@@ -12,7 +12,7 @@ suppressPackageStartupMessages(library(geosphere))
     (diflat < tol) & (abs(diflon%%360 - 180) < tol)
 }
 
-.onLoad<-function(arg1, arg2){
+.onLoad<-function(lib, pkg){
     suppressPackageStartupMessages(library(geosphere))
 
     unlockBinding('antipodal', as.environment('package:geosphere'))
@@ -21,7 +21,6 @@ suppressPackageStartupMessages(library(geosphere))
         ns = 'geosphere', envir = as.environment('package:geosphere'))
 
     lockBinding('antipodal', as.environment('package:geosphere'))
-
 }
 
 
