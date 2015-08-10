@@ -4,9 +4,9 @@
 #
 
 # Get main functions
-source('unit_sources.R')
-source('tsunami_sources.R')
-
+#source('unit_sources.R')
+#source('tsunami_sources.R')
+library(rptha)
 
 ###############################################################################
 #
@@ -21,7 +21,7 @@ tsunami_source_pixels = 900
 
 # Get a vector with all contours that we want to convert to unit sources
 all_sourcezone_shapefiles = 
-    Sys.glob('../MAKE_SOURCE_CONTOURS/OUTPUT_DATA/CONTOURS_FULL/*.shp')
+    Sys.glob('../../MAKE_SOURCE_CONTOURS/OUTPUT_DATA/CONTOURS_FULL/*.shp')[1]
 
 # Capture plots that occur as source is made in pdf
 pdf('UnitSources.pdf', width=10, height=10)
@@ -119,6 +119,21 @@ for(sourcename in names(discretized_sources)){
 # Optional plotting (interactive)
 #
 ###############################################################################
+
+#' Convenience plotting
+#'
+#' @export
+scatter3d<-function(x, y, z, colramp = 'cpt-city/ds9/rainbow.cpt', add=FALSE, 
+    ...){
+    library(rgl)
+    library(colorRampPC)
+
+    colfun = colorRampPC(colramp)
+
+    colz = colfun( (z - min(z))/diff(range(z)))
+    plot3d(x, y, z, col = colz, add=add, ...)
+}
+
 make_plot = FALSE
 if(make_plot){
 
@@ -163,7 +178,7 @@ if(make_plot){
 
     ## Make points of tsunami source FOR PLOTTING.
     ## Origin is the same as unit sources above
-    tsunami_source_points_4plot = gu$spherical_to_cartesian2d_coordinates(
+    tsunami_source_points_4plot = spherical_to_cartesian2d_coordinates(
         tsunami_surface_points_lonlat, origin_lonlat = origin)
     ## Combine all unit sources
     zstore = all_tsunami[[1]]$ts$zdsp*0
@@ -180,7 +195,7 @@ if(make_plot){
 
     #ti = 1
 
-    gu$scatter3d(tsunami_source_points_4plot[,1], tsunami_source_points_4plot[,2],
+    scatter3d(tsunami_source_points_4plot[,1], tsunami_source_points_4plot[,2],
         #all_tsunami[[ti]]$ts$zdsp*1.0e+05, add=TRUE, size=7)
         zstore*1.0e+05, add=TRUE, size=7)
 }
