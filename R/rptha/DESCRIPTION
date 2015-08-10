@@ -5,7 +5,7 @@ Version: 0.0
 Date: 2015-01-01
 Author: Gareth Davies, uses fortran code from Y. Okada
 Maintainer: Gareth Davies <gareth.davies.ga.code@gmail.com>
-Depends: rgdal, rgeos, geosphere, sp, raster, FNN, minpack.lm
+Depends: utils, rgdal, rgeos, geosphere, sp, raster, FNN, minpack.lm
 Suggests: rgl, testthat
 Description: Various tools useful in creating tsunami sources
 License: BSD-3

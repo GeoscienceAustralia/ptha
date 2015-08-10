@@ -197,58 +197,6 @@ intersect_surface_path_with_depth_contours<-function(surface_path, depth_contour
 }
 
 
-.test_intersect_surface_path_with_depth_contours<-function(){
-
-    contour1 = readOGR('../MAKE_SOURCE_CONTOURS/OUTPUT_DATA/CONTOURS_FULL/alaska.shp', 
-        layer='alaska')
-
-    line1 = matrix(c(210, 57, 208, 59.5), ncol = 2, byrow=TRUE)
-
-    line1_3D = intersect_surface_path_with_depth_contours(line1, contour1)
-
-    # Check that we get nearly the same result with higher 'n'
-    line2_3D = intersect_surface_path_with_depth_contours(line1, contour1, n=200)    
-
-    if(all(abs(line1_3D - line2_3D) < 1.0e-03)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    # Check what happens if we reverse line1_3D
-    # Should get the same result
-    line3_3D = intersect_surface_path_with_depth_contours(line1[2:1,], contour1)
-    if(all(abs(line1_3D - line3_3D) == 0.0)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    ## This case was troublesome originally 
-    ## The intersection point with the shallowest contour was missed
-    contour2 = readOGR('../MAKE_SOURCE_CONTOURS/OUTPUT_DATA/CONTOURS_FULL/sagami.shp', 
-        layer='sagami')
-
-    lc = length(contour2) 
-    l1 = length(contour2@lines[[1]]@Lines[[1]]@coords[,1] )
-    #l2 = length(contour2@lines[[lc]]@Lines[[1]]@coords[,1] )
-    l2 = 1 # Note the last line orientation in this file is currently reversed (24/07/2015)
-    end_points = rbind(contour2@lines[[1]]@Lines[[1]]@coords[l1,],
-                       contour2@lines[[lc]]@Lines[[1]]@coords[l2,])
-
-    line2_3D = intersect_surface_path_with_depth_contours(end_points, contour2, 
-        extend_line_fraction=0.1)
-
-    # Originally end_points[1,] was missing from line2_3D    
-    if(min(abs(end_points[1,1] - line2_3D[,1]) + 
-           abs(end_points[1,2] - line2_3D[,2])) < 1.0e-02){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-}
-
 #' Given lon-lat point(s) p0, and reference point(s), change the notation
 #' of the longitude of p0 so that it differs by < 360 degrees from the 
 #' longitude of the reference point
@@ -275,85 +223,6 @@ adjust_longitude_by_360_deg<-function(p0, reference_point){
 
     return(p0)
 }
-
-.test_adjust_longitude_by_360_deg<-function(){
-
-    # Test 1 -- good change
-    p0 = c(357, 5)
-    refpt = c(2, -10)
-   
-    p1 = adjust_longitude_by_360_deg(p0, refpt)
-    
-    if(all(p1 == p0 - c(360, 0))){
-        print('PASS')
-    }else{
-        print('FAIL')
-    } 
-   
-    # Test 2 -- good change 
-    p0 = c(-154, 5)
-    refpt = c(260, -10)
-    
-    p1 = adjust_longitude_by_360_deg(p0, refpt)
-    
-    if(all(p1 == p0 + c(360, 0))){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-
-    # Test 3 -- good change 
-    p0 = c(260, -10)
-    refpt = c(-154, 5)
-    
-    p1 = adjust_longitude_by_360_deg(p0, refpt)
-    
-    if(all(p1 == p0 - c(360, 0))){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    # Test 4 -- good change 
-    p0 = c(260 + 3*360, -10)
-    refpt = c(-154, 5)
-    
-    p11 = adjust_longitude_by_360_deg(p0, refpt)
-    
-    if(all(p11 == p1)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-
-    # Test 5 -- good change 
-    p0 = c(260 - 6*360, -10)
-    refpt = c(-154, 5)
-    
-    p11 = adjust_longitude_by_360_deg(p0, refpt)
-    
-    if(all(p11 == p1)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    # Test 6 -- no change
-    p0 = c(260 , -10)
-    refpt = c(130, 5)
-    
-    p11 = adjust_longitude_by_360_deg(p0, refpt)
-    
-    if(all(p11 == p0)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-}
-
 
 #' Given a 3D path of points (lon,lat,depth), interpolate a new path with n
 #' evenly spaced points (i.e. equal distances between points in 3D)
@@ -409,12 +278,6 @@ interpolate_3D_path<-function(threeD_path, n=100, depth_in_km=TRUE, ndense = (n*
     out_z = approx(fine_path[,4], fine_path[,3], n=n)$y
 
     return(cbind(out_x, out_y, out_z))
-}
-
-.test_interpolate_3D_path<-function(){
-
-
-    return
 }
 
 #' Given a longitude-latitude point in decimal degrees, return its UTM zone
@@ -544,106 +407,6 @@ cartesian2d_to_spherical_coordinates<-function(
 }
 
 
-.test_spherical_to_cartesian2d_and_inverse<-function(){
-
-    ## Test 1: Check that the inverse relation holds
-
-    lonlat = cbind(20 + 0.1*runif(10), -19 + 0.1*runif(10))
-    origin = c(20, -19)
-    # Convert to local xy system
-    new_coords = spherical_to_cartesian2d_coordinates(lonlat, 
-        origin_lonlat = origin)
-
-    # Back-caculate old coordinates
-    old_coords = cartesian2d_to_spherical_coordinates(new_coords, origin)
-
-    if(all(abs(lonlat - old_coords) < 1.0e-06)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    ## Test 2: Works for single-point vector input (as well as matrix, tested
-    ## above)
-    new_coord2 = spherical_to_cartesian2d_coordinates(lonlat[1,1:2], 
-        origin_lonlat = origin)
-    old_coord2 = cartesian2d_to_spherical_coordinates(new_coord2, origin)
-    
-    if(all(abs(old_coord2 - old_coords[1,]) == 0)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    ## Test 3: Check that distances are similar to UTM projection (cannot be indentical since
-    ##         UTM assumes ellipsoidal model of earth)
-    ##         Also check distances are similar to spherical distances
-
-    # Range of origins, including determininstic and random points
-    origins = list( c(144.96, -37.81), # Melbourne
-                    c(144.96, -60),  # Far south
-                    c(0, 62), # High latitude
-                    c(0, -62), # High latitude south
-                    c(runif(1, -180, 359), runif(1, -60, 59)),
-                    c(runif(1, -180, 359), runif(1, -60, 59)),
-                    c(runif(1, -180, 359), runif(1, -60, 59)),
-                    c(runif(1, -180, 359), runif(1, -60, 59)),
-                    c(runif(1, -180, 359), runif(1, -60, 59))
-                  ) 
-
-    # Relative distance error tolerances for each origin
-    # In reality the value can be low for equatorial regions, with larger
-    # errors for high latitudes N/S
-    tols = c(0.02, rep(0.04, length(origins) - 1))
-
-    for(ind in 1:length(origins)){
-
-        origin = origins[[ind]]
-        tol = tols[[ind]]
-
-        # Make a random set of coordinates 'near' origin
-        lonlat = cbind(origin[1] + runif(100), origin[2] + runif(100))
-
-        # Convert to our local coordinate system and compute distance matrix
-        new_coords = spherical_to_cartesian2d_coordinates(lonlat, 
-            origin_lonlat = origin)
-        distances0 = as.matrix(dist(new_coords, diag=FALSE, upper=TRUE))
-
-        # Convert to UTM coordinates
-        lonlat_wgs84 = SpatialPoints(lonlat, proj4string=CRS("+init=epsg:4326"))
-        local_utm_proj4string = lonlat2utm(origin) 
-        lonlat_utm = spTransform(lonlat_wgs84, CRS(local_utm_proj4string))
-        lonlat_utm_c = coordinates(lonlat_utm)
-
-        # Compute distance matrix for UTM version
-        distances1 = as.matrix(dist(lonlat_utm_c, diag=FALSE, upper=TRUE))
-
-        # Check that distance matrix is 'very close'
-        if( max( abs(distances0 - distances1)/distances0, na.rm=TRUE ) < tol){
-            print('PASS')
-        }else{
-            print('FAIL')
-        }
-
-        # Now compare distances0 against spherical distances
-        # Should be similar but not exactly the same (linear vs spherical)
-        distances_sphere = distances1*0
-        for(i in 1:length(lonlat[,1])){
-            for(j in 1:length(lonlat[,1])){
-                distances_sphere[i,j] = distHaversine(lonlat[i,], lonlat[j,])
-            }
-        }
-
-        if( max( abs(distances_sphere - distances0)/distances0, na.rm=TRUE) < tol){
-            print('PASS')
-        }else{
-            print('FAIL')
-        }
-
-    }
-
-}
-
 #' Convert spherical lon/lat coordinates to 3D cartesian x,y,z coordinates
 #'
 #' @param p0 2 column matrix with columns lon,lat
@@ -737,56 +500,6 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
     return(mean_angle)
 }
 
-.test_mean_angle<-function(){
-
-    # By this method the mean of -1,0,90 is < 30 
-    m1 = mean_angle(c(0,0,90))
-
-    err = abs(m1 - 26.5650511771)
-    if(err > 1.0e-08){
-        print('FAIL')
-    }else{
-        print('PASS')
-    }
-
-    # A more typical case
-    m2 = mean_angle(c(120, 60))
-    err = abs(m2 - 90)
-
-    if(err > sqrt(.Machine$double.eps)){
-        print('FAIL')
-    }else{
-        print('PASS')
-    }
-
-    # Check degrees / radians
-
-    a3 = runif(100, -2, 2)*pi
-    a4 = a3/pi*180
-    m3 = mean_angle(a3, degrees=FALSE)
-    m4 = mean_angle(a4, degrees=TRUE)
-
-    err = abs(m3*180/pi - m4)
-
-    if(err > 1.0e-06){
-        print('FAIL')
-    }else{
-        print('PASS')
-    }
-   
-    # Check there is no impact of representing negative angles as positive 
-    a5 = a3 + (a3 < 0)*2*pi
-    m5 = mean_angle(a5, degrees=FALSE)
-
-    err = abs(m3 - m5)
-    if(err > 1.0e-06){
-        print('FAIL')
-    }else{
-        print('PASS')
-    }
-    
-}
-
 #' Return a set of points with spacing='spacing' along a spatialLines object SL
 #'
 #' The spacing is calculated with linear interpolation (no great circles),
@@ -864,16 +577,4 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,verbose=FAL
     }
     return(out)
 }
-
-
-test_all_geometric_util<-function(){
-    .test_distance_down_depth()
-    .test_intersect_surface_path_with_depth_contours()
-    .test_interpolate_gc_path()     
-    .test_spherical_to_cartesian2d_and_inverse()
-    .test_mean_angle()
-    .test_adjust_longitude_by_360_deg()
-}
-
-
 
