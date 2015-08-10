@@ -186,6 +186,7 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
 #' @param discrete_source discrete source information for sourcename
 #' @return Nothing, but make a plot
 #'
+#' @export
 plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami, 
     all_tsunami_rast, discrete_source){
 
@@ -239,6 +240,9 @@ plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami,
     dev.off()
 }
 
+#' Test tsunami sources code
+#' 
+#' @export
 test_all_tsunami_sources<-function(){
     .test_unit_source_cartesian_to_okada_tsunami_source()
 }
