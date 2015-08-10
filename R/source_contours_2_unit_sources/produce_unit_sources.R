@@ -37,8 +37,8 @@ for(interface_shapefile in all_sourcezone_shapefiles){
     
     # Create unit sources for interface_shapefile
     discretized_sources[[sourcename]] = 
-        discretized_source_from_source_contours(interface_shapefile, desired_subfault_length, 
-            desired_subfault_width, make_plot=TRUE)
+        discretized_source_from_source_contours(interface_shapefile, 
+            desired_subfault_length, desired_subfault_width, make_plot=TRUE)
 
     # Get unit source summary stats
     discretized_sources_statistics[[sourcename]] = 
