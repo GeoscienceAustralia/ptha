@@ -1,0 +1,10 @@
+Package: EqSim
+Type: Package
+Title: Ground deformation from rupture
+Version: 0.0
+Date: 2013-11-10
+Author: Gareth Davies, uses fortran code from Y. Okada
+Maintainer: Gareth Davies <gareth.davies.ga.code@gmail.com>
+Description: Ground deformation from earthquake rupture
+License: BSD-3
+NeedsCompilation: yes
