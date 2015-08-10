@@ -1,0 +1,12 @@
+Package: rptha
+Type: Package
+Title: Tools for probabilistic tsunami hazard assessment
+Version: 0.0
+Date: 2015-01-01
+Author: Gareth Davies, uses fortran code from Y. Okada
+Maintainer: Gareth Davies <gareth.davies.ga.code@gmail.com>
+Depends: rgdal, rgeos, geosphere, sp, raster, FNN, minpack.lm
+Suggests: rgl
+Description: Ground deformation from earthquake rupture
+License: BSD-3
+NeedsCompilation: yes
