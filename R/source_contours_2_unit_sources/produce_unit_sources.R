@@ -17,6 +17,7 @@ source('tsunami_sources.R')
 desired_subfault_length = 100 # km
 desired_subfault_width = 50 # km
 MC_CORES = 12 # Number of cores for parallel parts
+tsunami_source_pixels = 900
 
 # Get a vector with all contours that we want to convert to unit sources
 all_sourcezone_shapefiles = 
@@ -68,8 +69,8 @@ for(sourcename in names(discretized_sources)){
     ## Get surface points for tsunami source
     source_lonlat_extent = extent(ds1$depth_contours)
     tsunami_surface_points_lonlat = expand.grid(
-        seq(source_lonlat_extent[1]-2, source_lonlat_extent[2]+2, len=900),
-        seq(source_lonlat_extent[3]-2, source_lonlat_extent[4]+2, len=900))
+        seq(source_lonlat_extent[1]-2, source_lonlat_extent[2]+2, len=tsunami_source_pixels),
+        seq(source_lonlat_extent[3]-2, source_lonlat_extent[4]+2, len=tsunami_source_pixels))
 
     # Make indices for unit sources in parallel computation.
     # If j varies fastest then the shallow unit sources
