@@ -1,3 +1,9 @@
-EqSim is a simple R package providing an interface to Okada's tsunami generation routine.
+rptha is the main workhorse R package. To build it, go inside 'rptha', start R, and do
 
-source_contours_2_unit_sources contains code to convert contours describing an earthquake source to earthquake-tsunami unit sources.
+    source('build_package.R')
+
+This will make an R package file in the directory above the package, which can be installed on the command line with:
+
+    sudo R CMD INSTALL rptha_XXXXX.tar.gz
+
+where the XXXX are adapted to match the file name.
