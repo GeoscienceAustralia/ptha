@@ -502,7 +502,7 @@ get_all_unit_source_top_edge_strikes<-function(discretized_source){
 #' discretized_source_from_source_contours)
 #' @param unit_source_index Index (down-dip, along-strike) of the unit source
 #' to operate on.
-#' @param origin. vector with 2 entries (lon,lat) giving the local cartesian coordinate
+#' @param origin vector with 2 entries (lon,lat) giving the local cartesian coordinate
 #' system origin for x,y. The depth origin is at 0. If NULL, the lon,lat of the
 #' first coordinate associated with the unit source at unit_source_index is
 #' used. 
@@ -517,6 +517,7 @@ get_all_unit_source_top_edge_strikes<-function(discretized_source){
 #' @param depths_in_km logical. If TRUE, input depths are assumed in km, and
 #' are transformed to m (so output depths are in m). Otherwise input depths are
 #' assumed in m
+#' @param plot_source logical. make a simple plot?
 #' @return list containing: 'unit_source': matrix with unit_source_coords in the
 #' cartesian coordinate system + an additional depth column (m); 'origin' the
 #' lon/lat origin of the local coordinate system; r (input argument); 'dx, dy'
