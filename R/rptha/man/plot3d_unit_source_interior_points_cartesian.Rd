@@ -13,9 +13,9 @@ plot3d_unit_source_interior_points_cartesian(us, aspect = "iso",
 
 \item{aspect}{aspect ratio of plot (passed to rgl::plot3d)}
 
-\item{add}{logical. Add to an existing plot?}
+\item{add}{logical Add to an existing plot?}
 
-\item{add_zero_plane.}{Draw a plane at depth = 0}
+\item{add_zero_plane}{Draw a plane at depth = 0}
 }
 \value{
 Nothing, but make a plot

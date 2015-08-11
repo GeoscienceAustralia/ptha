@@ -11,10 +11,10 @@ mean_angle(angles, degrees = TRUE, method = "complex-mean", weights = 1)
 
 \item{degrees}{logical. Are input angles in degrees (TRUE) or radians (FALSE)}
 
+\item{method}{character.  'complex-mean' gives Arg( mean(exp(i * angles))).}
+
 \item{weights}{Optionally provide a vector with the same length of 'angles'
        giving weights for weighted mean.}
-
-\item{method.}{character.  'complex-mean' gives Arg( mean(exp(i * angles))).}
 }
 \description{
 This accounts for the fact that e.g. mean(c(1, 359)) should be 0 for degrees

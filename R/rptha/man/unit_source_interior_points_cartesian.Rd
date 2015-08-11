@@ -15,6 +15,11 @@ discretized_source_from_source_contours)}
 \item{unit_source_index}{Index (down-dip, along-strike) of the unit source
 to operate on.}
 
+\item{origin}{vector with 2 entries (lon,lat) giving the local cartesian coordinate
+system origin for x,y. The depth origin is at 0. If NULL, the lon,lat of the
+first coordinate associated with the unit source at unit_source_index is
+used.}
+
 \item{r}{Radius of the earth (default gives radius in m)}
 
 \item{approx_dx}{Approximate x spacing of grid points inside the unit source
@@ -31,10 +36,7 @@ rescaling of defaults.}
 are transformed to m (so output depths are in m). Otherwise input depths are
 assumed in m}
 
-\item{origin.}{vector with 2 entries (lon,lat) giving the local cartesian coordinate
-system origin for x,y. The depth origin is at 0. If NULL, the lon,lat of the
-first coordinate associated with the unit source at unit_source_index is
-used.}
+\item{plot_source}{logical. make a simple plot?}
 }
 \value{
 list containing: 'unit_source': matrix with unit_source_coords in the

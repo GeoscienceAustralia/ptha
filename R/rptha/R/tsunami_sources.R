@@ -56,8 +56,8 @@ make_tsunami_unit_source<-function(i,j, discrete_source,
 tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL, 
     saveonly=FALSE){
 
-    library(raster)
-    library(rgdal)
+    #library(raster)
+    #library(rgdal)
 
     xyz = cbind(tsunami_unit_source$tsunami_surface_points_lonlat, 
         tsunami_unit_source$tsunami_source$zdsp)
@@ -145,7 +145,7 @@ plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami,
     for(i in 1:length(all_tsunami)){ 
         tsunami_sum = tsunami_sum + all_tsunami[[i]]$tsunami_source$zdsp
     }
-    library(raster)
+    #library(raster)
     tsunami_sum = rasterFromXYZ(
         cbind(all_tsunami[[1]]$tsunami_surface_points_lonlat, tsunami_sum),
         crs=CRS('+init=epsg:4326'))

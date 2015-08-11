@@ -4,13 +4,13 @@
 # Gareth Davies, Geoscience Australia 2015
 #
 
-suppressPackageStartupMessages(library(rgeos))
-suppressPackageStartupMessages(library(sp))
-suppressPackageStartupMessages(library(rgdal))
+#suppressPackageStartupMessages(library(rgeos))
+#suppressPackageStartupMessages(library(sp))
+#suppressPackageStartupMessages(library(rgdal))
 
 ## FIXME: At the moment we use a script to fix a bug in geosphere's antipodal
 ## I have reported the bug, when it it fixed remove this
-library(geosphere)
+#library(geosphere)
 #source('override_antipodal_geosphere.R')
 
 #' Compute distances between 2 points defined by (lon,lat,depth)

@@ -4,10 +4,10 @@
 # Gareth Davies, Geoscience Australia, 2015
 #
 
-suppressPackageStartupMessages(library(rgdal))
-suppressPackageStartupMessages(library(rgeos))
-suppressPackageStartupMessages(library(sp))
-suppressPackageStartupMessages(library(FNN))
+#suppressPackageStartupMessages(library(rgdal))
+#suppressPackageStartupMessages(library(rgeos))
+#suppressPackageStartupMessages(library(sp))
+#suppressPackageStartupMessages(library(FNN))
 
 #library(geosphere)
 ## FIXME: At the moment we use a script to fix a bug in geosphere's antipodal
@@ -815,7 +815,7 @@ get_depth_dip_at_unit_source_interior_points<-function(
         return(output)
     }
 
-    library(minpack.lm)
+    #library(minpack.lm)
     # Define a function that gives alpha/s associated with a given grid point
     find_alpha_s<-function(initial_guess, grid_point){
 
@@ -957,7 +957,7 @@ plot_unit_source_interior_points_cartesian<-function(us){
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){
 
-    require(rgl)
+    #require(rgl)
 
     if(!add){
         plot3d(us$grid_points[,1], us$grid_points[,2], -us$grid_points[,3], 

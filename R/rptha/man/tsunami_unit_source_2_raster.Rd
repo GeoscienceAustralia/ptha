@@ -7,6 +7,17 @@
 tsunami_unit_source_2_raster(tsunami_unit_source, filename = NULL,
   saveonly = FALSE)
 }
+\arguments{
+\item{tsunami_unit_source}{output of make_tsunami_unit_source or similar}
+
+\item{filename}{Name for output raster file. If NULL, no file is saved.}
+
+\item{saveonly}{logical. If FALSE, return the raster object as well as
+saving. If TRUE but filename is not NULL, then save the file, but return NULL}
+}
+\value{
+Either a raster, or NULL. Can save the raster to a file as a side effect
+}
 \description{
 Convert the tsunami unit source to a z-displacement raster
 }

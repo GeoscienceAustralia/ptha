@@ -7,6 +7,16 @@
 unit_source_cartesian_to_okada_tsunami_source(us,
   tsunami_surface_points_cartesian)
 }
+\arguments{
+\item{us}{A unit source with interior points in cartesian coordinates.}
+
+\item{tsunami_surface_points_cartesian}{Points at which to compute the
+tsunami deformation in cartesian coordinates}
+}
+\value{
+List with edsp, ndsp, zdsp giving the displacements at the
+tsunami_surface_points_cartesian.
+}
 \description{
 Convert a cartesian unit source with interior points to an okada tsunami source
 }
