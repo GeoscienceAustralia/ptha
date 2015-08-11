@@ -13,6 +13,7 @@ suppressPackageStartupMessages(library(geosphere))
 }
 
 .onLoad<-function(lib, pkg){
+    library(utils)
     suppressPackageStartupMessages(library(geosphere))
 
     unlockBinding('antipodal', as.environment('package:geosphere'))

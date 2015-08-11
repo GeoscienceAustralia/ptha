@@ -1,4 +1,7 @@
-test_distance_down_depth<-function(){
+context('test_distance_down_depth')
+
+test_that('test_distance_down_depth',{
+#test_distance_down_depth<-function(){
 
     ## TEST 1 ## Surface distances
 
@@ -80,5 +83,5 @@ test_distance_down_depth<-function(){
 
     expect_that(isTRUE(all.equal(l_analytical$value, l_numerical)), is_true())
 
-}
-
+#}
+})

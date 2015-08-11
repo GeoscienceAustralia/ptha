@@ -1,17 +1,21 @@
-test_mean_angle<-function(){
+
+context('test_mean_angle')
+
+test_that('test_mean_angle', {
+#test_mean_angle<-function(){
 
     # By this method the mean of -1,0,90 is < 30 
     m1 = mean_angle(c(0,0,90))
 
     err = abs(m1 - 26.5650511771)
     
-    test_that(err < 1.0e-08, is_true())
+    expect_that(err < 1.0e-08, is_true())
 
     # A more typical case
     m2 = mean_angle(c(120, 60))
     err = abs(m2 - 90)
 
-    test_that(err < sqrt(.Machine$double.eps), is_true())
+    expect_that(err < sqrt(.Machine$double.eps), is_true())
 
     # Check degrees / radians
 
@@ -22,7 +26,7 @@ test_mean_angle<-function(){
 
     err = abs(m3*180/pi - m4)
 
-    test_that(err < 1.0e-06, is_true())
+    expect_that(err < 1.0e-06, is_true())
    
     # Check there is no impact of representing negative angles as positive 
     a5 = a3 + (a3 < 0)*2*pi
@@ -30,6 +34,6 @@ test_mean_angle<-function(){
 
     err = abs(m3 - m5)
     
-    test_that(err < 1.0e-06, is_true())
-}
-
+    expect_that(err < 1.0e-06, is_true())
+#}
+})

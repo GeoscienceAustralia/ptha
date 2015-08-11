@@ -8,5 +8,5 @@ Maintainer: Gareth Davies <gareth.davies.ga.code@gmail.com>
 Depends: utils, rgdal, rgeos, geosphere, sp, raster, FNN, minpack.lm
 Suggests: rgl, testthat
 Description: Various tools useful in creating tsunami sources
-License: BSD-3
+License: BSD3
 NeedsCompilation: yes

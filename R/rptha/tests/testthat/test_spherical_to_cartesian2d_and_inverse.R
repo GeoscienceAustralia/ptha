@@ -1,4 +1,7 @@
-test_spherical_to_cartesian2d_and_inverse<-function(){
+context('test_spherical_to_cartesian2d_and_inverse')
+
+test_that('test_spherical_to_cartesian2d_and_inverse', {
+#test_spherical_to_cartesian2d_and_inverse<-function(){
 
     ## Test 1: Check that the inverse relation holds
 
@@ -86,5 +89,5 @@ test_spherical_to_cartesian2d_and_inverse<-function(){
 
     }
 
-}
+})
 

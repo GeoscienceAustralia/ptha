@@ -1,4 +1,7 @@
-test_intersect_surface_path_with_depth_contours<-function(){
+context('test_intersect_surface_path_with_depth_contours')
+
+test_that('test_intersect_surface_path_with_depth_contours', {
+#test_intersect_surface_path_with_depth_contours<-function(){
 
     contour1 = readOGR('testshp/alaska.shp', layer='alaska')
 
@@ -36,4 +39,4 @@ test_intersect_surface_path_with_depth_contours<-function(){
              abs(end_points[1,2] - line2_3D[,2])) < 1.0e-02),
         is_true())
 
-}
+})

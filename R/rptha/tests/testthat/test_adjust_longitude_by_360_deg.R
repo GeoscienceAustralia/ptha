@@ -1,4 +1,7 @@
-test_adjust_longitude_by_360_deg<-function(){
+context('test_adjust_longitude_by_360_deg')
+
+test_that("test_adjust_longitude_by_360_deg", {
+#test_adjust_longitude_by_360_deg<-function(){
 
     # Test 1 -- good change
     p0 = c(357, 5)
@@ -47,4 +50,5 @@ test_adjust_longitude_by_360_deg<-function(){
     p11 = adjust_longitude_by_360_deg(p0, refpt)
 
     expect_that(all(p11 == p0), is_true())
-}
+#}
+})
