@@ -956,7 +956,7 @@ plot_unit_source_interior_points_cartesian<-function(us){
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){
 
-    library(rgl)
+    require(rgl)
 
     if(!add){
         plot3d(us$grid_points[,1], us$grid_points[,2], -us$grid_points[,3], 
@@ -984,87 +984,3 @@ plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso',
 
 }
 
-.test_unit_source_interior_points_cartesian<-function(){
-
-    # Consider a source with width 20km, length 40km, top-edge-depth
-    # of 6km, bottom-edge-depth of 10km
-    
-    d0 = 6000
-    d1 = 10000
-    width = 20000
-    len = 40000
-    dip = atan((d1 - d0)/width)*180/pi
-    strike = 270    
-
-    unit_source_coords_cartesian=rbind(c(0, 0, d0),
-                                       c(0, width, d1),
-                                       c(-len, width, d1),
-                                       c(-len, 0, d0))
-
-    # Back-calculate lon/lat
-    unit_source_coords_lonlat = cartesian2d_to_spherical_coordinates(
-        unit_source_coords_cartesian[,1:2], origin=c(0,0))
-
-    # Make discrete source consisting of a single unit source
-    ds = list()
-    ds$unit_source_grid = array(dim=c(2,3,2))
-    ds$unit_source_grid[,,1] = cbind(unit_source_coords_lonlat[1:2,1:2], 
-        unit_source_coords_cartesian[1:2,3]/1000)
-    ds$unit_source_grid[,,2] = cbind(unit_source_coords_lonlat[4:3,1:2], 
-        unit_source_coords_cartesian[4:3,3]/1000)
-   
-    ds$discretized_source_dim = c(1,1) 
-
-    ds$fine_downdip_transects = ds$unit_source_grid    
-
-    us = unit_source_interior_points_cartesian(ds, unit_source_index = c(1,1),
-        approx_dx = NULL, approx_dy = NULL, depths_in_km=TRUE)
-
-    # Check strike
-    if(all(us$grid_points[,'strike'] == strike)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    # Check dip (small inaccuracies allowed due to numerical optimization)
-    if(all(abs(us$grid_points[,'dip'] - dip)<0.02)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    # Check depth (small inaccuracies allowed due to numerical optimization)
-    pred_depth = (us$grid_points[,'y']/width)*(d1 - d0) + d0
-    if(all(abs(us$grid_points[,'depth'] - pred_depth) < 1)){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    # Check area in m^2
-    if(abs(sum(us$grid_points[,'area']) - len*width) < 0.1){
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-    # Check x/y
-    if( (min(us$grid_points[,'x']) > -len) &
-        (max(us$grid_points[,'x']) < 0) &
-        (min(us$grid_points[,'y']) > 0) &
-        (max(us$grid_points[,'y']) < width) ){
-
-        print('PASS')
-    }else{
-        print('FAIL')
-    }
-
-}
-
-#' Run tests
-#'
-#' @export
-test_all_unit_sources<-function(){
-    .test_unit_source_interior_points_cartesian()
-}
