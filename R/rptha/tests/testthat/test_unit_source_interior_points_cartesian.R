@@ -2,7 +2,6 @@
 context('test_unit_source_interior_points_cartesian')
 
 test_that('test_unit_source_interior_points_cartesian', {
-#test_unit_source_interior_points_cartesian<-function(){
 
     # Consider a source with width 20km, length 40km, top-edge-depth
     # of 6km, bottom-edge-depth of 10km
@@ -57,5 +56,5 @@ test_that('test_unit_source_interior_points_cartesian', {
                  (max(us$grid_points[,'x']) < 0) &
                  (min(us$grid_points[,'y']) > 0) &
                  (max(us$grid_points[,'y']) < width), is_true() )
-}
+})
 
