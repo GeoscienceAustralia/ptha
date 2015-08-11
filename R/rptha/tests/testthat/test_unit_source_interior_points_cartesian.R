@@ -13,14 +13,15 @@ test_that('test_unit_source_interior_points_cartesian', {
     dip = atan((d1 - d0)/width)*180/pi
     strike = 270    
 
-    unit_source_coords_cartesian=rbind(c(0, 0, d0),
-                                       c(0, width, d1),
-                                       c(-len, width, d1),
-                                       c(-len, 0, d0))
+    unit_source_coords_cartesian = rbind(
+        c(0, 0, d0),
+        c(0, width, d1),
+        c(-len, width, d1),
+        c(-len, 0, d0))
 
     # Back-calculate lon/lat
     unit_source_coords_lonlat = cartesian2d_to_spherical_coordinates(
-        unit_source_coords_cartesian[,1:2], origin=c(0,0))
+        unit_source_coords_cartesian[,1:2], origin_lonlat=c(0,0))
 
     # Make discrete source consisting of a single unit source
     ds = list()
