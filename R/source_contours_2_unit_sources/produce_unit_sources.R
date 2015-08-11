@@ -121,17 +121,12 @@ for(sourcename in names(discretized_sources)){
 #
 ###############################################################################
 
-#' Convenience plotting
-#'
-#' @export
+# Convenience plotting
 scatter3d<-function(x, y, z, add=FALSE, ...){
     library(rgl)
-    #library(colorRampPC)
-
-    #colfun = colorRampPC(colramp)
     colfun = colorRamp(rainbow(255))
     
-    col_01 = (z - min(z))/(max(z) - min(z)+1.0e-06)
+    col_01 = (z - min(z))/(max(z) - min(z)+1.0e-20)
     colz = colfun(col_01)
     colz = rgb(colz[,1],colz[,2], colz[,3], maxColorValue=255)
     plot3d(x, y, z, col = colz, add=add, ...)
