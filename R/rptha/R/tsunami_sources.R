@@ -47,6 +47,11 @@ make_tsunami_unit_source<-function(i,j, discrete_source,
 
 #' Convert the tsunami unit source to a z-displacement raster
 #' 
+#' @param tsunami_unit_source output of make_tsunami_unit_source or similar
+#' @param filename Name for output raster file. If NULL, no file is saved.
+#' @param saveonly logical. If FALSE, return the raster object as well as
+#' saving. If TRUE but filename is not NULL, then save the file, but return NULL
+#' @return Either a raster, or NULL. Can save the raster to a file as a side effect
 #' @export
 tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL, 
     saveonly=FALSE){
@@ -73,6 +78,11 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 
 #' Convert a cartesian unit source with interior points to an okada tsunami source
 #'
+#' @param us A unit source with interior points in cartesian coordinates.
+#' @param tsunami_surface_points_cartesian Points at which to compute the
+#' tsunami deformation in cartesian coordinates
+#' @return List with edsp, ndsp, zdsp giving the displacements at the
+#' tsunami_surface_points_cartesian.
 #' @export
 unit_source_cartesian_to_okada_tsunami_source<-function(us,
     tsunami_surface_points_cartesian){

@@ -948,8 +948,8 @@ plot_unit_source_interior_points_cartesian<-function(us){
 #' @param us List with unit source interior points information: Output of
 #' 'unit_source_interior_points_cartesian' or similar
 #' @param aspect aspect ratio of plot (passed to rgl::plot3d)
-#' @param add logical. Add to an existing plot?
-#' @param add_zero_plane. Draw a plane at depth = 0
+#' @param add logical Add to an existing plot?
+#' @param add_zero_plane Draw a plane at depth = 0
 #' @return Nothing, but make a plot
 #' 
 #' @export
