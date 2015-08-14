@@ -213,10 +213,12 @@ discretized_source_from_source_contours<-function(
             mid_line_with_cutpoints, 
             n = 100,
             depth_in_km = contour_depth_in_km)
-        
-        points(interpolated_midline, col='purple', pch=19)
-        points(mid_line_with_cutpoints[,1:2], col='pink', pch=19, cex=0.2)
-        points(mid_line_with_cutpoints[,1:2], t='l', col='brown', lty = 'dashed' ) 
+       
+        if(make_plot){ 
+            points(interpolated_midline, col='purple', pch=19)
+            points(mid_line_with_cutpoints[,1:2], col='pink', pch=19, cex=0.2)
+            points(mid_line_with_cutpoints[,1:2], t='l', col='brown', lty = 'dashed' ) 
+        }
         
         strike_cuts[[i]] = interpolated_midline
         fine_strike_cuts[[i]] = fine_interpolated_midline
@@ -230,8 +232,10 @@ discretized_source_from_source_contours<-function(
         # Interpolate them along a great circle with the 3D line interpolation routine
         line2plot = cbind(line2plot[,1:2], rep(0, length(line2plot[,1])))
         line2plot = interpolate_3D_path(line2plot)[,1:2]
-        
-        points(line2plot[,1], line2plot[,2], t='l', lty='dashed', col='brown')
+       
+        if(make_plot){ 
+            points(line2plot[,1], line2plot[,2], t='l', lty='dashed', col='brown')
+        }
     }
 
     # Convert down-dip lines to 3D arrays (which makes the connectedness
@@ -272,7 +276,7 @@ discretized_source_from_source_contours<-function(
 #' @return data.frame with key summary statistics
 #'
 #' @export
-discretized_source_approximate_summary_statistics<-function(
+discretized_source_summary_statistics<-function(
     discretized_source,
     default_rake = 90, 
     default_slip = 1, 
