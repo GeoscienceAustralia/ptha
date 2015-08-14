@@ -276,7 +276,7 @@ discretized_source_from_source_contours<-function(
 #' @return data.frame with key summary statistics
 #'
 #' @export
-discretized_source_summary_statistics<-function(
+discretized_source_approximate_summary_statistics<-function(
     discretized_source,
     default_rake = 90, 
     default_slip = 1, 
