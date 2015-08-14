@@ -50,7 +50,7 @@ test_that('test_unit_source_interior_points_cartesian', {
     expect_that(all(abs(us$grid_points[,'depth'] - pred_depth) < 1), is_true())
 
     # Check area in m^2
-    expect_that(abs(sum(us$grid_points[,'area']) - len*width) < 0.1, is_true())
+    expect_that(abs(sum(us$grid_points[,'area_projected']) - len*width) < 0.1, is_true())
 
     # Check x/y
     expect_that( (min(us$grid_points[,'x']) > -len) &
