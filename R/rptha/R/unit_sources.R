@@ -256,7 +256,7 @@ discretized_source_from_source_contours<-function(
 }
 
 
-#' Compute approximate summary statistics for all unit sources in a discretized source
+#' Compute APPROXIMATE summary statistics for all unit sources in a discretized source
 #' zone
 #'
 #' The quantities that we output follow those in the i-invall format in the old
@@ -266,13 +266,13 @@ discretized_source_from_source_contours<-function(
 #' @param discretized_source list with an entry 'unit_source_grid' containing a
 #'        3 dimensional array defining the vertices of all unit sources for the source
 #'        zone (e.g. output of 'discretized_source_from_source_contours')
-#' @param default_rake numeric, all unit sources are assigned this rake
-#' @param default_slip numeric, all unit sources are assigned this slip
+#' @param default_rake numeric degrees, all unit sources are assigned this rake
+#' @param default_slip numeric m, all unit sources are assigned this slip
 #' @param make_plot logical, make a plot?
 #' @return data.frame with key summary statistics
 #'
 #' @export
-discretized_source_summary_statistics<-function(
+discretized_source_approximate_summary_statistics<-function(
     discretized_source,
     default_rake = 90, 
     default_slip = 1, 

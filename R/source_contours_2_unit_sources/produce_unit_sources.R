@@ -35,14 +35,15 @@ for(interface_shapefile in all_sourcezone_shapefiles){
     # Extract a name for the source
     sourcename = gsub('.shp', '', basename(interface_shapefile))
     
-    # Create unit sources for interface_shapefile
+    # Create discretized sources for interface_shapefile
     discretized_sources[[sourcename]] = 
         discretized_source_from_source_contours(interface_shapefile, 
             desired_subfault_length, desired_subfault_width, make_plot=TRUE)
 
-    # Get unit source summary stats
+    # Get discretized source approximate summary stats
+    # More accurate results can be obtained by analysing the unit sources directly
     discretized_sources_statistics[[sourcename]] = 
-        discretized_source_summary_statistics(discretized_sources[[sourcename]],
+        discretized_source_approximate_summary_statistics(discretized_sources[[sourcename]],
             make_plot=TRUE)
 }
 
