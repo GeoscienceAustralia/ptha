@@ -640,7 +640,7 @@ unit_source_interior_points_cartesian<-function(
     grid_points = cbind(grid_points, grid_point_areas, strike)
 
     # Fix row/column names for later ease of access
-    colnames(grid_points) = c('x', 'y', 'depth', 'dip', 'alpha', 's', 'area', 'strike')
+    colnames(grid_points) = c('x', 'y', 'depth', 'dip', 'alpha', 's', 'area_projected', 'strike')
 
     rownames(grid_points) = NULL
 

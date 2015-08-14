@@ -95,8 +95,8 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
     # Make a 'length' for the point source in km
     src_len = rep( sqrt(us$dx*us$dy)/1000, len=nsrc) 
     # Make a 'width' for the point source in km
-    area_projector = sqrt(1 + tan(src[,'dip']/180*pi)**2)
-    src_wdt = (src[,'area']/1e+06)/src_len*area_projector
+    area_downslope_adjust = sqrt(1 + tan(src[,'dip']/180*pi)**2)
+    src_wdt = (src[,'area_projected']/1e+06)/src_len*area_downslope_adjust
 
     dest = tsunami_surface_points_cartesian
 
