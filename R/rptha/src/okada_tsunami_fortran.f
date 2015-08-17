@@ -12,13 +12,14 @@ c***********************************************************************
       real(8),intent(in):: rlon(m),rlat(m)
       real(8),intent(out):: zdsp(m),edsp(m),ndsp(m)
 C     Local variables      
-      logical:: DEBUG
-      real(8) :: pi,dtr, tmp1, tmp2, odep,oy,ox, x, y, d, az
-      real(8) :: u1, u2, u3, u11, u12, u21, u22, u31, u32
-      integer:: i, j
+      logical:: DEBUG, USE_DC3D
+      real(8) :: pi,dtr, tmp1, tmp2, odep,oy,ox, x, y, d, az, alp_dc3d
+      real(8) :: u1, u2, u3, u11, u12, u13, u21, u22, u23, u31, u32, u33
+      integer:: i, j, IRET
 
 c     Convenience flag for debugging -- will write various outputs to file
       DEBUG=.FALSE. 
+      USE_DC3D = .TRUE.
    
 c      print*, 'IN FORTRAN'
 
@@ -113,9 +114,23 @@ c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              0186000
                 write(32,*) cos(dip(i)*dtr), disl1(i), disl2(i), 0.0D0
             END IF
 
-            call srectf(alp,x,y,odep,0.0D0,length(i),0.0D0,wdt(i),
-     &           sin(dip(i)*dtr),cos(dip(i)*dtr),disl1(i),
-     &           disl2(i),0.0D0,u1,u2,u3,u11,u12,u21,u22,u31,u32)
+            IF( USE_DC3D) THEN
+!SUBROUTINE  DC3D(ALPHA,X,Y,Z,DEPTH,DIP,
+!     *              AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,
+!     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
+                alp_dc3d = 2.0D0/3.0D0 ! Different definition than in srectf
+                call DC3D(alp_dc3d, x, y, 0.0D0, odep, dip(i),0.0D0,
+     &                    length(i), 0.0D0, wdt(i), disl1(i), 
+     &                    disl2(i), 0.0D0, u1, u2, u3, u11, u21, u31,
+     &                    u12, u22, u32, u13, u23, u33, IRET)
+                IF(IRET .NE. 0) THEN
+                    stop('IRET != 0') 
+                END IF
+            ELSE
+                call srectf(alp,x,y,odep,0.0D0,length(i),0.0D0,wdt(i),
+     &              sin(dip(i)*dtr),cos(dip(i)*dtr),disl1(i),
+     &              disl2(i),0.0D0,u1,u2,u3,u11,u12,u21,u22,u31,u32)
+            END IF
             IF(DEBUG.eqv..TRUE.) THEN
                 write(32,*) 'U3 is: ', u3
             END IF

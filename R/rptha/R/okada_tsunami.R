@@ -41,7 +41,7 @@ okada_tsunami<-function(elon,elat,edep,strk,dip,lnth,wdt,
     # Call Okada routines to compute surface displacement
 
     # Variables we already know
-    alp=0.5
+    alp=0.5 # Assuming lambda = mu, which is common
     n=length(elon)
     m=length(rlon)
 
