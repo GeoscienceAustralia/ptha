@@ -25,6 +25,8 @@ test_that("test_adjust_longitude_by_360_deg", {
     
     p1 = adjust_longitude_by_360_deg(p0, refpt)
 
+    expect_that(all(!is.null(p1)), is_true())
+
     expect_that(all(p1 == p0 - c(360, 0)), is_true())
 
     # Test 4 -- good change 
@@ -32,6 +34,8 @@ test_that("test_adjust_longitude_by_360_deg", {
     refpt = c(-154, 5)
     
     p11 = adjust_longitude_by_360_deg(p0, refpt)
+
+    expect_that(all(!is.null(p11)), is_true())
 
     expect_that(all(p11 == p1), is_true())
 
@@ -41,6 +45,8 @@ test_that("test_adjust_longitude_by_360_deg", {
     
     p11 = adjust_longitude_by_360_deg(p0, refpt)
 
+    expect_that(all(!is.null(p11)), is_true())
+
     expect_that(all(p11 == p1), is_true())
 
     # Test 6 -- no change
@@ -49,6 +55,7 @@ test_that("test_adjust_longitude_by_360_deg", {
     
     p11 = adjust_longitude_by_360_deg(p0, refpt)
 
+    expect_that(all(!is.null(p11)), is_true())
     expect_that(all(p11 == p0), is_true())
 #}
 })

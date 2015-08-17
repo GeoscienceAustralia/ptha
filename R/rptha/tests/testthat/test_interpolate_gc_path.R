@@ -8,12 +8,18 @@ test_that('test_interpolate_gc_path', {
 
     interp_path1 = interpolate_gc_path(surface_path)
 
-    expect_that(max(abs(diff(interp_path1[,1])))< 20, is_true())
+    expect_that(all(!is.null(interp_path1)), is_true())
+    expect_that(all(!is.na(interp_path1)), is_true())
+
+    expect_that(max(abs(diff(interp_path1[,1]))) < 20, is_true())
 
     ## Test 2
     surface_path = surface_path[2:1,]
     interp_path2 = interpolate_gc_path(surface_path)
   
+    expect_that(all(!is.null(interp_path2)), is_true())
+    expect_that(all(!is.na(interp_path1)), is_true())
+
     # Check there is no large spacing 
     expect_that(max(abs(diff(interp_path2[,1]))) < 2, is_true())
 
@@ -27,6 +33,8 @@ test_that('test_interpolate_gc_path', {
 
     interp_path1 = interpolate_gc_path(surface_path)
 
+    expect_that(all(!is.null(interp_path1)), is_true())
+    expect_that(all(!is.na(interp_path1)), is_true())
     expect_that(max(abs(diff(interp_path1[,1]))) < 20, is_true())
 
 

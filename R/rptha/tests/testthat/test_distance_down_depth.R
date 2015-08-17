@@ -12,7 +12,7 @@ test_that('test_distance_down_depth',{
 
     dist_cos = distCosine(p2[1:2], p1[1:2])
 
-    expect_that(all.equal(dist1, dist_cos), is_true())
+    expect_that(isTRUE(all.equal(dist1, dist_cos)), is_true())
 
     ## TEST 2 ## Unaffected by + 360 to lat
 
