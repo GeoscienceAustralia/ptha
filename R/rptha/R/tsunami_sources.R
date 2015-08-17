@@ -140,10 +140,10 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
     area_scale = updip_scale*alongstrike_scale
 
     # Make a 'length' for the point source in km
-    src_len = (sqrt(src[, 'area_projected'])/1000)/area_scale*alongstrike_scale
+    src_len = (sqrt(src[, 'area_projected']/area_scale)*alongstrike_scale) * 1/1000
     # Make a 'width' for the point source in km, adjusted for down-dip distance
     area_downslope_adjust = sqrt(1 + tan(src[,'dip']*deg2rad)**2)
-    src_wdt =  ((sqrt(src[, 'area_projected'])/1000)/area_scale*updip_scale)*area_downslope_adjust
+    src_wdt = (sqrt(src[, 'area_projected']/area_scale)*updip_scale)*area_downslope_adjust * 1/1000
 
     # Our Okada function is for a rectangular source with constant
     # depth along-strike.
