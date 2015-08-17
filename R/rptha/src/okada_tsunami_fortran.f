@@ -43,28 +43,30 @@ c      print*, 'IN FORTRAN'
  
       END IF
 
-      pi  = 4.*atan2(1.,1.)
-      dtr = pi/180.d0 ! degrees to radians
+      pi  = 4.0D0*atan2(1.0D0,1.0D0)
+      dtr = pi/180.0D0 ! degrees to radians
       !lt2k = 6371.d0*dtr ! latitude to kilometres
 
 c Initialize displacements to zero
       do 50 j=1,m
-         ndsp(j) = 0.
-         edsp(j) = 0.
- 50      zdsp(j) = 0.
+         ndsp(j) = 0.0D0
+         edsp(j) = 0.0D0
+ 50      zdsp(j) = 0.0D0
 
 c Loop over faults
       do 200 i=1,n
 c Translate the origin from fault center to Okada's lower left corner
          tmp2 = cos(dip(i)*dtr)
-         tmp1 = 0.5*sqrt(length(i)*length(i) + tmp2*wdt(i)*tmp2*wdt(i)) ! Half 'diagonal length' of surface projection of the slip area
-         tmp2 = atan2(tmp2*wdt(i),length(i)) ! Angle of triangle connecting corners of surface projection of slip area
-         odep = edep(i) + 0.5*wdt(i)*sin(dip(i)*dtr) ! Origin depth in Okada's reference frame
+         ! Half 'diagonal length' of surface projection of the slip area
+         tmp1 = (0.5D0)*sqrt(length(i)**2 + (tmp2*wdt(i))**2)
+         ! Angle of triangle connecting corners of surface projection of slip area
+         tmp2 = atan2(tmp2*wdt(i),length(i)) 
+         odep = edep(i) + (0.5D0)*wdt(i)*sin(dip(i)*dtr) ! Origin depth in Okada's reference frame
 
 c       Compute origin for Okada's reference frame
 c       GD CHANGES HERE
-         oy = elat(i) - 1000.*tmp1*cos(tmp2-strk(i)*dtr)
-         ox = elon(i) + 1000.*tmp1*sin(tmp2-strk(i)*dtr)
+         oy = elat(i) - 1000.0D0*tmp1*cos(tmp2-strk(i)*dtr)
+         ox = elon(i) + 1000.0D0*tmp1*sin(tmp2-strk(i)*dtr)
 c         ox = elon(i) - 1000.*tmp1*cos(tmp2-strk(i)*dtr)
 c         oy = elat(i) - 1000.*tmp1*sin(tmp2-strk(i)*dtr)
 
@@ -78,10 +80,10 @@ c         oy = elat(i) - 1000.*tmp1*sin(tmp2-strk(i)*dtr)
 c Loop over displacement points
          do 100 j=1,m
 c          Translate to new origin
-           x = (rlon(j) - ox)*.001
-           y = (rlat(j) - oy)*.001
+           x = (rlon(j) - ox)*.001D0
+           y = (rlat(j) - oy)*.001D0
            d = sqrt(x**2+y**2) ! Find distance from origin
-           az = 90.-atan2(y,x)/dtr
+           az = 90.0D0-atan2(y,x)/dtr
 
            IF(DEBUG.eqv..TRUE.) THEN
                write(32,*) x,y,rlon(j),rlat(j),d,az,atan2(y,x)/dtr
@@ -106,14 +108,14 @@ c      SUBROUTINE  SRECTF(ALP,X,Y,DEP,AL1,AL2,AW1,AW2,                   0184000
 c     *                   SD,CD,DISL1,DISL2,DISL3,                       01850000
 c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              01860000
             IF(DEBUG.eqv..TRUE.) THEN
-                write(32,*) 'SRECTF INPUTS: ', alp, x, y, odep, 0.d0
-                write(32,*) length(i), 0.d0, wdt(i), sin(dip(i)*dtr)
-                write(32,*) cos(dip(i)*dtr), disl1(i), disl2(i), 0.d0
+                write(32,*) 'SRECTF INPUTS: ', alp, x, y, odep, 0.0D0
+                write(32,*) length(i), 0.0D0, wdt(i), sin(dip(i)*dtr)
+                write(32,*) cos(dip(i)*dtr), disl1(i), disl2(i), 0.0D0
             END IF
 
-            call srectf(alp,x,y,odep,0.d0,length(i),0.d0,wdt(i),
+            call srectf(alp,x,y,odep,0.0D0,length(i),0.0D0,wdt(i),
      &           sin(dip(i)*dtr),cos(dip(i)*dtr),disl1(i),
-     &           disl2(i),0.d0,u1,u2,u3,u11,u12,u21,u22,u31,u32)
+     &           disl2(i),0.0D0,u1,u2,u3,u11,u12,u21,u22,u31,u32)
             IF(DEBUG.eqv..TRUE.) THEN
                 write(32,*) 'U3 is: ', u3
             END IF

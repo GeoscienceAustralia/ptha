@@ -97,6 +97,8 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
     nsrc = length(src[,'x'])
     strike = src[, 'strike']
     dip = src[, 'dip']
+    depth = src[,'depth']/1000 # depth in km
+    thrust_slip = depth*0 + 1 # Slip in m
 
     dest = tsunami_surface_points_cartesian
 
@@ -142,18 +144,29 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
     # Make a 'length' for the point source in km
     src_len = (sqrt(src[, 'area_projected']/area_scale)*alongstrike_scale) * 1/1000
     # Make a 'width' for the point source in km, adjusted for down-dip distance
-    area_downslope_adjust = sqrt(1 + tan(src[,'dip']*deg2rad)**2)
+    area_downslope_adjust = sqrt(1 + tan(dip*deg2rad)**2)
     src_wdt = (sqrt(src[, 'area_projected']/area_scale)*updip_scale)*area_downslope_adjust * 1/1000
+
+
+    # If sources are protruding from the earth, adjust their width and length
+    # to preserve area
+    width_limit = 2*depth/sin(dip*deg2rad) - thrust_slip*1/1000
+    too_shallow = which(src_wdt > width_limit)
+    if(length(too_shallow) > 0){
+        warning('Reducing source widths to prevent negative depths')
+        #src_len[too_shallow] = src_len[too_shallow]*src_wdt[too_shallow]/width_limit[too_shallow]
+        src_wdt[too_shallow] = width_limit[too_shallow]
+    }
 
     # Our Okada function is for a rectangular source with constant
     # depth along-strike.
     # We can rescale length/width to be like a point source
     # Note okada_tsunami uses depth in km. 
     ts = okada_tsunami(
-        elon = src[,'x'], elat = src[,'y'], edep = src[,'depth']/1000,
+        elon = src[,'x'], elat = src[,'y'], edep = depth,
         strk = strike, dip = dip,
         lnth = src_len*point_scale, wdt = src_wdt*point_scale,
-        disl1 = rep(0, len=nsrc), disl2 = rep(1, len=nsrc),
+        disl1 = rep(0, len=nsrc), disl2 = thrust_slip,
         rlon = dest[,1], rlat = dest[,2],
         verbose=FALSE)
 
