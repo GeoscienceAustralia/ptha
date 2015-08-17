@@ -19,10 +19,8 @@ C     Local variables
 
 c     Convenience flag for debugging -- will write various outputs to file
       DEBUG=.FALSE. 
-      USE_DC3D = .TRUE.
+      USE_DC3D = .FALSE.
    
-c      print*, 'IN FORTRAN'
-
       IF(DEBUG.eqv..TRUE.) THEN  
 
           open(32, file='mylog.log')

@@ -1,7 +1,9 @@
       SUBROUTINE  DC3D0(ALPHA,X,Y,Z,DEPTH,DIP,POT1,POT2,POT3,POT4,
      *               UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
       IMPLICIT REAL*8 (A-H,O-Z)
-      REAL*4   ALPHA,X,Y,Z,DEPTH,DIP,POT1,POT2,POT3,POT4,
+
+C     GD COMMENT -- Changed REAL*4 to REAL*8
+      REAL*8   ALPHA,X,Y,Z,DEPTH,DIP,POT1,POT2,POT3,POT4,
      *         UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ
 C
 C********************************************************************
@@ -472,7 +474,9 @@ C=========================================
      *              AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,
      *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
       IMPLICIT REAL*8 (A-H,O-Z)
-      REAL*4   ALPHA,X,Y,Z,DEPTH,DIP,AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,
+
+C     GD COMMENT -- Changed REAL*4 to REAL*8
+      REAL*8   ALPHA,X,Y,Z,DEPTH,DIP,AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,
      *         UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ
 C
 C********************************************************************
