@@ -148,8 +148,7 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
     src_wdt = (sqrt(src[, 'area_projected']/area_scale)*updip_scale)*area_downslope_adjust * 1/1000
 
 
-    # If sources are protruding from the earth, adjust their width and length
-    # to preserve area
+    # If sources are protruding from the earth, adjust their width 
     width_limit = 2*depth/sin(dip*deg2rad) - thrust_slip*1/1000
     too_shallow = which(src_wdt > width_limit)
     if(length(too_shallow) > 0){
