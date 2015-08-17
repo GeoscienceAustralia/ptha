@@ -157,6 +157,10 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
         src_wdt[too_shallow] = width_limit[too_shallow]
     }
 
+    # Try using the point source solution for areas which have been clipped
+    #print('GD Breaking point scale')
+    #point_scale = 0.99*((src_len > 0.8*max(src_len))&(src_wdt > 0.8*max(src_wdt))) + 0.01
+
     # Our Okada function is for a rectangular source with constant
     # depth along-strike.
     # We can rescale length/width to be like a point source
@@ -165,14 +169,9 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
         elon = src[,'x'], elat = src[,'y'], edep = depth,
         strk = strike, dip = dip,
         lnth = src_len*point_scale, wdt = src_wdt*point_scale,
-        disl1 = rep(0, len=nsrc), disl2 = thrust_slip,
+        disl1 = rep(0, len=nsrc), disl2 = thrust_slip/point_scale**2,
         rlon = dest[,1], rlat = dest[,2],
         verbose=FALSE)
-
-    # Rescale deformation to give correct area
-    for(nn in names(ts)){
-        ts[[nn]] = ts[[nn]]/(point_scale**2)
-    }
 
     return(ts)
 }

@@ -636,6 +636,9 @@ unit_source_interior_points_cartesian<-function(
     # Ensure > 0
     strike = strike + (strike < 0)*360
 
+    #print('GD: Deliberately breaking strike')
+    #strike = strike*0 + mean_angle(strike)
+
     ## Get dip/depth etc at the grid points
     grid_points = get_depth_dip_at_unit_source_interior_points(
         unit_source_cartesian, grid_points,
@@ -912,6 +915,9 @@ get_depth_dip_at_unit_source_interior_points<-function(
 
     # Now compute the dip numerically [ tan(dip) = change_in_depth/distance ]
     dip = atan((output_points_perturb[,3] - output_points[,3])/perturbation_scale)/deg2rad
+
+    #print('GD: Deliberately breaking dip')
+    #dip = dip*0 + mean_angle(dip)
 
     output_points = cbind(output_points, dip, alpha_s)
 
