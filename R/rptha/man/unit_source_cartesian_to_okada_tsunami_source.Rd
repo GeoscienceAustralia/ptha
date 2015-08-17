@@ -16,7 +16,7 @@ tsunami deformation in cartesian coordinates}
 \item{point_scale}{Multiply the length/width of area sources by point scale
 prior to convolution, then divide by this afterwoulds. Allows moving between
 Okada's area source representation at each grid point, and a point source
-representation.}
+representation. Set to 1 for standard rectangular area source representation}
 }
 \value{
 List with edsp, ndsp, zdsp giving the displacements at the
