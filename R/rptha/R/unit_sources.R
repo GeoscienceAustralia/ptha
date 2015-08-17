@@ -616,7 +616,9 @@ unit_source_interior_points_cartesian<-function(
     ds1_stats_points_cartesian = spherical_to_cartesian2d_coordinates(
         ds1_lonlatstrike[,1:2], origin_lonlat=origin, r=r)
 
-    np = length(ds1_lonlatstrike[,1]) 
+    # Ideally we interpolate strike using a weighted nearest-neighbours
+    # However, the code used here requires that we have > 1 point
+    np = length(ds1_lonlatstrike[,1])
     if(np > 1){
         k = min(15, np)
         # Compute an inverse distance weighted angular mean of k nearest neighbours
