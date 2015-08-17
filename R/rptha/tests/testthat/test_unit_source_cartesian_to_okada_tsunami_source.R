@@ -57,6 +57,6 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
 
     # Check both displacements are sufficiently close (can get closer with more
     # interior points)
-    expect_that(max(abs(tsunami1$tsunami_source$zdsp - tsunami2$zdsp)) < 1.0e-02, is_true())
+    expect_that(max(abs(range(tsunami1$tsunami_source$zdsp - tsunami2$zdsp))) < 1.0e-02, is_true())
     
 })
