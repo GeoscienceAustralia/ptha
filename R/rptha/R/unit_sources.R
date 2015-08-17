@@ -627,7 +627,7 @@ unit_source_interior_points_cartesian<-function(
         mean_strike = dists[,1]*NA 
         for(ii in 1:length(mean_strike)){
             mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii, ], 3], 
-                weights = 1/(dists[ii, ] + 0.05*mean(dists[ii,]))**0.5)
+                weights = 1/(dists[ii, ]))
         }
         strike = mean_strike
     }else{

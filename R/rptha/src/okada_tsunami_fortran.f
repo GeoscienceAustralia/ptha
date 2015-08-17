@@ -3,48 +3,23 @@
 c***********************************************************************
 c   
 c***********************************************************************
-      !Implicit REAL*8 (A-H,L,O-Z)
       IMPLICIT NONE
-      integer, intent(in):: m,n
+      INTEGER, INTENT(IN):: m,n
 
-      real(8),intent(in):: alp,elat(n),elon(n),edep(n),strk(n),dip(n)
-      real(8),intent(in):: dstmx,length(n),wdt(n),disl1(n),disl2(n)
-      real(8),intent(in):: rlon(m),rlat(m)
-      real(8),intent(out):: zdsp(m),edsp(m),ndsp(m)
+      REAL(8),INTENT(IN):: alp,elat(n),elon(n),edep(n),strk(n),dip(n)
+      REAL(8),INTENT(IN):: dstmx,length(n),wdt(n),disl1(n),disl2(n)
+      REAL(8),INTENT(IN):: rlon(m),rlat(m)
+      REAL(8),INTENT(OUT):: zdsp(m),edsp(m),ndsp(m)
 C     Local variables      
-      logical:: DEBUG, USE_DC3D
-      real(8) :: pi,dtr, tmp1, tmp2, odep,oy,ox, x, y, d, az, alp_dc3d
-      real(8) :: u1, u2, u3, u11, u12, u13, u21, u22, u23, u31, u32, u33
-      integer:: i, j, IRET
+      LOGICAL:: DEBUG, USE_DC3D
+      REAL(8) :: pi,dtr, tmp1, tmp2, odep,oy,ox, x, y, d, az, alp_dc3d
+      REAL(8) :: u1, u2, u3, u11, u12, u13, u21, u22, u23, u31, u32, u33
+      INTEGER:: i, j, IRET
 
-c     Convenience flag for debugging -- will write various outputs to file
-      DEBUG=.FALSE. 
       USE_DC3D = .FALSE.
    
-      IF(DEBUG.eqv..TRUE.) THEN  
-
-          open(32, file='mylog.log')
-          write(32,*) ' MYLOGGINGZ'
-
-          write(32,*) 'WRITING TO FILE'
-          write(32,*) 'Input pars:'
-          write(32,*) 'alp=', alp
-          write(32,*)  'elon=', elon
-          write(32,*)  'elat=',elat
-          write(32,*)  'edep=',edep
-          write(32,*)  'strk=',strk
-          write(32,*)  'dip=', dip
-          write(32,*)  'length=', length
-          write(32,*)  'wdt=',wdt
-          write(32,*)  'disl1, disl2', disl1, disl2
-          write(32,*)  'rlon, rlat = ', rlon, rlat
-          write(32,*)  'm , n = ', m, n
- 
-      END IF
-
       pi  = 4.0D0*atan2(1.0D0,1.0D0)
       dtr = pi/180.0D0 ! degrees to radians
-      !lt2k = 6371.d0*dtr ! latitude to kilometres
 
 c Initialize displacements to zero
       do 50 j=1,m
@@ -57,25 +32,17 @@ c Loop over faults
 c Translate the origin from fault center to Okada's lower left corner
          tmp2 = cos(dip(i)*dtr)
          ! Half 'diagonal length' of surface projection of the slip area
-         tmp1 = (0.5D0)*sqrt(length(i)**2 + (tmp2*wdt(i))**2)
+         tmp1 = 0.5D0*sqrt(length(i)**2 + (tmp2*wdt(i))**2)
          ! Angle of triangle connecting corners of surface projection of slip area
-         tmp2 = atan2(tmp2*wdt(i),length(i)) 
-         odep = edep(i) + (0.5D0)*wdt(i)*sin(dip(i)*dtr) ! Origin depth in Okada's reference frame
+         tmp2 = atan2(tmp2*wdt(i), length(i)) 
+         odep = edep(i) + 0.5D0*wdt(i)*sin(dip(i)*dtr) ! Origin depth in Okada's reference frame
 
 c       Compute origin for Okada's reference frame
-c       GD CHANGES HERE
          oy = elat(i) - 1000.0D0*tmp1*cos(tmp2-strk(i)*dtr)
          ox = elon(i) + 1000.0D0*tmp1*sin(tmp2-strk(i)*dtr)
 c         ox = elon(i) - 1000.*tmp1*cos(tmp2-strk(i)*dtr)
 c         oy = elat(i) - 1000.*tmp1*sin(tmp2-strk(i)*dtr)
 
-         IF (DEBUG.eqv..TRUE.) THEN
-             write(32,*) 'Okada origin of subfault ',i,': ',ox,oy,odep
-             write(32,*) 'Subfault centroid ',elon(i),elat(i)
-             write(32,*) 'Strike, dip',strk(i), dip(i)
-             write(32,*) 'More pars:', tmp1,tmp2, n, m, length(i),wdt(i)
-             write(32,*) 'END'
-         END IF
 c Loop over displacement points
          do 100 j=1,m
 c          Translate to new origin
@@ -84,11 +51,6 @@ c          Translate to new origin
            d = sqrt(x**2+y**2) ! Find distance from origin
            az = 90.0D0-atan2(y,x)/dtr
 
-           IF(DEBUG.eqv..TRUE.) THEN
-               write(32,*) x,y,rlon(j),rlat(j),d,az,atan2(y,x)/dtr
-               write(32,*) 'END'
-           END IF
-
 c          Rotate into Okada's reference frame, which has the strike
 c          direction = positive x axis, with the origin at the deep end
 c          of the slip with the most negative value along the x axis.
@@ -96,51 +58,39 @@ c          of the slip with the most negative value along the x axis.
            x = d*cos(dtr*(strk(i)-az))
 C           x = -d*sin(dtr*(strk(i)-az))
 c           y = d*cos(dtr*(strk(i)-az))
-           IF(DEBUG.eqv..TRUE.) THEN
-               write(32,*) x,y
-               write(32,*) 'END'
-           END IF
-c            write(*,*) x,y,d,az
+
 c Skip this contribution of distance exceeds the threshhold            
             if (dstmx.gt.0. .and. sqrt(x*x+y*y).gt.dstmx) goto 100
-c      SUBROUTINE  SRECTF(ALP,X,Y,DEP,AL1,AL2,AW1,AW2,                   01840000
-c     *                   SD,CD,DISL1,DISL2,DISL3,                       01850000
-c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              01860000
-            IF(DEBUG.eqv..TRUE.) THEN
-                write(32,*) 'SRECTF INPUTS: ', alp, x, y, odep, 0.0D0
-                write(32,*) length(i), 0.0D0, wdt(i), sin(dip(i)*dtr)
-                write(32,*) cos(dip(i)*dtr), disl1(i), disl2(i), 0.0D0
-            END IF
-
-            IF( USE_DC3D) THEN
+            IF(USE_DC3D) THEN
 !SUBROUTINE  DC3D(ALPHA,X,Y,Z,DEPTH,DIP,
 !     *              AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,
 !     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
+
                 alp_dc3d = 2.0D0/3.0D0 ! Different definition than in srectf
                 call DC3D(alp_dc3d, x, y, 0.0D0, odep, dip(i),0.0D0,
      &                    length(i), 0.0D0, wdt(i), disl1(i), 
      &                    disl2(i), 0.0D0, u1, u2, u3, u11, u21, u31,
      &                    u12, u22, u32, u13, u23, u33, IRET)
+
                 IF(IRET .NE. 0) THEN
                     stop('IRET != 0') 
                 END IF
             ELSE
+c      SUBROUTINE  SRECTF(ALP,X,Y,DEP,AL1,AL2,AW1,AW2,                   01840000
+c     *                   SD,CD,DISL1,DISL2,DISL3,                       01850000
+c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              01860000
+
                 call srectf(alp,x,y,odep,0.0D0,length(i),0.0D0,wdt(i),
      &              sin(dip(i)*dtr),cos(dip(i)*dtr),disl1(i),
      &              disl2(i),0.0D0,u1,u2,u3,u11,u12,u21,u22,u31,u32)
             END IF
-            IF(DEBUG.eqv..TRUE.) THEN
-                write(32,*) 'U3 is: ', u3
-            END IF
+
             edsp(j) = edsp(j) - u2*cos(strk(i)*dtr)+u1*sin(strk(i)*dtr)
             ndsp(j) = ndsp(j) + u2*sin(strk(i)*dtr)+u1*cos(strk(i)*dtr)
             zdsp(j) = zdsp(j) + u3
  100     continue
  200  continue
 
-      IF(DEBUG.eqv..TRUE.) THEN
-          close(32)
-      END IF
       RETURN
       END
 
