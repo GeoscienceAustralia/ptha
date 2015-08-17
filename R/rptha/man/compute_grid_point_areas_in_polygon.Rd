@@ -2,9 +2,7 @@
 % Please edit documentation in R/unit_sources.R
 \name{compute_grid_point_areas_in_polygon}
 \alias{compute_grid_point_areas_in_polygon}
-\title{Given a polygon filled with a grid of points, compute an area associated with
-each grid point such that the total area = polygon area, and the area is less
-for points near the boundary}
+\title{Fill a polygon with grid points (typically used for numerical integration)}
 \usage{
 compute_grid_point_areas_in_polygon(polygon, approx_dx, approx_dy)
 }
@@ -16,6 +14,11 @@ compute_grid_point_areas_in_polygon(polygon, approx_dx, approx_dy)
 \item{approx_dy}{approximate y spacing of points}
 }
 \description{
+Given a polygon, we fill it with grid points with the provided approximate
+spacing, compute an area associated with each grid point such that the total
+area = polygon area. The area is less for points near the boundary
+}
+\details{
 All grid points MUST be inside the polygon (filter beforehand with
 point.in.polygon if required)
 }

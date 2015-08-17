@@ -578,3 +578,64 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,verbose=FAL
     return(out)
 }
 
+#' Point rotation
+#'
+#' Given a set of cartesian x,y coordinates, create a new rotated coordinate
+#' system with a given origin and x-axis direction and return the points in the
+#' new coordinate system. With inverse = TRUE you can undo the rotation, see
+#' the example.
+#'
+#' @param points matrix with 2 columns containing point x,y cartesian coordinates
+#' @param origin numeric vector of length 2 giving the origin of the new coordinate system 
+#' @param x_axis_vector vector of length 2 which defines the positive x
+#' @param inverse logical. If TRUE, perform the inverse operation
+#' direction of the new coordinate system
+#' @return points in the new coordinate system
+#'
+#' @export
+#'
+#' @examples
+#' library(rptha)
+#' p1 = rbind(c(500,300), c(-60, 20), c(300, 12))
+#' origin = c(3000,4012)
+#' x_axis_vector = c(30,-1)
+#' # Get p1 in a new coordinate system
+#' p1_rot = rotate_cartesian2d(p1, origin, x_axis_vector)
+#' # Back-calculate the original points
+#' inverted_points = rotate_cartesian2d(p1_rot, origin, x_axis_vector, inverse=TRUE)
+#' # Should be identical to p1
+#' stopifnot(isTRUE(all.equal(c(inverted_points), c(p1))))
+#'
+rotate_cartesian2d<-function(points, origin, x_axis_vector, inverse=FALSE){
+
+    if(!inverse){
+        # Change origin
+        points = cbind(points[,1] - origin[1], points[,2] - origin[2])
+    }else{
+        x_axis_vector = c(x_axis_vector[1], -x_axis_vector[2])
+    }
+
+    # Ensure x-axis-vector has unit length
+    x_axis_vector_norm = sqrt(sum(x_axis_vector**2))
+
+    if(length(x_axis_vector_norm) > 0){
+        x_axis_vector = x_axis_vector / x_axis_vector_norm
+    }else{
+        stop('x_axis_vector cannot have zero length')
+    }
+
+    y_axis_vector = c(-x_axis_vector[2], x_axis_vector[1])
+
+    # rotate
+    points_rotated_x = points[,1]*x_axis_vector[1] + points[,2]*x_axis_vector[2]
+    points_rotated_y = points[,1]*y_axis_vector[1] + points[,2]*y_axis_vector[2]
+
+    if(inverse){
+        points_rotated_x = points_rotated_x + origin[1]
+        points_rotated_y = points_rotated_y + origin[2]
+    }
+    
+
+    return(cbind(points_rotated_x, points_rotated_y))
+
+}

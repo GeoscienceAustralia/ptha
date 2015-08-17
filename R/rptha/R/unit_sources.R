@@ -618,7 +618,7 @@ unit_source_interior_points_cartesian<-function(
 
     np = length(ds1_lonlatstrike[,1]) 
     if(np > 1){
-        k = min(5, np)
+        k = min(9, np)
         # Compute an inverse distance weighted angular mean of k nearest neighbours
         inds = knnx.index(data = ds1_stats_points_cartesian[,1:2], 
             query = grid_points[,1:2], k=k)
@@ -662,10 +662,12 @@ unit_source_interior_points_cartesian<-function(
 
     return(output)
 }
-
-#' Given a polygon filled with a grid of points, compute an area associated with
-#' each grid point such that the total area = polygon area, and the area is less
-#' for points near the boundary
+#'
+#' Fill a polygon with grid points (typically used for numerical integration)
+#'
+#' Given a polygon, we fill it with grid points with the provided approximate
+#' spacing, compute an area associated with each grid point such that the total
+#' area = polygon area. The area is less for points near the boundary
 #' 
 #' All grid points MUST be inside the polygon (filter beforehand with
 #' point.in.polygon if required)
@@ -677,9 +679,21 @@ unit_source_interior_points_cartesian<-function(
 #' @export
 compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy){
 
+    lp = length(polygon[,1])
+    new_origin = polygon[lp,]
+    x_axis_vector = polygon[lp,] - polygon[1,]
+    
+    # Ensure that the first/last points are not the same
+    stopifnot(!isTRUE(all.equal(x_axis_vector, c(0,0))))
+
+    # Rotate polygon. This helps us ensure the grid points are aligned with the
+    # top of the unit source
+    rotated_polygon = rotate_cartesian2d(points = polygon, origin = new_origin, 
+        x_axis_vector = x_axis_vector)
+
     # Get extent of the unit source
-    grid_extent = rbind(range(polygon[,1]), 
-        range(polygon[,2]))
+    grid_extent = rbind(range(rotated_polygon[,1]), 
+        range(rotated_polygon[,2]))
 
     # Make a 'grid' of points inside the unit source
     grid_xs = seq(grid_extent[1,1] - approx_dx/2, 
@@ -703,11 +717,18 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy){
     grid_pol = list()
     for(i in 1:length(grid_points[,1])){
         gp = grid_points[i,]
-        grid_pol[[i]] = Polygons(list(Polygon(
-            rbind( gp + c(-dx_local, -dy_local)/2,
+
+        local_polygon_rotated = rbind( 
+                   gp + c(-dx_local, -dy_local)/2,
                    gp + c(-dx_local, dy_local)/2,
                    gp + c( dx_local, dy_local)/2,
-                   gp + c( dx_local, -dy_local)/2))),
+                   gp + c( dx_local, -dy_local)/2)
+
+        # Get the polygon in 'unrotated' coordiantes
+        local_polygon = rotate_cartesian2d(local_polygon_rotated, 
+            origin = new_origin, x_axis_vector = x_axis_vector, inverse=TRUE)
+
+        grid_pol[[i]] = Polygons(list(Polygon(local_polygon)),
             ID=as.character(i))
     }
 

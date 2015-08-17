@@ -81,33 +81,73 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' @param us A unit source with interior points in cartesian coordinates.
 #' @param tsunami_surface_points_cartesian Points at which to compute the
 #' tsunami deformation in cartesian coordinates
+#' @param point_scale Multiply the length/width of area sources by point scale
+#' prior to convolution, then divide by this afterwoulds. Allows moving between
+#' Okada's area source representation at each grid point, and a point source
+#' representation. Set to 1 for standard rectangular area source representation
 #' @return List with edsp, ndsp, zdsp giving the displacements at the
 #' tsunami_surface_points_cartesian.
 #' @export
 unit_source_cartesian_to_okada_tsunami_source<-function(us,
-    tsunami_surface_points_cartesian){
-    ## Call the tsunami source function
+    tsunami_surface_points_cartesian, point_scale=1){
 
-    #library(EqSim)
+    deg2rad = pi/180
 
     src = us$grid_points
     nsrc = length(src[,'x'])
-    # Make a 'length' for the point source in km
-    src_len = rep( sqrt(us$dx*us$dy)/1000, len=nsrc) 
-    # Make a 'width' for the point source in km
-    area_downslope_adjust = sqrt(1 + tan(src[,'dip']/180*pi)**2)
-    src_wdt = (src[,'area_projected']/1e+06)/src_len*area_downslope_adjust
-
-    dest = tsunami_surface_points_cartesian
-
-    # Strike/Dip were already computed
     strike = src[, 'strike']
     dip = src[, 'dip']
 
+    dest = tsunami_surface_points_cartesian
+
+
+    # Choose equivalent rectangular length and width for each grid point.
+    #
+    # This is non-trivial near boundaries of the unit source, where the area
+    # associated with each grid point may be cut so it does not exceed the unit
+    # source boundaries.
+    #
+    # A careful approach to the integration is required to avoid oscillation in
+    # the tsunami source, unless an extremely fine grid is used. The approach
+    # here is:
+    # Generate a 'surface width' scale for the grid point area, by taking the
+    # dot product of the vectors making the sides of each grid-points polygon
+    # with a unit vector pointing up-dip, and summing their absolute values. To
+    # get an 'alongstrike-length' scale, do the same for a unit vector pointing
+    # along strike. The ratio of these gives the chosen ratio of the surface
+    # width/length for the equivalent rectangular element.
+
+    cs = cos(strike*deg2rad)
+    ss = sin(strike*deg2rad)
+    updip_vec = cbind(-cs, ss)
+    alongstrike_vec = cbind(ss, cs) 
+
+    updip_scale = updip_vec[,1]*NA
+    alongstrike_scale = alongstrike_vec[,1]*NA
+    for(i in 1:length(updip_scale)){
+        poly_coords = us$grid_point_polygon@polygons[[i]]@Polygons[[1]]@coords
+
+        # Matrix with rows giving edge vectors
+        region_boundary_vectors = diff(poly_coords)
+
+        # Compute scale for 'up-dip' dimension
+        updip_scale[i] = sum(abs(region_boundary_vectors%*%updip_vec[i,]))
+        # Compute scale for 'along-strike' dimension
+        alongstrike_scale[i] = sum(abs(region_boundary_vectors%*%alongstrike_vec[i,]))
+
+    }
+
+    area_scale = updip_scale*alongstrike_scale
+
+    # Make a 'length' for the point source in km
+    src_len = (sqrt(src[, 'area_projected'])/1000)/area_scale*alongstrike_scale
+    # Make a 'width' for the point source in km, adjusted for down-dip distance
+    area_downslope_adjust = sqrt(1 + tan(src[,'dip']*deg2rad)**2)
+    src_wdt =  ((sqrt(src[, 'area_projected'])/1000)/area_scale*updip_scale)*area_downslope_adjust
+
     # Our Okada function is for a rectangular source with constant
     # depth along-strike.
-    # We will rescale length/width to be like a point source
-    point_scale = 0.01
+    # We can rescale length/width to be like a point source
     # Note okada_tsunami uses depth in km. 
     ts = okada_tsunami(
         elon = src[,'x'], elat = src[,'y'], edep = src[,'depth']/1000,
