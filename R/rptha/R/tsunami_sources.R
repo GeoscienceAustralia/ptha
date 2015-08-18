@@ -92,11 +92,13 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' horizontal distance of dstmx*source depth. Using a low value of dstmax can
 #' speed up the algorithm if the displacement for each sub-source does not have
 #' to be computed for all tsunami_surface_points_cartesian.
+#' @param upper_depth_limit Limit for the top-depth of any unit source (km)
 #' @return List with edsp, ndsp, zdsp giving the displacements at the
 #' tsunami_surface_points_cartesian.
 #' @export
 unit_source_cartesian_to_okada_tsunami_source<-function(us,
-    tsunami_surface_points_cartesian, point_scale=1, dstmx = 9e+20){
+    tsunami_surface_points_cartesian, point_scale=1, dstmx = 9e+20,
+    upper_depth_limit = 0.0e-03){
 
     deg2rad = pi/180
 
@@ -156,7 +158,7 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
 
 
     # If sources are protruding from the earth, adjust their width 
-    width_limit = 2*depth/sin(dip*deg2rad) - thrust_slip*1/1000 #* 50 # Limit to 50m
+    width_limit = 2*depth/sin(dip*deg2rad) - upper_depth_limit #- thrust_slip*1/1000 #* 50 # Limit to 50m
     too_shallow = which(src_wdt > width_limit)
     if(length(too_shallow) > 0){
         warning('Reducing source widths to prevent negative depths')
