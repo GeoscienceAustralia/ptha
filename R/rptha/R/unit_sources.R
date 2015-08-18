@@ -600,7 +600,7 @@ unit_source_interior_points_cartesian<-function(
     a1 = areaPolygon(unit_source_coords[,1:2], f=0)
     rel_err = abs(a0-a1)/((a0+a1)*0.5)
     if( rel_err > 0.01 ){
-        msg = paste0('Projected and spherical unit source area differ by a fraction',
+        msg = paste0('Projected and spherical unit source area differ by a fraction ',
             rel_err, sep=" ")
         warning(msg)
     }
@@ -756,8 +756,19 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     }
 
     p1 = SpatialPolygons(grid_pol, proj4string=CRS(""))
-           
-    p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
+
+    # Alternative methods for computing the intersection of p1 and p0
+    exact_intersection = TRUE
+    if(exact_intersection){
+        p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
+    }else{
+        # Approximate method which however keeps the centroids = rotated grid_points
+        pc = coordinates(p1)
+        pip = point.in.polygon(pc[,1], pc[,2], polygon[,1], polygon[,2]) 
+        keepers = which(pip == 1)
+        p_intersect = p1[keepers,]
+    }
+
 
 
     # If there are 'just touching' relations and similar, then

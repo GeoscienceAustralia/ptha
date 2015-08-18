@@ -91,7 +91,8 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' @param dstmx For each sub-source, only compute the deformation to a
 #' horizontal distance of dstmx*source depth. Using a low value of dstmax can
 #' speed up the algorithm if the displacement for each sub-source does not have
-#' to be computed for all tsunami_surface_points_cartesian.
+#' to be computed for all tsunami_surface_points_cartesian. e.g. I have seen a
+#' value of 50 work well in one instance.
 #' @param upper_depth_limit Limit for the top-depth of any unit source (km)
 #' @return List with edsp, ndsp, zdsp giving the displacements at the
 #' tsunami_surface_points_cartesian.

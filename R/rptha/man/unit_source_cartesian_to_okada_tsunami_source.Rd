@@ -5,7 +5,8 @@
 \title{Convert a cartesian unit source with interior points to an okada tsunami source}
 \usage{
 unit_source_cartesian_to_okada_tsunami_source(us,
-  tsunami_surface_points_cartesian, point_scale = 1, dstmx = 9e+20)
+  tsunami_surface_points_cartesian, point_scale = 1, dstmx = 9e+20,
+  upper_depth_limit = 0)
 }
 \arguments{
 \item{us}{A unit source with interior points in cartesian coordinates.}
@@ -21,7 +22,10 @@ representation. Set to 1 for standard rectangular area source representation}
 \item{dstmx}{For each sub-source, only compute the deformation to a
 horizontal distance of dstmx*source depth. Using a low value of dstmax can
 speed up the algorithm if the displacement for each sub-source does not have
-to be computed for all tsunami_surface_points_cartesian.}
+to be computed for all tsunami_surface_points_cartesian. e.g. I have seen a
+value of 50 work well in one instance.}
+
+\item{upper_depth_limit}{Limit for the top-depth of any unit source (km)}
 }
 \value{
 List with edsp, ndsp, zdsp giving the displacements at the
