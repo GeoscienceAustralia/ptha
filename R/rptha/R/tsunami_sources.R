@@ -156,7 +156,7 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
 
 
     # If sources are protruding from the earth, adjust their width 
-    width_limit = 2*depth/sin(dip*deg2rad) - thrust_slip*1/1000
+    width_limit = 2*depth/sin(dip*deg2rad) - thrust_slip*1/1000 #* 50 # Limit to 50m
     too_shallow = which(src_wdt > width_limit)
     if(length(too_shallow) > 0){
         warning('Reducing source widths to prevent negative depths')

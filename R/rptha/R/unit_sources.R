@@ -672,21 +672,39 @@ unit_source_interior_points_cartesian<-function(
 #'
 #' Given a polygon, we fill it with grid points with the provided approximate
 #' spacing, compute an area associated with each grid point such that the total
-#' area = polygon area. The area is less for points near the boundary
-#' 
-#' All grid points MUST be inside the polygon (filter beforehand with
-#' point.in.polygon if required)
+#' area = polygon area. The area is less for points near the boundary, and the
+#' spacing here will generally deviate from a pure regular grid
 #' 
 #' @param polygon matrix with x,y coordinates defining a polygon
 #' @param approx_dx approximate x spacing of points
 #' @param approx_dy approximate y spacing of points
+#' @param rotation_origin Origin about which the polygon is rotated before
+#' filling with x-y aligned grid points. If NULL, the final point in the polygon
+#'is used.
+#' @param rotation_x_axis_vector Vector defining the rotated x-axis that the
+#' polygon is rotated to before filling with x-y aligned grid points. If NULL, the
+#' vector joining the final and first points in the polygon is used.
+#' @return A list containing grid points in the polygon and other useful information.
 #'
 #' @export
-compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy){
+compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
+    rotation_origin = NULL, rotation_x_axis_vector = NULL){
 
     lp = length(polygon[,1])
-    new_origin = polygon[lp,]
-    x_axis_vector = polygon[lp,] - polygon[1,]
+
+    # Set default rotation origin
+    if(is.null(rotation_origin)){
+        new_origin = polygon[lp,]
+    }else{
+        new_origin = rotation_origin
+    }
+
+    # Default rotation x-axis vector
+    if(is.null(rotation_x_axis_vector)){
+        x_axis_vector = polygon[lp,] - polygon[1,]
+    }else{
+        x_axis_vector = rotation_x_axis_vector
+    }
     
     # Ensure that the first/last points are not the same
     stopifnot(!isTRUE(all.equal(x_axis_vector, c(0,0))))
@@ -740,6 +758,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy){
     p1 = SpatialPolygons(grid_pol, proj4string=CRS(""))
            
     p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
+
 
     # If there are 'just touching' relations and similar, then
     # p_intersect may not by SpatialPolygons. Throw an error for now
@@ -990,7 +1009,7 @@ plot_unit_source_interior_points_cartesian<-function(us){
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){
 
-    #require(rgl)
+    require(rgl)
 
     if(!add){
         plot3d(us$grid_points[,1], us$grid_points[,2], -us$grid_points[,3], 

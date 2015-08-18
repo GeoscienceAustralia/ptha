@@ -78,7 +78,7 @@ c     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
      &                   disl2(i), 0.0D0, u1, u2, u3, u11, u21, u31,
      &                   u12, u22, u32, u13, u23, u33, IRET)
                 ELSE
-                  stop('Need to implement point source')
+                  stop('Need to implement DC3D0 point source')
 
                 END IF
                 

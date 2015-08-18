@@ -4,7 +4,8 @@
 \alias{compute_grid_point_areas_in_polygon}
 \title{Fill a polygon with grid points (typically used for numerical integration)}
 \usage{
-compute_grid_point_areas_in_polygon(polygon, approx_dx, approx_dy)
+compute_grid_point_areas_in_polygon(polygon, approx_dx, approx_dy,
+  rotation_origin = NULL, rotation_x_axis_vector = NULL)
 }
 \arguments{
 \item{polygon}{matrix with x,y coordinates defining a polygon}
@@ -12,14 +13,22 @@ compute_grid_point_areas_in_polygon(polygon, approx_dx, approx_dy)
 \item{approx_dx}{approximate x spacing of points}
 
 \item{approx_dy}{approximate y spacing of points}
+
+\item{rotation_origin}{Origin about which the polygon is rotated before
+filling with x-y aligned grid points. If NULL, the final point in the polygon
+is used.}
+
+\item{rotation_x_axis_vector}{Vector defining the rotated x-axis that the
+polygon is rotated to before filling with x-y aligned grid points. If NULL, the
+vector joining the final and first points in the polygon is used.}
+}
+\value{
+A list containing grid points in the polygon and other useful information.
 }
 \description{
 Given a polygon, we fill it with grid points with the provided approximate
 spacing, compute an area associated with each grid point such that the total
-area = polygon area. The area is less for points near the boundary
-}
-\details{
-All grid points MUST be inside the polygon (filter beforehand with
-point.in.polygon if required)
+area = polygon area. The area is less for points near the boundary, and the
+spacing here will generally deviate from a pure regular grid
 }
 
