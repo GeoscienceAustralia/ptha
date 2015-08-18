@@ -85,11 +85,15 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' prior to convolution, then divide by this afterwoulds. Allows moving between
 #' Okada's area source representation at each grid point, and a point source
 #' representation. Set to 1 for standard rectangular area source representation
+#' @param dstmx For each sub-source, only compute the deformation to a
+#' horizontal distance of dstmx*source depth. Using a low value of dstmax can
+#' speed up the algorithm if the displacement for each sub-source does not have
+#' to be computed for all tsunami_surface_points_cartesian.
 #' @return List with edsp, ndsp, zdsp giving the displacements at the
 #' tsunami_surface_points_cartesian.
 #' @export
 unit_source_cartesian_to_okada_tsunami_source<-function(us,
-    tsunami_surface_points_cartesian, point_scale=1){
+    tsunami_surface_points_cartesian, point_scale=1, dstmx = 9e+20){
 
     deg2rad = pi/180
 
@@ -161,7 +165,7 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
     #print('GD Breaking point scale')
     #point_scale = 0.99*((src_len > 0.8*max(src_len))&(src_wdt > 0.8*max(src_wdt))) + 0.01
     #point_scale = 0.01 + src[,'x']*0
-    point_scale = 1
+    point_scale = 1.0 # FIXME: Values other than 1 not working.
 
     # Our Okada function is for a rectangular source with constant
     # depth along-strike.

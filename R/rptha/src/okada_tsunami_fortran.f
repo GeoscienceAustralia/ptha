@@ -51,18 +51,19 @@ c           Translate to new origin
             x = (rlon(j) - ox)*.001D0
             y = (rlat(j) - oy)*.001D0
             d = sqrt(x**2+y**2) ! Find distance from origin
-            az = 90.0D0-atan2(y,x)/dtr
+
+c Skip this contribution of distance exceeds the threshhold            
+            IF(dstmx(i).gt.0. .and. d.gt.dstmx(i)) THEN 
+                goto 100
+            END IF
 
 c           Rotate into Okada's reference frame, which has the strike
 c           direction = positive x axis, with the origin at the deep end
 c           of the slip with the most negative value along the x axis.
+            az = 90.0D0-atan2(y,x)/dtr
             y = d*sin(dtr*(strk(i)-az))
             x = d*cos(dtr*(strk(i)-az))
 
-c Skip this contribution of distance exceeds the threshhold            
-            IF(dstmx(i).gt.0. .and. (x*x+y*y).gt.(dstmx(i)**2)) THEN 
-                goto 100
-            END IF            
                 
             IF(USE_DC3D) THEN
 c SUBROUTINE  DC3D(ALPHA,X,Y,Z,DEPTH,DIP,
