@@ -7,7 +7,7 @@
 make_tsunami_unit_source(i, j, discrete_source, tsunami_surface_points_lonlat,
   approx_dx = NULL, approx_dy = NULL, scale_dxdy = 1,
   depths_in_km = TRUE,
-  tsunami_function = unit_source_cartesian_to_okada_tsunami_source)
+  tsunami_function = unit_source_cartesian_to_okada_tsunami_source, ...)
 }
 \arguments{
 \item{i}{integer. The down-dip index of the unit source}
@@ -32,6 +32,8 @@ source. See unit_source_interior_points_cartesian.}
 
 \item{tsunami_function}{Function used to make the tunami source from
 a cartesian unit source with interior points}
+
+\item{...}{further arguments to tsunami function}
 }
 \value{
 a list with the cartesian unit source, tsunami source, i,j indices

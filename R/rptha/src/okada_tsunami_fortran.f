@@ -11,13 +11,15 @@ c***********************************************************************
       REAL(8),INTENT(IN):: rlon(m),rlat(m)
       REAL(8),INTENT(OUT):: zdsp(m),edsp(m),ndsp(m)
 C     Local variables      
-      LOGICAL:: USE_DC3D
+      LOGICAL:: USE_DC3D, POINT_SOURCE
       REAL(8) :: pi,dtr, tmp1, tmp2, odep,oy,ox, x, y, d, az, alp_dc3d
       REAL(8) :: u1, u2, u3, u11, u12, u13, u21, u22, u23, u31, u32, u33
       REAL(8) :: sd, cd, ss, cs
       INTEGER:: i, j, IRET
 
+c     Use these options to experiment only
       USE_DC3D = .FALSE.
+      POINT_SOURCE = .FALSE.
    
       pi  = 4.0D0*atan2(1.0D0,1.0D0)
       dtr = pi/180.0D0 ! degrees to radians
@@ -69,25 +71,40 @@ c           of the slip with the most negative value along the x axis.
 c SUBROUTINE  DC3D(ALPHA,X,Y,Z,DEPTH,DIP,
 c     *              AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,
 c     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
-
-                 alp_dc3d = 2.0D0/3.0D0 ! Different definition than in srectf
-                 call DC3D(alp_dc3d, x, y, 0.0D0, odep, dip(i),0.0D0,
+                IF(POINT_SOURCE.eqv..FALSE.) THEN
+                  alp_dc3d = 2.0D0/3.0D0 ! Different definition than in srectf
+                  call DC3D(alp_dc3d, x, y, 0.0D0, odep, dip(i),0.0D0,
      &                   length(i), 0.0D0, wdt(i), disl1(i), 
      &                   disl2(i), 0.0D0, u1, u2, u3, u11, u21, u31,
      &                   u12, u22, u32, u13, u23, u33, IRET)
+                ELSE
+                  stop('Need to implement point source')
 
-                 IF(IRET .NE. 0) THEN
-                     stop('IRET != 0') 
-                 END IF
+                END IF
+                
+                IF(IRET .NE. 0) THEN
+                    stop('IRET != 0') 
+                END IF
             ELSE
 c      SUBROUTINE  SRECTF(ALP,X,Y,DEP,AL1,AL2,AW1,AW2,                   01840000
 c     *                   SD,CD,DISL1,DISL2,DISL3,                       01850000
 c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              01860000
+                IF(POINT_SOURCE.eqv..FALSE.) THEN
 
                  call srectf(alp,x,y,odep,0.0D0,length(i),0.0D0,wdt(i),
      &               sd, cd, disl1(i),
      &               disl2(i),0.0D0,u1,u2,u3,u11,u12,u21,u22,u31,u32)
-             END IF
+                ELSE
+c      SUBROUTINE  SPOINT(ALP,X,Y,DEP,SD,CD,POT1,POT2,POT3,              00530000
+c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              00540000
+c      IMPLICIT REAL(8) (A-H,O-Z)                                         00550000
+                 call spoint(alp, x, y, odep, sd, cd, 
+     &               disl1(i)*length(i)*wdt(i), 
+     &               disl2(i)*length(i)*wdt(i),
+     &               0.0D0, u1,u2,u3,u11,u12,u21,u22,u31,u32)
+
+                END IF
+            END IF
 
              edsp(j) = edsp(j) - u2*cs + u1*ss
              ndsp(j) = ndsp(j) + u2*ss + u1*cs

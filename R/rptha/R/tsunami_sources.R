@@ -16,6 +16,7 @@
 #' (TRUE) or m (FALSE).
 #' @param tsunami_function Function used to make the tunami source from
 #' a cartesian unit source with interior points
+#' @param ... further arguments to tsunami function
 #' @return a list with the cartesian unit source, tsunami source, i,j indices
 #' and tsunami surface points
 #'
@@ -23,7 +24,8 @@
 make_tsunami_unit_source<-function(i,j, discrete_source, 
     tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL, 
     scale_dxdy = 1, depths_in_km = TRUE, 
-    tsunami_function = unit_source_cartesian_to_okada_tsunami_source){
+    tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
+    ...){
 
     ## Get unit source in local cartesian coordinates + unit source statistics
     # By default the first us coordinate will be the origin
@@ -37,11 +39,12 @@ make_tsunami_unit_source<-function(i,j, discrete_source,
     tsunami_surface_points_cartesian = spherical_to_cartesian2d_coordinates(
         tsunami_surface_points_lonlat, origin_lonlat=us$origin_lonlat, r=us$r)
 
-    ts = tsunami_function(us, tsunami_surface_points_cartesian)
+    ts = tsunami_function(us, tsunami_surface_points_cartesian, ...)
 
     tsunami_unit_source = list(unit_source_interior_points = us, 
         tsunami_source = ts, i=i, j = j, 
         tsunami_surface_points_lonlat = tsunami_surface_points_lonlat)
+
     return(tsunami_unit_source)
 }
 
@@ -177,7 +180,7 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
         lnth = src_len*point_scale, wdt = src_wdt*point_scale,
         disl1 = rep(0, len=nsrc)/point_scale**2, 
         disl2 = thrust_slip/point_scale**2,
-        rlon = dest[,1], rlat = dest[,2], dstmx = 50,
+        rlon = dest[,1], rlat = dest[,2], dstmx = dstmx,
         verbose=FALSE)
 
     return(ts)

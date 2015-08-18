@@ -35,9 +35,8 @@
 #'                  mypts[,1],mypts[,2])
 #' 
 #' plot(mypts[,1], mypts[,2],col=heat.colors(10)[cut(ff[[3]],10)],pch=19,asp=1)
-okada_tsunami<-function(elon,elat,edep,strk,dip,lnth,wdt,
-                        disl1,disl2,rlon,rlat,dstmx=9.0e+20,
-                        verbose=FALSE){
+okada_tsunami<-function(elon, elat, edep, strk, dip, lnth, wdt,
+    disl1, disl2, rlon, rlat, dstmx=9.0e+20, verbose=FALSE){
     # Call Okada routines to compute surface displacement
 
     # Variables we already know
