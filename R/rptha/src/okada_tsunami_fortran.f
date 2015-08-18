@@ -7,7 +7,7 @@ c***********************************************************************
       INTEGER, INTENT(IN):: m,n
 
       REAL(8),INTENT(IN):: alp,elat(n),elon(n),edep(n),strk(n),dip(n)
-      REAL(8),INTENT(IN):: dstmx,length(n),wdt(n),disl1(n),disl2(n)
+      REAL(8),INTENT(IN):: dstmx(n),length(n),wdt(n),disl1(n),disl2(n)
       REAL(8),INTENT(IN):: rlon(m),rlat(m)
       REAL(8),INTENT(OUT):: zdsp(m),edsp(m),ndsp(m)
 C     Local variables      
@@ -47,22 +47,24 @@ c        Compute origin for Okada's reference frame
 
 c Loop over displacement points
          do 100 j=1,m
-c            Translate to new origin
-             x = (rlon(j) - ox)*.001D0
-             y = (rlat(j) - oy)*.001D0
-             d = sqrt(x**2+y**2) ! Find distance from origin
-             az = 90.0D0-atan2(y,x)/dtr
+c           Translate to new origin
+            x = (rlon(j) - ox)*.001D0
+            y = (rlat(j) - oy)*.001D0
+            d = sqrt(x**2+y**2) ! Find distance from origin
+            az = 90.0D0-atan2(y,x)/dtr
 
-c            Rotate into Okada's reference frame, which has the strike
-c            direction = positive x axis, with the origin at the deep end
-c            of the slip with the most negative value along the x axis.
-             y = d*sin(dtr*(strk(i)-az))
-             x = d*cos(dtr*(strk(i)-az))
+c           Rotate into Okada's reference frame, which has the strike
+c           direction = positive x axis, with the origin at the deep end
+c           of the slip with the most negative value along the x axis.
+            y = d*sin(dtr*(strk(i)-az))
+            x = d*cos(dtr*(strk(i)-az))
 
 c Skip this contribution of distance exceeds the threshhold            
-             if (dstmx.gt.0. .and. sqrt(x*x+y*y).gt.dstmx) goto 100
-
-             IF(USE_DC3D) THEN
+            IF(dstmx(i).gt.0. .and. (x*x+y*y).gt.(dstmx(i)**2)) THEN 
+                goto 100
+            END IF            
+                
+            IF(USE_DC3D) THEN
 c SUBROUTINE  DC3D(ALPHA,X,Y,Z,DEPTH,DIP,
 c     *              AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,
 c     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
@@ -76,7 +78,7 @@ c     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
                  IF(IRET .NE. 0) THEN
                      stop('IRET != 0') 
                  END IF
-             ELSE
+            ELSE
 c      SUBROUTINE  SRECTF(ALP,X,Y,DEP,AL1,AL2,AW1,AW2,                   01840000
 c     *                   SD,CD,DISL1,DISL2,DISL3,                       01850000
 c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              01860000

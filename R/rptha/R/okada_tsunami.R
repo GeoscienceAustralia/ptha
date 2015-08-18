@@ -15,7 +15,7 @@
 #'@param disl2 -- numeric vector with up-dip disloacation on the sub-fault (m)
 #'@param rlon -- numeric vector with x locations where output is desired (m)
 #'@param rlat -- numeric vector with y locations where output is desired (m)
-#'@param dstmx -- optional maximum distance at which sub-faults can cause displacement 
+#'@param dstmx -- optional maximum distance at which sub-faults can cause displacement (as a multiple of the depth)
 #'@param verbose -- TRUE/FALSE -- print info on ground deformation
 #'
 #'@return -- list with edsp, ndsp, zdsp giving the displacements in the
@@ -36,41 +36,45 @@
 #' 
 #' plot(mypts[,1], mypts[,2],col=heat.colors(10)[cut(ff[[3]],10)],pch=19,asp=1)
 okada_tsunami<-function(elon,elat,edep,strk,dip,lnth,wdt,
-                        disl1,disl2,rlon,rlat,dstmx=9.0e+12,
+                        disl1,disl2,rlon,rlat,dstmx=9.0e+20,
                         verbose=FALSE){
     # Call Okada routines to compute surface displacement
 
     # Variables we already know
-    alp=0.5 # Assuming lambda = mu, which is common
-    n=length(elon)
-    m=length(rlon)
+    alp = 0.5 # Assuming lambda = mu, which is common
+    n = length(elon)
+    m = length(rlon)
+
+    # Convert dstmx to absolute distance
+    dstmx = dstmx*edep
 
     # Check input
     if(length(elat)!=n | length(edep)!=n | length(strk)!=n | length(dip)!=n |
-       length(lnth)!=n | length(wdt)!=n  | length(disl1)!=n | length(disl2)!=n ){
+       length(lnth)!=n | length(wdt)!=n  | length(disl1)!=n | length(disl2)!=n |
+       length(dstmx)!=n){
        stop('sub-fault variables are not all of the same length ')
     }
-    if(length(rlat)!=m) stop('length(rlon)!=length(rlat)')
+    if(length(rlat) != m) stop('length(rlon)!=length(rlat)')
 
     # Output variables
     #edsp=numeric(m)
     #ndsp=numeric(m)
     #zdsp=numeric(m)
-    edsp=rep(1.0e-16,m)
-    ndsp=rep(1.0e-16,m)
-    zdsp=rep(1.0e-16,m)
+    edsp = rep(0.0e-16,m)
+    ndsp = rep(0.0e-16,m)
+    zdsp = rep(0.0e-16,m)
 
     # Fortran call:
     #fault_disp(alp,elon,elat,edep,strk,dip,length,wdt,
     # &     disl1,disl2,rlon,rlat,dstmx,edsp,ndsp,zdsp,m,n)
-    xout=.Fortran('fault_disp', as.double(alp),as.double(elon),as.double(elat),as.double(edep),
-             as.double(strk),as.double(dip),as.double(lnth),as.double(wdt),
-             as.double(disl1),as.double(disl2),as.double(rlon),as.double(rlat),as.double(dstmx),
-             as.double(edsp),as.double(ndsp),as.double(zdsp),as.integer(m),as.integer(n), 
-             DUP=TRUE, # DUP=FALSE is deprecated
-             PACKAGE='rptha')
+    xout = .Fortran('fault_disp', as.double(alp),as.double(elon),as.double(elat),as.double(edep),
+        as.double(strk),as.double(dip),as.double(lnth),as.double(wdt),
+        as.double(disl1),as.double(disl2),as.double(rlon),as.double(rlat),as.double(dstmx),
+        as.double(edsp),as.double(ndsp),as.double(zdsp),as.integer(m),as.integer(n), 
+        DUP=TRUE, # DUP=FALSE is deprecated :(
+        PACKAGE='rptha')
 
-    names(xout)[14:16]=c('edsp','ndsp','zdsp')
+    names(xout)[14:16] = c('edsp','ndsp','zdsp')
     if(verbose){
         print(paste('Max zdsp: ', max(xout$zdsp)))
         print(paste('Min zdsp: ', min(xout$zdsp)))
