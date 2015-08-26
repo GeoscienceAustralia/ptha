@@ -517,7 +517,7 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
 #' @param spacing = approximate spacing between points
 #' @param n = Number of points in output (if spacing = NULL)
 #' @param longlat = TRUE/FALSE
-#' @param verbose
+#' @param verbose Print progressi information
 #' @return SpatialPointsDataFrame along SL, with data identifying the
 #'   corresponding line index in SL
 #'

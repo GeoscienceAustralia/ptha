@@ -19,7 +19,7 @@ test_that('test_kajiura_g', {
 
     #print('Compare theoretical and empirical')
 
-    kg_E = kg_empirical()
+    kg_E = kajiura_g_empirical()
     # Add small perturbation to x point so that we don't evaluate at spline knot
     e_ref = kg_E(testr+0.001)
     ref_val = kajiura_g(testr+0.001)
@@ -122,7 +122,7 @@ test_that('test_kajiura_filter_1', {
     rMax = matrix(sqrt(xyGrid[,1]^2+xyGrid[,2]^2), ncol=201,byrow=T)/d1
 
     # Make kajiura function
-    kgE = kg_empirical()
+    kgE = kajiura_g_empirical()
 
     # Limit the bounds of the kajiura function inputs
     rMax = pmin(rMax,8)
@@ -187,7 +187,7 @@ test_that('test_kajiura_filter_3', {
     rMax = pmin(rMax,8)
 
     # Make kajiura function
-    kgE = kg_empirical()
+    kgE = kajiura_g_empirical()
 
 
     k2 = matrix(kgE(rMax)*(rMax<8), ncol=201,byrow=T)

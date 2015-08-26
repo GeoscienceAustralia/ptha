@@ -16,7 +16,7 @@ approxSpatialLines(SL, spacing = NULL, n = NULL, longlat = FALSE,
 
 \item{longlat}{= TRUE/FALSE}
 
-\item{verbose}{}
+\item{verbose}{Print progressi information}
 }
 \value{
 SpatialPointsDataFrame along SL, with data identifying the

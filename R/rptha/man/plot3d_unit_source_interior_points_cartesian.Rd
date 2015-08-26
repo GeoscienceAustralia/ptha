@@ -16,6 +16,8 @@ plot3d_unit_source_interior_points_cartesian(us, aspect = "iso",
 \item{add}{logical Add to an existing plot?}
 
 \item{add_zero_plane}{Draw a plane at depth = 0}
+
+\item{...}{further arguments to plot3d (or points3d if add=TRUE)}
 }
 \value{
 Nothing, but make a plot

@@ -175,7 +175,7 @@ kajiura_filter<-function(xyDef,
         stop('interpolator not recognized')
     }
    
-    # Compute kajiura_g filter function, on a matrix varying from +- 6 reference depths
+    # Compute kajiura_g filter function, on a matrix varying from +- 5 reference depths
     # Glimsdal et al highlight that this only needs to be 5 reference depths long
     filter_refDepth_range = 5
     fR = filter_refDepth_range*reference_depth
