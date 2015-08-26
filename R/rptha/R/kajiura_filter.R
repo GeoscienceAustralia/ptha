@@ -7,7 +7,7 @@
 #'
 #' The function value is the sum over n in [0, Infty] of
 #' [ 1/pi*sum( (-1)^n*(2*n+1)/( (2*n+1)^2 + r^2)^(3/2)) ].
-#' For a more efficient and vectorized implementation, see kg_empirical
+#' For a more efficient and vectorized implementation, see kajiura_g_empirical
 #' which approximates this function using splines and a log transform.
 #'
 #' @param r numeric. Value of r in the equation
@@ -57,7 +57,7 @@ kajiura_g<-function(r, nt=1000, verbose=FALSE, recursive_stop_factor=1.0e-05){
 #' values.
 #' @return Function to compute kajiura_G from an input vector of R values <= rMax.
 #' @export
-kg_empirical<-function(rMax=9, n=81){
+kajiura_g_empirical<-function(rMax=9, n=81){
     # Empirical approximation to kajiura_g
     #
     # Uses splines to log-transformed data
@@ -76,7 +76,7 @@ kg_empirical<-function(rMax=9, n=81){
 
 #' Implementation of a Kajiura filter 
 #'
-#' Implement the filter similar to that of Glimsdal et al (2013), based on kajiura (1963) \cr
+#' Implement the filter similar to that of Glimsdal et al (2013), based on Kajiura (1963) \cr
 #' newDeformation(x,y) = int int [oldDeformation(x',y')*G( sqrt( (x'-x)^2+(y'-y)^2) / depth(x, y) ] dx' dy' \cr
 #' This is a 2D generalisation of the cosh filter, justified for a 'temporally short'
 #' earthquake with ocean governed by linear wave equations in constant depth water \cr
@@ -84,8 +84,8 @@ kg_empirical<-function(rMax=9, n=81){
 #' xyDef[,3] <-- convolution of [ (xyDef[,3]) and G(r/depth) ] where G is
 #' a filter function (kajiura's G) adjusted to have integral 1 over the
 #' filter window \cr
-#' We attempt to reduce edge effects with linearly weighting old and filtered values at edges
-#'  since we cannot EFFICIENTLY deal with edge effects in a better way. Therefore
+#' We attempt to reduce edge effects by linearly weighting original and filtered values at edges,
+#'  since we cannot efficiently deal with edge effects in a better way. Therefore
 #' it is best to have unimportant features around the edge of the input points. \cr
 #' We actually allow xyDef to be unstructured, and start by gridding the results
 #' on a grid with spacing approximately grid_dx,grid_dy, 
@@ -121,21 +121,21 @@ kg_empirical<-function(rMax=9, n=81){
 #' @return replacement version of xyDef, with smoothing applied to xyDef[,3]
 #' @export
 kajiura_filter<-function(xyDef, 
-                              depth,
-                              grid_dx=max(depth)/2,
-                              grid_dy=max(depth)/2, 
-                              edge_buffer_value=0, 
-                              edge_effect_correction_scale=1.5, 
-                              kajiuraGmax=9,
-                              interpolator='linear',
-                              volume_change_error_threshold=0.02,
-                              verbose=FALSE){
+                         depth,
+                         grid_dx=max(depth)/2,
+                         grid_dy=max(depth)/2, 
+                         edge_buffer_value=0, 
+                         edge_effect_correction_scale=1.5, 
+                         kajiuraGmax=9,
+                         interpolator='linear',
+                         volume_change_error_threshold=0.02,
+                         verbose=FALSE){
 
 
     reference_depth = max(depth)
 
     # Get fast approximation to G function
-    kgE = kg_empirical(rMax=kajiuraGmax)
+    kgE = kajiura_g_empirical(rMax=kajiuraGmax)
 
     # dx/dy for gridded data + filter
     dx = reference_depth/ceiling(reference_depth/grid_dx)
