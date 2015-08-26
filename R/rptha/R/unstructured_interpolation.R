@@ -20,11 +20,11 @@
 #' @import FNN
 #' @examples
 #'    # Make a single triangle in the plane z=x+y, and interpolate from it
-#'    xy=matrix(c(0,0,0,1,1,1),ncol=2,byrow=TRUE)
-#'    vals=c(0, 1, 2) # z=x+y
-#'    newPts=matrix(c(0.1, 0.9, 0.9, 0.9), ncol=2, byrow=TRUE)
+#'    xy = matrix(c(0,0,0,1,1,1), ncol=2, byrow=TRUE)
+#'    vals = c(0, 1, 2) # z=x+y
+#'    newPts = matrix(c(0.1, 0.9, 0.9, 0.9), ncol=2, byrow=TRUE)
 #'
-#'    out=nearest_neighbour_interpolation(xy, vals, newPts)
+#'    out = nearest_neighbour_interpolation(xy, vals, newPts)
 #'    stopifnot(all.equal(out, c(1,2)))
 nearest_neighbour_interpolation<-function(xy, vals, newPts){
     
@@ -41,8 +41,7 @@ nearest_neighbour_interpolation<-function(xy, vals, newPts){
 #' Function for various types of triangular ['linear'] interpolation of unstructured data. 
 #' 
 #' Delanay triangulation is supported, as well as a method based on linear interpolation 
-#' from the 3 nearest neighbour of the interpolation point, with limiting.
-#' 
+#' from the 3 nearest neighbour of the interpolation point, with limiting. \cr
 #' If useNearestNeighbour = FALSE then it provides a wrapper around the delanay triangulation used in the 'geometry' package.
 #' Unfortunately the look-up can be slow with this method for large point clouds. \cr
 #' If useNearestNeighbour=TRUE, we find the 3 nearest xy neighbours of each point to interpolate to, and
@@ -60,47 +59,47 @@ nearest_neighbour_interpolation<-function(xy, vals, newPts){
 #' @import geometry
 #' @examples
 #'    # Make a single triangle in the plane z=x+y, and interpolate from it
-#'    xy=matrix(c(0,0,0,1,1,1),ncol=2,byrow=TRUE)
-#'    vals=c(0, 1, 2) # z=x+y
-#'    newPts=matrix(c(0.5, 0.5, 0.3, 0.3), ncol=2, byrow=TRUE)
+#'    xy = matrix(c(0, 0, 0, 1, 1, 1), ncol=2, byrow=TRUE)
+#'    vals = c(0, 1, 2) # z=x+y
+#'    newPts = matrix(c(0.5, 0.5, 0.3, 0.3), ncol=2, byrow=TRUE)
 #'
-#'    out=triangular_interpolation(xy, vals, newPts)
+#'    out = triangular_interpolation(xy, vals, newPts)
 #'    stopifnot(all.equal(out, c(1.0,0.6)))
 #'
 #'    # Re-order triangle
-#'    xy=xy[3:1,]
-#'    vals=vals[3:1]
-#'    out=triangular_interpolation(xy, vals, newPts)
+#'    xy = xy[3:1,]
+#'    vals = vals[3:1]
+#'    out = triangular_interpolation(xy, vals, newPts)
 #'    stopifnot(all.equal(out,c(1.0,0.6)))
 #'
 #'    #another one, with formula z=0.5*x+0.2*y+7
-#'    xy=matrix(c(-1, -1, 1, -0.5, 0.5, 1), ncol=2,byrow=2)
-#'    vals=0.5*xy[,1]+0.2*xy[,2]+7
-#'    newPts=matrix(c(0,0, 0.5, 0.3),ncol=2,byrow=TRUE)
-#'    expectedVals=0.5*newPts[,1]+0.2*newPts[,2]+7
-#'    out=triangular_interpolation(xy,vals,newPts)
+#'    xy = matrix(c(-1, -1, 1, -0.5, 0.5, 1), ncol=2,byrow=2)
+#'    vals = 0.5*xy[,1]+0.2*xy[,2]+7
+#'    newPts = matrix(c(0,0, 0.5, 0.3),ncol=2,byrow=TRUE)
+#'    expectedVals = 0.5*newPts[,1]+0.2*newPts[,2]+7
+#'    out = triangular_interpolation(xy,vals,newPts)
 #'    stopifnot(all.equal(out,expectedVals))
 #'
 #'    # A point outside the triangle 
-#'    newPts=matrix(c(-1,0, -1, 1),ncol=2,byrow=TRUE)
-#'    out=triangular_interpolation(xy,vals,newPts,useNearestNeighbour=FALSE)
+#'    newPts = matrix(c(-1,0, -1, 1), ncol=2, byrow=TRUE)
+#'    out = triangular_interpolation(xy, vals, newPts, useNearestNeighbour=FALSE)
 #'    stopifnot(all(is.na(out)))
 #'    # Failure is expected here if using approximate triangulation based on nearest neighbour methods
 #'
 #'    # A single point
-#'    newPts=matrix(c(0,0),ncol=2)
-#'    out=triangular_interpolation(xy,vals,newPts)
-#'    stopifnot(out==7)
+#'    newPts = matrix(c(0,0), ncol=2)
+#'    out = triangular_interpolation(xy, vals, newPts)
+#'    stopifnot(out == 7)
 #'
 #'    # Points on the triangle
-#'    newPts=xy
-#'    out=triangular_interpolation(xy,vals,newPts)
-#'    stopifnot(all(out==vals))
+#'    newPts = xy
+#'    out = triangular_interpolation(xy, vals, newPts)
+#'    stopifnot(all(out == vals))
 #'
 #'    # Point on an edge
-#'    newPts=matrix(0.5*(xy[1,]+xy[2,]),ncol=2)
-#'    out=triangular_interpolation(xy,vals,newPts)
-#'    stopifnot(all(out==0.5*(vals[1]+vals[2])))
+#'    newPts = matrix(0.5*(xy[1,]+xy[2,]), ncol=2)
+#'    out = triangular_interpolation(xy, vals, newPts)
+#'    stopifnot(all(out == 0.5*(vals[1]+vals[2])))
 triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
 
     xy = as.matrix(xy,ncol=2)
