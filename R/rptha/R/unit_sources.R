@@ -620,22 +620,19 @@ unit_source_interior_points_cartesian<-function(
     # Ideally we interpolate strike using a weighted nearest-neighbours
     # However, the code used here requires that we have > 1 point
     np = length(ds1_lonlatstrike[,1])
-    if(np > 1){
-        k = min(4, np)
-        # Compute an inverse distance weighted angular mean of k nearest neighbours
-        inds = knnx.index(data = ds1_stats_points_cartesian[,1:2], 
-            query = grid_points[,1:2], k=k)
-        dists = knnx.dist(data = ds1_stats_points_cartesian[,1:2],
-            query = grid_points[,1:2], k=k)
-        mean_strike = dists[,1]*NA 
-        for(ii in 1:length(mean_strike)){
-            mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii, ], 3], 
-                weights = 1/(dists[ii, ]))
-        }
-        strike = mean_strike
-    }else{
-        strike = rep(ds1_lonlatstrike[1,3], length(grid_points[,1]))
+    k = min(4, np)
+    # Compute an inverse distance weighted angular mean of k nearest neighbours
+    inds = knnx.index(data = ds1_stats_points_cartesian[,1:2, drop=FALSE], 
+        query = grid_points[,1:2, drop=FALSE], k=k)
+    dists = knnx.dist(data = ds1_stats_points_cartesian[,1:2, drop=FALSE],
+        query = grid_points[,1:2, drop=FALSE], k=k)
+    mean_strike = dists[,1]*NA 
+    for(ii in 1:length(mean_strike)){
+        mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii, ], 3], 
+            weights = 1/(dists[ii, ])**2)
     }
+    strike = mean_strike
+
     # Ensure > 0
     strike = strike + (strike < 0)*360
 

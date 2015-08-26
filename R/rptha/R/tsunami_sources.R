@@ -18,6 +18,10 @@
 #' z-displacement computed by tsunami_function?
 #' @param surface_point_ocean_depths numeric vector giving ocean depths (in m)
 #' at the tsunami surface points. Used only for Kajiura filtering
+#' @param kajiura_grid_spacing Value used for grid_dx and grid_dy in kajiura filter.
+#' If NULL, max(surface_point_ocean_depths)/2 is used
+#' @param kajiura_volume_change_error_threshold Value of volume_change_error_threshold
+#' passed to kajiura_filter
 #' @param tsunami_function Function used to make the tunami source from
 #' a cartesian unit source with interior points. Must return a list containing
 #' zdsp (a vector of all z displacements in m), and perhaps also edsp, ndsp. 
@@ -29,7 +33,8 @@
 make_tsunami_unit_source<-function(i,j, discrete_source, 
     tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL, 
     scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth=FALSE, 
-    surface_point_ocean_depths=NULL,
+    surface_point_ocean_depths=NULL, kajiura_grid_spacing=NULL,
+    kajiura_volume_change_error_threshold = 0.1,
     tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
     ...){
 
@@ -51,8 +56,17 @@ make_tsunami_unit_source<-function(i,j, discrete_source,
     if(kajiura_smooth){
         stopifnot(length(surface_point_ocean_depths) == length(tsunami_surface_points_lonlat[,1]))
 
+        if(is.null(kajiura_grid_spacing)){
+            grid_dx = kajiura_grid_spacing
+            grid_dy = kajiura_grid_spacing
+        }else{
+            grid_dx = max(surface_point_ocean_depths)/2
+            grid_dy = grid_dx
+        }
+
         kajiura_source = kajiura_filter(cbind(tsunami_surface_points_cartesian, ts$zdsp),
-            surface_point_ocean_depths)
+            surface_point_ocean_depths, grid_dx = grid_dx, grid_dy=grid_dy,
+            volume_change_error_threshold = kajiura_volume_change_error_threshold)
 
         smooth_tsunami_displacement = kajiura_source[,3]
     }else{

@@ -7,7 +7,8 @@
 make_tsunami_unit_source(i, j, discrete_source, tsunami_surface_points_lonlat,
   approx_dx = NULL, approx_dy = NULL, scale_dxdy = 1,
   depths_in_km = TRUE, kajiura_smooth = FALSE,
-  surface_point_ocean_depths = NULL,
+  surface_point_ocean_depths = NULL, kajiura_grid_spacing = NULL,
+  kajiura_volume_change_error_threshold = 0.1,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source, ...)
 }
 \arguments{
@@ -36,6 +37,12 @@ z-displacement computed by tsunami_function?}
 
 \item{surface_point_ocean_depths}{numeric vector giving ocean depths (in m)
 at the tsunami surface points. Used only for Kajiura filtering}
+
+\item{kajiura_grid_spacing}{Value used for grid_dx and grid_dy in kajiura filter.
+If NULL, max(surface_point_ocean_depths)/2 is used}
+
+\item{kajiura_volume_change_error_threshold}{Value of volume_change_error_threshold
+passed to kajiura_filter}
 
 \item{tsunami_function}{Function used to make the tunami source from
 a cartesian unit source with interior points. Must return a list containing
