@@ -14,8 +14,13 @@
 #' @param scale_dxdy Adjustment factor for approx_dx and approx_dy
 #' @param depths_in_km logical. Are input depths in the discrete source in km
 #' (TRUE) or m (FALSE).
+#' @param kajiura_smooth logical. Should we apply kajiura smoothing to the
+#' z-displacement computed by tsunami_function?
+#' @param surface_point_ocean_depths numeric vector giving ocean depths (in m)
+#' at the tsunami surface points. Used only for Kajiura filtering
 #' @param tsunami_function Function used to make the tunami source from
-#' a cartesian unit source with interior points
+#' a cartesian unit source with interior points. Must return a list containing
+#' zdsp (a vector of all z displacements in m), and perhaps also edsp, ndsp. 
 #' @param ... further arguments to tsunami function
 #' @return a list with the cartesian unit source, tsunami source, i,j indices
 #' and tsunami surface points
@@ -23,7 +28,8 @@
 #' @export
 make_tsunami_unit_source<-function(i,j, discrete_source, 
     tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL, 
-    scale_dxdy = 1, depths_in_km = TRUE, 
+    scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth=FALSE, 
+    surface_point_ocean_depths=NULL,
     tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
     ...){
 
@@ -41,7 +47,21 @@ make_tsunami_unit_source<-function(i,j, discrete_source,
 
     ts = tsunami_function(us, tsunami_surface_points_cartesian, ...)
 
+    # Optionally apply Kajiura smoothing
+    if(kajiura_smooth){
+        stopifnot(length(surface_point_ocean_depths) == length(tsunami_surface_points_lonlat[,1]))
+
+        kajiura_source = kajiura_filter(cbind(tsunami_surface_points_cartesian, ts$zdsp),
+            surface_point_ocean_depths)
+
+        smooth_tsunami_displacement = kajiura_source[,3]
+    }else{
+        # In this case just repeat the tsunami source displacement
+        smooth_tsunami_displacement = ts$zdsp
+    }
+
     tsunami_unit_source = list(unit_source_interior_points = us, 
+        smooth_tsunami_displacement = smooth_tsunami_displacement,
         tsunami_source = ts, i=i, j = j, 
         tsunami_surface_points_lonlat = tsunami_surface_points_lonlat)
 
@@ -63,7 +83,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
     #library(rgdal)
 
     xyz = cbind(tsunami_unit_source$tsunami_surface_points_lonlat, 
-        tsunami_unit_source$tsunami_source$zdsp)
+        tsunami_unit_source$smooth_tsunami_displacement)
 
     outrast = rasterFromXYZ(xyz, crs=CRS('+init=epsg:4326'))
 
@@ -205,9 +225,9 @@ plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami,
     ds1 = discrete_source
 
     # Make raster with 'sum of all unit source tsunami'
-    tsunami_sum = all_tsunami[[1]]$tsunami_source$zdsp*0
+    tsunami_sum = all_tsunami[[1]]$smooth_tsunami_displacement*0
     for(i in 1:length(all_tsunami)){ 
-        tsunami_sum = tsunami_sum + all_tsunami[[i]]$tsunami_source$zdsp
+        tsunami_sum = tsunami_sum + all_tsunami[[i]]$smooth_tsunami_displacement
     }
     #library(raster)
     tsunami_sum = rasterFromXYZ(

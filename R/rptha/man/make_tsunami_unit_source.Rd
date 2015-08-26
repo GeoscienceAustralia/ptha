@@ -6,7 +6,8 @@
 \usage{
 make_tsunami_unit_source(i, j, discrete_source, tsunami_surface_points_lonlat,
   approx_dx = NULL, approx_dy = NULL, scale_dxdy = 1,
-  depths_in_km = TRUE,
+  depths_in_km = TRUE, kajiura_smooth = FALSE,
+  surface_point_ocean_depths = NULL,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source, ...)
 }
 \arguments{
@@ -30,8 +31,15 @@ source. See unit_source_interior_points_cartesian.}
 \item{depths_in_km}{logical. Are input depths in the discrete source in km
 (TRUE) or m (FALSE).}
 
+\item{kajiura_smooth}{logical. Should we apply kajiura smoothing to the
+z-displacement computed by tsunami_function?}
+
+\item{surface_point_ocean_depths}{numeric vector giving ocean depths (in m)
+at the tsunami surface points. Used only for Kajiura filtering}
+
 \item{tsunami_function}{Function used to make the tunami source from
-a cartesian unit source with interior points}
+a cartesian unit source with interior points. Must return a list containing
+zdsp (a vector of all z displacements in m), and perhaps also edsp, ndsp.}
 
 \item{...}{further arguments to tsunami function}
 }

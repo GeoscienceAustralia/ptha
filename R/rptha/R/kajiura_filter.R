@@ -97,9 +97,10 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #'
 #' 
 #' @param xyDef  3 column matrix with x,y, deformation. May be unstructured.
-#' @param depth vector with the the depth at each x,y point in xyDef
-#' @param grid_dx Numeric. See grid_dy
-#' @param grid_dy Numeric. To apply the filter, we regrid xyDef on a grid with
+#' x,y must be cartesian and in m
+#' @param depth vector with the the depth at each x,y point in xyDef in m
+#' @param grid_dx Numeric (m). See grid_dy
+#' @param grid_dy Numeric (m). To apply the filter, we regrid xyDef on a grid with
 #' point spacing grid_dx, grid_dy, then smooth, then transform back from the grid
 #' to our original xy points
 #' @param edge_buffer_value Numeric. Outside the domain edges we assume this is

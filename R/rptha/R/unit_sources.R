@@ -456,7 +456,8 @@ get_unit_source_from_discretized_source<-function(discretized_source,
 }
 
 #' Extract the lon-lat midpoints of the top edge of all unit sources
-#' in a discrete source, and compute the strike
+#' along the 'shallowest' edge of a discrete source (i.e. near the trench), and
+#' compute the strike
 #'
 #' @param discretized_source A list containing discretized source information
 #' (output of discretized_source_from_source_contours or similar)
@@ -464,7 +465,7 @@ get_unit_source_from_discretized_source<-function(discretized_source,
 #' each unit source
 #'
 #' @export
-get_all_unit_source_top_edge_strikes<-function(discretized_source){
+get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
 
     discretized_source_dim = discretized_source$discretized_source_dim
     nstrike = discretized_source_dim[2]
@@ -478,9 +479,9 @@ get_all_unit_source_top_edge_strikes<-function(discretized_source){
     # Skip the last down-dip index as it is not the 'top' edge of a unit source
     for(i in 1:nstrike){
          vertex_tl = rbind(vertex_tl, 
-            discretized_source$unit_source[1:ndip, 1:2, i])
+            discretized_source$unit_source[1, 1:2, i])
          vertex_tr = rbind(vertex_tr, 
-            discretized_source$unit_source[1:ndip, 1:2, i+1])
+            discretized_source$unit_source[1, 1:2, i+1])
     }
 
     top_edges = midPoint(vertex_tl, vertex_tr)
@@ -612,7 +613,7 @@ unit_source_interior_points_cartesian<-function(
     # the local coordinate system and use them to make a continuous function of
     # strike
 
-    ds1_lonlatstrike = get_all_unit_source_top_edge_strikes(discretized_source) 
+    ds1_lonlatstrike = get_shallow_unit_source_top_edge_strikes(discretized_source) 
     ds1_stats_points_cartesian = spherical_to_cartesian2d_coordinates(
         ds1_lonlatstrike[,1:2], origin_lonlat=origin, r=r)
 
@@ -620,7 +621,7 @@ unit_source_interior_points_cartesian<-function(
     # However, the code used here requires that we have > 1 point
     np = length(ds1_lonlatstrike[,1])
     if(np > 1){
-        k = min(15, np)
+        k = min(4, np)
         # Compute an inverse distance weighted angular mean of k nearest neighbours
         inds = knnx.index(data = ds1_stats_points_cartesian[,1:2], 
             query = grid_points[,1:2], k=k)
