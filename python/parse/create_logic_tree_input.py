@@ -7,7 +7,7 @@ import os, sys
 
 pathname = '/short/n74/GAR_2015/Tsunami_v2/DATA/FOR_MODEL'
 final_source_path = os.path.join(pathname, 'source_zones_atlantic_model')
-austptha_gem_map = '/short/n74/GAR_2015/Tsunami_v2/DATA/FOR_MODEL/ancillary/aust_gem_mapping.csv'
+austptha_gem_map = '/short/n74/GAR_2015/Tsunami_v2/DATA/FOR_MODEL/ancillary/aust_gem_mapping_2015.csv'
 gem_tab_path = '/short/n74/GAR_2015/Tsunami_v2/DATA/FOR_MODEL/ancillary'
 
 source_zones = os.walk(final_source_path).next()[1]
