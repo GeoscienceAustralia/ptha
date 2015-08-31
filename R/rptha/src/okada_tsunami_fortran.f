@@ -78,12 +78,12 @@ c     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
      &                   disl2(i), 0.0D0, u1, u2, u3, u11, u21, u31,
      &                   u12, u22, u32, u13, u23, u33, IRET)
                 ELSE
-                  stop('Need to implement point source')
+c                  stop('Need to implement point source')
 
                 END IF
                 
                 IF(IRET .NE. 0) THEN
-                    stop('IRET != 0') 
+c                    stop('IRET != 0') 
                 END IF
             ELSE
 c      SUBROUTINE  SRECTF(ALP,X,Y,DEP,AL1,AL2,AW1,AW2,                   01840000
