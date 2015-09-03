@@ -85,15 +85,18 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #' a filter function (kajiura's G) adjusted to have integral 1 over the
 #' filter window \cr
 #' We attempt to reduce edge effects by linearly weighting original and filtered values at edges,
-#'  since we cannot efficiently deal with edge effects in a better way. Therefore
+#' since we cannot efficiently deal with edge effects in a better way. Therefore
 #' it is best to have unimportant features around the edge of the input points. \cr
 #' We actually allow xyDef to be unstructured, and start by gridding the results
 #' on a grid with spacing approximately grid_dx,grid_dy, 
-#'  , using nearest neighbour interpolation. Generally, setting these values
-#'  to a fraction of the refernece depth should be ok. Something a bit
-#'  smaller than the input resolution would be good.
+#' using nearest neighbour interpolation. Generally, setting these values
+#' to a fraction of the refernece depth should be ok. Something a bit
+#' smaller than the input resolution would be good.
 #' The grid spacing is not exactly grid_dx,grid_dy, because it is forced to be 
-#'   an integer divisor of reference_depth
+#' an integer divisor of reference_depth. For deformations with discontinuities,
+#' there can be artefacts due to regridding, and it may be numerically
+#' beneficial to rotate the x,y input coordinates so that the discontinuity
+#' is aligned with one of the coordinate axes. (This is done in make_tsunami_unit_source)
 #'
 #' 
 #' @param xyDef  3 column matrix with x,y, deformation. May be unstructured.
