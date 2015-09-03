@@ -74,6 +74,8 @@ discretized_source_from_source_contours<-function(
     shallow_contour = source_contours[which.min(contour_levels),]
     deep_contour = source_contours[which.max(contour_levels),]
 
+
+
     # Get points on the shallow contour with approx desired length spacing
     interp_shallow_line = approxSpatialLines(shallow_contour, longlat=TRUE, 
         spacing=desired_subfault_length)
@@ -81,7 +83,6 @@ discretized_source_from_source_contours<-function(
 
     # Get the same number of points on the deep contour
     np = length(interp_shallow_line[,1])
-    deep_contour_coordinates = coordinates(deep_contour)[[1]][[1]]
     interp_deep_line = approxSpatialLines(deep_contour, longlat=TRUE,
         spacing=NULL, n = np)
     interp_deep_line = coordinates(interp_deep_line)
@@ -89,6 +90,25 @@ discretized_source_from_source_contours<-function(
     # Order the lines appropriately
     if(distCosine(interp_shallow_line[1,], interp_deep_line[1,]) > 
        distCosine(interp_shallow_line[1,], interp_deep_line[np,]) ){
+        interp_deep_line = interp_deep_line[np:1,]
+    }
+    # Now the deep and shallow lines are ordered in the same direction
+
+    # Make sure the line is ordered in the 'along-strike' direction
+    # Measure this direction as the angle from the first point to a
+    # point at index 'mi' along the line (intended as a rough mid-point)
+    mi = max(floor(np/2), 2)
+    b1 = bearing(interp_shallow_line[1,], interp_shallow_line[mi,], sphere=TRUE)
+    b2 = bearing(interp_shallow_line[1,], interp_deep_line[1,], sphere=TRUE)
+    # If the interp_shallow_line is ordered along-strike, then b1 + 90 should
+    # be similar to b2, accounting for angular addition. This means the
+    # difference is close to 0 or 360 or -360, etc
+    b1_plus_90 = b1 + 90
+    angle_diff = (b2 - b1_plus_90)%%360
+    if(!(angle_diff < 90 | angle_diff > 270)){
+        print('The top contour does not seem to be oriented in the along-strike direction')
+        print('Reordering ... (be careful)')
+        interp_shallow_line = interp_shallow_line[np:1,]
         interp_deep_line = interp_deep_line[np:1,]
     }
 
