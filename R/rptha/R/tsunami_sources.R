@@ -64,9 +64,17 @@ make_tsunami_unit_source<-function(i,j, discrete_source,
             grid_dy = grid_dx
         }
 
-        kajiura_source = kajiura_filter(cbind(tsunami_surface_points_cartesian, ts$zdsp),
+        # Rotate the surface points so the strike direction is aligned with
+        # pixels, to get better behaviour near discontinuities in Kajiura.
+        # This is caused by the re-interpolation to a regular grid in that routine
+        mean_strike = mean(us$grid_points[,'strike'])/180*pi
+        new_xy = rotate_cartesian2d(tsunami_surface_points_cartesian[,1:2], 
+            origin = c(0,0), x_axis_vector = c(sin(mean_strike), cos(mean_strike)))
+
+        kajiura_source = kajiura_filter(cbind(new_xy, ts$zdsp),
             surface_point_ocean_depths, grid_dx = grid_dx, grid_dy=grid_dy,
-            volume_change_error_threshold = kajiura_volume_change_error_threshold)
+            volume_change_error_threshold = kajiura_volume_change_error_threshold,
+            interpolator='linear')
 
         smooth_tsunami_displacement = kajiura_source[,3]
     }else{
