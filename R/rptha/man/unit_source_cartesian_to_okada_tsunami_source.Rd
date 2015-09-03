@@ -4,12 +4,14 @@
 \alias{unit_source_cartesian_to_okada_tsunami_source}
 \title{Convert a cartesian unit source with interior points to an okada tsunami source}
 \usage{
-unit_source_cartesian_to_okada_tsunami_source(us,
+unit_source_cartesian_to_okada_tsunami_source(us, rake,
   tsunami_surface_points_cartesian, point_scale = 1, dstmx = 9e+20,
   upper_depth_limit = 0)
 }
 \arguments{
 \item{us}{A unit source with interior points in cartesian coordinates.}
+
+\item{rake}{The rake of the slip in degrees}
 
 \item{tsunami_surface_points_cartesian}{Points at which to compute the
 tsunami deformation in cartesian coordinates}

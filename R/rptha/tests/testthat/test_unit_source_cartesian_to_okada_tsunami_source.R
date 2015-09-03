@@ -39,7 +39,7 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
         seq(-1,1,len=200)) 
 
     # Make tsunami with our routines
-    tsunami1 = make_tsunami_unit_source(1, 1, ds, 
+    tsunami1 = make_tsunami_unit_source(1, 1, ds, rake=90,
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
         tsunami_function = unit_source_cartesian_to_okada_tsunami_source)
 

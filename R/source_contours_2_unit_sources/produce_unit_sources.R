@@ -85,7 +85,7 @@ for(sourcename in names(discretized_sources)){
     library(parallel)
     all_tsunami = mcmapply(
         make_tsunami_unit_source, 
-        i = as.list(ij$i), j = as.list(ij$j), discrete_source=list(ds1), 
+        i = as.list(ij$i), j = as.list(ij$j), discrete_source=list(ds1), rake=list(90),
         tsunami_surface_points_lonlat = list(tsunami_surface_points_lonlat),
         approx_dx = list(NULL), approx_dy = list(NULL), 
         scale_dxdy=list(point_spacing_scale), 

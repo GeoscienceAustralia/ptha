@@ -5,6 +5,7 @@
 #' @param i integer. The down-dip index of the unit source
 #' @param j integer. The along-strike index of the unit source
 #' @param discrete_source List with discrete source information
+#' @param rake Rake (degrees) of the slip vector. 0 is along-strike slip, 90 is pure thrust,..
 #' @param tsunami_surface_points_lonlat matrix with lon/lat coordinates of
 #' points where tsunami initial condition will be evaluated.
 #' @param approx_dx Approximate x spacing of integration points inside unit
@@ -23,14 +24,15 @@
 #' @param kajiura_volume_change_error_threshold Value of volume_change_error_threshold
 #' passed to kajiura_filter
 #' @param tsunami_function Function used to make the tunami source from
-#' a cartesian unit source with interior points. Must return a list containing
-#' zdsp (a vector of all z displacements in m), and perhaps also edsp, ndsp. 
+#' a cartesian unit source with interior points, the rake, and the surface
+#' points.  Must return a list containing zdsp (a vector of all z displacements
+#' in m), and perhaps also edsp, ndsp. 
 #' @param ... further arguments to tsunami function
 #' @return a list with the cartesian unit source, tsunami source, i,j indices
-#' and tsunami surface points
+#' and tsunami surface points, smoothed deformation, and rake
 #'
 #' @export
-make_tsunami_unit_source<-function(i,j, discrete_source, 
+make_tsunami_unit_source<-function(i,j, discrete_source, rake,
     tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL, 
     scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth=FALSE, 
     surface_point_ocean_depths=NULL, kajiura_grid_spacing=NULL,
@@ -50,7 +52,7 @@ make_tsunami_unit_source<-function(i,j, discrete_source,
     tsunami_surface_points_cartesian = spherical_to_cartesian2d_coordinates(
         tsunami_surface_points_lonlat, origin_lonlat=us$origin_lonlat, r=us$r)
 
-    ts = tsunami_function(us, tsunami_surface_points_cartesian, ...)
+    ts = tsunami_function(us, rake, tsunami_surface_points_cartesian, ...)
 
     # Optionally apply Kajiura smoothing
     if(kajiura_smooth){
@@ -85,7 +87,8 @@ make_tsunami_unit_source<-function(i,j, discrete_source,
     tsunami_unit_source = list(unit_source_interior_points = us, 
         smooth_tsunami_displacement = smooth_tsunami_displacement,
         tsunami_source = ts, i=i, j = j, 
-        tsunami_surface_points_lonlat = tsunami_surface_points_lonlat)
+        tsunami_surface_points_lonlat = tsunami_surface_points_lonlat,
+        rake = rake)
 
     return(tsunami_unit_source)
 }
@@ -124,6 +127,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' Convert a cartesian unit source with interior points to an okada tsunami source
 #'
 #' @param us A unit source with interior points in cartesian coordinates.
+#' @param rake The rake of the slip in degrees
 #' @param tsunami_surface_points_cartesian Points at which to compute the
 #' tsunami deformation in cartesian coordinates
 #' @param point_scale Multiply the length/width of area sources by point scale
@@ -139,7 +143,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' @return List with edsp, ndsp, zdsp giving the displacements at the
 #' tsunami_surface_points_cartesian.
 #' @export
-unit_source_cartesian_to_okada_tsunami_source<-function(us,
+unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
     tsunami_surface_points_cartesian, point_scale=1, dstmx = 9e+20,
     upper_depth_limit = 0.0e-03){
 
@@ -150,7 +154,8 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
     strike = src[, 'strike']
     dip = src[, 'dip']
     depth = src[,'depth']/1000 # depth in km
-    thrust_slip = depth*0 + 1 # Slip in m
+    thrust_slip = depth*0 + sin(rake*deg2rad) # Slip in m
+    strike_slip = depth*0 + cos(rake*deg2rad)
 
     dest = tsunami_surface_points_cartesian
 
@@ -223,7 +228,7 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us,
         elon = src[,'x'], elat = src[,'y'], edep = depth,
         strk = strike, dip = dip,
         lnth = src_len*point_scale, wdt = src_wdt*point_scale,
-        disl1 = rep(0, len=nsrc)/point_scale**2, 
+        disl1 = strike_slip/point_scale**2, 
         disl2 = thrust_slip/point_scale**2,
         rlon = dest[,1], rlat = dest[,2], dstmx = dstmx,
         verbose=FALSE)

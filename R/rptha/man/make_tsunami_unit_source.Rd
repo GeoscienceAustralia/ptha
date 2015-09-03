@@ -4,9 +4,9 @@
 \alias{make_tsunami_unit_source}
 \title{Function to make a tsunami for the ij unit source in a discrete source.}
 \usage{
-make_tsunami_unit_source(i, j, discrete_source, tsunami_surface_points_lonlat,
-  approx_dx = NULL, approx_dy = NULL, scale_dxdy = 1,
-  depths_in_km = TRUE, kajiura_smooth = FALSE,
+make_tsunami_unit_source(i, j, discrete_source, rake,
+  tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL,
+  scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth = FALSE,
   surface_point_ocean_depths = NULL, kajiura_grid_spacing = NULL,
   kajiura_volume_change_error_threshold = 0.1,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source, ...)
@@ -17,6 +17,8 @@ make_tsunami_unit_source(i, j, discrete_source, tsunami_surface_points_lonlat,
 \item{j}{integer. The along-strike index of the unit source}
 
 \item{discrete_source}{List with discrete source information}
+
+\item{rake}{Rake (degrees) of the slip vector. 0 is along-strike slip, 90 is pure thrust,..}
 
 \item{tsunami_surface_points_lonlat}{matrix with lon/lat coordinates of
 points where tsunami initial condition will be evaluated.}
@@ -45,14 +47,15 @@ If NULL, max(surface_point_ocean_depths)/2 is used}
 passed to kajiura_filter}
 
 \item{tsunami_function}{Function used to make the tunami source from
-a cartesian unit source with interior points. Must return a list containing
-zdsp (a vector of all z displacements in m), and perhaps also edsp, ndsp.}
+a cartesian unit source with interior points, the rake, and the surface
+points.  Must return a list containing zdsp (a vector of all z displacements
+in m), and perhaps also edsp, ndsp.}
 
 \item{...}{further arguments to tsunami function}
 }
 \value{
 a list with the cartesian unit source, tsunami source, i,j indices
-and tsunami surface points
+and tsunami surface points, smoothed deformation, and rake
 }
 \description{
 Function to make a tsunami for the ij unit source in a discrete source.
