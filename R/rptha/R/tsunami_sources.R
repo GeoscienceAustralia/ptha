@@ -23,6 +23,9 @@
 #' If NULL, max(surface_point_ocean_depths)/2 is used
 #' @param kajiura_volume_change_error_threshold Value of volume_change_error_threshold
 #' passed to kajiura_filter
+#' @param minimal_output Logical. If TRUE, set the unit source and
+#' tsunami_surface_points_lonlat to NA in the outputs. These are memory heavy so
+#' in some settings they are best removed.
 #' @param tsunami_function Function used to make the tunami source from
 #' a cartesian unit source with interior points, the rake, and the surface
 #' points.  Must return a list containing zdsp (a vector of all z displacements
@@ -32,19 +35,22 @@
 #' and tsunami surface points, smoothed deformation, and rake
 #'
 #' @export
-make_tsunami_unit_source<-function(i,j, discrete_source, rake,
+make_tsunami_unit_source<-function(i, j, discrete_source, rake,
     tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL, 
     scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth=FALSE, 
     surface_point_ocean_depths=NULL, kajiura_grid_spacing=NULL,
-    kajiura_volume_change_error_threshold = 0.1,
+    kajiura_volume_change_error_threshold = 0.1, minimal_output=FALSE,
     tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
     ...){
 
     ## Get unit source in local cartesian coordinates + unit source statistics
     # By default the first us coordinate will be the origin
-    us = unit_source_interior_points_cartesian(discrete_source, 
+    us = unit_source_interior_points_cartesian(
+        discrete_source, 
         unit_source_index = c(i,j),
-        approx_dx=approx_dx, approx_dy=approx_dy, scale_dxdy=scale_dxdy,
+        approx_dx=approx_dx, 
+        approx_dy=approx_dy, 
+        scale_dxdy=scale_dxdy,
         depths_in_km=depths_in_km)
 
     ## Convert tsunami surface points from lonlat to local cartesian
@@ -68,10 +74,12 @@ make_tsunami_unit_source<-function(i,j, discrete_source, rake,
 
         # Rotate the surface points so the strike direction is aligned with
         # pixels, to get better behaviour near discontinuities in Kajiura.
-        # This is caused by the re-interpolation to a regular grid in that routine
-        mean_strike = mean(us$grid_points[,'strike'])/180*pi
+        # Artefacts can be caused by the re-interpolation to a regular grid in that routine
+        strike_vec = us$unit_source_cartesian[4,1:2] - us$unit_source_cartesian[1,1:2]
+        strike_vec = strike_vec/sqrt(sum(strike_vec**2))
+
         new_xy = rotate_cartesian2d(tsunami_surface_points_cartesian[,1:2], 
-            origin = c(0,0), x_axis_vector = c(sin(mean_strike), cos(mean_strike)))
+            origin = c(0,0), x_axis_vector = strike_vec)
 
         kajiura_source = kajiura_filter(cbind(new_xy, ts$zdsp),
             surface_point_ocean_depths, grid_dx = grid_dx, grid_dy=grid_dy,
@@ -82,6 +90,12 @@ make_tsunami_unit_source<-function(i,j, discrete_source, rake,
     }else{
         # In this case just repeat the tsunami source displacement
         smooth_tsunami_displacement = ts$zdsp
+    }
+
+    # Option to save memory
+    if(minimal_output){
+        us = NA
+        tsunami_surface_points_lonlat = NA
     }
 
     tsunami_unit_source = list(unit_source_interior_points = us, 
@@ -95,20 +109,37 @@ make_tsunami_unit_source<-function(i,j, discrete_source, rake,
 
 #' Convert the tsunami unit source to a z-displacement raster
 #' 
-#' @param tsunami_unit_source output of make_tsunami_unit_source or similar
+#' @param tsunami_unit_source output of make_tsunami_unit_source or similar.
 #' @param filename Name for output raster file. If NULL, no file is saved.
 #' @param saveonly logical. If FALSE, return the raster object as well as
-#' saving. If TRUE but filename is not NULL, then save the file, but return NULL
-#' @return Either a raster, or NULL. Can save the raster to a file as a side effect
+#' saving. If TRUE but filename is not NULL, then save the file, but return NULL.
+#' @param tsunami_surface_points_lonlat matrix with 2 columns containing surface points
+#' at which tsunami_unit_source$smooth_tsunami_displacement occurs. If NULL, look for
+#' this in tsunami_unit_source -- however, to save memory, the latter may be set to NA. In
+#' which case this argument must be provided.
+#' @return Either a raster, or NULL. Can save the raster to a file as a side effect.
 #' @export
 tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL, 
-    saveonly=FALSE){
+    saveonly=FALSE, tsunami_surface_points_lonlat=NULL){
 
     #library(raster)
     #library(rgdal)
 
-    xyz = cbind(tsunami_unit_source$tsunami_surface_points_lonlat, 
-        tsunami_unit_source$smooth_tsunami_displacement)
+    if(is.null(tsunami_surface_points_lonlat)){
+
+        stopifnot(length(tsunami_unit_source$tsunami_surface_points_lonlat[,1]) == 
+                  length(tsunami_unit_source$smooth_tsunami_displacement))
+
+        xyz = cbind(tsunami_unit_source$tsunami_surface_points_lonlat, 
+            tsunami_unit_source$smooth_tsunami_displacement)
+    }else{
+
+        stopifnot(length(tsunami_surface_points_lonlat[,1]) == 
+                  length(tsunami_unit_source$smooth_tsunami_displacement))
+
+        xyz = cbind(tsunami_surface_points_lonlat, 
+            tsunami_unit_source$smooth_tsunami_displacement)
+    }
 
     outrast = rasterFromXYZ(xyz, crs=CRS('+init=epsg:4326'))
 
@@ -252,14 +283,8 @@ plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami,
     ds1 = discrete_source
 
     # Make raster with 'sum of all unit source tsunami'
-    tsunami_sum = all_tsunami[[1]]$smooth_tsunami_displacement*0
-    for(i in 1:length(all_tsunami)){ 
-        tsunami_sum = tsunami_sum + all_tsunami[[i]]$smooth_tsunami_displacement
-    }
-    #library(raster)
-    tsunami_sum = rasterFromXYZ(
-        cbind(all_tsunami[[1]]$tsunami_surface_points_lonlat, tsunami_sum),
-        crs=CRS('+init=epsg:4326'))
+    tsunami_sum = all_tsunami_rast[[1]]*0
+    for(i in 1:length(all_tsunami_rast)) tsunami_sum = tsunami_sum + all_tsunami_rast[[i]]
 
     # Plot all
     pdf(paste0('Unit_source_data/', sourcename, '_plots.pdf'), width=10,
@@ -289,9 +314,15 @@ plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami,
     for(i in 1:length(all_tsunami_rast)){
         titlei = paste0('Dip index: ', all_tsunami[[i]]$i, ' ; Strike index: ',
             all_tsunami[[i]]$j)
-        plot_unit_source_interior_points_cartesian(
-            all_tsunami[[i]]$unit_source_interior_points)
-        title(main = titlei, line = -2)
+
+        if(!is.na(all_tsunami[[i]]$unit_source_interior_points)){
+            # This information might not be stored (if minimal_output=TRUE in
+            # make_tsunami_unit_source)
+            plot_unit_source_interior_points_cartesian(
+                all_tsunami[[i]]$unit_source_interior_points)
+            title(main = titlei, line = -2)
+        }
+
         plot(all_tsunami_rast[[i]], asp=1, main = titlei)
         add_discrete_source2plot()
     }

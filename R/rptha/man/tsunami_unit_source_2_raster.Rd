@@ -5,18 +5,23 @@
 \title{Convert the tsunami unit source to a z-displacement raster}
 \usage{
 tsunami_unit_source_2_raster(tsunami_unit_source, filename = NULL,
-  saveonly = FALSE)
+  saveonly = FALSE, tsunami_surface_points_lonlat = NULL)
 }
 \arguments{
-\item{tsunami_unit_source}{output of make_tsunami_unit_source or similar}
+\item{tsunami_unit_source}{output of make_tsunami_unit_source or similar.}
 
 \item{filename}{Name for output raster file. If NULL, no file is saved.}
 
 \item{saveonly}{logical. If FALSE, return the raster object as well as
-saving. If TRUE but filename is not NULL, then save the file, but return NULL}
+saving. If TRUE but filename is not NULL, then save the file, but return NULL.}
+
+\item{tsunami_surface_points_lonlat}{matrix with 2 columns containing surface points
+at which tsunami_unit_source$smooth_tsunami_displacement occurs. If NULL, look for
+this in tsunami_unit_source -- however, to save memory, the latter may be set to NA. In
+which case this argument must be provided.}
 }
 \value{
-Either a raster, or NULL. Can save the raster to a file as a side effect
+Either a raster, or NULL. Can save the raster to a file as a side effect.
 }
 \description{
 Convert the tsunami unit source to a z-displacement raster
