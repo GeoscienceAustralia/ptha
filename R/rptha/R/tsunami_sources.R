@@ -96,6 +96,7 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
     if(minimal_output){
         us = NA
         tsunami_surface_points_lonlat = NA
+        tsunami_source = NA
     }
 
     tsunami_unit_source = list(unit_source_interior_points = us, 
