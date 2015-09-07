@@ -64,7 +64,7 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
     if(kajiura_smooth){
         stopifnot(length(surface_point_ocean_depths) == length(tsunami_surface_points_lonlat[,1]))
 
-        if(is.null(kajiura_grid_spacing)){
+        if(!is.null(kajiura_grid_spacing)){
             grid_dx = kajiura_grid_spacing
             grid_dy = kajiura_grid_spacing
         }else{

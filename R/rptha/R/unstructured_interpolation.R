@@ -204,6 +204,7 @@ triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
             m = (final<valsmin)
             limit = pmax(M,m)
             final = final*(1-limit) + vals[lookupInds[,1]]*limit
+
         }else{
             # Vals is higher dimensional
 
