@@ -296,11 +296,16 @@ plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami,
     # quick function to add source info to the plot
     add_discrete_source2plot<-function(){
 
+        # Plot along-strike lines
         for(i in 1:dim(ds1$unit_source_grid)[1]){
             points(ds1$unit_source_grid[i,1,], ds1$unit_source_grid[i,2,],
                 t='l', col='brown', lty='dotted')
         }
+        # Add the shallowest one in a different colour
+        points(ds1$unit_source_grid[1,1,], ds1$unit_source_grid[1,2,],
+            t='l', col='red', lty='dashed')
 
+        # Plot down-dip lines
         for(i in 1:dim(ds1$unit_source_grid)[3]){
             points(ds1$unit_source_grid[,1:2,i], t='l', col='brown', 
                 lty='dotted')
@@ -316,7 +321,7 @@ plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami,
         titlei = paste0('Dip index: ', all_tsunami[[i]]$i, ' ; Strike index: ',
             all_tsunami[[i]]$j)
 
-        if(!is.na(all_tsunami[[i]]$unit_source_interior_points)){
+        if(!is.na(all_tsunami[[i]]$unit_source_interior_points[1])){
             # This information might not be stored (if minimal_output=TRUE in
             # make_tsunami_unit_source)
             plot_unit_source_interior_points_cartesian(

@@ -194,50 +194,61 @@ discretized_source_from_source_contours<-function(
 
     }
 
-    # Find the lengths of the dip cut lines
     chosen_line = down_dip_line_type
-    dip_cut_lengths = unlist(lapply(dip_cuts, 
-        f<-function(x) {
-            distCosine(x[[chosen_line]][1,], x[[chosen_line]][2,])
-        })
-        )
-
-    mean_dip_cut_length = mean(dip_cut_lengths)/1e+03 # km
-    number_of_mid_lines = max(round(mean_dip_cut_length / desired_subfault_width - 1), 0)
-
 
     # Find the 'depth' of points along all dip-cut lines
     strike_cuts = list()   
     fine_strike_cuts = list()
+    mid_line_with_cutpoints = list()
     ll = length(dip_cuts)
     for(i in 1:ll){
         # Split up the dip_cut line as appropriate
         mid_line = dip_cuts[[i]][[chosen_line]]
 
         # Compute the mid_line as a 3D path
-        mid_line_with_cutpoints = intersect_surface_path_with_depth_contours(
+        mid_line_with_cutpoints[[i]] = intersect_surface_path_with_depth_contours(
             mid_line, 
             source_contours, 
             n=1000, 
             contour_depth_attribute=contour_depth_attribute,
             extend_line_fraction=extend_line_fraction) 
+    }
 
+    # Find the lengths of the dip cut lines in the down-dip direction
+    dip_cut_lengths = unlist(lapply(mid_line_with_cutpoints, 
+        f<-function(x) {
+            total_distance = 0
+            for(i in 1:(length(x[,1])-1)){
+                total_distance = total_distance + 
+                    distance_down_depth(x[i,], x[i+1,], depth_in_km=contour_depth_in_km)
+            }
+            return(total_distance)
+        })
+        )
+
+    # Decide how many unit-sources there should be (determined by the number of
+    # mid-lines cutting the source)
+    mean_dip_cut_length = mean(dip_cut_lengths)/1e+03 # km
+    number_of_mid_lines = max(round(mean_dip_cut_length / desired_subfault_width - 1), 0)
+
+
+    for(i in 1:ll){
         # Now interpolate along the above, with the desired spacing between
         # points
         interpolated_midline = interpolate_3D_path(
-            mid_line_with_cutpoints, 
+            mid_line_with_cutpoints[[i]], 
             n = number_of_mid_lines + 2,
             depth_in_km = contour_depth_in_km)
 
         fine_interpolated_midline = interpolate_3D_path(
-            mid_line_with_cutpoints, 
+            mid_line_with_cutpoints[[i]], 
             n = 100,
             depth_in_km = contour_depth_in_km)
        
-        if(make_plot){ 
+        if(make_plot){
             points(interpolated_midline, col='purple', pch=19)
-            points(mid_line_with_cutpoints[,1:2], col='pink', pch=19, cex=0.2)
-            points(mid_line_with_cutpoints[,1:2], t='l', col='brown', lty = 'dashed' ) 
+            points(mid_line_with_cutpoints[[i]][,1:2], col='pink', pch=19, cex=0.2)
+            points(mid_line_with_cutpoints[[i]][,1:2], t='l', col='brown', lty = 'dashed') 
         }
         
         strike_cuts[[i]] = interpolated_midline
