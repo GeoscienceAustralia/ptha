@@ -8,7 +8,7 @@ make_tsunami_unit_source(i, j, discrete_source, rake,
   tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL,
   scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth = FALSE,
   surface_point_ocean_depths = NULL, kajiura_grid_spacing = NULL,
-  kajiura_volume_change_error_threshold = 0.1, minimal_output = FALSE,
+  kajiura_volume_change_error_threshold = 0.5, minimal_output = FALSE,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source, ...)
 }
 \arguments{
@@ -44,7 +44,7 @@ at the tsunami surface points. Used only for Kajiura filtering}
 If NULL, max(surface_point_ocean_depths)/2 is used}
 
 \item{kajiura_volume_change_error_threshold}{Value of volume_change_error_threshold
-passed to kajiura_filter}
+passed to kajiura_filter.}
 
 \item{minimal_output}{Logical. If TRUE, set the unit source and
 tsunami_surface_points_lonlat to NA in the outputs. These are memory heavy so
