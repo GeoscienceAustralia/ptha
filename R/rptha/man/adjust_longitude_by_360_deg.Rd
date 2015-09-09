@@ -2,9 +2,7 @@
 % Please edit documentation in R/geometric_util.R
 \name{adjust_longitude_by_360_deg}
 \alias{adjust_longitude_by_360_deg}
-\title{Given lon-lat point(s) p0, and reference point(s), change the notation
-of the longitude of p0 so that it differs by < 180 degrees from the
-longitude of the reference point}
+\title{Adjust longitude notation to be near a chosen value}
 \usage{
 adjust_longitude_by_360_deg(p0, reference_point)
 }
@@ -21,6 +19,8 @@ longitudes adjusted as required
 \description{
 Given lon-lat point(s) p0, and reference point(s), change the notation
 of the longitude of p0 so that it differs by < 180 degrees from the
-longitude of the reference point
+longitude of the reference point. This can be useful e.g. if you
+have a raster with longitude ranging from -180 to 180, and need to look up
+the values at points where the longitude notation might include values > 180
 }
 

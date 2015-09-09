@@ -100,3 +100,5 @@ slip_from_Mw_area_mu<-function(Mw, area, mu=3e+10){
     return(slip)
 }
 
+
+
