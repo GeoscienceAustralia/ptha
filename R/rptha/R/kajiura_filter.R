@@ -81,40 +81,37 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #' This is a 2D generalisation of the cosh filter, justified for a 'temporally short'
 #' earthquake with ocean governed by linear wave equations in constant depth water. \cr
 #' Essentially: \cr
-#' xyDef[,3] <-- convolution of [ (xyDef[,3]) and G(r/depth) ] where G is
-#' a filter function (kajiura's G) adjusted to have integral 1 over the
-#' filter window. \cr
+#' xyDef[,3] <-- convolution of the old deformation and a smoothing kernel \cr
 #' Numerically, we compute the new deformation as: \cr
 #' \deqn{ numerator_{nm} = sum_{i} sum_{j} oldDeformation_{ij} * G( \sqrt{ (x_{nm} - x_{ij})^2 + (y_{nm} - y_{ij})^2} / depth_{nm} ) }
 #' \deqn{ denominator_{nm} = sum_{i} sum_{j} G( \sqrt{ (x_{nm} - x_{ij})^2 + (y_{nm} - y_{ij})^2} / depth_{nm} ) }
-#' \deqn{ newDeformation_{nm} = numerator / denominator }
-#' where nm and ij denote pixel coordinates on a regular grid.\cr
+#' \deqn{ newDeformation_{nm} = numerator_{nm} / denominator_{nm} }
+#' where nm and ij denote pixel coordinates on a regular (cartesian) grid. So at any point
+#' nm, the new deformation is a weighted average of nearby values, with weights
+#' coming from Kajiuras function.\cr
 #' This is slightly different to approach used in Glimsdal et al (2013), but is
 #' equivalent for constant depth. With non-constant depth the underlying theory is
 #' not exactly valid, but should provide a reasonable approximation for slowly varying depths.\cr
 #' We attempt to reduce edge effects by linearly weighting original and filtered values at edges,
 #' since we cannot efficiently deal with edge effects in a better way. Therefore
 #' it is best to have unimportant features around the edge of the input points. \cr
-#' We actually allow xyDef to be unstructured, and start by gridding the results
-#' on a grid with spacing approximately grid_dx,grid_dy, 
-#' using nearest neighbour interpolation. Generally, setting these values
-#' to a fraction of the refernece depth should be ok. Something a bit
-#' smaller than the input resolution would be good.
-#' The grid spacing is not exactly grid_dx,grid_dy, because it is forced to be 
-#' an integer divisor of reference_depth. \cr
+#' We allow xyDef to be unstructured, and start by gridding the results
+#' on a grid with spacing approximately grid_dx,grid_dy.
+#' The grid spacing is not exactly grid_dx,grid_dy, because it is forced to 
+#' exactly divide the maximum input depth. \cr
 #' For deformations with discontinuities, there can be artefacts due to
 #' regridding, and it may be numerically beneficial to rotate the x,y input
 #' coordinates so that the discontinuity is aligned with one of the coordinate
 #' axes. (This is done in make_tsunami_unit_source).
-#'
 #' 
-#' @param xyDef  3 column matrix with x,y, deformation. May be unstructured.
-#' x,y must be cartesian and in m
-#' @param depth vector with the the depth at each x,y point in xyDef in m
+#' @param xyDef  3 column matrix with x,y, deformation. x and y can be unstructured.
+#' The x,y coordinate system must be cartesian and in m
+#' @param depth vector with the depth at each x,y point in xyDef (in m)
 #' @param grid_dx Numeric (m). See grid_dy
 #' @param grid_dy Numeric (m). To apply the filter, we regrid xyDef on a grid with
 #' point spacing grid_dx, grid_dy, then smooth, then transform back from the grid
-#' to our original xy points
+#' to our original xy points. This should ideally be a fraction of the depth in
+#' areas of significant deformation.
 #' @param edge_buffer_value Numeric. Outside the domain edges we assume this is
 #' the value of xyDef[,3], when the filter is applied. Without further correction, this
 #' would make edges tend towards edge_buffer_value
@@ -130,7 +127,7 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #' distinct 'groups' of points. Interpolation will be performed separately on
 #' each group. It is passed as \code{category_function} to \code{interpolation_discontinuous}
 #' @param kajiuraGmax When empirically approximating kajiuraG, we fit it from
-#' x=[0, kajiuraGmax]. Values above this are evaluated to zero
+#' x=[0, kajiuraGmax]. Values above this are evaluated to zero. Be cautious about changing this.
 #' @param volume_change_error_threshold If the difference in the positive or
 #' negative or total volume before and after filtering, relative to the original
 #' volume, is more than this, then throw an error. This might not indicate a mistake,
