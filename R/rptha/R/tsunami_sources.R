@@ -81,10 +81,13 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
         new_xy = rotate_cartesian2d(tsunami_surface_points_cartesian[,1:2], 
             origin = c(0,0), x_axis_vector = strike_vec)
 
+        # Call Kajiura, interpolating separately over (rotated) y > 0 and y <=0
+        # This can help reduce artefacts if we have a discontinuity in the deformation
+        # at y=0 (as occurs for ruptures to the trench, e.g. Goda 2015 BSSA)
         kajiura_source = kajiura_filter(cbind(new_xy, ts$zdsp),
             surface_point_ocean_depths, grid_dx = grid_dx, grid_dy=grid_dy,
             volume_change_error_threshold = kajiura_volume_change_error_threshold,
-            interpolator='linear')
+            interpolator='linear', interpolator_categories=function(xy){xy[,2]>0})
 
         smooth_tsunami_displacement = kajiura_source[,3]
     }else{

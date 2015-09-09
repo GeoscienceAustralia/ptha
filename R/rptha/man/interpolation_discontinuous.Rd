@@ -34,4 +34,19 @@ x-y coordinates.  The interpolation is performed separately on each category
 The main reason to do this is if there are discontinuities in the data, and
 you don't wish the interpolation to cross these boundaries.
 }
+\examples{
+xy = matrix(runif(200), ncol=2)
+  vals = (xy[,1] > 0.5) + (xy[,2] > 0.5)
+
+  newPts = matrix(runif(3000), ncol=2)
+  # Make 4 categories
+  category_function<-function(xy){
+      (xy[,1] > 0.5) + 10*(xy[,2] > 0.5)
+  }
+
+  newPts_vals = interpolation_discontinuous(xy, vals, newPts, category_function)
+
+  theoretical_answer = (newPts[,1] > 0.5) + (newPts[,2] > 0.5)
+  stopifnot(all(theoretical_answer == newPts_vals))
+}
 

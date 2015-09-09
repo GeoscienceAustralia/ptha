@@ -7,6 +7,7 @@
 kajiura_filter(xyDef, depth, grid_dx = max(depth)/2, grid_dy = max(depth)/2,
   edge_buffer_value = 0, edge_effect_correction_scale = 1.5,
   kajiuraGmax = 9, interpolator = "linear",
+  interpolator_categories = function(xy) {     xy[, 1] * 0 },
   volume_change_error_threshold = 0.02, verbose = FALSE)
 }
 \arguments{
@@ -36,6 +37,11 @@ x=[0, kajiuraGmax]. Values above this are evaluated to zero}
 
 \item{interpolator}{'linear' or 'nearest'. Linear is better, but may be slow for
 large point clouds. Don't use nearest unless grid_x, grid_y are 'small enough'}
+
+\item{interpolator_categories}{Function of xy (matrix of coordinates)
+returning a value for each point, with distinct values corresponding to
+distinct 'groups' of points. Interpolation will be performed separately on
+each group. It is passed as \code{category_function} to \code{interpolation_discontinuous}}
 
 \item{volume_change_error_threshold}{If the difference in the positive or
 negative or total volume before and after filtering, relative to the original

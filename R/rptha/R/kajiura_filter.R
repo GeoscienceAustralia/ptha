@@ -117,6 +117,10 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #' OUTPUT = WT*(ORIGINAL OUTPUT) + (1-WT)*FILTERED OUTPUT \cr
 #' @param interpolator 'linear' or 'nearest'. Linear is better, but may be slow for
 #' large point clouds. Don't use nearest unless grid_x, grid_y are 'small enough'
+#' @param interpolator_categories Function of xy (matrix of coordinates)
+#' returning a value for each point, with distinct values corresponding to
+#' distinct 'groups' of points. Interpolation will be performed separately on
+#' each group. It is passed as \code{category_function} to \code{interpolation_discontinuous}
 #' @param kajiuraGmax When empirically approximating kajiuraG, we fit it from
 #' x=[0, kajiuraGmax]. Values above this are evaluated to zero
 #' @param volume_change_error_threshold If the difference in the positive or
@@ -133,6 +137,7 @@ kajiura_filter<-function(xyDef,
                          edge_effect_correction_scale=1.5, 
                          kajiuraGmax=9,
                          interpolator='linear',
+                         interpolator_categories = function(xy){xy[,1]*0},
                          volume_change_error_threshold=0.02,
                          verbose=FALSE){
 
@@ -161,20 +166,35 @@ kajiura_filter<-function(xyDef,
     if(verbose) print('Unstructured interpolation number 1...')
     if(interpolator=='nearest'){
         # Nearest neighbour interpolation
-        interp1 = nearest_neighbour_interpolation(xyDef[,1:2], 
-            cbind(xyDef[,3], depth), newPts)
-        newVals = matrix(interp1[,1], ncol=lnx,byrow=T)
-        newDepth = matrix(interp1[,2], ncol=lnx,byrow=T)
-    }else if(interpolator=='linear'){
-        # Cheap triangulation/3-point-knn type interpolation
-        interp1 = triangular_interpolation(xyDef[,1:2], cbind(xyDef[,3], depth),
-            newPts)
-        # Remove NA values
-        interp1[is.na(interp1[,1]), 1] = edge_buffer_value
-        interp1[is.na(interp1[,2]), 2] = 1.e-12 # Set depth to a small number
+        #interp1 = nearest_neighbour_interpolation(xyDef[,1:2], 
+        #    cbind(xyDef[,3], depth), newPts)
+        interp1 = interpolation_discontinuous(xyDef[,1:2],
+            cbind(xyDef[,3], depth), newPts, 
+            category_function=interpolator_categories,
+            interpolator=nearest_neighbour_interpolation)
 
         newVals = matrix(interp1[,1], ncol=lnx,byrow=T)
         newDepth = matrix(interp1[,2], ncol=lnx,byrow=T)
+
+    }else if(interpolator=='linear'){
+        # Cheap triangulation/3-point-knn type interpolation
+        #interp1 = triangular_interpolation(xyDef[,1:2], cbind(xyDef[,3], depth),
+        #    newPts)
+        interp1 = interpolation_discontinuous(xyDef[,1:2], 
+            cbind(xyDef[,3], depth), newPts, 
+            category_function=interpolator_categories,
+            interpolator=triangular_interpolation, 
+            useNearestNeighbour=TRUE)
+
+        ## Remove NA values if they exist (e.g. from points outside of a
+        ## delaunay triangulation, if that type of interpolation is applied).
+        ## (no longer needed)
+        # interp1[is.na(interp1[,1]), 1] = edge_buffer_value
+        # interp1[is.na(interp1[,2]), 2] = 1.e-12 # Set depth to a small number
+
+        newVals = matrix(interp1[,1], ncol=lnx, byrow=T)
+        newDepth = matrix(interp1[,2], ncol=lnx, byrow=T)
+
     }else{
         stop('interpolator not recognized')
     }
