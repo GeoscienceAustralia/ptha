@@ -3,7 +3,7 @@
 \name{adjust_longitude_by_360_deg}
 \alias{adjust_longitude_by_360_deg}
 \title{Given lon-lat point(s) p0, and reference point(s), change the notation
-of the longitude of p0 so that it differs by < 360 degrees from the
+of the longitude of p0 so that it differs by < 180 degrees from the
 longitude of the reference point}
 \usage{
 adjust_longitude_by_360_deg(p0, reference_point)
@@ -20,7 +20,7 @@ longitudes adjusted as required
 }
 \description{
 Given lon-lat point(s) p0, and reference point(s), change the notation
-of the longitude of p0 so that it differs by < 360 degrees from the
+of the longitude of p0 so that it differs by < 180 degrees from the
 longitude of the reference point
 }
 

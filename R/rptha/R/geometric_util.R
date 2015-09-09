@@ -197,9 +197,13 @@ intersect_surface_path_with_depth_contours<-function(surface_path, depth_contour
 }
 
 
+#' Adjust longitude notation to be near a chosen value
+#'
 #' Given lon-lat point(s) p0, and reference point(s), change the notation
 #' of the longitude of p0 so that it differs by < 180 degrees from the 
-#' longitude of the reference point
+#' longitude of the reference point. This can be useful e.g. if you
+#' have a raster with longitude ranging from -180 to 180, and need to look up 
+#' the values at points where the longitude notation might include values > 180
 #'
 #' @param p0 numeric matrix with columns lon/lat, or a vector with a single
 #' point
@@ -209,6 +213,10 @@ intersect_surface_path_with_depth_contours<-function(surface_path, depth_contour
 #'
 #'@export
 adjust_longitude_by_360_deg<-function(p0, reference_point){
+
+    if(length(p0) != length(reference_point)){
+        stop('p0 and reference_point must have the same shape')
+    }
 
     if(is.null(dim(p0))){
         dim(p0) = c(1,2)
