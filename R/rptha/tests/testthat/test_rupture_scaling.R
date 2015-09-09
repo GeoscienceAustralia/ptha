@@ -23,7 +23,7 @@ test_that('test_rupture_scaling', {
 
     expect_that(all(output_simple == output_complex$values), is_true())
 
-    expect_that(all(output_complex$log10_sigmas = c(0.304, 0.173, 0.18)), is_true()) 
+    expect_that(all(output_complex$log10_sigmas == c(0.304, 0.173, 0.18)), is_true()) 
 
     expect_that(all(round(output_simple,0) == c(123595, 189, 614)), is_true())
 

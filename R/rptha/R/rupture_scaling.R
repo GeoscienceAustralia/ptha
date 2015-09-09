@@ -5,9 +5,14 @@
 #' final constant are sometimes used.
 #'
 #' @param M0 Seismic Moment (units of Nm) if inverse = FALSE, else Moment Magnitude
-#' @param inverse. If FALSE, return Mw given M0. If TRUE, return M0 given Mw
+#' @param inverse logical. If FALSE, return Mw given M0. If TRUE, return M0 given Mw
 #' @return Mw
 #' @export
+#' @examples
+#' Mw = M0_2_Mw(4e+17)
+#' M0 = M0_2_Mw(Mw, inverse=TRUE)
+#' stopifnot(M0 == 4e+17)
+#'
 M0_2_Mw<-function(M0, inverse=FALSE){
 
     if(inverse){
@@ -39,6 +44,9 @@ M0_2_Mw<-function(M0, inverse=FALSE){
 #' log10-standard-deviations
 #' @return A numeric vector
 #' @export
+#' @examples
+#' rupture_statistics1 = Mw_2_rupture_size(9.0)
+#' rupture_statistics2 = Mw_2_rupture_size(9.0, detailed=TRUE)
 Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE){
 
     if(relation == 'Strasser'){
@@ -78,6 +86,9 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE){
 #' @param mu Shear Modulus (Pascals)
 #' @return slip in m
 #' @export
+#' @examples
+#' s0 = slip_from_Mw_area_mu(9.0, 100e+03) # Should be close to 10m
+#'
 slip_from_Mw_area_mu<-function(Mw, area, mu=3e+10){
 
     M0 = M0_2_Mw(Mw, inverse=TRUE)
