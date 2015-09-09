@@ -225,7 +225,7 @@ kajiura_filter<-function(xyDef,
     # The matrix has length(filterYs) rows of zeros at the top an bottom, and 
     #    length(filterXs) columns of zeros at the left and right
     filVals = matrix(edge_buffer_value, ncol=lnx+2*lfx, nrow=lny+2*lfy)
-    filVals[lfy+1:lny, lfx+1:lnx] = newVals
+    filVals[lfy + 1:lny, lfx + 1:lnx] = newVals
 
     old_newVals = newVals
     # Now set newVals to zero -- it will hold the filtered results
@@ -278,12 +278,23 @@ kajiura_filter<-function(xyDef,
     if(verbose) print('Unstructured interpolation number 2...')
     new_xyDef = xyDef
     if(interpolator == 'nearest'){
-        interp2 = nearest_neighbour_interpolation(newPts, c(t(newVals)), xyDef[,1:2])
+        # At this stage, smoothing should have made the deformation continuous
+        interp2 = nearest_neighbour_interpolation(newPts, c(t(newVals)), 
+            xyDef[,1:2])
+
+        #interp2 = interpolation_discontinuous(newPts, c(t(newVals)), 
+        #    xyDef[,1:2], category_function=interpolator_categories,
+        #    interpolator=nearest_neighbour_interpolation)
         new_xyDef[,3] = interp2 
 
     }else if(interpolator=='linear'){
+        # At this stage, smoothing should have made the deformation continuous
         interp2 = triangular_interpolation(newPts, c(t(newVals)), xyDef[,1:2])
-        interp2[is.na(interp2)] = edge_buffer_value
+
+        #interp2 = interpolation_discontinuous(newPts, c(t(newVals)), 
+        #    xyDef[,1:2], category_function=interpolator_categories,
+        #    interpolator=triangular_interpolation, useNearestNeighbour=TRUE)
+        #interp2[is.na(interp2)] = edge_buffer_value
         new_xyDef[,3] = interp2 
 
     }
