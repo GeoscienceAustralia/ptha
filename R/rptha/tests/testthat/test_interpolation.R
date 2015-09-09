@@ -51,5 +51,36 @@ test_that('test_interpolation', {
 
     expect_that(all(out==0.5*(vals[1]+vals[2])), is_true())
 
+
+    # Test  discontinuous interpolation
+    for(interpolator in list(triangular_interpolation, nearest_neighbour_interpolation)){
+
+        xy = matrix(runif(200), ncol=2)
+        vals = (xy[,1] > 0.5) + (xy[,2] > 0.5)
+
+        newPts = matrix(runif(3000), ncol=2)
+        # Make 4 categories
+        category_function<-function(xy){
+            (xy[,1] > 0.5) + 10*(xy[,2] > 0.5)
+        }
+
+        newPts_vals = interpolation_discontinuous(xy, vals, newPts, category_function, 
+            interpolator=interpolator)
+
+        theoretical_answer = (newPts[,1] > 0.5) + (newPts[,2] > 0.5)
+
+        expect_that(all(newPts_vals == theoretical_answer), is_true())
+
+
+        ##  Test with a matrix of input arguments
+        vals = cbind(vals, 1-vals)
+        newPts_vals = interpolation_discontinuous(xy, vals, newPts, category_function, 
+            interpolator=interpolator)
+
+        theoretical_answer = cbind(theoretical_answer, 1 - theoretical_answer)
+        expect_that(all(newPts_vals == theoretical_answer), is_true())
+
+    }
+
 })
 

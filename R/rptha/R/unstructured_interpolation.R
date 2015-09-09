@@ -229,4 +229,77 @@ triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
     return(final)
 }
 
+#' Discontinuous interpolation function
+#'
+#' For typical interpolation, we are given some xy points and an associated
+#' matrix of values, and want to interpolate corresponding values at new points.
+#' This function is similar except we also provide a 'category function' which
+#' returns a unique value for each 'category' or 'group' of points given their
+#' x-y coordinates.  The interpolation is performed separately on each category
+#' The main reason to do this is if there are discontinuities in the data, and 
+#' you don't wish the interpolation to cross these boundaries.
+#'
+#' @param xy Matrix with x-y locations with known values, from which we wish interpolate
+#' @param vals Matrix with the same number of rows as xy, and 1 or more columns, giving the values at xy
+#' @param newPts Matrix with x-y locations where we would like to compute interpolated values
+#' @param category_function Function taking xy or newPts matrix as an input, which returns a value
+#' for each point. Each unique function value is associated with a group
+#' @param interpolator Function taking xy, vals, newPts, ..., which is applied to each group of points
+#' @param ... Further arguments to interpolator
+#' @return A matrix with the same number of rows as newPts, and the same number of columns as vals, giving
+#' interpolated values at newPts
+#' @export
+#' @examples
+#'   xy = matrix(runif(200), ncol=2)
+#'   vals = (xy[,1] > 0.5) + (xy[,2] > 0.5)
+#'
+#'   newPts = matrix(runif(3000), ncol=2)
+#'   # Make 4 categories
+#'   category_function<-function(xy){
+#'       (xy[,1] > 0.5) + 10*(xy[,2] > 0.5)
+#'   }
+#'
+#'   newPts_vals = interpolation_discontinuous(xy, vals, newPts, category_function)
+#'
+#'   theoretical_answer = (newPts[,1] > 0.5) + (newPts[,2] > 0.5)
+#'   stopifnot(all(theoretical_answer == newPts_vals))
+#'
+interpolation_discontinuous<-function(xy, vals, newPts, 
+    category_function = function(xy){ xy[,1]*0 + 1}, 
+    interpolator=triangular_interpolation,
+    ...){
+
+    xy_categories = category_function(xy)
+
+    newPts_categories = category_function(newPts)
+
+    unique_xy_categories = unique(xy_categories)
+    unique_newPts_categories = unique(newPts_categories)
+
+    if(!all(unique_newPts_categories %in% unique_xy_categories)){
+        print('unique newPts categories:')
+        print(unique_newPts_categories) 
+        print('unique xy categories:')
+        print(unique_xy_categories) 
+
+        stop('There are categories associated with newPts do not occur in the xy points')
+    }
+
+    if(is.null(dim(vals))){
+        dim(vals) = c(length(vals), 1)
+    }
+
+    newPts_vals = matrix(NA, nrow=nrow(newPts), ncol=ncol(vals))
+
+    for(nc in unique_newPts_categories){
+        ni = which(newPts_categories == nc)
+        xyi = which(xy_categories == nc)
+
+        newPts_vals[ni,] = interpolator(xy[xyi,], 
+            vals[xyi,], newPts[ni,], ...)
+    }
+
+    return(newPts_vals)
+}
+
 

@@ -158,7 +158,6 @@ kajiura_filter<-function(xyDef,
     # Compute nearest-neighbour interpolation
     newPts = as.matrix(expand.grid(newX,newY))
 
-    # Create search tree and get values on new grid
     if(verbose) print('Unstructured interpolation number 1...')
     if(interpolator=='nearest'){
         # Nearest neighbour interpolation
@@ -167,7 +166,7 @@ kajiura_filter<-function(xyDef,
         newVals = matrix(interp1[,1], ncol=lnx,byrow=T)
         newDepth = matrix(interp1[,2], ncol=lnx,byrow=T)
     }else if(interpolator=='linear'){
-        # Delaunay triangulation interpolation
+        # Cheap triangulation/3-point-knn type interpolation
         interp1 = triangular_interpolation(xyDef[,1:2], cbind(xyDef[,3], depth),
             newPts)
         # Remove NA values
