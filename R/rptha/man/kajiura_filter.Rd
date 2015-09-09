@@ -47,7 +47,8 @@ each group. It is passed as \code{category_function} to \code{interpolation_disc
 \item{volume_change_error_threshold}{If the difference in the positive or
 negative or total volume before and after filtering, relative to the original
 volume, is more than this, then throw an error. This might not indicate a mistake,
-but it does indicate a large change in the deformation, which is worth investigating.}
+but it does indicate a large change in the deformation, which is worth investigating.
+Possible causes include strong depth variation, or regridding with coarse grid_dx, grid_dy.}
 
 \item{verbose}{Print lots of information about the fit}
 }
@@ -55,12 +56,13 @@ but it does indicate a large change in the deformation, which is worth investiga
 replacement version of xyDef, with smoothing applied to xyDef[,3]
 }
 \description{
-Implement the filter similar to that of Glimsdal et al (2013), based on Kajiura (1963). \cr
+Implement the filter similar to that of Glimsdal et al (2013, Eqns 10-11), based on Kajiura (1963). \cr
 \deqn{ newDeformation(x,y) = depth(x,y)^{-2} \int \int \big{[}oldDeformation(x',y')G( \sqrt{(x'-x)^2+(y'-y)^2} / depth(x, y) )\big{]} dx' dy'}
 This is a 2D generalisation of the cosh filter, justified for a 'temporally short'
-earthquake with ocean governed by linear wave equations in constant depth water. \cr
+earthquake with ocean governed by linear wave equations in constant depth
+water. The definition of G is explained further in the help for \code{kajiura_g}\cr
 Essentially: \cr
-xyDef[,3] <-- convolution of the old deformation and a smoothing kernel \cr
+xyDef[,3] <-- convolution of the "old deformation" and "a smoothing kernel which integrates to 1"\cr
 Numerically, we compute the new deformation as: \cr
 \deqn{ numerator_{nm} = sum_{i} sum_{j} oldDeformation_{ij} * G( \sqrt{ (x_{nm} - x_{ij})^2 + (y_{nm} - y_{ij})^2} / depth_{nm} ) }
 \deqn{ denominator_{nm} = sum_{i} sum_{j} G( \sqrt{ (x_{nm} - x_{ij})^2 + (y_{nm} - y_{ij})^2} / depth_{nm} ) }
@@ -68,7 +70,7 @@ Numerically, we compute the new deformation as: \cr
 where nm and ij denote pixel coordinates on a regular (cartesian) grid. So at any point
 nm, the new deformation is a weighted average of nearby values, with weights
 coming from Kajiuras function.\cr
-This is slightly different to approach used in Glimsdal et al (2013), but is
+This is slightly different to the approach used in Glimsdal et al (2013), but is
 equivalent for constant depth. With non-constant depth the underlying theory is
 not exactly valid, but should provide a reasonable approximation for slowly varying depths.\cr
 We attempt to reduce edge effects by linearly weighting original and filtered values at edges,

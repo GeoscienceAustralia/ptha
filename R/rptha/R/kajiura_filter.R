@@ -323,15 +323,15 @@ kajiura_filter<-function(xyDef,
     if(verbose){
         print(paste('Original re-gridded volume: ', oldNewvalsSum))
         print(paste('New gridded volume: ', newvalsSum))
-        print(paste('Total volume relative error: ',r3))
+        print(paste('Total volume relative change: ',r3))
         print(' ')
         print(paste('Original positive re-gridded volume: ', old_newValsPosSum))
         print(paste('New positive gridded volume: ', newValsPosSum))
-        print(paste('Positive volume relative error: ', r1))
+        print(paste('Positive volume relative change: ', r1))
         print(' ')
         print(paste('Original negative re-gridded volume: ', old_newValsNegSum))
         print(paste('New negative gridded volume: ', newValsNegSum))
-        print(paste('Negative volume relative error: ', r2))
+        print(paste('Negative volume relative change: ', r2))
         print(' ')
     }
 
@@ -339,7 +339,7 @@ kajiura_filter<-function(xyDef,
     if(is.finite(r3)){
         if(abs(r3) > volume_change_error_threshold){
             print(paste('r3 = ', r3))
-            stop('Volume change error threshold exceeded')
+            stop('Volume change threshold exceeded')
         }
     }else{
         # Look for other measures of problems
@@ -348,14 +348,14 @@ kajiura_filter<-function(xyDef,
         if(is.finite(r1)){
             if(abs(r1) > volume_change_error_threshold){
                 print(paste('r1 = ', r1))
-                stop('(Positive vol) Volume change error threshold exceeded')
+                stop('(Positive vol) Volume change threshold exceeded')
 
             }
         }
         if(is.finite(r2)){
             if(abs(r2) > volume_change_error_threshold){
                 print(paste('r2 = ', r1))
-                stop('(Negative vol) Volume change error threshold exceeded')
+                stop('(Negative vol) Volume change threshold exceeded')
 
             }
         }
