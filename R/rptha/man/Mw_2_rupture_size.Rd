@@ -23,4 +23,8 @@ A numeric vector
 \description{
 Units are km and km^2
 }
+\examples{
+rupture_statistics1 = Mw_2_rupture_size(9.0)
+rupture_statistics2 = Mw_2_rupture_size(9.0, detailed=TRUE)
+}
 

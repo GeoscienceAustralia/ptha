@@ -198,7 +198,7 @@ intersect_surface_path_with_depth_contours<-function(surface_path, depth_contour
 
 
 #' Given lon-lat point(s) p0, and reference point(s), change the notation
-#' of the longitude of p0 so that it differs by < 360 degrees from the 
+#' of the longitude of p0 so that it differs by < 180 degrees from the 
 #' longitude of the reference point
 #'
 #' @param p0 numeric matrix with columns lon/lat, or a vector with a single

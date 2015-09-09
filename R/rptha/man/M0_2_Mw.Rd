@@ -9,7 +9,7 @@ M0_2_Mw(M0, inverse = FALSE)
 \arguments{
 \item{M0}{Seismic Moment (units of Nm) if inverse = FALSE, else Moment Magnitude}
 
-\item{inverse.}{If FALSE, return Mw given M0. If TRUE, return M0 given Mw}
+\item{inverse}{logical. If FALSE, return Mw given M0. If TRUE, return M0 given Mw}
 }
 \value{
 Mw
@@ -18,5 +18,10 @@ Mw
 We use the equation Mw = 2/3 * (log10(M0) - 9.05), see Hanks and Kanamori
 (1977) and Bird and Kagan (2004).  Note that slightly different values of the
 final constant are sometimes used.
+}
+\examples{
+Mw = M0_2_Mw(4e+17)
+M0 = M0_2_Mw(Mw, inverse=TRUE)
+stopifnot(isTRUE(all.equal(M0, 4e+17)))
 }
 

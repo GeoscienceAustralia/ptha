@@ -11,7 +11,7 @@
 #' @examples
 #' Mw = M0_2_Mw(4e+17)
 #' M0 = M0_2_Mw(Mw, inverse=TRUE)
-#' stopifnot(M0 == 4e+17)
+#' stopifnot(isTRUE(all.equal(M0, 4e+17)))
 #'
 M0_2_Mw<-function(M0, inverse=FALSE){
 

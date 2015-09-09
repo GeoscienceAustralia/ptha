@@ -9,6 +9,7 @@ test_that("test_adjust_longitude_by_360_deg", {
    
     p1 = adjust_longitude_by_360_deg(p0, refpt)
 
+    expect_that(abs(p1[1] - p0[1]) < 180)
     expect_that(all(p1 == p0 - c(360, 0)), is_true())
    
     # Test 2 -- good change 
@@ -17,6 +18,7 @@ test_that("test_adjust_longitude_by_360_deg", {
     
     p1 = adjust_longitude_by_360_deg(p0, refpt)
   
+    expect_that(abs(p1[1] - p0[1]) < 180)
     expect_that(all(p1 == p0 + c(360, 0)), is_true())
 
     # Test 3 -- good change 
@@ -25,6 +27,7 @@ test_that("test_adjust_longitude_by_360_deg", {
     
     p1 = adjust_longitude_by_360_deg(p0, refpt)
 
+    expect_that(abs(p1[1] - p0[1]) < 180)
     expect_that(all(!is.null(p1)), is_true())
 
     expect_that(all(p1 == p0 - c(360, 0)), is_true())
@@ -35,6 +38,7 @@ test_that("test_adjust_longitude_by_360_deg", {
     
     p11 = adjust_longitude_by_360_deg(p0, refpt)
 
+    expect_that(abs(p11[1] - p0[1]) < 180)
     expect_that(all(!is.null(p11)), is_true())
 
     expect_that(all(p11 == p1), is_true())
@@ -45,6 +49,7 @@ test_that("test_adjust_longitude_by_360_deg", {
     
     p11 = adjust_longitude_by_360_deg(p0, refpt)
 
+    expect_that(abs(p11[1] - p0[1]) < 180)
     expect_that(all(!is.null(p11)), is_true())
 
     expect_that(all(p11 == p1), is_true())
@@ -55,6 +60,7 @@ test_that("test_adjust_longitude_by_360_deg", {
     
     p11 = adjust_longitude_by_360_deg(p0, refpt)
 
+    expect_that(abs(p11[1] - p0[1]) < 180)
     expect_that(all(!is.null(p11)), is_true())
     expect_that(all(p11 == p0), is_true())
 #}
