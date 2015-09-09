@@ -45,7 +45,8 @@ each group. It is passed as \code{category_function} to \code{interpolation_disc
 
 \item{volume_change_error_threshold}{If the difference in the positive or
 negative or total volume before and after filtering, relative to the original
-volume, is more than this, then throw an error.}
+volume, is more than this, then throw an error. This might not indicate a mistake,
+but it does indicate a large change in the deformation, which is worth investigating.}
 
 \item{verbose}{Print lots of information about the fit}
 }

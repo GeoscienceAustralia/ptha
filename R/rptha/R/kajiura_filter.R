@@ -77,13 +77,21 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #' Implementation of a Kajiura filter 
 #'
 #' Implement the filter similar to that of Glimsdal et al (2013), based on Kajiura (1963). \cr
-#' \deqn{ newDeformation(x,y) = \int \int \big{[}oldDeformation(x',y')G( \sqrt{(x'-x)^2+(y'-y)^2} / depth(x, y) )\big{]} dx' dy'}
+#' \deqn{ newDeformation(x,y) = depth(x,y)^{-2} \int \int \big{[}oldDeformation(x',y')G( \sqrt{(x'-x)^2+(y'-y)^2} / depth(x, y) )\big{]} dx' dy'}
 #' This is a 2D generalisation of the cosh filter, justified for a 'temporally short'
 #' earthquake with ocean governed by linear wave equations in constant depth water. \cr
 #' Essentially: \cr
 #' xyDef[,3] <-- convolution of [ (xyDef[,3]) and G(r/depth) ] where G is
 #' a filter function (kajiura's G) adjusted to have integral 1 over the
 #' filter window. \cr
+#' Numerically, we compute the new deformation as: \cr
+#' \deqn{ numerator_{nm} = sum_{i} sum_{j} oldDeformation_{ij} * G( \sqrt{ (x_{nm} - x_{ij})^2 + (y_{nm} - y_{ij})^2} / depth_{nm} ) }
+#' \deqn{ denominator_{nm} = sum_{i} sum_{j} G( \sqrt{ (x_{nm} - x_{ij})^2 + (y_{nm} - y_{ij})^2} / depth_{nm} ) }
+#' \deqn{ newDeformation_{nm} = numerator / denominator }
+#' where nm and ij denote pixel coordinates on a regular grid.\cr
+#' This is slightly different to approach used in Glimsdal et al (2013), but is
+#' equivalent for constant depth. With non-constant depth the underlying theory is
+#' not exactly valid, but should provide a reasonable approximation for slowly varying depths.\cr
 #' We attempt to reduce edge effects by linearly weighting original and filtered values at edges,
 #' since we cannot efficiently deal with edge effects in a better way. Therefore
 #' it is best to have unimportant features around the edge of the input points. \cr
@@ -125,7 +133,8 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #' x=[0, kajiuraGmax]. Values above this are evaluated to zero
 #' @param volume_change_error_threshold If the difference in the positive or
 #' negative or total volume before and after filtering, relative to the original
-#' volume, is more than this, then throw an error.
+#' volume, is more than this, then throw an error. This might not indicate a mistake,
+#' but it does indicate a large change in the deformation, which is worth investigating.
 #' @param verbose Print lots of information about the fit
 #' @return replacement version of xyDef, with smoothing applied to xyDef[,3]
 #' @export
@@ -241,18 +250,19 @@ kajiura_filter<-function(xyDef,
         if(verbose) print(paste(i, ' of', lfx ))
         for(j in 1:lfy){
             # Compute r/depth for the j,i cell of the filter,  avoid division by zero
-            #r_on_d = pmin( filterXYr[j,i]*depth_inv, kajiuraGmax)
             r_on_d = filterXYr[j,i]*depth_inv
             r_on_d = r_on_d*(r_on_d < kajiuraGmax) + kajiuraGmax*(r_on_d >= kajiuraGmax)
 
             # Put into a matrix which aligns with newVals
-            G_j_i = matrix(kgE(r_on_d), ncol=lnx)
+            #G_j_i = matrix(kgE(r_on_d), ncol=lnx)
+            G_j_i = kgE(r_on_d) 
+            dim(G_j_i) = c(lny, lnx)
 
             # Numerator of the weighted average
-            newVals = newVals+filVals[(j+(lfy-1)/2)+1:lny,(i+(lfx-1)/2)+1:lnx]*G_j_i
+            newVals = newVals + filVals[(j+(lfy-1)/2) + 1:lny,(i+(lfx-1)/2) + 1:lnx] * G_j_i
 
             # Denominator of the weighted average. 
-            GtermsSum = GtermsSum+G_j_i
+            GtermsSum = GtermsSum + G_j_i
         }
     }
 

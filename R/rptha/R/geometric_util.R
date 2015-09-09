@@ -214,14 +214,18 @@ intersect_surface_path_with_depth_contours<-function(surface_path, depth_contour
 #'@export
 adjust_longitude_by_360_deg<-function(p0, reference_point){
 
-    if(length(p0) != length(reference_point)){
-        stop('p0 and reference_point must have the same shape')
-    }
-
     if(is.null(dim(p0))){
+        if(length(p0) != length(reference_point)){
+            stop('p0 and reference_point must have the same shape')
+        }
         dim(p0) = c(1,2)
         dim(reference_point) = c(1,2)
     }
+    
+    if(length(p0[,1]) != length(reference_point[,1])){
+        stop('p0 and reference_point must have the same shape')
+    }
+
 
     stopifnot(all(dim(p0) == dim(reference_point)))
 
