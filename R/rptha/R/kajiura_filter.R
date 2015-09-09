@@ -246,7 +246,7 @@ kajiura_filter<-function(xyDef,
     # computing the weighted average
     depth_inv = 1.0/pmax(newDepth, 1.0e-20)
     for(i in 1:lfx){
-        if(verbose) print(paste(i, ' of', lfx ))
+        if(verbose) print(paste0(i, ' of ', lfx ))
         for(j in 1:lfy){
             # Compute r/depth for the j,i cell of the filter,  avoid division by zero
             r_on_d = filterXYr[j,i]*depth_inv
