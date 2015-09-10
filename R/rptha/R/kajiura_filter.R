@@ -323,7 +323,7 @@ kajiura_filter<-function(xyDef,
     if(verbose){
         print(paste('Original re-gridded volume: ', oldNewvalsSum))
         print(paste('New gridded volume: ', newvalsSum))
-        print(paste('Total volume relative change: ',r3))
+        print(paste('Total volume relative change: ', r3))
         print(' ')
         print(paste('Original positive re-gridded volume: ', old_newValsPosSum))
         print(paste('New positive gridded volume: ', newValsPosSum))
