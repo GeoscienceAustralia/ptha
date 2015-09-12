@@ -104,6 +104,7 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
         tsunami_surface_points_lonlat = NA
         ts = NA
     }
+
     tsunami_unit_source = list(unit_source_interior_points = us, 
         smooth_tsunami_displacement = smooth_tsunami_displacement,
         tsunami_source = ts, i=i, j = j, 
@@ -112,7 +113,8 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
 
     # Force garbage collection since in parallel, this might not detect
     # high overall memory usage
-    gc() 
+    rm(us, smooth_tsunami_displacement, ts, tsunami_surface_points_lonlat, rake)
+    gc()
 
     return(tsunami_unit_source)
 }
@@ -152,6 +154,9 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
     }
 
     outrast = rasterFromXYZ(xyz, crs=CRS('+init=epsg:4326'))
+
+    # Free up memory
+    rm(xyz); gc()
 
     if(!is.null(filename)){
         writeRaster(outrast, filename, driver='GTiff', 
