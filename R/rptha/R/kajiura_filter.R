@@ -184,6 +184,8 @@ kajiura_filter<-function(xyDef,
         newVals = matrix(interp1[,1], ncol=lnx,byrow=T)
         newDepth = matrix(interp1[,2], ncol=lnx,byrow=T)
 
+        rm(interp1)
+
     }else if(interpolator=='linear'){
         # Cheap triangulation/3-point-knn type interpolation
         #interp1 = triangular_interpolation(xyDef[,1:2], cbind(xyDef[,3], depth),
@@ -202,6 +204,8 @@ kajiura_filter<-function(xyDef,
 
         newVals = matrix(interp1[,1], ncol=lnx, byrow=T)
         newDepth = matrix(interp1[,2], ncol=lnx, byrow=T)
+        
+        rm(interp1)
 
     }else{
         stop('interpolator not recognized')
@@ -225,6 +229,7 @@ kajiura_filter<-function(xyDef,
     filterXY = expand.grid(filterXs,filterYs)
     filterXYr = matrix( (filterXY[,1]^2+filterXY[,2]^2)**0.5,
         ncol=lfx, byrow=TRUE)
+    rm(filterXY)
 
     if(verbose) print('Applying filter ...') 
 
@@ -249,12 +254,12 @@ kajiura_filter<-function(xyDef,
         if(verbose) print(paste0(i, ' of ', lfx ))
         for(j in 1:lfy){
             # Compute r/depth for the j,i cell of the filter,  avoid division by zero
-            r_on_d = filterXYr[j,i]*depth_inv
-            r_on_d = r_on_d*(r_on_d < kajiuraGmax) + kajiuraGmax*(r_on_d >= kajiuraGmax)
+            # Store it as G_j_i to reduce memory usage
+            G_j_i = filterXYr[j,i]*depth_inv
+            G_j_i = G_j_i*(G_j_i < kajiuraGmax) + kajiuraGmax*(G_j_i >= kajiuraGmax)
 
             # Put into a matrix which aligns with newVals
-            #G_j_i = matrix(kgE(r_on_d), ncol=lnx)
-            G_j_i = kgE(r_on_d) 
+            G_j_i = kgE(G_j_i) 
             dim(G_j_i) = c(lny, lnx)
 
             # Numerator of the weighted average
@@ -268,6 +273,10 @@ kajiura_filter<-function(xyDef,
     # Compute final weighted average 
     newVals = newVals/(GtermsSum)
 
+    rm(G_j_i)
+    rm(GtermsSum)
+    rm(depth_inv)
+
     if(edge_effect_correction_scale > 0.){
         if(verbose) print('Reducing edge effects ...')
         # Reduce edge-effects with a weighted average of the old values there
@@ -280,6 +289,10 @@ kajiura_filter<-function(xyDef,
         edgeF = pmax(xEdge,yEdge)
         # Take weighted average of the original values and the new ones
         newVals = edgeF*old_newVals + (1-edgeF)*newVals
+
+        rm(xEdge)
+        rm(yEdge)
+        rm(edgeF)
     }
    
 
@@ -296,7 +309,9 @@ kajiura_filter<-function(xyDef,
         #    interpolator=nearest_neighbour_interpolation)
         new_xyDef[,3] = interp2 
 
-    }else if(interpolator=='linear'){
+        rm(interp2)
+
+    }else if(interpolator == 'linear'){
         # At this stage, smoothing should have made the deformation continuous
         interp2 = triangular_interpolation(newPts, c(t(newVals)), xyDef[,1:2])
 
@@ -306,6 +321,7 @@ kajiura_filter<-function(xyDef,
         #interp2[is.na(interp2)] = edge_buffer_value
         new_xyDef[,3] = interp2 
 
+        rm(interp2)
     }
 
     newValsPosSum = sum(newVals*(newVals>0))

@@ -4,20 +4,22 @@
 \alias{M0_2_Mw}
 \title{Compute Moment Magnitude Mw from Seismic Moment M0, and vice-versa}
 \usage{
-M0_2_Mw(M0, inverse = FALSE)
+M0_2_Mw(M0, inverse = FALSE, constant = 9.05)
 }
 \arguments{
 \item{M0}{Seismic Moment (units of Nm) if inverse = FALSE, else Moment Magnitude}
 
 \item{inverse}{logical. If FALSE, return Mw given M0. If TRUE, return M0 given Mw}
+
+\item{constant}{Optionally override the value "9.05" used by default in the equation.}
 }
 \value{
-Mw
+Mw if inverse = FALSE, or M0 (units of Nm) if inverse=TRUE
 }
 \description{
-We use the equation Mw = 2/3 * (log10(M0) - 9.05), see Hanks and Kanamori
+By default we use the equation Mw = 2/3 * (log10(M0) - 9.05), see Hanks and Kanamori
 (1977) and Bird and Kagan (2004).  Note that slightly different values of the
-final constant are sometimes used.
+final constant (9.05) are sometimes used, so we provide the option to override this.
 }
 \examples{
 Mw = M0_2_Mw(4e+17)

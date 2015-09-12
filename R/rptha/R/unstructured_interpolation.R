@@ -269,10 +269,11 @@ interpolation_discontinuous<-function(xy, vals, newPts,
     interpolator=triangular_interpolation,
     ...){
 
+    # Get categories of all points
     xy_categories = category_function(xy)
-
     newPts_categories = category_function(newPts)
 
+    # Identify unique categories (interpolation applied separately to each)
     unique_xy_categories = unique(xy_categories)
     unique_newPts_categories = unique(newPts_categories)
 
@@ -285,12 +286,15 @@ interpolation_discontinuous<-function(xy, vals, newPts,
         stop('There are categories associated with newPts do not occur in the xy points')
     }
 
+    # Ensure vals is a matrix
     if(is.null(dim(vals))){
         dim(vals) = c(length(vals), 1)
     }
 
+    # Pre-allocate storage for interpolated values
     newPts_vals = matrix(NA, nrow=nrow(newPts), ncol=ncol(vals))
 
+    # Interpolate
     for(nc in unique_newPts_categories){
         ni = which(newPts_categories == nc)
         xyi = which(xy_categories == nc)
