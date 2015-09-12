@@ -101,12 +101,15 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
         tsunami_surface_points_lonlat = NA
         ts = NA
     }
-
     tsunami_unit_source = list(unit_source_interior_points = us, 
         smooth_tsunami_displacement = smooth_tsunami_displacement,
         tsunami_source = ts, i=i, j = j, 
         tsunami_surface_points_lonlat = tsunami_surface_points_lonlat,
         rake = rake)
+
+    # Force garbage collection since in parallel, this might not detect
+    # high overall memory usage
+    gc() 
 
     return(tsunami_unit_source)
 }

@@ -184,7 +184,7 @@ kajiura_filter<-function(xyDef,
         newVals = matrix(interp1[,1], ncol=lnx,byrow=T)
         newDepth = matrix(interp1[,2], ncol=lnx,byrow=T)
 
-        rm(interp1)
+        rm(interp1); gc()
 
     }else if(interpolator=='linear'){
         # Cheap triangulation/3-point-knn type interpolation
@@ -205,7 +205,7 @@ kajiura_filter<-function(xyDef,
         newVals = matrix(interp1[,1], ncol=lnx, byrow=T)
         newDepth = matrix(interp1[,2], ncol=lnx, byrow=T)
         
-        rm(interp1)
+        rm(interp1); gc()
 
     }else{
         stop('interpolator not recognized')
@@ -229,7 +229,7 @@ kajiura_filter<-function(xyDef,
     filterXY = expand.grid(filterXs,filterYs)
     filterXYr = matrix( (filterXY[,1]^2+filterXY[,2]^2)**0.5,
         ncol=lfx, byrow=TRUE)
-    rm(filterXY)
+    rm(filterXY); gc()
 
     if(verbose) print('Applying filter ...') 
 
@@ -276,6 +276,7 @@ kajiura_filter<-function(xyDef,
     rm(G_j_i)
     rm(GtermsSum)
     rm(depth_inv)
+    gc()
 
     if(edge_effect_correction_scale > 0.){
         if(verbose) print('Reducing edge effects ...')
@@ -293,6 +294,7 @@ kajiura_filter<-function(xyDef,
         rm(xEdge)
         rm(yEdge)
         rm(edgeF)
+        gc()
     }
    
 
@@ -309,7 +311,7 @@ kajiura_filter<-function(xyDef,
         #    interpolator=nearest_neighbour_interpolation)
         new_xyDef[,3] = interp2 
 
-        rm(interp2)
+        rm(interp2); gc()
 
     }else if(interpolator == 'linear'){
         # At this stage, smoothing should have made the deformation continuous
@@ -321,7 +323,7 @@ kajiura_filter<-function(xyDef,
         #interp2[is.na(interp2)] = edge_buffer_value
         new_xyDef[,3] = interp2 
 
-        rm(interp2)
+        rm(interp2); gc()
     }
 
     newValsPosSum = sum(newVals*(newVals>0))
