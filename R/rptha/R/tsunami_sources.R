@@ -90,6 +90,9 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
             interpolator='linear', interpolator_categories=function(xy){xy[,2]>0})
 
         smooth_tsunami_displacement = kajiura_source[,3]
+
+        # Careful with memory usage (in parallel, auto garbage collection not so good)
+        rm(kajiura_source, new_xy); gc()
     }else{
         # In this case just repeat the tsunami source displacement
         smooth_tsunami_displacement = ts$zdsp
