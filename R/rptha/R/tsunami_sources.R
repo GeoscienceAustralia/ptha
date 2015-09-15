@@ -62,6 +62,7 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
 
     # Optionally apply Kajiura smoothing
     if(kajiura_smooth){
+
         stopifnot(length(surface_point_ocean_depths) == length(tsunami_surface_points_lonlat[,1]))
 
         if(!is.null(kajiura_grid_spacing)){
@@ -81,18 +82,32 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
         new_xy = rotate_cartesian2d(tsunami_surface_points_cartesian[,1:2], 
             origin = c(0,0), x_axis_vector = strike_vec)
 
+        # For computational efficiency we only apply Kajiura to a region covering
+        # the extent over which the absolute value of the initial deformation is > 1.0e-06
+        # This should include the important parts but ignore large zero areas
+        tmp = which(abs(ts$zdsp) > 1.0e-06)
+        k_bbox = rbind(range(new_xy[tmp,1]), range(new_xy[tmp,2]))
+        kajiura_inds = which( 
+            (new_xy[,1] >= k_bbox[1,1]) & (new_xy[,1] <= k_bbox[1,2]) &
+            (new_xy[,2] >= k_bbox[2,1]) & (new_xy[,2] <= k_bbox[2,2]))
+        rm(tmp, k_bbox)
+        
+
         # Call Kajiura, interpolating separately over (rotated) y > 0 and y <=0
         # This can help reduce artefacts if we have a discontinuity in the deformation
         # at y=0 (as occurs for ruptures to the trench, e.g. Goda 2015 BSSA)
-        kajiura_source = kajiura_filter(cbind(new_xy, ts$zdsp),
-            surface_point_ocean_depths, grid_dx = grid_dx, grid_dy=grid_dy,
+        kajiura_source = kajiura_filter(
+            cbind(new_xy[kajiura_inds,], ts$zdsp[kajiura_inds]),
+            surface_point_ocean_depths[kajiura_inds], 
+            grid_dx = grid_dx, grid_dy=grid_dy,
             volume_change_error_threshold = kajiura_volume_change_error_threshold,
             interpolator='linear', interpolator_categories=function(xy){xy[,2]>0})
 
-        smooth_tsunami_displacement = kajiura_source[,3]
+        smooth_tsunami_displacement = ts$zdsp 
+        smooth_tsunami_displacement[kajiura_inds] = kajiura_source[,3]
 
         # Careful with memory usage (in parallel, auto garbage collection not so good)
-        rm(kajiura_source, new_xy); gc()
+        rm(kajiura_source, new_xy, kajiura_inds); gc()
     }else{
         # In this case just repeat the tsunami source displacement
         smooth_tsunami_displacement = ts$zdsp
