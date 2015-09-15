@@ -6,7 +6,8 @@
 zone}
 \usage{
 discretized_source_approximate_summary_statistics(discretized_source,
-  default_rake = 90, default_slip = 1, make_plot = FALSE)
+  default_rake = 90, default_slip = 1, make_plot = FALSE,
+  depth_in_km = TRUE)
 }
 \arguments{
 \item{discretized_source}{list with an entry 'unit_source_grid' containing a
@@ -18,6 +19,8 @@ zone (e.g. output of 'discretized_source_from_source_contours')}
 \item{default_slip}{numeric m, all unit sources are assigned this slip}
 
 \item{make_plot}{logical, make a plot?}
+
+\item{depth_in_km}{Are depths in km (TRUE) or meters (FALSE)}
 }
 \value{
 data.frame with key summary statistics
