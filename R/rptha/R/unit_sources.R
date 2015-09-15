@@ -304,6 +304,7 @@ discretized_source_from_source_contours<-function(
 #' @param default_rake numeric degrees, all unit sources are assigned this rake
 #' @param default_slip numeric m, all unit sources are assigned this slip
 #' @param make_plot logical, make a plot?
+#' @param depth_in_km Are depths in km (TRUE) or meters (FALSE)
 #' @return data.frame with key summary statistics
 #'
 #' @export
@@ -311,7 +312,8 @@ discretized_source_approximate_summary_statistics<-function(
     discretized_source,
     default_rake = 90, 
     default_slip = 1, 
-    make_plot=FALSE){
+    make_plot=FALSE,
+    depth_in_km=TRUE){
 
     #
     # lon, lat, depth, strike, dip, rake, slip, length, width, subfaultnumber, 
@@ -377,9 +379,14 @@ discretized_source_approximate_summary_statistics<-function(
             # Dip = atan (change in depth / surface distance) 
             # Take average of left/right dipping lines (complex numbers to
             # average an angle)
-            dl = atan2( (source_coords[2,3] - source_coords[1,3])*1000,
+            #
+            # Account for depth being in m or km
+            depth_scale = 1
+            if(depth_in_km) depth_scale = 1000
+
+            dl = atan2( (source_coords[2,3] - source_coords[1,3])*depth_scale,
                 distHaversine(source_coords[1,1:2], source_coords[2,1:2]))
-            dr = atan2( (source_coords[3,3] - source_coords[4,3])*1000,
+            dr = atan2( (source_coords[3,3] - source_coords[4,3])*depth_scale,
                 distHaversine(source_coords[4,1:2], source_coords[3,1:2]))
 
             dip[counter] = mean_angle(c(dl, dr), degrees=FALSE)/deg2rad
@@ -388,8 +395,8 @@ discretized_source_approximate_summary_statistics<-function(
 
             # Length = 0.5*( upper length + lower length)
             len0 = 0.5*(
-                distance_down_depth(source_coords[1,], source_coords[4,], depth_in_km=TRUE) +
-                distance_down_depth(source_coords[2,], source_coords[3,], depth_in_km=TRUE)
+                distance_down_depth(source_coords[1,], source_coords[4,], depth_in_km=depth_in_km) +
+                distance_down_depth(source_coords[2,], source_coords[3,], depth_in_km=depth_in_km)
             )
 
             surface_area = areaPolygon(source_coords[,1:2], f = 0)
