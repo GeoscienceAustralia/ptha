@@ -43,12 +43,17 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' @param detailed logical. If False return a vector with area/width/length,
 #' otherwise provide a list with the latter as well as information on
 #' log10-standard-deviations
+#' @param CI_sd Logical. If detailed = TRUE, the output includes a positive
+#' and negative confidence interval threshold, both of which are CI_sd
+#' standard deviations away from the mean (in log space where the regression is
+#' computed)
 #' @return A numeric vector
 #' @export
 #' @examples
 #' rupture_statistics1 = Mw_2_rupture_size(9.0)
 #' rupture_statistics2 = Mw_2_rupture_size(9.0, detailed=TRUE)
-Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE){
+Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
+    CI_sd=1){
 
     if(relation == 'Strasser'){
 
@@ -75,6 +80,8 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE){
         output = list(values = output)
         output$log10_sigmas = c(area_absigma[3], width_absigma[3], length_absigma[3])
         names(output$log10_sigmas) = c('area', 'width', 'length')
+        output$plus_CI = 10**(log10(output$values) + CI_sd*output$log10_sigmas)
+        output$minus_CI = 10**(log10(output$values) - CI_sd*output$log10_sigmas)
     }
 
     return(output)
