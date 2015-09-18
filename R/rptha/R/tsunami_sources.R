@@ -65,12 +65,12 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
 
         stopifnot(length(surface_point_ocean_depths) == length(tsunami_surface_points_lonlat[,1]))
 
-        if(!is.null(kajiura_grid_spacing)){
-            grid_dx = kajiura_grid_spacing
-            grid_dy = kajiura_grid_spacing
-        }else{
+        if(is.null(kajiura_grid_spacing)){
             grid_dx = max(surface_point_ocean_depths)/2
             grid_dy = grid_dx
+        }else{
+            grid_dx = kajiura_grid_spacing
+            grid_dy = kajiura_grid_spacing
         }
 
         # Rotate the surface points so the strike direction is aligned with
