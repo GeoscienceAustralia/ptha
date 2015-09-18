@@ -9,6 +9,7 @@ make_tsunami_unit_source(i, j, discrete_source, rake,
   scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth = FALSE,
   surface_point_ocean_depths = NULL, kajiura_grid_spacing = NULL,
   kajiura_volume_change_error_threshold = 0.5, minimal_output = FALSE,
+  kajiura_where_deformation_exceeds_threshold = 0,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source, ...)
 }
 \arguments{
@@ -49,6 +50,15 @@ passed to kajiura_filter.}
 \item{minimal_output}{Logical. If TRUE, set the unit source and
 tsunami_surface_points_lonlat to NA in the outputs. These are memory heavy so
 in some settings they are best removed.}
+
+\item{kajiura_where_deformation_exceeds_threshold}{Numeric. The Kajiura
+filter is applied to a rectangular region including all points where the
+absolute value of the initial deformation (computed with
+\code{tsunami_function}) exceeds the given threshold. Use of non-zero values
+much smaller than the significant deformation (e.g. 1.0e-04) can lead to a
+large reduction in the memory and time required for the Kajiura filter
+computation, although if the threshold is too high then the filter might
+not be applied to important areas.}
 
 \item{tsunami_function}{Function used to make the tunami source from
 a cartesian unit source with interior points, the rake, and the surface

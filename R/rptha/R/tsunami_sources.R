@@ -26,6 +26,14 @@
 #' @param minimal_output Logical. If TRUE, set the unit source and
 #' tsunami_surface_points_lonlat to NA in the outputs. These are memory heavy so
 #' in some settings they are best removed.
+#' @param kajiura_where_deformation_exceeds_threshold Numeric. The Kajiura
+#' filter is applied to a rectangular region including all points where the
+#' absolute value of the initial deformation (computed with
+#' \code{tsunami_function}) exceeds the given threshold. Use of non-zero values
+#' much smaller than the significant deformation (e.g. 1.0e-04) can lead to a
+#' large reduction in the memory and time required for the Kajiura filter
+#' computation, although if the threshold is too high then the filter might
+#' not be applied to important areas.
 #' @param tsunami_function Function used to make the tunami source from
 #' a cartesian unit source with interior points, the rake, and the surface
 #' points.  Must return a list containing zdsp (a vector of all z displacements
@@ -40,6 +48,7 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
     scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth=FALSE, 
     surface_point_ocean_depths=NULL, kajiura_grid_spacing=NULL,
     kajiura_volume_change_error_threshold = 0.5, minimal_output=FALSE,
+    kajiura_where_deformation_exceeds_threshold = 0.0,
     tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
     ...){
 
@@ -83,11 +92,11 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
             origin = c(0,0), x_axis_vector = strike_vec)
 
         # For computational efficiency we only apply Kajiura to a region covering
-        # the extent over which the absolute value of the initial deformation is > 1.0e-06
+        # the extent over which the absolute value of the initial deformation is > threshold
         # This should include the important parts but ignore large zero areas
-        tmp = which(abs(ts$zdsp) > 1.0e-06)
+        tmp = which(abs(ts$zdsp) > kajiura_where_deformation_exceeds_threshold)
         k_bbox = rbind(range(new_xy[tmp,1]), range(new_xy[tmp,2]))
-        kajiura_inds = which( 
+        kajiura_inds = which(
             (new_xy[,1] >= k_bbox[1,1]) & (new_xy[,1] <= k_bbox[1,2]) &
             (new_xy[,2] >= k_bbox[2,1]) & (new_xy[,2] <= k_bbox[2,2]))
         rm(tmp, k_bbox)
@@ -266,6 +275,9 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
     area_downslope_adjust = sqrt(1 + tan(dip*deg2rad)**2)
     src_wdt = (sqrt(src[, 'area_projected']/area_scale)*updip_scale)*area_downslope_adjust * 1/1000
 
+    stopifnot(isTRUE(all.equal(
+        sum(src_len*src_wdt), sum(src[,'area_projected']*area_downslope_adjust)/1e+06
+        )))
 
     # If sources are protruding from the earth, adjust their width 
     width_limit = 2*depth/sin(dip*deg2rad) - upper_depth_limit #- thrust_slip*1/1000 #* 50 # Limit to 50m

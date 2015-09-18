@@ -5,7 +5,7 @@
 \title{Convert the tsunami unit source to a z-displacement raster}
 \usage{
 tsunami_unit_source_2_raster(tsunami_unit_source, filename = NULL,
-  saveonly = FALSE, tsunami_surface_points_lonlat = NULL)
+  saveonly = FALSE, tsunami_surface_points_lonlat = NULL, res = c(NA, NA))
 }
 \arguments{
 \item{tsunami_unit_source}{output of make_tsunami_unit_source or similar.}
@@ -19,6 +19,8 @@ saving. If TRUE but filename is not NULL, then save the file, but return NULL.}
 at which tsunami_unit_source$smooth_tsunami_displacement occurs. If NULL, look for
 this in tsunami_unit_source -- however, to save memory, the latter may be set to NA. In
 which case this argument must be provided.}
+
+\item{res}{optional argument 'res' to pass to \code{rasterFromXYZ}}
 }
 \value{
 Either a raster, or NULL. Can save the raster to a file as a side effect.
