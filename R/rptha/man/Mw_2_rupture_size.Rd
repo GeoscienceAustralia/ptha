@@ -5,7 +5,7 @@
 \title{Compute earthquake rupture area, width and length from Mw based on an
 empirical scaling relation}
 \usage{
-Mw_2_rupture_size(Mw, relation = "Strasser", detailed = FALSE)
+Mw_2_rupture_size(Mw, relation = "Strasser", detailed = FALSE, CI_sd = 1)
 }
 \arguments{
 \item{Mw}{Moment Magnitude}
@@ -16,6 +16,11 @@ event relation for Strasser et al 2010.)}
 \item{detailed}{logical. If False return a vector with area/width/length,
 otherwise provide a list with the latter as well as information on
 log10-standard-deviations}
+
+\item{CI_sd}{Logical. If detailed = TRUE, the output includes a positive
+and negative confidence interval threshold, both of which are CI_sd
+standard deviations away from the mean (in log space where the regression is
+computed)}
 }
 \value{
 A numeric vector

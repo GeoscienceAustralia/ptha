@@ -144,10 +144,11 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
 #' at which tsunami_unit_source$smooth_tsunami_displacement occurs. If NULL, look for
 #' this in tsunami_unit_source -- however, to save memory, the latter may be set to NA. In
 #' which case this argument must be provided.
+#' @param res optional argument 'res' to pass to \code{rasterFromXYZ}
 #' @return Either a raster, or NULL. Can save the raster to a file as a side effect.
 #' @export
 tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL, 
-    saveonly=FALSE, tsunami_surface_points_lonlat=NULL){
+    saveonly=FALSE, tsunami_surface_points_lonlat=NULL, res=c(NA,NA)){
 
     #library(raster)
     #library(rgdal)
@@ -168,7 +169,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
             tsunami_unit_source$smooth_tsunami_displacement)
     }
 
-    outrast = rasterFromXYZ(xyz, crs=CRS('+init=epsg:4326'))
+    outrast = rasterFromXYZ(xyz, crs=CRS('+init=epsg:4326'), res=res)
 
     # Free up memory
     rm(xyz); gc()

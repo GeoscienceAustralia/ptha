@@ -102,7 +102,7 @@ nearest_neighbour_interpolation<-function(xy, vals, newPts){
 #'    stopifnot(all(out == 0.5*(vals[1]+vals[2])))
 triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
 
-    xy = as.matrix(xy,ncol=2)
+    xy = as.matrix(xy, ncol=2)
     newPts = as.matrix(newPts)
 
     if(!is.null(dim(vals))){
@@ -173,8 +173,12 @@ triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
         dx21 = p2[,1]-p1[,1]
         dy21 = p2[,2]-p1[,2]
 
+        rm(p2, p3)
+
         dxN = newPts[,1]-p1[,1]
         dyN = newPts[,2]-p1[,2]
+
+        rm(p1)
         #
         ## Compute triangle area
         area = dx21*dy31-dx31*dy21 #dy21*dx31 - dx21*dy31
@@ -183,11 +187,12 @@ triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
         a = (dy31*dxN-dx31*dyN)/area 
         b = (-dy21*dxN+dx21*dyN)/area 
 
+        rm(dx31, dy31, dx21, dy21, dxN, dyN)
+
         # Treat cases with degenerate triangles -- use nearest-neighbour instead
         EPS = 1.0e-06
         a[abs(area)<EPS] = 0.
         b[abs(area)<EPS] = 0.
-
 
         if(is.null(dim(vals))){
             # Find max/min 'vals' on triangle
@@ -198,6 +203,8 @@ triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
             dz21 = vals[lookupInds[,2]] - vals[lookupInds[,1]]
 
             final = vals[lookupInds[,1]] + a*dz21 + b*dz31
+
+            rm(dz21, dz31, a, b)
 
             # Limit
             M = (final>valsMax)
@@ -216,6 +223,8 @@ triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
             dz21 = vals[lookupInds[,2],] - vals[lookupInds[,1],]
 
             final = vals[lookupInds[,1],] + a*dz21 + b*dz31
+            
+            rm(dz21, dz31, a, b)
 
             # Limit
             M = (final>valsMax)

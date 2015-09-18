@@ -271,19 +271,16 @@ kajiura_filter<-function(xyDef,
     }
 
     # Compute final weighted average 
-    newVals = newVals/(GtermsSum)
+    newVals = newVals/GtermsSum
 
-    rm(G_j_i)
-    rm(GtermsSum)
-    rm(depth_inv)
-    gc()
+    rm(G_j_i, GtermsSum, depth_inv); gc()
 
     if(edge_effect_correction_scale > 0.){
         if(verbose) print('Reducing edge effects ...')
         # Reduce edge-effects with a weighted average of the old values there
         # Compute the distance from an edge in the x/y directions
         xEdge = matrix( pmin((1:lnx)-0.5, (lnx:1)-0.5)*dx, byrow=TRUE, ncol=lnx, nrow=lny)
-        yEdge = matrix(pmin((1:lny)-0.5, (lny:1)-0.5)*dy, byrow=FALSE, ncol=lnx, nrow=lny)
+        yEdge = matrix( pmin((1:lny)-0.5, (lny:1)-0.5)*dy, byrow=FALSE, ncol=lnx, nrow=lny)
         # Convert to a weight
         xEdge = pmax(1-xEdge/(fR*edge_effect_correction_scale), 0.)**0.5
         yEdge = pmax(1-yEdge/(fR*edge_effect_correction_scale), 0.)**0.5
@@ -291,16 +288,13 @@ kajiura_filter<-function(xyDef,
         # Take weighted average of the original values and the new ones
         newVals = edgeF*old_newVals + (1-edgeF)*newVals
 
-        rm(xEdge)
-        rm(yEdge)
-        rm(edgeF)
-        gc()
+        rm(xEdge, yEdge, edgeF); gc()
     }
    
 
     # Back-compute x,y,Def with nearest neighbour lookup
     if(verbose) print('Unstructured interpolation number 2...')
-    new_xyDef = xyDef
+
     if(interpolator == 'nearest'){
         # At this stage, smoothing should have made the deformation continuous
         interp2 = nearest_neighbour_interpolation(newPts, c(t(newVals)), 
@@ -309,6 +303,7 @@ kajiura_filter<-function(xyDef,
         #interp2 = interpolation_discontinuous(newPts, c(t(newVals)), 
         #    xyDef[,1:2], category_function=interpolator_categories,
         #    interpolator=nearest_neighbour_interpolation)
+        new_xyDef = xyDef
         new_xyDef[,3] = interp2 
 
         rm(interp2); gc()
@@ -321,6 +316,7 @@ kajiura_filter<-function(xyDef,
         #    xyDef[,1:2], category_function=interpolator_categories,
         #    interpolator=triangular_interpolation, useNearestNeighbour=TRUE)
         #interp2[is.na(interp2)] = edge_buffer_value
+        new_xyDef = xyDef
         new_xyDef[,3] = interp2 
 
         rm(interp2); gc()
