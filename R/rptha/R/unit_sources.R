@@ -328,8 +328,6 @@ discretized_source_approximate_summary_statistics<-function(
    
     num_sources = along_strike_source_count*down_dip_source_count 
 
-    counter = 0    
-
     lon_c = rep(NA, num_sources)
     lat_c = rep(NA, num_sources)
     depth = rep(NA, num_sources)
@@ -345,6 +343,9 @@ discretized_source_approximate_summary_statistics<-function(
 
     source_coordinates = list() 
 
+    ## BEWARE: The loop ordering here should be the same as for the corresponding
+    ## detailed summary statistics routine, so that 'counter' is updated correctly
+    counter = 0    
     for(i in 1:along_strike_source_count){
         for(j in 1:down_dip_source_count){
 
@@ -460,12 +461,15 @@ discretized_source_approximate_summary_statistics<-function(
 }
 
 
-#' Compute APPROXIMATE summary statistics for all unit sources in a discretized source
-#' zone
+#' Compute summary statistics for all unit sources in a discretized source
+#' zone.
 #'
 #' The quantities that we output follow those in the i-invall format in the old
 #' URSGA code, although some outputs there (e.g. section number) do not apply
-#' with our algorithms
+#' with our algorithms. The calculations are based on filling the unit sources
+#' with subgrid points (via unit_source_interior_points_cartesian), so should
+#' more accurately account for the interface structure than does the alternative
+#' 'approximate summary statistics' routine.
 #'
 #' @param discretized_source list with an entry 'unit_source_grid' containing a
 #'        3 dimensional array defining the vertices of all unit sources for the source
@@ -475,17 +479,74 @@ discretized_source_approximate_summary_statistics<-function(
 #' @param make_plot logical, make a plot?
 #' @param depth_in_km Are depths in km (TRUE) or meters (FALSE)
 #' @return data.frame with key summary statistics
-#'
 #' @export
-discretized_source_detailed_summary_statistics<-function(
+discretized_source_summary_statistics<-function(
     discretized_source,
     default_rake = 90,
     default_slip = 1, 
+    approx_dx=1000,
+    approx_dy=1000,
     make_plot=FALSE,
     depth_in_km=TRUE){
 
-    # 
+    # First get the approximate statistics 
+    output = discretized_source_approximate_summary_statistics(
+        discretized_source,
+        default_rake = default_rake, 
+        default_slip = default_slip, 
+        make_plot=make_plot,
+        depth_in_km=depth_in_km)
 
+    # Correct some of the approximate statistics using the detailed cartesian
+    # information
+    ndip =    discretized_source$discretized_source_dim[1]
+    nstrike = discretized_source$discretized_source_dim[2]
+  
+    # BEWARE: The loop ordering here should be the same as for the corresponding
+    # approximate summary statistics routine, so that the variable 'counter'
+    # is updated correctly
+    for(ns in 1:nstrike){
+        for(nd in 1:ndip){
+
+            counter = which((output$downdip_number == nd) & (output$alongstrike_number == ns))
+
+            # Logical checks
+            if(length(counter) != 1){
+                stop('Did not find exactly one row corresponding to this subfault in the table')
+            }
+            if(output$subfault_number[counter] != counter){
+                stop('There seems to be a table ordering bug')
+            }
+
+            # Compute Cartesian source
+            usc = unit_source_interior_points_cartesian(discretized_source, 
+                c(nd, ns), origin=NULL, approx_dx=approx_dx, approx_dy=approx_dy)
+
+            # Get a good approximation of the rupture interface area
+            area = sum(usc$grid_points[,'area_projected']*sqrt(1 + tan(usc$grid_points[,'dip']/180*pi)**2))
+
+            # We want length * width = area
+            # -- keep length as average of top/bottom lengths
+            p0 = usc$unit_source_cartesian[1,1:3]
+            p1 = usc$unit_source_cartesian[4,1:3]
+            len0 = sqrt(sum((p0 - p1)**2))
+            p0 = usc$unit_source_cartesian[2,1:3]
+            p1 = usc$unit_source_cartesian[3,1:3]
+            len1 = sqrt(sum((p0 - p1)**2))
+
+            # Make 'good' estimates of length and width
+            output$length[counter] = (0.5*(len1 + len0))/1000
+            output$width[counter] = (area/1e+06)/output$length[counter]
+
+            # Depth in km
+            output$depth[counter] = weighted.mean(usc$grid_points[,'depth'], usc$grid_points[,'area_projected'])/1000
+            # Strike/dip consistent with subgrid
+            output$strike[counter] = mean_angle(usc$grid_points[,'strike'])
+            output$dip[counter] = mean_angle(usc$grid_points[,'dip'])
+        }
+    }
+
+    return(output)
 }
 
 

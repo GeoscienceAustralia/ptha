@@ -8,7 +8,7 @@ make_tsunami_unit_source(i, j, discrete_source, rake,
   tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL,
   scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth = FALSE,
   surface_point_ocean_depths = NULL, kajiura_grid_spacing = NULL,
-  kajiura_volume_change_error_threshold = 0.5, minimal_output = FALSE,
+  kajiura_volume_change_error_threshold = 0.1, minimal_output = FALSE,
   kajiura_where_deformation_exceeds_threshold = 0,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source, ...)
 }
