@@ -8,7 +8,8 @@ kajiura_filter(xyDef, depth, grid_dx = max(depth)/2, grid_dy = max(depth)/2,
   edge_buffer_value = 0, edge_effect_correction_scale = 1.5,
   kajiuraGmax = 9, interpolator = "linear",
   interpolator_categories = function(xy) {     xy[, 1] * 0 },
-  volume_change_error_threshold = 0.02, verbose = FALSE)
+  volume_change_error_threshold = 0.02, volume_change_MSL = 0,
+  verbose = FALSE)
 }
 \arguments{
 \item{xyDef}{3 column matrix with x,y, deformation. x and y can be unstructured.
@@ -46,9 +47,12 @@ each group. It is passed as \code{category_function} to \code{interpolation_disc
 
 \item{volume_change_error_threshold}{If the difference in the positive or
 negative or total volume before and after filtering, relative to the original
-volume, is more than this, then throw an error. This might not indicate a mistake,
+'absolute' volume, is more than this, then throw an error. This might not indicate a mistake,
 but it does indicate a large change in the deformation, which is worth investigating.
 Possible causes include strong depth variation, or regridding with coarse grid_dx, grid_dy.}
+
+\item{volume_change_MSL}{The mean-sea-level used to define positive/negative deformation
+for the volume check mentioned above.}
 
 \item{verbose}{Print lots of information about the fit}
 }

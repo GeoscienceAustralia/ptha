@@ -131,9 +131,11 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #' x=[0, kajiuraGmax]. Values above this are evaluated to zero. Be cautious about changing this.
 #' @param volume_change_error_threshold If the difference in the positive or
 #' negative or total volume before and after filtering, relative to the original
-#' volume, is more than this, then throw an error. This might not indicate a mistake,
+#' 'absolute' volume, is more than this, then throw an error. This might not indicate a mistake,
 #' but it does indicate a large change in the deformation, which is worth investigating.
 #' Possible causes include strong depth variation, or regridding with coarse grid_dx, grid_dy.
+#' @param volume_change_MSL The mean-sea-level used to define positive/negative deformation
+#' for the volume check mentioned above.
 #' @param verbose Print lots of information about the fit
 #' @return replacement version of xyDef, with smoothing applied to xyDef[,3]
 #' @export
@@ -147,6 +149,7 @@ kajiura_filter<-function(xyDef,
                          interpolator='linear',
                          interpolator_categories = function(xy){xy[,1]*0},
                          volume_change_error_threshold=0.02,
+                         volume_change_MSL=0.0,
                          verbose=FALSE){
 
 
@@ -322,17 +325,23 @@ kajiura_filter<-function(xyDef,
         rm(interp2); gc()
     }
 
-    newValsPosSum = sum(newVals*(newVals>0))
-    newValsNegSum = sum(newVals*(newVals<0))
-    old_newValsPosSum = sum(old_newVals*(old_newVals>0))
-    old_newValsNegSum = sum(old_newVals*(old_newVals<0))
+    
+    newValsPosSum = sum( (newVals - volume_change_MSL)*(newVals>volume_change_MSL))
+    newValsNegSum = sum( (newVals - volume_change_MSL)*(newVals<volume_change_MSL))
+    old_newValsPosSum = sum((old_newVals - volume_change_MSL)*(old_newVals>volume_change_MSL))
+    old_newValsNegSum = sum((old_newVals - volume_change_MSL)*(old_newVals<volume_change_MSL))
 
     oldNewvalsSum = sum(old_newVals)
     newvalsSum = sum(newVals)
 
-    r1 = (newValsPosSum-old_newValsPosSum)/old_newValsPosSum
-    r2 = (newValsNegSum-old_newValsNegSum)/old_newValsNegSum
-    r3 = (sum(newVals)-sum(old_newVals))/sum(old_newVals)
+    # Total volume of displacement (both + and - areas are counted as + in this
+    # volume -- because otherwise, a deformation with equal positive and negative
+    # parts would have a zero total volume)
+    vol_reference = old_newValsPosSum - old_newValsNegSum
+
+    r1 = (newValsPosSum-old_newValsPosSum)/vol_reference 
+    r2 = (newValsNegSum-old_newValsNegSum)/vol_reference 
+    r3 = (sum(newVals)-sum(old_newVals))/vol_reference 
 
     if(verbose){
         print(paste('Original re-gridded volume: ', oldNewvalsSum))

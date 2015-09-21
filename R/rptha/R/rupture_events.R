@@ -1,5 +1,5 @@
 # Code to make earthquake events
-
+#
 # FIXME: Need to carefully review discretized_source_approximate_summary_statistics
 # e.g. 
 # - needs a 'depth_in_km' argument [also there is a magic number 1000 which
@@ -20,7 +20,7 @@
 # - Integrate changes in rupture_scaling to main code
 # -  
 #
-#Mw = 8.0
+# Mw = 8.0
 #
 #' Given the summary statistics for a source zone, compute **all** events
 #' with moment magnitude Mw.

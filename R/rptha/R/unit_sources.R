@@ -459,6 +459,36 @@ discretized_source_approximate_summary_statistics<-function(
     return(output)
 }
 
+
+#' Compute APPROXIMATE summary statistics for all unit sources in a discretized source
+#' zone
+#'
+#' The quantities that we output follow those in the i-invall format in the old
+#' URSGA code, although some outputs there (e.g. section number) do not apply
+#' with our algorithms
+#'
+#' @param discretized_source list with an entry 'unit_source_grid' containing a
+#'        3 dimensional array defining the vertices of all unit sources for the source
+#'        zone (e.g. output of 'discretized_source_from_source_contours')
+#' @param default_rake numeric degrees, all unit sources are assigned this rake
+#' @param default_slip numeric m, all unit sources are assigned this slip
+#' @param make_plot logical, make a plot?
+#' @param depth_in_km Are depths in km (TRUE) or meters (FALSE)
+#' @return data.frame with key summary statistics
+#'
+#' @export
+discretized_source_detailed_summary_statistics<-function(
+    discretized_source,
+    default_rake = 90,
+    default_slip = 1, 
+    make_plot=FALSE,
+    depth_in_km=TRUE){
+
+    # 
+
+}
+
+
 #' Get coordinates of a single unit source from the discretized_source list
 #'
 #' @param discretized_source List holding the discretized_source information (e.g. output
