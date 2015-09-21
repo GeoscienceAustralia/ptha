@@ -469,7 +469,8 @@ discretized_source_approximate_summary_statistics<-function(
 #' with our algorithms. The calculations are based on filling the unit sources
 #' with subgrid points (via unit_source_interior_points_cartesian), so should
 #' more accurately account for the interface structure than does the alternative
-#' 'approximate summary statistics' routine.
+#' 'approximate summary statistics' routine. The width and length are defined
+#' so that (width x length) = (interface area).
 #'
 #' @param discretized_source list with an entry 'unit_source_grid' containing a
 #'        3 dimensional array defining the vertices of all unit sources for the source
@@ -486,8 +487,8 @@ discretized_source_summary_statistics<-function(
     discretized_source,
     default_rake = 90,
     default_slip = 1, 
-    approx_dx=1000,
-    approx_dy=1000,
+    approx_dx=2000,
+    approx_dy=2000,
     make_plot=FALSE,
     depth_in_km=TRUE){
 
