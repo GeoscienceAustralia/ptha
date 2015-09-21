@@ -476,6 +476,8 @@ discretized_source_approximate_summary_statistics<-function(
 #'        zone (e.g. output of 'discretized_source_from_source_contours')
 #' @param default_rake numeric degrees, all unit sources are assigned this rake
 #' @param default_slip numeric m, all unit sources are assigned this slip
+#' @param approx_dx numeric. Value of approx_dx passed to unit_source_interior_points_cartesian
+#' @param approx_dy numeric. Value of approx_dy passed to unit_source_interior_points_cartesian
 #' @param make_plot logical, make a plot?
 #' @param depth_in_km Are depths in km (TRUE) or meters (FALSE)
 #' @return data.frame with key summary statistics
@@ -523,7 +525,8 @@ discretized_source_summary_statistics<-function(
                 c(nd, ns), origin=NULL, approx_dx=approx_dx, approx_dy=approx_dy)
 
             # Get a good approximation of the rupture interface area
-            area = sum(usc$grid_points[,'area_projected']*sqrt(1 + tan(usc$grid_points[,'dip']/180*pi)**2))
+            area = sum(usc$grid_points[,'area_projected']*
+                sqrt(1 + tan(usc$grid_points[,'dip']/180*pi)**2))
 
             # We want length * width = area
             # -- keep length as average of top/bottom lengths
@@ -539,9 +542,15 @@ discretized_source_summary_statistics<-function(
             output$width[counter] = (area/1e+06)/output$length[counter]
 
             # Depth in km
-            output$depth[counter] = weighted.mean(usc$grid_points[,'depth'], usc$grid_points[,'area_projected'])/1000
+            output$depth[counter] = weighted.mean(usc$grid_points[,'depth'], 
+                usc$grid_points[,'area_projected'])/1000
+
             # Strike/dip consistent with subgrid
             output$strike[counter] = mean_angle(usc$grid_points[,'strike'])
+            # Ensure strike is > 0
+            if(output$strike[counter] < 0){
+                output$strike[counter] = output$strike[counter] + 360
+            }
             output$dip[counter] = mean_angle(usc$grid_points[,'dip'])
         }
     }
