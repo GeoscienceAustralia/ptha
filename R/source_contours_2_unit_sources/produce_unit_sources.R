@@ -41,7 +41,8 @@ for(interface_shapefile in all_sourcezone_shapefiles){
             desired_subfault_length, desired_subfault_width, make_plot=TRUE)
 
     # Get discretized source approximate summary stats
-    # More accurate results can be obtained by analysing the unit sources directly
+    # More accurate results can be obtained from a similar function without
+    # _approximate_ in the name, but this is a bit more intensive
     discretized_sources_statistics[[sourcename]] = 
         discretized_source_approximate_summary_statistics(discretized_sources[[sourcename]],
             make_plot=TRUE)
@@ -79,6 +80,9 @@ for(sourcename in names(discretized_sources)){
     ij = expand.grid(j = 1:ds1$discretized_source_dim[2], 
                      i = 1:ds1$discretized_source_dim[1])
 
+    approx_dx = (ij$i > 1)*5000 + 1000
+    approx_dy = approx_dx
+
     print('Making tsunami sources in parallel...')
 
     # i and j vary, other arguments are recycled
@@ -87,8 +91,7 @@ for(sourcename in names(discretized_sources)){
         make_tsunami_unit_source, 
         i = as.list(ij$i), j = as.list(ij$j), discrete_source=list(ds1), rake=list(90),
         tsunami_surface_points_lonlat = list(tsunami_surface_points_lonlat),
-        approx_dx = list(NULL), approx_dy = list(NULL), 
-        scale_dxdy=list(point_spacing_scale), 
+        approx_dx = as.list(approx_dx), approx_dy = as.list(approx_dy), 
         depths_in_km=list(TRUE),
         mc.cores=MC_CORES, mc.preschedule=FALSE, SIMPLIFY=FALSE)
 

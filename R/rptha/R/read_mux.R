@@ -1,39 +1,41 @@
 #' Read mux2 data format
 #'
-#' S4 class to hold data from mux2 files (an output format of the URS tsunami propagation solver)
+#' Returns a list with data from mux2 files (an output file format of the URS
+#' tsunami propagation solver)
 #' 
 #' @param mux2file character. Filename of a mux2 file which is to be read
-#' @return An object of class mux2data with slots mux2file, loc, t, wave, wave_tail which
-#' hold the data in the file
+#' @param inds optional integer vector of indicies of stations to keep. This can be 
+#' useful if you want to work on the stations in chunks (e.g. to save memory)
+#' @param return_nstations_only logical. If TRUE, then return an integer giving
+#' the number of stations in the file
+#' @return A list with entries mux2file, loc, t, wave, wave_tail which
+#' hold the data from the file
 #' @export
 #' @examples
 #' \dontrun{
 #' # Hypothetical system file
 #' filename = "mux2_data_file.mux2"
-#' # Read into an object 'x', access with e.g. x@@wave, x@@t, etc
-#' x = mux2data(filename)
-#' slotNames(x)
+#' # Read into a list 'x', access with e.g. x$wave, x$t, etc
+#' x = read_mux2_data(filename)
+#' names(x)
 #' # Example of accessing the table holding the point location information
-#' summary(x@@loc)
+#' summary(x$loc)
 #' }
 #'
-mux2data = setClass('mux2data', 
-    slots = c(mux2file='character', 
-              loc="data.frame", 
-              t='vector', 
-              wave="matrix",
-              wave_tail='vector'))
-
-setMethod('initialize', 'mux2data', function(.Object, mux2file = 'character'){
+read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
 
     # Read mux2data into mux2data object
-    .Object@mux2file = mux2file
     tgscon = file(mux2file,'rb')
 
     ## Relevant section of C code
     # fwrite(&nsta,sizeof(int),1,fp);     
     ## Read the number of stations
     nsta = readBin(tgscon, what='int', n=1,size=4)
+
+    if(return_nstations_only){
+        close(tgscon)
+        return(nsta)
+    }
 
     ## Read a tgsrwg struct
     # Relevant section of C code
@@ -75,84 +77,96 @@ setMethod('initialize', 'mux2data', function(.Object, mux2file = 'character'){
     id = rep(NA,nsta)
 
     for(i in 1:nsta){
-    mm = readBin(tgscon, what='double', n=4, size=4)
-    geolat[i] = mm[1]
-    geolong[i] = mm[2]
-    mclat[i] = mm[3]
-    mclong[i] = mm[4]
+        mm = readBin(tgscon, what='double', n=4, size=4)
+        geolat[i] = mm[1]
+        geolong[i] = mm[2]
+        mclat[i] = mm[3]
+        mclong[i] = mm[4]
 
-    mm = readBin(tgscon, what='int', n=3, size=4)
-    ig[i] = mm[1]
-    ilon[i] = mm[2]
-    ilat[i] = mm[3]
+        mm = readBin(tgscon, what='int', n=3, size=4)
+        ig[i] = mm[1]
+        ilon[i] = mm[2]
+        ilat[i] = mm[3]
 
-    mm = readBin(tgscon, what='double', n=7, size=4)
-    z[i] = mm[1]
-    center_lat[i] = mm[2]
-    center_lon[i] = mm[3]
-    offset[i] = mm[4]
-    az[i] = mm[5]
-    baz[i] = mm[6]
+        mm = readBin(tgscon, what='double', n=7, size=4)
+        z[i] = mm[1]
+        center_lat[i] = mm[2]
+        center_lon[i] = mm[3]
+        offset[i] = mm[4]
+        az[i] = mm[5]
+        baz[i] = mm[6]
 
-    mm = readBin(tgscon, what='int', n=1, size=4)
-    nt[i] = mm
-    mm = readBin(tgscon, what='char', n=16, size=1)
-    id[i] = paste(mm, sep="", collapse="")
+        mm = readBin(tgscon, what='int', n=1, size=4)
+        nt[i] = mm
+        mm = readBin(tgscon, what='char', n=16, size=1)
+        id[i] = paste(mm, sep="", collapse="")
     }
 
     # Find points inside the grids
     in_grids = (ig>=0)
-
-    .Object@loc = data.frame(geolat=geolat[in_grids],
-    geolong=geolong[in_grids],
-    mclat=mclat[in_grids],
-    mclong=mclong[in_grids],
-    ig=ig[in_grids],
-    ilon=ilon[in_grids],
-    ilat=ilat[in_grids],
-    z=z[in_grids],
-    center_lat=center_lat[in_grids],
-    center_lon=center_lon[in_grids],
-    offset=offset[in_grids],
-    az=az[in_grids],
-    baz=baz[in_grids],
-    id=id[in_grids])
+    
+    # Key location summary statistics
+    loc = data.frame(
+        geolat=geolat[in_grids],
+        geolong=geolong[in_grids],
+        mclat=mclat[in_grids],
+        mclong=mclong[in_grids],
+        ig=ig[in_grids],
+        ilon=ilon[in_grids],
+        ilat=ilat[in_grids],
+        z=z[in_grids],
+        center_lat=center_lat[in_grids],
+        center_lon=center_lon[in_grids],
+        offset=offset[in_grids],
+        az=az[in_grids],
+        baz=baz[in_grids],
+        id=id[in_grids])
 
     # Read the timeseries data
     nsta2 = sum(in_grids)
     wave = matrix(NA, ncol=nt[1]+1, nrow=nsta2)
     wavet = rep(NA, nt[1]+1)
-    .Object@wave_tail = NA
+    wave_tail = NA
+
     for(i in 1:(nt[1]+1)){
-    # For files with hazard points outside the domain, this seems
-    # necessary
-    if(i %in% c(1,2)){
-        # First 2 rows have nsta points?
-        mm = readBin(tgscon, what='double', n=nsta, size=4)
-        mm = c(NA, mm[in_grids])
-    }else{
-        # Remaining rows have nsta2+1 points (includes a time
-        # value)
-        mm = readBin(tgscon, what='double', n=nsta2+1, size=4)
+        # For files with hazard points outside the domain, this seems
+        # necessary
+        if(i %in% c(1,2)){
+            # First 2 rows have nsta points?
+            mm = readBin(tgscon, what='double', n=nsta, size=4)
+            mm = c(NA, mm[in_grids])
+        }else{
+            # Remaining rows have nsta2+1 points (includes a time
+            # value)
+            mm = readBin(tgscon, what='double', n=nsta2+1, size=4)
+        }
+
+        if(length(mm) == (nsta2+1)){
+            wave[,i] = mm[2:(nsta2+1)]
+            wavet[i] = mm[1]
+        }else{
+            print('Warning: length of wave data not as expected')
+            wave_tail = mm
+            break
+        }
     }
 
-    if(length(mm) == (nsta2+1)){
-        wave[,i] = mm[2:(nsta2+1)]
-        wavet[i] = mm[1]
+    if(is.null(inds)){
+        output = list(mux2file=mux2file, loc=loc, t=wavet, wave=wave, wave_tail=wave_tail)
     }else{
-        print('Warning: length of wave data not as expected')
-        .Object@wave_tail = mm
-        break
+
+        if( min(inds) <= 0 ) stop('inds must all be > 0')
+        if( max(inds) > length(loc[,1]) ) stop('inds must all be <= number of stations')
+
+        output = list(mux2file=mux2file, loc=loc[inds,], t=wavet, 
+            wave=wave[inds,], wave_tail=wave_tail)
     }
-    }
-    .Object@wave = wave
-    .Object@t = wavet
 
     close(tgscon)
-    return(.Object)
-    }
-)
 
+    return(output)
+
+}
 
 #/*** DEFINITION FOR TIDE GAUGE OUTPUT ***/
 #struct tgs
