@@ -206,7 +206,7 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
 #' read a mux2 data file
 #'
 #' This function does basically the same thing as the previous read_mux2_data
-#' file.  I had hoped it would be faster but it does not seem to be
+#' file.  It is arguably more elegant. I had hoped it would be faster but it does not seem to be
 #' significantly faster. Anyway it might be useful for debugging so I keep it
 #' here, but am not exporting it into the package namespace
 #'
@@ -319,4 +319,44 @@ read_mux2_data_alternative<-function(mux2file, inds=NULL){
 
     return(output)
 
+}
+
+
+#' Compute the zero-crossing-period of x
+#'
+#' This function computes both the up-crossing and down-crossing periods and
+#' returns their average
+#'
+#' @param x numeric vector containing a timeseries with mean (approx) zero
+#' @param dt The time between consecutive samples of x
+#' @return The zero crossing period of x
+#' @export
+#' @examples
+#' x = seq(1,2000, by=2)
+#' period = 30
+#' y = sin(x*2*pi/period)
+#' # Check we can compute this
+#' y_period = zero_crossing_period(y, dt=2)
+#' stopifnot(abs(y_period/period - 1) < 0.1)
+#'
+zero_crossing_period <-function(x, dt=1){
+    sg_x = sign(x)
+
+    # Get 'positive' zero crossings
+    up_cross = which(diff(sg_x) < 0)
+    # Get 'negative' zero crossings
+    down_cross = which(diff(sg_x) > 0)
+
+    lu = length(up_cross)
+    ld = length(down_cross) 
+
+    if( lu < 2 | ld < 2){
+        stop('Series not long enough')
+    }
+
+    # Compute periods
+    up_period = (up_cross[lu] - up_cross[1])*dt/(lu - 1)
+    down_period = (down_cross[ld] - down_cross[1])*dt/(ld - 1)
+
+    return(0.5*(up_period + down_period))
 }
