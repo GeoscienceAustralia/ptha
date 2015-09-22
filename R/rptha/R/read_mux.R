@@ -1,13 +1,15 @@
 #' Read mux2 data format
 #'
 #' Returns a list with data from mux2 files (an output file format of the URS
-#' tsunami propagation solver). This format binary format consists of
-#' 1) A 4byte integer witht the number of stations
+#' tsunami propagation solver). This format binary format consists of \cr
+#' 1) A 4byte integer witht the number of stations \cr
 #' 2) A (large) table containing location and grid information for all stations.
 #' This includes a flag 'in_grids' which is -1 if the gauge is not in the grid
-#' (in which case its detailed timeseries output is not recorded)
-#' 3) A large array with each column giving the stage at each gauge, but the first
-#' column giving the time.
+#' (in which case its detailed timeseries output is not recorded) \cr
+#' 3) A row of 1's (one for each station) \cr
+#' 4) A row with -1 and then the number of timesteps for each station \cr
+#' 5) A large array with each column giving the stage at each gauge, but the first
+#' column giving the time. Only gauges with ig > -1 are recorded. \cr
 #' 
 #' @param mux2file character. Filename of a mux2 file which is to be read
 #' @param inds optional integer vector of indicies of stations to keep. This can be 
@@ -135,32 +137,35 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
 
     # Read the timeseries data
     nsta2 = sum(in_grids)
-    wave = matrix(NA, ncol=nt[1]+1, nrow=nsta2)
-    wavet = rep(NA, nt[1]+1)
+    wave = matrix(NA, ncol=nt[1], nrow=nsta2)
+    wavet = rep(NA, nt[1])
     wave_tail = NA
 
-    for(i in 1:(nt[1]+1)){
+    for(i in 1:(nt[1]+2)){
         # For files with hazard points outside the domain, this seems
         # necessary
         if(i %in% c(1,2)){
-            # First 2 rows have nsta points?
+            # First 2 rows have nsta points, and basically contain header type
+            # information
             mm = readBin(tgscon, what='double', n=nsta, size=4)
-            mm = c(NA, mm[in_grids])
+            next
         }else{
             # Remaining rows have nsta2+1 points (includes a time
             # value)
             mm = readBin(tgscon, what='double', n=nsta2+1, size=4)
         }
 
-        if(length(mm) == (nsta2+1)){
-            wave[,i] = mm[2:(nsta2+1)]
-            wavet[i] = mm[1]
+        if( (i > 2) & (length(mm) == (nsta2+1))){
+            wavet[i-2] = mm[1]
+            wave[,i-2] = mm[-1]
         }else{
             print('Warning: length of wave data not as expected')
             wave_tail = mm
             break
         }
     }
+
+    close(tgscon)
 
     if(is.null(inds)){
         output = list(mux2file=mux2file, loc=loc, t=wavet, wave=wave, wave_tail=wave_tail)
@@ -172,8 +177,6 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
         output = list(mux2file=mux2file, loc=loc[inds,], t=wavet, 
             wave=wave[inds,], wave_tail=wave_tail)
     }
-
-    close(tgscon)
 
     return(output)
 
@@ -196,3 +199,124 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
 #
 #   char id[16];         /* identifier */
 #   };
+
+
+
+
+#' read a mux2 data file
+#'
+#' This function does basically the same thing as the previous read_mux2_data
+#' file.  I had hoped it would be faster but it does not seem to be
+#' significantly faster. Anyway it might be useful for debugging so I keep it
+#' here, but am not exporting it into the package namespace
+#'
+read_mux2_data_alternative<-function(mux2file, inds=NULL){
+
+    desired_inds = inds
+    tgscon = file(mux2file,'rb')
+
+    ## Relevant section of C code
+    # fwrite(&nsta,sizeof(int),1,fp);     
+    ## Read the number of stations
+    nsta = readBin(tgscon, what='int', n=1, size=4)
+
+    # There are the equivalent of 19 x 4byte columns in the table, with one row for each station
+    # Read first a raw binary, and then work on each column separately
+    table_binary_stream = readBin(tgscon, what = 'raw', n = nsta*19*4, size=1)
+
+    # Trick to extract indices corresponding to 'first column data' bytes
+    bigseq = seq(0, 19*4*nsta, 19*4)
+    bigMat = matrix(NA, nrow=length(bigseq), ncol=4)
+    for(i in 1:ncol(bigMat)) bigMat[,i] = bigseq + i
+    inds = c(t(bigMat))
+
+    # Read each column
+    geolat = readBin(table_binary_stream[inds], what='double', n=nsta, size=4)
+    geolong = readBin(table_binary_stream[inds+4], what='double', n=nsta, size=4)
+    mclat = readBin(table_binary_stream[inds+8], what='double', n=nsta, size=4)
+    mclong = readBin(table_binary_stream[inds+12], what='double', n=nsta, size=4)
+    ig = readBin(table_binary_stream[inds + 16], what = 'int', n=nsta, size=4)
+    ilon = readBin(table_binary_stream[inds + 20], what = 'int', n=nsta, size=4)
+    ilat = readBin(table_binary_stream[inds + 24], what = 'int', n=nsta, size=4)
+    z = readBin(table_binary_stream[inds + 28], what = 'double', n=nsta, size=4)
+    center_lat = readBin(table_binary_stream[inds + 32], what = 'double', n=nsta, size=4)
+    center_lon = readBin(table_binary_stream[inds + 36], what = 'double', n=nsta, size=4)
+    offset = readBin(table_binary_stream[inds + 40], what = 'double', n=nsta, size=4)
+    az = readBin(table_binary_stream[inds + 44], what = 'double', n=nsta, size=4)
+    baz = readBin(table_binary_stream[inds + 48], what = 'double', n=nsta, size=4)
+    dt = readBin(table_binary_stream[inds + 52], what = 'double', n=nsta, size=4)
+    nt = readBin(table_binary_stream[inds + 56], what = 'int', n=nsta, size=4)
+    # Final character
+    id = matrix('', ncol=16,nrow=nsta)
+    for(i in 1:16){
+        id[,i] = readBin(table_binary_stream[bigMat[,1] + 60 + i-1], what = 'char', n=nsta, size=1)
+    }
+    id = apply(id, 1, f<-function(x) paste(x, sep="", collapse=""))
+
+    # Find points inside the grids
+    in_grids = (ig >= 0)
+        
+    # Key location summary statistics
+    loc = data.frame(
+        geolat=geolat[in_grids],
+        geolong=geolong[in_grids],
+        mclat=mclat[in_grids],
+        mclong=mclong[in_grids],
+        ig=ig[in_grids],
+        ilon=ilon[in_grids],
+        ilat=ilat[in_grids],
+        z=z[in_grids],
+        center_lat=center_lat[in_grids],
+        center_lon=center_lon[in_grids],
+        offset=offset[in_grids],
+        az=az[in_grids],
+        baz=baz[in_grids],
+        dt=dt[in_grids],
+        id=id[in_grids])
+
+    ## Now read the wave timeseries at each gauge ##
+    nsta2 = sum(in_grids)
+    wave = matrix(NA, ncol=nt[1], nrow=nsta2)
+    wavet = rep(NA, nt[1])
+    wave_tail = NA
+
+    # Read a line of ones and negative ones showing which stations are included
+    ones = readBin(tgscon, what = 'integer', n = nsta, size=4)
+    # Read a line that contains the number of time-steps (nt[1]) in every entry, except
+    # those where no data are recorded, where it has (-1)
+    another_header = readBin(tgscon, what = 'integer', n = nsta, size=4)
+
+    if(nt[1] > 1){
+        wave_double_stream = readBin(tgscon, what = 'double', n = (nsta2+1)*(nt[1]), size=4)
+
+        if(length(wave_double_stream)!= (nsta2+1)*nt[1]){
+            print('Warning: Possible parsing error reading file')
+        }
+
+        wave_time_indices =  seq(0, (nsta2+1)*(nt[1]-1), by=(nsta2 + 1)) + 1
+
+        next_int_stream = readBin(tgscon, what = 'integer', n = 2*nsta, size=4)
+
+        wavet = wave_double_stream[wave_time_indices]
+        wave[,1:nt[1]] = wave_double_stream[-wave_time_indices]
+    }
+
+
+    close(tgscon) 
+    # Return output
+    if(is.null(desired_inds)){
+        output = list(mux2file=mux2file, loc=loc, t=wavet, wave=wave, wave_tail=wave_tail)
+
+    }else{
+        if( min(desired_inds) <= 0 ) stop('inds must all be > 0')
+        if( max(desired_inds) > length(loc[,1]) ){
+            stop('inds must all be <= number of stations')
+        }
+
+        output = list(mux2file=mux2file, loc=loc[desired_inds,], t=wavet, 
+            wave=wave[desired_inds,], wave_tail=NA)
+    }
+
+    return(output)
+
+}
