@@ -351,7 +351,8 @@ zero_crossing_period <-function(x, dt=1){
     ld = length(down_cross) 
 
     if( lu < 2 | ld < 2){
-        stop('Series not long enough')
+        #warning('To few zero crossings for period computation')
+        return(NA)
     }
 
     # Compute periods
