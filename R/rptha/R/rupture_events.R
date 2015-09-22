@@ -32,7 +32,7 @@
 #' @param unit_source_stats Output of discretized_source_approximate_summary_statistics or similar.
 #' @param mu Shear modulus in Pascals.
 #' @return A list with information which can be used to create all events.
-#' 
+#' @export
 get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
 
     ## Get scaling-relation based area, width, length
@@ -54,7 +54,9 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
     desired_subfault_count = round(desired_ALW['area']/mean_subfault_area)
 
     # Round length towards the longer side of the target
-    nlength = round(desired_ALW['length']/mean_subfault_length)
+    # This makes it unlikely to get events with e.g. length < width
+    # which can happen otherwise
+    nlength = ceiling(desired_ALW['length']/mean_subfault_length)
     nwidth = round(desired_subfault_count/nlength)
     #nwidth = round(desired_ALW['width']/mean_subfault_width)
     #nlength = round(desired_subfault_count/nwidth)

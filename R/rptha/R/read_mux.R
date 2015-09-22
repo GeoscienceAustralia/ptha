@@ -1,13 +1,21 @@
 #' Read mux2 data format
 #'
 #' Returns a list with data from mux2 files (an output file format of the URS
-#' tsunami propagation solver)
+#' tsunami propagation solver). This format binary format consists of
+#' 1) A 4byte integer witht the number of stations
+#' 2) A (large) table containing location and grid information for all stations.
+#' This includes a flag 'in_grids' which is -1 if the gauge is not in the grid
+#' (in which case its detailed timeseries output is not recorded)
+#' 3) A large array with each column giving the stage at each gauge, but the first
+#' column giving the time.
 #' 
 #' @param mux2file character. Filename of a mux2 file which is to be read
 #' @param inds optional integer vector of indicies of stations to keep. This can be 
 #' useful if you want to work on the stations in chunks (e.g. to save memory)
 #' @param return_nstations_only logical. If TRUE, then return an integer giving
-#' the number of stations in the file
+#' the number of stations in the file FOR WHICH TIMESERIES DATA IS RECORDED.
+#' This might not be the same as the number of stations, because of the 'in_grids'
+#' treatment.
 #' @return A list with entries mux2file, loc, t, wave, wave_tail which
 #' hold the data from the file
 #' @export
@@ -31,11 +39,6 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
     # fwrite(&nsta,sizeof(int),1,fp);     
     ## Read the number of stations
     nsta = readBin(tgscon, what='int', n=1,size=4)
-
-    if(return_nstations_only){
-        close(tgscon)
-        return(nsta)
-    }
 
     ## Read a tgsrwg struct
     # Relevant section of C code
@@ -74,6 +77,7 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
     az = rep(NA,nsta)
     baz = rep(NA,nsta)
     nt = rep(NA,nsta)
+    dt = rep(NA,nsta)
     id = rep(NA,nsta)
 
     for(i in 1:nsta){
@@ -95,6 +99,7 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
         offset[i] = mm[4]
         az[i] = mm[5]
         baz[i] = mm[6]
+        dt[i] = mm[7]
 
         mm = readBin(tgscon, what='int', n=1, size=4)
         nt[i] = mm
@@ -103,8 +108,13 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
     }
 
     # Find points inside the grids
-    in_grids = (ig>=0)
+    in_grids = (ig >= 0)
     
+    if(return_nstations_only){
+        close(tgscon)
+        return(sum(in_grids))
+    }
+
     # Key location summary statistics
     loc = data.frame(
         geolat=geolat[in_grids],
@@ -120,6 +130,7 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
         offset=offset[in_grids],
         az=az[in_grids],
         baz=baz[in_grids],
+        dt=dt[in_grids],
         id=id[in_grids])
 
     # Read the timeseries data
