@@ -219,6 +219,15 @@ haz_pts = cu$approxSpatialLines(dem_haz_lines,
 
 haz_pts@data = cbind(haz_pts@data, data.frame('elev'=dem[haz_pts]))
 
+## Ensure all points have elev < 0
+# At this stage, we will still have occasional points with terrestrial
+# elevation. This can be due to e.g. sites where we jump from 'deep ocean' to
+# 'land' [which becomes more likely due to our island removal]. The contouring
+# algorithm can interact with this to produce a few points with positive
+# elevation. E.G. in one instance I had ~ 18000 hazard points, with 79 being
+# terrestrial
+haz_pts = haz_pts[haz_pts$elev < 0,]
+
 # Write out
 writeOGR(haz_pts, dsn='OUTPUTS/HAZ_PTS', layer='HAZ_PTS',
          driver='ESRI Shapefile', overwrite=TRUE)
