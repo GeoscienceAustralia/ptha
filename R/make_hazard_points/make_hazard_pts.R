@@ -44,7 +44,7 @@ extra_manual_haz_lines = 'EXTRA_MANUAL_HAZ_LINE'
 haz_pts_mask = 'HAZ_PT_REMOVAL_REGION' 
 # FINAL STEP: Translate hazard points so this is the lower left longitude -- to
 # match with the tsunami model domain
-haz_pt_lowerleft = -65 
+haz_pt_lowerleft = -45 
 
 ## END INPUT DATA
 ###############################################################################

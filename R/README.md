@@ -13,7 +13,7 @@ where the XXXX are adapted to match the file name (and on Ubuntu, you would add 
 
 If the above fails because you are missing packages, then try running this prior to the install to get the required packages:
 
-    install.packages(c('sp', 'rgdal', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geosphere', 'rgl', 'testthat', 'devtools'))
+    install.packages(c('sp', 'rgdal', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'testthat', 'devtools'))
 
 If you are separately reading ncdf rasters, you will also need the 'ncdf4' package.
 
