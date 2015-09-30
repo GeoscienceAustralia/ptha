@@ -79,7 +79,14 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
             )
 
         # Logical test that we have the right number of subfaults
-        stopifnot(length(event_indices[[i]]) == (nlength*nwidth))
+        if(!(length(event_indices[[i]]) == (nlength*nwidth))){
+            print(paste0('Mw: ', Mw))
+            print('Event indices: ')
+            print(event_indices[[i]])
+            print(paste0('length(event_indices[[i]]) = ', length(event_indices[[i]])))
+            print(paste0('nlength: ', nlength, ' nwidth: ', nwidth, ' nlength*nwidth: ', nlength*nwidth))
+            stop('Incorrect number of subfaults')
+        }
 
         # Shorthand
         ll = unit_source_stats$length[event_indices[[i]]]
@@ -167,11 +174,16 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
 # So we might not really need to make the long-terms slip rate constant everywhere.
 #
 
-#' Apply get_all_earthquake_events to a range of Mw values and combine the results
+#' Apply \code{get_all_earthquake_events_of_magnitude_Mw} to a range of Mw
+#' values and combine the results
 #'
-#' @param discrete_source The discrete source for the events
+#' @param discrete_source The discrete source for the source-zone, as from \code{discrete_source_from_source_contours}
 #' @param unit_source_statistics Pre-computed unit-source-statistics for the
-#' discrete-source. If NULL, a cheap approximation is made (not recommended)
+#' discrete-source. If NULL, a local computation is made with
+#' \code{discretized_source_summary_statistics}, assuming
+#' approx_dx=approx_dy=5000, and using default arguments for other inputs. 
+#' It's normally best to compute this yourself beforehand to take control of
+#' those parameters.
 #' @param Mmin The minimum Mw value in the table
 #' @param Mmax The maximum Mw value in the table
 #' @param dMw The increment between the Mw values
