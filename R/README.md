@@ -21,3 +21,15 @@ source_contours_2_unit_sources
 ------------------------------
 
 This contains example code to make tsunami unit sources from source contours
+
+
+make_hazard_points
+------------------
+
+Example scripts to make hazard points (i.e. offshore points where the tsunami tide-gauges are recorded)
+
+
+combine_tsunami_sources
+-----------------------
+Example script to convert from tsunami unit sources to tsunami event offshore
+wave heights (assuming the URSGA solver was used for tsunami propagation)

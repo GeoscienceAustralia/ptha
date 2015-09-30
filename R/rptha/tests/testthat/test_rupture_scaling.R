@@ -29,7 +29,6 @@ test_that('test_rupture_scaling', {
 
 
     # Test slip from Mw area mu
-
     slip0 = slip_from_Mw_area_mu(9.0, output_simple[1], mu=3e+10)
     expect_that(round(slip0,0) == 10, is_true())
 
