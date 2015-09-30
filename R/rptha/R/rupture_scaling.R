@@ -108,5 +108,34 @@ slip_from_Mw_area_mu<-function(Mw, area, mu=3e+10){
     return(slip)
 }
 
+#' Compute slip given Mw (and optionally mu, and a function to compute the area from Mw)
+#'
+#' This gives an alternative interface to 'slip_from_Mw_area_mu', where a
+#' function to compute area from Mw is provided instead of the area. The default
+#' interface serves as a basic example of a function to compute mean slip given
+#' Mw alone. Functions like this are required in the event_probability calculations
+#'
+#' @param Mw Moment magnitude
+#' @param mu Shear Modulus (Pascals)
+#' @param area_function function which returns the area (in km^2) given Mw
+#' @return slip in m
+#' @examples
+#' x = slip_from_Mw(9.0) # Should be roughly 10m
+#' @export
+slip_from_Mw<-function(Mw, mu=3e+10, 
+    area_function=function(Mw){Mw_2_rupture_size(Mw)[1]}){
 
+
+        # Area in m^2
+        area = area_function(Mw)*1e+06
+
+        M0 = M0_2_Mw(Mw, inverse=TRUE)
+
+        slip = M0/(mu*area)
+
+        # Get rid of 'area' name
+        names(slip) = NULL
+
+        return(slip)
+}
 

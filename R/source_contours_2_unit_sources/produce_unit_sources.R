@@ -8,7 +8,7 @@ library(rptha)
 desired_subfault_length = 100 # km
 desired_subfault_width = 50 # km
 MC_CORES = 12 # Number of cores for parallel parts
-tsunami_source_pixels = 900 # The tsunami source is computed on a grid with this many pixels on each dimension
+tsunami_source_cellsize = 1/60
 make_3d_interactive_plot = TRUE # Only do this if you can use interactive graphics and have rgl (i.e. not on NCI)
 point_spacing_scale = 1.0 # Should be ~ 1.0. Increase to run faster at expense of accuracy
 
@@ -69,9 +69,15 @@ for(sourcename in names(discretized_sources)){
 
     ## Get surface points for tsunami source
     source_lonlat_extent = extent(ds1$depth_contours)
+
+    # Ensure tsunami extent exactly aligns with a degree
+    # (in practice this will help us align pixels with our propagation model)
+    tsunami_extent = rbind(floor(source_lonlat_extent[c(1,3)] - c(2,2)), 
+                           ceiling(source_lonlat_extent[c(2,4)] + c(2,2)))
+
     tsunami_surface_points_lonlat = expand.grid(
-        seq(source_lonlat_extent[1]-2, source_lonlat_extent[2]+2, len=tsunami_source_pixels),
-        seq(source_lonlat_extent[3]-2, source_lonlat_extent[4]+2, len=tsunami_source_pixels))
+        seq(tsunami_extent[1,1], tsunami_extent[2,1], by = tsunami_source_cellsize),
+        seq(tsunami_extent[1,2], tsunami_extent[2,2], by = tsunami_source_cellsize))
 
     # Make indices for unit sources in parallel computation.
     # If j varies fastest then the shallow unit sources
