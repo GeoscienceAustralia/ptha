@@ -183,3 +183,51 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
 # So we might not really need to make the long-terms slip rate constant everywhere.
 #
 
+#' Apply get_all_earthquake_events to a range of Mw values and combine the results
+#'
+#' @param discrete_source The discrete source for the events
+#' @param unit_source_statistics Pre-computed unit-source-statistics for the
+#' discrete-source. If NULL, a cheap approximation is made (not recommended)
+#' @param Mmin The minimum Mw value in the table
+#' @param Mmax The maximum Mw value in the table
+#' @param dMw The increment between the Mw values
+#' @return A large table containing information on all earthquake events, and
+#' the unit sources they involve
+get_all_earthquake_events<-function(discrete_source, unit_source_statistics = NULL,
+    Mmin=7.5, Mmax = 9.6, dMw = 0.1){
+
+    if(is.null(unit_source_statistics)){
+
+        unit_source_statistics = discretized_source_summary_statistics(discrete_source, 
+            approx_dx = 5000, approx_dy = 5000)
+    }
+
+    ## Get all earthquake events
+    all_eq_events = lapply(as.list(seq(Mmin, Mmax, dMw)), 
+        f<-function(x) get_all_events_of_magnitude_Mw(x, unit_source_statistics))
+
+    ## Convert to a single table which holds all the events + their subfaults
+    add_unit_source_indices_to_event_table<-function(event){
+        event_statistics = event$event_statistics
+
+        # Make a character vector, where each entry is a string
+        # with all unit source indices for that event, separated by '-'
+        event_index_string = unlist(lapply(event$event_indices, 
+            f<-function(x) paste0(x, sep="-", collapse="")))
+
+        event_statistics = cbind(event_statistics, 
+            data.frame(event_index_string = event_index_string))
+
+        return(event_statistics)
+    }
+
+    all_eq_tables = lapply(all_eq_events, add_unit_source_indices_to_event_table)
+
+    # big_eq_table + unit_source_statistics hold everything we need about the event geometry
+    # (but not probability)
+    big_eq_table = all_eq_tables[[1]]
+    for(i in 2:length(all_eq_tables)) big_eq_table = rbind(big_eq_table, all_eq_tables[[i]])
+
+    return(big_eq_table)
+}
+
