@@ -125,7 +125,6 @@ slip_from_Mw_area_mu<-function(Mw, area, mu=3e+10){
 slip_from_Mw<-function(Mw, mu=3e+10, 
     area_function=function(Mw){Mw_2_rupture_size(Mw)[1]}){
 
-
         # Area in m^2
         area = area_function(Mw)*1e+06
 

@@ -39,6 +39,8 @@ test_that('test_rupture_scaling', {
 
     # Test slip_from_Mw
     slip2 = slip_from_Mw(9.0)
+    # remove name from slip0 for equality test
+    names(slip0) = NULL
     expect_that(isTRUE(all.equal(slip0, slip2)), is_true())
 
 })
