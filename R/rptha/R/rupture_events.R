@@ -1,27 +1,11 @@
 # Code to make earthquake events
 #
-# FIXME: Need to carefully review discretized_source_approximate_summary_statistics
-# e.g. 
-# - needs a 'depth_in_km' argument [also there is a magic number 1000 which
-# needs to account for this]
-# - the area computation should be done more carefully (actually it is a real
-# area, and is equal to length*width, but check all this again)
-# - Potentially the computations should employ integration over the sub-source
-# points
-#
-#
 # - Tests to help ensure results are sensible:
 #   - All the events do have the desired magnitude (back-calculated)
 #   - Event areas/lengths/widths are consistent with Mw + scaling relation
-#   (make a plot and compare graphically)
+#   (make a plot and compare graphically) [Actually at the moment we check this in the function]
 #   - Good to have a test that links the rupture size with the deformation
-#
-# TODO #
-# - Integrate changes in rupture_scaling to main code
-# -  
-#
-# Mw = 8.0
-#
+
 #' Given the summary statistics for a source zone, compute **all** events
 #' with moment magnitude Mw.
 #'
@@ -193,6 +177,7 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
 #' @param dMw The increment between the Mw values
 #' @return A large table containing information on all earthquake events, and
 #' the unit sources they involve
+#' @export
 get_all_earthquake_events<-function(discrete_source, unit_source_statistics = NULL,
     Mmin=7.5, Mmax = 9.6, dMw = 0.1){
 
