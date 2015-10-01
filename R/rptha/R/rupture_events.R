@@ -41,7 +41,7 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
     # This makes it unlikely to get events with e.g. length < width
     # which can happen otherwise
     nlength = ceiling(desired_ALW['length']/mean_subfault_length)
-    nwidth = round(desired_subfault_count/nlength)
+    nwidth = max(round(desired_subfault_count/nlength), 1)
     #nwidth = round(desired_ALW['width']/mean_subfault_width)
     #nlength = round(desired_subfault_count/nwidth)
 

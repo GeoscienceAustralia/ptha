@@ -2,16 +2,21 @@
 % Please edit documentation in R/rupture_events.R
 \name{get_all_earthquake_events}
 \alias{get_all_earthquake_events}
-\title{Apply get_all_earthquake_events to a range of Mw values and combine the results}
+\title{Apply \code{get_all_earthquake_events_of_magnitude_Mw} to a range of Mw
+values and combine the results}
 \usage{
 get_all_earthquake_events(discrete_source, unit_source_statistics = NULL,
   Mmin = 7.5, Mmax = 9.6, dMw = 0.1)
 }
 \arguments{
-\item{discrete_source}{The discrete source for the events}
+\item{discrete_source}{The discrete source for the source-zone, as from \code{discrete_source_from_source_contours}}
 
 \item{unit_source_statistics}{Pre-computed unit-source-statistics for the
-discrete-source. If NULL, a cheap approximation is made (not recommended)}
+discrete-source. If NULL, a local computation is made with
+\code{discretized_source_summary_statistics}, assuming
+approx_dx=approx_dy=5000, and using default arguments for other inputs.
+It's normally best to compute this yourself beforehand to take control of
+those parameters.}
 
 \item{Mmin}{The minimum Mw value in the table}
 
@@ -24,6 +29,7 @@ A large table containing information on all earthquake events, and
 the unit sources they involve
 }
 \description{
-Apply get_all_earthquake_events to a range of Mw values and combine the results
+Apply \code{get_all_earthquake_events_of_magnitude_Mw} to a range of Mw
+values and combine the results
 }
 
