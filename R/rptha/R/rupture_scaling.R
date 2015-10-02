@@ -119,17 +119,18 @@ slip_from_Mw_area_mu<-function(Mw, area, mu=3e+10, constant=9.05){
 #' @param Mw Moment magnitude
 #' @param mu Shear Modulus (Pascals)
 #' @param area_function function which returns the area (in km^2) given Mw
+#' @param constant The value of constant passed to \code{M0_2_Mw}
 #' @return slip in m
 #' @examples
 #' x = slip_from_Mw(9.0) # Should be roughly 10m
 #' @export
 slip_from_Mw<-function(Mw, mu=3e+10, 
-    area_function=function(Mw){Mw_2_rupture_size(Mw)[1]}){
+    area_function=function(Mw){Mw_2_rupture_size(Mw)[1]}, constant=9.05){
 
         # Area in m^2
         area = area_function(Mw)*1e+06
 
-        M0 = M0_2_Mw(Mw, inverse=TRUE)
+        M0 = M0_2_Mw(Mw, inverse=TRUE, constant=constant)
 
         slip = M0/(mu*area)
 

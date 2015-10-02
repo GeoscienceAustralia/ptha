@@ -15,16 +15,17 @@
 #' @param Mw Moment magnitude.
 #' @param unit_source_stats Output of discretized_source_approximate_summary_statistics or similar.
 #' @param mu Shear modulus in Pascals.
+#' @param constant value of constant passed to \code{M0_2_Mw}
 #' @return A list with information which can be used to create all events.
 #' @export
-get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
+get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, constant=9.05){
 
     ## Get scaling-relation based area, width, length
     rupture_stats = Mw_2_rupture_size(Mw, detailed=TRUE, CI_sd = 2.0)
     desired_ALW = rupture_stats$values
 
     # Record M0 for later testing
-    M0 = M0_2_Mw(Mw, inverse=TRUE)
+    M0 = M0_2_Mw(Mw, inverse=TRUE, constant=constant)
 
     # FIXME: This area computation needs to be fixed
     subfault_areas = unit_source_stats[,'length']*unit_source_stats[,'width']
@@ -97,7 +98,7 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10){
         event_statistics$area[i] = sum(ll*ww)
         event_statistics$mean_length[i] = sum(ll)/nwidth
         event_statistics$mean_width[i] = sum(ww)/nlength
-        event_statistics$slip[i] = slip_from_Mw_area_mu(Mw, event_statistics$area[i], mu)
+        event_statistics$slip[i] = slip_from_Mw_area_mu(Mw, event_statistics$area[i], mu, constant=constant)
 
         # Logical test that the magnitude is correct
         local_M0 = event_statistics$slip[i] * (event_statistics$area[i] * 1e+06) * mu
