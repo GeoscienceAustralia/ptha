@@ -13,7 +13,7 @@ test_that("test_rupture_creation_and_probabilities", {
     unit_source_summary_statistics = discretized_source_summary_statistics(discrete_source,
         approx_dx=5000, approx_dy = 5000) 
 
-    # Get a table with all earthquake events between Mw = 7.6 and Mw = 9.2
+    # Get a table with all earthquake events between Mw = 7.5 and Mw = 9.4
     dMw = 0.1
     earthquake_event_table = get_all_earthquake_events(discrete_source, unit_source_summary_statistics,
         Mmin = 7.5, Mmax = 9.4, dMw = dMw)

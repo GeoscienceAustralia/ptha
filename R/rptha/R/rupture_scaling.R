@@ -38,8 +38,8 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' Units are km and km^2
 #'
 #' @param Mw Moment Magnitude 
-#' @param relation Name for the scaling relation ('Strasser' uses the interface
-#' event relation for Strasser et al 2010.)
+#' @param relation Name for the scaling relation ('Strasser' uses the subduction
+#' interface event relation for Strasser et al 2010.)
 #' @param detailed logical. If False return a vector with area/width/length,
 #' otherwise provide a list with the latter as well as information on
 #' log10-standard-deviations
@@ -47,7 +47,10 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' and negative confidence interval threshold, both of which are CI_sd
 #' standard deviations away from the mean (in log space where the regression is
 #' computed)
-#' @return A numeric vector
+#' @return A numeric vector with the area/width/length (if detailed = FALSE), otherwise
+#' a list with the rupture size statistics as well as upper and lower bounds
+#' for a confidence interval, and information on the log10 standard deviation
+#' of each variable (which can be used to compute any other confidence interval).
 #' @export
 #' @examples
 #' rupture_statistics1 = Mw_2_rupture_size(9.0)
