@@ -5,7 +5,7 @@
 \title{Compute slip given Mw (and optionally mu, and a function to compute the area from Mw)}
 \usage{
 slip_from_Mw(Mw, mu = 3e+10, area_function = function(Mw) {    
-  Mw_2_rupture_size(Mw)[1] })
+  Mw_2_rupture_size(Mw)[1] }, constant = 9.05)
 }
 \arguments{
 \item{Mw}{Moment magnitude}
@@ -13,6 +13,8 @@ slip_from_Mw(Mw, mu = 3e+10, area_function = function(Mw) {
 \item{mu}{Shear Modulus (Pascals)}
 
 \item{area_function}{function which returns the area (in km^2) given Mw}
+
+\item{constant}{The value of constant passed to \code{M0_2_Mw}}
 }
 \value{
 slip in m

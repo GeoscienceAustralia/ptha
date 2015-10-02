@@ -4,7 +4,7 @@
 \alias{slip_from_Mw_area_mu}
 \title{Compute mean slip on a rupture of a given area, moment magnitude Mw, and}
 \usage{
-slip_from_Mw_area_mu(Mw, area, mu = 3e+10)
+slip_from_Mw_area_mu(Mw, area, mu = 3e+10, constant = 9.05)
 }
 \arguments{
 \item{Mw}{Moment magnitude}
@@ -12,6 +12,8 @@ slip_from_Mw_area_mu(Mw, area, mu = 3e+10)
 \item{area}{area of rupture (km^2)}
 
 \item{mu}{Shear Modulus (Pascals)}
+
+\item{constant}{value of constant passed to \code{M0_2_Mw}}
 }
 \value{
 slip in m

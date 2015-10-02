@@ -5,7 +5,8 @@
 \title{Given the summary statistics for a source zone, compute **all** events
 with moment magnitude Mw.}
 \usage{
-get_all_events_of_magnitude_Mw(Mw, unit_source_stats, mu = 3e+10)
+get_all_events_of_magnitude_Mw(Mw, unit_source_stats, mu = 3e+10,
+  constant = 9.05)
 }
 \arguments{
 \item{Mw}{Moment magnitude.}
@@ -13,6 +14,8 @@ get_all_events_of_magnitude_Mw(Mw, unit_source_stats, mu = 3e+10)
 \item{unit_source_stats}{Output of discretized_source_approximate_summary_statistics or similar.}
 
 \item{mu}{Shear modulus in Pascals.}
+
+\item{constant}{value of constant passed to \code{M0_2_Mw}}
 }
 \value{
 A list with information which can be used to create all events.
