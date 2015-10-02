@@ -68,7 +68,7 @@ compute_slip_density_parameters<-function(Mw, mu=3e+10, constant=9.05){
 #' \code{get_all_earthquake_events}
 #' @param conditional_probability_model character. Supported values are
 #' 'all_equal' and 'inverse_slip', corresponding to cases discussed above.
-#' @return A numeric vector with length = nrow(event_table) giving the relative probabilities. 
+#' @return A numeric vector with length = nrow(event_table) giving the conditional probabilities. 
 #' @export
 get_event_probabilities_conditional_on_Mw<-function(
     event_table,
@@ -132,9 +132,9 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' rate (= long_term_slip_rate*coupling_coefficient), the long-term moment rate
 #' should equal the rate integrated from the individual events: \cr
 #' \deqn{ \mu  long_term_seismogenic_slip_rate  sourcezone_area = \sum_{i \in events} \big{(} \mu event_slip_{i} event_area_{i} Pr(event_{i} | event_of_size_Mw = Mw_{i}) rate_of_events_of_size_Mw_{i}\big{)} }\cr
-#' where Pr(event_{i} | event_of_size_Mw_{i}) gives the relative probability of each
+#' where Pr(event_{i} | event_of_size_Mw_{i}) gives the conditional probability of each
 #' event with the same Mw in the event table [i.e. if we take all events with a
-#' given Mw out of the table, their relative probabilities should sum to 1]. 
+#' given Mw out of the table, their conditional probabilities should sum to 1]. 
 #' The meaning of other variables should be clear. 
 #' Note that a factor of 10^(a) will appear in the RHS term
 #' rate_of_events_of_size_Mw_{i}, and nowhere else. Hence to compute a, we just
@@ -146,7 +146,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' the source-zone (m/year). This gives the long-term average slip on the fault
 #' due to seismic events (creep is ignored, so these rates must account for the
 #' rate of coupling)
-#' @param slip_rate_prob_prob numeric vector with probabilities for the slip_rate parameters
+#' @param slip_rate_prob numeric vector with probabilities for the slip_rate parameters
 #' @param b numeric vector with 1 or more 'b' parameters
 #' @param b_prob numeric vector with probabilities for the b parameters
 #' @param Mw_min numeric vector with 1 or more 'Mw_min' parameters
@@ -240,15 +240,15 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # sum to 1.0, for fixed Mw
     for(Mw in table_Mw_values){
         ii = which(eq_Mw == Mw)
-        relative_prob_sum = 
+        conditional_prob_sum = 
             sum(event_conditional_probabilities[ii])
-        if(!isTRUE(all.equal(relative_prob_sum, 1.0))){
-            print(paste0('Error: relative probabilities for Mw = ', Mw, 
+        if(!isTRUE(all.equal(conditional_prob_sum, 1.0))){
+            print(paste0('Error: conditional probabilities for Mw = ', Mw, 
                 ' do not sum to 1.0'))
-            print(paste0('They sum to: ', relative_prob_sum))
+            print(paste0('They sum to: ', conditional_prob_sum))
             print('The values are:')
             print(event_conditional_probabilities[ii])
-            stop('Invalid relative probabilities')
+            stop('Invalid conditional probabilities')
         }
     }
     
