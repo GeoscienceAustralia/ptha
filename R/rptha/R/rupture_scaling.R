@@ -92,14 +92,15 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
 #' @param Mw Moment magnitude
 #' @param area area of rupture (km^2)
 #' @param mu Shear Modulus (Pascals)
+#' @param constant value of constant passed to \code{M0_2_Mw}
 #' @return slip in m
 #' @export
 #' @examples
 #' s0 = slip_from_Mw_area_mu(9.0, 100e+03) # Should be close to 10m
 #'
-slip_from_Mw_area_mu<-function(Mw, area, mu=3e+10){
+slip_from_Mw_area_mu<-function(Mw, area, mu=3e+10, constant=9.05){
 
-    M0 = M0_2_Mw(Mw, inverse=TRUE)
+    M0 = M0_2_Mw(Mw, inverse=TRUE, constant=constant)
 
     area = area*1e+06 # m^2
 
