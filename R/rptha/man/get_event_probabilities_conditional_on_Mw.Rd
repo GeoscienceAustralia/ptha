@@ -16,7 +16,7 @@ events on the source-zone. It's the output of
 'all_equal' and 'inverse_slip', corresponding to cases discussed above.}
 }
 \value{
-A numeric vector with length = nrow(event_table) giving the relative probabilities.
+A numeric vector with length = nrow(event_table) giving the conditional probabilities.
 }
 \description{
 Consider all the earthquake events on a discrete source with magnitude Mw.

@@ -117,10 +117,9 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' Get a function to compute the rate of earthquakes with magnitude > Mw
 #'
 #' The input parameters are based on a truncated Gutenberg Richter model: \cr
-#' The parameter 'a' is obviously be adjusted to account for constant
-#' rescaling, and here it is computed to match the long-term seismogenic slip rate (m/year).
-#' Details are explained below. All other parameters are provided by the user.
-#' \cr
+#' The parameter 'a' is adjusted to account for constant rescaling, and here it
+#' is computed to match the long-term seismogenic slip rate (m/year). Details
+#' are explained below. All other parameters are provided by the user. \cr
 #' To account for uncertainties in those parameters, the user may specify each
 #' as a vector of one-or-more parameters with associated probabilities (which of
 #' course must sum to 1). The code then treats all combinations of those
@@ -131,10 +130,11 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' rate. Given particular values of all the pararameters except a, and a long-term seisomogenic slip
 #' rate (= long_term_slip_rate*coupling_coefficient), the long-term moment rate
 #' should equal the rate integrated from the individual events: \cr
-#' \deqn{ \mu  long_term_seismogenic_slip_rate  sourcezone_area = \sum_{i \in events} \big{(} \mu event_slip_{i} event_area_{i} Pr(event_{i} | event_of_size_Mw = Mw_{i}) rate_of_events_of_size_Mw_{i}\big{)} }\cr
+#' \deqn{ \mu  long_term_seismogenic_slip_rate  sourcezone_area = 
+#' \sum_{i \in events} \big{(} \mu event_slip_{i} event_area_{i} Pr(event_{i} | event_of_size_Mw = Mw_{i}) rate_of_events_of_size_Mw_{i}\big{)} }\cr
 #' where Pr(event_{i} | event_of_size_Mw_{i}) gives the conditional probability of each
 #' event with the same Mw in the event table [i.e. if we take all events with a
-#' given Mw out of the table, their conditional probabilities should sum to 1]. 
+#' given Mw from the table, their conditional probabilities should sum to 1]. 
 #' The meaning of other variables should be clear. 
 #' Note that a factor of 10^(a) will appear in the RHS term
 #' rate_of_events_of_size_Mw_{i}, and nowhere else. Hence to compute a, we just

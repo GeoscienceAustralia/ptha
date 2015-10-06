@@ -15,6 +15,8 @@ the source-zone (m/year). This gives the long-term average slip on the fault
 due to seismic events (creep is ignored, so these rates must account for the
 rate of coupling)}
 
+\item{slip_rate_prob}{numeric vector with probabilities for the slip_rate parameters}
+
 \item{b}{numeric vector with 1 or more 'b' parameters}
 
 \item{b_prob}{numeric vector with probabilities for the b parameters}
@@ -42,8 +44,6 @@ rate function with those parameters is computed at points in a sequence from
 min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
 required so that the extremes are included). The function value is then
 evaluated via lookup.}
-
-\item{slip_rate_prob_prob}{numeric vector with probabilities for the slip_rate parameters}
 }
 \value{
 function of a numeric vector Mw, which returns the rate of events
@@ -51,10 +51,9 @@ with magnitude > Mw
 }
 \description{
 The input parameters are based on a truncated Gutenberg Richter model: \cr
-The parameter 'a' is obviously be adjusted to account for constant
-rescaling, and here it is computed to match the long-term seismogenic slip rate (m/year).
-Details are explained below. All other parameters are provided by the user.
-\cr
+The parameter 'a' is adjusted to account for constant rescaling, and here it
+is computed to match the long-term seismogenic slip rate (m/year). Details
+are explained below. All other parameters are provided by the user. \cr
 To account for uncertainties in those parameters, the user may specify each
 as a vector of one-or-more parameters with associated probabilities (which of
 course must sum to 1). The code then treats all combinations of those
@@ -65,10 +64,11 @@ Next we clarify how the 'a' parameter is constrained to match the long-term seis
 rate. Given particular values of all the pararameters except a, and a long-term seisomogenic slip
 rate (= long_term_slip_rate*coupling_coefficient), the long-term moment rate
 should equal the rate integrated from the individual events: \cr
-\deqn{ \mu  long_term_seismogenic_slip_rate  sourcezone_area = \sum_{i \in events} \big{(} \mu event_slip_{i} event_area_{i} Pr(event_{i} | event_of_size_Mw = Mw_{i}) rate_of_events_of_size_Mw_{i}\big{)} }\cr
-where Pr(event_{i} | event_of_size_Mw_{i}) gives the relative probability of each
+\deqn{ \mu  long_term_seismogenic_slip_rate  sourcezone_area =
+\sum_{i \in events} \big{(} \mu event_slip_{i} event_area_{i} Pr(event_{i} | event_of_size_Mw = Mw_{i}) rate_of_events_of_size_Mw_{i}\big{)} }\cr
+where Pr(event_{i} | event_of_size_Mw_{i}) gives the conditional probability of each
 event with the same Mw in the event table [i.e. if we take all events with a
-given Mw out of the table, their relative probabilities should sum to 1].
+given Mw from the table, their conditional probabilities should sum to 1].
 The meaning of other variables should be clear.
 Note that a factor of 10^(a) will appear in the RHS term
 rate_of_events_of_size_Mw_{i}, and nowhere else. Hence to compute a, we just

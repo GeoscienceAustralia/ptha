@@ -3,15 +3,19 @@ library(rptha)
 ##############################################################################
 # INPUT DATA 
 #
-interface_shapefile = '../SOURCE_CONTOURS_2_UNIT_SOURCES/source_shapefiles/alaska.shp'
-# sourcename (occurs in input mux_file directory names, and in output files)
+# sourcename (occurs in input mux_file directory names, and in output files, and 
+# is the list-entry-name of the discrete_source in the list held in discrete_source_RDS
 sourcename = 'alaska'
+# Discrete sources RDS filename. This holds a list with the discrete sources, with
+# the name of sourcename associated with the discrete source for this source-zone
+discrete_source_RDS = '../SOURCE_CONTOURS_2_UNIT_SOURCES/all_discretized_sources.RDS'
 # A string which will glob all the mux2 files for the source zone
 mux_files_glob = 'alaska_mux2_test/alaska_*/*mux2'
-# Subfault width/length (must be the same as used to make the unit sources)
-desired_subfault_length = 100
-desired_subfault_width = 50
+#mux_files_glob = '../test/honshu/honshu_mux2_test/*/*mux2'
+#mux_files_glob = paste0('../OUTPUTS/', sourcename, '/*/*mux2')
 # Value of approx_dx/approx_dy passed to 'discretized_source_summary_statistics'
+# Smaller values can be more accurate, because statistics are computed by 
+# filling the source with integration points that have this spacing (on the surface)
 discrete_source_stats_dx = 4000
 # Read a chunk of stations at once. If the chunksize is too large we might run
 # out of memory. Must be an integer
@@ -20,48 +24,28 @@ station_chunksize = 10000
 mux_timestep = 20 # FIXME: This is contained in the output file
 # Minimum and maximum magnitude we should consider
 Mmax = 9.2
-Mmin = 7.8
+Mmin = 7.6
+# Basename for output_folder. Outputs will go in ./output_folder/sourcename/
+# The trailing slash is important
+output_folder = paste0('outputs/', sourcename, '/')
 #
 # END INPUT
-##############################################################################
+###############################################################################
+
+dir.create(output_folder, recursive=TRUE, showWarnings=FALSE)
 
 ## Get the discrete source geometric information
 
-discrete_source = discretized_source_from_source_contours(interface_shapefile, 
-    desired_subfault_length, desired_subfault_width, make_plot=FALSE)
+discrete_source = readRDS(discrete_source_RDS)[[sourcename]]
 
+## Get summary statistics for unit sources (both to save for later use, and to 
+## pass to 'get_all_earthquake_events'.
 unit_source_statistics = discretized_source_summary_statistics(discrete_source, 
     approx_dx = discrete_source_stats_dx, approx_dy = discrete_source_stats_dx)
 
-
-
-## Get all earthquake events
-all_eq_events = lapply(as.list(seq(Mmin, Mmax, 0.1)), 
-    f<-function(x) get_all_events_of_magnitude_Mw(x, unit_source_statistics))
-
-
-## Convert to a single table which holds all the events + their subfaults
-add_unit_source_indices_to_event_table<-function(event){
-    event_statistics = event$event_statistics
-
-    # Make a character vector, where each entry is a string
-    # with all unit source indices for that event, separated by '-'
-    event_index_string = unlist(lapply(event$event_indices, 
-        f<-function(x) paste0(x, sep="-", collapse="")))
-
-    event_statistics = cbind(event_statistics, 
-        data.frame(event_index_string = event_index_string))
-
-    return(event_statistics)
-}
-
-all_eq_tables = lapply(all_eq_events, add_unit_source_indices_to_event_table)
-
-# big_eq_table + unit_source_statistics hold everything we need about the event geometry
-# (but not probability)
-big_eq_table = all_eq_tables[[1]]
-for(i in 2:length(all_eq_tables)) big_eq_table = rbind(big_eq_table, all_eq_tables[[i]])
-
+# Get all earthquake events
+big_eq_table = get_all_earthquake_events(discrete_source, unit_source_statistics, 
+    Mmin, Mmax, dMw=0.1)
 nearthquakes = length(big_eq_table[,1])
 
 
@@ -132,9 +116,12 @@ for(i in 1:(length(station_starts) - 1)){
 
         wave_field = all_data[[1]]$wave*0
         # Main loop
+        # Note the potential for treating multiple events at once if they have the same
+        # value of 'us'
         for(us in unit_sources){
-            wave_field = wave_field + slip*all_data[[which(all_mux_subfault_numbers == us)]]$wave
+            wave_field = wave_field + all_data[[which(all_mux_subfault_numbers == us)]]$wave
         }
+        wave_field = slip*wave_field
 
         # Store max wave height
         wave_max = apply(wave_field, 1, max)
@@ -149,9 +136,9 @@ for(i in 1:(length(station_starts) - 1)){
 }
 
 
-saveRDS(mux_data_loc, file=paste0(sourcename, '_tide_gauge_loc.RDS'))
-saveRDS(height_period_array, file=paste0(sourcename, '_height_period_array.RDS'))
-saveRDS(big_eq_table, file=paste0(sourcename,'_earthquake_events_table.RDS'))
+saveRDS(mux_data_loc, file=paste0(output_folder, sourcename, '_tide_gauge_loc.RDS'))
+saveRDS(height_period_array, file=paste0(output_folder, sourcename, '_height_period_array.RDS'))
+saveRDS(big_eq_table, file=paste0(output_folder, sourcename,'_earthquake_events_table.RDS'))
 
 #' Make a quick plot of 'z' at tsunami points (indicated by height)
 plot_waves_with_unit_sources<-function(x, y, z, zcol='black', z_threshold=0.1, ...){

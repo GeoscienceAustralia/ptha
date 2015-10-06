@@ -10,8 +10,8 @@ Mw_2_rupture_size(Mw, relation = "Strasser", detailed = FALSE, CI_sd = 1)
 \arguments{
 \item{Mw}{Moment Magnitude}
 
-\item{relation}{Name for the scaling relation ('Strasser' uses the interface
-event relation for Strasser et al 2010.)}
+\item{relation}{Name for the scaling relation ('Strasser' uses the subduction
+interface event relation for Strasser et al 2010.)}
 
 \item{detailed}{logical. If False return a vector with area/width/length,
 otherwise provide a list with the latter as well as information on
@@ -23,7 +23,10 @@ standard deviations away from the mean (in log space where the regression is
 computed)}
 }
 \value{
-A numeric vector
+A numeric vector with the area/width/length (if detailed = FALSE), otherwise
+a list with the rupture size statistics as well as upper and lower bounds
+for a confidence interval, and information on the log10 standard deviation
+of each variable (which can be used to compute any other confidence interval).
 }
 \description{
 Units are km and km^2
