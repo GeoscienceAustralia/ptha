@@ -210,6 +210,9 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
 #' significantly faster. Anyway it might be useful for debugging so I keep it
 #' here, but am not exporting it into the package namespace
 #'
+#' @param mux2file mux2 filename
+#' @param inds indices to extract, see \code{read_mux2_data} for details
+#' @return see \code{read_mux2_data} for details
 read_mux2_data_alternative<-function(mux2file, inds=NULL){
 
     desired_inds = inds

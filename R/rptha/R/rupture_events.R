@@ -41,8 +41,17 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
     # Round length towards the longer side of the target
     # This makes it unlikely to get events with e.g. length < width
     # which can happen otherwise
-    nlength = ceiling(desired_ALW['length']/mean_subfault_length)
+    #nlength = ceiling(desired_ALW['length']/mean_subfault_length)
+
+    nlength = max(round(desired_ALW['length']/mean_subfault_length), 1)
     nwidth = max(round(desired_subfault_count/nlength), 1)
+
+    # We don't allow > subfault width than length
+    if(nwidth > nlength){
+        nlength = round(sqrt(desired_subfault_count))
+        nwidth = nlength
+    }
+
     #nwidth = round(desired_ALW['width']/mean_subfault_width)
     #nlength = round(desired_subfault_count/nwidth)
 
@@ -118,7 +127,8 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
                  (aa < rupture_stats$plus_CI['length']))
 
         if(!(test1 & test2 & test3)){
-            browser()
+            #browser()
+            print('Warning -- event length/width/area not within 2sd of the scaling relation')
         }
     }
 
