@@ -592,6 +592,7 @@ get_unit_source_from_discretized_source<-function(discretized_source,
 
     output = list(unit_source_grid = unit_source_coords, 
                   fine_downdip_transects = fine_downdip_transects)
+    return(output)
 }
 
 #' Extract the lon-lat midpoints of the top edge of all unit sources

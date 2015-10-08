@@ -277,8 +277,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # 10^a = LHS/RHS
         a_parameter = log10(LHS/RHS)
 
-        # Compute rates for a truncated Gutenberg Richter model, assuming a = 0
-        # We subsequently correct a to match the slip
+        # Compute rates of exceedence for a truncated Gutenberg Richter model,
+        # assuming a = 0. We subsequently correct a to match the slip
         all_rate_vec = Mw_exceedence_rate_truncated_gutenberg_richter(Mw_seq, 
             a = a_parameter, b = par$b, Mw_min = par$Mw_min, Mw_max = par$Mw_max)
 
