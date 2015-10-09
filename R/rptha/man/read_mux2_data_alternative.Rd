@@ -6,6 +6,14 @@
 \usage{
 read_mux2_data_alternative(mux2file, inds = NULL)
 }
+\arguments{
+\item{mux2file}{mux2 filename}
+
+\item{inds}{indices to extract, see \code{read_mux2_data} for details}
+}
+\value{
+see \code{read_mux2_data} for details
+}
 \description{
 This function does basically the same thing as the previous read_mux2_data
 file.  It is arguably more elegant. I had hoped it would be faster but it does not seem to be
