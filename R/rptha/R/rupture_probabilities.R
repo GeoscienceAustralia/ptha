@@ -290,12 +290,28 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         final_rates = final_rates + all_par_prob[i]*all_rate_matrix[i,]
     }
 
+    # Store the max/min rates from all branches of the logic tree,
+    # to help quantify uncertainty later
+    # Consider producing a fuller picture from all_rate_matrix
+    upper_rate = apply(all_rate_matrix, 2, max)
+    lower_rate = apply(all_rate_matrix, 2, min)
+
     # For the output function, if we exceed the bounds on the LHS we can return
     # the most extreme value, and on the RHS we should return zero.
     # We take care of the LHS in approxfun, and the RHS below
     output_function = approxfun(Mw_seq, final_rates, rule=2)
-    output_function2<-function(Mw){
+    upper_function = approxfun(Mw_seq, upper_rate, rule=2)
+    lower_function = approxfun(Mw_seq, lower_rate, rule=2)
+
+    output_function2<-function(Mw, bounds=FALSE){
         output = (Mw <= (max_Mw_max))*output_function(Mw)
+        if(bounds){
+            output_up = (Mw <= max_Mw_max)*upper_function(Mw)
+            output_low = (Mw <= max_Mw_max)*lower_function(Mw)
+            
+            output = c(output, output_low, output_up)
+            names(output) = c('rate', 'min', 'max')
+        }
         return(output)
     }
 
