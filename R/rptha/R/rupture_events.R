@@ -198,11 +198,13 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
 #' @param Mmin The minimum Mw value in the table
 #' @param Mmax The maximum Mw value in the table
 #' @param dMw The increment between the Mw values
+#' @param mu Shear modulus in Pascals.
+#' @param constant value of constant passed to \code{M0_2_Mw}
 #' @return A large table containing information on all earthquake events, and
 #' the unit sources they involve
 #' @export
 get_all_earthquake_events<-function(discrete_source, unit_source_statistics = NULL,
-    Mmin=7.5, Mmax = 9.6, dMw = 0.1){
+    Mmin=7.5, Mmax = 9.6, dMw = 0.1, mu=3.0e+10, constant=9.05){
 
     if(is.null(unit_source_statistics)){
 
@@ -212,7 +214,10 @@ get_all_earthquake_events<-function(discrete_source, unit_source_statistics = NU
 
     ## Get all earthquake events
     all_eq_events = lapply(as.list(seq(Mmin, Mmax, dMw)), 
-        f<-function(x) get_all_events_of_magnitude_Mw(x, unit_source_statistics))
+        f<-function(x){ 
+            get_all_events_of_magnitude_Mw(x, unit_source_statistics, 
+                mu=mu, constant=constant)}
+        )
 
     ## Convert to a single table which holds all the events + their subfaults
     add_unit_source_indices_to_event_table<-function(event){
