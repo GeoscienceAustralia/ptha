@@ -258,12 +258,15 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # Get parameter vector
         par = all_par_combo[i,] 
 
-        # Evaluate LHS of balance equation
+        # Evaluate LHS of seismic moment balance equation
         LHS = (sourcezone_total_area * 1e+06) * par$slip_rate
 
         lower_Mw = eq_Mw - table_Mw_increment/2
         upper_Mw = eq_Mw + table_Mw_increment/2
 
+        # We need to solve for 'a', given the long-term slip rate.
+        # This can be done by initially setting 'a' to zero, then
+        # back-calculating the value required to match the long-term slip
         rate_of_events_of_size_Mw_aeq0 = 
             Mw_exceedence_rate_truncated_gutenberg_richter(lower_Mw, a = 0, 
                 b = par$b, Mw_min=par$Mw_min, Mw_max = par$Mw_max) -

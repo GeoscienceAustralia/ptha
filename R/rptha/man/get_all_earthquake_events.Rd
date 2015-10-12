@@ -6,7 +6,7 @@
 values and combine the results}
 \usage{
 get_all_earthquake_events(discrete_source, unit_source_statistics = NULL,
-  Mmin = 7.5, Mmax = 9.6, dMw = 0.1)
+  Mmin = 7.5, Mmax = 9.6, dMw = 0.1, mu = 3e+10, constant = 9.05)
 }
 \arguments{
 \item{discrete_source}{The discrete source for the source-zone, as from \code{discrete_source_from_source_contours}}
@@ -23,6 +23,10 @@ those parameters.}
 \item{Mmax}{The maximum Mw value in the table}
 
 \item{dMw}{The increment between the Mw values}
+
+\item{mu}{Shear modulus in Pascals.}
+
+\item{constant}{value of constant passed to \code{M0_2_Mw}}
 }
 \value{
 A large table containing information on all earthquake events, and
