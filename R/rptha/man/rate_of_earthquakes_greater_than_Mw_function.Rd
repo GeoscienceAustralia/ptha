@@ -46,8 +46,9 @@ min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
 required so that the extremes are included). The function value is then
 evaluated via lookup.}
 
-\item{Mw_frequency_distribution.}{Either 'truncated_gutenberg_richter' or
-'characteristic_gutenberg_richter'}
+\item{Mw_frequency_distribution}{character giving the variant on the Gutenberg
+Richter model used. Either 'truncated_gutenberg_richter' or
+'characteristic_gutenberg_richter'.}
 }
 \value{
 function of a numeric vector Mw, which returns the rate of events
@@ -62,8 +63,8 @@ To account for uncertainties in those parameters, the user may specify each
 as a vector of one-or-more parameters with associated probabilities (which of
 course must sum to 1). The code then treats all combinations of those
 parameters as having probability equal to the product of the individual
-parameter probabilities. It then integrates the associated Gutenberg Richter
-models to produce a single Rate function, which is returned. \cr
+parameter probabilities. It then integrates the chosen Gutenberg Richter
+model to produce a single Rate function, which is returned. \cr
 Next we clarify how the 'a' parameter is constrained to match the long-term seismogenic slip
 rate. Given particular values of all the pararameters except a, and a long-term seisomogenic slip
 rate (= long_term_slip_rate*coupling_coefficient), the long-term moment rate
