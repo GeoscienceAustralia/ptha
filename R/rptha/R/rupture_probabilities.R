@@ -404,7 +404,7 @@ Mw_exceedence_rate_truncated_gutenberg_richter<-function(Mw, a, b, Mw_min, Mw_ma
 #' @param Mw_max the upper truncated moment magnitude
 #' @return The rate of events with magnitude > Mw
 #' @export
-Mw_exceedence_rate_characteristic_gutenberg_richter<-function(Mw, a, b, Mw_max){
+Mw_exceedence_rate_characteristic_gutenberg_richter<-function(Mw, a, b, Mw_min, Mw_max){
 
     N_mag_gt_Mw = 10^(a - b*pmax(Mw, Mw_min))
 
