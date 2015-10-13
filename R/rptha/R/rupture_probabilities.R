@@ -124,8 +124,8 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' as a vector of one-or-more parameters with associated probabilities (which of
 #' course must sum to 1). The code then treats all combinations of those
 #' parameters as having probability equal to the product of the individual
-#' parameter probabilities. It then integrates the associated Gutenberg Richter
-#' models to produce a single Rate function, which is returned. \cr
+#' parameter probabilities. It then integrates the chosen Gutenberg Richter
+#' model to produce a single Rate function, which is returned. \cr
 #' Next we clarify how the 'a' parameter is constrained to match the long-term seismogenic slip
 #' rate. Given particular values of all the pararameters except a, and a long-term seisomogenic slip
 #' rate (= long_term_slip_rate*coupling_coefficient), the long-term moment rate
@@ -160,8 +160,9 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' all events in the source-zone (conditional on the fact than an event with
 #' their magnitude did occur). Output of
 #' \code{get_event_probabilities_conditional_on_Mw}
-#' @param Mw_frequency_distribution. Either 'truncated_gutenberg_richter' or
-#' 'characteristic_gutenberg_richter'
+#' @param Mw_frequency_distribution character giving the variant on the Gutenberg 
+#' Richter model used. Either 'truncated_gutenberg_richter' or
+#' 'characteristic_gutenberg_richter'. 
 #' @param computational_increment For each final branch of the logic tree, the
 #' rate function with those parameters is computed at points in a sequence from
 #' min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
@@ -282,7 +283,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # back-calculating the value required to match the long-term slip
         rate_of_events_of_size_Mw_aeq0 = 
             Mfd(lower_Mw, a = 0, b = par$b, Mw_min=par$Mw_min, Mw_max = par$Mw_max) -
-            Mdf(upper_Mw, a = 0, b = par$b, Mw_min=par$Mw_min, Mw_max = par$Mw_max)
+            Mfd(upper_Mw, a = 0, b = par$b, Mw_min=par$Mw_min, Mw_max = par$Mw_max)
 
         RHS = sum(eq_slip * (eq_area*1e+06) * rate_of_events_of_size_Mw_aeq0 * 
             event_conditional_probabilities)

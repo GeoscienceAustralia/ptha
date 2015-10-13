@@ -7,7 +7,8 @@
 rate_of_earthquakes_greater_than_Mw_function(slip_rate, slip_rate_prob, b,
   b_prob, Mw_min, Mw_min_prob, Mw_max, Mw_max_prob, sourcezone_total_area,
   event_table, event_conditional_probabilities,
-  computational_increment = 0.01)
+  computational_increment = 0.01,
+  Mw_frequency_distribution = "truncated_gutenberg_richter")
 }
 \arguments{
 \item{slip_rate}{numeric vector with 1 or more long-term seismogenic slip rates for
@@ -44,6 +45,9 @@ rate function with those parameters is computed at points in a sequence from
 min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
 required so that the extremes are included). The function value is then
 evaluated via lookup.}
+
+\item{Mw_frequency_distribution.}{Either 'truncated_gutenberg_richter' or
+'characteristic_gutenberg_richter'}
 }
 \value{
 function of a numeric vector Mw, which returns the rate of events
