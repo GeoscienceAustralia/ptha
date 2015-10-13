@@ -74,7 +74,8 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
     # Store event summary statistics here
     event_statistics = data.frame(area = rep(0.0, nevents), 
         mean_length = rep(0.0, nevents), mean_width = rep(0.0, nevents), 
-        slip = rep(0.0, nevents), Mw = rep(Mw, nevents))
+        slip = rep(0.0, nevents), Mw = rep(Mw, nevents), 
+        mean_depth = rep(0.0, nevents), max_depth = rep(0.0, nevents))
     # Store event indices here
     event_indices = list()
 
@@ -101,6 +102,8 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
         # Shorthand
         ll = unit_source_stats$length[event_indices[[i]]]
         ww = unit_source_stats$width[event_indices[[i]]]
+        dd = unit_source_stats$depth[event_indices[[i]]]
+        dd_M = unit_source_stats$max_depth[event_indices[[i]]]
 
         # Store key statistics in table.
         # Note that width*length != area although they will be similar
@@ -108,6 +111,8 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
         event_statistics$mean_length[i] = sum(ll)/nwidth
         event_statistics$mean_width[i] = sum(ww)/nlength
         event_statistics$slip[i] = slip_from_Mw_area_mu(Mw, event_statistics$area[i], mu, constant=constant)
+        event_statistics$mean_depth[i] = mean(dd)
+        event_statistics$max_depth[i] = max(dd_M)
 
         # Logical test that the magnitude is correct
         local_M0 = event_statistics$slip[i] * (event_statistics$area[i] * 1e+06) * mu

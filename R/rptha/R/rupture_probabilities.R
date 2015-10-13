@@ -160,6 +160,8 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' all events in the source-zone (conditional on the fact than an event with
 #' their magnitude did occur). Output of
 #' \code{get_event_probabilities_conditional_on_Mw}
+#' @param Mw_frequency_distribution. Either 'truncated_gutenberg_richter' or
+#' 'characteristic_gutenberg_richter'
 #' @param computational_increment For each final branch of the logic tree, the
 #' rate function with those parameters is computed at points in a sequence from
 #' min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
@@ -173,7 +175,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     Mw_min, Mw_min_prob, Mw_max, Mw_max_prob, 
     sourcezone_total_area, event_table, 
     event_conditional_probabilities,
-    computational_increment=0.01){
+    computational_increment=0.01,
+    Mw_frequency_distribution='truncated_gutenberg_richter'){
 
     # Check data
     stopifnot(length(slip_rate) == length(slip_rate_prob))
@@ -251,6 +254,16 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             stop('Invalid conditional probabilities')
         }
     }
+
+    if(Mw_frequency_distribution == 'truncated_gutenberg_richter'){
+        Mfd = Mw_exceedence_rate_truncated_gutenberg_richter
+    }else if(Mw_frequency_distribution == 'characteristic_gutenberg_richter'){
+        Mfd = Mw_exceedence_rate_characteristic_gutenberg_richter
+    }else{
+        stop(paste0(" Value of Mw_frequency_distribution: ", 
+            Mw_frequency_distribution, " not recognized"))
+    }
+
     
     # Compute the rates for each final branch of the logic tree
     all_rate_matrix = matrix(NA, ncol = length(Mw_seq), nrow=nrow(all_par_combo))
@@ -268,22 +281,21 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # This can be done by initially setting 'a' to zero, then
         # back-calculating the value required to match the long-term slip
         rate_of_events_of_size_Mw_aeq0 = 
-            Mw_exceedence_rate_truncated_gutenberg_richter(lower_Mw, a = 0, 
-                b = par$b, Mw_min=par$Mw_min, Mw_max = par$Mw_max) -
-            Mw_exceedence_rate_truncated_gutenberg_richter(upper_Mw, a = 0, 
-                b = par$b, Mw_min=par$Mw_min, Mw_max = par$Mw_max)
+            Mfd(lower_Mw, a = 0, b = par$b, Mw_min=par$Mw_min, Mw_max = par$Mw_max) -
+            Mdf(upper_Mw, a = 0, b = par$b, Mw_min=par$Mw_min, Mw_max = par$Mw_max)
 
         RHS = sum(eq_slip * (eq_area*1e+06) * rate_of_events_of_size_Mw_aeq0 * 
             event_conditional_probabilities)
 
         # Back-calculate 'a'
         # 10^a = LHS/RHS
+        # NOTE: This assumes that 'a' appears in Mfd as 10^(a) {only}
         a_parameter = log10(LHS/RHS)
 
         # Compute rates of exceedence for a truncated Gutenberg Richter model,
         # assuming a = 0. We subsequently correct a to match the slip
-        all_rate_vec = Mw_exceedence_rate_truncated_gutenberg_richter(Mw_seq, 
-            a = a_parameter, b = par$b, Mw_min = par$Mw_min, Mw_max = par$Mw_max)
+        all_rate_vec = Mfd(Mw_seq, a = a_parameter, b = par$b, 
+            Mw_min = par$Mw_min, Mw_max = par$Mw_max)
 
         all_rate_matrix[i,] = all_rate_vec
     }
@@ -368,5 +380,33 @@ Mw_exceedence_rate_truncated_gutenberg_richter<-function(Mw, a, b, Mw_min, Mw_ma
 
     output = N_mag_gt_Mw*(Mw <= Mw_max)
     
+    return(output)
+}
+
+
+
+#' Evaluate the rate of earthquakes with magnitude > Mw using a characteristic
+#' variant of the Gutenberg Richter distribution.
+#' 
+#' The 'pure' Gutenberg Richter distribution gives the number of earthquakes with magnitude > Mw as:\cr
+#' N_{GR}(x > Mw) = 10^(a-bMw) \cr
+#' where a and b are constants. Note 10^(a) is the rate of earthquakes with Mw > 0. \cr
+#' The characteristic formulation used here ajusts this as:
+#' N_{GR}(x > Mw) = 10^(a-bMw) if Mw_min <= Mw <= Mw_max \cr
+#' ~~~~~~~~~~~~~  = 10^(a-bMw_min) if Mw < Mw_min
+#' ~~~~~~~~~~~~~  = 0 if Mw > Mw_max
+#' This means that the rate of earthquakes of size EXACTLY Mw_max is finite.
+#' @param Mw Moment magnitude
+#' @param a The a parameter
+#' @param b The b parameter
+#' @param Mw_min the lower truncated moment magnitude
+#' @param Mw_max the upper truncated moment magnitude
+#' @return The rate of events with magnitude > Mw
+#' @export
+Mw_exceedence_rate_characteristic_gutenberg_richter<-function(Mw, a, b, Mw_max){
+
+    N_mag_gt_Mw = 10^(a - b*pmax(Mw, Mw_min))
+
+    output = N_mag_gt_Mw*(Mw <= Mw_max)
     return(output)
 }

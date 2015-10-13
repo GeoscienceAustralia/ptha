@@ -17,8 +17,8 @@ test_that('test_discrete_source_summary_statistics', {
     output1 = discretized_source_approximate_summary_statistics(discrete_source1)
     output2 = discretized_source_summary_statistics(discrete_source1)
 
+    # Check that the results don't differ too much
     output_diff = abs(output1/output2 - 1)
-
     expect_that(all(abs(output_diff) < 0.2), is_true())
 
 })

@@ -340,6 +340,7 @@ discretized_source_approximate_summary_statistics<-function(
     subfault_number = rep(NA, num_sources)
     downdip_number = rep(NA, num_sources)
     alongstrike_number = rep(NA, num_sources)
+    max_depth = rep(NA, num_sources)
 
     source_coordinates = list() 
 
@@ -367,6 +368,7 @@ discretized_source_approximate_summary_statistics<-function(
             lon_c[counter] = mean(source_coords[,1])
             lat_c[counter] = mean(source_coords[,2])
             depth[counter] = mean(source_coords[,3])
+            max_depth[counter] = max(source_coords[,3])
            
             # Strike = midpoint bearing along great-circle of top of unit
             # source. 
@@ -419,7 +421,7 @@ discretized_source_approximate_summary_statistics<-function(
     output = data.frame(lon_c = lon_c, lat_c = lat_c, depth = depth, strike = strike, 
         dip = dip, rake = rake, slip = slip, length = len, width = width, 
         downdip_number = downdip_number, alongstrike_number = alongstrike_number, 
-        subfault_number = subfault_number)
+        subfault_number = subfault_number, max_depth = max_depth)
 
     # Plotting only below here
 
