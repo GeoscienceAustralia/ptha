@@ -39,14 +39,21 @@ dir.create(output_folder, recursive=TRUE, showWarnings=FALSE)
 
 discrete_source = readRDS(discrete_source_RDS)[[sourcename]]
 
-## Get summary statistics for unit sources (both to save for later use, and to 
-## pass to 'get_all_earthquake_events'.
-unit_source_statistics = discretized_source_summary_statistics(discrete_source, 
-    approx_dx = discrete_source_stats_dx, approx_dy = discrete_source_stats_dx)
+## FIXME: The following lines of code should probably be replaced with reads from files
+## since the same variables are required when computing event probabilities. Practically,
+## the user will probably want to produce the variables at that stage, so they can
+## conveniently understand the modelled earthquake probabilities and compare
+## with data.
+if(TRUE){
+    ## Get summary statistics for unit sources (both to save for later use, and to 
+    ## pass to 'get_all_earthquake_events'.
+    unit_source_statistics = discretized_source_summary_statistics(discrete_source, 
+        approx_dx = discrete_source_stats_dx, approx_dy = discrete_source_stats_dx)
 
-# Get all earthquake events
-big_eq_table = get_all_earthquake_events(discrete_source, unit_source_statistics, 
-    Mmin, Mmax, dMw=dMw)
+    # Get all earthquake events
+    big_eq_table = get_all_earthquake_events(discrete_source, unit_source_statistics, 
+        Mmin, Mmax, dMw=dMw)
+}
 nearthquakes = length(big_eq_table[,1])
 
 
