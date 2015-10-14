@@ -23,8 +23,9 @@ station_chunksize = 10000
 # Time between mux2 file tide gauge records
 mux_timestep = 20 # FIXME: This is contained in the output file
 # Minimum and maximum magnitude we should consider
-Mmax = 9.2
-Mmin = 7.6
+Mmax = 9.6
+Mmin = 7.5
+dMw = 0.1
 # Basename for output_folder. Outputs will go in ./output_folder/sourcename/
 # The trailing slash is important
 output_folder = paste0('outputs/', sourcename, '/')
@@ -45,7 +46,7 @@ unit_source_statistics = discretized_source_summary_statistics(discrete_source,
 
 # Get all earthquake events
 big_eq_table = get_all_earthquake_events(discrete_source, unit_source_statistics, 
-    Mmin, Mmax, dMw=0.1)
+    Mmin, Mmax, dMw=dMw)
 nearthquakes = length(big_eq_table[,1])
 
 
@@ -124,14 +125,13 @@ for(i in 1:(length(station_starts) - 1)){
         wave_field = slip*wave_field
 
         # Store max wave height
-        wave_max = apply(wave_field, 1, max)
-        height_period_array[inds,j,1] = wave_max
+        height_period_array[inds,j,1] = apply(wave_field, 1, max) 
 
         # Store max wave period
         # FIXME: Consider the effect of only working on part of the series
         # around the peak
-        period_zc = apply(wave_field, 1, f<-function(x) zero_crossing_period(x, dt=mux_timestep))
-        height_period_array[inds, j, 2] = period_zc
+        height_period_array[inds, j, 2] = 
+            apply(wave_field, 1, f<-function(x) zero_crossing_period(x, dt=mux_timestep))
     }
 }
 
@@ -139,7 +139,7 @@ for(i in 1:(length(station_starts) - 1)){
 saveRDS(mux_data_loc, file=paste0(output_folder, sourcename, '_tide_gauge_loc.RDS'))
 saveRDS(height_period_array, file=paste0(output_folder, sourcename, '_height_period_array.RDS'))
 saveRDS(big_eq_table, file=paste0(output_folder, sourcename,'_earthquake_events_table.RDS'))
-
+saveRDS(unit_source_statistics, file=paste0(output_folder, sourcename,'_unit_source_statistics.RDS'))
 #' Make a quick plot of 'z' at tsunami points (indicated by height)
 plot_waves_with_unit_sources<-function(x, y, z, zcol='black', z_threshold=0.1, ...){
 
