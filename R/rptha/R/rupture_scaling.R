@@ -85,10 +85,40 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
         names(output$log10_sigmas) = c('area', 'width', 'length')
         output$plus_CI = 10**(log10(output$values) + CI_sd*output$log10_sigmas)
         output$minus_CI = 10**(log10(output$values) - CI_sd*output$log10_sigmas)
+        # Store coefficients too
+        output$area_absigma = area_absigma
+        output$width_absigma = width_absigma
+        output$length_absigma = length_absigma
     }
 
     return(output)
 }
+
+#' Compute the inverse of Mw_2_rupture_size, given area as an input
+#'
+#' Given an area, this function computes the Mw value such that
+#'\code{Mw_2_rupture_size(Mw, relation=relation, detailed=TRUE, CI_sd = CI_sd) = area}. 
+#' It currently does not give information on length or width.
+#' 
+#' @param Mw numeric moment magnitude
+#' @param relation Type of scaling relation used ('Strasser')
+#' @param CI_sd numeric (can be positive or negative). Positive values correspond to
+#' lower Mw, negative values to higher Mw.
+#' @return values of Mw
+Mw_2_rupture_size_inverse<-function(area, relation='Strasser', CI_sd = 0){
+
+    if(length(CI_sd) > 1) stop('length(CI_sd) must = 1')
+  
+    # log10(area) = Mw*area_coef[2] + area_coef[1] + CI_sd*area_coef[3] 
+    area_coef = Mw_2_rupture_size(6.0, detailed=TRUE)$area_absigma 
+
+    Mw = (log10(area) - area_coef[1] - CI_sd*area_coef[3])/area_coef[2]
+
+    names(Mw) = NULL
+
+    return(Mw)
+}
+
 
 #' Compute mean slip on a rupture of a given area, moment magnitude Mw, and
 #'

@@ -42,4 +42,21 @@ test_that('test_rupture_scaling', {
     names(slip0) = NULL
     expect_that(isTRUE(all.equal(slip0, slip2)), is_true())
 
+   
+    # Test the 'inverse' function and similar 
+    Mw = 8.0
+    area0 = Mw_2_rupture_size(Mw, detailed=TRUE, CI_sd = 2)
+
+    Mw1 = Mw_2_rupture_size_inverse(area0$values[1])
+    expect_that(isTRUE(all.equal(Mw1, Mw)), is_true())
+
+    # Test the confidence interval functionality
+    Mw1_lower = Mw_2_rupture_size_inverse(area0$values[1], CI_sd = -2)
+    area2 = Mw_2_rupture_size(Mw1_lower, detailed=TRUE, CI_sd = 2)$minus_CI[1]
+
+    expect_that(isTRUE(all.equal(area2, area0$values[1])), is_true())
+
+    Mw1_lower = Mw_2_rupture_size_inverse(area0$values[1], CI_sd = 2)
+    area2 = Mw_2_rupture_size(Mw1_lower, detailed=TRUE, CI_sd = 2)$plus_CI[1]
+    expect_that(isTRUE(all.equal(area2, area0$values[1])), is_true())
 })

@@ -36,21 +36,47 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
     ## Determine the number of subfaults along the length/width 
     ndip = max(unit_source_stats['downdip_number'])
     nstrike = max(unit_source_stats['alongstrike_number'])
-    desired_subfault_count = round(desired_ALW['area']/mean_subfault_area)
+    desired_subfault_count = max(round(desired_ALW['area']/mean_subfault_area), 1)
 
-    # Round length towards the longer side of the target
-    # This makes it unlikely to get events with e.g. length < width
-    # which can happen otherwise
-    #nlength = ceiling(desired_ALW['length']/mean_subfault_length)
+    if(desired_subfault_count > (ndip*nstrike)){
+        print('Reached limit of rupture size')
+    }
+    
 
-    nlength = max(round(desired_ALW['length']/mean_subfault_length), 1)
-    nwidth = max(round(desired_subfault_count/nlength), 1)
+    ## Figure out the desired width/length in terms of number of cells
+    nlength = ceiling(desired_ALW['length']/mean_subfault_length)
+    nwidth = ceiling(desired_ALW['width']/nwidth)
+    if(nlength > nstrike){
+        # Length constrained
+        nlength = nstrike
+        nwidth = min(max(round(desired_subfault_count/nlength), 1), ndip)
+    }else if(nwidth > ndip){
+        # Width constrained
+        nwidth = ndip
+        nlength = min(max(round(desired_subfault_count/nwidth), 1), nstrike)
+    }else{
+        # Try a few different lengths/widths, and use the one with the best area
+        l1 = min( max(floor(desired_ALW['length']/mean_subfault_length), 1), nstrike)
+        l2 = min( max(ceiling(desired_ALW['length']/mean_subfault_length), 1), nstrike)
+
+        w1 = min( max(round(desired_subfault_count/l1), 1), ndip)
+        w2 = min( max(round(desired_subfault_count/l2), 1), ndip)
+
+        # Choose the one with the least error as a fraction of the desired subfault count
+        if(abs(log(w2*l2/desired_subfault_count)) > abs(log(w1*l1/desired_subfault_count))){
+            nlength = l1
+            nwidth = w1
+        }else{
+            nlength = l2
+            nwidth = w2
+        }
+    }
 
     # We don't allow > subfault width than length
-    if(nwidth > nlength){
-        nlength = round(sqrt(desired_subfault_count))
-        nwidth = nlength
-    }
+    #if(nwidth > nlength){
+    #    nlength = round(sqrt(desired_subfault_count))
+    #    nwidth = nlength
+    #}
 
     #nwidth = round(desired_ALW['width']/mean_subfault_width)
     #nlength = round(desired_subfault_count/nwidth)
