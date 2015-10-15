@@ -131,7 +131,7 @@ slip_from_Mw<-function(Mw, mu=3e+10,
     area_function=function(Mw){Mw_2_rupture_size(Mw)[1]}, constant=9.05){
 
         # Area in m^2
-        area = area_function(Mw)*1e+06
+        area = sapply(Mw, area_function)*1e+06
 
         M0 = M0_2_Mw(Mw, inverse=TRUE, constant=constant)
 
