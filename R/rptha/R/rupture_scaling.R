@@ -100,11 +100,22 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
 #'\code{Mw_2_rupture_size(Mw, relation=relation, detailed=TRUE, CI_sd = CI_sd) = area}. 
 #' It currently does not give information on length or width.
 #' 
-#' @param Mw numeric moment magnitude
+#' @param area numeric area
 #' @param relation Type of scaling relation used ('Strasser')
 #' @param CI_sd numeric (can be positive or negative). Positive values correspond to
 #' lower Mw, negative values to higher Mw.
 #' @return values of Mw
+#' @export
+#' @examples
+#'    Mw = 8.0
+#'    # Get detailed information on the expected rupture size range
+#'    area0 = Mw_2_rupture_size(Mw, detailed=TRUE, CI_sd = 2)
+#'    # Find Mw such that area0$values[1] is a lower 2-sigma area
+#'    Mw_squeezed = Mw_2_rupture_size_inverse(area0$values[1], CI_sd = -2)
+#'    # Confirm that it worked
+#'    area1 = Mw_2_rupture_size(Mw_squeezed, detailed=TRUE, CI_sd = 2)
+#'    # The minus_CI component of area1 should equal area0
+#'    stopifnot(abs(area1$minus_CI[1] - area0$values[1]) < 1.0e-04)
 Mw_2_rupture_size_inverse<-function(area, relation='Strasser', CI_sd = 0){
 
     if(length(CI_sd) > 1) stop('length(CI_sd) must = 1')

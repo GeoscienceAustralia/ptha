@@ -45,7 +45,8 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
 
     ## Figure out the desired width/length in terms of number of cells
     nlength = ceiling(desired_ALW['length']/mean_subfault_length)
-    nwidth = ceiling(desired_ALW['width']/nwidth)
+    nwidth = ceiling(desired_ALW['width']/mean_subfault_width)
+
     if(nlength > nstrike){
         # Length constrained
         nlength = nstrike
@@ -55,21 +56,33 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
         nwidth = ndip
         nlength = min(max(round(desired_subfault_count/nwidth), 1), nstrike)
     }else{
-        # Try a few different lengths/widths, and use the one with the best area
-        l1 = min( max(floor(desired_ALW['length']/mean_subfault_length), 1), nstrike)
-        l2 = min( max(ceiling(desired_ALW['length']/mean_subfault_length), 1), nstrike)
+        # Try a few different lengths/widths, and use the one with the best aspect ratio
+        l0 = rep(NA, 4)
+        w0 = rep(NA, 4)
 
-        w1 = min( max(round(desired_subfault_count/l1), 1), ndip)
-        w2 = min( max(round(desired_subfault_count/l2), 1), ndip)
+        desired_aspect_ratio = desired_ALW['length']/desired_ALW['width']
 
-        # Choose the one with the least error as a fraction of the desired subfault count
-        if(abs(log(w2*l2/desired_subfault_count)) > abs(log(w1*l1/desired_subfault_count))){
-            nlength = l1
-            nwidth = w1
-        }else{
-            nlength = l2
-            nwidth = w2
-        }
+        # Choose length first
+        l0[1] = min( max(floor(desired_ALW['length']/mean_subfault_length), 1), nstrike)
+        l0[2] = min( max(ceiling(desired_ALW['length']/mean_subfault_length), 1), nstrike)
+
+        w0[1] = min( max(round(desired_subfault_count/l0[1]), 1), ndip)
+        w0[2] = min( max(round(desired_subfault_count/l0[2]), 1), ndip)
+
+        # Now choose width first
+        w0[3] = min( max(floor(desired_ALW['width']/mean_subfault_width), 1), ndip)
+        w0[4] = min( max(ceiling(desired_ALW['width']/mean_subfault_width), 1), ndip)
+
+        l0[3] = min( max(round(desired_subfault_count/w0[3]), 1), nstrike)
+        l0[4] = min( max(round(desired_subfault_count/w0[4]), 1), nstrike)
+
+        # Get the 'best'
+        error_ratios = abs(log10((l0*mean_subfault_length/(w0*mean_subfault_width))/desired_aspect_ratio))
+
+        chosen_ind = which.min(error_ratios)
+
+        nwidth = w0[chosen_ind]
+        nlength = l0[chosen_ind]
     }
 
     # We don't allow > subfault width than length
