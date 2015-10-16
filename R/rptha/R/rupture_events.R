@@ -77,9 +77,19 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
         l0[4] = min( max(round(desired_subfault_count/w0[4]), 1), nstrike)
 
         # Get the 'best'
-        error_ratios = abs(log10((l0*mean_subfault_length/(w0*mean_subfault_width))/desired_aspect_ratio))
+        # According to Strasser, log10(length/width) = log10(length) - log10(width)
+        # is normally distributed, with mean = log10(desired_ALW['length']/desired_ALW['width']),
+        # and variance = sum of variances [which can be obtained from the scaling relation
+        # Therefore, the 'best' aspect ratio is the one which minimises
+        # abs(log10(l0*mean_subfault_length/(w0*mean_subfault_width)) - log10(desired_aspect_ratio))
 
-        chosen_ind = which.min(error_ratios)
+        aspect_error_ratios = abs(log10((l0*mean_subfault_length)/(w0*mean_subfault_width)) - 
+            log10(desired_aspect_ratio))
+        #area_error_ratios = abs(log10((l0*w0*mean_subfault_area)/desired_ALW['area']))
+
+        chosen_ind = which.min(aspect_error_ratios)
+        #chosen_ind = which.min(area_error_ratios)
+        #chosen_ind = which.min(aspect_error_ratios + area_error_ratios)
 
         nwidth = w0[chosen_ind]
         nlength = l0[chosen_ind]
