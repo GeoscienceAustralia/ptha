@@ -168,8 +168,17 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
 #' required so that the extremes are included). The function value is then
 #' evaluated via lookup. 
-#' @return function of a numeric vector Mw, which returns the rate of events
-#' with magnitude > Mw
+#' @return function of a numeric vector Mw, which by default returns the rate of events
+#' with magnitude > Mw. If the optional argument 'bounds=TRUE' is passed, then
+#' the function returns upper/lower/median rates of the logic tree as well as
+#' the probability weighted mean rate. If the optional argument
+#' 'return_all_logic_tree_branches=TRUE' is passed, then the function returns
+#' a list containing a data.frame with all combinations of parameters, a vector
+#' with their respective probabilities, a vector with the Mw sequence at which
+#' the function is tabulated, and a matrix with the tabulated values for every
+#' branch of the logic tree. This can be used to closely examine the
+#' probabilistic model.
+#' 
 #' @export
 rate_of_earthquakes_greater_than_Mw_function<-function(
     slip_rate, slip_rate_prob, b, b_prob, 
@@ -330,7 +339,18 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     lower_function = approxfun(Mw_seq, lower_rate, rule=2)
     median_function = approxfun(Mw_seq, median_rate, rule=2)
 
-    output_function2<-function(Mw, bounds=FALSE){
+    # Function to compute the rate, with a number of useful extra options
+    output_function2<-function(Mw, bounds=FALSE, 
+        return_all_logic_tree_branches=FALSE){
+
+        if(return_all_logic_tree_branches){
+            output = list(all_rate_matrix = all_rate_matrix, 
+                          Mw_seq = Mw_seq,
+                          all_par_prob = all_par_prob,
+                          all_par = all_par_combo)
+            return(output)
+        }
+
         output = (Mw <= (max_Mw_max))*output_function(Mw)
         if(bounds){
             output_up = (Mw <= max_Mw_max)*upper_function(Mw)

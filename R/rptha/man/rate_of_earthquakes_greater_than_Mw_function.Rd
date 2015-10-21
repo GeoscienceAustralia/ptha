@@ -51,8 +51,16 @@ Richter model used. Either 'truncated_gutenberg_richter' or
 'characteristic_gutenberg_richter'.}
 }
 \value{
-function of a numeric vector Mw, which returns the rate of events
-with magnitude > Mw
+function of a numeric vector Mw, which by default returns the rate of events
+with magnitude > Mw. If the optional argument 'bounds=TRUE' is passed, then
+the function returns upper/lower/median rates of the logic tree as well as
+the probability weighted mean rate. If the optional argument
+'return_all_logic_tree_branches=TRUE' is passed, then the function returns
+a list containing a data.frame with all combinations of parameters, a vector
+with their respective probabilities, a vector with the Mw sequence at which
+the function is tabulated, and a matrix with the tabulated values for every
+branch of the logic tree. This can be used to closely examine the
+probabilistic model.
 }
 \description{
 The input parameters are based on a truncated Gutenberg Richter model: \cr
