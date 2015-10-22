@@ -22,6 +22,10 @@ test_that("test_rupture_creation_and_probabilities", {
         earthquake_event_table,
         conditional_probability_model = 'inverse_slip')
 
+    # Get total area of source-zone in km^2
+    sourcezone_total_area = sum(unit_source_summary_statistics$length *
+        unit_source_summary_statistics$width)
+
 
     ###########################################################################
     #
@@ -38,10 +42,6 @@ test_that("test_rupture_creation_and_probabilities", {
     Mw_min_prob = 1
     Mw_max = c(9.40, 9.40, 9.00)
     Mw_max_prob = c(0.6, 0.3, 0.1)
-
-    # Get total area of source-zone in km^2
-    sourcezone_total_area = sum(unit_source_summary_statistics$length *
-        unit_source_summary_statistics$width)
 
     rate_function = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = slip_rate,
@@ -174,5 +174,78 @@ test_that("test_rupture_creation_and_probabilities", {
     err = r1 - (b_prob[1]*r2 + b_prob[2]*r3)
 
     expect_that( isTRUE(all.equal(err, err*0.0)), is_true())
+
+
+    #####################################################################
+    #
+    # Test 3: Check that weighting of logic-tree probabilities with data is ok
+    #
+    #####################################################################
+    #
+    # Idea: Provide strongly varying slip rates. Give data that only agrees with one or the other
+    # Check that the final averaged rate curve reflects this
+
+    slip_rate = c(0.1, 100)/1000 # m/year
+    slip_rate_prob =  c(0.5, 0.5)
+    b = 1
+    b_prob = 1
+    Mw_min = 7.5
+    Mw_min_prob = 1
+    Mw_max = 9.40
+    Mw_max_prob = 1
+
+    # The following data is much more consistent with 100mm of slip/year, vs
+    # 0.1mm
+    Mw_count_duration = c(7.6, 3, 50)
+
+    # Slip rate = 0.1mm/year alone
+    rate_function1 = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate[1],
+        slip_rate_prob = 1,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities)
+    
+    # Slip rate = 100mm/year alone
+    rate_function2 = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate[2],
+        slip_rate_prob = 1,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities)
+
+    # Weighted combination of both models, adjusted for the data
+    rate_function3 = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=Mw_count_duration)
+
+    # Given the data, rate_function3 should be basically equal to rate_function2
+    mws = seq(7.5, 9.399, len=100)
+    expect_that(
+        isTRUE(all.equal(rate_function3(mws), rate_function2(mws), tol=1.0e-05)), 
+        is_true())
 
 })

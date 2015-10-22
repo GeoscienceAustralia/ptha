@@ -334,20 +334,20 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         data_count = Mw_count_duration[2]
         data_observation_duration = Mw_count_duration[3]
         
-        if( (Mw_thresh < min(Mw_seq)) | (Mw_thresh > max(Mw_seq)) ){
+        if( (data_thresh < min(Mw_seq)) | (data_thresh > max(Mw_seq)) ){
             stop('The Mw threshold of the data cannot be outside the range of [Mw_min, Mw_max]')
         }
         
         model_rates = all_par_prob*0
         for(i in 1:length(model_rates)){
-            model_rates[i] = approx(Mw_seq, all_rate_matrix[i,], xout=Mw_thresh)$y
+            model_rates[i] = approx(Mw_seq, all_rate_matrix[i,], xout=data_thresh)$y
         }
-        pr_data_given_model = dpois(data_count, rate = (model_rates*Mw_count_duration))
+        pr_data_given_model = dpois(data_count, lambda = (model_rates*data_observation_duration))
 
         sum_pr_data_given_model = sum(pr_data_given_model)
         if(sum_pr_data_given_model == 0) stop('Data impossible under any model')
         
-        all_par_prob = weighted.mean(all_par_prob, weights = pr_data_given_model/sum_pr_data_given_model)    
+        all_par_prob =  all_par_prob * pr_data_given_model / sum(all_par_prob * pr_data_given_model)
     }
 
     # Compute the average rate
