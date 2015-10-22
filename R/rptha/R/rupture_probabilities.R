@@ -146,13 +146,13 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' the source-zone (m/year). This gives the long-term average slip on the fault
 #' due to seismic events (creep is ignored, so these rates must account for the
 #' rate of coupling)
-#' @param slip_rate_prob numeric vector with probabilities for the slip_rate parameters
+#' @param slip_rate_prob numeric vector with weights for the slip_rate parameters
 #' @param b numeric vector with 1 or more 'b' parameters
-#' @param b_prob numeric vector with probabilities for the b parameters
+#' @param b_prob numeric vector with weights for the b parameters
 #' @param Mw_min numeric vector with 1 or more 'Mw_min' parameters
-#' @param Mw_min_prob numeric vector with probabilities for the Mw_min parameters
+#' @param Mw_min_prob numeric vector with weights for the Mw_min parameters
 #' @param Mw_max numeric vector with 1 or more 'Mw_max' parameters
-#' @param Mw_max_prob numeric vector with probabilities for the Mw_max parameters
+#' @param Mw_max_prob numeric vector with weights for the Mw_max parameters
 #' @param sourcezone_total_area The total area of the sourcezone (km^2)
 #' @param event_table A data.frame containing information on all events in the
 #' source-zone. Output of \code{get_all_earthquake_events}
@@ -160,25 +160,35 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' all events in the source-zone (conditional on the fact than an event with
 #' their magnitude did occur). Output of
 #' \code{get_event_probabilities_conditional_on_Mw}
-#' @param Mw_frequency_distribution character giving the variant on the Gutenberg 
-#' Richter model used. Either 'truncated_gutenberg_richter' or
-#' 'characteristic_gutenberg_richter'. 
 #' @param computational_increment For each final branch of the logic tree, the
 #' rate function with those parameters is computed at points in a sequence from
 #' min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
 #' required so that the extremes are included). The function value is then
 #' evaluated via lookup. 
+#' @param Mw_frequency_distribution character giving the variant on the Gutenberg 
+#' Richter model used. Either 'truncated_gutenberg_richter' or
+#' 'characteristic_gutenberg_richter'. 
+#' @param update_logic_tree_weights_with_data logical. If TRUE, a value for Mw_count_duration
+#' must be provided. The weights for each parameter combination in the tree are updated
+#' with Bayes-theorem, based on the probability that they would produce
+#' Mw_count_duration[2] events within time duration Mw_count_duration[3] which
+#' exceed Mw_count_duration[1]. This assumes a poisson-process time occurrence
+#' @param Mw_count_duration numeric vector of length 3 providing some data. The first
+#' entry is an Mw value, the second is the number of events exceeding Mw at the
+#' site, and the third is the duration of observation (in years). 
+#' If \code{update_logic_tree_weights_with_data=TRUE},
+#' this is used to re-weight parameter combinations in the logic tree, with more weight
+#' given to those which predict similar event frequencies as the data.
 #' @return function of a numeric vector Mw, which by default returns the rate of events
 #' with magnitude > Mw. If the optional argument 'bounds=TRUE' is passed, then
 #' the function returns upper/lower/median rates of the logic tree as well as
 #' the probability weighted mean rate. If the optional argument
 #' 'return_all_logic_tree_branches=TRUE' is passed, then the function returns
 #' a list containing a data.frame with all combinations of parameters, a vector
-#' with their respective probabilities, a vector with the Mw sequence at which
+#' with their respective probabilities(weights), a vector with the Mw sequence at which
 #' the function is tabulated, and a matrix with the tabulated values for every
-#' branch of the logic tree. This can be used to closely examine the
-#' probabilistic model.
-#' 
+#' branch of the logic tree. The latter option can be used to scrutinize the
+#' results from each branch of the logic tree. 
 #' @export
 rate_of_earthquakes_greater_than_Mw_function<-function(
     slip_rate, slip_rate_prob, b, b_prob, 
@@ -186,7 +196,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     sourcezone_total_area, event_table, 
     event_conditional_probabilities,
     computational_increment=0.01,
-    Mw_frequency_distribution='truncated_gutenberg_richter'){
+    Mw_frequency_distribution='truncated_gutenberg_richter',
+    update_logic_tree_weights_with_data = FALSE,
+    Mw_count_duration = c(NA, NA, NA)){
 
     # Check data
     stopifnot(length(slip_rate) == length(slip_rate_prob))
@@ -310,6 +322,35 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         all_rate_matrix[i,] = all_rate_vec
     }
 
+    
+    if(update_logic_tree_weights_with_data){
+        # Adjust the weights of logic-tree branches based on the data
+
+        if(sum(is.na(Mw_count_duration)) > 0){
+            stop('Must provide Mw_count_duration data if update_logic_tree_weights_with_data=TRUE')
+        }
+
+        data_thresh = Mw_count_duration[1]
+        data_count = Mw_count_duration[2]
+        data_observation_duration = Mw_count_duration[3]
+        
+        if( (Mw_thresh < min(Mw_seq)) | (Mw_thresh > max(Mw_seq)) ){
+            stop('The Mw threshold of the data cannot be outside the range of [Mw_min, Mw_max]')
+        }
+        
+        model_rates = all_par_prob*0
+        for(i in 1:length(model_rates)){
+            model_rates[i] = approx(Mw_seq, all_rate_matrix[i,], xout=Mw_thresh)$y
+        }
+        pr_data_given_model = dpois(data_count, rate = (model_rates*Mw_count_duration))
+
+        sum_pr_data_given_model = sum(pr_data_given_model)
+        if(sum_pr_data_given_model == 0) stop('Data impossible under any model')
+        
+        all_par_prob = weighted.mean(all_par_prob, weights = pr_data_given_model/sum_pr_data_given_model)    
+    }
+
+    # Compute the average rate
     final_rates = rep(0, length(Mw_seq))
     for(i in 1:nrow(all_rate_matrix)){
         final_rates = final_rates + all_par_prob[i]*all_rate_matrix[i,]

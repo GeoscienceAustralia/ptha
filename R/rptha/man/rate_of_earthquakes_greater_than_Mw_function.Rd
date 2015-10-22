@@ -8,7 +8,9 @@ rate_of_earthquakes_greater_than_Mw_function(slip_rate, slip_rate_prob, b,
   b_prob, Mw_min, Mw_min_prob, Mw_max, Mw_max_prob, sourcezone_total_area,
   event_table, event_conditional_probabilities,
   computational_increment = 0.01,
-  Mw_frequency_distribution = "truncated_gutenberg_richter")
+  Mw_frequency_distribution = "truncated_gutenberg_richter",
+  update_logic_tree_weights_with_data = FALSE, Mw_count_duration = c(NA, NA,
+  NA))
 }
 \arguments{
 \item{slip_rate}{numeric vector with 1 or more long-term seismogenic slip rates for
@@ -16,19 +18,19 @@ the source-zone (m/year). This gives the long-term average slip on the fault
 due to seismic events (creep is ignored, so these rates must account for the
 rate of coupling)}
 
-\item{slip_rate_prob}{numeric vector with probabilities for the slip_rate parameters}
+\item{slip_rate_prob}{numeric vector with weights for the slip_rate parameters}
 
 \item{b}{numeric vector with 1 or more 'b' parameters}
 
-\item{b_prob}{numeric vector with probabilities for the b parameters}
+\item{b_prob}{numeric vector with weights for the b parameters}
 
 \item{Mw_min}{numeric vector with 1 or more 'Mw_min' parameters}
 
-\item{Mw_min_prob}{numeric vector with probabilities for the Mw_min parameters}
+\item{Mw_min_prob}{numeric vector with weights for the Mw_min parameters}
 
 \item{Mw_max}{numeric vector with 1 or more 'Mw_max' parameters}
 
-\item{Mw_max_prob}{numeric vector with probabilities for the Mw_max parameters}
+\item{Mw_max_prob}{numeric vector with weights for the Mw_max parameters}
 
 \item{sourcezone_total_area}{The total area of the sourcezone (km^2)}
 
@@ -49,6 +51,19 @@ evaluated via lookup.}
 \item{Mw_frequency_distribution}{character giving the variant on the Gutenberg
 Richter model used. Either 'truncated_gutenberg_richter' or
 'characteristic_gutenberg_richter'.}
+
+\item{update_logic_tree_weights_with_data}{logical. If TRUE, a value for Mw_count_duration
+must be provided. The weights for each parameter combination in the tree are updated
+with Bayes-theorem, based on the probability that they would produce
+Mw_count_duration[2] events within time duration Mw_count_duration[3] which
+exceed Mw_count_duration[1]. This assumes a poisson-process time occurrence}
+
+\item{Mw_count_duration}{numeric vector of length 3 providing some data. The first
+entry is an Mw value, the second is the number of events exceeding Mw at the
+site, and the third is the duration of observation (in years).
+If \code{update_logic_tree_weights_with_data=TRUE},
+this is used to re-weight parameter combinations in the logic tree, with more weight
+given to those which predict similar event frequencies as the data.}
 }
 \value{
 function of a numeric vector Mw, which by default returns the rate of events
@@ -57,10 +72,10 @@ the function returns upper/lower/median rates of the logic tree as well as
 the probability weighted mean rate. If the optional argument
 'return_all_logic_tree_branches=TRUE' is passed, then the function returns
 a list containing a data.frame with all combinations of parameters, a vector
-with their respective probabilities, a vector with the Mw sequence at which
+with their respective probabilities(weights), a vector with the Mw sequence at which
 the function is tabulated, and a matrix with the tabulated values for every
-branch of the logic tree. This can be used to closely examine the
-probabilistic model.
+branch of the logic tree. The latter option can be used to scrutinize the
+results from each branch of the logic tree.
 }
 \description{
 The input parameters are based on a truncated Gutenberg Richter model: \cr
