@@ -2,14 +2,16 @@
 % Please edit documentation in R/rupture_events.R
 \name{get_all_earthquake_events}
 \alias{get_all_earthquake_events}
-\title{Apply \code{get_all_earthquake_events_of_magnitude_Mw} to a range of Mw
-values and combine the results}
+\title{Compute all synthetic earthquake events for a sourcezone}
 \usage{
-get_all_earthquake_events(discrete_source, unit_source_statistics = NULL,
-  Mmin = 7.5, Mmax = 9.6, dMw = 0.1, mu = 3e+10, constant = 9.05)
+get_all_earthquake_events(discrete_source = NULL,
+  unit_source_statistics = NULL, Mmin = 7.5, Mmax = 9.6, dMw = 0.1,
+  mu = 3e+10, constant = 9.05)
 }
 \arguments{
-\item{discrete_source}{The discrete source for the source-zone, as from \code{discrete_source_from_source_contours}}
+\item{discrete_source}{The discrete source for the source-zone, as from
+\code{discrete_source_from_source_contours}. If NULL, you must provide
+unit_source_statistics}
 
 \item{unit_source_statistics}{Pre-computed unit-source-statistics for the
 discrete-source. If NULL, a local computation is made with
