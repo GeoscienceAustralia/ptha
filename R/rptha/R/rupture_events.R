@@ -239,10 +239,14 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
 # So we might not really need to make the long-terms slip rate constant everywhere.
 #
 
+#' Compute all synthetic earthquake events for a sourcezone
+#'
 #' Apply \code{get_all_earthquake_events_of_magnitude_Mw} to a range of Mw
 #' values and combine the results
 #'
-#' @param discrete_source The discrete source for the source-zone, as from \code{discrete_source_from_source_contours}
+#' @param discrete_source The discrete source for the source-zone, as from 
+#' \code{discrete_source_from_source_contours}. If NULL, you must provide
+#' unit_source_statistics
 #' @param unit_source_statistics Pre-computed unit-source-statistics for the
 #' discrete-source. If NULL, a local computation is made with
 #' \code{discretized_source_summary_statistics}, assuming
@@ -257,10 +261,14 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
 #' @return A large table containing information on all earthquake events, and
 #' the unit sources they involve
 #' @export
-get_all_earthquake_events<-function(discrete_source, unit_source_statistics = NULL,
+get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statistics = NULL,
     Mmin=7.5, Mmax = 9.6, dMw = 0.1, mu=3.0e+10, constant=9.05){
 
     if(is.null(unit_source_statistics)){
+
+        if(is.null(discrete_source)){
+            stop('Cannot have both "discrete_source" and "unit_source_statistics" being NULL')
+        }
 
         unit_source_statistics = discretized_source_summary_statistics(discrete_source, 
             approx_dx = 5000, approx_dy = 5000)
