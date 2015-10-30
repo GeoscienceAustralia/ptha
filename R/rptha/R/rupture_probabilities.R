@@ -61,13 +61,16 @@ compute_slip_density_parameters<-function(Mw, mu=3e+10, constant=9.05){
 #' probabilities vary inversely with the average slip of the event ('inverse_slip'). This might
 #' be reasonable if the individual events are almost the same, but there are slight
 #' differences in the event area and slip, and we want each event to make the same 
-#' contribution to the long-term average slip rate. 
+#' contribution to the long-term average slip rate. \cr
+#' Other methods could be proposed, and this routine also supports a user-defined function
 #'
 #' @param event_table A data.frame containing information on all earthquake
 #' events on the source-zone. It's the output of
 #' \code{get_all_earthquake_events}
-#' @param conditional_probability_model character. Supported values are
-#' 'all_equal' and 'inverse_slip', corresponding to cases discussed above.
+#' @param conditional_probability_model character or function. Supported character values are
+#' 'all_equal' and 'inverse_slip', corresponding to cases discussed above. If a function, this
+#' must take a single argument, which is a subset of the event_table containing all events with
+#' fixed Mw, and return the conditional probability of each event.
 #' @return A numeric vector with length = nrow(event_table) giving the conditional probabilities. 
 #' @export
 get_event_probabilities_conditional_on_Mw<-function(
@@ -87,6 +90,12 @@ get_event_probabilities_conditional_on_Mw<-function(
             slip_inv = 1/event_table_Mw$slip
             return(slip_inv/sum(slip_inv))
         }
+
+    }else if( class(conditional_probability_model) == 'function'){
+        # Here the user must provide a function which can convert
+        # a subset of the event table, containing all events with fixed Mw,
+        # to a conditional probability
+        pfun = conditional_probability_model
 
     }else{
         stop('conditional_probability_model value not recognized')
