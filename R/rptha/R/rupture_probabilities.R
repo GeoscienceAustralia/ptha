@@ -79,13 +79,15 @@ get_event_probabilities_conditional_on_Mw<-function(
 
     # Define functions corresponding to supported conditional_probability models
     # These take as input a subset of the event table containing events with identical Mw
-    if(conditional_probability_model == 'all_equal'){
+    if(is.character(conditional_probability_model) && 
+        (conditional_probability_model == 'all_equal')){
         pfun<-function(event_table_Mw){
             N = length(event_table_Mw[,1])
             return( rep(1, N)/N)
         }
 
-    }else if(conditional_probability_model == 'inverse_slip'){
+    }else if(is.character(conditional_probability_model) &&
+        (conditional_probability_model == 'inverse_slip')){
         pfun<-function(event_table_Mw){
             slip_inv = 1/event_table_Mw$slip
             return(slip_inv/sum(slip_inv))
