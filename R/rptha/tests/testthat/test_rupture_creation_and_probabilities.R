@@ -62,6 +62,12 @@ test_that("test_rupture_creation_and_probabilities", {
     freq_gt9 = 1/rate_function(9.0)
     expect_that( (freq_gt9 > 600) & (freq_gt9 < 700), is_true() )
 
+    # Compute some quantiles representing uncertainty in the rate function
+    rate_gt9_quantiles = rate_function(9.0, quantiles=seq(0.1, 0.9, by=0.1))
+    # The mean of these values should be close to the raw value of rate_function, which
+    # is based on the weighted mean of the logic-tree rates
+    expect_that( abs(mean(rate_gt9_quantiles) - rate_function(9.0)) < 1e-04, is_true())
+
     # Back-calculate slip on each fault
     event_rate = event_conditional_probabilities * 
         (rate_function(earthquake_event_table$Mw-dMw/2) - 

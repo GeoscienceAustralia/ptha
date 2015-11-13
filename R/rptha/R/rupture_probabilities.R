@@ -379,16 +379,20 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # Consider producing a fuller picture from all_rate_matrix
     upper_rate = apply(all_rate_matrix, 2, max)
     lower_rate = apply(all_rate_matrix, 2, min)
+
+    quantile_rate_fun<-function(rates, p){
+        sorted_rates = sort(rates, index.return=TRUE)
+        sorted_prob = all_par_prob[sorted_rates$ix]
+        cumulative_sorted_prob = cumsum(sorted_prob)
+        # The median occurs when the cumulative probability >= 0.5
+        ind = min(which(cumulative_sorted_prob >= p))
+        return(sorted_rates$x[ind])
+    }
+
     # Compute the 50th percentile
     median_rate = apply(all_rate_matrix, 2, 
-        f<-function(x){
-            sorted_rates = sort(x, index.return=TRUE)
-            sorted_prob = all_par_prob[sorted_rates$ix]
-            cumulative_sorted_prob = cumsum(sorted_prob)
-            # The median occurs when the cumulative probability >= 0.5
-            ind = min(which(cumulative_sorted_prob >= 0.5))
-            return(sorted_rates$x[ind])
-        })
+        f<-function(rates) quantile_rate_fun(rates, p=0.5)
+        )
 
     # For the output function, if we exceed the bounds on the LHS we can return
     # the most extreme value, and on the RHS we should return zero.
@@ -400,8 +404,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
     # Function to compute the rate, with a number of useful extra options
     output_function2<-function(Mw, bounds=FALSE, 
-        return_all_logic_tree_branches=FALSE){
-
+        return_all_logic_tree_branches=FALSE, quantiles=NULL){
+        
         if(return_all_logic_tree_branches){
             output = list(all_rate_matrix = all_rate_matrix, 
                           Mw_seq = Mw_seq,
@@ -411,14 +415,43 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         }
 
         output = (Mw <= (max_Mw_max))*output_function(Mw)
+
         if(bounds){
+            # Compute some summary statistics
             output_up = (Mw <= max_Mw_max)*upper_function(Mw)
             output_low = (Mw <= max_Mw_max)*lower_function(Mw)
             output_med = (Mw <= max_Mw_max)*median_function(Mw)
-            
-            output = c(output, output_low, output_up, output_med)
-            names(output) = c('rate', 'min', 'max', 'median')
+           
+            if(length(Mw) == 1){ 
+                output = c(output, output_low, output_up, output_med)
+                names(output) = c('rate', 'min', 'max', 'median')
+            }else{
+                output = cbind(output, output_low, output_up, output_med)
+                colnames(output) = c('rate', 'min', 'max', 'median')
+            }
+
+        }else if(!is.null(quantiles)){
+
+            # Compute results for a set of quantiles
+            if(length(Mw) == 1){
+                output = rep(NA, length(quantiles))
+                names(output) = quantiles
+            }else{
+                output = matrix(NA, ncol=length(quantiles), nrow=length(Mw))
+                colnames(output) = quantiles
+            }
+            for(i in 1:length(quantiles)){
+                # For each quantile, evaluate the rate curve with interpolation
+                quantile_rate = apply(all_rate_matrix, 2, 
+                    f<-function(rate) quantile_rate_fun(rate, p=quantiles[i]))
+                if(length(Mw) == 1){
+                    output[i] = approx(Mw_seq, quantile_rate, xout=Mw)$y * (Mw <= max_Mw_max)
+                }else{
+                    output[i,] = approx(Mw_seq, quantile_rate, xout=Mw)$y * (Mw <= max_Mw_max)
+                }
+            }
         }
+
         return(output)
     }
 
