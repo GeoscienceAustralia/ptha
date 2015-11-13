@@ -9,6 +9,7 @@ rate_of_earthquakes_greater_than_Mw_function(slip_rate, slip_rate_prob, b,
   event_table, event_conditional_probabilities,
   computational_increment = 0.01,
   Mw_frequency_distribution = "truncated_gutenberg_richter",
+  Mw_frequency_distribution_prob = 1,
   update_logic_tree_weights_with_data = FALSE, Mw_count_duration = c(NA, NA,
   NA))
 }
@@ -48,9 +49,9 @@ min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
 required so that the extremes are included). The function value is then
 evaluated via lookup.}
 
-\item{Mw_frequency_distribution}{character giving the variant on the Gutenberg
-Richter model used. Either 'truncated_gutenberg_richter' or
-'characteristic_gutenberg_richter'.}
+\item{Mw_frequency_distribution}{character vector giving the variant on the Gutenberg
+Richter model used (if more than 1 they are passed to the logic tree).
+Either 'truncated_gutenberg_richter' or 'characteristic_gutenberg_richter'.}
 
 \item{update_logic_tree_weights_with_data}{logical. If TRUE, a value for Mw_count_duration
 must be provided. The weights for each parameter combination in the tree are updated
@@ -64,6 +65,9 @@ site, and the third is the duration of observation (in years).
 If \code{update_logic_tree_weights_with_data=TRUE},
 this is used to re-weight parameter combinations in the logic tree, with more weight
 given to those which predict similar event frequencies as the data.}
+
+\item{Mw_frequency_distribution_weights}{numeric vector. Logic tree weights for
+each Mw_frequency_distribution type}
 }
 \value{
 function of a numeric vector Mw, which by default returns the rate of events

@@ -176,9 +176,11 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
 #' required so that the extremes are included). The function value is then
 #' evaluated via lookup. 
-#' @param Mw_frequency_distribution character giving the variant on the Gutenberg 
-#' Richter model used. Either 'truncated_gutenberg_richter' or
-#' 'characteristic_gutenberg_richter'. 
+#' @param Mw_frequency_distribution character vector giving the variant on the Gutenberg 
+#' Richter model used (if more than 1 they are passed to the logic tree).
+#' Either 'truncated_gutenberg_richter' or 'characteristic_gutenberg_richter'. 
+#' @param Mw_frequency_distribution_weights numeric vector. Logic tree weights for
+#' each Mw_frequency_distribution type
 #' @param update_logic_tree_weights_with_data logical. If TRUE, a value for Mw_count_duration
 #' must be provided. The weights for each parameter combination in the tree are updated
 #' with Bayes-theorem, based on the probability that they would produce
@@ -208,6 +210,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     event_conditional_probabilities,
     computational_increment=0.01,
     Mw_frequency_distribution='truncated_gutenberg_richter',
+    Mw_frequency_distribution_prob = 1,
     update_logic_tree_weights_with_data = FALSE,
     Mw_count_duration = c(NA, NA, NA)){
 
@@ -216,6 +219,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     stopifnot(length(b) == length(b_prob))
     stopifnot(length(Mw_min) == length(Mw_min_prob))
     stopifnot(length(Mw_max) == length(Mw_max_prob))
+    stopifnot(length(Mw_frequency_distribution) == length(Mw_frequency_distribution_prob))
 
     # Check (conservative) on the input Mw_min/Mw_max
     stopifnot(min(Mw_max) > max(Mw_min))
@@ -225,6 +229,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     stopifnot(isTRUE(all.equal(sum(b_prob), 1)))
     stopifnot(isTRUE(all.equal(sum(Mw_min_prob), 1)))
     stopifnot(isTRUE(all.equal(sum(Mw_max_prob), 1)))
+    stopifnot(isTRUE(all.equal(sum(Mw_frequency_distribution_prob), 1)))
 
     # Check that the range of Mw in the table covers the range of Mw_min/Mw_max)
     stopifnot(min(event_table$Mw) <= min(Mw_min))
@@ -234,9 +239,10 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # Get all combinations of the parameters, and all combinations of the
     # probabilities
     all_par_combo = expand.grid(slip_rate = slip_rate, b = b, Mw_min = Mw_min, 
-        Mw_max = Mw_max)
+        Mw_max = Mw_max, Mw_frequency_distribution=Mw_frequency_distribution)
     all_par_combo_prob = expand.grid(slip_rate_prob = slip_rate_prob,
-        b_prob = b_prob, Mw_min_prob = Mw_min_prob, Mw_max_prob = Mw_max_prob)
+        b_prob = b_prob, Mw_min_prob = Mw_min_prob, Mw_max_prob = Mw_max_prob,
+        Mw_frequency_distribution_prob = Mw_frequency_distribution_prob)
 
     # Collapse the probabilities to a single one for each set of table
     # parameters
@@ -288,14 +294,6 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         }
     }
 
-    if(Mw_frequency_distribution == 'truncated_gutenberg_richter'){
-        Mfd = Mw_exceedence_rate_truncated_gutenberg_richter
-    }else if(Mw_frequency_distribution == 'characteristic_gutenberg_richter'){
-        Mfd = Mw_exceedence_rate_characteristic_gutenberg_richter
-    }else{
-        stop(paste0(" Value of Mw_frequency_distribution: ", 
-            Mw_frequency_distribution, " not recognized"))
-    }
 
     
     # Compute the rates for each final branch of the logic tree
@@ -303,6 +301,15 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     for(i in 1:nrow(all_rate_matrix)){
         # Get parameter vector
         par = all_par_combo[i,] 
+        
+        if(par$Mw_frequency_distribution == 'truncated_gutenberg_richter'){
+            Mfd = Mw_exceedence_rate_truncated_gutenberg_richter
+        }else if(par$Mw_frequency_distribution == 'characteristic_gutenberg_richter'){
+            Mfd = Mw_exceedence_rate_characteristic_gutenberg_richter
+        }else{
+            stop(paste0(" Value of Mw_frequency_distribution: ", 
+                par$Mw_frequency_distribution, " not recognized"))
+        }
 
         # Evaluate LHS of seismic moment balance equation
         LHS = (sourcezone_total_area * 1e+06) * par$slip_rate
