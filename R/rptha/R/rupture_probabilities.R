@@ -405,7 +405,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # Function to compute the rate, with a number of useful extra options
     output_function2<-function(Mw, bounds=FALSE, 
         return_all_logic_tree_branches=FALSE, quantiles=NULL){
-        
+       
+        # Option to just dump the key data. This can be useful for
+        # debugging / plotting non-standard outputs, etc 
         if(return_all_logic_tree_branches){
             output = list(all_rate_matrix = all_rate_matrix, 
                           Mw_seq = Mw_seq,
@@ -414,6 +416,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             return(output)
         }
 
+        # Typical case
         output = (Mw <= (max_Mw_max))*output_function(Mw)
 
         if(bounds){
@@ -431,8 +434,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             }
 
         }else if(!is.null(quantiles)){
-
             # Compute results for a set of quantiles
+
             if(length(Mw) == 1){
                 output = rep(NA, length(quantiles))
                 names(output) = quantiles
