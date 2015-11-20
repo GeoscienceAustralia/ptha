@@ -450,7 +450,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 if(length(Mw) == 1){
                     output[i] = approx(Mw_seq, quantile_rate, xout=Mw)$y * (Mw <= max_Mw_max)
                 }else{
-                    output[i,] = approx(Mw_seq, quantile_rate, xout=Mw)$y * (Mw <= max_Mw_max)
+                    output[,i] = approx(Mw_seq, quantile_rate, xout=Mw)$y * (Mw <= max_Mw_max)
                 }
             }
         }
