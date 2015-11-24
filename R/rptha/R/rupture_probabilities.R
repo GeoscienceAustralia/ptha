@@ -293,8 +293,6 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             stop('Invalid conditional probabilities')
         }
     }
-
-
     
     # Compute the rates for each final branch of the logic tree
     all_rate_matrix = matrix(NA, ncol = length(Mw_seq), nrow=nrow(all_par_combo))
@@ -404,7 +402,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
     # Function to compute the rate, with a number of useful extra options
     output_function2<-function(Mw, bounds=FALSE, 
-        return_all_logic_tree_branches=FALSE, quantiles=NULL){
+        return_all_logic_tree_branches=FALSE, quantiles=NULL,
+        return_random_curve=FALSE){
        
         # Option to just dump the key data. This can be useful for
         # debugging / plotting non-standard outputs, etc 
@@ -413,6 +412,14 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                           Mw_seq = Mw_seq,
                           all_par_prob = all_par_prob,
                           all_par = all_par_combo)
+            return(output)
+        }
+
+        if(return_random_curve){
+            # Grab a curve 'at random' with probabilities based on all_par_prob
+            stopifnot(bounds==FALSE & return_all_logic_tree_branches==FALSE)
+            par = sample(1:length(all_par_combo[,1]), size=1, prob=all_par_prob)
+            output = approx(Mw_seq, all_rate_matrix[par,], xout=Mw, rule=2)$y * (Mw <= max_Mw_max)
             return(output)
         }
 
@@ -448,9 +455,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 quantile_rate = apply(all_rate_matrix, 2, 
                     f<-function(rate) quantile_rate_fun(rate, p=quantiles[i]))
                 if(length(Mw) == 1){
-                    output[i] = approx(Mw_seq, quantile_rate, xout=Mw)$y * (Mw <= max_Mw_max)
+                    output[i] = approx(Mw_seq, quantile_rate, xout=Mw, rule=2)$y * (Mw <= max_Mw_max)
                 }else{
-                    output[,i] = approx(Mw_seq, quantile_rate, xout=Mw)$y * (Mw <= max_Mw_max)
+                    output[,i] = approx(Mw_seq, quantile_rate, xout=Mw, rule=2)$y * (Mw <= max_Mw_max)
                 }
             }
         }
