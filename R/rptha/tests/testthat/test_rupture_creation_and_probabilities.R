@@ -91,7 +91,7 @@ test_that("test_rupture_creation_and_probabilities", {
     fake_event_table$Mw = 0
     fake_event_table$slip = M0_2_Mw(0, inverse=TRUE)/(fake_event_table$area *1e+06 * 3e+10)
     fake_cond_prob = 1
-    for(mwtmp in seq(0.1, Mw_min, by=0.1)){
+    for(mwtmp in seq(0.1, Mw_min-0.1, by=0.1)){
         tmp_event_table = earthquake_event_table[1,]
         tmp_event_table$Mw = mwtmp
         tmp_event_table$slip = M0_2_Mw(mwtmp, inverse=TRUE)/(tmp_event_table$area * 1e+06 * 3e+10)
