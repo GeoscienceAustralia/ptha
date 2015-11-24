@@ -47,6 +47,37 @@ compute_slip_density_parameters<-function(Mw, mu=3e+10, constant=9.05){
     return(list(log10_slip_par = log10_slip_par, mean_slip = mean_slip))
 }
 
+#' Compute the fraction of seismic moment associated with earthquake > a threshold
+#'
+#' For long-term slip rate computations we need to know how much slip is caused by events
+#' with Mw > mwmin. This function helps compute that, though it requires appropriately designed inputs
+#'
+#' @param Mws numeric vector with evenly spaced Mw values, increasing, densely spaced enough for integration
+#' @param rate_Mws numeric vector with an occurrence rate for each value in
+#' Mws. THIS IS NOT AN EXCEEDANCE RATE, IT IS A RATE FOR EVENTS WITH Mw = Mws[i].
+#' The value will thus depend on how closely spaced Mws is.
+#' @param moment_Mws vector with the seismic moment for each Mws [follows from standard formulae]
+#' @param mwmin numeric We want to know the fraction of the moment associated with events of this size or larger
+#' @return number between 0-1, giving the fraction of moment associated with events with Mw > mwmin
+compute_moment_fraction_from_events_greater_or_equal_than_mwmin<-function(Mws, rate_Mws, moment_Mws, mwmin){
+
+    dMw = Mws[2] - Mws[1]
+    if( !isTRUE(all.equal(diff(Mws), rep(dMw,len=length(Mws)-1))) ){
+        stop("Mws must be evenly spaced")
+    }
+
+    if(mwmin < Mws[1] | mwmin > max(Mws)){
+        stop("mwmin not compatible with Mws")
+    }
+
+    events_high = which(Mws >= mwmin)
+
+    fraction = sum( rate_Mws[events_high] * moment_Mws[events_high] ) / sum(rate_Mws * moment_Mws)
+
+    return(fraction)
+}
+
+
 #' Assign conditional probabilities to earthquakes with the same Mw
 #'
 #' Consider all the earthquake events on a discrete source with magnitude Mw.
@@ -192,6 +223,12 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' If \code{update_logic_tree_weights_with_data=TRUE},
 #' this is used to re-weight parameter combinations in the logic tree, with more weight
 #' given to those which predict similar event frequencies as the data.
+#' @param M0_2_Mw function which takes an earthquake magnitude and returns the
+#' corresponding seismic moment M0
+#' @param account_for_moment_below_mwmin logical. If FALSE assume all seismically coupled
+#' slip occurs due to earthquakes with Mw > Mwmin. If TRUE, estimate the fraction of seismically
+#' coupled slip that occurs due to earthquakes with Mw > Mwmin, and use that when computing
+#' the rates
 #' @return function of a numeric vector Mw, which by default returns the rate of events
 #' with magnitude > Mw. If the optional argument 'bounds=TRUE' is passed, then
 #' the function returns upper/lower/median rates of the logic tree as well as
@@ -212,7 +249,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     Mw_frequency_distribution='truncated_gutenberg_richter',
     Mw_frequency_distribution_prob = 1,
     update_logic_tree_weights_with_data = FALSE,
-    Mw_count_duration = c(NA, NA, NA)){
+    Mw_count_duration = c(NA, NA, NA),
+    Mw_2_M0 = function(x) M0_2_Mw(x, inverse=TRUE),
+    account_for_moment_below_mwmin=FALSE){
 
     # Check data
     stopifnot(length(slip_rate) == length(slip_rate_prob))
@@ -259,6 +298,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     max_Mw_max = max(Mw_max)
     npts = round((max_Mw_max - min_Mw_min)/computational_increment) + 1
     Mw_seq = seq(min_Mw_min, max_Mw_max, len=npts)
+
 
     # Get all Mw values in the eq table, and find the spacing between unique values
     table_Mw_values = sort(unique(event_table$Mw))
@@ -309,8 +349,27 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 par$Mw_frequency_distribution, " not recognized"))
         }
 
+        if(account_for_moment_below_mwmin){
+            # Compute the fraction of seismic moment associated with earthquakes between
+            # mw_min and mw_max
+            broad_Mw_seq = seq(min(par$Mw_min, 0), par$Mw_max, len = 1e+04)
+            dmw0 = broad_Mw_seq[2] - broad_Mw_seq[1]
+            broad_rates = Mfd(broad_Mw_seq - dmw0/2, a = 0, b = par$b, 
+                              Mw_min=broad_Mw_seq[1], Mw_max = par$Mw_max) -
+                          Mfd(broad_Mw_seq + dmw0/2, a = 0, b = par$b, 
+                              Mw_min=broad_Mw_seq[1], Mw_max = par$Mw_max) 
+            broad_seismic_moment = Mw_2_M0(broad_Mw_seq)
+            moment_fraction = compute_moment_fraction_from_events_greater_or_equal_than_mwmin(
+                broad_Mw_seq, broad_rates, broad_seismic_moment, par$Mw_min)
+           
+            stopifnot(moment_fraction >= 0 & moment_fraction <= 1) 
+        }else{
+            moment_fraction = 1
+        }
+
         # Evaluate LHS of seismic moment balance equation
-        LHS = (sourcezone_total_area * 1e+06) * par$slip_rate
+        LHS = (sourcezone_total_area * 1e+06) * par$slip_rate * moment_fraction
+
 
         lower_Mw = eq_Mw - table_Mw_increment/2
         upper_Mw = eq_Mw + table_Mw_increment/2

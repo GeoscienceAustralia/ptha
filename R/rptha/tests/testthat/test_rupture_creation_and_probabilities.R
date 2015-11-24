@@ -61,8 +61,67 @@ test_that("test_rupture_creation_and_probabilities", {
     # consistent with other estimates for the "Alaska" sourcezone
     freq_gt9 = 1/rate_function(9.0)
     expect_that( (freq_gt9 > 600) & (freq_gt9 < 700), is_true() )
+   
+    # Check that if we account for the moment below mwmin, then the rate
+    # of earthquakes is less. 
+    rate_functionB = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        account_for_moment_below_mwmin=TRUE)
 
+    freq_gt9B = 1/rate_functionB(9.0)
+    expect_that( freq_gt9 < freq_gt9B, is_true())
+
+    #
+    # Check that we get pretty much the same as rate_functionB by setting Mw_min to 0,
+    # and ignoring the moment below mwmin.
+    #
+    # To do this test, we need to hack events with Mw = 0 to Mw = 7.4 into to
+    # the event table. Those events need the right seismic moment.
+    fake_event_table = earthquake_event_table[1,]
+    fake_event_table$Mw = 0
+    fake_event_table$slip = M0_2_Mw(0, inverse=TRUE)/(tmp_event_table$area *1e+06 * 3e+10)
+    fake_cond_prob = 1
+    for(mwtmp in seq(0.1, Mw_min, by=0.1)){
+        tmp_event_table = earthquake_event_table[1,]
+        tmp_event_table$Mw = mwtmp
+        tmp_event_table$slip = M0_2_Mw(mwtmp, inverse=TRUE)/(tmp_event_table$area * 1e+06 * 3e+10)
+        fake_event_table = rbind(fake_event_table, tmp_event_table)
+        fake_cond_prob = c(fake_cond_prob, 1)
+    }
+
+    fake_event_table = rbind(fake_event_table, earthquake_event_table)
+    fake_cond_prob = c(fake_cond_prob, event_conditional_probabilities)
+
+    rate_functionC = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = 0,
+        Mw_min_prob = 1,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = fake_event_table,
+        event_conditional_probabilities = fake_cond_prob,
+        account_for_moment_below_mwmin=FALSE)
+
+    freq_gt9C = 1/rate_functionC(9.0)
+    expect_that(abs(freq_gt9C - freq_gt9B) < 0.1, is_true())
+
+    #
     # Compute some quantiles representing uncertainty in the rate function
+    #
     rate_gt9_quantiles = rate_function(9.0, quantiles=seq(0.1, 0.9, by=0.1))
     # The mean of these values should be close to the raw value of rate_function, which
     # is based on the weighted mean of the logic-tree rates
