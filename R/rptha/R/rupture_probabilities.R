@@ -338,7 +338,10 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         all_rate_matrix[i,] = all_rate_vec
     }
 
-    
+
+    # Save original probabilities in case we update them
+    all_par_prob_prior = all_par_prob   
+ 
     if(update_logic_tree_weights_with_data){
         # Adjust the weights of logic-tree branches based on the data
 
@@ -364,6 +367,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         if(sum_pr_data_given_model == 0) stop('Data impossible under any model')
         
         all_par_prob =  all_par_prob * pr_data_given_model / sum(all_par_prob * pr_data_given_model)
+    }else{
+        all_par_prob = all_par_prob_prior
     }
 
     # Compute the average rate
@@ -400,17 +405,22 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     lower_function = approxfun(Mw_seq, lower_rate, rule=2)
     median_function = approxfun(Mw_seq, median_rate, rule=2)
 
+    ## FIXME: The function below is severely in need of refactoring
+    ## Many options were hacked in to support the PTHA paper
+    ## Needs to be cleaned up, along with this routine. Consider working
+    ## with the 'all_logic_tree_branches' list in a more standard way
     # Function to compute the rate, with a number of useful extra options
     output_function2<-function(Mw, bounds=FALSE, 
         return_all_logic_tree_branches=FALSE, quantiles=NULL,
         return_random_curve=FALSE){
-       
+
         # Option to just dump the key data. This can be useful for
         # debugging / plotting non-standard outputs, etc 
         if(return_all_logic_tree_branches){
             output = list(all_rate_matrix = all_rate_matrix, 
                           Mw_seq = Mw_seq,
                           all_par_prob = all_par_prob,
+                          all_par_prob_prior = all_par_prob_prior,
                           all_par = all_par_combo)
             return(output)
         }
