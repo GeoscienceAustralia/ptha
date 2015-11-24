@@ -210,7 +210,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' @param Mw_frequency_distribution character vector giving the variant on the Gutenberg 
 #' Richter model used (if more than 1 they are passed to the logic tree).
 #' Either 'truncated_gutenberg_richter' or 'characteristic_gutenberg_richter'. 
-#' @param Mw_frequency_distribution_weights numeric vector. Logic tree weights for
+#' @param Mw_frequency_distribution_prob numeric vector. Logic tree weights for
 #' each Mw_frequency_distribution type
 #' @param update_logic_tree_weights_with_data logical. If TRUE, a value for Mw_count_duration
 #' must be provided. The weights for each parameter combination in the tree are updated

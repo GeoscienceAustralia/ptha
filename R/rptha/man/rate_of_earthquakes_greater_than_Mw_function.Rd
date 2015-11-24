@@ -54,6 +54,9 @@ evaluated via lookup.}
 Richter model used (if more than 1 they are passed to the logic tree).
 Either 'truncated_gutenberg_richter' or 'characteristic_gutenberg_richter'.}
 
+\item{Mw_frequency_distribution_prob}{numeric vector. Logic tree weights for
+each Mw_frequency_distribution type}
+
 \item{update_logic_tree_weights_with_data}{logical. If TRUE, a value for Mw_count_duration
 must be provided. The weights for each parameter combination in the tree are updated
 with Bayes-theorem, based on the probability that they would produce
@@ -71,9 +74,6 @@ given to those which predict similar event frequencies as the data.}
 slip occurs due to earthquakes with Mw > Mwmin. If TRUE, estimate the fraction of seismically
 coupled slip that occurs due to earthquakes with Mw > Mwmin, and use that when computing
 the rates}
-
-\item{Mw_frequency_distribution_weights}{numeric vector. Logic tree weights for
-each Mw_frequency_distribution type}
 
 \item{M0_2_Mw}{function which takes an earthquake magnitude and returns the
 corresponding seismic moment M0}
