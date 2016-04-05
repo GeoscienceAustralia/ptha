@@ -1,62 +1,74 @@
 library(raster)
 library(rgdal)
-
-gdal_contour<-function(dem, contour_levels=0.0, 
-            out_dsn=NA, contour_shp_name=NA,
-            delete_tmp_files=is.na(out_dsn),
-            verbose=TRUE, clean_dsn=TRUE){
-    ## Use gdal to make a contour (more reliable/efficient than R's algorithms)
-    ##
-    ## INPUT: dem = raster for which contours are desired
-    ##        contour_levels = elevations for the contours
-    ##        out_dsn = Folder to write outputs to
-    ##        contour_shp_name = name for the contour shapefile (inside out_dsn)
-    ##        delete_tmp_files = TRUE/FALSE -- delete temp files??
-    ##        verbose = TRUE/FALSE -- print more or less
-    ##        clean_dsn = TRUE/FALSE -- delete files matching contour_shp_name
-    ##                    in out_dsn. If we dont do this, gdal will throw 
-    #                     errors which may not be detected
-    ##
-    ## OUTPUT: 
-    ##       A contour, which seems to be of higher quality (and execute faster)
-    ##       than the native R routines
-
-    #browser()
+ 
+#' Contouring with gdal_contour
+#'   
+#' Using gdal to make a contour can be more reliable and efficient than R's
+#' algorithms for this application
+#'
+#' @param dem raster for which contours are desired, either as a filename or a
+#' RasterLayer. In the former case any format supported by gdal is ok.
+#' @param contour_levels elevations for the contours
+#' @param out_dsn Folder to write outputs to
+#' @param contour_shp_name name for the contour shapefile (inside out_dsn)
+#' @param delete_tmp_files TRUE/FALSE -- delete temp files??
+#' @param verbose TRUE/FALSE -- print more or less
+#' @param clean_dsn TRUE/FALSE -- delete files matching contour_shp_name
+#' in out_dsn. If we dont do this, gdal will throw errors which may not be
+#' detected
+#' @param gdal_contour_call character. R will try to call gdal_contour by
+#' passing this command (followed by various flags) to 'system'
+#' @return A SpatialLinesDataFrame contour, which seems to be of higher quality
+#' (and execute faster) than the native R routines
+#'
+gdal_contour<-function(
+    dem, 
+    contour_levels=0.0, 
+    out_dsn=NA, 
+    contour_shp_name=NA,
+    delete_tmp_files=is.na(out_dsn),
+    verbose=TRUE, 
+    clean_dsn=TRUE,
+    gdal_contour_call = 'gdal_contour '){
 
     # Make directory to write file in, if there is something
     if(is.na(out_dsn)){
-        out_dsn='.GCONTOUR_TMP'
+        out_dsn = '.GCONTOUR_TMP'
     } 
-    dir.create(out_dsn,showWarnings=FALSE)
+    dir.create(out_dsn, showWarnings=FALSE)
     
     # Make sure the dem is a tif file 
-    if(class(dem)=='RasterLayer'){ 
+    if(class(dem) == 'RasterLayer'){ 
         # Write the dem to a file
         if(verbose) print('Writing dem to file ...')
-        tmp_raster_filename=paste0(out_dsn,'/temp_dem.tif')
-        writeRaster(dem,tmp_raster_filename, driver='GTiff',overwrite=T)
+        tmp_raster_filename = paste0(out_dsn,'/temp_dem.tif')
+        writeRaster(dem, tmp_raster_filename, driver='GTiff', overwrite=TRUE)
     }else{
         if(file.exists(dem)){
-            tmp_raster_filename=dem
+            tmp_raster_filename = dem
         }else{
             stop('ERROR: dem should either be a raster layer, or a .tif filename')
         }
     }
     
-    #browser() 
     # Make the contour layer name
     if(!is.na(contour_shp_name)){
-        contour_layer=contour_shp_name
+        contour_layer = contour_shp_name
     }else{
-        contour_layer='contour'
+        contour_layer = 'contour'
     }
 
-    # Delete all files in out_dsn called contour_shape_name -- or there will be problems
-    if(clean_dsn) file.remove(dir(out_dsn, pattern=contour_layer,full.names=T))
+    # Delete all files in out_dsn called contour_shape_name -- or there will be
+    # problems
+    if(clean_dsn){
+        file.remove(dir(out_dsn, pattern=contour_layer, full.names=TRUE))
+    }
 
+    # Run the command
+    gdal_contour_command = paste(gdal_contour_call, ' -a elev -fl', 
+        paste(contour_levels, collapse=" "), '-nln ', contour_layer, 
+        tmp_raster_filename, out_dsn)
 
-    gdal_contour_command=paste('gdal_contour -a elev -fl', paste(contour_levels,collapse=" "), 
-                               '-nln ', contour_layer, tmp_raster_filename, out_dsn)
     if(verbose){
         print('Running gdal_contour ...')
         print(gdal_contour_command)
@@ -64,7 +76,7 @@ gdal_contour<-function(dem, contour_levels=0.0,
     system(gdal_contour_command)
 
     # Read the file
-    out=readOGR(out_dsn,layer=contour_layer,verbose=verbose)
+    out = readOGR(out_dsn, layer=contour_layer, verbose=verbose)
   
     # Clean up 
     if(delete_tmp_files){
@@ -73,77 +85,6 @@ gdal_contour<-function(dem, contour_levels=0.0,
 
     return(out)
 }
-
-
-approxSpatialLines<-function(SL,spacing=1, longlat=FALSE,verbose=FALSE){
-    ## Return a set of points with spacing='spacing' along a spatialLines object SL
-    ##
-    ## The spacing is calculated with linear interpolation (no great circles),
-    ## so it is assumed that the points defining lines in SL are close enough
-    ## together that 'great circle' and euclidean interpolation are practically identical
-    ##
-    ## INPUTS:
-    ## SL = spatialLines object
-    ## length = spacing between points
-    ## longlat = TRUE/FALSE
-    ##
-    ## The units of spacing depend on the projection of SL, and the value of longlat
-    ## If longlat=FALSE, spacing is in units of SL's coordinates (e.g. metres
-    ##   for UTM projections, degrees for longlat projections)
-    ## If longlat=TRUE, SL is in longlat degrees, and spacing is in kilometres
-    ##
-    ## OUTPUTS:
-    ##   SpatialPointsDataFrame along SL, with data identifying the
-    ##   corresponding line index in SL
-
-    #browser()
-    all_points=c()
-    for(j in 1:length(SL@lines)){
-        if(verbose) print(paste0('Line ', j))
-        # Get the segment distance between points defining each line in SL
-        SL_seglength=lapply(SL@lines[[j]]@Lines, 
-                myfun<-function(x) LineLength(x,longlat,sum=F))
-
-        # Get the total distance of each line within SL
-        #SL_length=lapply(SL@lines[[1]]@Lines, myfun<-function(x) LineLength(x,longlat,sum=T))
-
-        # Store x,y points on each segment
-        newxlist=list()
-        newylist=list()
-        for(i in 1:length(SL_seglength)){
-            seg_coords=SL@lines[[j]]@Lines[[i]]@coords
-            seg_lnth=c(0,cumsum(SL_seglength[[i]]))
-            # Space out_lnth_points evenly around the segment
-            out_lnth_num=ceiling(max(seg_lnth)/spacing)
-            out_lnth=seq(0,max(seg_lnth), len=out_lnth_num+1)[1:out_lnth_num]
-
-            # Interpolate the new coordinates
-            new_x=approx(seg_lnth,seg_coords[,1] , out_lnth)$y 
-            new_y=approx(seg_lnth, seg_coords[,2], out_lnth)$y
-
-            newxlist[[i]]=new_x
-            newylist[[i]]=new_y
-        
-            all_points_local=cbind(unlist(newxlist), unlist(newylist))
-            all_points_local=cbind(all_points_local, rep(j, length(all_points_local[,1])))
-        
-        }
-        
-   
-        all_points=rbind(all_points,all_points_local)
-    }
-
-    # Convert to spatial points
-    if(length(all_points)>0){
-        out=SpatialPointsDataFrame(all_points[,1:2],data=data.frame(SLID=all_points[,3]),
-                 proj4string=CRS(proj4string(SL)))
-    }else{
-        out=NULL
-    }
-    return(out)
-}
-
-##########################################################################################
 
 
 #####################################################################################

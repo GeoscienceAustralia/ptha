@@ -42,6 +42,7 @@ extra_manual_haz_lines = 'EXTRA_MANUAL_HAZ_LINE'
 
 # Mask where we will not include hazard points
 haz_pts_mask = 'HAZ_PT_REMOVAL_REGION' 
+
 # FINAL STEP: Translate hazard points so this is the lower left longitude -- to
 # match with the tsunami model domain
 haz_pt_lowerleft = -45 
@@ -214,8 +215,8 @@ extra_haz_lines = as(extra_haz_lines, 'SpatialLines')
 dem_haz_lines = rbind(dem_haz_lines, extra_haz_lines)
 
 ## Get points spaced at 'hazard_pt_spacing' km
-haz_pts = cu$approxSpatialLines(dem_haz_lines, 
-    spacing=hazard_pt_spacing, longlat=TRUE)
+haz_pts = rptha::approxSpatialLines(dem_haz_lines, spacing=hazard_pt_spacing, 
+    longlat=TRUE)
 
 haz_pts@data = cbind(haz_pts@data, data.frame('elev'=dem[haz_pts]))
 

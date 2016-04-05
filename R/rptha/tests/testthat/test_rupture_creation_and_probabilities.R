@@ -59,6 +59,8 @@ test_that("test_rupture_creation_and_probabilities", {
     # Test the rate of 'Great earthquakes' is reasonable
     # These bounds may change but they work at present (2/10/2015) and are
     # consistent with other estimates for the "Alaska" sourcezone
+    # This test is 'just' checking that the results do not suddenly become
+    # extremely inconsistent with previous results.
     freq_gt9 = 1/rate_function(9.0)
     expect_that( (freq_gt9 > 600) & (freq_gt9 < 700), is_true() )
    

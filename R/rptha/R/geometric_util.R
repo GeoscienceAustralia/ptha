@@ -514,27 +514,31 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
 
 #' Return a set of points with spacing='spacing' along a spatialLines object SL
 #'
-#' The spacing is calculated with linear interpolation (no great circles),
-#' so it is assumed that the points defining lines in SL are close enough
-#' together that 'great circle' and euclidean interpolation are practically identical.
-#' However distances are computed assuming longlat (and spherical earth) if longlat = TRUE.
+#' The spacing is calculated with linear interpolation (no great circles), so it
+#' is assumed that the points defining lines in SL are close enough together
+#' that 'great circle' and euclidean interpolation are practically identical.
+#' However distances are computed assuming longlat (and spherical earth) if
+#' longlat = TRUE.
 #'
-#' The units of spacing depend on the projection of SL, and the value of longlat
-#' If longlat=FALSE, spacing is in units of SL's coordinates (e.g. metres
-#'   for UTM projections, degrees for longlat projections)
-#' If longlat=TRUE, SL is in longlat degrees, and spacing is in kilometres
+#' The units of spacing depend on the projection of SL, and the value of
+#' longlat.  If longlat=FALSE, spacing is in units of SL's coordinates (e.g.
+#' metres for UTM projections, degrees for longlat projections).  If
+#' longlat=TRUE, SL is in longlat degrees, and spacing is in kilometres
 #'
-#' INPUTS:
-#' @param SL = spatialLines object
-#' @param spacing = approximate spacing between points
-#' @param n = Number of points in output (if spacing = NULL)
-#' @param longlat = TRUE/FALSE
-#' @param verbose Print progressi information
+#' @param SL a SpatialLines object
+#' @param spacing numeric. An approximate spacing between points
+#' @param n numeric. The number of points in output (if spacing = NULL)
+#' @param longlat logical. Is data longlat?
+#' @param verbose logical. Print progress information
 #' @return SpatialPointsDataFrame along SL, with data identifying the
 #'   corresponding line index in SL
 #'
 #' @export
-approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,verbose=FALSE){
+#'
+#' @examples
+#' 
+approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE, 
+    verbose=FALSE){
 
     if(is.null(n)) stopifnot(!is.null(spacing))
     if(is.null(spacing)) stopifnot(!is.null(n))
