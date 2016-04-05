@@ -5,10 +5,15 @@
 # creation of some of the input files (e.g. no_clip_zone or haz_pts_mask)
 #
 # It also requires that a range of standard gdal tools are in your path and
-# can be called linux-style
+# can be called linux-style.
 #
 # The key output is a file of hazard point locations
 #
+# To run this script interactively and check progress, start R and run:
+# source('make_hazard_pts.R', echo=TRUE, max.deparse.length=Inf)
+#
+# For non-interactive usage, use the following command (from the commandline)
+# Rscript make_hazard_pts.R
 
 
 ###############################################################################
@@ -28,22 +33,23 @@ hazard_pt_spacing = 25
 # usually the latter will be closer to hazard_contour_level)
 coast_contour_level = -0.001 
 
-# We will reject hazard points that are at within this many cells away of the
-# coast
+# We will reject hazard points that are at least this many raster cells away
+# from the coast
 coast_buffer_ncell = 3 
 
-# We will accept hazard points that are within this many cells from the coast. 
+# We will accept hazard points that are within this many raster cells from the
+# coast. 
 hazard_buffer_ncell = 44 
+
+# Shapefile name for the region where we don't clip small islands
+# Set to NULL if you don't want to use this
+no_clip_zone = '../../../../DATA/ELEV/ISLAND_CLIP_LAYER/ISLAND_CLIP_LAYER.shp' 
 
 # Outside of the no-clip-zone, a coast contour must enclose at least
 # coast_contour_removal_area_threshold (km^2), otherwise we remove it on
 # creation (so it will not be surrounded by hazard points). This is to avoid
 # having too many hazard points associated with tiny islands.
 coast_contour_removal_area_threshold = 100 
-
-# Shapefile name for the region where we don't clip small islands
-# Set to NULL if you don't want to use this
-no_clip_zone = '../../../../DATA/ELEV/ISLAND_CLIP_LAYER/ISLAND_CLIP_LAYER.shp' 
 
 # 'Land' values are set to this value before hazard contour computation. It
 # helps the contour algorithm avoid crossing land values, and probably does not
@@ -131,8 +137,8 @@ writeOGR(dem_0m_trim, dsn='OUTPUTS/ZERO_CONTOUR_TRIMMED',
     layer='ZERO_CONTOUR_TRIMMED', driver='ESRI Shapefile',
     overwrite=TRUE)
 
-## Sample points along the coastal contour -- we will later use these to
-## identify hazard_lines that do not loop around land
+# Sample points along the coastal contour -- we will later use these to
+# identify hazard_lines that do not loop around land
 dem_0m_trim_pts = rptha::approxSpatialLines(dem_0m_trim, 
     spacing=hazard_pt_spacing,longlat=TRUE)
 
