@@ -26,22 +26,23 @@ raster_infile = '../../../../DATA/ELEV/GEBCO_08/gebco_08_W-180-E180-S-90-N90-1mx
 # located (e.g. -100 for 100m water depth). 
 hazard_contour_level = -100 
 
-# Spacing of hazard points along hazard contour level (km)
+# Spacing of hazard points along the contour (km)
 hazard_pt_spacing = 25 
 
-# This value will place an upper bound on the hazard point depth (although
+# Elevation defining a contour called 'the coast'
+# This value will place an upper bound on the hazard point elevation (although
 # usually the latter will be closer to hazard_contour_level)
 coast_contour_level = -0.001 
 
-# We will reject hazard points that are at least this many raster cells away
-# from the coast
+# We will reject hazard points that are within this many raster cells of 'the
+# coast'
 coast_buffer_ncell = 3 
 
-# We will accept hazard points that are within this many raster cells from the
-# coast. 
+# We will accept hazard points that are within this many raster cells from 'the
+# coast'. 
 hazard_buffer_ncell = 44 
 
-# Shapefile name for the region where we don't clip small islands
+# Polygon shapefile name defining the region where we don't clip small islands
 # Set to NULL if you don't want to use this
 no_clip_zone = '../../../../DATA/ELEV/ISLAND_CLIP_LAYER/ISLAND_CLIP_LAYER.shp' 
 
@@ -56,12 +57,13 @@ coast_contour_removal_area_threshold = 100
 # need to be changed
 land_value = 10000 
 
-# Location of a line shapefile where we will have extra hazard points sampled
+# Name of a line shapefile where we will have extra hazard points sampled.
 # We use this in locations where our algorithm does not produce hazard points,
-# even though we want them. Set to NULL to not use anything
+# even though we want them. Set to NULL to not use anything.
 extra_manual_haz_lines = NULL
 
-# Mask where we will not include hazard points, or NULL if there is no mask
+# Name of a polygon shapefile, used as a mask. We will not include hazard
+# points inside this polygon. Set to NULL if there is no mask
 haz_pts_mask = '../../../../DATA/ELEV/HAZ_PT_REMOVAL_REGION/HAZ_PT_REMOVAL_REGION.shp' 
 
 # FINAL STEP: Translate hazard points so this is the lower left longitude -- to
@@ -87,7 +89,8 @@ sys.source('point_util.R', pu)
 dem = raster(raster_infile)
 
 # Use gdal to convert to geotif -- assume WGS84
-out_tif_dir = paste0('./OUTPUTS/', basename(dirname(raster_infile)))
+#out_tif_dir = paste0('./OUTPUTS/', basename(dirname(raster_infile)))
+out_tif_dir = './OUTPUTS/raster_tmp'
 dir.create(out_tif_dir, showWarnings=FALSE, recursive=TRUE)
 temp_tif = paste0(out_tif_dir, '/', 
     strsplit(basename(raster_infile), split='\\.')[[1]][1], '.tif')
