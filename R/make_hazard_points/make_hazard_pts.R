@@ -8,6 +8,7 @@
 # can be called linux-style
 #
 # The key output is a file of hazard point locations
+#
 
 
 ###############################################################################
@@ -16,16 +17,16 @@
 # Main raster file used for contour creation
 raster_infile = '../../DATA/ELEV/GEBCO_08/gebco_08.nc'
 
+# Hazard contour level (m). Elevation at which we 'desire' hazard points to be
+# located (e.g. -100 for 100m water depth). 
+hazard_contour_level = -100 
+
+# Spacing of hazard points along hazard contour level (km)
+hazard_pt_spacing = 25 
+
 # This value will place an upper bound on the hazard point depth (although
 # usually the latter will be closer to hazard_contour_level)
 coast_contour_level = -0.001 
-
-# (km^2) A coast contour must enclose at least this area, otherwise we remove
-# it on creation -- except in the no-clip-zone
-coast_contour_removal_area_threshold = 100 
-
-# Folder/shapefile name for the zone where we dont clip small islands
-no_clip_zone = 'ISLAND_CLIP_LAYER' 
 
 # We will reject hazard points that are at within this many cells away of the
 # coast
@@ -34,25 +35,27 @@ coast_buffer_ncell = 3
 # We will accept hazard points that are within this many cells from the coast. 
 hazard_buffer_ncell = 44 
 
-# 'Land' values are set to this value before hazard contour computation. Helps
-# the contour algorithm avoid crossing land values
+# Outside of the no-clip-zone, a coast contour must enclose at least
+# coast_contour_removal_area_threshold (km^2), otherwise we remove it on
+# creation (so it will not be surrounded by hazard points). This is to avoid
+# having too many hazard points associated with tiny islands.
+coast_contour_removal_area_threshold = 100 
+
+# Folder/shapefile name for the region where we don't clip small islands
+# Set to NULL if you don't want to use this
+no_clip_zone = 'ISLAND_CLIP_LAYER' 
+
+# 'Land' values are set to this value before hazard contour computation. It
+# helps the contour algorithm avoid crossing land values, and probably does not
+# need to be changed
 land_value = 10000 
 
-# Hazard contour level (m)
-hazard_contour_level = -100 
-
-# Spacing of hazard points along hazard contour level (km)
-hazard_pt_spacing = 25 
-
-# Opportunity for manual adjustment:
 # Location of a line shapefile where we will have extra hazard points sampled
-# We use this in locations where our algorithm does not produce points, even
-# though we want them
+# We use this in locations where our algorithm does not produce hazard points,
+# even though we want them. Set to NULL to not use anything
 extra_manual_haz_lines = 'EXTRA_MANUAL_HAZ_LINE'
 
-# 'Post processing' parameters below here
-
-# Mask where we will not include hazard points
+# Mask where we will not include hazard points, or NULL if there is no mask
 haz_pts_mask = 'HAZ_PT_REMOVAL_REGION' 
 
 # FINAL STEP: Translate hazard points so this is the lower left longitude -- to
@@ -99,7 +102,6 @@ dem_0m = cu$gdal_contour(temp_tif, contour_levels=-0.0001,
 # Except in the area inside the 'no-clip-zone', which protects e.g. small
 # pacific countries
 #
-no_clip_area = readOGR(dsn=no_clip_zone,layer=no_clip_zone)
 dem_0m_poly = cu$SpatialLinesDF2Polygons(dem_0m) 
 
 # NOTE: Be careful of self-intersections for areaPolygon -- can give crazy
@@ -108,9 +110,15 @@ dem_0m_polyArea = geosphere::areaPolygon(dem_0m_poly)/1e+06
 
 # Find a point inside each contour polygon -- so we can check if it is in the
 # no-clip-zone
-no_clipping_pt = SpatialPoints(coordinates(dem_0m_poly), 
-    proj4string=CRS(proj4string(no_clip_area)))
-in_noclip_zone = !is.na(over(no_clipping_pt, no_clip_area)) 
+if(!is.null(no_clip_zone)){
+    no_clip_area = readOGR(dsn=no_clip_zone, layer=no_clip_zone)
+    no_clipping_pt = SpatialPoints(coordinates(dem_0m_poly), 
+        proj4string=CRS(proj4string(no_clip_area)))
+    in_noclip_zone = !is.na(over(no_clipping_pt, no_clip_area)) 
+}else{
+    # There are no points 'protected' from removal
+    in_noclip_zone = dem_0m_polyArea * 0
+}
 
 # Contours to keep
 keep_islands = which((dem_0m_polyArea > coast_contour_removal_area_threshold ) |
@@ -242,9 +250,12 @@ dem_haz_lines = as(dem_haz_poly_clip,'SpatialLines')
 
 # Combine with manual lines to deal with areas that our algorithm 'undesirably'
 # removes.
-extra_haz_lines = readOGR(extra_manual_haz_lines, layer=extra_manual_haz_lines)
-extra_haz_lines = as(extra_haz_lines, 'SpatialLines')
-dem_haz_lines = rbind(dem_haz_lines, extra_haz_lines)
+if(!is.null(extra_manual_haz_lines)){
+    extra_haz_lines = readOGR(extra_manual_haz_lines, 
+        layer=extra_manual_haz_lines)
+    extra_haz_lines = as(extra_haz_lines, 'SpatialLines')
+    dem_haz_lines = rbind(dem_haz_lines, extra_haz_lines)
+}
 
 ## Get points spaced at 'hazard_pt_spacing' km
 haz_pts = rptha::approxSpatialLines(dem_haz_lines, spacing=hazard_pt_spacing, 
