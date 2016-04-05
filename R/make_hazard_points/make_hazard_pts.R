@@ -1,3 +1,15 @@
+#
+# This script can be used to make hazard points for PTHA from a DEM.
+#
+# It requires user editing of the input_data below, and potentially also
+# creation of some of the input files (e.g. no_clip_zone or haz_pts_mask)
+#
+# It also requires that a range of standard gdal tools are in your path and
+# can be called linux-style
+#
+# The key output is a file of hazard point locations
+
+
 ###############################################################################
 ## INPUT DATA 
 
@@ -49,21 +61,23 @@ haz_pt_lowerleft = -45
 
 ## END INPUT DATA
 ###############################################################################
-
+#
+# Get libraries
 library(rptha)
 # Utility routines for dealing with SpatialLines
 cu = new.env()
-sys.source('contour_util.R',cu)
+sys.source('contour_util.R', cu)
 # Utility routines for dealing with SpatialPoints
 pu = new.env()
 sys.source('point_util.R', pu)
 
 ##############################################################################
-
+#
 # Read raster, reformat to Geotif for GDAL operations, and make a zero contour
+
 dem = raster(raster_infile)
 
-### Use gdal to convert to geotif -- assume WGS84
+# Use gdal to convert to geotif -- assume WGS84
 out_tif_dir = paste0('./OUTPUTS/', basename(dirname(raster_infile)))
 dir.create(out_tif_dir, showWarnings=FALSE, recursive=TRUE)
 temp_tif = paste0(out_tif_dir, '/', 
@@ -72,17 +86,19 @@ gdal_translate_command = paste('gdal_translate -a_srs EPSG:4326', raster_infile,
     temp_tif, ' -co COMPRESS=DEFLATE')
 system(gdal_translate_command)
 
-### Read in the (properly georeferenced) data, get zero contour
+# Read in the (properly georeferenced) data, get zero contour
 dem = raster(temp_tif)
 dem_0m = cu$gdal_contour(temp_tif, contour_levels=-0.0001, 
-    out_dsn='OUTPUTS/ZERO_CONTOUR',contour_shp_name='ZERO_CONTOUR')
+    out_dsn='OUTPUTS/ZERO_CONTOUR', contour_shp_name='ZERO_CONTOUR')
 ###############################################################################
 
 
 ###############################################################################
-## Cut contourLines with length < coast_contour_removal_length_threshold.
-## Except in the area inside the 'no-clip-zone', which protects e.g. small
-## pacific countries
+#
+# Cut contourLines with length < coast_contour_removal_length_threshold.
+# Except in the area inside the 'no-clip-zone', which protects e.g. small
+# pacific countries
+#
 no_clip_area = readOGR(dsn=no_clip_zone,layer=no_clip_zone)
 dem_0m_poly = cu$SpatialLinesDF2Polygons(dem_0m) 
 
@@ -96,7 +112,7 @@ no_clipping_pt = SpatialPoints(coordinates(dem_0m_poly),
     proj4string=CRS(proj4string(no_clip_area)))
 in_noclip_zone = !is.na(over(no_clipping_pt, no_clip_area)) 
 
-## Contours to keep
+# Contours to keep
 keep_islands = which((dem_0m_polyArea > coast_contour_removal_area_threshold ) |
     (in_noclip_zone == 1))
 
@@ -108,94 +124,107 @@ writeOGR(dem_0m_trim, dsn='OUTPUTS/ZERO_CONTOUR_TRIMMED',
 
 ## Sample points along the coastal contour -- we will later use these to
 ## identify hazard_lines that do not loop around land
-dem_0m_trim_pts=rptha::approxSpatialLines(dem_0m_trim, 
+dem_0m_trim_pts = rptha::approxSpatialLines(dem_0m_trim, 
     spacing=hazard_pt_spacing,longlat=TRUE)
 
-##########################################################################
+###############################################################################
 
-#####################################################################################
-## Create a raster that has 1's within a 'band' where we would like all out
-## hazard points to be (i.e. within a certain distance from the coast), and zeros
-## elsewhere. This is a many step process
+###############################################################################
 #
+# Create a raster that has 1's within a 'band' where we would like all out
+# hazard points to be (i.e. within a certain distance from the coast), and
+# zeros elsewhere. This is a many step process
+#
+
 # Burn the zero contour into a raster. Initialise its values to 0.0, and
 # define these values to be NA (so that gdal_fillnodata.py can use them).
-gdal_rasterize_command=paste("gdal_rasterize -burn 1.0 -at -init 0.0",
-                             " -tr", res(dem)[1], res(dem)[2], 
-                             '-te ', extent(dem)@xmin, extent(dem)@ymin,
-                                     extent(dem)@xmax, extent(dem)@ymax,
-                             '-a_nodata 0.0',
-                             ' OUTPUTS/ZERO_CONTOUR_TRIMMED/ZERO_CONTOUR_TRIMMED.shp',
-                             'OUTPUTS/GEBCO_08/gebco_08_testing.tif',
-                             ' -co COMPRESS=DEFLATE -co BIGTIFF=YES')
+gdal_rasterize_command = paste(
+    "gdal_rasterize -burn 1.0 -at -init 0.0",
+    " -tr", res(dem)[1], res(dem)[2], 
+    '-te ', extent(dem)@xmin, extent(dem)@ymin,
+            extent(dem)@xmax, extent(dem)@ymax,
+    '-a_nodata 0.0',
+    ' OUTPUTS/ZERO_CONTOUR_TRIMMED/ZERO_CONTOUR_TRIMMED.shp',
+    'OUTPUTS/raster_tmp/raster_tmp.tif',
+    ' -co COMPRESS=DEFLATE -co BIGTIFF=YES')
 system(gdal_rasterize_command)
-#
+
 # Make a copy of this raster -- we will edit 2 x independently
-system('cp OUTPUTS/GEBCO_08/gebco_08_testing.tif OUTPUTS/GEBCO_08/gebco_08_testing3.tif')
-#
+system('cp OUTPUTS/raster_tmp/raster_tmp.tif OUTPUTS/raster_tmp/raster_tmp3.tif')
+
 # Use gdal_fillnodata to expand the zero contour into a region
-gdal_fillnodata_command=paste('gdal_fillnodata.py -md ', hazard_buffer_ncell, 
-                               'OUTPUTS/GEBCO_08/gebco_08_testing.tif',
-                               ' -co COMPRESS=DEFALTE -co BIGTIFF=YES')
+gdal_fillnodata_command = paste(
+    'gdal_fillnodata.py -md ', hazard_buffer_ncell, 
+    'OUTPUTS/raster_tmp/raster_tmp.tif',
+    ' -co COMPRESS=DEFALTE -co BIGTIFF=YES')
 system(gdal_fillnodata_command)
-#
+
 # Change the nodata value in the tif to negative 1.0 -- so that we can use
 # gdal_calc with the 0 and 1 values treated as numbers
-gdal_changenodata_command=paste('gdal_translate -a_nodata -1.0',
-                                ' OUTPUTS/GEBCO_08/gebco_08_testing.tif',
-                                ' OUTPUTS/GEBCO_08/gebco_08_testing2.tif',
-                                ' -co COMPRESS=DEFLATE -co BIGTIFF=YES')
+gdal_changenodata_command = paste(
+    'gdal_translate -a_nodata -1.0',
+    ' OUTPUTS/raster_tmp/raster_tmp.tif',
+    ' OUTPUTS/raster_tmp/raster_tmp2.tif',
+    ' -co COMPRESS=DEFLATE -co BIGTIFF=YES')
 system(gdal_changenodata_command)
-#
+
 # Cut-out points that are TOO NEAR the zero contour. This will be entirely
 # contained within the previously created hazard points. It is best not to have
 # hazard points very close to the coast.
-gdal_fillnodata_command=paste('gdal_fillnodata.py -md ', coast_buffer_ncell, 
-                               'OUTPUTS/GEBCO_08/gebco_08_testing3.tif',
-                               ' -co COMPRESS=DEFALTE -co BIGTIFF=YES')
+gdal_fillnodata_command = paste(
+    'gdal_fillnodata.py -md ', coast_buffer_ncell, 
+    'OUTPUTS/raster_tmp/raster_tmp3.tif',
+    ' -co COMPRESS=DEFALTE -co BIGTIFF=YES')
 system(gdal_fillnodata_command)
+
 # Fix nodata values
-gdal_changenodata_command=paste('gdal_translate -a_nodata -1.0',
-                                ' OUTPUTS/GEBCO_08/gebco_08_testing3.tif',
-                                ' OUTPUTS/GEBCO_08/gebco_08_testing4.tif',
-                                ' -co COMPRESS=DEFLATE -co BIGTIFF=YES')
+gdal_changenodata_command = paste(
+    'gdal_translate -a_nodata -1.0',
+    ' OUTPUTS/raster_tmp/raster_tmp3.tif',
+    ' OUTPUTS/raster_tmp/raster_tmp4.tif',
+    ' -co COMPRESS=DEFLATE -co BIGTIFF=YES')
 system(gdal_changenodata_command)
-#
-gdal_calc_command=paste('gdal_calc.py -A OUTPUTS/GEBCO_08/gebco_08_testing2.tif',
-                        ' -B OUTPUTS/GEBCO_08/gebco_08_testing4.tif',
-                        " --calc='(A-B)'",
-                        ' --outfile=OUTPUTS/GEBCO_08/gebco_08_testing5.tif',
-                        ' --co COMPRESS=DEFLATE BIGTIFF=YES')
+
+gdal_calc_command=paste(
+    'gdal_calc.py -A OUTPUTS/raster_tmp/raster_tmp2.tif',
+    ' -B OUTPUTS/raster_tmp/raster_tmp4.tif',
+    " --calc='(A-B)'",
+    ' --outfile=OUTPUTS/raster_tmp/raster_tmp5.tif',
+    ' --co COMPRESS=DEFLATE BIGTIFF=YES')
 system(gdal_calc_command)
 
-########################################################################################
+###############################################################################
 
-########################################################################################
-##
-## Make a raster, which we can contour to get our hazard points in the right place
-# A = GEBCO data;
+###############################################################################
+#
+# Make a raster, which we can contour to get our hazard points in the right
+# place
+#
+# A = Elevation data;
 # B = raster with 1.0 in the 'areas we want hazard points', and 0.0 elsewhere
-# C = raster with 1.0 in the 'near coast areas where we don't want hazard points', and 0 elsewhere
+# C = raster with 1.0 in the 'near coast areas where we don't want hazard
+#     points', and 0 elsewhere
+#
 # What we want: If (B==1) -- we want A
 #               If (B==0) and A<0 -- We want -land_thresh*(a_bit_less_than_1)
-#               If (B==0) and A>0 OR C==1 -- Wa want land_thresh (or some other very large number)
+#               If (B==0) and A>0 OR C==1 -- Wa want land_thresh (or another very large number)
 
 land_thresh = land_value
 outfile_gdc = paste0(dirname(temp_tif), '/gdc_proc.tif')
-gdal_calc_command = paste("gdal_calc.py -A", temp_tif, 
-                          " -B OUTPUTS/GEBCO_08/gebco_08_testing5.tif", 
-                          " -C OUTPUTS/GEBCO_08/gebco_08_testing4.tif",
-                          " --calc=' A*(B==1) + ", 
-                          land_thresh, "*(((C==1) + (A>", coast_contour_level,"))>0) + ",
-                          #land_thresh, "*(((C==1) )>0) + ",
-                          -land_thresh*0.9, "*((B+C)==0)*(A<=", coast_contour_level, ")'",
-                          " --outfile", outfile_gdc, 
-                          " --co=COMPRESS=DEFLATE")
+gdal_calc_command = paste(
+    "gdal_calc.py -A", temp_tif, 
+    " -B OUTPUTS/raster_tmp/raster_tmp5.tif", 
+    " -C OUTPUTS/raster_tmp/raster_tmp4.tif",
+    " --calc=' A*(B==1) + ", 
+    land_thresh, "*(((C==1) + (A>", coast_contour_level,"))>0) + ",
+    -land_thresh*0.9, "*((B+C)==0)*(A<=", coast_contour_level, ")'",
+    " --outfile", outfile_gdc, 
+    " --co=COMPRESS=DEFLATE")
 system(gdal_calc_command)
 
-########################################################################################
+###############################################################################
 
-#########################################################################################
+###############################################################################
 # Make hazard points
 # Make a contour of the new DEM
 contour_depth = hazard_contour_level
@@ -203,7 +232,8 @@ dem_haz_cont = cu$gdal_contour(outfile_gdc, contour_levels=contour_depth,
     out_dsn='OUTPUTS/HAZARD_CONTOUR', 
     contour_shp_name='HAZARD_CONTOUR')
 
-# Convert dem_has_cont to polygons, and remove areas not containing coastal points
+# Convert dem_has_cont to polygons, and remove areas not containing coastal
+# points
 dem_haz_poly = cu$SpatialLinesDF2Polygons(dem_haz_cont)
 # Find those with coastal points inside
 FirstPointIndex = over(dem_haz_poly, dem_0m_trim_pts)
@@ -222,7 +252,7 @@ haz_pts = rptha::approxSpatialLines(dem_haz_lines, spacing=hazard_pt_spacing,
 
 haz_pts@data = cbind(haz_pts@data, data.frame('elev'=dem[haz_pts]))
 
-## Ensure all points have elev < 0
+# Ensure all points have elev < 0
 # At this stage, we will still have occasional points with terrestrial
 # elevation. This can be due to e.g. sites where we jump from 'deep ocean' to
 # 'land' [which becomes more likely due to our island removal]. The contouring

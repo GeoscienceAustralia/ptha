@@ -34,15 +34,15 @@ haz_pts_2_ursga_format<-function(
 
 #' Code to remove hazard points from region defined by haz_cull_poly_name
 #'
-#' Also, the points can have the lower-left adjusted to lower_left
+#' Also, the points can have their lower-left adjusted to lower_left
 #' 
 #' @param haz_orig SpatialPointsDataFrame of the hazard points
 #' @param haz_cull_poly_name Directory/Layer name for the polygon where we cut
 #' points
-#' @param new_haz_pts_name : Name for output file with adjusted hazard points
-#' @param lower_left: Translate the points so this is the lower left
-#' @param outdir: Parent directory for output file
-#' @param indir: Parent directory for haz_cull_poly_name
+#' @param new_haz_pts_name Name for output file with adjusted hazard points
+#' @param lower_left Translate the points so this is the lower left
+#' @param outdir Parent directory for output file
+#' @param indir Parent directory for haz_cull_poly_name
 #' @return new hazard points, + there are various important side effects (IO)
 #' 
 cut_hazpts_in_poly<-function(haz_orig, 
@@ -57,7 +57,7 @@ cut_hazpts_in_poly<-function(haz_orig,
     set_ll_warn(TRUE) # Avoid errors related to long < -180
 
     # Get hazard removal region
-    haz_cull = readOGR(paste0(indir,haz_cull_poly_name), 
+    haz_cull = readOGR(paste0(indir, haz_cull_poly_name), 
         layer=haz_cull_poly_name)
 
     # Cut from polygon
