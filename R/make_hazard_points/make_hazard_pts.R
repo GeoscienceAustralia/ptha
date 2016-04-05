@@ -41,7 +41,7 @@ hazard_buffer_ncell = 44
 # having too many hazard points associated with tiny islands.
 coast_contour_removal_area_threshold = 100 
 
-# Folder/shapefile name for the region where we don't clip small islands
+# Shapefile name for the region where we don't clip small islands
 # Set to NULL if you don't want to use this
 no_clip_zone = 'ISLAND_CLIP_LAYER' 
 
@@ -111,7 +111,8 @@ dem_0m_polyArea = geosphere::areaPolygon(dem_0m_poly)/1e+06
 # Find a point inside each contour polygon -- so we can check if it is in the
 # no-clip-zone
 if(!is.null(no_clip_zone)){
-    no_clip_area = readOGR(dsn=no_clip_zone, layer=no_clip_zone)
+    no_clip_area = readOGR(dsn=no_clip_zone, 
+        layer=gsub('.shp', '', basename(no_clip_zone)))
     no_clipping_pt = SpatialPoints(coordinates(dem_0m_poly), 
         proj4string=CRS(proj4string(no_clip_area)))
     in_noclip_zone = !is.na(over(no_clipping_pt, no_clip_area)) 
@@ -252,7 +253,7 @@ dem_haz_lines = as(dem_haz_poly_clip,'SpatialLines')
 # removes.
 if(!is.null(extra_manual_haz_lines)){
     extra_haz_lines = readOGR(extra_manual_haz_lines, 
-        layer=extra_manual_haz_lines)
+        layer=gsub('.shp', '', basename(extra_manual_haz_lines)))
     extra_haz_lines = as(extra_haz_lines, 'SpatialLines')
     dem_haz_lines = rbind(dem_haz_lines, extra_haz_lines)
 }

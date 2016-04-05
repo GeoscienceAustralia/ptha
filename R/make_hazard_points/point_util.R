@@ -42,15 +42,14 @@ haz_pts_2_ursga_format<-function(
 #' @param new_haz_pts_name Name for output file with adjusted hazard points
 #' @param lower_left Translate the points so this is the lower left
 #' @param outdir Parent directory for output file
-#' @param indir Parent directory for haz_cull_poly_name
 #' @return new hazard points, + there are various important side effects (IO)
 #' 
 cut_hazpts_in_poly<-function(haz_orig, 
                              haz_cull_poly_name, 
                              new_haz_pts_name, 
                              lower_left=-65,
-                             outdir='OUTPUTS/',
-                             indir='./'){
+                             outdir='OUTPUTS/'
+                             ){
     library(sp)
     library(rgdal)
     set_ll_TOL(5000.0) # Don't worry if long < -180
@@ -58,8 +57,8 @@ cut_hazpts_in_poly<-function(haz_orig,
 
     if(!is.null(haz_cull_poly_name)){
         # Get hazard removal region
-        haz_cull = readOGR(paste0(indir, haz_cull_poly_name), 
-            layer=haz_cull_poly_name)
+        haz_cull = readOGR(haz_cull_poly_name, 
+            layer= gsub('.shp', '', basename(haz_cull_poly_name)))
 
         # Cut from polygon
         cutpts = over(haz_orig, haz_cull)
