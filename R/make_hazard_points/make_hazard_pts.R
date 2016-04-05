@@ -15,7 +15,7 @@
 ## INPUT DATA 
 
 # Main raster file used for contour creation
-raster_infile = '../../DATA/ELEV/GEBCO_08/gebco_08.nc'
+raster_infile = '../../../../DATA/ELEV/GEBCO_08/gebco_08_W-180-E180-S-90-N90-1mx1m.nc'
 
 # Hazard contour level (m). Elevation at which we 'desire' hazard points to be
 # located (e.g. -100 for 100m water depth). 
@@ -43,7 +43,7 @@ coast_contour_removal_area_threshold = 100
 
 # Shapefile name for the region where we don't clip small islands
 # Set to NULL if you don't want to use this
-no_clip_zone = 'ISLAND_CLIP_LAYER' 
+no_clip_zone = '../../../../DATA/ELEV/ISLAND_CLIP_LAYER/ISLAND_CLIP_LAYER.shp' 
 
 # 'Land' values are set to this value before hazard contour computation. It
 # helps the contour algorithm avoid crossing land values, and probably does not
@@ -53,10 +53,10 @@ land_value = 10000
 # Location of a line shapefile where we will have extra hazard points sampled
 # We use this in locations where our algorithm does not produce hazard points,
 # even though we want them. Set to NULL to not use anything
-extra_manual_haz_lines = 'EXTRA_MANUAL_HAZ_LINE'
+extra_manual_haz_lines = NULL
 
 # Mask where we will not include hazard points, or NULL if there is no mask
-haz_pts_mask = 'HAZ_PT_REMOVAL_REGION' 
+haz_pts_mask = '../../../../DATA/ELEV/HAZ_PT_REMOVAL_REGION/HAZ_PT_REMOVAL_REGION.shp' 
 
 # FINAL STEP: Translate hazard points so this is the lower left longitude -- to
 # match with the tsunami model domain
