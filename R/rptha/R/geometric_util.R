@@ -534,9 +534,6 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
 #'   corresponding line index in SL
 #'
 #' @export
-#'
-#' @examples
-#' 
 approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE, 
     verbose=FALSE){
 

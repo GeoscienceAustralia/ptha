@@ -87,132 +87,35 @@ gdal_contour<-function(
 }
 
 
-#####################################################################################
 
+#' Convert a SpatialLinesDataFrame containing closed contours to a
+#' SpatialPolygonsDataFrame.
+#' 
+#' This is useful so we can use 'over' to identify lines which don't contain 
+#' coastal points. 
+#' 
+#' @param sldf A SpatialLinesDataFrame
+#' @return A SpatialPolygonsDataFrame
+#'
 SpatialLinesDF2Polygons<-function(sldf){
-    ## Convert SpatialLinesDataFrame to SpatialPolygonsDataFrame -- so we can use 'over' to
-    ## identify those not containing coastal points
 
-    ## Input: sldf = SpatialLinesDataFrame object (e.g. from contouring)
+    mypolylist = lapply(sldf@lines, 
+       myfun<-function(x){
+            mycrds = x@Lines[[1]]@coords
+            l = length(mycrds[,1])
+            if(any(mycrds[1,1:2] != mycrds[l,1:2])){
+                mycrds = rbind(mycrds, mycrds[1,])
+            }
+            return(Polygons(list(Polygon(mycrds, hole=FALSE)), ID=1))
+        })
 
-    mypolylist=lapply(sldf@lines, 
-                   myfun<-function(x){
-                            mycrds=x@Lines[[1]]@coords
-                            l=length(mycrds[,1])
-                            if(any(mycrds[1,1:2]!=mycrds[l,1:2])){
-                                mycrds=rbind(mycrds,mycrds[1,])
-                            }
-                            return(Polygons(list(Polygon(mycrds,hole=F)), ID=1))
-                    }
-                  )
     for(i in 1:length(mypolylist)){
-       mypolylist[[i]]@ID=as.character(i)
+       mypolylist[[i]]@ID = as.character(i)
     }
 
-    sldf_poly=SpatialPolygons(mypolylist,proj4string=CRS(proj4string(sldf)))
-    sldf_poly=SpatialPolygonsDataFrame(sldf_poly, 
-                                              data=data.frame(ID=1:length(sldf_poly)))
+    sldf_poly = SpatialPolygons(mypolylist, proj4string=CRS(proj4string(sldf)))
+    sldf_poly = SpatialPolygonsDataFrame(sldf_poly, 
+        data=data.frame(ID=1:length(sldf_poly)))
 
     return(sldf_poly)
 }
-
-
-##################################################################################
-#
-# DRAFT code to split spatialLines appropriately
-#
-
-library(sp)
-rewrap_SpatialLines<-function(SL, newmin=0, split_eps=1e-05,progress=TRUE,ll_TOL=180){
-    #browser()
-    # Split lines at the min/max of the newrange
-    # FIXME: Fails for some values of newmin / overly conservative
-    # CAN SUPRESS FAILURE HERE
-    store_ll_TOL=get_ll_TOL()
-    store_ll_warn=get_ll_warn()
-
-    set_ll_TOL(ll_TOL)
-    set_ll_warn(TRUE)
-    
-    nwSL=SL
-    #proj4string(nwSL)<-CRS(as.character(NA))
-    #proj4string(nwSL)<-CRS('+proj=longlat')
-    nwSL<- nowrapSpatialLines(nwSL, offset=newmin, eps=c(1,1)*split_eps)
-    nwSL<- nowrapSpatialLines(nwSL, offset=newmin+360, eps=c(1,1)*split_eps)
-    nwSL<- nowrapSpatialLines(nwSL, offset=newmin-360, eps=c(1,1)*split_eps)
-    #nwSL=SL
-    #nwSL@lines <- lapply(nwSL@lines, .nowrapLines, offset = newmin+360, eps = eps)
-
-    l1=length(nwSL)
-    # Set up progress bar
-    if(progress) pb=txtProgressBar(min=0,max=l1,style=3)
-
-    for(j in 1:l1){
-        if(progress) setTxtProgressBar(pb,j)
-        l2=length(nwSL@lines[[j]]@Lines)
-        for(i in 1:l2){
-            if(nwSL@lines[[j]]@Lines[[i]]@coords[1,1]<=newmin){
-                # Fix lines (< newmin)
-                  
-                nwSL@lines[[j]]@Lines[[i]]@coords[,1] = 
-                   (nwSL@lines[[j]]@Lines[[i]]@coords[,1]-newmin)%%(360)+newmin
-
-            }else if(nwSL@lines[[j]]@Lines[[i]]@coords[1,1]>=(newmin+360)){
-                # Fix lines (> newmin+360)
-                  nwSL@lines[[j]]@Lines[[i]]@coords[,1] = 
-                     (nwSL@lines[[j]]@Lines[[i]]@coords[,1]-newmin)%%(360)+newmin
-            }
-         }
-     }
-     if(progress) close(pb)
-
-     output=SpatialLines(nwSL@lines, proj4string=CRS(proj4string(SL)))
-
-     set_ll_TOL(store_ll_TOL)
-     set_ll_warn(store_ll_warn)
-     return(output)
-}
-
-#
-# library(mapdata)
-# library(maptools)
-# m1=map(database='world')
-# m2=map2SpatialLines(m1)
-# proj4string(m2)=CRS("+proj=longlat +datum=WGS84")
-# m3=rewrap_SpatialLines(m2,-30,eps=1.0e-03)
-
-#rewrap_SpatialLines2<-function(SL, newmin=0, split_eps=1e-05,progress=TRUE){
-#    #browser()
-#    # Split lines at the min/max of the newrange
-#    # FIXME: Fails for some values of newmin / overly conservative
-#    # HOWEVER, THIS REPRESENTS AN ALTERNATIVE APPROACH TO PREVIOUS
-#    nwSL=SL
-#    #proj4string(nwSL)<-CRS(as.character(NA))
-#    #proj4string(nwSL)<-CRS('+proj=longlat')
-#    #nwSL=SL
-#    #nwSL@lines <- lapply(nwSL@lines, .nowrapLines, offset = newmin+360, eps = eps)
-#
-#    l1=length(nwSL)
-#    # Set up progress bar
-#    if(progress) pb=txtProgressBar(min=0,max=l1,style=3)
-#
-#    for(j in 1:l1){
-#        if(progress) setTxtProgressBar(pb,j)
-#        l2=length(nwSL@lines[[j]]@Lines)
-#        for(i in 1:l2){
-#                nwSL@lines[[j]]@Lines[[i]]@coords[,1] = 
-#                   (nwSL@lines[[j]]@Lines[[i]]@coords[,1]-newmin)%%(360)+newmin
-#
-#         }
-#     }
-#   
-#     nwSL<-SpatialLines(nwSL@lines,proj4string=CRS(proj4string(SL))) 
-#     nwSL<- nowrapSpatialLines(nwSL, offset=newmin, eps=c(1,1)*split_eps)
-#     nwSL<- nowrapSpatialLines(nwSL, offset=newmin+360, eps=c(1,1)*split_eps)
-#
-#     if(progress) close(pb)
-#
-#     output=SpatialLines(nwSL@lines, proj4string=CRS(proj4string(SL)))
-#     return(output)
-#}
-#

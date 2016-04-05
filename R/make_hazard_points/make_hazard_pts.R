@@ -90,13 +90,15 @@ dem_0m_poly = cu$SpatialLinesDF2Polygons(dem_0m)
 # answers in rare situations (e.g. antarctica)
 dem_0m_polyArea = geosphere::areaPolygon(dem_0m_poly)/1e+06 
 
-# Find a point inside each contour polygon -- so we can check if it is in the no-clip-zone
+# Find a point inside each contour polygon -- so we can check if it is in the
+# no-clip-zone
 no_clipping_pt = SpatialPoints(coordinates(dem_0m_poly), 
     proj4string=CRS(proj4string(no_clip_area)))
-in_noclip_zone = !is.na(over(no_clipping_pt, no_clip_area)) # Are we in the noclip zone
+in_noclip_zone = !is.na(over(no_clipping_pt, no_clip_area)) 
 
 ## Contours to keep
-keep_islands = which( (dem_0m_polyArea > coast_contour_removal_area_threshold )| (in_noclip_zone == 1))
+keep_islands = which((dem_0m_polyArea > coast_contour_removal_area_threshold ) |
+    (in_noclip_zone == 1))
 
 dem_0m_trim = dem_0m[keep_islands,]
 
