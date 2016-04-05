@@ -292,5 +292,5 @@ haz_new = pu$cut_hazpts_in_poly(haz_pts, haz_pts_mask,
     'HAZ_NEW', lower_left=haz_pt_lowerleft)
 
 pu$haz_pts_2_ursga_format(haz_new, 
-    outfile=paste0('haz_pts_W', haz_pt_lowerleft,'.txt'))
+    outfile=paste0('OUTPUTS/haz_pts_W', haz_pt_lowerleft,'.txt'))
 
