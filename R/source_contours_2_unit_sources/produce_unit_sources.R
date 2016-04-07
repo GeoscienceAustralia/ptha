@@ -5,14 +5,24 @@
 library(rptha)
 
 # Main input parameters 
-desired_subfault_length = 100 # km
-desired_subfault_width = 50 # km
-MC_CORES = 12 # Number of cores for parallel parts
-tsunami_source_cellsize = 1/60 # degrees
 
-# Get a vector with all contours that we want to convert to unit sources
+# A vector with shapefile names for all contours that we want to convert to
+# unit sources
 all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp')
 
+# Desired unit source geometric parameters
+desired_subfault_length = 100 # km
+desired_subfault_width = 50 # km
+
+# Cell size for output rasters
+tsunami_source_cellsize = 1/60 # degrees
+
+# Number of cores for parallel parts. Values > 1 will only work on shared
+# memory linux machines.
+MC_CORES = 12 
+
+# Option to illustrate 3d interactive plot creation
+#
 # Only make the 3d interactive plot if you can use interactive graphics and
 # have rgl (i.e. use FALSE on NCI). 
 make_3d_interactive_plot = FALSE 
