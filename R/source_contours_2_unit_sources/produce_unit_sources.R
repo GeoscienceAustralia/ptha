@@ -1,10 +1,15 @@
-# Main 'driver' script to create the unit sources
+# Main 'driver' script to create the unit sources (currently pure thrust events
+# only)
 #
 # Gareth Davies, Geoscience Australia 2015
 #
 library(rptha)
 
+###############################################################################
+#
 # Main input parameters 
+#
+###############################################################################
 
 # A vector with shapefile names for all contours that we want to convert to
 # unit sources
@@ -13,6 +18,15 @@ all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp')
 # Desired unit source geometric parameters
 desired_subfault_length = 100 # km
 desired_subfault_width = 50 # km
+
+# Desired spacing of sub-unit-source points
+# Lower values (e.g. 1000) may be required for accuracy in unit sources
+# along the trench, but in deeper unit sources a coarser point spacing
+# can be used. Hence 2 different values are provided.
+# The computational effort approximately scales with the inverse square of
+# the point density. 
+shallow_subunitsource_point_density = 1000 # m
+deep_subunitsource_point_density = 6000 # m
 
 # Cell size for output rasters
 tsunami_source_cellsize = 1/60 # degrees
@@ -106,7 +120,8 @@ for(sourcename in names(discretized_sources)){
                      i = 1:ds1$discretized_source_dim[1])
 
     # Approximate spacing for sub-unit-source integration points
-    approx_dx = (ij$i > 1)*5000 + 1000
+    approx_dx = (ij$i > 1)*deep_subunitsource_point_density + 
+        (ij$i == 1)*shallow_subunitsource_point_density
     approx_dy = approx_dx
 
     print('Making tsunami sources in parallel...')
