@@ -8,19 +8,20 @@ library(rptha)
 desired_subfault_length = 100 # km
 desired_subfault_width = 50 # km
 MC_CORES = 12 # Number of cores for parallel parts
-tsunami_source_cellsize = 1/60
-make_3d_interactive_plot = TRUE # Only do this if you can use interactive graphics and have rgl (i.e. not on NCI)
-point_spacing_scale = 1.0 # Should be ~ 1.0. Increase to run faster at expense of accuracy
+tsunami_source_cellsize = 1/60 # degrees
 
+# Get a vector with all contours that we want to convert to unit sources
+all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp')
+
+# Only make the 3d interactive plot if you can use interactive graphics and
+# have rgl (i.e. use FALSE on NCI). 
+make_3d_interactive_plot = FALSE 
 
 ###############################################################################
 #
 # Step 1: Make discretized source zones for all ruptures
 #
 ###############################################################################
-
-# Get a vector with all contours that we want to convert to unit sources
-all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp')
 
 # Capture plots that occur as source is made in pdf
 pdf('UnitSources.pdf', width=10, height=10)
@@ -44,13 +45,15 @@ for(interface_shapefile in all_sourcezone_shapefiles){
     # More accurate results can be obtained from a similar function without
     # _approximate_ in the name, but this is a bit more intensive
     discretized_sources_statistics[[sourcename]] = 
-        discretized_source_approximate_summary_statistics(discretized_sources[[sourcename]],
+        discretized_source_approximate_summary_statistics(
+            discretized_sources[[sourcename]],
             make_plot=TRUE)
 }
 
 
 dev.off() # Save pdf plot
 
+# Save the R image (can be useful for testing/debugging)
 dir.create('Rimages', showWarnings=FALSE)
 save.image('Rimages/post_sources.Rdata')
 
@@ -75,17 +78,24 @@ for(sourcename in names(discretized_sources)){
     tsunami_extent = rbind(floor(source_lonlat_extent[c(1,3)] - c(2,2)), 
                            ceiling(source_lonlat_extent[c(2,4)] + c(2,2)))
 
+    # Create a grid of points where the surface deformation is computed
     tsunami_surface_points_lonlat = expand.grid(
         seq(tsunami_extent[1,1], tsunami_extent[2,1], by = tsunami_source_cellsize),
         seq(tsunami_extent[1,2], tsunami_extent[2,2], by = tsunami_source_cellsize))
 
-    # Make indices for unit sources in parallel computation.
-    # If j varies fastest then the shallow unit sources
-    # will be submitted early, which will be efficient if
-    # they have more interior points (if the spacing is based on the depth)
+    # Make unit source indices for parallel computation.
+    #
+    # Each unit source is indexed by its position along-strike, and down-dip
+    # Typically shallow unit sources require more integration points, so
+    # are computationally expensive. Thus, in a parallel computation, we want
+    # to start those ones first.
+    #
+    # If j varies fastest then the shallow unit sources will be submitted early
+    # So make j the first argument in expand.grid
     ij = expand.grid(j = 1:ds1$discretized_source_dim[2], 
                      i = 1:ds1$discretized_source_dim[1])
 
+    # Approximate spacing for sub-unit-source integration points
     approx_dx = (ij$i > 1)*5000 + 1000
     approx_dy = approx_dx
 
@@ -95,18 +105,24 @@ for(sourcename in names(discretized_sources)){
     library(parallel)
     all_tsunami = mcmapply(
         make_tsunami_unit_source, 
-        i = as.list(ij$i), j = as.list(ij$j), discrete_source=list(ds1), rake=list(90),
+        i = as.list(ij$i), 
+        j = as.list(ij$j), 
+        discrete_source=list(ds1), 
+        rake=list(90), # Pure thrust
         tsunami_surface_points_lonlat = list(tsunami_surface_points_lonlat),
-        approx_dx = as.list(approx_dx), approx_dy = as.list(approx_dy), 
+        approx_dx = as.list(approx_dx), 
+        approx_dy = as.list(approx_dy), 
         depths_in_km=list(TRUE),
-        mc.cores=MC_CORES, mc.preschedule=FALSE, SIMPLIFY=FALSE)
+        mc.cores=MC_CORES, # Parallel arguments here and below
+        mc.preschedule=FALSE, 
+        SIMPLIFY=FALSE)
 
     print('Saving outputs...')
     # Save results to a file
     saveRDS(all_tsunami,
         file = paste0('Unit_source_data/', sourcename, '.RDS'))
 
-    ## Make output rasters
+    # Make output rasters
     #  Construct filename like 'OutputDir/source_dipIndex_strikeIndex.tif'
     raster_dir = paste0('Unit_source_data/', sourcename, '/') 
     down_dip_index = unlist(lapply(all_tsunami, f<-function(x) x$i))
