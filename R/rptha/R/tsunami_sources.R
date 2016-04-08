@@ -242,7 +242,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' @param rake The rake of the slip in degrees
 #' @param tsunami_surface_points_cartesian Points at which to compute the
 #' tsunami deformation in cartesian coordinates
-#' @param point_scale Multiply the length/width of area sources by point scale
+#' @param point_scale [deprecated] Multiply the length/width of area sources by point scale
 #' prior to convolution, then divide by this afterwoulds. Allows moving between
 #' Okada's area source representation at each grid point, and a point source
 #' representation. Set to 1 for standard rectangular area source representation

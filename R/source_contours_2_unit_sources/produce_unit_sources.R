@@ -1,10 +1,11 @@
+## ---- initialise ----
+
 # Main 'driver' script to create the unit sources (currently pure thrust events
 # only)
 #
 # Gareth Davies, Geoscience Australia 2015
 #
 library(rptha)
-
 ###############################################################################
 #
 # Main input parameters 
@@ -13,7 +14,7 @@ library(rptha)
 
 # A vector with shapefile names for all contours that we want to convert to
 # unit sources
-all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp')
+all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp') # Matches all shapefiles in CONTOURS
 
 # Desired unit source geometric parameters
 desired_subfault_length = 100 # km
@@ -25,8 +26,14 @@ desired_subfault_width = 50 # km
 # can be used. Hence 2 different values are provided.
 # The computational effort approximately scales with the inverse square of
 # the point density. 
-shallow_subunitsource_point_density = 1000 # m
-deep_subunitsource_point_density = 6000 # m
+shallow_subunitsource_point_spacing = 1000 # m
+deep_subunitsource_point_spacing = 6000 #m
+
+# For computational efficiency, only compute the okada deformation at
+# distances <= okada_distance_factor x (depth of sub-unit-source point) 
+# This can save computational effort for shallow unit sources.
+# But be careful if using a wide subunitsource_point_spacing.
+okada_distance_factor = 50 # Inf 
 
 # Cell size for output rasters
 tsunami_source_cellsize = 1/60 # degrees
@@ -41,6 +48,9 @@ MC_CORES = 12
 # have rgl (i.e. use FALSE on NCI). 
 make_3d_interactive_plot = FALSE 
 
+
+## ---- makeDiscretizedSources ----
+
 ###############################################################################
 #
 # Step 1: Make discretized source zones for all ruptures
@@ -48,7 +58,7 @@ make_3d_interactive_plot = FALSE
 ###############################################################################
 
 # Capture plots that occur as source is made in pdf
-pdf('UnitSources.pdf', width=10, height=10)
+# pdf('UnitSources.pdf', width=10, height=10)
 
 # Loop over all source contour shapefiles, and make the discretized source zone
 discretized_sources = list()
@@ -75,11 +85,15 @@ for(interface_shapefile in all_sourcezone_shapefiles){
 }
 
 
-dev.off() # Save pdf plot
+# dev.off() # Save pdf plot
 
-# Save the R image (can be useful for testing/debugging)
+
+# Save the R image (not essential, but can be useful for testing/debugging)
 dir.create('Rimages', showWarnings=FALSE)
 save.image('Rimages/post_sources.Rdata')
+
+
+## ---- makeTsunamiSources ----
 
 ###############################################################################
 #
@@ -120,8 +134,8 @@ for(sourcename in names(discretized_sources)){
                      i = 1:ds1$discretized_source_dim[1])
 
     # Approximate spacing for sub-unit-source integration points
-    approx_dx = (ij$i > 1)*deep_subunitsource_point_density + 
-        (ij$i == 1)*shallow_subunitsource_point_density
+    approx_dx = (ij$i > 1)*deep_subunitsource_point_spacing + 
+        (ij$i == 1)*shallow_subunitsource_point_spacing
     approx_dy = approx_dx
 
     print('Making tsunami sources in parallel...')
@@ -138,6 +152,7 @@ for(sourcename in names(discretized_sources)){
         approx_dx = as.list(approx_dx), 
         approx_dy = as.list(approx_dy), 
         depths_in_km=list(TRUE),
+        dstmx=okada_distance_factor,
         mc.cores=MC_CORES, # Parallel arguments here and below
         mc.preschedule=FALSE, 
         SIMPLIFY=FALSE)
@@ -165,6 +180,7 @@ for(sourcename in names(discretized_sources)){
     ## Plotting -- make a pdf for checking the sources
     plot_all_tsunami_unit_sources(sourcename, all_tsunami, all_tsunami_rast, ds1)
 }
+
 
 ###############################################################################
 #
