@@ -137,10 +137,10 @@ If the code successfully runs, it will generate:
 unit source (assuming 1m of earthquake slip).
 * a pdf file for each sourcezone, with various plots that can be used to check
 that the unit sources and tsunami deformations seem sensible.
-* an RDS file for each sourcezone. This is a native R format file, and contains
+* an RDS file for each unit source. This is a native R format file, and contains
 the tsunami unit sources as a native R data-structure. It can be useful for
-programming, since it contains the underlying data (such as sub-unit-source
-points, exact unit source discretization, etc).
+programming and debugging, since it contains the underlying data (such as
+sub-unit-source points, exact unit source discretization, etc).
 
 <!---
 # Geometric discretization
