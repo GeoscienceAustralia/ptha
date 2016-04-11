@@ -142,9 +142,9 @@ important of which are the sub-unit-source grid spacing.
 If kajiura filtering is to be applied, then the user must also provide an
 elevation raster (in lon-lat coordinates, with elevation in m, and negative
 value being below MSL). At the moment the code assumes that this raster has a
-longitude extent within [-180, 180] (i.e. Atlantic centred). The input
-sourcezones do NOT have to have longitudes in this range, although they MUST
-reside on the input raster.
+longitude extent within (-180, 180), corresponding to an Atlantic centred view.
+The input sourcezones do NOT have to have longitudes in this range, although
+they MUST reside on the input raster.
 
 Note that more than one source-contour shapefile can be provided -- the code
 will loop over them.
