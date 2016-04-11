@@ -52,9 +52,9 @@ elevation_raster = NULL
 kajiura_use_threshold = 1.0e-04
 
 # When applying the kajiura filter, the data is regridded onto a grid with
-# spacing=kajiura_gridsize. The latter should be small compared to the
+# spacing=kajiura_gridspacing. The latter should be small compared to the
 # horizontal distance over which the deformation changes significantly
-kajiura_gridsize = 1000 # m
+kajiura_grid_spacing = 1000 # m
 
 # Cell size for output rasters
 tsunami_source_cellsize = 1/60 # degrees
@@ -162,15 +162,19 @@ for(sourcename_index in 1:length(names(discretized_sources))){
         seq(tsunami_extent[1,1], tsunami_extent[2,1], by = tsunami_source_cellsize),
         seq(tsunami_extent[1,2], tsunami_extent[2,2], by = tsunami_source_cellsize))
 
+    # If elevation data is provided, lookup the depths at the tsunami surface points.
     if(!is.null(elevation_raster)){
 
         use_kajiura_filter = TRUE
 
-        # Lookup the depths at the tsunami surface points.
-        # Make some points with longitudes in [-180,180] so we can lookup gebco
+        # FIXME:  This assumes the elevation raster ranges from [-180 , 180]
+        #
+        # Make some temporary tsunami surface points with longitudes in
+        # [-180,180] so we can lookup the elevation raster
         ltspl = length(tsunami_surface_points_lonlat[,1])
         tmp_tsp = adjust_longitude_by_360_deg(tsunami_surface_points_lonlat, 
             matrix(0, ncol=2, nrow=ltspl))
+
         # Process in chunks to reduce memory usage
         chunk_inds = floor(seq(1, ltspl + 1, len=10))
         surface_point_ocean_depths = tmp_tsp[,1]*NA
@@ -186,8 +190,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
         rm(tmp_tsp); gc()
 
     }else{
-
-        # In this case depths are not needed, and kajiura filtering is not used
+        # In this case depths are not provided, and kajiura filtering is not used
         use_kajiura_filter = FALSE
         surface_point_ocean_depths = NULL
 
@@ -215,7 +218,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
 
     library(parallel)
 
-    # Function to run in parallel
+    # Function to facilitate running in parallel with mcmapply
     parallel_fun<-function(ind){
         # Make a single tsunami unit source 
         down_dip_index = ij$i[ind]
@@ -232,7 +235,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             depths_in_km=TRUE, 
             kajiura_smooth=use_kajiura_filter, 
             surface_point_ocean_depths=surface_point_ocean_depths,
-            kajiura_grid_spacing=1000, 
+            kajiura_grid_spacing=kajiura_grid_spacing, 
             kajiura_where_deformation_exceeds_threshold=kajiura_use_threshold,
             minimal_output=minimise_tsunami_unit_source_output, 
             dstmx=okada_distance_factor)
@@ -258,22 +261,20 @@ for(sourcename_index in 1:length(names(discretized_sources))){
         all_tsunami_files = mcmapply(parallel_fun, ind=as.list(1:length(ij[,1])),
             mc.cores=MC_CORES, mc.preschedule=FALSE, SIMPLIFY=FALSE)
     }else{
-        all_tsunami_files = mapply(parallel_fun, ind=as.list(1:length(ij[,1])), SIMPLIFY=FALSE)
+        all_tsunami_files = mapply(parallel_fun, ind=as.list(1:length(ij[,1])), 
+            SIMPLIFY=FALSE)
     }
 
 
     # Finally -- read in all the results and make some plots
     all_tsunami = lapply(as.list(all_tsunami_files), f<-function(x) readRDS(x))
    
-    ## PREVIOUSLY THIS LINE INTRODUCED A BUG IN THE PLOTS -- the raster
-    ## ordering differed from the all_tsunami ordering
-    #all_rasters = Sys.glob(paste0(raster_dir, '*.tif'))
     all_rasters = paste0(raster_dir, '/',
-        gsub('.RDS', '', basename(all_tsunami_files)), '.tif')
+        gsub('.RDS', '', basename(unlist(all_tsunami_files))), '.tif')
 
     all_tsunami_rast = lapply(as.list(all_rasters), f<-function(x) raster(x))
 
-    ## Plotting -- make a pdf for checking the sources
+    # Plotting -- make a pdf for checking the sources
     plot_all_tsunami_unit_sources(sourcename, all_tsunami, all_tsunami_rast, ds1)
 
     rm(all_tsunami, all_tsunami_rast); gc()
