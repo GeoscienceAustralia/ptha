@@ -231,15 +231,16 @@ okada_distance_factor = 50 # Inf
 elevation_raster = NULL 
 # elevation_raster = raster('../RAW/GEBCO/gebco_08.nc')
 
-# For computational efficiency, only compute Kajiura filtering in a box
+# For computational efficiency, only apply Kajiura filtering in a box
 # containing all points where the unit source deformation exceeds
-# kajiura_use_threshold. If in doubt 
+# kajiura_use_threshold. Set to zero to apply Kajiura filter everywhere.
+# Use of a small positive number can be faster.
 kajiura_use_threshold = 1.0e-04
 
 # When applying the kajiura filter, the data is regridded onto a grid with
-# spacing=kajiura_gridsize. The latter should be small compared to the
+# spacing=kajiura_gridspacing. The latter should be small compared to the
 # horizontal distance over which the deformation changes significantly
-kajiura_gridsize = 1000 # m
+kajiura_grid_spacing = 1000 # m
 
 # Cell size for output rasters
 tsunami_source_cellsize = 1/60 # degrees
