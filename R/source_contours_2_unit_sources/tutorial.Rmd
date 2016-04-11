@@ -107,28 +107,34 @@ case each core will run separate unit sources, until all are completed.
 
 # Running the script
 Assuming the rptha package has been successfully installed, the script can be
-run directly from the commandline using the syntax:
-
-    Rscript produce_unit_sources.R
-
-or from within R using:
+run from within R using the syntax:
 
     source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
 
 where the 'echo=TRUE' command prints the commands to the screen as they are
-executed. In either case the working directory must be the directory containing
+executed. 
+
+Alternatively the script can be run from the commandline directly with:
+
+    Rscript produce_unit_sources.R
+
+To only run a single shapefile, you can pass an integer argument, e.g.:
+
+    Rscript produce_unit_sources.R 10
+
+The above command would run the 10th shapefile from within CONTOURS (assuming
+alphabetical ordering).  The main purpose of this option is to facilitate
+running each sourcezone separately in a HPC environment (since it is relatively
+easy to automatically submit many jobs with different integer arguments).
+
+In either case the working directory must be the directory containing
 *'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
-Note that the alaska sourcezone make take a while to run using the parameters
-provided in the script. (e.g. half an hour on a 6 CPU machine). To make it run
-faster you can increase the subunitsource_point_spacing to e.g. 20000, although
-in this case there will be obvious artefacts along the shallowest unit sources.
-
-Beware of possible minor artefacts in the computed solution along the trench
-when rupture becomes very shallow and the dip is nonuniform. In our experience
-this is not detectible when Kajiura filtering is applied. In general we suggest
-to always apply Kajiura filtering, although it is not done above for speed, and
-so we can avoid distributing elevation data in the package.
+Note that the alaska sourcezone make take a long time to run using the
+parameters provided in the script (e.g. half an hour on a 6 CPU machine). To
+make it run faster you can increase the subunitsource_point_spacing to e.g.
+20000, although in this case there will be obvious artefacts along the
+shallowest unit sources.
 
 # Outputs
 
@@ -141,6 +147,14 @@ that the unit sources and tsunami deformations seem sensible.
 the tsunami unit sources as a native R data-structure. It can be useful for
 programming and debugging, since it contains the underlying data (such as
 sub-unit-source points, exact unit source discretization, etc).
+
+# Tips
+Beware of possible minor artefacts in the computed solution along the trench
+when rupture becomes very shallow and the dip is nonuniform. In our experience
+this is not detectible when Kajiura filtering is applied. In general we suggest
+to always apply Kajiura filtering, although it is not done above for speed, and
+so we can avoid distributing elevation data in the package.
+
 
 <!---
 # Geometric discretization
