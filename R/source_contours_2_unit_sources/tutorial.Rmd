@@ -21,8 +21,7 @@ corresponding tutorial.Rmd file. Edit the latter instead.*
 This document explains how to use the script
 *'[produce_unit_sources.R](produce_unit_sources.R)'* to convert earthquake
 source contours (defining an irregularly dipping surface on which earthquake
-slip can occur) into unit sources. It also provides some explanation
-of the data structures used.
+slip can occur) into tsunami unit sources. 
 
 You may find it helpful to directly read
 *'[produce_unit_sources.R](produce_unit_sources.R)'* first (or instead),
@@ -80,26 +79,20 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 
 # Input parameters
 
-The code below comes directly from *'[produce_unit_sources.R](produce_unit_sources.R)'*.
-
-Assuming the rptha package has been successfully installed, the script can be
-run directly from the commandline using the syntax:
-
-    Rscript produce_unit_sources.R
-
-or from within R using:
-
-    source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
-
-where the 'echo=TRUE' command prints the commands to the screen as they are executed. In
-either case the working directory must be the directory containing
+The code below comes directly from
 *'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
 In typical usage of *'[produce_unit_sources.R](produce_unit_sources.R)'*, the
 user would edit the input parameters to define the source contour filename(s),
-the desired unit-source length and width, the resolution of the output raster,
-and some numerical parameters describing the density of sub-unit-source
-gridpoints inside each unit source.
+the assumed earthquake rake, the desired unit-source length and width, the
+resolution of the output raster, and some numerical parameters, the most
+important of which are the sub-unit-source grid spacing.
+
+If kajiura filtering is to be applied, then the user must also provide an
+elevation raster (in lon-lat coordinates, with elevation in m, and negative
+value being below MSL). At the moment the code assumes that this raster has a
+longitude extent within [-180, 180]. However, the input sourcezones do NOT have
+to have longitudes in this range.
 
 Note that more than one source-contour shapefile can be provided -- the code
 will loop over them.
@@ -110,6 +103,21 @@ case each core will run separate unit sources, until all are completed.
 
 ```{r initialise, echo=TRUE}
 ```
+
+# Running the script
+Assuming the rptha package has been successfully installed, the script can be
+run directly from the commandline using the syntax:
+
+    Rscript produce_unit_sources.R
+
+or from within R using:
+
+    source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
+
+where the 'echo=TRUE' command prints the commands to the screen as they are
+executed. In either case the working directory must be the directory containing
+*'[produce_unit_sources.R](produce_unit_sources.R)'*.
+
 
 # Outputs
 Note that the alaska sourcezone make take a while to run using the parameters
