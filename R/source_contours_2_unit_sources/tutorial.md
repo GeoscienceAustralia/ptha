@@ -155,7 +155,8 @@ or from within R using:
     source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
 
 where the 'echo=TRUE' command prints the commands to the screen as they are executed. In
-either case the working directory must be the directory containing produce_unit_sources.R.
+either case the working directory must be the directory containing
+*'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
 In typical usage of *'[produce_unit_sources.R](produce_unit_sources.R)'*, the
 user would edit the input parameters to define the source contour filename(s),
