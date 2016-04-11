@@ -67,7 +67,7 @@ library(rgdal)
 alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska')
 
 # Print some information about it
-alaska
+print(alaska)
 
 # There should be a single attribute named 'level' containing the contour depths
 names(alaska)
