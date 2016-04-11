@@ -147,9 +147,13 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 The code below comes directly from *'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
 The script can be run directly from the commandline using the syntax:
+
     Rscript produce_unit_sources.R
-or from within R using
+
+or from within R using:
+
     source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
+
 where the 'echo=TRUE' command prints the commands to the screen as they are executed. In
 either case the working directory must be the directory containing produce_unit_sources.R.
 
