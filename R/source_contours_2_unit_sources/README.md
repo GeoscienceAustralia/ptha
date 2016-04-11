@@ -1,4 +1,4 @@
-The code **'produce_unit_sources.R'** gives an example of:
+The code **'[produce_unit_sources.R](produce_unit_sources.R)'** gives an example of:
 
 1) Making a discretized source from some source contours
 
