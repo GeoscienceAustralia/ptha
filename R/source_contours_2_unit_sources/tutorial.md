@@ -82,21 +82,27 @@ alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska')
 
 ```r
 # Print some information about it
-print(alaska)
+summary(alaska)
 ```
 
 ```
-##                                   geometry  level
-## 0 MULTILINESTRING((215.5272 59.54571 ...))      6
-## 1 MULTILINESTRING((214.8914 59.83469 ...))     16
-## 2 MULTILINESTRING((214.2812 60.04492 ...))     21
-## 3 MULTILINESTRING((213.9983 60.22785 ...))     26
-## 4 MULTILINESTRING((213.5437 60.38246 ...))     31
-## 5 MULTILINESTRING((213.1075 60.61865 ...))     36
-## 6 MULTILINESTRING((204.8049 56.93479 ...))     41
-## 7 MULTILINESTRING((211.0757 61.45045 ...))     46
-## 8 MULTILINESTRING((210.5005 61.72566 ...))     51
-## 9 MULTILINESTRING((210.1986 61.83479 ...)) 55.999
+## Object of class SpatialLinesDataFrame
+## Coordinates:
+##        min       max
+## x 204.4529 215.52723
+## y  55.6071  61.83479
+## Is projected: FALSE 
+## proj4string :
+## [+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0]
+## Data attributes:
+##      level  
+##  16     :1  
+##  21     :1  
+##  26     :1  
+##  31     :1  
+##  36     :1  
+##  41     :1  
+##  (Other):4
 ```
 
 ```r
