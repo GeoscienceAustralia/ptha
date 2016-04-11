@@ -26,8 +26,11 @@ sourcezone_rake = rep(90, len=length(all_sourcezone_shapefiles)) # degrees
 
 # Desired spacing of sub-unit-source points
 # Lower values (e.g. 1000) may be required for accuracy in unit sources
-# along the trench, but in deeper unit sources a coarser point spacing
-# can be used. Hence 2 different values are provided.
+# along the trench, because shallow deformation tends to be quite localised.
+# For deeper unit sources, a much coarser point spacing can be used without
+# sacrificing accuracy. 
+# Hence we use different values for the 'shallow' sub-unit-source points (i.e.
+# along the trench) and the deeper ones.
 # The computational effort approximately scales with the inverse square of
 # the point density. 
 shallow_subunitsource_point_spacing = 1000 # m
@@ -190,7 +193,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
         rm(tmp_tsp); gc()
 
     }else{
-        # In this case depths are not provided, and kajiura filtering is not used
+        # In this case depths are not provided, and Kajiura filtering is not used
         use_kajiura_filter = FALSE
         surface_point_ocean_depths = NULL
 
