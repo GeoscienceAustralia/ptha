@@ -280,11 +280,10 @@ easy to automatically submit many jobs with different integer arguments).
 In either case the working directory must be the directory containing
 *'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
-Note that the alaska sourcezone make take a long time to run using the
-parameters provided in the script (e.g. half an hour on a 6 CPU machine). To
-make it run faster you can increase the subunitsource_point_spacing to e.g.
-20000, although in this case there will be obvious artefacts along the
-shallowest unit sources.
+The alaska sourcezone may take a long time to run using the parameters provided
+in the script (e.g. half an hour on a 6 CPU machine). To make it run faster you
+can increase the subunitsource_point_spacing to e.g.  20000, although in this
+case there will be obvious artefacts along the shallowest unit sources.
 
 # Outputs
 
