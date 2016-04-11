@@ -73,11 +73,6 @@ summary(alaska)
 names(alaska)
 print(alaska$level)
 
-# The print out above shows that R has read 'level' as a factor (a categorical
-# type variable). Let's convert it to numeric
-alaska$level = as.numeric(as.character(alaska$level))
-print(alaska$level) # No longer a factor
-
 # Make a quick plot of the input data
 spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km', 
     scales=list(draw=TRUE), aspect='iso')
@@ -116,9 +111,13 @@ case each core will run separate unit sources, until all are completed.
 ```
 
 # Outputs
+Note that the alaska sourcezone make take a while to run using the parameters
+provided in the script. (e.g. a few hours on a 6 CPU machine). To make it run
+faster you can increase the subunitsource_point_spacing to e.g. 20000. 
 
 If the code successfully runs, it will generate: 
-* a set of tiff files (one for each unit source) with the computed tsunami deformation. 
+* a set of tiff files (one for each unit source) with the computed tsunami deformation for each
+unit source (assuming 1m of earthquake slip).
 * a pdf file for each sourcezone, with various plots that can be used to check
 that the unit sources and tsunami deformations seem sensible.
 * an RDS file for each sourcezone. This is a native R format file, and contains
