@@ -133,7 +133,8 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 
 The code below comes directly from *'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
-The script can be run directly from the commandline using the syntax:
+Assuming the rptha package has been successfully installed, the script can be
+run directly from the commandline using the syntax:
 
     Rscript produce_unit_sources.R
 
@@ -160,8 +161,7 @@ case each core will run separate unit sources, until all are completed.
 
 
 ```r
-# Main 'driver' script to create the unit sources (currently pure thrust events
-# only)
+# Main 'driver' script to create the unit sources
 #
 # Gareth Davies, Geoscience Australia 2015
 #
@@ -191,6 +191,8 @@ library(rptha)
 ```
 
 ```r
+library(raster)
+
 ###############################################################################
 #
 # Main input parameters 
@@ -204,6 +206,9 @@ all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp') # Matches all shapefile
 # Desired unit source geometric parameters
 desired_subfault_length = 100 # km
 desired_subfault_width = 50 # km
+
+# A vector with the desired rake angle (one entry per sourcezone)
+sourcezone_rake = rep(90, len=length(all_sourcezone_shapefiles)) # degrees
 
 # Desired spacing of sub-unit-source points
 # Lower values (e.g. 1000) may be required for accuracy in unit sources
@@ -220,6 +225,22 @@ deep_subunitsource_point_spacing = 6000 #m
 # But be careful if using a wide subunitsource_point_spacing.
 okada_distance_factor = 50 # Inf 
 
+# elevation raster (required for Kajiura filtering). Should give elevation in m, 
+# with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
+# Set to NULL to not use Kajiura filtering
+elevation_raster = NULL 
+# elevation_raster = raster('../RAW/GEBCO/gebco_08.nc')
+
+# For computational efficiency, only compute Kajiura filtering in a box
+# containing all points where the unit source deformation exceeds
+# kajiura_use_threshold. If in doubt 
+kajiura_use_threshold = 1.0e-04
+
+# When applying the kajiura filter, the data is regridded onto a grid with
+# spacing=kajiura_gridsize. The latter should be small compared to the
+# horizontal distance over which the deformation changes significantly
+kajiura_gridsize = 1000 # m
+
 # Cell size for output rasters
 tsunami_source_cellsize = 1/60 # degrees
 
@@ -232,6 +253,11 @@ MC_CORES = 12
 # Only make the 3d interactive plot if you can use interactive graphics and
 # have rgl (i.e. use FALSE on NCI). 
 make_3d_interactive_plot = FALSE 
+
+# Option to reduce the size of RDS output
+# Set to FALSE if make_3d_interactive_plot = TRUE, or if you have other
+# needs to use the detailed outputs.
+minimise_tsunami_unit_source_output = TRUE
 ```
 
 # Outputs

@@ -223,7 +223,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' If \code{update_logic_tree_weights_with_data=TRUE},
 #' this is used to re-weight parameter combinations in the logic tree, with more weight
 #' given to those which predict similar event frequencies as the data.
-#' @param M0_2_Mw function which takes an earthquake magnitude and returns the
+#' @param Mw_2_M0 function which takes an earthquake magnitude and returns the
 #' corresponding seismic moment M0
 #' @param account_for_moment_below_mwmin logical. If FALSE assume all seismically coupled
 #' slip occurs due to earthquakes with Mw > Mwmin. If TRUE, estimate the fraction of seismically

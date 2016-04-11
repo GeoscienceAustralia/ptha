@@ -8,32 +8,31 @@ approxSpatialLines(SL, spacing = NULL, n = NULL, longlat = FALSE,
   verbose = FALSE)
 }
 \arguments{
-\item{SL}{= spatialLines object}
+\item{SL}{a SpatialLines object}
 
-\item{spacing}{= approximate spacing between points}
+\item{spacing}{numeric. An approximate spacing between points}
 
-\item{n}{= Number of points in output (if spacing = NULL)}
+\item{n}{numeric. The number of points in output (if spacing = NULL)}
 
-\item{longlat}{= TRUE/FALSE}
+\item{longlat}{logical. Is data longlat?}
 
-\item{verbose}{Print progressi information}
+\item{verbose}{logical. Print progress information}
 }
 \value{
 SpatialPointsDataFrame along SL, with data identifying the
   corresponding line index in SL
 }
 \description{
-The spacing is calculated with linear interpolation (no great circles),
-so it is assumed that the points defining lines in SL are close enough
-together that 'great circle' and euclidean interpolation are practically identical.
-However distances are computed assuming longlat (and spherical earth) if longlat = TRUE.
+The spacing is calculated with linear interpolation (no great circles), so it
+is assumed that the points defining lines in SL are close enough together
+that 'great circle' and euclidean interpolation are practically identical.
+However distances are computed assuming longlat (and spherical earth) if
+longlat = TRUE.
 }
 \details{
-The units of spacing depend on the projection of SL, and the value of longlat
-If longlat=FALSE, spacing is in units of SL's coordinates (e.g. metres
-  for UTM projections, degrees for longlat projections)
-If longlat=TRUE, SL is in longlat degrees, and spacing is in kilometres
-
-INPUTS:
+The units of spacing depend on the projection of SL, and the value of
+longlat.  If longlat=FALSE, spacing is in units of SL's coordinates (e.g.
+metres for UTM projections, degrees for longlat projections).  If
+longlat=TRUE, SL is in longlat degrees, and spacing is in kilometres
 }
 

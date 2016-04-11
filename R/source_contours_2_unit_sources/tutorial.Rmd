@@ -5,7 +5,7 @@ knitr::read_chunk(
     'produce_unit_sources.R', 
     labels=c('initialise'), 
     from=c('## ---- initialise ----'), 
-    to=c('## ---- makeDiscretizedSources ----'),
+    to=c('## ---- takeCommandLineParameter ----'),
     from.offset=1,
     to.offset=-1)
 ```
@@ -82,7 +82,8 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 
 The code below comes directly from *'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
-The script can be run directly from the commandline using the syntax:
+Assuming the rptha package has been successfully installed, the script can be
+run directly from the commandline using the syntax:
 
     Rscript produce_unit_sources.R
 

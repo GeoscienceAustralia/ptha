@@ -23,4 +23,8 @@ longitude of the reference point. This can be useful e.g. if you
 have a raster with longitude ranging from -180 to 180, and need to look up
 the values at points where the longitude notation might include values > 180
 }
+\examples{
+# Adjust a point to have longitude 'close' to 180 degrees
+adjust_longitude_by_360_deg(c(-90, 10), c(180, 0))
+}
 

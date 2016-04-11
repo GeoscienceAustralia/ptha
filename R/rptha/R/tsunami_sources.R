@@ -4,7 +4,8 @@
 #' 
 #' @param i integer. The down-dip index of the unit source
 #' @param j integer. The along-strike index of the unit source
-#' @param discrete_source List with discrete source information
+#' @param discrete_source List with discrete source information (e.g. output of
+#' \code{discretized_source_from_source_contours})
 #' @param rake Rake (degrees) of the slip vector. 0 is along-strike slip, 90 is pure thrust,..
 #' @param tsunami_surface_points_lonlat matrix with lon/lat coordinates of
 #' points where tsunami initial condition will be evaluated.
@@ -44,11 +45,15 @@
 #'
 #' @export
 make_tsunami_unit_source<-function(i, j, discrete_source, rake,
-    tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL, 
-    scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth=FALSE, 
-    surface_point_ocean_depths=NULL, kajiura_grid_spacing=NULL,
-    kajiura_volume_change_error_threshold = 0.1, minimal_output=FALSE,
+    tsunami_surface_points_lonlat, 
+    approx_dx = NULL, approx_dy = NULL, 
+    scale_dxdy = 1, depths_in_km = TRUE, 
+    kajiura_smooth=FALSE, 
+    surface_point_ocean_depths=NULL, 
+    kajiura_grid_spacing=NULL,
+    kajiura_volume_change_error_threshold = 0.1, 
     kajiura_where_deformation_exceeds_threshold = 0.0,
+    minimal_output=FALSE,
     tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
     ...){
 
