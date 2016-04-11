@@ -87,11 +87,18 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 
 The code below comes directly from *'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
-In typical usage of *'[produce_unit_sources.R](produce_unit_sources.R)'*, the user would edit the input
-parameters to define the source contour filename(s), the desired unit-source
-length and width, the resolution of the output raster, and some numerical
-parameters describing the density of sub-unit-source gridpoints inside each unit
-source.
+The script can be run directly from the commandline using the syntax:
+    Rscript produce_unit_sources.R
+or from within R using
+    source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
+where the 'echo=TRUE' command prints the commands to the screen as they are executed. In
+either case the working directory must be the directory containing produce_unit_sources.R.
+
+In typical usage of *'[produce_unit_sources.R](produce_unit_sources.R)'*, the
+user would edit the input parameters to define the source contour filename(s),
+the desired unit-source length and width, the resolution of the output raster,
+and some numerical parameters describing the density of sub-unit-source
+gridpoints inside each unit source.
 
 Note that more than one source-contour shapefile can be provided -- the code
 will loop over them.
