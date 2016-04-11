@@ -95,14 +95,13 @@ summary(alaska)
 ## proj4string :
 ## [+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0]
 ## Data attributes:
-##      level  
-##  16     :1  
-##  21     :1  
-##  26     :1  
-##  31     :1  
-##  36     :1  
-##  41     :1  
-##  (Other):4
+##      level      
+##  Min.   : 0.00  
+##  1st Qu.:16.25  
+##  Median :27.50  
+##  Mean   :27.00  
+##  3rd Qu.:38.75  
+##  Max.   :50.00
 ```
 
 ```r
@@ -119,19 +118,7 @@ print(alaska$level)
 ```
 
 ```
-##  [1] 6      16     21     26     31     36     41     46     51     55.999
-## Levels: 16 21 26 31 36 41 46 51 55.999 6
-```
-
-```r
-# The print out above shows that R has read 'level' as a factor (a categorical
-# type variable). Let's convert it to numeric
-alaska$level = as.numeric(as.character(alaska$level))
-print(alaska$level) # No longer a factor
-```
-
-```
-##  [1]  6.000 16.000 21.000 26.000 31.000 36.000 41.000 46.000 51.000 55.999
+##  [1]  0.000 10.000 15.000 20.000 25.000 30.000 35.000 40.000 45.000 49.999
 ```
 
 ```r
@@ -248,9 +235,13 @@ make_3d_interactive_plot = FALSE
 ```
 
 # Outputs
+Note that the alaska sourcezone make take a while to run using the parameters
+provided in the script. (e.g. a few hours on a 6 CPU machine). To make it run
+faster you can increase the subunitsource_point_spacing to e.g. 20000. 
 
 If the code successfully runs, it will generate: 
-* a set of tiff files (one for each unit source) with the computed tsunami deformation. 
+* a set of tiff files (one for each unit source) with the computed tsunami deformation for each
+unit source (assuming 1m of earthquake slip).
 * a pdf file for each sourcezone, with various plots that can be used to check
 that the unit sources and tsunami deformations seem sensible.
 * an RDS file for each sourcezone. This is a native R format file, and contains
