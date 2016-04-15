@@ -260,8 +260,7 @@ MC_CORES = 12
 make_3d_interactive_plot = FALSE 
 
 # Option to reduce the size of RDS output
-# Set to FALSE if make_3d_interactive_plot = TRUE, or if you have other
-# needs to use the detailed outputs.
+# TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
 ```
 
