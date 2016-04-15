@@ -35,7 +35,13 @@ distance_down_depth<-function(p1, p2, depth_in_km=TRUE, n = 1e+03, r = 6378137){
     
     # Get 'surface' coordinates of path
     if(n > 0){
-        mypath = gcIntermediate(p1[1:2], p2[1:2], n=n, addStartEnd=TRUE)
+        # gcIntermediate warns about longitudes outside [-180, 180]
+        # This is probably because it always returns interpolated longitudes in
+        # that range
+        # This doesn't affect us here though, because of the cartesian
+        # transform a few lines below.
+        mypath = suppressWarnings(
+            geosphere::gcIntermediate(p1[1:2], p2[1:2], n=n, addStartEnd=TRUE))
     }else{
         stop('n must be large for this approximation')
     }
@@ -74,8 +80,14 @@ distance_down_depth<-function(p1, p2, depth_in_km=TRUE, n = 1e+03, r = 6378137){
 #' @export
 interpolate_gc_path<-function(surface_path, n=50){
 
-    surface_path_interpolated = gcIntermediate(surface_path[1,], surface_path[2,], 
-        n=n, addStartEnd=TRUE)
+    # gcIntermediate warns about longitudes outside [-180, 180]
+    # This is probably because it always returns interpolated longitudes in
+    # that range
+    # This doesn't affect us here though, because we correct the longitudes
+    # a few lines below
+    surface_path_interpolated = suppressWarnings(
+        geosphere::gcIntermediate(surface_path[1,], surface_path[2,], n=n, 
+            addStartEnd=TRUE))
 
     # Check whether longitudes have 'wrapped' (jumped) to stay in [-180, 180]
     path_jumps = diff(surface_path_interpolated[,1])
@@ -101,27 +113,36 @@ interpolate_gc_path<-function(surface_path, n=50){
 #' Assumes that the depth is changing at a constant rate with respect to the
 #' along-surface distance
 #'
-#' @param surface_path 2 points defining a great-circle path (2x2 matrix with columns lon,lat)
+#' @param surface_path 2 points defining a great-circle path (2x2 matrix with
+#' columns lon,lat)
 #' @param depth_contours depth_contours as SpatialLinesDataFrame
-#' @param n number of points to used to interpolate along the surface path, before we find the contours.
-#'        Note: The interpolation accounts for the great-circle geometry, 
-#'              while the intersection treats coordinates as cartesian.
-#'        So we need n sufficiently dense that the computed intersection 
-#'        is nonetheless reasonable.
-#' @param contour_depth_attribute name of the depth_contours attribute giving the depth
+#' @param n number of points to used to interpolate along the surface path,
+#' before we find the contours. Note: The interpolation accounts for the
+#' great-circle geometry, while the intersection treats coordinates as
+#' cartesian.  So we need n sufficiently dense that the computed intersection is
+#' nonetheless reasonable.
+#' @param contour_depth_attribute name of the depth_contours attribute giving
+#' the depth
 #' @param extend_line_fraction Extend contours at the edges of the source zone
-#'        by (approx) this fraction of their length. This can help ensure intersections at the edges.
-#' @return A 3 column matrix with lon/lat/depth giving the intersection with the contours
+#' by (approx) this fraction of their length. This can help ensure
+#' intersections at the edges.
+#' @return A 3 column matrix with lon/lat/depth giving the intersection with
+#' the contours
 #'
 #' @export
-intersect_surface_path_with_depth_contours<-function(surface_path, depth_contours, n=200, 
-    contour_depth_attribute = 'level', extend_line_fraction=0.0e-03){
+intersect_surface_path_with_depth_contours<-function(
+    surface_path, 
+    depth_contours, 
+    n=200, 
+    contour_depth_attribute = 'level', 
+    extend_line_fraction=0.0e-03){
 
     if(length(surface_path[,1]) != 2){
         stop('surface_path can only have 2 points')
     }
 
-    # Optionally extend the lines by a small fraction (to ensure intersections occur)
+    # Optionally extend the lines by a small fraction (to ensure intersections
+    # occur)
     if(extend_line_fraction != 0){
         line_dx = surface_path[2,] - surface_path[1,]
         surface_path[1,] = surface_path[1,] - line_dx*extend_line_fraction
@@ -142,40 +163,48 @@ intersect_surface_path_with_depth_contours<-function(surface_path, depth_contour
                 lch = min(lch, lc - 1)
                 dx2 = (lines@coords[lc,] - lines@coords[lch,])*2
 
-                lines@coords  = rbind(lines@coords[1,]  + dx1*extend_line_fraction, lines@coords)
-                lines@coords = rbind(lines@coords, lines@coords[lc+1,] + dx2*extend_line_fraction)
+                lines@coords  = rbind(lines@coords[1,] + dx1*extend_line_fraction, 
+                    lines@coords)
+                lines@coords = rbind(lines@coords, 
+                    lines@coords[lc+1,] + dx2*extend_line_fraction)
 
                 depth_contours@lines[[i]]@Lines[[j]]@coords = lines@coords
             }
         }
 
-        # Now extend the bounding box of depth_contours to reflect the extension we just did
-        # The 'trick' to doing that is pass the Lines to the SpatialLines creation function
-        depth_contours = SpatialLinesDataFrame(
-            SpatialLines(depth_contours@lines, proj4string = CRS(proj4string(depth_contours))),
+        # Now extend the bounding box of depth_contours to reflect the
+        # extension we just did.  The 'trick' to doing that is pass the Lines
+        # to the SpatialLines creation function.
+        depth_contours = sp::SpatialLinesDataFrame(
+            sp::SpatialLines(depth_contours@lines, 
+                proj4string = sp::CRS(proj4string(depth_contours))),
             data = depth_contours@data)
     }
 
     # Get points on the path. This is just done so that gIntersection works
     # well (since the latter is not designed for spherical cases)
     new_path = interpolate_gc_path(surface_path, n=n)
-    new_path_sp = SpatialLines(list(Lines(list(Line(new_path)), ID="P")), 
+    new_path_sp = sp::SpatialLines(list(sp::Lines(
+            list(sp::Line(new_path)), ID="P")), 
         proj4string=depth_contours@proj4string)
 
     # Compute intersection
-    path_contour_intersect = gIntersection(new_path_sp, depth_contours, byid=TRUE)
+    path_contour_intersect = rgeos::gIntersection(new_path_sp, depth_contours, 
+        byid=TRUE)
 
-    pci_indices = match( gsub('P ', '', rownames(path_contour_intersect@coords)),
-                      rownames(depth_contours@data) )
+    pci_indices = match( 
+        gsub('P ', '', rownames(path_contour_intersect@coords)),
+        rownames(depth_contours@data) )
 
-    path_contour_intersect_spdf = SpatialPointsDataFrame(
+    path_contour_intersect_spdf = sp::SpatialPointsDataFrame(
         path_contour_intersect@coords,
         data = depth_contours@data[pci_indices,,drop=FALSE], 
         proj4string=depth_contours@proj4string)
 
     # Make sure the depth attribute is a number
     path_contour_intersect_spdf[[contour_depth_attribute]] = 
-        as.numeric(as.character(path_contour_intersect_spdf[[contour_depth_attribute]] ))
+        as.numeric(as.character(
+            path_contour_intersect_spdf[[contour_depth_attribute]]))
 
     # Make 3D points
     threeD_points = cbind(path_contour_intersect_spdf@coords, 
@@ -251,7 +280,8 @@ adjust_longitude_by_360_deg<-function(p0, reference_point){
 #' @return a threeD path with the required number of points
 #'
 #' @export
-interpolate_3D_path<-function(threeD_path, n=100, depth_in_km=TRUE, ndense = (n*10)){
+interpolate_3D_path<-function(threeD_path, n=100, depth_in_km=TRUE, 
+    ndense = (n*10)){
 
     if(length(threeD_path[1,]) != 3){
         stop('threeD_path must have 3 columns')
@@ -277,15 +307,19 @@ interpolate_3D_path<-function(threeD_path, n=100, depth_in_km=TRUE, ndense = (n*
     fine_path = c(threeD_path[1,], path_distance[1])
     for(i in 2:length(threeD_path[,1])){
 
-        next_2D_path = interpolate_gc_path(threeD_path[((i-1):i),1:2], n=ndense)[2:(ndense+1),]
+        next_2D_path = interpolate_gc_path(
+            threeD_path[((i-1):i),1:2], n=ndense)[2:(ndense+1),]
 
-        next_depths = seq(threeD_path[i-1,3], threeD_path[i,3], len=ndense+2)[2:(ndense+1)]
+        next_depths = seq(threeD_path[i-1,3], threeD_path[i,3], 
+            len=ndense+2)[2:(ndense+1)]
 
-        next_distances = seq(path_distance[i-1], path_distance[i], len=ndense+2)[2:(ndense+1)]
+        next_distances = seq(path_distance[i-1], path_distance[i], 
+            len=ndense+2)[2:(ndense+1)]
 
         stopifnot(length(next_2D_path[,1]) == length(next_depths))
 
-        fine_path = rbind(fine_path, cbind(next_2D_path, next_depths, next_distances), 
+        fine_path = rbind(fine_path, 
+            cbind(next_2D_path, next_depths, next_distances), 
             c(threeD_path[i,], path_distance[i]))
     }
 
@@ -316,7 +350,8 @@ lonlat2utm<-function(lonlat){
     zone_number = floor((lonlat[1] + 180)/6)%%60 + 1;
 
     # Adjustment near Norway
-    if( lonlat[2] >= 56.0 & lonlat[2] < 64.0 & lonlat[1] >= 3.0 & lonlat[1] < 12.0 ){
+    if( (lonlat[2] >= 56.0) & (lonlat[2] < 64.0) & 
+        (lonlat[1] >= 3.0) & (lonlat[1] < 12.0) ){
         zone_number = 32;
     }
     # Adjustments for Svalbard
@@ -350,12 +385,12 @@ lonlat2utm<-function(lonlat){
 #' dlon = lon - origin_longitude
 #' x --> r*dlon*cos(origin_latitude)
 #' y --> r*dlat
-#' This will only have good accuracy for small areas near to the origin (and not too close to the
-#' poles)
+#' This will only have good accuracy for small areas near to the origin (and
+#' not too close to the poles)
 #'
 #' @param coords_lonlat matrix with 2 columns (lon/lat) in degrees
 #' @param origin_lonlat vector of length 2 giving the lon/lat for the origin of
-#'        the new coordinate system
+#' the new coordinate system
 #' @param r radius of the sphere (earth radius in m as default)
 #' @return matrix with x,y in the new coordinate system (units same as r units)
 #'
@@ -368,7 +403,9 @@ lonlat2utm<-function(lonlat){
 #'
 #' @export
 spherical_to_cartesian2d_coordinates<-function(
-    coords_lonlat, origin_lonlat = NULL, r = 6378137){
+    coords_lonlat, 
+    origin_lonlat = NULL, 
+    r = 6378137){
 
     # Treat case where coords_lonlat is simplified to a vector 
     if(is.null(dim(coords_lonlat))){
@@ -397,14 +434,19 @@ spherical_to_cartesian2d_coordinates<-function(
 #' This will only have good accuracy for small areas near to the origin_lonlat
 #' (and not too close to the poles)
 #'
-#' @param coords_xy matrix with 2 columns containing x,y coordinates in the local coordinate system
-#' @param origin_lonlat vector of length 2 with the lon-lat of the origin of the cartesian coordinate system
-#' @param r radius of the sphere with the same units as x and y (earth radius in m as default)
+#' @param coords_xy matrix with 2 columns containing x,y coordinates in the
+#' local coordinate system
+#' @param origin_lonlat vector of length 2 with the lon-lat of the origin of
+#' the cartesian coordinate system
+#' @param r radius of the sphere with the same units as x and y (earth radius
+#' in m as default)
 #' @return matrix with lon/lat of coords_xy
 #'
 #' @export
 cartesian2d_to_spherical_coordinates<-function(
-    coords_xy, origin_lonlat, r = 6378137){
+    coords_xy, 
+    origin_lonlat, 
+    r = 6378137){
    
     # Treat case where coords_xy is simplified to a vector 
     if(is.null(dim(coords_xy))){
@@ -508,7 +550,9 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
         stop('method not recognized')
         )
 
-    if(Mod(complex_value) < sqrt(.Machine$double.eps)) stop('Exact cancellation of complex number transform')
+    if(Mod(complex_value) < sqrt(.Machine$double.eps)){
+        stop('Exact cancellation of complex number transform')
+    }
 
     mean_angle = Arg(complex_value)
 
@@ -552,7 +596,7 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,
 
         # Get the segment distance between points defining each line in SL
         SL_seglength = lapply(SL@lines[[j]]@Lines, 
-            myfun<-function(x) LineLength(x,longlat, sum=F))
+            myfun<-function(x) sp::LineLength(x,longlat, sum=F))
 
         # Store x,y points on each segment
         newxlist = list()
@@ -579,7 +623,8 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,
             newylist[[i]] = new_y
         
             all_points_local = cbind(unlist(newxlist), unlist(newylist))
-            all_points_local = cbind(all_points_local, rep(j, length(all_points_local[,1])))
+            all_points_local = cbind(all_points_local, 
+                rep(j, length(all_points_local[,1])))
         
         }
         
@@ -588,8 +633,9 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,
 
     # Convert to spatial points
     if(length(all_points) > 0){
-        out = SpatialPointsDataFrame(all_points[,1:2], data=data.frame(SLID=all_points[,3]),
-            proj4string=CRS(proj4string(SL)))
+        out = sp::SpatialPointsDataFrame(all_points[,1:2], 
+            data=data.frame(SLID=all_points[,3]),
+            proj4string=sp::CRS(proj4string(SL)))
     }else{
         out = NULL
     }
@@ -603,8 +649,10 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,
 #' new coordinate system. With inverse = TRUE you can undo the rotation, see
 #' the example.
 #'
-#' @param points matrix with 2 columns containing point x,y cartesian coordinates
-#' @param origin numeric vector of length 2 giving the origin of the new coordinate system 
+#' @param points matrix with 2 columns containing point x,y cartesian
+#' coordinates
+#' @param origin numeric vector of length 2 giving the origin of the new
+#' coordinate system 
 #' @param x_axis_vector vector of length 2 which defines the positive x
 #' @param inverse logical. If TRUE, perform the inverse operation
 #' direction of the new coordinate system

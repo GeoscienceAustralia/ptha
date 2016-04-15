@@ -136,6 +136,8 @@ for(source_shapefile_index in 1:length(all_sourcezone_shapefiles)){
 
 dev.off() # Save pdf plot
 
+stop()
+
 ## ---- makeTsunamiSources ----
 
 ###############################################################################
