@@ -15,7 +15,7 @@ which covers the unit source edge, and gives detail to the depth variation.
 Must be in local cartesian coordinates, with x, y in m, and depth in km}
 }
 \value{
-a function f(alpha) --> (x, y, depth), where $\alpha$ is a coordinate
+a function f(alpha) --> (x, y, depth), where alpha is a coordinate
 in [0,1] giving the fraction distance along that part of the
 fine_downdip_transect that covers the unit source edge (might be slightly
 larger than the unit source edge)

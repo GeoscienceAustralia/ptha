@@ -3,10 +3,10 @@ suppressPackageStartupMessages(library(geosphere))
 
 .antipodal_modified<-function (p1, p2, tol = 1e-09) 
 {
-    p1 <- geosphere:::.pointsToMatrix(p1)
-    p2 <- geosphere:::.pointsToMatrix(p2)
+    p1 <- suppressWarnings(geosphere:::.pointsToMatrix(p1))
+    p2 <- suppressWarnings(geosphere:::.pointsToMatrix(p2))
     p <- cbind(p1[, 1], p1[, 2], p2[, 1], p2[, 2])
-    p[, c(1, 3)] <- geosphere:::.normalizeLonDeg(p[, c(1, 3)])
+    p[, c(1, 3)] <- suppressWarnings(geosphere:::.normalizeLonDeg(p[, c(1, 3)]))
     diflon <- abs(p[, 1] - p[, 3])
     diflat <- abs(p[, 2] + p[, 4])
     (diflat < tol) & (abs(diflon%%360 - 180) < tol)

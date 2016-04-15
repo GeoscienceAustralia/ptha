@@ -10,23 +10,27 @@ intersect_surface_path_with_depth_contours(surface_path, depth_contours,
   n = 200, contour_depth_attribute = "level", extend_line_fraction = 0)
 }
 \arguments{
-\item{surface_path}{2 points defining a great-circle path (2x2 matrix with columns lon,lat)}
+\item{surface_path}{2 points defining a great-circle path (2x2 matrix with
+columns lon,lat)}
 
 \item{depth_contours}{depth_contours as SpatialLinesDataFrame}
 
-\item{n}{number of points to used to interpolate along the surface path, before we find the contours.
-Note: The interpolation accounts for the great-circle geometry,
-      while the intersection treats coordinates as cartesian.
-So we need n sufficiently dense that the computed intersection
-is nonetheless reasonable.}
+\item{n}{number of points to used to interpolate along the surface path,
+before we find the contours. Note: The interpolation accounts for the
+great-circle geometry, while the intersection treats coordinates as
+cartesian.  So we need n sufficiently dense that the computed intersection is
+nonetheless reasonable.}
 
-\item{contour_depth_attribute}{name of the depth_contours attribute giving the depth}
+\item{contour_depth_attribute}{name of the depth_contours attribute giving
+the depth}
 
 \item{extend_line_fraction}{Extend contours at the edges of the source zone
-by (approx) this fraction of their length. This can help ensure intersections at the edges.}
+by (approx) this fraction of their length. This can help ensure
+intersections at the edges.}
 }
 \value{
-A 3 column matrix with lon/lat/depth giving the intersection with the contours
+A 3 column matrix with lon/lat/depth giving the intersection with
+the contours
 }
 \description{
 Assumes that the depth is changing at a constant rate with respect to the

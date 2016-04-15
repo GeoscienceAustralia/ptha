@@ -25,8 +25,8 @@ dlat = lat - origin_latitude
 dlon = lon - origin_longitude
 x --> r*dlon*cos(origin_latitude)
 y --> r*dlat
-This will only have good accuracy for small areas near to the origin (and not too close to the
-poles)
+This will only have good accuracy for small areas near to the origin (and
+not too close to the poles)
 }
 \examples{
 # Make some random coordinates near to (20, -19)

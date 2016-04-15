@@ -28,7 +28,7 @@
 #'    stopifnot(all.equal(out, c(1,2)))
 nearest_neighbour_interpolation<-function(xy, vals, newPts){
     
-    require(FNN)
+    #require(FNN)
     newInds = get.knnx(xy, newPts[,1:2, drop=FALSE], k=1)[[1]]
 
     if(is.null(dim(vals))){
@@ -130,7 +130,7 @@ triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
 
     if(!nnSort){
         # Use geometry package triangulation
-        require(geometry)
+        #require(geometry)
         # This is slow for large problems [tsearch is presently slow], but
         # arguably the best approach
         triIndices = delaunayn(xy)
@@ -158,7 +158,7 @@ triangular_interpolation<-function(xy, vals, newPts, useNearestNeighbour=TRUE){
         #triTree = createTree(xy)
         # Lookup the nearest index on the tree
         #lookupInds = knnLookup(triTree, newx=newPts[,1],newy=newPts[,2],k=3)
-        require(FNN)
+        #require(FNN)
         lookupInds = get.knnx(xy, newPts[,1:2, drop=FALSE], k=3)[[1]]
 
         ## Interpolate. 

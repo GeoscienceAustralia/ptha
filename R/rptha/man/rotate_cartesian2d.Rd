@@ -7,9 +7,11 @@
 rotate_cartesian2d(points, origin, x_axis_vector, inverse = FALSE)
 }
 \arguments{
-\item{points}{matrix with 2 columns containing point x,y cartesian coordinates}
+\item{points}{matrix with 2 columns containing point x,y cartesian
+coordinates}
 
-\item{origin}{numeric vector of length 2 giving the origin of the new coordinate system}
+\item{origin}{numeric vector of length 2 giving the origin of the new
+coordinate system}
 
 \item{x_axis_vector}{vector of length 2 which defines the positive x}
 

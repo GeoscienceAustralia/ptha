@@ -7,11 +7,14 @@
 cartesian2d_to_spherical_coordinates(coords_xy, origin_lonlat, r = 6378137)
 }
 \arguments{
-\item{coords_xy}{matrix with 2 columns containing x,y coordinates in the local coordinate system}
+\item{coords_xy}{matrix with 2 columns containing x,y coordinates in the
+local coordinate system}
 
-\item{origin_lonlat}{vector of length 2 with the lon-lat of the origin of the cartesian coordinate system}
+\item{origin_lonlat}{vector of length 2 with the lon-lat of the origin of
+the cartesian coordinate system}
 
-\item{r}{radius of the sphere with the same units as x and y (earth radius in m as default)}
+\item{r}{radius of the sphere with the same units as x and y (earth radius
+in m as default)}
 }
 \value{
 matrix with lon/lat of coords_xy

@@ -55,16 +55,12 @@ discretized_source_from_source_contours<-function(
     contour_depth_in_km=TRUE,
     extend_line_fraction=1.0e-01){
 
-    #if(grepl('sagami', source_shapefile)){
-    #    browser()
-    #}
-
     # Previously was a function argument, but now I am considering this the
     # only good choice
     down_dip_line_type = 'eq_spacing'
 
     # Get the shapefile
-    source_contours = readOGR(
+    source_contours = rgdal::readOGR(
         dsn = dirname(source_shapefile),
         layer=gsub('.shp', '', basename(source_shapefile)),
         verbose=FALSE)
@@ -73,7 +69,6 @@ discretized_source_from_source_contours<-function(
     contour_levels = as.numeric(as.character(source_contours@data$level))
     shallow_contour = source_contours[which.min(contour_levels),]
     deep_contour = source_contours[which.max(contour_levels),]
-
 
 
     # Get points on the shallow contour with approx desired length spacing
@@ -88,8 +83,12 @@ discretized_source_from_source_contours<-function(
     interp_deep_line = coordinates(interp_deep_line)
 
     # Order the lines appropriately
-    if(distCosine(interp_shallow_line[1,], interp_deep_line[1,]) > 
-       distCosine(interp_shallow_line[1,], interp_deep_line[np,]) ){
+    # Note: Here we suppress warnings from geosphere about longitudes in 
+    # [-180,180], which are caused by .pointsToMatrix therein
+    if(suppressWarnings(
+        distCosine(interp_shallow_line[1,], interp_deep_line[1,]) > 
+        distCosine(interp_shallow_line[1,], interp_deep_line[np,]) )
+        ){
         interp_deep_line = interp_deep_line[np:1,]
     }
     # Now the deep and shallow lines are ordered in the same direction
@@ -97,9 +96,17 @@ discretized_source_from_source_contours<-function(
     # Make sure the line is ordered in the 'along-strike' direction
     # Measure this direction as the angle from the first point to a
     # point at index 'mi' along the line (intended as a rough mid-point)
+    #
+    # Note: 'bearing' calls 'pointsToMatrix' which warns whenever longitudes
+    # are outside [-180, 180], but it is no problem
     mi = max(floor(np/2), 2)
-    b1 = bearing(interp_shallow_line[1,], interp_shallow_line[mi,], sphere=TRUE)
-    b2 = bearing(interp_shallow_line[1,], interp_deep_line[1,], sphere=TRUE)
+    b1 = suppressWarnings(
+        geosphere::bearing(interp_shallow_line[1,], interp_shallow_line[mi,], 
+            sphere=TRUE))
+    b2 = suppressWarnings(
+        geosphere::bearing(interp_shallow_line[1,], interp_deep_line[1,], 
+            sphere=TRUE))
+
     # If the interp_shallow_line is ordered along-strike, then b1 + 90 should
     # be similar to b2, accounting for angular addition. This means the
     # difference is close to 0 or 360 or -360, etc
@@ -143,29 +150,45 @@ discretized_source_from_source_contours<-function(
         if( (i != 1) & (i != ll)){
            
             # Line 1: Join equally spaced points along the top/bottom contours 
-            line_eq_spacing = rbind(interp_shallow_line[i,], interp_deep_line[i,])
+            line_eq_spacing = rbind(interp_shallow_line[i,], 
+                interp_deep_line[i,])
 
             # Line2: Join nearest points (measured along-surface) along the
             # bottom contour to the top
-            nearest = which.min(distCosine(interp_shallow_line[i,], interp_deep_line_dense))
-            line_nearest_surface = rbind(interp_shallow_line[i,], interp_deep_line_dense[nearest,])
+            # Note: Here we suppress warnings from geosphere about longitudes
+            # in [-180,180], which are caused by .pointsToMatrix therein
+            nearest = suppressWarnings(
+                which.min(distCosine(interp_shallow_line[i,], 
+                    interp_deep_line_dense)))
+            line_nearest_surface = rbind(interp_shallow_line[i,], 
+                interp_deep_line_dense[nearest,])
 
             # Line2B: Join nearest points (measured along-deep-contour) along the
             # top contour to the bottom
-            nearestB = which.min(distCosine(interp_deep_line[i,], interp_shallow_line_dense))
-            line_nearest_deep = rbind(interp_deep_line[i,], interp_shallow_line_dense[nearestB,])
+            # Note: Here we suppress warnings from geosphere about longitudes
+            # in [-180,180], which are caused by .pointsToMatrix therein
+            nearestB = suppressWarnings(
+                which.min(distCosine(interp_deep_line[i,], 
+                    interp_shallow_line_dense)))
+            line_nearest_deep = rbind(interp_deep_line[i,], 
+                interp_shallow_line_dense[nearestB,])
             
 
             # Line3: Find a midpoint compromise between the nearest and the
             # equal spacing option
-            mid_index_bottom = round(0.5*(nearest + 
-                which.min( distCosine(interp_deep_line[i,], interp_deep_line_dense) )))
-            mid_index_top = round(0.5*(nearestB + 
-                which.min( distCosine(interp_shallow_line[i,], interp_shallow_line_dense) )))
+            # Note: Here we suppress warnings from geosphere about longitudes
+            # in [-180,180], which are caused by .pointsToMatrix therein
+            mid_index_bottom = suppressWarnings(
+                round(0.5*(nearest + which.min(
+                    distCosine(interp_deep_line[i,], interp_deep_line_dense))))
+                )
+            mid_index_top = suppressWarnings(
+                round(0.5*(nearestB + which.min( 
+                    distCosine(interp_shallow_line[i,], 
+                    interp_shallow_line_dense)))))
 
-            #line_mid = rbind(line_eq_spacing[1,], interp_deep_line_dense[mid_index,])
-            line_mid = rbind(interp_shallow_line_dense[mid_index_top,], interp_deep_line_dense[mid_index_bottom,])
-            #line_mid = line_eq_spacing
+            line_mid = rbind(interp_shallow_line_dense[mid_index_top,], 
+                interp_deep_line_dense[mid_index_bottom,])
 
             # Store results 
             dip_cuts[[i]][['eq_spacing']] = line_eq_spacing
@@ -173,17 +196,22 @@ discretized_source_from_source_contours<-function(
             dip_cuts[[i]][['mid']] = line_mid
 
             if(make_plot & FALSE){
-                points(interpolate_gc_path(line_eq_spacing), t='l', col='blue', lwd=2, lty='solid')
-                points(interpolate_gc_path(line_nearest_surface), t='l', col='red', lty='solid')
-                points(interpolate_gc_path(line_mid), t='l', col='darkgreen', lty='solid')
+                points(interpolate_gc_path(line_eq_spacing), t='l', 
+                    col='blue', lwd=2, lty='solid')
+                points(interpolate_gc_path(line_nearest_surface), t='l', 
+                    col='red', lty='solid')
+                points(interpolate_gc_path(line_mid), t='l', col='darkgreen', 
+                    lty='solid')
             }
 
         }else{
             # End points need to match up
             line_eq_spacing = rbind(interp_shallow_line[i,], interp_deep_line[i,])
             
-            if(make_plot & FALSE) points(interpolate_gc_path(line_eq_spacing), t='l', 
-                col='blue', lwd=2, lty='solid')
+            if(make_plot & FALSE){
+                points(interpolate_gc_path(line_eq_spacing), t='l', col='blue',
+                    lwd=2, lty='solid')
+            }
 
             # All lines must connect the start/end points
             dip_cuts[[i]][['eq_spacing']] = line_eq_spacing
@@ -220,7 +248,8 @@ discretized_source_from_source_contours<-function(
             total_distance = 0
             for(i in 1:(length(x[,1])-1)){
                 total_distance = total_distance + 
-                    distance_down_depth(x[i,], x[i+1,], depth_in_km=contour_depth_in_km)
+                    distance_down_depth(x[i,], x[i+1,], 
+                        depth_in_km=contour_depth_in_km)
             }
             return(total_distance)
         })
@@ -229,7 +258,9 @@ discretized_source_from_source_contours<-function(
     # Decide how many unit-sources there should be (determined by the number of
     # mid-lines cutting the source)
     mean_dip_cut_length = mean(dip_cut_lengths)/1e+03 # km
-    number_of_mid_lines = max(round(mean_dip_cut_length / desired_subfault_width - 1), 0)
+    number_of_mid_lines = max(
+        round(mean_dip_cut_length / desired_subfault_width - 1), 
+        0)
 
 
     for(i in 1:ll){
@@ -247,8 +278,10 @@ discretized_source_from_source_contours<-function(
        
         if(make_plot){
             points(interpolated_midline, col='purple', pch=19)
-            points(mid_line_with_cutpoints[[i]][,1:2], col='pink', pch=19, cex=0.2)
-            points(mid_line_with_cutpoints[[i]][,1:2], t='l', col='brown', lty = 'dashed') 
+            points(mid_line_with_cutpoints[[i]][,1:2], col='pink', pch=19, 
+                cex=0.2)
+            points(mid_line_with_cutpoints[[i]][,1:2], t='l', col='brown', 
+                lty = 'dashed') 
         }
         
         strike_cuts[[i]] = interpolated_midline
@@ -260,7 +293,8 @@ discretized_source_from_source_contours<-function(
         # Get lines along-strike
         line2plot = matrix( unlist(lapply(strike_cuts, f<-function(x) x[i,])), 
             ncol = 3, byrow = TRUE)
-        # Interpolate them along a great circle with the 3D line interpolation routine
+        # Interpolate them along a great circle with the 3D line interpolation
+        # routine
         line2plot = cbind(line2plot[,1:2], rep(0, length(line2plot[,1])))
         line2plot = interpolate_3D_path(line2plot)[,1:2]
        
@@ -373,8 +407,12 @@ discretized_source_approximate_summary_statistics<-function(
             # Strike = midpoint bearing along great-circle of top of unit
             # source. 
             # FIXME: Consider averaging with bottom of unit source.
-            midpoint = midPoint(source_coords[1,1:2], source_coords[4,1:2])
-            st0 = bearing(midpoint, source_coords[4,1:2], sphere=TRUE)%%360
+            # NOTE: Here we suppress geosphere warnings about longitudes
+            # ranging from [-180, 180], which is caused by their .pointsToMatrix
+            midpoint = suppressWarnings(
+                midPoint(source_coords[1,1:2], source_coords[4,1:2]))
+            st0 = suppressWarnings(
+                bearing(midpoint, source_coords[4,1:2], sphere=TRUE)%%360)
             strike[counter] = st0 
 
             stopifnot( (strike[counter] > 0) & (strike[counter] < 360)) 
@@ -387,10 +425,16 @@ discretized_source_approximate_summary_statistics<-function(
             depth_scale = 1
             if(depth_in_km) depth_scale = 1000
 
-            dl = atan2( (source_coords[2,3] - source_coords[1,3])*depth_scale,
-                distHaversine(source_coords[1,1:2], source_coords[2,1:2]))
-            dr = atan2( (source_coords[3,3] - source_coords[4,3])*depth_scale,
-                distHaversine(source_coords[4,1:2], source_coords[3,1:2]))
+            dl = atan2( 
+                    (source_coords[2,3] - source_coords[1,3])*depth_scale,
+                    suppressWarnings(
+                        distHaversine(source_coords[1,1:2], 
+                            source_coords[2,1:2])))
+            dr = atan2( 
+                    (source_coords[3,3] - source_coords[4,3])*depth_scale,
+                    suppressWarnings(
+                        distHaversine(source_coords[4,1:2], 
+                            source_coords[3,1:2])))
 
             dip[counter] = mean_angle(c(dl, dr), degrees=FALSE)/deg2rad
 
@@ -398,14 +442,16 @@ discretized_source_approximate_summary_statistics<-function(
 
             # Length = 0.5*( upper length + lower length)
             len0 = 0.5*(
-                distance_down_depth(source_coords[1,], source_coords[4,], depth_in_km=depth_in_km) +
-                distance_down_depth(source_coords[2,], source_coords[3,], depth_in_km=depth_in_km)
+                distance_down_depth(source_coords[1,], source_coords[4,], 
+                    depth_in_km=depth_in_km) +
+                distance_down_depth(source_coords[2,], source_coords[3,], 
+                    depth_in_km=depth_in_km)
             )
 
             surface_area = areaPolygon(source_coords[,1:2], f = 0)
 
-            # FIXME: Consider that with our definitions there is also a 'horizontal'
-            # component to the slope, not considered here
+            # FIXME: Consider that with our definitions there is also a
+            # 'horizontal' component to the slope, not considered here
             sloping_area = surface_area*sqrt(1 + tan(dip[counter]*deg2rad)**2)
 
             # Width := sloping_area / sloping length
@@ -439,8 +485,11 @@ discretized_source_approximate_summary_statistics<-function(
         }   
 
         # Add vector giving direction of slip, using a great-circle
+        # Get rid of geosphere warnings about longitudes outside of [-180,180],
+        # as we deal with that below
         slip_angle = strike - rake
-        end_points = destPoint(cbind(lon_c, lat_c), slip_angle, (len/3)*1000, f=0)
+        end_points = suppressWarnings(
+            destPoint(cbind(lon_c, lat_c), slip_angle, (len/3)*1000, f=0))
 
         # end_points will have lat in [-180, 180] because that's how 'geosphere' works
         # Fix this.
@@ -513,7 +562,9 @@ discretized_source_summary_statistics<-function(
     for(ns in 1:nstrike){
         for(nd in 1:ndip){
 
-            counter = which((output$downdip_number == nd) & (output$alongstrike_number == ns))
+            counter = which(
+                (output$downdip_number == nd) & 
+                (output$alongstrike_number == ns))
 
             # Logical checks
             if(length(counter) != 1){
@@ -524,8 +575,12 @@ discretized_source_summary_statistics<-function(
             }
 
             # Compute Cartesian source
-            usc = unit_source_interior_points_cartesian(discretized_source, 
-                c(nd, ns), origin=NULL, approx_dx=approx_dx, approx_dy=approx_dy)
+            usc = unit_source_interior_points_cartesian(
+                discretized_source, 
+                c(nd, ns), 
+                origin=NULL, 
+                approx_dx=approx_dx, 
+                approx_dy=approx_dy)
 
             # Get a good approximation of the rupture interface area
             area = sum(usc$grid_points[,'area_projected']*
@@ -626,8 +681,10 @@ get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
             discretized_source$unit_source[1, 1:2, i+1])
     }
 
-    top_edges = midPoint(vertex_tl, vertex_tr)
-    strike = bearing(top_edges, vertex_tr, sphere=TRUE)
+    # Note: Here we suppress warnings from geosphere about longitudes
+    # in [-180,180], which are caused by .pointsToMatrix therein
+    top_edges = suppressWarnings(midPoint(vertex_tl, vertex_tr))
+    strike = suppressWarnings(bearing(top_edges, vertex_tr, sphere=TRUE))
 
     # Ensure strike in 0-360 [not -180 to 180]
     strike = strike + (strike < 0)*360
@@ -686,7 +743,8 @@ unit_source_interior_points_cartesian<-function(
 
     ## Get the unit source coordinates, and down-dip transects we can use for
     ## interpolation
-    unit_source_info = get_unit_source_from_discretized_source(discretized_source, 
+    unit_source_info = get_unit_source_from_discretized_source(
+        discretized_source, 
         unit_source_index)
 
     # We will change these variables to cartesian coordinates
@@ -1161,31 +1219,33 @@ plot_unit_source_interior_points_cartesian<-function(us){
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){
 
-    require(rgl)
-
     if(!add){
-        plot3d(us$grid_points[,1], us$grid_points[,2], -us$grid_points[,3], 
+        rgl::plot3d(us$grid_points[,1], us$grid_points[,2], -us$grid_points[,3], 
             aspect=aspect, add=add, ...)
     }else{
-        points3d(us$grid_points[,1], us$grid_points[,2], -us$grid_points[,3], ...)
+        rgl::points3d(us$grid_points[,1], us$grid_points[,2], 
+            -us$grid_points[,3], ...)
     }
 
-    polygon3d(us$unit_source_cartesian[,1], us$unit_source_cartesian[,2], 
+    rgl::polygon3d(us$unit_source_cartesian[,1], us$unit_source_cartesian[,2], 
             -us$unit_source_cartesian[,3], fill=FALSE)
 
     m = us$fine_downdip_transects_cartesian
-    lines3d(m[,1,1], m[,2,1], -m[,3,1], col='red')
-    lines3d(m[,1,2], m[,2,2], -m[,3,2], col='red')
+    rgl::lines3d(m[,1,1], m[,2,1], -m[,3,1], col='red')
+    rgl::lines3d(m[,1,2], m[,2,2], -m[,3,2], col='red')
 
     if(add_zero_plane){
-        polygon3d(x = us$unit_source_cartesian[,1], y = us$unit_source_cartesian[,2],
+        rgl::polygon3d(x = us$unit_source_cartesian[,1], 
+            y = us$unit_source_cartesian[,2],
             z = rep(0, 4), fill=TRUE, col='blue', alpha=0.2)
     }
 
     # Get the pan3d function -- suppress printing of the example where it is
     # defined
+    # To run the example we still need 'require'
+    require(rgl)
     tmp = capture.output(example(rgl.setMouseCallbacks))
-    tmp = capture.output(pan3d(3))
+    tmp = capture.output(rgl::pan3d(3))
 
 }
 
