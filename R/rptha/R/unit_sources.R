@@ -1245,7 +1245,7 @@ plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso',
     # To run the example we still need 'require'
     require(rgl)
     tmp = capture.output(example(rgl.setMouseCallbacks))
-    tmp = capture.output(rgl::pan3d(3))
+    tmp = capture.output(pan3d(3))
 
 }
 

@@ -1,6 +1,4 @@
 ```{r cache=FALSE, eval=TRUE, echo=FALSE}
-# Turn off warnings
-options(warn=-1) # Don't do this !
 knitr::read_chunk(
     'produce_unit_sources.R', 
     labels=c('initialise'), 

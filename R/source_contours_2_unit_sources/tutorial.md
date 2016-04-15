@@ -184,6 +184,11 @@ library(rptha)
 ##     shift
 ```
 
+```
+## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
+## loading 'rptha'
+```
+
 ```r
 library(raster)
 
@@ -240,7 +245,9 @@ kajiura_use_threshold = 1.0e-04
 kajiura_grid_spacing = 1000 # m
 
 # Cell size for output rasters
-tsunami_source_cellsize = 1/60 # degrees
+# The computation time will scale inversely with this squared
+# Here we use a relatively coarse discretization, for demonstration purposes
+tsunami_source_cellsize = 4/60 # degrees. 
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.

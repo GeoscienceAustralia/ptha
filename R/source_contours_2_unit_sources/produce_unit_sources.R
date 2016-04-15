@@ -60,7 +60,9 @@ kajiura_use_threshold = 1.0e-04
 kajiura_grid_spacing = 1000 # m
 
 # Cell size for output rasters
-tsunami_source_cellsize = 1/60 # degrees
+# The computation time will scale inversely with this squared
+# Here we use a relatively coarse discretization, for demonstration purposes
+tsunami_source_cellsize = 4/60 # degrees. 
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
@@ -135,8 +137,6 @@ for(source_shapefile_index in 1:length(all_sourcezone_shapefiles)){
 
 
 dev.off() # Save pdf plot
-
-stop()
 
 ## ---- makeTsunamiSources ----
 
@@ -304,7 +304,9 @@ scatter3d<-function(x, y, z, add=FALSE, ...){
 if(make_3d_interactive_plot){
     # NOTE: The next line will need to be changed interactively
     sourcename = 'alaska'
-    all_tsunami = readRDS(paste0('Unit_source_data/', sourcename, '.RDS'))
+    all_tsunami = lapply(
+        Sys.glob(paste0('Unit_source_data/', sourcename, '*.RDS')), 
+        readRDS)
 
     print('Computing unit sources for plotting in parallel...')
 
