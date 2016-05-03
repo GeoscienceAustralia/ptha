@@ -46,12 +46,17 @@ okada_distance_factor = 50 # Inf
 # with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
 # Set to NULL to not use Kajiura filtering
 elevation_raster = NULL 
-# elevation_raster = raster('../RAW/GEBCO/gebco_08.nc')
+## A realistic example would look like:
+# elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
+## Note that for Kajiura filtering, a minimum depth of 10m will be assumed 
+## (to avoid passing negative depths to the Kajiura smoothing routine)
 
 # For computational efficiency, only apply Kajiura filtering in a box
 # containing all points where the unit source deformation exceeds
 # kajiura_use_threshold. Set to zero to apply Kajiura filter everywhere.
 # Use of a small positive number can be faster.
+# Since the unit sources have 1m slip, use of e.g. 1e-04 implies an
+# error of < 1cm to the free surface, even if the slip were 100m. 
 kajiura_use_threshold = 1.0e-04
 
 # When applying the kajiura filter, the data is regridded onto a grid with
@@ -60,7 +65,7 @@ kajiura_use_threshold = 1.0e-04
 kajiura_grid_spacing = 1000 # m
 
 # Cell size for output rasters
-# The computation time will scale inversely with this squared
+# The computation time will scale inversely with tsunami_source_cellsize^2
 # Here we use a relatively coarse discretization, for demonstration purposes
 tsunami_source_cellsize = 4/60 # degrees. 
 
@@ -72,7 +77,7 @@ MC_CORES = 12
 #
 # Only make the 3d interactive plot if you can use interactive graphics and
 # have rgl (i.e. use FALSE on NCI). 
-make_3d_interactive_plot = FALSE 
+make_3d_interactive_plot = FALSE
 
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
@@ -134,6 +139,8 @@ for(source_shapefile_index in 1:length(all_sourcezone_shapefiles)){
             make_plot=TRUE)
 }
 
+saveRDS(discretized_sources, 'all_discretized_sources.RDS')
+
 
 dev.off() # Save pdf plot
 
@@ -171,13 +178,14 @@ for(sourcename_index in 1:length(names(discretized_sources))){
 
         use_kajiura_filter = TRUE
 
-        # FIXME:  This assumes the elevation raster ranges from [-180 , 180]
-        #
-        # Make some temporary tsunami surface points with longitudes in
-        # [-180,180] so we can lookup the elevation raster
+        # Need to ensure that we look up points at longitudes which are within
+        # the raster longitude range
+        raster_longitude_midpoint = 0.5 * 
+            (extent(elevation_raster)@xmin + extent(elevation_raster)@xmax)
+    
         ltspl = length(tsunami_surface_points_lonlat[,1])
         tmp_tsp = adjust_longitude_by_360_deg(tsunami_surface_points_lonlat, 
-            matrix(0, ncol=2, nrow=ltspl))
+            matrix(raster_longitude_midpoint, ncol=2, nrow=ltspl))
 
         # Process in chunks to reduce memory usage
         chunk_inds = floor(seq(1, ltspl + 1, len=10))
@@ -217,8 +225,8 @@ for(sourcename_index in 1:length(names(discretized_sources))){
 
     gc()
     
-    raster_dir = paste0('Unit_source_data/', sourcename, '/')
-    dir.create(raster_dir, showWarnings=FALSE, recursive=TRUE)
+    source_output_dir = paste0('Unit_source_data/', sourcename, '/')
+    dir.create(source_output_dir, showWarnings=FALSE, recursive=TRUE)
 
     library(parallel)
 
@@ -245,11 +253,11 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             dstmx=okada_distance_factor)
 
         # Save as RDS 
-        output_RDS_file =  paste0('Unit_source_data/', sourcename, '_', 
+        output_RDS_file =  paste0(source_output_dir, sourcename, '_', 
             down_dip_index, '_', along_strike_index, '.RDS')
         saveRDS(tsunami_, file = output_RDS_file)
 
-        tsunami_source_raster_filename = paste0(raster_dir, sourcename, '_', 
+        tsunami_source_raster_filename = paste0(source_output_dir, sourcename, '_', 
             down_dip_index, '_', along_strike_index, '.tif')
 
         # Make a raster
@@ -273,7 +281,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
     # Finally -- read in all the results and make some plots
     all_tsunami = lapply(as.list(all_tsunami_files), f<-function(x) readRDS(x))
    
-    all_rasters = paste0(raster_dir, '/',
+    all_rasters = paste0(source_output_dir, '/',
         gsub('.RDS', '', basename(unlist(all_tsunami_files))), '.tif')
 
     all_tsunami_rast = lapply(as.list(all_rasters), f<-function(x) raster(x))
@@ -304,7 +312,7 @@ if(make_3d_interactive_plot){
     # NOTE: The next line will need to be changed interactively
     sourcename = 'alaska'
     all_tsunami = lapply(
-        Sys.glob(paste0('Unit_source_data/', sourcename, '*.RDS')), 
+        Sys.glob(paste0('Unit_source_data/', sourcename , '/', sourcename, '*.RDS')), 
         readRDS)
 
     print('Computing unit sources for plotting in parallel...')

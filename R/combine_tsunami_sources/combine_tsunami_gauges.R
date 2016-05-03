@@ -3,32 +3,41 @@ library(rptha)
 ##############################################################################
 # INPUT DATA 
 #
+
 # sourcename (occurs in input mux_file directory names, and in output files, and 
 # is the list-entry-name of the discrete_source in the list held in discrete_source_RDS
 sourcename = 'alaska'
+
 # Discrete sources RDS filename. This holds a list with the discrete sources, with
 # the name of sourcename associated with the discrete source for this source-zone
-discrete_source_RDS = '../SOURCE_CONTOURS_2_UNIT_SOURCES/all_discretized_sources.RDS'
+discrete_source_RDS = '../source_contours_2_unit_sources/all_discretized_sources.RDS'
+
 # A string which will glob all the mux2 files for the source zone
 mux_files_glob = 'alaska_mux2_test/alaska_*/*mux2'
 #mux_files_glob = '../test/honshu/honshu_mux2_test/*/*mux2'
 #mux_files_glob = paste0('../OUTPUTS/', sourcename, '/*/*mux2')
+
 # Value of approx_dx/approx_dy passed to 'discretized_source_summary_statistics'
 # Smaller values can be more accurate, because statistics are computed by 
 # filling the source with integration points that have this spacing (on the surface)
 discrete_source_stats_dx = 4000
+
 # Read a chunk of stations at once. If the chunksize is too large we might run
 # out of memory. Must be an integer
 station_chunksize = 10000
+
 # Time between mux2 file tide gauge records
 mux_timestep = 20 # FIXME: This is contained in the output file
+
 # Minimum and maximum magnitude we should consider
 Mmax = 9.6
 Mmin = 7.5
 dMw = 0.1
+
 # Basename for output_folder. Outputs will go in ./output_folder/sourcename/
 # The trailing slash is important
 output_folder = paste0('outputs/', sourcename, '/')
+
 #
 # END INPUT
 ###############################################################################
