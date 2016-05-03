@@ -11,7 +11,7 @@ This will make an R package file in the directory above the package, which can b
 
 where the XXXX are adapted to match the file name (and on Ubuntu, you would add 'sudo' to the start).
 
-If the above fails because you are missing packages, then try running this prior to the install to get the required packages:
+If the above fails because you are missing packages, then try running this (from inside R) prior to the install to get the required packages:
 
     install.packages(c('sp', 'rgdal', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'testthat', 'devtools'))
 
@@ -20,7 +20,10 @@ If you are separately reading ncdf rasters, you will also need the 'ncdf4' packa
 source_contours_2_unit_sources
 ------------------------------
 
-This contains example code to make tsunami unit sources from source contours
+This contains
+[example_code](source_contours_2_unit_sources/produce_unit_sources.R) to make
+tsunami unit sources from source contours and a
+[tutorial](source_contours_2_unit_sources/tutorial.md) on its usage.
 
 
 make_hazard_points
