@@ -1,4 +1,4 @@
 # ptha
 ------
 
-The main codes are in (R)[R]. 
+The main codes are in [R](R). 
