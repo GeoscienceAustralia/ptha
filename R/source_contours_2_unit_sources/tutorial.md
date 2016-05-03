@@ -230,9 +230,9 @@ okada_distance_factor = 50 # Inf
 # elevation raster (required for Kajiura filtering). Should give elevation in m, 
 # with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
 # Set to NULL to not use Kajiura filtering.
-#elevation_raster = NULL 
+elevation_raster = NULL 
 ## A realistic example would look like:
-elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
+#elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
 ## Note that for Kajiura filtering, a minimum depth of 10m will be assumed 
 ## (to avoid passing negative depths to the Kajiura smoothing routine)
 
@@ -264,7 +264,7 @@ MC_CORES = 12
 #
 # Only make the 3d interactive plot if you can use interactive graphics and
 # have rgl (i.e. use FALSE on NCI). 
-make_3d_interactive_plot = TRUE #FALSE
+make_3d_interactive_plot = FALSE
 
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
@@ -296,10 +296,13 @@ easy to automatically submit many jobs with different integer arguments).
 In either case the working directory must be the directory containing
 *'[produce_unit_sources.R](produce_unit_sources.R)'*.
 
-The alaska sourcezone may take a long time to run using the parameters provided
-in the script (e.g. half an hour on a 6 CPU machine). To make it run faster you
-can increase the subunitsource_point_spacing to e.g.  20000, although in this
-case there will be obvious artefacts along the shallowest unit sources.
+The speed of the code depends heavily on a number of input parameters. If it is too
+slow, you can try decreasing the `tsunami_source_cellsize`. More dangerously
+you can try increasing the subunitsource_point_spacing parameters, or
+increasing the `kajiura_grid_spacing` (the latter only matters if you provide
+elevation data). But if the parameters in the last sentence are too coarse
+you can expect numerical artefacts.
+
 
 # Outputs
 
