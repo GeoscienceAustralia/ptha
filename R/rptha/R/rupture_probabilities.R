@@ -341,9 +341,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         par = all_par_combo[i,] 
         
         if(par$Mw_frequency_distribution == 'truncated_gutenberg_richter'){
-            Mfd = Mw_exceedence_rate_truncated_gutenberg_richter
+            Mfd = Mw_exceedance_rate_truncated_gutenberg_richter
         }else if(par$Mw_frequency_distribution == 'characteristic_gutenberg_richter'){
-            Mfd = Mw_exceedence_rate_characteristic_gutenberg_richter
+            Mfd = Mw_exceedance_rate_characteristic_gutenberg_richter
         }else{
             stop(paste0(" Value of Mw_frequency_distribution: ", 
                 par$Mw_frequency_distribution, " not recognized"))
@@ -389,7 +389,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # NOTE: This assumes that 'a' appears in Mfd as 10^(a) {only}
         a_parameter = log10(LHS/RHS)
 
-        # Compute rates of exceedence for a truncated Gutenberg Richter model,
+        # Compute rates of exceedance for a truncated Gutenberg Richter model,
         # assuming a = 0. We subsequently correct a to match the slip
         all_rate_vec = Mfd(Mw_seq, a = a_parameter, b = par$b, 
             Mw_min = par$Mw_min, Mw_max = par$Mw_max)
@@ -566,7 +566,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 #' @param Mw_max the upper truncated moment magnitude
 #' @return The rate of events with magnitude > Mw
 #' @export
-Mw_exceedence_rate_truncated_gutenberg_richter<-function(Mw, a, b, Mw_min, Mw_max){
+Mw_exceedance_rate_truncated_gutenberg_richter<-function(Mw, a, b, Mw_min, Mw_max){
    
     N_mag_gt_Mw = 10^(a - b*pmax(Mw, Mw_min)) - 10^(a - b*Mw_max)
 
@@ -595,7 +595,7 @@ Mw_exceedence_rate_truncated_gutenberg_richter<-function(Mw, a, b, Mw_min, Mw_ma
 #' @param Mw_max the upper truncated moment magnitude
 #' @return The rate of events with magnitude > Mw
 #' @export
-Mw_exceedence_rate_characteristic_gutenberg_richter<-function(Mw, a, b, Mw_min, Mw_max){
+Mw_exceedance_rate_characteristic_gutenberg_richter<-function(Mw, a, b, Mw_min, Mw_max){
 
     N_mag_gt_Mw = 10^(a - b*pmax(Mw, Mw_min))
 

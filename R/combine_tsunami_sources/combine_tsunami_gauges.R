@@ -68,17 +68,17 @@ nearthquakes = length(big_eq_table[,1])
 
 ## Get all the mux files (which each hold the tide-gauge results for a single
 ## unit source)
-all_mux = Sys.glob(mux_files_glob)
+all_mux_files = Sys.glob(mux_files_glob)
 # Find the 'subfault number' in the unit_source_statistics table which 
 # is associated with each mux file
-all_mux_subfault_numbers = match(basename(dirname(all_mux)), 
+all_mux_subfault_numbers = match(basename(dirname(all_mux_files)), 
     paste0(sourcename, '_', unit_source_statistics$downdip_number, '_', 
         unit_source_statistics$alongstrike_number))
 
 
 # Figure out the number of stations, and store the location information for
 # later usage.
-tmp = read_mux2_data(all_mux[1])
+tmp = read_mux2_data(all_mux_files[1])
 mux_data_loc = tmp$loc
 nstations = length(mux_data_loc[,1])
 rm(tmp)
@@ -105,13 +105,13 @@ for(i in 1:(length(station_starts) - 1)){
     inds = (station_starts[i]+1):station_starts[i+1]
 
     ## Read all the data
-    for(mux in all_mux){
+    for(mux in all_mux_files){
         print(paste0('Reading ', mux))
         all_data[[mux]] = read_mux2_data(mux, inds=inds)
     }
 
     ## Check that all files are consistent with each other
-    for(mux in all_mux[-1]){
+    for(mux in all_mux_files[-1]){
         if(any(all_data[[1]]$loc != all_data[[mux]]$loc)){
             stop('mux-data location tables are not identical')
         }
