@@ -139,19 +139,19 @@ the assumed earthquake rake, the desired unit-source length and width, the
 resolution of the output raster, and some numerical parameters, the most
 important of which are the sub-unit-source grid spacing.
 
-If kajiura filtering is to be applied, then the user must also provide an
+If Kajiura filtering is to be applied, then the user must also provide an
 elevation raster (in lon-lat coordinates, with elevation in m, and negative
-value being below MSL). At the moment the code assumes that this raster has a
-longitude extent within (-180, 180), corresponding to an Atlantic centred view.
-The input sourcezones do NOT have to have longitudes in this range, although
-they MUST reside on the input raster.
+value being below MSL). The input sourcezones should of course have longitudes
+inside the extent of the raster (if they are off by 360 degrees then the code
+will make the correction). Use of Kajiura filtering will cause the code to run
+more slowly.
 
 Note that more than one source-contour shapefile can be provided -- the code
 will loop over them.
 
 If you are running linux on a shared memory machine with multiple cores, then
-you can run in parallel by setting MC_CORES to be a number greater than one. In this
-case each core will run separate unit sources, until all are completed. 
+you can run in parallel by setting MC_CORES to be a number greater than one. In
+this case each core will run separate unit sources, until all are completed. 
 
 
 ```r
@@ -229,23 +229,30 @@ okada_distance_factor = 50 # Inf
 
 # elevation raster (required for Kajiura filtering). Should give elevation in m, 
 # with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
-# Set to NULL to not use Kajiura filtering
-elevation_raster = NULL 
-# elevation_raster = raster('../RAW/GEBCO/gebco_08.nc')
+# Set to NULL to not use Kajiura filtering.
+#elevation_raster = NULL 
+## A realistic example would look like:
+elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
+## Note that for Kajiura filtering, a minimum depth of 10m will be assumed 
+## (to avoid passing negative depths to the Kajiura smoothing routine)
 
 # For computational efficiency, only apply Kajiura filtering in a box
 # containing all points where the unit source deformation exceeds
 # kajiura_use_threshold. Set to zero to apply Kajiura filter everywhere.
 # Use of a small positive number can be faster.
+# Since the unit sources have 1m slip, use of e.g. 1e-04 implies an
+# error of < 1cm to the free surface, even if the slip were 100m. 
 kajiura_use_threshold = 1.0e-04
 
 # When applying the kajiura filter, the data is regridded onto a grid with
 # spacing=kajiura_gridspacing. The latter should be small compared to the
-# horizontal distance over which the deformation changes significantly
-kajiura_grid_spacing = 1000 # m
+# horizontal distance over which the free surface deformation changes
+# significantly (and small compared with the distance of
+# tsunami_source_cellsize)
+kajiura_grid_spacing = 2000 # m
 
 # Cell size for output rasters
-# The computation time will scale inversely with this squared
+# The computation time will scale inversely with tsunami_source_cellsize^2
 # Here we use a relatively coarse discretization, for demonstration purposes
 tsunami_source_cellsize = 4/60 # degrees. 
 
@@ -257,7 +264,7 @@ MC_CORES = 12
 #
 # Only make the 3d interactive plot if you can use interactive graphics and
 # have rgl (i.e. use FALSE on NCI). 
-make_3d_interactive_plot = FALSE 
+make_3d_interactive_plot = TRUE #FALSE
 
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
@@ -308,138 +315,7 @@ sub-unit-source points, exact unit source discretization, etc).
 
 # Tips
 Beware of possible minor artefacts in the computed solution along the trench
-when rupture becomes very shallow and the dip is nonuniform. In our experience
-this is not detectible when Kajiura filtering is applied. In general we suggest
-to always apply Kajiura filtering, although it is not done above for speed, and
-so we can avoid distributing elevation data in the package.
-
-
-<!---
-# Geometric discretization
-
-Here we create the unit source geometry. The computation of the tsunami
-deformation comes later. The key step is the function call
-*discretized_source_from_source_contours* which converts source contours
-to a list of unit sources.
-
-
-
-
-The above figures illustrate that the source contours are converted to a logically
-retangular grid of unit sources.
-
-# Further exploration of the data structures
-
-Here we explore the unit source data structures in more detail. Perhaps the
-most important point is that the unit source grid is stored as a 3d array.
-
-
-```r
-# discretized_sources is a list containing unit source information for each sourcezone.
-length(discretized_sources) # Should be equal to the number of input shapefiles
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'discretized_sources' not found
-```
-
-```r
-names(discretized_sources)
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'discretized_sources' not found
-```
-
-```r
-# Taking the example of alaska, we look at the unit source information for a single source
-names(discretized_sources$alaska)
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'discretized_sources' not found
-```
-
-```r
-# The depth contours are as before
-plot(discretized_sources$alaska$depth_contours, asp=1, axes=TRUE)
-```
-
-```
-## Error in plot(discretized_sources$alaska$depth_contours, asp = 1, axes = TRUE): error in evaluating the argument 'x' in selecting a method for function 'plot': Error: object 'discretized_sources' not found
-```
-
-```r
-# The unit sources are in a grid of these dimensions down-dip and along-strike 
-discretized_sources$alaska$discretized_source_dim
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'discretized_sources' not found
-```
-
-```r
-ndip = discretized_sources$alaska$discretized_source_dim['dip']
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'discretized_sources' not found
-```
-
-```r
-nstrike = discretized_sources$alaska$discretized_source_dim['strike']
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'discretized_sources' not found
-```
-
-```r
-# The unit source grid is represented as a 3d array of x,y,depth points. These
-# define the boundaries of the unit sources. Obviously there must be 'ndip+1'
-# lines down dip, and 'nstrike+1' lines along-strike
-#
-# First dimension: Down-dip
-# Second dimension: x,y,z
-# Third dimension: Along-strike
-#
-dim(discretized_sources$alaska$unit_source_grid)
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'discretized_sources' not found
-```
-
-```r
-discretized_sources$alaska$unit_source_grid
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'discretized_sources' not found
-```
-
-```r
-# Add to the plot
-for(j in 1:(nstrike+1)) points(discretized_sources$alaska$unit_source_grid[,1:2,j], t='o', col='red')
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'nstrike' not found
-```
-
-```r
-for(j in 1:(ndip+1)) points(t(discretized_sources$alaska$unit_source_grid[j,1:2,]), t='o', col='red')
-```
-
-```
-## Error in eval(expr, envir, enclos): object 'ndip' not found
-```
-
-
-# Tsunami deformation
-
-Finally we compute the tsunami initial condition for each unit source.
-
-
-
---->
+when rupture becomes very shallow and the sourcezone is nonuniform. In our
+experience this is not detectible when Kajiura filtering is applied. In general
+we suggest to always apply Kajiura filtering - although it is not done above so
+we can avoid distributing elevation data in the package.

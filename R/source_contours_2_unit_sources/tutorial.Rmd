@@ -86,19 +86,19 @@ the assumed earthquake rake, the desired unit-source length and width, the
 resolution of the output raster, and some numerical parameters, the most
 important of which are the sub-unit-source grid spacing.
 
-If kajiura filtering is to be applied, then the user must also provide an
+If Kajiura filtering is to be applied, then the user must also provide an
 elevation raster (in lon-lat coordinates, with elevation in m, and negative
-value being below MSL). At the moment the code assumes that this raster has a
-longitude extent within (-180, 180), corresponding to an Atlantic centred view.
-The input sourcezones do NOT have to have longitudes in this range, although
-they MUST reside on the input raster.
+value being below MSL). The input sourcezones should of course have longitudes
+inside the extent of the raster (if they are off by 360 degrees then the code
+will make the correction). Use of Kajiura filtering will cause the code to run
+more slowly.
 
 Note that more than one source-contour shapefile can be provided -- the code
 will loop over them.
 
 If you are running linux on a shared memory machine with multiple cores, then
-you can run in parallel by setting MC_CORES to be a number greater than one. In this
-case each core will run separate unit sources, until all are completed. 
+you can run in parallel by setting MC_CORES to be a number greater than one. In
+this case each core will run separate unit sources, until all are completed. 
 
 ```{r initialise, echo=TRUE}
 ```
@@ -147,72 +147,7 @@ sub-unit-source points, exact unit source discretization, etc).
 
 # Tips
 Beware of possible minor artefacts in the computed solution along the trench
-when rupture becomes very shallow and the dip is nonuniform. In our experience
-this is not detectible when Kajiura filtering is applied. In general we suggest
-to always apply Kajiura filtering, although it is not done above for speed, and
-so we can avoid distributing elevation data in the package.
-
-
-<!---
-# Geometric discretization
-
-Here we create the unit source geometry. The computation of the tsunami
-deformation comes later. The key step is the function call
-*discretized_source_from_source_contours* which converts source contours
-to a list of unit sources.
-
-
-```{r makeDiscretizedSources, echo=TRUE}
-```
-
-The above figures illustrate that the source contours are converted to a logically
-retangular grid of unit sources.
-
-# Further exploration of the data structures
-
-Here we explore the unit source data structures in more detail. Perhaps the
-most important point is that the unit source grid is stored as a 3d array.
-
-```{r}
-# discretized_sources is a list containing unit source information for each sourcezone.
-length(discretized_sources) # Should be equal to the number of input shapefiles
-names(discretized_sources)
-
-# Taking the example of alaska, we look at the unit source information for a single source
-names(discretized_sources$alaska)
-
-# The depth contours are as before
-plot(discretized_sources$alaska$depth_contours, asp=1, axes=TRUE)
-
-# The unit sources are in a grid of these dimensions down-dip and along-strike 
-discretized_sources$alaska$discretized_source_dim
-ndip = discretized_sources$alaska$discretized_source_dim['dip']
-nstrike = discretized_sources$alaska$discretized_source_dim['strike']
-
-# The unit source grid is represented as a 3d array of x,y,depth points. These
-# define the boundaries of the unit sources. Obviously there must be 'ndip+1'
-# lines down dip, and 'nstrike+1' lines along-strike
-#
-# First dimension: Down-dip
-# Second dimension: x,y,z
-# Third dimension: Along-strike
-#
-dim(discretized_sources$alaska$unit_source_grid)
-
-discretized_sources$alaska$unit_source_grid
-
-# Add to the plot
-for(j in 1:(nstrike+1)) points(discretized_sources$alaska$unit_source_grid[,1:2,j], t='o', col='red')
-for(j in 1:(ndip+1)) points(t(discretized_sources$alaska$unit_source_grid[j,1:2,]), t='o', col='red')
-
-```
-
-
-# Tsunami deformation
-
-Finally we compute the tsunami initial condition for each unit source.
-
-```{r makeTsunamiSources, echo=TRUE}
-```
-
---->
+when rupture becomes very shallow and the sourcezone is nonuniform. In our
+experience this is not detectible when Kajiura filtering is applied. In general
+we suggest to always apply Kajiura filtering - although it is not done above so
+we can avoid distributing elevation data in the package.
