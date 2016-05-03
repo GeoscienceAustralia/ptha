@@ -2,7 +2,8 @@
 % Please edit documentation in R/rupture_probabilities.R
 \name{compute_slip_density_parameters}
 \alias{compute_slip_density_parameters}
-\title{Given Mw, compute parameters which characterise the 'probability distribution' of slip}
+\title{Given Mw, compute parameters which characterise the 'probability
+distribution' of slip}
 \usage{
 compute_slip_density_parameters(Mw, mu = 3e+10, constant = 9.05)
 }
@@ -19,11 +20,12 @@ A list containing 1) The log10(Slip) mean and stanard deviation and
 }
 \description{
 FIXME: This function is not currently exported -- do we want to keep it?
-Seems a good idea.
+Seems a good idea. \cr
 We assume mu is constant, and log10(Area) has a normal distribution. Since
 the seismic moment = mu*slip*Area, this implies that log10(Slip) has a normal
-distribution as well. So the mean and standard deviation of the log10 variable
-completely describe it. As well as returning those values, we return the mean slip
-(mean of untransformed slip) since its calculation is slightly inconvenient.
+distribution as well. So the mean and standard deviation of the log10
+variable completely describe it. As well as returning those values, we return
+the mean slip (mean of untransformed slip) since its calculation is slightly
+inconvenient.
 }
 

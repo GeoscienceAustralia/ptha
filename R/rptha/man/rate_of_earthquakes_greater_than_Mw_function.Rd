@@ -15,12 +15,13 @@ rate_of_earthquakes_greater_than_Mw_function(slip_rate, slip_rate_prob, b,
   account_for_moment_below_mwmin = FALSE)
 }
 \arguments{
-\item{slip_rate}{numeric vector with 1 or more long-term seismogenic slip rates for
-the source-zone (m/year). This gives the long-term average slip on the fault
-due to seismic events (creep is ignored, so these rates must account for the
-rate of coupling)}
+\item{slip_rate}{numeric vector with 1 or more long-term seismogenic slip
+rates for the source-zone (m/year). This gives the long-term average slip on
+the fault due to seismic events (creep is ignored, so these rates must
+account for the rate of coupling)}
 
-\item{slip_rate_prob}{numeric vector with weights for the slip_rate parameters}
+\item{slip_rate_prob}{numeric vector with weights for the slip_rate
+parameters}
 
 \item{b}{numeric vector with 1 or more 'b' parameters}
 
@@ -37,83 +38,111 @@ rate of coupling)}
 \item{sourcezone_total_area}{The total area of the sourcezone (km^2)}
 
 \item{event_table}{A data.frame containing information on all events in the
-source-zone. Output of \code{get_all_earthquake_events}}
+source-zone. Output of \code{get_all_earthquake_events}. This is needed to
+evaluate the RHS of the seismic moment balance equation.}
 
-\item{event_conditional_probabilities}{A vector of conditional probabilities for
-all events in the source-zone (conditional on the fact than an event with
+\item{event_conditional_probabilities}{A vector of conditional probabilities
+for all events in the source-zone (conditional on the fact than an event with
 their magnitude did occur). Output of
-\code{get_event_probabilities_conditional_on_Mw}}
+\code{get_event_probabilities_conditional_on_Mw}. This is needed to evaluate
+the RHS of the seismic moment balance equation.}
 
-\item{computational_increment}{For each final branch of the logic tree, the
-rate function with those parameters is computed at points in a sequence from
-min(Mw_min) to max(Mw_max), with spacing computational_increment (adjusted if
-required so that the extremes are included). The function value is then
-evaluated via lookup.}
+\item{computational_increment}{For each parameter combination in the logic
+tree, the rate function is computed at points in a sequence from min(Mw_min)
+to max(Mw_max), with spacing computational_increment (adjusted if required so
+that the extremes are included). The function value is then evaluated via
+lookup.}
 
-\item{Mw_frequency_distribution}{character vector giving the variant on the Gutenberg
-Richter model used (if more than 1 they are passed to the logic tree).
-Either 'truncated_gutenberg_richter' or 'characteristic_gutenberg_richter'.}
+\item{Mw_frequency_distribution}{character vector giving the variant on the
+Gutenberg Richter model used (if more than 1 they are passed to the logic
+tree).  Either 'truncated_gutenberg_richter' or
+'characteristic_gutenberg_richter'.}
 
 \item{Mw_frequency_distribution_prob}{numeric vector. Logic tree weights for
 each Mw_frequency_distribution type}
 
-\item{update_logic_tree_weights_with_data}{logical. If TRUE, a value for Mw_count_duration
-must be provided. The weights for each parameter combination in the tree are updated
-with Bayes-theorem, based on the probability that they would produce
-Mw_count_duration[2] events within time duration Mw_count_duration[3] which
-exceed Mw_count_duration[1]. This assumes a poisson-process time occurrence}
+\item{update_logic_tree_weights_with_data}{logical. If TRUE, then a value for
+Mw_count_duration must be provided. The weights for each parameter
+combination in the tree are then updated with Bayes-theorem, based on the
+probability that they would produce Mw_count_duration[2] events which exceed
+Mw_count_duration[1] within time duration Mw_count_duration[3]. This assumes
+earthquake timings follow a Poisson-process.}
 
-\item{Mw_count_duration}{numeric vector of length 3 providing some data. The first
-entry is an Mw value, the second is the number of events exceeding Mw at the
-site, and the third is the duration of observation (in years).
-If \code{update_logic_tree_weights_with_data=TRUE},
-this is used to re-weight parameter combinations in the logic tree, with more weight
-given to those which predict similar event frequencies as the data.}
+\item{Mw_count_duration}{numeric vector of length 3 providing some data. The
+first entry is an Mw value, the second is the number of events exceeding Mw
+at the site, and the third is the duration of observation (in years).  If
+\code{update_logic_tree_weights_with_data=TRUE}, this is used to re-weight
+parameter combinations in the logic tree, with more weight given to those
+which predict similar event frequencies as the data.}
 
 \item{Mw_2_M0}{function which takes an earthquake magnitude and returns the
 corresponding seismic moment M0}
 
-\item{account_for_moment_below_mwmin}{logical. If FALSE assume all seismically coupled
-slip occurs due to earthquakes with Mw > Mwmin. If TRUE, estimate the fraction of seismically
-coupled slip that occurs due to earthquakes with Mw > Mwmin, and use that when computing
-the rates}
+\item{account_for_moment_below_mwmin}{logical. If FALSE assume all
+seismically coupled slip occurs due to earthquakes with Mw > Mwmin. If TRUE,
+estimate the fraction of seismically coupled slip that occurs due to
+earthquakes with Mw > Mwmin, and use that when computing the rates.}
 }
 \value{
-function of a numeric vector Mw, which by default returns the rate of events
-with magnitude > Mw. If the optional argument 'bounds=TRUE' is passed, then
-the function returns upper/lower/median rates of the logic tree as well as
-the probability weighted mean rate. If the optional argument
-'return_all_logic_tree_branches=TRUE' is passed, then the function returns
-a list containing a data.frame with all combinations of parameters, a vector
-with their respective probabilities(weights), a vector with the Mw sequence at which
-the function is tabulated, and a matrix with the tabulated values for every
-branch of the logic tree. The latter option can be used to scrutinize the
-results from each branch of the logic tree.
+Function f(Mw) of a numeric vector Mw, which by default returns the
+rate of events with magnitude > Mw. It has a number of optional arguments.
+\cr
+If the optional argument 'bounds=TRUE' is passed,
+then the function returns upper/lower/median rates of the logic tree as well
+as the probability weighted mean rate. \cr
+If the optional argument \code{return_all_logic_tree_branches=TRUE} is
+passed, then the function returns a list containing a data.frame with all
+combinations of parameters, a vector with their respective
+probabilities(weights), a vector with the Mw sequence at which the function
+is tabulated, and a matrix with the tabulated values for every branch of the
+logic tree. The latter option can be used to scrutinize the results from each
+branch of the logic tree. \cr
+If the optional argument \code{quantiles} = a vector of probabilities is
+passed, then the function evaluates the rate function at each given quantile
+of the logic tree (e.g. quantiles = c(0.1, 0.5, 0.9) would return the lower
+10\%, median, and upper 90\% rates from the logic tree at each Mw) \cr
+If the optional argument \code{return_random_curve=TRUE} is passed, then the
+function will randomly pick a parameter combination from the logic tree (with
+probability equal to the probability of each branch), and evaluate the
+exceedance rate of Mw for that parameter combination. This can be useful for
+some monte-carlo computations. \cr
+Only one of these optional arguments can be passed at a time.
 }
 \description{
-The input parameters are based on a truncated Gutenberg Richter model: \cr
-The parameter 'a' is adjusted to account for constant rescaling, and here it
-is computed to match the long-term seismogenic slip rate (m/year). Details
-are explained below. All other parameters are provided by the user. \cr
-To account for uncertainties in those parameters, the user may specify each
-as a vector of one-or-more parameters with associated probabilities (which of
-course must sum to 1). The code then treats all combinations of those
-parameters as having probability equal to the product of the individual
-parameter probabilities. It then integrates the chosen Gutenberg Richter
-model to produce a single Rate function, which is returned. \cr
-Next we clarify how the 'a' parameter is constrained to match the long-term seismogenic slip
-rate. Given particular values of all the pararameters except a, and a long-term seisomogenic slip
-rate (= long_term_slip_rate*coupling_coefficient), the long-term moment rate
-should equal the rate integrated from the individual events: \cr
+Create a function f(Mw) which returns the rate of events with
+magnitude > Mw. Here Mw is a vector of earthquake magnitudes. \cr
+The user provides parameters for a variant of the truncated Gutenberg Richter
+model, although the parameter 'a' is adjusted to match the long-term
+seismogenic slip rate (m/year). Details are explained below. \cr
+To account for uncertainties in the GR model parameters, the user may specify
+each as a vector of one-or-more parameters with associated probabilities
+(which must sum to 1, of course). The code then treats all combinations of
+those parameters as having probability equal to the product of the individual
+parameter probabilities. It then integrates over the chosen Gutenberg Richter
+models to produce a single exceedance rate function, which is returned. \cr
+The output rate function also supports a number of optional arguments, which
+provide various details on the rate function on each branch of the logic
+tree. See details below \cr
+}
+\note{
+The 'a' parameter in the GR model is constrained to match the long-term
+seismogenic slip rate.  Given particular values of all the parameters except
+a, and a long-term seisomogenic slip rate (= long_term_slip_rate *
+coupling_coefficient), the long-term moment rate should equal the rate
+integrated from the individual events. Mathematically: \cr
 \deqn{ \mu  long_term_seismogenic_slip_rate  sourcezone_area =
-\sum_{i \in events} \big{(} \mu event_slip_{i} event_area_{i} Pr(event_{i} | event_of_size_Mw = Mw_{i}) rate_of_events_of_size_Mw_{i}\big{)} }\cr
-where Pr(event_{i} | event_of_size_Mw_{i}) gives the conditional probability of each
-event with the same Mw in the event table [i.e. if we take all events with a
-given Mw from the table, their conditional probabilities should sum to 1].
-The meaning of other variables should be clear.
-Note that a factor of 10^(a) will appear in the RHS term
-rate_of_events_of_size_Mw_{i}, and nowhere else. Hence to compute a, we just
-compute the LHS and RHS of the above equations, tentatively assuming a=0 in the latter
-case, and then it follows that a = log10(LHS/RHS).
+\sum_{i \in events} ( \mu event_slip_{i} event_area_{i} Pr(event_{i} | event_of_size_Mw = Mw_{i}) rate_of_events_of_size_Mw_{i}) }\cr
+Here Pr(event_{i} | event_of_size_Mw_{i}) gives the conditional probability
+of each event with the same Mw in the event table [i.e. if we take all events
+with a given Mw from the table, their conditional probabilities should sum to
+1]. The meaning of other variables should be clear. \cr
+The form of the GR relation implies that a factor of 10^(a) will appear in
+the RHS term rate_of_events_of_size_Mw_{i}, and nowhere else. Hence to
+compute 'a', we just compute the LHS and RHS of the above equations,
+tentatively assuming a=0 in the latter case, and then it follows that a =
+log10(LHS/RHS). \cr
+The code also optionally allows us to account for the fraction of seismic
+moment released by earthquakes with magnitude smaller than Mw_min. This
+reduces the LHS term in the equation above.
 }
 

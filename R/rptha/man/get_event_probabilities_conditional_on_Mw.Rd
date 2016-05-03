@@ -12,28 +12,33 @@ get_event_probabilities_conditional_on_Mw(event_table,
 events on the source-zone. It's the output of
 \code{get_all_earthquake_events}}
 
-\item{conditional_probability_model}{character or function. Supported character values are
-'all_equal' and 'inverse_slip', corresponding to cases discussed above. If a function, this
-must take a single argument, which is a subset of the event_table containing all events with
-fixed Mw, and return the conditional probability of each event.}
+\item{conditional_probability_model}{character or function. Supported
+character values are 'all_equal' and 'inverse_slip', corresponding to cases
+discussed above. \cr
+If a function, it must take a single argument, which is a subset of the
+event_table containing all events with fixed Mw, and return the conditional
+probability of each event.}
 }
 \value{
-A numeric vector with length = nrow(event_table) giving the conditional probabilities.
+A numeric vector with length = nrow(event_table) giving the
+conditional probabilities.
 }
 \description{
 Consider all the earthquake events on a discrete source with magnitude Mw.
 We wish to assign conditional probabilities to these events (conditional on
 the fact that an event of size Mw occurred). This allows us to compute the rate
-of any individual event as 'event_conditional_probability * rate_of_events_of_size_Mw' \cr
+of any individual event as: \cr
+'event_conditional_probability * rate_of_events_of_size_Mw' \cr
 One way to do this is assume that for a given magnitude, all event
-conditional probabilities are equal ('all_equal').
+conditional probabilities are equal ('all_equal'). \cr
 This might be reasonable if the events are identical in area and slip, and
 just differ in location. \cr
-Another approach is to assume the conditional
-probabilities vary inversely with the average slip of the event ('inverse_slip'). This might
-be reasonable if the individual events are almost the same, but there are slight
-differences in the event area and slip, and we want each event to make the same
-contribution to the long-term average slip rate. \cr
-Other methods could be proposed, and this routine also supports a user-defined function
+Another approach is to assume the conditional probabilities vary
+inversely with the average slip of the event ('inverse_slip'). This might be
+reasonable if the individual events are almost the same, but there are slight
+differences in the event area and slip, and we want each event to make the
+same contribution to the long-term average slip rate. \cr
+Other methods could be proposed, and this routine also supports a
+user-defined function
 }
 

@@ -134,6 +134,7 @@ compute_rate_curve<-function(
             conditional_probability_model = cond_prob)
 
     }else{
+
         event_conditional_probabilities = get_event_probabilities_conditional_on_Mw(
             earthquake_event_table,
             conditional_probability_model = 'inverse_slip')
