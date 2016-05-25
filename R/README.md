@@ -33,7 +33,8 @@ the process.
 the tsunami for each unit-source separately and then [combine then
 later](combine_tsunami_sources). This is relatively efficient, but only
 theoretically valid for tsunami with a sufficiently small amplitude-to-depth
-ratio (or equivalently, with sufficiently small velocities). 
+ratio (or equivalently, with sufficiently small velocities). The 
+tsunami propagation results are generally stored at offshore points, and scripts to make these are [here](make_hazard_points).
   * If nonlinear solvers are required, then the user must first create the 
 initial conditions for each event (by linearly combining the unit source
 initial conditions), and then run each through the nonlinear propagation code. 
