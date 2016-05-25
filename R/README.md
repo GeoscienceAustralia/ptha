@@ -29,8 +29,8 @@ the process.
 the tsunami for each unit-source separately and then combine then later. This
 is relatively efficient, but only theoretically valid for tsunami with a
 sufficiently small amplitude-to-depth ratio (or equivalently, with sufficiently
-small velocities).
-  * If nonlinear solvers are required, then the used must first create the 
+small velocities). 
+  * If nonlinear solvers are required, then the user must first create the 
 initial conditions for each event (by linearly combining the unit source
 initial conditions), and then run each through the nonlinear propagation code. 
 
