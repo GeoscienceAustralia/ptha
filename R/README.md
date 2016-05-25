@@ -6,9 +6,9 @@ assessment (PTHA).
 
 PTHA methodologies can be quite diverse depending on the level of detail
 required. The main steps in PTHA methodology supported by rptha are outlined
-below. Note that the code can optionally be used just to [generate tsunami
-initial conditions](source_contours_2_unit_sources) (as raster output files),
-which may then form part of some other workflow.
+below. (Note that the code can optionally be used just to [generate tsunami
+initial conditions](source_contours_2_unit_sources) as raster output files,
+which may then form part of some other workflow):
 
 * Define tsunami sources. Currently rptha only supports earthquake tsunami
 sources. The user needs to provide contours defining the interface on
