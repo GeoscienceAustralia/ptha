@@ -25,13 +25,14 @@ scaling relations of Strasser et al (2010).
 provide a tsunami solver, so other software is required for this step. In
 realistic PTHA applications this is the most computationally demanding part of
 the process. 
-  * If a linear propagation code is used then the user can compute the
-tsunami for each unit-source separately and then combine then later (which is
-relatively efficient). 
-  * If nonlinear solvers are required, then the used must
-first create the initial conditions for each event (by linearly combining the
-unit source initial conditions), and then run each through the nonlinear
-propagation code. 
+  * If a linear propagation code is used then the user can optionally compute
+the tsunami for each unit-source separately and then combine then later. This
+is relatively efficient, but only theoretically valid for tsunami with a
+sufficiently small amplitude-to-depth ratio (or equivalently, with sufficiently
+small velocities).
+  * If nonlinear solvers are required, then the used must first create the 
+initial conditions for each event (by linearly combining the unit source
+initial conditions), and then run each through the nonlinear propagation code. 
 
 * Assign an mean annual rate to each event in the earthquake catalogue. This
 is based on seismic moment conservation principles, and requires the user to
