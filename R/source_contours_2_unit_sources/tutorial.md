@@ -226,7 +226,7 @@ deep_subunitsource_point_spacing = 6000 #m
 # distances <= okada_distance_factor x (depth of sub-unit-source point) 
 # This can save computational effort for shallow unit sources.
 # But be careful if using a wide subunitsource_point_spacing.
-okada_distance_factor = 50 # Inf 
+okada_distance_factor = 20 # Inf 
 
 # elevation raster (required for Kajiura filtering). Should give elevation in m, 
 # with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
@@ -241,9 +241,9 @@ elevation_raster = NULL
 # containing all points where the unit source deformation exceeds
 # kajiura_use_threshold. Set to zero to apply Kajiura filter everywhere.
 # Use of a small positive number can be faster.
-# Since the unit sources have 1m slip, use of e.g. 1e-04 implies an
-# error of < 1cm to the free surface, even if the slip were 100m. 
-kajiura_use_threshold = 1.0e-04
+# Since the unit sources have 1m slip, use of e.g. 1e-03 implies an
+# error of < 1cm to the free surface, even if the slip were 10m. 
+kajiura_use_threshold = 1.0e-03
 
 # When applying the kajiura filter, the data is regridded onto a grid with
 # spacing=kajiura_gridspacing. The latter should be small compared to the
