@@ -10,7 +10,9 @@ c***********************************************************************
       REAL(8),INTENT(IN):: dstmx(n),length(n),wdt(n),disl1(n),disl2(n)
       REAL(8),INTENT(IN):: rlon(m),rlat(m)
       REAL(8),INTENT(OUT):: zdsp(m),edsp(m),ndsp(m)
+
 C     Local variables      
+
       LOGICAL:: USE_DC3D, POINT_SOURCE
       REAL(8) :: pi,dtr, tmp1, tmp2, odep,oy,ox, x, y, d, az, alp_dc3d
       REAL(8) :: u1, u2, u3, u11, u12, u13, u21, u22, u23, u31, u32, u33
@@ -18,6 +20,7 @@ C     Local variables
       INTEGER:: i, j, IRET
 
 c     Use these options to experiment only
+c     As of 25/05/15 both should be .FALSE. for the package
       USE_DC3D = .FALSE.
       POINT_SOURCE = .FALSE.
    
@@ -32,7 +35,7 @@ c Initialize displacements to zero
 
 c Loop over faults
       do 200 i=1,n
-c Translate the origin from fault center to Okada's lower left corner
+c Translate the origin from fault center to Okada lower left corner
          cd = cos(dip(i)*dtr)
          sd = sin(dip(i)*dtr)
          ss = sin(strk(i)*dtr)
@@ -43,7 +46,7 @@ c Translate the origin from fault center to Okada's lower left corner
          tmp2 = atan2(cd*wdt(i), length(i)) 
          odep = edep(i) + 0.5D0*wdt(i)*sd ! Origin depth in Okada's reference frame
 
-c        Compute origin for Okada's reference frame
+c        Compute origin for Okada reference frame
          oy = elat(i) - 1000.0D0*tmp1*cos(tmp2-strk(i)*dtr)
          ox = elon(i) + 1000.0D0*tmp1*sin(tmp2-strk(i)*dtr)
 
@@ -59,7 +62,7 @@ c Skip this contribution of distance exceeds the threshhold
                 goto 100
             END IF
 
-c           Rotate into Okada's reference frame, which has the strike
+c           Rotate into Okada reference frame, which has the strike
 c           direction = positive x axis, with the origin at the deep end
 c           of the slip with the most negative value along the x axis.
             az = 90.0D0-atan2(y,x)/dtr
@@ -68,9 +71,6 @@ c           of the slip with the most negative value along the x axis.
 
                 
             IF(USE_DC3D) THEN
-c SUBROUTINE  DC3D(ALPHA,X,Y,Z,DEPTH,DIP,
-c     *              AL1,AL2,AW1,AW2,DISL1,DISL2,DISL3,
-c     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
                 IF(POINT_SOURCE.eqv..FALSE.) THEN
                   alp_dc3d = 2.0D0/3.0D0 ! Different definition than in srectf
                   call DC3D(alp_dc3d, x, y, 0.0D0, odep, dip(i),0.0D0,
@@ -78,26 +78,24 @@ c     *              UX,UY,UZ,UXX,UYX,UZX,UXY,UYY,UZY,UXZ,UYZ,UZZ,IRET)
      &                   disl2(i), 0.0D0, u1, u2, u3, u11, u21, u31,
      &                   u12, u22, u32, u13, u23, u33, IRET)
                 ELSE
+c DC3D is not used but can be tried by modifying USE_DC3D above
+c DC3D point source is not currently supported, but the following stop statement
+c must be commented out for R to link with the code.
 c                  stop('Need to implement point source')
 
                 END IF
                 
                 IF(IRET .NE. 0) THEN
+c The following stop must be commented out for R to compile the code
 c                    stop('IRET != 0') 
                 END IF
             ELSE
-c      SUBROUTINE  SRECTF(ALP,X,Y,DEP,AL1,AL2,AW1,AW2,                   01840000
-c     *                   SD,CD,DISL1,DISL2,DISL3,                       01850000
-c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              01860000
                 IF(POINT_SOURCE.eqv..FALSE.) THEN
 
                  call srectf(alp,x,y,odep,0.0D0,length(i),0.0D0,wdt(i),
      &               sd, cd, disl1(i),
      &               disl2(i),0.0D0,u1,u2,u3,u11,u12,u21,u22,u31,u32)
                 ELSE
-c      SUBROUTINE  SPOINT(ALP,X,Y,DEP,SD,CD,POT1,POT2,POT3,              00530000
-c     *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              00540000
-c      IMPLICIT REAL(8) (A-H,O-Z)                                         00550000
                  call spoint(alp, x, y, odep, sd, cd, 
      &               disl1(i)*length(i)*wdt(i), 
      &               disl2(i)*length(i)*wdt(i),

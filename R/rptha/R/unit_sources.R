@@ -696,7 +696,7 @@ get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
 }
 
 
-#' Fill a unit source with points (for tsunami source integration)
+#' Fill a unit source with "sub-unit-source" points (for tsunami source integration)
 #'
 #' Make a locally linear coordinate system for a unit source and compute a
 #' 'grid' of points inside the source. These can be used later for tsunami

@@ -56,12 +56,9 @@ okada_tsunami<-function(elon, elat, edep, strk, dip, lnth, wdt,
     if(length(rlat) != m) stop('length(rlon)!=length(rlat)')
 
     # Output variables
-    #edsp=numeric(m)
-    #ndsp=numeric(m)
-    #zdsp=numeric(m)
-    edsp = rep(0.0e-16,m)
-    ndsp = rep(0.0e-16,m)
-    zdsp = rep(0.0e-16,m)
+    edsp = rep(0.0, m)
+    ndsp = rep(0.0, m)
+    zdsp = rep(0.0, m)
 
     # Fortran call:
     #fault_disp(alp,elon,elat,edep,strk,dip,length,wdt,
