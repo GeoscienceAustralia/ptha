@@ -45,9 +45,9 @@ okada_distance_factor = 50 # Inf
 # elevation raster (required for Kajiura filtering). Should give elevation in m, 
 # with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
 # Set to NULL to not use Kajiura filtering.
-elevation_raster = NULL 
+#elevation_raster = NULL 
 ## A realistic example would look like:
-#elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
+elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
 ## Note that for Kajiura filtering, a minimum depth of 10m will be assumed 
 ## (to avoid passing negative depths to the Kajiura smoothing routine)
 
@@ -64,12 +64,12 @@ kajiura_use_threshold = 1.0e-04
 # horizontal distance over which the free surface deformation changes
 # significantly (and small compared with the distance of
 # tsunami_source_cellsize)
-kajiura_grid_spacing = 2000 # m
+kajiura_grid_spacing = 1000 # m
 
 # Cell size for output rasters
 # The computation time will scale inversely with tsunami_source_cellsize^2
 # Here we use a relatively coarse discretization, for demonstration purposes
-tsunami_source_cellsize = 4/60 # degrees. 
+tsunami_source_cellsize = 2/60 # degrees. 
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.

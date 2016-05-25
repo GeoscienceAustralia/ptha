@@ -116,14 +116,14 @@ c                    stop('IRET != 0')
 C********************************************************************   00570000
       SUBROUTINE  SPOINT(ALP,X,Y,DEP,SD,CD,POT1,POT2,POT3,              00530000
      *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              00540000
-      IMPLICIT REAL(8) (A-H,O-Z)                                         00550000
+      IMPLICIT REAL(8) (A-H,O-Z)                                        00550000
 C                                                                       00560000
 C********************************************************************   00570000
 C*****                                                          *****   00580000
 C*****    SURFACE DISPLACEMENT,STRAIN,TILT                      *****   00590000
 C*****    DUE TO BURIED POINT SOURCE IN A SEMIINFINITE MEDIUM   *****   00600000
 C*****                         CODED BY  Y.OKADA ... JAN 1985   *****   00610000
-C*****                                                          *****   00620000
+C*****    (minor changes Gareth Davies to remove some divisions)*****   00620000
 C********************************************************************   00630000
 C                                                                       00640000
 C***** INPUT                                                            00650000
@@ -159,13 +159,15 @@ C-----                                                                  00840000
       R3=R *R2                                                          00950000
       R5=R3*R2                                                          00960000
       QR=F3*Q/R5                                                        00970000
-      XR =F5*X2/R2                                                      00980000
-      YR =F5*Y2/R2                                                      00990000
-      XYR=F5*XY/R2                                                      01000000
-      DR =F5*D /R2                                                      01010000
+      R2INV = 1.0D0/R2
+      R5INV = 1.0D0/R5
+      XR =F5*X2*R2INV                                                   00980000
+      YR =F5*Y2*R2INV                                                   00990000
+      XYR=F5*XY*R2INV                                                   01000000
+      DR =F5*D *R2INV                                                   01010000
       RD =R + D                                                         01020000
       R12=F1/(R*RD*RD)                                                  01030000
-      R32=R12*(F2*R + D)/ R2                                            01040000
+      R32=R12*(F2*R + D)* R2INV                                         01040000
       R33=R12*(F3*R + D)/(R2*RD)                                        01050000
       R53=R12*(F8*R2 + F9*R*D + F3*D2)/(R2*R2*RD)                       01060000
       R54=R12*(F5*R2 + F4*R*D +    D2)/R3*R12                           01070000
@@ -177,11 +179,11 @@ C-----                                                                  01080000
       A5= ALP*( F1/(R*RD) - X2*R32 )                                    01130000
       B1= ALP*(-F3*XY*R33      + F3*X2*XY*R54)                          01140000
       B2= ALP*( F1/R3 - F3*R12 + F3*X2*Y2*R54)                          01150000
-      B3= ALP*( F1/R3 - F3*X2/R5) - B2                                  01160000
-      B4=-ALP*F3*XY/R5 - B1                                             01170000
+      B3= ALP*( F1/R3 - F3*X2*R5INV) - B2                               01160000
+      B4=-ALP*F3*XY*R5INV - B1                                          01170000
       C1=-ALP*Y*(R32 - X2*R53)                                          01180000
       C2=-ALP*X*(R32 - Y2*R53)                                          01190000
-      C3=-ALP*F3*X*D/R5 - C2                                            01200000
+      C3=-ALP*F3*X*D*R5INV - C2                                         01200000
 C-----                                                                  01210000
       U1 =F0                                                            01220000
       U2 =F0                                                            01230000
@@ -198,7 +200,7 @@ C======================================                                 01330000
       IF(POT1.EQ.F0)   GO TO 200                                        01340000
       UN=POT1/PI2                                                       01350000
       QRX=QR*X                                                          01360000
-      FX=F3*X/R5*SD                                                     01370000
+      FX=F3*X*R5INV*SD                                                  01370000
       U1 =U1 - UN*( QRX*X + A1*SD )                                     01380000
       U2 =U2 - UN*( QRX*Y + A2*SD )                                     01390000
       U3 =U3 - UN*( QRX*D + A4*SD )                                     01400000
@@ -215,7 +217,7 @@ C======================================                                 01490000
       UN=POT2/PI2                                                       01510000
       SDCD=SD*CD                                                        01520000
       QRP=QR*P                                                          01530000
-      FS=F3*S/R5                                                        01540000
+      FS=F3*S*R5INV                                                     01540000
       U1 =U1 - UN*( QRP*X - A3*SDCD )                                   01550000
       U2 =U2 - UN*( QRP*Y - A1*SDCD )                                   01560000
       U3 =U3 - UN*( QRP*D - A5*SDCD )                                   01570000
@@ -248,14 +250,14 @@ C-----                                                                  01810000
       SUBROUTINE  SRECTF(ALP,X,Y,DEP,AL1,AL2,AW1,AW2,                   01840000
      *                   SD,CD,DISL1,DISL2,DISL3,                       01850000
      *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              01860000
-      IMPLICIT REAL(8) (A-H,O-Z)                                         01870000
+      IMPLICIT REAL(8) (A-H,O-Z)                                        01870000
 C                                                                       01880000
 C*********************************************************              01890000
 C*****                                               *****              01900000
 C*****    SURFACE DISPLACEMENT,STRAIN,TILT           *****              01910000
 C*****    DUE TO RECTANGULAR FAULT IN A HALF-SPACE   *****              01920000
 C*****              CODED BY  Y.OKADA ... JAN 1985   *****              01930000
-C*****                                               *****              01940000
+C*****    (minor changes GD to remove some divisions)*****              01940000
 C*********************************************************              01950000
 C                                                                       01960000
 C***** INPUT                                                            01970000
@@ -312,14 +314,14 @@ C-----                                                                  02210000
       END                                                               02480000
       SUBROUTINE  SRECTG(ALP,XI,ET,Q,SD,CD,DISL1,DISL2,DISL3,           02490000
      *                   U1,U2,U3,U11,U12,U21,U22,U31,U32)              02500000
-      IMPLICIT REAL(8) (A-H,O-Z)                                         02510000
+      IMPLICIT REAL(8) (A-H,O-Z)                                        02510000
 C                                                                       02520000
 C*********************************************************************  02530000
 C*****                                                           *****  02540000
 C*****  INDEFINITE INTEGRAL OF SURFACE DISPLACEMENT,STRAIN,TILT  *****  02550000
 C*****  DUE TO RECTANGULAR FAULT IN A HALF-SPACE                 *****  02560000
 C*****                          CODED BY  Y.OKADA ... JAN 1985   *****  02570000
-C*****                                                           *****  02580000
+C***** (minor changes GD to remove some divisions)               *****  02580000
 C*********************************************************************  02590000
 C                                                                       02600000
 C***** INPUT                                                            02610000
@@ -357,43 +359,48 @@ C-----                                                                  02880000
       IF(RET.NE.F0)  DLE= DLOG(RET)                                     02930000
       IF(RET.EQ.F0)  DLE=-DLOG(R-ET)                                    02940000
       RRX=F1/(R*(R+XI))                                                 02950000
-      RRE=RE/R                                                          02960000
-      AXI=(F2*R+XI)*RRX*RRX/R                                           02970000
-      AET=(F2*R+ET)*RRE*RRE/R                                           02980000
+      RINV = 1.0D0/R
+      RRE=RE*RINV                                                       02960000
+      AXI=(F2*R+XI)*RRX*RRX*RINV                                        02970000
+      AET=(F2*R+ET)*RRE*RRE*RINV                                        02980000
       IF(CD.EQ.F0)  GO TO 20                                            02990000
 C==============================                                         03000000
 C=====   INCLINED FAULT   =====                                         03010000
 C==============================                                         03020000
-      TD=SD/CD                                                          03030000
+      CDINV = 1.0D0/CD
+      TD=SD*CDINV                                                       03030000
       X =DSQRT(XI2+Q2)                                                  03040000
       IF(XI.EQ.F0)  A5=F0                                               03050000
       IF(XI.NE.F0)                                                      03060000
-     *A5= ALP*F2/CD*DATAN( (ET*(X+Q*CD)+X*(R+X)*SD) / (XI*(R+X)*CD) )   03070000
-      A4= ALP/CD*( DLOG(RD) - SD*DLE )                                  03080000
-      A3= ALP*(Y/RD/CD - DLE) + TD*A4                                   03090000
-      A1=-ALP/CD*XI/RD        - TD*A5                                   03100000
-      C1= ALP/CD*XI*(RRD - SD*RRE)                                      03110000
-      C3= ALP/CD*(Q*RRE - Y*RRD)                                        03120000
-      B1= ALP/CD*(XI2*RRD - F1)/RD - TD*C3                              03130000
-      B2= ALP/CD*XI*Y*RRD/RD       - TD*C1                              03140000
+     *A5= ALP*F2*CDINV*DATAN((ET*(X+Q*CD)+X*(R+X)*SD) / (XI*(R+X)*CD))  03070000
+      A4= ALP*CDINV*( DLOG(RD) - SD*DLE )                               03080000
+      A3= ALP*(Y/RD*CDINV - DLE) + TD*A4                                03090000
+      A1=-ALP*CDINV*XI/RD        - TD*A5                                03100000
+      C1= ALP*CDINV*XI*(RRD - SD*RRE)                                   03110000
+      C3= ALP*CDINV*(Q*RRE - Y*RRD)                                     03120000
+      B1= ALP*CDINV*(XI2*RRD - F1)/RD - TD*C3                           03130000
+      B2= ALP*CDINV*XI*Y*RRD/RD       - TD*C1                           03140000
       GO TO 30                                                          03150000
 C==============================                                         03160000
 C=====   VERTICAL FAULT   =====                                         03170000
 C==============================                                         03180000
    20 RD2=RD*RD                                                         03190000
-      A1=-ALP/F2*XI*Q/RD2                                               03200000
-      A3= ALP/F2*( ET/RD + Y*Q/RD2 - DLE )                              03210000
-      A4=-ALP*Q/RD                                                      03220000
-      A5=-ALP*XI*SD/RD                                                  03230000
-      B1= ALP/F2*  Q  /RD2*(F2*XI2*RRD - F1)                            03240000
-      B2= ALP/F2*XI*SD/RD2*(F2*Q2 *RRD - F1)                            03250000
-      C1= ALP*XI*Q*RRD/RD                                               03260000
-      C3= ALP*SD/RD*(XI2*RRD - F1)                                      03270000
+      F2INV = 1.0D0/F2
+      RD2INV = 1.0D0/RD2
+      RDINV = 1.0D0/RD
+      A1=-ALP*F2INV*XI*Q*RD2INV                                         03200000
+      A3= ALP*F2INV*( ET/RD + Y*Q*RD2INV - DLE )                        03210000
+      A4=-ALP*Q*RDINV                                                   03220000
+      A5=-ALP*XI*SD*RDINV                                               03230000
+      B1= ALP*F2INV*  Q  *RD2INV*(F2*XI2*RRD - F1)                      03240000
+      B2= ALP*F2INV*XI*SD*RD2INV*(F2*Q2 *RRD - F1)                      03250000
+      C1= ALP*XI*Q*RRD*RDINV                                            03260000
+      C3= ALP*SD*RDINV*(XI2*RRD - F1)                                   03270000
 C-----                                                                  03280000
    30 A2=-ALP*DLE - A3                                                  03290000
       B3=-ALP*XI*RRE - B2                                               03300000
-      B4=-ALP*( CD/R + Q*SD*RRE ) - B1                                  03310000
-      C2= ALP*(-SD/R + Q*CD*RRE ) - C3                                  03320000
+      B4=-ALP*( CD*RINV + Q*SD*RRE ) - B1                               03310000
+      C2= ALP*(-SD*RINV + Q*CD*RRE ) - C3                               03320000
 C-----                                                                  03330000
       U1 =F0                                                            03340000
       U2 =F0                                                            03350000
@@ -410,15 +417,16 @@ C======================================                                 03450000
       IF(DISL1.EQ.F0)  GO TO 200                                        03460000
       UN=DISL1/PI2                                                      03470000
       REQ=RRE*Q                                                         03480000
+      R3INV=1.0D0/R3
       U1 =U1 - UN*( REQ*XI +   TT    + A1*SD )                          03490000
       U2 =U2 - UN*( REQ*Y  + Q*CD*RE + A2*SD )                          03500000
       U3 =U3 - UN*( REQ*D  + Q*SD*RE + A4*SD )                          03510000
       U11=U11+ UN*( XI2*Q*AET - B1*SD )                                 03520000
-      U12=U12+ UN*( XI2*XI*( D/(ET2+Q2)/R3 - AET*SD ) - B2*SD )         03530000
-      U21=U21+ UN*( XI*Q/R3*CD + (XI*Q2*AET - B2)*SD )                  03540000
-      U22=U22+ UN*( Y *Q/R3*CD + (Q*SD*(Q2*AET-F2*RRE)                  03550000
-     *                            -(XI2+ET2)/R3*CD - B4)*SD )           03560000
-      U31=U31+ UN*(-XI*Q2*AET*CD + (XI*Q/R3 - C1)*SD )                  03570000
+      U12=U12+ UN*( XI2*XI*( D/(ET2+Q2)*R3INV - AET*SD ) - B2*SD )      03530000
+      U21=U21+ UN*( XI*Q*R3INV*CD + (XI*Q2*AET - B2)*SD )               03540000
+      U22=U22+ UN*( Y *Q*R3INV*CD + (Q*SD*(Q2*AET-F2*RRE)               03550000
+     *                            -(XI2+ET2)*R3INV*CD - B4)*SD )        03560000
+      U31=U31+ UN*(-XI*Q2*AET*CD + (XI*Q*R3INV - C1)*SD )               03570000
       U32=U32+ UN*( D*Q/R3*CD + (XI2*Q*AET*CD - SD/R + Y*Q/R3 - C2)*SD )03580000
 C===================================                                    03590000
 C=====  DIP-SLIP CONTRIBUTION  =====                                    03600000
@@ -429,11 +437,11 @@ C===================================                                    03610000
       U1 =U1 - UN*( Q/R             - A3*SDCD )                         03650000
       U2 =U2 - UN*( Y*Q*RRX + CD*TT - A1*SDCD )                         03660000
       U3 =U3 - UN*( D*Q*RRX + SD*TT - A5*SDCD )                         03670000
-      U11=U11+ UN*( XI*Q/R3            + B3*SDCD )                      03680000
-      U12=U12+ UN*( Y *Q/R3 - SD/R     + B1*SDCD )                      03690000
-      U21=U21+ UN*( Y *Q/R3 + Q*CD*RRE + B1*SDCD )                      03700000
+      U11=U11+ UN*( XI*Q*R3INV            + B3*SDCD )                   03680000
+      U12=U12+ UN*( Y *Q*R3INV - SD/R     + B1*SDCD )                   03690000
+      U21=U21+ UN*( Y *Q*R3INV + Q*CD*RRE + B1*SDCD )                   03700000
       U22=U22+ UN*( Y*Y*Q*AXI - (F2*Y*RRX + XI*CD*RRE)*SD + B2*SDCD )   03710000
-      U31=U31+ UN*( D *Q/R3 + Q*SD*RRE + C3*SDCD )                      03720000
+      U31=U31+ UN*( D *Q*R3INV + Q*SD*RRE + C3*SDCD )                   03720000
       U32=U32+ UN*( Y*D*Q*AXI - (F2*D*RRX + XI*SD*RRE)*SD + C1*SDCD )   03730000
 C========================================                               03740000
 C=====  TENSILE-FAULT CONTRIBUTION  =====                               03750000
@@ -445,11 +453,11 @@ C========================================                               03760000
       U2 =U2 + UN*(-D*Q*RRX - SD*(XI*Q*RRE - TT) - A1*SDSD )            03810000
       U3 =U3 + UN*( Y*Q*RRX + CD*(XI*Q*RRE - TT) - A5*SDSD )            03820000
       U11=U11- UN*( XI*Q2*AET             + B3*SDSD )                   03830000
-      U12=U12- UN*(-D*Q/R3 - XI2*Q*AET*SD + B1*SDSD )                   03840000
-      U21=U21- UN*( Q2*(CD/R3 + Q*AET*SD) + B1*SDSD )                   03850000
+      U12=U12- UN*(-D*Q*R3INV - XI2*Q*AET*SD + B1*SDSD )                03840000
+      U21=U21- UN*( Q2*(CD*R3INV + Q*AET*SD) + B1*SDSD )                03850000
       U22=U22- UN*((Y*CD-D*SD)*Q2*AXI - F2*Q*SD*CD*RRX                  03860000
      *                      - (XI*Q2*AET - B2)*SDSD )                   03870000
-      U31=U31- UN*( Q2*(SD/R3 - Q*AET*CD) + C3*SDSD )                   03880000
+      U31=U31- UN*( Q2*(SD*R3INV - Q*AET*CD) + C3*SDSD )                03880000
       U32=U32- UN*((Y*SD+D*CD)*Q2*AXI + XI*Q2*AET*SD*CD                 03890000
      *                       - (F2*Q*RRX - C1)*SDSD )                   03900000
 C-----                                                                  03910000

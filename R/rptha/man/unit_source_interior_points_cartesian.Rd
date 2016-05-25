@@ -2,7 +2,7 @@
 % Please edit documentation in R/unit_sources.R
 \name{unit_source_interior_points_cartesian}
 \alias{unit_source_interior_points_cartesian}
-\title{Fill a unit source with points (for tsunami source integration)}
+\title{Fill a unit source with "sub-unit-source" points (for tsunami source integration)}
 \usage{
 unit_source_interior_points_cartesian(discretized_source, unit_source_index,
   origin = NULL, r = 6378137, approx_dx = NULL, approx_dy = NULL,
