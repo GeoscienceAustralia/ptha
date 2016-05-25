@@ -23,7 +23,10 @@ combinations of the unit sources. Currently rptha supports uniform slip
 earthquakes with dimensions determined to (approximately) agree with the
     scaling relations of Strasser et al (2010). 
 
-* Assign an mean annual rate to each event in the earthquake catalogue. 
+* Assign an mean annual rate to each event in the earthquake catalogue. This
+is based on seismic moment conservation principles, and requires the user to
+specify the source-zone convergence rate and various other parameters
+controlling seismicity. Uncertainties can be accounted for using a logic tree.
 
 * Compute the tsunami associated with each event in the catalogue by
 linearly combining the unit-source tsunami.
