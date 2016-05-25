@@ -253,6 +253,7 @@ kajiura_filter<-function(xyDef,
     # Generally lfx<<lnx, lfy<<lny
     # So for efficiency, here we loop over every element of the filter when
     # computing the weighted average
+    ## THIS LOOP IS THE MOST COMPUTATIONALLY INTENSIVE PART OF THIS ROUTINE 
     depth_inv = 1.0/pmax(newDepth, 1.0e-20)
     for(i in 1:lfx){
         if(verbose) print(paste0(i, ' of ', lfx ))

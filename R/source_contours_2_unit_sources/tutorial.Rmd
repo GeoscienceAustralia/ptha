@@ -89,7 +89,7 @@ important of which are the sub-unit-source grid spacing.
 
 If Kajiura filtering is to be applied, then the user must also provide an
 elevation raster (in lon-lat coordinates, with elevation in m, and negative
-value being below MSL). The input sourcezones should of course have longitudes
+value being below MSL). The input source zones should of course have longitudes
 inside the extent of the raster (if they are off by 360 degrees then the code
 will make the correction). Use of Kajiura filtering will cause the code to run
 more slowly.
@@ -142,7 +142,7 @@ you can expect numerical artefacts.
 If the code successfully runs, it will generate: 
 * a set of tiff files (one for each unit source) with the computed tsunami
 deformation for each unit source (assuming 1m of earthquake slip).
-* a pdf file for each sourcezone, with various plots that can be used to check
+* a pdf file for each source zone, with various plots that can be used to check
 that the unit sources and tsunami deformations seem sensible.
 * an RDS file for each unit source. This is a native R format file, and contains
 the tsunami unit sources as a native R data-structure. It can be useful for
@@ -151,7 +151,7 @@ sub-unit-source points, exact unit source discretization, etc).
 
 # Tips
 Beware of possible artefacts in the computed solution along the trench when
-rupture becomes very shallow and the sourcezone is nonuniform. In our
+rupture becomes very shallow and the source zone is nonuniform. In our
 experience this is not detectable when Kajiura filtering is applied. In general
 we suggest to always apply Kajiura filtering - although it is not done above so
 we can avoid distributing elevation data in the package.
