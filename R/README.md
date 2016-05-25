@@ -7,9 +7,9 @@ assessment (PTHA).
 
 PTHA methodologies can be quite diverse depending on the level of detail
 required. The main steps in PTHA methodology supported by rptha are outlined
-below. Note that the code can optionally be used just to generate tsunami
-initial conditions (as raster output files), which may then form part of some
-other workflow.
+below. Note that the code can optionally be used just to [generate tsunami
+initial conditions](source_contours_2_unit_sources) (as raster output files),
+which may then form part of some other workflow.
 
 * Define tsunami sources. Currently rptha only supports earthquake tsunami
 sources. The user needs to provide contours defining the interface on
@@ -30,10 +30,10 @@ provide a tsunami solver, so other software is required for this step. In
 realistic PTHA applications this is the most computationally demanding part of
 the process. 
   * If a linear propagation code is used then the user can optionally compute
-the tsunami for each unit-source separately and then combine then later. This
-is relatively efficient, but only theoretically valid for tsunami with a
-sufficiently small amplitude-to-depth ratio (or equivalently, with sufficiently
-small velocities). 
+the tsunami for each unit-source separately and then [combine then
+later](combine_tsunami_sources). This is relatively efficient, but only
+theoretically valid for tsunami with a sufficiently small amplitude-to-depth
+ratio (or equivalently, with sufficiently small velocities). 
   * If nonlinear solvers are required, then the user must first create the 
 initial conditions for each event (by linearly combining the unit source
 initial conditions), and then run each through the nonlinear propagation code. 
