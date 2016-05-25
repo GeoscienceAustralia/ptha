@@ -5,7 +5,11 @@ rptha
 rptha is the main workhorse R package for doing probabilistic tsunami hazard
 assessment (PTHA). 
 
-The main steps in the PTHA methodology that is supported by rptha are:
+PTHA methodologies can be quite diverse depending on the level of detail
+required. The main steps in PTHA methodology supported by rptha are outlined
+below. Note that the code can optionally be used just to generate tsunami
+initial conditions (as raster output files), which may then form part of some
+other workflow.
 
 * Define tsunami sources. Currently rptha only supports earthquake tsunami
 sources. The user needs to provide contours defining the interface on
