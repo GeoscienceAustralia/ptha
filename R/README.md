@@ -1,5 +1,6 @@
 rptha
 -----
+-----
 
 rptha is the main workhorse R package for doing probabilistic tsunami hazard
 assessment (PTHA). 
