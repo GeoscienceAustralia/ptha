@@ -19,9 +19,10 @@ particularly if you have programming experience. All functions used therein are
 documented in the rptha package or other packages, and so R's help system can
 be consulted for details. 
 
-In a typical application you would make a copy of *'[produce_unit_sources.R](produce_unit_sources.R)'* in a
-new working directory, and then edit the script parameters as required before
-running. You might also edit the code, depending on your needs.
+In a typical application you would make a copy of
+*'[produce_unit_sources.R](produce_unit_sources.R)'* in a new working
+directory, and then edit the script parameters as required before running. You
+might also edit the code, depending on your needs.
 
 To create a set of unit sources, you first need to have a set of source
 contours. These describe the earthquake source geometry, which we will
@@ -277,7 +278,7 @@ run from within R using the syntax:
 
     source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
 
-where the 'echo=TRUE' command prints the commands to the screen as they are
+where the `echo=TRUE` command prints the commands to the screen as they are
 executed. 
 
 Alternatively the script can be run from the commandline directly with:
@@ -307,8 +308,8 @@ you can expect numerical artefacts.
 # Outputs
 
 If the code successfully runs, it will generate: 
-* a set of tiff files (one for each unit source) with the computed tsunami deformation for each
-unit source (assuming 1m of earthquake slip).
+* a set of tiff files (one for each unit source) with the computed tsunami
+deformation for each unit source (assuming 1m of earthquake slip).
 * a pdf file for each sourcezone, with various plots that can be used to check
 that the unit sources and tsunami deformations seem sensible.
 * an RDS file for each unit source. This is a native R format file, and contains
@@ -317,8 +318,8 @@ programming and debugging, since it contains the underlying data (such as
 sub-unit-source points, exact unit source discretization, etc).
 
 # Tips
-Beware of possible minor artefacts in the computed solution along the trench
-when rupture becomes very shallow and the sourcezone is nonuniform. In our
-experience this is not detectible when Kajiura filtering is applied. In general
+Beware of possible artefacts in the computed solution along the trench when
+rupture becomes very shallow and the sourcezone is nonuniform. In our
+experience this is not detectable when Kajiura filtering is applied. In general
 we suggest to always apply Kajiura filtering - although it is not done above so
 we can avoid distributing elevation data in the package.

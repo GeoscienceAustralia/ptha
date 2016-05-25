@@ -158,7 +158,8 @@ kajiura_filter<-function(xyDef,
     # Get fast approximation to G function
     kgE = kajiura_g_empirical(rMax=kajiuraGmax)
 
-    # dx/dy for gridded data + filter
+    # dx/dy for gridded data + filter. Ensure reference_depth is an integer
+    # multiple of dx/dy
     dx = reference_depth/ceiling(reference_depth/grid_dx)
     dy = reference_depth/ceiling(reference_depth/grid_dy)
 
@@ -215,7 +216,7 @@ kajiura_filter<-function(xyDef,
     }
    
     # Compute kajiura_g filter function, on a matrix varying from +- 5 reference depths
-    # Glimsdal et al highlight that this only needs to be 5 reference depths long
+    # Glimsdal et al (2013) highlight that this only needs to be 5 reference depths long
     filter_refDepth_range = 5
     fR = filter_refDepth_range*reference_depth
     filterXs = seq(-fR,fR, by=dx)
@@ -258,7 +259,7 @@ kajiura_filter<-function(xyDef,
         for(j in 1:lfy){
             # Compute r/depth for the j,i cell of the filter,  avoid division by zero
             # Store it as G_j_i to reduce memory usage
-            G_j_i = filterXYr[j,i]*depth_inv
+            G_j_i = filterXYr[j,i] * depth_inv
             G_j_i = G_j_i*(G_j_i < kajiuraGmax) + kajiuraGmax*(G_j_i >= kajiuraGmax)
 
             # Put into a matrix which aligns with newVals
