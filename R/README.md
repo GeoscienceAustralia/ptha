@@ -29,7 +29,7 @@ provide a tsunami solver, so other software is required for this step. In
 realistic PTHA applications this is the most computationally demanding part of
 the process. 
   * If a linear propagation code is used then the user can optionally compute
-the tsunami for each unit-source separately and then [combine then
+the tsunami for each unit-source separately and then [combine them
 later](combine_tsunami_sources). This is relatively efficient, but only
 theoretically valid for tsunami with a sufficiently small amplitude-to-depth
 ratio (or equivalently, with sufficiently small velocities). The 
@@ -82,10 +82,11 @@ tsunami unit sources from source contours and a
 make_hazard_points
 ------------------
 
-Example scripts to make hazard points (i.e. offshore points where the tsunami tide-gauges are recorded)
+Example scripts to [make hazard points](make_hazard_points/make_hazard_pts.R) (i.e. offshore points where the tsunami tide-gauges are recorded)
 
 
 combine_tsunami_sources
 -----------------------
-Example script to convert from tsunami unit sources to tsunami event offshore
-wave heights (assuming the URSGA solver was used for tsunami propagation)
+[Example script](combine_tsunami_sources/combine_tsunami_gauges.R) to convert
+from tsunami unit sources to tsunami event offshore wave heights (assuming the
+URSGA solver was used for tsunami propagation)
