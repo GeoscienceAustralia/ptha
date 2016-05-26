@@ -39,6 +39,7 @@
 #' a cartesian unit source with interior points, the rake, and the surface
 #' points.  Must return a list containing zdsp (a vector of all z displacements
 #' in m), and perhaps also edsp, ndsp. 
+#' @param verbose logical. Print some information on progress
 #' @param ... further arguments to tsunami function
 #' @return a list with the cartesian unit source, tsunami source, i,j indices
 #' and tsunami surface points, smoothed deformation, and rake
@@ -55,8 +56,14 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
     kajiura_where_deformation_exceeds_threshold = 0.0,
     minimal_output=FALSE,
     tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
+    verbose=FALSE,
     ...){
 
+    if(verbose){
+        print('Making sub-unit-source points...')
+        t0 = Sys.time()
+    }
+    
     ## Get unit source in local cartesian coordinates + unit source statistics
     # By default the first us coordinate will be the origin
     us = unit_source_interior_points_cartesian(
@@ -67,15 +74,35 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
         scale_dxdy=scale_dxdy,
         depths_in_km=depths_in_km)
 
+    if(verbose){
+        print(Sys.time() - t0)
+        print('')
+    }
+
     ## Convert tsunami surface points from lonlat to local cartesian
     ## coordinates
     tsunami_surface_points_cartesian = spherical_to_cartesian2d_coordinates(
         tsunami_surface_points_lonlat, origin_lonlat=us$origin_lonlat, r=us$r)
 
+    if(verbose){
+        print('Computing Okada deformation..')
+        t0 = Sys.time()
+    }
+
     ts = tsunami_function(us, rake, tsunami_surface_points_cartesian, ...)
+
+    if(verbose){
+        print(Sys.time() - t0)
+        print('')
+    }
 
     # Optionally apply Kajiura smoothing
     if(kajiura_smooth){
+
+        if(verbose){
+            print('Applying Kajiura filter')
+            t0 = Sys.time()
+        }
 
         stopifnot(length(surface_point_ocean_depths) == length(tsunami_surface_points_lonlat[,1]))
 
@@ -122,6 +149,10 @@ make_tsunami_unit_source<-function(i, j, discrete_source, rake,
 
         # Careful with memory usage (in parallel, auto garbage collection not so good)
         rm(kajiura_source, new_xy, kajiura_inds); gc()
+        if(verbose){
+            print(Sys.time() - t0)
+            print('')
+        }
     }else{
         # In this case just repeat the tsunami source displacement
         smooth_tsunami_displacement = ts$zdsp

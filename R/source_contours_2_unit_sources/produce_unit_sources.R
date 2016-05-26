@@ -54,9 +54,14 @@ elevation_raster = NULL
 # For computational efficiency, only apply Kajiura filtering in a box
 # containing all points where the unit source deformation exceeds
 # kajiura_use_threshold. Set to zero to apply Kajiura filter everywhere.
+#
 # Use of a small positive number can be faster.
-# Since the unit sources have 1m slip, use of e.g. 1e-03 implies an
+# Since the unit sources have 1m slip, use of e.g. 1e-03 suggests an
 # error of < 1cm to the free surface, even if the slip were 10m. 
+# In practice there might be greater difference because our Kajiura routine
+# involves interpolation to/from cartesian coordinates. Interpolation creates
+# slight diffusion, and changes to the Kajiura box will affect the
+# interpolation and so also affect this, though not in a systematic way.
 kajiura_use_threshold = 1.0e-03
 
 # When applying the kajiura filter, the data is regridded onto a grid with
@@ -73,7 +78,7 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 12 
+MC_CORES = 1
 
 # Option to illustrate 3d interactive plot creation
 #
@@ -252,6 +257,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             kajiura_grid_spacing=kajiura_grid_spacing, 
             kajiura_where_deformation_exceeds_threshold=kajiura_use_threshold,
             minimal_output=minimise_tsunami_unit_source_output, 
+            verbose=FALSE,
             dstmx=okada_distance_factor)
 
         # Save as RDS 
@@ -270,6 +276,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
 
         return(output_RDS_file)
     }
+
 
     if(MC_CORES > 1){
         all_tsunami_files = mcmapply(parallel_fun, ind=as.list(1:length(ij[,1])),

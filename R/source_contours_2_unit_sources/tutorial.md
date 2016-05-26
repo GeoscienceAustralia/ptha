@@ -240,9 +240,14 @@ elevation_raster = NULL
 # For computational efficiency, only apply Kajiura filtering in a box
 # containing all points where the unit source deformation exceeds
 # kajiura_use_threshold. Set to zero to apply Kajiura filter everywhere.
+#
 # Use of a small positive number can be faster.
-# Since the unit sources have 1m slip, use of e.g. 1e-03 implies an
+# Since the unit sources have 1m slip, use of e.g. 1e-03 suggests an
 # error of < 1cm to the free surface, even if the slip were 10m. 
+# In practice there might be greater difference because our Kajiura routine
+# involves interpolation to/from cartesian coordinates. Interpolation creates
+# slight diffusion, and changes to the Kajiura box will affect the
+# interpolation and so also affect this, though not in a systematic way.
 kajiura_use_threshold = 1.0e-03
 
 # When applying the kajiura filter, the data is regridded onto a grid with
@@ -259,7 +264,7 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 12 
+MC_CORES = 1
 
 # Option to illustrate 3d interactive plot creation
 #

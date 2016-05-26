@@ -10,7 +10,8 @@ make_tsunami_unit_source(i, j, discrete_source, rake,
   surface_point_ocean_depths = NULL, kajiura_grid_spacing = NULL,
   kajiura_volume_change_error_threshold = 0.1,
   kajiura_where_deformation_exceeds_threshold = 0, minimal_output = FALSE,
-  tsunami_function = unit_source_cartesian_to_okada_tsunami_source, ...)
+  tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
+  verbose = FALSE, ...)
 }
 \arguments{
 \item{i}{integer. The down-dip index of the unit source}
@@ -65,6 +66,8 @@ in some settings they are best removed.}
 a cartesian unit source with interior points, the rake, and the surface
 points.  Must return a list containing zdsp (a vector of all z displacements
 in m), and perhaps also edsp, ndsp.}
+
+\item{verbose}{logical. Print some information on progress}
 
 \item{...}{further arguments to tsunami function}
 }
