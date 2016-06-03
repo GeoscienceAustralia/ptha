@@ -141,7 +141,7 @@ for(i in 1:length(source_info)){
     source_info[[i]]$source_raster_smooth = kajiura_smooth_raster(source_info[[i]]$source_raster)
 }
 
-pdf('Deformation_plot.pdf', width=15, height=6)
+png('Deformation_plot.png', width=15, height=9, units='in', res=300)
 par(mfrow=c(2,3))
 par(mar=c(3,2,1,1))
 for(i in 1:3) plot(source_info[[i]]$slip_raster, xlab='Along-strike distance (km)', 
