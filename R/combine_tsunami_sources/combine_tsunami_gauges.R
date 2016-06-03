@@ -1,3 +1,7 @@
+# Combine unit-source tsunami offshore wave height time-series, to produce
+# offshore wave-height time-series for uniform slip earthquakes. This assumes
+# linear theory is appropriate for the wave propagation.
+
 library(rptha)
 
 ##############################################################################
