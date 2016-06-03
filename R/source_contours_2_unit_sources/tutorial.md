@@ -204,19 +204,19 @@ library(raster)
 all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp') # Matches all shapefiles in CONTOURS
 
 # Desired unit source geometric parameters
-desired_subfault_length = 100 # km
-desired_subfault_width = 50 # km
+desired_subfault_length = 20 # km
+desired_subfault_width = 20 # km
 
 # A vector with the desired rake angle (one entry per sourcezone)
 sourcezone_rake = rep(90, len=length(all_sourcezone_shapefiles)) # degrees
 
 # Desired spacing of sub-unit-source points
 # Lower values (e.g. 1000) may be required for accuracy in unit sources
-# along the trench, because shallow deformation tends to be quite localised.
+# near the trench, because shallow deformation tends to be quite localised.
 # For deeper unit sources, a much coarser point spacing can be used without
 # sacrificing accuracy. 
 # Hence we use different values for the 'shallow' sub-unit-source points (i.e.
-# along the trench) and the deeper ones.
+# < 50km down dip) and the deeper ones.
 # The computational effort approximately scales with the inverse square of
 # the point density. 
 shallow_subunitsource_point_spacing = 1000 # m
@@ -254,7 +254,10 @@ kajiura_use_threshold = 1.0e-03
 # spacing=kajiura_gridspacing. The latter should be small compared to the
 # horizontal distance over which the free surface deformation changes
 # significantly (and small compared with the distance of
-# tsunami_source_cellsize)
+# tsunami_source_cellsize). If this is not small enough, artefacts
+# can be observed especially when summing tsunami sources.
+# A numerically easier alternative is to apply kajiura AFTER summing
+# the sources [see script in 'combine_tsunami_sources' folder]
 kajiura_grid_spacing = 2000 # m
 
 # Cell size for output rasters
@@ -264,13 +267,13 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 1
+MC_CORES = 12
 
 # Option to illustrate 3d interactive plot creation
 #
 # Only make the 3d interactive plot if you can use interactive graphics and
 # have rgl (i.e. use FALSE on NCI). 
-make_3d_interactive_plot = FALSE
+make_3d_interactive_plot = TRUE
 
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
