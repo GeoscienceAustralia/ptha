@@ -240,9 +240,9 @@ intersect_surface_path_with_depth_contours<-function(
 #' @return matrix with the same shape and coordinates as p0, but with
 #' longitudes adjusted as required
 #'
-#'@export
+#' @export
 #'
-#'@examples
+#' @examples
 #' # Adjust a point to have longitude 'close' to 180 degrees
 #' adjust_longitude_by_360_deg(c(-90, 10), c(180, 0))
 #'

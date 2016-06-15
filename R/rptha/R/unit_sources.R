@@ -729,7 +729,7 @@ get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
 #' values); 'grid_points' grid points inside the source in the cartesian
 #' coordinate system; 'grid_point_polygons' a polygon associated with the grid points
 #'
-#'@export
+#' @export
 unit_source_interior_points_cartesian<-function(
     discretized_source,
     unit_source_index,

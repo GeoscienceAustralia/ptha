@@ -4,26 +4,26 @@
 #' 
 #' Complex ruptures can be treated using multiple sub-faults
 #'
-#'@param elon -- numeric vector with x rupture centroid location (m)
-#'@param elat -- numeric vector with y of rupture centroid location (m)
-#'@param edep -- numeric vector with centroid depth of rupture (km)
-#'@param strk -- numeric vector with strike of sub-fault (degrees clockwise from North)
-#'@param dip -- numeric vector with dip of rupture (degrees below the horizontal, dipping to the right when looking in the along-strike direction)
-#'@param lnth -- numeric vector with length of sub-fault (km)
-#'@param wdt -- numeric vector with width of sub-fault (km)
-#'@param disl1 -- numeric vector with along-strike disloacation on the sub-fault (m)
-#'@param disl2 -- numeric vector with up-dip disloacation on the sub-fault (m)
-#'@param rlon -- numeric vector with x locations where output is desired (m)
-#'@param rlat -- numeric vector with y locations where output is desired (m)
-#'@param dstmx -- optional maximum distance at which sub-faults can cause displacement (as a multiple of the depth)
-#'@param verbose -- TRUE/FALSE -- print info on ground deformation
+#' @param elon -- numeric vector with x rupture centroid location (m)
+#' @param elat -- numeric vector with y of rupture centroid location (m)
+#' @param edep -- numeric vector with centroid depth of rupture (km)
+#' @param strk -- numeric vector with strike of sub-fault (degrees clockwise from North)
+#' @param dip -- numeric vector with dip of rupture (degrees below the horizontal, dipping to the right when looking in the along-strike direction)
+#' @param lnth -- numeric vector with length of sub-fault (km)
+#' @param wdt -- numeric vector with width of sub-fault (km)
+#' @param disl1 -- numeric vector with along-strike disloacation on the sub-fault (m)
+#' @param disl2 -- numeric vector with up-dip disloacation on the sub-fault (m)
+#' @param rlon -- numeric vector with x locations where output is desired (m)
+#' @param rlat -- numeric vector with y locations where output is desired (m)
+#' @param dstmx -- optional maximum distance at which sub-faults can cause displacement (as a multiple of the depth)
+#' @param verbose -- TRUE/FALSE -- print info on ground deformation
 #'
-#'@return -- list with edsp, ndsp, zdsp giving the displacements in the
+#' @return -- list with edsp, ndsp, zdsp giving the displacements in the
 #' east,north, and vertical directions. Often we are only interested in the
 #' latter.
-#'@export
-#'@useDynLib rptha
-#'@examples
+#' @export
+#' @useDynLib rptha
+#' @examples
 #' # Simple example -- pure thrust fault
 #' mypts=expand.grid(seq(-100.5,100.5,len=100), seq(-100.5,100.5,len=100))*1000
 #' ff=okada_tsunami(0,0,30,0,15,1,1,0,1,

@@ -57,10 +57,14 @@ Installation from source
 To build rptha, you firstly need to install the R packages that it depends on.
 The usual way to get these is to start R, and do:
 
-    install.packages(c('sp', 'rgdal', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'ncdf4', 'testthat', 'devtools'))
+    install.packages(c('sp', 'rgdal', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'ncdf4', 'testthat', 'devtools', 'roxygen2'))
 
-Check the printed text to ensure that the installations all succeeded. If they
-didn't, use google to troubleshoot. The packages rely on various non-R
+This will ask you to choose a mirror to download from. Just choose something that
+is close to your location -- for example in Canberra, Australia, you can first select
+'http mirrors' and then select the Canberra-Australia mirror. 
+
+As the packages install, check the printed text to ensure it worked. If any packages
+failed to install, use google to troubleshoot. The packages rely on various non-R
 libraries already being installed on your system (e.g. gdal, netcdf, geos).
 Experience suggests that the installation is straightforward on a standard
 ubuntu desktop, but can be tricky on non standard environments (e.g. raijin on
