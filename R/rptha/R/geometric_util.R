@@ -546,7 +546,7 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
     complex_value = switch(method,
         'complex-mean' = (mean(exp(1i*angles)*weights)),
         # This has problems with e.g. mean_angle(c(-180, 180)) 
-        #'complex-geometric-mean' = ( prod(exp(1i*angles)**(1/length(angles)))),
+        # 'complex-geometric-mean' = ( prod(exp(1i*angles)**(1/length(angles)))),
         stop('method not recognized')
         )
 

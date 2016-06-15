@@ -561,25 +561,25 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     lower_function = approxfun(Mw_seq, lower_rate, rule=2)
     median_function = approxfun(Mw_seq, median_rate, rule=2)
 
-    #' Function to compute the rate, with a number of useful extra options
-    #'
-    #' @param Mw the Mw value at which the rate is desired
-    #' @param bounds logical. If TRUE, return some summary statistics on the
-    #' range of rates suggested by the logic tree. More detailed information
-    #' can be obtained using quantiles or return_all_logic_tree_branches.
-    #' @param return_all_logic_tree_branches logical. If TRUE, return a list
-    #' with the all_rate_matrix, Mw_seq, all_par_prob, all_par_prob_prior,
-    #' and all_par. This option is useful for doing non-standard manipulations
-    #' of the results, and debugging.
-    #' @param quantiles numeric vector of probabilities or NULL. If not NULL,
-    #' then return quantiles of the exceedance rate for Mw (based on the
-    #' logic tree branches and probabilities)
-    #' @param return_random_curve TRUE/FALSE. If TRUE, randomly pick a parameter
-    #' combination from the logic tree (with probability equal to the probability
-    #' of each branch), and evaluate the exceedance rate of Mw for that
-    #' parameter combination. This can be useful for some monte-carlo
-    #' computations.
-    #' @return Depends on the input arguments, see comments above.
+    # Function to compute the rate, with a number of useful extra options
+    #
+    # @param Mw the Mw value at which the rate is desired
+    # @param bounds logical. If TRUE, return some summary statistics on the
+    # range of rates suggested by the logic tree. More detailed information
+    # can be obtained using quantiles or return_all_logic_tree_branches.
+    # @param return_all_logic_tree_branches logical. If TRUE, return a list
+    # with the all_rate_matrix, Mw_seq, all_par_prob, all_par_prob_prior,
+    # and all_par. This option is useful for doing non-standard manipulations
+    # of the results, and debugging.
+    # @param quantiles numeric vector of probabilities or NULL. If not NULL,
+    # then return quantiles of the exceedance rate for Mw (based on the
+    # logic tree branches and probabilities)
+    # @param return_random_curve TRUE/FALSE. If TRUE, randomly pick a parameter
+    # combination from the logic tree (with probability equal to the probability
+    # of each branch), and evaluate the exceedance rate of Mw for that
+    # parameter combination. This can be useful for some monte-carlo
+    # computations.
+    # @return Depends on the input arguments, see comments above.
     output_function2<-function(
         Mw, 
         bounds=FALSE, 
