@@ -51,24 +51,39 @@ In a typical application you would write scripts to call routines in rptha.
 Examples of scripts for common tasks are provided here.
 
 
-Installation
-------------
+Installation from source
+------------------------
 
-To build rptha, go inside 'rptha', start R, and do:
+To build rptha, you firstly need to install the R packages that it depends on.
+The usual way to get these is to start R, and do:
+
+    install.packages(c('sp', 'rgdal', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'ncdf4', 'testthat', 'devtools'))
+
+Check the printed text to ensure that the installations all succeeded. If they
+didn't, use google to troubleshoot. The packages rely on various non-R
+libraries already being installed on your system (e.g. gdal, netcdf, geos).
+Experience suggests that the installation is straightforward on a standard
+ubuntu desktop, but can be tricky on non standard environments (e.g. raijin on
+the NCI). Note that the `rgl` install is not essential, as it is only used for
+3d interactive graphics, so errors associated with this can optionally be
+ignored.
+
+Once the packages have installed, you should cd into the rptha directory, start
+R, and then do:
 
     source('build_package.R')
 
-This will make an R package file in the directory above the package, which can be installed on the command line with:
+This will make an R package file in the same directory that 'rptha' is in. That
+package can be installed on the command line with:
 
     R CMD INSTALL rptha_XXXXX.tar.gz
 
-where the XXXX are adapted to match the file name (and on Ubuntu, you would add 'sudo' to the start).
+where the XXXX are adapted to match the file name (and on Ubuntu, you would add
+'sudo' to the start). 
 
-If the above fails because you are missing packages, then try running this (from inside R) prior to the install to get the required packages:
-
-    install.packages(c('sp', 'rgdal', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'testthat', 'devtools'))
-
-If you are separately reading ncdf rasters, you will also need the 'ncdf4' package.
+You can also give other people copies of the rptha_XXXXX.tar.gz file to install
+themselves (provided they are running a similar environment to you, and have
+the package dependencies installed).
 
 source_contours_2_unit_sources
 ------------------------------
