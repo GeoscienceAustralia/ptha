@@ -73,7 +73,7 @@ R, and then do:
 
     source('build_package.R')
 
-This will make an R package file in the same directory that 'rptha' is in. That
+This will make an R package file in the same directory as this README.md. That
 package can be installed on the command line with:
 
     R CMD INSTALL rptha_XXXXX.tar.gz
