@@ -14,8 +14,9 @@
 #source('override_antipodal_geosphere.R')
 
 #' Compute distances between 2 points defined by (lon,lat,depth)
+#'
 #' Assume all depths are relative to a regular datum (MSL -- key point is we
-#' ignore topography of earth)
+#' ignore topography of earth). \cr
 #' The surface projection of the path is assumed to follow a great circle
 #' The rate of change of depth with respect to surface distance is assumed constant
 #'
@@ -66,7 +67,7 @@ distance_down_depth<-function(p1, p2, depth_in_km=TRUE, n = 1e+03, r = 6378137){
     return(total_distance) 
 }
 
-
+#' Interpolate points along a great circle 
 #'
 #' Given a path defined by 2 points, interpolate along the great-circle
 #' and return a matrix with the points along the great circle (where lon is
@@ -105,13 +106,13 @@ interpolate_gc_path<-function(surface_path, n=50){
 
 }
 
-
+#' Get points along a path which intersect with depth contours
+#'
 #' Given a line on the earths surface (defined by 2 points, assumed to follow a
 #' great circle path) and some intersecting depth contours, assign depths to
-#' path points using the contours.
-#'
+#' path points using the contours. \cr
 #' Assumes that the depth is changing at a constant rate with respect to the
-#' along-surface distance
+#' along-surface distance. 
 #'
 #' @param surface_path 2 points defining a great-circle path (2x2 matrix with
 #' columns lon,lat)
@@ -270,6 +271,8 @@ adjust_longitude_by_360_deg<-function(p0, reference_point){
     return(p0)
 }
 
+#' Interpolate along a 3D path
+#'
 #' Given a 3D path of points (lon,lat,depth), interpolate a new path with n
 #' evenly spaced points (i.e. equal distances between points in 3D)
 #'
@@ -331,9 +334,10 @@ interpolate_3D_path<-function(threeD_path, n=100, depth_in_km=TRUE,
     return(cbind(out_x, out_y, out_z))
 }
 
-#' Given a longitude-latitude point in decimal degrees, return its UTM zone
-#' with the WGS84 ellipsoid + datum as a proj4string
+#' Find the utm zone of a lon/lat point
 #'
+#' Given a longitude-latitude point in decimal degrees, return its UTM zone
+#' with the WGS84 ellipsoid + datum as a proj4string \cr
 #' Zone number derived based on discussions on stack-exchange and
 #' stack-overflow:
 #' -- http://gis.stackexchange.com/questions/13291/computing-utm-zone-from-lat-long-point
