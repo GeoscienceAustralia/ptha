@@ -6,9 +6,11 @@ assessment (PTHA).
 
 PTHA methodologies can be quite diverse depending on the level of detail
 required. The main steps in PTHA methodology supported by rptha are outlined
-below. (Note that the code can optionally be used just to [generate tsunami
-initial conditions](source_contours_2_unit_sources) as raster output files,
-which may then form part of some other workflow):
+below. In a typical application you would write scripts to call routines in rptha.
+Examples of scripts for common tasks are provided here. (Note that the code can
+optionally be used just to [generate tsunami initial
+conditions](source_contours_2_unit_sources) as raster output files, which may
+then form part of some other workflow):
 
 * Define tsunami sources. Currently rptha only supports earthquake tsunami
 sources. The user needs to provide contours defining the interface on
@@ -49,9 +51,6 @@ is based on seismic moment conservation principles, and requires the user to
 specify the source-zone convergence rate and various other parameters
 controlling seismicity. Uncertainties can be accounted for using a logic tree.
 See the function `rate_of_earthquakes_greater_than_Mw` in the rptha package.
-
-In a typical application you would write scripts to call routines in rptha.
-Examples of scripts for common tasks are provided here.
 
 
 Installation from source
