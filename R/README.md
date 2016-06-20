@@ -17,12 +17,16 @@ which earthquake slip occurs.
 * Discretize each earthquake source-zone into a grid of unit-sources, and
 for each compute the tsunami initial condition using the Okada solution
 combined with Kajiura filtering. This produces a (static) tsunami initial
-condition for each source-zone.
+condition for each source-zone. See [source_contours_2_unit_sources](source_contours_2_unit_sources).
 
 * Create a synthetic catalogue of earthquake events from linear
 combinations of the unit sources. Currently rptha supports uniform slip
 earthquakes with dimensions determined to (approximately) agree with the
-scaling relations of Strasser et al (2010). 
+scaling relations of Strasser et al. (2010). See the function
+`get_all_earthquake_events` in the rptha package. Modifications would be
+required to treat non-uniform slip earthquakes. For an example of making
+tsunami initial conditions for complex earthquake scenarios, see
+[here](combine_tsunami_sources/combine_tsunami_sources.R).
 
 * Compute the tsunami associated with each earthquake event. rptha does not
 provide a tsunami solver, so other software is required for this step. In
@@ -30,22 +34,21 @@ realistic PTHA applications this is the most computationally demanding part of
 the process. 
   * If a linear propagation code is used then the user can optionally compute
 the tsunami for each unit-source separately and then [combine them
-later](combine_tsunami_sources). This is relatively efficient, but only
-theoretically valid for tsunami with a sufficiently small amplitude-to-depth
-ratio (or equivalently, with sufficiently small velocities). The 
-tsunami propagation results are generally stored at offshore points, and
+later](combine_tsunami_sources/combine_tsunami_gauges.R). This is relatively
+efficient, but only theoretically valid for tsunami with a sufficiently small
+amplitude-to-depth ratio (or equivalently, with sufficiently small velocities).
+The tsunami propagation results are generally stored at offshore points, and
 scripts to make these are [here](make_hazard_points).
   * If nonlinear solvers are required, then the user must first create the 
 initial conditions for each event (by linearly combining the unit source
 initial conditions), and then run each through the nonlinear propagation code. 
+See [here](combine_tsunami_sources/combine_tsunami_sources.R) for an example.
 
 * Assign an mean annual rate to each event in the earthquake catalogue. This
 is based on seismic moment conservation principles, and requires the user to
 specify the source-zone convergence rate and various other parameters
 controlling seismicity. Uncertainties can be accounted for using a logic tree.
-
-* Compute the tsunami associated with each event in the catalogue by
-linearly combining the unit-source tsunami.
+See the function `rate_of_earthquakes_greater_than_Mw` in the rptha package.
 
 In a typical application you would write scripts to call routines in rptha.
 Examples of scripts for common tasks are provided here.
