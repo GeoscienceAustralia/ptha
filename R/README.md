@@ -72,13 +72,13 @@ the NCI). Note that the `rgl` install is not essential, as it is only used for
 3d interactive graphics, so errors associated with this can optionally be
 ignored.
 
-Once the packages have installed, you should cd into the rptha directory, start
+Once the packages have installed, you should cd into the ptha/R/rptha directory, start
 R, and then do:
 
     source('build_package.R')
 
-This will make an R package file in the same directory as this README.md. That
-package can be installed on the command line with:
+This will make an R package file in the same directory as this README.md
+(ptha/R/). That package can be installed on the command line with:
 
     R CMD INSTALL rptha_XXXXX.tar.gz
 
