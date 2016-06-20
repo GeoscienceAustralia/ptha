@@ -17,15 +17,15 @@ which earthquake slip occurs.
 * Discretize each earthquake source-zone into a grid of unit-sources, and
 for each compute the tsunami initial condition using the Okada solution
 combined with Kajiura filtering. This produces a (static) tsunami initial
-condition for each source-zone. See [source_contours_2_unit_sources](source_contours_2_unit_sources).
+condition for each unit-source. See [source_contours_2_unit_sources](source_contours_2_unit_sources).
 
 * Create a synthetic catalogue of earthquake events from linear
 combinations of the unit sources. Currently rptha supports uniform slip
 earthquakes with dimensions determined to (approximately) agree with the
 scaling relations of Strasser et al. (2010). See the function
-`get_all_earthquake_events` in the rptha package. Modifications would be
-required to treat non-uniform slip earthquakes. For an example of making
-tsunami initial conditions for complex earthquake scenarios, see
+`get_all_earthquake_events` in the rptha package. Modifications are required to
+treat non-uniform slip earthquakes, but for an example of making tsunami
+initial conditions for complex earthquake scenarios, see
 [here](combine_tsunami_sources/combine_tsunami_sources.R).
 
 * Compute the tsunami associated with each earthquake event. rptha does not
