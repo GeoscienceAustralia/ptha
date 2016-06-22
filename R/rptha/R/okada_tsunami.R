@@ -15,7 +15,10 @@
 #' @param disl2 -- numeric vector with up-dip disloacation on the sub-fault (m)
 #' @param rlon -- numeric vector with x locations where output is desired (m)
 #' @param rlat -- numeric vector with y locations where output is desired (m)
-#' @param dstmx -- optional maximum distance at which sub-faults can cause displacement (as a multiple of the depth)
+#' @param dstmx -- optional maximum distance at which sub-faults can cause
+#' displacement (as a multiple of the depth). This can save computing time.
+#' @param dstmx_min -- minimum value of dstmx*depth passed to the okada routine. Serves as a lower
+#' bound on the distance over which Okada computations occur, relevant for very shallow rupture.
 #' @param verbose -- TRUE/FALSE -- print info on ground deformation
 #'
 #' @return -- list with edsp, ndsp, zdsp giving the displacements in the
@@ -36,7 +39,8 @@
 #' 
 #' plot(mypts[,1], mypts[,2],col=heat.colors(10)[cut(ff[[3]],10)],pch=19,asp=1)
 okada_tsunami<-function(elon, elat, edep, strk, dip, lnth, wdt,
-    disl1, disl2, rlon, rlat, dstmx=9.0e+20, verbose=FALSE){
+    disl1, disl2, rlon, rlat, dstmx=9.0e+20, dstmx_min = 20, 
+    verbose=FALSE){
     # Call Okada routines to compute surface displacement
 
     # Variables we already know
@@ -45,7 +49,7 @@ okada_tsunami<-function(elon, elat, edep, strk, dip, lnth, wdt,
     m = length(rlon)
 
     # Convert dstmx to absolute distance
-    dstmx = dstmx*edep
+    dstmx = pmax(dstmx*edep, dstmx_min)
 
     # Check input
     if(length(elat)!=n | length(edep)!=n | length(strk)!=n | length(dip)!=n |

@@ -6,7 +6,7 @@
 subfault ruptures, using Okada's (1985) solution for rectangular subfaults}
 \usage{
 okada_tsunami(elon, elat, edep, strk, dip, lnth, wdt, disl1, disl2, rlon, rlat,
-  dstmx = 9e+20, verbose = FALSE)
+  dstmx = 9e+20, dstmx_min = 20, verbose = FALSE)
 }
 \arguments{
 \item{elon}{-- numeric vector with x rupture centroid location (m)}
@@ -31,7 +31,11 @@ okada_tsunami(elon, elat, edep, strk, dip, lnth, wdt, disl1, disl2, rlon, rlat,
 
 \item{rlat}{-- numeric vector with y locations where output is desired (m)}
 
-\item{dstmx}{-- optional maximum distance at which sub-faults can cause displacement (as a multiple of the depth)}
+\item{dstmx}{-- optional maximum distance at which sub-faults can cause
+displacement (as a multiple of the depth). This can save computing time.}
+
+\item{dstmx_min}{-- minimum value of dstmx*depth passed to the okada routine. Serves as a lower
+bound on the distance over which Okada computations occur, relevant for very shallow rupture.}
 
 \item{verbose}{-- TRUE/FALSE -- print info on ground deformation}
 }

@@ -1216,8 +1216,8 @@ get_depth_dip_at_unit_source_interior_points<-function(
     # have a depth/dip similar to the edge transect depth/dip
     adjusters = which(alpha_s < 0)
     if(length(adjusters) > 0){
-        if(min(alpha_s[adjusters]) > -5.0e-02){
-            #alpha_s[adjusters] = 0
+        if(min(alpha_s[adjusters]) > -1.0e-01){
+            alpha_s[adjusters] = 0
         }else{
             msg = paste0('bad interpolation a:', min(alpha_s[adjusters]))
             stop(msg)
@@ -1225,8 +1225,8 @@ get_depth_dip_at_unit_source_interior_points<-function(
     }
     adjusters = which(alpha_s > 1)
     if(length(adjusters) > 0){
-        if(max(alpha_s[adjusters]) < (1.0 + 5.0e-02) ){
-            #alpha_s[adjusters] = 1
+        if(max(alpha_s[adjusters]) < (1.0 + 1.0e-02) ){
+            alpha_s[adjusters] = 1
         }else{
             msg = paste0('bad interpolation b:', max(alpha_s[adjusters]))
             stop(msg)
