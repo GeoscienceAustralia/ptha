@@ -1214,24 +1214,24 @@ get_depth_dip_at_unit_source_interior_points<-function(
     # It's ok to keep points affected by that, since they will be missing from the
     # neighbouring unit source (which arguably should have them), and they will
     # have a depth/dip similar to the edge transect depth/dip
-    adjusters = which(alpha_s < 0)
-    if(length(adjusters) > 0){
-        if(min(alpha_s[adjusters]) > -1.0e-01){
-            #alpha_s[adjusters] = 0
-        }else{
-            msg = paste0('bad interpolation a:', min(alpha_s[adjusters]))
-            stop(msg)
-        }
-    }
-    adjusters = which(alpha_s > 1)
-    if(length(adjusters) > 0){
-        if(max(alpha_s[adjusters]) < (1.0 + 1.0e-01) ){
-            #alpha_s[adjusters] = 1
-        }else{
-            msg = paste0('bad interpolation b:', max(alpha_s[adjusters]))
-            stop(msg)
-        }
-    }
+    #adjusters = which(alpha_s < 0)
+    #if(length(adjusters) > 0){
+    #    if(min(alpha_s[adjusters]) > -2.0e-01){
+    #        #alpha_s[adjusters] = 0
+    #    }else{
+    #        msg = paste0('bad interpolation a:', min(alpha_s[adjusters]))
+    #        stop(msg)
+    #    }
+    #}
+    #adjusters = which(alpha_s > 1)
+    #if(length(adjusters) > 0){
+    #    if(max(alpha_s[adjusters]) < (1.0 + 2.0e-01) ){
+    #        #alpha_s[adjusters] = 1
+    #    }else{
+    #        msg = paste0('bad interpolation b:', max(alpha_s[adjusters]))
+    #        stop(msg)
+    #    }
+    #}
 
     # Get the x,y,depth points and perturbed points
     output_points = line_across_source(alpha_s[,1], alpha_s[,2])
