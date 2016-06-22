@@ -2,8 +2,7 @@
 % Please edit documentation in R/geometric_util.R
 \name{lonlat2utm}
 \alias{lonlat2utm}
-\title{Given a longitude-latitude point in decimal degrees, return its UTM zone
-with the WGS84 ellipsoid + datum as a proj4string}
+\title{Find the utm zone of a lon/lat point}
 \usage{
 lonlat2utm(lonlat)
 }
@@ -14,6 +13,8 @@ lonlat2utm(lonlat)
 proj4string for the UTM Zone
 }
 \description{
+Given a longitude-latitude point in decimal degrees, return its UTM zone
+with the WGS84 ellipsoid + datum as a proj4string \cr
 Zone number derived based on discussions on stack-exchange and
 stack-overflow:
 -- http://gis.stackexchange.com/questions/13291/computing-utm-zone-from-lat-long-point

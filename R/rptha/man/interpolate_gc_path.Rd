@@ -2,9 +2,7 @@
 % Please edit documentation in R/geometric_util.R
 \name{interpolate_gc_path}
 \alias{interpolate_gc_path}
-\title{Given a path defined by 2 points, interpolate along the great-circle
-and return a matrix with the points along the great circle (where lon is
-adjusted for continuity). There will be n+2 points (so n intermediate points)}
+\title{Interpolate points along a great circle}
 \usage{
 interpolate_gc_path(surface_path, n = 50)
 }

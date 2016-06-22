@@ -2,9 +2,7 @@
 % Please edit documentation in R/unit_sources.R
 \name{get_shallow_unit_source_top_edge_strikes}
 \alias{get_shallow_unit_source_top_edge_strikes}
-\title{Extract the lon-lat midpoints of the top edge of all unit sources
-along the 'shallowest' edge of a discrete source (i.e. near the trench), and
-compute the strike}
+\title{Get strike along top edge of shallowest unit sources}
 \usage{
 get_shallow_unit_source_top_edge_strikes(discretized_source)
 }

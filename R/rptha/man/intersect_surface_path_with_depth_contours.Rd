@@ -2,9 +2,7 @@
 % Please edit documentation in R/geometric_util.R
 \name{intersect_surface_path_with_depth_contours}
 \alias{intersect_surface_path_with_depth_contours}
-\title{Given a line on the earths surface (defined by 2 points, assumed to follow a
-great circle path) and some intersecting depth contours, assign depths to
-path points using the contours.}
+\title{Get points along a path which intersect with depth contours}
 \usage{
 intersect_surface_path_with_depth_contours(surface_path, depth_contours,
   n = 200, contour_depth_attribute = "level", extend_line_fraction = 0)
@@ -33,7 +31,10 @@ A 3 column matrix with lon/lat/depth giving the intersection with
 the contours
 }
 \description{
+Given a line on the earths surface (defined by 2 points, assumed to follow a
+great circle path) and some intersecting depth contours, assign depths to
+path points using the contours. \cr
 Assumes that the depth is changing at a constant rate with respect to the
-along-surface distance
+along-surface distance.
 }
 

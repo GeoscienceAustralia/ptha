@@ -2,11 +2,7 @@
 % Please edit documentation in R/geometric_util.R
 \name{distance_down_depth}
 \alias{distance_down_depth}
-\title{Compute distances between 2 points defined by (lon,lat,depth)
-Assume all depths are relative to a regular datum (MSL -- key point is we
-ignore topography of earth)
-The surface projection of the path is assumed to follow a great circle
-The rate of change of depth with respect to surface distance is assumed constant}
+\title{Compute distances between 2 points defined by (lon,lat,depth)}
 \usage{
 distance_down_depth(p1, p2, depth_in_km = TRUE, n = 1000, r = 6378137)
 }
@@ -25,9 +21,8 @@ distance_down_depth(p1, p2, depth_in_km = TRUE, n = 1000, r = 6378137)
 The distance in m
 }
 \description{
-Compute distances between 2 points defined by (lon,lat,depth)
 Assume all depths are relative to a regular datum (MSL -- key point is we
-ignore topography of earth)
+ignore topography of earth). \cr
 The surface projection of the path is assumed to follow a great circle
 The rate of change of depth with respect to surface distance is assumed constant
 }

@@ -16,7 +16,7 @@ unit_source_cartesian_to_okada_tsunami_source(us, rake,
 \item{tsunami_surface_points_cartesian}{Points at which to compute the
 tsunami deformation in cartesian coordinates}
 
-\item{point_scale}{[deprecated] Multiply the length/width of area sources by point scale
+\item{point_scale}{[fixme: Do not change] Multiply the length/width of area sources by point scale
 prior to convolution, then divide by this afterwoulds. Allows moving between
 Okada's area source representation at each grid point, and a point source
 representation. Set to 1 for standard rectangular area source representation}

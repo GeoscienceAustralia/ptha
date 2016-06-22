@@ -12,8 +12,8 @@ unit_source_interior_points_cartesian(discretized_source, unit_source_index,
 \item{discretized_source}{list containing unit sources information (e.g. output of
 discretized_source_from_source_contours)}
 
-\item{unit_source_index}{Index (down-dip, along-strike) of the unit source
-to operate on.}
+\item{unit_source_index}{vector of length 2 with integer index (down-dip,
+along-strike) of the unit source to operate on.}
 
 \item{origin}{vector with 2 entries (lon,lat) giving the local cartesian coordinate
 system origin for x,y. The depth origin is at 0. If NULL, the lon,lat of the

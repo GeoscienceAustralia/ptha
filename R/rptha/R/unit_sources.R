@@ -58,6 +58,7 @@ discretized_source_from_source_contours<-function(
     # Previously was a function argument, but now I am considering this the
     # only good choice
     down_dip_line_type = 'eq_spacing'
+    #down_dip_line_type = 'mid'
 
     # Get the shapefile
     source_contours = rgdal::readOGR(
@@ -414,8 +415,7 @@ discretized_source_approximate_summary_statistics<-function(
             st0 = suppressWarnings(
                 bearing(midpoint, source_coords[4,1:2], sphere=TRUE)%%360)
             strike[counter] = st0 
-
-            stopifnot( (strike[counter] > 0) & (strike[counter] < 360)) 
+            stopifnot( (strike[counter] >= 0) & (strike[counter] < 360)) 
   
             # Dip = atan (change in depth / surface distance) 
             # Take average of left/right dipping lines (complex numbers to
@@ -652,6 +652,8 @@ get_unit_source_from_discretized_source<-function(discretized_source,
     return(output)
 }
 
+#' Get strike along top edge of shallowest unit sources
+#'
 #' Extract the lon-lat midpoints of the top edge of all unit sources
 #' along the 'shallowest' edge of a discrete source (i.e. near the trench), and
 #' compute the strike
@@ -704,8 +706,8 @@ get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
 #'
 #' @param discretized_source list containing unit sources information (e.g. output of
 #' discretized_source_from_source_contours)
-#' @param unit_source_index Index (down-dip, along-strike) of the unit source
-#' to operate on.
+#' @param unit_source_index vector of length 2 with integer index (down-dip,
+#' along-strike) of the unit source to operate on.
 #' @param origin vector with 2 entries (lon,lat) giving the local cartesian coordinate
 #' system origin for x,y. The depth origin is at 0. If NULL, the lon,lat of the
 #' first coordinate associated with the unit source at unit_source_index is
@@ -828,16 +830,13 @@ unit_source_interior_points_cartesian<-function(
         query = grid_points[,1:2, drop=FALSE], k=k)
     mean_strike = dists[,1]*NA 
     for(ii in 1:length(mean_strike)){
-        mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii, ], 3], 
-            weights = 1/(dists[ii, ])**2)
+        mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii,], 3], 
+            weights = 1/(dists[ii,])**2)
     }
     strike = mean_strike
 
     # Ensure > 0
     strike = strike + (strike < 0)*360
-
-    #print('GD: Deliberately breaking strike')
-    #strike = strike*0 + mean_angle(strike)
 
     ## Get dip/depth etc at the grid points
     grid_points = get_depth_dip_at_unit_source_interior_points(
@@ -847,14 +846,18 @@ unit_source_interior_points_cartesian<-function(
     grid_points = cbind(grid_points, grid_point_areas, strike)
 
     # Fix row/column names for later ease of access
-    colnames(grid_points) = c('x', 'y', 'depth', 'dip', 'alpha', 's', 'area_projected', 'strike')
+    colnames(grid_points) = c('x', 'y', 'depth', 'dip', 'alpha', 's', 
+        'area_projected', 'strike')
 
     rownames(grid_points) = NULL
 
     # Make a list to hold the unit source interior points information
-    output = list(unit_source_cartesian=unit_source_cartesian, 
-        origin_lonlat=origin, r=r, 
-        dx=grid_point_data$dx, dy=grid_point_data$dy, 
+    output = list(
+        unit_source_cartesian=unit_source_cartesian, 
+        origin_lonlat=origin, 
+        r=r, 
+        dx=grid_point_data$dx, 
+        dy=grid_point_data$dy, 
         grid_points=grid_points,
         grid_point_polygon=grid_point_polygon,
         fine_downdip_transects_cartesian = fine_downdip_transects_cartesian)
@@ -957,6 +960,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     # Alternative methods for computing the intersection of p1 and p0
     exact_intersection = TRUE
+    #exact_intersection=FALSE
     if(exact_intersection){
         p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
     }else{
@@ -1100,7 +1104,7 @@ get_depth_dip_at_unit_source_interior_points<-function(
 
     deg2rad = pi/180
     strike_perp = (grid_points_strike + 90)*deg2rad
-    perturbation_scale = 100
+    perturbation_scale = 100 # m
     grid_points_perturb = grid_points[,1:2] + cbind(sin(strike_perp), cos(strike_perp))*perturbation_scale
 
     for(i in 1:length(alpha_s[,1])){

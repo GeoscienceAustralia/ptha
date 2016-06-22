@@ -45,10 +45,16 @@
 #' and tsunami surface points, smoothed deformation, and rake
 #'
 #' @export
-make_tsunami_unit_source<-function(i, j, discrete_source, rake,
+make_tsunami_unit_source<-function(
+    i, 
+    j, 
+    discrete_source, 
+    rake,
     tsunami_surface_points_lonlat, 
-    approx_dx = NULL, approx_dy = NULL, 
-    scale_dxdy = 1, depths_in_km = TRUE, 
+    approx_dx = NULL, 
+    approx_dy = NULL, 
+    scale_dxdy = 1, 
+    depths_in_km = TRUE, 
     kajiura_smooth=FALSE, 
     surface_point_ocean_depths=NULL, 
     kajiura_grid_spacing=NULL,
@@ -278,7 +284,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' @param rake The rake of the slip in degrees
 #' @param tsunami_surface_points_cartesian Points at which to compute the
 #' tsunami deformation in cartesian coordinates
-#' @param point_scale [deprecated] Multiply the length/width of area sources by point scale
+#' @param point_scale [fixme: Do not change] Multiply the length/width of area sources by point scale
 #' prior to convolution, then divide by this afterwoulds. Allows moving between
 #' Okada's area source representation at each grid point, and a point source
 #' representation. Set to 1 for standard rectangular area source representation

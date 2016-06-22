@@ -2,8 +2,7 @@
 % Please edit documentation in R/geometric_util.R
 \name{interpolate_3D_path}
 \alias{interpolate_3D_path}
-\title{Given a 3D path of points (lon,lat,depth), interpolate a new path with n
-evenly spaced points (i.e. equal distances between points in 3D)}
+\title{Interpolate along a 3D path}
 \usage{
 interpolate_3D_path(threeD_path, n = 100, depth_in_km = TRUE, ndense = (n
   * 10))
