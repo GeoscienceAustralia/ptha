@@ -19,6 +19,63 @@
 #source('contour_util.R', local=cu)
 #source('geometric_util.R', local=gu)
 
+#' Adjust points defining unit source boundaries near the trench to enhance orthogonality
+#'
+#' Suppose top-line is a set of lon/lat points defining the top of a grid of
+#' unit sources, and second line is a set of lon/lat points defining the bottom
+#' of the unit sources. If top-line is at the trench, then numerically it can be
+#' desirable for the unit sources to be highly orthogonal where they intersect
+#' the trench. One way to do this is by moving points along the top line. That's
+#' what this function does.
+#'
+#' @param top_line matrix with 2 rows and n columns. First row is longitude,
+#' second row is latitude
+#' @param second_line as top_line, but for the second line
+#' @return an alternative top_line which should have better orthogonality
+orthogonal_near_trench<-function(top_line, second_line){
+
+    top_line_bearing = top_line[1,]*0
+    n = length(top_line_bearing)
+
+    top_line_bearing[2:(n-1)] = bearing(t(top_line[1:2,1:(n-2)]), t(top_line[1:2, 3:n]))
+    top_line_bearing[1] = bearing(top_line[1:2,1], top_line[1:2,2])
+    top_line_bearing[n] = bearing(top_line[1:2,n-1], top_line[1:2,n])
+
+    # Make function to interpolate along the line, and also give the tangent
+    # bearing
+    make_approx_top_line<-function(){
+        approx_top_line_xfun = approxfun(1:n, top_line[1,])
+        approx_top_line_yfun = approxfun(1:n, top_line[2,])
+        approx_bearing = approxfun(1:n, top_line_bearing)
+        
+        approx_top_line<-function(n){
+            return(cbind(approx_top_line_xfun(n), approx_top_line_yfun(n), approx_bearing(n)))
+        }
+
+        return(approx_top_line)
+    }
+
+    approx_top_line = make_approx_top_line()
+
+    # Find the new top of grid point
+    best_n = rep(NA, n)
+    for(i in 2:(n-1)){
+
+        bearing_end_point<-function(n){
+            p1 = approx_top_line(n)
+            p2 = destPoint(p1[1:2], (p1[3] + 90), d = 1000*500)
+            point_distance = dist2Line(second_line[1:2,i], rbind(p1[1:2], p2))[1]
+            return(point_distance)
+        }
+
+        best_n[i] = optimize(bearing_end_point, interval = c(i-0.4, i+0.4))$minimum
+    }
+    best_n[1] = 1
+    best_n[n] = n
+
+    return(approx_top_line(best_n)[,1:2])
+}
+
 #' Make discretized_source from subduction interface contours
 #'
 #' Given a shapefile with contour lines in lon/lat coordinates defining the
@@ -38,6 +95,8 @@
 #' @param extend_line_fraction To ensure that contour lines intersect downdip
 #' lines at the left/right edges we extend them by this fraction of the
 #' end-to-end source length
+#' @param orthogonal_near_trench move unit source points along the trench to enhance
+#' orthogonality there. Can reduce numerical artefacts at the trench
 #' @return A list containing: depth_contours The original source contours;
 #' unit_source_grid A 3 dimensional array descrbing the unit source vertices;
 #' discretized_source_dim A vector of length 2 with number-of-sources-down-dip,
@@ -53,7 +112,8 @@ discretized_source_from_source_contours<-function(
     make_plot=FALSE,
     contour_depth_attribute='level', 
     contour_depth_in_km=TRUE,
-    extend_line_fraction=1.0e-01){
+    extend_line_fraction=1.0e-01,
+    orthogonal_near_trench = FALSE){
 
     # Previously was a function argument, but now I am considering this the
     # only good choice
@@ -243,6 +303,26 @@ discretized_source_from_source_contours<-function(
             extend_line_fraction=extend_line_fraction) 
     }
 
+    # If desired, adjust the top line to enhance orthogonality
+    if(orthogonal_near_trench){
+        top_line = matrix(NA, nrow=2, ncol=ll)
+        second_line = matrix(NA, nrow=2, ncol=ll)
+
+        for(i in 1:ll){
+            top_line[,i] = mid_line_with_cutpoints[[i]][1,1:2]
+            second_line[,i] = mid_line_with_cutpoints[[i]][2,1:2]
+        }
+        new_top_line = orthogonal_near_trench(top_line, second_line)
+        for(i in 1:ll){
+            # Now make the 'new-top-line' exactly on the contour.
+            nearest_index = which.min(
+                (interp_shallow_line_dense[,1] - new_top_line[i,1])**2 + 
+                (interp_shallow_line_dense[,2] - new_top_line[i,2])**2)
+            mid_line_with_cutpoints[[i]][1,1:2] = interp_shallow_line_dense[nearest_index,1:2]
+        }
+    }
+
+
     # Find the lengths of the dip cut lines in the down-dip direction
     dip_cut_lengths = unlist(lapply(mid_line_with_cutpoints, 
         f<-function(x) {
@@ -271,6 +351,11 @@ discretized_source_from_source_contours<-function(
             mid_line_with_cutpoints[[i]], 
             n = number_of_mid_lines + 2,
             depth_in_km = contour_depth_in_km)
+        strike_cuts[[i]] = interpolated_midline
+    }
+
+
+    for(i in 1:ll){
 
         fine_interpolated_midline = interpolate_3D_path(
             mid_line_with_cutpoints[[i]], 
@@ -278,15 +363,21 @@ discretized_source_from_source_contours<-function(
             depth_in_km = contour_depth_in_km)
        
         if(make_plot){
-            points(interpolated_midline, col='purple', pch=19)
+            points(strike_cuts[[i]], col='purple', pch=19)
             points(mid_line_with_cutpoints[[i]][,1:2], col='pink', pch=19, 
                 cex=0.2)
             points(mid_line_with_cutpoints[[i]][,1:2], t='l', col='brown', 
                 lty = 'dashed') 
         }
         
-        strike_cuts[[i]] = interpolated_midline
         fine_strike_cuts[[i]] = fine_interpolated_midline
+    }
+
+    # Correct the 'fine' interpolated midline to match the strike_cuts
+    if(orthogonal_near_trench){
+        for(i in 1:ll){
+            fine_strike_cuts[[i]][1,1:2] = strike_cuts[[i]][1,1:2]        
+        }
     }
 
     # Plot
