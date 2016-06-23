@@ -5,4 +5,4 @@ data.
 [combine_tsunami_sources.R](combine_tsunami_sources.R) -- Code to combine
 tsunami unit-source initial conditions into event initial conditions. Kajiura
 filter is applied after combining the unit sources, since numerically this
-approach is less prone to aftefacts caused by interpolation/discretization.
+approach is less prone to artefacts caused by interpolation/discretization.
