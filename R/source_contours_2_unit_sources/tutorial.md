@@ -331,12 +331,15 @@ sub-unit-source points, exact unit source discretization, etc).
 
 # Tips
 Beware of possible artefacts in the computed solution along the trench when
-rupture becomes very shallow and the source zone is nonuniform. In our
+rupture becomes very shallow and the source zone is nonuniform. This would
+typically manifest itself as rare high-points in the solution. In our
 experience this is not detectable when Kajiura filtering is applied. In general
 we suggest to always apply Kajiura filtering. It is not done above so we can
 avoid distributing elevation data with the package, and also because often it
 is best to apply Kajiura filtering AFTER unit sources have been combined (see
 next paragraph).
+
+The option 'orthogonal_near_trench=TRUE' has also be used to reduce this issue.
 
 If a fine unit source spacing is used and the unit source deformations are combined
 to produce tsunami initial conditions, then it may be best to apply Kajiura filtering
@@ -344,13 +347,14 @@ AFTER combining the sources ('filtering-after-combining'). Mathematically the
 problem is linear, and there should be no difference between this and
 filtering-before-combining (i.e. filtering before the unit source deformations
 are combined, as supported in this script). However, in practice our Kajiura
-filtering algorithm involves some interplation, leading to some discretization
-error, and the approach of 'filtering-before-combining' is numerically much
-more sensitive to this than 'filtering-after-combining'. In the
+filtering algorithm involves some interplation to move from to and from
+cartesian and spherical coordinates. This leads to some discretization error,
+and the approach of 'filtering-before-combining' is numerically much more
+sensitive to this than 'filtering-after-combining'. In the
 filtering-before-combining approach, individual unit source deformations can
 have steep gradients that would be cancelled by neighbouring sources after
 combination. These steep gradients cause relatively high smoothing with the
-Kajiura filter. To avoid artefacts any discretization errors in this
-smoothing must cancel with those from neighbouring unit source deformations. In
-practice it is difficult to achieve this, whereas by definition it is not an
-issue for the filtering-after-combining approach.
+Kajiura filter. To avoid artefacts any discretization errors in this smoothing
+must cancel with those from neighbouring unit source deformations. In practice
+it is difficult to achieve this, whereas by definition it is not an issue for
+the filtering-after-combining approach.
