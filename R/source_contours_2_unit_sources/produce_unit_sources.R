@@ -336,6 +336,7 @@ if(make_3d_interactive_plot){
 
     ds1 = discretized_sources[[sourcename]]
     origin = ds1$unit_source_grid[1,1:2,1]
+    source_lonlat_extent = extent(ds1$depth_contours)
 
     ## Get surface points for tsunami source
     tsunami_extent = rbind(floor(source_lonlat_extent[c(1,3)] - c(2,2)), 
