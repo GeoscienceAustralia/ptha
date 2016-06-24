@@ -278,6 +278,10 @@ make_3d_interactive_plot = TRUE
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
+
+# Option to make the unit-source edges be more orthogonal to the trench. TRUE
+# can help if artefacts in the solution near the trench occur. 
+orthogonal_near_trench = FALSE
 ```
 
 # Running the script

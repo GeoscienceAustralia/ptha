@@ -93,6 +93,10 @@ make_3d_interactive_plot = TRUE
 # TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
 
+# Option to make the unit-source edges be more orthogonal to the trench. TRUE
+# can help if artefacts in the solution near the trench occur. 
+orthogonal_near_trench = FALSE
+
 ## ---- takeCommandLineParameter ----
 
 if(interactive() == FALSE){
@@ -139,7 +143,8 @@ for(source_shapefile_index in 1:length(all_sourcezone_shapefiles)){
     # Create unit sources for source_shapefile
     discretized_sources[[sourcename]] = 
         discretized_source_from_source_contours(source_shapefile, 
-            desired_subfault_length, desired_subfault_width, make_plot=TRUE)
+            desired_subfault_length, desired_subfault_width, make_plot=TRUE,
+            orthogonal_near_trench=orthogonal_near_trench)
 
     # Get unit source summary stats
     discretized_sources_statistics[[sourcename]] = 
