@@ -2,7 +2,7 @@
 % Please edit documentation in R/unit_sources.R
 \name{get_unit_source_from_discretized_source}
 \alias{get_unit_source_from_discretized_source}
-\title{Get coordinates of a single unit source from the discretized_source list}
+\title{Coordinates of a single unit source}
 \usage{
 get_unit_source_from_discretized_source(discretized_source, unit_source_index)
 }
@@ -17,6 +17,7 @@ unit source (down-dip, along-strike)}
 List containing unit source information
 }
 \description{
-Get coordinates of a single unit source from the discretized_source list
+Convenience function to extract coordinates of a single unit source from the
+discretized_source list
 }
 

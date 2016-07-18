@@ -81,13 +81,13 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 12
+MC_CORES = 1
 
 # Option to illustrate 3d interactive plot creation
 #
 # Only make the 3d interactive plot if you can use interactive graphics and
 # have rgl (i.e. use FALSE on NCI). 
-make_3d_interactive_plot = TRUE
+make_3d_interactive_plot = FALSE
 
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
@@ -95,7 +95,7 @@ minimise_tsunami_unit_source_output = TRUE
 
 # Option to make the unit-source edges be more orthogonal to the trench. TRUE
 # can help if artefacts in the solution near the trench occur. 
-orthogonal_near_trench = FALSE
+orthogonal_near_trench = TRUE 
 
 ## ---- takeCommandLineParameter ----
 
@@ -148,7 +148,8 @@ for(source_shapefile_index in 1:length(all_sourcezone_shapefiles)){
 
     # Get unit source summary stats
     discretized_sources_statistics[[sourcename]] = 
-        discretized_source_approximate_summary_statistics(
+        #discretized_source_approximate_summary_statistics(
+        discretized_source_summary_statistics(
             discretized_sources[[sourcename]],
             default_rake = sourcezone_rake[source_shapefile_index],
             make_plot=TRUE)

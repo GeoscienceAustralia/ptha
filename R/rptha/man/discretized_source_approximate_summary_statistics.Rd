@@ -28,6 +28,8 @@ data.frame with key summary statistics
 \description{
 The quantities that we output follow those in the i-invall format in the old
 URSGA code, although some outputs there (e.g. section number) do not apply
-with our algorithms
+with our algorithms. \cr
+The approach used in this routine is faster than discretized_source_summary_statistics,
+at the expense of accuracy [the latter draws on the sub-unit-source grid points].
 }
 

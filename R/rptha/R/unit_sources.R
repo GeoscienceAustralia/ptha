@@ -422,7 +422,9 @@ discretized_source_from_source_contours<-function(
 #'
 #' The quantities that we output follow those in the i-invall format in the old
 #' URSGA code, although some outputs there (e.g. section number) do not apply
-#' with our algorithms
+#' with our algorithms. \cr
+#' The approach used in this routine is faster than discretized_source_summary_statistics,
+#' at the expense of accuracy [the latter draws on the sub-unit-source grid points].
 #'
 #' @param discretized_source list with an entry 'unit_source_grid' containing a
 #'        3 dimensional array defining the vertices of all unit sources for the source
@@ -593,7 +595,8 @@ discretized_source_approximate_summary_statistics<-function(
             }
         }
 
-        arrows(lon_c, lat_c, end_points[,1], end_points[,2], col='orange')
+        arrows(lon_c, lat_c, end_points[,1], end_points[,2], code=3, length=0, 
+            col='orange')
 
         title(main = 'Unit sources with slip direction (strike - rake)')
     }
@@ -707,8 +710,10 @@ discretized_source_summary_statistics<-function(
     return(output)
 }
 
-
-#' Get coordinates of a single unit source from the discretized_source list
+#' Coordinates of a single unit source
+#'
+#' Convenience function to extract coordinates of a single unit source from the
+#' discretized_source list
 #'
 #' @param discretized_source List holding the discretized_source information (e.g. output
 #'        of discretized_source_from_source_contours)
