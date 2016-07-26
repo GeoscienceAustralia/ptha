@@ -37,9 +37,9 @@ orthogonal_near_trench<-function(top_line, second_line){
     top_line_bearing = top_line[1,]*0
     n = length(top_line_bearing)
 
-    top_line_bearing[2:(n-1)] = bearing(t(top_line[1:2,1:(n-2)]), t(top_line[1:2, 3:n]))
-    top_line_bearing[1] = bearing(top_line[1:2,1], top_line[1:2,2])
-    top_line_bearing[n] = bearing(top_line[1:2,n-1], top_line[1:2,n])
+    top_line_bearing[2:(n-1)] = bearing(t(top_line[1:2,1:(n-2)]), t(top_line[1:2, 3:n]), f=0)
+    top_line_bearing[1] = bearing(top_line[1:2,1], top_line[1:2,2], f=0)
+    top_line_bearing[n] = bearing(top_line[1:2,n-1], top_line[1:2,n], f=0)
 
     # Make function to interpolate along the line, and also give the tangent
     # bearing
@@ -163,10 +163,10 @@ discretized_source_from_source_contours<-function(
     mi = max(floor(np/2), 2)
     b1 = suppressWarnings(
         geosphere::bearing(interp_shallow_line[1,], interp_shallow_line[mi,], 
-            sphere=TRUE))
+            f=0))
     b2 = suppressWarnings(
         geosphere::bearing(interp_shallow_line[1,], interp_deep_line[1,], 
-            sphere=TRUE))
+            f=0))
 
     # If the interp_shallow_line is ordered along-strike, then b1 + 90 should
     # be similar to b2, accounting for angular addition. This means the
@@ -506,7 +506,7 @@ discretized_source_approximate_summary_statistics<-function(
             midpoint = suppressWarnings(
                 midPoint(source_coords[1,1:2], source_coords[4,1:2]))
             st0 = suppressWarnings(
-                bearing(midpoint, source_coords[4,1:2], sphere=TRUE)%%360)
+                bearing(midpoint, source_coords[4,1:2], f=0)%%360)
             strike[counter] = st0 
             stopifnot( (strike[counter] >= 0) & (strike[counter] < 360)) 
   
@@ -782,7 +782,7 @@ get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
     # Note: Here we suppress warnings from geosphere about longitudes
     # in [-180,180], which are caused by .pointsToMatrix therein
     top_edges = suppressWarnings(midPoint(vertex_tl, vertex_tr))
-    strike = suppressWarnings(bearing(top_edges, vertex_tr, sphere=TRUE))
+    strike = suppressWarnings(bearing(top_edges, vertex_tr, f=0))
 
     # Ensure strike in 0-360 [not -180 to 180]
     strike = strike + (strike < 0)*360
