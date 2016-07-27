@@ -66,6 +66,11 @@ extra_manual_haz_lines = NULL
 # points inside this polygon. Set to NULL if there is no mask
 haz_pts_mask = '../../../../DATA/ELEV/HAZ_PT_REMOVAL_REGION/HAZ_PT_REMOVAL_REGION.shp' 
 
+# If TRUE, remove contours which do not contain coastal points (i.e. elev > 0)
+# This can be useful, but also dangerous if you have important non-closed contours, 
+# since it will be non-obvious which regions are judged as 'inside' the latter.
+remove_contours_not_containing_coast=TRUE
+
 # FINAL STEP: Translate hazard points so this is the lower left longitude -- to
 # match with the tsunami model domain
 haz_pt_lowerleft = -45 
@@ -250,13 +255,18 @@ dem_haz_cont = cu$gdal_contour(outfile_gdc, contour_levels=contour_depth,
     out_dsn='OUTPUTS/HAZARD_CONTOUR', 
     contour_shp_name='HAZARD_CONTOUR')
 
-# Convert dem_has_cont to polygons, and remove areas not containing coastal
-# points
-dem_haz_poly = cu$SpatialLinesDF2Polygons(dem_haz_cont)
-# Find those with coastal points inside
-FirstPointIndex = over(dem_haz_poly, dem_0m_trim_pts)
-dem_haz_poly_clip = dem_haz_poly[!is.na(FirstPointIndex[[1]]),]
-dem_haz_lines = as(dem_haz_poly_clip,'SpatialLines')
+if(remove_contours_not_containing_coast){
+    # Convert dem_has_cont to polygons, and remove areas not containing coastal
+    # points
+    dem_haz_poly = cu$SpatialLinesDF2Polygons(dem_haz_cont)
+    # Find those with coastal points inside
+    FirstPointIndex = over(dem_haz_poly, dem_0m_trim_pts)
+    dem_haz_poly_clip = dem_haz_poly[!is.na(FirstPointIndex[[1]]),]
+    dem_haz_lines = as(dem_haz_poly_clip,'SpatialLines')
+}else{
+    dem_haz_lines = as(dem_haz_cont, 'SpatialLines')
+
+}
 
 # Combine with manual lines to deal with areas that our algorithm 'undesirably'
 # removes.
