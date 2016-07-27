@@ -281,7 +281,8 @@ haz_pts@data = cbind(haz_pts@data, data.frame('elev'=dem[haz_pts]))
 # elevation. E.G. in one instance I had ~ 18000 hazard points, with 79 being
 # terrestrial.
 # Also, NA hazard points can happen at the raster boundary, remove them
-haz_pts = haz_pts[haz_pts$elev < 0 & is.finite(haz_pts$elev),]
+haz_pts = haz_pts[is.finite(haz_pts$elev),]
+haz_pts = haz_pts[haz_pts$elev < 0,]
 
 # Write out
 writeOGR(haz_pts, dsn='OUTPUTS/HAZ_PTS', layer='HAZ_PTS',
