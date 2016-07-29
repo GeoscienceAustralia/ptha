@@ -115,30 +115,21 @@ for(j in 1:3){
 # it first to the unit sources, and then summing. Although mathematically the
 # two are equivalent, numerically the unit source approach is much more prone to
 # artefacts
-kajiura_smooth_raster<-function(source_raster){
-    new_orig = c(209, 58)
-    xyz_spherical = rasterToPoints(source_raster)
-    xyz_cartesian = xyz_spherical
-    xyz_cartesian[,1:2] = spherical_to_cartesian2d_coordinates(xyz_spherical[,1:2], 
-        origin = new_orig)
 
-    elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
-    xyz_depth = extract(elevation_raster, cbind(xyz_spherical[,1] - 360, xyz_spherical[,2]))
-    xyz_depth = pmax(10, -xyz_depth)
-
-    kajiura_inds = which(abs(xyz_spherical[,3]) > 1.0e-02)
-
-    smoothed_perturbation = kajiura_filter(xyz_cartesian[kajiura_inds,], xyz_depth[kajiura_inds], 
-        grid_dx = 2000, grid_dy = 2000)
-
-    xyz_spherical[kajiura_inds,3] = smoothed_perturbation[,3]
-    smoothed_raster = rptha:::.local_rasterFromXYZ(xyz_spherical, 
-        res=c(4/60, 4/60), crs=CRS(proj4string(source_raster)))
-    return(smoothed_raster)
-}
-
+# FIXME: Integrate this code into the main ptha package
+source('kajiura_smooth_raster.R')
 for(i in 1:length(source_info)){
-    source_info[[i]]$source_raster_smooth = kajiura_smooth_raster(source_info[[i]]$source_raster)
+    source_info[[i]]$source_raster_smooth = 
+        kajiura_smooth_raster(
+            source_info[[i]]$source_raster,
+            new_origin=c(209, 58),
+            elevation_raster_file = '../../../../DATA/ELEV/GEBCO_08/gebco_08.nc',
+            kj_filter_grid_dxdy = 2000,
+            kj_filter_def_threshold=1.0e-02,
+            kj_cartesian_buffer = 10000,
+            minimum_kj_depth = 10,
+            elevation_extraction_x_offset=-360,
+            spherical_input = TRUE)
 }
 
 png('Deformation_plot.png', width=15, height=9, units='in', res=300)
@@ -146,8 +137,6 @@ par(mfrow=c(2,3))
 par(mar=c(3,2,1,1))
 for(i in 1:3) plot(source_info[[i]]$slip_raster, xlab='Along-strike distance (km)', 
     ylab='Up-dip distance (km)', xlim=c(100, 500))
-#for(i in 1:3) plot(source_info[[i]]$source_raster_smooth, xlim=c(200, 220), 
-#    ylim=c(56, 62), col=rainbow(255))
 for(i in 1:3) {
     persp(source_info[[i]]$source_raster_smooth, col='skyblue', shade=TRUE, 
         border=NA, phi=30, theta=-90, scale=FALSE, expand=0.2)
