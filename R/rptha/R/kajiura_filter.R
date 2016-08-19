@@ -264,7 +264,7 @@ kajiura_filter<-function(xyDef,
             G_j_i = G_j_i*(G_j_i < kajiuraGmax) + kajiuraGmax*(G_j_i >= kajiuraGmax)
 
             # Put into a matrix which aligns with newVals
-            G_j_i = kgE(G_j_i) 
+            G_j_i = kgE(G_j_i) * (G_j_i < kajiuraGmax) 
             dim(G_j_i) = c(lny, lnx)
 
             # Numerator of the weighted average
