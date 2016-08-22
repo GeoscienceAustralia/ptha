@@ -9,7 +9,7 @@ kajiura_filter(xyDef, depth, grid_dx = max(depth)/2, grid_dy = max(depth)/2,
   kajiuraGmax = 9, interpolator = "linear",
   interpolator_categories = function(xy) {     xy[, 1] * 0 },
   volume_change_error_threshold = 0.02, volume_change_MSL = 0,
-  verbose = FALSE)
+  verbose = FALSE, fortran_inner_loop = TRUE)
 }
 \arguments{
 \item{xyDef}{3 column matrix with x,y, deformation. x and y can be unstructured.
@@ -55,6 +55,8 @@ Possible causes include strong depth variation, or regridding with coarse grid_d
 for the volume check mentioned above.}
 
 \item{verbose}{Print lots of information about the fit}
+
+\item{fortran_inner_loop}{Use compiled fortran for the inner loop instead of R}
 }
 \value{
 replacement version of xyDef, with smoothing applied to xyDef[,3]

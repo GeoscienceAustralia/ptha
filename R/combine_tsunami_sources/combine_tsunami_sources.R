@@ -73,7 +73,7 @@ for(i in 1:nrow(discretized_source_statistics)){
 template_slip_matrix = dx * 0
 slip_matrix = dx * 0
 
-peak_slip_row = 1
+peak_slip_row = 4
 peak_slip_col = floor(nx/2)
 
 numerical_corner_wavenumbers = physical_corner_wavenumbers * 

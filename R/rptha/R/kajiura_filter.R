@@ -137,6 +137,7 @@ kajiura_g_empirical<-function(rMax=9, n=81){
 #' @param volume_change_MSL The mean-sea-level used to define positive/negative deformation
 #' for the volume check mentioned above.
 #' @param verbose Print lots of information about the fit
+#' @param fortran_inner_loop Use compiled fortran for the inner loop instead of R
 #' @return replacement version of xyDef, with smoothing applied to xyDef[,3]
 #' @export
 kajiura_filter<-function(xyDef, 
@@ -150,7 +151,8 @@ kajiura_filter<-function(xyDef,
                          interpolator_categories = function(xy){xy[,1]*0},
                          volume_change_error_threshold=0.02,
                          volume_change_MSL=0.0,
-                         verbose=FALSE){
+                         verbose=FALSE,
+                         fortran_inner_loop=TRUE){
 
 
     reference_depth = max(depth)
@@ -255,30 +257,39 @@ kajiura_filter<-function(xyDef,
     # computing the weighted average
     ## THIS LOOP IS THE MOST COMPUTATIONALLY INTENSIVE PART OF THIS ROUTINE 
     depth_inv = 1.0/pmax(newDepth, 1.0e-20)
-    for(i in 1:lfx){
-        if(verbose) print(paste0(i, ' of ', lfx ))
-        for(j in 1:lfy){
-            # Compute r/depth for the j,i cell of the filter,  avoid division by zero
-            # Store it as G_j_i to reduce memory usage
-            G_j_i = filterXYr[j,i] * depth_inv
-            G_j_i = G_j_i*(G_j_i < kajiuraGmax) + kajiuraGmax*(G_j_i >= kajiuraGmax)
+    if(!fortran_inner_loop){
 
-            # Put into a matrix which aligns with newVals
-            G_j_i = kgE(G_j_i) * (G_j_i < kajiuraGmax) 
-            dim(G_j_i) = c(lny, lnx)
+        for(i in 1:lfx){
+            if(verbose) print(paste0(i, ' of ', lfx ))
+            for(j in 1:lfy){
+                # Compute r/depth for the j,i cell of the filter,  avoid division by zero
+                # Store it as G_j_i to reduce memory usage
+                G_j_i = filterXYr[j,i] * depth_inv
+                G_j_i = G_j_i*(G_j_i < kajiuraGmax) + kajiuraGmax*(G_j_i >= kajiuraGmax)
 
-            # Numerator of the weighted average
-            newVals = newVals + filVals[(j+(lfy-1)/2) + 1:lny,(i+(lfx-1)/2) + 1:lnx] * G_j_i
+                # Put into a matrix which aligns with newVals
+                G_j_i = kgE(G_j_i) * (G_j_i < kajiuraGmax) 
+                dim(G_j_i) = c(lny, lnx)
 
-            # Denominator of the weighted average. 
-            GtermsSum = GtermsSum + G_j_i
+                # Numerator of the weighted average
+                newVals = newVals + filVals[(j+(lfy-1)/2) + 1:lny,(i+(lfx-1)/2) + 1:lnx] * G_j_i
+
+                # Denominator of the weighted average. 
+                GtermsSum = GtermsSum + G_j_i
+            }
         }
+
+        # Compute final weighted average 
+        newVals = newVals/GtermsSum
+
+        rm(G_j_i, GtermsSum, depth_inv); gc()
+    }else{
+        # Does the same as above, in Fortran! This will modify 'newVals'
+        kajiura_convolution(depth_inv, filVals, filterXYr, 
+            kajiuraGmax, lfx, lfy, lnx, lny, newVals)
+
+        rm(depth_inv); gc()
     }
-
-    # Compute final weighted average 
-    newVals = newVals/GtermsSum
-
-    rm(G_j_i, GtermsSum, depth_inv); gc()
 
     if(edge_effect_correction_scale > 0.){
         if(verbose) print('Reducing edge effects ...')

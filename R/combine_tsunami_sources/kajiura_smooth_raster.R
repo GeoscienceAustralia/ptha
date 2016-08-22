@@ -69,7 +69,8 @@ kajiura_smooth_raster<-function(
 
     smoothed_perturbation = kajiura_filter(
         xyz_cartesian[kajiura_inds,], xyz_depth[kajiura_inds],
-        grid_dx = kj_filter_grid_dxdy, grid_dy = kj_filter_grid_dxdy)
+        grid_dx = kj_filter_grid_dxdy, grid_dy = kj_filter_grid_dxdy,
+        verbose=FALSE, fortran_inner_loop=TRUE)
 
     xyz_spherical[kajiura_inds,3] = smoothed_perturbation[,3]
 
