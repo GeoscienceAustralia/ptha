@@ -4,105 +4,107 @@ MODULE linear_interpolator_mod
     ! Real and integer kinds
     INTEGER, PARAMETER, PRIVATE:: ip = C_INT, dp = C_DOUBLE
 
+    !!! If R was compiled with gcc < 4.8, then the object-oriented fortran will cause build errors
+    !!! Since it is not essential I comment out those features of the code here
 
-    TYPE linear_interpolator_type
-        REAL(dp), ALLOCATABLE:: xs_local(:), ys_local(:)
-        REAL(dp), POINTER :: xs(:), ys(:)
-        INTEGER(ip) :: n
+    !TYPE linear_interpolator_type
+    !    REAL(dp), ALLOCATABLE:: xs_local(:), ys_local(:)
+    !    REAL(dp), POINTER :: xs(:), ys(:)
+    !    INTEGER(ip) :: n
 
-        CONTAINS
-        ! To build the an interpolator from x,y data (with x monotonic
-        !   increasing, NO REPEATED VALUES), we do
-        ! CALL linear_interpolator%initialise(x,y)
-        ! or to not copy x,y
-        ! CALL linear_interpolator%initialise(x,y, copy_data=.FALSE.)
-        !
-        PROCEDURE:: initialise => initialise_linear_interpolator
-        !
-        ! CALL linear_interpolator%eval(xout, yout)
-        ! will update yout with values interpolated at xout
-        !
-        PROCEDURE:: eval => eval_linear_interpolator
-        !
-        ! CALL linear_interpolator%finalise()
-        ! to clear pointers, deallocate data, etc
-        !
-        PROCEDURE:: finalise => finalise_linear_interpolator
+    !    CONTAINS
+    !    ! To build the an interpolator from x,y data (with x monotonic
+    !    !   increasing, NO REPEATED VALUES), we do
+    !    ! CALL linear_interpolator%initialise(x,y)
+    !    ! or to not copy x,y
+    !    ! CALL linear_interpolator%initialise(x,y, copy_data=.FALSE.)
+    !    !
+    !    PROCEDURE:: initialise => initialise_linear_interpolator
+    !    !
+    !    ! CALL linear_interpolator%eval(xout, yout)
+    !    ! will update yout with values interpolated at xout
+    !    !
+    !    PROCEDURE:: eval => eval_linear_interpolator
+    !    !
+    !    ! CALL linear_interpolator%finalise()
+    !    ! to clear pointers, deallocate data, etc
+    !    !
+    !    PROCEDURE:: finalise => finalise_linear_interpolator
 
-    END TYPE
+    !END TYPE
 
     CONTAINS
 
-    SUBROUTINE initialise_linear_interpolator(linear_interpolator, x, y, copy_data)
-        CLASS(linear_interpolator_type), TARGET, INTENT(INOUT):: linear_interpolator
-        REAL(dp), TARGET, INTENT(IN):: x(:), y(:)
-        LOGICAL, OPTIONAL, INTENT(IN):: copy_data
-        INTEGER(ip):: i, n
-        LOGICAL:: use_pointers
-        
+    !SUBROUTINE initialise_linear_interpolator(linear_interpolator, x, y, copy_data)
+    !    CLASS(linear_interpolator_type), TARGET, INTENT(INOUT):: linear_interpolator
+    !    REAL(dp), TARGET, INTENT(IN):: x(:), y(:)
+    !    LOGICAL, OPTIONAL, INTENT(IN):: copy_data
+    !    INTEGER(ip):: i, n
+    !    LOGICAL:: use_pointers
+    !    
 
-        if (present(copy_data)) then
-            use_pointers = merge(.FALSE., .TRUE., copy_data)
-        else
-            use_pointers = .FALSE.
-        end if
+    !    if (present(copy_data)) then
+    !        use_pointers = merge(.FALSE., .TRUE., copy_data)
+    !    else
+    !        use_pointers = .FALSE.
+    !    end if
 
-        if(use_pointers) then
-            ALLOCATE(linear_interpolator%xs_local(n))
-            linear_interpolator%xs_local = x
-            linear_interpolator%xs => linear_interpolator%xs_local
-            ALLOCATE(linear_interpolator%ys_local(n))
-            linear_interpolator%ys_local = y
-            linear_interpolator%ys => linear_interpolator%ys_local
-        else
-            linear_interpolator%xs => x 
-            linear_interpolator%ys => y 
-        end if
-       
-        n = size(x) 
-        linear_interpolator%n = n
-        if(n /= size(y)) then
-            print*, 'initialise_linear_interpolator error: size of x and y must be equal'
-            stop
-        end if
+    !    if(use_pointers) then
+    !        ALLOCATE(linear_interpolator%xs_local(n))
+    !        linear_interpolator%xs_local = x
+    !        linear_interpolator%xs => linear_interpolator%xs_local
+    !        ALLOCATE(linear_interpolator%ys_local(n))
+    !        linear_interpolator%ys_local = y
+    !        linear_interpolator%ys => linear_interpolator%ys_local
+    !    else
+    !        linear_interpolator%xs => x 
+    !        linear_interpolator%ys => y 
+    !    end if
+    !   
+    !    n = size(x) 
+    !    linear_interpolator%n = n
+    !    if(n /= size(y)) then
+    !        print*, 'initialise_linear_interpolator error: size of x and y must be equal'
+    !        stop
+    !    end if
 
-        DO i = 1, size(linear_interpolator%xs)-1
-            if(linear_interpolator%xs(i) >= linear_interpolator%xs(i+1)) then
-                print*, 'initialise_linear_interpolator error: x must be monotonic increasing (no repeated values)'
-                stop
-            end if
-        END DO
+    !    DO i = 1, size(linear_interpolator%xs)-1
+    !        if(linear_interpolator%xs(i) >= linear_interpolator%xs(i+1)) then
+    !            print*, 'initialise_linear_interpolator error: x must be monotonic increasing (no repeated values)'
+    !            stop
+    !        end if
+    !    END DO
 
-    END SUBROUTINE
+    !END SUBROUTINE
 
-    SUBROUTINE finalise_linear_interpolator(linear_interpolator)
-        CLASS(linear_interpolator_type), INTENT(INOUT):: linear_interpolator
+    !SUBROUTINE finalise_linear_interpolator(linear_interpolator)
+    !    CLASS(linear_interpolator_type), INTENT(INOUT):: linear_interpolator
 
-        if(allocated(linear_interpolator%xs_local)) then        
-            DEALLOCATE(linear_interpolator%xs_local, linear_interpolator%ys_local)
-        end if
+    !    if(allocated(linear_interpolator%xs_local)) then        
+    !        DEALLOCATE(linear_interpolator%xs_local, linear_interpolator%ys_local)
+    !    end if
 
-        linear_interpolator%xs => NULL()
-        linear_interpolator%ys => NULL()
+    !    linear_interpolator%xs => NULL()
+    !    linear_interpolator%ys => NULL()
 
-    END SUBROUTINE
+    !END SUBROUTINE
 
-    SUBROUTINE eval_linear_interpolator(linear_interpolator, output_x, output_y)
-        CLASS(linear_interpolator_type), INTENT(IN):: linear_interpolator
-        REAL(dp), INTENT(IN):: output_x(:)
-        REAL(dp), INTENT(OUT):: output_y(:)
-        INTEGER(ip):: i, n
+    !SUBROUTINE eval_linear_interpolator(linear_interpolator, output_x, output_y)
+    !    CLASS(linear_interpolator_type), INTENT(IN):: linear_interpolator
+    !    REAL(dp), INTENT(IN):: output_x(:)
+    !    REAL(dp), INTENT(OUT):: output_y(:)
+    !    INTEGER(ip):: i, n
 
-        n = size(output_x)
-        if(n /= size(output_y)) then
-            print*, 'eval_linear_interpolator error: size of x and y must be equal'
-            stop
-        end if
+    !    n = size(output_x)
+    !    if(n /= size(output_y)) then
+    !        print*, 'eval_linear_interpolator error: size of x and y must be equal'
+    !        stop
+    !    end if
 
-        CALL linear_interpolation(linear_interpolator%n, linear_interpolator%xs, &
-            linear_interpolator%ys, n, output_x, output_y)
+    !    CALL linear_interpolation(linear_interpolator%n, linear_interpolator%xs, &
+    !        linear_interpolator%ys, n, output_x, output_y)
 
-    END SUBROUTINE
+    !END SUBROUTINE
 
     !
     ! Suppose x is a SORTED vector of length n with x(i) <= x(i+1).
@@ -181,71 +183,74 @@ MODULE linear_interpolator_mod
 
     END SUBROUTINE
 
-    SUBROUTINE test_linear_interpolator_mod
-        REAL(dp):: x(5), y(5), xout(9), yout_true(9), yout(9)
-        TYPE(linear_interpolator_type):: li
-        INTEGER(ip):: i, j
-        LOGICAL:: copy_data
+    !! If R was compiled with gcc < 4.8, then the object-oriented fortran will cause build errors
+    !! Since it is not essential I comment out those features of the code here
+    !
+    !SUBROUTINE test_linear_interpolator_mod
+    !    REAL(dp):: x(5), y(5), xout(9), yout_true(9), yout(9)
+    !    TYPE(linear_interpolator_type):: li
+    !    INTEGER(ip):: i, j
+    !    LOGICAL:: copy_data
 
-        ! Data to interpolate from
-        x = [1.0_dp, 4.0_dp, 4.01_dp, 10.0_dp, 11.0_dp]
-        y = [-1.0_dp, -4.0_dp, 4.01_dp, 10.0_dp, 110.0_dp]
+    !    ! Data to interpolate from
+    !    x = [1.0_dp, 4.0_dp, 4.01_dp, 10.0_dp, 11.0_dp]
+    !    y = [-1.0_dp, -4.0_dp, 4.01_dp, 10.0_dp, 110.0_dp]
 
-        ! X values to interpolate at
-        xout      = [-10.0_dp, 1.0_dp, 2.5_dp,  4.0_dp, 4.005_dp, 6.0_dp, 10.5_dp, 11.0_dp, 13.0_dp]
-        ! Y values that we should get from interpolating
-        yout_true = [-1.0_dp, -1.0_dp, -2.5_dp, -4.0_dp, 0.005_dp, 6.0_dp, 60.0_dp, 110.0_dp, 110.0_dp]
+    !    ! X values to interpolate at
+    !    xout      = [-10.0_dp, 1.0_dp, 2.5_dp,  4.0_dp, 4.005_dp, 6.0_dp, 10.5_dp, 11.0_dp, 13.0_dp]
+    !    ! Y values that we should get from interpolating
+    !    yout_true = [-1.0_dp, -1.0_dp, -2.5_dp, -4.0_dp, 0.005_dp, 6.0_dp, 60.0_dp, 110.0_dp, 110.0_dp]
 
-        DO j = 1, 2
-            ! Test cases with/without pointers
-            if(j == 1) then
-                copy_data = .true.
-            else
-                copy_data = .false.
-            end if
+    !    DO j = 1, 2
+    !        ! Test cases with/without pointers
+    !        if(j == 1) then
+    !            copy_data = .true.
+    !        else
+    !            copy_data = .false.
+    !        end if
 
-            ! Set it up correctly
-            call li%initialise(x,y, copy_data)
-            if(all(abs(li%xs - x) < 1.0e-10_dp)) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', li%xs - x
-            end if
-            
-            if(all(abs(li%ys - y) < 1.0e-10_dp)) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', li%ys - y
-            end if
+    !        ! Set it up correctly
+    !        call li%initialise(x,y, copy_data)
+    !        if(all(abs(li%xs - x) < 1.0e-10_dp)) then
+    !            print*, 'PASS'
+    !        else
+    !            print*, 'FAIL', li%xs - x
+    !        end if
+    !        
+    !        if(all(abs(li%ys - y) < 1.0e-10_dp)) then
+    !            print*, 'PASS'
+    !        else
+    !            print*, 'FAIL', li%ys - y
+    !        end if
 
-            ! Do the interpolation
-            call li%eval(xout, yout)
+    !        ! Do the interpolation
+    !        call li%eval(xout, yout)
 
-            DO i = 1, size(xout)
-                if(abs(yout(i) - yout_true(i)) < 1.0e-10_dp) then
-                    print*, 'PASS'
-                else
-                    print*, 'FAIL', xout(i), yout(i), yout_true(i)
-                end if
-            END DO
+    !        DO i = 1, size(xout)
+    !            if(abs(yout(i) - yout_true(i)) < 1.0e-10_dp) then
+    !                print*, 'PASS'
+    !            else
+    !                print*, 'FAIL', xout(i), yout(i), yout_true(i)
+    !            end if
+    !        END DO
 
-            ! Clean up
-            call li%finalise()
+    !        ! Clean up
+    !        call li%finalise()
 
-            if(allocated(li%ys_local) .OR. allocated(li%xs_local)) then
-                print*, 'FAIL'
-            else
-                print*, 'PASS'
-            end if
-            if(associated(li%ys) .OR. associated(li%xs)) then
-                print*, 'FAIL'
-            else
-                print*, 'PASS'
-            end if
+    !        if(allocated(li%ys_local) .OR. allocated(li%xs_local)) then
+    !            print*, 'FAIL'
+    !        else
+    !            print*, 'PASS'
+    !        end if
+    !        if(associated(li%ys) .OR. associated(li%xs)) then
+    !            print*, 'FAIL'
+    !        else
+    !            print*, 'PASS'
+    !        end if
 
-        END DO
+    !    END DO
 
-    END SUBROUTINE
+    !END SUBROUTINE
 
 END MODULE
 
@@ -253,7 +258,7 @@ END MODULE
 MODULE kajiura_mod
 
     USE ISO_C_BINDING
-    USE linear_interpolator_mod, only: linear_interpolator_type, linear_interpolation
+    USE linear_interpolator_mod, only: linear_interpolation
 
     IMPLICIT NONE
 
