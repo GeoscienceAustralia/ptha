@@ -259,11 +259,14 @@ get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.
 #' @param dMw The increment between the Mw values
 #' @param mu Shear modulus in Pascals.
 #' @param constant value of constant passed to \code{M0_2_Mw}
+#' @param target_location c(longitude, latitude) or NULL. If not NULL, then
+#' only return earthquake events which include the unit source 'closest' to the
+#' target location (computed assuming a spherical earth with lon/lat coordinates)
 #' @return A large table containing information on all earthquake events, and
 #' the unit sources they involve
 #' @export
 get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statistics = NULL,
-    Mmin=7.5, Mmax = 9.6, dMw = 0.1, mu=3.0e+10, constant=9.05){
+    Mmin=7.5, Mmax = 9.6, dMw = 0.1, mu=3.0e+10, constant=9.05, target_location = NULL){
 
     if(is.null(unit_source_statistics)){
 
@@ -304,6 +307,22 @@ get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statisti
     big_eq_table = all_eq_tables[[1]]
     if(length(all_eq_tables) > 1){
         for(i in 2:length(all_eq_tables)) big_eq_table = rbind(big_eq_table, all_eq_tables[[i]])
+    }
+
+    if(!is.null(target_location)){
+        # Find the row of unit_source_statistics with location closest to
+        # target_location
+        N = length(unit_source_statistics[,1])
+        unit_source_nearest_target = which.min(distHaversine(
+            as.matrix(unit_source_statistics[,c('lon_c', 'lat_c')]),
+            cbind(rep(target_location[1], N), rep(target_location[2], N)))) 
+
+        # Find events containing unit_source_nearest_target 
+        target_eq_event_indices = which(
+            grepl(paste0('-', unit_source_nearest_target, '-'), 
+                paste0('-',as.character(big_eq_table$event_index_string))))
+    
+        big_eq_table = big_eq_table[target_eq_event_indices,]
     }
 
     return(big_eq_table)

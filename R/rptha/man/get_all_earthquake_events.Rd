@@ -2,11 +2,11 @@
 % Please edit documentation in R/rupture_events.R
 \name{get_all_earthquake_events}
 \alias{get_all_earthquake_events}
-\title{Compute all synthetic earthquake events for a sourcezone}
+\title{Compute all synthetic uniform slip earthquake events for a sourcezone}
 \usage{
 get_all_earthquake_events(discrete_source = NULL,
   unit_source_statistics = NULL, Mmin = 7.5, Mmax = 9.6, dMw = 0.1,
-  mu = 3e+10, constant = 9.05)
+  mu = 3e+10, constant = 9.05, target_location = NULL)
 }
 \arguments{
 \item{discrete_source}{The discrete source for the source-zone, as from 
@@ -29,6 +29,10 @@ those parameters.}
 \item{mu}{Shear modulus in Pascals.}
 
 \item{constant}{value of constant passed to \code{M0_2_Mw}}
+
+\item{target_location}{c(longitude, latitude) or NULL. If not NULL, then
+only return earthquake events which include the unit source 'closest' to the
+target location (computed assuming a spherical earth with lon/lat coordinates)}
 }
 \value{
 A large table containing information on all earthquake events, and
