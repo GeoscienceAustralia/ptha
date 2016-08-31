@@ -381,16 +381,16 @@ discretized_source_from_source_contours<-function(
     }
 
     # Plot
-    for(i in 1:length(interpolated_midline[,1])){
-        # Get lines along-strike
-        line2plot = matrix( unlist(lapply(strike_cuts, f<-function(x) x[i,])), 
-            ncol = 3, byrow = TRUE)
-        # Interpolate them along a great circle with the 3D line interpolation
-        # routine
-        line2plot = cbind(line2plot[,1:2], rep(0, length(line2plot[,1])))
-        line2plot = interpolate_3D_path(line2plot)[,1:2]
-       
-        if(make_plot){ 
+    if(make_plot){
+        for(i in 1:length(interpolated_midline[,1])){
+            # Get lines along-strike
+            line2plot = matrix( unlist(lapply(strike_cuts, f<-function(x) x[i,])), 
+                ncol = 3, byrow = TRUE)
+            # Interpolate them along a great circle with the 3D line interpolation
+            # routine
+            line2plot = cbind(line2plot[,1:2], rep(0, length(line2plot[,1])))
+            line2plot = interpolate_3D_path(line2plot)[,1:2]
+           
             points(line2plot[,1], line2plot[,2], t='l', lty='dashed', col='brown')
         }
     }
