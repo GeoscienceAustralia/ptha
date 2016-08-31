@@ -6,11 +6,12 @@
 #   (make a plot and compare graphically) [Actually at the moment we check this in the function]
 #   - Good to have a test that links the rupture size with the deformation
 
-#' Given the summary statistics for a source zone, compute **all** events
+#' Given the summary statistics for a source zone, compute **all** uniform slip events
 #' with moment magnitude Mw.
 #'
-#' The events all have the same number of unit sources along-strike and down-dip.
-#'
+#' The events all have the same number of unit sources along-strike and
+#' down-dip. \code{Mw_2_rupture_size} is used to compute the target event
+#' dimensions.
 #'
 #' @param Mw Moment magnitude.
 #' @param unit_source_stats Output of discretized_source_approximate_summary_statistics or similar.
@@ -18,7 +19,7 @@
 #' @param constant value of constant passed to \code{M0_2_Mw}
 #' @return A list with information which can be used to create all events.
 #' @export
-get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, constant=9.05){
+get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, constant=9.05){
 
     ## Get scaling-relation based area, width, length
     rupture_stats = Mw_2_rupture_size(Mw, detailed=TRUE, CI_sd = 2.0)
@@ -239,7 +240,7 @@ get_all_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, cons
 # So we might not really need to make the long-terms slip rate constant everywhere.
 #
 
-#' Compute all synthetic earthquake events for a sourcezone
+#' Compute all synthetic uniform slip earthquake events for a sourcezone
 #'
 #' Apply \code{get_all_earthquake_events_of_magnitude_Mw} to a range of Mw
 #' values and combine the results
@@ -277,7 +278,7 @@ get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statisti
     ## Get all earthquake events
     all_eq_events = lapply(as.list(seq(Mmin, Mmax, dMw)), 
         f<-function(x){ 
-            get_all_events_of_magnitude_Mw(x, unit_source_statistics, 
+            get_all_earthquake_events_of_magnitude_Mw(x, unit_source_statistics, 
                 mu=mu, constant=constant)}
         )
 
@@ -301,7 +302,9 @@ get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statisti
     # big_eq_table + unit_source_statistics hold everything we need about the event geometry
     # (but not probability)
     big_eq_table = all_eq_tables[[1]]
-    for(i in 2:length(all_eq_tables)) big_eq_table = rbind(big_eq_table, all_eq_tables[[i]])
+    if(length(all_eq_tables) > 1){
+        for(i in 2:length(all_eq_tables)) big_eq_table = rbind(big_eq_table, all_eq_tables[[i]])
+    }
 
     return(big_eq_table)
 }
