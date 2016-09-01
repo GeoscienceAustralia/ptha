@@ -111,7 +111,7 @@ MODULE linear_interpolator_mod
     ! We want to find the index corresponding to the value in 'x' that is nearest y.
     ! This is a useful operation e.g. for interpolation of sorted input data
     !
-    SUBROUTINE nearest_index_sorted(n, x, y, output)
+    PURE SUBROUTINE nearest_index_sorted(n, x, y, output)
         INTEGER(ip), INTENT(IN) :: n
         REAL(dp), INTENT(IN) :: x(n)
         REAL(dp), INTENT(IN) :: y      
@@ -127,14 +127,14 @@ MODULE linear_interpolator_mod
             ELSE
                 lower = 1
                 upper = n
-                i = floor(0.5_dp*(lower + upper))
+                i = (lower + upper)/2 !floor(0.5_dp*(lower + upper))
                 DO WHILE ((x(i) > y).OR.(x(i+1) < y))
                    IF(x(i) > y) THEN
                        upper = i
                    ELSE
                        lower = i
                    END IF
-                   i = floor(0.5_dp*(lower + upper))
+                   i = (lower+upper)/2 !floor(0.5_dp*(lower + upper))
                 END DO
 
                 IF ( y - x(i) > x(i+1) - y) THEN
@@ -152,10 +152,12 @@ MODULE linear_interpolator_mod
     ! Suppose input_x, input_y are some data with input_x being sorted and increasing 
     ! We are given output_x, and wish to get output_y by linearly interpolating the
     ! original series.
-    SUBROUTINE linear_interpolation(n_input, input_x, input_y, n_output, output_x, output_y)
+    PURE SUBROUTINE linear_interpolation(n_input, input_x, input_y, n_output, output_x, output_y, precomputed_gradient)
         INTEGER(ip), INTENT(IN):: n_input, n_output
         REAL(dp), INTENT(IN):: input_x(n_input), input_y(n_input), output_x(n_output)
         REAL(dp), INTENT(OUT):: output_y(n_output)
+        !REAL(dp), OPTIONAL, INTENT(IN):: precomputed_gradient(n_input-1)
+        REAL(dp), INTENT(IN):: precomputed_gradient(n_input-1)
 
         INTEGER(ip):: i, j
         REAL(dp):: gradient
@@ -166,14 +168,23 @@ MODULE linear_interpolator_mod
             ! interpolate
             if (input_x(j) > output_x(i)) then
                 if(j > 1) then
-                    gradient = (input_y(j) - input_y(j-1))/(input_x(j) - input_x(j-1))
+                    !if(present(precomputed_gradient)) then
+                        gradient = precomputed_gradient(j-1)
+                    !else
+                    !    gradient = (input_y(j) - input_y(j-1))/(input_x(j) - input_x(j-1))
+                    !end if
+                        
                     output_y(i) = input_y(j-1) +  gradient * (output_x(i) - input_x(j-1))
                 else
                     output_y(i) = input_y(1)
                 end if
             else
                 if(j < n_input) then
-                    gradient = (input_y(j+1) - input_y(j))/(input_x(j+1) - input_x(j))
+                    !if(present(precomputed_gradient)) then
+                        gradient = precomputed_gradient(j)
+                    !else
+                    !    gradient = (input_y(j+1) - input_y(j))/(input_x(j+1) - input_x(j))
+                    !end if
                     output_y(i) = input_y(j) +  gradient * (output_x(i) - input_x(j))
                 else
                     output_y(i) = input_y(n_input)
@@ -352,7 +363,7 @@ MODULE kajiura_mod
         
         INTEGER(ip), PARAMETER:: ninterp_points = 601
         LOGICAL, PARAMETER:: log_transform_interpolation = .FALSE.
-        REAL(dp):: kj_xs(ninterp_points), kj_ys(ninterp_points)
+        REAL(dp):: kj_xs(ninterp_points), kj_ys(ninterp_points), precomputed_gradient(ninterp_points - 1)
 
         ! Make the kajiura_G_interpolator
         DO i = 1, ninterp_points
@@ -360,6 +371,9 @@ MODULE kajiura_mod
         END DO
         kj_ys = kajiura_G(kj_xs)
         if(log_transform_interpolation) kj_ys = log(kj_ys)
+
+        precomputed_gradient = (kj_ys(2:ninterp_points) - kj_ys(1:(ninterp_points-1)))/&
+            (kj_xs(2:ninterp_points) - kj_xs(1:(ninterp_points-1)))
         !CALL kajiura_G_log_interpolator%initialise(kj_xs, kj_ys, copy_data=.FALSE.)
 
         output = 0.0_dp
@@ -376,7 +390,7 @@ MODULE kajiura_mod
                         r_on_d(1) = filterXYr(j, i) * depth_inv(n,m)
                         IF(r_on_d(1) < kajiuraGmax) THEN
                             ! Get the kajiura value from interpolation
-                            CALL linear_interpolation(ninterp_points, kj_xs, kj_ys, 1, r_on_d, G_j_i)
+                            CALL linear_interpolation(ninterp_points, kj_xs, kj_ys, 1, r_on_d, G_j_i, precomputed_gradient)
                             !CALL kajiura_G_log_interpolator%eval(r_on_d, G_j_i)    
                             ! Undo logarithm that was applied for interpolation
                             if(log_transform_interpolation) G_j_i(1) = exp(G_j_i(1))
