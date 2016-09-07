@@ -289,7 +289,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
 
     if(MC_CORES > 1){
         all_tsunami_files = mcmapply(parallel_fun, ind=as.list(1:length(ij[,1])),
-            mc.cores=MC_CORES, mc.preschedule=FALSE, SIMPLIFY=FALSE)
+            mc.cores=MC_CORES, mc.preschedule=TRUE, SIMPLIFY=FALSE)
     }else{
         all_tsunami_files = mapply(parallel_fun, ind=as.list(1:length(ij[,1])), 
             SIMPLIFY=FALSE)

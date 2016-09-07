@@ -59,14 +59,20 @@ library(rgdal)
 
 ```
 ## Loading required package: methods
+```
+
+```
 ## Loading required package: sp
-## rgdal: version: 1.0-4, (SVN revision 548)
+```
+
+```
+## rgdal: version: 1.1-10, (SVN revision 622)
 ##  Geospatial Data Abstraction Library extensions to R successfully loaded
 ##  Loaded GDAL runtime: GDAL 1.10.1, released 2013/08/26
 ##  Path to GDAL shared files: /usr/share/gdal/1.10
 ##  Loaded PROJ.4 runtime: Rel. 4.8.0, 6 March 2012, [PJ_VERSION: 480]
 ##  Path to PROJ.4 shared files: (autodetected)
-##  Linking to sp version: 1.1-1
+##  Linking to sp version: 1.2-3
 ```
 
 ```r
@@ -127,7 +133,7 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
     scales=list(draw=TRUE), aspect='iso')
 ```
 
-![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png) 
+![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png)
 
 # Input parameters
 
@@ -165,21 +171,49 @@ library(rptha)
 
 ```
 ## Loading required package: rgeos
-## rgeos version: 0.3-15, (SVN revision 515)
+```
+
+```
+## rgeos version: 0.3-19, (SVN revision 524)
 ##  GEOS runtime version: 3.4.2-CAPI-1.8.2 r3921 
-##  Linking to sp version: 1.1-1 
-##  Polygon checking: TRUE 
-## 
+##  Linking to sp version: 1.2-3 
+##  Polygon checking: TRUE
+```
+
+```
 ## Loading required package: geosphere
+```
+
+```
 ## Loading required package: raster
+```
+
+```
 ## Loading required package: FNN
+```
+
+```
 ## Loading required package: minpack.lm
+```
+
+```
 ## Loading required package: geometry
+```
+
+```
 ## Loading required package: magic
+```
+
+```
 ## Loading required package: abind
+```
+
+```
 ## 
 ## Attaching package: 'magic'
-## 
+```
+
+```
 ## The following object is masked from 'package:raster':
 ## 
 ##     shift
