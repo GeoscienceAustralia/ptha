@@ -76,61 +76,44 @@ orthogonal_near_trench<-function(top_line, second_line){
     return(approx_top_line(best_n)[,1:2])
 }
 
-#' Make discretized_source from subduction interface contours
+#' Make '3D' down-dip lines along source contours
 #'
-#' Given a shapefile with contour lines in lon/lat coordinates defining the
-#' subduction interface (with an attribute defining their depth), partition into
-#' unit sources with chosen approximate length/width. Information on all the
-#' unit sources is held in a 'discretized_source' list
-#' 
-#' @param source_shapefile character name of line shapefile defining the
-#' subduction interface contours. It should have an attribute giving the depth
-#' @param desired_subfault_length numeric desired length of subfaults (km)
-#' @param desired_subfault_width numeric desired width of subfaults (km)
-#' @param make_plot logical Make a plot?
+#' This is as an intermediate step when defining boundaries of
+#' the unit sources. It is not meant to be exported to the main package,
+#' and has been replaced by more advanced routines.
+#'
+#' @param source_contours SpatialLinesDataFrame with the source contours and an
+#' attribute 'level' giving the contour depth
+#' @param desired_subfault_length Desired length of subfaults along-strike
 #' @param contour_depth_attribute character The name of the column in the
 #' attribute table giving the contour depth
-#' @param contour_depth_in_km logical Are contour depths given in km? (If False,
-#' assume 'm')
 #' @param extend_line_fraction To ensure that contour lines intersect downdip
 #' lines at the left/right edges we extend them by this fraction of the
 #' end-to-end source length
 #' @param orthogonal_near_trench move unit source points along the trench to enhance
 #' orthogonality there. Can reduce numerical artefacts at the trench
-#' @return A list containing: depth_contours The original source contours;
-#' unit_source_grid A 3 dimensional array descrbing the unit source vertices;
-#' discretized_source_dim A vector of length 2 with number-of-sources-down-dip,
-#' number-of-sources-along-strike; fine_downdip_transects A 3 dimensional array
-#' containing densly spaced points along the down-dip transects, which might be
-#' useful for defining sub-unit-source points for tsunami source integration
+#' @param make_plot logical (TRUE/FALSE) Plot the result
+#' @return a list with the 3d lines
 #'
-#' @export
-discretized_source_from_source_contours<-function(
-    source_shapefile, 
-    desired_subfault_length,
-    desired_subfault_width, 
-    make_plot=FALSE,
-    contour_depth_attribute='level', 
-    contour_depth_in_km=TRUE,
-    extend_line_fraction=1.0e-01,
-    orthogonal_near_trench = FALSE){
+#' DO NOT EXPORT THIS FUNCTION
+#'
+create_3d_lines_dipping_down_depth<-function(
+    source_contours, 
+    desired_subfault_length, 
+    contour_depth_attribute, 
+    extend_line_fraction,
+    orthogonal_near_trench,
+    make_plot){
 
     # Previously was a function argument, but now I am considering this the
     # only good choice
-    down_dip_line_type = 'eq_spacing'
     #down_dip_line_type = 'mid'
-
-    # Get the shapefile
-    source_contours = rgdal::readOGR(
-        dsn = dirname(source_shapefile),
-        layer=gsub('.shp', '', basename(source_shapefile)),
-        verbose=FALSE)
+    down_dip_line_type = 'eq_spacing'
 
     # Get the deepest/shallowest levels
     contour_levels = as.numeric(as.character(source_contours@data$level))
     shallow_contour = source_contours[which.min(contour_levels),]
     deep_contour = source_contours[which.max(contour_levels),]
-
 
     # Get points on the shallow contour with approx desired length spacing
     interp_shallow_line = approxSpatialLines(shallow_contour, longlat=TRUE, 
@@ -286,8 +269,6 @@ discretized_source_from_source_contours<-function(
     chosen_line = down_dip_line_type
 
     # Find the 'depth' of points along all dip-cut lines
-    strike_cuts = list()   
-    fine_strike_cuts = list()
     mid_line_with_cutpoints = list()
     ll = length(dip_cuts)
     for(i in 1:ll){
@@ -322,6 +303,64 @@ discretized_source_from_source_contours<-function(
         }
     }
 
+    return(mid_line_with_cutpoints)
+
+}
+
+
+#' Make discretized_source from subduction interface contours
+#'
+#' Given a shapefile with contour lines in lon/lat coordinates defining the
+#' subduction interface (with an attribute defining their depth), partition into
+#' unit sources with chosen approximate length/width. Information on all the
+#' unit sources is held in a 'discretized_source' list
+#' 
+#' @param source_shapefile character name of line shapefile defining the
+#' subduction interface contours. It should have an attribute giving the depth
+#' @param desired_subfault_length numeric desired length of subfaults (km)
+#' @param desired_subfault_width numeric desired width of subfaults (km)
+#' @param make_plot logical Make a plot?
+#' @param contour_depth_attribute character The name of the column in the
+#' attribute table giving the contour depth
+#' @param contour_depth_in_km logical Are contour depths given in km? (If False,
+#' assume 'm')
+#' @param extend_line_fraction To ensure that contour lines intersect downdip
+#' lines at the left/right edges we extend them by this fraction of the
+#' end-to-end source length
+#' @param orthogonal_near_trench move unit source points along the trench to enhance
+#' orthogonality there. Can reduce numerical artefacts at the trench
+#' @return A list containing: depth_contours The original source contours;
+#' unit_source_grid A 3 dimensional array descrbing the unit source vertices;
+#' discretized_source_dim A vector of length 2 with number-of-sources-down-dip,
+#' number-of-sources-along-strike; fine_downdip_transects A 3 dimensional array
+#' containing densly spaced points along the down-dip transects, which might be
+#' useful for defining sub-unit-source points for tsunami source integration
+#'
+#' @export
+discretized_source_from_source_contours<-function(
+    source_shapefile, 
+    desired_subfault_length,
+    desired_subfault_width, 
+    make_plot=FALSE,
+    contour_depth_attribute='level', 
+    contour_depth_in_km=TRUE,
+    extend_line_fraction=1.0e-01,
+    orthogonal_near_trench = FALSE){
+
+    # Get the shapefile
+    source_contours = rgdal::readOGR(
+        dsn = dirname(source_shapefile),
+        layer=gsub('.shp', '', basename(source_shapefile)),
+        verbose=FALSE)
+
+    mid_line_with_cutpoints = create_3d_lines_dipping_down_depth(
+        source_contours,
+        desired_subfault_length, 
+        contour_depth_attribute, 
+        extend_line_fraction,
+        orthogonal_near_trench,
+        make_plot)
+    ll = length(mid_line_with_cutpoints)
 
     # Find the lengths of the dip cut lines in the down-dip direction
     dip_cut_lengths = unlist(lapply(mid_line_with_cutpoints, 
@@ -343,7 +382,7 @@ discretized_source_from_source_contours<-function(
         round(mean_dip_cut_length / desired_subfault_width - 1), 
         0)
 
-
+    strike_cuts = list()   
     for(i in 1:ll){
         # Now interpolate along the above, with the desired spacing between
         # points
@@ -354,7 +393,7 @@ discretized_source_from_source_contours<-function(
         strike_cuts[[i]] = interpolated_midline
     }
 
-
+    fine_strike_cuts = list()
     for(i in 1:ll){
 
         fine_interpolated_midline = interpolate_3D_path(
