@@ -393,7 +393,8 @@ lonlat2utm<-function(lonlat){
 #' not too close to the poles)
 #'
 #' @param coords_lonlat matrix with 2 columns (lon/lat) in degrees
-#' @param origin_lonlat vector of length 2 giving the lon/lat for the origin of
+#' @param origin_lonlat vector of length 2 (or matrix with 2 columns and same number of rows as coords_lonlat) 
+#' giving the lon/lat for the origin of
 #' the new coordinate system
 #' @param r radius of the sphere (earth radius in m as default)
 #' @return matrix with x,y in the new coordinate system (units same as r units)
@@ -414,19 +415,28 @@ spherical_to_cartesian2d_coordinates<-function(
     # Treat case where coords_lonlat is simplified to a vector 
     if(is.null(dim(coords_lonlat))){
         stopifnot(length(coords_lonlat) == 2)
-        coords_lonlat = matrix(coords_lonlat, ncol = 2, nrow = 1)
+        #coords_lonlat = matrix(coords_lonlat, ncol = 2, nrow = 1)
+        dim(coords_lonlat) = c(1, 2)
     }
 
     if(is.null(origin_lonlat)){
         stop('Must provide origin for cartesian coordinate system in lon/lat)')
+    }else{
+        if(is.null(dim(origin_lonlat))){
+            dim(origin_lonlat) = c(1, length(origin_lonlat))
+        }else{
+            if(nrow(origin_lonlat) != nrow(coords_lonlat)){
+                stop('If origin_lonlat is a matrix, it must have the same number of rows as coords_lonlat')
+            }
+        }
     }
 
     deg2rad = pi/180
 
-    dlon = (coords_lonlat[,1] - origin_lonlat[1])*deg2rad
-    dlat = (coords_lonlat[,2] - origin_lonlat[2])*deg2rad
+    dlon = (coords_lonlat[,1] - origin_lonlat[,1])*deg2rad
+    dlat = (coords_lonlat[,2] - origin_lonlat[,2])*deg2rad
     
-    x = r*dlon*cos(origin_lonlat[2]*deg2rad)
+    x = r*dlon*cos(origin_lonlat[,2]*deg2rad)
     y = r*dlat
 
     return(cbind(x,y))

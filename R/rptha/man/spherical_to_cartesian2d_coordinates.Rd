@@ -10,7 +10,8 @@ spherical_to_cartesian2d_coordinates(coords_lonlat, origin_lonlat = NULL,
 \arguments{
 \item{coords_lonlat}{matrix with 2 columns (lon/lat) in degrees}
 
-\item{origin_lonlat}{vector of length 2 giving the lon/lat for the origin of
+\item{origin_lonlat}{vector of length 2 (or matrix with 2 columns and same number of rows as coords_lonlat) 
+giving the lon/lat for the origin of
 the new coordinate system}
 
 \item{r}{radius of the sphere (earth radius in m as default)}
