@@ -223,6 +223,11 @@ test_that('test_kajiura_filter_3', {
     # Should be 'the same' as m2
     deformation_kj_mat = as.matrix(deformation_kj)
     testStat = max(abs(deformation_kj_mat - m2))
+    # Beware (6/10/2016) it seems that testthat throws an error here during the
+    # package build.  But, if I run the same test code in the terminal after
+    # library(rptha), library(testthat), then there is no error. Weird. I have
+    # seen bug-reports about false positives in testthat when checking packages
+    # before -- not sure if something like that is going on.
     expect_that( testStat < 1.0e-15, is_true())
 
 })
