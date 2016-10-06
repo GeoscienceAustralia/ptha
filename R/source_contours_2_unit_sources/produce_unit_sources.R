@@ -45,9 +45,9 @@ okada_distance_factor = 20 # Inf
 # elevation raster (required for Kajiura filtering). Should give elevation in m, 
 # with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
 # Set to NULL to not use Kajiura filtering.
-#elevation_raster = NULL 
+elevation_raster = NULL 
 ## A realistic example would look like:
-elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
+#elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
 ## Note that for Kajiura filtering, a minimum depth of 10m will be assumed 
 ## (to avoid passing negative depths to the Kajiura smoothing routine)
 
