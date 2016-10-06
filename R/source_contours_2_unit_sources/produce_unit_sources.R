@@ -18,8 +18,8 @@ library(raster)
 all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp') # Matches all shapefiles in CONTOURS
 
 # Desired unit source geometric parameters
-desired_subfault_length = 20 # km
-desired_subfault_width = 20 # km
+desired_subfault_length = 50 # km
+desired_subfault_width = 50 # km
 
 # A vector with the desired rake angle (one entry per sourcezone)
 sourcezone_rake = rep(90, len=length(all_sourcezone_shapefiles)) # degrees
@@ -45,9 +45,9 @@ okada_distance_factor = 20 # Inf
 # elevation raster (required for Kajiura filtering). Should give elevation in m, 
 # with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
 # Set to NULL to not use Kajiura filtering.
-elevation_raster = NULL 
+#elevation_raster = NULL 
 ## A realistic example would look like:
-#elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
+elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
 ## Note that for Kajiura filtering, a minimum depth of 10m will be assumed 
 ## (to avoid passing negative depths to the Kajiura smoothing routine)
 
@@ -81,7 +81,7 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 1
+MC_CORES = 12
 
 # Option to illustrate 3d interactive plot creation
 #
@@ -93,9 +93,8 @@ make_3d_interactive_plot = FALSE
 # TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
 
-# Option to make the unit-source edges be more orthogonal to the trench. TRUE
-# can help if artefacts in the solution near the trench occur. 
-orthogonal_near_trench = TRUE 
+# Option to make the unit-source edges be more orthogonal. 
+use_improved_downdip_lines = TRUE
 
 ## ---- takeCommandLineParameter ----
 
@@ -144,7 +143,7 @@ for(source_shapefile_index in 1:length(all_sourcezone_shapefiles)){
     discretized_sources[[sourcename]] = 
         discretized_source_from_source_contours(source_shapefile, 
             desired_subfault_length, desired_subfault_width, make_plot=TRUE,
-            orthogonal_near_trench=orthogonal_near_trench)
+            improved_downdip_lines = use_improved_downdip_lines)
 
     # Get unit source summary stats
     discretized_sources_statistics[[sourcename]] = 

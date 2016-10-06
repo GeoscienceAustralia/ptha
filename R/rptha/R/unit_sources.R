@@ -76,237 +76,6 @@ orthogonal_near_trench<-function(top_line, second_line){
     return(approx_top_line(best_n)[,1:2])
 }
 
-#' Make '3D' down-dip lines along source contours
-#'
-#' This is as an intermediate step when defining boundaries of
-#' the unit sources. It is not meant to be exported to the main package,
-#' and has been replaced by more advanced routines.
-#'
-#' @param source_contours SpatialLinesDataFrame with the source contours and an
-#' attribute 'level' giving the contour depth
-#' @param desired_subfault_length Desired length of subfaults along-strike
-#' @param contour_depth_attribute character The name of the column in the
-#' attribute table giving the contour depth
-#' @param extend_line_fraction To ensure that contour lines intersect downdip
-#' lines at the left/right edges we extend them by this fraction of the
-#' end-to-end source length
-#' @param orthogonal_near_trench move unit source points along the trench to enhance
-#' orthogonality there. Can reduce numerical artefacts at the trench
-#' @param make_plot logical (TRUE/FALSE) Plot the result
-#' @return a list with the 3d lines
-#'
-#' DO NOT EXPORT THIS FUNCTION
-#'
-create_3d_lines_dipping_down_depth<-function(
-    source_contours, 
-    desired_subfault_length, 
-    contour_depth_attribute, 
-    extend_line_fraction,
-    orthogonal_near_trench,
-    make_plot){
-
-    # Previously was a function argument, but now I am considering this the
-    # only good choice
-    #down_dip_line_type = 'mid'
-    down_dip_line_type = 'eq_spacing'
-
-    # Get the deepest/shallowest levels
-    contour_levels = as.numeric(as.character(source_contours@data$level))
-    shallow_contour = source_contours[which.min(contour_levels),]
-    deep_contour = source_contours[which.max(contour_levels),]
-
-    # Get points on the shallow contour with approx desired length spacing
-    interp_shallow_line = approxSpatialLines(shallow_contour, longlat=TRUE, 
-        spacing=desired_subfault_length)
-    interp_shallow_line = coordinates(interp_shallow_line)
-
-    # Get the same number of points on the deep contour
-    np = length(interp_shallow_line[,1])
-    interp_deep_line = approxSpatialLines(deep_contour, longlat=TRUE,
-        spacing=NULL, n = np)
-    interp_deep_line = coordinates(interp_deep_line)
-
-    # Order the lines appropriately
-    # Note: Here we suppress warnings from geosphere about longitudes in 
-    # [-180,180], which are caused by .pointsToMatrix therein
-    if(suppressWarnings(
-        distCosine(interp_shallow_line[1,], interp_deep_line[1,]) > 
-        distCosine(interp_shallow_line[1,], interp_deep_line[np,]) )
-        ){
-        interp_deep_line = interp_deep_line[np:1,]
-    }
-    # Now the deep and shallow lines are ordered in the same direction
-
-    # Make sure the line is ordered in the 'along-strike' direction
-    # Measure this direction as the angle from the first point to a
-    # point at index 'mi' along the line (intended as a rough mid-point)
-    #
-    # Note: 'bearing' calls 'pointsToMatrix' which warns whenever longitudes
-    # are outside [-180, 180], but it is no problem
-    mi = max(floor(np/2), 2)
-    b1 = suppressWarnings(
-        geosphere::bearing(interp_shallow_line[1,], interp_shallow_line[mi,], 
-            f=0))
-    b2 = suppressWarnings(
-        geosphere::bearing(interp_shallow_line[1,], interp_deep_line[1,], 
-            f=0))
-
-    # If the interp_shallow_line is ordered along-strike, then b1 + 90 should
-    # be similar to b2, accounting for angular addition. This means the
-    # difference is close to 0 or 360 or -360, etc
-    b1_plus_90 = b1 + 90
-    angle_diff = (b2 - b1_plus_90)%%360
-    if(!(angle_diff < 90 | angle_diff > 270)){
-        print('The top contour does not seem to be oriented in the along-strike direction')
-        print('Reordering ... (be careful)')
-        interp_shallow_line = interp_shallow_line[np:1,]
-        interp_deep_line = interp_deep_line[np:1,]
-    }
-
-    # Divide the deep line into finely spaced points
-    interp_deep_line_dense = approxSpatialLines(deep_contour, longlat=TRUE,
-        spacing=NULL, n=np*50)
-    interp_deep_line_dense = coordinates(interp_deep_line_dense)
-
-    # Divide the shallow line into finely spaced points
-    interp_shallow_line_dense = approxSpatialLines(shallow_contour, longlat=TRUE,
-        spacing=NULL, n=np*50)
-    interp_shallow_line_dense = coordinates(interp_shallow_line_dense)
-
-    if(make_plot){
-
-        ## Plot
-        plot(source_contours, asp=1, axes=TRUE)
-        plot(shallow_contour, col='red', add=T)
-        plot(deep_contour, col='red', add=T)
-        title(source_shapefile)
-
-    }
-
-    # Find 'nearest' points on shallow/deep lines which can be used to make
-    # lines 'cutting' the source along the dip
-    dip_cuts = list()
-    ll = length(interp_shallow_line[,1])
-    for(i in 1:ll){
-
-        dip_cuts[[i]] = list()
-
-        if( (i != 1) & (i != ll)){
-           
-            # Line 1: Join equally spaced points along the top/bottom contours 
-            line_eq_spacing = rbind(interp_shallow_line[i,], 
-                interp_deep_line[i,])
-
-            # Line2: Join nearest points (measured along-surface) along the
-            # bottom contour to the top
-            # Note: Here we suppress warnings from geosphere about longitudes
-            # in [-180,180], which are caused by .pointsToMatrix therein
-            nearest = suppressWarnings(
-                which.min(distCosine(interp_shallow_line[i,], 
-                    interp_deep_line_dense)))
-            line_nearest_surface = rbind(interp_shallow_line[i,], 
-                interp_deep_line_dense[nearest,])
-
-            # Line2B: Join nearest points (measured along-deep-contour) along the
-            # top contour to the bottom
-            # Note: Here we suppress warnings from geosphere about longitudes
-            # in [-180,180], which are caused by .pointsToMatrix therein
-            nearestB = suppressWarnings(
-                which.min(distCosine(interp_deep_line[i,], 
-                    interp_shallow_line_dense)))
-            line_nearest_deep = rbind(interp_deep_line[i,], 
-                interp_shallow_line_dense[nearestB,])
-            
-
-            # Line3: Find a midpoint compromise between the nearest and the
-            # equal spacing option
-            # Note: Here we suppress warnings from geosphere about longitudes
-            # in [-180,180], which are caused by .pointsToMatrix therein
-            mid_index_bottom = suppressWarnings(
-                round(0.5*(nearest + which.min(
-                    distCosine(interp_deep_line[i,], interp_deep_line_dense))))
-                )
-            mid_index_top = suppressWarnings(
-                round(0.5*(nearestB + which.min( 
-                    distCosine(interp_shallow_line[i,], 
-                    interp_shallow_line_dense)))))
-
-            line_mid = rbind(interp_shallow_line_dense[mid_index_top,], 
-                interp_deep_line_dense[mid_index_bottom,])
-
-            # Store results 
-            dip_cuts[[i]][['eq_spacing']] = line_eq_spacing
-            dip_cuts[[i]][['nearest']] = line_nearest_surface
-            dip_cuts[[i]][['mid']] = line_mid
-
-            if(make_plot & FALSE){
-                points(interpolate_gc_path(line_eq_spacing), t='l', 
-                    col='blue', lwd=2, lty='solid')
-                points(interpolate_gc_path(line_nearest_surface), t='l', 
-                    col='red', lty='solid')
-                points(interpolate_gc_path(line_mid), t='l', col='darkgreen', 
-                    lty='solid')
-            }
-
-        }else{
-            # End points need to match up
-            line_eq_spacing = rbind(interp_shallow_line[i,], interp_deep_line[i,])
-            
-            if(make_plot & FALSE){
-                points(interpolate_gc_path(line_eq_spacing), t='l', col='blue',
-                    lwd=2, lty='solid')
-            }
-
-            # All lines must connect the start/end points
-            dip_cuts[[i]][['eq_spacing']] = line_eq_spacing
-            dip_cuts[[i]][['nearest']] = line_eq_spacing
-            dip_cuts[[i]][['mid']] = line_eq_spacing
-
-        }
-
-    }
-
-    chosen_line = down_dip_line_type
-
-    # Find the 'depth' of points along all dip-cut lines
-    mid_line_with_cutpoints = list()
-    ll = length(dip_cuts)
-    for(i in 1:ll){
-        # Split up the dip_cut line as appropriate
-        mid_line = dip_cuts[[i]][[chosen_line]]
-
-        # Compute the mid_line as a 3D path
-        mid_line_with_cutpoints[[i]] = intersect_surface_path_with_depth_contours(
-            mid_line, 
-            source_contours, 
-            n=1000, 
-            contour_depth_attribute=contour_depth_attribute,
-            extend_line_fraction=extend_line_fraction) 
-    }
-
-    # If desired, adjust the top line to enhance orthogonality
-    if(orthogonal_near_trench){
-        top_line = matrix(NA, nrow=2, ncol=ll)
-        second_line = matrix(NA, nrow=2, ncol=ll)
-
-        for(i in 1:ll){
-            top_line[,i] = mid_line_with_cutpoints[[i]][1,1:2]
-            second_line[,i] = mid_line_with_cutpoints[[i]][2,1:2]
-        }
-        new_top_line = orthogonal_near_trench(top_line, second_line)
-        for(i in 1:ll){
-            # Now make the 'new-top-line' exactly on the contour.
-            nearest_index = which.min(
-                (interp_shallow_line_dense[,1] - new_top_line[i,1])**2 + 
-                (interp_shallow_line_dense[,2] - new_top_line[i,2])**2)
-            mid_line_with_cutpoints[[i]][1,1:2] = interp_shallow_line_dense[nearest_index,1:2]
-        }
-    }
-
-    return(mid_line_with_cutpoints)
-
-}
-
 
 #' Make discretized_source from subduction interface contours
 #'
@@ -326,9 +95,14 @@ create_3d_lines_dipping_down_depth<-function(
 #' assume 'm')
 #' @param extend_line_fraction To ensure that contour lines intersect downdip
 #' lines at the left/right edges we extend them by this fraction of the
-#' end-to-end source length
+#' end-to-end source length. Not required if 'improved_downdip_lines=TRUE'
 #' @param orthogonal_near_trench move unit source points along the trench to enhance
-#' orthogonality there. Can reduce numerical artefacts at the trench
+#' orthogonality there. Can reduce numerical artefacts at the trench. 
+#' Not required if 'improved_downdip_lines=TRUE'
+#' @param improved_downdip_lines If TRUE, use an iterative algorithm for computing the downdip
+#' lines (which define unit source boundaries). This should lead to unit-sources
+#' that are more orthogonal. The iterative algorithm can take a few minutes if
+#' there are hundreds of unit-sources in each along-trench direction. 
 #' @return A list containing: depth_contours The original source contours;
 #' unit_source_grid A 3 dimensional array descrbing the unit source vertices;
 #' discretized_source_dim A vector of length 2 with number-of-sources-down-dip,
@@ -345,7 +119,8 @@ discretized_source_from_source_contours<-function(
     contour_depth_attribute='level', 
     contour_depth_in_km=TRUE,
     extend_line_fraction=1.0e-01,
-    orthogonal_near_trench = FALSE){
+    orthogonal_near_trench = FALSE,
+    improved_downdip_lines = FALSE){
 
     # Get the shapefile
     source_contours = rgdal::readOGR(
@@ -353,13 +128,21 @@ discretized_source_from_source_contours<-function(
         layer=gsub('.shp', '', basename(source_shapefile)),
         verbose=FALSE)
 
-    mid_line_with_cutpoints = create_3d_lines_dipping_down_depth(
-        source_contours,
-        desired_subfault_length, 
-        contour_depth_attribute, 
-        extend_line_fraction,
-        orthogonal_near_trench,
-        make_plot)
+    if(!improved_downdip_lines){
+        mid_line_with_cutpoints = create_downdip_lines_on_source_contours(
+            source_contours,
+            desired_subfault_length, 
+            contour_depth_attribute, 
+            extend_line_fraction,
+            orthogonal_near_trench,
+            make_plot)
+    }else{
+        mid_line_with_cutpoints = create_downdip_lines_on_source_contours_improved(
+            source_contours,
+            desired_subfault_length, 
+            contour_depth_attribute,
+            make_plot=make_plot)
+    }
     ll = length(mid_line_with_cutpoints)
 
     # Find the lengths of the dip cut lines in the down-dip direction
@@ -1294,10 +1077,10 @@ get_depth_dip_at_unit_source_interior_points<-function(
 
 }
 
-#' Quick plot of a unit source interior points
+#' Quick plot of a unit source interior points cartesian
 #'
 #' @param us List with unit source interior points information: Output of
-#' 'unit_source_interior_points_cartesian' or similar
+#' 'unit_source_interior_points_cartesian' or similar. 
 #' @return nothing but make a plot
 #'
 #' @export
@@ -1305,6 +1088,13 @@ plot_unit_source_interior_points_cartesian<-function(us){
 
     unit_source = us$unit_source_cartesian
     output_points = us$grid_points
+
+    if(is.null(unit_source)){
+        msg = paste0('"us" is not a CARTESIAN unit source. \n',
+            'It should be the output of "unit_source_interior_points_cartesian" or similar')
+        stop(msg)
+    }
+
 
     col_value = (max(unit_source[,3]) - unit_source[,3])/diff(range(unit_source[,3])) 
     plot(unit_source[,1:2], t='o', 
@@ -1357,6 +1147,12 @@ plot_unit_source_interior_points_cartesian<-function(us){
 #' @export
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){
+
+    if(is.null(unit_source$unit_source_cartesian)){
+        msg = paste0('us is not a CARTESIAN unit source. \n',
+            'It should be the output of "unit_source_interior_points_cartesian" or similar')
+        stop(msg)
+    }
 
     if(!add){
         rgl::plot3d(us$grid_points[,1], us$grid_points[,2], -us$grid_points[,3], 

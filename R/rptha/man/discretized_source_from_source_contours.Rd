@@ -7,7 +7,8 @@
 discretized_source_from_source_contours(source_shapefile,
   desired_subfault_length, desired_subfault_width, make_plot = FALSE,
   contour_depth_attribute = "level", contour_depth_in_km = TRUE,
-  extend_line_fraction = 0.1, orthogonal_near_trench = FALSE)
+  extend_line_fraction = 0.1, orthogonal_near_trench = FALSE,
+  improved_downdip_lines = FALSE)
 }
 \arguments{
 \item{source_shapefile}{character name of line shapefile defining the
@@ -27,10 +28,16 @@ assume 'm')}
 
 \item{extend_line_fraction}{To ensure that contour lines intersect downdip
 lines at the left/right edges we extend them by this fraction of the
-end-to-end source length}
+end-to-end source length. Not required if 'improved_downdip_lines=TRUE'}
 
 \item{orthogonal_near_trench}{move unit source points along the trench to enhance
-orthogonality there. Can reduce numerical artefacts at the trench}
+orthogonality there. Can reduce numerical artefacts at the trench. 
+Not required if 'improved_downdip_lines=TRUE'}
+
+\item{improved_downdip_lines}{If TRUE, use an iterative algorithm for computing the downdip
+lines (which define unit source boundaries). This should lead to unit-sources
+that are more orthogonal. The iterative algorithm can take a few minutes if
+there are hundreds of unit-sources in each along-trench direction.}
 }
 \value{
 A list containing: depth_contours The original source contours;

@@ -238,8 +238,8 @@ library(raster)
 all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp') # Matches all shapefiles in CONTOURS
 
 # Desired unit source geometric parameters
-desired_subfault_length = 20 # km
-desired_subfault_width = 20 # km
+desired_subfault_length = 50 # km
+desired_subfault_width = 50 # km
 
 # A vector with the desired rake angle (one entry per sourcezone)
 sourcezone_rake = rep(90, len=length(all_sourcezone_shapefiles)) # degrees
@@ -265,9 +265,16 @@ okada_distance_factor = 20 # Inf
 # elevation raster (required for Kajiura filtering). Should give elevation in m, 
 # with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
 # Set to NULL to not use Kajiura filtering.
-elevation_raster = NULL 
+#elevation_raster = NULL 
 ## A realistic example would look like:
-#elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
+elevation_raster = raster('../../../../DATA/ELEV/GEBCO_08/gebco_08.nc')
+```
+
+```
+## Loading required namespace: ncdf4
+```
+
+```r
 ## Note that for Kajiura filtering, a minimum depth of 10m will be assumed 
 ## (to avoid passing negative depths to the Kajiura smoothing routine)
 
@@ -301,7 +308,7 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 1
+MC_CORES = 12
 
 # Option to illustrate 3d interactive plot creation
 #
@@ -313,9 +320,8 @@ make_3d_interactive_plot = FALSE
 # TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
 
-# Option to make the unit-source edges be more orthogonal to the trench. TRUE
-# can help if artefacts in the solution near the trench occur. 
-orthogonal_near_trench = TRUE 
+# Option to make the unit-source edges be more orthogonal. 
+use_improved_downdip_lines = TRUE
 ```
 
 # Running the script
@@ -327,11 +333,8 @@ run from within R using the syntax:
 where the `echo=TRUE` command prints the commands to the screen as they are
 executed. 
 
-Alternatively the script can be run from the commandline directly with:
-
-    Rscript produce_unit_sources.R
-
-To only run a single shapefile, you can pass an integer argument, e.g.:
+Alternatively the script can be run from the commandline directly. It
+is setup to run a single shapefile, selected with an integer argument, e.g.:
 
     Rscript produce_unit_sources.R 10
 
@@ -367,13 +370,14 @@ sub-unit-source points, exact unit source discretization, etc).
 Beware of possible artefacts in the computed solution along the trench when
 rupture becomes very shallow and the source zone is nonuniform. This would
 typically manifest itself as rare high-points in the solution. In our
-experience this is not detectable when Kajiura filtering is applied. In general
-we suggest to always apply Kajiura filtering. It is not done above so we can
-avoid distributing elevation data with the package, and also because often it
-is best to apply Kajiura filtering AFTER unit sources have been combined (see
-next paragraph).
+experience this is not detectable when Kajiura filtering is applied (and is
+often not detectible in any case -- but you should check for it). In general we
+suggest to always apply Kajiura filtering, although that is not done above so
+we can avoid distributing elevation data with the package. Also, as discussed
+below, often it is best to apply Kajiura filtering AFTER unit sources have been
+combined (see next paragraph).
 
-The option 'orthogonal_near_trench=TRUE' has also be used to reduce this issue.
+The option 'use_improved_downdip_lines=TRUE' can reduce the above issues.
 
 If a fine unit source spacing is used and the unit source deformations are combined
 to produce tsunami initial conditions, then it may be best to apply Kajiura filtering
