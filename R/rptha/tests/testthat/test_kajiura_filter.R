@@ -80,17 +80,18 @@ test_that('test_kajiura_filter_qualitative', {
 
 test_that('test_kajiura_filter_1', {
     
-    # Check that the smoothing of a 'point' source    
-    # is as desired, with an uneven point cloud
+    # Check that the smoothing of a 'point' source with constant depth
+    # leads to a bump with the shape of the Kajiura G function.
+    # Use an uneven point cloud.
     #
     # NOTE: The volume of the 'point' source is not well defined.
     #       Since the input xyDef data is interpreted as unstructured points,
-    #        the volume of a 'point' source depends on how you interpolate the data
-    #       So, we account for this in the test
+    #        the volume of a 'point' source depends on how you interpolate the data.
+    #       So, we account for this in the test.
     #
-    # However, the repeated re-gridding in the routine will still introduce some errors
+    # Regardless, the repeated re-gridding in the routine will still introduce some errors.
 
-    # DEFINE INITIAL xyDef + depth
+    # Define initial xyDef + depth
     xrange = seq(-1,1,len=201)*50000
     yrange = seq(-1,1,len=401)*50000
 
@@ -139,8 +140,12 @@ test_that('test_kajiura_filter_1', {
 test_that('test_kajiura_filter_3', {
 
     # Check that the smoothing of a 'point' source    
-    # is as desired, with an uneven point cloud
-    # USE VARIABLE DEPTHS
+    # is as desired, with an uneven point cloud.
+    # Uses variable depths. 
+    # Recall that in this situation, the implementation of the kajiura filter
+    # is not really well defined (since the underlying theory applies to
+    # constant depths). However, for slowly varying depths, application of the
+    # filter with locally varying filter width should be quite accurate.
     #
     # NOTE: The volume of the 'point' source is not well defined.
     #       Since the input xyDef data is interpreted as unstructured points,
@@ -149,7 +154,7 @@ test_that('test_kajiura_filter_3', {
     #
     # However, the repeated re-gridding in the routine will still introduce some errors
 
-    # DEFINE INITIAL xyDef + depth
+    # Define initial xyDef + depth
     xrange = seq(-1,1,len=201)*50000
     yrange = seq(-1,1,len=401)*50000
 
@@ -163,9 +168,9 @@ test_that('test_kajiura_filter_3', {
     def[mm] = 1.0
    
     # Make 'varying' depths 
-    # If they vary too rapidly, the volume error becomes too large
-    #browser()
-    depths = 2000.+100.*(sin(xyGrid[,1]/3000)+cos(xyGrid[,2]/3000*0.8)) #runif(length(xyGrid[,1]), min=-1,max=1)*500.+2000
+    # If they vary too rapidly, the volume error becomes too large (since our kajiura filter)
+    # is not volume conservative with spatially varying depths.
+    depths = 2000.+100.*(sin(xyGrid[,1]/3000)+cos(xyGrid[,2]/3000*0.8))
     xyDef = cbind(xyGrid, def)
 
     # Interpolate / smooth
@@ -178,10 +183,8 @@ test_that('test_kajiura_filter_3', {
     # Smoothed
     m2 = matrix(new_xyDef[,3],ncol=201,byrow=T)
     #
-    #d1=matrix(depths, ncol=201,byrow=T)
     #
     # Find the 'r' value to apply to kajiura G
-    #rMax=matrix(sqrt(xyGrid[,1]^2+xyGrid[,2]^2), ncol=201,byrow=T)/d1
     rMax = sqrt(xyGrid[,1]^2+xyGrid[,2]^2)/depths
     # Limit the bounds of the kajiura function inputs
     rMax = pmin(rMax,8)
@@ -189,13 +192,37 @@ test_that('test_kajiura_filter_3', {
     # Make kajiura function
     kgE = kajiura_g_empirical()
 
-
     k2 = matrix(kgE(rMax)*(rMax<8), ncol=201,byrow=T)
     k2 = k2/max(k2)*max(m2) # Normalise to sum, to get around the 'volume' interpretation issue for a point source
     
 
-    # Test = difference in surfaces / maximum.
-    testStat = max(abs(m2-k2))/max(m2)
+    # Test = difference in surfaces
+    testStat = max(abs(m2-k2))
 
-    expect_that(testStat < 1.0e-01, is_true())
+    # Because both our 'analytical' approach in this test and numerical
+    # approach can both only be considered approximate with varying depths, we
+    # don't expect perfect agreement here.
+    expect_that(testStat < 1.0e-04, is_true())
+
+    #
+    # Now, let's do it using the raster kajiura code, and check that results
+    # are 'the same'
+    #
+
+    elevation_rast = rptha:::.local_rasterFromXYZ(cbind(xyDef[,1:2], -depths))
+    deformation_rast = rptha:::.local_rasterFromXYZ(xyDef)
+
+    deformation_kj = kajiura_smooth_raster(
+        deformation_rast,
+        new_origin=c(0,0),
+        elevation_raster=elevation_rast,
+        kj_filter_grid_dxdy = c(500, 250),
+        kj_filter_def_threshold = 0,
+        spherical_input=FALSE)
+
+    # Should be 'the same' as m2
+    deformation_kj_mat = as.matrix(deformation_kj)
+    testStat = max(abs(deformation_kj_mat - m2))
+    expect_that( testStat < 1.0e-15, is_true())
+
 })
