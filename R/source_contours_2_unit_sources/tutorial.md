@@ -308,7 +308,7 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 12
+MC_CORES = 1
 
 # Option to illustrate 3d interactive plot creation
 #
