@@ -458,7 +458,7 @@ kajiura_smooth_raster<-function(
     if(spherical_input){
         xyz_cartesian[,1:2] = spherical_to_cartesian2d_coordinates(
             xyz_spherical[,1:2], 
-            origin = new_orig)
+            origin_lonlat = new_orig)
     }
 
     if(class(elevation_raster) != 'RasterLayer'){

@@ -14,7 +14,11 @@ Depends:
     raster,
     FNN,
     minpack.lm,
-    geometry
+    geometry,
+    methods,
+    stats,
+    grDevices,
+    graphics
 Suggests:
     rgl,
     testthat

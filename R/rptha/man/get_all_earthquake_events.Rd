@@ -11,14 +11,14 @@ get_all_earthquake_events(discrete_source = NULL,
 \arguments{
 \item{discrete_source}{The discrete source for the source-zone, as from 
 \code{discrete_source_from_source_contours}. If NULL, you must provide
-unit_source_statistics}
+unit_source_statistics (prefered approach)}
 
 \item{unit_source_statistics}{Pre-computed unit-source-statistics for the
-discrete-source. If NULL, a local computation is made with
-\code{discretized_source_summary_statistics}, assuming
-approx_dx=approx_dy=5000, and using default arguments for other inputs. 
-It's normally best to compute this yourself beforehand to take control of
-those parameters.}
+discrete-source. It is best to provide this, but if it is NULL, a local
+computation is made with \code{discretized_source_summary_statistics},
+assuming approx_dx=approx_dy=5000, and using default arguments for other
+inputs.  It's normally best to compute this yourself beforehand to take
+control of those parameters.}
 
 \item{Mmin}{The minimum Mw value in the table}
 

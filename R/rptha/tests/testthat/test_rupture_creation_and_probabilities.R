@@ -27,6 +27,18 @@ test_that("test_rupture_creation_and_probabilities", {
         unit_source_summary_statistics$width)
 
 
+    # Check event_index_string is correct (for an event in the middle of the
+    # event table)
+    ei_ind = ceiling(length(earthquake_event_table[,1])/2)
+    indices_in_event_ei_ind = get_unit_source_indices_in_event(
+        earthquake_event_table[ei_ind,])
+    back_computed_event_index_string = paste(indices_in_event_ei_ind, '-', 
+        sep="", collapse="")
+    orig_event_index_string = as.character(
+        earthquake_event_table$event_index_string[ei_ind])
+
+    expect_that(back_computed_event_index_string == orig_event_index_string, is_true())
+
     ###########################################################################
     #
     # A 'REALISTIC' TEST
