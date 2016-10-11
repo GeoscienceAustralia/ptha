@@ -360,32 +360,30 @@ programming and debugging, since it contains the underlying data (such as
 sub-unit-source points, exact unit source discretization, etc).
 
 # Tips
-Beware of possible artefacts in the computed solution along the trench when
-rupture becomes very shallow and the source zone is nonuniform. This would
-typically manifest itself as rare high-points in the solution. In our
-experience this is not detectable when Kajiura filtering is applied (and is
-often not detectible in any case -- but you should check for it). In general we
-suggest to always apply Kajiura filtering, although that is not done above so
-we can avoid distributing elevation data with the package. Also, as discussed
-below, often it is best to apply Kajiura filtering AFTER unit sources have been
-combined (see next paragraph).
 
-The option 'use_improved_downdip_lines=TRUE' can reduce the above issues.
+* You should visually check that the computed initial conditions seem reasonable.
+In early versions of the code, we sometimes observed numerical artefacts in the
+computed solution along the trench (manifest as localised spikes in the
+deformation). Improvements to the code seem to have dealt with this issue, but
+it seems plausible that other artefacts might occur for some input
+source-contours  (or you might accidently make a poor choice of input
+parameters) -- so we suggest visually checking the outputs.
 
-If a fine unit source spacing is used and the unit source deformations are combined
-to produce tsunami initial conditions, then it may be best to apply Kajiura filtering
-AFTER combining the sources ('filtering-after-combining'). Mathematically the
-problem is linear, and there should be no difference between this and
-filtering-before-combining (i.e. filtering before the unit source deformations
-are combined, as supported in this script). However, in practice our Kajiura
-filtering algorithm involves some interplation to move from to and from
-cartesian and spherical coordinates. This leads to some discretization error,
-and the approach of 'filtering-before-combining' is numerically much more
-sensitive to this than 'filtering-after-combining'. In the
+* If using Kajiura filtering with unit-sources, you can either apply the Kajiura
+filter to the unit sources directly before summing them
+('filtering-before-combining'), or you can sum the unit sources and
+subsequently apply the Kajiura filter ('filtering-after-combining'). The above
+code directly supports 'filtering-before-combining'( see codes in the
+combine_tsunami_sources folder for 'filtering-after-combining'). Mathematically
+the problem is linear, and there should be no difference between these two
+cases. However, in practice our Kajiura filtering algorithm involves some
+interplation to move from to and from cartesian and spherical coordinates. This
+leads to some discretization error, and the approach of
+'filtering-before-combining' is numerically more sensitive to this than
+'filtering-after-combining'. If this is a problem you might consider using the
+`filtering-after-combining' approach. The basic issue that that in the
 filtering-before-combining approach, individual unit source deformations can
 have steep gradients that would be cancelled by neighbouring sources after
 combination. These steep gradients cause relatively high smoothing with the
 Kajiura filter. To avoid artefacts any discretization errors in this smoothing
-must cancel with those from neighbouring unit source deformations. In practice
-it is difficult to achieve this, whereas by definition it is not an issue for
-the filtering-after-combining approach.
+must cancel with those from neighbouring unit source deformations.
