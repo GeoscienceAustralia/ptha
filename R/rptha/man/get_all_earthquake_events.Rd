@@ -6,7 +6,8 @@
 \usage{
 get_all_earthquake_events(discrete_source = NULL,
   unit_source_statistics = NULL, Mmin = 7.5, Mmax = 9.6, dMw = 0.1,
-  mu = 3e+10, constant = 9.05, target_location = NULL)
+  mu = 3e+10, constant = 9.05, target_location = NULL,
+  source_zone_name = NA)
 }
 \arguments{
 \item{discrete_source}{The discrete source for the source-zone, as from 
@@ -33,6 +34,10 @@ control of those parameters.}
 \item{target_location}{c(longitude, latitude) or NULL. If not NULL, then
 only return earthquake events which include the unit source 'closest' to the
 target location (computed assuming a spherical earth with lon/lat coordinates)}
+
+\item{source_zone_name}{name of the source-zone. This will be
+put in the table. Even though the entire column is constant, it can be useful 
+useful when working with tables that combine results from many sources.}
 }
 \value{
 A large table containing information on all earthquake events, and

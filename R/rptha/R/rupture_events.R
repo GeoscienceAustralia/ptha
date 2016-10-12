@@ -270,11 +270,15 @@ get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.
 #' @param target_location c(longitude, latitude) or NULL. If not NULL, then
 #' only return earthquake events which include the unit source 'closest' to the
 #' target location (computed assuming a spherical earth with lon/lat coordinates)
+#' @param source_zone_name name of the source-zone. This will be
+#' put in the table. Even though the entire column is constant, it can be useful 
+#' useful when working with tables that combine results from many sources.
 #' @return A large table containing information on all earthquake events, and
 #' the unit sources they involve
 #' @export
 get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statistics = NULL,
-    Mmin=7.5, Mmax = 9.6, dMw = 0.1, mu=3.0e+10, constant=9.05, target_location = NULL){
+    Mmin=7.5, Mmax = 9.6, dMw = 0.1, mu=3.0e+10, constant=9.05, target_location = NULL,
+    source_zone_name = NA){
 
     if(is.null(unit_source_statistics)){
 
@@ -293,6 +297,7 @@ get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statisti
                 mu=mu, constant=constant)}
         )
 
+    source_zone_name = source_zone_name
     ## Convert to a single table which holds all the events + their subfaults
     add_unit_source_indices_to_event_table<-function(event){
         event_statistics = event$event_statistics
@@ -301,9 +306,11 @@ get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statisti
         # with all unit source indices for that event, separated by '-'
         event_index_string = unlist(lapply(event$event_indices, 
             f<-function(x) paste0(x, sep="-", collapse="")))
+        local_source_name = rep(source_zone_name, length(event_index_string))
 
         event_statistics = cbind(event_statistics, 
-            data.frame(event_index_string = event_index_string))
+            data.frame(event_index_string = event_index_string,
+                sourcename = source_zone_name))
 
         return(event_statistics)
     }
