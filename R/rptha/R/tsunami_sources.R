@@ -1,4 +1,3 @@
-#source('unit_sources.R')
 
 #' Function to make a tsunami for the ij unit source in a discrete source. 
 #' 
@@ -85,16 +84,17 @@ make_tsunami_unit_source<-function(
         print('')
     }
 
-    ## Convert tsunami surface points from lonlat to local cartesian
-    ## coordinates
+    # Convert tsunami surface points from lonlat to local cartesian
+    # coordinates
     tsunami_surface_points_cartesian = spherical_to_cartesian2d_coordinates(
         tsunami_surface_points_lonlat, origin_lonlat=us$origin_lonlat, r=us$r)
 
     if(verbose){
-        print('Computing Okada deformation..')
+        print('Computing co-seismic deformation..')
         t0 = Sys.time()
     }
 
+    # Compute the tsunami deformation (without Kajiura smoothing)
     ts = tsunami_function(us, rake, tsunami_surface_points_cartesian, ...)
 
     if(verbose){

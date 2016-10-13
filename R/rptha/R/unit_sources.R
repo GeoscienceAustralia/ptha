@@ -648,8 +648,8 @@ unit_source_interior_points_cartesian<-function(
     depths_in_km = TRUE,
     plot_source=FALSE){
 
-    ## Get the unit source coordinates, and down-dip transects we can use for
-    ## interpolation
+    # Get the unit source coordinates, and down-dip transects we
+    # can use for interpolation
     unit_source_info = get_unit_source_from_discretized_source(
         discretized_source, 
         unit_source_index)
@@ -662,14 +662,15 @@ unit_source_interior_points_cartesian<-function(
         origin = unit_source_coords[1,1:2]
     }
 
-    ## Convert the unit source lon/lat coordinates to a local 2D cartesain system
+    # Convert the unit source lon/lat coordinates to a local 2D
+    # cartesain system
     unit_source_cartesian = unit_source_coords
     unit_source_cartesian[,1:2] = spherical_to_cartesian2d_coordinates(
         unit_source_coords[,1:2], origin_lonlat = origin, r = r)
 
     if(depths_in_km) unit_source_cartesian[,3] = 1000*unit_source_cartesian[,3]
 
-    ## Adjust approx_dx, approx_dy
+    # Adjust approx_dx, approx_dy
     if(is.null(approx_dx)){
         approx_dx = min(unit_source_cartesian[,3])*0.5
     }
@@ -679,7 +680,8 @@ unit_source_interior_points_cartesian<-function(
     approx_dx = approx_dx*scale_dxdy
     approx_dy = approx_dx*scale_dxdy
 
-    ## Replace lon/lat spherical coordinates in 'fine-transects' with local cartesians
+    # Replace lon/lat spherical coordinates in 'fine-transects'
+    # with local cartesians
     fine_downdip_transects_cartesian[,1:2,1] = spherical_to_cartesian2d_coordinates(
         fine_downdip_transects_cartesian[,1:2,1], origin_lonlat = origin, r=r)
     fine_downdip_transects_cartesian[,1:2,2] = spherical_to_cartesian2d_coordinates(
@@ -690,8 +692,8 @@ unit_source_interior_points_cartesian<-function(
             1000*fine_downdip_transects_cartesian[,3,1:2]
     }
 
-    ## Get a 'grid' of points inside the unit source (later used for
-    ## integration)
+    # Get a 'grid' of points inside the unit source (later used
+    # for integration)
     grid_point_data = compute_grid_point_areas_in_polygon(
         unit_source_cartesian[,1:2], approx_dx = approx_dx, 
         approx_dy = approx_dy)
@@ -740,10 +742,10 @@ unit_source_interior_points_cartesian<-function(
     }
     strike = mean_strike
 
-    # Ensure > 0
+    # Ensure strike is > 0
     strike = strike + (strike < 0)*360
 
-    ## Get dip/depth etc at the grid points
+    # Get dip/depth etc at the grid points
     grid_points = get_depth_dip_at_unit_source_interior_points(
         unit_source_cartesian, grid_points,
         fine_downdip_transects_cartesian, strike)
@@ -891,7 +893,11 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     stopifnot(length(areas) == length(indices))
 
-    return(list(grid_points = centroids, index = indices, area = areas, dx = dx_local, dy = dy_local,
+    return(list(
+        grid_points = centroids, 
+        index = indices, 
+        area = areas, 
+        dx = dx_local, dy = dy_local,
         grid_point_polygon=p_intersect))
 }
 
