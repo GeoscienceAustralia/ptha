@@ -4,21 +4,6 @@
 # Gareth Davies, Geoscience Australia, 2015
 #
 
-#suppressPackageStartupMessages(library(rgdal))
-#suppressPackageStartupMessages(library(rgeos))
-#suppressPackageStartupMessages(library(sp))
-#suppressPackageStartupMessages(library(FNN))
-
-#library(geosphere)
-## FIXME: At the moment we use a script to fix a bug in geosphere's antipodal
-## I have reported the bug, when it it fixed remove this
-#source('override_antipodal_geosphere.R')
-
-#cu = new.env()
-#gu = new.env()
-#source('contour_util.R', local=cu)
-#source('geometric_util.R', local=gu)
-
 #' Adjust points defining unit source boundaries near the trench to enhance orthogonality
 #'
 #' Suppose top-line is a set of lon/lat points defining the top of a grid of
@@ -26,7 +11,9 @@
 #' of the unit sources. If top-line is at the trench, then numerically it can be
 #' desirable for the unit sources to be highly orthogonal where they intersect
 #' the trench. One way to do this is by moving points along the top line. That's
-#' what this function does.
+#' what this function does. Note the approach has been superceded by an improved
+#' algorithm to generate the unit-sources, which is invoked by passing 
+#' improved_downdip_lines=TRUE to \code{discretized_source_from_source_contours}
 #'
 #' @param top_line matrix with 2 rows and n columns. First row is longitude,
 #' second row is latitude
