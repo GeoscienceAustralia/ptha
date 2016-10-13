@@ -50,7 +50,7 @@ See [here](combine_tsunami_sources/combine_tsunami_sources.R) for an example.
 is based on seismic moment conservation principles, and requires the user to
 specify the source-zone convergence rate and various other parameters
 controlling seismicity. Uncertainties can be accounted for using a logic tree.
-See the function `rate_of_earthquakes_greater_than_Mw` in the rptha package.
+See the the example script [here](event_rates/single_source_rate_computation.R).
 
 
 Installation from source
