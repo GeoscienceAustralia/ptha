@@ -766,13 +766,13 @@ unit_source_interior_points_cartesian<-function(
     a1 = areaPolygon(unit_source_coords[,1:2], f=0)
     rel_err = abs(a0-a1)/((a0+a1)*0.5)
     if( rel_err > 0.01 ){
-        msg = paste0('Projected and spherical unit source area differ by a fraction ',
+        msg = paste0('Cartesian and spherical unit source area (surface only, not 3d) differ by a fraction',
             rel_err, sep=" ")
         warning(msg)
     }
 
     
-    ## Get strike at the grid points
+    # Get strike at the grid points
 
     # Convert lon-lat centroids of ALL unit sources in the discrete source to
     # the local coordinate system and use them to make a continuous function of
