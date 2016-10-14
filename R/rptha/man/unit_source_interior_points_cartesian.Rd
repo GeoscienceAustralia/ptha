@@ -6,7 +6,8 @@
 \usage{
 unit_source_interior_points_cartesian(discretized_source, unit_source_index,
   origin = NULL, r = 6378137, approx_dx = NULL, approx_dy = NULL,
-  scale_dxdy = 1, depths_in_km = TRUE, plot_source = FALSE)
+  scale_dxdy = 1, depths_in_km = TRUE, plot_source = FALSE,
+  edge_taper_width = 0)
 }
 \arguments{
 \item{discretized_source}{list containing unit sources information (e.g. output of
@@ -37,6 +38,11 @@ are transformed to m (so output depths are in m). Otherwise input depths are
 assumed in m}
 
 \item{plot_source}{logical. make a simple plot?}
+
+\item{edge_taper_width}{m. Use tapering of the slip boundaries. This extends
+the sub-unit-source grid points beyond the unit-source 'box' by a distance
+edge_taper_width. The slip reduces linearly from 1 to 0 for points near the boundary
+(ranging from -edge_taper_width to +edge_taper_width from the unit-source edges)}
 }
 \value{
 list containing: 'unit_source': matrix with unit_source_coords in the

@@ -553,7 +553,8 @@ get_unit_source_from_discretized_source<-function(discretized_source,
         discretized_source$fine_downdip_transects[,,(a_s:(a_s+1))]
 
     output = list(unit_source_grid = unit_source_coords, 
-                  fine_downdip_transects = fine_downdip_transects)
+                  fine_downdip_transects = fine_downdip_transects
+                  )
     return(output)
 }
 
@@ -602,6 +603,38 @@ get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
     return(cbind(top_edges, strike))
 }
 
+#' Outline of the discretized source
+#'
+#' Convenience function to get the outline of the discretized source from its
+#' unit_source_grid
+#'
+#' @param discretized_source list containing unit sources information (e.g.
+#' output of discretized_source_from_source_contours)
+#' @return matrix defining the 'outline' polygon of the discretized source
+#' 
+get_discretized_source_outline<-function(discretized_source){
+    
+    unit_source_grid = discretized_source$unit_source_grid
+    ndip = discretized_source$discretized_source_dim['dip']
+    nstrike = discretized_source$discretized_source_dim['strike']
+
+    top_line = t(unit_source_grid[1,1:3,])
+    bottom_line = t(unit_source_grid[ndip+1,1:3,])
+    left_line = unit_source_grid[,1:3,1]
+    right_line = unit_source_grid[,1:3,nstrike+1]
+
+    # Drop the 'first' point from the second line in the rbind to avoid repeats 
+    output_grid = rbind(top_line, right_line[-1,])
+    output_grid = rbind(output_grid, bottom_line[(nstrike):1,])
+    # Need to drop 2 points from left_line
+    if(ndip > 1){
+        output_grid = rbind(output_grid, left_line[ndip:2,])
+    }
+    
+    return(output_grid) 
+
+}
+
 
 #' Fill a unit source with "sub-unit-source" points (for tsunami source integration)
 #'
@@ -629,6 +662,10 @@ get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
 #' are transformed to m (so output depths are in m). Otherwise input depths are
 #' assumed in m
 #' @param plot_source logical. make a simple plot?
+#' @param edge_taper_width m. Use tapering of the slip boundaries. This extends
+#' the sub-unit-source grid points beyond the unit-source 'box' by a distance
+#' edge_taper_width. The slip reduces linearly from 1 to 0 for points near the boundary
+#' (ranging from -edge_taper_width to +edge_taper_width from the unit-source edges)
 #' @return list containing: 'unit_source': matrix with unit_source_coords in the
 #' cartesian coordinate system + an additional depth column (m); 'origin' the
 #' lon/lat origin of the local coordinate system; r (input argument); 'dx, dy'
@@ -646,7 +683,8 @@ unit_source_interior_points_cartesian<-function(
     approx_dy = NULL,
     scale_dxdy = 1,
     depths_in_km = TRUE,
-    plot_source=FALSE){
+    plot_source=FALSE,
+    edge_taper_width = 0){
 
     # Get the unit source coordinates, and down-dip transects we
     # can use for interpolation
@@ -654,9 +692,11 @@ unit_source_interior_points_cartesian<-function(
         discretized_source, 
         unit_source_index)
 
+    discretized_source_outline = get_discretized_source_outline(
+        discretized_source)
+
     # We will change these variables to cartesian coordinates
     unit_source_coords = unit_source_info$unit_source_grid
-    fine_downdip_transects_cartesian = unit_source_info$fine_downdip_transects
 
     if(is.null(origin)){
         origin = unit_source_coords[1,1:2]
@@ -668,7 +708,16 @@ unit_source_interior_points_cartesian<-function(
     unit_source_cartesian[,1:2] = spherical_to_cartesian2d_coordinates(
         unit_source_coords[,1:2], origin_lonlat = origin, r = r)
 
-    if(depths_in_km) unit_source_cartesian[,3] = 1000*unit_source_cartesian[,3]
+    discretized_source_outline_cartesian = discretized_source_outline
+    discretized_source_outline_cartesian[,1:2] = 
+        spherical_to_cartesian2d_coordinates(discretized_source_outline[,1:2], 
+            origin_lonlat = origin, r = r)
+
+    if(depths_in_km){
+        unit_source_cartesian[,3] = 1000*unit_source_cartesian[,3]
+        discretized_source_outline_cartesian[,3] = 1000 * 
+            discretized_source_outline_cartesian[,3]
+    }
 
     # Adjust approx_dx, approx_dy
     if(is.null(approx_dx)){
@@ -682,6 +731,7 @@ unit_source_interior_points_cartesian<-function(
 
     # Replace lon/lat spherical coordinates in 'fine-transects'
     # with local cartesians
+    fine_downdip_transects_cartesian = unit_source_info$fine_downdip_transects
     fine_downdip_transects_cartesian[,1:2,1] = spherical_to_cartesian2d_coordinates(
         fine_downdip_transects_cartesian[,1:2,1], origin_lonlat = origin, r=r)
     fine_downdip_transects_cartesian[,1:2,2] = spherical_to_cartesian2d_coordinates(
@@ -695,8 +745,11 @@ unit_source_interior_points_cartesian<-function(
     # Get a 'grid' of points inside the unit source (later used
     # for integration)
     grid_point_data = compute_grid_point_areas_in_polygon(
-        unit_source_cartesian[,1:2], approx_dx = approx_dx, 
-        approx_dy = approx_dy)
+        unit_source_cartesian[,1:2], 
+        approx_dx = approx_dx, 
+        approx_dy = approx_dy,
+        edge_taper_width=edge_taper_width,
+        bounding_polgon = discrete_source_outline_cartesian[,1:2])
 
     grid_points = grid_point_data$grid_points
 
@@ -784,21 +837,44 @@ unit_source_interior_points_cartesian<-function(
 #' spacing here will generally deviate from a pure regular grid
 #' 
 #' @param polygon matrix with x,y coordinates defining a polygon
-#' @param approx_dx approximate x spacing of points
-#' @param approx_dy approximate y spacing of points
+#' @param approx_dx approximate x spacing of points in same units as x,y
+#' @param approx_dy approximate y spacing of points in same units as x,y
 #' @param rotation_origin Origin about which the polygon is rotated before
 #' filling with x-y aligned grid points. If NULL, the final point in the polygon
 #'is used.
 #' @param rotation_x_axis_vector Vector defining the rotated x-axis that the
 #' polygon is rotated to before filling with x-y aligned grid points. If NULL, the
 #' vector joining the final and first points in the polygon is used.
+#' @param edge_taper_width Length scale over which slip should be smoothed at 
+#' the edges of the unit-source. If > 0, grid points will be made in a polygon 
+#' derived by buffering the original polygon this much
+#' @param bounding_polygon If not NULL, then a 2 column matrix of coordinates 
+#' defining a polygon in which the output grid_points are forced to be inside. 
+#' Should be used in conjunction with edge_taper_width>0 to ensure points do
+#' not fall outside the source-zone.
 #' @return A list containing grid points in the polygon and other useful information.
 #'
 #' @export
 compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
-    rotation_origin = NULL, rotation_x_axis_vector = NULL){
+    rotation_origin = NULL, rotation_x_axis_vector = NULL,
+    edge_taper_width=0, bounding_polygon=NULL){
 
     lp = length(polygon[,1])
+    
+    # Convert polygon to SpatialPolygons, so we can use rgeos::gIntersection
+    p0 = SpatialPolygons(list(Polygons(list(Polygon(polygon)), ID='P')),
+        proj4string=CRS(""))
+
+    # If edge tapering is used we return points in a 'buffered' polygon
+    # which extends outside the original polygon range
+    if(edge_taper_width > 0){
+        # Note -- this gives 'rounded' edges. There are other options
+        p0_buf = gBuffer(p0, width = edge_taper_width)
+        p0_negbuf = gBuffer(p0, width = -edge_taper_width)
+    }else{
+        p0_buf = p0
+        p0_negbuf = p0
+    }
 
     # Set default rotation origin
     if(is.null(rotation_origin)){
@@ -818,13 +894,13 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     stopifnot(!isTRUE(all.equal(x_axis_vector, c(0,0))))
 
     # Rotate polygon. This helps us ensure the grid points are aligned with the
-    # top of the unit source
+    # top of the unit source. 
     rotated_polygon = rotate_cartesian2d(points = polygon, origin = new_origin, 
         x_axis_vector = x_axis_vector)
 
-    # Get extent of the unit source
-    grid_extent = rbind(range(rotated_polygon[,1]), 
-        range(rotated_polygon[,2]))
+    # Get extent of the unit source + edge buffer
+    grid_extent = rbind(range(rotated_polygon[,1]) + c(-1,1)*edge_taper_width, 
+        range(rotated_polygon[,2]) + c(-1,1)*edge_taper_width)
 
     # Make a 'grid' of points inside the unit source
     grid_xs = seq(grid_extent[1,1] - approx_dx/2, 
@@ -839,10 +915,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     dy_local = grid_ys[2] - grid_ys[1]
 
     grid_points = expand.grid(grid_xs, grid_ys)
-    
-    # Convert polygon to SpatialPolygons, so we can use rgeos::gIntersection
-    p0 = SpatialPolygons(list(Polygons(list(Polygon(polygon)), ID='P')),
-        proj4string=CRS(""))
+
 
     # Create polygon around each grid point
     grid_pol = list()
@@ -865,18 +938,79 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     p1 = SpatialPolygons(grid_pol, proj4string=CRS(""))
 
-    # Alternative methods for computing the intersection of p1 and p0
-    exact_intersection = TRUE
-    #exact_intersection=FALSE
-    if(exact_intersection){
-        p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
-    }else{
-        # Approximate method which however keeps the centroids = rotated grid_points
-        pc = coordinates(p1)
-        pip = point.in.polygon(pc[,1], pc[,2], polygon[,1], polygon[,2]) 
-        keepers = which(pip == 1)
-        p_intersect = p1[keepers,]
+    if(!is.null(bounding_polygon)){
+        # Remove grid_points outside the bounding polygon
+        p1_points = SpatialPoints(coords = coordinates(p1))
+
+        bp = SpatialPolygons(list(Polygons(list(
+                Polygon(bounding_polygon)), ID='P')),
+            proj4string=CRS(""))
+
+
+        keep = which(gContains(bp, p1_points, byid=TRUE))
+        if(length(keep) == 0) stop('ERROR: No grid points in bounding_polygon')
+        p1 = p1[keep]
     }
+    
+    # Remove points which are outside the 'buffered' bounding polygon 
+    p1_points = SpatialPoints(coords = coordinates(p1))
+    keep2 = which(gContains(p0_buf, p1_points, byid=TRUE))
+    if(length(keep2) == 0) stop('ERROR: No grid points in buffered polygon')
+    p1 = p1[keep2]
+    p1_points = SpatialPoints(coords = coordinates(p1))
+
+
+    # Identify the 'unit slip_scale' on each grid point. This takes the value
+    # 1 for most interior points, but with edge_taper_width>0, near the
+    # original unit source boundary it starts to decrease (reaching 0 at a distance
+    # of edge_taper_width beyond the original boundary)
+    # Approach:
+    # 1) Compute distances to 'negative buffer' polygon -- this distance,
+    #    divided by 2xedge_taper_width, gives a measure of how much we should
+    #    depress the slip
+    # 2) But we need to do a further correction if the bounding polygon was
+    #    applied. This is to prevent e.g. points near the trench from having
+    #    their unit_slip reduced
+
+    grid_points = coordinates(p1)
+
+    if(edge_taper_width > 0){
+        grid_points_sp = SpatialPoints(coords = grid_points)
+        inner_buffer_distance = gDistance(p0_negbuf, grid_points_sp, byid=TRUE)
+
+        unit_slip_scale = pmax(0,
+            1 - inner_buffer_distance[,1]/(2*edge_taper_width))
+
+        if(!is.null(bounding_polygon)){
+            # We don't want to depress slip on points inside the original
+            # polygon if they do not have a full buffer (i.e. the buffer can
+            # be cut off by the bounding_polygon
+            inside_points = gContains(p0, grid_points_sp, byid=TRUE)
+            bp_lines = as(bp, 'SpatialLines')
+            boundary_distance = gDistance(bp_lines, grid_points_sp, 
+                byid=TRUE)
+            interior_and_near_boundary = which(inside_points & 
+                (boundary_distance[,1] <= edge_taper_width))
+            unit_slip_scale[interior_and_near_boundary] = 1
+        }
+    }else{
+        unit_slip_scale = 1 + 0*grid_points[,1]
+    }
+
+
+    # Alternative methods for computing the intersection of p1 and p0
+    #exact_intersection = TRUE
+    #exact_intersection=FALSE
+    #if(exact_intersection){
+        p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
+        p_intersect_buf = gIntersection(p1, p0_buf, byid=TRUE, drop_lower_td=TRUE)
+    #}else{
+    #    # Approximate method which however keeps the centroids = rotated grid_points
+    #    pc = coordinates(p1)
+    #    pip = point.in.polygon(pc[,1], pc[,2], polygon[,1], polygon[,2]) 
+    #    keepers = which(pip == 1)
+    #    p_intersect = p1[keepers,]
+    #}
 
 
 
@@ -893,12 +1027,27 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     stopifnot(length(areas) == length(indices))
 
+
+    areas_buffer = unlist(lapply(p_intersect_buf@polygons, 
+        f<-function(x) x@Polygons[[1]]@area))
+
+
+    # Adjust unit_slip_scale to preserve seismic moment (assuming constant mu)
+    a1 = sum(areas)
+    a2 = sum(areas_buffer * unit_slip_scale)
+    unit_slip_scale = unit_slip_scale * a1/a2
+
     return(list(
         grid_points = centroids, 
         index = indices, 
         area = areas, 
         dx = dx_local, dy = dy_local,
-        grid_point_polygon=p_intersect))
+        grid_point_polygon=p_intersect,
+        grid_point_polygon_buffer=p_intersect_buf,
+        grid_points_buffer = coordinates(p_intersect_buf),
+        area_buffer = areas_buffer,
+        unit_slip_scale = unit_slip_scale
+        ))
 }
 
 #' Utility to assist with interpolating depth at points inside a unit source

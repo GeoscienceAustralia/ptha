@@ -13,6 +13,26 @@ test_that('test_discrete_source_summary_statistics', {
         interface_shapefile, desired_subfault_length, desired_subfault_width,
         make_plot=FALSE, improved_downdip_lines=FALSE)
 
+    # Test that our outline of the discrete source is ok
+    # Do this by taking the outline, buffering slightly, and checking that all
+    # unit_source_grid points are inside it
+    discrete_source1_outline = get_discretized_source_outline(discrete_source1)
+
+    p0 = SpatialPolygons(list(
+            Polygons(list(Polygon(discrete_source1_outline[,1:2])), ID='P')),
+        proj4string=CRS(""))
+
+    p0_buf = gBuffer(p0, width=1)
+
+    grid_pts = discrete_source1$unit_source_grid[,1:2,1]
+    for(i in 2:(dim(discrete_source1$unit_source_grid)[3])){
+        grid_pts = rbind(grid_pts, discrete_source1$unit_source_grid[,1:2,i])
+    }
+    grid_pts_sp = SpatialPoints(coords = grid_pts)
+
+    test_result = gCovers(p0_buf, grid_pts_sp)
+    expect_that(test_result, is_true())
+
     # Compute summary stats in the approximate way
 
     output1 = discretized_source_approximate_summary_statistics(discrete_source1)
@@ -59,5 +79,72 @@ test_that('test_discrete_source_summary_statistics', {
     # Top length can vary quite a bit if we try to allow for orthogonality
     expect_that(all(abs(output_a1.1$length/output_a2.1$length - 1) < 0.3), is_true())
     expect_that(all(abs(output_a1.1$width/output_a2.1$width - 1) < 0.07), is_true())
+
+})
+
+test_that('test_sub_unit_source_grid_point_creation', {
+
+    # Test compute_grid_point_areas_in_polygon
+
+    polygon = rbind(c(0, 0), c(0, 10000), c(10000, 10000), c(10000, 0))
+
+    xx = compute_grid_point_areas_in_polygon(polygon, 
+        approx_dx=1000, approx_dy=1000)
+
+    c1 = coordinates(xx$grid_point_polygon)
+    c2 = coordinates(xx$grid_point_polygon_buffer)
+    test_result = all(c1 == c2)
+    expect_that(test_result, is_true())
+
+    l1 = length(xx$unit_slip_scale)
+    l2 = length(c2[,1])
+    expect_that(l1 == l2, is_true())
+
+    expect_that(all(xx$area == xx$area_buffer), is_true())
+
+    ##################################################################
+    #
+    # Examine results with edge_taper
+    #
+
+    xx2 = compute_grid_point_areas_in_polygon(polygon, 
+        approx_dx=1000, approx_dy=1000, edge_taper_width = 1000)
+
+    # Check that this has not affected the 'untaperd' results
+    c3 = coordinates(xx2$grid_point_polygon)
+    test_result = all(c1 == c3)
+    expect_that(test_result, is_true())
+
+    expect_that(sum(is.nan(xx2$unit_slip_scale)) == 0, is_true())
+
+    # The peak unit_source_slip_scale might be slightly different to 1 due to
+    # normalisation
+    err = 1 - max(xx2$unit_slip_scale)
+    expect_that( abs(err) < 5.0e-03, is_true())
+
+    a1 = sum(xx2$unit_slip_scale * xx2$area_buffer)
+    a2 = sum(xx2$area)
+    expect_that( abs(a1 - a2) < 1.0e-06 * a1, is_true())
+
+    ##################################################################
+    #
+    # Examine results with edge_taper and bounding_polygon
+    #
+    bounding_polygon = rbind(c(0, 0), c(0, 10000), c(0, 20000), 
+        c(20000, 20000), c(20000, 0))
+    xx3 = compute_grid_point_areas_in_polygon(polygon, 
+        approx_dx=1000, approx_dy=1000, edge_taper_width = 1000,
+        bounding_polygon = bounding_polygon)
+
+    # Ensure that the bounding polygon did clip as expected
+    m1 = point.in.polygon(xx3$grid_points_buffer[,1], xx3$grid_points_buffer[,2],
+        bounding_polygon[,1], bounding_polygon[,2])
+    expect_that(all(m1 == 1), is_true())
+
+    a1 = sum(xx3$unit_slip_scale * xx3$area_buffer)
+    a2 = sum(xx3$area)
+    expect_that( abs(a1 - a2) < 1.0e-06 * a1, is_true() )
+
+
 
 })
