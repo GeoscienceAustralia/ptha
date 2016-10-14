@@ -220,7 +220,7 @@ discretized_source_from_source_contours<-function(
         depth_contours = source_contours, 
         unit_source_grid = unit_source_grid, 
         discretized_source_dim = unit_source_dim,
-        fine_downdip_transects = fine_unit_source_grid
+        fine_downdip_transects = fine_unit_source_grid,
         mid_line_with_cutpoints = mid_line_with_cutpoints)
 
     return(unit_source_data)
@@ -1031,7 +1031,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     # FIXME: This should be applied to the 'projected' area
     a0 = sum(areas)
     a2 = sum(areas_buffer * unit_slip_scale)
-    unit_slip_scale = unit_slip_scale * a1/a2
+    unit_slip_scale = unit_slip_scale * a0/a2
 
     return(list(
         grid_points = centroids, 
