@@ -1128,7 +1128,6 @@ get_depth_dip_at_unit_source_interior_points<-function(
         return(output)
     }
 
-    #library(minpack.lm)
     # Define a function that gives alpha/s associated with a given grid point
     find_alpha_s<-function(initial_guess, grid_point){
 
