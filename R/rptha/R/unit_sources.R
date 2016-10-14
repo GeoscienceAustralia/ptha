@@ -4,7 +4,7 @@
 # Gareth Davies, Geoscience Australia, 2015
 #
 
-#' Adjust points defining unit source boundaries near the trench to enhance orthogonality
+#' Enhance near-trench orthogonality on discretized source [deprecated]
 #'
 #' Suppose top-line is a set of lon/lat points defining the top of a grid of
 #' unit sources, and second line is a set of lon/lat points defining the bottom
@@ -107,7 +107,7 @@ discretized_source_from_source_contours<-function(
     contour_depth_in_km=TRUE,
     extend_line_fraction=1.0e-01,
     orthogonal_near_trench = FALSE,
-    improved_downdip_lines = FALSE){
+    improved_downdip_lines = TRUE){
 
     # Get the shapefile
     source_contours = rgdal::readOGR(
@@ -220,7 +220,8 @@ discretized_source_from_source_contours<-function(
         depth_contours = source_contours, 
         unit_source_grid = unit_source_grid, 
         discretized_source_dim = unit_source_dim,
-        fine_downdip_transects = fine_unit_source_grid)
+        fine_downdip_transects = fine_unit_source_grid
+        mid_line_with_cutpoints = mid_line_with_cutpoints)
 
     return(unit_source_data)
 }
@@ -426,7 +427,9 @@ discretized_source_approximate_summary_statistics<-function(
 #' 'approximate summary statistics' routine. The width and length are defined
 #' so that (width x length) = (dipping interface area). \cr
 #' Note that the statistics will not account for edge tapering that may be
-#' applied to the slip (optionally). 
+#' optionally applied to the slip (i.e. the area is entirely based on the interior
+#' of the earthquake unit source, so does not include any extra regions
+#' affected by smoothing). 
 #'
 #' @param discretized_source list with an entry 'unit_source_grid' containing a
 #'        3 dimensional array defining the vertices of all unit sources for the source
@@ -628,9 +631,11 @@ get_discretized_source_outline<-function(discretized_source){
 
     # Drop the 'first' point from the second matrix in rbind to avoid repeats 
     output_grid = rbind(top_line, right_line[-1,, drop=FALSE])
+    # (note bottom_line has (nstrike+1) rows, so we are still dropping a point here)
     output_grid = rbind(output_grid, bottom_line[nstrike:1,, drop=FALSE])
     # Need to drop 2 points from left_line
     if(ndip > 1){
+        # (note left_line has (ndip+1) rows, so we are dropping 2 points here)
         output_grid = rbind(output_grid, left_line[ndip:2,, drop=FALSE])
     }
     
@@ -1024,7 +1029,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     # Adjust unit_slip_scale to preserve seismic moment (assuming constant mu)
     # FIXME: This should be applied to the 'projected' area
-    a1 = sum(areas)
+    a0 = sum(areas)
     a2 = sum(areas_buffer * unit_slip_scale)
     unit_slip_scale = unit_slip_scale * a1/a2
 
@@ -1131,16 +1136,14 @@ get_depth_dip_at_unit_source_interior_points<-function(
     # Define a function that gives alpha/s associated with a given grid point
     find_alpha_s<-function(initial_guess, grid_point){
 
-        # Function giving the distance**2 between the desired x,y point
-        # and the line at alpha,s. We minimise this to find the best alpha/s
+        # Function giving the (dx,dy) between the desired x,y point and the
+        # line at alpha,s. We minimise the norm of this with the lm-algorithm
+        # to find the best alpha/s
         minme<-function(alpha_s){
-            #sum((line_across_source(alpha_s[1], alpha_s[2])[1:2] - grid_point[1:2])**2)
             (line_across_source(alpha_s[1], alpha_s[2])[1:2] - grid_point[1:2])
         }
 
         # Find (alpha, s) at grid_points[i,1:2]
-        #fit_alpha_s = optim(initial_guess, minme, method='BFGS', 
-        #    control = list(reltol=1e-8, abstol=1.0e-8))
         fit_alpha_s = nls.lm(initial_guess, lower=c(-0.1, -0.1), 
             upper=c(1.1, 1.1), minme)
 
@@ -1155,42 +1158,16 @@ get_depth_dip_at_unit_source_interior_points<-function(
     deg2rad = pi/180
     strike_perp = (grid_points_strike + 90)*deg2rad
     perturbation_scale = 100 # m
-    grid_points_perturb = grid_points[,1:2] + cbind(sin(strike_perp), cos(strike_perp))*perturbation_scale
+    grid_points_perturb = grid_points[,1:2] + 
+        cbind(sin(strike_perp), cos(strike_perp))*perturbation_scale
 
-    for(i in 1:length(alpha_s[,1])){
+    for(i in 1:length(grid_points[,1])){
         fit_alpha_s = find_alpha_s(alpha_s[i,], grid_points[i,1:2])
         alpha_s[i,] = fit_alpha_s$par
 
         alpha_s_perturbation[i,] = 
             find_alpha_s(fit_alpha_s$par, grid_points_perturb[i,1:2])$par
     }
-
-    # Check for alpha/s which are outside [0,1]. Very small excursions are ok
-    # (due to the great-circle fine_downdip_transects having slight disagreement
-    # with the straight-line along the unit source edge -- the latter are used
-    # for point-in-polygon checking).
-    #
-    # It's ok to keep points affected by that, since they will be missing from the
-    # neighbouring unit source (which arguably should have them), and they will
-    # have a depth/dip similar to the edge transect depth/dip
-    #adjusters = which(alpha_s < 0)
-    #if(length(adjusters) > 0){
-    #    if(min(alpha_s[adjusters]) > -2.0e-01){
-    #        #alpha_s[adjusters] = 0
-    #    }else{
-    #        msg = paste0('bad interpolation a:', min(alpha_s[adjusters]))
-    #        stop(msg)
-    #    }
-    #}
-    #adjusters = which(alpha_s > 1)
-    #if(length(adjusters) > 0){
-    #    if(max(alpha_s[adjusters]) < (1.0 + 2.0e-01) ){
-    #        #alpha_s[adjusters] = 1
-    #    }else{
-    #        msg = paste0('bad interpolation b:', max(alpha_s[adjusters]))
-    #        stop(msg)
-    #    }
-    #}
 
     # Get the x,y,depth points and perturbed points
     output_points = line_across_source(alpha_s[,1], alpha_s[,2])
@@ -1199,9 +1176,6 @@ get_depth_dip_at_unit_source_interior_points<-function(
 
     # Now compute the dip numerically [ tan(dip) = change_in_depth/distance ]
     dip = atan((output_points_perturb[,3] - output_points[,3])/perturbation_scale)/deg2rad
-
-    #print('GD: Deliberately breaking dip')
-    #dip = dip*0 + mean_angle(dip)
 
     output_points = cbind(output_points, dip, alpha_s)
 

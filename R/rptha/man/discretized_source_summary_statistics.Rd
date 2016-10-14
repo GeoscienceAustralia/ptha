@@ -38,6 +38,8 @@ more accurately account for the interface structure than does the alternative
 'approximate summary statistics' routine. The width and length are defined
 so that (width x length) = (dipping interface area). \cr
 Note that the statistics will not account for edge tapering that may be
-applied to the slip (optionally).
+optionally applied to the slip (i.e. the area is entirely based on the interior
+of the earthquake unit source, so does not include any extra regions
+affected by smoothing).
 }
 

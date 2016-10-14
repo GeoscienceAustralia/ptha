@@ -8,7 +8,7 @@ discretized_source_from_source_contours(source_shapefile,
   desired_subfault_length, desired_subfault_width, make_plot = FALSE,
   contour_depth_attribute = "level", contour_depth_in_km = TRUE,
   extend_line_fraction = 0.1, orthogonal_near_trench = FALSE,
-  improved_downdip_lines = FALSE)
+  improved_downdip_lines = TRUE)
 }
 \arguments{
 \item{source_shapefile}{character name of line shapefile defining the
