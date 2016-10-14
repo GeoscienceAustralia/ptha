@@ -613,7 +613,8 @@ get_shallow_unit_source_top_edge_strikes<-function(discretized_source){
 #' @param discretized_source list containing unit sources information (e.g.
 #' output of discretized_source_from_source_contours)
 #' @return matrix defining the 'outline' polygon of the discretized source
-#' 
+#'
+#' @export 
 get_discretized_source_outline<-function(discretized_source){
     
     unit_source_grid = discretized_source$unit_source_grid
@@ -751,7 +752,7 @@ unit_source_interior_points_cartesian<-function(
         approx_dx = approx_dx, 
         approx_dy = approx_dy,
         edge_taper_width=edge_taper_width,
-        bounding_polgon = discrete_source_outline_cartesian[,1:2])
+        bounding_polygon = discretized_source_outline_cartesian[,1:2])
 
     grid_points = grid_point_data$grid_points
     grid_point_areas = grid_point_data$area
