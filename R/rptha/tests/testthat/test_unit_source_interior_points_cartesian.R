@@ -30,8 +30,9 @@ test_that('test_unit_source_interior_points_cartesian', {
         unit_source_coords_cartesian[1:2,3]/1000)
     ds$unit_source_grid[,,2] = cbind(unit_source_coords_lonlat[4:3,1:2], 
         unit_source_coords_cartesian[4:3,3]/1000)
-   
+    
     ds$discretized_source_dim = c(1,1) 
+    names(ds$discretized_source_dim) = c('dip', 'strike')
 
     ds$fine_downdip_transects = ds$unit_source_grid    
 

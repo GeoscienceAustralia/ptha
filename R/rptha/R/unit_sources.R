@@ -754,6 +754,7 @@ unit_source_interior_points_cartesian<-function(
         edge_taper_width=edge_taper_width,
         bounding_polygon = discretized_source_outline_cartesian[,1:2])
 
+    # FIXME: Update to tapered grid points
     grid_points = grid_point_data$grid_points
     grid_point_areas = grid_point_data$area
     grid_point_polygon = grid_point_data$grid_point_polygon

@@ -31,6 +31,7 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
         unit_source_coords_cartesian[4:3,3]/1000)
    
     ds$discretized_source_dim = c(1,1) 
+    names(ds$discretized_source_dim) = c('dip','strike')
 
     ds$fine_downdip_transects = ds$unit_source_grid    
 
