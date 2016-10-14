@@ -39,23 +39,23 @@ test_that('test_unit_source_interior_points_cartesian', {
         approx_dx = NULL, approx_dy = NULL, depths_in_km=TRUE)
 
     # Check strike
-    expect_that(all(us$grid_points[,'strike'] == strike), is_true())
+    expect_true(all(us$grid_points[,'strike'] == strike))
 
     # Check dip (small inaccuracies allowed due to numerical optimization)
-    expect_that(all(abs(us$grid_points[,'dip'] - dip)<0.02), is_true())
+    expect_true(all(abs(us$grid_points[,'dip'] - dip)<0.02))
 
     # Check depth (small inaccuracies allowed due to numerical optimization)
     pred_depth = (us$grid_points[,'y']/width)*(d1 - d0) + d0
 
-    expect_that(all(abs(us$grid_points[,'depth'] - pred_depth) < 1), is_true())
+    expect_true(all(abs(us$grid_points[,'depth'] - pred_depth) < 1))
 
     # Check area in m^2
-    expect_that(abs(sum(us$grid_points[,'area_projected']) - len*width) < 0.1, is_true())
+    expect_true(abs(sum(us$grid_points[,'area_projected']) - len*width) < 0.1)
 
     # Check x/y
-    expect_that( (min(us$grid_points[,'x']) > -len) &
+    expect_true( (min(us$grid_points[,'x']) > -len) &
                  (max(us$grid_points[,'x']) < 0) &
                  (min(us$grid_points[,'y']) > 0) &
-                 (max(us$grid_points[,'y']) < width), is_true() )
+                 (max(us$grid_points[,'y']) < width))
 })
 

@@ -36,6 +36,8 @@ with our algorithms. The calculations are based on filling the unit sources
 with subgrid points (via unit_source_interior_points_cartesian), so should
 more accurately account for the interface structure than does the alternative
 'approximate summary statistics' routine. The width and length are defined
-so that (width x length) = (dipping interface area).
+so that (width x length) = (dipping interface area). \cr
+Note that the statistics will not account for edge tapering that may be
+applied to the slip (optionally).
 }
 

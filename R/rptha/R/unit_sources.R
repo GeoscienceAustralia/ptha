@@ -424,7 +424,9 @@ discretized_source_approximate_summary_statistics<-function(
 #' with subgrid points (via unit_source_interior_points_cartesian), so should
 #' more accurately account for the interface structure than does the alternative
 #' 'approximate summary statistics' routine. The width and length are defined
-#' so that (width x length) = (dipping interface area).
+#' so that (width x length) = (dipping interface area). \cr
+#' Note that the statistics will not account for edge tapering that may be
+#' applied to the slip (optionally). 
 #'
 #' @param discretized_source list with an entry 'unit_source_grid' containing a
 #'        3 dimensional array defining the vertices of all unit sources for the source
@@ -621,14 +623,14 @@ get_discretized_source_outline<-function(discretized_source){
     top_line = t(unit_source_grid[1,1:3,])
     bottom_line = t(unit_source_grid[ndip+1,1:3,])
     left_line = unit_source_grid[,1:3,1]
-    right_line = unit_source_grid[,1:3,nstrike+1]
+    right_line = unit_source_grid[,1:3, nstrike+1]
 
-    # Drop the 'first' point from the second line in the rbind to avoid repeats 
-    output_grid = rbind(top_line, right_line[-1,])
-    output_grid = rbind(output_grid, bottom_line[(nstrike):1,])
+    # Drop the 'first' point from the second matrix in rbind to avoid repeats 
+    output_grid = rbind(top_line, right_line[-1,, drop=FALSE])
+    output_grid = rbind(output_grid, bottom_line[nstrike:1,, drop=FALSE])
     # Need to drop 2 points from left_line
     if(ndip > 1){
-        output_grid = rbind(output_grid, left_line[ndip:2,])
+        output_grid = rbind(output_grid, left_line[ndip:2,, drop=FALSE])
     }
     
     return(output_grid) 
@@ -752,14 +754,13 @@ unit_source_interior_points_cartesian<-function(
         bounding_polgon = discrete_source_outline_cartesian[,1:2])
 
     grid_points = grid_point_data$grid_points
-
     grid_point_areas = grid_point_data$area
-
     grid_point_polygon = grid_point_data$grid_point_polygon
+    grid_point_unit_slip_scale = grid_point_data$unit_slip_scale
 
     # Test for consistency between the grid point areas and the original unit
     # source
-    a0 = sum(grid_point_areas)
+    a0 = sum(grid_point_data$area)
     a1 = areaPolygon(unit_source_coords[,1:2], f=0)
     rel_err = abs(a0-a1)/((a0+a1)*0.5)
     if( rel_err > 0.01 ){
@@ -997,21 +998,8 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         unit_slip_scale = 1 + 0*grid_points[,1]
     }
 
-
-    # Alternative methods for computing the intersection of p1 and p0
-    #exact_intersection = TRUE
-    #exact_intersection=FALSE
-    #if(exact_intersection){
-        p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
-        p_intersect_buf = gIntersection(p1, p0_buf, byid=TRUE, drop_lower_td=TRUE)
-    #}else{
-    #    # Approximate method which however keeps the centroids = rotated grid_points
-    #    pc = coordinates(p1)
-    #    pip = point.in.polygon(pc[,1], pc[,2], polygon[,1], polygon[,2]) 
-    #    keepers = which(pip == 1)
-    #    p_intersect = p1[keepers,]
-    #}
-
+    p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
+    p_intersect_buf = gIntersection(p1, p0_buf, byid=TRUE, drop_lower_td=TRUE)
 
 
     # If there are 'just touching' relations and similar, then
@@ -1033,6 +1021,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
 
     # Adjust unit_slip_scale to preserve seismic moment (assuming constant mu)
+    # FIXME: This should be applied to the 'projected' area
     a1 = sum(areas)
     a2 = sum(areas_buffer * unit_slip_scale)
     unit_slip_scale = unit_slip_scale * a1/a2

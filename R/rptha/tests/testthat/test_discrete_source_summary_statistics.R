@@ -31,7 +31,7 @@ test_that('test_discrete_source_summary_statistics', {
     grid_pts_sp = SpatialPoints(coords = grid_pts)
 
     test_result = gCovers(p0_buf, grid_pts_sp)
-    expect_that(test_result, is_true())
+    expect_true(test_result)
 
     # Compute summary stats in the approximate way
 
@@ -40,7 +40,7 @@ test_that('test_discrete_source_summary_statistics', {
 
     # Check that the results don't differ too much
     output_diff = abs(output1/output2 - 1)
-    expect_that(all(abs(output_diff) < 0.2), is_true())
+    expect_true(all(abs(output_diff) < 0.2))
 
 
     # Do it again with improved orthogonality
@@ -52,11 +52,11 @@ test_that('test_discrete_source_summary_statistics', {
     output2.2 = discretized_source_summary_statistics(discrete_source2)
     
     output_diff = abs(output2.1/output2.2 - 1)
-    expect_that(all(abs(output_diff) < 0.2), is_true())
+    expect_true(all(abs(output_diff) < 0.2))
 
     # Changes should be small
-    expect_that(all(abs(output1/output2.1 - 1) < 0.1 ), is_true())
-    expect_that(all(abs(output2/output2.2 - 1)  < 0.1), is_true())
+    expect_true(all(abs(output1/output2.1 - 1) < 0.1 ))
+    expect_true(all(abs(output2/output2.2 - 1)  < 0.1))
 
     #
     # Do a similar test for a more complex case, to confirm that
@@ -77,8 +77,8 @@ test_that('test_discrete_source_summary_statistics', {
     output_a2.1 = discretized_source_approximate_summary_statistics(alaska_source2)
 
     # Top length can vary quite a bit if we try to allow for orthogonality
-    expect_that(all(abs(output_a1.1$length/output_a2.1$length - 1) < 0.3), is_true())
-    expect_that(all(abs(output_a1.1$width/output_a2.1$width - 1) < 0.07), is_true())
+    expect_true(all(abs(output_a1.1$length/output_a2.1$length - 1) < 0.3))
+    expect_true(all(abs(output_a1.1$width/output_a2.1$width - 1) < 0.07))
 
 })
 
@@ -94,13 +94,13 @@ test_that('test_sub_unit_source_grid_point_creation', {
     c1 = coordinates(xx$grid_point_polygon)
     c2 = coordinates(xx$grid_point_polygon_buffer)
     test_result = all(c1 == c2)
-    expect_that(test_result, is_true())
+    expect_true(test_result)
 
     l1 = length(xx$unit_slip_scale)
     l2 = length(c2[,1])
-    expect_that(l1 == l2, is_true())
+    expect_true(l1 == l2)
 
-    expect_that(all(xx$area == xx$area_buffer), is_true())
+    expect_true(all(xx$area == xx$area_buffer))
 
     ##################################################################
     #
@@ -113,18 +113,18 @@ test_that('test_sub_unit_source_grid_point_creation', {
     # Check that this has not affected the 'untaperd' results
     c3 = coordinates(xx2$grid_point_polygon)
     test_result = all(c1 == c3)
-    expect_that(test_result, is_true())
+    expect_true(test_result)
 
-    expect_that(sum(is.nan(xx2$unit_slip_scale)) == 0, is_true())
+    expect_true(sum(is.nan(xx2$unit_slip_scale)) == 0)
 
     # The peak unit_source_slip_scale might be slightly different to 1 due to
     # normalisation
     err = 1 - max(xx2$unit_slip_scale)
-    expect_that( abs(err) < 5.0e-03, is_true())
+    expect_true( abs(err) < 5.0e-03)
 
     a1 = sum(xx2$unit_slip_scale * xx2$area_buffer)
     a2 = sum(xx2$area)
-    expect_that( abs(a1 - a2) < 1.0e-06 * a1, is_true())
+    expect_true( abs(a1 - a2) < 1.0e-06 * a1)
 
     ##################################################################
     #
@@ -139,11 +139,11 @@ test_that('test_sub_unit_source_grid_point_creation', {
     # Ensure that the bounding polygon did clip as expected
     m1 = point.in.polygon(xx3$grid_points_buffer[,1], xx3$grid_points_buffer[,2],
         bounding_polygon[,1], bounding_polygon[,2])
-    expect_that(all(m1 == 1), is_true())
+    expect_true(all(m1 == 1))
 
     a1 = sum(xx3$unit_slip_scale * xx3$area_buffer)
     a2 = sum(xx3$area)
-    expect_that( abs(a1 - a2) < 1.0e-06 * a1, is_true() )
+    expect_true( abs(a1 - a2) < 1.0e-06 * a1)
 
 
 
