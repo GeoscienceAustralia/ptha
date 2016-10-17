@@ -144,7 +144,7 @@ test_that('test_sub_unit_source_grid_point_creation', {
 
     a1 = sum(xx3$unit_slip_scale * xx3$area_buffer)
     a2 = sum(xx3$area)
-    expect_true( abs(a1 - a2) < 1.0e-06 * a1)
+    expect_true( abs(a1 - a2) < 1.0e-02 * a1)
 
 
 
