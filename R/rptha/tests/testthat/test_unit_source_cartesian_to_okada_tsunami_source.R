@@ -141,16 +141,16 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     # Note: This 'test' is really better illustrated with plotting -- we see a
     # strong ridge in the m11 raster (and similar), and it is gone in the m12 raster.
 
-    r1 = diff(range(as.matrix(sum_all)))
-    r2 = diff(range(as.matrix(sum_allB)))
+    r1 = diff(range(raster::as.matrix(sum_all)))
+    r2 = diff(range(raster::as.matrix(sum_allB)))
     expect_true(r1*0.9 > r2)
     
-    r1 = diff(range(as.matrix(m11)))
-    r2 = diff(range(as.matrix(m11B)))
+    r1 = diff(range(raster::as.matrix(m11)))
+    r2 = diff(range(raster::as.matrix(m11B)))
     expect_true(r1*0.8 > r2)
     
-    r1 = diff(range(as.matrix(m12)))
-    r2 = diff(range(as.matrix(m12B)))
+    r1 = diff(range(raster::as.matrix(m12)))
+    r2 = diff(range(raster::as.matrix(m12B)))
     expect_true(r1*0.8 > r2)
 
     # png('Slip_tapering_effects.png', width=11,height=10,units='in',res=300)
