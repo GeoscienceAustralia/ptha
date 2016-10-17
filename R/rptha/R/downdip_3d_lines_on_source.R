@@ -241,13 +241,18 @@ get_quality_matrix<-function(s_matrix, source_contours_interpolator_list){
         # Prepare to take dot product of unit vectors up-dip and along-strike
         v1 = local_xy_coords_ip1 - local_xy_coords_im1
         v2 = local_xy_coords_jp1 - local_xy_coords_jm1
+        v1A = local_xy_coords_ip1 # - c(0,0) # Note local_xy_coords is 0,0
 
         # Local 'badness of fit' measure. It includes a component related to
         # the angle at which the up-dip and along-strike vectors meet
         # (orthogonal == good).
         # It also contains a component that increases if the increment in the
         # s_matrix is not close to 1/(np-1). 
-        q_matrix[i,] = abs(rowSums(v1 * v2))/sqrt(rowSums(v1*v1)*rowSums(v2*v2)) + 
+        q_matrix[i,] = 
+           # Orthogonal-ness measures
+           0.25*abs(rowSums(v1A * v2))/(1.0e-12 + sqrt(rowSums(v1A*v1A)*rowSums(v2*v2)))+ 
+           abs(rowSums(v1 * v2))/sqrt(rowSums(v1*v1)*rowSums(v2*v2)) + 
+           # Even-distance measures
            0.3*(exp(abs((s_matrix[i,jp1] - s_matrix[i,j]) - 1/(np-1))*(np-1)*(jp1 != j))-1) + 
            0.3*(exp(abs((s_matrix[i,j] - s_matrix[i,jm1]) - 1/(np-1))*(np-1)*(jm1 != j))-1)
 
@@ -342,13 +347,14 @@ create_downdip_lines_on_source_contours_improved<-function(
         # Converges when the maximum change in the solution is (relatively)
         # nls_ptol. Set the accuracy to within 1/100 of the typical grid
         # spacing.
-        nls_ptol = 1/(np-1) * 0.01 
+        #nls_ptol = 1/(np-1) * 0.01 
         model_fit = nls.lm(moving_par, 
             fn=optim_fun, 
             control=list(
                 #maxiter=nls_max_iter, 
                 #maxfev=nls_max_fev, 
-                ptol=nls_ptol, 
+                #ptol=nls_ptol, 
+                ftol = 1.0e-03,
                 nprint=0))
 
         new_s_matrix = s_matrix

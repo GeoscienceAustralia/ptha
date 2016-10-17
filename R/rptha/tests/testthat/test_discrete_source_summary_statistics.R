@@ -36,7 +36,7 @@ test_that('test_discrete_source_summary_statistics', {
     # Compute summary stats in the approximate way
 
     output1 = discretized_source_approximate_summary_statistics(discrete_source1)
-    output2 = discretized_source_summary_statistics(discrete_source1)
+    output2 = discretized_source_summary_statistics(discrete_source1, approx_dx=5000, approx_dy=5000)
 
     # Check that the results don't differ too much
     output_diff = abs(output1/output2 - 1)
@@ -49,7 +49,7 @@ test_that('test_discrete_source_summary_statistics', {
         interface_shapefile, desired_subfault_length, desired_subfault_width,
         make_plot=FALSE, improved_downdip_lines=TRUE)
     output2.1 = discretized_source_approximate_summary_statistics(discrete_source2)
-    output2.2 = discretized_source_summary_statistics(discrete_source2)
+    output2.2 = discretized_source_summary_statistics(discrete_source2, approx_dx=5000, approx_dy=5000)
     
     output_diff = abs(output2.1/output2.2 - 1)
     expect_true(all(abs(output_diff) < 0.2))
@@ -77,8 +77,8 @@ test_that('test_discrete_source_summary_statistics', {
     output_a2.1 = discretized_source_approximate_summary_statistics(alaska_source2)
 
     # Top length can vary quite a bit if we try to allow for orthogonality
-    expect_true(all(abs(output_a1.1$length/output_a2.1$length - 1) < 0.3))
-    expect_true(all(abs(output_a1.1$width/output_a2.1$width - 1) < 0.07))
+    expect_true(all(abs(output_a1.1$length/output_a2.1$length - 1) < 0.5))
+    expect_true(all(abs(output_a1.1$width/output_a2.1$width - 1) < 0.10))
 
 })
 
