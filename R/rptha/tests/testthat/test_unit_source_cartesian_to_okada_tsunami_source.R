@@ -101,19 +101,19 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
     tsunami21 = make_tsunami_unit_source(2,1,sagami_source, rake=90, 
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
-    tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
-        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
-    tsunami22 = make_tsunami_unit_source(2,2,sagami_source, rake=90, 
-        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
+    #tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
+    #    tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
+    #tsunami22 = make_tsunami_unit_source(2,2,sagami_source, rake=90, 
+    #    tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
 
     m11 = tsunami_unit_source_2_raster(tsunami11)
-    m12 = tsunami_unit_source_2_raster(tsunami12)
+    #m12 = tsunami_unit_source_2_raster(tsunami12)
     m21 = tsunami_unit_source_2_raster(tsunami21)
-    m22 = tsunami_unit_source_2_raster(tsunami22)
+    #m22 = tsunami_unit_source_2_raster(tsunami22)
 
-    sum1 = m11 + m12
+    #sum1 = m11 + m12
     sum_2 = m11 + m21
-    sum_all = m11 + m12 + m21 + m22
+    #sum_all = m11 + m12 + m21 + m22
   
     # Case 2 -- edge tapering 
     tsunami11 = make_tsunami_unit_source(1,1,sagami_source, rake=90, 
@@ -122,27 +122,27 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     tsunami21 = make_tsunami_unit_source(2,1,sagami_source, rake=90, 
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
         edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
-    tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
-        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-        edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
-    tsunami22 = make_tsunami_unit_source(2,2,sagami_source, rake=90, 
-        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-        edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
+    #tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
+    #    tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
+    #    edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
+    #tsunami22 = make_tsunami_unit_source(2,2,sagami_source, rake=90, 
+    #    tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
+    #    edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
 
     m11B = tsunami_unit_source_2_raster(tsunami11)
-    m12B = tsunami_unit_source_2_raster(tsunami12)
+    #m12B = tsunami_unit_source_2_raster(tsunami12)
     m21B = tsunami_unit_source_2_raster(tsunami21)
-    m22B = tsunami_unit_source_2_raster(tsunami22)
+    #m22B = tsunami_unit_source_2_raster(tsunami22)
 
-    sum1B = m11B + m12B
+    #sum1B = m11B + m12B
     sum_2B = m11B + m21B
-    sum_allB = m11B + m12B + m21B + m22B
+    #sum_allB = m11B + m12B + m21B + m22B
 
     # Note: This 'test' is really better illustrated with plotting -- we see a
     # strong ridge in the m11 raster (and similar), and it is gone in the m12 raster.
 
-    r1 = diff(range(raster::as.matrix(sum_all)))
-    r2 = diff(range(raster::as.matrix(sum_allB)))
+    r1 = diff(range(raster::as.matrix(sum_2)))
+    r2 = diff(range(raster::as.matrix(sum_2B)))
     expect_true(r1*0.9 > r2)
     
     r1 = diff(range(raster::as.matrix(m11)))
