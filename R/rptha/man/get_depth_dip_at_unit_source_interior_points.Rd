@@ -2,7 +2,7 @@
 % Please edit documentation in R/unit_sources.R
 \name{get_depth_dip_at_unit_source_interior_points}
 \alias{get_depth_dip_at_unit_source_interior_points}
-\title{Interpolate depth and dip at interior points in the unit source}
+\title{Interpolate depth and dip at interior points in the unit source [deprecated]}
 \usage{
 get_depth_dip_at_unit_source_interior_points(unit_source, grid_points,
   fine_downdip_transects, grid_points_strike)
@@ -29,6 +29,6 @@ m in local cartesian coordinates}
 matrix with x, y, depth, dip,.. etc at points inside the unit source
 }
 \description{
-Interpolate depth and dip at interior points in the unit source
+Interpolate depth and dip at interior points in the unit source [deprecated]
 }
 

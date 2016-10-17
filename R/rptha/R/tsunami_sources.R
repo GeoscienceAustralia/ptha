@@ -39,6 +39,13 @@
 #' points.  Must return a list containing zdsp (a vector of all z displacements
 #' in m), and perhaps also edsp, ndsp. 
 #' @param verbose logical. Print some information on progress
+#' @param edge_taper_width Distance over which to taper slip on unit sources. 
+#' Values > 0 can lead to less peaked slip on sources with a shallow top edge
+#' depth. Note values>0 also imply some slip occurring outside the unit source
+#' location (due to smoothing), although we ensure seismic moment is conserved
+#' @param allow_points_outside_discrete_source_outline Logical. If TRUE and
+#' edge_taper_width>0, then we allow sub-unit-source points to occur outside
+#' the boundary of the full discrete source. Mainly used for testing.
 #' @param ... further arguments to tsunami function
 #' @return a list with the cartesian unit source, tsunami source, i,j indices
 #' and tsunami surface points, smoothed deformation, and rake
@@ -62,7 +69,9 @@ make_tsunami_unit_source<-function(
     minimal_output=FALSE,
     tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
     verbose=FALSE,
-    ...){
+    edge_taper_width=0,
+    allow_points_outside_discrete_source_outline=FALSE,
+        ...){
 
     if(verbose){
         print('Making sub-unit-source points...')
@@ -77,7 +86,9 @@ make_tsunami_unit_source<-function(
         approx_dx=approx_dx, 
         approx_dy=approx_dy, 
         scale_dxdy=scale_dxdy,
-        depths_in_km=depths_in_km)
+        depths_in_km=depths_in_km,
+        edge_taper_width=edge_taper_width,
+        allow_points_outside_discrete_source_outline=allow_points_outside_discrete_source_outline)
 
     if(verbose){
         print(Sys.time() - t0)
@@ -284,10 +295,6 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' @param rake The rake of the slip in degrees
 #' @param tsunami_surface_points_cartesian Points at which to compute the
 #' tsunami deformation in cartesian coordinates
-#' @param point_scale [fixme: Do not change] Multiply the length/width of area sources by point scale
-#' prior to convolution, then divide by this afterwoulds. Allows moving between
-#' Okada's area source representation at each grid point, and a point source
-#' representation. Set to 1 for standard rectangular area source representation
 #' @param dstmx For each sub-source, only compute the deformation to a
 #' horizontal distance of dstmx*source depth. Using a low value of dstmax can
 #' speed up the algorithm if the displacement for each sub-source does not have
@@ -298,7 +305,7 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' tsunami_surface_points_cartesian.
 #' @export
 unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
-    tsunami_surface_points_cartesian, point_scale=1, dstmx = 9e+20,
+    tsunami_surface_points_cartesian, dstmx = 9e+20,
     upper_depth_limit = 0.0e-03){
 
     deg2rad = pi/180
@@ -308,8 +315,9 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
     strike = src[, 'strike']
     dip = src[, 'dip']
     depth = src[,'depth']/1000 # depth in km
-    thrust_slip = depth*0 + sin(rake*deg2rad) # Slip in m
-    strike_slip = depth*0 + cos(rake*deg2rad)
+    # Unit slip in m, accounting for tapering (variable unit_slip_scale)
+    thrust_slip = src[,'unit_slip_scale'] * sin(rake*deg2rad) 
+    strike_slip = src[,'unit_slip_scale'] * cos(rake*deg2rad)
 
     dest = tsunami_surface_points_cartesian
 
@@ -371,23 +379,23 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
         src_wdt[too_shallow] = width_limit[too_shallow]
     }
 
-    # Try using the point source solution for areas which have been clipped
-    #print('GD Breaking point scale')
-    #point_scale = 0.99*((src_len > 0.8*max(src_len))&(src_wdt > 0.8*max(src_wdt))) + 0.01
-    #point_scale = 0.01 + src[,'x']*0
-    point_scale = 1.0 # FIXME: Values other than 1 not working.
-
     # Our Okada function is for a rectangular source with constant
     # depth along-strike.
     # We can rescale length/width to be like a point source
     # Note okada_tsunami uses depth in km. 
     ts = okada_tsunami(
-        elon = src[,'x'], elat = src[,'y'], edep = depth,
-        strk = strike, dip = dip,
-        lnth = src_len*point_scale, wdt = src_wdt*point_scale,
-        disl1 = strike_slip/point_scale**2, 
-        disl2 = thrust_slip/point_scale**2,
-        rlon = dest[,1], rlat = dest[,2], dstmx = dstmx,
+        elon = src[,'x'], 
+        elat = src[,'y'], 
+        edep = depth,
+        strk = strike, 
+        dip = dip,
+        lnth = src_len, 
+        wdt = src_wdt,
+        disl1 = strike_slip, 
+        disl2 = thrust_slip,
+        rlon = dest[,1], 
+        rlat = dest[,2], 
+        dstmx = dstmx,
         verbose=FALSE)
 
     return(ts)

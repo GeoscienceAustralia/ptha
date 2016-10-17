@@ -5,8 +5,7 @@
 \title{Convert a cartesian unit source with interior points to an okada tsunami source}
 \usage{
 unit_source_cartesian_to_okada_tsunami_source(us, rake,
-  tsunami_surface_points_cartesian, point_scale = 1, dstmx = 9e+20,
-  upper_depth_limit = 0)
+  tsunami_surface_points_cartesian, dstmx = 9e+20, upper_depth_limit = 0)
 }
 \arguments{
 \item{us}{A unit source with interior points in cartesian coordinates.}
@@ -15,11 +14,6 @@ unit_source_cartesian_to_okada_tsunami_source(us, rake,
 
 \item{tsunami_surface_points_cartesian}{Points at which to compute the
 tsunami deformation in cartesian coordinates}
-
-\item{point_scale}{[fixme: Do not change] Multiply the length/width of area sources by point scale
-prior to convolution, then divide by this afterwoulds. Allows moving between
-Okada's area source representation at each grid point, and a point source
-representation. Set to 1 for standard rectangular area source representation}
 
 \item{dstmx}{For each sub-source, only compute the deformation to a
 horizontal distance of dstmx*source depth. Using a low value of dstmax can

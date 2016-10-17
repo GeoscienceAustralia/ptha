@@ -1,0 +1,255 @@
+#' Convert a unit_source_grid to SpatialPolygonsDataFrame
+#'
+#' Useful to exploit vector operations in sp/rgeos etc
+#' @param unit_source_grid 3d array defining the outline of unit sources
+#' on some source-zone contours. Typically obtained as the unit_source_grid
+#' entry from \code{discretized_source_from_source_contours}.
+#' @return SpatialPolygonsDataFrame, with attributes giving the down-dip
+#' and along-strike indices of each polygon.
+#' @export
+#'
+unit_source_grid_to_SpatialPolygonsDataFrame<-function(unit_source_grid){
+
+    ndip = length(unit_source_grid[,1,1])-1
+    nstrike = length(unit_source_grid[1,1,]) - 1
+    np = ndip * nstrike
+
+    poly_list = list()
+    poly_data = data.frame(downdip_number = rep(NA, np), alongstrike_number = rep(NA,np))
+    counter = 0
+    for(i in 1:ndip){
+        for(j in 1:nstrike){
+            local_polygon = rbind(
+                unit_source_grid[i,1:2,j],
+                unit_source_grid[i+1,1:2,j], 
+                unit_source_grid[i+1,1:2,j+1], 
+                unit_source_grid[i,1:2,j+1])
+            counter = counter+1
+            poly_list[[counter]] = Polygons(list(Polygon(local_polygon)),
+                ID=as.character(counter))
+            poly_data$downdip_number[counter] = i
+            poly_data$alongstrike_number[counter] = j
+        }
+    }
+    
+    p1 = SpatialPolygons(poly_list, proj4string=CRS(""))
+    p1_df = SpatialPolygonsDataFrame(p1, poly_data)
+
+    return(p1_df)
+}
+
+#' Interpolate along downdip lines defining (cartesian) source contours
+#'
+#' Suppose we have a list of matrices defining a grid of (x,y_depth) points over
+#' the source contours, with the along-strike edges aligned with fixed contour
+#' levels. This input can be obtained from the 'mid_line_with_cutpoints' entry
+#' of the output of \code{discretized_source_from_source_contours}, or from the
+#' function \code{create_downdip_lines_on_source_contours_improved}. \cr
+#' This function is used to make a function, which can assign a depth value to
+#' arbitrary x,y points inside the source. Note it can handle conversion from spherical
+#' to cartesian coordinates (with convert_to_cartesian=TRUE)
+#'
+#' @param mid_line_with_cutpoints A list of matrices which is typically obtained
+#' from the 'mid_line_with_cutpoints' entry of the output of
+#' \code{discretized_source_from_source_contours}, or directly from
+#' \code{create_downdip_lines_on_source_contours_improved}. All matrices have
+#' the same dimensions (and 3 columns). Each matrix defines a down-dip
+#' line along the source contours (x,y,depth). The depth values are increasing,
+#' and have the same values in each matrix. The list is ordered along strike. 
+#' @param convert_to_cartesian Logical. If TRUE, the mid_line_with_cutpoints
+#' is in spherical lon/lat coordinates, and the return function will account
+#' for this by transforming x,y data to cartesian prior to fitting, using the
+#' provided values of origin_lonlat and r (see
+#' \code{spherical_to_cartesian2d_coordinates}).
+#' @param origin_lonlat If convert_to_cartesian = TRUE, then this value of
+#' origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).
+#' @param r radius of the earth. If convert_to_cartesian = TRUE, then this value
+#' of origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).
+#' @return a function f(xy, buffer_width=0) which can interpolate depth values
+#' along the source contours. Non-zero buffer widths can be used to allow the
+#' function to be applied to points slightly outside the polygons.
+#' @export
+#'
+make_contour_interpolator<-function(mid_line_with_cutpoints, 
+    convert_to_cartesian = FALSE, origin_lonlat = NULL, r = 6378137){
+
+    convert_to_cartesian = convert_to_cartesian
+    r = r
+    origin_lonlat = origin_lonlat
+
+    if(convert_to_cartesian){
+        if(is.null(origin_lonlat)){
+            stop('origin_lonlat must be provided if convert_to_cartesian=TRUE')
+        }
+        for(i in 1:length(mid_line_with_cutpoints)){
+            mid_line_with_cutpoints[[i]][,1:2] = 
+                spherical_to_cartesian2d_coordinates(
+                    mid_line_with_cutpoints[[i]][,1:2],
+                    origin_lonlat = origin_lonlat,
+                    r = r)
+        }
+    }
+
+    # Convert mid_line_with_cutpoints to SpatialPolygonsDataFrame, so
+    # we can use rgeos to find which polygons contain points
+    mid_line_array = array(NA, 
+        dim=c(dim(mid_line_with_cutpoints[[1]]), 
+            length(mid_line_with_cutpoints)))
+
+    for(i in 1:length(mid_line_with_cutpoints)){
+        mid_line_array[,,i] = mid_line_with_cutpoints[[i]]
+    }
+
+    local_polygons = unit_source_grid_to_SpatialPolygonsDataFrame(mid_line_array)
+
+    # Make a function to interpolate from mid_line_with_cutpoints
+    # Approach: Treat the mid_line like SpatialPolygons. Find
+    # which polygon each 'xy' value (at which we want interpolated depth) is
+    # inside
+    contour_interpolator<-function(xy, na_buffer_width=0){
+        # Ensure xy is a matrix
+        if(length(xy) == 2) dim(xy) = c(1,2)
+
+        if(length(dim(xy)) != 2){
+            stop('xy points must be a matrix with 2 columns')
+        }
+
+        if(dim(xy)[2] != 2){
+            stop('xy points must be a matrix with 2 columns')
+        }
+
+        if(convert_to_cartesian){
+            xy = spherical_to_cartesian2d_coordinates(xy, 
+                origin_lonlat = origin_lonlat, r=r)
+        }
+
+
+        xy_sp = SpatialPoints(coords=xy)
+        local_polygons_sp = as(local_polygons, 'SpatialPolygons')
+        poly_id = over(xy_sp, local_polygons_sp)
+
+        if(any(is.na(poly_id))){
+            # Some points are outside the polygons
+            if(na_buffer_width > 0){
+                # Buffer the polygons. Then again try to identify the polygon
+                # we are inside.
+                kk = which(is.na(poly_id))
+                local_poly_buf = gBuffer(local_polygons_sp, 
+                    width=na_buffer_width, byid=TRUE)
+                na_poly_id = over(xy_sp[kk], local_poly_buf)
+                # Replace the na polygon id's with the buffered polygon id's
+                poly_id[kk] = na_poly_id
+            }
+        }
+       
+        if(any(is.na(poly_id))){
+            stop(paste0(
+                ' Some xy points outside the unit source grid in', 
+                ' contour_interpolator. \n',
+                'Consider passing na_buffer_width > 0 to the function, with a',
+                ' value large enough to contain',
+                ' all points at which interpolation is desired'))
+        }
+
+        # Do depth interpolation by looping over the polygons which contain 
+        # the points
+        depths = rep(0, length(poly_id))
+        polys_to_use = unique(poly_id)
+        for(ptu in polys_to_use){
+            # Indices in 'xy' which are inside the "ptu'th" polygon
+            inds = which(poly_id == ptu)
+            poly_dip_index = local_polygons$downdip_number[ptu]
+            poly_strike_index = local_polygons$alongstrike_number[ptu]
+
+            # Get the 4-points used for interpolation
+            l0 = mid_line_with_cutpoints[[poly_strike_index]]
+            l1 = mid_line_with_cutpoints[[poly_strike_index+1]] 
+            interpolating_quad = rbind(
+                l0[poly_dip_index:(poly_dip_index+1),1:3],
+                l1[(poly_dip_index+1):poly_dip_index,1:3] )
+
+            interpolated_points = quad3d_source_interpolator(xy[inds,], 
+                interpolating_quad)
+            depths[inds] = interpolated_points[,3]
+        }
+
+        return(depths)
+    }
+    return(contour_interpolator)
+}
+
+#' Interpolate inside a 3d planar source
+#'
+#' Interpolate inside a 3d quadrilateral defined by 4 x,y,depth points.
+#' The 'top' edge and the 'bottom' edge both have constant depth. 
+#' 
+#' @param xy matrix of xy coordinates ('n' rows, 2 columns)
+#' @param interpolating_quad Matrix with 4 rows and 3 columns, containing rows
+#' with x,y,depth. It is assumed that interpolating_quad[1:2,1:3] contains the
+#' 'left' edge, and interpolating_quad[4:3,1:3] contains the right edge, both 
+#' ordered top to bottom. We further assume that the 'top' and 'bottom' depths
+#' are the same, i.e. \cr
+#' ((interpolating_quad[1,3] == interpolating_quad[4,3]) & \cr
+#'  (interpolating_quad[2,3] == interpolating_quad[3,3]))
+#' @return xyz coordinates interpolated at xy. Note that x,y should be the same
+#' as the input x,y (we return them anyway for debugging/testing purposes)
+#' 
+quad3d_source_interpolator<-function(xy, interpolating_quad){
+
+    if((is.null(dim(xy))) | (length(dim(xy))!=2) ){
+        if(length(xy) == 2){
+            dim(xy) = c(1,2)
+        }else{
+            stop('xy must have 2 columns, or be a vector of length 2')
+        }
+    }
+
+    top_edge = interpolating_quad[c(1,4),1:3]
+    bottom_edge = interpolating_quad[c(2,3),1:3]
+    if(top_edge[1,3] != top_edge[2,3]) stop('Top edge depths not equal')
+    if(bottom_edge[1,3] != bottom_edge[2,3]) stop('bottom edge depths not equal')
+
+    # Make function to linearly interpolate along the edge. Allow points
+    # outside the edge
+    f_edge<-function(edge){
+        outfun<-function(alpha){
+            out = cbind(edge[1,1] + alpha * (edge[2,1] - edge[1,1]), 
+                        edge[1,2] + alpha * (edge[2,2] - edge[1,2]),  
+                        edge[1,3] + alpha * (edge[2,3] - edge[1,3]))  
+        }
+    
+        return(outfun)
+    }
+
+    top_edge_fun = f_edge(top_edge)
+    bottom_edge_fun = f_edge(bottom_edge)
+
+    # Make a function to interpolate along the 2D quad with 2 parameters, which
+    # we can optimize with nls.lm
+    f_xyz<-function(alpha_s, returncoords = FALSE){
+        dim(alpha_s) = c(length(alpha_s)/2, 2)
+        alpha = alpha_s[,1]
+        s = alpha_s[,2]    
+
+        output_coords = s * top_edge_fun(alpha) + 
+            (1 - s)*(bottom_edge_fun(alpha))
+
+        if(returncoords){
+            output = output_coords
+        }else{
+            # Return a residual
+            output = output_coords[,1:2] - xy[,1:2]
+            # Coerce to vector since nls.lm works with vectors
+            dim(output) = NULL
+        }
+        return(output)
+    }
+
+    # Find 'best' alpha, s values for these coordinates
+    coordinate_optim = nls.lm(rep(0.5, length(xy)), fn=f_xyz)
+    alpha_s_best = coordinate_optim$par
+    dim(alpha_s_best) = c(length(alpha_s_best)/2, 2)
+
+    fitted_coordinates = f_xyz(alpha_s_best, returncoords=TRUE)
+}
+

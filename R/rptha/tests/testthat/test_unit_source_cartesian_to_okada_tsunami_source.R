@@ -33,6 +33,11 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     ds$discretized_source_dim = c(1,1) 
     names(ds$discretized_source_dim) = c('dip','strike')
 
+    mid_line_with_cutpoints = list()
+    mid_line_with_cutpoints[[1]] = cbind(unit_source_coords_lonlat[1:2,], c(d0, d1)/1000)
+    mid_line_with_cutpoints[[2]] = cbind(unit_source_coords_lonlat[4:3,], c(d0, d1)/1000)
+    ds$mid_line_with_cutpoints = mid_line_with_cutpoints
+
     ds$fine_downdip_transects = ds$unit_source_grid    
 
     # Get tsunami surface points
@@ -58,6 +63,80 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
 
     # Check both displacements are sufficiently close (can get closer with more
     # interior points)
-    expect_that(max(abs(range(tsunami1$tsunami_source$zdsp - tsunami2$zdsp))) < 1.0e-02, is_true())
+    expect_true(max(abs(range(tsunami1$tsunami_source$zdsp - tsunami2$zdsp))) < 1.0e-02)
+
+    # Check that edge_taper_width > 0 runs
+    tsunami3 = make_tsunami_unit_source(1, 1, ds, rake=90,
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
+        tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
+        edge_taper_width = 6000,
+        allow_points_outside_discrete_source_outline=TRUE)
+
+    # Simple check -- edge_tapering decreases the extremes of the displacement
+    r1 = diff(range(tsunami1$smooth_tsunami_displacement))
+    r3 = diff(range(tsunami3$smooth_tsunami_displacement))
     
+    expect_true(r1 > r3)
+    
+    tsunami4 = make_tsunami_unit_source(1, 1, ds, rake=90,
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
+        tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
+        edge_taper_width = 9995, # 10000 will induce an error
+        allow_points_outside_discrete_source_outline=TRUE)
+    
+    r4 = diff(range(tsunami4$smooth_tsunami_displacement))
+    expect_true(r3 > r4)
+    
+    #
+    # Check that edge tapering only effects the edges of sums of unit sources
+    #
+    sagami = readOGR('testshp/sagami.shp', 'sagami')
+    sagami_source = discretized_source_from_source_contours('testshp/sagami.shp',
+        desired_subfault_length = 50, desired_subfault_width=50, make_plot=TRUE)
+    tsunami_surface_points_lonlat = expand.grid(seq(138,144,len=200), 
+        seq(33,37,len=200)) 
+    
+    # Case 1 -- no edge tapering
+    tsunami11 = make_tsunami_unit_source(1,1,sagami_source, rake=90, 
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
+    tsunami21 = make_tsunami_unit_source(2,1,sagami_source, rake=90, 
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
+    tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
+    tsunami22 = make_tsunami_unit_source(2,2,sagami_source, rake=90, 
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000)
+
+    m11 = tsunami_unit_source_2_raster(tsunami11)
+    m12 = tsunami_unit_source_2_raster(tsunami12)
+    m21 = tsunami_unit_source_2_raster(tsunami21)
+    m22 = tsunami_unit_source_2_raster(tsunami22)
+
+    sum1 = m11 + m12
+    sum_2 = m11 + m21
+    sum_all = m11 + m12 + m21 + m22
+  
+    # Case 2 -- edge tapering 
+    tsunami11 = make_tsunami_unit_source(1,1,sagami_source, rake=90, 
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
+        edge_taper_width=10000)
+    tsunami21 = make_tsunami_unit_source(2,1,sagami_source, rake=90, 
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
+        edge_taper_width=10000)
+    tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
+        edge_taper_width=10000)
+    tsunami22 = make_tsunami_unit_source(2,2,sagami_source, rake=90, 
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
+        edge_taper_width=10000)
+
+    m11B = tsunami_unit_source_2_raster(tsunami11)
+    m12B = tsunami_unit_source_2_raster(tsunami12)
+    m21B = tsunami_unit_source_2_raster(tsunami21)
+    m22B = tsunami_unit_source_2_raster(tsunami22)
+
+    sum1B = m11B + m12B
+    sum_2B = m11B + m21B
+    sum_allB = m11B + m12B + m21B + m22B
+     
+
 })

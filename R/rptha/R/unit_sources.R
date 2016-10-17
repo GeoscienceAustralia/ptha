@@ -674,6 +674,9 @@ get_discretized_source_outline<-function(discretized_source){
 #' the sub-unit-source grid points beyond the unit-source 'box' by a distance
 #' edge_taper_width. The slip reduces linearly from 1 to 0 for points near the boundary
 #' (ranging from -edge_taper_width to +edge_taper_width from the unit-source edges)
+#' @param allow_points_outside_discrete_source_outline. If FALSE, then ensure all
+#' interior_points are inside the discretized_source's outline. If TRUE, then do not
+#' enforce this (the latter option is mainly for testing)
 #' @return list containing: 'unit_source': matrix with unit_source_coords in the
 #' cartesian coordinate system + an additional depth column (m); 'origin' the
 #' lon/lat origin of the local coordinate system; r (input argument); 'dx, dy'
@@ -692,7 +695,8 @@ unit_source_interior_points_cartesian<-function(
     scale_dxdy = 1,
     depths_in_km = TRUE,
     plot_source=FALSE,
-    edge_taper_width = 0){
+    edge_taper_width = 0,
+    allow_points_outside_discrete_source_outline=FALSE){
 
     # Get the unit source coordinates, and down-dip transects we
     # can use for interpolation
@@ -752,21 +756,24 @@ unit_source_interior_points_cartesian<-function(
 
     # Get a 'grid' of points inside the unit source (later used
     # for integration)
+    if(allow_points_outside_discrete_source_outline){
+        bounding_polygon = NULL
+    }else{
+        bounding_polygon = discretized_source_outline_cartesian[,1:2]
+    }
     grid_point_data = compute_grid_point_areas_in_polygon(
         unit_source_cartesian[,1:2], 
         approx_dx = approx_dx, 
         approx_dy = approx_dy,
         edge_taper_width=edge_taper_width,
-        bounding_polygon = discretized_source_outline_cartesian[,1:2])
+        bounding_polygon = bounding_polygon)
 
-    # FIXME: Update to tapered grid points
-    grid_points = grid_point_data$grid_points
-    grid_point_areas = grid_point_data$area
-    grid_point_polygon = grid_point_data$grid_point_polygon
-    grid_point_unit_slip_scale = grid_point_data$unit_slip_scale
+    # NOTE: grid points which might fall outside the unit source boundaries,
+    # because of edge tapering (if edge_taper_width > 0). This is deliberate.
+    grid_points = grid_point_data$grid_points_buffer
 
     # Test for consistency between the grid point areas and the original unit
-    # source
+    # source. Do NOT use the buffered areas
     a0 = sum(grid_point_data$area)
     a1 = areaPolygon(unit_source_coords[,1:2], f=0)
     rel_err = abs(a0-a1)/((a0+a1)*0.5)
@@ -778,7 +785,7 @@ unit_source_interior_points_cartesian<-function(
 
     
     # Get strike at the grid points
-
+    #
     # Convert lon-lat centroids of ALL unit sources in the discrete source to
     # the local coordinate system and use them to make a continuous function of
     # strike
@@ -807,15 +814,74 @@ unit_source_interior_points_cartesian<-function(
     strike = strike + (strike < 0)*360
 
     # Get dip/depth etc at the grid points
-    grid_points = get_depth_dip_at_unit_source_interior_points(
-        unit_source_cartesian, grid_points,
-        fine_downdip_transects_cartesian, strike)
+    #
+    # ## OLD METHOD ##
+    #grid_points = get_depth_dip_at_unit_source_interior_points(
+    #    unit_source_cartesian, grid_points,
+    #    fine_downdip_transects_cartesian, strike)
+    #
+    ## Alternative approach: Use the new contour function
+    # easiest if we convert the mid_line_with_cutpoints to cartesian
+    # coordinates before starting 
+    mid_line_with_cutpoints_cartesian = discretized_source$mid_line_with_cutpoints
+    for(i in 1:length(mid_line_with_cutpoints_cartesian)){
+        mid_line_with_cutpoints_cartesian[[i]][,1:2] = 
+            spherical_to_cartesian2d_coordinates(
+                mid_line_with_cutpoints_cartesian[[i]][,1:2],
+                origin_lonlat = origin, 
+                r=r)
+        if(depths_in_km){
+            mid_line_with_cutpoints_cartesian[[i]][,3] = 1000 * 
+                mid_line_with_cutpoints_cartesian[[i]][,3]
+        }
+    }
+    contour_fun = make_contour_interpolator(mid_line_with_cutpoints_cartesian)
+    # NOTE: It is possible for points to be outside the grid defined by
+    # mid_line_with_cutpoints_cartesian, but inside the grid defined by the
+    # unit_source edges. This is because the former can be jagged (particularly
+    # at lateral boundaries). A crude solution is just to add more buffer
+    new_depths = try(contour_fun(grid_points, 
+        na_buffer_width=edge_taper_width), silent=TRUE)
+    extra_buffer = 0
+    if(class(new_depths) == 'try-error'){
+        warning('unit source points exceed contour extent (maybe due to jagged contour edges?). Additional 10km buffering applied')
+        extra_buffer = 10000
+        new_depths = contour_fun(grid_points, na_buffer_width=edge_taper_width+extra_buffer)
+    }
+    # Compute dip -- first make some 'down-dip' points, then find their depth,
+    # and do the computation
+    dx_numerical = 100
+    deg2rad = pi/180
+    grid_points_perturb = grid_points
+    grid_points_perturb[,1] = grid_points_perturb[,1] + dx_numerical*cos(strike*deg2rad)
+    grid_points_perturb[,2] = grid_points_perturb[,2] - dx_numerical*sin(strike*deg2rad)
+    depth_perturb = contour_fun(grid_points_perturb, 
+        na_buffer_width=edge_taper_width + (dx_numerical*1.2) + extra_buffer)
+    if(any(depth_perturb < new_depths)) stop('Negative dip')
+    dip = atan((depth_perturb - new_depths)/dx_numerical)/deg2rad
 
-    grid_points = cbind(grid_points, grid_point_areas, strike)
+    # Now that we know dip, we can properly normalise the unit_slip_scale to
+    # preserve seismic moment
+    grid_point_unit_slip_scale = grid_point_data$unit_slip_scale
+    a0 = sum(grid_point_data$area_buffer * 
+        grid_point_data$area_buffer_fraction_inside_unit_source * 
+        sqrt(1 + tan(dip*deg2rad)**2))
+    a1 = sum(grid_point_unit_slip_scale * 
+        grid_point_data$area_buffer * 
+        sqrt(1 + tan(dip*deg2rad)**2))
+    grid_point_unit_slip_scale = grid_point_unit_slip_scale * a0/a1
 
+    # Make output with x,y,depth,dip, area_projected, strike, unit_slip_scale
+    grid_point_areas = grid_point_data$area_buffer
+    grid_point_polygon = grid_point_data$grid_point_polygon_buffer
+    fraction_area_inside_unit_source = grid_point_data$area_buffer_fraction_inside_unit_source
+
+    grid_points = cbind(grid_points, new_depths, dip)
+    grid_points = cbind(grid_points, grid_point_areas, strike, grid_point_unit_slip_scale, 
+        fraction_area_inside_unit_source)
     # Fix row/column names for later ease of access
-    colnames(grid_points) = c('x', 'y', 'depth', 'dip', 'alpha', 's', 
-        'area_projected', 'strike')
+    colnames(grid_points) = c('x', 'y', 'depth', 'dip', 'area_projected', 'strike', 
+        'unit_slip_scale', 'fraction_area_inside_unit_source')
 
     rownames(grid_points) = NULL
 
@@ -879,6 +945,27 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         # Note -- this gives 'rounded' edges. There are other options
         p0_buf = gBuffer(p0, width = edge_taper_width)
         p0_negbuf = gBuffer(p0, width = -edge_taper_width)
+        if(is.null(p0_negbuf)){
+            # If we buffered the polygon out of existence, find the distance
+            # which would give a buffer width of 0 and use that? 
+            # BUT, if we did that, then for large enough edge_taper width, the
+            # slip would become similar to uniform!
+            # p0_negbuf = gBuffer(SpatialPoints(coordinates(p0)), width=1.0e-03)
+            #
+            # Actually don't do this, since the behaviour in this situation is
+            # counter intuitive. The slip can actually become more concentrated.
+            # This is because if we shrink the polygon to have area slightly > 0,
+            # it will look like a line, and so distances will be different to
+            # if we shrunk it to a point. So there ends up being a 'discontinuity'
+            # in the behaviour of the tapered slip distribution. That might cause
+            # some surprises, so just disallow it.
+            stop(paste0("Error: edge_taper_width too large.  \n",
+                '    "p0_negbuf = gBuffer(p0, width = -edge_taper_width)" \n',
+                " has shrunk to a point. This leads to a qualitative step-change in the \n",
+                " unit source behaviour, so we disallow it. \n",
+                " Need (edge_taper_width) < (0.5*[earth_surface_width of the ",
+                " slip region]).\n Constraints for non-orthogonal sources may be stronger.") )
+        }
     }else{
         p0_buf = p0
         p0_negbuf = p0
@@ -1008,7 +1095,6 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
     p_intersect_buf = gIntersection(p1, p0_buf, byid=TRUE, drop_lower_td=TRUE)
 
-
     # If there are 'just touching' relations and similar, then
     # p_intersect may not by SpatialPolygons. Throw an error for now
     stopifnot(class(p_intersect)=='SpatialPolygons')
@@ -1022,16 +1108,20 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     stopifnot(length(areas) == length(indices))
 
-
     areas_buffer = unlist(lapply(p_intersect_buf@polygons, 
         f<-function(x) x@Polygons[[1]]@area))
 
-
-    # Adjust unit_slip_scale to preserve seismic moment (assuming constant mu)
-    # FIXME: This should be applied to the 'projected' area
-    a0 = sum(areas)
-    a2 = sum(areas_buffer * unit_slip_scale)
-    unit_slip_scale = unit_slip_scale * a0/a2
+    # Find fraction of each 'buffer' point area that is inside the original
+    # unit source region
+    unit_source_region = gUnaryUnion(p_intersect)
+    area_buffer_fraction_inside_unit_source = areas_buffer * 0
+    for(i in 1:length(area_buffer_fraction_inside_unit_source)){
+        intersect_pol = gIntersection(unit_source_region, p_intersect_buf[i])
+        if(!is.null(intersect_pol)){
+            area_buffer_fraction_inside_unit_source[i] = 
+                gArea(intersect_pol)/gArea(p_intersect_buf[i]) 
+        }
+    }
 
     return(list(
         grid_points = centroids, 
@@ -1042,6 +1132,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         grid_point_polygon_buffer=p_intersect_buf,
         grid_points_buffer = coordinates(p_intersect_buf),
         area_buffer = areas_buffer,
+        area_buffer_fraction_inside_unit_source = area_buffer_fraction_inside_unit_source,
         unit_slip_scale = unit_slip_scale
         ))
 }
@@ -1093,7 +1184,7 @@ make_edge_approxfun<-function(unit_source_edge, fine_downdip_transect){
 }
 
 
-#' Interpolate depth and dip at interior points in the unit source
+#' Interpolate depth and dip at interior points in the unit source [deprecated]
 #'
 #' @param unit_source matrix with 4 rows and 3 columns (x,y,depth) defining the
 #' unit source boundary. The 4 points should be ordered so that unit_source[1,]
@@ -1110,7 +1201,6 @@ make_edge_approxfun<-function(unit_source_edge, fine_downdip_transect){
 #' @param grid_points_strike The strike for each grid point
 #' @return matrix with x, y, depth, dip,.. etc at points inside the unit source
 #' 
-#' @export
 get_depth_dip_at_unit_source_interior_points<-function(
     unit_source, grid_points, fine_downdip_transects, 
     grid_points_strike){

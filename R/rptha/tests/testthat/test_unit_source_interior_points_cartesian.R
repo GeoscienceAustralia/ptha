@@ -30,6 +30,11 @@ test_that('test_unit_source_interior_points_cartesian', {
         unit_source_coords_cartesian[1:2,3]/1000)
     ds$unit_source_grid[,,2] = cbind(unit_source_coords_lonlat[4:3,1:2], 
         unit_source_coords_cartesian[4:3,3]/1000)
+
+    mid_line_with_cutpoints = list()
+    mid_line_with_cutpoints[[1]] = cbind(unit_source_coords_lonlat[1:2,], c(d0, d1)/1000)
+    mid_line_with_cutpoints[[2]] = cbind(unit_source_coords_lonlat[4:3,], c(d0, d1)/1000)
+    ds$mid_line_with_cutpoints = mid_line_with_cutpoints
     
     ds$discretized_source_dim = c(1,1) 
     names(ds$discretized_source_dim) = c('dip', 'strike')
@@ -45,6 +50,9 @@ test_that('test_unit_source_interior_points_cartesian', {
     # Check dip (small inaccuracies allowed due to numerical optimization)
     expect_true(all(abs(us$grid_points[,'dip'] - dip)<0.02))
 
+    expect_true(all(us$grid_points[,'unit_slip_scale'] == 1))
+    expect_true(all(us$grid_points[,'fraction_area_inside_unit_source'] == 1))
+
     # Check depth (small inaccuracies allowed due to numerical optimization)
     pred_depth = (us$grid_points[,'y']/width)*(d1 - d0) + d0
 
@@ -58,5 +66,26 @@ test_that('test_unit_source_interior_points_cartesian', {
                  (max(us$grid_points[,'x']) < 0) &
                  (min(us$grid_points[,'y']) > 0) &
                  (max(us$grid_points[,'y']) < width))
+
+    us2 = unit_source_interior_points_cartesian(ds, unit_source_index = c(1,1),
+        approx_dx = NULL, approx_dy = NULL, depths_in_km=TRUE, 
+        edge_taper_width=3000,
+        allow_points_outside_discrete_source_outline=TRUE)
+
+
+    # Check that the moment-normalization has worked
+    a0 = sum(us$grid_points[,'area_projected'] * 
+        sqrt(1 + atan(us$grid_points[,'dip']/180 * pi)**2))
+    a1 = sum(us2$grid_points[,'unit_slip_scale'] * 
+        us2$grid_points[,'area_projected'] *
+        sqrt(1 + atan(us2$grid_points[,'dip']/180 * pi)**2))
+    expect_true(abs(a0 - a1) < 1.0e-12 * a1)
+
+    # Check that the area normalization has worked
+    a0 = sum(us$grid_points[,'area_projected'])
+    a1 = sum(us2$grid_points[,'area_projected'] * 
+        us2$grid_points[,'fraction_area_inside_unit_source'])
+    expect_true(abs(a0 - a1) < 1.0e-12 * a1)
+       
 })
 

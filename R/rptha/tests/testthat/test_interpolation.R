@@ -84,3 +84,24 @@ test_that('test_interpolation', {
 
 })
 
+test_that('test_contour_interpolation', {
+
+    contours = readOGR('testshp/alaska.shp', layer='alaska')
+    dsc = discretized_source_from_source_contours('testshp/alaska.shp', 50, 50, 
+        improved_downdip_lines=TRUE)
+
+    # Test some 'general' points with previously confirmed reasonable values
+    p1 = rbind(c(210, 58), c(212, 60), c(208, 57))
+    expected_p1_depths = c(14.669, 27.898, 12.471) + 6 # These contours are offset by 6km from trench=0
+    contour_fun = make_contour_interpolator(dsc$mid_line_with_cutpoints, 
+        convert_to_cartesian=TRUE, origin_lonlat = c(208,58))
+    p1_depths = contour_fun(p1)
+    expect_true(max(abs(p1_depths - expected_p1_depths)) < 1.0e-02)
+
+    ## Test points exactly on the contours
+    mid_line_first = dsc$mid_line_with_cutpoints[[1]]
+    expected_depths = mid_line_first[,3]
+    interpolated_z = contour_fun(mid_line_first[,1:2])
+    expect_true(max(abs(expected_depths - interpolated_z)) < 1.0e-05)
+
+})

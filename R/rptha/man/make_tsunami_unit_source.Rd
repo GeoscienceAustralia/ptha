@@ -11,7 +11,8 @@ make_tsunami_unit_source(i, j, discrete_source, rake,
   kajiura_volume_change_error_threshold = 0.1,
   kajiura_where_deformation_exceeds_threshold = 0, minimal_output = FALSE,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
-  verbose = FALSE, ...)
+  verbose = FALSE, edge_taper_width = 0,
+  allow_points_outside_discrete_source_outline = FALSE, ...)
 }
 \arguments{
 \item{i}{integer. The down-dip index of the unit source}
@@ -68,6 +69,15 @@ points.  Must return a list containing zdsp (a vector of all z displacements
 in m), and perhaps also edsp, ndsp.}
 
 \item{verbose}{logical. Print some information on progress}
+
+\item{edge_taper_width}{Distance over which to taper slip on unit sources. 
+Values > 0 can lead to less peaked slip on sources with a shallow top edge
+depth. Note values>0 also imply some slip occurring outside the unit source
+location (due to smoothing), although we ensure seismic moment is conserved}
+
+\item{allow_points_outside_discrete_source_outline}{Logical. If TRUE and
+edge_taper_width>0, then we allow sub-unit-source points to occur outside
+the boundary of the full discrete source. Mainly used for testing.}
 
 \item{...}{further arguments to tsunami function}
 }
