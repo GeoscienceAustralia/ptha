@@ -149,10 +149,6 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     r2 = diff(range(raster::as.matrix(m11B)))
     expect_true(r1*0.8 > r2)
     
-    r1 = diff(range(raster::as.matrix(m12)))
-    r2 = diff(range(raster::as.matrix(m12B)))
-    expect_true(r1*0.8 > r2)
-
     # png('Slip_tapering_effects.png', width=11,height=10,units='in',res=300)
     # par(mfrow=c(2,2))
     # nc = c(123, 137)
