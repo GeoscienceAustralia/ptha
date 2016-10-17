@@ -96,7 +96,7 @@ test_that('test_contour_interpolation', {
     contour_fun = make_contour_interpolator(dsc$mid_line_with_cutpoints, 
         convert_to_cartesian=TRUE, origin_lonlat = c(208,58))
     p1_depths = contour_fun(p1)
-    expect_true(max(abs(p1_depths - expected_p1_depths)) < 1.0e-02)
+    expect_true(max(abs(p1_depths - expected_p1_depths)) < 1.0e-01)
 
     ## Test points exactly on the contours
     mid_line_first = dsc$mid_line_with_cutpoints[[1]]
