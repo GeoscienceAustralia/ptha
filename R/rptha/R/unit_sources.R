@@ -1115,7 +1115,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     # Find fraction of each 'buffer' point area that is inside the original
     # unit source region
     # gBuffer calls are used to try to work around topology exceptions from rgeos
-    unit_source_region = gUnaryUnion(gBuffer(gBuffer(p_intersect, width=1.0e-06), width=-1e-06)) 
+    unit_source_region = gUnaryUnion(gBuffer(gBuffer(p_intersect, width=1.0e-06), width=-1e-06))
 
     area_buffer_fraction_inside_unit_source = areas_buffer * 0
     for(i in 1:length(area_buffer_fraction_inside_unit_source)){
