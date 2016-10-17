@@ -778,8 +778,9 @@ unit_source_interior_points_cartesian<-function(
     a1 = areaPolygon(unit_source_coords[,1:2], f=0)
     rel_err = abs(a0-a1)/((a0+a1)*0.5)
     if( rel_err > 0.01 ){
-        msg = paste0('Cartesian and spherical unit source area (surface only, not 3d) differ by a fraction',
-            rel_err, sep=" ")
+        msg = paste0('Cartesian and spherical unit source area ',
+            "(surface only, not 3d) differ by a fraction ",
+            signif(rel_err,3), sep=" ")
         warning(msg)
     }
 

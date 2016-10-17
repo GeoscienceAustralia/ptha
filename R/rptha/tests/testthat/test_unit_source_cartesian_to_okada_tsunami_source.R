@@ -118,16 +118,16 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     # Case 2 -- edge tapering 
     tsunami11 = make_tsunami_unit_source(1,1,sagami_source, rake=90, 
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-        edge_taper_width=10000)
+        edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
     tsunami21 = make_tsunami_unit_source(2,1,sagami_source, rake=90, 
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-        edge_taper_width=10000)
+        edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
     tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-        edge_taper_width=10000)
+        edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
     tsunami22 = make_tsunami_unit_source(2,2,sagami_source, rake=90, 
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-        edge_taper_width=10000)
+        edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
 
     m11B = tsunami_unit_source_2_raster(tsunami11)
     m12B = tsunami_unit_source_2_raster(tsunami12)
@@ -137,6 +137,20 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     sum1B = m11B + m12B
     sum_2B = m11B + m21B
     sum_allB = m11B + m12B + m21B + m22B
-     
+
+    # Note: This 'test' is really better illustrated with plotting -- we see a
+    # strong ridge in the m11 raster (and similar), and it is gone in the m12 raster.
+
+    r1 = diff(range(as.matrix(sum_all)))
+    r2 = diff(range(as.matrix(sum_allB)))
+    expect_true(r1*0.9 > r2)
+    
+    r1 = diff(range(as.matrix(m11)))
+    r2 = diff(range(as.matrix(m11B)))
+    expect_true(r1*0.8 > r2)
+    
+    r1 = diff(range(as.matrix(m12)))
+    r2 = diff(range(as.matrix(m12B)))
+    expect_true(r1*0.8 > r2)
 
 })
