@@ -92,7 +92,7 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     #
     sagami = readOGR('testshp/sagami.shp', 'sagami')
     sagami_source = discretized_source_from_source_contours('testshp/sagami.shp',
-        desired_subfault_length = 50, desired_subfault_width=50, make_plot=TRUE)
+        desired_subfault_length = 50, desired_subfault_width=50, make_plot=FALSE)
     tsunami_surface_points_lonlat = expand.grid(seq(138,144,len=200), 
         seq(33,37,len=200)) 
     
@@ -152,5 +152,22 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     r1 = diff(range(as.matrix(m12)))
     r2 = diff(range(as.matrix(m12B)))
     expect_true(r1*0.8 > r2)
+
+    # png('Slip_tapering_effects.png', width=11,height=10,units='in',res=300)
+    # par(mfrow=c(2,2))
+    # nc = c(123, 137)
+    # plot(sum_2, zlim=c(-0.2, 0.5), col=rainbow(255))
+    # abline(v=xFromCol(sum_2,nc), lty='longdash')
+    # title('No tapering')
+    # plot(sum_2B, zlim=c(-0.2, 0.5), col=rainbow(255))
+    # abline(v=xFromCol(sum_2,nc), lty='longdash')
+    # title('Tapering of slip')
+    # plot(sum_2[,nc[1],],t='o')
+    # points(sum_2B[,nc[1],],t='l',col='red', lwd=2)
+    # title('Left transect')
+    # plot(sum_2[,nc[2],],t='o')
+    # points(sum_2B[,nc[2],],t='l',col='red', lwd=2)
+    # title('Right transect')
+    # dev.off()
 
 })

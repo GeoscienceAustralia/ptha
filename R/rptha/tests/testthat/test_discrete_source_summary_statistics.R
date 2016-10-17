@@ -122,9 +122,10 @@ test_that('test_sub_unit_source_grid_point_creation', {
     err = 1 - max(xx2$unit_slip_scale)
     expect_true( abs(err) < 5.0e-03)
 
+    # The following won't hold exactly (because of varying dip), but does hold approximately
     a1 = sum(xx2$unit_slip_scale * xx2$area_buffer)
     a2 = sum(xx2$area)
-    expect_true( abs(a1 - a2) < 1.0e-06 * a1)
+    expect_true( abs(a1 - a2) < 1.0e-02 * a1)
 
     ##################################################################
     #

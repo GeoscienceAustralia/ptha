@@ -674,7 +674,7 @@ get_discretized_source_outline<-function(discretized_source){
 #' the sub-unit-source grid points beyond the unit-source 'box' by a distance
 #' edge_taper_width. The slip reduces linearly from 1 to 0 for points near the boundary
 #' (ranging from -edge_taper_width to +edge_taper_width from the unit-source edges)
-#' @param allow_points_outside_discrete_source_outline. If FALSE, then ensure all
+#' @param allow_points_outside_discrete_source_outline If FALSE, then ensure all
 #' interior_points are inside the discretized_source's outline. If TRUE, then do not
 #' enforce this (the latter option is mainly for testing)
 #' @return list containing: 'unit_source': matrix with unit_source_coords in the
