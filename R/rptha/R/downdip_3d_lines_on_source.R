@@ -341,21 +341,43 @@ create_downdip_lines_on_source_contours_improved<-function(
             return(c(q_matrix))
         }
 
-        #nls_max_iter = 10
-        #nls_max_fev = 20 * length(moving_par) # Default is 100 times this
-
-        # Converges when the maximum change in the solution is (relatively)
-        # nls_ptol. Set the accuracy to within 1/100 of the typical grid
-        # spacing.
-        #nls_ptol = 1/(np-1) * 0.01 
+        # Minimise optim_fun with the lm algorithm
         model_fit = nls.lm(moving_par, 
             fn=optim_fun, 
             control=list(
-                #maxiter=nls_max_iter, 
-                #maxfev=nls_max_fev, 
-                #ptol=nls_ptol, 
                 ftol = 1.0e-03,
                 nprint=0))
+
+        if(model_fit$niter == 1){
+            # Occasionally we have convergence problems, whereby the
+            # model only takes one step and there is no improvement to the contours.
+            # Here we randomy perturb the initial conditions and try again -- twice.
+            # This seems to work well in at least some cases, but is a bit ad-hoc
+
+            ascale = 0.2 * 1/(np-1)
+            ll = ascale * sample(c(-1,1), size=length(model_fit$par), replace=TRUE)
+            model_fit2 = nls.lm(model_fit$par + ll, 
+                fn=optim_fun, 
+                control=list(
+                    ftol = 1.0e-06,
+                    maxiter=250,
+                    maxfev = 9e+4,
+                    nprint=0))
+           
+            # Do another iteration 
+            ll = ascale/4 * sample(c(-1,1), size=length(model_fit$par), replace=TRUE)
+            model_fit2 = nls.lm(model_fit2$par + ll, 
+                fn=optim_fun, 
+                control=list(
+                    ftol = 1.0e-06,
+                    maxiter=250,
+                    maxfev = 9e+4,
+                    nprint=0))
+
+            # Could do more iterations...
+            model_fit = model_fit2
+            rm(model_fit2)
+        }
 
         new_s_matrix = s_matrix
         new_s_matrix[1:(num_l), 2:(np-1)] = model_fit$par
