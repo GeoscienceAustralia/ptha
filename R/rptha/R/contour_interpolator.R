@@ -65,9 +65,12 @@ unit_source_grid_to_SpatialPolygonsDataFrame<-function(unit_source_grid){
 #' origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).
 #' @param r radius of the earth. If convert_to_cartesian = TRUE, then this value
 #' of origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).
-#' @return a function f(xy, buffer_width=0) which can interpolate depth values
-#' along the source contours. Non-zero buffer widths can be used to allow the
-#' function to be applied to points slightly outside the polygons.
+#' @return a function f(xy, na_buffer_width=0, xy_perturbation_m=NULL) 
+#' which can interpolate depth values along the source contours. Non-zero buffer
+#' widths can be used to allow the function to be applied to points slightly
+#' outside the polygons. xy_perturbation_m can be a matrix of the same shape as xy,
+#' in which case it is added to xy before depth computation. This turns out to be convenient
+#' for computing dip.
 #' @export
 #'
 make_contour_interpolator<-function(mid_line_with_cutpoints, 
@@ -171,16 +174,16 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
         polys_to_use = unique(poly_id)
         for(ptu in polys_to_use){
             # Indices in 'xy' which are inside the "ptu'th" polygon
+            #
+            # FIXME: Could simplyfy this -- only need polygons defined by pairs
+            # of midlines.
+            #
             inds = which(poly_id == ptu)
             poly_dip_index = local_polygons$downdip_number[ptu]
             poly_strike_index = local_polygons$alongstrike_number[ptu]
 
-            # Get the 4-points used for interpolation
             l0 = mid_line_with_cutpoints[[poly_strike_index]]
-            l1 = mid_line_with_cutpoints[[poly_strike_index+1]] 
-            interpolating_quad = rbind(
-                l0[poly_dip_index:(poly_dip_index+1),1:3],
-                l1[(poly_dip_index+1):poly_dip_index,1:3] )
+            l1 = mid_line_with_cutpoints[[poly_strike_index+1]]
 
             if(!is.null(xy_perturbation_m)){
                 xp = xy[inds,] + xy_perturbation_m[inds,]
@@ -188,8 +191,8 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
                 xp = xy[inds,]
             }
 
-            interpolated_points = quad3d_source_interpolator(xp, 
-                interpolating_quad)
+            interpolated_points = edge_source_interpolator(xp, 
+                l0, l1)
             depths[inds] = interpolated_points[,3]
         }
 
@@ -198,23 +201,19 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
     return(contour_interpolator)
 }
 
-#' Interpolate inside a 3d planar source
+#' Interpolate inside a region defined by 2 downdip lines
 #'
-#' Interpolate inside a 3d quadrilateral defined by 4 x,y,depth points.
-#' The 'top' edge and the 'bottom' edge both have constant depth. 
+#' Interpolate inside a region defined by 2 downdip lines (x,y,z coordinates)
+#' based on a given set of xy coordinates
 #' 
 #' @param xy matrix of xy coordinates ('n' rows, 2 columns)
-#' @param interpolating_quad Matrix with 4 rows and 3 columns, containing rows
-#' with x,y,depth. It is assumed that interpolating_quad[1:2,1:3] contains the
-#' 'left' edge, and interpolating_quad[4:3,1:3] contains the right edge, both 
-#' ordered top to bottom. We further assume that the 'top' and 'bottom' depths
-#' are the same, i.e. \cr
-#' ((interpolating_quad[1,3] == interpolating_quad[4,3]) & \cr
-#'  (interpolating_quad[2,3] == interpolating_quad[3,3]))
+#' @param edge1 matrix of x,y,z coordinates. 
+#' @param edge2 matrix of x,y,z coordinates. 
 #' @return xyz coordinates interpolated at xy. Note that x,y should be the same
 #' as the input x,y (we return them anyway for debugging/testing purposes)
 #' 
-quad3d_source_interpolator<-function(xy, interpolating_quad){
+edge_source_interpolator<-function(xy, edge1, edge2){
+    #interpolating_quad){
 
     if((is.null(dim(xy))) | (length(dim(xy))!=2) ){
         if(length(xy) == 2){
@@ -224,25 +223,25 @@ quad3d_source_interpolator<-function(xy, interpolating_quad){
         }
     }
 
-    top_edge = interpolating_quad[c(1,4),1:3]
-    bottom_edge = interpolating_quad[c(2,3),1:3]
-    if(top_edge[1,3] != top_edge[2,3]) stop('Top edge depths not equal')
-    if(bottom_edge[1,3] != bottom_edge[2,3]) stop('bottom edge depths not equal')
-
     # Make function to linearly interpolate along the edge. Allow points
     # outside the edge
+    # By using splines, we ensure depth is differentiable, so dip varies
+    # smoothly. 
     f_edge<-function(edge){
+        s_coord = c(0, cumsum(sqrt(diff(edge[,1])**2 + diff(edge[,2])**2))) 
+        s_coord = s_coord/max(s_coord)
+        f_x = splinefun(s_coord, edge[,1])
+        f_y = splinefun(s_coord, edge[,2])
+        f_z = splinefun(s_coord, edge[,3])
         outfun<-function(alpha){
-            out = cbind(edge[1,1] + alpha * (edge[2,1] - edge[1,1]), 
-                        edge[1,2] + alpha * (edge[2,2] - edge[1,2]),  
-                        edge[1,3] + alpha * (edge[2,3] - edge[1,3]))  
+            out = cbind(f_x(alpha), f_y(alpha), f_z(alpha))
         }
     
         return(outfun)
     }
 
-    top_edge_fun = f_edge(top_edge)
-    bottom_edge_fun = f_edge(bottom_edge)
+    edge1_fun = f_edge(edge1)
+    edge2_fun = f_edge(edge2)
 
     # Make a function to interpolate along the 2D quad with 2 parameters, which
     # we can optimize with nls.lm
@@ -251,8 +250,8 @@ quad3d_source_interpolator<-function(xy, interpolating_quad){
         alpha = alpha_s[,1]
         s = alpha_s[,2]    
 
-        output_coords = s * top_edge_fun(alpha) + 
-            (1 - s)*(bottom_edge_fun(alpha))
+        output_coords = s * edge1_fun(alpha) + 
+            (1 - s)*(edge2_fun(alpha))
 
         if(returncoords){
             output = output_coords

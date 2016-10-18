@@ -29,9 +29,12 @@ origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).}
 of origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).}
 }
 \value{
-a function f(xy, buffer_width=0) which can interpolate depth values
-along the source contours. Non-zero buffer widths can be used to allow the
-function to be applied to points slightly outside the polygons.
+a function f(xy, na_buffer_width=0, xy_perturbation_m=NULL) 
+which can interpolate depth values along the source contours. Non-zero buffer
+widths can be used to allow the function to be applied to points slightly
+outside the polygons. xy_perturbation_m can be a matrix of the same shape as xy,
+in which case it is added to xy before depth computation. This turns out to be convenient
+for computing dip.
 }
 \description{
 Suppose we have a list of matrices defining a grid of (x,y_depth) points over
