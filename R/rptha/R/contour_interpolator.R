@@ -226,7 +226,7 @@ quad3d_source_interpolator<-function(xy, interpolating_quad){
 
     # Make a function to interpolate along the 2D quad with 2 parameters, which
     # we can optimize with nls.lm
-    f_xyz<-function(alpha_s, returncoords = FALSE){
+    f_xyz<-function(alpha_s, xy=NULL, returncoords = FALSE){
         dim(alpha_s) = c(length(alpha_s)/2, 2)
         alpha = alpha_s[,1]
         s = alpha_s[,2]    
@@ -246,10 +246,30 @@ quad3d_source_interpolator<-function(xy, interpolating_quad){
     }
 
     # Find 'best' alpha, s values for these coordinates
-    coordinate_optim = nls.lm(rep(0.5, length(xy)), fn=f_xyz)
-    alpha_s_best = coordinate_optim$par
-    dim(alpha_s_best) = c(length(alpha_s_best)/2, 2)
+    #
+    alpha_s_best = xy[,1:2,drop=FALSE] * 0
+    for(i in 1:length(xy[,1])){
+        coordinate_optim = nls.lm(c(0.5, 0.5), fn=f_xyz, xy=xy[i,1:2, drop=FALSE])
+        alpha_s_best[i,] = coordinate_optim$par
+    }
 
-    fitted_coordinates = f_xyz(alpha_s_best, returncoords=TRUE)
+    fitted_coordinates = f_xyz(alpha_s_best, xy[,1:2], returncoords=TRUE)
+    if(length(fitted_coordinates) == 3) dim(fitted_coordinates) = c(1,3)
+
+    # Check that convergence was ok -- and if not, try to improve the fit
+    distance_check = ((fitted_coordinates[,1] - xy[,1])**2 + (fitted_coordinates[,2] - xy[,2])**2)
+    refit_threshold = (1.0e-02)**2 # FIXME: Beware hardcoded threshold (but probably ok?)
+    refit = which(distance_check > refit_threshold)
+    if(length(refit) > 0){
+        for(i in 1:length(refit)){
+            ri = refit[i]
+            coordinate_optim = nls.lm(alpha_s_best[ri,], fn=f_xyz, xy=xy[ri,1:2, drop=FALSE])
+            alpha_s_best[ri,] = coordinate_optim$par
+        }
+        fitted_coordinates[refit,] = f_xyz(alpha_s_best[refit,,drop=FALSE], 
+            xy[refit,,drop=FALSE], returncoords=TRUE)
+    }
+
+    return(fitted_coordinates)
 }
 
