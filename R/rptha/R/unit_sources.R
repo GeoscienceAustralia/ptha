@@ -853,11 +853,13 @@ unit_source_interior_points_cartesian<-function(
     # and do the computation
     dx_numerical = 100
     deg2rad = pi/180
-    grid_points_perturb = grid_points
-    grid_points_perturb[,1] = grid_points_perturb[,1] + dx_numerical*cos(strike*deg2rad)
-    grid_points_perturb[,2] = grid_points_perturb[,2] - dx_numerical*sin(strike*deg2rad)
-    depth_perturb = contour_fun(grid_points_perturb, 
-        na_buffer_width=edge_taper_width + (dx_numerical*1.2) + extra_buffer)
+    grid_points_perturb = grid_points * 0
+    grid_points_perturb[,1] = dx_numerical*cos(strike*deg2rad)
+    grid_points_perturb[,2] = -dx_numerical*sin(strike*deg2rad)
+    depth_perturb = contour_fun(
+        grid_points, 
+        na_buffer_width=edge_taper_width + extra_buffer, 
+        xy_perturbation_m = grid_points_perturb)
     if(any(depth_perturb < new_depths)) stop('Negative dip')
     dip = atan((depth_perturb - new_depths)/dx_numerical)/deg2rad
 

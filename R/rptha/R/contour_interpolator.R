@@ -106,9 +106,17 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
     # Approach: Treat the mid_line like SpatialPolygons. Find
     # which polygon each 'xy' value (at which we want interpolated depth) is
     # inside
-    contour_interpolator<-function(xy, na_buffer_width=0){
+    # NOTE: Sometimes we want to use this function for dip computation. In that
+    # case we will compute depth at 2 points (one is down-dip of the other), and
+    # it is important that both points are interpolated based on the same mid_line_with_cutpoints
+    # polygon. To enforce this, we allow an xy_perturbation_m to be passed to the
+    # function directly -- which ensures that 'xy + xy_perturbation_m' will be interpolated
+    # using the same polygon as used for 'xy'.
+    contour_interpolator<-function(xy, na_buffer_width=0, xy_perturbation_m=NULL){
         # Ensure xy is a matrix
-        if(length(xy) == 2) dim(xy) = c(1,2)
+        if(length(xy) == 2){ 
+            dim(xy) = c(1,2)
+        }
 
         if(length(dim(xy)) != 2){
             stop('xy points must be a matrix with 2 columns')
@@ -116,6 +124,12 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
 
         if(dim(xy)[2] != 2){
             stop('xy points must be a matrix with 2 columns')
+        }
+
+        if(!is.null(xy_perturbation_m)){
+            if(!(length(xy_perturbation_m) == length(xy))){
+                dim(xy_perturbation_m) = dim(xy)
+            }
         }
 
         if(convert_to_cartesian){
@@ -168,7 +182,13 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
                 l0[poly_dip_index:(poly_dip_index+1),1:3],
                 l1[(poly_dip_index+1):poly_dip_index,1:3] )
 
-            interpolated_points = quad3d_source_interpolator(xy[inds,], 
+            if(!is.null(xy_perturbation_m)){
+                xp = xy[inds,] + xy_perturbation_m[inds,]
+            }else{
+                xp = xy[inds,]
+            }
+
+            interpolated_points = quad3d_source_interpolator(xp, 
                 interpolating_quad)
             depths[inds] = interpolated_points[,3]
         }

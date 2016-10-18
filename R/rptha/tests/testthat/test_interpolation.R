@@ -98,7 +98,7 @@ test_that('test_contour_interpolation', {
     p1_depths = contour_fun(p1)
     expect_true(max(abs(p1_depths - expected_p1_depths)) < 1.0e-01)
 
-    ## Test points exactly on the contours
+    # Test points exactly on the contours
     mid_line_first = dsc$mid_line_with_cutpoints[[1]]
     expected_depths = mid_line_first[,3]
     interpolated_z = contour_fun(mid_line_first[,1:2])
