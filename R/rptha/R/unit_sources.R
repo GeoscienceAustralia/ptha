@@ -856,7 +856,7 @@ unit_source_interior_points_cartesian<-function(
         allow_outside=TRUE,
         xy_perturbation_m = grid_points_perturb)
     if(any(depth_perturb < new_depths)) stop('Negative dip')
-    if(any(depth < 0) | any(depth_perturb < 0)) stop('Negative depth')
+    if(any(new_depths < 0) | any(depth_perturb < 0)) stop('Negative depth')
     dip = atan((depth_perturb - new_depths)/dx_numerical)/deg2rad
 
     # Now that we know dip, we can properly normalise the unit_slip_scale to

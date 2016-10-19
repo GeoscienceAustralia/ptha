@@ -81,7 +81,7 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     tsunami4 = make_tsunami_unit_source(1, 1, ds, rake=90,
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
         tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
-        edge_taper_width = 9995, # 10000 will induce an error
+        edge_taper_width = 9995, # 10000 will induce an error because there is no fully interior region left.
         allow_points_outside_discrete_source_outline=TRUE)
     
     r4 = diff(range(tsunami4$smooth_tsunami_displacement))
@@ -138,8 +138,8 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     sum_2B = m11B + m21B
     #sum_allB = m11B + m12B + m21B + m22B
 
-    # Note: This 'test' is really better illustrated with plotting -- we see a
-    # strong ridge in the m11 raster (and similar), and it is gone in the m12 raster.
+    # Note: This 'test' is really better illustrated with plotting -- see commented
+    # out plot below
 
     r1 = diff(range(raster::as.matrix(sum_2)))
     r2 = diff(range(raster::as.matrix(sum_2B)))
@@ -149,6 +149,16 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     r2 = diff(range(raster::as.matrix(m11B)))
     expect_true(r1*0.8 > r2)
     
+    # Check that results are 'similar' before the 'ridge'
+    expect_true(max(abs(sum_2[1:130,123,1] - sum_2B[1:130,123,1])) < 7.0e-03)
+    expect_true(max(abs(sum_2[150:200,123,1] - sum_2B[150:200,123,1])) < 7.0e-3)
+
+    # Check that results differ substantially near the ridge
+    ll = 130:150
+    expect_true(max(abs(sum_2[ll,123,1] - sum_2B[ll,123,1])) > 0.05)
+
+    ## This figure well illustrates the impact of slip tapering
+    #
     # png('Slip_tapering_effects.png', width=11,height=10,units='in',res=300)
     # par(mfrow=c(2,2))
     # nc = c(123, 137)
