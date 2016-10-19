@@ -149,12 +149,8 @@ sub-unit-source points, exact unit source discretization, etc).
 # Tips
 
 * You should visually check that the computed initial conditions seem reasonable.
-In early versions of the code, we sometimes observed numerical artefacts in the
-computed solution along the trench (manifest as localised spikes in the
-deformation). Improvements to the code seem to have dealt with this issue, but
-it seems plausible that other artefacts might occur for some input
-source-contours  (or you might accidently make a poor choice of input
-parameters) -- so we suggest visually checking the outputs.
+If the subgrid point spacing is too coarse, or the input contours are poorly behaved,
+then artefacts can occur, particularly near the trench. 
 
 * If using Kajiura filtering with unit-sources, you can either apply the Kajiura
 filter to the unit sources directly before summing them

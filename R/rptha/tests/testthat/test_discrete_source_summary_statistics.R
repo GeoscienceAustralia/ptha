@@ -122,11 +122,6 @@ test_that('test_sub_unit_source_grid_point_creation', {
     err = 1 - max(xx2$unit_slip_scale)
     expect_true( abs(err) < 5.0e-03)
 
-    # The following won't hold exactly (because of varying dip), but does hold approximately
-    a1 = sum(xx2$unit_slip_scale * xx2$area_buffer)
-    a2 = sum(xx2$area)
-    expect_true( abs(a1 - a2) < 1.0e-02 * a1)
-
     ##################################################################
     #
     # Examine results with edge_taper and bounding_polygon
@@ -142,9 +137,19 @@ test_that('test_sub_unit_source_grid_point_creation', {
         bounding_polygon[,1], bounding_polygon[,2])
     expect_true(all(m1 == 1))
 
-    a1 = sum(xx3$unit_slip_scale * xx3$area_buffer)
-    a2 = sum(xx3$area)
-    expect_true( abs(a1 - a2) < 1.0e-02 * a1)
+    
+    ###################################################################
+    # Larger edge taper
+
+    xx2 = compute_grid_point_areas_in_polygon(polygon, 
+        approx_dx=1000, approx_dy=1000, edge_taper_width = 3000)
+
+    # Check that this has not affected the 'untaperd' results
+    c3 = coordinates(xx2$grid_point_polygon)
+    test_result = all(c1 == c3)
+    expect_true(test_result)
+
+    expect_true(sum(is.nan(xx2$unit_slip_scale)) == 0)
 
 
 

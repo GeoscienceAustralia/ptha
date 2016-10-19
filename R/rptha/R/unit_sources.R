@@ -786,44 +786,49 @@ unit_source_interior_points_cartesian<-function(
 
     
     # Get strike at the grid points
+    # 
+    top_edge_vector = unit_source_cartesian[4,1:2] - unit_source_cartesian[1,1:2]
+    # Since the sub-unit-sources are created to be aligned with the top edge vector,
+    # we should use that strike. Degrees from north
+    strike_top_edge = atan2(top_edge_vector[1], top_edge_vector[2])/pi*180
+    strike = rep(strike_top_edge, length(grid_points[,1]))
+    # Ensure strike is > 0
+    strike = strike + (strike < 0)*360
+
     #
     # Convert lon-lat centroids of ALL unit sources in the discrete source to
     # the local coordinate system and use them to make a continuous function of
     # strike
 
-    ds1_lonlatstrike = get_shallow_unit_source_top_edge_strikes(discretized_source) 
-    ds1_stats_points_cartesian = spherical_to_cartesian2d_coordinates(
-        ds1_lonlatstrike[,1:2], origin_lonlat=origin, r=r)
+    #ds1_lonlatstrike = get_shallow_unit_source_top_edge_strikes(discretized_source) 
+    #ds1_stats_points_cartesian = spherical_to_cartesian2d_coordinates(
+    #    ds1_lonlatstrike[,1:2], origin_lonlat=origin, r=r)
 
-    # Ideally we interpolate strike using a weighted nearest-neighbours
-    # However, the code used here requires that we have > 1 point
-    np = length(ds1_lonlatstrike[,1])
-    k = min(4, np)
-    # Compute an inverse distance weighted angular mean of k nearest neighbours
-    inds = knnx.index(data = ds1_stats_points_cartesian[,1:2, drop=FALSE], 
-        query = grid_points[,1:2, drop=FALSE], k=k)
-    dists = knnx.dist(data = ds1_stats_points_cartesian[,1:2, drop=FALSE],
-        query = grid_points[,1:2, drop=FALSE], k=k)
-    mean_strike = dists[,1]*NA 
-    for(ii in 1:length(mean_strike)){
-        mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii,], 3], 
-            weights = 1/(dists[ii,])**2)
-    }
-    strike = mean_strike
+    ## Ideally we interpolate strike using a weighted nearest-neighbours
+    ## However, the code used here requires that we have > 1 point
+    #np = length(ds1_lonlatstrike[,1])
+    #k = min(4, np)
+    ## Compute an inverse distance weighted angular mean of k nearest neighbours
+    #inds = knnx.index(data = ds1_stats_points_cartesian[,1:2, drop=FALSE], 
+    #    query = grid_points[,1:2, drop=FALSE], k=k)
+    #dists = knnx.dist(data = ds1_stats_points_cartesian[,1:2, drop=FALSE],
+    #    query = grid_points[,1:2, drop=FALSE], k=k)
+    #mean_strike = dists[,1]*NA 
+    #for(ii in 1:length(mean_strike)){
+    #    mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii,], 3], 
+    #        weights = 1/(dists[ii,])**2)
+    #}
+    #strike = mean_strike
 
-    # Ensure strike is > 0
-    strike = strike + (strike < 0)*360
+    ## Ensure strike is > 0
+    #strike = strike + (strike < 0)*360
 
+    #
     # Get dip/depth etc at the grid points
-    #
-    # ## OLD METHOD ##
-    #grid_points = get_depth_dip_at_unit_source_interior_points(
-    #    unit_source_cartesian, grid_points,
-    #    fine_downdip_transects_cartesian, strike)
-    #
-    ## Alternative approach: Use the new contour function
-    # easiest if we convert the mid_line_with_cutpoints to cartesian
+    # Use the contour_function
+    # Easiest if we convert the mid_line_with_cutpoints to cartesian
     # coordinates before starting 
+    #
     mid_line_with_cutpoints_cartesian = discretized_source$mid_line_with_cutpoints
     for(i in 1:length(mid_line_with_cutpoints_cartesian)){
         mid_line_with_cutpoints_cartesian[[i]][,1:2] = 
@@ -1073,20 +1078,27 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         dim(unit_slip_scale) = c(length(grid_xs), length(grid_ys))
         new_unit_slip_scale = unit_slip_scale
         
-        # Horrible brute force 'boxcar' filter!
+        # Horrible brute force filter!
         nxf = ceiling(edge_taper_width/dx_local)
         nyf = ceiling(edge_taper_width/dy_local)
         nx = dim(unit_slip_scale)[1]
         ny = dim(unit_slip_scale)[2]
+        # Circular filter which is 1 inside a radius of edge_taper_width, and 0 elsewhere
+        rx = matrix(((-nxf):nxf)*dx_local, ncol=2*nyf + 1, nrow=2*nxf+1)
+        ry = matrix(((-nyf):nyf)*dy_local, ncol=2*nyf + 1, nrow=2*nxf+1, byrow=TRUE)
+        filter_coef = as.numeric(rx**2 + ry**2 < edge_taper_width**2)
         for(j in 1:ny){
+            # yindices, deal with edge effects
+            iy = pmin(pmax(1, (-nyf):(nyf) + j), ny)
             for(i in 1:nx){
                 if(is.na(unit_slip_scale[i,j])) next
-                ix = max(i-nxf,1):min(i+nxf,nx)
-                iy = max(j-nyf,1):min(j+nyf,ny)
-                new_unit_slip_scale[i,j] = mean(unit_slip_scale[ix,iy], 
-                    na.rm=TRUE)
+                # xindices, deal with edge effects
+                ix = pmin(pmax(1, (-nxf):(nxf) + i), nx)
+                new_unit_slip_scale[i,j] = weighted.mean(unit_slip_scale[ix,iy], 
+                    filter_coef, na.rm=TRUE)
             }
         }
+        
         # Back to vector
         unit_slip_scale = c(new_unit_slip_scale)
         
