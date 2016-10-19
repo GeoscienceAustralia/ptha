@@ -906,8 +906,9 @@ unit_source_interior_points_cartesian<-function(
 #'
 #' Given a polygon, we fill it with grid points with the provided approximate
 #' spacing, compute an area associated with each grid point such that the total
-#' area = polygon area. The area is less for points near the boundary, and the
-#' spacing here will generally deviate from a pure regular grid
+#' area = polygon area. If edge_tapering is used, the points may extend outside
+#' the polygon, and they are assigned a unit_slip_scale giving the slip corresonding
+#' to an overall 1m slip (not exactly 1m around edges so that result is smooth).
 #' 
 #' @param polygon matrix with x,y coordinates defining a polygon
 #' @param approx_dx approximate x spacing of points in same units as x,y
@@ -993,14 +994,20 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         x_axis_vector = x_axis_vector)
 
     # Get extent of the unit source + edge buffer
-    grid_extent = rbind(range(rotated_polygon[,1]) + c(-1,1)*edge_taper_width, 
-        range(rotated_polygon[,2]) + c(-1,1)*edge_taper_width)
+    rx = ceiling(edge_taper_width/approx_dx)*approx_dx
+    ry = ceiling(edge_taper_width/approx_dy)*approx_dy
+
+    grid_extent = rbind(
+        range(rotated_polygon[,1]) + c(-1,1)*rx, 
+        range(rotated_polygon[,2]) + c(-1,1)*ry)
 
     # Make a 'grid' of points inside the unit source
-    grid_xs = seq(grid_extent[1,1] - approx_dx/2, 
+    grid_xs = seq(
+        grid_extent[1,1] - approx_dx/2, 
         grid_extent[1,2] + approx_dx/2, 
         len=max(3, ceiling(diff(grid_extent[1,])/approx_dx)+2))
-    grid_ys = seq(grid_extent[2,1] - approx_dy/2, 
+    grid_ys = seq(
+        grid_extent[2,1] - approx_dy/2, 
         grid_extent[2,2] + approx_dy/2, 
         len=max(3, ceiling(diff(grid_extent[2,])/approx_dy)+2))
 
@@ -1008,10 +1015,9 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     dx_local = grid_xs[2] - grid_xs[1]
     dy_local = grid_ys[2] - grid_ys[1]
 
-    grid_points = expand.grid(grid_xs, grid_ys)
-
 
     # Create polygon around each grid point
+    grid_points = expand.grid(grid_xs, grid_ys)
     grid_pol = list()
     for(i in 1:length(grid_points[,1])){
         gp = grid_points[i,]
@@ -1032,6 +1038,65 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     p1 = SpatialPolygons(grid_pol, proj4string=CRS(""))
 
+
+    # Identify the 'unit slip_scale' on each grid point. This takes the value
+    # 1 for most interior points, but with edge_taper_width>0, near the
+    # original unit source boundary it starts to decrease (reaching 0 at a distance
+    # of edge_taper_width beyond the original boundary)
+    grid_points = coordinates(p1)
+    if(edge_taper_width > 0){
+
+        grid_points_sp = SpatialPoints(coords = grid_points)
+        inside_points = gContains(p0, grid_points_sp, byid=TRUE)
+
+        # This has '1' for points inside p0, and '0' for points outside
+        unit_slip_scale = as.numeric(inside_points)
+
+
+        if(!is.null(bounding_polygon)){
+            # We don't want to depress slip on points inside the original
+            # polygon if they do not have a full buffer (i.e. the buffer can
+            # be cut off by the bounding_polygon
+            # Set them to NA, and deal with it in the filter
+            bp = SpatialPolygons(list(Polygons(list(
+                    Polygon(bounding_polygon)), ID='P')),
+                proj4string=CRS(""))
+            outside_bp = 1 - gContains(bp, grid_points_sp, byid=TRUE)
+            unit_slip_scale[which(outside_bp == 1)] = NA
+        }
+
+        # We can taper the above with a moving average. This will preserve the
+        # additivity of multiple unit sources (i.e. if we have two neighbouring
+        # unit sources, their slip should sum to 1 in the overlapping taper zone)
+        #
+        # Pack into matrix to facilitate this
+        dim(unit_slip_scale) = c(length(grid_xs), length(grid_ys))
+        new_unit_slip_scale = unit_slip_scale
+        
+        # Horrible brute force 'boxcar' filter!
+        nxf = ceiling(edge_taper_width/dx_local)
+        nyf = ceiling(edge_taper_width/dy_local)
+        nx = dim(unit_slip_scale)[1]
+        ny = dim(unit_slip_scale)[2]
+        for(j in 1:ny){
+            for(i in 1:nx){
+                if(is.na(unit_slip_scale[i,j])) next
+                ix = max(i-nxf,1):min(i+nxf,nx)
+                iy = max(j-nyf,1):min(j+nyf,ny)
+                new_unit_slip_scale[i,j] = mean(unit_slip_scale[ix,iy], 
+                    na.rm=TRUE)
+            }
+        }
+        # Back to vector
+        unit_slip_scale = c(new_unit_slip_scale)
+        
+
+    }else{
+        unit_slip_scale = 1 + 0*grid_points[,1]
+    }
+
+
+
     if(!is.null(bounding_polygon)){
         # Remove grid_points outside the bounding polygon
         p1_points = SpatialPoints(coords = coordinates(p1))
@@ -1044,6 +1109,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         keep = which(gContains(bp, p1_points, byid=TRUE))
         if(length(keep) == 0) stop('ERROR: No grid points in bounding_polygon')
         p1 = p1[keep]
+        unit_slip_scale = unit_slip_scale[keep]
     }
     
     # Remove points which are outside the 'buffered' bounding polygon 
@@ -1051,45 +1117,9 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     keep2 = which(gContains(p0_buf, p1_points, byid=TRUE))
     if(length(keep2) == 0) stop('ERROR: No grid points in buffered polygon')
     p1 = p1[keep2]
+    unit_slip_scale = unit_slip_scale[keep2]
     p1_points = SpatialPoints(coords = coordinates(p1))
 
-
-    # Identify the 'unit slip_scale' on each grid point. This takes the value
-    # 1 for most interior points, but with edge_taper_width>0, near the
-    # original unit source boundary it starts to decrease (reaching 0 at a distance
-    # of edge_taper_width beyond the original boundary)
-    # Approach:
-    # 1) Compute distances to 'negative buffer' polygon -- this distance,
-    #    divided by 2xedge_taper_width, gives a measure of how much we should
-    #    depress the slip
-    # 2) But we need to do a further correction if the bounding polygon was
-    #    applied. This is to prevent e.g. points near the trench from having
-    #    their unit_slip reduced
-
-    grid_points = coordinates(p1)
-
-    if(edge_taper_width > 0){
-        grid_points_sp = SpatialPoints(coords = grid_points)
-        inner_buffer_distance = gDistance(p0_negbuf, grid_points_sp, byid=TRUE)
-
-        unit_slip_scale = pmax(0,
-            1 - inner_buffer_distance[,1]/(2*edge_taper_width))
-
-        if(!is.null(bounding_polygon)){
-            # We don't want to depress slip on points inside the original
-            # polygon if they do not have a full buffer (i.e. the buffer can
-            # be cut off by the bounding_polygon
-            inside_points = gContains(p0, grid_points_sp, byid=TRUE)
-            bp_lines = as(bp, 'SpatialLines')
-            boundary_distance = gDistance(bp_lines, grid_points_sp, 
-                byid=TRUE)
-            interior_and_near_boundary = which(inside_points & 
-                (boundary_distance[,1] <= edge_taper_width))
-            unit_slip_scale[interior_and_near_boundary] = 1
-        }
-    }else{
-        unit_slip_scale = 1 + 0*grid_points[,1]
-    }
 
     p_intersect = gIntersection(p1, p0, byid=TRUE, drop_lower_td = TRUE) 
     p_intersect_buf = gIntersection(p1, p0_buf, byid=TRUE, drop_lower_td=TRUE)

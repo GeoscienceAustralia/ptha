@@ -38,7 +38,8 @@ A list containing grid points in the polygon and other useful information.
 \description{
 Given a polygon, we fill it with grid points with the provided approximate
 spacing, compute an area associated with each grid point such that the total
-area = polygon area. The area is less for points near the boundary, and the
-spacing here will generally deviate from a pure regular grid
+area = polygon area. If edge_tapering is used, the points may extend outside
+the polygon, and they are assigned a unit_slip_scale giving the slip corresonding
+to an overall 1m slip (not exactly 1m around edges so that result is smooth).
 }
 

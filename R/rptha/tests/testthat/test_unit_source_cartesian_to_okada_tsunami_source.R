@@ -63,6 +63,9 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
 
     # Check both displacements are sufficiently close (can get closer with more
     # interior points)
+    # Note that 'okada_tsunami' is tested elsewhere, so we are effectively testing
+    # that the 'make_tsunami_unit_source' interface is working as expected to integrate
+    # over the sub-unit-source points
     expect_true(max(abs(range(tsunami1$tsunami_source$zdsp - tsunami2$zdsp))) < 1.0e-02)
 
     # Check that edge_taper_width > 0 runs
@@ -150,8 +153,8 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     expect_true(r1*0.8 > r2)
     
     # Check that results are 'similar' before the 'ridge'
-    expect_true(max(abs(sum_2[1:130,123,1] - sum_2B[1:130,123,1])) < 7.0e-03)
-    expect_true(max(abs(sum_2[150:200,123,1] - sum_2B[150:200,123,1])) < 7.0e-3)
+    expect_true(max(abs(sum_2[1:130,123,1] - sum_2B[1:130,123,1])) < 1.0e-02)
+    expect_true(max(abs(sum_2[150:200,123,1] - sum_2B[150:200,123,1])) < 1.0e-2)
 
     # Check that results differ substantially near the ridge
     ll = 130:150
@@ -159,21 +162,21 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
 
     ## This figure well illustrates the impact of slip tapering
     #
-    # png('Slip_tapering_effects.png', width=11,height=10,units='in',res=300)
-    # par(mfrow=c(2,2))
-    # nc = c(123, 137)
-    # plot(sum_2, zlim=c(-0.2, 0.5), col=rainbow(255))
-    # abline(v=xFromCol(sum_2,nc), lty='longdash')
-    # title('No tapering')
-    # plot(sum_2B, zlim=c(-0.2, 0.5), col=rainbow(255))
-    # abline(v=xFromCol(sum_2,nc), lty='longdash')
-    # title('Tapering of slip')
-    # plot(sum_2[,nc[1],],t='o')
-    # points(sum_2B[,nc[1],],t='l',col='red', lwd=2)
-    # title('Left transect')
-    # plot(sum_2[,nc[2],],t='o')
-    # points(sum_2B[,nc[2],],t='l',col='red', lwd=2)
-    # title('Right transect')
-    # dev.off()
+    #png('Slip_tapering_effects.png', width=11,height=10,units='in',res=300)
+    #par(mfrow=c(2,2))
+    #nc = c(123, 137)
+    #plot(sum_2, zlim=c(-0.2, 0.5), col=rainbow(255))
+    #abline(v=xFromCol(sum_2,nc), lty='longdash')
+    #title('No tapering')
+    #plot(sum_2B, zlim=c(-0.2, 0.5), col=rainbow(255))
+    #abline(v=xFromCol(sum_2,nc), lty='longdash')
+    #title('Tapering of slip')
+    #plot(sum_2[,nc[1],],t='o')
+    #points(sum_2B[,nc[1],],t='l',col='red', lwd=2)
+    #title('Left transect')
+    #plot(sum_2[,nc[2],],t='o')
+    #points(sum_2B[,nc[2],],t='l',col='red', lwd=2)
+    #title('Right transect')
+    #dev.off()
 
 })
