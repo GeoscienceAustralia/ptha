@@ -837,18 +837,13 @@ unit_source_interior_points_cartesian<-function(
         }
     }
     contour_fun = make_contour_interpolator(mid_line_with_cutpoints_cartesian)
+
     # NOTE: It is possible for points to be outside the grid defined by
     # mid_line_with_cutpoints_cartesian, but inside the grid defined by the
     # unit_source edges. This is because the former can be jagged (particularly
-    # at lateral boundaries). A crude solution is just to add more buffer
-    new_depths = try(contour_fun(grid_points, 
-        na_buffer_width=edge_taper_width), silent=TRUE)
-    extra_buffer = 0
-    if(class(new_depths) == 'try-error'){
-        warning('unit source points exceed contour extent (maybe due to jagged contour edges?). Additional 10km buffering applied')
-        extra_buffer = 10000
-        new_depths = contour_fun(grid_points, na_buffer_width=edge_taper_width+extra_buffer)
-    }
+    # at lateral boundaries). So better use 'allow_outside=TRUE'
+    new_depths = contour_fun(grid_points, allow_outside=TRUE)
+
     # Compute dip -- first make some 'down-dip' points, then find their depth,
     # and do the computation
     dx_numerical = 100
@@ -858,9 +853,10 @@ unit_source_interior_points_cartesian<-function(
     grid_points_perturb[,2] = -dx_numerical*sin(strike*deg2rad)
     depth_perturb = contour_fun(
         grid_points, 
-        na_buffer_width=edge_taper_width + extra_buffer, 
+        allow_outside=TRUE,
         xy_perturbation_m = grid_points_perturb)
     if(any(depth_perturb < new_depths)) stop('Negative dip')
+    if(any(depth < 0) | any(depth_perturb < 0)) stop('Negative depth')
     dip = atan((depth_perturb - new_depths)/dx_numerical)/deg2rad
 
     # Now that we know dip, we can properly normalise the unit_slip_scale to

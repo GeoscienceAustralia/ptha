@@ -98,6 +98,18 @@ test_that('test_contour_interpolation', {
     p1_depths = contour_fun(p1)
     expect_true(max(abs(p1_depths - expected_p1_depths)) < 5.0e-01)
 
+    # Get lots of points
+    gp = expand.grid(seq(206,209,len=50), seq(56, 59, len=50))
+    gpd = contour_fun(gp, allow_outside=TRUE)
+    m1 = raster::rasterFromXYZ(xyz=cbind(gp, gpd))
+    # Check that points inside the contours are between the min and max depth (6 and 55.999 res)
+    ug = unit_source_grid_to_SpatialPolygonsDataFrame(dsc$unit_source_grid)
+    ugU = rgeos::gUnaryUnion(ug)
+    kk = which(rgeos::gContains(ugU, SpatialPoints(coords=gp), byid=TRUE))    
+    expect_true(min(gpd[kk]) >= min(as.numeric(as.character(dsc$depth_contours$level)))) 
+    expect_true(max(gpd[kk]) <= max(as.numeric(as.character(dsc$depth_contours$level))))
+    
+
     # Test points exactly on the contours
     mid_line_first = dsc$mid_line_with_cutpoints[[1]]
     expected_depths = mid_line_first[,3]

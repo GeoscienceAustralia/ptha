@@ -45,7 +45,7 @@ unit_source_grid_to_SpatialPolygonsDataFrame<-function(unit_source_grid){
 #' levels. This input can be obtained from the 'mid_line_with_cutpoints' entry
 #' of the output of \code{discretized_source_from_source_contours}, or from the
 #' function \code{create_downdip_lines_on_source_contours_improved}. \cr
-#' This function is used to make a function, which can assign a depth value to
+#' This function is used to make a function which can assign a depth value to
 #' arbitrary x,y points inside the source. Note it can handle conversion from spherical
 #' to cartesian coordinates (with convert_to_cartesian=TRUE)
 #'
@@ -65,7 +65,7 @@ unit_source_grid_to_SpatialPolygonsDataFrame<-function(unit_source_grid){
 #' origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).
 #' @param r radius of the earth. If convert_to_cartesian = TRUE, then this value
 #' of origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).
-#' @return a function f(xy, na_buffer_width=0, xy_perturbation_m=NULL) 
+#' @return a function f(xy, allow_outside=FALSE, xy_perturbation_m=NULL) 
 #' which can interpolate depth values along the source contours. Non-zero buffer
 #' widths can be used to allow the function to be applied to points slightly
 #' outside the polygons. xy_perturbation_m can be a matrix of the same shape as xy,
@@ -93,29 +93,33 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
         }
     }
 
-    # Convert mid_line_with_cutpoints to SpatialPolygonsDataFrame, so
-    # we can use rgeos to find which polygons contain points
-    mid_line_array = array(NA, 
-        dim=c(dim(mid_line_with_cutpoints[[1]]), 
-            length(mid_line_with_cutpoints)))
-
-    for(i in 1:length(mid_line_with_cutpoints)){
-        mid_line_array[,,i] = mid_line_with_cutpoints[[i]]
+    # Convert mid_line_with_cutpoints to SpatialPolygonsDataFrame, with
+    # one polygon for each along-strike region.
+    poly_list = list()
+    ns = (length(mid_line_with_cutpoints)-1)
+    poly_data = data.frame(alongstrike_number = 1:ns)
+    for(i in 1:ns){
+        nn = length(mid_line_with_cutpoints[[i+1]][,1])
+        poly_list[[i]] = Polygons(list(Polygon(
+            rbind(mid_line_with_cutpoints[[i]][,1:2], 
+                  mid_line_with_cutpoints[[i+1]][nn:1,1:2]))),
+            ID = as.character(i))
     }
-
-    local_polygons = unit_source_grid_to_SpatialPolygonsDataFrame(mid_line_array)
+    p1 = SpatialPolygons(poly_list, proj4string=CRS(""))
+    local_polygons = SpatialPolygonsDataFrame(p1, poly_data)
 
     # Make a function to interpolate from mid_line_with_cutpoints
-    # Approach: Treat the mid_line like SpatialPolygons. Find
-    # which polygon each 'xy' value (at which we want interpolated depth) is
-    # inside
+    #
+    # Approach: Find which polygon each 'xy' value (at which we want
+    # interpolated depth) is inside
+    #
     # NOTE: Sometimes we want to use this function for dip computation. In that
     # case we will compute depth at 2 points (one is down-dip of the other), and
     # it is important that both points are interpolated based on the same mid_line_with_cutpoints
     # polygon. To enforce this, we allow an xy_perturbation_m to be passed to the
     # function directly -- which ensures that 'xy + xy_perturbation_m' will be interpolated
     # using the same polygon as used for 'xy'.
-    contour_interpolator<-function(xy, na_buffer_width=0, xy_perturbation_m=NULL){
+    contour_interpolator<-function(xy, allow_outside=FALSE, xy_perturbation_m=NULL){
         # Ensure xy is a matrix
         if(length(xy) == 2){ 
             dim(xy) = c(1,2)
@@ -147,25 +151,23 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
 
         if(any(is.na(poly_id))){
             # Some points are outside the polygons
-            if(na_buffer_width > 0){
-                # Buffer the polygons. Then again try to identify the polygon
-                # we are inside.
+            if(allow_outside){
+                # Compute the distance from each point outside the polygons to
+                # each polygon, and use the nearest
                 kk = which(is.na(poly_id))
-                local_poly_buf = gBuffer(local_polygons_sp, 
-                    width=na_buffer_width, byid=TRUE)
-                na_poly_id = over(xy_sp[kk], local_poly_buf)
-                # Replace the na polygon id's with the buffered polygon id's
-                poly_id[kk] = na_poly_id
+                local_dist = gDistance(xy_sp[kk], local_polygons, byid=TRUE)
+                local_min_ind = apply(local_dist, 2, which.min)
+
+                # Replace the na polygon id's with the nearest polygon id
+                poly_id[kk] = local_min_ind
             }
         }
        
         if(any(is.na(poly_id))){
             stop(paste0(
-                ' Some xy points outside the unit source grid in', 
+                ' Some xy points outside the contour mid lines in', 
                 ' contour_interpolator. \n',
-                'Consider passing na_buffer_width > 0 to the function, with a',
-                ' value large enough to contain',
-                ' all points at which interpolation is desired'))
+                'Consider passing allow_outside=TRUE to the function to allow extrapolation'))
         }
 
         # Do depth interpolation by looping over the polygons which contain 
@@ -230,9 +232,11 @@ edge_source_interpolator<-function(xy, edge1, edge2){
     f_edge<-function(edge){
         s_coord = c(0, cumsum(sqrt(diff(edge[,1])**2 + diff(edge[,2])**2))) 
         s_coord = s_coord/max(s_coord)
-        f_x = splinefun(s_coord, edge[,1])
-        f_y = splinefun(s_coord, edge[,2])
-        f_z = splinefun(s_coord, edge[,3])
+        f_x = splinefun(s_coord, edge[,1], method='natural')
+        f_y = splinefun(s_coord, edge[,2], method='natural')
+        f_z = splinefun(s_coord, edge[,3], 
+            method='natural') # Linear extrapolation
+            #method='monoH.FC') # Monotonic depths
         outfun<-function(alpha){
             out = cbind(f_x(alpha), f_y(alpha), f_z(alpha))
         }
@@ -243,8 +247,8 @@ edge_source_interpolator<-function(xy, edge1, edge2){
     edge1_fun = f_edge(edge1)
     edge2_fun = f_edge(edge2)
 
-    # Make a function to interpolate along the 2D quad with 2 parameters, which
-    # we can optimize with nls.lm
+    # Function to interpolate between the lines (also works outside the lines,
+    # which is occasionally useful although not advisable in general)
     f_xyz<-function(alpha_s, xy=NULL, returncoords = FALSE){
         dim(alpha_s) = c(length(alpha_s)/2, 2)
         alpha = alpha_s[,1]
@@ -265,10 +269,10 @@ edge_source_interpolator<-function(xy, edge1, edge2){
     }
 
     # Find 'best' alpha, s values for these coordinates
-    #
     alpha_s_best = xy[,1:2,drop=FALSE] * 0
     for(i in 1:length(xy[,1])){
-        coordinate_optim = nls.lm(c(0.5, 0.5), fn=f_xyz, xy=xy[i,1:2, drop=FALSE])
+        coordinate_optim = nls.lm(c(0.5, 0.5), lower=c(-Inf,-Inf), upper=c(Inf,Inf), 
+            fn=f_xyz, xy=xy[i,1:2, drop=FALSE])
         alpha_s_best[i,] = coordinate_optim$par
     }
 
@@ -282,7 +286,8 @@ edge_source_interpolator<-function(xy, edge1, edge2){
     if(length(refit) > 0){
         for(i in 1:length(refit)){
             ri = refit[i]
-            coordinate_optim = nls.lm(alpha_s_best[ri,], fn=f_xyz, xy=xy[ri,1:2, drop=FALSE])
+            coordinate_optim = nls.lm(alpha_s_best[ri,], lower=c(-Inf,-Inf), upper=c(Inf,Inf),
+                fn=f_xyz, xy=xy[ri,1:2, drop=FALSE])
             alpha_s_best[ri,] = coordinate_optim$par
         }
         fitted_coordinates[refit,] = f_xyz(alpha_s_best[refit,,drop=FALSE], 

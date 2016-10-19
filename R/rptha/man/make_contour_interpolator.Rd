@@ -29,7 +29,7 @@ origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).}
 of origin_lonlat is passed to \code{spherical_to_cartesian2d_coordinates}).}
 }
 \value{
-a function f(xy, na_buffer_width=0, xy_perturbation_m=NULL) 
+a function f(xy, allow_outside=FALSE, xy_perturbation_m=NULL) 
 which can interpolate depth values along the source contours. Non-zero buffer
 widths can be used to allow the function to be applied to points slightly
 outside the polygons. xy_perturbation_m can be a matrix of the same shape as xy,
@@ -42,7 +42,7 @@ the source contours, with the along-strike edges aligned with fixed contour
 levels. This input can be obtained from the 'mid_line_with_cutpoints' entry
 of the output of \code{discretized_source_from_source_contours}, or from the
 function \code{create_downdip_lines_on_source_contours_improved}. \cr
-This function is used to make a function, which can assign a depth value to
+This function is used to make a function which can assign a depth value to
 arbitrary x,y points inside the source. Note it can handle conversion from spherical
 to cartesian coordinates (with convert_to_cartesian=TRUE)
 }
