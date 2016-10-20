@@ -13,33 +13,43 @@ test_that('test_unit_source_interior_points_cartesian', {
     dip = atan((d1 - d0)/width)*180/pi
     strike = 270    
 
-    unit_source_coords_cartesian = rbind(
-        c(0, 0, d0),
-        c(0, width, d1),
-        c(-len, width, d1),
-        c(-len, 0, d0))
+    l0 = rbind(c(0, 0, d0),
+               c(0, width, d1),
+               c(0, 2*width, d1+(d1-d0)))
+
+    l1 = l0
+    l1[,1] = -len
+
+    l2 = l1
+    l2[,1] = -2*len
+
+    unit_source_coords_cartesian = array(NA, dim=c(dim(l0), 3))
+    unit_source_coords_cartesian[,,1] = l0
+    unit_source_coords_cartesian[,,2] = l1
+    unit_source_coords_cartesian[,,3] = l2
+    
 
     # Back-calculate lon/lat
-    unit_source_coords_lonlat = cartesian2d_to_spherical_coordinates(
-        unit_source_coords_cartesian[,1:2], origin_lonlat=c(0,0))
+    origin = c(0,0)
+    unit_source_coords_lonlat = unit_source_coords_cartesian
+    for(i in 1:3){
+        unit_source_coords_lonlat[,1:2,i] = cartesian2d_to_spherical_coordinates(
+            unit_source_coords_cartesian[,1:2,i], origin=origin)
+    }
 
-    # Make discrete source consisting of a single unit source
+    # Make discrete source consisting of a 2x2 set of unit sources
     ds = list()
-    ds$unit_source_grid = array(dim=c(2,3,2))
-    ds$unit_source_grid[,,1] = cbind(unit_source_coords_lonlat[1:2,1:2], 
-        unit_source_coords_cartesian[1:2,3]/1000)
-    ds$unit_source_grid[,,2] = cbind(unit_source_coords_lonlat[4:3,1:2], 
-        unit_source_coords_cartesian[4:3,3]/1000)
+    ds$unit_source_grid = unit_source_coords_lonlat
+    ds$unit_source_grid[,3,] = ds$unit_source_grid[,3,]/1000
+   
+    ds$discretized_source_dim = c(2,2) 
+    names(ds$discretized_source_dim) = c('dip','strike')
 
     mid_line_with_cutpoints = list()
-    mid_line_with_cutpoints[[1]] = cbind(unit_source_coords_lonlat[1:2,], c(d0, d1)/1000)
-    mid_line_with_cutpoints[[2]] = cbind(unit_source_coords_lonlat[4:3,], c(d0, d1)/1000)
+    for(i in 1:3) mid_line_with_cutpoints[[i]] = ds$unit_source_grid[,,i]
     ds$mid_line_with_cutpoints = mid_line_with_cutpoints
-    
-    ds$discretized_source_dim = c(1,1) 
-    names(ds$discretized_source_dim) = c('dip', 'strike')
 
-    ds$fine_downdip_transects = ds$unit_source_grid    
+    ds$fine_downdip_transects = ds$unit_source_grid
 
     us = unit_source_interior_points_cartesian(ds, unit_source_index = c(1,1),
         approx_dx = NULL, approx_dy = NULL, depths_in_km=TRUE)
@@ -67,11 +77,13 @@ test_that('test_unit_source_interior_points_cartesian', {
                  (min(us$grid_points[,'y']) > 0) &
                  (max(us$grid_points[,'y']) < width))
 
-    us2 = unit_source_interior_points_cartesian(ds, unit_source_index = c(1,1),
-        approx_dx = NULL, approx_dy = NULL, depths_in_km=TRUE, 
-        edge_taper_width=3000,
-        allow_points_outside_discrete_source_outline=TRUE)
+    ##
+    ## Case with edge tapering
+    ##
 
+    us2 = unit_source_interior_points_cartesian(ds, unit_source_index = c(1,1),
+        approx_dx = 1000, approx_dy = 1000, depths_in_km=TRUE, 
+        edge_taper_width=3000)
 
     # Check that the moment-normalization has worked
     a0 = sum(us$grid_points[,'area_projected'] * 

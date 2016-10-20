@@ -5,40 +5,50 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
 
     # Here we copy code from a test of unit source interior points cartesian to
     # set up the problem
-    d0 = 6000
-    d1 = 10000
+    d0 = 2000 #6000
+    d1 = 4000 #10000
     width = 20000
     len = 40000
     dip = atan((d1 - d0)/width)*180/pi
     strike = 270    
 
-    unit_source_coords_cartesian=rbind(c(0, 0, d0),
-                                       c(0, width, d1),
-                                       c(-len, width, d1),
-                                       c(-len, 0, d0))
+    l0 = rbind(c(0, 0, d0),
+               c(0, width, d1),
+               c(0, 2*width, d1+(d1-d0)))
+
+    l1 = l0
+    l1[,1] = -len
+
+    l2 = l1
+    l2[,1] = -2*len
+
+    unit_source_coords_cartesian = array(NA, dim=c(dim(l0), 3))
+    unit_source_coords_cartesian[,,1] = l0
+    unit_source_coords_cartesian[,,2] = l1
+    unit_source_coords_cartesian[,,3] = l2
+    
 
     # Back-calculate lon/lat
     origin = c(0,0)
-    unit_source_coords_lonlat = cartesian2d_to_spherical_coordinates(
-        unit_source_coords_cartesian[,1:2], origin=origin)
+    unit_source_coords_lonlat = unit_source_coords_cartesian
+    for(i in 1:3){
+        unit_source_coords_lonlat[,1:2,i] = cartesian2d_to_spherical_coordinates(
+            unit_source_coords_cartesian[,1:2,i], origin=origin)
+    }
 
-    # Make discrete source consisting of a single unit source
+    # Make discrete source consisting of a 2x2 set of unit sources
     ds = list()
-    ds$unit_source_grid = array(dim=c(2,3,2))
-    ds$unit_source_grid[,,1] = cbind(unit_source_coords_lonlat[1:2,1:2], 
-        unit_source_coords_cartesian[1:2,3]/1000)
-    ds$unit_source_grid[,,2] = cbind(unit_source_coords_lonlat[4:3,1:2], 
-        unit_source_coords_cartesian[4:3,3]/1000)
+    ds$unit_source_grid = unit_source_coords_lonlat
+    ds$unit_source_grid[,3,] = ds$unit_source_grid[,3,]/1000
    
-    ds$discretized_source_dim = c(1,1) 
+    ds$discretized_source_dim = c(2,2) 
     names(ds$discretized_source_dim) = c('dip','strike')
 
     mid_line_with_cutpoints = list()
-    mid_line_with_cutpoints[[1]] = cbind(unit_source_coords_lonlat[1:2,], c(d0, d1)/1000)
-    mid_line_with_cutpoints[[2]] = cbind(unit_source_coords_lonlat[4:3,], c(d0, d1)/1000)
+    for(i in 1:3) mid_line_with_cutpoints[[i]] = ds$unit_source_grid[,,i]
     ds$mid_line_with_cutpoints = mid_line_with_cutpoints
 
-    ds$fine_downdip_transects = ds$unit_source_grid    
+    ds$fine_downdip_transects = ds$unit_source_grid
 
     # Get tsunami surface points
     tsunami_surface_points_lonlat = expand.grid(seq(-1,1,len=200), 
@@ -66,14 +76,23 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     # Note that 'okada_tsunami' is tested elsewhere, so we are effectively testing
     # that the 'make_tsunami_unit_source' interface is working as expected to integrate
     # over the sub-unit-source points
-    expect_true(max(abs(range(tsunami1$tsunami_source$zdsp - tsunami2$zdsp))) < 1.0e-02)
+    expect_true(max(abs(range(tsunami1$tsunami_source$zdsp - tsunami2$zdsp))) < 5.0e-03)
 
+    ############################################################
+    #
     # Check that edge_taper_width > 0 runs
-    tsunami3 = make_tsunami_unit_source(1, 1, ds, rake=90,
+    #
+
+    tsunami3 = make_tsunami_unit_source(2, 1, ds, rake=90,
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
         tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
-        edge_taper_width = 6000,
-        allow_points_outside_discrete_source_outline=TRUE)
+        edge_taper_width = 6000)
+   
+    # Compare with no tapering 
+    tsunami1 = make_tsunami_unit_source(2, 1, ds, rake=90,
+        tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
+        tsunami_function = unit_source_cartesian_to_okada_tsunami_source)
+    expect_true(all(tsunami1$unit_source_interior_points$grid_points[,'unit_slip_scale'] == 1))
 
     # Simple check -- edge_tapering decreases the extremes of the displacement
     r1 = diff(range(tsunami1$smooth_tsunami_displacement))
@@ -81,7 +100,7 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     
     expect_true(r1 > r3)
     
-    tsunami4 = make_tsunami_unit_source(1, 1, ds, rake=90,
+    tsunami4 = make_tsunami_unit_source(2, 1, ds, rake=90,
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
         tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
         edge_taper_width = 9995, # 10000 will induce an error because there is no fully interior region left.
@@ -94,7 +113,8 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     # Check that edge tapering only effects the edges of sums of unit sources
     #
     sagami = readOGR('testshp/sagami.shp', 'sagami')
-    sagami_source = discretized_source_from_source_contours('testshp/sagami.shp',
+    sagami$level = as.numeric(as.character(sagami$level)) - 6 # Force rupture to trench
+    sagami_source = discretized_source_from_source_contours(sagami,
         desired_subfault_length = 50, desired_subfault_width=50, make_plot=FALSE)
     tsunami_surface_points_lonlat = expand.grid(seq(138,144,len=200), 
         seq(33,37,len=200)) 
@@ -121,10 +141,10 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     # Case 2 -- edge tapering 
     tsunami11 = make_tsunami_unit_source(1,1,sagami_source, rake=90, 
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-        edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
+        edge_taper_width=10000)
     tsunami21 = make_tsunami_unit_source(2,1,sagami_source, rake=90, 
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-        edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
+        edge_taper_width=10000)
     #tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
     #    tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
     #    edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)

@@ -6,7 +6,8 @@
 \usage{
 compute_grid_point_areas_in_polygon(polygon, approx_dx, approx_dy,
   rotation_origin = NULL, rotation_x_axis_vector = NULL,
-  edge_taper_width = 0, bounding_polygon = NULL)
+  edge_taper_width = 0, bounding_polygon = NULL,
+  full_unit_source_grid = NULL)
 }
 \arguments{
 \item{polygon}{matrix with x,y coordinates defining a polygon}
@@ -47,13 +48,17 @@ polygon is rotated to before filling with x-y aligned grid points. If NULL, the
 vector joining the final and first points in the polygon is used.}
 
 \item{edge_taper_width}{Length scale over which slip should be smoothed at 
-the edges of the unit-source. If > 0, grid points will be made in a polygon 
-derived by buffering the original polygon this much}
+the edges of the unit-source. This will expand slip outside the original polygon,
+and reduce slip near the polygon edges.}
 
 \item{bounding_polygon}{If not NULL, then a 2 column matrix of coordinates 
 defining a polygon in which the output grid_points are forced to be inside. 
 Should be used in conjunction with edge_taper_width>0 to ensure points do
 not fall outside the source-zone.}
+
+\item{full_unit_source_grid.}{Polygons for the entire sourcezone, stored in an 
+array as a unit_source_grid. This is needed if edge_taper_width>0, since we
+need to find sub-grid points inside neighbouring polygons}
 }
 \value{
 A list containing grid points in the polygon and other useful information.

@@ -43,9 +43,6 @@
 #' Values > 0 can lead to less peaked slip on sources with a shallow top edge
 #' depth. Note values>0 also imply some slip occurring outside the unit source
 #' location (due to smoothing), although we ensure seismic moment is conserved
-#' @param allow_points_outside_discrete_source_outline Logical. If TRUE and
-#' edge_taper_width>0, then we allow sub-unit-source points to occur outside
-#' the boundary of the full discrete source. Mainly used for testing.
 #' @param ... further arguments to tsunami function
 #' @return a list with the cartesian unit source, tsunami source, i,j indices
 #' and tsunami surface points, smoothed deformation, and rake
@@ -70,8 +67,7 @@ make_tsunami_unit_source<-function(
     tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
     verbose=FALSE,
     edge_taper_width=0,
-    allow_points_outside_discrete_source_outline=FALSE,
-        ...){
+    ...){
 
     if(verbose){
         print('Making sub-unit-source points...')
@@ -87,8 +83,7 @@ make_tsunami_unit_source<-function(
         approx_dy=approx_dy, 
         scale_dxdy=scale_dxdy,
         depths_in_km=depths_in_km,
-        edge_taper_width=edge_taper_width,
-        allow_points_outside_discrete_source_outline=allow_points_outside_discrete_source_outline)
+        edge_taper_width=edge_taper_width)
 
     if(verbose){
         print(Sys.time() - t0)

@@ -12,7 +12,9 @@ discretized_source_from_source_contours(source_shapefile,
 }
 \arguments{
 \item{source_shapefile}{character name of line shapefile defining the
-subduction interface contours. It should have an attribute giving the depth}
+subduction interface contours. It should have an attribute giving the depth.
+Update: This argument can alternatively be a spatialLinesDataFrame obtained
+by reading the file.}
 
 \item{desired_subfault_length}{numeric desired length of subfaults (km)}
 
