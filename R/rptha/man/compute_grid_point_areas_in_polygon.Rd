@@ -25,33 +25,6 @@ polygon is rotated to before filling with x-y aligned grid points. If NULL, the
 vector joining the final and first points in the polygon is used.}
 
 \item{edge_taper_width}{Length scale over which slip should be smoothed at 
-the edges of the unit-source. If > 0, grid points will be made in a polygon 
-derived by buffering the original polygon this much}
-
-\item{bounding_polygon}{If not NULL, then a 2 column matrix of coordinates 
-defining a polygon in which the output grid_points are forced to be inside. 
-Should be used in conjunction with edge_taper_width>0 to ensure points do
-not fall outside the source-zone.}
-
-\item{full_unit_source_grid}{Polygons for the entire sourcezone, stored in an 
-array as a unit_source_grid. This is needed if edge_taper_width>0, since we
-need to find sub-grid points inside neighbouring polygons.}
-
-\item{polygon}{matrix with x,y coordinates defining a polygon}
-
-\item{approx_dx}{approximate x spacing of points in same units as x,y}
-
-\item{approx_dy}{approximate y spacing of points in same units as x,y}
-
-\item{rotation_origin}{Origin about which the polygon is rotated before
-filling with x-y aligned grid points. If NULL, the final point in the polygon
-is used.}
-
-\item{rotation_x_axis_vector}{Vector defining the rotated x-axis that the
-polygon is rotated to before filling with x-y aligned grid points. If NULL, the
-vector joining the final and first points in the polygon is used.}
-
-\item{edge_taper_width}{Length scale over which slip should be smoothed at 
 the edges of the unit-source. This will expand slip outside the original polygon,
 and reduce slip near the polygon edges.}
 
@@ -60,10 +33,12 @@ defining a polygon in which the output grid_points are forced to be inside.
 Should be used in conjunction with edge_taper_width > 0 to ensure points near 
 boundaries are weighted correctly (note: This could just be recomputed with
 full_unit_source_grid)}
+
+\item{full_unit_source_grid}{Polygons for the entire sourcezone, stored in an 
+array as a unit_source_grid. This is needed if edge_taper_width>0, since we
+need to find sub-grid points inside neighbouring polygons.}
 }
 \value{
-A list containing grid points in the polygon and other useful information.
-
 A list containing grid points in the polygon and other useful information.
 }
 \description{
