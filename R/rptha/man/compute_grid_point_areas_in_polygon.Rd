@@ -33,6 +33,10 @@ defining a polygon in which the output grid_points are forced to be inside.
 Should be used in conjunction with edge_taper_width>0 to ensure points do
 not fall outside the source-zone.}
 
+\item{full_unit_source_grid}{Polygons for the entire sourcezone, stored in an 
+array as a unit_source_grid. This is needed if edge_taper_width>0, since we
+need to find sub-grid points inside neighbouring polygons.}
+
 \item{polygon}{matrix with x,y coordinates defining a polygon}
 
 \item{approx_dx}{approximate x spacing of points in same units as x,y}
@@ -53,12 +57,9 @@ and reduce slip near the polygon edges.}
 
 \item{bounding_polygon}{If not NULL, then a 2 column matrix of coordinates 
 defining a polygon in which the output grid_points are forced to be inside. 
-Should be used in conjunction with edge_taper_width>0 to ensure points do
-not fall outside the source-zone.}
-
-\item{full_unit_source_grid.}{Polygons for the entire sourcezone, stored in an 
-array as a unit_source_grid. This is needed if edge_taper_width>0, since we
-need to find sub-grid points inside neighbouring polygons}
+Should be used in conjunction with edge_taper_width > 0 to ensure points near 
+boundaries are weighted correctly (note: This could just be recomputed with
+full_unit_source_grid)}
 }
 \value{
 A list containing grid points in the polygon and other useful information.

@@ -86,21 +86,78 @@ test_that('test_sub_unit_source_grid_point_creation', {
 
     # Test compute_grid_point_areas_in_polygon
 
-    polygon = rbind(c(0, 0), c(0, 10000), c(10000, 10000), c(10000, 0))
+    ############################################################
+    # Setup
+    #
+    # Consider a source with width 20km, length 40km, top-edge-depth
+    # of 6km, bottom-edge-depth of 10km
+    
+    d0 = 6000
+    d1 = 10000
+    width = 20000
+    len = 40000
+    dip = atan((d1 - d0)/width)*180/pi
+    strike = 270    
+
+    l0 = rbind(c(0, 0, d0),
+               c(0, width, d1),
+               c(0, 2*width, d1+(d1-d0)))
+
+    l1 = l0
+    l1[,1] = -len
+
+    l2 = l1
+    l2[,1] = -2*len
+
+    unit_source_coords_cartesian = array(NA, dim=c(dim(l0), 3))
+    unit_source_coords_cartesian[,,1] = l0
+    unit_source_coords_cartesian[,,2] = l1
+    unit_source_coords_cartesian[,,3] = l2
+    
+    # Back-calculate lon/lat
+    origin = c(0,0)
+    unit_source_coords_lonlat = unit_source_coords_cartesian
+    for(i in 1:3){
+        unit_source_coords_lonlat[,1:2,i] = cartesian2d_to_spherical_coordinates(
+            unit_source_coords_cartesian[,1:2,i], origin=origin)
+    }
+
+    # Make discrete source consisting of a 2x2 set of unit sources
+    ds = list()
+    ds$unit_source_grid = unit_source_coords_lonlat
+    ds$unit_source_grid[,3,] = ds$unit_source_grid[,3,]/1000
+   
+    ds$discretized_source_dim = c(2,2) 
+    names(ds$discretized_source_dim) = c('dip','strike')
+
+    mid_line_with_cutpoints = list()
+    for(i in 1:3) mid_line_with_cutpoints[[i]] = ds$unit_source_grid[,,i]
+    ds$mid_line_with_cutpoints = mid_line_with_cutpoints
+
+    ds$fine_downdip_transects = ds$unit_source_grid
+
+    # The tested routine uses cartesian info
+    p1 = get_unit_source_from_discretized_source(ds, c(1,1))
+    polygon = p1$unit_source_grid[,1:2]
+    polygon = spherical_to_cartesian2d_coordinates(polygon, origin_lonlat=c(0,0))
+    full_unit_source_grid = unit_source_coords_cartesian
+
+    # 
+    # End preliminary setup
+    #########################################################
+
+    #polygon = rbind(c(0, 0), c(0, 10000), c(10000, 10000), c(10000, 0))
 
     xx = compute_grid_point_areas_in_polygon(polygon, 
         approx_dx=1000, approx_dy=1000)
 
     c1 = coordinates(xx$grid_point_polygon)
     c2 = coordinates(xx$grid_point_polygon_buffer)
-    test_result = all(c1 == c2)
-    expect_true(test_result)
 
-    l1 = length(xx$unit_slip_scale)
-    l2 = length(c2[,1])
-    expect_true(max(abs(c1-c2)) < 1.0e-12)
-
-    expect_true(all(xx$area == xx$area_buffer))
+    # Tapered and un-tapered outputs should be the same, but since some trivial
+    # geometric operations were involved, we accept round-off error
+    expect_true(max(abs(c1-c2)) < 1.0e-10)
+    expect_true(all(abs(xx$area - xx$area_buffer) < (xx$area * 1.0e-12)))
 
     ##################################################################
     #
@@ -108,32 +165,46 @@ test_that('test_sub_unit_source_grid_point_creation', {
     #
 
     xx2 = compute_grid_point_areas_in_polygon(polygon, 
-        approx_dx=1000, approx_dy=1000, edge_taper_width = 1000)
+        approx_dx=1000, approx_dy=1000, edge_taper_width = 1000,
+        full_unit_source_grid = full_unit_source_grid)
 
-    # Check that this has not affected the 'untaperd' results
+    # Check that this has not affected the 'untapered' results
     c3 = coordinates(xx2$grid_point_polygon)
     test_result = all(c1 == c3)
     expect_true(test_result)
+    
+    # Check there are more points in the tapered case    
+    c4 = coordinates(xx2$grid_point_polygon_buffer)
+    test_result = all(dim(c4)[1] > dim(c3)[1])
+    expect_true(test_result)
 
+    # Actually we should have a layer of 1 cell around 2 edges
+    expect_true(dim(c4)[1] - dim(c3)[1] == len/1000 + width/1000 + 1)
+
+    # General sanity check
     expect_true(sum(is.nan(xx2$unit_slip_scale)) == 0)
 
     # The peak unit_source_slip_scale might be slightly different to 1 due to
     # normalisation
     err = 1 - max(xx2$unit_slip_scale)
-    expect_true( abs(err) < 5.0e-03)
+    expect_true( abs(err) < 5.0e-10)
 
-    ##################################################################
-    #
-    # Examine results with edge_taper and bounding_polygon
-    #
-    bounding_polygon = rbind(c(0, 0), c(0, 10000), c(0, 20000), 
-        c(20000, 20000), c(20000, 0))
-    xx3 = compute_grid_point_areas_in_polygon(polygon, 
-        approx_dx=1000, approx_dy=1000, edge_taper_width = 1000,
-        bounding_polygon = bounding_polygon)
+    # 'Unit Moment' conservation -- sum(slip * down-dip-area) is same in 
+    # buffered and unbuffered cases.
+    # Since the dip is constant, we expect the following relation to hold
+    # (in general we would have to adjust the 'surface areas' to reflect the
+    # 'down-dip areas' by multiplying by sqrt(1+tan(dip)**2 -- but dip is not
+    # computed by this routine)
+    expect_true(
+        abs(sum(xx2$unit_slip_scale * xx2$area_buffer) - sum(xx$area)) < 
+            (1.0e-12*sum(xx$area)))
 
-    # Ensure that the bounding polygon did clip as expected
-    m1 = point.in.polygon(xx3$grid_points_buffer[,1], xx3$grid_points_buffer[,2],
+    # Ensure that all points are in the 'full' bounding polygon
+    bounding_polygon = get_discretized_source_outline(ds)
+    bounding_polygon[,1:2] = spherical_to_cartesian2d_coordinates(bounding_polygon[,1:2],
+        origin_lonlat=c(0,0))
+    
+    m1 = point.in.polygon(xx2$grid_points_buffer[,1], xx2$grid_points_buffer[,2],
         bounding_polygon[,1], bounding_polygon[,2])
     expect_true(all(m1 == 1))
 
@@ -142,15 +213,48 @@ test_that('test_sub_unit_source_grid_point_creation', {
     # Larger edge taper
 
     xx2 = compute_grid_point_areas_in_polygon(polygon, 
-        approx_dx=1000, approx_dy=1000, edge_taper_width = 3000)
+        approx_dx=1000, approx_dy=1000, edge_taper_width = 3000,
+        full_unit_source_grid = full_unit_source_grid)
 
     # Check that this has not affected the 'untaperd' results
     c3 = coordinates(xx2$grid_point_polygon)
     test_result = all(c1 == c3)
     expect_true(test_result)
 
+    # Check there are more points in the tapered case    
+    c4 = coordinates(xx2$grid_point_polygon_buffer)
+    test_result = all(dim(c4)[1] > dim(c3)[1])
+    expect_true(test_result)
+
+    # Actually we should have a layer of 3 cells around 2 edges, except
+    # the top corner is missing (doesn't make it inside the buffer)
+    expect_true(dim(c4)[1] - dim(c3)[1] == (3*(len/1000 + width/1000 + 3) -1))
+
     expect_true(sum(is.nan(xx2$unit_slip_scale)) == 0)
 
+    # The peak unit_source_slip_scale might be slightly different to 1 due to
+    # normalisation
+    err = 1 - max(xx2$unit_slip_scale)
+    expect_true( abs(err) < 5.0e-10)
+
+    # 'Unit Moment' conservation -- sum(slip * down-dip-area) is same in 
+    # buffered and unbuffered cases.
+    # Since the dip is constant, we expect the following relation to hold
+    # (in general we would have to adjust the 'surface areas' to reflect the
+    # 'down-dip areas' by multiplying by sqrt(1+tan(dip)**2 -- but dip is not
+    # computed by this routine)
+    expect_true(
+        abs(sum(xx2$unit_slip_scale * xx2$area_buffer) - sum(xx$area)) < 
+            (1.0e-12*sum(xx$area)))
+
+    # Ensure that all points are in the 'full' bounding polygon
+    bounding_polygon = get_discretized_source_outline(ds)
+    bounding_polygon[,1:2] = spherical_to_cartesian2d_coordinates(bounding_polygon[,1:2],
+        origin_lonlat=c(0,0))
+    
+    m1 = point.in.polygon(xx2$grid_points_buffer[,1], xx2$grid_points_buffer[,2],
+        bounding_polygon[,1], bounding_polygon[,2])
+    expect_true(all(m1 == 1))
 
 
 })
