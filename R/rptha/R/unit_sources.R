@@ -738,6 +738,11 @@ unit_source_interior_points_cartesian<-function(
     if(is.null(approx_dy)){
         approx_dy = min(unit_source_cartesian[,3])*0.5
     }
+
+    if(approx_dx != approx_dy){
+        stop('Currently assuming approx_dx == approx_dy. The interface should be updated to reflect that')
+    }
+
     approx_dx = approx_dx*scale_dxdy
     approx_dy = approx_dx*scale_dxdy
 
@@ -787,41 +792,43 @@ unit_source_interior_points_cartesian<-function(
     
     # Get strike at the grid points
     # 
-    top_edge_vector = unit_source_cartesian[4,1:2] - unit_source_cartesian[1,1:2]
-    # Since the sub-unit-sources are created to be aligned with the top edge vector,
-    # we should use that strike. Degrees from north
-    strike_top_edge = atan2(top_edge_vector[1], top_edge_vector[2])/pi*180
-    strike = rep(strike_top_edge, length(grid_points[,1]))
-    # Ensure strike is > 0
-    strike = strike + (strike < 0)*360
+
+    ## APPROACH 1: Strike is discontinuous between neighbouring unit-sources
+    #top_edge_vector = unit_source_cartesian[4,1:2] - unit_source_cartesian[1,1:2]
+    ## Since the sub-unit-sources are created to be aligned with the top edge vector,
+    ## we should use that strike. Degrees from north
+    #strike_top_edge = atan2(top_edge_vector[1], top_edge_vector[2])/pi*180
+    #strike = rep(strike_top_edge, length(grid_points[,1]))
+    ## Ensure strike is > 0
+    #strike = strike + (strike < 0)*360
 
     #
     # Convert lon-lat centroids of ALL unit sources in the discrete source to
     # the local coordinate system and use them to make a continuous function of
     # strike
 
-    #ds1_lonlatstrike = get_shallow_unit_source_top_edge_strikes(discretized_source) 
-    #ds1_stats_points_cartesian = spherical_to_cartesian2d_coordinates(
-    #    ds1_lonlatstrike[,1:2], origin_lonlat=origin, r=r)
+    ds1_lonlatstrike = get_shallow_unit_source_top_edge_strikes(discretized_source) 
+    ds1_stats_points_cartesian = spherical_to_cartesian2d_coordinates(
+        ds1_lonlatstrike[,1:2], origin_lonlat=origin, r=r)
 
-    ## Ideally we interpolate strike using a weighted nearest-neighbours
-    ## However, the code used here requires that we have > 1 point
-    #np = length(ds1_lonlatstrike[,1])
-    #k = min(4, np)
-    ## Compute an inverse distance weighted angular mean of k nearest neighbours
-    #inds = knnx.index(data = ds1_stats_points_cartesian[,1:2, drop=FALSE], 
-    #    query = grid_points[,1:2, drop=FALSE], k=k)
-    #dists = knnx.dist(data = ds1_stats_points_cartesian[,1:2, drop=FALSE],
-    #    query = grid_points[,1:2, drop=FALSE], k=k)
-    #mean_strike = dists[,1]*NA 
-    #for(ii in 1:length(mean_strike)){
-    #    mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii,], 3], 
-    #        weights = 1/(dists[ii,])**2)
-    #}
-    #strike = mean_strike
+    # Ideally we interpolate strike using a weighted nearest-neighbours
+    # However, the code used here requires that we have > 1 point
+    np = length(ds1_lonlatstrike[,1])
+    k = min(4, np)
+    # Compute an inverse distance weighted angular mean of k nearest neighbours
+    inds = knnx.index(data = ds1_stats_points_cartesian[,1:2, drop=FALSE], 
+        query = grid_points[,1:2, drop=FALSE], k=k)
+    dists = knnx.dist(data = ds1_stats_points_cartesian[,1:2, drop=FALSE],
+        query = grid_points[,1:2, drop=FALSE], k=k)
+    mean_strike = dists[,1]*NA 
+    for(ii in 1:length(mean_strike)){
+        mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii,], 3], 
+            weights = 1/(dists[ii,])**2)
+    }
+    strike = mean_strike
 
-    ## Ensure strike is > 0
-    #strike = strike + (strike < 0)*360
+    # Ensure strike is > 0
+    strike = strike + (strike < 0)*360
 
     #
     # Get dip/depth etc at the grid points
@@ -851,7 +858,7 @@ unit_source_interior_points_cartesian<-function(
 
     # Compute dip -- first make some 'down-dip' points, then find their depth,
     # and do the computation
-    dx_numerical = 100
+    dx_numerical = approx_dx/2
     deg2rad = pi/180
     grid_points_perturb = grid_points * 0
     grid_points_perturb[,1] = dx_numerical*cos(strike*deg2rad)
@@ -1083,10 +1090,12 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         nyf = ceiling(edge_taper_width/dy_local)
         nx = dim(unit_slip_scale)[1]
         ny = dim(unit_slip_scale)[2]
-        # Circular filter which is 1 inside a radius of edge_taper_width, and 0 elsewhere
         rx = matrix(((-nxf):nxf)*dx_local, ncol=2*nyf + 1, nrow=2*nxf+1)
         ry = matrix(((-nyf):nyf)*dy_local, ncol=2*nyf + 1, nrow=2*nxf+1, byrow=TRUE)
-        filter_coef = as.numeric(rx**2 + ry**2 < edge_taper_width**2)
+        # Circular filter which is 1 inside a radius of edge_taper_width, and 0 elsewhere
+        #filter_coef = as.numeric(rx**2 + ry**2 < edge_taper_width**2)
+        # Circular filter decaying as 1-sqrt(r)
+        filter_coef = pmax(0, 1 - ((rx**2 + ry**2)/(edge_taper_width**2))**0.25)
         for(j in 1:ny){
             # yindices, deal with edge effects
             iy = pmin(pmax(1, (-nyf):(nyf) + j), ny)

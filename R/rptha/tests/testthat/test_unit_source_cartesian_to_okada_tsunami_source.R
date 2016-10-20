@@ -150,7 +150,7 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     
     r1 = diff(range(raster::as.matrix(m11)))
     r2 = diff(range(raster::as.matrix(m11B)))
-    expect_true(r1*0.8 > r2)
+    expect_true(r1*0.9 > r2)
     
     # Check that results are 'similar' before the 'ridge'
     expect_true(max(abs(sum_2[1:130,123,1] - sum_2B[1:130,123,1])) < 1.0e-02)
