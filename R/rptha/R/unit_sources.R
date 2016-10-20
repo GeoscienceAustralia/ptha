@@ -1228,7 +1228,7 @@ unit_source_interior_points_cartesian<-function(
 #' defining a polygon in which the output grid_points are forced to be inside. 
 #' Should be used in conjunction with edge_taper_width>0 to ensure points do
 #' not fall outside the source-zone.
-#' @param full_unit_source_grid. Polygons for the entire sourcezone, stored in an 
+#' @param full_unit_source_grid Polygons for the entire sourcezone, stored in an 
 #' array as a unit_source_grid. This is needed if edge_taper_width>0, since we
 #' need to find sub-grid points inside neighbouring polygons
 #' @return A list containing grid points in the polygon and other useful information.
@@ -1261,6 +1261,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         # intersect with ours. If they do, fill them with points, and do some
         # work to figure out unit_slip_scale weightings
         #
+        if(is.null(full_unit_source_grid)) stop('Must provide full unit source grid with edge_taper_width>0')
         p0_buf = gBuffer(p0, width=edge_taper_width)
         ndip = dim(full_unit_source_grid)[1] - 1
         nstrike = dim(full_unit_source_grid)[3] - 1

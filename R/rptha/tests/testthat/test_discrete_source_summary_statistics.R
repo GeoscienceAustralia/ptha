@@ -98,7 +98,7 @@ test_that('test_sub_unit_source_grid_point_creation', {
 
     l1 = length(xx$unit_slip_scale)
     l2 = length(c2[,1])
-    expect_true(l1 == l2)
+    expect_true(max(abs(c1-c2)) < 1.0e-12)
 
     expect_true(all(xx$area == xx$area_buffer))
 
