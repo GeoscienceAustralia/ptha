@@ -103,17 +103,19 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     tsunami4 = make_tsunami_unit_source(2, 1, ds, rake=90,
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
         tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
-        edge_taper_width = 9995, # 10000 will induce an error because there is no fully interior region left.
-        allow_points_outside_discrete_source_outline=TRUE)
+        edge_taper_width = 9995) # 10000 will induce an error because there is no fully interior region left.
     
     r4 = diff(range(tsunami4$smooth_tsunami_displacement))
     expect_true(r3 > r4)
     
     #
-    # Check that edge tapering only effects the edges of sums of unit sources
+    # Check that edge tapering only effects the extremes of sums of unit sources
     #
+
     sagami = readOGR('testshp/sagami.shp', 'sagami')
-    sagami$level = as.numeric(as.character(sagami$level)) - 6 # Force rupture to trench
+    # Force rupture to trench + low dip, to invoke higher gradients in regions we can
+    # affect with smoothing. 
+    sagami$level = (as.numeric(as.character(sagami$level)))/3
     sagami_source = discretized_source_from_source_contours(sagami,
         desired_subfault_length = 50, desired_subfault_width=50, make_plot=FALSE)
     tsunami_surface_points_lonlat = expand.grid(seq(138,144,len=200), 
@@ -147,10 +149,10 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
         edge_taper_width=10000)
     #tsunami12 = make_tsunami_unit_source(1,2,sagami_source, rake=90, 
     #    tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-    #    edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
+    #    edge_taper_width=10000)
     #tsunami22 = make_tsunami_unit_source(2,2,sagami_source, rake=90, 
     #    tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy = 3000,
-    #    edge_taper_width=10000, allow_points_outside_discrete_source_outline=TRUE)
+    #    edge_taper_width=10000)
 
     m11B = tsunami_unit_source_2_raster(tsunami11)
     #m12B = tsunami_unit_source_2_raster(tsunami12)
@@ -163,39 +165,46 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
 
     # Note: This 'test' is really better illustrated with plotting -- see commented
     # out plot below
-
-    r1 = diff(range(raster::as.matrix(sum_2)))
-    r2 = diff(range(raster::as.matrix(sum_2B)))
-    expect_true(r1*0.9 > r2)
     
-    r1 = diff(range(raster::as.matrix(m11)))
-    r2 = diff(range(raster::as.matrix(m11B)))
+    # In this case, the top edge is not smoothed, because we cannot put points up-dip of it.
+    # But the second unit source is smoothed (and it is still shallow enough for this to have effect
+    r1 = diff(range(raster::as.matrix(m21)))
+    r2 = diff(range(raster::as.matrix(m21B)))
     expect_true(r1*0.9 > r2)
     
     # Check that results are 'similar' before the 'ridge'
-    expect_true(max(abs(sum_2[1:130,123,1] - sum_2B[1:130,123,1])) < 1.0e-02)
-    expect_true(max(abs(sum_2[150:200,123,1] - sum_2B[150:200,123,1])) < 1.0e-2)
+    expect_true(max(abs(m21[1:105,123,1] - m21B[1:105,123,1])) < 1.0e-02)
+    expect_true(max(abs(m21[130:200,123,1] - m21B[130:200,123,1])) < 1.0e-2)
 
     # Check that results differ substantially near the ridge
-    ll = 130:150
-    expect_true(max(abs(sum_2[ll,123,1] - sum_2B[ll,123,1])) > 0.05)
+    ll = 105:130
+    expect_true(max(abs(m21[ll,123,1] - m21B[ll,123,1])) > 0.05)
+
+    # In this case, the 'ridge' slip is down-dip (which is typical if we rupture to the trench).
+    # When we add the up-dip and down-dip slip, we would like the result to be not
+    # much affected by slip tapering (since the ridges in both should have cancelled anyway).
+    # Here we test that there is not much effect. However, we deliberately avoid the 
+    # ridge region, since i haven't used small enough approx_dx/dy to resolve it, and there
+    # are thus artefacts. Prefer not to do that, to keep the runtime short
+    # 
+    expect_true(max(abs(sum_2[1:120,123,1] - sum_2B[1:120,123,1])) < 1.0e-02) 
 
     ## This figure well illustrates the impact of slip tapering
     #
     #png('Slip_tapering_effects.png', width=11,height=10,units='in',res=300)
     #par(mfrow=c(2,2))
     #nc = c(123, 137)
-    #plot(sum_2, zlim=c(-0.2, 0.5), col=rainbow(255))
-    #abline(v=xFromCol(sum_2,nc), lty='longdash')
+    #plot(m21, zlim=c(-0.3, 0.4), col=rainbow(255))
+    #abline(v=xFromCol(m21,nc), lty='longdash')
     #title('No tapering')
-    #plot(sum_2B, zlim=c(-0.2, 0.5), col=rainbow(255))
-    #abline(v=xFromCol(sum_2,nc), lty='longdash')
+    #plot(m21B, zlim=c(-0.3, 0.4), col=rainbow(255))
+    #abline(v=xFromCol(m21,nc), lty='longdash')
     #title('Tapering of slip')
-    #plot(sum_2[,nc[1],],t='o')
-    #points(sum_2B[,nc[1],],t='l',col='red', lwd=2)
+    #plot(m21[,nc[1],],t='o')
+    #points(m21B[,nc[1],],t='l',col='red', lwd=2)
     #title('Left transect')
-    #plot(sum_2[,nc[2],],t='o')
-    #points(sum_2B[,nc[2],],t='l',col='red', lwd=2)
+    #plot(m21[,nc[2],],t='o')
+    #points(m21B[,nc[2],],t='l',col='red', lwd=2)
     #title('Right transect')
     #dev.off()
 

@@ -1337,9 +1337,13 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         unit_slip_scale = unit_slip_scale[kk]
     
         if(any(unit_slip_scale > 1)){
-            stop('Error: Unit_slip_scale > 1')
+            if(any(unit_slip_scale > 1.0001)){
+                print(max(unit_slip_scale))
+                stop('Error: Unit_slip_scale > 1')
+            }else{
+                unit_slip_scale = pmin(unit_slip_scale, 1)
+            }
         }
-
     }
 
     p1_points = SpatialPoints(coords = coordinates(p1))
