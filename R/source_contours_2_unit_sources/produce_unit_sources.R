@@ -34,7 +34,15 @@ sourcezone_rake = rep(90, len=length(all_sourcezone_shapefiles)) # degrees
 # The computational effort approximately scales with the inverse square of
 # the point density. 
 shallow_subunitsource_point_spacing = 1000 # m
-deep_subunitsource_point_spacing = 6000 #m
+deep_subunitsource_point_spacing = 4000 #m
+
+# Taper edges of unit_source slip with circular filter having this radius (m)
+# This can be useful to avoid features of the Okada solution associated with
+# slip discontinuities at the rupture edges. 
+# E.G. For ruptures with shallow top depth, the Okada solution suggests a high
+# 'ridge' of deformation just above the top-edge, which is entirely due to the
+# discontinuity in the slip. Slip tapering will smooth out such features.
+slip_edge_taper_width = 10000
 
 # For computational efficiency, only compute the okada deformation at
 # distances <= okada_distance_factor x (depth of sub-unit-source point) 
@@ -81,7 +89,7 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 1
+MC_CORES = 12
 
 # Option to illustrate 3d interactive plot creation
 #
@@ -89,12 +97,13 @@ MC_CORES = 1
 # have rgl (i.e. use FALSE on NCI). 
 make_3d_interactive_plot = FALSE
 
+# Make a multi-page pdf plot of the sources
+make_pdf_plot = FALSE
+
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
 
-# Option to make the unit-source edges be more orthogonal. 
-use_improved_downdip_lines = TRUE
 
 ## ---- takeCommandLineParameter ----
 
@@ -142,8 +151,7 @@ for(source_shapefile_index in 1:length(all_sourcezone_shapefiles)){
     # Create unit sources for source_shapefile
     discretized_sources[[sourcename]] = 
         discretized_source_from_source_contours(source_shapefile, 
-            desired_subfault_length, desired_subfault_width, make_plot=TRUE,
-            improved_downdip_lines = use_improved_downdip_lines)
+            desired_subfault_length, desired_subfault_width, make_plot=TRUE)
 
     # Get unit source summary stats
     discretized_sources_statistics[[sourcename]] = 
@@ -232,10 +240,6 @@ for(sourcename_index in 1:length(names(discretized_sources))){
 
     print('Making tsunami sources in parallel...')
 
-    approx_dx = ( ((ij$i - 1)*desired_subfault_width) >= 50)*deep_subunitsource_point_spacing + 
-        ( (ij$i-1)*desired_subfault_width < 50)*shallow_subunitsource_point_spacing
-    approx_dy = approx_dx 
-
     myrake = sourcezone_rake[sourcename_index]
 
     gc()
@@ -250,6 +254,15 @@ for(sourcename_index in 1:length(names(discretized_sources))){
         # Make a single tsunami unit source 
         down_dip_index = ij$i[ind]
         along_strike_index = ij$j[ind]
+
+        # Set the sub-unit-source point spacing based on the minimum sourcezone depth
+        di = down_dip_index:(down_dip_index+1)
+        sj = along_strike_index:(along_strike_index+1)
+        depth_range = range(ds1$unit_source_grid[di,3,sj])*1000
+        approx_dx = min(
+            max(shallow_subunitsource_point_spacing, min(depth_range)), 
+            deep_subunitsource_point_spacing)
+        approx_dy = approx_dx
       
         tsunami_ = make_tsunami_unit_source(
             down_dip_index, 
@@ -257,8 +270,8 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             discrete_source=ds1, 
             rake=myrake,
             tsunami_surface_points_lonlat = tsunami_surface_points_lonlat,
-            approx_dx = approx_dx[ind], 
-            approx_dy = approx_dy[ind], 
+            approx_dx = approx_dx, 
+            approx_dy = approx_dy, 
             depths_in_km=TRUE, 
             kajiura_smooth=use_kajiura_filter, 
             surface_point_ocean_depths=surface_point_ocean_depths,
@@ -266,7 +279,8 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             kajiura_where_deformation_exceeds_threshold=kajiura_use_threshold,
             minimal_output=minimise_tsunami_unit_source_output, 
             verbose=FALSE,
-            dstmx=okada_distance_factor)
+            dstmx=okada_distance_factor,
+            edge_taper_width=slip_edge_taper_width)
 
         # Save as RDS 
         output_RDS_file =  paste0(source_output_dir, sourcename, '_', 
@@ -282,6 +296,8 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             tsunami_surface_points_lonlat = tsunami_surface_points_lonlat,
             res=c(tsunami_source_cellsize, tsunami_source_cellsize))
 
+        gc()
+
         return(output_RDS_file)
     }
 
@@ -295,18 +311,20 @@ for(sourcename_index in 1:length(names(discretized_sources))){
     }
 
 
-    # Finally -- read in all the results and make some plots
-    all_tsunami = lapply(as.list(all_tsunami_files), f<-function(x) readRDS(x))
-   
-    all_rasters = paste0(source_output_dir, '/',
-        gsub('.RDS', '', basename(unlist(all_tsunami_files))), '.tif')
+    if(make_pdf_plot){
+        # Finally -- read in all the results and make some plots
+        all_tsunami = lapply(as.list(all_tsunami_files), f<-function(x) readRDS(x))
+       
+        all_rasters = paste0(source_output_dir, '/',
+            gsub('.RDS', '', basename(unlist(all_tsunami_files))), '.tif')
 
-    all_tsunami_rast = lapply(as.list(all_rasters), f<-function(x) raster(x))
+        all_tsunami_rast = lapply(as.list(all_rasters), f<-function(x) raster(x))
 
-    # Plotting -- make a pdf for checking the sources
-    plot_all_tsunami_unit_sources(sourcename, all_tsunami, all_tsunami_rast, ds1)
+        # Plotting -- make a pdf for checking the sources
+        if(make_pdf_plot) plot_all_tsunami_unit_sources(sourcename, all_tsunami, all_tsunami_rast, ds1)
 
-    rm(all_tsunami, all_tsunami_rast); gc()
+        rm(all_tsunami, all_tsunami_rast); gc()
+    }
 }
 
 ###############################################################################
@@ -365,7 +383,7 @@ if(make_3d_interactive_plot){
         unit_source_index = unit_source_index_list,
         origin=list(origin),
         approx_dx = list(5000), approx_dy = list(5000), 
-        mc.preschedule=FALSE, mc.cores=MC_CORES, SIMPLIFY=FALSE)
+        mc.preschedule=TRUE, mc.cores=MC_CORES, SIMPLIFY=FALSE)
 
     ## Make a 3D plot of the points inside the unit source
     #for(i in 1:length(us)){
@@ -376,6 +394,7 @@ if(make_3d_interactive_plot){
     ## Origin is the same as unit sources above
     tsunami_source_points_4plot = spherical_to_cartesian2d_coordinates(
         tsunami_surface_points_lonlat, origin_lonlat = origin)
+
     ## Combine all unit sources
     zstore = all_tsunami[[1]]$smooth_tsunami_displacement*0
     for(i in 1:length(all_tsunami)){

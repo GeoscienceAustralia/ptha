@@ -254,7 +254,15 @@ sourcezone_rake = rep(90, len=length(all_sourcezone_shapefiles)) # degrees
 # The computational effort approximately scales with the inverse square of
 # the point density. 
 shallow_subunitsource_point_spacing = 1000 # m
-deep_subunitsource_point_spacing = 6000 #m
+deep_subunitsource_point_spacing = 4000 #m
+
+# Taper edges of unit_source slip with circular filter having this radius (m)
+# This can be useful to avoid features of the Okada solution associated with
+# slip discontinuities at the rupture edges. 
+# E.G. For ruptures with shallow top depth, the Okada solution suggests a high
+# 'ridge' of deformation just above the top-edge, which is entirely due to the
+# discontinuity in the slip. Slip tapering will smooth out such features.
+slip_edge_taper_width = 10000
 
 # For computational efficiency, only compute the okada deformation at
 # distances <= okada_distance_factor x (depth of sub-unit-source point) 
@@ -301,7 +309,7 @@ tsunami_source_cellsize = 4/60 # degrees.
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 1
+MC_CORES = 12
 
 # Option to illustrate 3d interactive plot creation
 #
@@ -309,12 +317,12 @@ MC_CORES = 1
 # have rgl (i.e. use FALSE on NCI). 
 make_3d_interactive_plot = FALSE
 
+# Make a multi-page pdf plot of the sources
+make_pdf_plot = FALSE
+
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
-
-# Option to make the unit-source edges be more orthogonal. 
-use_improved_downdip_lines = TRUE
 ```
 
 # Running the script
@@ -343,7 +351,7 @@ The speed of the code depends heavily on a number of input parameters. If it is 
 slow, you can try decreasing the `tsunami_source_cellsize`. More dangerously
 you can try increasing the subunitsource_point_spacing parameters, or
 increasing the `kajiura_grid_spacing` (the latter only matters if you provide
-elevation data). But if the parameters in the last sentence are too coarse
+elevation data). But if the parameters in the last sentence are too coarse,
 you can expect numerical artefacts.
 
 
@@ -357,17 +365,32 @@ that the unit sources and tsunami deformations seem sensible.
 * an RDS file for each unit source. This is a native R format file, and contains
 the tsunami unit sources as a native R data-structure. It can be useful for
 programming and debugging, since it contains the underlying data (such as
-sub-unit-source points, exact unit source discretization, etc).
+sub-unit-source points, exact unit source discretization, etc). In this case,
+you might want to set minimise_tsunami_unit_source_output=FALSE
 
 # Tips
 
-* You should visually check that the computed initial conditions seem reasonable.
-In early versions of the code, we sometimes observed numerical artefacts in the
-computed solution along the trench (manifest as localised spikes in the
-deformation). Improvements to the code seem to have dealt with this issue, but
-it seems plausible that other artefacts might occur for some input
-source-contours  (or you might accidently make a poor choice of input
-parameters) -- so we suggest visually checking the outputs.
+* If `slip_edge_taper_width > 0`, then instead of having uniform slip, each source
+has its slip smoothed to zero around the edges. To do this, the original unit-source
+slip (1 inside the unit source, 0 outside) is convolved with a circular filter with
+radius `slip_edge_taper_width`. This implies that if two neighbouring sources are added,
+their smoothed slips will sum to 1 - and so the smoothing should have no effect in
+the interior of constant a multi-source rupture. Smoothing can be useful to reduce artefacts
+caused by the slip discontinuity at the boundaries of the rupture. For example, if
+the rupture top-edge is buried a few km below the earth surface, then for relatively low dips,
+the Okada solution implies a sharp 'ridge' of deformation along the upper edge of the unit-source. 
+Although mathematically this is correct, it is entirely due to slip dropping discontinuously
+from '1' to '0', and so might not be physically realistic. Slip tapering effectively smooths
+out such features. 
+
+* You should visually check that the computed initial conditions seem
+reasonable. If the subgrid point spacing is too coarse, or the input contours
+are poorly behaved, then artefacts can occur, particularly near the trench.
+Typically these are minor spikes in deformation, and are removed by Kajiura
+filtering. Numerically it is challenging to compute very shallow ruptures over
+irregular source contours, because the Okada solutions become very concentrated
+at shallow depths (high peaks/troughs of slip over a narrow area), and we rely
+on exact cancellation of neighbouring peaks/troughs to avoid artefacts.
 
 * If using Kajiura filtering with unit-sources, you can either apply the Kajiura
 filter to the unit sources directly before summing them
@@ -385,5 +408,6 @@ leads to some discretization error, and the approach of
 filtering-before-combining approach, individual unit source deformations can
 have steep gradients that would be cancelled by neighbouring sources after
 combination. These steep gradients cause relatively high smoothing with the
-Kajiura filter. To avoid artefacts any discretization errors in this smoothing
-must cancel with those from neighbouring unit source deformations.
+Kajiura filter, especially if `slip_edge_taper_width=0`. To avoid artefacts any
+discretization errors in this smoothing must cancel with those from
+neighbouring unit source deformations.
