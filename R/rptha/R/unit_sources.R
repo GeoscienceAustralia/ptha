@@ -1409,7 +1409,7 @@ plot_unit_source_interior_points_cartesian<-function(us){
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){
 
-    if(is.null(unit_source$unit_source_cartesian)){
+    if(is.null(us$unit_source_cartesian)){
         msg = paste0('us is not a CARTESIAN unit source. \n',
             'It should be the output of "unit_source_interior_points_cartesian" or similar')
         stop(msg)
