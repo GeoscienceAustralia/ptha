@@ -540,7 +540,7 @@ create_downdip_lines_on_source_contours<-function(
         plot(source_contours, asp=1, axes=TRUE)
         plot(shallow_contour, col='red', add=T)
         plot(deep_contour, col='red', add=T)
-        title(source_shapefile)
+        #title(source_shapefile)
 
     }
 
