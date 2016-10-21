@@ -871,7 +871,9 @@ unit_source_interior_points_cartesian<-function(
     dip = atan((depth_perturb - new_depths)/dx_numerical)/deg2rad
 
     # Now that we know dip, we can properly normalise the unit_slip_scale to
-    # preserve seismic moment
+    # preserve seismic moment. Since we record dip in the 'buffer' points, we
+    # indirectly compute area inside the original unit source by multiplying
+    # the buffer areas by their fraction inside the unit source, before summing.
     grid_point_unit_slip_scale = grid_point_data$unit_slip_scale
     a0 = sum(grid_point_data$area_buffer * 
         grid_point_data$area_buffer_fraction_inside_unit_source * 
@@ -956,6 +958,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         bp = as(
             unit_source_grid_to_SpatialPolygonsDataFrame(full_unit_source_grid), 
             'SpatialPolygons')
+        bp = gUnaryUnion(bp)
     }
 
     lp = length(polygon[,1])
@@ -1022,20 +1025,26 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
         # moving-average filter, applied to a set of points with '1' inside p0, 
         # and 0 elsewhere
         unit_slip_scale = rep(NA, length(p1))
+        point_bufs = gBuffer(gCentroid(p1, byid=TRUE), width=edge_taper_width, quadsegs=5, byid=TRUE)
+        point_bufs_intersect = gIntersection(point_bufs, bp, byid=TRUE)
+        if(length(point_bufs) != length(point_bufs_intersect)){
+            stop('BUG: Some sub-unit-source points not inside bounding polygon')
+        }
+
         for(i in 1:length(p1)){
-            point_buf = gBuffer(gCentroid(p1[i]), width=edge_taper_width, 
-                quadsegs=10)
+            #point_buf = gBuffer(gCentroid(p1[i]), width=edge_taper_width, 
+            #    quadsegs=10)
 
             # Need this to prevent points near the trench from having
             # slip suppressed
-            point_buf = gIntersection(point_buf, bp)
-            if(is.null(point_buf)) stop('BUG: Logically, point_buf should be inside bounding_polygon.')
+            #point_buf = gIntersection(point_buf, bp)
+            #if(is.null(point_buf)) stop('BUG: Logically, point_buf should be inside bounding_polygon.')
 
-            point_buf_intersect = gIntersection(point_buf, p0)
-            if(is.null(point_buf_intersect)){
+            point_buf_intersect_i = gIntersection(point_bufs_intersect[i], p0)
+            if(is.null(point_buf_intersect_i)){
                 unit_slip_scale[i] = 0
             }else{
-                unit_slip_scale[i] = gArea(point_buf_intersect)/gArea(point_buf)
+                unit_slip_scale[i] = gArea(point_buf_intersect_i)/gArea(point_bufs_intersect[i])
             }
         }
 
