@@ -404,7 +404,7 @@ interplation to move from to and from cartesian and spherical coordinates. This
 leads to some discretization error, and the approach of
 'filtering-before-combining' is numerically more sensitive to this than
 'filtering-after-combining'. If this is a problem you might consider using the
-`filtering-after-combining' approach. The basic issue that that in the
+'filtering-after-combining' approach. The basic issue that that in the
 filtering-before-combining approach, individual unit source deformations can
 have steep gradients that would be cancelled by neighbouring sources after
 combination. These steep gradients cause relatively high smoothing with the
