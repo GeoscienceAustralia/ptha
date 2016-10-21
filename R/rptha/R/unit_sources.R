@@ -1040,11 +1040,18 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
             #point_buf = gIntersection(point_buf, bp)
             #if(is.null(point_buf)) stop('BUG: Logically, point_buf should be inside bounding_polygon.')
 
-            point_buf_intersect_i = gIntersection(point_bufs_intersect[i], p0)
+            point_buf_intersect_i = gIntersection(p0, point_bufs_intersect[i])
             if(is.null(point_buf_intersect_i)){
                 unit_slip_scale[i] = 0
             }else{
                 unit_slip_scale[i] = gArea(point_buf_intersect_i)/gArea(point_bufs_intersect[i])
+    
+                #if(unit_slip_scale[i] > 1.001){
+                #    # I have seen a case where order reversal seems to lead to
+                #    # a bug in gIntersection, but could not reproduce it in an example.
+                #    point_buf_intersect_i = gIntersection(point_bufs_intersect[i], p0)
+                #    unit_slip_scale[i] = gArea(point_buf_intersect_i)/gArea(point_bufs_intersect[i])
+                #}
             }
         }
 

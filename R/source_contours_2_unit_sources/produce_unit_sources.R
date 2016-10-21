@@ -251,6 +251,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
 
     # Function to facilitate running in parallel with mcmapply
     parallel_fun<-function(ind){
+
         # Make a single tsunami unit source 
         down_dip_index = ij$i[ind]
         along_strike_index = ij$j[ind]
