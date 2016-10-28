@@ -249,12 +249,33 @@ get_quality_matrix<-function(s_matrix, source_contours_interpolator_list){
         # It also contains a component that increases if the increment in the
         # s_matrix is not close to 1/(np-1). 
         q_matrix[i,] = 
-           # Orthogonal-ness measures
-           0.25*abs(rowSums(v1A * v2))/(1.0e-12 + sqrt(rowSums(v1A*v1A)*rowSums(v2*v2)))+ 
-           abs(rowSums(v1 * v2))/sqrt(rowSums(v1*v1)*rowSums(v2*v2)) + 
-           # Even-distance measures
-           0.3*(exp(abs((s_matrix[i,jp1] - s_matrix[i,j]) - 1/(np-1))*(np-1)*(jp1 != j))-1) + 
-           0.3*(exp(abs((s_matrix[i,j] - s_matrix[i,jm1]) - 1/(np-1))*(np-1)*(jm1 != j))-1)
+            # Orthogonal-ness measures
+            0.25*abs(rowSums(v1A * v2))/(1.0e-12 + sqrt(rowSums(v1A*v1A)*rowSums(v2*v2)))+ 
+            abs(rowSums(v1 * v2))/sqrt(rowSums(v1*v1)*rowSums(v2*v2)) + 
+            #
+            ## Even-distance measures. Eventually decided to replace these with 'relative distance change'
+            ## measures, since I am more concerned about fractional changes in unit source sizes, rather
+            ## than absolute values. For example, if the desired s_matrix increment is 0.1, then I would
+            ## like to rate 0.05 and 0.2 as 'the same' -- rather than weighting 0.05 and 0.15 the same.
+            ##
+            #0.3*(exp(abs((s_matrix[i,jp1] - s_matrix[i,j]) - 1/(np-1))*(np-1)*(jp1 != j))-1) + 
+            #0.3*(exp(abs((s_matrix[i,j] - s_matrix[i,jm1]) - 1/(np-1))*(np-1)*(jm1 != j))-1)
+            #
+            ## Relative distance based measures
+            ##
+            ## In the 'crazy' formulas below, note that:
+            ##    'exp(abs(log(abs(a/b)))) = max(abs(a/b), abs(b/a))' 
+            ## Also, diff(s_matrix[i,]) * (np-1) = diff(s_matrix[i,])/(np-1) = 'The ratio of the s_increment,
+            ## to the average s_increment'
+            ## 
+            ## Also, the 1*(jp1 == j) is a trick to deal with boundaries in a vectorized computation. It sends
+            ## the contribution of this term to zero.
+            ##
+            ## Conceptually, ignoring the boundary case, the formula is:
+            ##    exp( pmax(abs(a/b), abs(b/a)) - 1) - 1
+            ## where a = diff(s_matrix) and b = 1/(np-1)
+            0.5*(exp( exp(abs(log(abs(s_matrix[i,jp1] - s_matrix[i,j])*(np-1) + 1*(jp1 == j)))) - 1) - 1) + 
+            0.5*(exp( exp(abs(log(abs(s_matrix[i,j] - s_matrix[i,jm1])*(np-1) + 1*(jm1 == j)))) - 1) - 1)
 
     }
     return(q_matrix)
@@ -300,11 +321,19 @@ create_downdip_lines_on_source_contours_improved<-function(
     num_l = length(source_contours@lines)
 
     #
-    # We can optionally use a multigrid type method (looping over the 'nps'). 
-    # However, this does not seem to offer improvements.
+    # We use a multigrid type method (looping over the 'nps'). Instead of
+    # jumping straight to solving the problem with all downdip lines, we first
+    # solve it with 1/8, then 1/4, then 1/2. Each time, interpolation is used to
+    # make the initial condition for the subsequent iteration.
+    # This does not seem faster, but does seem higher quality in difficult cases.
     #
-    # nps = 2 + 2**(1:4) 
-    nps = desired_num_lines 
+    nps = floor(desired_num_lines * c(1/8, 1/4, 1/2, 1))
+    kk = which(nps < 3)
+    if(length(kk) > 0){
+        if(length(kk) == length(nps)) stop('desired_unit_source_length is too small')
+        nps = nps[-kk]
+    }
+
     for(i in 1:length(nps)){
         np = nps[i]
 
