@@ -170,6 +170,13 @@ discretized_source_from_source_contours<-function(
             downdip_lines, 
             contour_depth_attribute=contour_depth_attribute, 
             buffer_width=extend_line_fraction)
+
+        if(make_plot){
+            plot(source_contours, axes=TRUE)
+            for(i in 1:length(mid_line_with_cutpoints)){
+                points(mid_line_with_cutpoints[[i]][,1:2], t='o', col='red', pch=19, cex=0.5)
+            }
+        }
     }
 
     ll = length(mid_line_with_cutpoints)
