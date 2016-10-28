@@ -7,8 +7,8 @@
 discretized_source_from_source_contours(source_shapefile,
   desired_subfault_length, desired_subfault_width, make_plot = FALSE,
   contour_depth_attribute = "level", contour_depth_in_km = TRUE,
-  extend_line_fraction = 0.1, orthogonal_near_trench = FALSE,
-  improved_downdip_lines = TRUE)
+  extend_line_fraction = 1e-06, orthogonal_near_trench = FALSE,
+  improved_downdip_lines = TRUE, downdip_lines = NULL)
 }
 \arguments{
 \item{source_shapefile}{character name of line shapefile defining the
@@ -29,17 +29,23 @@ attribute table giving the contour depth}
 assume 'm')}
 
 \item{extend_line_fraction}{To ensure that contour lines intersect downdip
-lines at the left/right edges we extend them by this fraction of the
+lines at the left/right edges we extend (or buffer) them by this fraction of the
 end-to-end source length. Not required if 'improved_downdip_lines=TRUE'}
 
 \item{orthogonal_near_trench}{move unit source points along the trench to enhance
 orthogonality there. Can reduce numerical artefacts at the trench. 
-Not required if 'improved_downdip_lines=TRUE'}
+Not required if 'improved_downdip_lines=TRUE' or if downdip_lines is provided}
 
 \item{improved_downdip_lines}{If TRUE, use an iterative algorithm for computing the downdip
 lines (which define unit source boundaries). This should lead to unit-sources
 that are more orthogonal. The iterative algorithm can take a few minutes if
 there are hundreds of unit-sources in each along-trench direction.}
+
+\item{downdip_lines}{Either NULL, or the name of a Line Shapefile, or a 
+SpatialLinesDataFrame derived by reading the latter. It should contain lines
+which cross the source contours in a down-dip direction, with a single attribute 
+giving the line order in the along strike direction. If not NULL, then these
+lines define the along-strike boundaries of the unit-sources.}
 }
 \value{
 A list containing: depth_contours The original source contours;
@@ -53,6 +59,14 @@ useful for defining sub-unit-source points for tsunami source integration
 Given a shapefile with contour lines in lon/lat coordinates defining the
 subduction interface (with an attribute defining their depth), partition into
 unit sources with chosen approximate length/width. Information on all the
-unit sources is held in a 'discretized_source' list
+unit sources is held in a 'discretized_source' list. \cr 
+Optionally, the user can provide a line shapefile defining the along-strike
+boundaries of the unit sources. Otherwise, they can be automatically created
+in a number of ways. In any case care, may be required to ensure good quality
+unit-source boundaries are produced. A good strategy is to make them automatically as
+a first iteration, then save the corresponding down-dip lines as a line shapefile.
+This can be achieved by passing the mid_lines_with_cutpoints output of the current routine to 
+\code{downdip_lines_to_SpatialLinesDataFrame}. Then you may optionally edit
+the latter shapefile in GIS, and subsequently pass it to this routine directly.
 }
 

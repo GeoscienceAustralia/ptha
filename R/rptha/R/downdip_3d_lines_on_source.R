@@ -463,6 +463,73 @@ downdip_lines_to_SpatialLinesDataFrame<-function(new_xy){
     return(output_sldf)
 }
 
+#' Make mid_line_with_cutpoints from two shapefiles
+#'
+#' Make mid_line_with_cutpoints from the intersection of source_contours with a user-provided
+#' shapefile consisting of down-dip lines which intersect the contours. The latter lines will
+#' define the along-strike boundaries of the unit sources (the down-dip boundaries will be 
+#' created automatically to make the down-dip width fairly even). \cr
+#' While there are other ways to make mid_line_with_cutpoints, this approach can
+#' be advantageous because the user can edit the downdip_lines shapefile to make
+#' sure the lines are nice -- and thus avoid using the numerical-optimization
+#' based methods (which might not always work well, or might need manual
+#' tweaking, or might be slow to apply repeatedly, etc). 
+#'
+#' @param source_contours SpatialLinesDataFrame with the source contours. Must have
+#' an attribute giving the depth, with attribute name = contour_depth_attribute
+#' @param downdip_lines SpatialLinesDataFrame with the downdip_lines. Must have only
+#' one attribute, which is a number giving the order of the line in the along-strike
+#' direction. [e.g. 1, 2, 3, 4 ...]
+#' @param contour_depth_attribute Name of attribute with contour depth info in source_contours
+#' @param buffer_width When doing intersections, buffer by this much to avoid round-off.
+#' This should generally be > 0 unless no intersections occur at line end-points.
+#' @return A list of matrices giving the x,y,depth locations of the mid_line_with_cutpoints,
+#' ordered along strike.
+#' 
+#' @export
+#'
+mid_line_with_cutpoints_from_downdip_sldf_and_source_contours<-function(
+    source_contours, downdip_lines, contour_depth_attribute='level', 
+    buffer_width=1.0e-06){
+  
+    # Get ordering of source_contours, and downdip_lines 
+    contour_level = as.numeric(as.character(
+        source_contours@data[[contour_depth_attribute]])) 
+    ocl = order(contour_level)
+
+    downdip_alongstrike_rank = as.numeric(as.character(downdip_lines@data[,1]))
+    odd = order(downdip_alongstrike_rank)
+
+    mid_line_with_cutpoints = list()
+    for(i in 1:length(odd)){
+
+        dd_line = downdip_lines[odd[i],]
+        dd_line_buf = gBuffer(dd_line, width=buffer_width)
+
+        mid_line_with_cutpoints[[i]] = matrix(NA, ncol=3, nrow=length(ocl))
+
+        for(j in 1:length(ocl)){
+            cl_line = source_contours[ocl[j],]
+            cl_level = contour_level[ocl[j]]
+
+            local_intersects = gIntersection(
+                dd_line_buf, gBuffer(cl_line, width=buffer_width))
+
+            if(is.null(local_intersects)){
+                stop('Missing intersection: Consider increasing buffer_width or editing downdip_lines')
+            }
+            if(length(local_intersects@polygons) != 1){
+                stop('Multi intersection: Consider reducing buffer_width or editing downdip_lines')
+            }
+
+            mid_line_with_cutpoints[[i]][j,1:2] = coordinates(local_intersects)
+            mid_line_with_cutpoints[[i]][j,3] = cl_level
+        }
+    }
+
+    return(mid_line_with_cutpoints)
+}
+
 
 #' Make '3D' down-dip lines along source contours [deprecated]
 #'

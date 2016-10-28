@@ -69,7 +69,15 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' Given a shapefile with contour lines in lon/lat coordinates defining the
 #' subduction interface (with an attribute defining their depth), partition into
 #' unit sources with chosen approximate length/width. Information on all the
-#' unit sources is held in a 'discretized_source' list
+#' unit sources is held in a 'discretized_source' list. \cr 
+#' Optionally, the user can provide a line shapefile defining the along-strike
+#' boundaries of the unit sources. Otherwise, they can be automatically created
+#' in a number of ways. In any case care, may be required to ensure good quality
+#' unit-source boundaries are produced. A good strategy is to make them automatically as
+#' a first iteration, then save the corresponding down-dip lines as a line shapefile.
+#' This can be achieved by passing the mid_lines_with_cutpoints output of the current routine to 
+#' \code{downdip_lines_to_SpatialLinesDataFrame}. Then you may optionally edit
+#' the latter shapefile in GIS, and subsequently pass it to this routine directly.
 #' 
 #' @param source_shapefile character name of line shapefile defining the
 #' subduction interface contours. It should have an attribute giving the depth.
@@ -83,15 +91,20 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' @param contour_depth_in_km logical Are contour depths given in km? (If False,
 #' assume 'm')
 #' @param extend_line_fraction To ensure that contour lines intersect downdip
-#' lines at the left/right edges we extend them by this fraction of the
-#' end-to-end source length. Not required if 'improved_downdip_lines=TRUE'
+#' lines at the left/right edges we extend (or buffer) them by this fraction of the
+#' end-to-end source length. Not required if 'improved_downdip_lines=TRUE' 
 #' @param orthogonal_near_trench move unit source points along the trench to enhance
 #' orthogonality there. Can reduce numerical artefacts at the trench. 
-#' Not required if 'improved_downdip_lines=TRUE'
+#' Not required if 'improved_downdip_lines=TRUE' or if downdip_lines is provided 
 #' @param improved_downdip_lines If TRUE, use an iterative algorithm for computing the downdip
 #' lines (which define unit source boundaries). This should lead to unit-sources
 #' that are more orthogonal. The iterative algorithm can take a few minutes if
 #' there are hundreds of unit-sources in each along-trench direction. 
+#' @param downdip_lines Either NULL, or the name of a Line Shapefile, or a 
+#' SpatialLinesDataFrame derived by reading the latter. It should contain lines
+#' which cross the source contours in a down-dip direction, with a single attribute 
+#' giving the line order in the along strike direction. If not NULL, then these
+#' lines define the along-strike boundaries of the unit-sources.  
 #' @return A list containing: depth_contours The original source contours;
 #' unit_source_grid A 3 dimensional array descrbing the unit source vertices;
 #' discretized_source_dim A vector of length 2 with number-of-sources-down-dip,
@@ -107,9 +120,10 @@ discretized_source_from_source_contours<-function(
     make_plot=FALSE,
     contour_depth_attribute='level', 
     contour_depth_in_km=TRUE,
-    extend_line_fraction=1.0e-01,
+    extend_line_fraction=1.0e-06,
     orthogonal_near_trench = FALSE,
-    improved_downdip_lines = TRUE){
+    improved_downdip_lines = TRUE,
+    downdip_lines=NULL){
 
     # Get the shapefile
     if(class(source_shapefile) == 'SpatialLinesDataFrame'){
@@ -122,21 +136,42 @@ discretized_source_from_source_contours<-function(
             verbose=FALSE)
     }
 
-    if(!improved_downdip_lines){
-        mid_line_with_cutpoints = create_downdip_lines_on_source_contours(
-            source_contours,
-            desired_subfault_length, 
-            contour_depth_attribute, 
-            extend_line_fraction,
-            orthogonal_near_trench,
-            make_plot)
+    if(is.null(downdip_lines)){
+        # Make the mid_line_with_cutpoints automatically
+
+        if(!improved_downdip_lines){
+            mid_line_with_cutpoints = create_downdip_lines_on_source_contours(
+                source_contours,
+                desired_subfault_length, 
+                contour_depth_attribute, 
+                extend_line_fraction,
+                orthogonal_near_trench,
+                make_plot)
+        }else{
+            mid_line_with_cutpoints = create_downdip_lines_on_source_contours_improved(
+                source_contours,
+                desired_subfault_length, 
+                contour_depth_attribute,
+                make_plot=make_plot)
+        }
+
     }else{
-        mid_line_with_cutpoints = create_downdip_lines_on_source_contours_improved(
-            source_contours,
-            desired_subfault_length, 
-            contour_depth_attribute,
-            make_plot=make_plot)
+        # Use the provided downdip_lines to make the mid_line_with_cutpoints
+
+        if(is.character(downdip_lines)){
+            if(!file.exists(downdip_lines)){
+                stop(paste0('Could not find file defined by downdip_lines ', downdip_lines))
+            }
+            downdip_lines = readOGR(dsn=downdip_lines, layer=gsub('.shp', '', basename(downdip_lines)))
+        }
+
+        mid_line_with_cutpoints = mid_line_with_cutpoints_from_downdip_sldf_and_source_contours(
+            source_contours, 
+            downdip_lines, 
+            contour_depth_attribute=contour_depth_attribute, 
+            buffer_width=extend_line_fraction)
     }
+
     ll = length(mid_line_with_cutpoints)
 
     # Find the lengths of the dip cut lines in the down-dip direction

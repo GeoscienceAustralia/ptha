@@ -1,7 +1,7 @@
 
-context('test_discrete_source_summary_statistics')
+context('test_discrete_sources')
 
-test_that('test_discrete_source_summary_statistics', {
+test_that('test_discrete_sources_and_summary_statistics', {
 
     interface_shapefile = 'testshp/sagami.shp'
 
@@ -77,8 +77,23 @@ test_that('test_discrete_source_summary_statistics', {
     output_a2.1 = discretized_source_approximate_summary_statistics(alaska_source2)
 
     # Top length can vary quite a bit if we try to allow for orthogonality
-    expect_true(all(abs(output_a1.1$length/output_a2.1$length - 1) < 0.5))
+    expect_true(all(abs(output_a1.1$length/output_a2.1$length - 1) < 0.25))
     expect_true(all(abs(output_a1.1$width/output_a2.1$width - 1) < 0.10))
+
+
+    # Check that we can make a discrete_source while providing downdip lines
+    new_downdip_lines = downdip_lines_to_SpatialLinesDataFrame(
+        discrete_source2$mid_line_with_cutpoints)
+    discrete_source3 = discretized_source_from_source_contours(
+        interface_shapefile, desired_subfault_length, desired_subfault_width,
+        make_plot=FALSE, downdip_lines = new_downdip_lines)
+    # Check that mid_lines_with_cutpoints is hardly affected
+    for(i in 1:length(new_downdip_lines)){
+        expect_true(max(abs(
+            discrete_source3$mid_line_with_cutpoints[[i]] - 
+            discrete_source2$mid_line_with_cutpoints[[i]])) < 1.0e-05)
+    }
+
 
 })
 
