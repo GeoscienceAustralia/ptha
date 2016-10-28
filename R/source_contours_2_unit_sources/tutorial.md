@@ -370,6 +370,11 @@ you might want to set minimise_tsunami_unit_source_output=FALSE
 
 # Tips
 
+* If you don't like the shape of the unit-sources, note it is possible to provide
+a shapefile defining the along-strike boundaries of the unit sources as input. This
+gives the user much more control. See the help for 
+\code{discretized_source_from_source_contours}.
+
 * If `slip_edge_taper_width > 0`, then instead of having uniform slip, each source
 has its slip smoothed to zero around the edges. To do this, the original unit-source
 slip (1 inside the unit source, 0 outside) is convolved with a circular filter with
