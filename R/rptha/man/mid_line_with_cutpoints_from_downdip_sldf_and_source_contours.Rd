@@ -5,7 +5,8 @@
 \title{Make mid_line_with_cutpoints from two shapefiles}
 \usage{
 mid_line_with_cutpoints_from_downdip_sldf_and_source_contours(source_contours,
-  downdip_lines, contour_depth_attribute = "level", buffer_width = 1e-06)
+  downdip_lines, contour_depth_attribute = "level", buffer_width = 1e-06,
+  make_plot = FALSE)
 }
 \arguments{
 \item{source_contours}{SpatialLinesDataFrame with the source contours. Must have
@@ -19,6 +20,8 @@ direction. [e.g. 1, 2, 3, 4 ...]}
 
 \item{buffer_width}{When doing intersections, buffer by this much to avoid round-off.
 This should generally be > 0 unless no intersections occur at line end-points.}
+
+\item{make_plot}{Logical. Make a plot of the source contours and downdip lines}
 }
 \value{
 A list of matrices giving the x,y,depth locations of the mid_line_with_cutpoints,
