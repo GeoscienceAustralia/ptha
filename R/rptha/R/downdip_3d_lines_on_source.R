@@ -483,6 +483,7 @@ downdip_lines_to_SpatialLinesDataFrame<-function(new_xy){
 #' @param contour_depth_attribute Name of attribute with contour depth info in source_contours
 #' @param buffer_width When doing intersections, buffer by this much to avoid round-off.
 #' This should generally be > 0 unless no intersections occur at line end-points.
+#' @param make_plot Logical. Make a plot of the source contours and downdip lines
 #' @return A list of matrices giving the x,y,depth locations of the mid_line_with_cutpoints,
 #' ordered along strike.
 #' 
@@ -490,7 +491,7 @@ downdip_lines_to_SpatialLinesDataFrame<-function(new_xy){
 #'
 mid_line_with_cutpoints_from_downdip_sldf_and_source_contours<-function(
     source_contours, downdip_lines, contour_depth_attribute='level', 
-    buffer_width=1.0e-06){
+    buffer_width=1.0e-06, make_plot=FALSE){
   
     # Get ordering of source_contours, and downdip_lines 
     contour_level = as.numeric(as.character(
@@ -524,6 +525,13 @@ mid_line_with_cutpoints_from_downdip_sldf_and_source_contours<-function(
 
             mid_line_with_cutpoints[[i]][j,1:2] = coordinates(local_intersects)
             mid_line_with_cutpoints[[i]][j,3] = cl_level
+        }
+    }
+
+    if(make_plot){
+        plot(source_contours, axes=TRUE)
+        for(i in 1:length(mid_line_with_cutpoints)){
+            points(mid_line_with_cutpoints[[i]][,1:2], t='o', col='red', pch=19, cex=0.5)
         }
     }
 

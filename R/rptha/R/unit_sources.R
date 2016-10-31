@@ -162,24 +162,18 @@ discretized_source_from_source_contours<-function(
             if(!file.exists(downdip_lines)){
                 stop(paste0('Could not find file defined by downdip_lines ', downdip_lines))
             }
-            downdip_lines = readOGR(dsn=downdip_lines, layer=gsub('.shp', '', basename(downdip_lines)))
+            downdip_lines = readOGR(dsn=downdip_lines, 
+                layer=gsub('.shp', '', basename(downdip_lines)), verbose=FALSE)
         }
 
         mid_line_with_cutpoints = mid_line_with_cutpoints_from_downdip_sldf_and_source_contours(
             source_contours, 
             downdip_lines, 
             contour_depth_attribute=contour_depth_attribute, 
-            buffer_width=extend_line_fraction)
+            buffer_width=extend_line_fraction,
+            make_plot=make_plot)
 
-        if(make_plot){
-            plot(source_contours, axes=TRUE)
-            for(i in 1:length(mid_line_with_cutpoints)){
-                points(mid_line_with_cutpoints[[i]][,1:2], t='o', col='red', pch=19, cex=0.5)
-            }
-        }
     }
-
-    ll = length(mid_line_with_cutpoints)
 
     # Find the lengths of the dip cut lines in the down-dip direction
     dip_cut_lengths = unlist(lapply(mid_line_with_cutpoints, 
@@ -194,14 +188,15 @@ discretized_source_from_source_contours<-function(
         })
         )
 
-    # Decide how many unit-sources there should be (determined by the number of
-    # mid-lines cutting the source)
+    # Decide how many unit-sources there should be in the down-dip direction
+    # (the number along-strike is already determined from mid_line_with_cutpoints)
     mean_dip_cut_length = mean(dip_cut_lengths)/1e+03 # km
     number_of_mid_lines = max(
         round(mean_dip_cut_length / desired_subfault_width - 1), 
         0)
 
     strike_cuts = list()   
+    ll = length(mid_line_with_cutpoints)
     for(i in 1:ll){
         # Now interpolate along the above, with the desired spacing between
         # points
