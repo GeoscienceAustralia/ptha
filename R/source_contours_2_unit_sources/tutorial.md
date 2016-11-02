@@ -365,7 +365,7 @@ that the unit sources and tsunami deformations seem sensible.
 * an RDS file for each unit source. This is a native R format file, and contains
 the tsunami unit sources as a native R data-structure. It can be useful for
 programming and debugging, since it contains the underlying data (such as
-sub-unit-source points, exact unit source discretization, etc). In this case,
+sub-unit-source points, exact unit source discretization, etc.). In this case,
 you might want to set minimise_tsunami_unit_source_output=FALSE
 
 # Tips
@@ -405,7 +405,7 @@ code directly supports 'filtering-before-combining'( see codes in the
 combine_tsunami_sources folder for 'filtering-after-combining'). Mathematically
 the problem is linear, and there should be no difference between these two
 cases. However, in practice our Kajiura filtering algorithm involves some
-interplation to move to and from cartesian and spherical coordinates. This
+interpolation to move to and from cartesian and spherical coordinates. This
 leads to some discretization error, and the approach of
 'filtering-before-combining' is numerically more sensitive to this than
 'filtering-after-combining'. If this is a problem you might consider using the
