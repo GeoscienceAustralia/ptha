@@ -116,14 +116,12 @@ for(j in 1:3){
 # two are equivalent, numerically the unit source approach is much more prone to
 # artefacts
 
-# FIXME: Integrate this code into the main ptha package
-source('kajiura_smooth_raster.R')
 for(i in 1:length(source_info)){
     source_info[[i]]$source_raster_smooth = 
         kajiura_smooth_raster(
-            source_info[[i]]$source_raster,
+            source_raster=source_info[[i]]$source_raster,
             new_origin=c(209, 58),
-            elevation_raster_file = '../../../../DATA/ELEV/GEBCO_08/gebco_08.nc',
+            elevation_raster = '../../../../DATA/ELEV/GEBCO_08/gebco_08.nc',
             kj_filter_grid_dxdy = 2000,
             kj_filter_def_threshold=1.0e-02,
             kj_cartesian_buffer = 10000,
