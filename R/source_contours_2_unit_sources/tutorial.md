@@ -405,7 +405,7 @@ code directly supports 'filtering-before-combining'( see codes in the
 combine_tsunami_sources folder for 'filtering-after-combining'). Mathematically
 the problem is linear, and there should be no difference between these two
 cases. However, in practice our Kajiura filtering algorithm involves some
-interplation to move from to and from cartesian and spherical coordinates. This
+interplation to move to and from cartesian and spherical coordinates. This
 leads to some discretization error, and the approach of
 'filtering-before-combining' is numerically more sensitive to this than
 'filtering-after-combining'. If this is a problem you might consider using the
