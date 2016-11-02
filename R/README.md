@@ -56,6 +56,8 @@ See the the example script [here](event_rates/single_source_rate_computation.R).
 Installation from source
 ------------------------
 
+### Standard install
+
 To build rptha, you firstly need to install the R packages that it depends on.
 The usual way to get these is to start R, and do:
 
@@ -90,6 +92,8 @@ where the XXXX are adapted to match the file name (and on Ubuntu, you would add
 You can also give other people copies of the rptha_XXXXX.tar.gz file to install
 themselves (provided they are running a similar environment to you, and have
 the package dependencies installed).
+
+### Install on NCI
 
 * To install on NCI is more challenging. See some detailed notes in the [install/NCI](install/NCI) directory
 
