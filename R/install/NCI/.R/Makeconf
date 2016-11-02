@@ -1,0 +1,53 @@
+BLAS_LIBS = -L$(R_HOME)/lib$(R_ARCH)
+C_VISIBILITY = -fvisibility=hidden
+CC = gcc -std=gnu99
+CFLAGS = -g -O2 $(LTO)
+CPICFLAGS = -fpic
+DYLIB_LD = $(CC)
+DYLIB_LDFLAGS = -shared $(CFLAGS) $(CPICFLAGS)
+DYLIB_LINK = $(DYLIB_LD) $(DYLIB_LDFLAGS) $(LDFLAGS)
+## NB, set FC before F77 as on Solaris make, setting FC sets F77
+FC = gfortran
+FCFLAGS = -g -O2 $(LTO)
+## additional libs needed when linking with $(FC), e.g. on Solaris
+FCLIBS =
+F77 = gfortran
+F77_VISIBILITY = -fvisibility=hidden
+FFLAGS = -g -O2 $(LTO)
+FLIBS =  -lgfortran -lm
+FCPICFLAGS = -fpic
+FPICFLAGS = -fpic
+CXX = g++
+CXXCPP = $(CXX) -E
+CXXFLAGS = -g -O2 $(LTO)
+CXXPICFLAGS = -fpic
+CXX1X = g++
+CXX1XFLAGS = -g -O2
+CXX1XPICFLAGS = -fpic
+CXX1XSTD =  -std=c++11
+LDFLAGS = -L/usr/lib/
+LTO =
+MAIN_LD = $(CC)
+MAIN_LDFLAGS = -Wl,--export-dynamic
+MAIN_LINK = $(MAIN_LD) $(MAIN_LDFLAGS) $(LDFLAGS)
+SHLIB_CFLAGS =
+SHLIB_CXXFLAGS =
+SHLIB_CXXLD = $(CXX)
+SHLIB_CXXLDFLAGS = -shared
+SHLIB_CXX1XLD = $(CXX1X) $(CXX1XSTD)
+SHLIB_CXX1XLDFLAGS = -shared
+SHLIB_EXT = .so
+SHLIB_FCLD = $(FC)
+SHLIB_FCLDFLAGS = -shared
+SHLIB_FFLAGS =
+SHLIB_LD = $(CC)
+SHLIB_LDFLAGS = -shared# $(CFLAGS) $(CPICFLAGS)
+SHLIB_LIBADD =
+## We want to ensure libR is picked up from $(R_HOME)/lib
+## before e.g. /usr/local/lib if a version is already installed.
+SHLIB_LINK = $(SHLIB_LD) $(SHLIB_LDFLAGS) $(LIBR0) $(LDFLAGS)
+SHLIB_OPENMP_CFLAGS =
+SHLIB_OPENMP_CXXFLAGS =
+SHLIB_OPENMP_FCFLAGS =
+SHLIB_OPENMP_FFLAGS =
+

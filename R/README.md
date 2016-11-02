@@ -91,6 +91,8 @@ You can also give other people copies of the rptha_XXXXX.tar.gz file to install
 themselves (provided they are running a similar environment to you, and have
 the package dependencies installed).
 
+* To install on NCI is more challenging. See some detailed notes in the [install/NCI](install/NCI) directory
+
 source_contours_2_unit_sources
 ------------------------------
 
