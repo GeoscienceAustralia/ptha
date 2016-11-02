@@ -15,5 +15,6 @@ module load gdal/1.10.1
 module load netcdf/4.3.0
 module load hdf4
 module load hdf5
-module load geos/3.4.2
+## 2/11/2016 -- need to use a local build of GEOS or else gDistance is failing on NCI
+#module load geos/3.4.2
 module load curl/7.49.1

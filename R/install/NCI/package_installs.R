@@ -45,13 +45,13 @@ install.packages('rgdal',
 
 
 ## rgeos should build nicely
-install.packages('rgeos')
+#install.packages('rgeos')
 ## ... except there is a problem with gDistance, which required installing from source
 ## So I build geos separately here:
-#geos_base_dir = '/short/w85/gxd547/PTHA_Aust/SOURCE/geos'
+geos_base_dir = '/short/w85/gxd547/PTHA_Aust/SOURCE/geos'
 ## and get R to use it with
-#install.packages('rgeos', 
-#  configure.args=c(paste0('--with-geos-config=', geos_base_dir, '/bin/geos-config')))
+install.packages('rgeos', 
+  configure.args=c(paste0('--with-geos-config=', geos_base_dir, '/bin/geos-config')))
 
 # devtools needs a few tweaks to build
 zlib_build_dir = '/apps/zlib/1.2.8'
