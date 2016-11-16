@@ -849,8 +849,8 @@ unit_source_interior_points_cartesian<-function(
     # Ideally we interpolate strike using a weighted nearest-neighbours
     # However, the code used here requires that we have > 1 point
     np = length(ds1_lonlatstrike[,1])
-    k = min(4, np)
-    # Compute an inverse distance weighted angular mean of k nearest neighbours
+    k = min(11, np)
+    # Compute a distance**(negative_power) weighted angular mean of k nearest neighbours
     inds = knnx.index(data = ds1_stats_points_cartesian[,1:2, drop=FALSE], 
         query = grid_points[,1:2, drop=FALSE], k=k)
     dists = knnx.dist(data = ds1_stats_points_cartesian[,1:2, drop=FALSE],
@@ -858,7 +858,7 @@ unit_source_interior_points_cartesian<-function(
     mean_strike = dists[,1]*NA 
     for(ii in 1:length(mean_strike)){
         mean_strike[ii] = mean_angle(ds1_lonlatstrike[inds[ii,], 3], 
-            weights = 1/(dists[ii,])**2)
+            weights = 1/(dists[ii,])**3)
     }
     strike = mean_strike
 
