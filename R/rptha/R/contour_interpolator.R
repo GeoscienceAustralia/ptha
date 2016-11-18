@@ -239,6 +239,7 @@ edge_source_interpolator<-function(xy, edge1, edge2){
             #method='monoH.FC') # Monotonic depths
         outfun<-function(alpha){
             out = cbind(f_x(alpha), f_y(alpha), f_z(alpha))
+            return(out)
         }
     
         return(outfun)
