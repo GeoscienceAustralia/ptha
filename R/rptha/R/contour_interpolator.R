@@ -234,9 +234,22 @@ edge_source_interpolator<-function(xy, edge1, edge2){
         s_coord = s_coord/max(s_coord)
         f_x = splinefun(s_coord, edge[,1], method='natural')
         f_y = splinefun(s_coord, edge[,2], method='natural')
-        f_z = splinefun(s_coord, edge[,3], 
-            method='natural') # Linear extrapolation
-            #method='monoH.FC') # Monotonic depths
+        #f_z = splinefun(s_coord, edge[,3], 
+        #    method='natural') # Linear extrapolation
+        #    #method='monoH.FC') # Monotonic depths
+        
+        # Use monotonic splines for depth, but enforce linear extrapolation
+        # outside [0,1], since monoH splines may not be well behaved with
+        # extrapolation
+        f_zB = splinefun(s_coord, edge[,3], method='monoH.FC')
+        df_dzB_1 = (f_zB(1) - f_zB(1-1.0e-08))/1.0e-08
+        df_dzB_0 = (f_zB(1.0e-08) - f_zB(0.0))/1.0e-08
+        f_z<-function(alpha){
+            (alpha < 0)*(f_zB(0) + (alpha-0)*df_dzB_0) + 
+            (alpha > 1)*(f_zB(1) + (alpha-1)*df_dzB_1) + 
+            (alpha >= 0)*(alpha <= 1)*f_zB(alpha)
+        }
+
         outfun<-function(alpha){
             out = cbind(f_x(alpha), f_y(alpha), f_z(alpha))
             return(out)
