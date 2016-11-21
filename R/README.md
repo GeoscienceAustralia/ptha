@@ -12,7 +12,7 @@ required. The main steps in PTHA methodology supported by rptha are outlined
 below. In a typical application you would write scripts to call routines in rptha.
 Examples of scripts for common tasks are provided here. (Note that the code can
 optionally be used just to [generate tsunami initial
-conditions](source_contours_2_unit_sources) as raster output files, which may
+conditions](examples/source_contours_2_unit_sources) as raster output files, which may
 then form part of some other workflow):
 
 * Define tsunami sources. Currently rptha only supports earthquake tsunami
@@ -22,7 +22,7 @@ which earthquake slip occurs.
 * Discretize each earthquake source-zone into a grid of unit-sources, and
 for each compute the tsunami initial condition using the Okada solution
 combined with Kajiura filtering. This produces a (static) tsunami initial
-condition for each unit-source. See [source_contours_2_unit_sources](source_contours_2_unit_sources).
+condition for each unit-source. See [source_contours_2_unit_sources](examples/source_contours_2_unit_sources).
 
 * Create a synthetic catalogue of earthquake events from linear
 combinations of the unit sources. Currently rptha supports uniform slip
@@ -31,7 +31,7 @@ scaling relations of Strasser et al. (2010). See the function
 `get_all_earthquake_events` in the rptha package. Modifications are required to
 treat non-uniform slip earthquakes, but for an example of making tsunami
 initial conditions for complex earthquake scenarios, see
-[here](combine_tsunami_sources/combine_tsunami_sources.R).
+[here](examples/combine_tsunami_sources/combine_tsunami_sources.R).
 
 * Compute the tsunami associated with each earthquake event. rptha does not
 provide a tsunami solver, so other software is required for this step. In
@@ -39,21 +39,21 @@ realistic PTHA applications this is the most computationally demanding part of
 the process. 
   * If a linear propagation code is used then the user can optionally compute
 the tsunami for each unit-source separately and then [combine them
-later](combine_tsunami_sources/combine_tsunami_gauges.R). This is relatively
+later](examples/combine_tsunami_sources/combine_tsunami_gauges.R). This is relatively
 efficient, but only theoretically valid for tsunami with a sufficiently small
 amplitude-to-depth ratio (or equivalently, with sufficiently small velocities).
 The tsunami propagation results are generally stored at offshore points, and
-scripts to make these are [here](make_hazard_points).
+scripts to make these are [here](examples/make_hazard_points).
   * If nonlinear solvers are required, then the user must first create the 
 initial conditions for each event (by linearly combining the unit source
 initial conditions), and then run each through the nonlinear propagation code. 
-See [here](combine_tsunami_sources/combine_tsunami_sources.R) for an example.
+See [here](examples/combine_tsunami_sources/combine_tsunami_sources.R) for an example.
 
 * Assign an mean annual rate to each event in the earthquake catalogue. This
 is based on seismic moment conservation principles, and requires the user to
 specify the source-zone convergence rate and various other parameters
 controlling seismicity. Uncertainties can be accounted for using a logic tree.
-See the the example script [here](event_rates/single_source_rate_computation.R).
+See the the example script [here](examples/event_rates/single_source_rate_computation.R).
 
 
 Installation from source
@@ -103,35 +103,7 @@ the package dependencies installed).
 
 Usage
 -----
-To learn to use rptha, you can look at the following scripts, as well as the package documentation
+To learn to use rptha, you can look at the [examples](examples) directory, as well as the package documentation
 
-### source_contours_2_unit_sources
-
-This contains
-[example_code](source_contours_2_unit_sources/produce_unit_sources.R) to make
-tsunami unit sources from source contours and a
-[tutorial](source_contours_2_unit_sources/tutorial.md) on its usage.
-
-### event_rates
-
-Contains an [example script](event_rates/single_source_rate_computation.R) to
-compute the rate of earthquake events on a source.
-
-
-### combine_tsunami_sources
-
-[Example script](combine_tsunami_sources/combine_tsunami_gauges.R) to convert
-from tsunami unit sources to tsunami event offshore wave heights (assuming the
-URSGA solver was used for tsunami propagation).
-
-[Example script](combine_tsunami_sources/combine_tsunami_sources.R) to make
-random slip tsunami from unit source initial conditions.
-
-
-### make_hazard_points
-
-Although not heavily using the rptha package, this contains example scripts to
-[make hazard points](make_hazard_points/make_hazard_pts.R) (i.e. offshore
-points where the tsunami tide-gauges are recorded)
 
 
