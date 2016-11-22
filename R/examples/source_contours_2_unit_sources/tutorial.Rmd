@@ -151,8 +151,8 @@ you might want to set minimise_tsunami_unit_source_output=FALSE
 
 * If you don't like the shape of the unit-sources, note it is possible to provide
 a shapefile defining the along-strike boundaries of the unit sources as input. This
-gives the user much more control. See the help for 
-\code{discretized_source_from_source_contours}.
+gives the user much more control over the lateral boundaries of the unit
+sources. See the help for \code{discretized_source_from_source_contours}.
 
 * If `slip_edge_taper_width > 0`, then instead of having uniform slip, each source
 has its slip smoothed to zero around the edges. To do this, the original unit-source
@@ -170,9 +170,10 @@ out such features.
 * You should visually check that the computed initial conditions seem
 reasonable. If the subgrid point spacing is too coarse, or the input contours
 are poorly behaved, then artefacts can occur, particularly near the trench.
-Typically these are minor spikes in deformation, and are removed by Kajiura
-filtering. Numerically it is challenging to compute very shallow ruptures over
-irregular source contours, because the Okada solutions become very concentrated
+Typically these are minor spikes in deformation, and can be reduced by Kajiura
+filtering and by using a finer sub-unit-source point spacing. Numerically it is
+challenging to compute very shallow ruptures over irregular source contours,
+because the Okada solutions for each sub-unit-source become very concentrated
 at shallow depths (high peaks/troughs of slip over a narrow area), and we rely
 on exact cancellation of neighbouring peaks/troughs to avoid artefacts.
 
