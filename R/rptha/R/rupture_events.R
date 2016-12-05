@@ -370,3 +370,78 @@ get_unit_source_indices_in_event<-function(earthquake_event){
     return(event_unit_source_inds)
 }
 
+
+#' Graphical checks of earthquake events
+#'
+#' Plot some properties of the earthquake events, with comparisons to scaling
+#' relations (solid lines) and +- 2sd (dashed lines)
+#'
+#' @param all_eq_events data.frame with all earthquake events. This could be
+#' generated using the function \code{get_all_earthquake_events}
+#' @return nothing, but make a plot
+#' @export
+plot_earthquake_event_properties<-function(all_eq_events){
+    
+    par(mfrow=c(3,2))
+
+    # Initial plot showing numbers of events
+    plot(table(all_eq_events$Mw), main='Number of events by magnitude')
+
+    # Plot of event Mw vs mean depth
+    plot(all_eq_events$Mw, all_eq_events$mean_depth, 
+        main='Mw vs mean rupture depth', xlab='Mw', ylab='depth (km)')
+
+    # Compute scaling relations, which our events should roughly satisfy
+    mw_seq = sort(unique(all_eq_events$Mw))
+    mw_area_theory = mw_seq*NA
+    mw_area_theory_p2sd = mw_seq*NA
+    mw_area_theory_m2sd = mw_seq*NA
+    mw_length_theory = mw_seq*NA
+    mw_length_theory_p2sd = mw_seq*NA
+    mw_length_theory_m2sd = mw_seq*NA
+    mw_width_theory = mw_seq*NA
+    mw_width_theory_p2sd = mw_seq*NA
+    mw_width_theory_m2sd = mw_seq*NA
+
+    for(i in 1:length(mw_seq)){
+
+        scaling_results = Mw_2_rupture_size(mw_seq[i], detailed=TRUE, CI_sd=2)
+
+        mw_area_theory[i] = scaling_results$values['area']
+        mw_area_theory_p2sd[i] = scaling_results$plus_CI['area']
+        mw_area_theory_m2sd[i] = scaling_results$minus_CI['area']
+
+        mw_width_theory[i] = scaling_results$values['width']
+        mw_width_theory_p2sd[i] = scaling_results$plus_CI['width']
+        mw_width_theory_m2sd[i] = scaling_results$minus_CI['width']
+        
+        mw_length_theory[i] = scaling_results$values['length']
+        mw_length_theory_p2sd[i] = scaling_results$plus_CI['length']
+        mw_length_theory_m2sd[i] = scaling_results$minus_CI['length']
+
+    }
+
+    # Main plot
+    plot(all_eq_events$Mw, all_eq_events$area, log='y', main='Mw-area', 
+        xlab='Mw', ylab='area')
+    points(mw_seq, mw_area_theory, t='o', col='red')
+    points(mw_seq, mw_area_theory_p2sd, t='o', lty='dashed', col='red')
+    points(mw_seq, mw_area_theory_m2sd, t='o', lty='dashed', col='red')
+
+    plot(all_eq_events$Mw, all_eq_events$mean_length, log='y', 
+        main='Mw-length', xlab='Mw', ylab='length')
+    points(mw_seq, mw_length_theory, t='o', col='red')
+    points(mw_seq, mw_length_theory_p2sd, t='o', lty='dashed', col='red')
+    points(mw_seq, mw_length_theory_m2sd, t='o', lty='dashed', col='red')
+
+    plot(all_eq_events$Mw, all_eq_events$mean_width, log='y', main='Mw-width', 
+        xlab='Mw', ylab='width')
+    points(mw_seq, mw_width_theory, t='o', col='red')
+    points(mw_seq, mw_width_theory_p2sd, t='o', lty='dashed', col='red')
+    points(mw_seq, mw_width_theory_m2sd, t='o', lty='dashed', col='red')
+
+    plot(all_eq_events$Mw, all_eq_events$slip, log='y', main='Mw-slip', 
+        xlab='Mw', ylab='slip')
+    points(mw_seq, slip_from_Mw(mw_seq), t='o', col='red')
+
+}
