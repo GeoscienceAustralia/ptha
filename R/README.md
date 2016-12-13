@@ -33,10 +33,10 @@ treat non-uniform slip earthquakes, but for an example of making tsunami
 initial conditions for complex earthquake scenarios, see
 [here](examples/combine_tsunami_sources/combine_tsunami_sources.R).
 
-* Compute the tsunami associated with each earthquake event. rptha does not
-provide a tsunami solver, so other software is required for this step. In
+* Compute the tsunami associated with each earthquake event. In
 realistic PTHA applications this is the most computationally demanding part of
-the process. 
+the process. In general, the user is encouraged to provide their own
+tsunami propagation code, although one option is provided in [propagation](../propagation).
   * If a linear propagation code is used then the user can optionally compute
 the tsunami for each unit-source separately and then [combine them
 later](examples/combine_tsunami_sources/combine_tsunami_gauges.R). This is relatively
