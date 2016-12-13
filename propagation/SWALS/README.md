@@ -55,13 +55,13 @@ is implemented in both).
 Getting started
 ---------------
 
-SWALS requires existing installs of gfortran, gdal, and netcdf, with the latter
-compiled with the same version of gfortran that you use to compile SWALS. It is
-setup to run on linux type environments. 
+SWALS requires existing installs of gfortran (>= 4.7), gdal, and netcdf, with
+the latter compiled with the same version of gfortran that you use to compile
+SWALS. It is setup to run on linux type environments. 
 
-If you have those, then try to compile and run the unit tests in tests/unit_tests.
-The programs therein should print many 'PASS' statements, and no 'FAIL' statements
-or other errors. 
+If you have those dependencies, then try to compile and run the unit tests in
+tests/unit_tests.  The programs therein should print many 'PASS' statements,
+and no 'FAIL' statements or other errors. 
 
 If that works, then try running the test case in examples/nthmp/BP02, which will
 compare SWALS with analytical solutions (and experimental data) for a well known
