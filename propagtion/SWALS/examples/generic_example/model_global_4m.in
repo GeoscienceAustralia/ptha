@@ -1,0 +1,19 @@
+&MODELCONFIG
+    ! Comment
+    input_elevation_raster = 'GEBCO_2014_1mx1m_W-30_E320.tif' ! User must provide full path to elevation raster
+    input_stage_raster = 'event_6000.tif' ! User must provide full path to initial condition raster
+    global_ll = -40.0 -72.0 ! Must not go outside input_elevation_raster
+    global_ur = 320.0 65.0  ! Must not go outside input_elevation_raster
+    global_nx = 5400 2055 ! Model number of cells in lon,lat directions
+    approximate_writeout_frequency = 60.0
+    output_basedir='OUTPUTS/event_6000'
+    final_time = 129600.0
+    timestepping_method = 'linear'
+    cfl = 0.7
+    hazard_points_file = 'hazard_points.csv' ! csv file with lon, lat, ID, which defines locations where model outputs are stored
+    skip_header_hazard_points_file=0
+    record_max_U = TRUE
+    output_grid_timeseries = FALSE
+    adaptive_computational_extents=TRUE
+    negative_elevation_raster = FALSE
+/

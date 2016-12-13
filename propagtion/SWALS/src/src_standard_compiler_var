@@ -1,0 +1,15 @@
+# Define variables we typically need for compilation
+#
+# This is included in the user make script -- and in unusual cases, variables
+# can be overwritten by redefining them.
+#
+
+CC=gcc -O3
+GDAL_LIBS=-lgdal
+GDAL_CFLAGS=`gdal-config --cflags`
+
+NETCDF_FINCLUDE=`nc-config --fflags`
+NETCDF_FLIBS=`nc-config --flibs`
+
+FORTRAN=gfortran -O3 -fopenmp -std=f2008 -fall-intrinsics -cpp -DTIMER
+

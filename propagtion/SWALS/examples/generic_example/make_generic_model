@@ -1,0 +1,31 @@
+# SOURCE CODE DIRECTORY relative to the current directory
+SRC=../../src
+include $(SRC)/src_standard_compiler_var
+
+#FCCOMP=caf
+FCCOMP=gfortran
+#FCCOMP=/home/gareth/Code_Experiments/opencoarrays/opencoarrays/install_prerequisites/gcc-5.3.0-installation/bin/gfortran
+
+# Trick for getting git version into code
+GIT_VERSION := $(shell git describe --abbrev=50 --always --tags --dirty)
+SOURCE_DIR := $(shell pwd)
+
+#FORTRAN=$(FCCOMP) -fopenmp -Ofast -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DTIMER -DSPHERICAL -DREALFLOAT #-DNONETCDF
+#FORTRAN=$(FCCOMP) -Ofast -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DREALFLOAT -DNOOPENMP -DTIMER
+FORTRAN=$(FCCOMP) -Ofast -fopenmp -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DREALFLOAT -DTIMER -DGITVERSION=\"$(GIT_VERSION)\" -DSOURCEDIR=\"$(SOURCE_DIR)\"
+#FORTRAN=$(FCCOMP) -Ofast -fopenmp -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DREALFLOAT -DTIMER
+
+# Clean up
+clean: generic_model
+	rm *.o *.mod
+
+# Link everything
+generic_model: libSWE.a generic_model.o
+	$(FORTRAN) -o $@ generic_model.o libSWE.a $(GDAL_LIBS) $(NETCDF_FLIBS)
+
+# Compile the driver script
+generic_model.o: generic_model.f90
+	$(FORTRAN) -c $^ 
+
+# Build main source
+include $(SRC)/src_make_commands
