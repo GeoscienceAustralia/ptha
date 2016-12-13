@@ -7,7 +7,7 @@ include $(SRC)/src_standard_compiler_var
 FCCOMP=gfortran
 #FCCOMP=/home/gareth/Code_Experiments/opencoarrays/opencoarrays/install_prerequisites/gcc-5.3.0-installation/bin/gfortran
 
-FORTRAN=$(FCCOMP) -fopenmp -O3 -fall-intrinsics -march=native -mtune=native -cpp -DTIMER #-DNONETCDF
+FORTRAN=$(FCCOMP) -fopenmp -Ofast -fall-intrinsics -march=native -mtune=native -cpp -DTIMER #-DNONETCDF
 
 # Clean up
 clean: BP2_testcases

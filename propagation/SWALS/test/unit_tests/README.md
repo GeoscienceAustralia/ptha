@@ -1,6 +1,6 @@
 Compile with:
 
-    make -B -f make_unit_tests
+    make -B -f make_tests
 
 and run with:
 
