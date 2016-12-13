@@ -9,7 +9,9 @@ output the peak stage for an entire run.
 SWALS can run either on a single core, or in parallel using openmp. In the
 latter case, in the authors experience speedups of around 4x are common (say on
 6 cores), but you should not expect good performance gains by extending this to
-many CPUs. 
+many CPUs. The authors use cases have mainly involved running many model
+scenarios, so we are most interested in good performance in the single-core scenario,
+although when a single run is of interest, the parallel speedup is convenient. 
 
 Either single or double precision arithmetic is supported, and while single
 precision is usually fine (as well as being faster, and using less memory),
@@ -49,7 +51,8 @@ A range of other tests are currently not provided here to avoid the need to
 distribute large elevation data. It has been compared with the linear solver in
 JAGURS on a realistic spherical coordinates case, giving identical answers up
 to floating point precision (which it should, since the same leap-frog algorithm
-is implemented in both).
+is implemented in both). We strongly encourage you to do convergence testing on
+all applications to check the sensitivity to grid size.
 
 
 Getting started

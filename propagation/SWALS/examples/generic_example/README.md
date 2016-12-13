@@ -9,14 +9,15 @@ by just running a model.
 * Assuming all the unit tests pass, please continue .....!
 * Copy 'model_global_4min.in' to a new file (e.g. 'model_test.in'), and edit it
 to ensure that the input_elevation_raster and input_stage_raster exist on your
-filesystem, and that the model extends are as desired. These files should give the
-initial elevation and stage in lon-lat coordinates. 
-* The elevation raster should contain the desired model domain, but does
-not have to exactly cover the same north-east-south-west extent -- since the
-model will get the data it needs using bilinear interpolation. Note however
-that the model does not account for the periodicity of longitude (i.e. if the
-input raster has east-west extent [-180, 180], then the tsunami model cannot
-have east-west extent exceeding 180, or less than -180). 
+filesystem, and that the model extents are as desired. The input rasters should
+give the initial elevation and stage in lon-lat coordinates. 
+* The elevation raster should cover the desired model domain, but does
+not have to have exactly the same north-east-south-west extent -- since the
+model will get the data it needs using bilinear interpolation. So for example, 
+you can run a small area model using a global DEM, without editing the DEM.
+Note however that the model does not account for the periodicity of longitude
+(i.e. if the input raster has east-west extent [-180, 180], then the tsunami
+model cannot have east-west extent exceeding 180, or less than -180). 
 * The stage raster can be either smaller or larger than the desired model domain. The
 model will extract stages from this raster where possible, using bilinear
 interpolation. It will use a value of 0 elsewhere. 
