@@ -38,11 +38,12 @@ tsunami hazard mapping program test suite which are suitable for purely linear
 shallow water equations solvers, see
 https://github.com/rjleveque/nthmp-benchmark-problems ).
 
-Mass conservation tracking is also implemented (both the volume in the domain, and
-the time-integrated fluxes through the boundaries). The example scripts show
-how to print out the difference between these quantities at regular intervals (any
-change from a constant implies mass conservation errors). You should not expect any
-mass conservation errors, although 
+Mass conservation tracking is also implemented (both the volume in the domain,
+and the time-integrated fluxes through the boundaries). The example scripts
+show how to print out the difference between these quantities at regular
+intervals (any change from a constant implies mass conservation errors). You
+should not expect any mass conservation errors, (although tiny, non-systematic
+floating-point related changes in the mass balance are normal).
 
 A range of other tests are currently not provided here to avoid the need to
 distribute large elevation data. It has been compared with the linear solver in
