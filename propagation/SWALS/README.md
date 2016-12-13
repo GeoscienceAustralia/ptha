@@ -69,3 +69,17 @@ linear-shallow-water test problem. Plotting requires that R is installed on your
 system.
 
 For spherical coordinate applications, see the example in examples/generic_model.
+
+
+Compilation details
+-------------------
+A number of preprocessor options can be provided to the compiler to control features of the code.
+See makefiles in the example projects for illustrations of their use
+
+    -DREALFLOAT (use single precision for all reals. Otherwise double-precision is used)
+    -DSPHERICAL (assume spherical coordinates. Otherwise cartesian coordinates are used)
+    -DNONETCDF (do not use netcdf for tide gauge outputs. This is useful if you cannot build with netcdf for some reason.)
+    -DNOOPENMP (do not use the openmp library, not even for timing the code. In this case, the timer will report the CPU time for all cores, not the wallclock time). This can occasionally be useful if you must avoid using openmp.
+    -DTIMER (time sections of the code and report on how long they take)
+
+
