@@ -38,3 +38,7 @@ you can compile and run the code with:
 
     source run_test_NCI.sh
 
+3) To compile application code, the same process is required, i.e.
+* Load the correct gcc/gfortran
+* Point LD_LIBRARY_PATH to them
+* Ensure the makefile overrides the GDAL and NETCDF variables as above
