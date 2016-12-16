@@ -4,7 +4,7 @@ linear shallow water model.
 To run it:
 * It is **strongly** suggested that you ensure the unit tests all pass before
 attempting to run the current code. See
-[../../tests/unit_tests](../../tests/unit_tests). These will help detect
+[../../test/unit_tests](../../test/unit_tests). These will help detect
 problems with your computing environment which might be hard to diagnose by
 just running a model.
 * Assuming all the unit tests pass, please continue .....!
