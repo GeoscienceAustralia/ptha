@@ -92,7 +92,7 @@ alone without having R.
 
 For spherical coordinate applications with an internally generated tsunami
 source, and manually defined tide gauges, see the example in
-[examples/generic_model](examples/generic_model).  Currently we do not
+[examples/generic_example](examples/generic_example).  Currently we do not
 provide the data to run that example (since the associated files are large).
 To use it, the user needs to provide raster files with the elevation and
 initial stage, with details explained in that folder
