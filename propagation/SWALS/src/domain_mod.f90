@@ -1691,6 +1691,20 @@ MODULE domain_mod
         domain%time = domain%time + dt * HALF_dp
         CALL domain%update_boundary()
 
+        !! Boundary flux integration
+        ! note : U(i, j, UH) = UH_{i+1/2, j}
+        !      : U(i, j, VH) = UH_{i, j+1/2}
+        ! Outward boundary flux over the north -- integrate over the 'interior' cells
+        domain%boundary_flux_store(1) = sum(domain%U((1+n_ext):(nx-n_ext),ny-n_ext,VH)) * domain%distance_bottom_edge(ny-n_ext+1)
+        ! Outward boundary flux over the east
+        domain%boundary_flux_store(2) = sum(domain%U(nx-n_ext,(1+n_ext):(ny-n_ext),UH)) * domain%distance_left_edge(nx-n_ext+1)
+        ! Outward boundary flux over the south
+        domain%boundary_flux_store(3) = -sum(domain%U((1+n_ext):(nx-n_ext),n_ext,VH)) * domain%distance_bottom_edge(n_ext+1)
+        ! Outward boundary flux over the west
+        domain%boundary_flux_store(4) = -sum(domain%U(n_ext,(1+n_ext):(ny-n_ext),UH)) * domain%distance_left_edge(n_ext+1)
+
+        domain%boundary_flux_evolve_integral = sum(domain%boundary_flux_store) * dt
+
         !
         ! Update uh, vh
         !
@@ -1769,20 +1783,6 @@ MODULE domain_mod
         !$OMP END DO
         !$OMP END PARALLEL
         domain%time = domain%time + HALF_dp*dt
-
-        !! Boundary flux integration
-        ! note : U(i, j, UH) = UH_{i+1/2, j}
-        !      : U(i, j, VH) = UH_{i, j+1/2}
-        ! Outward boundary flux over the north -- integrate over the 'interior' cells
-        domain%boundary_flux_store(1) = sum(domain%U((1+n_ext):(nx-n_ext),ny-n_ext,VH)) * domain%distance_bottom_edge(ny-n_ext+1)
-        ! Outward boundary flux over the east
-        domain%boundary_flux_store(2) = sum(domain%U(nx-n_ext,(1+n_ext):(ny-n_ext),UH)) * domain%distance_left_edge(nx-n_ext+1)
-        ! Outward boundary flux over the south
-        domain%boundary_flux_store(3) = -sum(domain%U((1+n_ext):(nx-n_ext),n_ext,VH)) * domain%distance_bottom_edge(n_ext+1)
-        ! Outward boundary flux over the west
-        domain%boundary_flux_store(4) = -sum(domain%U(n_ext,(1+n_ext):(ny-n_ext),UH)) * domain%distance_left_edge(n_ext+1)
-
-        domain%boundary_flux_evolve_integral = sum(domain%boundary_flux_store) * dt
 
         TIMER_STOP('LF_update')
 
