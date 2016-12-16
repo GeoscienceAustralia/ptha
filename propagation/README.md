@@ -1,13 +1,15 @@
 This folder can store codes for tsunami propagation modelling. 
 
 Currently a simple linear shallow water equations solver is provided (SWALS),
-which is suitable for offshore tsunami propagation, but not inundation
+which is suitable for offshore tsunami propagation (so long as disperision can
+be neglected), but not suitable for inundation modelling or nearshore tsunami
 modelling (for which the non-linear equations are required).
 
 Users are encouraged to use other propagation codes instead, if desired,
 depending on whatever suits their needs. Well known open source examples
-include GEOCLAW, JAGURS, COMCOT, and easyWave. Some of the latter include a
-range of other solvers, e.g. non-linear, dispersive, etc. 
+include GEOCLAW, JAGURS, COMCOT, ANUGA, and easyWave. Some of the latter
+include a range of other solvers, e.g. non-linear, dispersive, etc. They
+vary widely in their features, and the required computational effort. 
 
 As much as possible, we try to keep the code logic in other parts of the PTHA
 package independent of any particular solver. This is especially enforced in
