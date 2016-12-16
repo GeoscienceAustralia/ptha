@@ -4,7 +4,8 @@ SWALS
 SWALS is a light-weight linear shallow water equations solver. It can run in
 Cartesian or spherical coordinates, and output stage and depth-integrated
 velocities over time, either as grids, and/or at tidal gauges. It can also
-output the peak stage for an entire run. 
+output the peak stage for an entire run. Only single grid runs are supported
+(i.e. no nesting).
 
 SWALS can run either on a single core, or in parallel using openmp. In the
 latter case, speedups of around 4x are common (say on 6 cores), but you should
