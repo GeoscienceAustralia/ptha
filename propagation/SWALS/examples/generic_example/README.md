@@ -41,4 +41,5 @@ fortran compiler as used to compile this code. If you need to use custom
 gdal/netcdf installs, then you can redefine variables mentioned in
 [../../src/src_standard_compiler_var](../../src/src_standard_compiler_var)
 (don't edit the latter, just redefine them in the makefile
-[make_generic_model](make_generic_model)). 
+[make_generic_model](make_generic_model)). For more information on doing this,
+see the NCI relevant example in [../../test/unit_tests](../../test/unit_tests).
