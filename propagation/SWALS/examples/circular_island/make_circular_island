@@ -1,0 +1,25 @@
+# SOURCE CODE DIRECTORY relative to the current directory
+SRC=../../src
+include $(SRC)/src_standard_compiler_var
+
+
+#FCCOMP=caf
+FCCOMP=gfortran
+#FCCOMP=/home/gareth/Code_Experiments/opencoarrays/opencoarrays/install_prerequisites/gcc-5.3.0-installation/bin/gfortran
+
+FORTRAN=$(FCCOMP) -fopenmp -Ofast -fall-intrinsics -march=native -mtune=native -cpp -DTIMER #-DNONETCDF
+
+# Clean up
+clean: circular_island_testcase
+	rm *.o *.mod
+
+# Link everything
+circular_island_testcase: libSWE.a circular_island_testcase.o
+	$(FORTRAN) circular_island_testcase.o -o $@ libSWE.a $(GDAL_LIBS) $(NETCDF_FLIBS) 
+
+# Compile the driver script
+circular_island_testcase.o: circular_island_testcase.f90
+	$(FORTRAN) -c $^ 
+
+# Build main source
+include $(SRC)/src_make_commands

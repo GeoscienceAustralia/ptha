@@ -34,11 +34,19 @@ reasonable CPU sharing can lead to better load-balancing and faster run times.
 Testing
 -------
 
-SWALS includes a unit test suite in tests/unit_tests. It also ships with three
-analytical tests (to my knowledge, these are the only ones from the national
-tsunami hazard mapping program test suite which are suitable for purely linear
-shallow water equations solvers, see
-https://github.com/rjleveque/nthmp-benchmark-problems ).
+SWALS includes a unit test suite in tests/unit_tests. These are most useful for
+ensuring that your install is working, and to help us avoid accidently breaking
+features as the code evolves
+
+It also ships with some analytical tests, including: 
+* Three 1D solutions of wave shoaling over a piecewise linear beach, from the
+ 'national tsunami hazard mapping program' test suite
+([examples/nthmp/BP02](examples/nthmp/BP02). To my knowledge, these are the
+only ones from that test suite which are suitable for purely linear shallow
+water equations solvers. The solution was obtained from:
+https://github.com/rjleveque/nthmp-benchmark-problems .
+* A 2D analytical solution of wave scattering around a conical island. Unlike
+the above tests, this test is 2D situation with variable topography. 
 
 Mass conservation tracking is also implemented (both the volume in the domain,
 and the time-integrated fluxes through the boundaries). The example scripts
@@ -50,9 +58,12 @@ floating-point related changes in the mass balance are normal).
 A range of other tests are currently not provided here to avoid the need to
 distribute large elevation data. It has been compared with the linear solver in
 JAGURS on a realistic spherical coordinates case, giving identical answers up
-to floating point precision (which it should, since the same leap-frog algorithm
-is implemented in both). We strongly encourage you to do convergence testing on
-all applications to check the sensitivity to grid size.
+to floating point precision (which it should, since the same widely used leap-frog 
+algorithm is implemented in both). 
+
+As with all PDE based numerical modelling, we strongly encourage you to do
+convergence testing on all applications, to check the sensitivity of results to
+grid size.
 
 
 Getting started
