@@ -36,7 +36,7 @@ reasonable CPU sharing can lead to better load-balancing and faster run times.
 Testing
 -------
 
-SWALS includes a unit test suite in [tests/unit_tests](tests/unit_tests). These
+SWALS includes a unit test suite in [test/unit_tests](test/unit_tests). These
 are most useful for ensuring that your install is working, and to help us avoid
 accidentally breaking features as the code evolves. When trying to install SWALS,
 the first thing to do is try to compile and successfully run the unit tests.
@@ -78,8 +78,8 @@ the latter compiled with the same version of gfortran that you use to compile
 SWALS. It is setup to run on linux type environments. 
 
 If you have those dependencies, then try to compile and run the unit tests in
-tests/unit_tests.  The programs therein should print many 'PASS' statements,
-and no 'FAIL' statements or other errors. 
+[test/unit_tests](test/unit_tests). The programs therein should print many
+'PASS' statements, and no 'FAIL' statements or other errors. 
 
 If that works, then try running the test cases in
 [examples/nthmp/BP02](examples/nthmp/BP02) and
@@ -108,5 +108,5 @@ See makefiles in the example projects for illustrations of their use
 
 
 If compiling on NCI, see the additional information in
-[tests/unit_tests](tests/unit_tests), which is equally applicable to the other
+[test/unit_tests](test/unit_tests), which is equally applicable to the other
 examples.
