@@ -89,7 +89,10 @@ linear-shallow-water test problem. Plotting requires that R is installed on
 your system, along with the ncdf4 R package, although you can run the models
 alone without R.
 
-For spherical coordinate applications, see the example in examples/generic_model.
+For spherical coordinate applications with an internally generated tsunami
+source, see the example in [examples/generic_model](examples/circular_island).
+Currently we do not provide the data to run that example (since it would be large), 
+but it can be run if the user provide raster files with the elevation and initial stage.
 
 
 Compilation details
@@ -104,3 +107,6 @@ See makefiles in the example projects for illustrations of their use
     -DTIMER (time sections of the code and report on how long they take)
 
 
+If compiling on NCI, see the additional information in
+[tests/unit_tests](tests/unit_tests), which is equally applicable to the other
+examples.
