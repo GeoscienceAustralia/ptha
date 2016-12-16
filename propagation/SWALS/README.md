@@ -41,11 +41,12 @@ features as the code evolves
 It also ships with some analytical tests, including: 
 * Three 1D solutions of wave shoaling over a piecewise linear beach, from the
  'national tsunami hazard mapping program' test suite
-([examples/nthmp/BP02](examples/nthmp/BP02). To my knowledge, these are the
+[(examples/nthmp/BP02)](examples/nthmp/BP02). To my knowledge, these are the
 only ones from that test suite which are suitable for purely linear shallow
 water equations solvers. The solution was obtained from:
 https://github.com/rjleveque/nthmp-benchmark-problems .
-* A 2D analytical solution of wave scattering around a conical island. Unlike
+* A 2D analytical solution of wave scattering around a conical island
+[(examples/circular_island)](examples/circular_island). Unlike
 the above tests, this test is 2D situation with variable topography. 
 
 Mass conservation tracking is also implemented (both the volume in the domain,
