@@ -2,30 +2,32 @@ SWALS
 -----
 
 SWALS is a light-weight linear shallow water equations solver. It can run in
-cartesian or spherical coordinates, and output stage and depth-integrated
+Cartesian or spherical coordinates, and output stage and depth-integrated
 velocities over time, either as grids, and/or at tidal gauges. It can also
 output the peak stage for an entire run. 
 
 SWALS can run either on a single core, or in parallel using openmp. In the
-latter case, in the authors experience speedups of around 4x are common (say on
-6 cores), but you should not expect good performance gains by extending this to
-many CPUs. The authors use cases have mainly involved running many model
-scenarios, so we are most interested in good performance in the single-core scenario,
-although when a single run is of interest, the parallel speedup is convenient. 
+latter case, speedups of around 4x are common (say on 6 cores), but you should
+not expect good performance gains by extending this to many CPUs. The authors'
+use cases have mainly involved running many model scenarios, where good
+performance in the single-core scenario is most relevant. However, when just a
+few runs are of interest, the parallel speedup is convenient. 
 
-Either single or double precision arithmetic is supported, and while single
-precision is usually fine (as well as being faster, and using less memory),
-users employing single precision should confirm it is sufficient for their
-application by a few comparisons with the double precision version.
+The code can run using either single or double precision arithmetic (see
+section below on preprocessing flags). Single precision is usually fine (as
+well as being faster, and using less memory), but users employing single
+precision should confirm it is sufficient for their application, by doing a few
+comparisons with the double precision version.
 
-Run-times will of course depend on the hardware you use. For example, SWALS has
-been used to run a Pacific wide tsunami model at 4-arc-minute resolution for 24
-hours, in around 220-300s (depending on IO choices) on a single core of my 3
-year old desktop (or on raijin on the NCI). As another example, on a single
-core of the same hardware, we regularly run 'nearly global' models (360 degrees
+Model run-times will of course depend on the hardware you use. For example,
+SWALS has been used to run a Pacific wide tsunami model at 4-arc-minute
+resolution for 24 hours, in around 220s (with no IO) on a single core of my 3
+year old desktop (or on raijin on the NCI). Times are a bit longer with IO,
+depending on how much output is generated. As another example, on a single core
+of the same hardware, we regularly run 'nearly global' models (360 degrees
 longitude, latitude ranging from -72 to +65) at 1-arc-minute resolution, with
-run times being abour 75% of the real time (i.e. around 18 hours to simulate 24
-hours of tsunami propagation). We often simulaneously run 16 models like the
+run times being about 75% of the real time (i.e.  around 18 hours to simulate
+24 hours of tsunami propagation). We often simultaneously run 16 models like the
 latter on a single node of the NCI (16 cores, 64GB total RAM) with similar run
 times. In this case, note that using the 'numactl' program to enforce
 reasonable CPU sharing can lead to better load-balancing and faster run times.
@@ -36,7 +38,7 @@ Testing
 
 SWALS includes a unit test suite in [tests/unit_tests](tests/unit_tests). These
 are most useful for ensuring that your install is working, and to help us avoid
-accidently breaking features as the code evolves. When trying to install SWALS,
+accidentally breaking features as the code evolves. When trying to install SWALS,
 the first thing to do is try to compile and successfully run the unit tests.
 
 It also ships with some analytical tests, including: 
@@ -79,10 +81,13 @@ If you have those dependencies, then try to compile and run the unit tests in
 tests/unit_tests.  The programs therein should print many 'PASS' statements,
 and no 'FAIL' statements or other errors. 
 
-If that works, then try running the test case in examples/nthmp/BP02, which will
-compare SWALS with analytical solutions (and experimental data) for a well known
-linear-shallow-water test problem. Plotting requires that R is installed on your 
-system.
+If that works, then try running the test cases in
+[examples/nthmp/BP02](examples/nthmp/BP02) and
+[examples/circular_island](examples/circular_island), which will compare SWALS
+with analytical solutions (and experimental data) for well known
+linear-shallow-water test problem. Plotting requires that R is installed on
+your system, along with the ncdf4 R package, although you can run the models
+alone without R.
 
 For spherical coordinate applications, see the example in examples/generic_model.
 
