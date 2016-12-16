@@ -34,9 +34,10 @@ reasonable CPU sharing can lead to better load-balancing and faster run times.
 Testing
 -------
 
-SWALS includes a unit test suite in tests/unit_tests. These are most useful for
-ensuring that your install is working, and to help us avoid accidently breaking
-features as the code evolves
+SWALS includes a unit test suite in [tests/unit_tests](tests/unit_tests). These
+are most useful for ensuring that your install is working, and to help us avoid
+accidently breaking features as the code evolves. When trying to install SWALS,
+the first thing to do is try to compile and successfully run the unit tests.
 
 It also ships with some analytical tests, including: 
 * Three 1D solutions of wave shoaling over a piecewise linear beach, from the
