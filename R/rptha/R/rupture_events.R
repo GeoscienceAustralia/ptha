@@ -254,7 +254,7 @@ get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.
 #' values and combine the results
 #'
 #' @param discrete_source The discrete source for the source-zone, as from 
-#' \code{discrete_source_from_source_contours}. If NULL, you must provide
+#' \code{discretized_source_from_source_contours}. If NULL, you must provide
 #' unit_source_statistics (prefered approach)
 #' @param unit_source_statistics Pre-computed unit-source-statistics for the
 #' discrete-source. It is best to provide this, but if it is NULL, a local

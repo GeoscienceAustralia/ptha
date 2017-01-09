@@ -11,7 +11,7 @@ get_all_earthquake_events(discrete_source = NULL,
 }
 \arguments{
 \item{discrete_source}{The discrete source for the source-zone, as from 
-\code{discrete_source_from_source_contours}. If NULL, you must provide
+\code{discretized_source_from_source_contours}. If NULL, you must provide
 unit_source_statistics (prefered approach)}
 
 \item{unit_source_statistics}{Pre-computed unit-source-statistics for the
