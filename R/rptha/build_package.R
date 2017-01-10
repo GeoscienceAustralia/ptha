@@ -2,11 +2,11 @@ library(devtools)
 document('.')
 document('.')
 
-# Modify the 'version' to have the git revision number
-version_extra = system('git describe --abbrev=50 --always --tags --dirty', intern=TRUE)
+# Modify the 'version'
 description_lines = readLines('DESCRIPTION')
 dvi = grep('Version:', description_lines)
-description_lines[dvi] = paste0('Version: 0.0.', version_extra)
+new_version_number = as.numeric(strsplit(description_lines[dvi], '\\.')[[1]][3]) + 1
+description_lines[dvi] = paste0('Version: 0.0.', new_version_number)
 cat(description_lines, file='DESCRIPTION', sep="\n")
 system('git commit -a -m "autobuild"')
 

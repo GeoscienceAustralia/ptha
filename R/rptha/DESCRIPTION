@@ -1,7 +1,7 @@
 Package: rptha
 Type: Package
 Title: Tools for probabilistic tsunami hazard assessment
-Version: 0.0.04ad65c33729c14c21f3b387b9378c7ffcee5b74-dirty
+Version: 0.0.1
 Date: 2015-01-01
 Author: Gareth Davies, uses fortran code from Y. Okada
 Maintainer: Gareth Davies <gareth.davies.ga.code@gmail.com>
