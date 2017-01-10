@@ -8,7 +8,7 @@ test_that('test_write_table_to_ncdf4', {
 
     # Rely on internal logical checks to catch errors
     errflag = try({
-        write_table_to_ncdf4(test_table, 
+        write_table_to_netcdf(test_table, 
             file='test.nc', 
             units=c('m', '', 'kg'), 
             long_names=c('head count', 'mychar', 'asdfasdfa'), 

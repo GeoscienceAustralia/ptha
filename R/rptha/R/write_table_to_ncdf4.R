@@ -1,6 +1,6 @@
 #library(ncdf4)
 
-#' Write a data.frame to a ncdf4 file
+#' Write a data.frame to a netcdf file
 #'
 #' The unlimited dimension corresponds to the rows of the data.frame, which 
 #' should enable efficient row-wise access to the data.
@@ -20,7 +20,7 @@
 #'
 #'  test_table = data.frame(x = c(1,2,3), y=c('a', 'b', 'csdf'), z=c(1.1, 1.2, 1.3))
 #'
-#'  write_table_to_ncdf4(test_table, 
+#'  write_table_to_netcdf(test_table, 
 #'      file='test.nc', 
 #'      units=c('m', '', 'kg'), 
 #'      long_names=c('head count', 'mychar', 'asdfasdfa'), 
@@ -29,7 +29,7 @@
 #'  # Clean up
 #'  unlink('test.nc')
 #'
-write_table_to_ncdf4<-function(dataframe, filename, global_attributes_list=NULL, 
+write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL, 
     units=NULL, long_names=NULL, var_prec = NULL){
 
     # Make the rows an unlimited dimension
@@ -129,7 +129,7 @@ write_table_to_ncdf4<-function(dataframe, filename, global_attributes_list=NULL,
 
 #' Read a netcdf file into a data.frame
 #'
-#' It is assumed that the file was produced by \code{write_table_to_netcdf4},
+#' It is assumed that the file was produced by \code{write_table_to_netcdf},
 #' or is compatible with it.
 #'
 #' @param filename netcdf file
