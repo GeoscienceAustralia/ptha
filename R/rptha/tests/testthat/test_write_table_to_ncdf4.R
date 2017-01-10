@@ -18,4 +18,4 @@ test_that('test_write_table_to_ncdf4', {
 
     # Clean up
     if(class(errflag) != 'try-error') unlink('test.nc')
-}
+})
