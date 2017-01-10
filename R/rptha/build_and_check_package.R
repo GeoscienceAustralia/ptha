@@ -1,6 +1,4 @@
 library(devtools)
-document('.')
-document('.')
 
 # Modify the 'version'
 try({
@@ -12,6 +10,8 @@ try({
     system('git commit -a -m "autobuild"')
 })
 
+document('.')
+document('.')
 build('.')
 setwd('..')
 system('R CMD check rptha_0.0.tar.gz')

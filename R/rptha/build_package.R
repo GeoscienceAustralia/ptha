@@ -1,6 +1,4 @@
 library(devtools)
-document('.')
-document('.')
 
 # Modify the 'version'
 try({
@@ -12,4 +10,6 @@ try({
     system('git commit -a -m "autobuild"')
 })
 
+document('.')
+document('.')
 build('.')
