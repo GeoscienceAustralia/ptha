@@ -12,6 +12,7 @@
 #' @param long_names character vector with long_name for each column of the dataframe, or NULL
 #' @param var_prec character vector with data type for each column (possible
 #' values are 'short', 'integer', 'float', 'double', 'char', 'byte'). If NULL it is made automatically.
+#' @param add_session_info_attribute if true, add a global attribute containing information from sessionInfo()
 #' @return nothing, but save the file
 #'
 #' @export
@@ -30,7 +31,7 @@
 #'  unlink('test.nc')
 #'
 write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL, 
-    units=NULL, long_names=NULL, var_prec = NULL){
+    units=NULL, long_names=NULL, var_prec = NULL, add_session_info_attribute=FALSE){
 
     # Make the rows an unlimited dimension
     rowdim = ncdim_def('table_rows', units='', vals = 1:nrow(dataframe), unlim=TRUE,
@@ -116,6 +117,11 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
             ncatt_put(output_nc_file, varid=0, attname=names(global_attributes_list)[i], 
                 attval=global_attributes_list[[i]])
         }
+    }
+
+    if(add_session_info_attribute){
+        ncatt_put(output_nc_file, varid=0, attname='R_session_info', 
+            attval=paste(capture.output(sessionInfo()), collapse=" ; "))
     }
 
     # Add variables
