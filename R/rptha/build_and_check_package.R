@@ -12,6 +12,7 @@ try({
 
 document('.')
 document('.')
+system('mv ../rptha_0.0*.tar.gz ../old_builds')
 build('.')
 setwd('..')
 system('R CMD check rptha_0.0*.tar.gz')
