@@ -126,3 +126,28 @@ write_table_to_ncdf4<-function(dataframe, filename, global_attributes_list=NULL,
     nc_close(output_nc_file)
 
 }
+
+#' Read a netcdf file into a data.frame
+#'
+#' It is assumed that the file was produced by \code{write_table_to_netcdf},
+#' or is compatible with it.
+#'
+#' @param filename netcdf file
+#' @return data.frame with the data
+#' @export
+#'
+read_table_from_netcdf<-function(filename){
+
+    fid = nc_open(filename)
+    nc_var_names = unlist(lapply(fid$var, f<-function(x) x$name))
+
+    var_list = list()
+    for(i in 1:length(nc_var_names)){
+        var_list[[nc_var_names[i]]] = c(ncvar_get(fid, varid=nc_var_names[i]))
+    }
+
+    output_df = as.data.frame(var_list, stringsAsFactors=FALSE)
+
+    return(output_df)
+}
+
