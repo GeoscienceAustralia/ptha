@@ -50,7 +50,7 @@ write_table_to_ncdf4<-function(dataframe, filename, global_attributes_list=NULL,
     if(is.null(var_prec)){
         var_prec = rep("", ncol(dataframe))
         for(i in 1:ncol(dataframe)){
-            if(class(dataframe[1,i]) == 'numeric'){
+            if(class(dataframe[1,i]) %in% c('numeric', 'integer')){
                 # Check if they can be represented as integers
                 if(all(floor(dataframe[,i]) == dataframe[,i])){
                     var_prec[i] = 'integer' 
@@ -61,7 +61,7 @@ write_table_to_ncdf4<-function(dataframe, filename, global_attributes_list=NULL,
                 var_prec[i] = 'char'
             }else{
                 stop(paste0('Cannot automatically detect var_prec for column ', 
-                    i,' based on first entry ', datarfame[i,1]))
+                    i,' based on first entry ', datafame[i,1]))
             }
         }
     }
@@ -129,7 +129,7 @@ write_table_to_ncdf4<-function(dataframe, filename, global_attributes_list=NULL,
 
 #' Read a netcdf file into a data.frame
 #'
-#' It is assumed that the file was produced by \code{write_table_to_netcdf},
+#' It is assumed that the file was produced by \code{write_table_to_netcdf4},
 #' or is compatible with it.
 #'
 #' @param filename netcdf file
