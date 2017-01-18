@@ -235,7 +235,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' \sum_{i \in events} ( \mu s_{i} a_{i} Pr(event_{i} | event with size Mw_{i}) rMw_{i}) }\cr
 #' \cr
 #' The form of the GR relation implies that a factor of 10^(a) will appear in
-#' the RHS term rate_of_events_of_size_Mw_{i}, and nowhere else. Hence to
+#' the RHS term \eqn{rMw_{i}}, and nowhere else. Hence to
 #' compute 'a', we just compute the LHS and RHS of the above equations,
 #' tentatively assuming a=0 in the latter case, and then it follows that a =
 #' log10(LHS/RHS). \cr
