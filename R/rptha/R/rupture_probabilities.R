@@ -215,10 +215,10 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' (definitions) \cr
 #' S = long term semsmogenic slip rate \cr
 #' A = source-zone area \cr
-#' \deqn{ s_{i} }= slip for event i
-#' \deqn{ a_{i} } = area for event i
-#' \deqn{rMw_{i} } = rate of events with the same magnitude Mw as event i
-#' \deqn{ Pr(event_{i} | event with size Mw_{i}) } = the conditional probability
+#' \eqn{ s_{i} }= slip for event i
+#' \eqn{ a_{i} } = area for event i
+#' \eqn{rMw_{i} } = rate of events with the same magnitude Mw as event i
+#' \eqn{ Pr(event_{i} | event with size Mw_{i}) } = the conditional probability
 #' of each event with the same Mw in the event table [i.e. if we take all events
 #' with a given Mw from the table, their conditional probabilities should sum to
 #' 1]. \cr
