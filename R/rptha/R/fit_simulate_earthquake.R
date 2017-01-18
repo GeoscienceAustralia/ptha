@@ -569,8 +569,8 @@ sffm_slip_goodness_of_fit<-function(
 #' 
 sffm_fit_parameters<-function(
     m1,
-    default_seed=1,   
-    NumRandSf=400,
+    default_seed = 1,   
+    NumRandSf = 400,
     sffm_pars = .sffm_default_model_parameters,
     reg_par_start = c(2/dim(m1)[1], 2/dim(m1)[2])
     ){
