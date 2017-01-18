@@ -211,12 +211,21 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' a, and a long-term seisomogenic slip rate (= long_term_slip_rate *
 #' coupling_coefficient), the long-term moment rate should equal the rate
 #' integrated from the individual events. Mathematically: \cr
-#' \deqn{ \mu  long_term_seismogenic_slip_rate  sourcezone_area = 
-#' \sum_{i \in events} ( \mu event_slip_{i} event_area_{i} Pr(event_{i} | event_of_size_Mw = Mw_{i}) rate_of_events_of_size_Mw_{i}) }\cr
-#' Here Pr(event_{i} | event_of_size_Mw_{i}) gives the conditional probability
+#' \cr
+#' (definitions) \cr
+#' S = long term semsmogenic slip rate \cr
+#' A = source-zone area \cr
+#' \deqn{ s_{i} }= slip for event i
+#' \deqn{ a_{i} } = area for event i
+#' \deqn{rMw_{i} } = rate of events with the same magnitude Mw as event i
+#' \deqn{ Pr(event_{i} | event with size Mw_{i}) } = the conditional probability
 #' of each event with the same Mw in the event table [i.e. if we take all events
 #' with a given Mw from the table, their conditional probabilities should sum to
-#' 1]. The meaning of other variables should be clear. \cr
+#' 1]. \cr
+#' (main equation) \cr
+#' \deqn{ \mu  S  A = 
+#' \sum_{i \in events} ( \mu s_{i} a_{i} Pr(event_{i} | event_of_size_Mw_{i}) rMw_{i}) }\cr
+#' \cr
 #' The form of the GR relation implies that a factor of 10^(a) will appear in
 #' the RHS term rate_of_events_of_size_Mw_{i}, and nowhere else. Hence to
 #' compute 'a', we just compute the LHS and RHS of the above equations,

@@ -36,10 +36,10 @@ earthquakes. Unlike a pdf, n(Mw) integrates to the rate of earthquakes,
 instead of 1.\cr
 For the truncated Gutenberg Richter distribution, n(Mw) is truncated between
 lower and upper Mw limits (i.e. set to zero outside these limits). \cr
-We then have the equivalent of N_{GR} for the truncated distribution as \cr:
+We then have the equivalent of N_{GR} for the truncated distribution as: \cr
 N_{TGR}(x > Mw) = 10^(-max(Mw, Mw_min)*b + a) - 10^(-Mw_max*b + a) \cr
 Notice that now, 10^(a) is no-longer the rate of earthquakes with Mw > 0 --
-instead that rate is \cr:
+instead that rate is :\cr
 N_{TGR}(x > Mw_min) = 10^(a - b*Mw_min) - 10^(a - b*Mw_max) \cr
 }
 
