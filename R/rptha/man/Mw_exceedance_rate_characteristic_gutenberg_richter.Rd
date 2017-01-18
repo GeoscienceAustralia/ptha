@@ -27,10 +27,10 @@ with magnitude > Mw as:\cr
 N_{GR}(x > Mw) = 10^(a-bMw) \cr
 where a and b are constants. Note 10^(a) is the rate of earthquakes with Mw
 > 0. \cr
-The characteristic formulation used here ajusts this as:
+The characteristic formulation used here ajusts this as: \cr
 N_{GR}(x > Mw) = 10^(a-bMw) if Mw_min <= Mw <= Mw_max \cr
-~~~~~~~~~~~~~  = 10^(a-bMw_min) if Mw < Mw_min
-~~~~~~~~~~~~~  = 0 if Mw > Mw_max
+~~~~~~~~~~~~~  = 10^(a-bMw_min) if Mw < Mw_min \cr
+~~~~~~~~~~~~~  = 0 if Mw > Mw_max \cr
 This means that the rate of earthquakes of size EXACTLY Mw_max is finite.
 }
 

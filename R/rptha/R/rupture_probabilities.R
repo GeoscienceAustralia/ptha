@@ -681,7 +681,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 #' N_{GR}(x > Mw) = 10^(a-bMw) \cr
 #' where a and b are constants. Note 10^(a) is the rate of earthquakes with Mw >
 #' 0. \cr
-#' By differentiating N_{GR} we can estimate the number of events with
+#' By differentiating N_{GR} we can estimate the number of events with 
 #' (Mw - dx/2 <= magnitude <= Mw +dx/2) as:\cr
 #' N(Mw -dx/2 <= x <= Mw + dx/2) ~= dx * n(Mw) = dx * ([10^(a-bMw)] * bln(10)) \cr
 #' where n(Mw) is the negative of the derivative of N(x>Mw). \cr
@@ -690,10 +690,10 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 #' instead of 1.\cr
 #' For the truncated Gutenberg Richter distribution, n(Mw) is truncated between
 #' lower and upper Mw limits (i.e. set to zero outside these limits). \cr
-#' We then have the equivalent of N_{GR} for the truncated distribution as \cr:
+#' We then have the equivalent of N_{GR} for the truncated distribution as: \cr
 #' N_{TGR}(x > Mw) = 10^(-max(Mw, Mw_min)*b + a) - 10^(-Mw_max*b + a) \cr
 #' Notice that now, 10^(a) is no-longer the rate of earthquakes with Mw > 0 --
-#' instead that rate is \cr:
+#' instead that rate is :\cr
 #' N_{TGR}(x > Mw_min) = 10^(a - b*Mw_min) - 10^(a - b*Mw_max) \cr
 #'
 #' @param Mw Moment magnitude
@@ -723,10 +723,10 @@ Mw_exceedance_rate_truncated_gutenberg_richter<-function(
 #' N_{GR}(x > Mw) = 10^(a-bMw) \cr
 #' where a and b are constants. Note 10^(a) is the rate of earthquakes with Mw
 #' > 0. \cr
-#' The characteristic formulation used here ajusts this as:
+#' The characteristic formulation used here ajusts this as: \cr
 #' N_{GR}(x > Mw) = 10^(a-bMw) if Mw_min <= Mw <= Mw_max \cr
-#' ~~~~~~~~~~~~~  = 10^(a-bMw_min) if Mw < Mw_min
-#' ~~~~~~~~~~~~~  = 0 if Mw > Mw_max
+#' ~~~~~~~~~~~~~  = 10^(a-bMw_min) if Mw < Mw_min \cr
+#' ~~~~~~~~~~~~~  = 0 if Mw > Mw_max \cr
 #' This means that the rate of earthquakes of size EXACTLY Mw_max is finite.
 #' @param Mw Moment magnitude
 #' @param a The a parameter

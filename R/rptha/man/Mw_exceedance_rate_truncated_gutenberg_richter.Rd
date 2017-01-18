@@ -27,7 +27,7 @@ magnitude > Mw as:\cr
 N_{GR}(x > Mw) = 10^(a-bMw) \cr
 where a and b are constants. Note 10^(a) is the rate of earthquakes with Mw >
 0. \cr
-By differentiating N_{GR} we can estimate the number of events with
+By differentiating N_{GR} we can estimate the number of events with 
 (Mw - dx/2 <= magnitude <= Mw +dx/2) as:\cr
 N(Mw -dx/2 <= x <= Mw + dx/2) ~= dx * n(Mw) = dx * ([10^(a-bMw)] * bln(10)) \cr
 where n(Mw) is the negative of the derivative of N(x>Mw). \cr
