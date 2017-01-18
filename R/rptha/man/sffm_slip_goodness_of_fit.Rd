@@ -14,17 +14,17 @@ space**. A 3rd parameter may be accepted in some cases, depending on the
 values of reg_par allowed in sffm_pars$spectral_amplitude_function. See
 \code{?sffm_simulate} for more details on 'numerical space' and 'physical space'}
 
-\item{tg_rast}{= slip matrix or raster to compute the goodness of fit for}
+\item{tg_rast}{slip matrix or raster to compute the goodness of fit for}
 
-\item{verbose}{= TRUE/FALSE -- Verbose error messages}
+\item{verbose}{TRUE/FALSE -- Verbose error messages}
 
-\item{NumRandSf}{= Number of slip distributions simulated to compute the
+\item{default_seed}{integer -- passed to set.seed for reproducible fitting
+with random fault generation (original .Random.seed is restored at the end)}
+
+\item{NumRandSf}{integer. Number of slip distributions simulated to compute the
 goodness-of-fit of the model}
 
 \item{sffm_pars}{environment containing configuration parameters}
-
-\item{default_seed=}{integer -- passed to set.seed for reproducible fitting
-with random fault generation (original .Random.seed is restored at the end)}
 }
 \value{
 A goodness-of-fit measure -- minimising this will lead to the 'best'

@@ -18,11 +18,11 @@ to make the fit reproducible}
 goodness-of-fit computation}
 
 \item{sffm_pars}{list containing parameters passed to \code{sffm_simulate}. See
-\code{?sffm_simulate} and \code{?sffm_get_default_model_pars'} for more info.}
+\code{?sffm_simulate} and \code{?sffm_get_default_model_pars} for more info.}
 
 \item{reg_par_start}{vector of starting values for parameters \code{reg_par} in
 \code{sffm_pars$spectral_amplitude_fun} which are optimized by the current
-function. See \code{?sffm_simulate} and \code{?sffm_get_default_model_pars'}
+function. See \code{?sffm_simulate} and \code{?sffm_get_default_model_pars}
 for more info.}
 }
 \value{

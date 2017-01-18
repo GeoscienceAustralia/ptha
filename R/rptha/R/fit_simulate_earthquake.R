@@ -394,11 +394,11 @@ sffm_recentre_slip<-function(m1, tg=NULL){
 #' space**. A 3rd parameter may be accepted in some cases, depending on the
 #' values of reg_par allowed in sffm_pars$spectral_amplitude_function. See
 #' \code{?sffm_simulate} for more details on 'numerical space' and 'physical space'
-#' @param tg_rast = slip matrix or raster to compute the goodness of fit for
-#' @param verbose = TRUE/FALSE -- Verbose error messages
-#' @param default_seed= integer -- passed to set.seed for reproducible fitting
+#' @param tg_rast slip matrix or raster to compute the goodness of fit for
+#' @param verbose TRUE/FALSE -- Verbose error messages
+#' @param default_seed integer -- passed to set.seed for reproducible fitting
 #'        with random fault generation (original .Random.seed is restored at the end)
-#' @param NumRandSf = Number of slip distributions simulated to compute the
+#' @param NumRandSf integer. Number of slip distributions simulated to compute the
 #'        goodness-of-fit of the model
 #' @param sffm_pars environment containing configuration parameters
 #' @return A goodness-of-fit measure -- minimising this will lead to the 'best'
@@ -494,10 +494,10 @@ sffm_slip_goodness_of_fit<-function(
 #' @param NumRandSf integer. number of synthetic slip simulations to use in
 #' goodness-of-fit computation
 #' @param sffm_pars list containing parameters passed to \code{sffm_simulate}. See
-#' \code{?sffm_simulate} and \code{?sffm_get_default_model_pars'} for more info.
+#' \code{?sffm_simulate} and \code{?sffm_get_default_model_pars} for more info.
 #' @param reg_par_start vector of starting values for parameters \code{reg_par} in
 #' \code{sffm_pars$spectral_amplitude_fun} which are optimized by the current
-#' function. See \code{?sffm_simulate} and \code{?sffm_get_default_model_pars'}
+#' function. See \code{?sffm_simulate} and \code{?sffm_get_default_model_pars}
 #' for more info.
 #' @return an object from 'optim' with the fit
 #' 
