@@ -31,9 +31,16 @@ Get the default sffm model parameters
 Convenience function to make the sffm_default_model_parameters list. By default
 these parameters are used in all sffm_ functions, unless an alternative list
 of default parameters is provided. See the help for \code{sffm_simulate} for
-an example of using non-default parameters.
+an example of using non-default parameters. Default parameters correspond to the
+S_{NCF} model of Davies et al., 2015
 }
 \examples{
 sffm_default_par = sffm_get_default_model_parameters()
+}
+\references{
+Davies et al. (2015), 
+Tsunami inundation from heterogeneous earthquake slip distributions:
+Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
+6431–6451, doi:10.1002/2015JB012272. \cr
 }
 

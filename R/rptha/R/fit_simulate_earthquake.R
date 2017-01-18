@@ -12,7 +12,8 @@
 #' Convenience function to make the sffm_default_model_parameters list. By default
 #' these parameters are used in all sffm_ functions, unless an alternative list
 #' of default parameters is provided. See the help for \code{sffm_simulate} for
-#' an example of using non-default parameters. 
+#' an example of using non-default parameters. Default parameters correspond to the
+#' S_{NCF} model of Davies et al., 2015
 #'
 #' @return a list containing default parameters affecting the sffm generation \cr
 #' random_phase_generating_field --  random function f(x) which returns
@@ -27,6 +28,13 @@
 #' kx, ky and a vector of model parameters reg_par. The first two values of
 #' reg_par should  be the corner wavenumbers kcx, kcy IN NUMERICAL SPACE (i.e. the
 #' physical wavenumbers multiplied by dx and dy respectively) \cr
+#' 
+#' @references
+#' Davies et al. (2015), 
+#' Tsunami inundation from heterogeneous earthquake slip distributions:
+#' Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
+#' 6431–6451, doi:10.1002/2015JB012272. \cr
+#' 
 #'
 #' @export
 #' @examples
@@ -118,24 +126,30 @@ sffm_get_numerical_wavenumbers<-function(tg_mat){
 ###############################################################################
 #' Synthetic finite fault model generator
 #'
-#' Make a random slip surface from a template raster, given some regression
-#' parameters (specified in NUMERICAL SPACE independent of the pixel size) and 
-#' SFFM definitions in sffm_pars \cr
-#' If kx = 0,1/N,2/N, ... are the numerical wavenumbers,
-#' they are equal to the ('physical' wavenumbers) x (dx) \cr
-#' where dx is the raster x-cell size. \cr
-#' In that case, if reg_par[1] and reg_par[2] are the numerical corner 
-#' wavenumbers, then: \cr
-#' reg_par[1] = kcxN = kcx*dx  \cr
-#' [where kcx is the physical 'corner wavenumber'], and similarly for
-#' reg_par[2] = kcyN = kcy*dy 
+#' Make a random slip surface with the same dimensions as a provided template
+#' RasterLayer or matrix. The random slip surface is generated using (by default)
+#' the S_{NCF} algorithm in Davies et al., (2015), based on user-provided 
+#' numerical corner wave-number parameters. The corner-wavenumber parameters
+#' are specified in numerical space as (kcxN, kcyN) = (kcx, kcy) * (dx, dy) 
+#' where kcxN, kcyN are the NUMERICAL corner wave numbers; (kcx, kcy) are the
+#' physical corner wavenumbers (units of 1/distance), and (dx, dy) are the x/y
+#' pixel spacing of the template raster or matrix. \cr
+#' Further explanation, see the example: \cr
 #'
 #' @param reg_par vector passed to sffm_pars$spectral_amplitude_fun. First
-#' two entries are kcxN, kcyN, in NUMERICAL SPACE as explained above.
-#' @param tg_mat is a 'template' raster, or matrix
+#' two entries are kcxN, kcyN, as explained above and in the example
+#' @param tg_mat is a 'template' raster, or matrix. The output slip distribution
+#' will have these dimensions, and if tg_mat is a RasterLayer, it will have the
+#' same properties (e.g. pixel size, spatial projection). 
 #' @param sffm_pars list containing sffm configuration parameters. See
 #' sffm_get_default_model_parameters()
 #' @return Output is the same class as tg_mat
+#'
+#' @references
+#' Davies et al. (2015), 
+#' Tsunami inundation from heterogeneous earthquake slip distributions:
+#' Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
+#' 6431–6451, doi:10.1002/2015JB012272. \cr
 #'
 #' @export
 #' @examples
@@ -151,7 +165,7 @@ sffm_get_numerical_wavenumbers<-function(tg_mat){
 #' dx = xs[2] - xs[1]
 #' dy = ys[2] - ys[1]
 #' # Make numerical corner wavenumbers c(kcxN, kcyN), corresponding to physical
-#' # corner wavenumbers 1/50, 1/20
+#' # corner wavenumbers (1/50, 1/20) in the (x,y) directions respectively
 #' reg_par = c(1/50 * dx, 1/20 * dy) 
 #' random_slip_mat = sffm_simulate(reg_par, tg_mat)
 #' 
@@ -372,29 +386,31 @@ sffm_recentre_slip<-function(m1, tg=NULL){
 #' Goodness of fit for SFFM parameters
 #'
 #' Given regression parameters, compute a goodness-of-fit statistic of the
-#' model with reg_par and data (tg_mat). This is useful for fitting
-#' statistical models within optimization routines \cr
-#' The statistical model is 'largely' fit in 'numerical' space, not physical
-#' space. \cr
-#' e.g. the smallest non-zero wavenumber resolvable by a DFT is 1/N,
-#' and the nyquist wavenumber is 0.5 \cr
-#' So be careful with units of kcx, kcy etc. 
+#' model with reg_par and data (tg_mat), based on Davies et al. (2015), Equation
+#' 5. Most users would not call this routine directly (see sffm_fit_parameters 
+#' for parameter estimation). \cr
 #'
-#' @param reg_par = vector of 2 regression parameters  [kcx,kcy in numerical
-#' space]. A 3rd parameter may be accepted in some cases, depending on the
-#' values of reg_par allowed in sffm_pars$spectral_amplitude_function
-#' @param tg_rast = slip grid raster to fit
+#' @param reg_par = vector of 2 proposed regression parameters (kcxN, kcyN) **in numerical
+#' space**. A 3rd parameter may be accepted in some cases, depending on the
+#' values of reg_par allowed in sffm_pars$spectral_amplitude_function. See
+#' \code{?sffm_simulate} for more details on 'numerical space' and 'physical space'
+#' @param tg_rast = slip matrix or raster to compute the goodness of fit for
 #' @param verbose = TRUE/FALSE -- Verbose error messages
 #' @param default_seed= integer -- passed to set.seed for reproducible fitting
 #'        with random fault generation (original .Random.seed is restored at the end)
 #' @param NumRandSf = Number of slip distributions simulated to compute the
 #'        goodness-of-fit of the model
 #' @param sffm_pars environment containing configuration parameters
-#'
 #' @return A goodness-of-fit measure -- minimising this will lead to the 'best'
 #'         model fit
 #' @export
 #'
+#' @references
+#' Davies et al. (2015), 
+#' Tsunami inundation from heterogeneous earthquake slip distributions:
+#' Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
+#' 6431–6451, doi:10.1002/2015JB012272. \cr
+#' 
 sffm_slip_goodness_of_fit<-function(
     reg_par,
     tg_rast,
@@ -470,12 +486,7 @@ sffm_slip_goodness_of_fit<-function(
 #' Fit SFFM parameters
 #'
 #' Function to compute the optimal reg_par parameters for the stochastic slip
-#' model. Uses the stochastic optimization method of \cr 
-#' Davies et al. (2015), 
-#' Tsunami inundation from heterogeneous earthquake slip distributions:
-#' Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
-#' 6431–6451, doi:10.1002/2015JB012272. \cr
-#' 
+#' model. Uses the stochastic optimization method of  Davies et al. (2015)
 #'
 #' @param m1 matrix or RasterLayer with slip values
 #' @param default_seed integer. Force the random seed value to this, in order
@@ -491,6 +502,12 @@ sffm_slip_goodness_of_fit<-function(
 #' @return an object from 'optim' with the fit
 #' 
 #' @export
+#'
+#' @references
+#' Davies et al. (2015), 
+#' Tsunami inundation from heterogeneous earthquake slip distributions:
+#' Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
+#' 6431–6451, doi:10.1002/2015JB012272. \cr
 #'
 #' @examples
 #' 

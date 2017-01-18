@@ -9,11 +9,12 @@ sffm_slip_goodness_of_fit(reg_par, tg_rast, verbose = FALSE,
   sffm_pars = .sffm_default_model_parameters)
 }
 \arguments{
-\item{reg_par}{= vector of 2 regression parameters  [kcx,kcy in numerical
-space]. A 3rd parameter may be accepted in some cases, depending on the
-values of reg_par allowed in sffm_pars$spectral_amplitude_function}
+\item{reg_par}{= vector of 2 proposed regression parameters (kcxN, kcyN) **in numerical
+space**. A 3rd parameter may be accepted in some cases, depending on the
+values of reg_par allowed in sffm_pars$spectral_amplitude_function. See
+\code{?sffm_simulate} for more details on 'numerical space' and 'physical space'}
 
-\item{tg_rast}{= slip grid raster to fit}
+\item{tg_rast}{= slip matrix or raster to compute the goodness of fit for}
 
 \item{verbose}{= TRUE/FALSE -- Verbose error messages}
 
@@ -31,12 +32,14 @@ A goodness-of-fit measure -- minimising this will lead to the 'best'
 }
 \description{
 Given regression parameters, compute a goodness-of-fit statistic of the
-model with reg_par and data (tg_mat). This is useful for fitting
-statistical models within optimization routines \cr
-The statistical model is 'largely' fit in 'numerical' space, not physical
-space. \cr
-e.g. the smallest non-zero wavenumber resolvable by a DFT is 1/N,
-and the nyquist wavenumber is 0.5 \cr
-So be careful with units of kcx, kcy etc.
+model with reg_par and data (tg_mat), based on Davies et al. (2015), Equation
+5. Most users would not call this routine directly (see sffm_fit_parameters 
+for parameter estimation). \cr
+}
+\references{
+Davies et al. (2015), 
+Tsunami inundation from heterogeneous earthquake slip distributions:
+Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
+6431–6451, doi:10.1002/2015JB012272. \cr
 }
 

@@ -30,11 +30,7 @@ an object from 'optim' with the fit
 }
 \description{
 Function to compute the optimal reg_par parameters for the stochastic slip
-model. Uses the stochastic optimization method of \cr 
-Davies et al. (2015), 
-Tsunami inundation from heterogeneous earthquake slip distributions:
-Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
-6431–6451, doi:10.1002/2015JB012272. \cr
+model. Uses the stochastic optimization method of  Davies et al. (2015)
 }
 \examples{
 
@@ -94,5 +90,11 @@ stopifnot(abs(fitted_sffm_parB$par - fitted_sffm_par$par)/fitted_sffm_par$par < 
 # hist(all_fitted_par[,2] / dy, main = 'Fitted kcy')
 # abline(v=reg_par[2] / dy, col='red')
 
+}
+\references{
+Davies et al. (2015), 
+Tsunami inundation from heterogeneous earthquake slip distributions:
+Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
+6431–6451, doi:10.1002/2015JB012272. \cr
 }
 

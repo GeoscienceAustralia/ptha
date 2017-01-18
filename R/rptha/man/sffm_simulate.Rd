@@ -8,9 +8,11 @@ sffm_simulate(reg_par, tg_mat, sffm_pars = .sffm_default_model_parameters)
 }
 \arguments{
 \item{reg_par}{vector passed to sffm_pars$spectral_amplitude_fun. First
-two entries are kcxN, kcyN, in NUMERICAL SPACE as explained above.}
+two entries are kcxN, kcyN, as explained above and in the example}
 
-\item{tg_mat}{is a 'template' raster, or matrix}
+\item{tg_mat}{is a 'template' raster, or matrix. The output slip distribution
+will have these dimensions, and if tg_mat is a RasterLayer, it will have the
+same properties (e.g. pixel size, spatial projection).}
 
 \item{sffm_pars}{list containing sffm configuration parameters. See
 sffm_get_default_model_parameters()}
@@ -19,17 +21,15 @@ sffm_get_default_model_parameters()}
 Output is the same class as tg_mat
 }
 \description{
-Make a random slip surface from a template raster, given some regression
-parameters (specified in NUMERICAL SPACE independent of the pixel size) and 
-SFFM definitions in sffm_pars \cr
-If kx = 0,1/N,2/N, ... are the numerical wavenumbers,
-they are equal to the ('physical' wavenumbers) x (dx) \cr
-where dx is the raster x-cell size. \cr
-In that case, if reg_par[1] and reg_par[2] are the numerical corner 
-wavenumbers, then: \cr
-reg_par[1] = kcxN = kcx*dx  \cr
-[where kcx is the physical 'corner wavenumber'], and similarly for
-reg_par[2] = kcyN = kcy*dy
+Make a random slip surface with the same dimensions as a provided template
+RasterLayer or matrix. The random slip surface is generated using (by default)
+the S_{NCF} algorithm in Davies et al., (2015), based on user-provided 
+numerical corner wave-number parameters. The corner-wavenumber parameters
+are specified in numerical space as (kcxN, kcyN) = (kcx, kcy) * (dx, dy) 
+where kcxN, kcyN are the NUMERICAL corner wave numbers; (kcx, kcy) are the
+physical corner wavenumbers (units of 1/distance), and (dx, dy) are the x/y
+pixel spacing of the template raster or matrix. \cr
+Further explanation, see the example: \cr
 }
 \examples{
 
@@ -44,7 +44,7 @@ ys = seq(0, 50, len=nrow(tg_mat)) # y-coordinates of tg_mat
 dx = xs[2] - xs[1]
 dy = ys[2] - ys[1]
 # Make numerical corner wavenumbers c(kcxN, kcyN), corresponding to physical
-# corner wavenumbers 1/50, 1/20
+# corner wavenumbers (1/50, 1/20) in the (x,y) directions respectively
 reg_par = c(1/50 * dx, 1/20 * dy) 
 random_slip_mat = sffm_simulate(reg_par, tg_mat)
 
@@ -72,5 +72,11 @@ filled.contour(xs, ys, t(random_slip_matB), asp=1, nlevels=30,
 # Should no longer be patches of zero values
 stopifnot(min(random_slip_matB) > 0)
 
+}
+\references{
+Davies et al. (2015), 
+Tsunami inundation from heterogeneous earthquake slip distributions:
+Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
+6431–6451, doi:10.1002/2015JB012272. \cr
 }
 
