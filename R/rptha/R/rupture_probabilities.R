@@ -213,6 +213,8 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' integrated from the individual events. Mathematically: \cr
 #' \cr
 #' (definitions) \cr
+#' \eqn{ \mu } = Shear modulus
+#' \cr
 #' S = long term semsmogenic slip rate 
 #' \cr
 #' A = source-zone area 
