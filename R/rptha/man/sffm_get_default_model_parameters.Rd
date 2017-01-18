@@ -2,7 +2,7 @@
 % Please edit documentation in R/fit_simulate_earthquake.R
 \name{sffm_get_default_model_parameters}
 \alias{sffm_get_default_model_parameters}
-\title{Code to fit/simulate spectral models of earthquake slip surfaces}
+\title{Get the default sffm model parameters}
 \usage{
 sffm_get_default_model_parameters()
 }
@@ -22,12 +22,6 @@ reg_par should  be the corner wavenumbers kcx, kcy IN NUMERICAL SPACE (i.e. the
 physical wavenumbers multiplied by dx and dy respectively) \cr
 }
 \description{
-AUTHORS
-Gareth Davies, Geoscience Australia 2013+, gareth.davies.ga.code@gmail.com
-}
-\details{
-Get the default sffm model parameters
-
 Convenience function to make the sffm_default_model_parameters list. By default
 these parameters are used in all sffm_ functions, unless an alternative list
 of default parameters is provided. See the help for \code{sffm_simulate} for
