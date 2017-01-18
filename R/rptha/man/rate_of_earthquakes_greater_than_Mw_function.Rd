@@ -134,9 +134,9 @@ integrated from the individual events. Mathematically: \cr
 (definitions) \cr
 S = long term semsmogenic slip rate \cr
 A = source-zone area \cr
-\eqn{ s_{i} }= slip for event i
-\eqn{ a_{i} } = area for event i
-\eqn{rMw_{i} } = rate of events with the same magnitude Mw as event i
+\eqn{ s_{i} }= slip for event i \cr
+\eqn{ a_{i} } = area for event i \cr
+\eqn{rMw_{i} } = rate of events with the same magnitude Mw as event i \cr
 \eqn{ Pr(event_{i} | event with size Mw_{i}) } = the conditional probability
 of each event with the same Mw in the event table [i.e. if we take all events
 with a given Mw from the table, their conditional probabilities should sum to

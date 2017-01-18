@@ -224,7 +224,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' 1]. \cr
 #' (main equation) \cr
 #' \deqn{ \mu  S  A = 
-#' \sum_{i \in events} ( \mu s_{i} a_{i} Pr(event_{i} | event_of_size_Mw_{i}) rMw_{i}) }\cr
+#' \sum_{i \in events} ( \mu s_{i} a_{i} Pr(event_{i} | event with size Mw_{i}) rMw_{i}) }\cr
 #' \cr
 #' The form of the GR relation implies that a factor of 10^(a) will appear in
 #' the RHS term rate_of_events_of_size_Mw_{i}, and nowhere else. Hence to
