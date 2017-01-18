@@ -1,11 +1,3 @@
-###############################################################################
-#'
-#' Code to fit/simulate spectral models of earthquake slip surfaces
-#'
-#' AUTHORS
-#' Gareth Davies, Geoscience Australia 2013+, gareth.davies.ga.code@gmail.com
-#'
-#'
 
 #' Get the default sffm model parameters
 #'
