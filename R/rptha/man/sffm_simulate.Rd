@@ -4,7 +4,8 @@
 \alias{sffm_simulate}
 \title{Synthetic finite fault model generator}
 \usage{
-sffm_simulate(reg_par, tg_mat, sffm_pars = .sffm_default_model_parameters)
+sffm_simulate(reg_par, tg_mat, sffm_pars = .sffm_default_model_parameters,
+  sub_sample_size = c(1, 1))
 }
 \arguments{
 \item{reg_par}{vector passed to sffm_pars$spectral_amplitude_fun. First
@@ -16,6 +17,12 @@ same properties (e.g. pixel size, spatial projection).}
 
 \item{sffm_pars}{list containing sffm configuration parameters. See
 sffm_get_default_model_parameters()}
+
+\item{sub_sample_size}{vector of length 2 with integers >= 1. tg_mat is 
+refined to have rows/columns = sub_sample_size * (original rows/columns) before
+the algorithm is applied. Values > 1 cause tg_mat to be sampled to finer
+resolution before we simulate the sffm. The synthetic values are re-aggregated
+into a matrix with the size of the original tg_mat prior to returning}
 }
 \value{
 Output is the same class as tg_mat

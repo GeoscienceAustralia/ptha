@@ -135,6 +135,11 @@ sffm_get_numerical_wavenumbers<-function(tg_mat){
 #' same properties (e.g. pixel size, spatial projection). 
 #' @param sffm_pars list containing sffm configuration parameters. See
 #' sffm_get_default_model_parameters()
+#' @param sub_sample_size vector of length 2 with integers >= 1. tg_mat is 
+#' refined to have rows/columns = sub_sample_size * (original rows/columns) before
+#' the algorithm is applied. Values > 1 cause tg_mat to be sampled to finer
+#' resolution before we simulate the sffm. The synthetic values are re-aggregated
+#' into a matrix with the size of the original tg_mat prior to returning 
 #' @return Output is the same class as tg_mat
 #'
 #' @references
@@ -185,11 +190,44 @@ sffm_get_numerical_wavenumbers<-function(tg_mat){
 #' # Should no longer be patches of zero values
 #' stopifnot(min(random_slip_matB) > 0)
 #'
-sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_parameters){ 
+sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_parameters,
+    sub_sample_size = c(1,1)){ 
 
     # Record random seed for reproducibility
     initial_seed = get_random_seed()
-    
+
+    # Optionally sample to a finer grid   
+    if(any(sub_sample_size > 1)){
+        #ensure sub_sample_size is integer
+        stopifnot(all.equal(sub_sample_size, round(sub_sample_size)))
+
+	# Store input values
+	old_tg_mat = tg_mat
+	old_reg_par = reg_par	
+
+	# Make a finer tg_mat
+        new_tg_mat = matrix(0, nrow=nrow(tg_mat)*sub_sample_size[1], 
+            ncol=ncol(tg_mat)*sub_sample_size[2])
+        # Give values to interpolated tg_mat, making sure the sum of slip
+        # remains the same
+        max_tg_orig = which(as.matrix(tg_mat) == max(as.matrix(tg_mat)), arr.ind=TRUE)
+        new_max_tg = (max_tg_orig - 1) * sub_sample_size + ceiling(0.5*sub_sample_size)
+        new_tg_mat[new_max_tg[1], new_max_tg[2]] = sum(as.matrix(tg_mat))
+	
+        # Adjust reg_par to match new_tg_mat
+        new_reg_par = reg_par
+        new_reg_par[1:2] = reg_par[1:2] / sub_sample_size
+
+        if(class(tg_mat) == 'RasterLayer'){
+            new_tg_mat = raster(new_tg_max, xmn = extent(tg_mat)@xmin, 
+                xmx = extent(tg_mat)@xmax, ymn = extent(tg_mat)@ymin,
+                ymx = extent(tg_mat)@ymax)
+        }
+
+        tg_mat = new_tg_mat
+        reg_par = new_reg_par
+    }
+ 
     # Make wavenumber matrices
     tmp = sffm_get_numerical_wavenumbers(tg_mat)
     kx = tmp[[1]]
@@ -268,6 +306,22 @@ sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_paramet
         if(!(sffm_pars$spatial_slip_decay %in% c('none'))){
             stop('sffm_pars$spatial_slip_decay not recognized')
         }
+    }
+
+    # If required, reaggregate the slip values
+    if(any(sub_sample_size > 1)){
+        agg_fake_data_clip = as.matrix(old_tg_mat) * 0
+        sr = seq(1, nrow(fake_data_clip), by=sub_sample_size[1])
+        sc = seq(1, ncol(fake_data_clip), by=sub_sample_size[2])
+        for(ic in 1:sub_sample_size[2]){
+            for(ir in 1:sub_sample_size[1]){
+                agg_fake_data_clip = agg_fake_data_clip + 
+                    fake_data_clip[sr + (ir-1), sc + (ic-1)]
+            }
+        }
+        # Redefine tg_mat to be the pre-interpolation matrix, 
+        # so that summation is correct later on
+        tg_mat = old_tg_mat 
     }
 
     # Ensure final mean = data mean 
