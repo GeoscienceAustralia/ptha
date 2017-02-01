@@ -319,9 +319,10 @@ sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_paramet
                     fake_data_clip[sr + (ir-1), sc + (ic-1)]
             }
         }
-        # Redefine tg_mat to be the pre-interpolation matrix, 
-        # so that summation is correct later on
+	# Redefine fake_data_clip and tg_mat to be the pre-interpolation
+	# matrix, so that summation is correct later on
         tg_mat = old_tg_mat 
+        fake_data_clip = agg_fake_data_clip
     }
 
     # Ensure final mean = data mean 
