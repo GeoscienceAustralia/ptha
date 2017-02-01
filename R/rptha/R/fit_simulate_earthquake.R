@@ -357,10 +357,10 @@ sffm_recentre_slip<-function(m1, tg=NULL){
         nc = dim(m1_mat)[2]
         newRows = (((1:nr) - (new_row_max - old_row_max))%%nr)
         newRows[which(newRows==0)] = nr
-        m1_mat = m1_mat[newRows,]
+        m1_mat = m1_mat[newRows, , drop=FALSE]
         newCols = (((1:nc) - (new_col_max-old_col_max))%%nc)
         newCols[which(newCols==0)] = nc 
-        m1_mat = m1_mat[,newCols]
+        m1_mat = m1_mat[, newCols, drop=FALSE]
     }
     if(class(m1) == 'RasterLayer'){
         output = raster(m1)
