@@ -200,6 +200,7 @@ sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_paramet
     if(any(sub_sample_size > 1)){
         #ensure sub_sample_size is integer
         stopifnot(all.equal(sub_sample_size, round(sub_sample_size)))
+        stopifnot(length(sub_sample_size) == 2)
 
 	# Store input values
 	old_tg_mat = tg_mat
@@ -208,11 +209,11 @@ sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_paramet
 	# Make a finer tg_mat
         new_tg_mat = matrix(0, nrow=nrow(tg_mat)*sub_sample_size[1], 
             ncol=ncol(tg_mat)*sub_sample_size[2])
-        # Give values to interpolated tg_mat, making sure the sum of slip
-        # remains the same
+
+        # Give values to interpolated tg_mat 
         max_tg_orig = which(as.matrix(tg_mat) == max(as.matrix(tg_mat)), arr.ind=TRUE)
         new_max_tg = (max_tg_orig - 1) * sub_sample_size + ceiling(0.5*sub_sample_size)
-        new_tg_mat[new_max_tg[1], new_max_tg[2]] = sum(as.matrix(tg_mat))
+        new_tg_mat[new_max_tg[1], new_max_tg[2]] = sum(as.matrix(tg_mat)) * prod(sub_sample_size)
 	
         # Adjust reg_par to match new_tg_mat
         new_reg_par = reg_par
