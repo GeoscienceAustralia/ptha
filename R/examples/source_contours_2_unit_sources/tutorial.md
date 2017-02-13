@@ -220,6 +220,10 @@ library(rptha)
 ```
 
 ```
+## Loading required package: ncdf4
+```
+
+```
 ## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
 ## loading 'rptha'
 ```
