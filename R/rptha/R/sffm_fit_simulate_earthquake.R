@@ -877,7 +877,9 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre){
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are
-#' familiary with \code{sffm_simulate}
+#' familiary with \code{sffm_simulate}. Note the slip raster is returned for plotting
+#' convenience only - one limitation is that all raster cells are the same size, whereas in
+#' reality the unit-source sizes vary slightly.
 #'
 #' @export
 #' @examples
