@@ -125,7 +125,8 @@ orthogonal_near_trench<-function(top_line, second_line){
 #'     source_shapefile=puysegur,
 #'    desired_subfault_length=50,
 #'    desired_subfault_width=50,
-#'    downdip_lines=puysegur_downdip)
+#'    downdip_lines=puysegur_downdip,
+#'    make_plot=TRUE)
 #'
 discretized_source_from_source_contours<-function(
     source_shapefile, 
@@ -304,6 +305,23 @@ discretized_source_from_source_contours<-function(
 #' @return data.frame with key summary statistics
 #'
 #' @export
+#' @examples
+#' # Get source contours
+#' puysegur = readOGR(system.file('extdata/puysegur.shp', package='rptha'), layer='puysegur')
+#' # Get downdip lines
+#' puysegur_downdip = readOGR(system.file('extdata/puysegur_downdip.shp', package='rptha'), 
+#'    layer='puysegur_downdip')
+#' # Make discretized_source with 50km x 50km unit-sources (approximately)
+#' puysegur_discretized_source = discretized_source_from_source_contours(
+#'     source_shapefile=puysegur,
+#'    desired_subfault_length=50,
+#'    desired_subfault_width=50,
+#'    downdip_lines=puysegur_downdip)
+#'
+#' # Make summary statistics
+#' puysegur_summary_statistics = discretized_source_approximate_summary_statistics(puysegur_discretized_source)
+#' print(head(puysegur_summary_statistics))
+#'
 discretized_source_approximate_summary_statistics<-function(
     discretized_source,
     default_rake = 90, 
@@ -500,6 +518,29 @@ discretized_source_approximate_summary_statistics<-function(
 #' @param depth_in_km Are depths in km (TRUE) or meters (FALSE)
 #' @return data.frame with key summary statistics
 #' @export
+#' @examples
+#' # Get source contours
+#' puysegur = readOGR(system.file('extdata/puysegur.shp', package='rptha'), layer='puysegur')
+#' # Get downdip lines
+#' puysegur_downdip = readOGR(system.file('extdata/puysegur_downdip.shp', package='rptha'), 
+#'    layer='puysegur_downdip')
+#' # Make discretized_source with 50km x 50km unit-sources (approximately)
+#' puysegur_discretized_source = discretized_source_from_source_contours(
+#'     source_shapefile=puysegur,
+#'    desired_subfault_length=50,
+#'    desired_subfault_width=50,
+#'    downdip_lines=puysegur_downdip)
+#'
+#' puysegur_stats = discretized_source_summary_statistics(puysegur_discretized_source, 
+#'    approx_dx = 5000, approx_dy = 5000)
+#' head(puysegur_stats)
+#'
+#' # Compare with 'approximate' summary statistics, which don't use sub-grid points
+#' # Most obvious difference occurs in depth for up-dip unit-sources, which have a fairly
+#' # non-linear (concave-down parabolic-ish) profile. This causes the
+#' # 'approximate' mean depth to be larger than the mean depth based on sub-grid points.
+#' puysegur_stats_approx = discretized_source_approximate_summary_statistics(puysegur_discretized_source)
+#' summary(puysegur_stats_approx/puysegur_stats)
 discretized_source_summary_statistics<-function(
     discretized_source,
     default_rake = 90,
