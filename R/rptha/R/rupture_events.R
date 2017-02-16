@@ -276,6 +276,28 @@ get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.
 #' @return A large table containing information on all earthquake events, and
 #' the unit sources they involve
 #' @export
+#' @examples
+#'
+#' # Get source contours
+#' puysegur = readOGR(system.file('extdata/puysegur.shp', package='rptha'), layer='puysegur')
+#' # Get downdip lines
+#' puysegur_downdip = readOGR(system.file('extdata/puysegur_downdip.shp', package='rptha'), 
+#'    layer='puysegur_downdip')
+#' # Make discretized_source with 50km x 50km unit-sources (approximately)
+#' puysegur_discretized_source = discretized_source_from_source_contours(
+#'     source_shapefile=puysegur,
+#'    desired_subfault_length=50,
+#'    desired_subfault_width=50,
+#'    downdip_lines=puysegur_downdip)
+#'
+#' puysegur_unit_source_stats = discretized_source_summary_statistics(
+#'    puysegur_discretized_source, approx_dx=10000, approx_dy=10000)
+#' puysegur_events = get_all_earthquake_events(
+#'     unit_source_statistics = puysegur_unit_source_stats,
+#'     Mmin = 7.2, Mmax = 9.2, dMw = 0.1, 
+#'     source_zone_name='puysegur')
+#' print(head(puysegur_events))
+#'
 get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statistics = NULL,
     Mmin=7.5, Mmax = 9.6, dMw = 0.1, mu=3.0e+10, constant=9.05, target_location = NULL,
     source_zone_name = NA){
