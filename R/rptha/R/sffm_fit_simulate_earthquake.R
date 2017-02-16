@@ -1071,3 +1071,63 @@ sffm_make_events_on_discretized_source<-function(
 }
 
 
+#' Convert the sffm events information to a table 
+#'
+#' Convert the sffm events to a data.frame to ease export to csv or netcdf. Note
+#' the tabular format is not ideal, since the data is relatively unstructured.
+#' For instance, it is necessary to store the indices with non-zero slip in a
+#' character string.  The same issue arises for the slip values themselves.
+#' 
+#' @param all_sffm_events output of \code{sffm_make_events_on_discretized_source}
+#' @param slip_significant_figures integer or NULL. If not NULL, then truncate slip
+#' to this many significant figures when concatenating to string
+#' @return data.frame with: columns event_index_string and event_slip_string, having
+#' all the unit-source-indices and their slip values in a character string, separated
+#' by '-' and '_' respectively; and other metadata about the event
+#'
+#' @export
+#'
+sffm_events_to_table<-function(all_sffm_events, slip_significant_figures=NULL){
+
+    # Collapse the indices of unit sources with non-zero slip to a character
+    # The string is like e.g. '20-22-23-37-', i.e. numbers separated by '-'
+    # This is a clumsy way of integrating an array with irregular length into
+    # each row of a data.frame
+    event_index_string = unlist(lapply(all_sffm_events, 
+        f<-function(x) paste0(which(c(x$slip_matrix) > 0), sep="-", collapse="")))
+
+    # Collapse the slip on unit sources with non-zero slip to a character, possibly
+    # with a reduction in the number of significant figures
+    #
+    # The string is like e.g. '0.234_1.23543_23.7_37_', i.e. numbers separated by '_'
+    #
+    # This is a clumsy way of integrating an array with irregular length into
+    # each row of a data.frame
+    if(is.null(slip_significant_figures)){
+        event_slip_string = unlist(lapply(all_sffm_events, 
+            f<-function(x){
+                paste0(c(x$slip_matrix[x$slip_matrix > 0]), sep="_", collapse="")
+            }
+        ))
+    }else{
+        event_slip_string = unlist(lapply(all_sffm_events, 
+            f<-function(x){
+                paste0(c(signif(x$slip_matrix[x$slip_matrix > 0],slip_significant_figures)), 
+                    sep="_", collapse="")
+            }))
+    }
+
+    # Make the final output dataframe -- put various potentially useful metadata in too
+    output_data = data.frame(
+        event_index_string = event_index_string, 
+        event_slip_string = event_slip_string, 
+        Mw = unlist(lapply(all_sffm_events, f<-function(x) x$target_event_mw)),
+        target_lon = unlist(lapply(all_sffm_events, f<-function(x) x$target_location[1])),
+        target_lat = unlist(lapply(all_sffm_events, f<-function(x) x$target_location[2])),
+        peak_slip_downdip_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[1])),
+        peak_slip_alongstring_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[1])),
+        sourcename = unlist(lapply(all_sffm_events, f<-function(x) x$sourcename)),
+        stringsAsFactors=FALSE)
+
+    return(output_data)
+}
