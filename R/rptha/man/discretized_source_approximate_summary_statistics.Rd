@@ -46,7 +46,8 @@ puysegur_discretized_source = discretized_source_from_source_contours(
    downdip_lines=puysegur_downdip)
 
 # Make summary statistics
-puysegur_summary_statistics = discretized_source_approximate_summary_statistics(puysegur_discretized_source)
+puysegur_summary_statistics = discretized_source_approximate_summary_statistics(
+    puysegur_discretized_source)
 print(head(puysegur_summary_statistics))
 
 }

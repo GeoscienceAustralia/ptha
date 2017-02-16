@@ -845,3 +845,227 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre){
 
         return(c(sL, eL, sW, eW))
 }
+
+
+#' Make synthetic finite fault models on a discretized source
+#'
+#' Currently only the S_{NCF} model from Davies et al. (2015) is implemented.
+#' The corner wave-number parameters are generated stochastically based on
+#' the regression relations provided therein. The peak slip location varies
+#' about the target_location, within a region of approximately (L/2, W/2) where
+#' L, W are the length/width of earthquakes of this magnitude according to 
+#' Strasser's scaling relations 
+#' 
+#' @param discretized_source_statistics data.frame returned from e.g. 
+#' \code{discretized_source_summary_statistics} or
+#' \code{discretized_source_approximate_summary_statistics}
+#' @param target_location numeric vector c(lon,lat) giving the desired peak slip
+#' location. By default the peak slip will be distributed stochastically around this
+#' point within a region of approximately (L/2, W/2), where L, W are the
+#' length/width of uniform-slip earthquakes of this magnitude based on
+#' Strasser's scaling relations. See vary_peak_slip_location
+#' @param target_event_mw desired magnitude of the earthquake
+#' @param num_events number of stochastic slip scenarios to produce
+#' @param vary_peak_slip_location If TRUE, vary the peak slip location in a window
+#' around the target location, as described above. If FALSE, use the same peak
+#' slip location for every synthetic event
+#' @param zero_low_slip_cells_fraction real between 0 and 1. If > 0,
+#' then we zero all of the smallest slip values, which contribute < 'zero_low_slip_cells_fraction'
+#' to the sum of all slip values on the rupture. A conservative value is 0, 
+#' but small values (e.g. 0.05) might substantially reduce the number of unit-sources
+#' involved in the rupture, with little distortion of the event.
+#' @return A list with length = num_events. Each element of the list is a list
+#' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
+#' numerical_corner_wavenumbers, which should be self-explanatory if you are
+#' familiary with \code{sffm_simulate}
+#'
+#' @export
+#' @examples
+#'
+#' # Get source contours
+#' puysegur = readOGR(system.file('extdata/puysegur.shp', package='rptha'), layer='puysegur')
+#' # Get downdip lines
+#' puysegur_downdip = readOGR(system.file('extdata/puysegur_downdip.shp', package='rptha'), 
+#'     layer='puysegur_downdip')
+#' # Make discretized_source
+#' puysegur_discretized_source = discretized_source_from_source_contours(
+#'     source_shapefile=puysegur,
+#'     desired_subfault_length=50,
+#'     desired_subfault_width=50,
+#'     downdip_lines=puysegur_downdip)
+#' # Get unit source summary statistics
+#' puysegur_summary_statistics = discretized_source_summary_statistics(
+#'     puysegur_discretized_source,
+#'     approx_dx=5000,
+#'     approx_dy=5000)
+#' # Make stochastic slip events, with location/magnitude based on 2009/07/15
+#' # puysegur earthquake
+#' puysegur_sffm_event1 = sffm_make_events_on_discretized_source(
+#'     puysegur_summary_statistics,
+#'     target_location = c(166.568, -45.745),
+#'     target_event_mw = 7.8,
+#'     num_events = 10)
+#'
+#' # Plot the slip raster for the first 6 synthetic events
+#' par(mfrow=c(3,2))
+#' for(i in 1:6) plot(puysegur_sffm_event1[[i]]$slip_raster)
+
+sffm_make_events_on_discretized_source<-function(
+    discretized_source_statistics, 
+    target_location,
+    target_event_mw, 
+    num_events = 1,
+    vary_peak_slip_location=TRUE,
+    zero_low_slip_cells_fraction=0.0,
+    sourcename="",
+    sffm_sub_sample_size = c(1,1)){
+
+    nx = max(discretized_source_statistics$alongstrike_number)
+    ny = max(discretized_source_statistics$downdip_number)
+
+    # Get 'typical' rupture dimensions, and allow the peak slip location
+    # to be within L/2, W/2 of the CMT location
+    rs = Mw_2_rupture_size(target_event_mw)
+    if(vary_peak_slip_location){
+        mean_us_width = mean(discretized_source_statistics$width)
+        mean_us_length = mean(discretized_source_statistics$length)
+        peak_slip_unit_source_window = c(
+            ceiling(0.5*rs['width']/mean_us_width),
+            ceiling(0.5*rs['length']/mean_us_length))
+    }else{
+        # Constant peak slip location
+        peak_slip_unit_source_window = c(0, 0)
+    }
+        
+
+    # Make the random kcx/kcy values appropriate for the magnitude. Simulatneously
+    # make the length/width over which non-zero slip can occur
+    random_LWkc_function = sffm_make_random_lwkc_function()
+    LWkc = random_LWkc_function(rep(target_event_mw, length=num_events))
+    physical_corner_wavenumbers = LWkc[,3:4]
+    nonzero_slip_LW = LWkc[,1:2]
+
+    # Find the along-strike/down-dip unit source index near the target_location
+    target_unit_source_index = which.min(distHaversine(
+        discretized_source_statistics[,c('lon_c', 'lat_c')], 
+        matrix(target_location, ncol=2, nrow=length(nx), byrow=TRUE)))
+    target_alongstrike = discretized_source_statistics$alongstrike_number[target_unit_source_index]
+    target_downdip = discretized_source_statistics$downdip_number[target_unit_source_index]
+
+    # Get average dx/dy for unit sources, where dx is along-strike and dy is
+    # down-dip
+    mean_dx = mean(discretized_source_statistics$length)
+    mean_dy = sum(discretized_source_statistics$width * 
+        discretized_source_statistics$length) / 
+        sum(discretized_source_statistics$length)
+
+    # Record full dx/dy in matrices
+    dx = matrix(NA, ncol=nx, nrow=ny)
+    dy = matrix(NA, ncol=nx, nrow=ny)
+    for(i in 1:nrow(discretized_source_statistics)){
+        nr = discretized_source_statistics$downdip_number[i] 
+        nc = discretized_source_statistics$alongstrike_number[i]
+        dx[nr, nc] = discretized_source_statistics$length[i]
+        dy[nr, nc] = discretized_source_statistics$width[i]
+    }
+
+    desired_M0 = M0_2_Mw(target_event_mw, inverse=TRUE)
+
+    #source_info = list()
+    slip_generator_fun<-function(j){
+
+        # Define the allowed ranges of the peak slip location
+        target_downdip_range_min = max(1, target_downdip - peak_slip_unit_source_window[1])
+        target_downdip_range_max = min(ny, target_downdip + peak_slip_unit_source_window[1])
+        target_alongstrike_range_min = max(1, target_alongstrike - peak_slip_unit_source_window[2])
+        target_alongstrike_range_max = min(nx, target_alongstrike + peak_slip_unit_source_window[2])
+
+        # Randomly sample the peak slip location
+        peak_slip_row = sample(target_downdip_range_min:target_downdip_range_max, size=1)
+        peak_slip_col = sample(target_alongstrike_range_min:target_alongstrike_range_max, size=1)
+
+        # Choose random 'numerical' corner wavenumbers
+        numerical_corner_wavenumbers = physical_corner_wavenumbers[j,1:2] * 
+            c(dx[peak_slip_row, peak_slip_col], 
+              dy[peak_slip_row, peak_slip_col])
+
+        # Find indices where we allow non-zero slip.
+        slip_LW = nonzero_slip_LW[j,1:2]
+        # Must include at least 1x1 unit source, though could have as many as
+        # the entire source zone allows.
+        num_L = round(slip_LW[1] / dx[peak_slip_row, peak_slip_col])
+        num_L = min(ncol(dx), max(num_L, 1))
+        num_W = round(slip_LW[2] / dy[peak_slip_row, peak_slip_col])
+        num_W = min(nrow(dx), max(num_W, 1))
+
+        # Non-zero slip cover along-strike indices sL:eL, and down-dip indices
+        # sW:eW. We try to make the peak slip location be the middle of the rupture,
+        # but there are practical difficulties
+        bbox = rectangle_on_grid(dim(dx), c(num_W, num_L), c(peak_slip_row, peak_slip_col))
+        sL = bbox[3]
+        eL = bbox[4]
+        sW = bbox[1]
+        eW = bbox[2]
+
+        # Ensure peak slip occurs in desired location
+        template_slip_matrix = dx * 0
+        template_slip_matrix[peak_slip_row, peak_slip_col] = 1
+        slip_matrix = dx * 0
+        # Simulate on sub-sampled grid -- e.g. with 50x50km unit sources,
+        # 5x5 sub-sample implies events with 10km cells -- similar to many
+        # finite fault inversions.
+        # Note we only sample on the 'non-zero slip area', i.e. sW:eW, sL:eL
+        slip_matrix[sW:eW, sL:eL] = sffm_simulate(
+            numerical_corner_wavenumbers, 
+            template_slip_matrix[sW:eW, sL:eL, drop=FALSE], 
+            sub_sample_size=sffm_sub_sample_size)
+
+        # There will probably be many small but nonzero slip values
+        # Set some to zero, so for efficiency later
+        threshold_level = zero_low_slip_cells_fraction # Get the main fraction of the cumulative slip
+        slip_sorted = sort(slip_matrix, decreasing=FALSE)
+        cumulative_slip_sorted = cumsum(slip_sorted)
+        if(threshold_level == 0){
+            slip_threshold = 0
+        }else{
+            slip_threshold_ind = max(
+                which(cumulative_slip_sorted < threshold_level*max(cumulative_slip_sorted)))
+            if(is.finite(slip_threshold_ind)){
+                slip_threshold = slip_sorted[slip_threshold_ind]
+            }else{
+                slip_threshold = 0
+            }
+        }
+        slip_matrix = slip_matrix * (slip_matrix > slip_threshold)
+
+        # Ensure M0 is correct
+        # We need slip * dx * dy * mu = M0
+        mu = 3e+10
+        initial_moment = sum(slip_matrix * dx * dy * 1e+06 * mu)
+        slip_matrix = slip_matrix/initial_moment * desired_M0
+        stopifnot(abs(sum(slip_matrix * dx * dy * 1e+06 * mu) - desired_M0) < 
+            (1.0e-06 * desired_M0))
+
+        # Make a raster for nice output plots
+        slip_raster = raster(slip_matrix, xmn=0, xmx=nx*mean_dx, ymx=0, 
+            ymn=-ny*mean_dy)
+
+        output_list = list(
+            slip_matrix = slip_matrix, 
+            slip_raster = slip_raster, 
+            initial_moment = initial_moment,
+            peak_slip_ind = c(peak_slip_row, peak_slip_col),
+            numerical_corner_wavenumbers = numerical_corner_wavenumbers,
+            target_event_mw = target_event_mw,
+            target_location = target_location,
+            sourcename = sourcename)
+
+        return(output_list)
+    }
+
+    all_sffm_events = lapply(as.list(1:num_events), slip_generator_fun)
+
+    return(all_sffm_events)
+}
+
+

@@ -63,7 +63,8 @@ head(puysegur_stats)
 # Most obvious difference occurs in depth for up-dip unit-sources, which have a fairly
 # non-linear (concave-down parabolic-ish) profile. This causes the
 # 'approximate' mean depth to be larger than the mean depth based on sub-grid points.
-puysegur_stats_approx = discretized_source_approximate_summary_statistics(puysegur_discretized_source)
+puysegur_stats_approx = discretized_source_approximate_summary_statistics(
+    puysegur_discretized_source)
 summary(puysegur_stats_approx/puysegur_stats)
 }
 
