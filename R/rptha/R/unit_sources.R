@@ -113,6 +113,20 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' useful for defining sub-unit-source points for tsunami source integration
 #'
 #' @export
+#'
+#' @examples
+#' # Get source contours
+#' puysegur = readOGR(system.file('extdata/puysegur.shp', package='rptha'), layer='puysegur')
+#' # Get downdip lines
+#' puysegur_downdip = readOGR(system.file('extdata/puysegur_downdip.shp', package='rptha'), 
+#'    layer='puysegur_downdip')
+#' # Make discretized_source with 50km x 50km unit-sources (approximately)
+#' puysegur_discretized_source = discretized_source_from_source_contours(
+#'     source_shapefile=puysegur,
+#'    desired_subfault_length=50,
+#'    desired_subfault_width=50,
+#'    downdip_lines=puysegur_downdip)
+#'
 discretized_source_from_source_contours<-function(
     source_shapefile, 
     desired_subfault_length,

@@ -503,9 +503,10 @@ mid_line_with_cutpoints_from_downdip_sldf_and_source_contours<-function(
 
     mid_line_with_cutpoints = list()
     for(i in 1:length(odd)){
-
+        # To get the intersections more consistenly, we allow buffering of the
+        # lines (i.e. to avoid numerical near-misses at boundaries)
         dd_line = downdip_lines[odd[i],]
-        dd_line_buf = gBuffer(dd_line, width=buffer_width)
+        dd_line_buf = suppressWarnings(gBuffer(dd_line, width=buffer_width))
 
         mid_line_with_cutpoints[[i]] = matrix(NA, ncol=3, nrow=length(ocl))
 
@@ -514,7 +515,7 @@ mid_line_with_cutpoints_from_downdip_sldf_and_source_contours<-function(
             cl_level = contour_level[ocl[j]]
 
             local_intersects = gIntersection(
-                dd_line_buf, gBuffer(cl_line, width=buffer_width))
+                dd_line_buf, suppressWarnings(gBuffer(cl_line, width=buffer_width)))
 
             if(is.null(local_intersects)){
                 stop('Missing intersection: Consider increasing buffer_width or editing downdip_lines')
