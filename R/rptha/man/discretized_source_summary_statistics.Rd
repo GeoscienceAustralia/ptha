@@ -42,4 +42,28 @@ optionally applied to the slip (i.e. the area is entirely based on the interior
 of the earthquake unit source, so does not include any extra regions
 affected by smoothing).
 }
+\examples{
+# Get source contours
+puysegur = readOGR(system.file('extdata/puysegur.shp', package='rptha'), layer='puysegur')
+# Get downdip lines
+puysegur_downdip = readOGR(system.file('extdata/puysegur_downdip.shp', package='rptha'), 
+   layer='puysegur_downdip')
+# Make discretized_source with 50km x 50km unit-sources (approximately)
+puysegur_discretized_source = discretized_source_from_source_contours(
+    source_shapefile=puysegur,
+   desired_subfault_length=50,
+   desired_subfault_width=50,
+   downdip_lines=puysegur_downdip)
+
+puysegur_stats = discretized_source_summary_statistics(puysegur_discretized_source, 
+   approx_dx = 5000, approx_dy = 5000)
+head(puysegur_stats)
+
+# Compare with 'approximate' summary statistics, which don't use sub-grid points
+# Most obvious difference occurs in depth for up-dip unit-sources, which have a fairly
+# non-linear (concave-down parabolic-ish) profile. This causes the
+# 'approximate' mean depth to be larger than the mean depth based on sub-grid points.
+puysegur_stats_approx = discretized_source_approximate_summary_statistics(puysegur_discretized_source)
+summary(puysegur_stats_approx/puysegur_stats)
+}
 

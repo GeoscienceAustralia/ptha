@@ -32,4 +32,22 @@ with our algorithms. \cr
 The approach used in this routine is faster than discretized_source_summary_statistics,
 at the expense of accuracy [the latter draws on the sub-unit-source grid points].
 }
+\examples{
+# Get source contours
+puysegur = readOGR(system.file('extdata/puysegur.shp', package='rptha'), layer='puysegur')
+# Get downdip lines
+puysegur_downdip = readOGR(system.file('extdata/puysegur_downdip.shp', package='rptha'), 
+   layer='puysegur_downdip')
+# Make discretized_source with 50km x 50km unit-sources (approximately)
+puysegur_discretized_source = discretized_source_from_source_contours(
+    source_shapefile=puysegur,
+   desired_subfault_length=50,
+   desired_subfault_width=50,
+   downdip_lines=puysegur_downdip)
+
+# Make summary statistics
+puysegur_summary_statistics = discretized_source_approximate_summary_statistics(puysegur_discretized_source)
+print(head(puysegur_summary_statistics))
+
+}
 

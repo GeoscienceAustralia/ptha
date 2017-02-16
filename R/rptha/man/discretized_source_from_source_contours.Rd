@@ -80,7 +80,8 @@ puysegur_discretized_source = discretized_source_from_source_contours(
     source_shapefile=puysegur,
    desired_subfault_length=50,
    desired_subfault_width=50,
-   downdip_lines=puysegur_downdip)
+   downdip_lines=puysegur_downdip,
+   make_plot=TRUE)
 
 }
 
