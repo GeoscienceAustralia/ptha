@@ -660,3 +660,188 @@ sffm_fit_parameters<-function(
 }
 
 
+#' Create a function to simulate random length/width/kcx/kcy for synthetic
+#' finite fault models.
+#'
+#' The default parameter values are based on the Strasser et al. (2010)
+#' length/width vs Mw scaling laws, and the kcx/kcy parameters from the S_{NCF}
+#' stochastic slip model of Davies et al (2015). Beware that kcx/kcy are 'physical'
+#' corner wavenumbers (units of distance^{-1}), whereas the function \code{simulate_sffm} requires these
+#' to be transformed to dimensionless 'numerical' corner wavenumbers, by
+#' division by the sffm cell size.
+#'
+#' @param log10kcx_regression_par vector of length 3 with the gradient,
+#' intercept and residual standard deviation for the regression of log10(kcx) vs
+#' earthquake-magnitude
+#' @param log10kcy_regression_par vector of length 3 with the gradient,
+#' intercept and residual standard deviation for the regression of log10(kcy) vs
+#' earthquake-magnitude
+#' @param cor_kcx_kcy_residual Pearson correlation between the log10(kcx) and
+#' log10(kcy) regression residuals
+#' @return a function f(Mw) which returns a vector or matrix with random
+#' length, width, kcx, kcy values to be used to simulate an sffm with a given magnitude.
+#' Units are km, km, km^{-1}, km^{-1} respectively.
+#' @export
+#' @examples
+#' # Here we use default parameter values
+#' lwkc = sffm_make_random_lwkc_function()
+#' print(lwkc(7.5)) # Random parameters for Mw = 7.5
+#' print(lwkc(7.5)) # More random parameters
+#' print(lwkc(9.2)) # Larger L, W, and smaller kc
+#' # The function can also take a vector, in which case it returns a matrix with one row for each Mw.
+#' print(lwkc(c(7.5, 8.0, 8.5, 9.0)))
+#'
+sffm_make_random_lwkc_function<-function(
+    log10kcx_regression_par=c(-0.54, 2.03, 0.22),
+    log10kcy_regression_par=c(-0.41, 1.18, 0.19),
+    cor_kcx_kcy_residual = 0.68){
+
+    library(rptha)
+
+    # Make a function to simulate the parameters, with regression residuals
+    # having the desired correlations
+    simulate_L_W_kcx_kcy<-function(Mw){
+
+        # Get regression coefficients for log10(L), log10(W). Note the value
+        # of 7.5 for Mw is arbitrary
+        AWL_sigmas = Mw_2_rupture_size(7.5, detailed=TRUE)$log10_sigmas
+
+        L_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x)['length'])
+        W_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x)['width'])
+
+        N = length(Mw)
+        new_L = 10**( log10(L_Mw) + AWL_sigmas[3] * rnorm(N))
+
+        new_W = 10**(log10(W_Mw) + AWL_sigmas[2] * rnorm(N))
+
+        make_correlated_random_err<-function(N, correlation_coef){
+            err_kcx = rnorm(N)
+            err_kcy = correlation_coef * err_kcx + sqrt(1-correlation_coef**2)*rnorm(N)
+            return(cbind(err_kcx, err_kcy))
+        }
+        err_kc = make_correlated_random_err(N, cor_kcx_kcy_residual)
+        err_kcx = err_kc[,1]
+        err_kcy = err_kc[,2]
+        
+        a = log10kcx_regression_par
+        b = log10kcy_regression_par
+
+        physical_corner_wavenumbers = 10**cbind(a[1]*Mw + a[2] + a[3]*err_kcx, 
+            b[1]*Mw + b[2] + b[3]*err_kcy)
+
+        output = cbind(new_L, new_W, physical_corner_wavenumbers)
+        colnames(output) = c('L', 'W', 'kcx', 'kcy')
+        rownames(output) = NULL
+
+        return(output)
+    }
+
+    return(simulate_L_W_kcx_kcy)
+}
+
+
+
+#' Make a rectangle with a given size and target location on a grid
+#'
+#' Suppose we have a 2D grid (i.e. a logically rectangular set of cells),
+#' and would like to define a rectangular sub-region consisting of L, W cells
+#' with a given target x,y centre location. This problem arises when trying to define
+#' regions of non-zero slip over unit sources for synthetic finite fault models. 
+#' In many situations this is straightforward, but in some situations it is
+#' ambiguous (e.g. if L and/or W is even, then no single grid cell is in the
+#' 'centre'), or impossible (e.g. if a given target centre is too close to the
+#' grid boundaries, it  may be impossible to make a rectangle with L/W having the target_centre).
+#' This code solves the problem, taking care of the ambiguous situations (with randomness)
+#' and the impossible situations (by putting the centre somewhere else), in a manner
+#' which seems satisfactory for synthetic finite fault model simulation.
+#'
+#' @param grid_LW vector of length 2 giving the number of rows, columns on the 2D grid
+#' @param num_LW vector of length 2 giving the desired number of rows,columns
+#' on the rectangular sub-region
+#' @param target_centre vector of length 2 giving the row,column indices on the
+#' 2D grid where we would like the centre of the sub-region to be.
+#' @return integer vector of length 4. The first 2 entries are the min/max row
+#' indices of the sub-region. The 3rd and 4th entries are the min/max column
+#' indices of the sub-region.
+#'
+#' @export
+#' @examples
+#' #
+#' # Simple test case with deterministic answer
+#' # 
+#'
+#' v1 = rectangle_on_grid(c(4, 10), c(3, 3), c(2, 5))
+#' stopifnot(all(v1 == c(1, 3, 4, 6)))
+#'
+#' # Push a boundary
+#' v1 = rectangle_on_grid(c(4, 10), c(3, 3), c(1, 5))
+#' stopifnot(all(v1 == c(1, 3, 4, 6)))
+#'
+#' # Push two boundaries
+#' v1 = rectangle_on_grid(c(4, 10), c(3, 3), c(1, 1))
+#' stopifnot(all(v1 == c(1, 3, 1, 3)))
+#'
+#' v1 = rectangle_on_grid(c(4, 10), c(3, 3), c(4, 10))
+#' stopifnot(all(v1 == c(2, 4, 8, 10)))
+#'
+#' #
+#' #  Case with non-deterministic answer
+#' #
+#' v1 = rectangle_on_grid(c(4, 10), c(2, 2), c(2, 5))
+#' stopifnot(v1[2]-v1[1]+1 == 2)
+#' stopifnot(v1[4]-v1[3]+1 == 2)
+#'
+#' stopifnot(v1[1]%in%c(1,2))
+#' stopifnot(v1[3]%in%c(4,5))
+#'
+#' # Deterministic because of the boundary
+#' v1 = rectangle_on_grid(c(4, 10), c(2, 3), c(1, 5))
+#' stopifnot(v1[2]-v1[1]+1 == 2)
+#' stopifnot(v1[4]-v1[3]+1 == 3)
+#'
+#' stopifnot(v1[1]%in%c(1))
+#' stopifnot(v1[3]%in%c(4))
+#'
+#' # Overly large rupture because of the boundary
+#' v1 = rectangle_on_grid(c(4, 10), c(5, 3), c(1, 5))
+#' stopifnot(v1[4]-v1[3]+1 == 3)
+#'
+#' stopifnot(v1[1:2] == c(1,4))
+#' stopifnot(v1[3]%in%c(4))
+#'
+#' print('PASS')
+#'
+rectangle_on_grid<-function(grid_LW, num_LW, target_centre){        
+
+        num_L = num_LW[1]
+        num_W = num_LW[2]
+
+        # Non-zero slip cover along-strike indices sL:eL, and down-dip indices
+        # sW:eW. We try to make the peak slip location be the middle of the rupture,
+        # but there are practical difficulties
+        if(num_L%%2 == 0){
+            # Peak slip location cannot be in the middle exactly, so we
+            # randomly choose one location.
+            sL = target_centre[1] - num_L/2 + sample(c(0,1), size=1)
+        }else{
+            sL = target_centre[1] - floor(num_L/2)
+        }
+        # If there are not enough unit sources, further constraints are needed
+        sL = min(sL, grid_LW[1] - num_L + 1)
+        sL = max(sL, 1)
+        eL = min(sL + num_L - 1, grid_LW[1])
+
+        if(num_W%%2 == 0){
+            # Peak slip location cannot be in the middle exactly, so we
+            # randomly choose one location.
+            sW = target_centre[2] - num_W/2 + sample(c(0,1), size=1)
+        }else{
+            sW = target_centre[2] - floor(num_W/2)
+        }
+        # If there are not enough unit sources, further constraints are needed
+        sW = min(sW, grid_LW[2] - num_W + 1)
+        sW = max(sW, 1)
+        eW = min(sW + num_W - 1, grid_LW[2])
+
+        return(c(sL, eL, sW, eW))
+}
