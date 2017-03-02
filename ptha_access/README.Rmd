@@ -1,0 +1,212 @@
+# **Codes to access the 2017 Australian PTHA results**
+
+**Currently these tools are in development, and the study is not complete.** 
+* **The data and models referred to below are placeholder examples for internal testing purposes only,
+and are not to be used in any real application.**
+* **The interfaces are expected to change.**
+* **The code should be adjusted to download all data from the NCI [including source-zones + hazard points], to ensure consistency**
+* **There is opportunity to extract contiguous hazard points more efficiently**
+
+These codes can be used to access the 2017 Australian PTHA results, developed
+by Geoscience Australia.
+
+## **Installation**
+
+You need the program R installed, as well as the packages `raster`, `rgdal`,
+and `mapview`. If you have R installed, then the latter can be obtained by
+typing the following in R:
+```{r installme, eval=FALSE}
+    install.packages(c('raster', 'rgdal', 'mapview'))
+```
+You only need to do this once (usually just after installing R).
+
+Then, copy the `ptha_access` folder to your computer. The location should not
+matter. To run the code, simply open an R session in the `ptha_access`
+directory, and type the required instructions as explained below.
+
+
+### ***Extra dependencies to extract tsunami time-series***
+
+If you wish to extract modelled tsunami time-series at gauges, then you also
+need to have the `rptha` package installed. This must be built from source,
+after obtaining the code from Geoscience Australia's the `PTHA` github
+repository: https://github.com/GeoscienceAustralia/ptha
+
+Before installing `rptha`, note that for the time-series extraction code to
+work, R's `ncdf4` package must be built with OpenDAP support. OpenDAP is what
+allows the code to access subsets of netcdf files on the NCI, without
+downloading everythng (TB in total). ncdf4 seems to be built with OpenDAP by
+default on Linux - but not on Windows - and I'm unsure about Mac. In the
+latter cases, you will have to build netcdf yourself before installing `ncdf4` in R. 
+*Also, beware there is a bug in netcdf 4.1.3 which can cause the code to hang
+if one tries to access the first gauge in a file. This version is the default
+netcdf on Ubuntu 14.04, so in that case, it may be necessary to install a newer
+netcdf and link the ncdf4 package with this during installation.*
+
+
+## **Usage**
+
+### ***Viewing the locations of hazard points and source zones***
+
+To view the source-zones and hazard points on an interactive map, start
+R in the same directory that this file resides in, and do:
+```{r interactive_map, eval=FALSE}
+    source('hazard_points_plot.R')
+```
+
+This should open a map in your web browser, containing all unit sources and
+hazard points. The latter include DART buoy locations, and a set of points on
+the GA250 national bathymetry grid for Australia (because this is a grid, it
+contains some points around neighbouring countries as well). 
+
+![hazardpoints1](figure/hazard_point_viewer_screenshot1.png)
+
+Initially, most of the hazard points will be aggregated into coloured circles
+containing clusters of hazard points. This is done because it is too slow to
+render all hazard points at the same time on the one map. In the above figure,
+we see green circles (containing less than 10 hazard points), yellow circles
+(containing 10-100 hazard points), and red circles (containing more than 100
+hazard points). A number on the circle shows how many hazard points they
+contain. The blue dots are individual hazard points, and in the above figure
+mostly correspond to the locations of DART buoys.
+
+
+If you zoom in enough (e.g. below we look at Christmas Island), eventually the circles
+containing many points should be replaced by individual hazard points (blue
+circles). They can be queried with a mouse click.
+![hazardpoints2](figure/hazard_point_viewer_screenshot2.png)
+
+The unit sources appear as a polygonal grid. Individual unit sources can also
+be queried. 
+![hazardpoints3](figure/hazard_point_viewer_screenshot3c.png)
+The controls on the top left of the map can be expanded. These
+should allow you to change the background layer, and to turn layers on and off.
+
+### ***Getting metadata on the earthquake events on each source-zone***
+
+To download metadata from the NCI describing the earthquake events on a
+particular source-zone, start R in the current directory, and do:
+```{r get_metadata}
+    # Import the functions
+    source('get_PTHA_results.R')
+
+    # Example: get metadata for the puysegur source_zone
+    puysegur = get_source_zone_events_data('puysegur')
+```
+
+This variable `puysegur` is now an R `list`, which contains two `data.frame`'s: 
+* `puysegur$unit_source_statistics` contains summary statistics about the unit-sources. 
+For each unit source this gives the centroid `lon` and `lat` and `depth`; the unit source
+dimensions `length` and `width`; the rupture source mechanism (`strike`, `dip`, `rake`);
+and indices `downdip_number`, `alongstrike_number`, and `subfault_number` which give
+information of the placement of the unit source on the grid of all unit sources. 
+```{r metadata_infoA}
+    # Get the names of all summary statistics
+    names(puysegur$unit_source_statistics)
+
+    # Get the table dimensions
+    dim(puysegur$unit_source_statistics)
+
+    # Print rows 1 and 2
+    puysegur$unit_source_statistics[1:2,]
+```
+* `puysegur$events` contains summary statistics about the earthquake events.
+The most important are the moment magnitude `Mw`, the earthquake slip `slip`,
+and the `event_index_string`. The latter can be used to determine which
+unit-sources are included in the earthquake (the integers in `event_index_string`
+correspond to `subfault_number`'s in the `unit_source_statistics`, separated by
+a `-` character).
+
+```{r metadata_infoB}
+    # Print the names of all event summary statistics
+    names(puysegur$events)
+
+    # Get the table dimensions
+    dim(puysegur$events)
+
+    # Print rows 200 and 201
+    puysegur$events[200:201, ]
+```
+
+### ***Getting initial conditions for a single earthquake-tsunami event***
+
+Suppose we want to get the initial conditions for the earthquake event on row
+240 of `puysegur$events`.  (By initial conditions, we mean the initial water
+surface perturbation -- the velocity is treated as zero). The metadata for event 240 is:
+```{r event240}
+    puysegur$events[240,]
+```
+To get its initial condition, do:
+```{r raster_event240, fig.width=6, fig.height=8}
+    # Get the initial condition as a geo-referenced raster
+    initial_condition_240 = get_initial_condition_for_event(puysegur, 240)
+
+    ## The raster can be save as a geotif for use in other software, with:
+    # writeRaster(initial_conditions, 'my_output_filename.tif')
+
+    # Make a plot
+    plot(initial_condition_240, main='Initial water surface deformation, event 240, Puysegur')
+
+```
+
+The function `get_initial_condition_for_event` used above will download the
+required data from the web and save it in the folder
+`SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_sources/puysegur`. Subsequently, the
+function will check whether the required files exist in that folder, and only
+download those that it needs. However, you can force the function to download
+the files (and overwrite any existing ones) by adding the argument
+`force_file_download=TRUE` (by default the latter is `FALSE`). This is useful
+if the NCI analysis has been updated.
+```{r event240B, eval=FALSE}
+    # Get the initial condition as a geo-referenced raster, forcing download of
+    # all files from NCI irrespective of whether they exist on the current
+    # machine
+    initial_condition_240 = get_initial_condition_for_event(puysegur, 240, force_file_download=TRUE)
+```
+
+
+### ***Getting hazard curves at a particular hazard point***
+
+FIXME: To do -- I still need to make the data on NCI to facilitate this
+
+
+### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
+
+FIXME: To do -- I still need to make the data on NCI to facilitate this
+
+
+### ***Extracting the tsunami time-series for a particular event at a particular hazard point***
+
+Here we show how to read a flow time-series for a given earthquake event, at a
+given hazard point. To do this, you have to know the hazard point ID, which can
+be found by clicking on the hazard point in the interactive map above (see the
+ID number). 
+
+The data is downloaded from the NCI.
+
+*Recall that this requires that ncdf4 and rptha are installed appropriately,
+see the installation section above.*
+
+```{r getflow, fig.width=5, fig.height=5}
+    # Get stage, uh, vh time-series at DART gauges 55015 and 55042
+    # To find the ID's, look on the interactive hazard-point map.
+    model_240 = get_flow_time_series_at_hazard_point(puysegur, 240, c(55015.4, 55042.4))
+    # Should have a 'time' vector, and 'flow' list
+    names(model_240)
+    # The 'flow' list should have one matrix for each gauge
+    names(model_240$flow)
+    # For each gauge, model_240$flow[["gauge_id"]] is a 3D array. Currently
+    # the first dimension is always length 1, the second dimension has length
+    # equal to the number of time-steps, and the third dimension is of length
+    # three -- with 1 = Stage, 2 = UH, 3 = VH
+    dim(model_240$flow[['55015.4']])
+
+    # Example plot of stage
+    plot(model_240$time, model_240$flow[['55015.4']][1,,1], t='l', 
+        xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)')
+    points(model_240$time, model_240$flow[['55042.4']][1,,1], t='l', 
+        col='red')
+    legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
+
+    title('Some stage gauges for event 240')
+```
