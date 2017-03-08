@@ -304,7 +304,7 @@ you might want to set minimise_tsunami_unit_source_output=FALSE
 * If you don't like the shape of the unit-sources, note it is possible to provide
 a shapefile defining the along-strike boundaries of the unit sources as input. This
 gives the user much more control over the lateral boundaries of the unit
-sources. See the help for \code{discretized_source_from_source_contours}.
+sources. See the associated R help page, using the command: `?discretized_source_from_source_contours`.
 
 * If `slip_edge_taper_width > 0`, then instead of having uniform slip, each source
 has its slip smoothed to zero around the edges. To do this, the original unit-source
