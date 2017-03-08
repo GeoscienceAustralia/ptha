@@ -9,18 +9,18 @@ corresponding tutorial.Rmd file. Edit the latter instead.*
 # Background
 
 This document explains how to use the script
-*'[produce_unit_sources.R](produce_unit_sources.R)'* to convert earthquake
+'[produce_unit_sources.R](produce_unit_sources.R)' to convert earthquake
 source contours (defining an irregularly dipping surface on which earthquake
 slip can occur) into tsunami unit sources. 
 
 You may find it helpful to directly read
-*'[produce_unit_sources.R](produce_unit_sources.R)'* first (or instead),
+'[produce_unit_sources.R](produce_unit_sources.R)' first (or instead),
 particularly if you have programming experience. All functions used therein are
 documented in the rptha package or other packages, and so R's help system can
 be consulted for details. 
 
 In a typical application you would make a copy of
-*'[produce_unit_sources.R](produce_unit_sources.R)'* in a new working
+'[produce_unit_sources.R](produce_unit_sources.R)' in a new working
 directory, and then edit the script parameters as required before running. You
 might also edit the code, depending on your needs.
 
@@ -48,34 +48,13 @@ situated at the eastern end of the Aleutians-Alaska subduction interface in the
 North Pacific. The code below demonstrates how to read them in R and make a basic plot. 
 
 **Note the code in this section is not required when using
-*'[produce_unit_sources.R](produce_unit_sources.R)'* -- however, we include
+'[produce_unit_sources.R](produce_unit_sources.R)' -- however, we include
 this to demonstrate the input data requirements**
 
 
 ```r
 # Read the shapefile
-library(rgdal)
-```
-
-```
-## Loading required package: methods
-```
-
-```
-## Loading required package: sp
-```
-
-```
-## rgdal: version: 1.1-10, (SVN revision 622)
-##  Geospatial Data Abstraction Library extensions to R successfully loaded
-##  Loaded GDAL runtime: GDAL 1.10.1, released 2013/08/26
-##  Path to GDAL shared files: /usr/share/gdal/1.10
-##  Loaded PROJ.4 runtime: Rel. 4.8.0, 6 March 2012, [PJ_VERSION: 480]
-##  Path to PROJ.4 shared files: (autodetected)
-##  Linking to sp version: 1.2-3
-```
-
-```r
+suppressPackageStartupMessages(library(rgdal))
 alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska')
 ```
 
@@ -138,9 +117,9 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 # Input parameters
 
 The code below comes directly from
-*'[produce_unit_sources.R](produce_unit_sources.R)'*.
+'[produce_unit_sources.R](produce_unit_sources.R)'.
 
-In typical usage of *'[produce_unit_sources.R](produce_unit_sources.R)'*, the
+In typical usage of '[produce_unit_sources.R](produce_unit_sources.R)', the
 user would edit the input parameters to define the source contour filename(s),
 the assumed earthquake rake, the desired unit-source length and width, the
 resolution of the output raster, and some numerical parameters, the most
@@ -166,61 +145,7 @@ this case each core will run separate unit sources, until all are completed.
 #
 # Gareth Davies, Geoscience Australia 2015
 #
-library(rptha)
-```
-
-```
-## Loading required package: rgeos
-```
-
-```
-## rgeos version: 0.3-19, (SVN revision 524)
-##  GEOS runtime version: 3.4.2-CAPI-1.8.2 r3921 
-##  Linking to sp version: 1.2-3 
-##  Polygon checking: TRUE
-```
-
-```
-## Loading required package: geosphere
-```
-
-```
-## Loading required package: raster
-```
-
-```
-## Loading required package: FNN
-```
-
-```
-## Loading required package: minpack.lm
-```
-
-```
-## Loading required package: geometry
-```
-
-```
-## Loading required package: magic
-```
-
-```
-## Loading required package: abind
-```
-
-```
-## 
-## Attaching package: 'magic'
-```
-
-```
-## The following object is masked from 'package:raster':
-## 
-##     shift
-```
-
-```
-## Loading required package: ncdf4
+suppressPackageStartupMessages(library(rptha))
 ```
 
 ```
@@ -229,7 +154,7 @@ library(rptha)
 ```
 
 ```r
-library(raster)
+suppressPackageStartupMessages(library(raster))
 
 ###############################################################################
 #
@@ -333,7 +258,9 @@ minimise_tsunami_unit_source_output = TRUE
 Assuming the rptha package has been successfully installed, the script can be
 run from within R using the syntax:
 
-    source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
+```r
+source('produce_unit_sources.R', echo=TRUE, max.deparse.length=Inf)
+```
 
 where the `echo=TRUE` command prints the commands to the screen as they are
 executed. 
@@ -349,7 +276,7 @@ running each sourcezone separately in a HPC environment (since it is relatively
 easy to automatically submit many jobs with different integer arguments).
 
 In either case the working directory must be the directory containing
-*'[produce_unit_sources.R](produce_unit_sources.R)'*.
+'[produce_unit_sources.R](produce_unit_sources.R)'.
 
 The speed of the code depends heavily on a number of input parameters. If it is too
 slow, you can try decreasing the `tsunami_source_cellsize`. More dangerously

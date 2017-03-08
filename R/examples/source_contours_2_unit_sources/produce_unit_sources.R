@@ -4,8 +4,8 @@
 #
 # Gareth Davies, Geoscience Australia 2015
 #
-library(rptha)
-library(raster)
+suppressPackageStartupMessages(library(rptha))
+suppressPackageStartupMessages(library(raster))
 
 ###############################################################################
 #
