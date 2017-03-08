@@ -307,17 +307,19 @@ gives the user much more control over the lateral boundaries of the unit
 sources. See the associated R help page, using the command: `?discretized_source_from_source_contours`.
 
 * If `slip_edge_taper_width > 0`, then instead of having uniform slip, each source
-has its slip smoothed to zero around the edges. To do this, the original unit-source
-slip (1 inside the unit source, 0 outside) is convolved with a circular filter with
-radius `slip_edge_taper_width`. This implies that if two neighbouring sources are added,
-their smoothed slips will sum to 1 - and so the smoothing should have no effect in
-the interior of constant a multi-source rupture. Smoothing can be useful to reduce artefacts
-caused by the slip discontinuity at the boundaries of the rupture. For example, if
-the rupture top-edge is buried a few km below the earth surface, then for relatively low dips,
-the Okada solution implies a sharp 'ridge' of deformation along the upper edge of the unit-source. 
-Although mathematically this is correct, it is entirely due to slip dropping discontinuously
-from '1' to '0', and so might not be physically realistic. Slip tapering effectively smooths
-out such features. 
+has its slip smoothed to zero around the edges. To do this, the original
+unit-source slip (1 inside the unit source, 0 outside) is convolved with a
+circular filter with radius `slip_edge_taper_width`. This implies that if two
+neighbouring sources are added, their smoothed slips will sum to 1 - and so the
+smoothing should have no effect in the interior of uniform slip multi-source
+rupture. However, smoothing can be useful to reduce artefacts caused by the
+slip discontinuity at the boundaries of the rupture. For example, if the
+rupture top-edge is buried a few km below the earth surface, then for
+relatively low dips, the Okada solution implies a sharp 'ridge' of deformation
+along the upper edge of the unit-source.  Although mathematically this is
+correct, it is enhanced by the slip dropping discontinuously from '1' to '0',
+which might not be physically realistic. Slip tapering smooths out such
+features. 
 
 * You should visually check that the computed initial conditions seem
 reasonable. If the subgrid point spacing is too coarse, or the input contours
