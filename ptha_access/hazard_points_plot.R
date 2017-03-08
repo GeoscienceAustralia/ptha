@@ -13,6 +13,7 @@ if(!exists('.HAVE_SOURCED_CONFIG')) source('R/config.R', local=TRUE, chdir=FALSE
 # 'mapview' is built off 'leaflet'
 plot_interactive_map<-function(){
 
+    #suppressPackageStartupMessages(library(leaflet))
     suppressPackageStartupMessages(library(mapview))
     m = mapview(
         hazard_points_spdf, 
@@ -55,6 +56,8 @@ plot_interactive_map<-function(){
 
     # Display in browser
     print(m)
+    #m@map
+    #return(m)
 
 }
 plot_interactive_map()
