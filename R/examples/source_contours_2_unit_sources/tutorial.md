@@ -136,7 +136,7 @@ Note that more than one source-contour shapefile can be provided -- the code
 will loop over them.
 
 If you are running linux on a shared memory machine with multiple cores, then
-you can run in parallel by setting MC_CORES to be a number greater than one. In
+you can run in parallel by setting `MC_CORES` to be a number greater than one. In
 this case each core will run separate unit sources, until all are completed. 
 
 
@@ -280,7 +280,7 @@ In either case the working directory must be the directory containing
 
 The speed of the code depends heavily on a number of input parameters. If it is too
 slow, you can try decreasing the `tsunami_source_cellsize`. More dangerously
-you can try increasing the subunitsource_point_spacing parameters, or
+you can try increasing the `subunitsource_point_spacing` parameters, or
 increasing the `kajiura_grid_spacing` (the latter only matters if you provide
 elevation data). But if the parameters in the last sentence are too coarse,
 you can expect numerical artefacts.
