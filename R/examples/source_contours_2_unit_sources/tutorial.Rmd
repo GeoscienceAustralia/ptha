@@ -147,13 +147,13 @@ that the unit sources and tsunami deformations seem sensible.
 the tsunami unit sources as a native R data-structure. It can be useful for
 programming and debugging, since it contains the underlying data (such as
 sub-unit-source points, exact unit source discretization, etc.). In this case,
-you might want to set minimise_tsunami_unit_source_output=FALSE
+you might want to set `minimise_tsunami_unit_source_output=FALSE`.
 
 # Tips
 
-* If you don't like the shape of the unit-sources, note it is possible to provide
-a shapefile defining the along-strike boundaries of the unit sources as input. This
-gives the user much more control over the lateral boundaries of the unit
+* If you don't like the shape of the unit-sources, you may provide
+a shapefile defining the along-strike boundaries of the unit sources as input.
+This gives the user much more control over the lateral boundaries of the unit
 sources. For more information see the associated R help page, using the
 command: `?discretized_source_from_source_contours`.
 
