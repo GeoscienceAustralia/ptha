@@ -146,8 +146,10 @@ that the unit sources and tsunami deformations seem sensible.
 * an RDS file for each unit source. This is a native R format file, and contains
 the tsunami unit sources as a native R data-structure. It can be useful for
 programming and debugging, since it contains the underlying data (such as
-sub-unit-source points, exact unit source discretization, etc.). In this case,
-you might want to set `minimise_tsunami_unit_source_output=FALSE`.
+sub-unit-source points, exact unit source discretization, etc.). If using it
+for debugging, you can ensure that more information is saved by setting
+`minimise_tsunami_unit_source_output=FALSE`. This is not done by default, since
+the output files can be rather large.
 
 # Tips
 
