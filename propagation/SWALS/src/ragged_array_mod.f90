@@ -27,7 +27,7 @@ MODULE ragged_array_mod
     ! Real case
 
     TYPE allocatable_array_dp_type
-        INTEGER(dp), ALLOCATABLE:: i1(:)
+        REAL(dp), ALLOCATABLE:: i1(:)
     END TYPE
 
     TYPE ragged_array_2d_dp_type

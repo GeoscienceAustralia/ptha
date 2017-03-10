@@ -49,18 +49,6 @@ MODULE linear_interpolator_mod
             use_pointers = .FALSE.
         end if
 
-        if(use_pointers) then
-            ALLOCATE(linear_interpolator%xs_local(n))
-            linear_interpolator%xs_local = x
-            linear_interpolator%xs => linear_interpolator%xs_local
-            ALLOCATE(linear_interpolator%ys_local(n))
-            linear_interpolator%ys_local = y
-            linear_interpolator%ys => linear_interpolator%ys_local
-        else
-            linear_interpolator%xs => x 
-            linear_interpolator%ys => y 
-        end if
-       
         n = size(x) 
         linear_interpolator%n = n
         if(n /= size(y)) then
@@ -68,12 +56,26 @@ MODULE linear_interpolator_mod
             call generic_stop()
         end if
 
-        DO i = 1, size(linear_interpolator%xs)-1
+        ! Set xs, ys, optionally making a local copy of the data
+        if(.not. use_pointers) then
+            allocate(linear_interpolator%xs_local(n))
+            linear_interpolator%xs_local = x
+            linear_interpolator%xs => linear_interpolator%xs_local
+            allocate(linear_interpolator%ys_local(n))
+            linear_interpolator%ys_local = y
+            linear_interpolator%ys => linear_interpolator%ys_local
+        else
+            linear_interpolator%xs => x 
+            linear_interpolator%ys => y 
+        end if
+      
+        ! Check xs is monotonic 
+        do i = 1, size(linear_interpolator%xs)-1
             if(linear_interpolator%xs(i) >= linear_interpolator%xs(i+1)) then
                 print*, 'initialise_linear_interpolator error: x must be monotonic increasing (no repeated values)'
                 call generic_stop()
             end if
-        END DO
+        end do
 
     END SUBROUTINE
 
