@@ -63,7 +63,8 @@ unit_source_grids = .read_all_unit_source_grids()
     #browser()
     dartp = which(hp_type_char == 'DART')
 
-    clip_region = readOGR(dsn='DATA/HAZARD_POINTS/point_filter_polygon', layer='point_filter_polygon')
+    clip_region = readOGR(dsn='DATA/HAZARD_POINTS/point_filter_polygon', 
+        layer='point_filter_polygon', verbose=FALSE)
     suppressWarnings({proj4string(clip_region) = proj4string(hazard_points_spdf)})
 
     clip_region_keep = which(!is.na(over(as(hazard_points_spdf, 'SpatialPoints'), clip_region)))

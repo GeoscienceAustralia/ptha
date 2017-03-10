@@ -230,7 +230,7 @@ plot(initial_condition_240, main='Initial water surface deformation, event 240, 
 
 The function `get_initial_condition_for_event` used above will download the
 required data from the web and save it in the folder
-`SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_sources/puysegur`. Subsequently, the
+`SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur`. Subsequently, the
 function will check whether the required files exist in that folder, and only
 download those that it needs. However, you can force the function to download
 the files (and overwrite any existing ones) by adding the argument
