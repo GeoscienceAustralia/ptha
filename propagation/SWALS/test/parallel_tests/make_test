@@ -1,0 +1,24 @@
+# SOURCE CODE DIRECTORY relative to the current directory
+SRC=../../src
+include $(SRC)/src_standard_compiler_var
+
+FORTRAN=caf -Ofast -fopenmp -fbounds-check -std=f2008ts -fall-intrinsics -cpp -DNONETCDF -DCOARRAY -DTIMERLOCAL #-DREALFLOAT
+
+# Don't try to link with netcdf yet
+NETCDF_FINCLUDE=
+NETCDF_FLIBS=
+
+# Clean up
+clean: parallel_unit_tests
+	rm *.o *.mod
+
+# Link everything
+parallel_unit_tests: libSWE.a parallel_unit_tests.o
+	$(FORTRAN) parallel_unit_tests.o -o $@ libSWE.a $(GDAL_LIBS) $(NETCDF_FLIBS)
+
+# Compile the driver script
+parallel_unit_tests.o: parallel_unit_tests.f90
+	$(FORTRAN) -c $^ 
+
+# Build main source
+include $(SRC)/src_make_commands
