@@ -1,46 +1,46 @@
-MODULE linear_interpolator_mod
+module linear_interpolator_mod
     !
     ! Type for linear interpolation
     !
-    USE global_mod, only: dp, ip
-    USE stop_mod, only: generic_stop
-    IMPLICIT NONE
+    use global_mod, only: dp, ip
+    use stop_mod, only: generic_stop
+    implicit none
 
 
-    TYPE linear_interpolator_type
-        REAL(dp), ALLOCATABLE:: xs_local(:), ys_local(:)
-        REAL(dp), POINTER :: xs(:), ys(:)
-        INTEGER(ip) :: n
+    type linear_interpolator_type
+        real(dp), allocatable:: xs_local(:), ys_local(:)
+        real(dp), pointer :: xs(:), ys(:)
+        integer(ip) :: n
 
-        CONTAINS
+        contains
         ! To build the an interpolator from x,y data (with x monotonic
         !   increasing, NO REPEATED VALUES), we do
         ! CALL linear_interpolator%initialise(x,y)
         ! or to not copy x,y
         ! CALL linear_interpolator%initialise(x,y, copy_data=.FALSE.)
         !
-        PROCEDURE:: initialise => initialise_linear_interpolator
+        procedure:: initialise => initialise_linear_interpolator
         !
         ! CALL linear_interpolator%eval(xout, yout)
         ! will update yout with values interpolated at xout
         !
-        PROCEDURE:: eval => eval_linear_interpolator
+        procedure:: eval => eval_linear_interpolator
         !
         ! CALL linear_interpolator%finalise()
         ! to clear pointers, deallocate data, etc
         !
-        PROCEDURE:: finalise => finalise_linear_interpolator
+        procedure:: finalise => finalise_linear_interpolator
 
-    END TYPE
+    end type
 
-    CONTAINS
+    contains
 
-    SUBROUTINE initialise_linear_interpolator(linear_interpolator, x, y, copy_data)
-        CLASS(linear_interpolator_type), TARGET, INTENT(INOUT):: linear_interpolator
-        REAL(dp), TARGET, INTENT(IN):: x(:), y(:)
-        LOGICAL, OPTIONAL, INTENT(IN):: copy_data
-        INTEGER(ip):: i, n
-        LOGICAL:: use_pointers
+    subroutine initialise_linear_interpolator(linear_interpolator, x, y, copy_data)
+        class(linear_interpolator_type), target, intent(inout):: linear_interpolator
+        real(dp), target, intent(in):: x(:), y(:)
+        logical, optional, intent(in):: copy_data
+        integer(ip):: i, n
+        logical:: use_pointers
         
 
         if (present(copy_data)) then
@@ -83,7 +83,7 @@ MODULE linear_interpolator_mod
         CLASS(linear_interpolator_type), INTENT(INOUT):: linear_interpolator
 
         if(allocated(linear_interpolator%xs_local)) then        
-            DEALLOCATE(linear_interpolator%xs_local, linear_interpolator%ys_local)
+            deallocate(linear_interpolator%xs_local, linear_interpolator%ys_local)
         end if
 
         linear_interpolator%xs => NULL()
@@ -103,7 +103,7 @@ MODULE linear_interpolator_mod
             call generic_stop()
         end if
 
-        CALL linear_interpolation(linear_interpolator%n, linear_interpolator%xs, &
+        call linear_interpolation(linear_interpolator%n, linear_interpolator%xs, &
             linear_interpolator%ys, n, output_x, output_y)
 
     END SUBROUTINE
@@ -113,58 +113,58 @@ MODULE linear_interpolator_mod
     ! We want to find the index corresponding to the value in 'x' that is nearest y.
     ! This is a useful operation e.g. for interpolation of sorted input data
     !
-    PURE SUBROUTINE nearest_index_sorted(n, x, y, output)
-        INTEGER(ip), INTENT(IN) :: n
-        REAL(dp), INTENT(IN) :: x(n)
-        REAL(dp), INTENT(IN) :: y      
-        INTEGER(ip), INTENT(OUT) :: output
+    pure subroutine nearest_index_sorted(n, x, y, output)
+        integer(ip), intent(in) :: n
+        real(dp), intent(in) :: x(n)
+        real(dp), intent(in) :: y      
+        integer(ip), intent(out) :: output
 
-        INTEGER :: i, upper, lower
+        integer :: i, upper, lower
 
-        IF(y < x(1)) THEN
+        if(y < x(1)) then
             output = 1
-        ELSE 
-            IF (y > x(n)) THEN
+        else 
+            if (y > x(n)) then
                 output = n
-            ELSE
+            else
                 lower = 1
                 upper = n
                 i = (lower + upper)/2 !floor(0.5_dp*(lower + upper))
-                DO WHILE ((x(i) > y).OR.(x(i+1) < y))
-                   IF(x(i) > y) THEN
+                do while ((x(i) > y).or.(x(i+1) < y))
+                   if(x(i) > y) then
                        upper = i
-                   ELSE
+                   else
                        lower = i
-                   END IF
+                   end if
                    i = (lower + upper)/2 !floor(0.5_dp*(lower + upper))
-                END DO
+                end do
 
-                IF ( y - x(i) > x(i+1) - y) THEN
+                if ( y - x(i) > x(i+1) - y) then
                     output = i+1
-                ELSE
+                else
                     output = i
-                END IF
+                end if
 
-            END IF
-        END IF
+            end if
+        end if
 
-    END SUBROUTINE
+    end subroutine
 
     !
     ! Suppose input_x, input_y are some data with input_x being sorted and increasing 
     ! We are given output_x, and wish to get output_y by linearly interpolating the
     ! original series.
-    PURE SUBROUTINE linear_interpolation(n_input, input_x, input_y, n_output, output_x, output_y)
-        INTEGER(ip), INTENT(IN):: n_input, n_output
-        REAL(dp), INTENT(IN):: input_x(n_input), input_y(n_input), output_x(n_output)
-        REAL(dp), INTENT(OUT):: output_y(n_output)
+    pure subroutine linear_interpolation(n_input, input_x, input_y, n_output, output_x, output_y)
+        integer(ip), intent(in):: n_input, n_output
+        real(dp), intent(in):: input_x(n_input), input_y(n_input), output_x(n_output)
+        real(dp), intent(out):: output_y(n_output)
 
-        INTEGER(ip):: i, j
-        REAL(dp):: gradient
+        integer(ip):: i, j
+        real(dp):: gradient
 
-        DO i = 1, n_output
+        do i = 1, n_output
             ! set j = nearest index to output_x(i) in input_x
-            CALL nearest_index_sorted(n_input, input_x, output_x(i), j)
+            call nearest_index_sorted(n_input, input_x, output_x(i), j)
             ! interpolate
             if (input_x(j) > output_x(i)) then
                 if(j > 1) then
@@ -181,15 +181,15 @@ MODULE linear_interpolator_mod
                     output_y(i) = input_y(n_input)
                 end if
             end if
-        END DO
+        end do
 
-    END SUBROUTINE
+    end subroutine
 
-    SUBROUTINE test_linear_interpolator_mod
-        REAL(dp):: x(5), y(5), xout(9), yout_true(9), yout(9)
-        TYPE(linear_interpolator_type):: li
-        INTEGER(ip):: i, j
-        LOGICAL:: copy_data
+    subroutine test_linear_interpolator_mod
+        real(dp):: x(5), y(5), xout(9), yout_true(9), yout(9)
+        type(linear_interpolator_type):: li
+        integer(ip):: i, j
+        logical:: copy_data
 
         ! Data to interpolate from
         x = [1.0_dp, 4.0_dp, 4.01_dp, 10.0_dp, 11.0_dp]
@@ -200,7 +200,7 @@ MODULE linear_interpolator_mod
         ! Y values that we should get from interpolating
         yout_true = [-1.0_dp, -1.0_dp, -2.5_dp, -4.0_dp, 0.005_dp, 6.0_dp, 60.0_dp, 110.0_dp, 110.0_dp]
 
-        DO j = 1, 2
+        do j = 1, 2
             ! Test cases with/without pointers
             if(j == 1) then
                 copy_data = .true.
@@ -222,16 +222,32 @@ MODULE linear_interpolator_mod
                 print*, 'FAIL', li%ys - y
             end if
 
+            ! Check that xs_local / ys_local are used or not appropriately
+            if(copy_data) then
+                if(allocated(li%xs_local) .and. allocated(li%ys_local)) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL'
+                end if
+            else
+                ! Should not make a copy
+                if(allocated(li%xs_local) .or. allocated(li%ys_local)) then
+                    print*, 'FAIL'
+                else
+                    print*, 'PASS'
+                end if
+            end if
+
             ! Do the interpolation
             call li%eval(xout, yout)
 
-            DO i = 1, size(xout)
+            do i = 1, size(xout)
                 if(abs(yout(i) - yout_true(i)) < 1.0e-6_dp) then
                     print*, 'PASS'
                 else
                     print*, 'FAIL', xout(i), yout(i), yout_true(i)
                 end if
-            END DO
+            end do
 
             ! Clean up
             call li%finalise()
@@ -247,9 +263,9 @@ MODULE linear_interpolator_mod
                 print*, 'PASS'
             end if
 
-        END DO
+        end do
 
-    END SUBROUTINE
+    end subroutine
 
-END MODULE
+end module
 

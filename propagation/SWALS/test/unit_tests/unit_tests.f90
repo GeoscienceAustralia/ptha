@@ -8,8 +8,10 @@ PROGRAM unit_tests
     USE which_mod, only: test_which
     USE point_gauge_mod, only: test_point_gauge_mod
     USE linear_interpolator_mod, only: test_linear_interpolator_mod
-    !USE coarray_utilities_mod, only: test_coarray_utilities_mod
-    !USE nested_grid_comms_mod, only: test_nested_grid_comms_mod
+    USE coarray_utilities_mod, only: test_coarray_utilities_mod
+    USE nested_grid_comms_mod, only: test_nested_grid_comms_mod
+    USE coarray_point2point_comms_mod, only: test_coarray_point2point_comms_mod
+    USE reshape_array_mod, only: test_reshape_array_mod
     IMPLICIT NONE
 
     print*, 'Testing read raster'
@@ -29,11 +31,19 @@ PROGRAM unit_tests
 
     print*, 'Testing linear_interpolator_mod'
     call test_linear_interpolator_mod()
+    
+    print*, 'Testing reshape_array_mod'
+    call test_reshape_array_mod()
 
-    !print*, 'Testing coarray_utilities_mod'
-    !call test_coarray_utilities_mod()
+    print*, 'Testing coarray_point2point_comms_mod'
+    call test_coarray_point2point_comms_mod()
 
-    !print*, 'Testing nested_grid_comms_mod'
-    !call test_nested_grid_comms_mod()
+    print*, 'Testing coarray_utilities_mod'
+    call test_coarray_utilities_mod()
+
+    print*, 'Testing nested_grid_comms_mod'
+    call test_nested_grid_comms_mod()
+
+
 END PROGRAM
     

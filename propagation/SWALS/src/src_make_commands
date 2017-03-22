@@ -3,62 +3,27 @@
 # It is assumed FORTRAN, CC, GDAL_CFLAGS, and NETCDF_FINCLUDE are defined
 # See src_standard_compiler_var for examples of these
 #
-# FIXME: Use makefile variables to simplify this.
 
 # Make a library
-libSWE.a: global_mod.o stop_mod.o which_mod.o linear_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o point_gauge_mod.o timer_mod.o domain_mod.o boundary_mod.o read_raster_c.o read_raster_mod.o
+OBJECTS :=global_mod.o stop_mod.o reshape_array_mod.o which_mod.o linear_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o point_gauge_mod.o timer_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o coarray_utilities_mod.o domain_mod.o boundary_mod.o read_raster_c.o read_raster_mod.o
+
+# Make the library
+libSWE.a: $(OBJECTS)
 	ar rcs $@ $^
 
-read_raster_mod.o: $(SRC)/read_raster_mod.f90
-	$(FORTRAN) -c $^ 
+# This is the 'generic build rule' for my modules -- it is applied unless the
+# module file matches one of the 'specific' build rules below
+%_mod.o: $(SRC)/*/%_mod.f90
+	$(FORTRAN) -c $^
 
 # Note this one relies on GDAL
-read_raster_c.o: $(SRC)/read_raster_c.c
-	$(CC) -c $(SRC)/read_raster_c.c $(GDAL_CFLAGS)
-
-boundary_mod.o: $(SRC)/boundary_mod.f90
-	$(FORTRAN) -c  $^ 
-
-#coarray_utilities_mod.o: $(SRC)/coarray_utilities_mod.f90 
-#	$(FORTRAN) -c  $^ 
-
-domain_mod.o: $(SRC)/domain_mod.f90 
-	$(FORTRAN) -c  $^ 
-
-#nested_grid_comms_mod.o: $(SRC)/nested_grid_comms_mod.f90
-#	$(FORTRAN) -c  $^ 
-
-timer_mod.o: $(SRC)/timer_mod.f90
-	$(FORTRAN) -c $^ 
+read_raster_c.o: $(SRC)/raster/read_raster_c.c
+	$(CC) -c $(SRC)/raster/read_raster_c.c $(GDAL_CFLAGS)
 
 # Note this one relies on NETCDF, unless compiled with -DNONETCDF,
 # in which case NETCDF_FINCLUDE should be set to 'nothing' like:
 #     NETCDF_FINCLUDE=
 #
-point_gauge_mod.o: $(SRC)/point_gauge_mod.f90 
+point_gauge_mod.o: $(SRC)/shallow_water/point_gauge_mod.f90 
 	$(FORTRAN) -g -c $^ $(NETCDF_FINCLUDE)
-
-file_io_mod.o: $(SRC)/file_io_mod.f90
-	$(FORTRAN) -c $^ 
-
-points_in_poly_mod.o: $(SRC)/points_in_poly_mod.f90
-	$(FORTRAN) -c $^ 
-
-spherical_mod.o: $(SRC)/spherical_mod.f90
-	$(FORTRAN) -c $^ 
-
-ragged_array_mod.o: $(SRC)/ragged_array_mod.f90
-	$(FORTRAN) -c $^ 
-
-linear_interpolator_mod.o: $(SRC)/linear_interpolator_mod.f90
-	$(FORTRAN) -c $^ 
-
-which_mod.o: $(SRC)/which_mod.f90
-	$(FORTRAN) -c $^ 
-
-stop_mod.o: $(SRC)/stop_mod.f90
-	$(FORTRAN) -c $^ 
-
-global_mod.o: $(SRC)/global_mod.f90
-	$(FORTRAN) -c $^ 
 

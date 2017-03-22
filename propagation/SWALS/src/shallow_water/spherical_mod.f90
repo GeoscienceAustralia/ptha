@@ -1,14 +1,16 @@
 
-MODULE spherical_mod
+module spherical_mod
     !
     ! Useful routines for computation on sphere
     !
-    USE global_mod, only: dp, ip, radius_earth
-    USE iso_c_binding, only: C_DOUBLE
-    IMPLICIT NONE
+    use global_mod, only: dp, ip, radius_earth
+    use iso_c_binding, only: C_DOUBLE
+    implicit none
 
-    REAL(dp), PARAMETER, PRIVATE:: PI = atan(1.0_dp)*4.0_dp
-    REAL(dp), PARAMETER :: DEG2RAD = PI/180.0_dp
+    real(dp), parameter, private:: PI = atan(1.0_dp)*4.0_dp
+    real(dp), parameter :: DEG2RAD = PI/180.0_dp
+    ! Radians/second of earth rotation
+    real(dp), parameter :: EARTH_ANGULAR_FREQ = 2.0_dp * PI / (3600.0_dp * 24.0_dp)
 
     CONTAINS
 
@@ -25,12 +27,12 @@ MODULE spherical_mod
     ! The equation here is similar if we note [sin(lat+dlat)-sin(lat)]/dlat = cos(lat)
     ! as dlat --> 0
     ! If flat=.true. then we use the 'cos' formula, but if flat=.FALSE. (default) we do not.
-    ELEMENTAL FUNCTION area_lonlat_rectangle(lon1, lat1, dlon, dlat, flat) result (area_sp)
-        REAL(dp), INTENT(IN):: lon1, lat1, dlon, dlat
-        LOGICAL, OPTIONAL, INTENT(IN):: flat
-        REAL(dp) :: area_sp
-        LOGICAL:: flat_flag
-        REAL(C_DOUBLE):: sin1, sin2
+    elemental function area_lonlat_rectangle(lon1, lat1, dlon, dlat, flat) result (area_sp)
+        real(dp), intent(in):: lon1, lat1, dlon, dlat
+        logical, optional, intent(in):: flat
+        real(dp) :: area_sp
+        logical:: flat_flag
+        real(C_DOUBLE):: sin1, sin2
 
         if(present(flat)) then
             flat_flag = flat
@@ -53,14 +55,14 @@ MODULE spherical_mod
                 mod(abs(dlon), 360.0_dp)*DEG2RAD
         end if
 
-    END FUNCTION
+    end function
 
-    SUBROUTINE test_spherical_mod()
-        REAL(dp):: lon1, lon2, lat1, lat2, area
-        REAL(dp):: ans 
-        ! The test cases assume this radius
-        REAL(dp), PARAMETER:: test_radius = 6378137.0_dp
-        REAL(dp), PARAMETER:: radius_adjustment_factor = (test_radius/radius_earth)**2 
+    subroutine test_spherical_mod()
+        real(dp):: lon1, lon2, lat1, lat2, area
+        real(dp):: ans 
+        ! the test cases assume this radius
+        real(dp), parameter:: test_radius = 6378137.0_dp
+        real(dp), parameter:: radius_adjustment_factor = (test_radius/radius_earth)**2 
 
         !! Test 1
         ans = 12391399902.0_dp
@@ -117,6 +119,6 @@ MODULE spherical_mod
             print*, 'FAIL', area * radius_adjustment_factor, ans
         end if
 
-    END SUBROUTINE
+    end subroutine
 
-END MODULE
+end module

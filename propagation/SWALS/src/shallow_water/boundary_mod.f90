@@ -57,7 +57,7 @@ MODULE boundary_mod
                 if(domain%boundary_exterior(2)) domain%U(domain%nx(1),j,k) = domain%U(domain%nx(1)-1,j,k) !- domain%U(domain%nx(1)-2,j,k)
             END DO
         END DO
-        !$OMP END DO NOWAIT
+        !$OMP END DO
 
         !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
         DO k = 1, 4
@@ -98,12 +98,12 @@ MODULE boundary_mod
             if(domain%boundary_exterior(4)) then
                 i = 1
                 bc_values = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
-                domain%U(i,j,1) = bc_values(1)
-                domain%U(i,j,4) = bc_values(4)
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
                 if(domain%timestepping_method /= 'linear') then
-                    domain%U(i,j,2) = domain%U(i+1,j,2) !2.0_dp * domain%U(i+1,j,2) - domain%U(i+2,j,2)
-                    domain%U(i,j,3) = ZERO_dp
+                    domain%U(i,j,UH) = domain%U(i+1,j,UH) !2.0_dp * domain%U(i+1,j,2) - domain%U(i+2,j,2)
+                    domain%U(i,j,VH) = ZERO_dp
                 end if
             end if
 
@@ -111,12 +111,12 @@ MODULE boundary_mod
             if(domain%boundary_exterior(2)) then
                 i = domain%nx(1)
                 bc_values = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
-                domain%U(i,j,1) = bc_values(1)
-                domain%U(i,j,4) = bc_values(4)
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
                 if(domain%timestepping_method /= 'linear') then
-                    domain%U(i,j,2) = domain%U(i-1,j,2) !2.0_dp * domain%U(i-1,j,2) - domain%U(i-2, j, 2)
-                    domain%U(i,j,3) = ZERO_dp
+                    domain%U(i,j,UH) = domain%U(i-1,j,UH) !2.0_dp * domain%U(i-1,j,2) - domain%U(i-2, j, 2)
+                    domain%U(i,j,VH) = ZERO_dp
                 end if
             end if
 
@@ -129,12 +129,12 @@ MODULE boundary_mod
             if(domain%boundary_exterior(3)) then
                 j = 1
                 bc_values = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
-                domain%U(i,j,1) = bc_values(1)
-                domain%U(i,j,4) = bc_values(4)
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
                 if(domain%timestepping_method /= 'linear') then
-                    domain%U(i,j,3) = domain%U(i,j+1,3) !2.0_dp * domain%U(i,j+1,3) - domain%U(i,j+2,3)
-                    domain%U(i,j,2) = ZERO_dp
+                    domain%U(i,j,VH) = domain%U(i,j+1,VH) !2.0_dp * domain%U(i,j+1,3) - domain%U(i,j+2,3)
+                    domain%U(i,j,UH) = ZERO_dp
                 end if
             end if
 
@@ -142,12 +142,12 @@ MODULE boundary_mod
             if(domain%boundary_exterior(1)) then
                 j = domain%nx(2)
                 bc_values = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
-                domain%U(i,j,1) = bc_values(1)
-                domain%U(i,j,4) = bc_values(4)
+                domain%U(i,j,STG) = bc_values(1)
+                domain%U(i,j,ELV) = bc_values(4)
                 !domain%U(i,j,2:3) = ZERO_dp
                 if(domain%timestepping_method /= 'linear') then
-                    domain%U(i,j,3) = domain%U(i,j-1,3) !2.0_dp * domain%U(i,j-1,3) - domain%U(i,j-2,3)
-                    domain%U(i,j,2) = ZERO_dp
+                    domain%U(i,j,VH) = domain%U(i,j-1,VH) !2.0_dp * domain%U(i,j-1,3) - domain%U(i,j-2,3)
+                    domain%U(i,j,UH) = ZERO_dp
                 end if
             end if
         END DO

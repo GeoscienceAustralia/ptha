@@ -1,27 +1,27 @@
-MODULE which_mod
+module which_mod
     !
     ! Simple module to compute the indices which are 'TRUE' in a logical array
     !
-    USE global_mod, only: ip
+    use global_mod, only: ip
 
-    IMPLICIT NONE
+    implicit none
     
-    PRIVATE
-    PUBLIC which, test_which
+    private
+    public which, test_which
 
 
     contains
 
     ! Return an array with integers corresponding to indices where logical_array is .true.
     ! Like 'which' in R.
-    SUBROUTINE which(logical_array, allocatable_array)
-        LOGICAL, INTENT(IN) :: logical_array(:)
-        INTEGER(ip), ALLOCATABLE, INTENT(OUT):: allocatable_array(:)
-        INTEGER(ip):: arr_len, i, counter
+    subroutine which(logical_array, allocatable_array)
+        logical, intent(in) :: logical_array(:)
+        integer(ip), allocatable, intent(out):: allocatable_array(:)
+        integer(ip):: arr_len, i, counter
 
-        IF(allocated(allocatable_array)) THEN
+        if(allocated(allocatable_array)) then
             deallocate(allocatable_array)
-        END IF
+        end if
 
         arr_len = count(logical_array)
 
@@ -37,14 +37,13 @@ MODULE which_mod
             end do
         end if
 
-    END SUBROUTINE
+    end subroutine
 
     ! Test the 'which' subroutine
-    SUBROUTINE test_which() 
-        LOGICAL:: does_which_work
+    subroutine test_which() 
 
-        LOGICAL :: test_data(5)
-        INTEGER(ip), ALLOCATABLE :: data_indices(:)
+        logical :: test_data(5)
+        integer(ip), allocatable :: data_indices(:)
 
         test_data = [.FALSE., .TRUE., .FALSE., .FALSE., .TRUE.]
 
@@ -56,6 +55,6 @@ MODULE which_mod
             print*, 'FAIL'
         end if 
 
-    END SUBROUTINE
+    end subroutine
 
-END MODULE
+end module
