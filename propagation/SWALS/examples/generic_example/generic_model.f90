@@ -275,9 +275,9 @@ PROGRAM generic_model
         ! The periodic boundaries involve 2 cells on the model exterior
         domain%exterior_cells_width = 2
 
-        global_nx = global_nx + [4,0]
-        global_ur = global_ur + [2*dx(1), 0.0]
-        global_ll = global_ll - [2*dx(1), 0.0]
+        global_nx = global_nx + [4_ip, 0_ip]
+        global_ur = global_ur + [2*dx(1), 0.0_dp]
+        global_ll = global_ll - [2*dx(1), 0.0_dp]
         global_lw = global_ur - global_ll
     else
         domain%boundary_subroutine => flather_boundary

@@ -1,6 +1,6 @@
 &MODELCONFIG
     ! Comment
-    input_elevation_raster = 'GEBCO_2014_1mx1m_W-30_E320.tif' ! User must provide full path to elevation raster
+    input_elevation_raster = 'GEBCO_2014_1mx1m_W-40_E320.tif' ! User must provide full path to elevation raster
     input_stage_raster = 'event_6000.tif' ! User must provide full path to initial condition raster
     global_ll = -40.0 -72.0 ! Must not go outside input_elevation_raster
     global_ur = 320.0 65.0  ! Must not go outside input_elevation_raster
