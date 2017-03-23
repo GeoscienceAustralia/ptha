@@ -73,6 +73,11 @@ module domain_mod
     ! This can be useful when reading in domains, prior to allocation. For example,
     ! we can manipulate the domain bounding box to support nesting buffers, etc
     !
+    ! However, using non-type-bound procedures with the CLASS attribute of
+    ! dummy arguments (as required for polymorphism) seems to have a bug
+    ! with older gfortran (e.g. 4.8, which is default on ubuntu 14.04). So 
+    ! be careful about using such subroutines/functions in the code.
+    !
     type :: domain_metadata_type
 
         ! [Length,width] of domain in x/y units
@@ -120,8 +125,6 @@ module domain_mod
     !
     ! Main type used in the program. It holds the model arrays, information on the domain,
     ! etc
-    ! Do not make this extend domain_metadata_type, since deep-down it holds a
-    ! coarray component.
     type, extends(domain_metadata_type) :: domain_type
 
         ! Number of quantities (stage, uh, vh, elevation)
