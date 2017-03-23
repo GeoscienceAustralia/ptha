@@ -16,7 +16,7 @@ MODULE local_routines
 
     CONTAINS 
 
-    SUBROUTINE set_initial_conditions_java(domain, input_elevation_raster, &
+    SUBROUTINE set_initial_conditions_generic(domain, input_elevation_raster, &
         input_stage_raster, hazard_points_file, skip_header,&
         adaptive_computational_extents, negative_elevation_raster)
 
@@ -28,8 +28,7 @@ MODULE local_routines
 
         INTEGER(ip):: i, j
         REAL(dp), ALLOCATABLE:: x(:), y(:), xy_coords(:,:)
-        INTEGER(ip):: stage_raster_dim(2), xl, xU, yl, yU
-        REAL(dp) :: stage_raster_ll(2), stage_raster_ur(2)
+        INTEGER(ip):: xl, xU, yl, yU
         TYPE(gdal_raster_dataset_type):: elevation_data, stage_data
 
         ! Make space for x/y coordinates, at which we will look-up the rasters
@@ -45,7 +44,6 @@ MODULE local_routines
         print*, '    ', elevation_data%lowerleft
         print*, '    ', elevation_data%upperright
 
-        ! Allow for periodic boundaries
         where( x < elevation_data%lowerleft(1) )
             x = x + 360.0_dp
         end where
@@ -147,7 +145,7 @@ END MODULE
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-PROGRAM java
+PROGRAM coarray_example
 
     USE global_mod, only: ip, dp, minimum_allowed_depth
     USE domain_mod, only: domain_type
@@ -164,11 +162,11 @@ PROGRAM java
     CHARACTER(charlen) :: timestepping_method, input_parameter_file
     REAL(dp) :: approximate_writeout_frequency, final_time 
 
-    REAL(dp) :: global_ur(2), global_ll(2), global_lw(2), cfl, dx(2), local_lw(2), local_ll(2)
-    INTEGER(ip) :: global_nx(2), local_nx(2)
+    REAL(dp) :: global_ur(2), global_ll(2), global_lw(2), cfl, dx(2)
+    INTEGER(ip) :: global_nx(2)
     INTEGER(ip) :: skip_header_hazard_points_file
     CHARACTER(len=charlen) :: input_elevation_raster, input_stage_raster, &
-        hazard_points_file, output_basedir, logfile_name
+        hazard_points_file, output_basedir
     LOGICAL :: record_max_U, output_grid_timeseries, adaptive_computational_extents, &
         negative_elevation_raster, ew_periodic, ns_periodic
 
@@ -281,7 +279,7 @@ PROGRAM java
     write(domain%logfile_unit, MODELCONFIG)
 
     ! Call local routine to set initial conditions
-    CALL set_initial_conditions_java(domain, input_elevation_raster,&
+    CALL set_initial_conditions_generic(domain, input_elevation_raster,&
         input_stage_raster, hazard_points_file, skip_header_hazard_points_file,&
         adaptive_computational_extents, negative_elevation_raster)
 

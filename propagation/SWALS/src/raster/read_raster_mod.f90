@@ -226,8 +226,8 @@ module read_raster_mod
         call get_raster_dimensions_Cfun(inputFile_c, xydim_c, lowerleft_c, upperright_c)
 
         xydim = xydim_c
-        lowerleft = lowerleft_c
-        upperright = upperright_c
+        lowerleft = real(lowerleft_c, dp)
+        upperright = real(upperright_c, dp)
 
     end subroutine
 

@@ -396,6 +396,7 @@ module coarray_point2point_comms_mod
         ! Allocate the receive buffer to have the maximum required size
         !
         ! First we need to find how big it should be
+        desired_size_local = 0
         do i = 1, num_images_local
             if(allocated(send_size)) then
                 desired_size = sum(send_size, mask=(sendto_image_index == i))
@@ -456,7 +457,7 @@ module coarray_point2point_comms_mod
             ! Broadcast the send metadata from image i to all images
             if( this_image_local == i) then
                 work_coarray = 0 
-                real64_coarray = transfer("", real(1.0, real64))
+                real64_coarray = transfer("        ", real(1.0, real64))
 
                 if(allocated(send_size)) then
                     n = size(sendto_image_index)
