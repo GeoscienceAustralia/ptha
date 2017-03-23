@@ -522,9 +522,9 @@ module domain_mod
         ! Only split the domain if we provided a co_size with > 1 image
         if (present(co_size_xy)) then
             if(maxval(co_size_xy) > 1) then
-                use_partitioned_comms = .FALSE.
-            else
                 use_partitioned_comms = .TRUE.
+            else
+                use_partitioned_comms = .FALSE.
             endif
         else
             use_partitioned_comms = .FALSE.
@@ -2196,7 +2196,7 @@ module domain_mod
     !  (1:size(xy_coords(1,:))) * 1.0. Even though integers are natural we store
     !   as REAL to avoid precision loss issues
     !
-    subroutine setup_point_gauges(domain, xy_coords, time_series_var, static_var, gauge_ids,&
+    subroutine setup_point_gauges(domain, xy_coords, time_series_var, static_var, gauge_ids, &
         attribute_names, attribute_values)
 
         class(domain_type), intent(inout):: domain
@@ -2208,6 +2208,7 @@ module domain_mod
         character(charlen) :: netcdf_gauge_output_file, t3
         integer(ip), allocatable:: tsv(:), sv(:)
         real(dp), allocatable:: gauge_ids_local(:)
+        real(dp) :: bounding_box(2,2)
         integer(ip):: i
 
         if(present(time_series_var)) then
@@ -2247,7 +2248,13 @@ module domain_mod
         netcdf_gauge_output_file = trim(domain%output_folder_name) // '/' // &
             'Gauges_data_ID' // trim(t3) // '.nc'
 
-        call domain%point_gauges%allocate_gauges(xy_coords, tsv, sv, gauge_ids_local)
+        ! Pass the bounding box
+        bounding_box(1,1:2) = domain%lower_left
+        bounding_box(2,1:2) = domain%lower_left + domain%lw
+
+        ! Allocate the gauges
+        call domain%point_gauges%allocate_gauges(xy_coords, tsv, sv, gauge_ids_local, &
+            bounding_box=bounding_box)
 
         if((present(attribute_names)).AND.(present(attribute_values))) then
             call domain%point_gauges%initialise_gauges(domain%lower_left, domain%dx, &

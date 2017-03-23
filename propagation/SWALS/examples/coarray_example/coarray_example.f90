@@ -110,27 +110,15 @@ MODULE local_routines
             print*, ''
             print*, 'Reading hazard points'
             call read_csv_into_array(xy_coords, hazard_points_file, skip_header)
-            if( (any(xy_coords(1,:) < domain%lower_left(1))).OR. &
-                (any(xy_coords(1,:) > domain%lower_left(1) + domain%lw(1))).OR. &
-                (any(xy_coords(2,:) > domain%lower_left(2) + domain%lw(2))).OR. &
-                (any(xy_coords(2,:) < domain%lower_left(2))) ) then
-                print*, '    # WARNING: Some hazard points outside domain extents are being clipped'
-                print*, '    #          (Could include points on the domain edge, due to round-off error)'
-                print*, '    # The original hazard point range:'
-                print*, '    #     lon: ', minval(xy_coords(1,:)), maxval(xy_coords(1,:))
-                print*, '    #     lat: ', minval(xy_coords(2,:)), maxval(xy_coords(2,:))
-                print*, '    # will be truncated to the range of the cell midpoints'
-                xy_coords(1,:) = min(xy_coords(1,:), maxval(domain%x))
-                xy_coords(1,:) = max(xy_coords(1,:), minval(domain%x))
-                xy_coords(2,:) = min(xy_coords(2,:), maxval(domain%y))
-                xy_coords(2,:) = max(xy_coords(2,:), minval(domain%y))
-            end if
             print*, '    Setting up gauges'
-            call domain%setup_point_gauges(xy_coords, time_series_var=[STG], static_var=[ELV])
-            print*, '    The number of points is', domain%point_gauges%n_gauges
-            print*, '    The first point is (lon,lat): ', xy_coords(1,1), xy_coords(2,1)
-            print*, '    The last  point is (lon,lat): ', xy_coords(1:2, domain%point_gauges%n_gauges)
-            print*, ''
+            print*, domain%lower_left, domain%lw
+            call domain%setup_point_gauges(xy_coords(1:2,:), time_series_var=[STG], static_var=[ELV], gauge_ids=xy_coords(3,:))
+            if(allocated(domain%point_gauges%xy)) then
+                print*, '    The number of points is', domain%point_gauges%n_gauges
+                print*, '    The first point is (lon,lat): ', domain%point_gauges%xy(1:2,1)
+                print*, '    The last  point is (lon,lat): ', domain%point_gauges%xy(1:2, domain%point_gauges%n_gauges)
+                print*, ''
+            end if
             DEALLOCATE(xy_coords)
         else
             print*, ''
@@ -279,13 +267,14 @@ PROGRAM java
     sync all
     call allocate_p2p_comms
 #endif
-        CALL domain%log_outputs()
-        write(domain%logfile_unit, MODELCONFIG)
 
-        ! Call local routine to set initial conditions
-        CALL set_initial_conditions_java(domain, input_elevation_raster,&
-            input_stage_raster, hazard_points_file, skip_header_hazard_points_file,&
-            adaptive_computational_extents, negative_elevation_raster)
+    CALL domain%log_outputs()
+    write(domain%logfile_unit, MODELCONFIG)
+
+    ! Call local routine to set initial conditions
+    CALL set_initial_conditions_java(domain, input_elevation_raster,&
+        input_stage_raster, hazard_points_file, skip_header_hazard_points_file,&
+        adaptive_computational_extents, negative_elevation_raster)
 
 
 #ifdef COARRAY

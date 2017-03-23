@@ -80,7 +80,7 @@ module file_io_mod
         ! Clean out 'array' in case it is already allocated
         if(allocated(array)) deallocate(array)
 
-        open(newunit=file_unit_no, file=csv_file)
+        open(newunit=file_unit_no, file=csv_file, action='read')
 
         file_rows = count_file_lines(file_unit_no)
         

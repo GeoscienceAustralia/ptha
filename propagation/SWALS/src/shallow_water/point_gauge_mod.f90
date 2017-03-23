@@ -5,6 +5,7 @@ module point_gauge_mod
     use global_mod, only: dp, ip, output_precision, charlen
     use file_io_mod, only: read_csv_into_array
     use stop_mod, only: generic_stop
+    use which_mod, only: which 
 
     ! point_gauge output can be either:
     !   A) netcdf, or 
@@ -53,7 +54,7 @@ module point_gauge_mod
 #endif
 
         ! How many gauges, and the dimension of the space
-        integer(ip):: n_gauges, space_dim = 2
+        integer(ip):: n_gauges = 0, space_dim = 2
         ! Indices of variables 
         integer(ip), allocatable:: time_series_var(:), static_var(:)
 
@@ -92,15 +93,21 @@ module point_gauge_mod
     !  wish to store once. e.g. [ELV], or [UH, VH, ELV]
     ! @param gauge_ids real array of size n_gauges giving an ID for each
     !  gauge. Make it REAL to avoid truncation issues for large IDs
+    ! @param bounding_box If provided, only keep gauges inside a given bounding box
     !
     subroutine allocate_gauges(point_gauges, xy_coordinates, &
-        time_series_var_indices, static_var_indices, gauge_ids)
+        time_series_var_indices, static_var_indices, gauge_ids, &
+        bounding_box)
         class(point_gauge_type), intent(inout) :: point_gauges
         real(dp), intent(in) :: xy_coordinates(:,:)
         integer(ip), intent(in) :: time_series_var_indices(:), static_var_indices(:)
         real(dp), intent(in) :: gauge_ids(:)
+        real(dp), optional, intent(in) :: bounding_box(2,2)
 
         integer(ip):: n_gauges, space_dim, n_ts_var, n_static_var
+        logical :: all_gauges
+        logical, allocatable :: points_inside(:)
+        integer(ip), allocatable :: indices_inside(:)
             
             ! At the moment the space dimension must be 2 
             if (point_gauges%space_dim /= size(xy_coordinates(:,1))) then
@@ -108,12 +115,45 @@ module point_gauge_mod
                     point_gauges%space_dim
             end if
 
+            if(present(bounding_box)) then
+                ! It is possible that not all the gauges will be in the bounding box
+                all_gauges = .FALSE.
+
+                allocate(points_inside(size(xy_coordinates(1,:))))
+
+                points_inside = ( &
+                    (xy_coordinates(1,:) > bounding_box(1,1)) .and. &
+                    (xy_coordinates(1,:) < bounding_box(2,1)) .and. &
+                    (xy_coordinates(2,:) > bounding_box(1,2)) .and. &
+                    (xy_coordinates(2,:) < bounding_box(2,2)) )
+
+                n_gauges = count(points_inside)
+
+                if(.not. any(points_inside)) then
+                    ! If there are no points inside, do a quick exit
+                    point_gauges%n_gauges = n_gauges
+                    return
+                else
+                    call which(points_inside, indices_inside)
+                end if
+
+            else
+                ! Make space for all gauges
+                all_gauges = .TRUE.
+                n_gauges = size(xy_coordinates(1,:))
+
+            end if
+
             ! Get coordinates
-            n_gauges = size(xy_coordinates(1,:))
             space_dim = point_gauges%space_dim
             point_gauges%n_gauges = n_gauges
             allocate(point_gauges%xy(space_dim, n_gauges))
-            point_gauges%xy = xy_coordinates 
+
+            if(all_gauges) then
+                point_gauges%xy = xy_coordinates 
+            else
+                point_gauges%xy = xy_coordinates(1:2, indices_inside)
+            end if
             
             space_dim = point_gauges%space_dim
             n_gauges = point_gauges%n_gauges
@@ -125,7 +165,12 @@ module point_gauge_mod
             allocate(point_gauges%time_series_values(n_gauges, n_ts_var))
             allocate(point_gauges%static_values(n_gauges, n_static_var))
             allocate(point_gauges%gauge_ids(n_gauges))
-            point_gauges%gauge_ids = gauge_ids
+
+            if(all_gauges) then
+                point_gauges%gauge_ids = gauge_ids
+            else
+                point_gauges%gauge_ids = gauge_ids(indices_inside)
+            end if
 
             allocate(point_gauges%time_series_var(n_ts_var))
             point_gauges%time_series_var = time_series_var_indices
@@ -154,6 +199,8 @@ module point_gauge_mod
 
         integer(ip):: i, j, xind, yind
 
+        if(point_gauges%n_gauges == 0) return
+
         if(size(var_inds) /= size(time_series_values(1,:))) then
             print*, 'Dimension mismatch between time_series_values and var_inds'
             call generic_stop()
@@ -180,6 +227,8 @@ module point_gauge_mod
         class(point_gauge_type), intent(inout):: point_gauges
         real(dp), intent(in):: domain_U(:,:,:), domain_time
         integer(ip) :: i
+
+        if(point_gauges%n_gauges == 0) return
  
         call update_gauge_var(point_gauges, point_gauges%time_series_values, &
             domain_U, point_gauges%time_series_var)
@@ -244,6 +293,8 @@ module point_gauge_mod
         integer(ip):: n_gauges, i, j, varind, xind, yind
 
         n_gauges = point_gauges%n_gauges
+
+        if(n_gauges == 0) return
    
         ! Get indices of gauges on domain        
         do i = 1, n_gauges
@@ -537,7 +588,7 @@ module point_gauge_mod
     subroutine finalise_point_gauges(point_gauges)
         class(point_gauge_type), intent(inout):: point_gauges
 
-        if (allocated(point_gauges%xy)) then
+        if (point_gauges%n_gauges > 0) then
 #ifndef NONETCDF      
             ! Close the netcdf file 
             call check(nf90_close(point_gauges%netcdf_gauge_output_file_ID))

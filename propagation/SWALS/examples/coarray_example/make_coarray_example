@@ -14,20 +14,18 @@ NETCDF_FLIBS=`/home/gareth/Code_Experiments/alternate_compiler_lib/gcc_6.1/netcd
 GDAL_CFLAGS=`/home/gareth/Code_Experiments/alternate_compiler_lib/gcc_6.1/gdal/install/bin/gdal-config --cflags`
 GDAL_LIBS=`/home/gareth/Code_Experiments/alternate_compiler_lib/gcc_6.1/gdal/install/bin/gdal-config --libs`
 
-#FORTRAN=$(FCCOMP) -Ofast -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DREALFLOAT -DTIMER -DNONETCDF -DNOOPENMP
-FORTRAN=$(FCCOMP) -Ofast -std=f2008ts -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DNOOPENMP -DTIMER -DCOARRAY -DREALFLOAT -DNONETCDF
-#FORTRAN=$(FCCOMP) -fbounds-check -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DREALFLOAT -DCOARRAY -DNOOPENMP -DTIMER -DNONETCDF
+FORTRAN=$(FCCOMP) -Ofast -std=f2008ts -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DNOOPENMP -DTIMER -DCOARRAY -DREALFLOAT
 
 # Clean up
-clean: java_example
+clean: coarray_example
 	rm *.o *.mod
 
 # Link everything
-java_example: libSWE.a java_example.o
-	$(FORTRAN) java_example.o -o $@ libSWE.a $(GDAL_LIBS) -lgdal #$(NETCDF_FLIBS) -lnetcdf 
+coarray_example: libSWE.a java_example.o
+	$(FORTRAN) coarray_example.o -o $@ libSWE.a $(GDAL_LIBS) -lgdal $(NETCDF_FLIBS) -lnetcdf 
 
 # Compile the driver script
-java_example.o: java_example.f90
+coarray_example.o: java_example.f90
 	$(FORTRAN) -c $^ 
 
 # Build main source

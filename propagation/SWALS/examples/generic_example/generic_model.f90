@@ -142,24 +142,16 @@ SOURCEDIR
                 (any(xy_coords(1,:) > domain%lower_left(1) + domain%lw(1))).OR. &
                 (any(xy_coords(2,:) > domain%lower_left(2) + domain%lw(2))).OR. &
                 (any(xy_coords(2,:) < domain%lower_left(2))) ) then
-                print*, '    # WARNING: Some hazard points outside domain extents are being clipped'
-                print*, '    #          (Could include points on the domain edge, due to round-off error)'
-                print*, '    # The original hazard point range:'
-                print*, '    #     lon: ', minval(xy_coords(1,:)), maxval(xy_coords(1,:))
-                print*, '    #     lat: ', minval(xy_coords(2,:)), maxval(xy_coords(2,:))
-                print*, '    # will be truncated to the range of the cell midpoints'
-                xy_coords(1,:) = min(xy_coords(1,:), maxval(domain%x))
-                xy_coords(1,:) = max(xy_coords(1,:), minval(domain%x))
-                xy_coords(2,:) = min(xy_coords(2,:), maxval(domain%y))
-                xy_coords(2,:) = max(xy_coords(2,:), minval(domain%y))
+                print*, '    # WARNING: Some hazard points outside domain extents are being discarded'
+                print*, '    #          (Could reflect running in parallel, or round-off error)'
             end if
 
             print*, '    Setting up gauges'
             call domain%setup_point_gauges(xy_coords(1:2,:), time_series_var=[STG, UH, VH], static_var=[ELV], &
                 gauge_ids = xy_coords(3,:), attribute_names=attribute_names, attribute_values=attribute_values)
-            print*, '    The number of points is', domain%point_gauges%n_gauges
-            print*, '    The first point is (lon,lat): ', xy_coords(1,1), xy_coords(2,1)
-            print*, '    The last  point is (lon,lat): ', xy_coords(1:2, domain%point_gauges%n_gauges)
+            print*, '    The number of points on this domain is', domain%point_gauges%n_gauges
+            print*, '    The first point is (lon,lat): ', domain%point_gauges%xy(1:2, 1)
+            print*, '    The last  point is (lon,lat): ', domain%point_gauges%xy(1:2, domain%point_gauges%n_gauges)
             print*, ''
         else
             print*, ''
