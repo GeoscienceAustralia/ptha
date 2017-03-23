@@ -552,7 +552,8 @@ module domain_mod
         ! Use coarrays if co_size_xy is provided
         if(use_partitioned_comms) then
             ! Compute the ll/lw/nx for this sub-domain
-            call domain%partitioned_comms%initialise(co_size_xy, global_ll, global_lw, global_nx, &
+            call domain%partitioned_comms%initialise(&
+                co_size_xy, global_ll, global_lw, global_nx, &
                 local_ll, local_lw, local_nx, &
                 ew_periodic=ew_periodic_, ns_periodic=ns_periodic_)
             domain%lower_left = local_ll

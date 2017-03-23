@@ -45,19 +45,13 @@ MODULE local_routines
         print*, '    ', elevation_data%lowerleft
         print*, '    ', elevation_data%upperright
 
+        ! Allow for periodic boundaries
         where( x < elevation_data%lowerleft(1) )
             x = x + 360.0_dp
         end where
         where( x > elevation_data%upperright(1) )
             x = x - 360.0_dp
         end where
-
-        ! Treat periodic case, where there will be 2 points on either side
-        ! which exceed the input raster extent
-        if(x(domain%nx(1)) - x(1) > 360.0_dp) then
-            x(1:2) = x(1:2) + 360.0_dp
-            x((domain%nx(1) - 1):domain%nx(1)) = x((domain%nx(1) - 1):domain%nx(1)) - 360.0_dp
-        end if
 
         DO j = 1, domain%nx(2)
             y = domain%y(j)

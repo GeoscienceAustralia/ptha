@@ -393,9 +393,15 @@ module coarray_utilities_mod
         do i = 1, 4
             if(comms%neighbour_images(i) > 0) then
                 ! We need the images to be unique
-                if( (i == 1) .or. all(comms%neighbour_images(i) /= comms%neighbour_images(1:(i-1)))) then
+                if( i == 1) then
                     !counter = counter+1
                     comms%neighbour_images_keep = [comms%neighbour_images_keep, i]
+                else
+                    ! Cannot do this test unless i > 1
+                    if(all(comms%neighbour_images(i) /= comms%neighbour_images(1:(i-1)))) then
+                        ! Add the images we don't have already
+                        comms%neighbour_images_keep = [comms%neighbour_images_keep, i]
+                    end if
                 end if
             end if
         end do
