@@ -21,11 +21,11 @@ clean: coarray_example
 	rm *.o *.mod
 
 # Link everything
-coarray_example: libSWE.a java_example.o
+coarray_example: libSWE.a coarray_example.o
 	$(FORTRAN) coarray_example.o -o $@ libSWE.a $(GDAL_LIBS) -lgdal $(NETCDF_FLIBS) -lnetcdf 
 
 # Compile the driver script
-coarray_example.o: java_example.f90
+coarray_example.o: coarray_example.f90
 	$(FORTRAN) -c $^ 
 
 # Build main source

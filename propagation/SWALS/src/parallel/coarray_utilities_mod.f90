@@ -132,6 +132,7 @@ module coarray_utilities_mod
     ! Convenience printing function
     !
     subroutine print_comms(comms)
+
         class(partitioned_domain_NESW_comms_type), intent(in):: comms
         integer(ip):: i, j, tmp(2)
 
@@ -141,16 +142,16 @@ module coarray_utilities_mod
         do j = 1, num_images()
             if(this_image() == j) then
                 print*, 'Image: ', this_image()
-                print*, 'ti_xy: ', comms%ti_xy
-                print*, 'neighbour_im_xy: '
+                print*, '  ti_xy: ', comms%ti_xy
+                print*, '  neighbour_im_xy: '
                 do i = 1, 4
                     tmp = comms%neighbour_im_xy(i,1:2)
                     print*, '   (coindex:)', tmp
                 end do
-                print*, 'neighbour_images_full: ', comms%neighbour_images
-                print*, 'neighbour_images: ', &
+                print*, '  neighbour_images_full: ', comms%neighbour_images
+                print*, '  neighbour_images: ', &
                     comms%neighbour_images(comms%neighbour_images_keep)
-                print*, 'halo_pad: ', comms%halo_pad
+                print*, '  halo_pad: ', comms%halo_pad
             end if
             sync all
         end do
@@ -216,22 +217,42 @@ module coarray_utilities_mod
     ! @param local_ll new domain lower left [x,y]
     ! @param local_lw new domain [length, width]
     ! @param local_nx new domain [nx, ny]
+    ! @param ew_periodic logical. Should we have EW periodic boundary
+    !     conditions. Only matters if using coarrays.
+    ! @param ns_periodic logical. Should we have NS periodic boundary
+    !     conditions. Only matters if using coarrays.
     !
     subroutine setup_partitioned_domain_comms(comms, co_size_xy, global_ll, &
-        global_lw, global_nx, local_ll, local_lw, local_nx)
+        global_lw, global_nx, local_ll, local_lw, local_nx, &
+        ew_periodic, ns_periodic)
 
         class(partitioned_domain_NESW_comms_type), intent(inout):: comms
         real(dp), intent(in):: global_ll(2), global_lw(2)
         integer(ip), intent(in):: global_nx(2), co_size_xy(2)
         real(dp), intent(out):: local_ll(2), local_lw(2)
         integer(ip), intent(out):: local_nx(2)
+        logical, intent(in), optional :: ew_periodic, ns_periodic
         
         integer(4) :: offset(2), i, counter, tmp(2), nvar, halo_width, ti
         integer(ip) :: interior_nx(2)
         real(dp):: dx(2)
         real(dp), allocatable :: dummy_array(:)
         character(len=charlen) :: buffer_label
+        logical :: ew_periodic_, ns_periodic_
 
+        ! By default we do not use EW periodic domains
+        if(present(ew_periodic)) then
+            ew_periodic_ = ew_periodic
+        else
+            ew_periodic_ = .FALSE.
+        end if
+
+        ! By default we do not use NS periodic domains
+        if(present(ns_periodic)) then
+            ns_periodic_ = ns_periodic
+        else
+            ns_periodic_ = .FALSE.
+        end if
 
 #ifndef COARRAY
 
@@ -318,16 +339,45 @@ module coarray_utilities_mod
         ! Find images of N,E,S,W neighbours
         do i = 1, 4
             select case(i)
-            case(1) ! N
-                offset = [0,1]
-            case(2) ! E
-                offset = [1,0]
-            case(3) ! S
-                offset = [0,-1]
-            case(4) ! W
-                offset = [-1,0]
+                case(1) ! North boundary
+
+                    offset = [0,1]
+
+                    if( ns_periodic_ .and. (comms%ti_xy(2) == co_size_xy(2)) ) then
+                         offset(2) = 1 - co_size_xy(2)
+                    end if
+
+                case(2) ! East boundary
+
+                    offset = [1,0]
+
+                    if( ew_periodic_ .and. (comms%ti_xy(1) == co_size_xy(1)) ) then
+                         offset(1) = 1 - co_size_xy(1)
+                    end if
+
+                case(3) ! South boundary
+
+                    offset = [0,-1]
+
+                    if( ns_periodic_ .and. (comms%ti_xy(2) == 1) ) then
+                         offset(2) = co_size_xy(2) - 1
+                    end if
+
+                case(4) ! West boundary
+
+                    offset = [-1,0]
+
+                    if( ew_periodic_ .and. (comms%ti_xy(1) == 1) ) then
+                         offset(1) = co_size_xy(1) - 1
+                    end if
+
             end select
+
             comms%neighbour_im_xy(i,1:2) = comms%ti_xy + offset 
+
+            !if(this_image() == 1) print*, i, comms%ti_xy, offset, ew_periodic_, ns_periodic_, &
+            !    comms%neighbour_im_xy(i,1:2), co_size_xy
+
             ! This 'copy' is required to avoid the rank being 2 in the second argument of 'image_index',
             ! which causes an error
             tmp = comms%neighbour_im_xy(i,1:2)
@@ -338,12 +388,15 @@ module coarray_utilities_mod
         end do
     
         ! Array with the indices of neighbour images we want to keep
-        allocate(comms%neighbour_images_keep(count(comms%neighbour_images > 0)))
-        counter = 0
+        allocate(comms%neighbour_images_keep(0))
+        !counter = 0
         do i = 1, 4
             if(comms%neighbour_images(i) > 0) then
-                counter = counter+1
-                comms%neighbour_images_keep(counter) = i
+                ! We need the images to be unique
+                if( (i == 1) .or. all(comms%neighbour_images(i) /= comms%neighbour_images(1:(i-1)))) then
+                    !counter = counter+1
+                    comms%neighbour_images_keep = [comms%neighbour_images_keep, i]
+                end if
             end if
         end do
 
@@ -600,7 +653,9 @@ module coarray_utilities_mod
         TIMER_STOP('to_buffer')
         ! Need to have finshed the communication before we can procced to copy
         ! buffers into U
+        !print*, 'Pre sync', this_image(), ', ', comms%neighbour_images(comms%neighbour_images_keep)
         sync images(comms%neighbour_images(comms%neighbour_images_keep))
+        !print*, 'Post sync'
         !sync all
 
         TIMER_START('from_buffer')

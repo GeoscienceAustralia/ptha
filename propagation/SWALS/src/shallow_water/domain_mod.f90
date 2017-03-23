@@ -497,19 +497,24 @@ module domain_mod
     ! @param global_ll real(dp) array size 2. lower left x/y coordinate of the
     !  domain (at the corner of the lower left cell)
     ! @param create_output_files optional. If .TRUE. or not provided, then make
+    ! @param co_size_xy Split up domain into sub-tiles of this dimension, using coarrays
+    ! @param ew_periodic Use EW periodic boundaries [coarray only]
+    ! @param ns_periodic Use NS periodic boundaries [coarray only]
     !  output files.
     !
     subroutine allocate_quantities(domain, global_lw, global_nx, global_ll, create_output_files,&
-        co_size_xy)
+        co_size_xy, ew_periodic, ns_periodic)
+
         class(domain_type), target, intent(inout):: domain
         real(dp), intent(in):: global_lw(2), global_ll(2)
         integer(ip), intent(in):: global_nx(2)
         logical, optional, intent(in) :: create_output_files
         integer(ip), optional, intent(in):: co_size_xy(2)
+        logical, optional, intent(in) :: ew_periodic, ns_periodic
 
         integer(ip), pointer:: nx, ny, nvar
         integer(ip) :: i
-        logical :: create_output, use_partitioned_comms
+        logical :: create_output, use_partitioned_comms, ew_periodic_, ns_periodic_
         real(dp):: local_lw(2), local_ll(2)
         integer(ip):: local_nx(2)
 
@@ -523,6 +528,20 @@ module domain_mod
         if (present(co_size_xy)) then
             if(maxval(co_size_xy) > 1) then
                 use_partitioned_comms = .TRUE.
+
+                ! In parallel, we need to tell the code whether the domain is periodic or not
+                if(present(ew_periodic)) then
+                    ew_periodic_ = ew_periodic
+                else
+                    ew_periodic_ = .FALSE.
+                end if
+
+                if(present(ns_periodic)) then
+                    ns_periodic_ = ns_periodic
+                else
+                    ns_periodic_ = .FALSE.
+                end if
+
             else
                 use_partitioned_comms = .FALSE.
             endif
@@ -534,7 +553,8 @@ module domain_mod
         if(use_partitioned_comms) then
             ! Compute the ll/lw/nx for this sub-domain
             call domain%partitioned_comms%initialise(co_size_xy, global_ll, global_lw, global_nx, &
-                local_ll, local_lw, local_nx)
+                local_ll, local_lw, local_nx, &
+                ew_periodic=ew_periodic_, ns_periodic=ns_periodic_)
             domain%lower_left = local_ll
             domain%lw = local_lw 
             domain%nx = local_nx

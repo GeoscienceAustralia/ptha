@@ -45,6 +45,13 @@ MODULE local_routines
         print*, '    ', elevation_data%lowerleft
         print*, '    ', elevation_data%upperright
 
+        where( x < elevation_data%lowerleft(1) )
+            x = x + 360.0_dp
+        end where
+        where( x > elevation_data%upperright(1) )
+            x = x - 360.0_dp
+        end where
+
         ! Treat periodic case, where there will be 2 points on either side
         ! which exceed the input raster extent
         if(x(domain%nx(1)) - x(1) > 360.0_dp) then
@@ -169,7 +176,7 @@ PROGRAM java
     CHARACTER(len=charlen) :: input_elevation_raster, input_stage_raster, &
         hazard_points_file, output_basedir, logfile_name
     LOGICAL :: record_max_U, output_grid_timeseries, adaptive_computational_extents, &
-        negative_elevation_raster
+        negative_elevation_raster, ew_periodic, ns_periodic
 
     REAL(dp) :: timestep
     
@@ -236,20 +243,28 @@ PROGRAM java
     ! Use either ew-periodic or flather boundaries
     if(abs(global_lw(1) - 360.0_dp) < (0.1_dp*dx(1))) then
         ! Global model in EW direction.
-        print*, ' Periodic case not yet supported with coarrays'
-        error stop
         ! Case with periodic EW boundaries
         print*, ''
-        print*, 'Assuming global model with periodic boundaries: Appending cells to domain'
+        print*, 'Assuming global model with periodic boundaries'
         print*, ''
         domain%boundary_subroutine => periodic_EW_reflective_NS 
 
+#ifndef COARRAY
         global_nx = global_nx + [4,0]
         global_ur = global_ur + [2*dx(1), 0.0_dp]
         global_ll = global_ll - [2*dx(1), 0.0_dp]
         global_lw = global_ur - global_ll
+#endif
+
+        ew_periodic = .TRUE.
+        ns_periodic = .FALSE.
+
     else
         domain%boundary_subroutine => flather_boundary
+
+        ew_periodic = .FALSE.
+        ns_periodic = .FALSE.
+
     end if
 
     domain%timestepping_method = timestepping_method
@@ -257,13 +272,13 @@ PROGRAM java
     domain%record_max_U = record_max_U
     domain%output_basedir = output_basedir
 
-    
 #ifndef COARRAY    
     CALL domain%allocate_quantities(global_lw, global_nx, global_ll)
 #else
     print*, 'Allocating image ', ti
     ! Allocate domain with coarrays
-    CALL domain%allocate_quantities(global_lw, global_nx, global_ll, co_size_xy = [nx_ca, ny_ca])
+    CALL domain%allocate_quantities(global_lw, global_nx, global_ll, co_size_xy = [nx_ca, ny_ca], &
+        ew_periodic = ew_periodic, ns_periodic = ns_periodic)
     sync all
     call allocate_p2p_comms
 #endif
@@ -301,6 +316,7 @@ PROGRAM java
 #ifdef COARRAY
     sync all
 #endif
+
     TIMER_STOP('SETUP')
 
 
