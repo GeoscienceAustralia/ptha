@@ -66,7 +66,7 @@ module domain_mod
     real(dp), parameter :: HALF_dp = 0.5_dp, ZERO_dp = 0.0_dp, ONE_dp=1.0_dp
     real(dp), parameter:: NEG_SEVEN_ON_THREE_dp = -7.0_dp/3.0_dp
 
-    !type :: domain_type
+    type :: domain_type
     !
     ! Type to only hold domain metadata
     !
@@ -78,7 +78,7 @@ module domain_mod
     ! with older gfortran (e.g. 4.8, which is default on ubuntu 14.04). So 
     ! be careful about using such subroutines/functions in the code.
     !
-    type :: domain_metadata_type
+    !type :: domain_metadata_type
 
         ! [Length,width] of domain in x/y units
         real(dp):: lw(2) 
@@ -120,12 +120,12 @@ module domain_mod
 
         real(dp) :: max_parent_dx_ratio
 
-    end type
+    !end type
 
     !
     ! Main type used in the program. It holds the model arrays, information on the domain,
     ! etc
-    type, extends(domain_metadata_type) :: domain_type
+    !type, extends(domain_metadata_type) :: domain_type
 
         ! Number of quantities (stage, uh, vh, elevation)
         integer(ip):: nvar = 4 !global_nvar
@@ -551,6 +551,7 @@ module domain_mod
 
         ! Use coarrays if co_size_xy is provided
         if(use_partitioned_comms) then
+
             ! Compute the ll/lw/nx for this sub-domain
             call domain%partitioned_comms%initialise(&
                 co_size_xy, global_ll, global_lw, global_nx, &
@@ -567,6 +568,7 @@ module domain_mod
             do i = 1,4
                 if(domain%partitioned_comms%neighbour_images(i) > 0) domain%boundary_exterior(i) = .FALSE.
             end do
+
         else
             ! Not using coarrays (simple case)
             domain%lw = global_lw
@@ -1797,10 +1799,6 @@ module domain_mod
         ! The linear solver code has become complex [in order to reduce memory footprint, and
         ! include coriolis, while still having openmp work]. So it is moved here. 
 #include "domain_linear_solver_include.inc"        
-
-        TIMER_START('partitioned_comms')
-        call domain%partitioned_comms%communicate(domain%U)
-        TIMER_STOP('partitioned_comms')
 
     end subroutine
     

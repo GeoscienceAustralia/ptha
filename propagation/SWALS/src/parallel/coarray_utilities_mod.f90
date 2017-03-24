@@ -308,14 +308,6 @@ module coarray_utilities_mod
                     [1:co_size_xy(1), *], &
                 comms%west_recv_buffer(halo_width, interior_nx(2), nvar)&
                     [1:co_size_xy(1), *] )
-
-            !allocate(dummy_buffer(1)[1:co_size_xy(1), *])
-#else
-            !! Use this to get neighbour co-subscripts if we don't allocate the
-            !! above buffers, and for 1D comms later
-            !allocate(dummy_buffer(&
-            !    maxval(comms%interior_nx) * nvar * halo_width)&
-            !    [1:co_size_xy(1), *])
 #endif
 
                 

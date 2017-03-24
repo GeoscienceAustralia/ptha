@@ -44,6 +44,7 @@ MODULE local_routines
         print*, '    ', elevation_data%lowerleft
         print*, '    ', elevation_data%upperright
 
+        ! Allow periodic elevation data
         where( x < elevation_data%lowerleft(1) )
             x = x + 360.0_dp
         end where
@@ -64,8 +65,13 @@ MODULE local_routines
 
         ! Set stage -- zero outside of initial condition file range
         domain%U(:,:,[STG,UH,VH]) = 0.0_dp
-       
+         
         CALL stage_data%initialise(input_stage_raster)
+
+        ! Do not allow periodic stage data (unlike elevation, since the latter has to be set
+        ! everywhere, whereas the former will just be set inside the provided data and use
+        ! the default 0 everywhere else)
+        x = domain%x
 
         ! Get the x indices which are inside the stage raster 
         ! We permit this to only cover a small part of the domain

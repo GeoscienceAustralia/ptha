@@ -94,6 +94,10 @@
         domain%time = domain%time + dt * HALF_dp
         call domain%update_boundary()
 
+        TIMER_START('partitioned_comms')
+        call domain%partitioned_comms%communicate(domain%U)
+        TIMER_STOP('partitioned_comms')
+
         !! Boundary flux integration
         ! note : U(i, j, UH) = UH_{i+1/2, j}
         !      : U(i, j, VH) = VH_{i, j+1/2}
