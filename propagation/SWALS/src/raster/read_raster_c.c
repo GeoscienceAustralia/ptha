@@ -192,6 +192,8 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
 
     }
 
+    free(pafScanline) ;
+
     return;
 }
 

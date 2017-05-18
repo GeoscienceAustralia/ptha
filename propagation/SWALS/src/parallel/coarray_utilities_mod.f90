@@ -308,6 +308,7 @@ module coarray_utilities_mod
                     [1:co_size_xy(1), *], &
                 comms%west_recv_buffer(halo_width, interior_nx(2), nvar)&
                     [1:co_size_xy(1), *] )
+
 #endif
 
                 
@@ -391,7 +392,6 @@ module coarray_utilities_mod
                 else
                     ! Cannot do this test unless i > 1
                     if(all(comms%neighbour_images(i) /= comms%neighbour_images(1:(i-1)))) then
-                        ! Add the images we don't have already
                         comms%neighbour_images_keep = [comms%neighbour_images_keep, i]
                     end if
                 end if
@@ -652,7 +652,7 @@ module coarray_utilities_mod
         ! Need to have finshed the communication before we can procced to copy
         ! buffers into U
         !print*, 'Pre sync', this_image(), ', ', comms%neighbour_images(comms%neighbour_images_keep)
-        sync images(comms%neighbour_images(comms%neighbour_images_keep))
+        if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
         !print*, 'Post sync'
         !sync all
 
@@ -666,7 +666,7 @@ module coarray_utilities_mod
         ! could have completed the copy, proceeded and updated the recv buffer again.
         !
         ! Probably this could be more efficiently done with events
-        sync images(comms%neighbour_images(comms%neighbour_images_keep))
+        if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
         !sync all
         !sync memory
         TIMER_STOP('sync')
