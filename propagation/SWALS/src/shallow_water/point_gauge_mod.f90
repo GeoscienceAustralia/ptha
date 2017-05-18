@@ -122,10 +122,10 @@ module point_gauge_mod
                 allocate(points_inside(size(xy_coordinates(1,:))))
 
                 points_inside = ( &
-                    (xy_coordinates(1,:) > bounding_box(1,1)) .and. &
-                    (xy_coordinates(1,:) < bounding_box(2,1)) .and. &
-                    (xy_coordinates(2,:) > bounding_box(1,2)) .and. &
-                    (xy_coordinates(2,:) < bounding_box(2,2)) )
+                    (xy_coordinates(1,:) >= bounding_box(1,1)) .and. &
+                    (xy_coordinates(1,:) <= bounding_box(2,1)) .and. &
+                    (xy_coordinates(2,:) >= bounding_box(1,2)) .and. &
+                    (xy_coordinates(2,:) <= bounding_box(2,2)) )
 
                 n_gauges = count(points_inside)
 
