@@ -298,8 +298,11 @@ module point_gauge_mod
    
         ! Get indices of gauges on domain        
         do i = 1, n_gauges
+            ! Map to [i,j] index. Note the 'min' operation deals with the corner case where
+            ! the coordinate has x = max_domain_x or y = max_domain_y
             point_gauges%site_index(:,i) = 1_ip + &
-                floor((point_gauges%xy(:,i) - domain_lower_left)/domain_dx)
+                min(floor((point_gauges%xy(:,i) - domain_lower_left)/domain_dx), &
+                    domain_nx-1_ip)
 
             ! Check it is inside the domain
             if((any(point_gauges%site_index(:,i) < 1_ip).or. &
