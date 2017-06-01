@@ -80,11 +80,11 @@ okada_tsunami<-function(elon, elat, edep, strk, dip, lnth, wdt,
     #}
     #return(xout[14:16])
 
-    .Call('fault_disp_c', as.double(elat), as.double(edep), as.double(strk), as.double(dip), 
-        as.double(lnth), as.double(wdt), as.double(disl1), as.double(disl2), as.double(rlon), 
-        as.double(rlat), as.double(dstmx), 
+    .Call('fault_disp_c', 
+	alp, elon, elat, edep, strk, dip, 
+        lnth, wdt, disl1, disl2, rlon, rlat, dstmx, 
 	edsp, ndsp, zdsp, 
-	as.integer(m), as.integer(n))
+	m, n)
 
     xout = list(edsp = edsp, ndsp = ndsp, zdsp = zdsp)
     if(verbose){
