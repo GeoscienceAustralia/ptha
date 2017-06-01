@@ -20,7 +20,8 @@ test_puysegur<-function(){
     source('./get_PTHA_results.R', local=TRUE)
    
     puysegur = get_source_zone_events_data('puysegur')
-	model_240 = get_flow_time_series_at_hazard_point(puysegur, 240, c(55015.4, 55042.4))
+	model_240 = get_flow_time_series_at_hazard_point(puysegur, 240, 
+	c(1.1, 10.1, 22.1, 55015.4, 55042.4))
 
     max_55015 = max(model_240$flow[['55015.4']][1,,1])
     max_55042 = max(model_240$flow[['55042.4']][1,,1])
@@ -40,5 +41,5 @@ test_puysegur<-function(){
     }
 }
 # Run the puysegur regression test
-test_puysegur()
+t1 = system.time(test_puysegur())
 

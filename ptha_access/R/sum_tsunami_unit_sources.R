@@ -43,6 +43,18 @@ get_netcdf_attribute_initial_stage_raster<-function(netcdf_file){
     return(myatt)
 }
 
+#' Undo precision issues in gaugeID (caused by storing as float)
+#'
+#'
+clean_gaugeID<-function(gaugeID){
+
+    clean_gauge_val = round(gaugeID, 2)
+    if(any(abs(clean_gauge_val - gaugeID) > 0.005)){
+        stop('Error with gauge IDs')
+    }
+    return(clean_gauge_val)
+}
+
 #'
 #' Get lon/lat/depth/gaugeID from gauges in netcdf file
 #' 
@@ -55,7 +67,7 @@ get_netcdf_gauge_locations<-function(netcdf_file, indices_of_subset = NULL){
 
     fid = nc_open(netcdf_file, readunlim=FALSE)
 
-    gauge_ids = ncvar_get(fid, 'gaugeID')
+    gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
     lon = ncvar_get(fid, 'lon')
     lat = ncvar_get(fid, 'lat')
     elev = ncvar_get(fid, 'elevation0')
@@ -182,29 +194,16 @@ get_netcdf_gauge_index_matching_ID<-function(netcdf_file, gauge_ID){
 
     fid = nc_open(netcdf_file, readunlim=FALSE)
 
-    point_ids = ncvar_get(fid, 'gaugeID')
+    point_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
 
-    closest_ID = gauge_ID * NA
-
-    point_ids_rounded = round(point_ids, 2)
-    if(any(abs(point_ids_rounded - point_ids) > 0.005)){
-        print('Warning: Using brute force search due to gauge rounding')
-        # Use brute force method
-        for(i in 1:length(gauge_ID)){
-            # The netcdf file stores the IDs as floats, which implies some
-            # rounding. 
-            closest_ID[i] = which.min(abs(point_ids - gauge_ID[i]))
-        }
-    }else{
-        closest_ID = match(gauge_ID, point_ids_rounded)
-    }
+    closest_ID = match(gauge_ID, point_ids)
 
 
-    if(any(abs(gauge_ID - point_ids[closest_ID]) > 0.005)){
-        kk = which.max(abs(gauge_ID - point_ids[closest_ID]))
+    if(any(is.na(closest_ID))){
+        kk = which(is.na(closest_ID))
         print(gauge_ID[kk])
-        print(point_ids[closest_ID[kk]])
-        stop('Provided ID differs from nearest ID by > 0.005')
+        nc_close(fid)
+        stop('Could not find gauge index matching the above value (which is rounded to address netcdf issues)')
     }
     
     nc_close(fid)
@@ -220,9 +219,9 @@ get_netcdf_gauge_index_matching_ID<-function(netcdf_file, gauge_ID){
 
     # Check that the gaugeID value is 1.1 (to within precision of a float)
     fid = nc_open(netcdf_file)
-    gaugeIDs = ncvar_get(fid, 'gaugeID')
+    gaugeIDs = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
 
-    if(all(abs(gaugeIDs[desired_index] - desired_id) < 1.0e-04)){
+    if(all(abs(gaugeIDs[desired_index] - desired_id) < 1.0e-08)){
         print('PASS')
     }else{
         print('FAIL')
@@ -341,7 +340,7 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
     run_atts = ncatt_get(fid, varid=0)
 
     if(!flow_and_attributes_only){
-        gauge_ids = ncvar_get(fid, 'gaugeID')
+        gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
         lat = ncvar_get(fid, 'lat')
         lon = ncvar_get(fid, 'lon')
         elev = ncvar_get(fid, 'elevation0')

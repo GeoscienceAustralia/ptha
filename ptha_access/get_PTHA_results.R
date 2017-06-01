@@ -144,40 +144,82 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
 #' @param source_zone_events_data output from \code{get_source_zone_events_data}
 #' @param event_ID The row index of the earthquake event in source_zone_events_data$events
 #' @param hazard_point_ID The numeric ID of the hazard point
+#' @param target_polygon A SpatialPolygons object. All gauges inside this are selected
+#' @param target_points A matrix of lon/lat point locations. The nearest gauge to each is selected
+#' @param unpack_to_list Return flow_var as a list with one gauge per element
 #' @return Flow time-series
-get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID, hazard_point_ID){
-   
+get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID, 
+    hazard_point_ID = NULL, target_polygon = NULL, target_points=NULL,
+    unpack_to_list=TRUE){
+
     szed = source_zone_events_data
- 
+
     if(!any(grepl('rptha', .packages(all=TRUE)))){
         stop('This function requires the rptha package to be installed, but the latter cannot be detected')
     }else{
         source('R/sum_tsunami_unit_sources.R', local=TRUE)
     }
 
-    # Find the index of the points matching event_ID inside the netcdf file
-    event_indices = get_netcdf_gauge_index_matching_ID(
-        szed$gauge_netcdf_files[1],
-        hazard_point_ID)
+    # Case of user-provided point IDs
+    if(!is.null(hazard_point_ID)){
+        if(!is.null(target_polygon) | !is.null(target_points)){
+            stop('Only one of hazard_point_ID, target_polygon, target_points should provided as non-NULL')
+        }
 
-    event_times = get_netcdf_gauge_output_times(szed$gauge_netcdf_files[1])
+        # Find the index of the points matching event_ID inside the netcdf file
+        event_indices = get_netcdf_gauge_index_matching_ID(
+            szed$gauge_netcdf_files[1],
+            hazard_point_ID)
 
-    flow_var = list()
-
-    # FIXME: Do this by chunking if indices are contiguous
-    for(i in 1:length(event_indices)){
-        flow_var[[i]] = make_tsunami_event_from_unit_sources(
-            szed$events[event_ID,], 
-            szed$unit_source_statistics, 
-            szed$gauge_netcdf_files,
-            #get_flow_time_series_function = get_flow_time_series_SWALS,  
-            indices_of_subset=event_indices[i], 
-            verbose=FALSE,
-            summary_function=NULL)[[1]]
     }
 
-    names(flow_var) = hazard_point_ID
+    # Case of user-provided polygon
+    if(!is.null(target_polygon)){
 
-    output = list(time=event_times, flow=flow_var)
+        if(!is.null(hazard_point_ID) | !is.null(target_points)){
+            stop('Only one of hazard_point_ID, target_polygon, target_points should provided as non-NULL')
+        }
+        
+        event_indices = get_netcdf_gauge_indices_in_polygon(
+            szed$gauge_netcdf_files[1], target_polygon)
+
+    }
+
+    # Case of user-provided point locations
+    if(!is.null(target_points)){
+        if(!is.null(hazard_point_ID) | !is.null(target_polygon)){
+            stop('Only one of hazard_point_ID, target_polygon, target_points should provided as non-NULL')
+        }
+        event_indices = get_netcdf_gauge_indices_near_points(
+            szed$gauge_netcdf_files[1], target_points)
+
+    }
+
+    event_times = get_netcdf_gauge_output_times(szed$gauge_netcdf_files[1])
+    gauge_locations = get_netcdf_gauge_locations(szed$gauge_netcdf_files[1], event_indices)
+
+    flow_var_batch = make_tsunami_event_from_unit_sources(
+        szed$events[event_ID,], 
+        szed$unit_source_statistics, 
+        szed$gauge_netcdf_files,
+        #get_flow_time_series_function = get_flow_time_series_SWALS,  
+        indices_of_subset=event_indices, 
+        verbose=FALSE,
+        summary_function=NULL)[[1]]
+
+    # Optionally output flow_var as a list
+    if(unpack_to_list){
+        flow_var = list()
+        for(i in 1:dim(flow_var_batch)[1]){
+            flow_var[[i]] = flow_var_batch[i,,,drop=FALSE]
+        }
+        names(flow_var) = gauge_locations$gaugeID
+    }else{
+        # Save the copy and keep in compact matrix format
+        flow_var = flow_var_batch
+    }
+
+    output = list(time=event_times, flow=flow_var, locations=gauge_locations)
+
     return(output)
 }
