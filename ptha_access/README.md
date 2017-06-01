@@ -270,25 +270,19 @@ see the installation section above.*
 ```r
 # Get stage, uh, vh time-series at DART gauges 55015 and 55042
 # To find the ID's, look on the interactive hazard-point map.
-model_240 = get_flow_time_series_at_hazard_point(puysegur, 240, c(55015.4, 55042.4))
-```
-
-```
-## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
-## loading 'rptha'
-```
-
-```r
-# Should have a 'time' vector, and 'flow' list
+model_240 = get_flow_time_series_at_hazard_point(puysegur, 
+    event_ID=240, 
+    hazard_point_ID=c(55015.4, 55042.4))
+# Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame
 names(model_240)
 ```
 
 ```
-## [1] "time" "flow"
+## [1] "time"      "flow"      "locations"
 ```
 
 ```r
-# The 'flow' list should have one matrix for each gauge
+# The 'flow' list should have one matrix for each gauge. 
 names(model_240$flow)
 ```
 
@@ -297,8 +291,12 @@ names(model_240$flow)
 ```
 
 ```r
-# For each gauge, model_240$flow[["gauge_id"]] is a 3D array. Currently
-# the first dimension is always length 1, the second dimension has length
+# Alternatively the user can keep 'flow' as an array with the first dimension
+# size equal to the number of gauges, by passing the argument 'unpack_to_list=FALSE'
+# The latter option may be more efficient for some computations.
+
+# By default for each gauge, model_240$flow[["gauge_id"]] is a 3D array. 
+# The first dimension is always length 1, the second dimension has length
 # equal to the number of time-steps, and the third dimension is of length
 # three -- with 1 = Stage, 2 = UH, 3 = VH
 dim(model_240$flow[['55015.4']])
