@@ -1,6 +1,7 @@
 #' Convert a unit_source_grid to SpatialPolygonsDataFrame
 #'
 #' Useful to exploit vector operations in sp/rgeos etc
+#'
 #' @param unit_source_grid 3d array defining the outline of unit sources
 #' on some source-zone contours. Typically obtained as the unit_source_grid
 #' entry from \code{discretized_source_from_source_contours}.
