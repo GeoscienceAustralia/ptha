@@ -33,6 +33,13 @@ then we zero all of the smallest slip values, which contribute < 'zero_low_slip_
 to the sum of all slip values on the rupture. A conservative value is 0, 
 but small values (e.g. 0.05) might substantially reduce the number of unit-sources
 involved in the rupture, with little distortion of the event.}
+
+\item{sourcename}{Name of source (will be included in output list, can be useful for book-keeping)}
+
+\item{sffm_sub_sample_size}{vector of 2 integers. The slip raster is
+re-sampled to a higher resolution [sub_sample_size cells in the x/y directions
+for each original cell] before generating the sffm, and then re-averaged before
+returning the output.}
 }
 \value{
 A list with length = num_events. Each element of the list is a list
