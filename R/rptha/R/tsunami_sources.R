@@ -1,4 +1,5 @@
-
+#' unit_source water surface deformation 
+#'
 #' Function to make a tsunami for the ij unit source in a discrete source. 
 #' 
 #' @param i integer. The down-dip index of the unit source

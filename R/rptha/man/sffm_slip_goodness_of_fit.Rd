@@ -42,4 +42,3 @@ Tsunami inundation from heterogeneous earthquake slip distributions:
 Evaluation of synthetic source models, J. Geophys. Res. Solid Earth, 120,
 6431-6451, doi:10.1002/2015JB012272. \cr
 }
-

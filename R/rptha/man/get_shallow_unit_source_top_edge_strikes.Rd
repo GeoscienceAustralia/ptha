@@ -19,4 +19,3 @@ Extract the lon-lat midpoints of the top edge of all unit sources
 along the 'shallowest' edge of a discrete source (i.e. near the trench), and
 compute the strike
 }
-

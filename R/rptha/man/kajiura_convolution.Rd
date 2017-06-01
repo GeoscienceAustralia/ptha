@@ -35,4 +35,3 @@ Internal routine to speed up kajiura filter. Tried to efficiently
 implement the inner loop for the kajiura filter. See the code in
 kajuria_filter to understand in detail the arguments.
 }
-

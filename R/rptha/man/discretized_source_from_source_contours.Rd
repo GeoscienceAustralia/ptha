@@ -84,4 +84,3 @@ puysegur_discretized_source = discretized_source_from_source_contours(
    make_plot=TRUE)
 
 }
-

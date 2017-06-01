@@ -162,4 +162,3 @@ The code also optionally allows us to account for the fraction of seismic
 moment released by earthquakes with magnitude smaller than Mw_min. This
 reduces the LHS term in the equation above.
 }
-

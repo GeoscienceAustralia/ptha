@@ -33,4 +33,3 @@ It currently does not give information on length or width.
    # The minus_CI component of area1 should equal area0
    stopifnot(abs(area1$minus_CI[1] - area0$values[1]) < 1.0e-04)
 }
-

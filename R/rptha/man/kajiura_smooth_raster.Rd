@@ -47,4 +47,3 @@ a raster (source raster with kajiura filter applied)
 \description{
 Kajiura filter applied directly to a raster representing the stage deformation
 }
-

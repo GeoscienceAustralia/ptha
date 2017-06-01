@@ -27,4 +27,3 @@ a list with the 3d lines
 Make downdip lines (lon/lat/depth) which can be used to form the boundaries
 for unit sources on source contours
 }
-

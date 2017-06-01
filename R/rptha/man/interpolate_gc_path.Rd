@@ -20,4 +20,3 @@ Given a path defined by 2 points, interpolate along the great-circle
 and return a matrix with the points along the great circle (where lon is
 adjusted for continuity). There will be n+2 points (so n intermediate points)
 }
-

@@ -27,4 +27,3 @@ M0 = M0_2_Mw(Mw, inverse=TRUE)
 stopifnot(isTRUE(all.equal(M0, 4e+17)))
 
 }
-

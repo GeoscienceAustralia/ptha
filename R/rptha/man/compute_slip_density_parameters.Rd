@@ -28,4 +28,3 @@ variable completely describe it. As well as returning those values, we return
 the mean slip (mean of untransformed slip) since its calculation is slightly
 inconvenient.
 }
-

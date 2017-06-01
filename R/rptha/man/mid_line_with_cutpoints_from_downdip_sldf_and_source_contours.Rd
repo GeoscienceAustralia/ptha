@@ -38,4 +38,3 @@ sure the lines are nice -- and thus avoid using the numerical-optimization
 based methods (which might not always work well, or might need manual
 tweaking, or might be slow to apply repeatedly, etc).
 }
-

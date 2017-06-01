@@ -25,4 +25,3 @@ Compute mean slip on a rupture of a given area, moment magnitude Mw, and
 s0 = slip_from_Mw_area_mu(9.0, 100e+03) # Should be close to 10m
 
 }
-

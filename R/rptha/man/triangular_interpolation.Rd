@@ -72,4 +72,3 @@ neighbours. This method is fast since it relies only an a fast nearest neighbour
    out = triangular_interpolation(xy, vals, newPts)
    stopifnot(all(out == 0.5*(vals[1]+vals[2])))
 }
-

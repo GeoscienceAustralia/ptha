@@ -80,4 +80,3 @@ stopifnot(v1[3]\%in\%c(4))
 print('PASS')
 
 }
-

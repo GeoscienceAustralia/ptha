@@ -33,4 +33,3 @@ N_{GR}(x > Mw) = 10^(a-bMw) if Mw_min <= Mw <= Mw_max \cr
 ~~~~~~~~~~~~~  = 0 if Mw > Mw_max \cr
 This means that the rate of earthquakes of size EXACTLY Mw_max is finite.
 }
-

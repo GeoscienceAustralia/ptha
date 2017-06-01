@@ -23,4 +23,3 @@ a threeD path with the required number of points
 Given a 3D path of points (lon,lat,depth), interpolate a new path with n
 evenly spaced points (i.e. equal distances between points in 3D)
 }
-

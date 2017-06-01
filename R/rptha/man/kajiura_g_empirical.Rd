@@ -24,4 +24,3 @@ and the exponential transform is applied to correct the result. Our tests
 suggest the approach is highly accurate, and in R it is much more efficient than
 direct computation.
 }
-

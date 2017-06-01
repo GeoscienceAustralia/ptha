@@ -14,4 +14,3 @@ If the call to \code{parent_script_name} is placed inside a script which is
 source'd from R or executed with Rscript, then it should return the full path
 to the corresponding file. See discussion on http://stackoverflow.com/questions/1815606/rscript-determine-path-of-the-executing-script
 }
-

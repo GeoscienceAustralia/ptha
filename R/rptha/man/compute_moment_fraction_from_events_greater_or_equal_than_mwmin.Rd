@@ -31,4 +31,3 @@ For long-term slip rate computations we need to know how much slip is caused
 by events with Mw > mwmin. This function helps compute that, though it
 requires appropriately designed inputs
 }
-

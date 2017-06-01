@@ -22,4 +22,3 @@ Nothing, but make a plot
 \description{
 Make plot of all tsunami unit sources and their sum
 }
-

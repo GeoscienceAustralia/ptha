@@ -46,4 +46,3 @@ This function is used to make a function which can assign a depth value to
 arbitrary x,y points inside the source. Note it can handle conversion from spherical
 to cartesian coordinates (with convert_to_cartesian=TRUE)
 }
-

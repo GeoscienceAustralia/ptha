@@ -50,4 +50,3 @@ you don't wish the interpolation to cross these boundaries.
   stopifnot(all(theoretical_answer == newPts_vals))
 
 }
-

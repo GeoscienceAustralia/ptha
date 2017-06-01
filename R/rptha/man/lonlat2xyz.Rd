@@ -17,4 +17,3 @@ matrix with 3 columns x,y,z giving the cartesian coordinates
 \description{
 Convert spherical lon/lat coordinates to 3D cartesian x,y,z coordinates
 }
-

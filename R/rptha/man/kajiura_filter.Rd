@@ -91,4 +91,3 @@ regridding, and it may be numerically beneficial to rotate the x,y input
 coordinates so that the discontinuity is aligned with one of the coordinate
 axes. (This is done in make_tsunami_unit_source).
 }
-

@@ -16,4 +16,3 @@ data.frame with the data
 It is assumed that the file was produced by \code{write_table_to_netcdf},
 or is compatible with it.
 }
-

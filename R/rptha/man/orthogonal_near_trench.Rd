@@ -25,4 +25,3 @@ what this function does. Note the approach has been superceded by an improved
 algorithm to generate the unit-sources, which is invoked by passing 
 improved_downdip_lines=TRUE to \code{discretized_source_from_source_contours}
 }
-

@@ -80,4 +80,3 @@ puysegur_sffm_event1 = sffm_make_events_on_discretized_source(
 par(mfrow=c(3,2))
 for(i in 1:6) plot(puysegur_sffm_event1[[i]]$slip_raster)
 }
-

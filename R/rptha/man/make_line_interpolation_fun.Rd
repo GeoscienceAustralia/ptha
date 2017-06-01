@@ -40,4 +40,3 @@ stopifnot(all(f(1) == c(0,2)))
 stopifnot(all(f(0.5) == c(2,2)))
 
 }
-

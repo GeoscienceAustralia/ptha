@@ -25,4 +25,3 @@ The events all have the same number of unit sources along-strike and
 down-dip. \code{Mw_2_rupture_size} is used to compute the target event
 dimensions.
 }
-

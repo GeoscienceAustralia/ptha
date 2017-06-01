@@ -64,4 +64,3 @@ stopifnot( abs( energy_bands[2] - sum(s2^2)*dt) < 0.01*energy_bands[2])
 stopifnot( abs( energy_bands[3] - sum(s3^2)*dt) < 0.01*energy_bands[3])
 
 }
-

@@ -31,4 +31,3 @@ matrix with x, y, depth, dip,.. etc at points inside the unit source
 \description{
 Interpolate depth and dip at interior points in the unit source [deprecated]
 }
-

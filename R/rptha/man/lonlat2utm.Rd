@@ -20,4 +20,3 @@ stack-overflow:
 -- http://gis.stackexchange.com/questions/13291/computing-utm-zone-from-lat-long-point
 -- http://stackoverflow.com/questions/9186496/determining-utm-zone-to-convert-from-longitude-latitude
 }
-

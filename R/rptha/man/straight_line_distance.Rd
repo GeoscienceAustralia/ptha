@@ -18,4 +18,3 @@ straight_line_distance(p0, p1, r = 6378137)
 This will be shorter than the great circle distance (but similar for small
 differences between the points)
 }
-

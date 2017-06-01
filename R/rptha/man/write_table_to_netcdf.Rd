@@ -45,4 +45,3 @@ should enable efficient row-wise access to the data.
  unlink('test.nc')
 
 }
-

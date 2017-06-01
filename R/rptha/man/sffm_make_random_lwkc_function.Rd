@@ -44,4 +44,3 @@ print(lwkc(9.2)) # Larger L, W, and smaller kc
 print(lwkc(c(7.5, 8.0, 8.5, 9.0)))
 
 }
-

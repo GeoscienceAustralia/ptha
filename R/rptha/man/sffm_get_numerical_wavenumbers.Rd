@@ -21,4 +21,3 @@ tg_mat. kx has rows all equal kx', and ky has columns all equal ky'. \cr
 These numerical wavenumbers can be adjusted to physical wavenumbers by
 division by cellsize dx for kx, or dy for ky.
 }
-

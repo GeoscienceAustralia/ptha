@@ -60,4 +60,3 @@ ff=okada_tsunami(c(0,0),c(0,50000.),c(30,25),c(0,0),c(15,12),c(1,1),c(1,1),c(0,0
 
 plot(mypts[,1], mypts[,2],col=heat.colors(10)[cut(ff[[3]],10)],pch=19,asp=1)
 }
-

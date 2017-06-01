@@ -18,4 +18,3 @@ and along-strike indices of each polygon.
 \description{
 Useful to exploit vector operations in sp/rgeos etc
 }
-

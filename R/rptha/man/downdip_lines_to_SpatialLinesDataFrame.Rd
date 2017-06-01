@@ -16,4 +16,3 @@ a SpatialLinesDataFrame with the downdip lines
 Convenience function for making a shapefile from the downdip lines. This
 is useful for checking the result quality
 }
-

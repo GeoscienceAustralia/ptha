@@ -35,4 +35,3 @@ longlat.  If longlat=FALSE, spacing is in units of SL's coordinates (e.g.
 metres for UTM projections, degrees for longlat projections).  If
 longlat=TRUE, SL is in longlat degrees, and spacing is in kilometres
 }
-

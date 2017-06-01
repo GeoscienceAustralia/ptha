@@ -67,18 +67,27 @@ okada_tsunami<-function(elon, elat, edep, strk, dip, lnth, wdt,
     # Fortran call:
     #fault_disp(alp,elon,elat,edep,strk,dip,length,wdt,
     # &     disl1,disl2,rlon,rlat,dstmx,edsp,ndsp,zdsp,m,n)
-    xout = .Fortran('fault_disp', as.double(alp),as.double(elon),as.double(elat),as.double(edep),
-        as.double(strk),as.double(dip),as.double(lnth),as.double(wdt),
-        as.double(disl1),as.double(disl2),as.double(rlon),as.double(rlat),as.double(dstmx),
-        as.double(edsp),as.double(ndsp),as.double(zdsp),as.integer(m),as.integer(n), 
-        DUP=TRUE, # DUP=FALSE is deprecated :(
-        PACKAGE='rptha')
+    #xout = .Fortran('fault_disp', as.double(alp),as.double(elon),as.double(elat),as.double(edep),
+    #    as.double(strk),as.double(dip),as.double(lnth),as.double(wdt),
+    #    as.double(disl1),as.double(disl2),as.double(rlon),as.double(rlat),as.double(dstmx),
+    #    as.double(edsp),as.double(ndsp),as.double(zdsp),as.integer(m),as.integer(n), 
+    #    DUP=TRUE, # DUP=FALSE is deprecated :(
+    #    PACKAGE='rptha')
+    #names(xout)[14:16] = c('edsp','ndsp','zdsp')
+    #if(verbose){
+    #    print(paste('Max zdsp: ', max(xout$zdsp)))
+    #    print(paste('Min zdsp: ', min(xout$zdsp)))
+    #}
+    #return(xout[14:16])
 
-    names(xout)[14:16] = c('edsp','ndsp','zdsp')
+    .Call('fault_disp_c', elat, edep, strk, dip, lnth, wdt, disl1, disl2, rlon, 
+        rlat, dstmx, edsp, ndsp, zdsp, m, n)
+
+    xout = list(edsp = edsp, ndsp = ndsp, zdsp = zdsp)
     if(verbose){
         print(paste('Max zdsp: ', max(xout$zdsp)))
         print(paste('Min zdsp: ', min(xout$zdsp)))
     }
-    return(xout[14:16])
+    return(xout)
 }
 

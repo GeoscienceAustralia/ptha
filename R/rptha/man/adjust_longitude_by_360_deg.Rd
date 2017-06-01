@@ -28,4 +28,3 @@ the values at points where the longitude notation might include values > 180
 adjust_longitude_by_360_deg(c(-90, 10), c(180, 0))
 
 }
-

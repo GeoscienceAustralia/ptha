@@ -28,4 +28,3 @@ Either a raster, or NULL. Can save the raster to a file as a side effect.
 \description{
 Convert the tsunami unit source to a z-displacement raster
 }
-

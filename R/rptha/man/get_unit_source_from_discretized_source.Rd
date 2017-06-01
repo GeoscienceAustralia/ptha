@@ -20,4 +20,3 @@ List containing unit source information
 Convenience function to extract coordinates of a single unit source from the
 discretized_source list
 }
-

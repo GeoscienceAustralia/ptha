@@ -51,4 +51,3 @@ puysegur_summary_statistics = discretized_source_approximate_summary_statistics(
 print(head(puysegur_summary_statistics))
 
 }
-

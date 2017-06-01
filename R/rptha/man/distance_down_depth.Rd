@@ -26,4 +26,3 @@ ignore topography of earth). \cr
 The surface projection of the path is assumed to follow a great circle
 The rate of change of depth with respect to surface distance is assumed constant
 }
-

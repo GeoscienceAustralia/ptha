@@ -45,4 +45,3 @@ summary(x$loc)
 }
 
 }
-

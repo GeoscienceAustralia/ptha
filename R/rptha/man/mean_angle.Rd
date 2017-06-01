@@ -31,4 +31,3 @@ the [mean of c(0,0,90)] != 30.
   stopifnot(abs(m2 - 90) < sqrt(.Machine$double.eps))
 
 }
-

@@ -2,7 +2,7 @@
 % Please edit documentation in R/tsunami_sources.R
 \name{make_tsunami_unit_source}
 \alias{make_tsunami_unit_source}
-\title{Function to make a tsunami for the ij unit source in a discrete source.}
+\title{unit_source water surface deformation}
 \usage{
 make_tsunami_unit_source(i, j, discrete_source, rake,
   tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL,
@@ -83,4 +83,3 @@ and tsunami surface points, smoothed deformation, and rake
 \description{
 Function to make a tsunami for the ij unit source in a discrete source.
 }
-

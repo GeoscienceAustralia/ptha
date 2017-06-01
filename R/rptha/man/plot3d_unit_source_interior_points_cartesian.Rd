@@ -25,4 +25,3 @@ Nothing, but make a plot
 \description{
 3D rgl plot of the unit source interior points
 }
-

@@ -61,4 +61,3 @@ stopifnot(abs(longperiod_range2$mintomax_peak_frequency - 1/50) < 0.01/50)
 full_range2 = gauge_range_filtered(t, stage, filter_freq = 1/0.5, detailed = TRUE)
 stopifnot(abs(longperiod_range2$mintomax_peak_frequency - 1/50) < 0.01/50)
 }
-

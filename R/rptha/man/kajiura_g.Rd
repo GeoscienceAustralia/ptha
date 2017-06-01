@@ -26,4 +26,3 @@ The function value is the sum over n in [0, Infty] of
 For a more efficient and vectorized implementation, see kajiura_g_empirical
 which approximates this function using splines and a log transform.
 }
-

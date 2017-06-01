@@ -27,4 +27,3 @@ y_period = zero_crossing_period(y, dt=2)
 stopifnot(abs(y_period/period - 1) < 0.1)
 
 }
-

@@ -28,4 +28,3 @@ Basically a wrapper around the SearchTrees package
    out = nearest_neighbour_interpolation(xy, vals, newPts)
    stopifnot(all.equal(out, c(1,2)))
 }
-

@@ -37,4 +37,3 @@ origin = c(20, -19)
 new_coords = spherical_to_cartesian2d_coordinates(lonlat, origin)
 
 }
-

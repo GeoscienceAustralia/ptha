@@ -23,4 +23,3 @@ matrix with lon/lat of coords_xy
 This will only have good accuracy for small areas near to the origin_lonlat
 (and not too close to the poles)
 }
-

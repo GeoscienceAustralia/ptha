@@ -17,4 +17,3 @@ nothing, but make a plot
 Plot some properties of the earthquake events, with comparisons to scaling
 relations (solid lines) and +- 2sd (dashed lines)
 }
-

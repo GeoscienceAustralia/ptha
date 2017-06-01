@@ -21,4 +21,3 @@ as the input x,y (we return them anyway for debugging/testing purposes)
 Interpolate inside a region defined by 2 downdip lines (x,y,z coordinates)
 based on a given set of xy coordinates
 }
-

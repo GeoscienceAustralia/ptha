@@ -23,4 +23,3 @@ the tabular format is not ideal, since the data is relatively unstructured.
 For instance, it is necessary to store the indices with non-zero slip in a
 character string.  The same issue arises for the slip values themselves.
 }
-

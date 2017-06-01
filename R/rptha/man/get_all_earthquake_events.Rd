@@ -70,4 +70,3 @@ puysegur_events = get_all_earthquake_events(
 print(head(puysegur_events))
 
 }
-

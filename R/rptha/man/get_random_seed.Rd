@@ -13,4 +13,3 @@ Utility function to get the random seed -- and make it first if required
  x = get_random_seed()
 
 }
-

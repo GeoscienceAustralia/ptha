@@ -28,4 +28,3 @@ Mw alone. Functions like this are required in the event_probability calculations
 \examples{
 x = slip_from_Mw(9.0) # Should be roughly 10m
 }
-

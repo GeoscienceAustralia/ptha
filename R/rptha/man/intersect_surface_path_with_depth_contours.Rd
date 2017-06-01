@@ -37,4 +37,3 @@ path points using the contours. \cr
 Assumes that the depth is changing at a constant rate with respect to the
 along-surface distance.
 }
-

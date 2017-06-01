@@ -10,4 +10,3 @@ fill_polygon_with_grid_points(polygon, new_origin, x_axis_vector, approx_dx,
 \description{
 Workhorse function used inside compute_grid_point_areas_in_polygon
 }
-

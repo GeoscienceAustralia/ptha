@@ -64,4 +64,3 @@ geo_ind = which(target_unit_source$downdip_number == puysegur_geometry$downdip_n
 plot(puysegur_geometry[geo_ind,], border='green', add=TRUE)
 
 }
-

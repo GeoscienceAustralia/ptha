@@ -42,4 +42,3 @@ Notice that now, 10^(a) is no-longer the rate of earthquakes with Mw > 0 --
 instead that rate is :\cr
 N_{TGR}(x > Mw_min) = 10^(a - b*Mw_min) - 10^(a - b*Mw_max) \cr
 }
-

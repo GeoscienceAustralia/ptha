@@ -67,4 +67,3 @@ puysegur_stats_approx = discretized_source_approximate_summary_statistics(
     puysegur_discretized_source)
 summary(puysegur_stats_approx/puysegur_stats)
 }
-

@@ -41,4 +41,3 @@ same contribution to the long-term average slip rate. \cr
 Other methods could be proposed, and this routine also supports a
 user-defined function
 }
-

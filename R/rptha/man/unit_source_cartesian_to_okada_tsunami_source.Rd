@@ -30,4 +30,3 @@ tsunami_surface_points_cartesian.
 \description{
 Convert a cartesian unit source with interior points to an okada tsunami source
 }
-

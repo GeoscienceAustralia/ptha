@@ -17,4 +17,3 @@ matrix defining the 'outline' polygon of the discretized source
 Convenience function to get the outline of the discretized source from its
 unit_source_grid
 }
-

@@ -24,4 +24,3 @@ map [0,1] to points on each contour line using
 \code{make_line_interpolation_fun}. The list has one such function for each
 contour line, and is ordered by increasing depth.
 }
-

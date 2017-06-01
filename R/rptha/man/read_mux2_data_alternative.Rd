@@ -20,4 +20,3 @@ file.  It is arguably more elegant. I had hoped it would be faster but it does n
 significantly faster. Anyway it might be useful for debugging so I keep it
 here, but am not exporting it into the package namespace
 }
-

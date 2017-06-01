@@ -25,4 +25,3 @@ the row with the smallest max is at the top of the rupture
 Then do the same with the columns, trying to put the smallest max
 col on the left (unless it is already at the left or right) \cr
 }
-

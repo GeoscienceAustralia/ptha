@@ -23,4 +23,3 @@ The latter correspond to the row indices of unit_source_statistics (which
 is an argument to \code{get_all_earthquake_events}, see the help of that function
 for details)
 }
-

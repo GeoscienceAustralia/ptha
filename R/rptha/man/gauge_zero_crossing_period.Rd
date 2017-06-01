@@ -31,4 +31,3 @@ y_period = gauge_zero_crossing_period(x, y)
 stopifnot(abs(y_period/period - 1) < 1.0e-03)
 
 }
-

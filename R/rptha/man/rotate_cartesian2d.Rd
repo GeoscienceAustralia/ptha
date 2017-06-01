@@ -40,4 +40,3 @@ inverted_points = rotate_cartesian2d(p1_rot, origin, x_axis_vector, inverse=TRUE
 stopifnot(isTRUE(all.equal(c(inverted_points), c(p1))))
 
 }
-

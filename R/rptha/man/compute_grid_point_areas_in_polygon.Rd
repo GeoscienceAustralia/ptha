@@ -48,4 +48,3 @@ area = polygon area. If edge_tapering is used, the points may extend outside
 the polygon, and they are assigned a unit_slip_scale giving the slip corresonding
 to an overall 1m slip (not exactly 1m around edges so that result is smooth).
 }
-

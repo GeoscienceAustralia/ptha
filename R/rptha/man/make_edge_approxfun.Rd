@@ -26,4 +26,3 @@ fine_downdip_transect , make a function f(alpha): [0-1] --> (x,y,depth) which
 gives the cartesian coordinates and depth at fraction 'alpha' of the distance
 down the unit source edge.
 }
-

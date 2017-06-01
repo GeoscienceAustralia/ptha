@@ -57,4 +57,3 @@ Make a locally linear coordinate system for a unit source and compute a
 'grid' of points inside the source. These can be used later for tsunami
 source integration
 }
-
