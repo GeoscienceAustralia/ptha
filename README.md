@@ -1,6 +1,6 @@
 # ptha
 ------
-Codes for probabilistic tsunami hazard assessment.
+Codes for probabilistic tsunami hazard assessment. 
 
 The main codes and README information reside in the folder [R](R). This
 includes the R package [rptha](R/rptha).
