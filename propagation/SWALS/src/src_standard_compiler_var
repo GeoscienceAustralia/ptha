@@ -8,8 +8,19 @@ CC=gcc -O3
 GDAL_LIBS=-lgdal
 GDAL_CFLAGS=`gdal-config --cflags`
 
-NETCDF_FINCLUDE=`nc-config --fflags`
-NETCDF_FLIBS=`nc-config --flibs`
+# The netcdf fortran include/lib paths might be in either nc-config, or nf-config.
+# Here we test for that
+NC_TEST := $(nc-config --fflags)
+
+NETCDF_FINCLUDE := `nc-config --fflags`
+NETCDF_FLIBS := `nc-config --flibs`
+
+ifeq ($(NC_TEST),)
+NETCDF_FINCLUDE := `nf-config --fflags`
+NETCDF_FLIBS := `nf-config --flibs`
+endif
+
+# end netcdf bit
 
 FORTRAN=gfortran -O3 -fopenmp -std=f2008 -fall-intrinsics -cpp -DTIMER
 
