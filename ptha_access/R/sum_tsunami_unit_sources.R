@@ -25,8 +25,8 @@
 ##  
 
 
-library(ncdf4)
-library(rptha)
+suppressPackageStartupMessages(library(ncdf4))
+suppressPackageStartupMessages(library(rptha))
 
 #'
 #' Get the 'input_stage_raster' attribute from the tide gauge netcdf files. This

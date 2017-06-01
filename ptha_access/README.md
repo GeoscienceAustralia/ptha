@@ -5,7 +5,6 @@
 and are not to be used in any real application.**
 * **The interfaces are expected to change.**
 * **The code should be adjusted to download all data from the NCI [including source-zones + hazard points], to ensure consistency**
-* **There is opportunity to extract contiguous hazard points more efficiently**
 
 These codes can be used to access the 2017 Australian PTHA results, developed
 by Geoscience Australia.
