@@ -874,6 +874,11 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre){
 #' to the sum of all slip values on the rupture. A conservative value is 0, 
 #' but small values (e.g. 0.05) might substantially reduce the number of unit-sources
 #' involved in the rupture, with little distortion of the event.
+#' @param sourcename Name of source (will be included in output list, can be useful for book-keeping)
+#' @param sffm_sub_sample_size vector of 2 integers. The slip raster is
+#' re-sampled to a higher resolution [sub_sample_size cells in the x/y directions
+#' for each original cell] before generating the sffm, and then re-averaged before
+#' returning the output.
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are

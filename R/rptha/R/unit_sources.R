@@ -1221,6 +1221,11 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 #'
 #' Workhorse function used inside compute_grid_point_areas_in_polygon
 #'
+#' @param polygon 
+#' @param new_origin
+#' @param x_axis_vector
+#' @param approx_dx
+#' @param approx_dy
 fill_polygon_with_grid_points<-function(polygon, new_origin, x_axis_vector,
         approx_dx, approx_dy){
 
