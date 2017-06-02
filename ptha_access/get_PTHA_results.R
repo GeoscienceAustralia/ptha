@@ -146,11 +146,24 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
 #' @param hazard_point_ID The numeric ID of the hazard point
 #' @param target_polygon A SpatialPolygons object. All gauges inside this are selected
 #' @param target_points A matrix of lon/lat point locations. The nearest gauge to each is selected
+#' @param target_indices A vector with integer indices corresponding to where the gauge values are stored.
 #' @param unpack_to_list Return flow_var as a list with one gauge per element
 #' @return Flow time-series
 get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID, 
-    hazard_point_ID = NULL, target_polygon = NULL, target_points=NULL,
+    hazard_point_ID = NULL, target_polygon = NULL, target_points=NULL, target_indices = NULL,
     unpack_to_list=TRUE){
+
+    is_null_hpID = is.null(hazard_point_ID)
+    is_null_target_poly = is.null(target_polygon)
+    is_null_target_points = is.null(target_points)
+    is_null_target_indices = is.null(target_indices)
+
+    only_one_input = is_null_hpID + is_null_target_poly + is_null_target_points + is_null_target_indices
+    if(only_one_input != 3){
+            print(only_one_input)
+            stop('Only one of hazard_point_ID, target_polygon, target_points, target_indices should provided as non-NULL')
+    }
+
 
     szed = source_zone_events_data
 
@@ -162,10 +175,6 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
 
     # Case of user-provided point IDs
     if(!is.null(hazard_point_ID)){
-        if(!is.null(target_polygon) | !is.null(target_points)){
-            stop('Only one of hazard_point_ID, target_polygon, target_points should provided as non-NULL')
-        }
-
         # Find the index of the points matching event_ID inside the netcdf file
         event_indices = get_netcdf_gauge_index_matching_ID(
             szed$gauge_netcdf_files[1],
@@ -176,10 +185,6 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
     # Case of user-provided polygon
     if(!is.null(target_polygon)){
 
-        if(!is.null(hazard_point_ID) | !is.null(target_points)){
-            stop('Only one of hazard_point_ID, target_polygon, target_points should provided as non-NULL')
-        }
-        
         event_indices = get_netcdf_gauge_indices_in_polygon(
             szed$gauge_netcdf_files[1], target_polygon)
 
@@ -187,12 +192,12 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
 
     # Case of user-provided point locations
     if(!is.null(target_points)){
-        if(!is.null(hazard_point_ID) | !is.null(target_polygon)){
-            stop('Only one of hazard_point_ID, target_polygon, target_points should provided as non-NULL')
-        }
         event_indices = get_netcdf_gauge_indices_near_points(
             szed$gauge_netcdf_files[1], target_points)
+    }
 
+    if(!is.null(target_indices)){
+        event_indices = target_indices
     }
 
     event_times = get_netcdf_gauge_output_times(szed$gauge_netcdf_files[1])
