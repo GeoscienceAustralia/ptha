@@ -5,7 +5,8 @@
 \title{Convert a cartesian unit source with interior points to an okada tsunami source}
 \usage{
 unit_source_cartesian_to_okada_tsunami_source(us, rake,
-  tsunami_surface_points_cartesian, dstmx = 9e+20, upper_depth_limit = 0)
+  tsunami_surface_points_cartesian, dstmx = 9e+20, upper_depth_limit = 0,
+  cell_integration_scale = c(0, 0))
 }
 \arguments{
 \item{us}{A unit source with interior points in cartesian coordinates.}
@@ -22,6 +23,12 @@ to be computed for all tsunami_surface_points_cartesian. e.g. I have seen a
 value of 50 work well in one instance.}
 
 \item{upper_depth_limit}{Limit for the top-depth of any unit source (km)}
+
+\item{cell_integration_scale}{vector of length 2, giving a dx/dy value. 
+If c(0,0), then do nothing. Otherwise we compute a 16 point smooth within each cell where the
+initially computed abs(deformation) exceeds 10% of its maximum. The smooth
+is the average okada deformation, computed over the tsunami_surface_points_cartesian 
+perturbed by dx and +-dy multiplied by c(-1, -1/3, 1/3, 1) [i.e. 4x4 = 16 points]}
 }
 \value{
 List with edsp, ndsp, zdsp giving the displacements at the

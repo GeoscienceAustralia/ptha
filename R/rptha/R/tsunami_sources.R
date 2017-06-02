@@ -297,12 +297,17 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 #' to be computed for all tsunami_surface_points_cartesian. e.g. I have seen a
 #' value of 50 work well in one instance.
 #' @param upper_depth_limit Limit for the top-depth of any unit source (km)
+#' @param cell_integration_scale vector of length 2, giving a dx/dy value. 
+#' If c(0,0), then do nothing. Otherwise we compute a 16 point smooth within each cell where the
+#' initially computed abs(deformation) exceeds 10% of its maximum. The smooth
+#' is the average okada deformation, computed over the tsunami_surface_points_cartesian 
+#' perturbed by dx and +-dy multiplied by c(-1, -1/3, 1/3, 1) [i.e. 4x4 = 16 points] 
 #' @return List with edsp, ndsp, zdsp giving the displacements at the
 #' tsunami_surface_points_cartesian.
 #' @export
 unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
     tsunami_surface_points_cartesian, dstmx = 9e+20,
-    upper_depth_limit = 0.0e-03){
+    upper_depth_limit = 0.0e-03, cell_integration_scale=c(0,0)){
 
     deg2rad = pi/180
 
@@ -375,10 +380,8 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
         src_wdt[too_shallow] = width_limit[too_shallow]
     }
 
-    # Our Okada function is for a rectangular source with constant
-    # depth along-strike.
-    # We can rescale length/width to be like a point source
-    # Note okada_tsunami uses depth in km. 
+    # Our Okada function integrates over each rectangular source with constant
+    # depth along-strike
     ts = okada_tsunami(
         elon = src[,'x'], 
         elat = src[,'y'], 
@@ -393,6 +396,68 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
         rlat = dest[,2], 
         dstmx = dstmx,
         verbose=FALSE)
+
+    # Optionally apply sub-grid sampling to points with significant deformation
+    # This is used to avoid issues with 'spikes' etc around the trench
+    if(!all(cell_integration_scale == 0)){
+
+
+        # Find points in a 'box' where deformation is significant
+        # FIXME: Hardcoded to 10% of maximum
+        largedef = which(abs(ts$zdsp) > 0.1*max(abs(ts$zdsp)))
+        lonrange = range(dest[largedef,1])
+        latrange = range(dest[largedef,2])
+
+        sp = which(dest[,1] >= lonrange[1] & dest[,1] <= lonrange[2] &
+            dest[,2] >= latrange[1] & dest[,2] <= latrange[2])
+
+
+        counter = 0
+        di = cell_integration_scale[1] * c(-1, -1/3, 1/3, 1)
+        dj = cell_integration_scale[2] * c(-1, -1/3, 1/3, 1)
+        for(i in di){
+            for(j in dj){
+
+                # Compute the deformation at coordiantes perturbed by i/j
+                ts_local = okada_tsunami(
+                    elon = src[,'x'], 
+                    elat = src[,'y'], 
+                    edep = depth,
+                    strk = strike, 
+                    dip = dip,
+                    lnth = src_len, 
+                    wdt = src_wdt,
+                    disl1 = strike_slip, 
+                    disl2 = thrust_slip,
+                    rlon = dest[sp,1] + i, 
+                    rlat = dest[sp,2] + j, 
+                    dstmx = dstmx,
+                    verbose=FALSE)
+
+                if(counter == 0){
+                    ts_sp = ts_local
+                }else{
+                    for(ii in 1:length(ts)){
+                        # Summation [divide later to get average]
+                        ts_sp[[ii]] = ts_sp[[ii]] + ts_local[[ii]]
+
+                        # Store result for median
+                        #ts_sp[[ii]] = cbind(ts_sp[[ii]], ts_local[[ii]])
+                    }
+                }
+                counter = counter+1
+            }
+        }
+        rm(ts_local); gc()
+        # Divide to get the average
+        for(i in 1:length(ts)) ts_sp[[i]] = ts_sp[[i]]/counter
+
+        # row-wise median 
+        #for(i in 1:length(ts)) ts_sp[[i]] = apply(ts_sp[[i]], 1, median)
+
+        # Update original ts
+        for(i in 1:length(ts)) ts[[i]][sp] = ts_sp[[i]]
+    }
 
     return(ts)
 }
