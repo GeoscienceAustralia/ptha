@@ -90,6 +90,20 @@ kajiura_grid_spacing = 500 # m
 # Here we use a relatively coarse discretization, for demonstration purposes
 tsunami_source_cellsize = 2/60 # degrees. 
 
+# Spatial scale for sub-cell point integration
+# During the Okada computation, points with "abs(deformation) > 10% of max(abs(deformation)"
+# will have deformations re-computed as the average of the 16 Okada point values
+# around point p. These 16 points have coordinates:
+#     points = expand.grid(p[1] + cell_integration_scale[1]*c(-1,-1/3,1/3,1), 
+#                          p[2] + cell_integration_scale[2]*c(-1,-1/3,1/3,1))
+# If 'cell_integration_scale' is close to the grid size, then this is an approximation
+# of the within-pixel average Okada deformation. We do this because near the trench,
+# the Okada deformation might not be smooth [e.g. when rupture depth --> 0], and this
+# reduces the chance of artificial 'spikes' in the Okada deformation.
+# In the code below, this is only applied along the 'top' row of unit-sources
+# where the trench depth might --> 0.
+cell_integration_scale = c(1500, 1500)
+
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
 MC_CORES = 16
@@ -274,6 +288,9 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             max(shallow_subunitsource_point_spacing, min(depth_range)), 
             deep_subunitsource_point_spacing)
         approx_dy = approx_dx
+
+        # Use within-pixel integration for Okada along the top-row of unit-sources
+        local_cell_integration_scale = cell_integration_scale * (down_dip_index == 1)
       
         tsunami_ = make_tsunami_unit_source(
             down_dip_index, 
@@ -291,7 +308,8 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             minimal_output=minimise_tsunami_unit_source_output, 
             verbose=FALSE,
             dstmx=okada_distance_factor,
-            edge_taper_width=slip_edge_taper_width)
+            edge_taper_width=slip_edge_taper_width,
+            cell_integration_scale=local_cell_integration_scale)
 
         # Save as RDS 
         output_RDS_file =  paste0(source_output_dir, sourcename, '_', 
