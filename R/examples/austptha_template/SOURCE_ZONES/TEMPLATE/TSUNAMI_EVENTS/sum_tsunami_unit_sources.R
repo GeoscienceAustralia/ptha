@@ -25,8 +25,8 @@
 ##  
 
 
-library(ncdf4)
-library(rptha)
+suppressPackageStartupMessages(library(ncdf4))
+suppressPackageStartupMessages(library(rptha))
 
 #'
 #' Get the 'input_stage_raster' attribute from the tide gauge netcdf files. This
@@ -43,6 +43,21 @@ get_netcdf_attribute_initial_stage_raster<-function(netcdf_file){
     return(myatt)
 }
 
+#' Undo precision issues in gaugeID (caused by storing as float)
+#'
+#' @param gaugeID vector of numeric gauge IDs, which will be close
+#' to a number having 2 non-zero decimal places, but may be slightly
+#' rounded due to floating point precision issues
+#'
+clean_gaugeID<-function(gaugeID){
+
+    clean_gauge_val = round(gaugeID, 2)
+    if(any(abs(clean_gauge_val - gaugeID) > 0.005)){
+        stop('Error with gauge IDs')
+    }
+    return(clean_gauge_val)
+}
+
 #'
 #' Get lon/lat/depth/gaugeID from gauges in netcdf file
 #' 
@@ -55,16 +70,58 @@ get_netcdf_gauge_locations<-function(netcdf_file, indices_of_subset = NULL){
 
     fid = nc_open(netcdf_file, readunlim=FALSE)
 
-    gauge_ids = ncvar_get(fid, 'gaugeID')
-    lon = ncvar_get(fid, 'lon')
-    lat = ncvar_get(fid, 'lat')
-    elev = ncvar_get(fid, 'elevation0')
+    if(is.null(indices_of_subset)){
+        # Read everything
+        gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
+        lon = ncvar_get(fid, 'lon')
+        lat = ncvar_get(fid, 'lat')
+        elev = ncvar_get(fid, 'elevation0')
 
-    if(!is.null(indices_of_subset)){
-        gauge_ids = gauge_ids[indices_of_subset]
-        lon = lon[indices_of_subset]
-        lat = lat[indices_of_subset]
-        elev = elev[indices_of_subset]
+    }else{
+        ## Determine whether we are on a remote filesystem
+        ## If yes, then it's better to read in chunks. 
+        ## But if the file lives on our filesystem, it seems better
+        ## to read one by one
+        #point_by_point = file.exists(fid$filename)
+
+        #if(point_by_point){
+        #    # Read one point at a time -- might be faster for few points
+        #    gauge_ids = NA * indices_of_subset
+        #    lon = NA * indices_of_subset
+        #    lat = NA * indices_of_subset
+        #    elev = NA * indices_of_subset
+
+        #    for(i in 1:length(gauge_ids)){
+        #        gauge_ids[i] = ncvar_get(fid, 'gaugeID', start=indices_of_subset[i], count=1)
+        #    }
+        #    gauge_ids = clean_gaugeID(gauge_ids)
+        #    for(i in 1:length(gauge_ids)){
+        #        lon[i] = ncvar_get(fid, 'lon', start=indices_of_subset[i], count=1)
+        #    }
+        #    for(i in 1:length(gauge_ids)){
+        #        lat[i] = ncvar_get(fid, 'lat', start=indices_of_subset[i], count=1)
+        #    }
+        #    for(i in 1:length(gauge_ids)){
+        #        elev[i] = ncvar_get(fid, 'elevation0', start=indices_of_subset[i], count=1)
+        #    }
+
+        #}else{
+
+            # Read in one chunk -- faster over a remote filesystem
+            contiguous_inds = min(indices_of_subset):max(indices_of_subset)
+            contig_match = match(indices_of_subset, contiguous_inds)
+
+            # In case it is faster to read everything -- seems to be over a remote connection
+            gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID', start=contiguous_inds[1], count=length(contiguous_inds)))
+            gauge_ids = gauge_ids[contig_match]
+            lon = ncvar_get(fid, 'lon', start=contiguous_inds[1], count=length(contiguous_inds))
+            lon = lon[contig_match]
+            lat = ncvar_get(fid, 'lat', start=contiguous_inds[1], count=length(contiguous_inds))
+            lat = lat[contig_match]
+            elev = ncvar_get(fid, 'elevation0', start=contiguous_inds[1], count=length(contiguous_inds))
+            elev = elev[contig_match]
+
+        #}
     }
 
     nc_close(fid)
@@ -173,6 +230,50 @@ get_netcdf_gauge_indices_in_polygon<-function(netcdf_file, region_poly){
     }
 }
 
+#' Find the index gauges in netcdf_file that match the given gauge_ID's
+#'
+#' @param netcdf_file netcdf filename
+#' @param gauge_ID vector of numeric gauge IDs
+#'
+get_netcdf_gauge_index_matching_ID<-function(netcdf_file, gauge_ID){
+
+    fid = nc_open(netcdf_file, readunlim=FALSE)
+
+    point_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
+
+    closest_ID = match(gauge_ID, point_ids)
+
+    if(any(is.na(closest_ID))){
+        kk = which(is.na(closest_ID))
+        print(gauge_ID[kk])
+        nc_close(fid)
+        stop('Could not find gauge index matching the above value (which is rounded to address netcdf issues)')
+    }
+
+    nc_close(fid)
+
+    return(closest_ID)
+}
+
+
+.test_get_netcdf_gauge_index_matching_ID<-function(netcdf_file){
+
+    desired_id = c(1.1, 10.1)
+    desired_index = get_netcdf_gauge_index_matching_ID(netcdf_file, desired_id)
+
+    # Check that the gaugeID value is 1.1 (to within precision of a float)
+    fid = nc_open(netcdf_file)
+    gaugeIDs = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
+
+    if(all(abs(gaugeIDs[desired_index] - desired_id) < 1.0e-08)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+
+}
+
+
 #' Convenience function to sort the netcdf tide gauge files in the same order as
 #' the unit_source_statistics table. This is required for the unit-source
 #' summation.
@@ -202,7 +303,7 @@ sort_tide_gauge_files_by_unit_source_table<-function(
     return(netcdf_tide_gauge_files[unit_source_to_tg])
 }
 
-#' Read chunck of netcdf file
+#' Read chunk of netcdf file
 #'
 #' Function for efficiently reading in a subset of the netcdf file 2D variables
 #' (stage/uh/vh)
@@ -210,8 +311,8 @@ sort_tide_gauge_files_by_unit_source_table<-function(
 #' @param fid netcdf file id
 #' @param varname variable name to read
 #' @param indices_of_subset desired indices for the second dimension (read all th first dimension)
-#' @param chunk_size Read contiguous chunks of size 'chunk_size'. My test suggest this should
-#'         always be equal to 1
+#' @param chunk_size Read contiguous chunks of size 'chunk_size'. Over the internet it can be 
+#' much faster to have this > 1, whereas on a disk it may be faster to be equal to one.
 #' 
 .chunked_read<-function(fid, varname, indices_of_subset, chunk_size=1){
 
@@ -219,6 +320,8 @@ sort_tide_gauge_files_by_unit_source_table<-function(
     di = indices_of_subset - min(indices_of_subset) 
 
     # Get indices in groups of 'chunk-size' from first offset
+    # FIXME: This approach could be improved, by instead focussing on 
+    # the 'jumps' between ordered indices_of_subset values.
     di_round = floor(di/chunk_size)
     unique_di_round = unique(di_round)
 
@@ -276,14 +379,16 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
     flow_and_attributes_only=TRUE, all_flow_variables=TRUE){
 
     fid = nc_open(netcdf_file, readunlim=FALSE)
-
+    # Determine if we are reading a remote file -- in that case file.exists will
+    # return FALSE
+    is_remote = (!file.exists(netcdf_file))
     # Get all 'global' attributes in the netcdf file. This allows sanity checks
     # on book_keeping, since the attributes include e.g. references to the unit
     # source initial conditions.
     run_atts = ncatt_get(fid, varid=0)
 
     if(!flow_and_attributes_only){
-        gauge_ids = ncvar_get(fid, 'gaugeID')
+        gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
         lat = ncvar_get(fid, 'lat')
         lon = ncvar_get(fid, 'lon')
         elev = ncvar_get(fid, 'elevation0')
@@ -361,11 +466,16 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
             # continuous (or close to). Take the transpose of the stages for
             # consistency with the case when time is an unlimited dimension
 
-            stages = .chunked_read(fid, 'stage', indices_of_subset, chunk_size=1)
+            chunk_size = ifelse(is_remote, 100, 1) 
+            #print(paste0('chunk size: ', chunk_size))
+            #print('stage...')
+            stages = .chunked_read(fid, 'stage', indices_of_subset, chunk_size=chunk_size)
 
             if(all_flow_variables){
-                uhs = .chunked_read(fid, 'uh', indices_of_subset, chunk_size=1)
-                vhs = .chunked_read(fid, 'vh', indices_of_subset, chunk_size=1)
+                #print('uhs...')
+                uhs = .chunked_read(fid, 'uh', indices_of_subset, chunk_size=chunk_size)
+                #print('vhs...')
+                vhs = .chunked_read(fid, 'vh', indices_of_subset, chunk_size=chunk_size)
             }
                 
         }
@@ -553,4 +663,18 @@ make_tsunami_event_from_unit_sources<-function(
     gc()
 
     return(events_data)
+}
+
+
+#
+#' Generic routine to run the test codes on a netcdf file
+#'
+#' Helps to detect connection issues as well as errors in code logic
+#'
+test_sum_tsunami_unit_sources<-function(netcdf_file){
+
+    .test_get_netcdf_gauge_indices_near_points(netcdf_file)
+    .test_get_netcdf_gauge_indices_in_polygon(netcdf_file)
+    .test_get_netcdf_gauge_index_matching_ID(netcdf_file)
+
 }
