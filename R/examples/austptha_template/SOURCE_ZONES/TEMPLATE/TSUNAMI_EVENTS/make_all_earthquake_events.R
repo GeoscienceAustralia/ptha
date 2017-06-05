@@ -45,10 +45,11 @@ pdf(paste0('event_size_scaling_', source_zone_name, '.pdf'),
 plot_earthquake_event_properties(all_eq_events)
 dev.off()
 
-# Save key statistics to csv
-#write.csv(unit_source_statistics,
-#    paste0('unit_source_statistics_', source_zone_name, '.csv'),
-#    row.names=FALSE, quote=FALSE)
+# Save key unit source statistics to csv
+write.csv(unit_source_statistics,
+    paste0('unit_source_statistics_', source_zone_name, '.csv'),
+    row.names=FALSE, quote=FALSE)
+# Also save unit source statistics to netcdf
 unit_source_statistics_file = paste0(getwd(), '/unit_source_statistics_', source_zone_name, '.nc')
 uss_attr = list('discretized_sources_file' = discretized_sources_file,
     'parent_script_name' = parent_script_name())
@@ -57,9 +58,11 @@ write_table_to_netcdf(unit_source_statistics,
     global_attributes_list = uss_attr,
     add_session_info_attribute=TRUE)
 
-#write.csv(all_eq_events,
-#    paste0('all_eq_events_', source_zone_name, '.csv'),
-#    row.names=FALSE, quote=FALSE)
+# Save earthquake events to csv
+write.csv(all_eq_events,
+    paste0('all_eq_events_', source_zone_name, '.csv'),
+    row.names=FALSE, quote=FALSE)
+# Also save earthquake events to netcdf
 eq_events_attr = c(
     list('unit_source_statistics_file' = unit_source_statistics_file,
         'slip_type' = 'uniform slip'), 
@@ -68,3 +71,4 @@ write_table_to_netcdf(all_eq_events,
     paste0('all_eq_events_', source_zone_name, '.nc'),
     global_attributes_list = eq_events_attr,
     add_session_info_attribute=TRUE)
+
