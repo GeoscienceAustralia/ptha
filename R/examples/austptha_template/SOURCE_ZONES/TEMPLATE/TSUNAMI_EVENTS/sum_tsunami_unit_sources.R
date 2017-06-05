@@ -617,6 +617,7 @@ make_tsunami_event_from_unit_sources<-function(
     }
 
     # Do the sum
+    #browser()
     for(i in 1:num_eq){
         if(verbose) print(paste0('    event ', i))
         earthquake_event = earthquake_events[i,]
