@@ -1,20 +1,17 @@
 library(rptha)
 source('sum_tsunami_unit_sources.R', local=TRUE)
-#source('sffm_make_events_on_discretized_source.R', local=TRUE)
+tsunami_model_config = new.env()
+source('../TSUNAMI_UNIT_SOURCE/config.R', local=tsunami_model_config, chdir=TRUE)
 
 # Data for this source zone
 source_name = basename(dirname(getwd()))
-#earthquake_events = read.csv(paste0('all_eq_events_', source_name, '.csv'), stringsAsFactors=FALSE)
-earthquake_events = read_table_from_netcdf(paste0('all_eq_events_', source_name, '.nc'))
+#earthquake_events = read.csv(paste0('all_uniform_slip_earthquake_events_', source_name, '.csv'), stringsAsFactors=FALSE)
+earthquake_events = read_table_from_netcdf(paste0('all_uniform_slip_earthquake_events_', source_name, '.nc'))
 #unit_source_statistics = read.csv(paste0('unit_source_statistics_', source_name, '.csv'), stringsAsFactors=FALSE)
 unit_source_statistics = read_table_from_netcdf(paste0('unit_source_statistics_', source_name, '.nc'))
 unit_source_geometry = readOGR(dsn='../EQ_SOURCE/unit_source_grid', layer=source_name)
 # Get the tide files, sorted based on unit_source_statistics rows
-all_tide_files = Sys.glob(
-    paste0('/g/data/w85/tsunami/AustPTHA/version1/unit_sources/', source_name, 
-        '/unit_source_tsunami/*/*/Gauge*.nc'))
-all_tide_files = sort_tide_gauge_files_by_unit_source_table(
-    unit_source_statistics, all_tide_files)
+all_tide_files = unit_source_statistics$tide_gauge_file
 # Get the gauge lon/lat/depth/ID points
 all_gauge_lonlat = get_netcdf_gauge_locations(all_tide_files[1]) 
 # Get the gauge output times [identical for all files]
