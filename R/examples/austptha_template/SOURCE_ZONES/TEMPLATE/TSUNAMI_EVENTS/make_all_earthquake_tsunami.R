@@ -1,0 +1,97 @@
+library(rptha)
+library(parallel)
+source('sum_tsunami_unit_sources.R')
+
+#
+# Input parameters
+#
+
+station_chunk_size = 200
+source_zone_name = basename(dirname(getwd()))
+earthquake_events_file = paste0('all_uniform_slip_earthquake_events_', source_zone_name, '.nc')
+unit_source_statistics_file = paste0('unit_source_statistics_', source_zone_name, '.nc')
+
+
+#
+# End input
+#
+
+# Read unit source statistics & uniform slip earthquake events
+unit_source_statistics = read_table_from_netcdf(unit_source_statistics_file)
+all_eq_events = read_table_from_netcdf(earthquake_events_file)
+
+# Read gauges
+gauge_locations = get_netcdf_gauge_locations(unit_source_statistics$tide_gauge_file[1])
+# Read times at which gauge values are stored -- always constant thanks to the model setup
+gauge_times = get_netcdf_gauge_output_times(unit_source_statistics$tide_gauge_file[1])
+
+#
+# Prepare output variables
+#
+nevents = length(all_eq_events[,1])
+ngauges = length(gauge_locations[,1])
+
+# Matrix for max stage, with as many rows as events, and as many columns as gauges.
+gauge_event_max_stage = matrix(-9999, nrow=nevents, ncol=ngauges)
+# Period
+gauge_event_reference_period = matrix(-9999, nrow=nevents, ncol=ngauges)
+# Peak-to-trough
+gauge_event_peak_to_trough = matrix(-9999, nrow=nevents, ncol=ngauges)
+# Arrival time
+gauge_event_arrival_time = matrix(-9999, nrow=nevents, ncol=ngauges)
+
+
+# Indices of each 'chunk' of gauges
+gauge_chunks_list = splitIndices(ngauges, ceiling(ngauges/station_chunk_size))
+
+# Given an array with [gauge, time-slice, [stg,uh,vh]], extract flow summary
+# statistics for each gauge
+#
+local_summary_function<-function(flow_data){
+
+    times = gauge_times
+    mean_dt = mean(diff(times))
+
+    output = matrix(NA, nrow=dim(flow_data)[1], ncol=4)
+
+    for(i in 1:dim(flow_data)[1]){
+        stages = flow_data[i,,1]
+        rst = range(stages)
+        # Peak stage
+        output[i,1] = max(rst)
+        # Reference period
+        # NOTE: This period is approximate in a number of ways -- consider revising
+        output[i,2] = rptha::zero_crossing_period(stages, dt=mean_dt)
+        # Peak_to_trough
+        output[i,3] = diff(rst)
+        # Arrival time
+        # Suppose > 1mm
+        kk = min(which(abs(stages) > 1.0e-03))
+        if(is.finite(kk)) output[i,4] = times[kk]
+
+    }
+
+    return(output)
+
+}
+
+# Loop over chunks of gauges, computing the statistics as we go
+for(i in 1:length(gauge_chunks_list)){
+
+    gcl = gauge_chunks_list[[i]]
+
+    modelled_flow = make_tsunami_event_from_unit_sources(
+        earthquake_events = all_eq_events,
+        unit_source_statistics = unit_source_statistics,
+        unit_source_flow_files = unit_source_statistics$tide_gauge_file,
+        indices_of_subset = gcl,
+        summary_function = local_summary_function)
+
+    for(j in 1:nevents){
+        gauge_event_max_stage[j, gcl ] = modelled_flow[[j]][,1]
+        gauge_event_reference_period[j, gcl ] = modelled_flow[[j]][,2]
+        gauge_event_peak_to_trough[j, gcl ] = modelled_flow[[j]][,3]
+        gauge_event_arrival_time[j, gcl ] = modelled_flow[[j]][,4] 
+    }
+
+}
