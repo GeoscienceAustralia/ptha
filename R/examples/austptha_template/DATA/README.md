@@ -3,7 +3,7 @@
 ./HAZARD_POINTS -- Hazard point files for modelling
 
 ./SOURCEZONE_CONTOURS -- Contours of source-zones, made by manually merging
-    SLAB and planar contours. These are used to make the earthquake sources.
+    SLAB1.0 and geometric contours. These are used to make the earthquake sources.
 
 ./SOURCEZONE_DOWNDIP_LINES -- Lines which traverse the source-zone contours in
     a down-dip direction, and are used to define the lateral boundaries of the

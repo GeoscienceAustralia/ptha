@@ -142,16 +142,17 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
 #' Download flow time-series from NCI
 #'
 #' @param source_zone_events_data output from \code{get_source_zone_events_data}
-#' @param event_ID The row index of the earthquake event in source_zone_events_data$events
+#' @param event_ID The row indices of the earthquake event(s) in source_zone_events_data$events
 #' @param hazard_point_ID The numeric ID of the hazard point
 #' @param target_polygon A SpatialPolygons object. All gauges inside this are selected
 #' @param target_points A matrix of lon/lat point locations. The nearest gauge to each is selected
 #' @param target_indices A vector with integer indices corresponding to where the gauge values are stored.
-#' @param unpack_to_list Return flow_var as a list with one gauge per element
+#' @param store_by_gauge Return the flow variables as a list with one gauge per
+#' entry. Otherwise, return as a list with one event_ID per entry
 #' @return Flow time-series
 get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID, 
     hazard_point_ID = NULL, target_polygon = NULL, target_points=NULL, target_indices = NULL,
-    unpack_to_list=TRUE){
+    store_by_gauge=TRUE){
 
     is_null_hpID = is.null(hazard_point_ID)
     is_null_target_poly = is.null(target_polygon)
@@ -176,7 +177,7 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
     # Case of user-provided point IDs
     if(!is.null(hazard_point_ID)){
         # Find the index of the points matching event_ID inside the netcdf file
-        event_indices = get_netcdf_gauge_index_matching_ID(
+        indices_of_subset = get_netcdf_gauge_index_matching_ID(
             szed$gauge_netcdf_files[1],
             hazard_point_ID)
 
@@ -185,46 +186,52 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
     # Case of user-provided polygon
     if(!is.null(target_polygon)){
 
-        event_indices = get_netcdf_gauge_indices_in_polygon(
+        indices_of_subset = get_netcdf_gauge_indices_in_polygon(
             szed$gauge_netcdf_files[1], target_polygon)
 
     }
 
     # Case of user-provided point locations
     if(!is.null(target_points)){
-        event_indices = get_netcdf_gauge_indices_near_points(
+        indices_of_subset = get_netcdf_gauge_indices_near_points(
             szed$gauge_netcdf_files[1], target_points)
     }
 
     if(!is.null(target_indices)){
-        event_indices = target_indices
+        indices_of_subset = target_indices
     }
 
     event_times = get_netcdf_gauge_output_times(szed$gauge_netcdf_files[1])
-    gauge_locations = get_netcdf_gauge_locations(szed$gauge_netcdf_files[1], event_indices)
+    gauge_locations = get_netcdf_gauge_locations(szed$gauge_netcdf_files[1], indices_of_subset)
 
     flow_var_batch = make_tsunami_event_from_unit_sources(
         szed$events[event_ID,], 
         szed$unit_source_statistics, 
         szed$gauge_netcdf_files,
         #get_flow_time_series_function = get_flow_time_series_SWALS,  
-        indices_of_subset=event_indices, 
+        indices_of_subset=indices_of_subset, 
         verbose=FALSE,
-        summary_function=NULL)[[1]]
+        summary_function=NULL)
 
-    # Optionally output flow_var as a list
-    if(unpack_to_list){
-        flow_var = list()
-        for(i in 1:dim(flow_var_batch)[1]){
-            flow_var[[i]] = flow_var_batch[i,,,drop=FALSE]
+    if(store_by_gauge){
+        # Store as a list, with one gauge in each list
+        flow_var = vector(mode='list', length=length(indices_of_subset))
+        for(i in 1:length(indices_of_subset)){
+            flow_var[[i]] = array(0, 
+                dim=c(length(event_ID), dim(flow_var_batch[[1]])[2:3]))
+            for(j in 1:length(event_ID)){
+                flow_var[[i]][j,,] = flow_var_batch[[j]][i,,]
+            }
         }
+
         names(flow_var) = gauge_locations$gaugeID
     }else{
-        # Save the copy and keep in compact matrix format
+        # Store as a list, with one event in each entry
+        names(flow_var_batch) = event_ID
         flow_var = flow_var_batch
     }
 
-    output = list(time=event_times, flow=flow_var, locations=gauge_locations)
+    output = list(time=event_times, flow=flow_var, locations=gauge_locations, events=szed$events[event_ID,])
 
     return(output)
 }

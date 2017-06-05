@@ -52,9 +52,34 @@ test_puysegur<-function(){
         ), row.names = c(NA, -5L), class = "data.frame")
 
     m1 = max(abs(model_240$location - test_data))
-    print(m1)
     if(m1 > 1.0e-010){
         print('FAIL -- location information haz changed')
+    }else{
+        print('PASS')
+    }
+
+    # Check if we unpack to gauge-based list, it still works
+    model_240b = get_flow_time_series_at_hazard_point(puysegur, 240, 
+        hazard_point_ID = c(1.1, 10.1, 22.1, 55015.4, 55042.4),
+        store_by_gauge=FALSE)
+
+
+    if(length(model_240b$flow) == dim(model_240$flow[[1]])[1]){
+        print('PASS')
+    }else{
+        print('FAIL: store_by_gauge not working as desired')
+    }
+
+    FAILED=FALSE
+    for(i in 1:length(model_240b$flow)){
+        for(j in 1:length(model_240$flow)){
+            if(! all(model_240b$flow[[i]][j,,] == model_240$flow[[j]][i,,])){
+                FAILED=TRUE
+            }
+        }
+    }
+    if(FAILED){
+        print('FAIL: store_by_gauge not ordered as desired')
     }else{
         print('PASS')
     }
