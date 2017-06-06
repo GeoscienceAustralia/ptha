@@ -19,6 +19,11 @@ source_zone_name = basename(dirname(getwd()))
 earthquake_events_file = paste0('all_uniform_slip_earthquake_events_', source_zone_name, '.nc')
 unit_source_statistics_file = paste0('unit_source_statistics_', source_zone_name, '.nc')
 
+# Run parameters
+msl = 0.0 # Pre-tsunami initial condition for linear model. Gauges with elev>msl are inactive
+lat_range = c(-72 + 2/60, 65 - 2/60) # Latitude range where gauges should be taken
+lon_range = c(-40, 320) # Longitude range where gauges can be taken
+
 #
 # End input
 #
@@ -91,7 +96,8 @@ local_summary_function<-function(flow_data){
 #        unit_source_statistics = unit_source_statistics,
 #        unit_source_flow_files = unit_source_statistics$tide_gauge_file,
 #        indices_of_subset = gcl,
-#        summary_function = local_summary_function)
+#        summary_function = local_summary_function,
+#        msl=msl)
 #}
 
 #
@@ -103,7 +109,8 @@ parfun<-function(gcl){
         unit_source_statistics = unit_source_statistics,
         unit_source_flow_files = unit_source_statistics$tide_gauge_file,
         indices_of_subset = gcl,
-        summary_function = local_summary_function)
+        summary_function = local_summary_function,
+        msl = msl)
 }
 modelled_flow_store = mclapply(gauge_chunks_list, parfun, mc.cores=mc_cores)
 
@@ -130,8 +137,9 @@ for(i in 1:length(gauge_chunks_list)){
     valid_gauges = (
         gauge_locations$lat[gcl] < (65-2/60) &
         gauge_locations$lat[gcl] > (-72+2/60) &
-        gauge_locations$elev[gcl] < 0)
+        gauge_locations$elev[gcl] < msl)
 
+    # Set 'invalid gauges' values to zero
     for(j in 1:nevents){
         gauge_event_max_stage[j, gcl ] = modelled_flow_store[[i]][[j]][,1] * valid_gauges
         gauge_event_reference_period[j, gcl ] = modelled_flow_store[[i]][[j]][,2] * valid_gauges
