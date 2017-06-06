@@ -43,6 +43,16 @@ if one tries to access the first gauge in a file. This version is the default
 netcdf on Ubuntu 14.04, so in that case, it may be necessary to install a newer
 netcdf and link the ncdf4 package with this during installation.*
 
+## **Unit tests**
+Assuming you have installed all the above dependencies, you can run the unit
+tests with:
+
+```r
+source('test_all.R')
+```
+This should print a number of 'PASS' statements, and no 'FAIL' statements.
+Some of the tests will fail if you haven't installed the dependencies to read
+time-series.
 
 ## **Usage**
 
@@ -273,12 +283,20 @@ see the installation section above.*
 model_240 = get_flow_time_series_at_hazard_point(puysegur, 
     event_ID=240, 
     hazard_point_ID=c(55015.4, 55042.4))
+```
+
+```
+## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
+## loading 'rptha'
+```
+
+```r
 # Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame
 names(model_240)
 ```
 
 ```
-## [1] "time"      "flow"      "locations"
+## [1] "time"      "flow"      "locations" "events"
 ```
 
 ```r

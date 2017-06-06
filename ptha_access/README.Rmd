@@ -42,6 +42,15 @@ if one tries to access the first gauge in a file. This version is the default
 netcdf on Ubuntu 14.04, so in that case, it may be necessary to install a newer
 netcdf and link the ncdf4 package with this during installation.*
 
+## **Unit tests**
+Assuming you have installed all the above dependencies, you can run the unit
+tests with:
+```{r unit_tests, eval=FALSE}
+source('test_all.R')
+```
+This should print a number of 'PASS' statements, and no 'FAIL' statements.
+Some of the tests will fail if you haven't installed the dependencies to read
+time-series.
 
 ## **Usage**
 
