@@ -432,9 +432,9 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
         }
 
     }else{
-	# In this case, the file has time varying quickly, which permits
-	# efficient single-station access, so long as indices_of_subset is
-	# continuous
+        # In this case, the file has time varying quickly, which permits
+        # efficient single-station access, so long as indices_of_subset is
+        # continuous
         stopifnot(stage_dim1 == 'time')
 
         if(is.null(indices_of_subset)){
@@ -447,8 +447,8 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
         }
 
         if(read_all_stages){
-	    # Take the transpose of the stages for consistency with the case
-	    # when time is an unlimited dimension
+            # Take the transpose of the stages for consistency with the case
+            # when time is an unlimited dimension
             stages = t(ncvar_get(fid, 'stage'))
             if(!is.null(indices_of_subset)) stages = stages[indices_of_subset,,drop=FALSE]
 

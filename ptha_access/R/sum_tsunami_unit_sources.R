@@ -300,7 +300,6 @@ sort_tide_gauge_files_by_unit_source_table<-function(
         stop('Some initial condition files are not matching a corresponding tide gauge netcdf attribute')
     }
 
-
     return(netcdf_tide_gauge_files[unit_source_to_tg])
 }
 
@@ -433,9 +432,9 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
         }
 
     }else{
-	# In this case, the file has time varying quickly, which permits
-	# efficient single-station access, so long as indices_of_subset is
-	# continuous
+        # In this case, the file has time varying quickly, which permits
+        # efficient single-station access, so long as indices_of_subset is
+        # continuous
         stopifnot(stage_dim1 == 'time')
 
         if(is.null(indices_of_subset)){
@@ -448,8 +447,8 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
         }
 
         if(read_all_stages){
-	    # Take the transpose of the stages for consistency with the case
-	    # when time is an unlimited dimension
+            # Take the transpose of the stages for consistency with the case
+            # when time is an unlimited dimension
             stages = t(ncvar_get(fid, 'stage'))
             if(!is.null(indices_of_subset)) stages = stages[indices_of_subset,,drop=FALSE]
 
@@ -545,6 +544,8 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
 #' time-series is provided. This function could be used to compute e.g.
 #' the maxima and period of the stage time-series at each gauge, while avoiding
 #' having to store the full waveforms for all events in memory.
+#' @param msl mean sea level for the linear shallow water solver. All gauges above msl
+#' are 'dry' for the full simulation
 #' @export
 #'
 make_tsunami_event_from_unit_sources<-function(
@@ -554,7 +555,8 @@ make_tsunami_event_from_unit_sources<-function(
     get_flow_time_series_function = get_flow_time_series_SWALS,  
     indices_of_subset=NULL, 
     verbose=FALSE,
-    summary_function=NULL){
+    summary_function=NULL,
+    msl=0.0){
 
     if(all(c('slip', 'event_slip_string') %in% names(earthquake_events))){
         msg = paste0('earthquake_events cannot have both a column named "slip" ', 
@@ -597,11 +599,16 @@ make_tsunami_event_from_unit_sources<-function(
             netcdf_file, 
             indices_of_subset = indices_of_subset)
 
+        if(msl != 0){
+            # Subtract MSL from stage, since (stage-msl) is linear 
+            flow_data[[i]]$flow_time_series[,,1] = flow_data[[i]]$flow_time_series[,,1] - msl
+        }
+
         names(flow_data)[i] = netcdf_file
 
         gc()
     }
-  
+
     if(verbose) print('Summing unit sources ...') 
 
     # Make a matrix in which we sum the flow_time_series for each event
@@ -618,7 +625,6 @@ make_tsunami_event_from_unit_sources<-function(
     }
 
     # Do the sum
-    #browser()
     for(i in 1:num_eq){
         if(verbose) print(paste0('    event ', i))
         earthquake_event = earthquake_events[i,]
@@ -633,13 +639,8 @@ make_tsunami_event_from_unit_sources<-function(
                     flow_data[[j]]$flow_time_series
             }
 
-            if(is.null(summary_function)){
-                # Rescale the slip value -- uniform slip!
-                events_data[[i]] = template_flow_data * earthquake_event$slip   
-            }else{
-                template_flow_data = template_flow_data * earthquake_event$slip
-                events_data[[i]] = summary_function(template_flow_data)
-            }
+            template_flow_data = template_flow_data * earthquake_event$slip
+
         }else{
             # Stochastic slip case
 
@@ -653,14 +654,20 @@ make_tsunami_event_from_unit_sources<-function(
                     flow_data[[event_unit_sources[j]]]$flow_time_series * slip_vector[j]
             }
 
-            if(is.null(summary_function)){
-                # Rescale the slip value -- uniform slip!
-                events_data[[i]] = template_flow_data 
-            }else{
-                events_data[[i]] = summary_function(template_flow_data)
-            }
         }
+
+        # Add MSL to stage [recall it was subtracted earlier, since (stage-msl) is linear]
+        if(msl != 0) template_flow_data[,,1] = template_flow_data[,,1] + msl
+
+        # Apply the summary function if required
+        if(is.null(summary_function)){
+            events_data[[i]] = template_flow_data
+        }else{
+            events_data[[i]] = summary_function(template_flow_data)
+        }
+
     }
+
     rm(flow_data, template_flow_data)
     gc()
 
