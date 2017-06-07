@@ -10,14 +10,17 @@ library(parallel)
 # INPUT DATA
 #
 
+config_env = new.env()
+source('config.R', local=config_env)
+
 # Name of source. In this template, that should be the name of the directory
 # above the working directory
-source_name = basename(dirname(getwd()))
+source_name = config_env$site_name #basename(dirname(getwd()))
 
 # Vector of all netcdf files that we wish to permute
 tide_gauge_files = Sys.glob(
-    paste0('/g/data/w85/tsunami/AustPTHA/version1/unit_sources/', 
-    source_name, '/unit_source_tsunami/*/*/Gauge*.nc')) 
+    paste0(config_env$all_runs_output_base_dir, '/', config_env$all_runs_dir,  
+        '/*/*/Gauge*.nc'))
 
 # Number of cores to use in parallel (shared memory only)
 mc_cores = 16

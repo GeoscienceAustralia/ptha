@@ -1,12 +1,28 @@
-unit_sources_output_basedir = '/g/data/w85/tsunami/AustPTHA/version1/unit_sources/'
+#
+# Some code for checking that models have finished [i.e. not been killed before finishing],
+# and that the tide gauge outputs exist and are correctly ordered
+#
 
+# Read config info
+config_env = new.env()
+source('config.R', local=config_env)
+
+unit_sources_output_basedir = dirname(config_env$all_runs_output_base_dir) #'/g/data/w85/tsunami/AustPTHA/version1/unit_sources/'
+
+# Useful utility for 'fast' tail
 tail_file<-function(filename, n=1){
     x = system(paste0('tail -n',n, ' ', filename), intern=TRUE)
     return(x)
 }
 
+
+#'
+#' Check that model runs have logfiles, which appear to have finished
+#'
 check_models_have_been_run<-function(sourcename, verbose=FALSE){
-    ## Note: These file paths might need to be changed in other applications
+
+    # Note: These file paths might need to be changed in other applications.
+    # FIXME: This could be better integrated with content in config_env (see config.R)
     all_logs = Sys.glob(paste0(unit_sources_output_basedir, sourcename, '/unit_source_tsunami/RUN_*/*/log*'))
     all_unit_sources = Sys.glob(paste0(unit_sources_output_basedir, sourcename, '/unit_source_tsunami/RUN_*'))
 
@@ -47,7 +63,9 @@ check_models_have_been_run<-function(sourcename, verbose=FALSE){
 }
 
 
+#
 # Check tide gauge outputs exist, and that the coordinates are all ordered in the same way
+#
 check_model_gauge_integrity<-function(sourcename, verbose=FALSE){
 
     library(ncdf4)
