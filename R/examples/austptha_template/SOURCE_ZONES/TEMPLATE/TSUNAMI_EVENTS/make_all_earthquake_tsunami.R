@@ -8,8 +8,8 @@ source('sum_tsunami_unit_sources.R')
 
 # Memory we will allow in unit-sources, in MB. 
 # It's a rough estimator -- should be a fraction of 1-nodes memory [e.g. using
-# 7 GB on a 32GB machine seemed to work ok]
-memory_for_unit_sources = 7 * 1024 
+# 10 GB on a 32GB machine seemed to work ok]
+memory_for_unit_sources = 10 * 1024 
 
 # Number of cores in parallel [shared memory only]
 mc_cores = 16 
@@ -129,7 +129,11 @@ parfun<-function(gcl){
         summary_function = local_summary_function,
         msl = msl)
 }
-modelled_flow_store = mclapply(gauge_chunks_list, parfun, mc.cores=mc_cores)
+# Here we avoid use of mclapply, which seems to leave un-stopped worker nodes
+# on NCI
+cl = makeForkCluster(nnodes=mc_cores)
+modelled_flow_store = parLapply(cl=cl, X=gauge_chunks_list, fun=parfun)
+stopCluster(cl)
 
 #
 # Pack outputs
