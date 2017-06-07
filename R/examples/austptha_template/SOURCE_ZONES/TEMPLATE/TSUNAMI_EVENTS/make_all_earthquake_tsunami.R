@@ -406,6 +406,8 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
         attval=normalizePath(unit_source_statistics_file), prec='text')
     ncatt_put(output_nc_file, varid=0, attname='source_zone_name',
         attval=source_zone_name, prec='text')
+    ncatt_put(output_nc_file, varid=0, attname='parent_script_name',
+        attval=parent_script_name(), prec='text')
 
     #
     # Add variables: gauge locations
