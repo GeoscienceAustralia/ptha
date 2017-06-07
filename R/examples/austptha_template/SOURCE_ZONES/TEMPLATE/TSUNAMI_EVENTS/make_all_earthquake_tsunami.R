@@ -8,8 +8,8 @@ source('sum_tsunami_unit_sources.R')
 
 # Memory we will allow in unit-sources, in MB. 
 # It's a rough estimator -- should be a fraction of 1-nodes memory [e.g. using
-# 10 GB on a 32GB machine seemed to work ok]
-memory_for_unit_sources = 10 * 1024 
+# 7 GB on a 32GB machine seemed to work ok]
+memory_for_unit_sources = 7 * 1024 
 
 # Number of cores in parallel [shared memory only]
 mc_cores = 16 
