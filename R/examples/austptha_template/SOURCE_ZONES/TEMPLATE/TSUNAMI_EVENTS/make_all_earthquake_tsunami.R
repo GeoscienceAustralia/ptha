@@ -401,9 +401,9 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     # Add global attributes
     #
     ncatt_put(output_nc_file, varid=0, attname='earthquake_events_file',
-        attval=earthquake_events_file, prec='text')
+        attval=normalizePath(earthquake_events_file), prec='text')
     ncatt_put(output_nc_file, varid=0, attname='unit_source_statistics_file',
-        attval=unit_source_statistics_file, prec='text')
+        attval=normalizePath(unit_source_statistics_file), prec='text')
     ncatt_put(output_nc_file, varid=0, attname='source_zone_name',
         attval=source_zone_name, prec='text')
 
