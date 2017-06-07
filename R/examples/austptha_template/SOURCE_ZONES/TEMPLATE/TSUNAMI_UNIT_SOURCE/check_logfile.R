@@ -3,6 +3,12 @@
 #' It can plot the max stage envelope and mass balance over time,
 #' and flag warnings if the peak stage is too extreme
 #'
+#' @param logfile_name name of a logfile from SWALS linear solver
+#' @param plot logical. Should we make a plot? If TRUE, it will contain
+#' a time-series of the peak stage, and of the water volume in the domain.
+#' @param extreme_stage_warning numerical value, such that if 
+#'      max(abs(stage)) > extreme_stage_warning, then a warning is raised.
+#' @return nothing, but the plot and/or warnings are useful 
 check_logfile<-function(logfile_name, plot=FALSE, extreme_stage_warning=Inf){
    
     log_data = readLines(logfile_name) 
@@ -56,10 +62,10 @@ check_logfile<-function(logfile_name, plot=FALSE, extreme_stage_warning=Inf){
 }
 
 ### Main
-source_name = basename(dirname(getwd()))
-all_logs = Sys.glob(
-    paste0('/g/data/w85/tsunami/AustPTHA/version1/unit_sources/', 
-        source_name, '/unit_source_tsunami/RUN_*/*/log*'))
+config_env = new.env()
+source('config.R', local=config_env)
+all_logs = Sys.glob(paste0(config_env$all_runs_output_base_dir, '/', 
+        config_env$all_runs_dir, '/RUN_*/*/log*'))
 
 # Try ordering them along-strike/down-dip
 us_name = basename(dirname(dirname(all_logs)))
