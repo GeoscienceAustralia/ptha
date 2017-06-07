@@ -96,7 +96,7 @@ tsunami_source_cellsize = 2/60 # degrees.
 # around point p. These 16 points have coordinates:
 #     points = expand.grid(p[1] + cell_integration_scale[1]*c(-1,-1/3,1/3,1), 
 #                          p[2] + cell_integration_scale[2]*c(-1,-1/3,1/3,1))
-# If 'cell_integration_scale' is close to the grid size, then this is an approximation
+# If 'cell_integration_scale' is close to half the grid size, then this is an approximation
 # of the within-pixel average Okada deformation. We do this because near the trench,
 # the Okada deformation might not be smooth [e.g. when rupture depth --> 0], and this
 # reduces the chance of artificial 'spikes' in the Okada deformation.
