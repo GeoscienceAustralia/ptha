@@ -179,10 +179,10 @@ for(i in 1:length(gauge_chunks_list)){
 #
 ##############################################################################
 
-write_all_source_zone_tsunami_statistics_to_netcdf(
+write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     source_zone_name,
     all_eq_events,
-    all_eq_events_file,
+    earthquake_events_file,
     unit_source_statistics,
     unit_source_statistics_file,
     gauge_locations,
@@ -292,10 +292,10 @@ write_all_source_zone_tsunami_statistics_to_netcdf(
         missval=NA, longname='mean_rupture_depth_of_earthquake_event', prec='float') 
     event_max_depth_v = ncvar_def(name='event_max_depth', units='km', dim=list(dim_event),
         missval=NA, longname='max_rupture_depth_of_earthquake_event', prec='float') 
-    event_index_string_v = ncvar_def(name='event_index_string', units='', dim=list(dim_event, dim_nchar),
-        missval=NA, longname='indices_of_unit_sources_included_in_earthquake_event', prec='char')
-    event_sourcename_v = ncvar_def(name='event_sourcename', units='', dim=list(dim_event, dim_nchar),
-        missval=NA, longname='source_zone_name_of_earthquake_event', prec='char')
+    event_index_string_v = ncvar_def(name='event_index_string', units='', dim=list(dim_nchar, dim_event),
+        missval=NULL, longname='indices_of_unit_sources_included_in_earthquake_event', prec='char')
+    event_sourcename_v = ncvar_def(name='event_sourcename', units='', dim=list(dim_nchar, dim_event),
+        missval=NULL, longname='source_zone_name_of_earthquake_event', prec='char')
     event_rate_annual_v = ncvar_def(name='event_rate_annual', units='events per year', dim=list(dim_event),
         missval=NA, longname='mean_rate_of_earthquake_event', prec='float') 
     event_rate_annual_upper_ci_v = ncvar_def(name='event_rate_annual_upper_ci', 
@@ -351,26 +351,26 @@ write_all_source_zone_tsunami_statistics_to_netcdf(
         longname='width_of_unit_source', 
         prec='float')
     us_downdip_number_v = ncvar_def(name='us_downdip_number', units='', 
-        dim=list(dim_unit_sources), missval=NA, 
+        dim=list(dim_unit_sources), missval=NULL, 
         longname='down_dip_index_of_unit_source', 
         prec='integer')
     us_alongstrike_number_v = ncvar_def(name='us_alongstrike_number', units='', 
-        dim=list(dim_unit_sources), missval=NA, 
+        dim=list(dim_unit_sources), missval=NULL, 
         longname='alongstrike_index_of_unit_source', 
         prec='integer')
     us_subfault_number_v = ncvar_def(name='us_subfault_number', units='', 
-        dim=list(dim_unit_sources), missval=NA, 
+        dim=list(dim_unit_sources), missval=NULL, 
         longname='subfault_index_of_unit_source', 
         prec='integer')
     us_max_depth_v = ncvar_def(name='us_max_depth', units='km', 
         dim=list(dim_unit_sources), missval=NA, 
         longname='max_depth_of_unit_source', prec='float')
     us_initial_condition_v = ncvar_def(name='us_initial_condition_file',
-        units='', dim=list(dim_unit_sources), missval=NA, 
+        units='', dim=list(dim_nchar, dim_unit_sources), missval=NULL, 
         longname='filename_containing_initial_surface_displacement_for_unit_source',
         prec='char')
     us_tide_gauge_file_v = ncvar_def(name='us_tide_gauge_file',
-        units='', dim=list(dim_unit_sources), missval=NA, 
+        units='', dim=list(dim_nchar, dim_unit_sources), missval=NULL, 
         longname='filename_containing_tide_gauge_time_series_for_unit_source',
         prec='char')
 
@@ -384,12 +384,12 @@ write_all_source_zone_tsunami_statistics_to_netcdf(
     #
     # Make file
     #
-    sourcename_dot_nc = paste0(sourcename, '.nc')
+    sourcename_dot_nc = paste0(source_zone_name, '.nc')
     output_file_name = paste0(
-        #Name of all_eq_events_file, with the 'sourcename.nc' cut off
-        gsub(sourcename_dot_nc, '', all_eq_events_file, ),
-        # add on _tsunami_sourcename.nc
-        '_tsunami_', sourcename_dot_nc)
+        #Name of earthquake_events_file, with the 'sourcename.nc' cut off
+        gsub(sourcename_dot_nc, '', earthquake_events_file),
+        # add on tsunami_sourcename.nc
+        'tsunami_', sourcename_dot_nc)
 
     output_nc_file = nc_create(output_file_name, vars=all_nc_var)
 
@@ -397,11 +397,11 @@ write_all_source_zone_tsunami_statistics_to_netcdf(
     # Add global attributes
     #
     ncatt_put(output_nc_file, varid=0, attname='earthquake_events_file',
-        attval=all_eq_events_file, prec='char')
+        attval=earthquake_events_file, prec='text')
     ncatt_put(output_nc_file, varid=0, attname='unit_source_statistics_file',
-        attval=unit_source_statistics_file, prec='char')
+        attval=unit_source_statistics_file, prec='text')
     ncatt_put(output_nc_file, varid=0, attname='source_zone_name',
-        attval=source_zone_name)
+        attval=source_zone_name, prec='text')
 
     #
     # Add variables: gauge locations
@@ -460,3 +460,19 @@ write_all_source_zone_tsunami_statistics_to_netcdf(
     return(invisible(output_file_name))
 }
 
+#
+# Write it out
+#
+write_all_source_zone_tsunami_statistics_to_netcdf(
+    source_zone_name,
+    all_eq_events,
+    earthquake_events_file,
+    unit_source_statistics,
+    unit_source_statistics_file,
+    gauge_locations,
+    gauge_event_max_stage,
+    gauge_event_reference_period,
+    gauge_event_peak_to_trough,
+    gauge_event_arrival_time,
+    gauge_event_initial_stage,
+    stage_threshold_for_arrival_time)

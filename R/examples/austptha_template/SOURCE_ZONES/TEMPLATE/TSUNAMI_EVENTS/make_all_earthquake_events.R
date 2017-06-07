@@ -73,7 +73,7 @@ all_eq_events = get_all_earthquake_events(
     source_zone_name = source_zone_name)
 
 # Add an annual rate variable that we can change later
-all_eq_events$rate_annual = rep(-1, length(all_eq_events[,1]))
+all_eq_events$rate_annual = rep(-1.0, length(all_eq_events[,1]))
 all_eq_events$rate_annual_upper_ci = rep(-1, length(all_eq_events[,1]))
 all_eq_events$rate_annual_lower_ci = rep(-1, length(all_eq_events[,1]))
 
