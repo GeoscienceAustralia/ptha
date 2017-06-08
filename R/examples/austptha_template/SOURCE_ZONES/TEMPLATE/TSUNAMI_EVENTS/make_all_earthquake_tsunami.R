@@ -362,10 +362,14 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
             missval=NA, longname='latitude_near_earthquake_event', prec='float')
 
         event_peak_slip_downdip_ind_v = ncvar_def(name='event_peak_slip_downdip_index', units='', 
-            dim=list(dim_event), missval=NULL, longmane='down-dip_index_of_the_unit_source_with_peak_slip',
+            dim=list(dim_event), missval=NULL, longname='down-dip_index_of_the_unit_source_with_peak_slip',
             prec='integer')
         event_peak_slip_alongstrike_ind_v = ncvar_def(name='event_peak_slip_alongstrike_index', units='', 
-            dim=list(dim_event), missval=NULL, longmane='along-strike_index_of_the_unit_source_with_peak_slip',
+            dim=list(dim_event), missval=NULL, longname='along-strike_index_of_the_unit_source_with_peak_slip',
+            prec='integer')
+        event_uniform_event_row_v = ncvar_def(name='event_uniform_event_row', units='', 
+            dim=list(dim_event), missval=NULL, 
+            longname='row_index_of_the_uniform_slip_event_used_to_define_location_and_magnitude',
             prec='integer')
         
         event_sourcename_v = ncvar_def(name='event_sourcename', units='', dim=list(dim_nchar, dim_event),
@@ -374,7 +378,8 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
         event_index_string_v = ncvar_def(name='event_index_string', units='', dim=list(dim_nchar, dim_event),
             missval=NULL, longname='indices_of_unit_sources_included_in_earthquake_event', prec='char')
         event_slip_string_v = ncvar_def(name='event_slip_string', units='', dim=list(dim_nchar, dim_event),
-            missval=NULL, longname='slip_(m)_of_unit_sources_included_in_earthquake_event_with_underscore_separator', 
+            missval=NULL, 
+            longname='slip_(m)_of_unit_sources_included_in_earthquake_event_with_underscore_separator', 
             prec='char')
 
         event_rate_annual_v = ncvar_def(name='event_rate_annual', units='events per year', dim=list(dim_event),
@@ -388,7 +393,13 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
             missval=NA, longname='lower_credible_interval_for_rate_of_earthquake_event', 
             prec='float')
 
+        all_nc_var = c(all_nc_var, list(event_Mw_v, event_target_lon_v, event_target_lat_v,
+            event_peak_slip_downdip_ind_v, event_peak_slip_alongstrike_ind_v, event_uniform_event_row_v,
+            event_sourcename_v, event_index_string_v, event_slip_string_v, event_rate_annual_v, 
+            event_rate_annual_upper_ci, event_rate_annual_lower_ci))
+
     }
+
     #
     # Make variables for unit-source statistics
     #
@@ -505,18 +516,35 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     #
     # Add event summary statistics 
     #
-    ncvar_put(output_nc_file, event_area_v, all_eq_events$area)
-    ncvar_put(output_nc_file, event_mean_length_v, all_eq_events$mean_length)
-    ncvar_put(output_nc_file, event_mean_width_v, all_eq_events$mean_width)
-    ncvar_put(output_nc_file, event_slip_v, all_eq_events$slip)
-    ncvar_put(output_nc_file, event_Mw_v, all_eq_events$Mw)
-    ncvar_put(output_nc_file, event_mean_depth_v, all_eq_events$mean_depth)
-    ncvar_put(output_nc_file, event_max_depth_v, all_eq_events$max_depth)
-    ncvar_put(output_nc_file, event_index_string_v, all_eq_events$event_index_string)
-    ncvar_put(output_nc_file, event_sourcename_v, all_eq_events$sourcename)
-    ncvar_put(output_nc_file, event_rate_annual_v, all_eq_events$rate_annual)
-    ncvar_put(output_nc_file, event_rate_annual_upper_ci_v, all_eq_events$rate_annual_upper_ci)
-    ncvar_put(output_nc_file, event_rate_annual_lower_ci_v, all_eq_events$rate_annual_lower_ci)
+    if(stochastic_slip == FALSE){
+        # Uniform slip
+        ncvar_put(output_nc_file, event_area_v, all_eq_events$area)
+        ncvar_put(output_nc_file, event_mean_length_v, all_eq_events$mean_length)
+        ncvar_put(output_nc_file, event_mean_width_v, all_eq_events$mean_width)
+        ncvar_put(output_nc_file, event_slip_v, all_eq_events$slip)
+        ncvar_put(output_nc_file, event_Mw_v, all_eq_events$Mw)
+        ncvar_put(output_nc_file, event_mean_depth_v, all_eq_events$mean_depth)
+        ncvar_put(output_nc_file, event_max_depth_v, all_eq_events$max_depth)
+        ncvar_put(output_nc_file, event_index_string_v, all_eq_events$event_index_string)
+        ncvar_put(output_nc_file, event_sourcename_v, all_eq_events$sourcename)
+        ncvar_put(output_nc_file, event_rate_annual_v, all_eq_events$rate_annual)
+        ncvar_put(output_nc_file, event_rate_annual_upper_ci_v, all_eq_events$rate_annual_upper_ci)
+        ncvar_put(output_nc_file, event_rate_annual_lower_ci_v, all_eq_events$rate_annual_lower_ci)
+    }else{
+        # Stochastic slip
+        ncvar_put(output_nc_file, event_Mw_v, all_eq_events$Mw)
+        ncvar_put(output_nc_file, event_target_lon_c, all_eq_events$target_lon)
+        ncvar_put(output_nc_file, event_target_lat_c, all_eq_events$target_lat)
+        ncvar_put(output_nc_file, event_peak_slip_downdip_ind_v, all_eq_events$peak_slip_downdip_ind)
+        ncvar_put(output_nc_file, event_peak_slip_alongstrike_ind_v, all_eq_events$peak_slip_alongstrike_ind)
+        ncvar_put(output_nc_file, event_sourcename_v, all_eq_events$sourcename)
+        ncvar_put(output_nc_file, event_uniform_event_row_v, all_eq_events$uniform_event_row)
+        ncvar_put(output_nc_file, event_rate_annual_v, all_eq_events$rate_annual)
+        ncvar_put(output_nc_file, event_rate_annual_upper_ci_v, all_eq_events$rate_annual_upper_ci)
+        ncvar_put(output_nc_file, event_rate_annual_lower_ci_v, all_eq_events$rate_annual_lower_ci)
+        ncvar_put(output_nc_file, event_index_string_v, all_eq_events$event_index_string)
+        ncvar_put(output_nc_file, event_slip_string_v, all_eq_events$event_slip_string)
+    }
 
     #
     # Add unit source summary statistics 
