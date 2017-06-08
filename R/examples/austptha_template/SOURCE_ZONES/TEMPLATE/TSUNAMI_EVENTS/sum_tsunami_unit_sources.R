@@ -496,7 +496,8 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
         flow_time_series[,,2] = uhs
         flow_time_series[,,3] = vhs
     }else{
-        flow_time_series = stages
+        flow_time_series = array(NA, dim=c(dim(stages), 1))
+        flow_time_series[,,1] = stages
     }
 
     output = list(attr = run_atts, flow_time_series = flow_time_series, gauge_ids = gauge_ids, 
@@ -546,6 +547,7 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
 #' having to store the full waveforms for all events in memory.
 #' @param msl mean sea level for the linear shallow water solver. All gauges above msl
 #' are 'dry' for the full simulation
+#' @param ... further arguments passed to get_flow_time_series_function
 #' @export
 #'
 make_tsunami_event_from_unit_sources<-function(
@@ -556,7 +558,8 @@ make_tsunami_event_from_unit_sources<-function(
     indices_of_subset=NULL, 
     verbose=FALSE,
     summary_function=NULL,
-    msl=0.0){
+    msl=0.0,
+    ...){
 
     if(all(c('slip', 'event_slip_string') %in% names(earthquake_events))){
         msg = paste0('earthquake_events cannot have both a column named "slip" ', 
@@ -597,7 +600,8 @@ make_tsunami_event_from_unit_sources<-function(
 
         flow_data[[i]] = get_flow_time_series_function(
             netcdf_file, 
-            indices_of_subset = indices_of_subset)
+            indices_of_subset = indices_of_subset,
+            ...)
 
         if(msl != 0){
             # Subtract MSL from stage, since (stage-msl) is linear 

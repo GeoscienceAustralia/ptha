@@ -56,12 +56,12 @@ full_unit_sources_mem = real_bytes * nvar * length(gauge_times) * ngauges *
 # My 'model' of how this code uses memory is very approximate and
 # under-estimates, so you should set 'memory_for_unit_sources' to be say 1/3 of
 # the available memory.
-station_chunk_size = floor( length(gauge_locations[,1]) * 
+station_chunk_size = floor( ngauges * 
     min(1, memory_for_unit_sources/(full_unit_sources_mem*mc_cores)) )
 gauge_chunks_list = splitIndices(ngauges, ceiling(ngauges/station_chunk_size))
 
 #
-# Given an array with [gauge, time-slice, [stg,uh,vh]], extract flow summary
+# Given an array with [gauge, time-slice, [stg] ], extract flow summary
 # statistics for each gauge. Pass this to the function that makes the tsunami
 # events, so we don't have to store full time-series [too much memory for
 # many gauges and events]
@@ -127,7 +127,8 @@ parfun<-function(gcl){
         unit_source_flow_files = unit_source_statistics$tide_gauge_file,
         indices_of_subset = gcl,
         summary_function = local_summary_function,
-        msl = msl)
+        msl = msl,
+        all_flow_variables=FALSE)
 }
 # Here we avoid use of mclapply, which seems to leave un-stopped worker nodes
 # on NCI
@@ -160,22 +161,26 @@ for(i in 1:length(gauge_chunks_list)){
         gauge_locations$lat[gcl] > lat_range[1] &
         gauge_locations$elev[gcl] < msl)
 
+    valid_gauges_m = (c(NA, 1)[valid_gauges+1])
+
     # Set 'invalid gauges' values to zero
     for(j in 1:nevents){
         gauge_event_max_stage[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,1] * (c(NA, 1)[valid_gauges+1])
+            modelled_flow_store[[i]][[j]][,1] * valid_gauges_m 
         gauge_event_reference_period[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,2] * (c(NA, 1)[valid_gauges+1])
+            modelled_flow_store[[i]][[j]][,2] * valid_gauges_m
         gauge_event_peak_to_trough[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,3] * (c(NA, 1)[valid_gauges+1])
+            modelled_flow_store[[i]][[j]][,3] * valid_gauges_m
         gauge_event_arrival_time[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,4] * (c(NA, 1)[valid_gauges+1])
+            modelled_flow_store[[i]][[j]][,4] * valid_gauges_m
         gauge_event_initial_stage[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,5] * (c(NA, 1)[valid_gauges+1])
+            modelled_flow_store[[i]][[j]][,5] * valid_gauges_m
     }
 }
 
-
+# Forcibly free some memory
+rm(modelled_flow_store, valid_gauges, valid_gauges_m)
+gc()
 
 ##############################################################################
 #
@@ -421,10 +426,15 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     # Add gauge summary statistics
     #
     ncvar_put(output_nc_file, gauge_event_max_stage_v, gauge_event_max_stage)
+    gc()
     ncvar_put(output_nc_file, gauge_event_reference_period_v, gauge_event_reference_period)
+    gc()
     ncvar_put(output_nc_file, gauge_event_peak_to_trough_v, gauge_event_peak_to_trough)
+    gc()
     ncvar_put(output_nc_file, gauge_event_arrival_time_v, gauge_event_arrival_time)
+    gc()
     ncvar_put(output_nc_file, gauge_event_initial_stage_v, gauge_event_initial_stage)
+    gc()
    
     #
     # Add event summary statistics 
