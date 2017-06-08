@@ -4,7 +4,11 @@ library(rptha)
 Mw_min = 7.2
 Mw_max = 9.8
 dMw = 0.1
+
+# Make at least ten stochastic slip events for each uniform event
 number_stochastic_events_for_each_uniform_event = 10
+# ... but ensure that there are at least 100 stochastic slip events in each magnitude category
+minimum_number_stochastic_events_for_each_magnitude = 100
 
 #
 # Get code for summing unit sources (only required for matching tide gauge
@@ -133,7 +137,14 @@ for(i in 1:length(all_eq_events[,1])){
     }
 
     event_magnitude = eq_event$Mw
-    number_of_sffm = number_stochastic_events_for_each_uniform_event
+
+    # Determine the number of stochastic events -- ensuring there are enough
+    # events in this magnitude category, and that there are a minimum number of
+    # events for each uniform slip event
+    number_of_uniform_events_with_same_magnitude = sum(all_eq_events$Mw == event_magnitude)
+
+    number_of_sffm = max(number_stochastic_events_for_each_uniform_event, 
+        ceiling(100/number_of_uniform_events_with_same_magnitude))
 
     # Make stochastic events
     all_events = sffm_make_events_on_discretized_source(
@@ -145,7 +156,13 @@ for(i in 1:length(all_eq_events[,1])){
         sourcename = source_zone_name)
 
     events_with_Mw = sffm_events_to_table(all_events, slip_significant_figures=4)
+
+    # Add additional variables we will need
     events_with_Mw$uniform_event_row = i
+    events_with_Mw$annual_rate = -1
+    events_with_Mw$annual_lower_ci = -1
+    events_with_Mw$annual_upper_ci = -1
+
     stochastic_events_store[[i]] = events_with_Mw
     
 }
