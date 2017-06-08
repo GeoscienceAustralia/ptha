@@ -93,7 +93,7 @@ local_summary_function<-function(flow_data){
         stages = flow_data[i,,1]
         rst = range(stages)
         # Peak stage
-        output[i,1] = max(rst)
+        output[i,1] = rst[2]
         # Reference period
         # FIXME: This period is approximate in a number of ways -- consider revising
         #        e.g. start only after the wave exceeds some threshold?
@@ -396,7 +396,7 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
         all_nc_var = c(all_nc_var, list(event_Mw_v, event_target_lon_v, event_target_lat_v,
             event_peak_slip_downdip_ind_v, event_peak_slip_alongstrike_ind_v, event_uniform_event_row_v,
             event_sourcename_v, event_index_string_v, event_slip_string_v, event_rate_annual_v, 
-            event_rate_annual_upper_ci, event_rate_annual_lower_ci))
+            event_rate_annual_upper_ci_v, event_rate_annual_lower_ci_v))
 
     }
 
@@ -533,8 +533,8 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     }else{
         # Stochastic slip
         ncvar_put(output_nc_file, event_Mw_v, all_eq_events$Mw)
-        ncvar_put(output_nc_file, event_target_lon_c, all_eq_events$target_lon)
-        ncvar_put(output_nc_file, event_target_lat_c, all_eq_events$target_lat)
+        ncvar_put(output_nc_file, event_target_lon_c_v, all_eq_events$target_lon)
+        ncvar_put(output_nc_file, event_target_lat_c_v, all_eq_events$target_lat)
         ncvar_put(output_nc_file, event_peak_slip_downdip_ind_v, all_eq_events$peak_slip_downdip_ind)
         ncvar_put(output_nc_file, event_peak_slip_alongstrike_ind_v, all_eq_events$peak_slip_alongstrike_ind)
         ncvar_put(output_nc_file, event_sourcename_v, all_eq_events$sourcename)
