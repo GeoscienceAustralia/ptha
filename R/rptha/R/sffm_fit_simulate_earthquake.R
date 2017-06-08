@@ -1130,7 +1130,7 @@ sffm_events_to_table<-function(all_sffm_events, slip_significant_figures=NULL){
         target_lon = unlist(lapply(all_sffm_events, f<-function(x) x$target_location[1])),
         target_lat = unlist(lapply(all_sffm_events, f<-function(x) x$target_location[2])),
         peak_slip_downdip_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[1])),
-        peak_slip_alongstrike_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[1])),
+        peak_slip_alongstrike_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[2])),
         sourcename = unlist(lapply(all_sffm_events, f<-function(x) x$sourcename)),
         stringsAsFactors=FALSE)
 

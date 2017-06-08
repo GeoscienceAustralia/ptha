@@ -159,9 +159,9 @@ for(i in 1:length(all_eq_events[,1])){
 
     # Add additional variables we will need
     events_with_Mw$uniform_event_row = i
-    events_with_Mw$annual_rate = -1
-    events_with_Mw$annual_lower_ci = -1
-    events_with_Mw$annual_upper_ci = -1
+    events_with_Mw$rate_annual = -1
+    events_with_Mw$rate_annual_lower_ci = -1
+    events_with_Mw$rate_annual_upper_ci = -1
 
     stochastic_events_store[[i]] = events_with_Mw
     
