@@ -368,7 +368,7 @@ gauge_statistics_simple<-function(gauge_times, flow_data,
         if(length(kk) > 0) output[kk,2] = NA
 
         kk = which(output[,4] < 0)
-        if(kength(kk) > 0) output[kk,4] = NA
+        if(length(kk) > 0) output[kk,4] = NA
 
     }
 
