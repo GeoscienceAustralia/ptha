@@ -84,34 +84,7 @@ gauge_chunks_list = splitIndices(ngauges, ceiling(ngauges/station_chunk_size))
 #
 local_summary_function<-function(flow_data){
 
-    times = gauge_times
-    mean_dt = mean(diff(times))
-
-    output = matrix(NA, nrow=dim(flow_data)[1], ncol=5)
-
-    for(i in 1:dim(flow_data)[1]){
-        stages = flow_data[i,,1]
-        rst = range(stages)
-        # Peak stage
-        output[i,1] = rst[2]
-        # Reference period
-        # FIXME: This period is approximate in a number of ways -- consider revising
-        #        e.g. start only after the wave exceeds some threshold?
-        #             consider only the most significant wave?
-        output[i,2] = rptha::zero_crossing_period(stages, dt=mean_dt)
-        # FIXME: Peak_to_trough -- note it might be better to have a 'wave-based' view
-        output[i,3] = diff(rst)
-        # Arrival time
-        suppressWarnings({kk = min(which(abs(stages) > stage_threshold_for_arrival_time))})
-        if(is.finite(kk)){
-            output[i,4] = times[kk]
-        }
-
-        # Initial stage
-        output[i,5] = stages[1]
-
-    }
-
+    output = gauge_statistics_simple(gauge_times, flow_data, stage_threshold_for_arrival_time)
     return(output)
 
 }
