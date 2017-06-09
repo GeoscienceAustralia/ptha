@@ -639,8 +639,12 @@ make_tsunami_event_from_unit_sources<-function(
         if(uniform_slip){
             # Sum the unit sources [each with 1m slip]
             for(j in event_unit_sources){
-                template_flow_data = template_flow_data + 
-                    flow_data[[j]]$flow_time_series
+                ## This is slower than BLAS
+                #template_flow_data = template_flow_data + 
+                #    flow_data[[j]]$flow_time_series
+
+                ## Does the same as commented out above, faster with BLAS
+                axpy_local(template_flow_data, 1.0, flow_data[[j]]$flow_time_series)
             }
 
             template_flow_data = template_flow_data * earthquake_event$slip
@@ -654,8 +658,13 @@ make_tsunami_event_from_unit_sources<-function(
 
             # Sum the non-uniform slip
             for(j in 1:length(event_unit_sources)){
-                template_flow_data = template_flow_data +
-                    flow_data[[event_unit_sources[j]]]$flow_time_series * slip_vector[j]
+                ## Slower than BLAS
+                #template_flow_data = template_flow_data +
+                #    flow_data[[event_unit_sources[j]]]$flow_time_series * slip_vector[j]
+
+                # Does the same as commented out above, with BLAS
+                ej = event_unit_sources[[j]]
+                axpy_local(template_flow_data, slip_vector[j], flow_data[[ej]]$flow_time_series)
             }
 
         }

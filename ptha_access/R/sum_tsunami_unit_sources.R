@@ -529,12 +529,12 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
 #' unit_source_flow_file, and an optional indices_of_subset vector which
 #' contains the indices of flow_time_series to extract, or NULL to extract all
 #' indices. This function must returns a list containing an element named
-#' "flow_time_series", which is EITHER a matrix flow_time_series[i,j] containing stage
-#' time-series, with i indexing the gauge, and j the time stage time slice, OR
-#' a three dimensional array including variables other than just stage, such as uh, vh. (e.g.
-#' flow_time_series[i,j,k] where i indexes the station, j the time, and k the
-#' variable, typically k=1 is stage, k=2 is uh, and k=3 is vh). The list that
-#' the function returns can also contain entries with other names, but they
+#' "flow_time_series", which is EITHER an array flow_time_series[i,j,k] containing stage
+#' time-series, with i indexing the gauge, and j the time stage time slice, and k=1, OR
+#' an array including variables other than just stage, such as uh, vh. In this case k = 1,2,...
+#' (e.g. flow_time_series[i,j,k] where i indexes the station, j the time, and k
+#' the variable, typically k=1 is stage, k=2 is uh, and k=3 is vh). The list
+#' that the function returns can also contain entries with other names, but they
 #' are ignored by this function
 #' @param indices_of_subset If not null, the value of indices_of_subset that is
 #' passed to get_flow_time_series_function
@@ -639,8 +639,12 @@ make_tsunami_event_from_unit_sources<-function(
         if(uniform_slip){
             # Sum the unit sources [each with 1m slip]
             for(j in event_unit_sources){
-                template_flow_data = template_flow_data + 
-                    flow_data[[j]]$flow_time_series
+                ## This is slower than BLAS
+                #template_flow_data = template_flow_data + 
+                #    flow_data[[j]]$flow_time_series
+
+                ## Does the same as commented out above, faster with BLAS
+                axpy_local(template_flow_data, 1.0, flow_data[[j]]$flow_time_series)
             }
 
             template_flow_data = template_flow_data * earthquake_event$slip
@@ -654,8 +658,13 @@ make_tsunami_event_from_unit_sources<-function(
 
             # Sum the non-uniform slip
             for(j in 1:length(event_unit_sources)){
-                template_flow_data = template_flow_data +
-                    flow_data[[event_unit_sources[j]]]$flow_time_series * slip_vector[j]
+                ## Slower than BLAS
+                #template_flow_data = template_flow_data +
+                #    flow_data[[event_unit_sources[j]]]$flow_time_series * slip_vector[j]
+
+                # Does the same as commented out above, with BLAS
+                ej = event_unit_sources[[j]]
+                axpy_local(template_flow_data, slip_vector[j], flow_data[[ej]]$flow_time_series)
             }
 
         }
