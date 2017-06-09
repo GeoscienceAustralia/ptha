@@ -267,7 +267,7 @@ gauge_energy_banding<-function(data_t, data_s, bin_divisors, interp_dt = NULL, e
 #' are: 1. max stage; 2. zero crossing period; 3. stage range; 4. Time that abs(stage)
 #' exceeds stage_threshold_for_arrival_time; 5. The initial stage
 #' @export
-#' @example
+#' @examples
 #' t = seq(0,1000)
 #'
 #' # Store gauge time-series
