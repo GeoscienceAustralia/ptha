@@ -44,6 +44,7 @@ SEXP fault_disp_c(SEXP alp_SEXP, SEXP elon_SEXP, SEXP elat_SEXP, SEXP edep_SEXP,
 
     // Return something of type SEXP -- note that a range of things were modified, but this 
     // is just required for R
-    return edsp_SEXP;
+    //return edsp_SEXP;
+    return R_NilValue;
 }
 

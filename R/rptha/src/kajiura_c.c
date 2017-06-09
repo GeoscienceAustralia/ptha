@@ -29,6 +29,7 @@ SEXP kajiura_convolution_c(SEXP depth_inv_SEXP, SEXP initial_deformation_padded_
         kajiuraGmax, lfx, lfy, lnx, lny, output);
 
     // Return the R object
-    return output_SEXP;
+    //return output_SEXP;
+    return R_NilValue;
     // return;
 }

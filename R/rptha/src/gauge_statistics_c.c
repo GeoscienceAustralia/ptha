@@ -26,6 +26,7 @@ SEXP gauge_statistics_c(SEXP gauge_times, SEXP flow_var,
         ngauges_c, ntimes_c, nflow_var_c, output_var_c);
 
     // Return something of class SEXP
-    return gauge_times; 
+    //return gauge_times; 
+    return R_NilValue;
 
 }
