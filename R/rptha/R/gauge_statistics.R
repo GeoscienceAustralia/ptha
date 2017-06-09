@@ -263,6 +263,7 @@ gauge_energy_banding<-function(data_t, data_s, bin_divisors, interp_dt = NULL, e
 #' the time at which the absolute stage exceeds this value.
 #' @param use_fortran logical. If FALSE, uses an R implementation. The latter
 #' is slow but useful for testing
+#' @param ... other arguments 
 #' @return matrix with 5 columns and one row for each gauge. The matrix columns
 #' are: 1. max stage; 2. zero crossing period; 3. stage range; 4. Time that abs(stage)
 #' exceeds stage_threshold_for_arrival_time; 5. The initial stage
@@ -361,7 +362,17 @@ gauge_statistics_simple<-function(gauge_times, flow_data,
               stage_threshold_for_arrival_time, as.integer(ngauges), 
               as.integer(ntimes), as.integer(nvar),
               output)
+    
+        # Interpret negative values in period and arrival time as NA
+        kk = which(output[,2] < 0)
+        if(length(kk) > 0) output[kk,2] = NA
+
+        kk = which(output[,4] < 0)
+        if(kength(kk) > 0) output[kk,4] = NA
+
     }
+
+    colnames(output) = c('maxstage', 'period', 'stage_range', 'arrival_time', 'init_stage')
 
     return(output)
 
