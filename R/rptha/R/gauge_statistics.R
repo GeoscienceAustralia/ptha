@@ -101,7 +101,7 @@ gauge_range_filtered<-function(data_t, data_s, filter_freq = 1/(2*60), interp_dt
 #' Zero-crossing-period of a gauge time-series
 #'
 #' This function computes both the up-crossing and down-crossing periods and
-#' returns their average
+#' returns their average.
 #'
 #' @param data_t vector of numeric times (usually in seconds)
 #' @param data_s vector of numeric stages corresponding to data_t (usually in metres)
@@ -133,9 +133,9 @@ gauge_zero_crossing_period <-function(data_t, data_s, interp_dt=NULL){
     sg_x = sign(x)
 
     # Get 'positive' zero crossings
-    up_cross = which(diff(sg_x) < 0)
+    up_cross = which(diff(sg_x) > 0)
     # Get 'negative' zero crossings
-    down_cross = which(diff(sg_x) > 0)
+    down_cross = which(diff(sg_x) < 0)
 
     lu = length(up_cross)
     ld = length(down_cross) 
@@ -242,3 +242,127 @@ gauge_energy_banding<-function(data_t, data_s, bin_divisors, interp_dt = NULL, e
     return(energy_band)
 }
 
+
+
+#' Simple gauge summary statistics
+#'
+#' This function computes gauge-summary statistics at one or more gauges,
+#' stored as a 3D array of time-series, with dimensions [number_gauges,
+#' number_time-steps, number_flow_variables]. It is implemented in fortran for
+#' speed. The main purpose is efficiently computing summary statistics for all
+#' gauges in the PTHA (because not all the function operations can be vectorized,
+#' looping over the gauges leads to too much overhead
+#' in pure R)
+#'
+#' @param gauge_times vector giving the times at which each flow-time-series
+#' is measured
+#' @param flow_data 3D array with size [number_of_gauges, 
+#' number_of_timesteps, number_of_flow_variables]. It is assumed that stage is
+#' stored where the 'third index is equal to 1'. 
+#' @param stage_threshold_for_arrival_time The arrival time is defined as
+#' the time at which the absolute stage exceeds this value.
+#' @param use_fortran logical. If FALSE, uses an R implementation. The latter
+#' is slow but useful for testing
+#' @return matrix with 5 columns and one row for each gauge. The matrix columns
+#' are: 1. max stage; 2. zero crossing period; 3. stage range; 4. Time that abs(stage)
+#' exceeds stage_threshold_for_arrival_time; 5. The initial stage
+#' @export
+#' @example
+#' t = seq(0,1000)
+#'
+#' # Store gauge time-series
+#' #
+#' 
+#' flow_array = array(runif(9*length(t)), dim=c(3, length(t), 3))
+#' 
+#' # Set the stage values in [,,1]. The other values will not effect the computation
+#' flow_array[1,,1] = sin(2*pi*(t-3)/30)
+#' flow_array[2,,1] = sin(2*pi*(t-3)/10)
+#' flow_array[3,,1] = sin(2*pi*t/3)
+#' 
+#' library(rptha)
+#' 
+#' output = gauge_statistics_simple(t, flow_array, stage_threshold_for_arrival_time = 7.0e-01)
+#' 
+#' #
+#' # Regression test -- we expect this result, although the period
+#' # computation has slight errors if use_fortran=FALSE (but within a few percent)
+#' #
+#' expected_output = structure(c(0.994521895368277, 0.951056516295184, 0.866025403784579,
+#'                               30, 10, 3, 1.98904379073655, 1.90211303259037, 1.73205080756909, 
+#'                               7, 0, 1, -0.587785252292473, -0.951056516295154, 0), .Dim = c(3L, 
+#'                               5L))
+#' 
+#' outputB = gauge_statistics_simple(t, flow_array, stage_threshold_for_arrival_time = 7.0e-01, use_fortran=FALSE)
+#' # Errors should be very small
+#' stopifnot(all(abs(output-expected_output) <= 1.0e-06*abs(expected_output)))
+#'
+#' # Use a weaker test for the R version for period, because it does not do interpolation
+#' # in the zero-crossing-period computation, so errors end up larger (but < 2%)
+#' stopifnot(all(abs(outputB[,-2]-expected_output[,-2]) <= 1.0e-06*abs(expected_output[,-2])))
+#' stopifnot(all(abs(outputB[,2]-expected_output[,2]) <= 2.0e-02*abs(expected_output[,2])))
+#' 
+#' 
+gauge_statistics_simple<-function(gauge_times, flow_data, 
+    stage_threshold_for_arrival_time, use_fortran=TRUE, ...){
+
+    # Store output variables here
+
+    if(!use_fortran){
+        output = matrix(NA, nrow=dim(flow_data)[1], ncol=5)
+
+        for(i in 1:dim(flow_data)[1]){
+
+            stages = flow_data[i,,1]
+            rst = range(stages)
+
+            # Peak stage
+            output[i,1] = rst[2]
+
+            # Reference period
+            # FIXME: This period is approximate in a number of ways -- consider
+            # revising
+            #        e.g. start only after the wave exceeds some threshold?
+            #             consider only the most significant wave?
+            output[i,2] = gauge_zero_crossing_period(gauge_times, stages)
+            # FIXME: Peak_to_trough -- note it might be better to have a
+            # 'wave-based' view
+            output[i,3] = diff(rst)
+
+            # Arrival time
+            suppressWarnings({kk = min(which(
+                abs(stages) > stage_threshold_for_arrival_time))})
+            if(is.finite(kk)){
+                output[i,4] = gauge_times[kk]
+            }
+
+            # Initial stage
+            output[i,5] = stages[1]
+
+        }
+
+
+    }else{
+
+        # Fortran version
+        dflow = dim(flow_data)
+        if(length(dflow) != 3) stop('flow_data must be a 3d array')
+        ngauges = dflow[1]
+        ntimes = dflow[2]
+        nvar = dflow[3]
+
+        output = matrix(-999.0, nrow=ngauges, ncol=5)
+
+        if(!is.double(gauge_times)) gauge_times = as.double(gauge_times)
+        if(!is.double(flow_data)) flow_data = as.double(flow_data)
+        if(!is.double(flow_data)) stage_threshold_for_arrival_time = as.double(stage_threshold_for_arrival_time)
+
+        .Call('gauge_statistics_c', gauge_times, flow_data, 
+              stage_threshold_for_arrival_time, as.integer(ngauges), 
+              as.integer(ntimes), as.integer(nvar),
+              output)
+    }
+
+    return(output)
+
+}

@@ -20,7 +20,7 @@ The zero crossing period of the gauge data
 }
 \description{
 This function computes both the up-crossing and down-crossing periods and
-returns their average
+returns their average.
 }
 \examples{
 x = seq(1,2000, by=2)
