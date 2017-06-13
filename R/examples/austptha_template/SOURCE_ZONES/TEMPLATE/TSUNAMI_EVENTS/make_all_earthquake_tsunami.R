@@ -636,7 +636,7 @@ if(make_file_only | (subset_only==FALSE)){
     #
 
     # Open the file for editing -- DO NOT DO THIS WITH MULTIPLE PROGRAMS AT ONCE
-    output_nc_file = ncvar_open(output_file_name, readunlim=FALSE, write=TRUE)
+    output_nc_file = nc_open(output_file_name, readunlim=FALSE, write=TRUE)
 
     # Put each variable, only in the contiguous part of my_events
     ncvar_put(output_nc_file, output_nc_file$var$max_stage, gauge_event_max_stage, 
