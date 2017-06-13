@@ -68,9 +68,9 @@ outputB = gauge_statistics_simple(t, flow_array, stage_threshold_for_arrival_tim
 stopifnot(all(abs(output-expected_output) <= 1.0e-06*abs(expected_output)))
 
 # Use a weaker test for the R version for period, because it does not do interpolation
-# in the zero-crossing-period computation, so errors end up larger (but < 2\%)
+# in the zero-crossing-period computation, so errors end up larger (but < 0.2\%)
 stopifnot(all(abs(outputB[,-2]-expected_output[,-2]) <= 1.0e-06*abs(expected_output[,-2])))
-stopifnot(all(abs(outputB[,2]-expected_output[,2]) <= 2.0e-02*abs(expected_output[,2])))
+stopifnot(all(abs(outputB[,2]-expected_output[,2]) <= 2.0e-03*abs(expected_output[,2])))
 
 
 }

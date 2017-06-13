@@ -84,7 +84,16 @@ module gauge_statistics_mod
             ! positive --> up crossing
             ! negative --> down crossing
             ! 0 --> no sign change
-            work(i) = sign(1.0_dp, x(i)) - sign(1.0_dp, x(i-1))
+            !work(i) = sign(1.0_dp, x(i)) - sign(1.0_dp, x(i-1))
+            if(x(i) > 0.0_dp .and. x(i-1) <= 0.0_dp) then
+                work(i) = 1.0_dp
+            else
+                if(x(i) < 0.0_dp .and. x(i-1) >= 0.0_dp) then
+                    work(i) = -1.0_dp
+                else
+                    work(i) = 0.0_dp
+                end if
+            end if
         end do
 
         found_first_up_crossing = .FALSE.

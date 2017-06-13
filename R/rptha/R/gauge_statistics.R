@@ -132,10 +132,11 @@ gauge_zero_crossing_period <-function(data_t, data_s, interp_dt=NULL){
 
     sg_x = sign(x)
 
+    n = length(sg_x)
     # Get 'positive' zero crossings
-    up_cross = which(diff(sg_x) > 0)
+    up_cross = which((diff(sg_x) > 0) & (sg_x[2:n] > 0))
     # Get 'negative' zero crossings
-    down_cross = which(diff(sg_x) < 0)
+    down_cross = which((diff(sg_x) < 0) & (sg_x[2:n] < 0))
 
     lu = length(up_cross)
     ld = length(down_cross) 
@@ -299,9 +300,9 @@ gauge_energy_banding<-function(data_t, data_s, bin_divisors, interp_dt = NULL, e
 #' stopifnot(all(abs(output-expected_output) <= 1.0e-06*abs(expected_output)))
 #'
 #' # Use a weaker test for the R version for period, because it does not do interpolation
-#' # in the zero-crossing-period computation, so errors end up larger (but < 2%)
+#' # in the zero-crossing-period computation, so errors end up larger (but < 0.2%)
 #' stopifnot(all(abs(outputB[,-2]-expected_output[,-2]) <= 1.0e-06*abs(expected_output[,-2])))
-#' stopifnot(all(abs(outputB[,2]-expected_output[,2]) <= 2.0e-02*abs(expected_output[,2])))
+#' stopifnot(all(abs(outputB[,2]-expected_output[,2]) <= 2.0e-03*abs(expected_output[,2])))
 #' 
 #' 
 gauge_statistics_simple<-function(gauge_times, flow_data, 

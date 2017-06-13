@@ -328,12 +328,13 @@ read_mux2_data_alternative<-function(mux2file, inds=NULL){
 #' Compute the zero-crossing-period of x
 #'
 #' This function computes both the up-crossing and down-crossing periods and
-#' returns their average
+#' returns their average. No interpolation is used. Consider \code{gauge_statistics_simple}
+#' for a faster alternative that also uses interpolation (so is more accurate).
 #'
 #' @param x numeric vector containing a timeseries with mean (approx) zero
 #' @param dt The time between consecutive samples of x
 #' @return The zero crossing period of x
-#' @export
+#' 
 #' @examples
 #' x = seq(1,2000, by=2)
 #' period = 30
@@ -344,11 +345,11 @@ read_mux2_data_alternative<-function(mux2file, inds=NULL){
 #'
 zero_crossing_period <-function(x, dt=1){
     sg_x = sign(x)
-
+    n = length(sg_x)
     # Get 'positive' zero crossings
-    up_cross = which(diff(sg_x) < 0)
+    up_cross = which((diff(sg_x) > 0) & (sg_x[2:n] > 0.0))
     # Get 'negative' zero crossings
-    down_cross = which(diff(sg_x) > 0)
+    down_cross = which((diff(sg_x) < 0) & (sg_x[2:n] < 0.0))
 
     lu = length(up_cross)
     ld = length(down_cross) 
