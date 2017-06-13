@@ -76,10 +76,11 @@ all_eq_events = get_all_earthquake_events(
     dMw=dMw, 
     source_zone_name = source_zone_name)
 
-# Add an annual rate variable that we can change later
-all_eq_events$rate_annual = rep(-1.0, length(all_eq_events[,1]))
-all_eq_events$rate_annual_upper_ci = rep(-1, length(all_eq_events[,1]))
-all_eq_events$rate_annual_lower_ci = rep(-1, length(all_eq_events[,1]))
+# Add an annual rate variable that we can change later, with
+# a value that is obviously double [so the netcdf data type is correctly inferred]
+all_eq_events$rate_annual = rep(-999.999, length(all_eq_events[,1]))
+all_eq_events$rate_annual_upper_ci = rep(-999.999, length(all_eq_events[,1]))
+all_eq_events$rate_annual_lower_ci = rep(-999.999, length(all_eq_events[,1]))
 
 
 # Make the plot
@@ -157,11 +158,12 @@ for(i in 1:length(all_eq_events[,1])){
 
     events_with_Mw = sffm_events_to_table(all_events, slip_significant_figures=4)
 
-    # Add additional variables we will need
+    # Add additional variables we will need. Use an obviously
+    # floating point number to get the netcdf output to be in double
     events_with_Mw$uniform_event_row = i
-    events_with_Mw$rate_annual = -1
-    events_with_Mw$rate_annual_lower_ci = -1
-    events_with_Mw$rate_annual_upper_ci = -1
+    events_with_Mw$rate_annual = -999.999
+    events_with_Mw$rate_annual_lower_ci = -999.999
+    events_with_Mw$rate_annual_upper_ci = -999.999
 
     stochastic_events_store[[i]] = events_with_Mw
     
