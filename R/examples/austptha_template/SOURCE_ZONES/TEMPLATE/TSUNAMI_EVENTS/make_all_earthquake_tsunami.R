@@ -65,7 +65,7 @@ if(any(grepl('-subset', command_arguments))){
     subset_only=TRUE
 
     command_ind = which(grepl('-subset', command_arguments))
-    stopifnot(length(command_ind == 1))
+    stopifnot(length(command_ind)== 1)
 
     # Subset will be followed by two integers, giving the 
     # index of 'this_subset', and the total number of subsets
@@ -574,8 +574,8 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     }else{
         # Stochastic slip
         ncvar_put(output_nc_file, event_Mw_v, all_eq_events$Mw)
-        ncvar_put(output_nc_file, event_target_lon_c_v, all_eq_events$target_lon)
-        ncvar_put(output_nc_file, event_target_lat_c_v, all_eq_events$target_lat)
+        ncvar_put(output_nc_file, event_target_lon_v, all_eq_events$target_lon)
+        ncvar_put(output_nc_file, event_target_lat_v, all_eq_events$target_lat)
         ncvar_put(output_nc_file, event_peak_slip_downdip_ind_v, all_eq_events$peak_slip_downdip_ind)
         ncvar_put(output_nc_file, event_peak_slip_alongstrike_ind_v, all_eq_events$peak_slip_alongstrike_ind)
         ncvar_put(output_nc_file, event_sourcename_v, all_eq_events$sourcename)
