@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=04:00:00
+#PBS -lmem=32GB
+#PBS -lncpus=16
+#PBS -l wd
+
+# Source key R modules -- not that you will need the right packages installed
+# as well (see comments in the script that is sourced)
+source ~/R_modules.sh
+Rscript make_all_earthquake_events.R
+
+# Uniform slip, all at once
+Rscript make_all_earthquake_tsunami.R
+
+# Stochastic slip, in batches
+Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
+Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 1 5
+Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 2 5
+Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 3 5
+Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 4 5
+Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 5 5
+

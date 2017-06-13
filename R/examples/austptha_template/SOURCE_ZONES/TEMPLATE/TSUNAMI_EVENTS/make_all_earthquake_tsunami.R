@@ -1,5 +1,10 @@
-library(rptha)
-library(parallel)
+# Record start time, so we can report how long the script takes
+time_start = Sys.time()
+print(paste0('Time is: ', time_start))
+
+# Key libraries
+suppressPackageStartupMessages(library(rptha))
+suppressPackageStartupMessages(library(parallel))
 source('sum_tsunami_unit_sources.R')
 
 #
@@ -41,6 +46,52 @@ if(length(command_arguments) > 0){
     }
 }
 
+
+# Do we only make the file (if -make_file_only was passed), or do we run the
+# computation (default)? 
+make_file_only = FALSE
+if(length(command_arguments) > 0){
+    if(any(grepl('-make_file_only', command_arguments))){
+        make_file_only=TRUE
+        print('Making output file with empty flow variables')
+    }
+}
+
+# Check whether we only run a subset of events (this happens if commandline
+# arguments of the form " --subset 4 10" where passed. Here '4' is this_subset,
+# and 10 is number_of_subsets.)
+subset_only=FALSE
+if(any(grepl('-subset', command_arguments))){
+    subset_only=TRUE
+
+    command_ind = which(grepl('-subset', command_arguments))
+    stopifnot(length(command_ind == 1))
+
+    # Subset will be followed by two integers, giving the 
+    # index of 'this_subset', and the total number of subsets
+    this_subset = as.numeric(command_arguments[command_ind+1])
+    number_of_subsets = as.numeric(command_arguments[command_ind+2])
+    stopifnot(this_subset <= number_of_subsets)
+
+    print(paste0('running subset ', this_subset, '/', number_of_subsets))
+
+    # Better check that the output file exists
+
+    sourcename_dot_nc = paste0(source_zone_name, '.nc')
+
+    # Output filename (same as created in
+    # write_all_souce_zone_tsunami_statistics_to_netcdf)
+    output_file_name = paste0(
+        #Name of earthquake_events_file, with the 'sourcename.nc' cut off
+        gsub(sourcename_dot_nc, '', earthquake_events_file),
+        # add on tsunami_sourcename.nc 
+        'tsunami_', sourcename_dot_nc)
+
+    if(!file.exists(output_file_name)){
+        stop(paste0('Could not find output file ', output_file_name))
+    }
+}
+
 #
 # End input
 #
@@ -51,6 +102,18 @@ if(length(command_arguments) > 0){
 # Read unit source statistics & uniform slip earthquake events
 unit_source_statistics = read_table_from_netcdf(unit_source_statistics_file)
 all_eq_events = read_table_from_netcdf(earthquake_events_file)
+
+
+# Potentially only look at a subset of events
+my_events = 1:length(all_eq_events[,1])
+if(subset_only){
+    # Update my_events and all_eq_events
+    my_events = splitIndices(length(all_eq_events[,1]), number_of_subsets)[[this_subset]]
+    all_eq_events = all_eq_events[my_events,]
+    gc()
+}
+# Ensure a contiguous chunk was selected
+stopifnot(all( range(diff(my_events)) == 1))
 
 # Read gauges
 gauge_locations = get_netcdf_gauge_locations(unit_source_statistics$tide_gauge_file[1])
@@ -119,58 +182,63 @@ parfun<-function(gcl){
         msl = msl,
         all_flow_variables=FALSE)
 }
-# Here we avoid use of mclapply, which seems to leave un-stopped worker nodes
-# on NCI
-cl = makeForkCluster(nnodes=mc_cores)
-modelled_flow_store = parLapply(cl=cl, X=gauge_chunks_list, fun=parfun)
-stopCluster(cl)
+
+if(!make_file_only){
+    # Here we avoid use of mclapply, which seems to leave un-stopped worker nodes
+    # on NCI
+    cl = makeForkCluster(nnodes=mc_cores)
+    modelled_flow_store = parLapply(cl=cl, X=gauge_chunks_list, fun=parfun)
+    stopCluster(cl)
+}
 
 #
 # Pack outputs
 #
 
+nul_r = -999.999 # A 'missing_data' flag which is definitely interpreted as real
 # Matrix for max stage, with as many rows as events, and as many columns as gauges.
-gauge_event_max_stage = matrix(-9999, nrow=nevents, ncol=ngauges)
+gauge_event_max_stage = matrix(nul_r, nrow=nevents, ncol=ngauges)
 # Period
-gauge_event_reference_period = matrix(-9999, nrow=nevents, ncol=ngauges)
+gauge_event_reference_period = matrix(nul_r, nrow=nevents, ncol=ngauges)
 # Peak-to-trough
-gauge_event_peak_to_trough = matrix(-9999, nrow=nevents, ncol=ngauges)
+gauge_event_peak_to_trough = matrix(nul_r, nrow=nevents, ncol=ngauges)
 # Arrival time
-gauge_event_arrival_time = matrix(-9999, nrow=nevents, ncol=ngauges)
+gauge_event_arrival_time = matrix(nul_r, nrow=nevents, ncol=ngauges)
 # Initial stage
-gauge_event_initial_stage = matrix(-9999, nrow=nevents, ncol=ngauges)
+gauge_event_initial_stage = matrix(nul_r, nrow=nevents, ncol=ngauges)
 
-# Pack the statistics into the output arrays
-for(i in 1:length(gauge_chunks_list)){
-    gcl = gauge_chunks_list[[i]]
+if(!make_file_only){
+    # Pack the statistics into the output arrays
+    for(i in 1:length(gauge_chunks_list)){
+        gcl = gauge_chunks_list[[i]]
 
-    # Vector with 1 at 'valid gauges', 0 elsewhere
-    valid_gauges = (
-        gauge_locations$lat[gcl] < lat_range[2] &
-        gauge_locations$lat[gcl] > lat_range[1] &
-        gauge_locations$elev[gcl] < msl)
+        # Vector with 1 at 'valid gauges', 0 elsewhere
+        valid_gauges = (
+            gauge_locations$lat[gcl] < lat_range[2] &
+            gauge_locations$lat[gcl] > lat_range[1] &
+            gauge_locations$elev[gcl] < msl)
 
-    valid_gauges_m = (c(NA, 1)[valid_gauges+1])
+        valid_gauges_m = (c(NA, 1)[valid_gauges+1])
 
-    # Set 'invalid gauges' values to zero
-    for(j in 1:nevents){
-        gauge_event_max_stage[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,1] * valid_gauges_m 
-        gauge_event_reference_period[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,2] * valid_gauges_m
-        gauge_event_peak_to_trough[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,3] * valid_gauges_m
-        gauge_event_arrival_time[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,4] * valid_gauges_m
-        gauge_event_initial_stage[j, gcl ] = 
-            modelled_flow_store[[i]][[j]][,5] * valid_gauges_m
+        # Set 'invalid gauges' values to zero
+        for(j in 1:nevents){
+            gauge_event_max_stage[j, gcl ] = 
+                modelled_flow_store[[i]][[j]][,1] * valid_gauges_m 
+            gauge_event_reference_period[j, gcl ] = 
+                modelled_flow_store[[i]][[j]][,2] * valid_gauges_m
+            gauge_event_peak_to_trough[j, gcl ] = 
+                modelled_flow_store[[i]][[j]][,3] * valid_gauges_m
+            gauge_event_arrival_time[j, gcl ] = 
+                modelled_flow_store[[i]][[j]][,4] * valid_gauges_m
+            gauge_event_initial_stage[j, gcl ] = 
+                modelled_flow_store[[i]][[j]][,5] * valid_gauges_m
+        }
     }
+
+    # Forcibly free some memory
+    rm(modelled_flow_store, valid_gauges, valid_gauges_m)
+    gc()
 }
-
-# Forcibly free some memory
-rm(modelled_flow_store, valid_gauges, valid_gauges_m)
-gc()
-
 ##############################################################################
 #
 # Write all the relevant information to netcdf
@@ -543,19 +611,60 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     return(invisible(output_file_name))
 }
 
-#
-# Write it out
-#
-write_all_source_zone_tsunami_statistics_to_netcdf(
-    source_zone_name,
-    all_eq_events,
-    earthquake_events_file,
-    unit_source_statistics,
-    unit_source_statistics_file,
-    gauge_locations,
-    gauge_event_max_stage,
-    gauge_event_reference_period,
-    gauge_event_peak_to_trough,
-    gauge_event_arrival_time,
-    gauge_event_initial_stage,
-    stage_threshold_for_arrival_time)
+
+if(make_file_only | (subset_only==FALSE)){
+    #
+    # Write it out
+    #
+    write_all_source_zone_tsunami_statistics_to_netcdf(
+        source_zone_name,
+        all_eq_events,
+        earthquake_events_file,
+        unit_source_statistics,
+        unit_source_statistics_file,
+        gauge_locations,
+        gauge_event_max_stage,
+        gauge_event_reference_period,
+        gauge_event_peak_to_trough,
+        gauge_event_arrival_time,
+        gauge_event_initial_stage,
+        stage_threshold_for_arrival_time)
+
+}else{
+    #
+    # Update variables in the already-created netcdf_file
+    #
+
+    # Open the file for editing -- DO NOT DO THIS WITH MULTIPLE PROGRAMS AT ONCE
+    output_nc_file = ncvar_open(output_file_name, readunlim=FALSE, write=TRUE)
+
+    # Put each variable, only in the contiguous part of my_events
+    ncvar_put(output_nc_file, output_nc_file$var$max_stage, gauge_event_max_stage, 
+              start=c(my_events[1], 1), count=c(length(my_events), -1))
+    gc()
+
+    ncvar_put(output_nc_file, output_nc_file$var$period, gauge_event_reference_period,
+              start=c(my_events[1], 1), count=c(length(my_events), -1))
+    gc()
+
+    ncvar_put(output_nc_file, output_nc_file$var$stage_range, gauge_event_peak_to_trough,
+              start=c(my_events[1], 1), count=c(length(my_events), -1))
+    gc()
+
+    ncvar_put(output_nc_file, output_nc_file$var$arrival_time, gauge_event_arrival_time,
+              start=c(my_events[1], 1), count=c(length(my_events), -1))
+    gc()
+
+    ncvar_put(output_nc_file, output_nc_file$var$initial_stage, gauge_event_initial_stage,
+              start=c(my_events[1], 1), count=c(length(my_events), -1))
+    gc()
+
+    nc_close(output_nc_file)
+}
+
+# Some useful finishing information
+time_end = Sys.time()
+print(paste0('Ending time: ', time_end))
+print(paste0('    nevents: ', length(my_events)))
+print(paste0('That_took: ', format(time_end - time_start, units='s')))
+print(gc())
