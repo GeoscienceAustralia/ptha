@@ -17,7 +17,18 @@ Rscript make_all_earthquake_tsunami.R
 # Stochastic slip, in batches
 Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
 
-nsplit=20 # Break into 20 batches to reduce memory. Best to keep nsplit low, while meeting memory requirements
+## Break into 'nsplit' batches. 
+#
+# nsplit=1 for nevents < 4500
+# nsplit=2 for 4500 <= nevents < (2*4500)
+# nsplit=3 for (2*4500) <= nevents < (3*4500)
+# ...
+#
+# The code works by counting the table_rows in the file with stochastic slip earthquake events,
+# then doing integer division by 4500 and adding 1
+#
+nsplit=$( expr $( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' ) / 4500 + 1 )
+
 for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset $i $nsplit ; done
 
 
