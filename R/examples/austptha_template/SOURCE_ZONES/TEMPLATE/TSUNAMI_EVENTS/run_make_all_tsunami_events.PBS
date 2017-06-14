@@ -16,9 +16,8 @@ Rscript make_all_earthquake_tsunami.R
 
 # Stochastic slip, in batches
 Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
-Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 1 5
-Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 2 5
-Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 3 5
-Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 4 5
-Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset 5 5
+
+nsplit=20 # Break into 20 batches to reduce memory. Best to keep nsplit low, while meeting memory requirements
+for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset $i $nsplit ; done
+
 

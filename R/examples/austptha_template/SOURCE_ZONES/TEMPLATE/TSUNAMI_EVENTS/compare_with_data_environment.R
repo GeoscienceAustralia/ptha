@@ -7,6 +7,7 @@ source('../TSUNAMI_UNIT_SOURCE/config.R', local=tsunami_model_config, chdir=TRUE
 source_name = basename(dirname(getwd()))
 #earthquake_events = read.csv(paste0('all_uniform_slip_earthquake_events_', source_name, '.csv'), stringsAsFactors=FALSE)
 earthquake_events = read_table_from_netcdf(paste0('all_uniform_slip_earthquake_events_', source_name, '.nc'))
+earthquake_events_stochastic = read_table_from_netcdf(paste0('all_stochastic_slip_earthquake_events_', source_name, '.nc'))
 #unit_source_statistics = read.csv(paste0('unit_source_statistics_', source_name, '.csv'), stringsAsFactors=FALSE)
 unit_source_statistics = read_table_from_netcdf(paste0('unit_source_statistics_', source_name, '.nc'))
 unit_source_geometry = readOGR(dsn='../EQ_SOURCE/unit_source_grid', layer=source_name)
@@ -40,12 +41,19 @@ gauge_times = get_netcdf_gauge_output_times(all_tide_files[1])
 #' data and the model.
 #' @param output_dir_tag character giving a string to insert in the output directory containing
 #' model/obs data. If NULL, we do not make those outputs
+#' @param use_stochastic_slip logical. If TRUE, generate stochastic slip events. Otherwise use
+#' uniform slip
 #'
 compare_event_with_gauge_time_series<-function(event_magnitude, event_hypocentre, 
-    event_start, gauge_ids, gauge_data, plot_durations, gauge_ylims, output_dir_tag=NULL){
+    event_start, gauge_ids, gauge_data, plot_durations, gauge_ylims, output_dir_tag=NULL,
+    use_stochastic_slip = FALSE){
   
     # Events with the right magnitude 
-    events_with_Mw = earthquake_events[which(abs(earthquake_events$Mw - event_magnitude) < 1.0e-03), ]
+    if(!use_stochastic_slip){
+        events_with_Mw = earthquake_events[which(abs(earthquake_events$Mw - event_magnitude) < 1.0e-03), ]
+    }else{
+        events_with_Mw = earthquake_events_stochastic[which(abs(earthquake_events_stochastic$Mw - event_magnitude) < 1.0e-03), ]
+    }
   
     # Find which events contain the hypocentre, by finding which unit source
     # contains it
@@ -76,12 +84,13 @@ compare_event_with_gauge_time_series<-function(event_magnitude, event_hypocentre
 #' rupture. All modelled stochastic earthquakes are 'near' this point (peak
 #' slip within half-a-width and half-a-length of the location, with width/length
 #' based on Strasser earthquake size scaling relations). 
-#' @param number_of_sffm How many stochastic scenarios to simulate
+#' @param number_of_sffm How many stochastic scenarios to simulate. Beware this is ignored
+#' if create_new = FALSE (default)
 #' @param zero_low_slip_cells_fraction number close to zero in [0,1). To reduce the
 #' number of unit-sources involved in events (and thus reduce the computational and memory
 #' requirements), we set slip to zero on cells with smallest slip, which contributing < this
 #' fraction of the total cumulative slip. Suggested values of e.g. 0.02 or 0.03. Set to zero
-#' to not simplify the slip at all.
+#' to not simplify the slip at all. Beware this is ignored if create_new = FALSE (default)
 #' @param event_start POSIX.lt object giving the event start time (UTC), made with e.g. 
 #' event_start=strptime('2009-06-13 15:22:31', format='%Y:%m:%d %H:%M:%S', tz='Etc/UTC')
 #' @param gauge_ids vector giving IDs of gauges at which to extract model
@@ -97,6 +106,8 @@ compare_event_with_gauge_time_series<-function(event_magnitude, event_hypocentre
 #' data and the model.
 #' @param output_dir_tag character giving a string to insert in the output directory containing
 #' model/obs data. If NULL, we do not make those outputs
+#' @param create_new logical. If TRUE, then make new random events. Otherwise, selected events
+#' from the existing earthquake_events_stochastic data.frame
 #'
 compare_stochastic_slip_event_with_gauge_time_series<-function(
     event_magnitude, 
@@ -108,20 +119,30 @@ compare_stochastic_slip_event_with_gauge_time_series<-function(
     gauge_data, 
     plot_durations, 
     gauge_ylims,
-    output_dir_tag=NULL){
+    output_dir_tag=NULL,
+    create_new = FALSE){
 
-    all_events = sffm_make_events_on_discretized_source(
-        unit_source_statistics,    
-        target_location = event_hypocentre,
-        target_event_mw = event_magnitude,
-        num_events = number_of_sffm,
-        zero_low_slip_cells_fraction=zero_low_slip_cells_fraction,
-        sourcename = source_name)
+    if(create_new){
+        # Make new events
+        all_events = sffm_make_events_on_discretized_source(
+            unit_source_statistics,    
+            target_location = event_hypocentre,
+            target_event_mw = event_magnitude,
+            num_events = number_of_sffm,
+            zero_low_slip_cells_fraction=zero_low_slip_cells_fraction,
+            sourcename = source_name)
 
-    events_with_Mw = sffm_events_to_table(all_events, slip_significant_figures=4)
+        events_with_Mw = sffm_events_to_table(all_events, slip_significant_figures=4)
 
-    plot_events_vs_gauges(events_with_Mw, event_start, gauge_ids, gauge_data, 
-        plot_durations, gauge_ylims, output_dir_tag)
+        plot_events_vs_gauges(events_with_Mw, event_start, gauge_ids, gauge_data, 
+            plot_durations, gauge_ylims, output_dir_tag)
+    }else{
+        # Get events from existing table
+        compare_event_with_gauge_time_series(event_magnitude, event_hypocentre, 
+            event_start, gauge_ids, gauge_data, plot_durations, gauge_ylims, 
+            output_dir_tag=output_dir_tag,
+            use_stochastic_slip = TRUE)
+    }
 
 }
 
