@@ -8,13 +8,16 @@
 
 # Source key R modules -- not that you will need the right packages installed
 # as well (see comments in the script that is sourced)
-source ~/R_modules.sh
+# NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
+source R_modules.sh
+
+# Make the earthquake events
 Rscript make_all_earthquake_events.R
 
-# Uniform slip, all at once
+# Make the uniform slip tsunami, all at once
 Rscript make_all_earthquake_tsunami.R
 
-# Stochastic slip, in batches
+# Make the stochastic slip tsunami, in batches
 Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
 
 ## Break into 'nsplit' batches. 
@@ -29,6 +32,7 @@ Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
 #
 nsplit=$( expr $( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' ) / 4500 + 1 )
 
+# This loop runs the $nsplit jobs
 for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset $i $nsplit ; done
 
 

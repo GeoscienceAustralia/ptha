@@ -1,3 +1,5 @@
+# Code to load R modules ON NCI ONLY
+
 export R_MAKEVARS_USER='~/.R/Makeconf'
 export LD_LIBRARY_PATH=/short/w85/gxd547/PTHA_Aust/SOURCE/geos/lib:/short/w85/gxd547/PTHA_Aust/SOURCE/proj4/proj.4.9.1/proj-4.9.1/build/lib:$LD_LIBRARY_PATH
 export PATH=/short/w85/gxd547/PTHA_Aust/SOURCE/geos/bin:/short/w85/gxd547/PTHA_Aust/SOURCE/proj4/proj.4.9.1/proj-4.9.1/build/bin:$PATH
