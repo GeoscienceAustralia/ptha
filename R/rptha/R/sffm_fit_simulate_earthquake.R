@@ -879,6 +879,7 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre){
 #' re-sampled to a higher resolution [sub_sample_size cells in the x/y directions
 #' for each original cell] before generating the sffm, and then re-averaged before
 #' returning the output.
+#' @param mu Shear modulus (Pascals)
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are
@@ -925,10 +926,12 @@ sffm_make_events_on_discretized_source<-function(
     vary_peak_slip_location=TRUE,
     zero_low_slip_cells_fraction=0.0,
     sourcename="",
-    sffm_sub_sample_size = c(1,1)){
+    sffm_sub_sample_size = c(1,1),
+    mu=3e+10){
 
     nx = max(discretized_source_statistics$alongstrike_number)
     ny = max(discretized_source_statistics$downdip_number)
+    mu = mu
 
     # Get 'typical' rupture dimensions, and allow the peak slip location
     # to be within L/2, W/2 of the CMT location
@@ -1018,9 +1021,8 @@ sffm_make_events_on_discretized_source<-function(
         template_slip_matrix = dx * 0
         template_slip_matrix[peak_slip_row, peak_slip_col] = 1
         slip_matrix = dx * 0
-        # Simulate on sub-sampled grid -- e.g. with 50x50km unit sources,
-        # 5x5 sub-sample implies events with 10km cells -- similar to many
-        # finite fault inversions.
+
+        # Simulate (possibly on sub-sampled grid) 
         # Note we only sample on the 'non-zero slip area', i.e. sW:eW, sL:eL
         slip_matrix[sW:eW, sL:eL] = sffm_simulate(
             numerical_corner_wavenumbers, 
@@ -1029,14 +1031,14 @@ sffm_make_events_on_discretized_source<-function(
 
         # There will probably be many small but nonzero slip values
         # Set some to zero, so for efficiency later
-        threshold_level = zero_low_slip_cells_fraction # Get the main fraction of the cumulative slip
+        threshold_level = zero_low_slip_cells_fraction 
         slip_sorted = sort(slip_matrix, decreasing=FALSE)
         cumulative_slip_sorted = cumsum(slip_sorted)
         if(threshold_level == 0){
             slip_threshold = 0
         }else{
             slip_threshold_ind = max(
-                which(cumulative_slip_sorted < threshold_level*max(cumulative_slip_sorted)))
+                which(cumulative_slip_sorted < (threshold_level*max(cumulative_slip_sorted))))
             if(is.finite(slip_threshold_ind)){
                 slip_threshold = slip_sorted[slip_threshold_ind]
             }else{
@@ -1047,7 +1049,7 @@ sffm_make_events_on_discretized_source<-function(
 
         # Ensure M0 is correct
         # We need slip * dx * dy * mu = M0
-        mu = 3e+10
+        #mu = 3e+10 # Now an input argument
         initial_moment = sum(slip_matrix * dx * dy * 1e+06 * mu)
         slip_matrix = slip_matrix/initial_moment * desired_M0
         stopifnot(abs(sum(slip_matrix * dx * dy * 1e+06 * mu) - desired_M0) < 

@@ -33,7 +33,8 @@ gauge_similarity_time_domain<-function(data1_t, data1_s, data2_t, data2_s, inter
         return(Em)
     }
 
-    best_lag = optimize(f, interval=c(-60, 60)*allowed_lag_minutes)
+    sec_in_min = 60
+    best_lag = optimize(f, interval=c(-1, 1)*sec_in_min*allowed_lag_minutes)
 
     if(!detailed){
         return(best_lag$objective)
