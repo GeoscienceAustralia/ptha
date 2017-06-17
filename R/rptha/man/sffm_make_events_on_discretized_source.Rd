@@ -7,7 +7,7 @@
 sffm_make_events_on_discretized_source(discretized_source_statistics,
   target_location, target_event_mw, num_events = 1,
   vary_peak_slip_location = TRUE, zero_low_slip_cells_fraction = 0,
-  sourcename = "", sffm_sub_sample_size = c(1, 1))
+  sourcename = "", sffm_sub_sample_size = c(1, 1), mu = 3e+10)
 }
 \arguments{
 \item{discretized_source_statistics}{data.frame returned from e.g. 
@@ -40,6 +40,8 @@ involved in the rupture, with little distortion of the event.}
 re-sampled to a higher resolution [sub_sample_size cells in the x/y directions
 for each original cell] before generating the sffm, and then re-averaged before
 returning the output.}
+
+\item{mu}{Shear modulus (Pascals)}
 }
 \value{
 A list with length = num_events. Each element of the list is a list
