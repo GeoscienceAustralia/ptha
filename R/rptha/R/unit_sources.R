@@ -67,27 +67,28 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' Make discretized_source from subduction interface contours
 #'
 #' Given a shapefile with contour lines in lon/lat coordinates defining the
-#' subduction interface (with an attribute defining their depth), partition into
+#' source-zone subduction interface depth, partition the source-zone into
 #' unit sources with chosen approximate length/width. Information on all the
 #' unit sources is held in a 'discretized_source' list. \cr 
 #' Optionally, the user can provide a line shapefile defining the along-strike
-#' boundaries of the unit sources. Otherwise, they can be automatically created
-#' in a number of ways. In any case care, may be required to ensure good quality
-#' unit-source boundaries are produced. A good strategy is to make them automatically as
+#' boundaries of the unit sources. Otherwise, they are automatically created.
+#' In any case care may be required to ensure good quality unit-source
+#' boundaries are created. A good strategy is to make them automatically as
 #' a first iteration, then save the corresponding down-dip lines as a line shapefile.
-#' This can be achieved by passing the mid_lines_with_cutpoints output of the current routine to 
-#' \code{downdip_lines_to_SpatialLinesDataFrame}. Then you may optionally edit
-#' the latter shapefile in GIS, and subsequently pass it to this routine directly.
+#' This can be achieved by passing the mid_lines_with_cutpoints output of the
+#' current routine to  \code{downdip_lines_to_SpatialLinesDataFrame}. Then you
+#' may optionally edit the latter shapefile in GIS, and subsequently pass it
+#' to this routine directly.
 #' 
-#' @param source_shapefile character name of line shapefile defining the
+#' @param source_shapefile character filename of the line shapefile defining the
 #' subduction interface contours. It should have an attribute giving the depth.
-#' Update: This argument can alternatively be a spatialLinesDataFrame obtained
-#' by reading the file. 
+#' Alternatively, source_shapefile can be a \code{SpatialLinesDataFrame} obtained
+#' by reading the file with \code{rgdal::readOGR}. 
 #' @param desired_subfault_length numeric desired length of subfaults (km)
 #' @param desired_subfault_width numeric desired width of subfaults (km)
 #' @param make_plot logical Make a plot?
 #' @param contour_depth_attribute character The name of the column in the
-#' attribute table giving the contour depth
+#' source_shapefile attribute table giving the contour depth
 #' @param contour_depth_in_km logical Are contour depths given in km? (If False,
 #' assume 'm')
 #' @param extend_line_fraction To ensure that contour lines intersect downdip
@@ -95,16 +96,23 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' end-to-end source length. Not required if 'improved_downdip_lines=TRUE' 
 #' @param orthogonal_near_trench move unit source points along the trench to enhance
 #' orthogonality there. Can reduce numerical artefacts at the trench. 
-#' Not required if 'improved_downdip_lines=TRUE' or if downdip_lines is provided 
-#' @param improved_downdip_lines If TRUE, use an iterative algorithm for computing the downdip
-#' lines (which define unit source boundaries). This should lead to unit-sources
-#' that are more orthogonal. The iterative algorithm can take a few minutes if
-#' there are hundreds of unit-sources in each along-trench direction. 
+#' Not used if 'improved_downdip_lines=TRUE' or if downdip_lines is provided (we
+#' encourage the latter approaches)
+#' @param improved_downdip_lines If TRUE, use an iterative algorithm for
+#' computing the downdip lines (which define unit source boundaries). This
+#' should lead to unit-sources that are more orthogonal, which is normally a 'good thing'. 
+#' The iterative algorithm can take a few minutes if there are hundreds of unit-sources in
+#' each along-trench direction. In general we do not suggest setting this to
+#' FALSE (except for compatibility with early versions of the code).
 #' @param downdip_lines Either NULL, or the name of a Line Shapefile, or a 
 #' SpatialLinesDataFrame derived by reading the latter. It should contain lines
 #' which cross the source contours in a down-dip direction, with a single attribute 
 #' giving the line order in the along strike direction. If not NULL, then these
-#' lines define the along-strike boundaries of the unit-sources.  
+#' lines define the along-strike boundaries of the unit-sources. If NULL and 
+#' 'improved_downdip_lines=TRUE', then the code uses
+#' \code{create_downdip_lines_on_source_contours_improved} to auto-generate downdip
+#' lines. The latter routine can be called separately to make downdip
+#' lines, which can be manually edited before passing to this function. 
 #' @return A list containing: depth_contours The original source contours;
 #' unit_source_grid A 3 dimensional array descrbing the unit source vertices;
 #' discretized_source_dim A vector of length 2 with number-of-sources-down-dip,
