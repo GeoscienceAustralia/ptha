@@ -196,18 +196,30 @@ if(!make_file_only){
 #
 
 nul_r = -999.999 # A 'missing_data' flag which is definitely interpreted as real
-# Matrix for max stage, with as many rows as events, and as many columns as gauges.
-gauge_event_max_stage = matrix(nul_r, nrow=nevents, ncol=ngauges)
-# Period
-gauge_event_reference_period = matrix(nul_r, nrow=nevents, ncol=ngauges)
-# Peak-to-trough
-gauge_event_peak_to_trough = matrix(nul_r, nrow=nevents, ncol=ngauges)
-# Arrival time
-gauge_event_arrival_time = matrix(nul_r, nrow=nevents, ncol=ngauges)
-# Initial stage
-gauge_event_initial_stage = matrix(nul_r, nrow=nevents, ncol=ngauges)
 
-if(!make_file_only){
+# Matrix for max stage, with as many rows as events, and as many columns as gauges.
+# Even if (make_file_only==TRUE), we use this to create the netcdf output
+gauge_event_max_stage = matrix(nul_r, nrow=nevents, ncol=ngauges)
+
+if(make_file_only){
+
+    # Dummy values to save memory
+    gauge_event_reference_period = NULL
+    gauge_event_peak_to_trough = NULL
+    gauge_event_arrival_time = NULL
+    gauge_event_initial_stage = NULL
+
+}else{
+
+    # Period
+    gauge_event_reference_period = matrix(nul_r, nrow=nevents, ncol=ngauges)
+    # Peak-to-trough
+    gauge_event_peak_to_trough = matrix(nul_r, nrow=nevents, ncol=ngauges)
+    # Arrival time
+    gauge_event_arrival_time = matrix(nul_r, nrow=nevents, ncol=ngauges)
+    # Initial stage
+    gauge_event_initial_stage = matrix(nul_r, nrow=nevents, ncol=ngauges)
+
     # Pack the statistics into the output arrays
     for(i in 1:length(gauge_chunks_list)){
         gcl = gauge_chunks_list[[i]]
@@ -543,16 +555,31 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     #
     # Add gauge summary statistics
     #
-    ncvar_put(output_nc_file, gauge_event_max_stage_v, gauge_event_max_stage)
-    gc()
-    ncvar_put(output_nc_file, gauge_event_reference_period_v, gauge_event_reference_period)
-    gc()
-    ncvar_put(output_nc_file, gauge_event_peak_to_trough_v, gauge_event_peak_to_trough)
-    gc()
-    ncvar_put(output_nc_file, gauge_event_arrival_time_v, gauge_event_arrival_time)
-    gc()
-    ncvar_put(output_nc_file, gauge_event_initial_stage_v, gauge_event_initial_stage)
-    gc()
+    if(make_file_only){
+        # Use gauge_event_max_stage to represent all output statistics
+        ncvar_put(output_nc_file, gauge_event_max_stage_v, gauge_event_max_stage)
+        gc()
+        ncvar_put(output_nc_file, gauge_event_reference_period_v, gauge_event_max_stage)
+        gc()
+        ncvar_put(output_nc_file, gauge_event_peak_to_trough_v, gauge_event_max_stage)
+        gc()
+        ncvar_put(output_nc_file, gauge_event_arrival_time_v, gauge_event_max_stage)
+        gc()
+        ncvar_put(output_nc_file, gauge_event_initial_stage_v, gauge_event_max_stage)
+        gc()
+
+    }else{
+        ncvar_put(output_nc_file, gauge_event_max_stage_v, gauge_event_max_stage)
+        gc()
+        ncvar_put(output_nc_file, gauge_event_reference_period_v, gauge_event_reference_period)
+        gc()
+        ncvar_put(output_nc_file, gauge_event_peak_to_trough_v, gauge_event_peak_to_trough)
+        gc()
+        ncvar_put(output_nc_file, gauge_event_arrival_time_v, gauge_event_arrival_time)
+        gc()
+        ncvar_put(output_nc_file, gauge_event_initial_stage_v, gauge_event_initial_stage)
+        gc()
+    }
    
     #
     # Add event summary statistics 
