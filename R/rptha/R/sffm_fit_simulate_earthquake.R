@@ -880,6 +880,8 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre){
 #' for each original cell] before generating the sffm, and then re-averaged before
 #' returning the output.
 #' @param mu Shear modulus (Pascals)
+#' @param return_slip_raster logical. If TRUE, include the slip as a raster object in
+#' the output list. If FALSE, set the latter to NULL on output.
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are
@@ -927,11 +929,11 @@ sffm_make_events_on_discretized_source<-function(
     zero_low_slip_cells_fraction=0.0,
     sourcename="",
     sffm_sub_sample_size = c(1,1),
-    mu=3e+10){
+    mu=3e+10,
+    return_slip_raster=TRUE){
 
     nx = max(discretized_source_statistics$alongstrike_number)
     ny = max(discretized_source_statistics$downdip_number)
-    mu = mu
 
     # Get 'typical' rupture dimensions, and allow the peak slip location
     # to be within L/2, W/2 of the CMT location
@@ -1029,6 +1031,8 @@ sffm_make_events_on_discretized_source<-function(
             template_slip_matrix[sW:eW, sL:eL, drop=FALSE], 
             sub_sample_size=sffm_sub_sample_size)
 
+        rm(template_slip_matrix)
+
         # There will probably be many small but nonzero slip values
         # Set some to zero, so for efficiency later
         threshold_level = zero_low_slip_cells_fraction 
@@ -1046,6 +1050,7 @@ sffm_make_events_on_discretized_source<-function(
             }
         }
         slip_matrix = slip_matrix * (slip_matrix > slip_threshold)
+        rm(slip_sorted, cumulative_slip_sorted)
 
         # Ensure M0 is correct
         # We need slip * dx * dy * mu = M0
@@ -1055,9 +1060,13 @@ sffm_make_events_on_discretized_source<-function(
         stopifnot(abs(sum(slip_matrix * dx * dy * 1e+06 * mu) - desired_M0) < 
             (1.0e-06 * desired_M0))
 
-        # Make a raster for nice output plots
-        slip_raster = raster(slip_matrix, xmn=0, xmx=nx*mean_dx, ymx=0, 
-            ymn=-ny*mean_dy)
+        if(return_slip_raster){
+            # Make a raster for nice output plots
+            slip_raster = raster(slip_matrix, xmn=0, xmx=nx*mean_dx, ymx=0, 
+                ymn=-ny*mean_dy)
+        }else{
+            slip_raster = NULL
+        }
 
         output_list = list(
             slip_matrix = slip_matrix, 
@@ -1065,9 +1074,14 @@ sffm_make_events_on_discretized_source<-function(
             initial_moment = initial_moment,
             peak_slip_ind = c(peak_slip_row, peak_slip_col),
             numerical_corner_wavenumbers = numerical_corner_wavenumbers,
+            physical_corner_wavenumbers = physical_corner_wavenumbers,
             target_event_mw = target_event_mw,
             target_location = target_location,
             sourcename = sourcename)
+
+
+        # Garbage-collect now-and-again
+        if( j%%50 == 0 ) gc()
 
         return(output_list)
     }
@@ -1133,6 +1147,8 @@ sffm_events_to_table<-function(all_sffm_events, slip_significant_figures=NULL){
         target_lat = unlist(lapply(all_sffm_events, f<-function(x) x$target_location[2])),
         peak_slip_downdip_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[1])),
         peak_slip_alongstrike_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[2])),
+        physical_corner_wavenumber_x= unlist(lapply(all_sffm_events, f<-function(x) x$physical_corner_wavenumbers[1])),
+        physical_corner_wavenumber_y= unlist(lapply(all_sffm_events, f<-function(x) x$physical_corner_wavenumbers[2])),
         sourcename = unlist(lapply(all_sffm_events, f<-function(x) x$sourcename)),
         stringsAsFactors=FALSE)
 

@@ -30,7 +30,8 @@ Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
 # The code works by counting the table_rows in the file with stochastic slip earthquake events,
 # then doing integer division by 4500 and adding 1
 #
-nsplit=$( expr $( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' ) / 4500 + 1 )
+nevents=$( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
+nsplit=$( expr $nevents / 4500 + 1 )
 
 # This loop runs the $nsplit jobs
 for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset $i $nsplit ; done
