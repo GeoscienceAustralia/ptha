@@ -21,13 +21,13 @@ matrix with x,y in the new coordinate system (units same as r units)
 }
 \description{
 Given lon-lat coordinates for a sphere, and an origin (also lon-lat),
-compute the coordinates in a 'local' cartesian 2D coordinate system (x,y):
-dlat = lat - origin_latitude
-dlon = lon - origin_longitude
-x --> r*dlon*cos(origin_latitude)
-y --> r*dlat
-This will only have good accuracy for small areas near to the origin (and
-not too close to the poles)
+compute the coordinates in a 'local' cartesian 2D coordinate system (x,y):\cr
+dlat = (lat - origin_latitude)*degrees_to_radians \cr
+dlon = (lon - origin_longitude)*degrees_to_radians \cr
+x --> r*dlon*cos(origin_latitude * degrees_to_radians) \cr
+y --> r*dlat \cr
+This will only have good accuracy for small areas, near to the origin, and
+not too close to the poles.
 }
 \examples{
 # Make some random coordinates near to (20, -19)

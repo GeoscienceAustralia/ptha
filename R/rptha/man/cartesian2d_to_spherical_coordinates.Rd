@@ -20,6 +20,8 @@ in m as default)}
 matrix with lon/lat of coords_xy
 }
 \description{
-This will only have good accuracy for small areas near to the origin_lonlat
-(and not too close to the poles)
+Suppose coords_xy are 'local' cartesian coordinates on a sphere, 
+defined by a plane tangent to the sphere with origin at a given lon/lat
+location (see \code{?spherical_to_cartesian2d_coordiantes} for details). 
+Then this routine converts coords_xy to lon/lat coordinates.
 }

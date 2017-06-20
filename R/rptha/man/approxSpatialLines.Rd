@@ -2,15 +2,16 @@
 % Please edit documentation in R/geometric_util.R
 \name{approxSpatialLines}
 \alias{approxSpatialLines}
-\title{Return a set of points with spacing='spacing' along a spatialLines object SL}
+\title{Return a set of points with chosen spacing along a SpatialLines object}
 \usage{
 approxSpatialLines(SL, spacing = NULL, n = NULL, longlat = FALSE,
   verbose = FALSE)
 }
 \arguments{
-\item{SL}{a SpatialLines object}
+\item{SL}{a SpatialLines object, along which we desire evenly spaced points.}
 
-\item{spacing}{numeric. An approximate spacing between points}
+\item{spacing}{numeric. An approximate spacing between points. Alternatively,
+the user may provide 'n' below.}
 
 \item{n}{numeric. The number of points in output (if spacing = NULL)}
 
@@ -20,14 +21,14 @@ approxSpatialLines(SL, spacing = NULL, n = NULL, longlat = FALSE,
 }
 \value{
 SpatialPointsDataFrame along SL, with data identifying the
-  corresponding line index in SL
+corresponding line index in SL
 }
 \description{
 The spacing is calculated with linear interpolation (no great circles), so it
-is assumed that the points defining lines in SL are close enough together
-that 'great circle' and euclidean interpolation are practically identical.
-However distances are computed assuming longlat (and spherical earth) if
-longlat = TRUE.
+is assumed that the points defining lines in the SpatialLines object SL are
+close enough together that 'great circle' and 'euclidean' interpolation 
+are practically identical. However, distances are computed assuming longlat 
+(and spherical earth) if 'longlat = TRUE'.
 }
 \details{
 The units of spacing depend on the projection of SL, and the value of
