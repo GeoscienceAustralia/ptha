@@ -384,13 +384,13 @@ lonlat2utm<-function(lonlat){
 #' Convert from spherical coordinates to a local 2D cartesian coordinate system
 #'
 #' Given lon-lat coordinates for a sphere, and an origin (also lon-lat),
-#' compute the coordinates in a 'local' cartesian 2D coordinate system (x,y):
-#' dlat = lat - origin_latitude
-#' dlon = lon - origin_longitude
-#' x --> r*dlon*cos(origin_latitude)
-#' y --> r*dlat
-#' This will only have good accuracy for small areas near to the origin (and
-#' not too close to the poles)
+#' compute the coordinates in a 'local' cartesian 2D coordinate system (x,y):\cr
+#' dlat = (lat - origin_latitude)*degrees_to_radians \cr
+#' dlon = (lon - origin_longitude)*degrees_to_radians \cr
+#' x --> r*dlon*cos(origin_latitude * degrees_to_radians) \cr
+#' y --> r*dlat \cr
+#' This will only have good accuracy for small areas, near to the origin, and
+#' not too close to the poles.
 #'
 #' @param coords_lonlat matrix with 2 columns (lon/lat) in degrees
 #' @param origin_lonlat vector of length 2 (or matrix with 2 columns and same number of rows as coords_lonlat) 
@@ -445,8 +445,10 @@ spherical_to_cartesian2d_coordinates<-function(
 
 #' Inverse of spherical_to_cartesian2d_coordinates
 #'
-#' This will only have good accuracy for small areas near to the origin_lonlat
-#' (and not too close to the poles)
+#' Suppose coords_xy are 'local' cartesian coordinates on a sphere, 
+#' defined by a plane tangent to the sphere with origin at a given lon/lat
+#' location (see \code{?spherical_to_cartesian2d_coordiantes} for details). 
+#' Then this routine converts coords_xy to lon/lat coordinates.
 #'
 #' @param coords_xy matrix with 2 columns containing x,y coordinates in the
 #' local coordinate system
@@ -575,26 +577,27 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
     return(mean_angle)
 }
 
-#' Return a set of points with spacing='spacing' along a spatialLines object SL
+#' Return a set of points with chosen spacing along a SpatialLines object
 #'
 #' The spacing is calculated with linear interpolation (no great circles), so it
-#' is assumed that the points defining lines in SL are close enough together
-#' that 'great circle' and euclidean interpolation are practically identical.
-#' However distances are computed assuming longlat (and spherical earth) if
-#' longlat = TRUE.
+#' is assumed that the points defining lines in the SpatialLines object SL are
+#' close enough together that 'great circle' and 'euclidean' interpolation 
+#' are practically identical. However, distances are computed assuming longlat 
+#' (and spherical earth) if 'longlat = TRUE'.
 #'
 #' The units of spacing depend on the projection of SL, and the value of
 #' longlat.  If longlat=FALSE, spacing is in units of SL's coordinates (e.g.
 #' metres for UTM projections, degrees for longlat projections).  If
 #' longlat=TRUE, SL is in longlat degrees, and spacing is in kilometres
 #'
-#' @param SL a SpatialLines object
-#' @param spacing numeric. An approximate spacing between points
+#' @param SL a SpatialLines object, along which we desire evenly spaced points.
+#' @param spacing numeric. An approximate spacing between points. Alternatively,
+#' the user may provide 'n' below.
 #' @param n numeric. The number of points in output (if spacing = NULL)
 #' @param longlat logical. Is data longlat?
 #' @param verbose logical. Print progress information
 #' @return SpatialPointsDataFrame along SL, with data identifying the
-#'   corresponding line index in SL
+#' corresponding line index in SL
 #'
 #' @export
 approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE, 
