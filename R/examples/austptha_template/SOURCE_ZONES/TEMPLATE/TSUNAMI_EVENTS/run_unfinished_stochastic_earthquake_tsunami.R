@@ -1,36 +1,38 @@
 #
-# qsub additional stochastic_tsunami runs if they did not all finish 
+# Script to 'qsub' additional stochastic_tsunami runs if they did not all finish.
 #
-# This is run after run_make_all_tsunami_events.sh, in case that did not finish
+# It will probably only work on NCI [or systems with similar setup + using PBS
+# for job submission].
+#
+# This script should be run after run_make_all_tsunami_events.sh. If the latter
+# script did finish, then this script will not do anything.
+#
+# For each 'batch' of events we tried to treat earlier, we check 'max_stage'
+# in the netcdf file to see if the batch has missing data. If it does, we rerun
+# the batch (on its own PBS job), and save as an RDS file [to avoid the possibility
+# of parallel writes if running more than one job, which can cause netcdf to fail].
+#
+# Once all the above jobs have finished, we'll need to run another script to insert 
+# their data into the netcdf file
+
+##############################################################################
+
+#
+# INPUTS: THESE MUST BE CONSISTENT WITH OTHER SCRIPTS FOR EVERYTHING TO WORK
+# DO NOT CHANGE WITHOUT UNDERSTANDING THOSE LINKAGES [commented below]
 #
 
-library(ncdf4)
+# This number was used to determine the number of batches in
+# run_make_all_tsunami_events.PBS (computation of nsplit)
+batch_chunk_size = 4500 
 
-source_zone = basename(dirname(getwd()))
-
-# Open (potentially incomplete) stochastic slip earthquake events file
-nc_file = paste0('all_stochastic_slip_earthquake_events_tsunami_', source_zone, '.nc')
-fid = nc_open(nc_file, readunlim=FALSE)
-
-# Number of events
-nevents = fid$var$event_index_string$varsize[2]
-
-# How many batches did we originally split into -- note the '4500' must match the 
-# run_make_all_tsunami_events.sh script
-nbatch = floor(nevents/4500 + 1)
-
-batch_inds = parallel::splitIndices(nevents, nbatch)
-
-# Find those batches that we missed [i.e. the job was killed before they finished ]
-missed = c()
-for(i in 1:length(batch_inds)){
-    # Get any stage series in the i'th batch -- here just take the first one in
-    # batch_inds
-    stg = ncvar_get(fid, 'max_stage', start=c(batch_inds[[i]][1],1), count=c(1,1))
-    # Recall the missing data value was -999.999
-    if(stg < -999| is.na(stg)) missed = c(missed, i)
-}
-
+# This number is greater than the number used as a missing data value in
+# make_all_earthquake_tsunami.R
+# See nul_r = -999.999 
+# Note -- to identify missing data, we check that "max_stage < missing_data_less_than".
+# Do not try an exact check - because the netcdf data is stored as float, and
+# will not be able to exactly represent -999.999
+missing_data_less_than = -999.0 
 
 #
 # Template PBS script text -- note REPLACEWITHMID in final line, which will be auto-replaced
@@ -54,6 +56,40 @@ nsplit=$( expr $nevents / 4500 + 1 )
 
 Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset REPLACEWITHMYID $nsplit --save_as_RDS
 "
+
+#
+# END INPUTS [do not change them without understanding cross-script linkages!]
+#
+
+#############################################################################
+
+library(ncdf4)
+
+source_zone = basename(dirname(getwd()))
+
+# Open (potentially incomplete) stochastic slip earthquake tsunami events file
+nc_file = paste0('all_stochastic_slip_earthquake_events_tsunami_', source_zone, '.nc')
+fid = nc_open(nc_file, readunlim=FALSE)
+
+# Number of events
+nevents = fid$var$event_index_string$varsize[2]
+
+# How many batches did we originally split into -- note the 'batch_chunk_size'
+# must match the run_make_all_tsunami_events.sh script
+nbatch = floor(nevents/batch_chunk_size + 1)
+
+batch_inds = parallel::splitIndices(nevents, nbatch)
+
+# Find those batches that we missed [i.e. the job was killed before they finished ]
+missed = c()
+for(i in 1:length(batch_inds)){
+    # Get any stage series in the i'th batch -- here just check the first entry
+    # in the first row
+    stg = ncvar_get(fid, 'max_stage', start=c(batch_inds[[i]][1],1), count=c(1,1))
+    # Recall the missing data value was -999.999
+    if(stg < missing_data_less_than | is.na(stg)) missed = c(missed, i)
+}
+
 
 # Make scripts for each unfinished job, and run them
 if(length(missed) > 0){
