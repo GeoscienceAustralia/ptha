@@ -1,21 +1,25 @@
 #
-# Script to 'qsub' additional stochastic_tsunami runs if they did not all finish.
+# Script to 'qsub' additional stochastic_tsunami runs if they did not all finish
+# when run from 'run_make_all_tsunami_events.PBS'. The latter script executes
+# a number of jobs to do make the stochastic slip tsunami, in serial, and for
+# large source-zones they will not finish in the 48 hours available.
 #
-# It will probably only work on NCI [or systems with similar setup + using PBS
-# for job submission].
+# This script will probably only work on NCI [or systems with similar setup +
+# using PBS for job submission].
 #
-# This script should be run after run_make_all_tsunami_events.sh. If the latter
-# script did finish, then this script will not do anything.
+# This script should be run after 'run_make_all_tsunami_events.sh'. If the
+# latter script did finish, then this script will not do anything.
 #
-# For each 'batch' of events we tried to treat earlier, we check 'max_stage'
-# in the netcdf file to see if the batch has missing data. If it does, we rerun
-# the batch (on its own PBS job), and save as an RDS file [to avoid the possibility
-# of parallel writes if running more than one job, which can cause netcdf to fail].
+# For each 'batch' of events we tried to treat earlier, we check 'max_stage' in
+# the netcdf file to see if the batch has missing data. If it does, we rerun
+# the batch (on its own PBS job), and save as an RDS file [to avoid the
+# possibility of parallel writes if running more than one job, which can cause
+# netcdf to fail].
 #
-# Once all the above jobs have finished, we'll need to run another script to insert 
-# their data into the netcdf file
-
-##############################################################################
+# Once all the above jobs have finished, we'll need to run another script to
+# insert their data into the netcdf file
+#
+###############################################################################
 
 #
 # INPUTS: THESE MUST BE CONSISTENT WITH OTHER SCRIPTS FOR EVERYTHING TO WORK
@@ -27,11 +31,12 @@
 batch_chunk_size = 4500 
 
 # This number is greater than the number used as a missing data value in
-# make_all_earthquake_tsunami.R
-# See nul_r = -999.999 
+# 'make_all_earthquake_tsunami.R'
+# See nul_r = -999.999 in that script.
 # Note -- to identify missing data, we check that "max_stage < missing_data_less_than".
-# Do not try an exact check - because the netcdf data is stored as float, and
-# will not be able to exactly represent -999.999
+# We do not try an exact check - because the netcdf data is stored as float,
+# and will not be able to exactly represent -999.999. 
+# -999 is well outside the range of max_stage vlaues, so it's no problem.
 missing_data_less_than = -999.0 
 
 #
@@ -63,6 +68,10 @@ Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset REPLACEWITHMYID
 
 #############################################################################
 
+#
+# MAIN CODE
+#
+
 library(ncdf4)
 
 source_zone = basename(dirname(getwd()))
@@ -74,11 +83,11 @@ fid = nc_open(nc_file, readunlim=FALSE)
 # Number of events
 nevents = fid$var$event_index_string$varsize[2]
 
-# How many batches did we originally split into -- note the 'batch_chunk_size'
+# How many batches did we originally split into? -- note the 'batch_chunk_size'
 # must match the run_make_all_tsunami_events.sh script
 nbatch = floor(nevents/batch_chunk_size + 1)
 
-batch_inds = parallel::splitIndices(nevents, nbatch)
+batch_inds = parallel::splitIndices(nevents, nbatch) # Same split as in make_all_earthquake_tsunami.R
 
 # Find those batches that we missed [i.e. the job was killed before they finished ]
 missed = c()
