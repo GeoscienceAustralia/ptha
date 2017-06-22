@@ -6,7 +6,7 @@
 \usage{
 write_table_to_netcdf(dataframe, filename, global_attributes_list = NULL,
   units = NULL, long_names = NULL, var_prec = NULL,
-  add_session_info_attribute = FALSE)
+  add_session_info_attribute = FALSE, force_v4 = FALSE)
 }
 \arguments{
 \item{dataframe}{the input data.frame to be written to file}
@@ -23,6 +23,8 @@ write_table_to_netcdf(dataframe, filename, global_attributes_list = NULL,
 values are 'short', 'integer', 'float', 'double', 'char', 'byte'). If NULL it is made automatically.}
 
 \item{add_session_info_attribute}{if true, add a global attribute containing information from sessionInfo()}
+
+\item{force_v4}{logical Do we create a netcdf4 file (TRUE) or not (FALSE, default)}
 }
 \value{
 nothing, but save the file

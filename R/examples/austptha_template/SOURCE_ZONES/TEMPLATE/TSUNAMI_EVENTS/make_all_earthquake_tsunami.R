@@ -7,6 +7,8 @@ suppressPackageStartupMessages(library(rptha))
 suppressPackageStartupMessages(library(parallel))
 source('sum_tsunami_unit_sources.R')
 
+###############################################################################
+
 #
 # Input parameters
 #
@@ -90,6 +92,13 @@ if(any(grepl('-subset', command_arguments))){
     if(!file.exists(output_file_name)){
         stop(paste0('Could not find output file ', output_file_name))
     }
+
+    # Check for save_as_RDS option
+    save_as_RDS = FALSE
+    if(any(grepl('-save_as_RDS', command_arguments))){
+        save_as_RDS = TRUE
+    }
+
 }
 
 #
@@ -658,35 +667,57 @@ if(make_file_only | (subset_only==FALSE)){
         stage_threshold_for_arrival_time)
 
 }else{
-    #
-    # Update variables in the already-created netcdf_file
-    #
+    # Save the variables -- either direct to the netcdf, or to an individual RDS file
 
-    # Open the file for editing -- DO NOT DO THIS WITH MULTIPLE PROGRAMS AT ONCE
-    output_nc_file = nc_open(output_file_name, readunlim=FALSE, write=TRUE)
+    if(save_as_RDS){
+        #
+        # Save R image, so we can write to netcdf later
+        #
+        # This is useful to avoid accidently having multiple images writing to
+        # netcdf at once
+        #
+        print('Writing to RDS')
 
-    # Put each variable, only in the contiguous part of my_events
-    ncvar_put(output_nc_file, output_nc_file$var$max_stage, gauge_event_max_stage, 
-              start=c(my_events[1], 1), count=c(length(my_events), -1))
-    gc()
+        # Make directory for R images
+        tmp_RDS_dir = 'R_images_tmp'
+        dir.create(tmp_RDS_dir, showWarnings=FALSE)
 
-    ncvar_put(output_nc_file, output_nc_file$var$period, gauge_event_reference_period,
-              start=c(my_events[1], 1), count=c(length(my_events), -1))
-    gc()
+        image_file = paste0(tmp_RDS_dir, '/', 
+            gsub('.nc', '', output_file_name), '_RDS_', 
+            this_subset, '_', number_of_subsets, '.RDS')
+        save.image(image_file)
 
-    ncvar_put(output_nc_file, output_nc_file$var$stage_range, gauge_event_peak_to_trough,
-              start=c(my_events[1], 1), count=c(length(my_events), -1))
-    gc()
+    }else{
+        #
+        # Update variables in the already-created netcdf_file
+        #
 
-    ncvar_put(output_nc_file, output_nc_file$var$arrival_time, gauge_event_arrival_time,
-              start=c(my_events[1], 1), count=c(length(my_events), -1))
-    gc()
+        # Open the file for editing -- DO NOT DO THIS WITH MULTIPLE PROGRAMS AT ONCE
+        output_nc_file = nc_open(output_file_name, readunlim=FALSE, write=TRUE)
 
-    ncvar_put(output_nc_file, output_nc_file$var$initial_stage, gauge_event_initial_stage,
-              start=c(my_events[1], 1), count=c(length(my_events), -1))
-    gc()
+        # Put each variable, only in the contiguous part of my_events
+        ncvar_put(output_nc_file, output_nc_file$var$max_stage, gauge_event_max_stage, 
+                  start=c(my_events[1], 1), count=c(length(my_events), -1))
+        gc()
 
-    nc_close(output_nc_file)
+        ncvar_put(output_nc_file, output_nc_file$var$period, gauge_event_reference_period,
+                  start=c(my_events[1], 1), count=c(length(my_events), -1))
+        gc()
+
+        ncvar_put(output_nc_file, output_nc_file$var$stage_range, gauge_event_peak_to_trough,
+                  start=c(my_events[1], 1), count=c(length(my_events), -1))
+        gc()
+
+        ncvar_put(output_nc_file, output_nc_file$var$arrival_time, gauge_event_arrival_time,
+                  start=c(my_events[1], 1), count=c(length(my_events), -1))
+        gc()
+
+        ncvar_put(output_nc_file, output_nc_file$var$initial_stage, gauge_event_initial_stage,
+                  start=c(my_events[1], 1), count=c(length(my_events), -1))
+        gc()
+
+        nc_close(output_nc_file)
+    }
 }
 
 # Some useful finishing information

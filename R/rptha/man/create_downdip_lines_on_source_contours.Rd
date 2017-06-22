@@ -32,5 +32,6 @@ a list with the 3d lines
 \description{
 This is as an intermediate step when defining boundaries of
 the unit sources. It is not meant to be exported to the main package,
-and has been replaced by more advanced routines.
+and has been replaced by more advanced routines. Please use
+\code{create_downdip_lines_on_source_contours_improved}
 }
