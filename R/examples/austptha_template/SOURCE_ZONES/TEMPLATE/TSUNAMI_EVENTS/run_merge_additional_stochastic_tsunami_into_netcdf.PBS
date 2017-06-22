@@ -1,0 +1,15 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=6:00:00
+#PBS -lmem=32GB
+#PBS -lncpus=16
+#PBS -l wd
+
+# Source key R modules -- not that you will need the right packages installed
+# as well (see comments in the script that is sourced)
+# NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
+source R_modules.sh
+
+Rscript merge_additional_stochastic_tsunami_into_netcdf.R
+
