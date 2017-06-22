@@ -1,9 +1,9 @@
 #
 # qsub additional stochastic_tsunami runs if they did not all finish 
-# when ran from run_make_all_tsunami_events.sh
+#
+# This is run after run_make_all_tsunami_events.sh, in case that did not finish
 #
 
-# Figure out how many events still need to be run
 library(ncdf4)
 
 source_zone = basename(dirname(getwd()))
@@ -12,10 +12,11 @@ source_zone = basename(dirname(getwd()))
 nc_file = paste0('all_stochastic_slip_earthquake_events_tsunami_', source_zone, '.nc')
 fid = nc_open(nc_file, readunlim=FALSE)
 
+# Number of events
 nevents = fid$var$event_index_string$varsize[2]
-dim_max_stage = fid$var$max_stage$varsize
 
-# How many batches did we originally split into
+# How many batches did we originally split into -- note the '4500' must match the 
+# run_make_all_tsunami_events.sh script
 nbatch = floor(nevents/4500 + 1)
 
 batch_inds = parallel::splitIndices(nevents, nbatch)
@@ -26,11 +27,15 @@ for(i in 1:length(batch_inds)){
     # Get any stage series in the i'th batch -- here just take the first one in
     # batch_inds
     stg = ncvar_get(fid, 'max_stage', start=c(batch_inds[[i]][1],1), count=c(1,1))
+    # Recall the missing data value was -999.999
     if(stg < -999| is.na(stg)) missed = c(missed, i)
 }
 
 
-
+#
+# Template PBS script text -- note REPLACEWITHMID in final line, which will be auto-replaced
+# with 'missed' integers
+#
 pbs_text = "#!/bin/bash
 #PBS -P w85
 #PBS -q normal
