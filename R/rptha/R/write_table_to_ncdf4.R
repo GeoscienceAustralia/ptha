@@ -13,6 +13,7 @@
 #' @param var_prec character vector with data type for each column (possible
 #' values are 'short', 'integer', 'float', 'double', 'char', 'byte'). If NULL it is made automatically.
 #' @param add_session_info_attribute if true, add a global attribute containing information from sessionInfo()
+#' @param force_v4 logical Do we create a netcdf4 file (TRUE) or not (FALSE, default)
 #' @return nothing, but save the file
 #'
 #' @export
@@ -31,7 +32,8 @@
 #'  unlink('test.nc')
 #'
 write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL, 
-    units=NULL, long_names=NULL, var_prec = NULL, add_session_info_attribute=FALSE){
+    units=NULL, long_names=NULL, var_prec = NULL, add_session_info_attribute=FALSE,
+    force_v4=FALSE){
 
     # Make the rows an unlimited dimension
     rowdim = ncdim_def('table_rows', units='', vals = 1:nrow(dataframe), unlim=TRUE,
@@ -109,7 +111,7 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
     }
 
     # Make file
-    output_nc_file = nc_create(filename, vars=var_list)
+    output_nc_file = nc_create(filename, vars=var_list, force_v4 = force_v4)
 
     # Add global attributes
     if(!is.null(global_attributes_list)){
