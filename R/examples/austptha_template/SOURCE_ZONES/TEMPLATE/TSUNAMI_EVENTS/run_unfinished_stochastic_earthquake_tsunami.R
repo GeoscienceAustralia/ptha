@@ -50,7 +50,7 @@ nsplit=$( expr $nevents / 4500 + 1 )
 Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset REPLACEWITHMYID $nsplit --save_as_RDS
 "
 
-
+# Make scripts for each unfinished job, and run them
 if(length(missed) > 0){
     for(ii in missed){
         pbs_local = gsub('REPLACEWITHMYID', ii, pbs_text)
@@ -62,4 +62,3 @@ if(length(missed) > 0){
 }
 
 
-}
