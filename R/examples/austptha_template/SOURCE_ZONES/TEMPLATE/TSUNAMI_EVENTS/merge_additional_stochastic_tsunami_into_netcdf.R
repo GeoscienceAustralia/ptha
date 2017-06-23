@@ -42,3 +42,24 @@ if( length(all_R_images) > 0 ){
     }
 
 }
+
+# At this point, check that everything has finished
+r_env = new.env()
+load(all_R_images[i], envir=r_env)
+output_nc_file = nc_open(r_env$output_file_name, readunlim=FALSE, write=TRUE)
+# Find 'un-written data' flag, which is -999.999
+# Because netcdf will only store to float precision, we just check for values which are
+# less than the following [which should all be float(-999.999) ]
+nul_r_less_than = r_env$nul_r + 1
+
+# Get the max-stage data, which should no longer have un-written values
+max_stage = ncvar_get(output_nc_file, 'max_stage')
+nc_close(output_nc_file)
+
+sum_missing = sum(max_stage < nul_r, na.rm=TRUE)
+if(sum_missing > 0){
+    stop('ERROR: There are still unwritten values in the file')
+}else{
+    print("PASS")
+}
+    
