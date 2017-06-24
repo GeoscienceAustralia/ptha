@@ -39,8 +39,8 @@ for(i in 1:length(unit_source_tables)){
 #
 nearest_bird_point<-function(p){
     p_mat = bird_centroid*0
-    p_mat[,1] = p[1]
-    p_mat[,2] = p[2]
+    p_mat[,1] = as.numeric(p[1])
+    p_mat[,2] = as.numeric(p[2])
 
     distances = distHaversine(p_mat, bird_centroid)
     k = which.min(distances)
@@ -49,15 +49,41 @@ nearest_bird_point<-function(p){
 }
 
 for(i in 1:length(top_edge_tables)){
+
     ti = top_edge_tables[[i]]
     di = ti[,1]*0 # Store distances to nearest bird point
     ki = ti[,1]*0 # Store index of nearest bird point
+
     for(j in 1:nrow(ti)){
         output = nearest_bird_point(ti[j,1:2]) 
         di[j] = output[2]
         ki[j] = output[1]
     }
+
     top_edge_tables[[i]] = cbind(ti, 
-        data.frame('distance_bird' = di, 'bird_index' = ki) )
+        data.frame(
+            'distance_bird' = di, 
+            'bird_index' = ki, 
+            'bird_vel_div' = bd$vel_div[ki], 
+            'bird_vel_rl' = bd$vel_rl[ki])
+        )
 }
+
+#
+# Use the top-edge data to populate the unit-source tables
+#
+for(i in 1:length(top_edge_tables)){
+
+    ui = unit_source_tables[[i]]
+    ti = top_edge_tables[[i]]
+
+    kk = match(ui$alongstrike_number, ti$alongstrike_number)
+    ui = cbind(ui, ti[kk, c('distance_bird', 'bird_index', 'bird_vel_div', 'bird_vel_rl')] )
+    # The above cbind mangles the rownames, so fix that here.
+    rownames(ui) = rownames(unit_source_tables[[i]])
+
+    unit_source_tables[[i]] = ui
+}
+
+
 
