@@ -60,7 +60,8 @@ event_conditional_probability_factory<-function(){
         p_mat[,1] = as.numeric(p[1])
         p_mat[,2] = as.numeric(p[2])
 
-        distances = distHaversine(p_mat, bird_centroid)
+        # Bypass warnings about longitudes > 180 [which does not cause problems]
+        suppressWarnings({ distances =  distHaversine(p_mat, bird_centroid) })
         k = which.min(distances)
         output = c(k, distances[k])
         return(output)
