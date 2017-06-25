@@ -22,11 +22,14 @@ suppressPackageStartupMessages(library(rptha))
 event_conditional_probability_factory<-function(){
 
     #
-    # Parse bird's data 
+    # Parse bird's data (which is zipped for compression)
     # 
 
-    bird_data = '../DATA/BIRD_PLATE_BOUNDARIES/PB2002_steps.dat.txt'
-    bd = read.table(bird_data)
+    bird_data = '../DATA/BIRD_PLATE_BOUNDARIES/PB2002_steps.dat.txt.zip'
+    bd = read.table(
+            unz(description=bird_data, 
+                filename=basename(gsub('\\.zip', '', bird_data))) 
+        )
 
     # See table 2 of the bird paper for definitions of the data columns
     names(bd) = c('id', 'plateboundary', 'lon1', 'lat1', 'lon2', 'lat2', 
