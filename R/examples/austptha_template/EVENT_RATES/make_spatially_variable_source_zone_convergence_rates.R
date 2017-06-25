@@ -120,7 +120,7 @@ event_conditional_probability_factory<-function(){
         }
 
         # Get relevant part of 'unit_source_tables' from parent environment
-        uss = unit_source_tables[[i]]
+        uss = unit_source_tables[[unit_source_match]]
         dim_uss = dim(uss)
        
         # Ensure table is correctly sorted 
