@@ -130,7 +130,7 @@ event_conditional_probability_factory<-function(){
         #' Conditional probability function that can be passed to
         #' \code{get_event_probabilities_conditional_on_Mw} .
         #'
-        conditional_probability_function<-function(events_with_Mw){
+        conditional_probability_function<-function(events_with_Mw, debug_output=FALSE){
 
             if( 'event_slip_string' %in% names(events_with_Mw) ){
                 msg = paste0('Tried to pass a stochastic slip events table to ',
@@ -157,7 +157,20 @@ event_conditional_probability_factory<-function(){
             conditional_probability = (events_with_Mw$area * long_term_slip_near_event)
             conditional_probability = conditional_probability/sum(conditional_probability)
 
-            return(conditional_probability)
+            if(!debug_output){
+                # Default case
+                return(conditional_probability)
+
+            }else{
+                # For debugging, return the information we used to make the table
+                output = list(unit_sources = uss, 
+                    long_term_slip_near_event = long_term_slip_near_event, 
+                    conditional_probability=conditional_probability,
+                    events_with_Mw = events_with_Mw)
+                return(output)
+
+            }
+
         }
 
         return(conditional_probability_function)
