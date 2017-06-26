@@ -116,7 +116,7 @@ event_conditional_probability_factory<-function(return_environment=FALSE){
             line_mat = matrix(c(bird_centroid[ki[j],1:2], top_point_top_edge_approx[1:2]), 
                 nrow=2,byrow=TRUE)
             line_mat[2,] = adjust_longitude_by_360_deg(line_mat[2,], line_mat[1,])
-            lines_list[[i]] = Lines(list(Line(line_mat)), ID=as.character(j))
+            lines_list[[j]] = Lines(list(Line(line_mat)), ID=as.character(j))
         }
 
         top_edge_tables[[i]] = cbind(ti, 
@@ -128,7 +128,7 @@ event_conditional_probability_factory<-function(return_environment=FALSE){
             )
         sl = SpatialLines(lines_list, proj4string=CRS("+init=epsg:4326"))
     
-        sldf_list[[i]] = SpatialLinesDataFrame(sl, data=top_edge_tables[[i]])
+        sldf_list[[i]] = SpatialLinesDataFrame(sl, data=top_edge_tables[[i]], match.ID=TRUE)
     }
 
     #
