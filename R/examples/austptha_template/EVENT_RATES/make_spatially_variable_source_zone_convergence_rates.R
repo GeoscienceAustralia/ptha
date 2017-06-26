@@ -128,7 +128,7 @@ event_conditional_probability_factory<-function(return_environment=FALSE){
             )
         sl = SpatialLines(lines_list, proj4string=CRS("+init=epsg:4326"))
     
-        sldf_list[[i]] = SpatialLinesDataFrame(sl, data=top_edge_tables[[i]], match.ID=TRUE)
+        sldf_list[[i]] = SpatialLinesDataFrame(sl, data=top_edge_tables[[i]], match.ID=FALSE)
     }
 
     #
