@@ -77,7 +77,13 @@ event_conditional_probability_factory<-function(){
         ki = ti[,1]*0 # Store index of nearest bird point
 
         for(j in 1:nrow(ti)){
-            output = nearest_bird_point(ti[j,1:2]) 
+
+            top_point = as.numeric(ti[j,1:2])
+            # Convert 'top_point' to the 'top-edge' point
+            half_width_surface = as.numeric(ti$width[j])/2 * 1000 * cos(2*pi*ti$dip[j]/180)
+            top_point_top_edge_approx = destPoint(top_point, ti$strike[j]-90, half_width_surface)
+
+            output = nearest_bird_point(top_point_top_edge_approx)
             di[j] = output[2]
             ki[j] = output[1]
         }
