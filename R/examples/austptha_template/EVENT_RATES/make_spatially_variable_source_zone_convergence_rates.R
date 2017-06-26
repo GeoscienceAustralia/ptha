@@ -19,7 +19,7 @@ suppressPackageStartupMessages(library(rptha))
 #' # Get the conditional probability of these "Mw = 8.0" events as:
 #' Mw_8.0_conditional_prob = puysegur_conditional_prob_function(Mw_8.0_events)
 #' 
-event_conditional_probability_factory<-function(){
+event_conditional_probability_factory<-function(return_environment=FALSE){
 
     #
     # Parse bird's data (which is zipped for compression)
@@ -35,7 +35,28 @@ event_conditional_probability_factory<-function(){
     names(bd) = c('id', 'plateboundary', 'lon1', 'lat1', 'lon2', 'lat2', 
         'length', 'azi', 'vel_L2R', 'vel_azi', 'vel_div', 'vel_rl', 
         'elev', 'age', 'class')
-    bird_centroid = midPoint(as.matrix(bd[,c('lon1', 'lat1')]), as.matrix(bd[,c('lon2', 'lat2')]), f = 0)
+    bird_centroid = midPoint(
+        as.matrix(bd[,c('lon1', 'lat1')]), 
+        as.matrix(bd[,c('lon2', 'lat2')]), 
+        f = 0)
+
+    #
+    # Make bird data as a SpatialLinesDataFrame, and save it for QC
+    #
+    lines_list = vector(mode='list', length=length(bd[,1]))
+    for(i in 1:length(bd[,1])){
+
+        line_mat = matrix(c(bd$lon1[i], bd$lat1[i], bd$lon2[i], bd$lat2[i]), ncol=2, byrow=T)
+
+        line_mat[2,] = adjust_longitude_by_360_deg(line_mat[2,], line_mat[1,])
+
+        lines_list[[i]] = Lines(list(Line(line_mat)), ID=as.character(i))
+    }
+
+    bd_sl = SpatialLines(lines_list, proj4string=CRS("+init=epsg:4326"))
+    bd_sldf = SpatialLinesDataFrame(bd_sl, data=bd, match=FALSE)
+
+    writeOGR(bd_sldf, dsn='bird_2003', layer='bird_2003', driver='ESRI Shapefile', overwrite=TRUE)
 
 
     #
@@ -70,12 +91,16 @@ event_conditional_probability_factory<-function(){
         return(output)
     }
 
+    # For each table, loop over all 'trench' unit sources and find the nearest bird centroid to
+    # the top edge. Make a SpatialLines object as we go for QC
+    sldf_list = vector(mode='list', length=length(top_edge_tables))
     for(i in 1:length(top_edge_tables)){
 
         ti = top_edge_tables[[i]]
         di = ti[,1]*0 # Store distances to nearest bird point
         ki = ti[,1]*0 # Store index of nearest bird point
 
+        lines_list = vector(mode='list', length=length(di))
         for(j in 1:nrow(ti)){
 
             top_point = as.numeric(ti[j,1:2])
@@ -86,6 +111,12 @@ event_conditional_probability_factory<-function(){
             output = nearest_bird_point(top_point_top_edge_approx)
             di[j] = output[2]
             ki[j] = output[1]
+
+            # Prepare SpatialLines output, mapping the unit-source top edge to the Bird lines
+            line_mat = matrix(c(bird_centroid[ki[j],1:2], top_point_top_edge_approx[1:2]), 
+                nrow=2,byrow=TRUE)
+            line_mat[2,] = adjust_longitude_by_360_deg(line_mat[2,], line_mat[1,])
+            lines_list[[i]] = Lines(list(Line(line_mat)), ID=as.character(j))
         }
 
         top_edge_tables[[i]] = cbind(ti, 
@@ -95,6 +126,9 @@ event_conditional_probability_factory<-function(){
                 'bird_vel_div' = bd$vel_div[ki], 
                 'bird_vel_rl' = bd$vel_rl[ki])
             )
+        sl = SpatialLines(lines_list, proj4string=CRS("+init=epsg:4326"))
+    
+        sldf_list[[i]] = SpatialLinesDataFrame(sl, data=top_edge_tables[[i]])
     }
 
     #
@@ -186,7 +220,13 @@ event_conditional_probability_factory<-function(){
         return(conditional_probability_function)
     }
 
-    return(make_conditional_probability_function_uniform_slip)
+
+    if(!return_environment){
+        return(make_conditional_probability_function_uniform_slip)
+    }else{
+        # For debugging, it's useful to have the entire function environment
+        return(environment())
+    }
 
 }
 
