@@ -27,7 +27,7 @@ Mw_frequency_dists_p = c(0.5, 0.5)
 #
 # Function to evaluate the rates for a given source-zone. This function returns
 # it's environment, so we have easy access to key variables
-source_rate_environment_fun<-function(source_name){
+source_rate_environment_fun<-function(source_name, i){
 
     #
     # Coupling
@@ -96,7 +96,8 @@ source_rate_environment_fun<-function(source_name){
     # Event table
     #
     event_table_file = paste0('../SOURCE_ZONES/', source_name, 
-        '/TSUNAMI_EVENTS/all_eq_events_', source_name, '.nc')
+        '/TSUNAMI_EVENTS/all_uniform_slip_earthquake_events_', 
+        source_name, '.nc')
     event_table = read_table_from_netcdf(event_table_file)
 
     # Round away any finite-precision issues in the netcdf file
@@ -104,7 +105,7 @@ source_rate_environment_fun<-function(source_name){
     event_table$Mw = round(event_table$Mw, 3)
     stopifnot( all(event_table$Mw == sort(event_table$Mw)) )
     # Check we didn't destroy the table by rouding!
-    stopifnot( all(diff(event_table$Mw) %in% c(0, dMw)) )
+    stopifnot( all(diff(event_table$Mw) == 0) | (abs(diff(event_table$Mw) - dMw) < 1.0e-12) )
 
     #
     # Event conditional probabilities
@@ -163,11 +164,11 @@ source_rate_environment_fun<-function(source_name){
     
 
 source_envs = vector(mode='list', length=length(source_names))
-
+names(source_envs) = source_names
 for(i in 1:length(source_names)){
 
     source_name = source_names[i]
-    source_envs[[i]] = source_rate_environment_fun(source_name)
+    source_envs[[i]] = source_rate_environment_fun(source_name, i)
 
 }
 
