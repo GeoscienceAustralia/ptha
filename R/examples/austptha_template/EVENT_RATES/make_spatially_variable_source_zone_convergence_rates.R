@@ -3,12 +3,12 @@
 #
 suppressPackageStartupMessages(library(rptha))
 
-
-#' Map Bird (2003) convergence data onto our unit-sources, and 
+#'
+#' Map Bird (2003) convergence data onto our unit-sources
 #
 #' # Read Bird's data and setup key information required to make conditional
 #' # probability functions
-#' make_conditional_probability_function = event_conditional_probability_factory()
+#' make_conditional_probability_function = event_conditional_probability_bird2003_factory()
 #' 
 #' # Make the function for puysegur
 #' source_name = 'puysegur' 
@@ -19,7 +19,7 @@ suppressPackageStartupMessages(library(rptha))
 #' # Get the conditional probability of these "Mw = 8.0" events as:
 #' Mw_8.0_conditional_prob = puysegur_conditional_prob_function(Mw_8.0_events)
 #' 
-event_conditional_probability_factory<-function(return_environment=FALSE){
+event_conditional_probability_bird2003_factory<-function(return_environment=FALSE){
 
     #
     # Parse bird's data (which is zipped for compression)
@@ -58,15 +58,17 @@ event_conditional_probability_factory<-function(return_environment=FALSE){
 
     writeOGR(bd_sldf, dsn='bird_2003', layer='bird_2003', driver='ESRI Shapefile', overwrite=TRUE)
 
-
     #
     # Parse unit-source top edges
     #
     unit_source_files = Sys.glob(
         '../SOURCE_ZONES/*/TSUNAMI_EVENTS/unit_source_statistics*.nc')
     unit_source_tables = lapply(as.list(unit_source_files), read_table_from_netcdf)
-    names(unit_source_tables) = unit_source_files
+    #
+    all_source_names = basename(dirname(dirname(unit_source_files)))
+    names(unit_source_tables) = all_source_names
 
+    
     #
     # Make 'top-edge-only' tables
     #
@@ -91,9 +93,11 @@ event_conditional_probability_factory<-function(return_environment=FALSE){
         return(output)
     }
 
-    # For each table, loop over all 'trench' unit sources and find the nearest bird centroid to
-    # the top edge. Make a SpatialLines object as we go for QC
+    # For each table, loop over all 'trench' unit sources and find the nearest
+    # bird centroid to the top edge. Make a SpatialLines object as we go for QC
     sldf_list = vector(mode='list', length=length(top_edge_tables))
+    names(sldf_list) = all_source_names
+
     for(i in 1:length(top_edge_tables)){
 
         ti = top_edge_tables[[i]]
@@ -155,8 +159,7 @@ event_conditional_probability_factory<-function(return_environment=FALSE){
     #'
     make_conditional_probability_function_uniform_slip<-function(source_name){
 
-        unit_source_match = grep( source_name, 
-            basename(dirname(dirname(names(unit_source_tables)))) )
+        unit_source_match = grep( source_name, names(unit_source_tables) )
 
         if(length(unit_source_match) != 1){
             print(unit_source_match)
