@@ -4,7 +4,7 @@ bird2003_env = event_conditional_probability_bird2003_factory(
     return_environment=TRUE)
 
 sourcezone_parameter_file = '../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv'
-sourcezone_parameters = read.csv(sourcezone_parameter_file)
+sourcezone_parameters = read.csv(sourcezone_parameter_file, stringsAsFactors=FALSE)
 
 source_names = sourcezone_parameters$sourcename
 
