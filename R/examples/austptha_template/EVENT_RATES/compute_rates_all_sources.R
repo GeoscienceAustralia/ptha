@@ -16,7 +16,7 @@ MINIMUM_ALLOWED_MW_MAX = 7.6
 MW_MIN = 7.5
 
 # Increment between Mw values in the earthquake_events table. We will check
-# that this holds
+# that the table holds the same value
 dMw = 0.1
 
 # Truncated or 'characteristic' Gutenberg Richter model
@@ -66,7 +66,7 @@ source_rate_environment_fun<-function(source_name, i){
     source_Mw_max = pmax(source_Mw_max, MINIMUM_ALLOWED_MW_MAX)
     source_Mw_max = pmin(source_Mw_max, MAXIMUM_ALLOWED_MW_MAX)
     # Assign equal probabilities to all
-    source_Mw_max_p = rep(1, 4)/4
+    source_Mw_max_p = rep(1, length(source_Mw_max) ) / length(source_Mw_max)
 
     #
     # Tectonic convergence rate
@@ -89,8 +89,8 @@ source_rate_environment_fun<-function(source_name, i){
 
     }
 
-    # Account for non-zero dip
-    source_slip = source_slip/cos_dip
+    # Account for non-zero dip, and convert from mm/year to m/year
+    source_slip = source_slip/cos_dip * 1/1000
 
     #
     # Event table
