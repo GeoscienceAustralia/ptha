@@ -19,6 +19,11 @@ dMw = 0.1
 # Only assign non-zero probability to earthquakes with Mw greater than this
 MW_MIN = 7.5 - dMw/2
 
+# We ensure that (Mw_max >= maximum_observed_mw + mw_observed_perturbation)
+# This ensures that no logic-tree curve assigns zero probability to the largest
+# observed event
+mw_observed_perturbation = 0.05
+
 
 # Truncated or 'characteristic' Gutenberg Richter model
 Mw_frequency_dists = c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')
@@ -51,8 +56,8 @@ source_rate_environment_fun<-function(source_name, i){
     source_area = sum(unit_source_areas)
 
     source_Mw_max = c(
-        # Largest observed,
-        sourcezone_parameters$mw_max_observed[i],
+        # Largest observed plus a small value,
+        sourcezone_parameters$mw_max_observed[i] + mw_observed_perturbation,
         # Lower mw
         Mw_2_rupture_size_inverse(source_area, CI_sd=1 ),
         # Middle mw
