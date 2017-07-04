@@ -12,12 +12,13 @@ source_names = sourcezone_parameters$sourcename
 MAXIMUM_ALLOWED_MW_MAX = 9.6
 MINIMUM_ALLOWED_MW_MAX = 7.6
 
-# Only assign non-zero probability to earthquakes with Mw greater than this
-MW_MIN = 7.5
-
 # Increment between Mw values in the earthquake_events table. We will check
 # that the table holds the same value
 dMw = 0.1
+
+# Only assign non-zero probability to earthquakes with Mw greater than this
+MW_MIN = 7.5 - dMw/2
+
 
 # Truncated or 'characteristic' Gutenberg Richter model
 Mw_frequency_dists = c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')

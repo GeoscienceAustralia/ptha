@@ -356,10 +356,10 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     stopifnot(isTRUE(all.equal(sum(Mw_max_prob), 1)))
     stopifnot(isTRUE(all.equal(sum(Mw_frequency_distribution_prob), 1)))
 
-    # Check that the range of Mw in the table covers the range of
-    # Mw_min/Mw_max)
-    stopifnot(min(event_table$Mw) <= min(Mw_min))
-    stopifnot(max(event_table$Mw) >= max(Mw_max))
+    # # Check that the range of Mw in the table covers the range of
+    # # Mw_min/Mw_max)
+    # stopifnot(min(event_table$Mw) <= min(Mw_min))
+    # stopifnot(max(event_table$Mw) >= max(Mw_max))
 
 
     # Get all combinations of the parameters, and all combinations of the
