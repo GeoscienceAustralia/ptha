@@ -60,7 +60,7 @@ test_that("test_rupture_creation_and_probabilities", {
         slip_rate_prob = slip_rate_prob,
         b = b,
         b_prob = b_prob,
-        Mw_min = Mw_min,
+        Mw_min = Mw_min - dMw/2,
         Mw_min_prob = Mw_min_prob,
         Mw_max = Mw_max,
         Mw_max_prob = Mw_max_prob,
@@ -83,7 +83,7 @@ test_that("test_rupture_creation_and_probabilities", {
         slip_rate_prob = slip_rate_prob,
         b = b,
         b_prob = b_prob,
-        Mw_min = Mw_min,
+        Mw_min = Mw_min - dMw/2,
         Mw_min_prob = Mw_min_prob,
         Mw_max = Mw_max,
         Mw_max_prob = Mw_max_prob,
@@ -121,7 +121,7 @@ test_that("test_rupture_creation_and_probabilities", {
         slip_rate_prob = slip_rate_prob,
         b = b,
         b_prob = b_prob,
-        Mw_min = 0,
+        Mw_min = 0-dMw/2,
         Mw_min_prob = 1,
         Mw_max = Mw_max,
         Mw_max_prob = Mw_max_prob,
@@ -131,7 +131,7 @@ test_that("test_rupture_creation_and_probabilities", {
         account_for_moment_below_mwmin=FALSE)
 
     freq_gt9C = 1/rate_functionC(9.0)
-    expect_that(abs(freq_gt9C - freq_gt9B) < 0.1, is_true())
+    expect_that(abs(freq_gt9C - freq_gt9B) < 0.0005*max(freq_gt9C, freq_ft9B), is_true())
 
     #
     # Compute some quantiles representing uncertainty in the rate function
