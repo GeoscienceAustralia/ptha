@@ -9,8 +9,8 @@ sourcezone_parameters = read.csv(sourcezone_parameter_file, stringsAsFactors=FAL
 source_names = sourcezone_parameters$sourcename
 
 # Never allow Mw_max to be greater than this
-MAXIMUM_ALLOWED_MW_MAX = 9.6
-MINIMUM_ALLOWED_MW_MAX = 7.6
+MAXIMUM_ALLOWED_MW_MAX = 9.8
+MINIMUM_ALLOWED_MW_MAX = 7.65
 
 # Increment between Mw values in the earthquake_events table. We will check
 # that the table holds the same value
@@ -29,7 +29,7 @@ mw_observed_perturbation = 0.05
 Mw_frequency_dists = c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')
 Mw_frequency_dists_p = c(0.7, 0.3)
 
-
+nbins = 9
 #
 # Function to evaluate the rates for a given source-zone. This function returns
 # it's environment, so we have easy access to key variables
@@ -39,14 +39,14 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
     # Coupling
     #
     source_coupling   = sourcezone_parameters[i, c('cmin', 'cpref', 'cmax')]
-    source_coupling = approx(as.numeric(source_coupling), n=20)$y
+    source_coupling = approx(as.numeric(source_coupling), n=nbins)$y
     source_coupling_p = rep(1, length(source_coupling))/length(source_coupling)
 
     #
     # Gutenberg Richter b-value
     #
     source_b   = sourcezone_parameters[i, c('bmin', 'bpref', 'bmax')]
-    source_b = approx(as.numeric(source_b), n=20)$y
+    source_b = approx(as.numeric(source_b), n=nbins)$y
     source_b_p = rep(1, length(source_b))/length(source_b)
 
     #
@@ -57,24 +57,37 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
 
     source_area = sum(unit_source_areas)
 
+    min_mw_max = max(sourcezone_parameters$mw_max_observed[i] + mw_observed_perturbation,
+        MINIMUM_ALLOWED_MW_MAX)
+
     source_Mw_max = c(
-        # Largest observed plus a small value,
-        sourcezone_parameters$mw_max_observed[i] + mw_observed_perturbation,
+        ## Largest observed plus a small value,
+        #min_mw_max,
         # Middle Mw
-        0.5*(Mw_2_rupture_size_inverse(source_area, CI_sd=0) + 
-            sourcezone_parameters$mw_max_observed[i] + mw_observed_perturbation),
+        #0.5*(Mw_2_rupture_size_inverse(source_area, CI_sd=0) + 
+        #    min_mw_max),
+        # Another middle Mw
+        Mw_2_rupture_size_inverse(source_area/2, CI_sd=0),
+        # Another middle Mw
+        Mw_2_rupture_size_inverse(source_area, CI_sd=0),
         # Upper mw [Strasser + 1SD]
         Mw_2_rupture_size_inverse(source_area, CI_sd=-1 ) )
+    #
+    # Simple test -- all weight on full source rupture area 
+    #source_Mw_max = c(Mw_2_rupture_size_inverse(source_area, CI_sd=0), Mw_2_rupture_size_inverse(source_area, CI_sd=0)+0.01)
+    #
+ 
+    # Ensure ordered
+    source_Mw_max = sort(source_Mw_max)
 
     # Check it is correctly ordered (of course!)
     stopifnot(all(diff(source_Mw_max) > 0))
     # Ensure all Mw meet out constraints
-    source_Mw_max = pmax(source_Mw_max, sourcezone_parameters$mw_max_observed[i]+mw_observed_perturbation)
-    source_Mw_max = pmax(source_Mw_max, MINIMUM_ALLOWED_MW_MAX)
+    source_Mw_max = pmax(source_Mw_max, min_mw_max)
     source_Mw_max = pmin(source_Mw_max, MAXIMUM_ALLOWED_MW_MAX)
 
     # Interpolate
-    source_Mw_max = approx(source_Mw_max, n=20)$y
+    source_Mw_max = approx(source_Mw_max, n=nbins)$y
 
     # Assign equal probabilities to all
     source_Mw_max_p = rep(1, length(source_Mw_max) )/length(source_Mw_max)
@@ -87,10 +100,17 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
 
     if(sourcezone_parameters$use_bird_convergence[i] == 1){
 
+        # Idea: If plate convergence vector is between -pi/4, pi/4 of pure thrust,
+        # then use the raw vector. Otherwise, project it onto the nearest of -pi/4, pi/4 of pure thrust
+        div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div)
+        # Limit lateral component that we consider to be no more than div component
+        rl_vec = sign(bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl) * 
+            pmin(abs(bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl), div_vec)
 
         source_slip = weighted.mean(
             # Convergent slip
-            x= pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div), 
+            #x= pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div), 
+            x = sqrt(div_vec**2 + rl_vec**2),
             # Weighted by area
             w = unit_source_areas)
 

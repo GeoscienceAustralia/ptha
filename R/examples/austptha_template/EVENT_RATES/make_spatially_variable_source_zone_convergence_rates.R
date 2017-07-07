@@ -196,8 +196,19 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
 
                 ui = get_unit_source_indices_in_event(events_with_Mw[i,])
                 areas = uss$length[ui] * uss$width[ui]
+
                 # Note with bird's data, negative 'vel_div' means convergence
-                convergent_slip = pmax(0, -uss$bird_vel_div[ui])
+                # Here we use the convergent component of the slip vector
+                #convergent_slip = pmax(0, -uss$bird_vel_div[ui])
+
+                # Allow consideration of right-lateral component, between -pi/4 and pi/4.
+                div_vec = pmax(0, -uss$bird_vel_div[ui])
+                rl_vec = uss$bird_vel_rl[ui]
+                rl_vec = sign(rl_vec) * pmax(abs(rl_vec), div_vec)
+                convergent_slip = sqrt(rl_vec**2 + div_vec**2)
+
+                # Here we use the 'full' slip vector
+                #convergent_slip = pmax(0, sign(-uss$bird_vel_div[ui])) * sqrt(uss$bird_vel_div[ui]**2 + uss$bird_vel_rl[ui]**2)
                 long_term_slip_near_event[i] = sum(areas * convergent_slip)/sum(areas)
             }
             # Set the conditional proability as proportional to [event area x long-term-slip]
