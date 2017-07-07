@@ -127,7 +127,7 @@ event_rates_function = rate_of_earthquakes_greater_than_Mw_function(
     Mw_count_duration = Mw_count_durations_CMT, 
     account_for_moment_below_mwmin = TRUE)
 
-# Example: Compute rate of events exceeding Mw 9.0. Should be around 1/543.
+# Example: Compute rate of events exceeding Mw 9.0. Should be around 1/540.
 # Small variations can arise depending on the unit-source discretization
 # and how the unit source summary statistics are computed, but they should
 # not be significant.

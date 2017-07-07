@@ -449,22 +449,40 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 par$Mw_frequency_distribution, " not recognized"))
         }
 
+        # Ranges of Mw in our event table, with additional dx/2 spacing.
+        # These are useful since the rate assigned to events with Mw = X is
+        # GR(rate-dx/2) - GR(rate+dx/2)
+        lower_Mw = eq_Mw - table_Mw_increment/2
+        upper_Mw = eq_Mw + table_Mw_increment/2
+
+
         if(account_for_moment_below_mwmin){
             # Compute the fraction of seismic moment associated with
-            # earthquakes between mw_min and mw_max.
+            # earthquakes with Mw ranging over the values in our event table
 
             # Finely spaced sequence used for numerical integration
-            broad_Mw_seq = seq(min(par$Mw_min, 0), par$Mw_max, len = 1e+04)
+            lower = min(par$Mw_min, min(lower_Mw), 0)  - 0.001
+            upper = max(par$Mw_max, max(upper_Mw)) + 0.001
+            broad_Mw_seq = seq(lower, upper, by=0.001)
             dmw0 = broad_Mw_seq[2] - broad_Mw_seq[1]
+
+            # Get the rate of events with Mw in the finely spaced sequence. 
             broad_rates = Mfd(broad_Mw_seq - dmw0/2, a = 0, b = par$b, 
                               Mw_min=broad_Mw_seq[1], Mw_max = par$Mw_max) -
                           Mfd(broad_Mw_seq + dmw0/2, a = 0, b = par$b, 
                               Mw_min=broad_Mw_seq[1], Mw_max = par$Mw_max) 
             broad_seismic_moment = Mw_2_M0(broad_Mw_seq)
 
+            # Get the fraction of seismic moment between min mw and max mw in
+            # our earthquake events table
+            # Step 1: above min(eq_Mw)
             moment_fraction = 
                 compute_moment_fraction_from_events_greater_or_equal_than_mwmin(
-                    broad_Mw_seq, broad_rates, broad_seismic_moment, par$Mw_min)
+                    broad_Mw_seq, broad_rates, broad_seismic_moment, min(lower_Mw))
+            # Step 2: subtract off fraction above max(eq_Mw)
+            moment_fraction = moment_fraction - 
+                compute_moment_fraction_from_events_greater_or_equal_than_mwmin(
+                    broad_Mw_seq, broad_rates, broad_seismic_moment, max(upper_Mw))
            
             stopifnot(moment_fraction >= 0 & moment_fraction <= 1)
         }else{
@@ -473,10 +491,6 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
         # Evaluate LHS of seismic moment balance equation
         LHS = (sourcezone_total_area * 1e+06) * par$slip_rate * moment_fraction
-
-
-        lower_Mw = eq_Mw - table_Mw_increment/2
-        upper_Mw = eq_Mw + table_Mw_increment/2
 
         # We need to solve for 'a', given the long-term slip rate.
         # This can be done by initially setting 'a' to zero, then
