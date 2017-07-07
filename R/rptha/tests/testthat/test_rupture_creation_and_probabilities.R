@@ -99,6 +99,13 @@ test_that("test_rupture_creation_and_probabilities", {
     # Check that we get pretty much the same as rate_functionB by setting Mw_min to 0,
     # and ignoring the moment below mwmin.
     #
+    # Slight differences can occur because when we use 'account_for_moment_below_mwmin',
+    # the integration of moment rate below mw-min is done in high detail. OTOH, when
+    # we use the earthquake event table, we get the moment from Mw [often crudely discretized, e.g. dMw=0.1]
+    # and assign a rate based on the exact rate from [Mw-dMw/2, Mw+dMw/2]. The 'moment' in the
+    # bin would obviously differ if we split the bin into a set of finer bins [because the moment at Mw=7.5 is not
+    # equal to the mean of all moments between Mw=7.4 and Mw=7.6
+    #
     # To do this test, we need to hack events with Mw = 0 to Mw = 7.4 into to
     # the event table. Those events need the right seismic moment.
     fake_event_table = earthquake_event_table[1,]
@@ -131,7 +138,7 @@ test_that("test_rupture_creation_and_probabilities", {
         account_for_moment_below_mwmin=FALSE)
 
     freq_gt9C = 1/rate_functionC(9.0)
-    expect_that(abs(freq_gt9C - freq_gt9B) < 0.0005*max(freq_gt9C, freq_ft9B), is_true())
+    expect_that(abs(freq_gt9C - freq_gt9B) < 0.0005*max(freq_gt9C, freq_gt9B), is_true())
 
     #
     # Compute some quantiles representing uncertainty in the rate function
