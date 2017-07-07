@@ -204,7 +204,7 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
                 # Allow consideration of right-lateral component, between -pi/4 and pi/4.
                 div_vec = pmax(0, -uss$bird_vel_div[ui])
                 rl_vec = uss$bird_vel_rl[ui]
-                rl_vec = sign(rl_vec) * pmax(abs(rl_vec), div_vec)
+                rl_vec = sign(rl_vec) * pmax(abs(rl_vec), div_vec) # Restricts angle to +- pi/4 of pure thrust
                 convergent_slip = sqrt(rl_vec**2 + div_vec**2)
 
                 # Here we use the 'full' slip vector
