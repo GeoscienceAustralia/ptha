@@ -58,6 +58,7 @@ read_lon_lat_elev<-function(nc_file){
 source_zone_stage_exceedance_rates<-function(tsunami_file, gauge_points, point_chunk_size, stage_seq){
 
     # Check that gauges are ordered as expected
+    lgp = length(gauge_points[,1])
     local_gauge_points = read_lon_lat_elev(tsunami_file)
     stopifnot(all(local_gauge_points == gauge_points))
 
@@ -67,8 +68,7 @@ source_zone_stage_exceedance_rates<-function(tsunami_file, gauge_points, point_c
     output_rates_upper_ci = matrix( NA, nrow=stage_seq_len, ncol=lgp )
 
     # Process gauges in chunks to reduce memory usage
-    lgp = length(gauge_points)
-    point_chunks = splitIndices(lgp, n=ceiling(lgp/point_chunk_size))
+    point_chunks = splitIndices(lgp, ceiling(lgp/point_chunk_size))
 
     # File we read from
     fid = nc_open(tsunami_file, readunlim=FALSE) 
@@ -81,6 +81,8 @@ source_zone_stage_exceedance_rates<-function(tsunami_file, gauge_points, point_c
     # Do the calculation for all points, in chunks
     for(j in 1:length(point_chunks)){
 
+        #print(paste0(c(j, '/', length(point_chunks))))
+
         gauge_indices = point_chunks[[j]]
         # Ensure indices are contiguous
         stopifnot(all(range(diff(gauge_indices)) == 1))
@@ -91,6 +93,8 @@ source_zone_stage_exceedance_rates<-function(tsunami_file, gauge_points, point_c
             count=c(-1, length(gauge_indices)))
 
         for(k in 1:ncol(peak_stages)){
+
+            if(all(is.na(peak_stages[,k]))) next
            
             # Sort the stages in decreasing order 
             events_sort = sort(peak_stages[,k], index.return=TRUE, decreasing=TRUE)
@@ -109,16 +113,16 @@ source_zone_stage_exceedance_rates<-function(tsunami_file, gauge_points, point_c
             sorted_cumulative_rate_upper = cumsum(c(0, 0, event_rate_upper[events_sort$ix]))
 
             # Rates
-            rate_fun = approxfun(sorted_stages, sorted_cumulative_rate)
-            output_rates[,gauge_no] = rate_fun(stage_seq)
+            rate_fun = approx(sorted_stages, sorted_cumulative_rate, xout=stage_seq)
+            output_rates[,gauge_no] = rate_fun$y
 
             # Upper estimate of rates
-            rate_fun = approxfun(sorted_stages, sorted_cumulative_rate_upper)
-            output_rates_upper_ci[,gauge_no] = rate_fun(stage_seq)
+            rate_fun = approx(sorted_stages, sorted_cumulative_rate_upper, xout=stage_seq)
+            output_rates_upper_ci[,gauge_no] = rate_fun$y
                         
             # Lower estimate of rates
-            rate_fun = approxfun(sorted_stages, sorted_cumulative_rate_lower)
-            output_rates_lower_ci[,gauge_no] = rate_fun(stage_seq)
+            rate_fun = approx(sorted_stages, sorted_cumulative_rate_lower, xout=stage_seq)
+            output_rates_lower_ci[,gauge_no] = rate_fun$y
         }
     }
 
@@ -241,13 +245,14 @@ create_rate_netcdf_file<-function(
     return(invisible(output_file_name))
 }
 
+stop()
 # Get point info
 gauge_points = read_lon_lat_elev(all_source_uniform_slip_tsunami[1])
 
 # names of sources
 source_names = basename(dirname(dirname(all_source_uniform_slip_tsunami)))
 # check that uniform/stochastic files are ordered the same
-stopifnot(all(source_names == basename(dirname(dirname(all_source_stochastic_slip_tsunami))) )
+stopifnot(all(source_names == basename(dirname(dirname(all_source_stochastic_slip_tsunami)))  ) )
 
 for(i in 1:length(source_names)){
 
