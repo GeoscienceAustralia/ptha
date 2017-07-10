@@ -32,7 +32,7 @@ stage_seq_min = 0.02 # Min stage on rate curve m
 stage_seq = exp(seq(log(stage_seq_min), log(stage_seq_max), len=stage_seq_len))
 
 # Number of cores to use in shared memory parallel
-mc_cores = 16
+MC_CORES = 16
 
 #
 # END INPUTS
@@ -145,7 +145,7 @@ source_zone_stage_exceedance_rates<-function(
             sorted_cumulative_rate_upper = cumsum(c(0, 0, 
                 event_rate_upper[events_sort$ix]))
 
-            output = vector(mode=list, length=3)
+            output = vector(mode='list', length=3)
 
             # Rates
             rate_fun = approx(sorted_stages, sorted_cumulative_rate, 
