@@ -21,7 +21,8 @@ all_source_stochastic_slip_tsunami = Sys.glob(
 # We read in (nevents x point_chunk_size) max stage values at once, and then
 # compute rate curves for the point_chunk_size gauges before moving to the next
 # chunk
-point_chunk_size = 300
+point_chunk_size_uniform = 10000
+point_chunk_size_stochastic = 1000
 
 # Sequence of stages at which we compute the rate, for every point, for every
 # source-zone
@@ -37,7 +38,7 @@ MC_CORES = 16
 #
 # END INPUTS
 #
-
+mycluster = makeForkCluster(nnodes=MC_CORES)
 
 #'
 #' Get lon/lat/elevation/id for all gauges
@@ -62,6 +63,7 @@ read_lon_lat_elev<-function(nc_file){
 }
 
 
+#'
 #' Get stage exceedance rates based on a file with tsunami peak-stages and rates
 #' for each event
 #' 
@@ -120,12 +122,20 @@ source_zone_stage_exceedance_rates<-function(
 
         # Function for the inner loop which computes rates for the k'th gauge
         # in this chunk. Will run in parallel.
-        rates_kth_gauge<-function(k){
+        #rates_kth_gauge<-function(k, stage_seq = stage_seq, peak_stages=peak_stages){
+        rates_kth_gauge<-function(peak_stage_kth_gauge, stage_seq = stage_seq, 
+            event_rate=event_rate, event_rate_lower=event_rate_lower, 
+            event_rate_upper=event_rate_upper){
 
-            if(all(is.na(peak_stages[,k]))) next
+            #if(all(is.na(peak_stages[,k]))){
+            if(all(is.na(peak_stage_kth_gauge))){
+               return(list(stage_seq*NA, stage_seq*NA, stage_seq*NA))
+            } 
 
             # Sort the stages in decreasing order 
-            events_sort = sort(peak_stages[,k], index.return=TRUE, 
+            #events_sort = sort(peak_stages[,k], index.return=TRUE, 
+            #    decreasing=TRUE)
+            events_sort = sort(peak_stage_kth_gauge, index.return=TRUE, 
                 decreasing=TRUE)
             #gauge_no = gauge_indices[k]
 
@@ -169,8 +179,14 @@ source_zone_stage_exceedance_rates<-function(
         }
 
         # Main computation
-        par_output = mclapply(as.list(1:ncol(peak_stages)), rates_kth_gauge, 
-            mc.cores=MC_CORES)
+        #par_output = mclapply(as.list(1:ncol(peak_stages)), rates_kth_gauge, 
+        #    mc.cores=MC_CORES)
+        #par_output = parLapply(cl=mycluster, 
+        #    X=as.list(1:ncol(peak_stages)), fun=rates_kth_gauge,
+        #    stage_seq = stage_seq, peak_stages = peak_stages)
+        par_output = parCapply(cl=mycluster, x=peak_stages, FUN=rates_kth_gauge, stage_seq=stage_seq,
+            event_rate=event_rate, event_rate_upper=event_rate_upper, 
+            event_rate_lower=event_rate_lower)
 
         # Unpack parallel output to main arrays
         for(i in 1:length(par_output)){
@@ -191,6 +207,7 @@ source_zone_stage_exceedance_rates<-function(
     return(output)
 }
 
+#'
 #' Take care of saving outputs to netcdf file
 #'
 #'
@@ -204,11 +221,11 @@ create_rate_netcdf_file<-function(
     stochastic_slip_tsunami_file){
 
     # Dimension for rate curve
-    dim_stage_seq = ncdim_create('stage', 'm', vals=stage_seq, unlim=FALSE,
+    dim_stage_seq = ncdim_def('stage', 'm', vals=stage_seq, unlim=FALSE,
         longname='stages corresponding to tsunami wave height exceedance rates')
 
     # Dimension for gauges
-    dim_station = ncdim_create('station', '', vals=1:length(gauge_points[,1]), 
+    dim_station = ncdim_def('station', '', vals=1:length(gauge_points[,1]), 
         unlim=TRUE,
         longname='integer index corresponding to the gauge location')
 
@@ -313,7 +330,7 @@ create_rate_netcdf_file<-function(
     return(invisible(output_file_name))
 }
 
-# stop()
+#stop()
 # Get point info
 gauge_points = read_lon_lat_elev(all_source_uniform_slip_tsunami[1])
 
@@ -333,12 +350,15 @@ for(i in 1:length(source_names)){
     # Get uniform slip outputs
     uniform_slip_rates = source_zone_stage_exceedance_rates(
         uniform_slip_tsunami_file, gauge_points,
-        point_chunk_size=point_chunk_size, stage_seq=stage_seq)
+        point_chunk_size=point_chunk_size_uniform, stage_seq=stage_seq)
 
     # Get stochastic slip outputs
     stochastic_slip_rates = source_zone_stage_exceedance_rates(
         stochastic_slip_tsunami_file, gauge_points,
-        point_chunk_size=point_chunk_size, stage_seq=stage_seq)
+        point_chunk_size=point_chunk_size_stochastic, stage_seq=stage_seq)
+
+    # Remove memory from cluster
+    parLapply(mycluster, as.list(1:MC_CORES), gc)
 
     # Write out to a file 'tsunami_stage_exceedance_rates_SOURCENAME.nc'
     # in the same folder as uniform_slip_tsunami_file
@@ -347,6 +367,9 @@ for(i in 1:length(source_names)){
         uniform_slip_rates, stochastic_slip_rates,
         uniform_slip_tsunami_file, stochastic_slip_tsunami_file)
 
+    # Save some memory
+    rm(uniform_slip_rates, stochastic_slip_rates)
+    gc()
 }
 
 
