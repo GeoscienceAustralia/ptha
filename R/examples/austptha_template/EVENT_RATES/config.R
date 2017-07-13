@@ -179,6 +179,13 @@ all_source_stochastic_slip_tsunami = Sys.glob(
 
 
 
+################################################################################
+#
+# CONSISTENCY CHECKS BELOW HERE
+#
+################################################################################
+
+
 #
 # Here we check that the parameters exist
 # 
@@ -198,3 +205,22 @@ if(logic_tree_parameter_subsampling_factor < 3){
         ' produced if logic_tree_parameter_subsampling_factor < 3') 
     )
 }
+
+#
+# Here we check for consistency among filenames.
+#
+source_names_1 = basename(dirname(dirname(unit_source_statistics_netcdf_files)))
+source_names_2 = basename(dirname(dirname(dirname(unit_source_grid_polygon_shapefiles))))
+source_names_3 = basename(dirname(dirname(all_source_uniform_slip_tsunami)))
+source_names_4 = basename(dirname(dirname(all_source_stochastic_slip_tsunami)))
+
+if(!all(source_names_1 == source_names_2)){
+    stop('unit_source_statistics_netcdf_files and unit_source_grid_polygon_shapefiles must refer to the same source-zones, in the same order')
+}
+if(!all(source_names_1 == source_names_3)){
+    stop('unit_source_statistics_netcdf_files and all_source_uniform_slip_tsunami must refer to the same source-zones, in the same order')
+}
+if(!all(source_names_1 == source_names_4)){
+    stop('unit_source_statistics_netcdf_files and all_source_stochastic_slip_tsunami must refer to the same source-zones, in the same order')
+}
+
