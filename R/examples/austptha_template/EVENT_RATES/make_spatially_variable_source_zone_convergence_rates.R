@@ -112,7 +112,7 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
 
             top_point = as.numeric(ti[j,1:2])
             # Convert 'top_point' to the 'top-edge' point
-            half_width_surface = as.numeric(ti$width[j])/2 * 1000 * cos(2*pi*ti$dip[j]/180)
+            half_width_surface = as.numeric(ti$width[j])/2 * 1000 * cos(pi*ti$dip[j]/180)
             top_point_top_edge_approx = destPoint(top_point, ti$strike[j]-90, half_width_surface)
 
             output = nearest_bird_point(top_point_top_edge_approx)

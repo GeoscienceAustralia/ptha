@@ -6,7 +6,7 @@
 # all events with that Mw]. For example, the nominal 'individual event' rates
 # are inversely related to the number of events in the magnitude category, which is
 # somewhat arbitrary [especially for stochastic slip]. 
-
+library(rptha)
 config = new.env()
 source('config.R', local=config)
 
@@ -125,20 +125,23 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
     if(sourcezone_parameters$use_bird_convergence[i] == 1){
 
         #
-        # Idea: If plate convergence vector is between -pi/4, pi/4 of pure thrust,
-        # then use the raw vector. Otherwise, project it onto the nearest of -pi/4, pi/4 of pure thrust
+        # Idea: If plate convergence vector is between
+        # "+-config$rake_deviation_thrust_events" of pure thrust,
+        # then use the raw vector. Otherwise, project it onto the nearest
+        # within that range
         #
         # This is consistent with our use of data, which extracts earthquakes
-        # with rake being within pi/4 of pure thrust.
+        # with rake being within some deviation of pure thrust.
         #
-        div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div)
-
-        # Limit lateral component that we consider, based on the permitted rake deviation from pure thrust
-        allowed_rake_deviation_radians = config$rake_deviation_thrust_events / 180 * pi
         
-        rl_vec = sign(bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl) * 
-            pmin(abs(bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl), 
-            div_vec*allowed_rake_deviation_radians)
+        # Shorthand divergent and right-lateral velocity 
+        div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div)
+        bvrl =  bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl
+
+        # Limit lateral component that we consider, based on the permitted rake
+        # deviation from pure thrust
+        allowed_rake_deviation_radians = config$rake_deviation_thrust_events / 180 * pi
+        rl_vec = sign(bvrl) *pmin(abs(bvrl), div_vec*allowed_rake_deviation_radians)
 
         source_slip = weighted.mean(
             # Convergent slip
@@ -154,8 +157,8 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
     }
 
     # Account for non-zero dip, and convert from mm/year to m/year
-    mean_dip = mean(bird2003_env$unit_source_tables[[source_name]]$dip)
-    cos_dip = cos(2*pi*mean_dip/180)
+    mean_dip = mean_angle(bird2003_env$unit_source_tables[[source_name]]$dip)
+    cos_dip = cos(pi*mean_dip/180)
     source_slip = source_slip/cos_dip * 1/1000
 
     #
