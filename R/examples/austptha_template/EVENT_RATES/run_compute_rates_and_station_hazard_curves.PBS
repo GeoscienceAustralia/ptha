@@ -1,0 +1,13 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=6:00:00
+#PBS -lmem=32GB
+#PBS -lncpus=16
+#PBS -l wd
+
+# Source key R modules -- not that you will need the right packages installed
+# as well (see comments in the script that is sourced)
+source R_modules.sh
+Rscript compute_rates_all_sources.R
+Rscript compute_station_hazard_curves.R
