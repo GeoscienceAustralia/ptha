@@ -24,23 +24,18 @@ for i in $all_subdirs; do
     checkFile=$i'/running_flag.txt';
     if [ -f $checkFile ];
     then
-	#echo $i
-	#echo 'ALREADY ON'
+        #echo $i
+        #echo 'ALREADY ON'
         continue 
     else
-	# The job has not been submitted, so we should submit it
+        # The job has not been submitted, so we should submit it
         cd $i
         touch 'running_flag.txt'
-	#echo $(pwd)
-        #echo 'Could run this one';
-        #source run_jagurs_raw.sh &
-        #./java_example < model_namelist_java2.in > outfile.log &
 
-	# See if we can bind to individual CPUs for better speed
+        # See if we can bind to individual CPUs for better speed
         numactl -C $counter ./generic_model model_namelist.in > outfile.log &
         counter=$(($counter+$one));
-        #echo $counter;
-	cd $mybasedir
+        cd $mybasedir
     fi
 
     # Once we have submitted 16 jobs, break from this loop.
