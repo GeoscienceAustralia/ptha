@@ -9,11 +9,12 @@ have been run before trying to run codes here.
 
 Once the prerequesite steps are complete, edit [config.R](config.R) in this
 folder to set parameters used in the event rate computation. Then, assuming
-everything is correctly configured, the codes can be run with:
+everything is correctly configured, the codes can be run (on NCI) with:
 
-    source run_compute_rates_and_station_hazard_curves.PBS
+    qsub run_compute_rates_and_station_hazard_curves.PBS
 
-(or qsubbing the above script, if running on a machine that uses qsub).
+With slight modifications, one could also just 'source' the above script on
+another machine.
 
 
 
