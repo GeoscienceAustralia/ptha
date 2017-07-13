@@ -122,22 +122,17 @@ source_zone_stage_exceedance_rates<-function(
 
         # Function for the inner loop which computes rates for the k'th gauge
         # in this chunk. Will run in parallel.
-        #rates_kth_gauge<-function(k, stage_seq = stage_seq, peak_stages=peak_stages){
         rates_kth_gauge<-function(peak_stage_kth_gauge, stage_seq = stage_seq, 
             event_rate=event_rate, event_rate_lower=event_rate_lower, 
             event_rate_upper=event_rate_upper){
 
-            #if(all(is.na(peak_stages[,k]))){
             if(all(is.na(peak_stage_kth_gauge))){
                return(list(stage_seq*NA, stage_seq*NA, stage_seq*NA))
             } 
 
             # Sort the stages in decreasing order 
-            #events_sort = sort(peak_stages[,k], index.return=TRUE, 
-            #    decreasing=TRUE)
             events_sort = sort(peak_stage_kth_gauge, index.return=TRUE, 
                 decreasing=TRUE)
-            #gauge_no = gauge_indices[k]
 
             # Value that no stage is larger than for this gauge
             stage_upper_bound = events_sort$x[1] + 1.0e-03
@@ -160,32 +155,28 @@ source_zone_stage_exceedance_rates<-function(
             # Rates
             rate_fun = approx(sorted_stages, sorted_cumulative_rate, 
                 xout=stage_seq)
-            #output_rates[,gauge_no] = rate_fun$y
             output[[1]] = rate_fun$y
 
             # Upper estimate of rates
             rate_fun = approx(sorted_stages, sorted_cumulative_rate_upper, 
                 xout=stage_seq)
-            #output_rates_upper_ci[,gauge_no] = rate_fun$y
             output[[2]] = rate_fun$y
 
             # Lower estimate of rates
             rate_fun = approx(sorted_stages, sorted_cumulative_rate_lower, 
                 xout=stage_seq)
-            #output_rates_lower_ci[,gauge_no] = rate_fun$y
             output[[3]] = rate_fun$y
 
             return(output)
         }
 
         # Main computation
-        #par_output = mclapply(as.list(1:ncol(peak_stages)), rates_kth_gauge, 
-        #    mc.cores=MC_CORES)
-        #par_output = parLapply(cl=mycluster, 
-        #    X=as.list(1:ncol(peak_stages)), fun=rates_kth_gauge,
-        #    stage_seq = stage_seq, peak_stages = peak_stages)
-        par_output = parCapply(cl=mycluster, x=peak_stages, FUN=rates_kth_gauge, stage_seq=stage_seq,
-            event_rate=event_rate, event_rate_upper=event_rate_upper, 
+        par_output = parCapply(cl=mycluster, 
+            x=peak_stages, 
+            FUN=rates_kth_gauge, 
+            stage_seq=stage_seq, 
+            event_rate=event_rate, 
+            event_rate_upper=event_rate_upper, 
             event_rate_lower=event_rate_lower)
 
         # Unpack parallel output to main arrays

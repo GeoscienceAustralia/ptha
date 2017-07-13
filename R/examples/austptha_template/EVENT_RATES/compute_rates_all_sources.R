@@ -1,7 +1,16 @@
-# Get environment we can use to provide spatially variable convergence information
-source('make_spatially_variable_source_zone_convergence_rates.R')
-bird2003_env = event_conditional_probability_bird2003_factory(
-    return_environment=TRUE)
+# Compute the rates for all source-zones, and assign nominal 'individual event' rates
+# to each tsunami event in the synthetic catalogue. 
+#
+# Note the 'individual event' rates are not by themselves particularly
+# meaningful [they simply involve distributing the rate for each Mw value over
+# all events with that Mw]. For example, the nominal 'individual event' rates
+# are inversely related to the number of events in the magnitude category, which is
+# somewhat arbitrary [especially for stochastic slip]. 
+
+
+#
+# INPUTS
+# 
 
 sourcezone_parameter_file = '../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv'
 sourcezone_parameters = read.csv(sourcezone_parameter_file, stringsAsFactors=FALSE)
@@ -29,10 +38,26 @@ mw_observed_perturbation = 0.05
 Mw_frequency_dists = c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')
 Mw_frequency_dists_p = c(0.7, 0.3)
 
+# Interpolate logic-tree parameter variation over this many values, all assumed to have
+# equal rate. For example, if we provide source_coupling = c(0.1, 0.2, 0.7), then the
+# actual coupling values will be "approx(source_coupling, n=nbins)$y"
 nbins = 9
+
+#
+# END INPUTS
+#
+
+
+# Get environment we can use to provide spatially variable convergence information
+source('make_spatially_variable_source_zone_convergence_rates.R')
+bird2003_env = event_conditional_probability_bird2003_factory(
+    return_environment=TRUE)
+
+
 #
 # Function to evaluate the rates for a given source-zone. This function returns
 # it's environment, so we have easy access to key variables
+#
 source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table=FALSE){
 
     #
@@ -95,13 +120,16 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
     #
     # Tectonic convergence rate
     #
-    mean_dip = mean(bird2003_env$unit_source_tables[[source_name]]$dip)
-    cos_dip = cos(2*pi*mean_dip/180)
 
     if(sourcezone_parameters$use_bird_convergence[i] == 1){
 
+        #
         # Idea: If plate convergence vector is between -pi/4, pi/4 of pure thrust,
         # then use the raw vector. Otherwise, project it onto the nearest of -pi/4, pi/4 of pure thrust
+        #
+        # This is consistent with our use of data, which extracts earthquakes
+        # with rake being within pi/4 of pure thrust.
+        #
         div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div)
         # Limit lateral component that we consider to be no more than div component
         rl_vec = sign(bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl) * 
@@ -121,6 +149,8 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
     }
 
     # Account for non-zero dip, and convert from mm/year to m/year
+    mean_dip = mean(bird2003_env$unit_source_tables[[source_name]]$dip)
+    cos_dip = cos(2*pi*mean_dip/180)
     source_slip = source_slip/cos_dip * 1/1000
 
     #
