@@ -1488,8 +1488,9 @@ plot_unit_source_interior_points_cartesian<-function(us){
     dy = us$dy
     ds = 0.5 * sqrt(dx**2 + dy**2)
 
-    perturb = ds * cbind(sin(us$grid_points[,'strike']/180*pi - pi/2),
-        cos(us$grid_points[,'strike']/180*pi - pi/2))
+    deg2rad = pi/180
+    perturb = ds * cbind(sin(us$grid_points[,'strike']*deg2rad - pi/2),
+        cos(us$grid_points[,'strike']*deg2rad - pi/2))
     arrows(output_points[,1], output_points[,2], output_points[,1] + perturb[,1],
         output_points[,2] + perturb[,2], length=0)
 
@@ -1500,7 +1501,7 @@ plot_unit_source_interior_points_cartesian<-function(us){
                     c(output_points[i,2], output_points[i,2]))
         points(l1, t='l', col='orange', lwd=0.5)
 
-        sindip = sin(output_points[i,'dip']/180*pi)
+        sindip = sin(output_points[i,'dip']*deg2rad)
         l2 = cbind(c(output_points[i,1], output_points[i,1] + 2*ds/3),
                    c(output_points[i,2], output_points[i,2] - 2*ds/3*sindip))
         points(l2, t='l', col='orange', lwd=0.5)
