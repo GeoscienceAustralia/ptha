@@ -3,6 +3,10 @@
 #
 suppressPackageStartupMessages(library(rptha))
 
+# Get the config variables
+config = new.env()
+source('config.R', local=config)
+
 #'
 #' Map Bird (2003) convergence data onto our unit-sources
 #
@@ -25,7 +29,7 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
     # Parse bird's data (which is zipped for compression)
     # 
 
-    bird_data = '../DATA/BIRD_PLATE_BOUNDARIES/PB2002_steps.dat.txt.zip'
+    bird_data = config$bird2003_steps_data_zip_file 
     bd = read.table(
             unz(description=bird_data, 
                 filename=basename(gsub('\\.zip', '', bird_data))) 
@@ -61,8 +65,7 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
     #
     # Parse unit-source top edges
     #
-    unit_source_files = Sys.glob(
-        '../SOURCE_ZONES/*/TSUNAMI_EVENTS/unit_source_statistics*.nc')
+    unit_source_files = config$unit_source_statistics_netcdf_files 
     unit_source_tables = lapply(as.list(unit_source_files), read_table_from_netcdf)
     #
     all_source_names = basename(dirname(dirname(unit_source_files)))
@@ -201,16 +204,19 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
                 # Here we use the convergent component of the slip vector
                 #convergent_slip = pmax(0, -uss$bird_vel_div[ui])
 
-                # Allow consideration of right-lateral component, between -pi/4 and pi/4.
+                # Allow consideration of right-lateral component, limited by the allowed rake deviation
                 div_vec = pmax(0, -uss$bird_vel_div[ui])
                 rl_vec = uss$bird_vel_rl[ui]
-                rl_vec = sign(rl_vec) * pmax(abs(rl_vec), div_vec) # Restricts angle to +- pi/4 of pure thrust
+                allowed_rake_deviation_radians = config$rake_deviation_thrust_events / 180 * pi
+                # Restrict angle to +- rake_deviation_thrust_events of pure thrust
+                rl_vec = sign(rl_vec) * pmin(abs(rl_vec), div_vec * tan(allowed_rake_deviation_radians)) 
                 convergent_slip = sqrt(rl_vec**2 + div_vec**2)
 
                 # Here we use the 'full' slip vector
                 #convergent_slip = pmax(0, sign(-uss$bird_vel_div[ui])) * sqrt(uss$bird_vel_div[ui]**2 + uss$bird_vel_rl[ui]**2)
                 long_term_slip_near_event[i] = sum(areas * convergent_slip)/sum(areas)
             }
+
             # Set the conditional proability as proportional to [event area x long-term-slip]
             conditional_probability = (events_with_Mw$area * long_term_slip_near_event)
             conditional_probability = conditional_probability/sum(conditional_probability)

@@ -1,6 +1,8 @@
 library(rptha)
 
 # Make events with magnitudes ranging from Mw_min to Mw_max, separated by dMw
+# These values do not have to correspond to Mw ranges that are assigned non-zero 
+# probability -- but they should fully contain the possible values
 Mw_min = 7.2
 Mw_max = 9.8
 dMw = 0.1

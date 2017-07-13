@@ -7,41 +7,42 @@
 # are inversely related to the number of events in the magnitude category, which is
 # somewhat arbitrary [especially for stochastic slip]. 
 
+config = new.env()
+source('config.R', local=config)
 
 #
 # INPUTS
 # 
 
-sourcezone_parameter_file = '../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv'
+sourcezone_parameter_file = config$sourcezone_parameter_file 
 sourcezone_parameters = read.csv(sourcezone_parameter_file, stringsAsFactors=FALSE)
 
 source_names = sourcezone_parameters$sourcename
 
 # Never allow Mw_max to be greater than this
-MAXIMUM_ALLOWED_MW_MAX = 9.8
-MINIMUM_ALLOWED_MW_MAX = 7.65
+MAXIMUM_ALLOWED_MW_MAX = config$MAXIMUM_ALLOWED_MW_MAX  # 9.8
+MINIMUM_ALLOWED_MW_MAX = config$MINIMUM_ALLOWED_MW_MAX  # 7.65
 
 # Increment between Mw values in the earthquake_events table. We will check
 # that the table holds the same value
-dMw = 0.1
+dMw = config$dMw # 0.1
 
 # Only assign non-zero probability to earthquakes with Mw greater than this
-MW_MIN = 7.5 - dMw/2
+MW_MIN = config$MW_MIN # 7.45
 
 # We ensure that (Mw_max >= maximum_observed_mw + mw_observed_perturbation)
 # This ensures that no logic-tree curve assigns zero probability to the largest
 # observed event
-mw_observed_perturbation = 0.05
-
+mw_observed_perturbation = config$mw_observed_perturbation #0.05
 
 # Truncated or 'characteristic' Gutenberg Richter model
-Mw_frequency_dists = c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')
-Mw_frequency_dists_p = c(0.7, 0.3)
+Mw_frequency_dists = config$Mw_frequency_distribution_types #c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')
+Mw_frequency_dists_p = config$Mw_frequency_distribution_weights #c(0.7, 0.3)
 
 # Interpolate logic-tree parameter variation over this many values, all assumed to have
 # equal rate. For example, if we provide source_coupling = c(0.1, 0.2, 0.7), then the
 # actual coupling values will be "approx(source_coupling, n=nbins)$y"
-nbins = 9
+nbins = config$logic_tree_parameter_subsampling_factor # 9
 
 #
 # END INPUTS
@@ -131,9 +132,13 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
         # with rake being within pi/4 of pure thrust.
         #
         div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div)
-        # Limit lateral component that we consider to be no more than div component
+
+        # Limit lateral component that we consider, based on the permitted rake deviation from pure thrust
+        allowed_rake_deviation_radians = config$rake_deviation_thrust_events / 180 * pi
+        
         rl_vec = sign(bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl) * 
-            pmin(abs(bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl), div_vec)
+            pmin(abs(bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl), 
+            div_vec*allowed_rake_deviation_radians)
 
         source_slip = weighted.mean(
             # Convergent slip

@@ -6,38 +6,40 @@
 library(rptha)
 library(parallel)
 
+# Get the config variables
+config = new.env()
+source('config.R', local=config)
+
 #
 # INPUTS
 #
 
-# Files with uniform slip max_stage for every point, and also event rates
-all_source_uniform_slip_tsunami = Sys.glob(
-    '../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_uniform_slip_earthquake_events_tsunami_*.nc')
-# Files with uniform slip max_stage for every point, and also event rates
-all_source_stochastic_slip_tsunami = Sys.glob(
-    '../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_*.nc')
+# NetCDF files with uniform slip max_stage for every point, and also event rates
+all_source_uniform_slip_tsunami = config$all_source_uniform_slip_tsunami
+
+# NetCDF files with stochastic slip max_stage for every point, and also event rates
+all_source_stochastic_slip_tsunami = config$all_source_stochastic_slip_tsunami 
 
 # Apply hazard curve computation / data extraction to chunks of data
 # We read in (nevents x point_chunk_size) max stage values at once, and then
 # compute rate curves for the point_chunk_size gauges before moving to the next
 # chunk
-point_chunk_size_uniform = 10000
-point_chunk_size_stochastic = 1000
+point_chunk_size_uniform = config$point_chunk_size_uniform #10000
+point_chunk_size_stochastic = config$point_chunk_size_stochastic #1000
 
 # Sequence of stages at which we compute the rate, for every point, for every
 # source-zone
-stage_seq_len = 100 # Number of points defining rate curve
-stage_seq_max = 20 # Max stage on rate curve, m
-stage_seq_min = 0.02 # Min stage on rate curve m
-# Stage points have logarithmic spacing
-stage_seq = exp(seq(log(stage_seq_min), log(stage_seq_max), len=stage_seq_len))
+stage_seq = config$stage_seq
 
 # Number of cores to use in shared memory parallel
-MC_CORES = 16
+MC_CORES = config$MC_CORES
 
 #
 # END INPUTS
 #
+
+stage_seq_len = length(config$stage_seq) # Number of points defining rate curve
+
 mycluster = makeForkCluster(nnodes=MC_CORES)
 
 #'
