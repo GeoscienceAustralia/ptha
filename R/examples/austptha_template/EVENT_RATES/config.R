@@ -7,7 +7,8 @@
 # PARAMETERS CONTROLLING SELECTION OF EVENTS FROM GLOBAL CMT CATALOGUE
 #
 #######################################################################################
-cmt_catalogue_csv = '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Earthquake_catalogues/Global_CMT_catalogue/GCMT_1976_2017.csv'
+#cmt_catalogue_csv = '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Earthquake_catalogues/Global_CMT_catalogue/GCMT_1976_2017.csv'
+cmt_catalogue_csv = '../../../DATA/EARTHQUAKE/Earthquake_catalogues/Global_CMT_catalogue/GCMT_1976_2017.csv'
 
 # Only use events with depth < depth_threshold
 depth_threshold = 71 # km
@@ -105,7 +106,6 @@ logic_tree_parameter_subsampling_factor = 9
 #
 # PARAMETERS CONTROLLING THE STAGE EXCEEDANCE RATE CURVE COMPUTATION AT EVERY STATION
 #
-#
 #######################################################################################
 
 #
@@ -140,6 +140,7 @@ MC_CORES = 16
 # 
 # IF YOU ARE USING THE STANDARD FILE STRUCTURE, THESE PARAMETERS PROBABLY DO NOT NEED
 # TO BE CHANGED
+#
 #######################################################################################
 
 #
@@ -157,7 +158,8 @@ unit_source_statistics_netcdf_files = Sys.glob(
 # Paths to shapefiles containing unit-source grid (one for each source-zone). 
 #
 unit_source_grid_polygon_shapefiles = Sys.glob(
-    '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/MODELS/AustPTHA/SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
+    '../SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
+    # '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/MODELS/AustPTHA/SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
 
 #
 # NetCDF files with uniform slip max_stage for every hazard point, and also a place for rates for every event
