@@ -630,11 +630,28 @@ make_tsunami_event_from_unit_sources<-function(
 
     # Do the sum
     for(i in 1:num_eq){
+
         if(verbose) print(paste0('    event ', i))
         earthquake_event = earthquake_events[i,]
         event_unit_sources = required_unit_sources[[i]]
 
         template_flow_data = template_flow_data * 0
+        #
+        # NOTE: We need to be sure that R is not treating "template_flow_data"
+        # as a reference to some other variable, since below we update in-place
+        # with "axpy_local".
+        #
+        # For example, in R, the following 'axpy_local' call will modify both
+        # 'x' and 'z', because R will not have made a copy for z [instead, x
+        # and z point to the same memory]:
+        #     x = runif(10)
+        #     z = x
+        #     y = runif(10)
+        #     axpy_local(x, 1.0, y)
+        # On the other hand, we can force a copy by creating z as:
+        #     z = x*1.0   # The multiplication forces a copy
+        # and then the problem does not arise
+        #
 
         if(uniform_slip){
             # Sum the unit sources [each with 1m slip]
