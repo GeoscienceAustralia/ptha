@@ -64,7 +64,8 @@ check_logfile<-function(logfile_name, plot=FALSE, extreme_stage_warning=Inf){
 ### Main
 config_env = new.env()
 source('config.R', local=config_env)
-all_logs = Sys.glob(paste0(config_env$all_runs_output_base_dir, '/', 
+all_logs = Sys.glob(
+    paste0(config_env$all_runs_output_base_dir, '/', 
         config_env$all_runs_dir, '/RUN_*/*/log*'))
 
 # Try ordering them along-strike/down-dip
