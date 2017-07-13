@@ -1,0 +1,15 @@
+# site_name is used in various 'naming' situations for the model runs and
+# directory structure
+site_name = basename(dirname(getwd()))
+
+# This should expand to a vector of all the initial stage 'tif' filenames you
+# want to run
+initial_condition_files = normalizePath(
+    Sys.glob(paste0('../EQ_SOURCE/Unit_source_data/', site_name, '/', site_name, '*.tif')))
+
+# The runs will occur inside this folder (which will be created)
+all_runs_dir = 'unit_source_tsunami'
+
+# The output will go inside here (with sub folders corresponding to
+# all_runs_dir/run_initial_condition/)
+all_runs_output_base_dir = normalizePath(paste0('./OUTPUTS/', site_name))
