@@ -112,7 +112,8 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
 
             top_point = as.numeric(ti[j,1:2])
             # Convert 'top_point' to the 'top-edge' point
-            half_width_surface = as.numeric(ti$width[j])/2 * 1000 * cos(pi*ti$dip[j]/180)
+            deg2rad = pi/180
+            half_width_surface = as.numeric(ti$width[j])/2 * 1000 * cos(deg2rad*ti$dip[j])
             top_point_top_edge_approx = destPoint(top_point, ti$strike[j]-90, half_width_surface)
 
             output = nearest_bird_point(top_point_top_edge_approx)
@@ -207,7 +208,8 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
                 # Allow consideration of right-lateral component, limited by the allowed rake deviation
                 div_vec = pmax(0, -uss$bird_vel_div[ui])
                 rl_vec = uss$bird_vel_rl[ui]
-                allowed_rake_deviation_radians = config$rake_deviation_thrust_events / 180 * pi
+                deg2rad = pi/180
+                allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
                 # Restrict angle to +- rake_deviation_thrust_events of pure thrust
                 rl_vec = sign(rl_vec) * pmin(abs(rl_vec), div_vec * tan(allowed_rake_deviation_radians)) 
                 convergent_slip = sqrt(rl_vec**2 + div_vec**2)
