@@ -13,12 +13,14 @@ library(raster)
 #
 ###############################################################################
 
-# A vector with shapefile names for all contours that we want to convert to
-# unit sources
 site_name = basename(dirname(getwd()))
 
-all_sourcezone_shapefiles = paste0('../../../DATA/SOURCEZONE_CONTOURS/', site_name, '.shp')
-all_sourcezone_downdip_shapefiles =  paste0('../../../DATA/SOURCEZONE_DOWNDIP_LINES/', site_name, '_downdip.shp')
+# A vector with shapefile names for all contours that we want to convert to
+# unit sources
+all_sourcezone_shapefiles = paste0('../../../DATA/SOURCEZONE_CONTOURS/', 
+    site_name, '.shp')
+all_sourcezone_downdip_shapefiles =  paste0('../../../DATA/SOURCEZONE_DOWNDIP_LINES/', 
+    site_name, '_downdip.shp')
 
 # Desired unit source geometric parameters
 desired_subfault_length = 50 # km
