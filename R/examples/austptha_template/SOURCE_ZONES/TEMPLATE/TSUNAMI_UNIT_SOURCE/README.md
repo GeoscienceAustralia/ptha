@@ -49,6 +49,12 @@ using 'numactl' when running multiple jobs on a single node. It is run with:
 
 The above needs to be done repeatedly, until all model runs are completed.
 
+Note if you are running multiple source-zones, it may be preferable to use the
+alternative script [../../run_16.sh](../../run_16.sh). The latter is run from
+it's own directory, and has the advantage of being able to run models from more
+than one source-zone (if it doesn't find 16 models to run on a single
+source-zone).
+
 # Step 4
 
 Perform some basic checks that the models have run correctly.
@@ -66,6 +72,10 @@ R* using:
     # are correctly ordered
     check_model_gauge_integrity()
 ```
+
+Note that this process can be run over multiple source-zones at once, by using
+the alternative script [../../checkruns.R](../../checkruns.R).
+
 
 [check_logfile.R](check_logfile.R) is used to plot the evolution of peak-stage
 and mass balance in every tsunami model, using the log-files. To run it, do
