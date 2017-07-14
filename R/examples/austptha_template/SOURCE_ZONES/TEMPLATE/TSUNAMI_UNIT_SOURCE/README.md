@@ -56,13 +56,15 @@ Perform some basic checks that the models have run correctly.
 [check_runs_complete.R](check_runs_complete.R) is used to check that the SWALS
 model runs have finished, and to do some basic checks. It is run *from within
 R* using: 
-    
-    source(check_runs_complete.R)
-    # This is used to check for models that seem to have not completed
-    check_models_have_been_run()
-    # If the above is ok, then try this to check that gauge outputs exist and
-    # are correctly ordered
-    check_models_gauge_integrity()
+   
+```r 
+source(check_runs_complete.R)
+# This is used to check for models that seem to have not completed
+check_models_have_been_run()
+# If the above is ok, then try this to check that gauge outputs exist and
+# are correctly ordered
+check_models_gauge_integrity()
+```
 
 [check_logfile.R](check_logfile.R) is used to plot the evolution of peak-stage
 and mass balance in every tsunami model, using the log-files. To run it, do
