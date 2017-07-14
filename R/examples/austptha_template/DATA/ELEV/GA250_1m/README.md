@@ -6,5 +6,6 @@ GA250 data, and then do:
     
     source downsample_ga250.sh
 
-**Note that this script is not directly used when making the merged DEM for our tsunami model**
-since similar operations are performed elsewhere. However, it can be a useful thing to do.
+**Note that this script is not directly used when making the merged DEM for our
+tsunami model** since similar operations are performed elsewhere. However, we
+need its output for other scripts (e.g. making hazard points). 
