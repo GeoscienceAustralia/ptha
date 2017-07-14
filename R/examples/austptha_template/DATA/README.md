@@ -21,4 +21,5 @@ potentially then manually edited. (see
 [make_initial_downdip_lines.R](make_initial_downdip_lines.R) for a script which
 does the non-manual parts).
 
-./BIRD_PLATE_BOUNDARIES -- contains zipped data from Bird's (2003) plate model
+[BIRD_PLATE_BOUNDARIES](BIRD_PLATE_BOUNDARIES) -- contains zipped data from
+Bird's (2003) plate model
