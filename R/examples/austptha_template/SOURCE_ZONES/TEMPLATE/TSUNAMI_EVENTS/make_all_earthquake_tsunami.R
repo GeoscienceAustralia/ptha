@@ -6,6 +6,12 @@ print(paste0('Time is: ', time_start))
 suppressPackageStartupMessages(library(rptha))
 suppressPackageStartupMessages(library(parallel))
 source('sum_tsunami_unit_sources.R')
+#
+# Get local parameters code
+#
+config_env = new.env()
+source('config.R', local=config_env)
+
 
 ###############################################################################
 
@@ -18,27 +24,33 @@ command_arguments = commandArgs(trailingOnly=TRUE)
 # Memory we will allow in unit-sources, in MB. 
 # It's a rough estimator -- should be a fraction of 1-nodes memory [e.g. using
 # 10 GB on a 32GB machine seemed to work ok]
-memory_for_unit_sources = 10 * 1024 
+memory_for_unit_sources = config_env$memory_for_unit_sources #10 * 1024 
 
 # Number of cores in parallel [shared memory only]
-mc_cores = 16 
+mc_cores = config_env$mc_cores
 
 # Run parameters
-msl = 0.0 # Pre-tsunami initial condition for linear model. Gauges with elev>msl are inactive
-lat_range = c(-72 + 2/60, 65 - 2/60) # Latitude range where gauges should be taken
-#lon_range = c(-40, 320) # Longitude range where gauges can be taken -- currently unused
+
+# Pre-tsunami initial condition for linear model. Gauges with elev>msl are inactive
+msl = config_env$msl #0.0 
+
+# Latitude range where gauges should be taken
+lat_range = config_env$lat_range #c(-72 + 2/60, 65 - 2/60) 
 
 # Record the wave arrival time as the time at which abs(stage) exceeds this
 # threshold
-stage_threshold_for_arrival_time = 0.001 
+stage_threshold_for_arrival_time = config_env$stage_threshold_for_arrival_time # 1.0e-03
 
 # Files to read
 source_zone_name = basename(dirname(getwd()))
-unit_source_statistics_file = paste0('unit_source_statistics_', source_zone_name, '.nc')
+unit_source_statistics_file = paste0('unit_source_statistics_', 
+    source_zone_name, '.nc')
 # Either uniform or stochastic slip
 # ... uniform slip is default
-earthquake_events_file = paste0('all_uniform_slip_earthquake_events_', source_zone_name, '.nc')
-# .... but replace with stochastic slip if an argument -stochastic_slip was passed to R on startup
+earthquake_events_file = paste0('all_uniform_slip_earthquake_events_', 
+    source_zone_name, '.nc')
+# .... but replace with stochastic slip if an argument -stochastic_slip was
+# passed to R on startup
 stochastic_slip = FALSE
 if(length(command_arguments) > 0){
     if(any(grepl('-stochastic_slip', command_arguments))){
@@ -117,7 +129,8 @@ all_eq_events = read_table_from_netcdf(earthquake_events_file)
 my_events = 1:length(all_eq_events[,1])
 if(subset_only){
     # Update my_events and all_eq_events
-    my_events = splitIndices(length(all_eq_events[,1]), number_of_subsets)[[this_subset]]
+    my_events = splitIndices(length(all_eq_events[,1]), 
+        number_of_subsets)[[this_subset]]
     all_eq_events = all_eq_events[my_events,]
     gc()
 }
@@ -125,9 +138,12 @@ if(subset_only){
 stopifnot(all( range(diff(my_events)) == 1))
 
 # Read gauges
-gauge_locations = get_netcdf_gauge_locations(unit_source_statistics$tide_gauge_file[1])
-# Read times at which gauge values are stored -- always constant thanks to the model setup
-gauge_times = get_netcdf_gauge_output_times(unit_source_statistics$tide_gauge_file[1])
+gauge_locations = get_netcdf_gauge_locations(
+    unit_source_statistics$tide_gauge_file[1])
+# Read times at which gauge values are stored -- always constant thanks to the
+# model setup
+gauge_times = get_netcdf_gauge_output_times(
+    unit_source_statistics$tide_gauge_file[1])
 
 #
 # Partition the work among processes
@@ -156,7 +172,8 @@ gauge_chunks_list = splitIndices(ngauges, ceiling(ngauges/station_chunk_size))
 #
 local_summary_function<-function(flow_data){
 
-    output = gauge_statistics_simple(gauge_times, flow_data, stage_threshold_for_arrival_time)
+    output = gauge_statistics_simple(gauge_times, flow_data, 
+        stage_threshold_for_arrival_time)
     return(output)
 
 }
@@ -204,9 +221,11 @@ if(!make_file_only){
 # Pack outputs
 #
 
-nul_r = -999.999 # A 'missing_data' flag which is definitely interpreted as real
+# Make a 'missing_data' flag which is definitely interpreted as real by netcdf
+nul_r = config_env$null_double 
 
-# Matrix for max stage, with as many rows as events, and as many columns as gauges.
+# Matrix for max stage, with as many rows as events, and as many columns as
+# gauges.
 # Even if (make_file_only==TRUE), we use this to create the netcdf output
 gauge_event_max_stage = matrix(nul_r, nrow=nevents, ncol=ngauges)
 
@@ -260,11 +279,11 @@ if(make_file_only){
     rm(modelled_flow_store, valid_gauges, valid_gauges_m)
     gc()
 }
-##############################################################################
+###############################################################################
 #
 # Write all the relevant information to netcdf
 #
-##############################################################################
+###############################################################################
 
 write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     source_zone_name,
@@ -301,8 +320,10 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     # Figure out a dimension size for a string
     charlen_sourcename = max(nchar(all_eq_events$sourcename))
     charlen_event_index_string = max(nchar(all_eq_events$event_index_string))
-    charlen_initial_cond_string = max(nchar(unit_source_statistics$initial_condition_file))
-    charlen_tide_gauge_string = max(nchar(unit_source_statistics$tide_gauge_file))
+    charlen_initial_cond_string = max(nchar(
+        unit_source_statistics$initial_condition_file))
+    charlen_tide_gauge_string = max(nchar(
+        unit_source_statistics$tide_gauge_file))
 
     dim_char_size = max(c(charlen_sourcename, charlen_event_index_string, 
         charlen_initial_cond_string, charlen_tide_gauge_string))
@@ -315,10 +336,12 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     #
     # Create netcdf variable for gauges
     #
-    gauge_lon_v = ncvar_def(name='lon', units='degrees_east', dim=list(dim_station), 
-        missval=NA, longname='station_longitude', prec='float')
-    gauge_lat_v = ncvar_def(name='lat', units='degrees_north', dim=list(dim_station), 
-        missval=NA, longname='station_latitude', prec='float')
+    gauge_lon_v = ncvar_def(name='lon', units='degrees_east', 
+        dim=list(dim_station), missval=NA, longname='station_longitude', 
+        prec='float')
+    gauge_lat_v = ncvar_def(name='lat', units='degrees_north', 
+        dim=list(dim_station), missval=NA, longname='station_latitude', 
+        prec='float')
     gauge_elev_v = ncvar_def(name='elev', units='m', dim=list(dim_station), 
         missval=NA, longname='station_ground_elevation_above_mean_sea_level', 
         prec='float')
@@ -365,45 +388,63 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
 
     #
     # Create a netcdf variable for the event summary statistics
-    # These statistics vary depending on whether we do stochastic_slip or uniform_slip
+    # These statistics vary depending on whether we do stochastic_slip or
+    # uniform_slip
     #
     if(stochastic_slip == FALSE){
         #
         # Uniform slip case
         #
-        event_area_v = ncvar_def(name='event_area', units='km^2', dim=list(dim_event),
-            missval=NA, longname='rupture_area_of_earthquake_event', prec='float')
+        event_area_v = ncvar_def(name='event_area', units='km^2', 
+            dim=list(dim_event), missval=NA, 
+            longname='rupture_area_of_earthquake_event', prec='float')
 
-        event_mean_length_v = ncvar_def(name='event_mean_length', units='km', dim=list(dim_event),
-            missval=NA, longname='mean_rupture_length_of_earthquake_event', prec='float')
-        event_mean_width_v = ncvar_def(name='event_mean_width', units='km', dim=list(dim_event),
-            missval=NA, longname='mean_rupture_width_of_earthquake_event', prec='float')
+        event_mean_length_v = ncvar_def(name='event_mean_length', units='km', 
+            dim=list(dim_event), missval=NA, 
+            longname='mean_rupture_length_of_earthquake_event', prec='float')
 
-        event_slip_v = ncvar_def(name='event_slip', units='m', dim=list(dim_event),
-            missval=NA, longname='slip_of_earthquake_event', prec='float')
+        event_mean_width_v = ncvar_def(name='event_mean_width', units='km', 
+            dim=list(dim_event), missval=NA, 
+            longname='mean_rupture_width_of_earthquake_event', prec='float')
+
+        event_slip_v = ncvar_def(name='event_slip', units='m', 
+            dim=list(dim_event), missval=NA, 
+            longname='slip_of_earthquake_event', prec='float')
 
         event_Mw_v = ncvar_def(name='event_Mw', units='', dim=list(dim_event),
-            missval=NA, longname='moment_magnitude_of_earthquake_event', prec='float')
+            missval=NA, longname='moment_magnitude_of_earthquake_event', 
+            prec='float')
 
-        event_mean_depth_v = ncvar_def(name='event_mean_depth', units='km', dim=list(dim_event),
-            missval=NA, longname='mean_rupture_depth_of_earthquake_event', prec='float') 
-        event_max_depth_v = ncvar_def(name='event_max_depth', units='km', dim=list(dim_event),
-            missval=NA, longname='max_rupture_depth_of_earthquake_event', prec='float') 
+        event_mean_depth_v = ncvar_def(name='event_mean_depth', units='km', 
+            dim=list(dim_event), missval=NA, 
+            longname='mean_rupture_depth_of_earthquake_event', prec='float') 
 
-        event_index_string_v = ncvar_def(name='event_index_string', units='', dim=list(dim_nchar, dim_event),
-            missval=NULL, longname='indices_of_unit_sources_included_in_earthquake_event', prec='char')
-        event_sourcename_v = ncvar_def(name='event_sourcename', units='', dim=list(dim_nchar, dim_event),
-            missval=NULL, longname='source_zone_name_of_earthquake_event', prec='char')
+        event_max_depth_v = ncvar_def(name='event_max_depth', units='km', 
+            dim=list(dim_event), missval=NA, 
+            longname='max_rupture_depth_of_earthquake_event', prec='float') 
 
-        event_rate_annual_v = ncvar_def(name='event_rate_annual', units='events per year', dim=list(dim_event),
+        event_index_string_v = ncvar_def(name='event_index_string', units='', 
+            dim=list(dim_nchar, dim_event), missval=NULL, 
+            longname='indices_of_unit_sources_included_in_earthquake_event', 
+            prec='char')
+        event_sourcename_v = ncvar_def(name='event_sourcename', units='', 
+            dim=list(dim_nchar, dim_event), missval=NULL, 
+            longname='source_zone_name_of_earthquake_event', prec='char')
+
+        event_rate_annual_v = ncvar_def(name='event_rate_annual', 
+            units='events per year', dim=list(dim_event),
             missval=NA, longname='mean_rate_of_earthquake_event', prec='float') 
-        event_rate_annual_upper_ci_v = ncvar_def(name='event_rate_annual_upper_ci', 
+        event_rate_annual_upper_ci_v = ncvar_def(
+            name='event_rate_annual_upper_ci', 
             units='events per year', dim=list(dim_event),
-            missval=NA, longname='upper_credible_interval_for_rate_of_earthquake_event', 
+            missval=NA, 
+            longname='upper_credible_interval_for_rate_of_earthquake_event', 
             prec='float') 
-        event_rate_annual_lower_ci_v = ncvar_def(name='event_rate_annual_lower_ci', 
+        event_rate_annual_lower_ci_v = ncvar_def(
+            name='event_rate_annual_lower_ci', 
             units='events per year', dim=list(dim_event),
-            missval=NA, longname='lower_credible_interval_for_rate_of_earthquake_event', 
+            missval=NA, 
+            longname='lower_credible_interval_for_rate_of_earthquake_event', 
             prec='float')
 
         # Append to list of variables, for making netcdf
@@ -417,48 +458,69 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
         # Stochastic slip case
         #
         event_Mw_v = ncvar_def(name='event_Mw', units='', dim=list(dim_event),
-            missval=NA, longname='moment_magnitude_of_earthquake_event', prec='float')
-        event_target_lon_v = ncvar_def(name='event_target_lon', units='degrees_east', dim=list(dim_event),
-            missval=NA, longname='longitude_near_earthquake_event', prec='float')
-        event_target_lat_v = ncvar_def(name='event_target_lat', units='degrees_north', dim=list(dim_event),
+            missval=NA, longname='moment_magnitude_of_earthquake_event', 
+            prec='float')
+        event_target_lon_v = ncvar_def(name='event_target_lon', 
+            units='degrees_east', dim=list(dim_event),
+            missval=NA, longname='longitude_near_earthquake_event', 
+            prec='float')
+        event_target_lat_v = ncvar_def(name='event_target_lat', 
+            units='degrees_north', dim=list(dim_event),
             missval=NA, longname='latitude_near_earthquake_event', prec='float')
 
-        event_peak_slip_downdip_ind_v = ncvar_def(name='event_peak_slip_downdip_index', units='', 
-            dim=list(dim_event), missval=NULL, longname='down-dip_index_of_the_unit_source_with_peak_slip',
+        event_peak_slip_downdip_ind_v = ncvar_def(
+            name='event_peak_slip_downdip_index', units='', 
+            dim=list(dim_event), missval=NULL, 
+            longname='down-dip_index_of_the_unit_source_with_peak_slip',
             prec='integer')
-        event_peak_slip_alongstrike_ind_v = ncvar_def(name='event_peak_slip_alongstrike_index', units='', 
-            dim=list(dim_event), missval=NULL, longname='along-strike_index_of_the_unit_source_with_peak_slip',
+        event_peak_slip_alongstrike_ind_v = ncvar_def(
+            name='event_peak_slip_alongstrike_index', units='', 
+            dim=list(dim_event), missval=NULL, 
+            longname='along-strike_index_of_the_unit_source_with_peak_slip',
             prec='integer')
-        event_uniform_event_row_v = ncvar_def(name='event_uniform_event_row', units='', 
+        event_uniform_event_row_v = ncvar_def(
+            name='event_uniform_event_row', units='', 
             dim=list(dim_event), missval=NULL, 
             longname='row_index_of_the_uniform_slip_event_used_to_define_location_and_magnitude',
             prec='integer')
         
-        event_sourcename_v = ncvar_def(name='event_sourcename', units='', dim=list(dim_nchar, dim_event),
-            missval=NULL, longname='source_zone_name_of_earthquake_event', prec='char')
+        event_sourcename_v = ncvar_def(name='event_sourcename', units='', 
+            dim=list(dim_nchar, dim_event),
+            missval=NULL, longname='source_zone_name_of_earthquake_event', 
+            prec='char')
 
-        event_index_string_v = ncvar_def(name='event_index_string', units='', dim=list(dim_nchar, dim_event),
-            missval=NULL, longname='indices_of_unit_sources_included_in_earthquake_event', prec='char')
-        event_slip_string_v = ncvar_def(name='event_slip_string', units='', dim=list(dim_nchar, dim_event),
+        event_index_string_v = ncvar_def(name='event_index_string', units='', 
+            dim=list(dim_nchar, dim_event),
             missval=NULL, 
+            longname='indices_of_unit_sources_included_in_earthquake_event', 
+            prec='char')
+        event_slip_string_v = ncvar_def(name='event_slip_string', units='', 
+            dim=list(dim_nchar, dim_event), missval=NULL, 
             longname='slip_(m)_of_unit_sources_included_in_earthquake_event_with_underscore_separator', 
             prec='char')
 
-        event_rate_annual_v = ncvar_def(name='event_rate_annual', units='events per year', dim=list(dim_event),
+        event_rate_annual_v = ncvar_def(name='event_rate_annual', 
+            units='events per year', dim=list(dim_event),
             missval=NA, longname='mean_rate_of_earthquake_event', prec='float') 
-        event_rate_annual_upper_ci_v = ncvar_def(name='event_rate_annual_upper_ci', 
+        event_rate_annual_upper_ci_v = ncvar_def(
+            name='event_rate_annual_upper_ci', 
             units='events per year', dim=list(dim_event),
-            missval=NA, longname='upper_credible_interval_for_rate_of_earthquake_event', 
+            missval=NA, 
+            longname='upper_credible_interval_for_rate_of_earthquake_event', 
             prec='float') 
-        event_rate_annual_lower_ci_v = ncvar_def(name='event_rate_annual_lower_ci', 
+        event_rate_annual_lower_ci_v = ncvar_def(
+            name='event_rate_annual_lower_ci', 
             units='events per year', dim=list(dim_event),
-            missval=NA, longname='lower_credible_interval_for_rate_of_earthquake_event', 
+            missval=NA, 
+            longname='lower_credible_interval_for_rate_of_earthquake_event', 
             prec='float')
 
-        all_nc_var = c(all_nc_var, list(event_Mw_v, event_target_lon_v, event_target_lat_v,
-            event_peak_slip_downdip_ind_v, event_peak_slip_alongstrike_ind_v, event_uniform_event_row_v,
-            event_sourcename_v, event_index_string_v, event_slip_string_v, event_rate_annual_v, 
-            event_rate_annual_upper_ci_v, event_rate_annual_lower_ci_v))
+        all_nc_var = c(all_nc_var, list(event_Mw_v, event_target_lon_v, 
+            event_target_lat_v, event_peak_slip_downdip_ind_v, 
+            event_peak_slip_alongstrike_ind_v, event_uniform_event_row_v,
+            event_sourcename_v, event_index_string_v, event_slip_string_v,
+            event_rate_annual_v, event_rate_annual_upper_ci_v,
+            event_rate_annual_lower_ci_v))
 
     }
 

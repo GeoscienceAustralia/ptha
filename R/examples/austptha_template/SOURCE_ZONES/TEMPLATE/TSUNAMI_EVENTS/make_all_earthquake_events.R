@@ -1,31 +1,42 @@
 library(rptha)
-
-# Make events with magnitudes ranging from Mw_min to Mw_max, separated by dMw
-# These values do not have to correspond to Mw ranges that are assigned non-zero 
-# probability -- but they should fully contain the possible values
-Mw_min = 7.2
-Mw_max = 9.8
-dMw = 0.1
-
-# Make at least ten stochastic slip events for each uniform event
-number_stochastic_events_for_each_uniform_event = 10
-# ... but ensure that there are at least 100 stochastic slip events in each magnitude category
-minimum_number_stochastic_events_for_each_magnitude = 100
-
 #
 # Get code for summing unit sources (only required for matching tide gauge
 # files and unit-sources)
 #
 sum_sources = new.env()
 source('sum_tsunami_unit_sources.R', local=sum_sources)
+#
 # Get key information on tsunami unit sources
+#
 tsunami_unit_source_config = new.env()
-source('../TSUNAMI_UNIT_SOURCE/config.R', local=tsunami_unit_source_config, chdir=TRUE)
+source('../TSUNAMI_UNIT_SOURCE/config.R', local=tsunami_unit_source_config, 
+    chdir=TRUE)
+#
+# Get local parameters code
+#
+config_env = new.env()
+source('config.R', local=config_env)
+
+# Make events with magnitudes ranging from Mw_min to Mw_max, separated by dMw
+# These values do not have to correspond to Mw ranges that are assigned non-zero 
+# probability -- but they should fully contain the possible values
+Mw_min = config_env$Mw_min #7.2
+Mw_max = config_env$Mw_max #9.8
+dMw = config_env$dMw #0.1
+
+# Make at least N stochastic slip events for each uniform event
+number_stochastic_events_for_each_uniform_event = 
+    config_env$number_stochastic_events_for_each_uniform_event
+# ... but ensure that there are at least M >> N stochastic slip events in each
+# magnitude category
+minimum_number_stochastic_events_for_each_magnitude = 
+    config_env$minimum_number_stochastic_events_for_each_magnitude
 
 #
 # Read the discretized sources geometry
 #
-discretized_sources_file = normalizePath('../EQ_SOURCE/all_discretized_sources.RDS')
+discretized_sources_file = normalizePath(
+    '../EQ_SOURCE/all_discretized_sources.RDS')
 all_discretized_sources = readRDS(discretized_sources_file)
 
 source_zone_name=names(all_discretized_sources)[1]
@@ -78,11 +89,14 @@ all_eq_events = get_all_earthquake_events(
     dMw=dMw, 
     source_zone_name = source_zone_name)
 
-# Add an annual rate variable that we can change later, with
-# a value that is obviously double [so the netcdf data type is correctly inferred]
-all_eq_events$rate_annual = rep(-999.999, length(all_eq_events[,1]))
-all_eq_events$rate_annual_upper_ci = rep(-999.999, length(all_eq_events[,1]))
-all_eq_events$rate_annual_lower_ci = rep(-999.999, length(all_eq_events[,1]))
+# Add an annual rate variable that we can change later, with a value that is
+# obviously double-precision [so the netcdf data type is correctly inferred]
+all_eq_events$rate_annual = rep(config_env$null_double, 
+    length(all_eq_events[,1]))
+all_eq_events$rate_annual_upper_ci = rep(config_env$null_double, 
+    length(all_eq_events[,1]))
+all_eq_events$rate_annual_lower_ci = rep(config_env$null_double, 
+    length(all_eq_events[,1]))
 
 
 # Make the plot
@@ -96,7 +110,8 @@ write.csv(unit_source_statistics,
     paste0('unit_source_statistics_', source_zone_name, '.csv'),
     row.names=FALSE, quote=FALSE)
 # Also save unit source statistics to netcdf
-unit_source_statistics_file = paste0(getwd(), '/unit_source_statistics_', source_zone_name, '.nc')
+unit_source_statistics_file = paste0(getwd(), '/unit_source_statistics_', 
+    source_zone_name, '.nc')
 uss_attr = list('discretized_sources_file' = discretized_sources_file,
     'parent_script_name' = parent_script_name())
 write_table_to_netcdf(unit_source_statistics, 
@@ -113,7 +128,8 @@ eq_events_attr = c(
     list('unit_source_statistics_file' = unit_source_statistics_file,
         'slip_type' = 'uniform slip'), 
     uss_attr)
-all_eq_events_nc_file = paste0('all_uniform_slip_earthquake_events_', source_zone_name, '.nc')
+all_eq_events_nc_file = paste0('all_uniform_slip_earthquake_events_', 
+    source_zone_name, '.nc')
 write_table_to_netcdf(
     all_eq_events,
     all_eq_events_nc_file,
@@ -132,7 +148,8 @@ for(i in 1:length(all_eq_events[,1])){
     stopifnot(all(unit_source_statistics$subfault_number[usi] == usi))
 
     # Find mean of unit-source locations, accounting for spherical coordinates
-    unit_source_locations = cbind(unit_source_statistics$lon_c[usi], unit_source_statistics$lat_c[usi])
+    unit_source_locations = cbind(unit_source_statistics$lon_c[usi], 
+        unit_source_statistics$lat_c[usi])
     if(length(usi) > 1){
         event_hypocentre = geomean(unit_source_locations, w=rep(1, length(usi)) )
     }else{
@@ -144,10 +161,14 @@ for(i in 1:length(all_eq_events[,1])){
     # Determine the number of stochastic events -- ensuring there are enough
     # events in this magnitude category, and that there are a minimum number of
     # events for each uniform slip event
-    number_of_uniform_events_with_same_magnitude = sum(all_eq_events$Mw == event_magnitude)
+    number_of_uniform_events_with_same_magnitude = 
+        sum(all_eq_events$Mw == event_magnitude)
 
-    number_of_sffm = max(number_stochastic_events_for_each_uniform_event, 
-        ceiling(100/number_of_uniform_events_with_same_magnitude))
+    number_of_sffm = max(
+        number_stochastic_events_for_each_uniform_event, 
+        ceiling(minimum_number_stochastic_events_for_each_magnitude / 
+            number_of_uniform_events_with_same_magnitude)
+        )
 
     # Make stochastic events
     all_events = sffm_make_events_on_discretized_source(
@@ -158,14 +179,15 @@ for(i in 1:length(all_eq_events[,1])){
         zero_low_slip_cells_fraction=0.0,
         sourcename = source_zone_name)
 
-    events_with_Mw = sffm_events_to_table(all_events, slip_significant_figures=4)
+    events_with_Mw = sffm_events_to_table(all_events, 
+        slip_significant_figures=config_env$stochastic_slip_table_significant_figures)
 
     # Add additional variables we will need. Use an obviously
     # floating point number to get the netcdf output to be in double
     events_with_Mw$uniform_event_row = i
-    events_with_Mw$rate_annual = -999.999
-    events_with_Mw$rate_annual_lower_ci = -999.999
-    events_with_Mw$rate_annual_upper_ci = -999.999
+    events_with_Mw$rate_annual = config_env$null_double
+    events_with_Mw$rate_annual_lower_ci = config_env$null_double
+    events_with_Mw$rate_annual_upper_ci = config_env$null_double
 
     stochastic_events_store[[i]] = events_with_Mw
     

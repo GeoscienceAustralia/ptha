@@ -19,4 +19,8 @@ once). Once all the runs have finished, run
 to put the results into the netcdf. Finally, you might want to delete the folder R_images_tmp that 
 was used to store temporary files. 
 
+# Note
+
+The PBS scripts are designed to work on raijin.nci.org.au, and will need to
+be ported to any other platform.
 

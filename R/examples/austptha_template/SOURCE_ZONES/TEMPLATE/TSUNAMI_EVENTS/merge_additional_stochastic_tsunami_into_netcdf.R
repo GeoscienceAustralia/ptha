@@ -56,7 +56,7 @@ load(all_R_images[i], envir=r_env)
 output_nc_file = nc_open(r_env$output_file_name, readunlim=FALSE, write=TRUE)
 # Find 'un-written data' flag, which is -999.999
 # Because netcdf will only store to float precision, we just check for values which are
-# less than the following [which should all be float(-999.999) ]
+# less than the following [they should all be float(-999.999) ]
 nul_r_less_than = r_env$nul_r + 1
 
 # Get the max-stage data, which should no longer have un-written values

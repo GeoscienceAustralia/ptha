@@ -22,6 +22,12 @@
 ###############################################################################
 
 #
+# Get local parameters code
+#
+config_env = new.env()
+source('config.R', local=config_env)
+
+#
 # INPUTS: THESE MUST BE CONSISTENT WITH OTHER SCRIPTS FOR EVERYTHING TO WORK
 # DO NOT CHANGE WITHOUT UNDERSTANDING THOSE LINKAGES [commented below]
 #
@@ -36,8 +42,9 @@ batch_chunk_size = 4500
 # Note -- to identify missing data, we check that "max_stage < missing_data_less_than".
 # We do not try an exact check - because the netcdf data is stored as float,
 # and will not be able to exactly represent -999.999. 
-# -999 is well outside the range of max_stage vlaues, so it's no problem.
-missing_data_less_than = -999.0 
+# This value is well outside the range of 'genuine' max_stage vlaues, so it's
+# no problem.
+missing_data_less_than = config_env$null_double + 1
 
 #
 # Template PBS script text -- note REPLACEWITHMID in final line, which will be auto-replaced
