@@ -129,7 +129,16 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
 
 }
 
-
+#' Boxplot of wave-heights for all events from a given source-zone, for all Mw,
+#' at a station.
+#'
+#' @param lon_p, lat_p station coordinates
+#' @param source_zone name of source_zone
+#' @param slip_type either 'uniform' or 'stochastic'
+#' @param plot_y_range y range of plot
+#' @param boxwex Bar thickness 
+#' @param ... further arguments to plot
+#'
 plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 'uniform',
     plot_y_range=c(1e-04, 1e+02), boxwex=1, ...){
 
