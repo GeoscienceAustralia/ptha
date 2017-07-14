@@ -140,7 +140,8 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
 
         # Limit lateral component that we consider, based on the permitted rake
         # deviation from pure thrust
-        allowed_rake_deviation_radians = config$rake_deviation_thrust_events / 180 * pi
+        deg2rad = pi/180
+        allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
         rl_vec = sign(bvrl) *pmin(abs(bvrl), div_vec*allowed_rake_deviation_radians)
 
         source_slip = weighted.mean(
@@ -158,7 +159,8 @@ source_rate_environment_fun<-function(source_name, i, write_rates_to_event_table
 
     # Account for non-zero dip, and convert from mm/year to m/year
     mean_dip = mean_angle(bird2003_env$unit_source_tables[[source_name]]$dip)
-    cos_dip = cos(pi*mean_dip/180)
+    deg2rad = pi/180
+    cos_dip = cos(mean_dip*deg2rad)
     source_slip = source_slip/cos_dip * 1/1000
 
     #
