@@ -54,3 +54,13 @@ Once that has finished and you have confirmed the netCDF files are ok, you
 might want to delete the folder R_images_tmp that was used to store temporary
 RDS files. 
 
+# Step 4
+
+At this point all the stochastic and uniform slip events have been created, and it is 
+time to check the results. 
+
+The script [check_dart_example.R](check_dart_example.R) gives an example of comparing
+model scenarios to tide gauge data -- but obviously the file paths etc will need to be
+adapted on a case-by-case basis. There are further codes in [plots](plots) which can
+be used to examine the events. 
+
