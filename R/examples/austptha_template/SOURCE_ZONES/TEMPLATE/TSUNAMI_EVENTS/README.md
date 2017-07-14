@@ -42,8 +42,8 @@ You can create the unfinished stochastic slip with
 This will split the remaining work over multiple jobs (so it is reasonably
 fast), and submit all jobs to the PBS queue. Each of those jobs will make an
 RDS file with its portion of the unfinished results. Those are not initially
-written to the main netCDF output file, to avoid the chance of multiple files
-trying to write at once (which is unsupported and can lead to data loss).
+written to the main netCDF output file, to avoid the chance of multiple processes
+trying to write to the same file at once (which is unsupported and can lead to data loss).
 However, once all the 'unfinished' runs are finished, we put the data into the
 main netcdf file using the script
 [run_merge_additional_stochastic_tsunami_into_netcdf.PBS](run_merge_additional_stochastic_tsunami_into_netcdf.PBS)
