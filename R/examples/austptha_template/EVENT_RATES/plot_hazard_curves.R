@@ -130,7 +130,8 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
 }
 
 
-plot_wave_heights_at_a_station(lon_p, lat_p, source_zone, slip_type = 'uniform'){
+plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 'uniform',
+    plot_y_range=c(1e-04, 1e+02), boxwex=1, ...){
 
     # Find index of nearest gauge. FIXME: Do spherical coordinates here
     lon_p_x = rep(lon_p, length.out=length(lon))
@@ -171,7 +172,8 @@ plot_wave_heights_at_a_station(lon_p, lat_p, source_zone, slip_type = 'uniform')
     stopifnot(length(gauge_max_stage) == length(event_Mw))
 
     # Make the plot
-    boxplot(gauge_max_stage ~ event_Mw, log='y')
+    plot(range(event_Mw), plot_y_range, col=0, log='y', ...)
+    boxplot(gauge_max_stage ~ event_Mw, at=unique(event_Mw), boxwex=boxwex, add=TRUE)
 
     nc_close(fid)
 
