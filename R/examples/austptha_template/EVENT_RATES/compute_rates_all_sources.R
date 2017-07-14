@@ -268,6 +268,8 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
     # Write to netcdf file. Easiest from within source_env
     with(source_env,{
 
+        # Pull this into the local environment with a new name, to prevent that
+        # 'promise already under evaluation' error
         scale_rate_local = scale_rate
         add_rate_local = add_rate
 
@@ -352,8 +354,9 @@ for(i in 1:length(source_names)){
         sourcezone_parameters[i,])
 
     # Write parameters to a log for later checks
-    log_filename = paste0(source_log_dir, '/', names(source_envs)[i], '_', i, '.log')
-    capture.output(source_envs[[i]]$sourcepar, log_filename)
+    log_filename = paste0(source_log_dir, '/', names(source_envs)[i], 
+        '_', i, '.log')
+    capture.output(source_envs[[i]]$sourcepar, file=log_filename)
 }
 
 # Write rates to netcdf
