@@ -261,6 +261,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 write_rates_to_event_table<-function(source_env, scale_rate=1.0, 
     add_rate=FALSE){
 
+    scale_rate = scale_rate 
+    add_rate = add_rate
+
     # Add function arguments to environment source_env 
     with(source_env, {
         scale_rate = scale_rate
