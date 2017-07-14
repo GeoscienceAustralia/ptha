@@ -1,5 +1,12 @@
 #
+# When computing stochastic slip events by linear summation, it is common that
+# the initial call to 'run_make_all_earthquake_tsunami_events.PBS' will not
+# complete in the 48 hour time limit [e.g. especially for large source-zones].
 #
+# To complete the runs, we use run_unfinished_stochastic_slip_tsunami.R, which
+# splits the work up onto multiple nodes. To avoid doing unsupported parallel
+# netcdf writes on those runs, they save their outputs to the R_images_tmp folder.
+# This script reads those outputs and puts them in the main netcdf output file.
 #
 
 library(ncdf4)
