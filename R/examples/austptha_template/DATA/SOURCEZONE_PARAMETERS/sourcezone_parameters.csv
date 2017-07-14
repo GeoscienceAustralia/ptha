@@ -1,9 +1,9 @@
-sourcename, use_bird_convergence, tectonic_slip, convergent_fraction, cmin, cpref, cmax,cmin_p,cpref_p,cmax_p, bmin, bpref, bmax,bmin_p,bpref_p,bmax_p, mw_max_observed,notes
-izumariana,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.2,"Berryman et al (2015) suggest coupling values: [Izubonin, 0.1, 0.2, 0.7;   Marianas, 0.1, 0.2, 0.7]; and mw_max_min=7.2"
-kermadectonga,1,,,0.2,0.31,0.72,,,,0.7,0.95,1.2,,,,8.1,"Berryman et al. (2015) suggest coupling values of 0.2, 0.31, 0.72; and mw_max_min = 8.1"
-kurilsjapan,1,,,0.67,0.77,0.9,,,,0.7,0.95,1.2,,,,9,"Berryman et al (2015) suggest coupling values: 0.67, 0.77, 0.9, and Mw_max_min of 9.0 (Tohoku 2011)"
-newhebrides,1,,,0.27,0.37,0.73,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and mw_max_min values
-puysegur,1,,,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,Berryman et al. (2015) coupling and Mw_max_min
-solomon,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
-southamerica,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.5,Berryman et al. (2015) coupling and Mw_max_min
-sunda,1,,,0.44,0.54,0.79,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
+sourcename, use_bird_convergence, tectonic_slip, convergent_fraction, cmin, cpref, cmax,cmin_p,cpref_p,cmax_p, bmin, bpref, bmax,bmin_p,bpref_p,bmax_p, mw_max_observed,segment_name,segment_boundary_alongstrike_index_lower,segment_boundary_alongstrike_index_upper,segment_weight,notes
+izumariana,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.2,,,,1,"Berryman et al (2015) suggest coupling values: [Izubonin, 0.1, 0.2, 0.7;   Marianas, 0.1, 0.2, 0.7]; and mw_max_min=7.2"
+kermadectonga,1,,,0.2,0.31,0.72,,,,0.7,0.95,1.2,,,,8.1,,,,1,"Berryman et al. (2015) suggest coupling values of 0.2, 0.31, 0.72; and mw_max_min = 8.1"
+kurilsjapan,1,,,0.67,0.77,0.9,,,,0.7,0.95,1.2,,,,9,,,,1,"Berryman et al (2015) suggest coupling values: 0.67, 0.77, 0.9, and Mw_max_min of 9.0 (Tohoku 2011)"
+newhebrides,1,,,0.27,0.37,0.73,,,,0.7,0.95,1.2,,,,8.3,,,,1,Berryman et al. (2015) coupling and mw_max_min values
+puysegur,1,,,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,,,,1,Berryman et al. (2015) coupling and Mw_max_min
+solomon,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,,,,1,Berryman et al. (2015) coupling and Mw_max_min
+southamerica,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.5,,,,1,Berryman et al. (2015) coupling and Mw_max_min
+sunda,1,,,0.44,0.54,0.79,,,,0.7,0.95,1.2,,,,9,,,,1,Berryman et al. (2015) coupling and Mw_max_min
