@@ -1,3 +1,6 @@
+Run tsunami models for all unit-sources
+---------------------------------------
+
 The codes in this folder are made to run tsunami propagation models for every
 unit-source on the source-zone. The unit-sources themselves must already have
 been defined using code in [../EQ_SOURCE/](../EQ_SOURCE/).
