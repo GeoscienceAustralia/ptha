@@ -268,6 +268,9 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
     # Write to netcdf file. Easiest from within source_env
     with(source_env,{
 
+        scale_rate_local = scale_rate
+        add_rate_local = add_rate
+
         #
         # Function to do slightly modified 'add to netcdf' computation
         #
@@ -276,8 +279,9 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         #
         # This would allow e.g. weighted treatments of segmented and unsegmented
         # models of the source-zone.
-        ncvar_put_extra<-function(fid, varname, event_rate, add_rate=add_rate, 
-            scale_rate=scale_rate){
+        #
+        ncvar_put_extra<-function(fid, varname, event_rate, add_rate=add_rate_local, 
+            scale_rate=scale_rate_local){
 
             if(add_rate){
                 extra_rate = ncvar_get(fid, varname)
