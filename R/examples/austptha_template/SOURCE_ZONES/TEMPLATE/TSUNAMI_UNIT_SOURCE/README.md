@@ -58,12 +58,13 @@ model runs have finished, and to do some basic checks. It is run *from within
 R* using: 
    
 ```r 
-source(check_runs_complete.R)
-# This is used to check for models that seem to have not completed
-check_models_have_been_run()
-# If the above is ok, then try this to check that gauge outputs exist and
-# are correctly ordered
-check_models_gauge_integrity()
+    # Read the functions into R
+    source(check_runs_complete.R)
+    # This is used to check for models that seem to have not completed
+    check_models_have_been_run()
+    # If the above is ok, then try this to check that gauge outputs exist and
+    # are correctly ordered
+    check_model_gauge_integrity()
 ```
 
 [check_logfile.R](check_logfile.R) is used to plot the evolution of peak-stage
@@ -71,7 +72,9 @@ and mass balance in every tsunami model, using the log-files. To run it, do
     
     Rscript check_logfile.R
 
-and then investigate the resulting pdf file 'tsunami_log_check.pdf'
+and then visually investigate the resulting pdf file 'tsunami_log_check.pdf',
+which will show the time-evolution of peak-stage and mass-balance, for every
+model.
 
 # Step 5
 
