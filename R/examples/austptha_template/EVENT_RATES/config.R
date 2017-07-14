@@ -102,6 +102,10 @@ Mw_frequency_distribution_weights = c(0.7, 0.3) # Must sum to give 1.0
 logic_tree_parameter_subsampling_factor = 9
 
 
+#
+# Name for a directory where we write log files for each source
+sourcezone_log_directory  = 'source_zone_parameter_logs'
+
 #######################################################################################
 #
 # PARAMETERS CONTROLLING THE STAGE EXCEEDANCE RATE CURVE COMPUTATION AT EVERY STATION
