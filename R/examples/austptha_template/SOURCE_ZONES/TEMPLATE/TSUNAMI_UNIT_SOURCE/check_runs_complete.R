@@ -19,10 +19,9 @@ tail_file<-function(filename, n=1){
 #'
 #' Check that model runs have logfiles, which appear to have finished
 #'
-check_models_have_been_run<-function(sourcename, verbose=FALSE){
+check_models_have_been_run<-function(sourcename=config_env$site_name, verbose=FALSE){
 
     # Note: These file paths might need to be changed in other applications.
-    # FIXME: This could be better integrated with content in config_env (see config.R)
     all_logs = Sys.glob(paste0(unit_sources_output_basedir, sourcename, '/unit_source_tsunami/RUN_*/*/log*'))
     all_unit_sources = Sys.glob(paste0(unit_sources_output_basedir, sourcename, '/unit_source_tsunami/RUN_*'))
 
@@ -66,7 +65,7 @@ check_models_have_been_run<-function(sourcename, verbose=FALSE){
 #
 # Check tide gauge outputs exist, and that the coordinates are all ordered in the same way
 #
-check_model_gauge_integrity<-function(sourcename, verbose=FALSE){
+check_model_gauge_integrity<-function(sourcename=config_env$site_name, verbose=FALSE){
 
     library(ncdf4)
     all_netcdf_gauges = Sys.glob(paste0(unit_sources_output_basedir, sourcename,

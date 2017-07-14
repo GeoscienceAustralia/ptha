@@ -11,22 +11,44 @@ another model.**
 
 [create_files_for_all_simulations.R](create_files_for_all_simulations.R) is
 used to make directory structures for all model runs (using some definitions
-in [config.R](config.R)]. We make directories for all model runs by modifying 
+in [config.R](config.R)). We make directories for all model runs by modifying 
 template files in the [template](template) folder. This results in a separate
-SWALS model that runs for each unit-source. 
+SWALS model that runs for each unit-source. It is run with:
+
+    Rscript create_files_for_all_simulations.R
+
+and is quite light-weight (i.e. might not need to use the job queue).
 
 [run_16.sh](run_16.sh) is used to submit 16 of the SWALS models (which are not
 already slated for running) to the job queue, to be run on a single node. The
 number 16 was chosen because that is efficient for the hardware on
 raijin.nci.org.au.  Note that significant performance benefits were gained by
-using 'numactl' when running multiple jobs on a single node. 
+using 'numactl' when running multiple jobs on a single node. It is run with:
+    
+    qsub run_16.sh
 
 [run_permute_netcdf_gauges.sh](run_permute_netcdf_gauges.sh). This script
 permutes the dimension of the tide-gauge netcdf output files, to ensure fast
 access to single-station data [which is extremely convenient for later
-analysis]. 
+analysis]. It is run with:
+
+    qsub run_permute_netcdf_gauges.sh
 
 
-[check_runs_complete.R](check_runs_complete.R) and [check_logfile.R](check_logfile.R)
-are used to check that the SWALS model runs have finished, and to do some basic
-graphical QC checks. 
+[check_runs_complete.R](check_runs_complete.R) is used to check that the SWALS
+model runs have finished, and to do some basic checks. It is run *from within
+R* using: 
+    
+    source(check_runs_complete.R)
+    # This is used to check for models that seem to have not completed
+    check_models_have_been_run()
+    # If the above is ok, then try this to check that gauge outputs exist and
+    # are correctly ordered
+    check_models_gauge_integrity()
+
+[check_logfile.R](check_logfile.R) is used to plot the evolution of peak-stage
+and mass balance in every tsunami model, using the log-files. To run it, do
+    
+    Rscript check_logfile.R
+
+and then investigate the resulting pdf file 'tsunami_log_check.pdf'
