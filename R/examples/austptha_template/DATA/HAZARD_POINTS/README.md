@@ -19,7 +19,7 @@ We would like:
 Running
 -------
 
-Assuming that you have already made the merged DEM's (see [../ELEV][../ELEV]),
+Assuming that you have already made the merged DEM's (see [../ELEV](../ELEV)),
 and that R is installed with required packages, then do:
 
     source make_all.sh
