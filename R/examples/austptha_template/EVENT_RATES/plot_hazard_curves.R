@@ -20,7 +20,11 @@ stage_seq = ncvar_get(rates[[1]], 'stage')
 plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE){
 
     # Find index of nearest gauge. FIXME: Do spherical coordinates here
-    site = which.min(abs(lon-lon_p) + abs(lat - lat_p))
+    lon_p_x = rep(lon_p, length.out=length(lon))
+    lat_p_x = rep(lat_p, length.out=length(lon))
+
+    #site = which.min(abs(lon-lon_p) + abs(lat - lat_p))
+    site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
 
     #
     # Get uniform and stochastic rates in a list
