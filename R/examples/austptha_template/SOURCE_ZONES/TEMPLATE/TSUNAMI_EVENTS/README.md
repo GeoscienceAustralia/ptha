@@ -4,6 +4,8 @@ Code for making earthquake and tsunami events
 Codes in this folder should be run after all unit-source tsunami runs are
 complete (see [../TSUNAMI_UNIT_SOURCES](tsunami_unit_sources) ).
 
+Key parameters are defined in [config.R](config.R). 
+
 To make earthquake and tsunami events (for both stochastic and uniform slip),
 see [run_make_all_tsunami_events.PBS](run_make_all_tsunami_events.PBS). 
 
