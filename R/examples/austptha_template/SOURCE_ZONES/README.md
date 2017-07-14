@@ -37,7 +37,9 @@ likely to be computationally efficient.
 ### checkruns.R
 
 This code can be used to run the completion checks for the propagation models,
-over multiple source-zones. Run it from within R as
+over multiple source-zones. In [checkruns.R](checkruns.R), modify the variable
+`source_zones` which points to the folders that will be checked, and then
+run it from within R as
 
 ```r
     source('checkruns.R')
