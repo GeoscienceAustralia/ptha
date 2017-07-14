@@ -101,8 +101,11 @@ Mw_frequency_distribution_weights = c(0.7, 0.3) # Must sum to give 1.0
 #
 logic_tree_parameter_subsampling_factor = 9
 
+# Inverse quantiles used for lower and upper credible intervals
+lower_ci_inv_quantile = 0.025
+upper_ci_inv_quantile = 0.975
 
-#
+
 # Name for a directory where we write log files for each source
 sourcezone_log_directory  = 'source_zone_parameter_logs'
 

@@ -238,12 +238,12 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
          mw_rate_function(event_table$Mw + dMw/2) )
 
     event_rates_upper = event_conditional_probabilities * 
-        (mw_rate_function(event_table$Mw -dMw/2, quantiles=0.975) - 
-         mw_rate_function(event_table$Mw + dMw/2, quantiles=0.975) )
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$upper_ci_inv_quantile) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=config$upper_ci_inv_quantile) )
 
     event_rates_lower = event_conditional_probabilities * 
-        (mw_rate_function(event_table$Mw -dMw/2, quantiles=0.025) - 
-         mw_rate_function(event_table$Mw + dMw/2, quantiles=0.025) )
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$lower_ci_inv_quantile) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=config$lower_ci_inv_qauntile) )
 
 
     return(environment())
@@ -286,8 +286,10 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             scale_rate=scale_rate_local){
 
             if(add_rate){
+                # Need to add the current rate to the existing value
                 extra_rate = ncvar_get(fid, varname)
             }else{
+                # Replace the current rate with the existing value
                 extra_rate = event_rate * 0
             }
 
