@@ -13,3 +13,4 @@ all_runs_dir = 'unit_source_tsunami'
 # The output will go inside here (with sub folders corresponding to
 # all_runs_dir/run_initial_condition/)
 all_runs_output_base_dir = normalizePath(paste0('./OUTPUTS/', site_name))
+# all_runs_output_base_dir = paste0('/g/data/w85/tsunami/AustPTHA/version1/unit_sources/', site_name)
