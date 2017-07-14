@@ -21,13 +21,21 @@ that you are happy with.
 
 [create_files_for_all_simulations.R](create_files_for_all_simulations.R) is
 used to make directory structures for all model runs (using some definitions
-in [config.R](config.R)). We make directories for all model runs by modifying 
-template files in the [template](template) folder. This results in a separate
-SWALS model that runs for each unit-source. It is run with:
+in [config.R](config.R)). 
+
+We make directories for all model runs by modifying template files in the
+[template](template) folder. This allows us to define separate output directories
+and initial conditions (i.e. tsunami unit sources) for every model run. Note
+that files in the [template](template) folder define the input elevation data,
+the model resolution, the hazard point files, and other model configuration
+issues. These may need to be modified depending on your applications.
+
+Once the [template](template) files are ok, to create a separate SWALS model
+that runs for each unit-source, do: 
 
     Rscript create_files_for_all_simulations.R
 
-and is quite light-weight (i.e. might not need to use the job queue).
+This script is quite light-weight (i.e. you might not need to use the job queue).
 
 # Step 3
 
