@@ -10,23 +10,21 @@ codes would require significant modification to be run on another machine, or us
 another model.**
 
 [create_files_for_all_simulations.R](create_files_for_all_simulations.R) is
-used to make directory structures for all model runs. This modifies files in
-the [template](template) folder, to make a SWALS model that runs for each
-unit-source. Because it is modifying SWALS input files, it is obviously strongly
-dependent on the input-file design for the SWALS model. Furthermore, to run
-the code on raijin.nci.org.au we need to load particular modules and set
-particular paths. This code takes care of that, but it would require modification
-to work on systems other than raijin.nci.org.au.
+used to make directory structures for all model runs (using some definitions
+in [config.R](config.R)]. We make directories for all model runs by modifying 
+template files in the [template](template) folder. This results in a separate
+SWALS model that runs for each unit-source. 
 
 [run_16.sh](run_16.sh) is used to submit 16 of the SWALS models (which are not
-already slated for running) to the job queue. This is set-up to work on
-raijin.nci.org.au. Note that significant performance benefits were gained by using
-'numactl' when running multiple jobs on a single node. 
+already slated for running) to the job queue, to be run on a single node. The
+number 16 was chosen because that is efficient for the hardware on
+raijin.nci.org.au.  Note that significant performance benefits were gained by
+using 'numactl' when running multiple jobs on a single node. 
 
 [run_permute_netcdf_gauges.sh](run_permute_netcdf_gauges.sh). This script
 permutes the dimension of the tide-gauge netcdf output files, to ensure fast
 access to single-station data [which is extremely convenient for later
-analysis]. It is set-up for raijin.nci.org.au
+analysis]. 
 
 
 [check_runs_complete.R](check_runs_complete.R) and [check_logfile.R](check_logfile.R)
