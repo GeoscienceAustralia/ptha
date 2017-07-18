@@ -188,7 +188,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         sourcepar$slip = weighted.mean(
             # Convergent slip
             x = sqrt(div_vec**2 + rl_vec**2),
-            # Weighted by area
+            # Weighted by area of unit-sources in the segment
             w = unit_source_areas * is_in_segment)
 
     }else{
@@ -423,9 +423,16 @@ for(i in 1:length(source_segment_names)){
     capture.output(source_envs[[i]]$sourcepar, file=log_filename)
 }
 
-# Write rates to netcdf
+# Zero rates in netcdf files by setting scale_rate to zero
 for(i in 1:length(source_segment_names)){
-    write_rates_to_event_table(source_envs[[i]])
+    write_rates_to_event_table(source_envs[[i]], scale_rate = 0.0, add_rate=FALSE)
 }
-
+#
+# Now add rates to netcdf files, scaled by the row_weight to allow multiple
+# weighted models of the source-zone segmentation
+#
+for(i in 1:length(source_segment_names)){
+    rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
+    write_rates_to_event_table(source_envs[[i]], scale_rate = rate_scale, add_rate=TRUE)
+}
 
