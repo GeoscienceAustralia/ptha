@@ -6,6 +6,8 @@
 # all events with that Mw]. For example, the nominal 'individual event' rates
 # are inversely related to the number of events in the magnitude category, which is
 # somewhat arbitrary [especially for stochastic slip]. 
+#
+
 library(rptha)
 config = new.env()
 source('config.R', local=config)
@@ -17,10 +19,12 @@ source('config.R', local=config)
 sourcezone_parameter_file = config$sourcezone_parameter_file 
 sourcezone_parameters = read.csv(sourcezone_parameter_file, stringsAsFactors=FALSE)
 
-source_names = sourcezone_parameters$sourcename
+# Get the source-name. Segmented cases have an extra 'segment name' that distinguishes them
+source_segment_names = paste0(sourcezone_parameters$sourcename, sourcezone_parameters$segment_name)
 
 # Never allow Mw_max to be greater than this
 MAXIMUM_ALLOWED_MW_MAX = config$MAXIMUM_ALLOWED_MW_MAX  # 9.8
+# Never allow Mw_max to be less than this
 MINIMUM_ALLOWED_MW_MAX = config$MINIMUM_ALLOWED_MW_MAX  # 7.65
 
 # Increment between Mw values in the earthquake_events table. We will check
@@ -69,12 +73,33 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     sourcepar$sourcezone_parameters_row = sourcezone_parameters_row
     source_name = sourcezone_parameters_row$sourcename
     sourcepar$name = source_name
+   
+    # We might be on a specific segment 
+    segment_name = sourcezone_parameters_row$segment_name
+    source_segment_name = paste0(source_name, segment_name)
+
+    # Find the lower/upper alongstrike numbers for this segment. If missing, we assume
+    # the 'segment' is actually the entire source-zone
+    alongstrike_lower = sourcezone_parameters$segment_boundary_alongstrike_index_lower
+    if(is.na(alongstrike_lower)) alongstrike_lower = 1
+
+    alongstrike_upper = sourcezone_parameters$segment_boundary_alongstrike_index_upper
+    if(is.na(alongstrike_upper)) alongstrike_upper = Inf
+
+    stopifnot(alongstrike_lower < alongstrike_upper)
+
+    # Get a vector which is true/false depending on whether each unit-source is
+    # inside this particular segment
+    is_in_segment = 
+        ((bird2003_env$unit_source_tables[[source_name]]$alongstrike_number >= alongstrike_lower) &
+         (bird2003_env$unit_source_tables[[source_name]]$alongstrike_number <= alongstrike_upper))
 
     # Source area 
     unit_source_areas = bird2003_env$unit_source_tables[[source_name]]$length * 
         bird2003_env$unit_source_tables[[source_name]]$width 
 
     sourcepar$area = sum(unit_source_areas)
+    sourcepar$area_in_segment = sum(unit_source_areas*is_in_segment)
 
     #
     # Gutenberg Richter b-value
@@ -102,18 +127,18 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         ## Largest observed plus a small value,
         #min_mw_max,
         # Middle Mw
-        #0.5*(Mw_2_rupture_size_inverse(sourcepar$area, CI_sd=0) + 
+        #0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0) + 
         #    min_mw_max),
         # Another middle Mw
-        Mw_2_rupture_size_inverse(sourcepar$area/2, CI_sd=0),
+        Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, CI_sd=0),
         # Another middle Mw
-        Mw_2_rupture_size_inverse(sourcepar$area, CI_sd=0),
+        Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0),
         # Upper mw [Strasser + 1SD]
-        Mw_2_rupture_size_inverse(sourcepar$area, CI_sd=-1 ) )
+        Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=-1 ) )
     #
     # Simple test -- all weight on full source rupture area 
-    #sourcepar$Mw_max = c(Mw_2_rupture_size_inverse(sourcepar$area, CI_sd=0),
-    #    Mw_2_rupture_size_inverse(sourcepar$area, CI_sd=0)+0.01)
+    #sourcepar$Mw_max = c(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0),
+    #    Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0)+0.01)
     #
 
     # Ensure ordered
@@ -148,18 +173,24 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         #
         
         # Shorthand divergent and right-lateral velocity 
-        div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div)
-        bvrl =  bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl
+        # NOTE: We zero velocities that are not on this segment.
+        div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div) * is_in_segment
+        bvrl =  bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl * is_in_segment
 
-        # Limit lateral component that we consider, based on the permitted rake
+        # Limit lateral component of motion that we consider, based on the permitted rake
         # deviation from pure thrust
         deg2rad = pi/180
         allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
         rl_vec = sign(bvrl) *pmin(abs(bvrl), div_vec*allowed_rake_deviation_radians)
 
+        # NOTE: If we have segmentation, then this source-zone averaged slip
+        # value will be low [since it will average also over regions which do
+        # not have events]. However, because of our 'local slip rate'
+        # conditional probability treatment, all the rate will go on events
+        # in our segment -- thus 'offsetting' the reduction in the
+        # source-zone averaged slip.
         sourcepar$slip = weighted.mean(
             # Convergent slip
-            #x= pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div), 
             x = sqrt(div_vec**2 + rl_vec**2),
             # Weighted by area
             w = unit_source_areas)
@@ -170,8 +201,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
     }
 
-    # Account for non-zero dip, and convert from mm/year to m/year
-    mean_dip = mean_angle(bird2003_env$unit_source_tables[[source_name]]$dip)
+    # Account for non-zero dip, and convert from mm/year to m/year -- only
+    # averaging over unit-sources in the segment.
+    mean_dip = mean_angle(bird2003_env$unit_source_tables[[source_name]]$dip[which(is_in_segment)])
     sourcepar$mean_dip = mean_dip
     deg2rad = pi/180
     cos_dip = cos(mean_dip*deg2rad)
@@ -198,14 +230,42 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     # Event conditional probabilities
     #
     if(sourcezone_parameters_row$use_bird_convergence == 1){
+        # Make a function which uses Bird's spatially variable convergence to
+        # assign conditional probabilities
         conditional_probability_model = 
-            bird2003_env$make_conditional_probability_function_uniform_slip(source_name)
+            bird2003_env$make_conditional_probability_function_uniform_slip(
+                source_name, is_in_segment)
     }else{
-        conditional_probability_model = 'inverse_slip'
+        ## conditional_probability_model = 'inverse_slip'
+
+        # Make a conditional probability model like 'inverse_slip', but which
+        # considers whether the event is in the segment
+        conditional_probability_model<-function(event_table_with_fixed_Mw){
+
+            slip_inv = 1/event_table_with_fixed_Mw$slip
+
+            # Find the fraction of the unit sources in each event which are 
+            # inside our segment
+            fraction_in_segment = slip_inv * 0.0
+            for(i in 1:nrow(event_table_with_fixed_Mw)){
+                unit_source_indices = get_unit_source_indices_in_event(
+                    event_table_with_fixed_Mw[i,])
+                fraction_in_segment[i] = mean(is_in_segment[unit_source_indices])
+            }
+    
+            # Conditional probability will entirely be weighted on events that
+            # touch the segment. Events that are only partially contained will
+            # be downweighted accordingly
+            output = slip_inv * fraction_in_segment
+            output = output/sum(output)
+            return(output)
+        }
+
     }
 
     event_conditional_probabilities = get_event_probabilities_conditional_on_Mw(
-        event_table, conditional_probability_model = conditional_probability_model)    
+        event_table, 
+        conditional_probability_model = conditional_probability_model)    
 
     #
     # Build rate function
@@ -219,7 +279,10 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         Mw_min_prob = 1,
         Mw_max = as.numeric(sourcepar$Mw_max),
         Mw_max_prob = sourcepar$Mw_max_p,
-        sourcezone_total_area = sourcepar$area,
+        # Need to pass the full area here, irrespective of segmentation. The
+        # previous slip_rate computation accounts for the fact that there is
+        # only activity on the current segment
+        sourcezone_total_area = sourcepar$area, 
         event_table = event_table,
         event_conditional_probabilities = event_conditional_probabilities,
         computational_increment = 0.01,
@@ -238,12 +301,16 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
          mw_rate_function(event_table$Mw + dMw/2) )
 
     event_rates_upper = event_conditional_probabilities * 
-        (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$upper_ci_inv_quantile) - 
-         mw_rate_function(event_table$Mw + dMw/2, quantiles=config$upper_ci_inv_quantile) )
+        (mw_rate_function(event_table$Mw - dMw/2, 
+            quantiles=config$upper_ci_inv_quantile) - 
+         mw_rate_function(event_table$Mw + dMw/2, 
+            quantiles=config$upper_ci_inv_quantile) )
 
     event_rates_lower = event_conditional_probabilities * 
-        (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$lower_ci_inv_quantile) - 
-         mw_rate_function(event_table$Mw + dMw/2, quantiles=config$lower_ci_inv_qauntile) )
+        (mw_rate_function(event_table$Mw - dMw/2, 
+            quantiles=config$lower_ci_inv_quantile) - 
+         mw_rate_function(event_table$Mw + dMw/2, 
+            quantiles=config$lower_ci_inv_qauntile) )
 
 
     return(environment())
@@ -344,13 +411,13 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
 
 
 # Do computations
-source_envs = vector(mode='list', length=length(source_names))
-names(source_envs) = source_names
+source_envs = vector(mode='list', length=length(source_segment_names))
+names(source_envs) = source_segment_names
 
 source_log_dir = config$sourcezone_log_directory
 dir.create(source_log_dir, showWarnings=FALSE)
 
-for(i in 1:length(source_names)){
+for(i in 1:length(source_segment_names)){
 
     source_envs[[i]] = source_rate_environment_fun(
         sourcezone_parameters[i,])
@@ -362,7 +429,7 @@ for(i in 1:length(source_names)){
 }
 
 # Write rates to netcdf
-for(i in 1:length(source_names)){
+for(i in 1:length(source_segment_names)){
     write_rates_to_event_table(source_envs[[i]])
 }
 

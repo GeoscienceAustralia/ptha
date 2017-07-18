@@ -161,7 +161,12 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
     #' a fixed Mw on the chosen source-zone, which accounts for spatially variable
     #' slip and source-zone area
     #'
-    make_conditional_probability_function_uniform_slip<-function(source_name){
+    #' @param source_name name of source-zone
+    #' @param is_in_segment logical vector with length equal to number of unit sources, which 
+    #' is sorted in the same way as the data.frame unit_source_tables[[source_name]].
+    #' 
+    #'
+    make_conditional_probability_function_uniform_slip<-function(source_name, is_in_segment){
 
         unit_source_match = grep( source_name, names(unit_source_tables) )
 
@@ -172,6 +177,7 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
 
         # Get relevant part of 'unit_source_tables' from parent environment
         uss = unit_source_tables[[unit_source_match]]
+        local_is_in_segment = is_in_segment # Pull into local environment
         dim_uss = dim(uss)
        
         # Ensure table is correctly sorted 
@@ -205,9 +211,10 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
                 # Here we use the convergent component of the slip vector
                 #convergent_slip = pmax(0, -uss$bird_vel_div[ui])
 
+                # Get convergence on each unit source, but zero it on unit-sources outside of the segment
                 # Allow consideration of right-lateral component, limited by the allowed rake deviation
-                div_vec = pmax(0, -uss$bird_vel_div[ui])
-                rl_vec = uss$bird_vel_rl[ui]
+                div_vec = pmax(0, -uss$bird_vel_div[ui]) * local_is_in_segment[ui]
+                rl_vec = uss$bird_vel_rl[ui] * local_is_in_segment[ui]
                 deg2rad = pi/180
                 allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
                 # Restrict angle to +- rake_deviation_thrust_events of pure thrust
