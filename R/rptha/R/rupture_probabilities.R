@@ -619,7 +619,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         return_random_curve=FALSE){
 
         # Check input arguments for accidental nulls
-        input_args = as.list(match.call)
+        input_args = as.list(match.call())
 
         # If we actually provided the 'quantiles' argument, then it's unlikely we want
         # a NULL value, however, a typo could create this. Check here for that situation.
