@@ -67,7 +67,7 @@ dMw = 0.1
 # the smallest earthquakes we simulate on all source-zones, to ensure we have
 # at least some earthquake events with non-zero probability!
 #
-MAXIMUM_ALLOWED_MW_MAX = 9.8
+MAXIMUM_ALLOWED_MW_MAX = 9.6
 MINIMUM_ALLOWED_MW_MAX = 7.65
 
 #
