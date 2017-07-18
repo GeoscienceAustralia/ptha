@@ -181,19 +181,15 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         # deviation from pure thrust
         deg2rad = pi/180
         allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
-        rl_vec = sign(bvrl) *pmin(abs(bvrl), div_vec*allowed_rake_deviation_radians)
+        rl_vec = sign(bvrl) *pmin(abs(bvrl), div_vec*tan(allowed_rake_deviation_radians))
 
         # NOTE: If we have segmentation, then this source-zone averaged slip
-        # value will be low [since it will average also over regions which do
-        # not have events]. However, because of our 'local slip rate'
-        # conditional probability treatment, all the rate will go on events
-        # in our segment -- thus 'offsetting' the reduction in the
-        # source-zone averaged slip.
+        # value will be a localised value. 
         sourcepar$slip = weighted.mean(
             # Convergent slip
             x = sqrt(div_vec**2 + rl_vec**2),
             # Weighted by area
-            w = unit_source_areas)
+            w = unit_source_areas * is_in_segment)
 
     }else{
 
@@ -280,10 +276,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         Mw_min_prob = 1,
         Mw_max = as.numeric(sourcepar$Mw_max),
         Mw_max_prob = sourcepar$Mw_max_p,
-        # Need to pass the full area here, irrespective of segmentation. The
-        # previous slip_rate computation accounts for the fact that there is
-        # only activity on the current segment
-        sourcezone_total_area = sourcepar$area, 
+        # Need to pass the local segment area here 
+        sourcezone_total_area = sourcepar$area_in_segment, 
         event_table = event_table,
         event_conditional_probabilities = event_conditional_probabilities,
         computational_increment = 0.01,
