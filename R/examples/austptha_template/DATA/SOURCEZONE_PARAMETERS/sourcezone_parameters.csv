@@ -6,8 +6,8 @@ newhebrides,1,,,0.27,0.37,0.73,,,,0.7,0.95,1.2,,,,8.3,,,,1,Berryman et al. (2015
 puysegur,1,,,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,,,,1,Berryman et al. (2015) coupling and Mw_max_min
 solomon,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,,,,1,Berryman et al. (2015) coupling and Mw_max_min
 southamerica,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.5,,,,1,Berryman et al. (2015) coupling and Mw_max_min
-sunda,1,,,0.44,0.54,0.79,,,,0.7,0.95,1.2,,,,9,,,,0.5,Berryman et al. (2015) coupling and Mw_max_min
-sunda,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8.3,-java,1,59,0.5,Berryman et al. (2015) coupling and Mw_max_min [note the Mw 8.3 was however a normal fault]
-sunda,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,-sumatra,60,88,0.5,Berryman et al. (2015) coupling and Mw_max_min
-sunda,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,-andaman,89,117,0.5,Berryman et al. (2015) coupling and Mw_max_min
-sunda,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,-arakan,118,141,0.5,Coupling based on Andaman. Mw-max-min based on CMT [although it was a normal fault] – noting Cummins (2007) suggested much higher values
+sunda,1,,,0.44,0.54,0.79,,,,0.7,0.95,1.2,,,,9,,,,0.5,"Berryman et al. (2015) coupling and Mw_max_min. As well as this ‘sunda as one segment’ branch, we have segmented branches which cover the source below"
+sunda,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8.3,_java,1,59,0.5,Berryman et al. (2015) coupling and Mw_max_min [note the Mw 8.3 was however a normal fault]
+sunda,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,_sumatra,60,88,0.5,Berryman et al. (2015) coupling and Mw_max_min
+sunda,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,_andaman,89,117,0.5,Berryman et al. (2015) coupling and Mw_max_min
+sunda,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,_arakan,118,141,0.5,Coupling based on Andaman. Mw-max-min based on CMT [although it was a normal fault] – noting Cummins (2007) suggested much higher values
