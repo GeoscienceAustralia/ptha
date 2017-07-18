@@ -125,7 +125,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
     sourcepar$Mw_max = c(
         ## Largest observed plus a small value,
-        #min_mw_max,
+        min_mw_max,
         # Middle Mw
         #0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0) + 
         #    min_mw_max),
