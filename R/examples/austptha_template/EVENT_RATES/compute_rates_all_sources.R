@@ -80,10 +80,10 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
     # Find the lower/upper alongstrike numbers for this segment. If missing, we assume
     # the 'segment' is actually the entire source-zone
-    alongstrike_lower = sourcezone_parameters$segment_boundary_alongstrike_index_lower
+    alongstrike_lower = as.numeric(sourcezone_parameters_row$segment_boundary_alongstrike_index_lower)
     if(is.na(alongstrike_lower)) alongstrike_lower = 1
 
-    alongstrike_upper = sourcezone_parameters$segment_boundary_alongstrike_index_upper
+    alongstrike_upper = as.numeric(sourcezone_parameters_row$segment_boundary_alongstrike_index_upper)
     if(is.na(alongstrike_upper)) alongstrike_upper = Inf
 
     stopifnot(alongstrike_lower < alongstrike_upper)
@@ -235,6 +235,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         conditional_probability_model = 
             bird2003_env$make_conditional_probability_function_uniform_slip(
                 source_name, is_in_segment)
+
     }else{
         ## conditional_probability_model = 'inverse_slip'
 
