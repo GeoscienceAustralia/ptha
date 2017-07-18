@@ -295,18 +295,25 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         (mw_rate_function(event_table$Mw - dMw/2) - 
          mw_rate_function(event_table$Mw + dMw/2) )
 
-    event_rates_upper = event_conditional_probabilities * 
+    # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
+    # column matrix as output
+    event_rates_upper = as.numeric(
+        event_conditional_probabilities * 
         (mw_rate_function(event_table$Mw - dMw/2, 
             quantiles=config$upper_ci_inv_quantile) - 
          mw_rate_function(event_table$Mw + dMw/2, 
             quantiles=config$upper_ci_inv_quantile) )
+        )
 
-    event_rates_lower = event_conditional_probabilities * 
+    # Lower credible interval bound. Wrap in as.numeric to avoid having a 1
+    # column matrix as output
+    event_rates_lower = as.numeric(
+        event_conditional_probabilities * 
         (mw_rate_function(event_table$Mw - dMw/2, 
             quantiles=config$lower_ci_inv_quantile) - 
          mw_rate_function(event_table$Mw + dMw/2, 
-            quantiles=config$lower_ci_inv_qauntile) )
-
+            quantiles=config$lower_ci_inv_quantile) )
+        )
 
     return(environment())
 
@@ -355,6 +362,10 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 extra_rate = event_rate * 0
             }
 
+            output_var = event_rate * scale_rate + extra_rate
+
+            if(any(output_var < 0.0)) stop('negative rate')
+
             ncvar_put(fid, varname, event_rate*scale_rate + extra_rate)
 
             return(invisible())
@@ -400,6 +411,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         ncvar_put_extra(fid, 'event_rate_annual_lower_ci', 
             event_rates_lower[event_uniform_event_row]/nevents_broad)
         nc_close(fid)
+
     })
 
 }

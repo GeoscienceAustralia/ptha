@@ -618,6 +618,20 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         quantiles=NULL,
         return_random_curve=FALSE){
 
+        # Check input arguments for accidental nulls
+        input_args = as.list(match.call)
+
+        # If we actually provided the 'quantiles' argument, then it's unlikely we want
+        # a NULL value, however, a typo could create this. Check here for that situation.
+        if('quantiles' %in% names(input_args)){
+            if(is.null(quantiles)){
+                print(paste0('Deliberately passed null value to the optional argument "quantiles"',
+                        ' -- halting as this suggests a user typo'))
+                stop()
+            }
+        }
+
+
         # Check that at most one 'special option' is taken
         quantiles_not_null = !is.null(quantiles)
         options_sum = bounds + return_all_logic_tree_branches + 
