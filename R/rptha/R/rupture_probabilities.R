@@ -1,6 +1,7 @@
 #'
 #' Given Mw, compute parameters which characterise the 'probability
-#' distribution' of slip
+#' distribution' of slip, supposing area varies as a log-normal distribution
+#' according to the Strasser (2010) scaling relation.
 #'
 #' FIXME: This function is not currently exported -- do we want to keep it?
 #' Seems a good idea. \cr
@@ -52,8 +53,8 @@ compute_slip_density_parameters<-function(Mw, mu=3e+10, constant=9.05){
 }
 
 #'
-#' Compute the fraction of seismic moment associated with earthquake > a
-#' threshold
+#' Compute the fraction of seismic moment associated with earthquakes having a
+#' magnitude above some threshold
 #'
 #' For long-term slip rate computations we need to know how much slip is caused
 #' by events with Mw > mwmin. This function helps compute that, though it

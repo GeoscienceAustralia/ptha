@@ -435,6 +435,45 @@ for(i in 1:length(source_segment_names)){
     capture.output(source_envs[[i]]$sourcepar, file=log_filename)
 }
 
+#
+# Plot all the rate curves to a single pdf
+#
+
+xlim = c(7.0, 9.7)
+ylim = c(1.0e-06, 10)
+pdf('rate_curves_on_source_zones.pdf', width=9, height=7)
+for(i in 1:length(source_segment_names)){
+
+   # Get all the information
+   all_rate_curves = source_envs[[i]]$mw_rate_function(NA, return_all_logic_tree_branches=TRUE)
+
+   mw = all_rate_curves$Mw_seq
+   plot(xlim, ylim, log='y', col=0, xlab='Mw', ylab='Exceedance Rate')
+
+   # We will plot quantiles 0, 0.1, 0.2, ... 0.8, 0.9, (1.0-eps) 
+   # The 'eps' is used because our quantile evaluation function does not work
+   # at the extreme end-point. 
+   qntls = seq(0, 1, by=0.1)
+   qntls[length(qntls)] = 1 - 1.0e-08 # Must be just < 1
+   for(j in 1:length(qntls)){
+       curve = as.numeric(source_envs[[i]]$mw_rate_function(mw, quantile=qntls[j]))
+       # Remove zero values so we can see the line 'drop' on log axes
+       curve = pmax(curve, 1e-100) 
+       points(mw, curve, t='l', col='grey')
+   }
+
+   points(mw, source_envs[[i]]$mw_rate_function(mw), t='o', col='black', pch=17)
+   title(names(source_envs)[i])
+   grid(col='orange')
+   abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange', lty='dotted')
+}
+
+dev.off()
+
+#
+# OUTPUT RATES TO NETCDF FILES BELOW HERE
+#
+
 # Zero rates in netcdf files by setting scale_rate to zero
 for(i in 1:length(source_segment_names)){
     write_rates_to_event_table(source_envs[[i]], scale_rate = 0.0, add_rate=FALSE)

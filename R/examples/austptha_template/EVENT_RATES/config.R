@@ -71,12 +71,12 @@ MAXIMUM_ALLOWED_MW_MAX = 9.6
 MINIMUM_ALLOWED_MW_MAX = 7.65
 
 #
-# Only assign non-zero probability to earthquakes with Mw greater than this
-# This should be smaller than the largest earthquake in the event set (or they
+# Only assign non-zero probability to earthquakes with Mw greater than MW_MIN.
+# MW_MIN should be smaller than the largest earthquake in the event set (or they
 # will all be assigned a zero rate!). It may also be smaller than the smallest
-# Mw event in the event set -- that won't creating problems, and can make it
-# easier to compare against data for small Mw events.
-MW_MIN = 7.5 - dMw/2
+# Mw event in the event set -- that won't create problems, and can make it
+# easier to compare against data for small Mw events. 
+MW_MIN = 7.2 - dMw/2
 
 #
 # We ensure that (Mw_max >= maximum_observed_mw + mw_observed_perturbation)
