@@ -1,7 +1,7 @@
 sourcename,segment_name,segment_boundary_alongstrike_index_lower,segment_boundary_alongstrike_index_upper,row_weight, use_bird_convergence, tectonic_slip, convergent_fraction, cmin, cpref, cmax,cmin_p,cpref_p,cmax_p, bmin, bpref, bmax,bmin_p,bpref_p,bmax_p, mw_max_observed,notes
 izumariana,,,,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.2,"Berryman et al (2015) suggest coupling values: [Izubonin, 0.1, 0.2, 0.7;   Marianas, 0.1, 0.2, 0.7]; and mw_max_min=7.2"
-izumariana,_izubonin,1,27,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,,
-izumariana,_marianas,28,70,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,,
+izumariana,_izubonin,1,27,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.2,
+izumariana,_marianas,28,70,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.2,
 kermadectonga,,,,0.5,1,,,0.2,0.31,0.72,,,,0.7,0.95,1.2,,,,8.1,"Berryman et al. (2015) suggest coupling values of 0.2, 0.31, 0.72; and mw_max_min = 8.1"
 kermadectonga,_tonga,1,22,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al
 kermadectonga,_kermadec,23,56,0.5,1,,,0.2,0.3,0.75,,,,0.7,0.95,1.2,,,,8.1,Berryman et al
