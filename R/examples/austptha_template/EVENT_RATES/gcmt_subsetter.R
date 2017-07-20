@@ -74,10 +74,25 @@ lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
 
 }
 
-#
-# Extract earthquake events > threshold for all sources
-#
-
+#'
+#' Extract earthquake events > threshold for a source-zone or segment
+#'
+#' Spatial inclusion is judged by testing both hypocentres and centroids [if
+#' either is judged as 'inside', then the event is treated as inside.
+#'
+#' @param source_name name of a source-zone in unit_source_grid_poly
+#' @param alongstrike_index_min NULL, or an integer alongstrike index where the
+#'   segment of interest begins
+#' @param alongstrike_index_min NULL, or an integer alongstrike index where the
+#'   segment of interest ends
+#' @param local_mw_threshold keep earthquakes with magnitude >= this
+#' @param local_depth_threshold keep earthquakes with depth <= this
+#' @param local_rake_min, local_rake_max  keep earthquakes with rake inside
+#'   this range [either rake1, or rake2]
+#' @param local_buffer_width buffer polygon by this many degrees before running
+#'   point-in-polygon test.
+#' @return subset of gCMT catalogue
+#'
 get_gcmt_events_in_poly<-function(source_name, 
     alongstrike_index_min = NULL, 
     alongstrike_index_max = NULL,
@@ -94,12 +109,14 @@ get_gcmt_events_in_poly<-function(source_name,
     # Get the polygon
     poly = unit_source_grid_poly[[source_name]]
 
+    # Get a subset of 'poly' with the right alongstrike indices
     if(!is.null(alongstrike_index_min) | !is.null(alongstrike_index_max)){
-        # Get a subset of 'poly' with the right alongstrike indices
+
+        # Check input args
         if(is.null(alongstrike_index_min) | is.null(alongstrike_index_max)){
             stop('Must provide BOTH alongstrike_index_min and alongstrike_index_max, or neither')
         }
-
+        # Ensure name-mangling in shapefile has not changed
         if( !('alngst_' %in% names(poly)) ){
             stop('Polygon does not have"alngst_" attribute')
         }
@@ -124,16 +141,16 @@ get_gcmt_events_in_poly<-function(source_name,
    
     inside_events = (inside_events_hypo | inside_events_centroid)
  
-    # Criterion for point selection - note we will keep the event if either rake1 or rake2 is within pi/4 of pure thrust
+    # Criterion for point selection - note we will keep the event if either
+    # rake1 or rake2 is within pi/4 of pure thrust
     inside_keep = which( inside_events & 
         (gcmt$Mw >= local_mw_threshold) & 
         (gcmt$depth <= local_depth_threshold) & 
-        ((gcmt$rake1 >= local_rake_min & gcmt$rake1 <= local_rake_max) | (gcmt$rake2 >= local_rake_min & gcmt$rake2 <= local_rake_max) )
+        ((gcmt$rake1 >= local_rake_min & gcmt$rake1 <= local_rake_max) | 
+            (gcmt$rake2 >= local_rake_min & gcmt$rake2 <= local_rake_max) )
         )
 
     return(gcmt[inside_keep,])
 }
-
-
 
 
