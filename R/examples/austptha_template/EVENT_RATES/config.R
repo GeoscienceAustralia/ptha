@@ -17,6 +17,9 @@ depth_threshold = 71 # km
 # is inside the source-zone-polygon, after the polygon is buffered by 'buffer_width' degrees
 buffer_width = 0.2 
 
+#
+# See also 'rake_deviation_thrust_events' below
+#
 
 #######################################################################################
 #

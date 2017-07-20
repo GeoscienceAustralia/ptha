@@ -1,100 +1,13 @@
-# 
-# Routines to extract data from e.g. the CMT catalogue, or the ISC-GEM catalogue, 
-# within polygons that define our source-zones
 #
-library(rptha)
-config = new.env()
-source('config.R', local=config)
-
-# Key inputs
-cmt_catalogue_csv = config$cmt_catalogue_csv 
-unit_source_grid_polygon_shapefiles = config$unit_source_grid_polygon_shapefiles 
-
-# Properties of earthquake events we extract
-mw_threshold = config$MW_MIN 
-depth_threshold = config$depth_threshold #70 # depth < depth_threshold
-buffer_width = config$buffer_width # Events are inside polygon, after polygon is buffered by 'buffer_width' degrees
-# Events have rake_min <= rake1 <= rake_max; OR rake_min <= rake2 <= rake_max
-rake_min = 90 - config$rake_deviation_thrust_events  
-rake_max = 90 + config$rake_deviation_thrust_events  
-
+# Code for casual analysis of earthquakes in our source zones
 #
-# Read all unit-source grid shapefiles into a list, with names corresponding to
-# source-zones
-#
-unit_source_grid_poly = lapply(
-    as.list(unit_source_grid_polygon_shapefiles), 
-    f<-function(x) readOGR(x, layer=gsub('.shp', '', basename(x))))
 
-names(unit_source_grid_poly) = basename(dirname(dirname(dirname(
-    unit_source_grid_polygon_shapefiles))))
-
-#
-# Read earthquake observational datasets
-#
-gcmt = read.csv(cmt_catalogue_csv)
-days_in_year = 365.25
-cmt_duration_years = diff(range(gcmt$julianDay1900))/days_in_year
-
-#'
-#' Determine whether lonlat coordinates are inside a given polygon
-#'
-#' Takes care of different longitude conventions (e.g. offsets by 360n).
-#'
-#' If buffer_width is provided, then poly is buffered by this amount prior
-#' to testing inclusion. Buffer_width should be in the same units as poly's coordinates.
-#'
-#' @param lonlat 2 column matrix with longitude/latitude
-#' @param poly SpatialPolygons object
-#' @param buffer width thickness of buffer to apply to poly before testing the point inclusion.
-#' @return logical vector with one entry for every row in lonlat.
-#'
-lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
-
-    if(buffer_width != 0){
-        poly = gBuffer(poly, width=buffer_width, byid=TRUE)
-    }
-
-    # Find point on poly, which is used to determine the longitude convention of 'poly'
-    point_in_poly = as.numeric(coordinates(gCentroid(poly)))
-
-    # Extend to same dimensions as lonlat
-    point_in_poly = matrix(point_in_poly, nrow=length(lonlat[,1]), ncol=2, byrow=TRUE)
-
-    # Make sure longitude convention is the same as for the polygon
-    lonlat_near_poly = adjust_longitude_by_360_deg(lonlat, point_in_poly)
-
-    lonlat_near_poly = SpatialPoints(lonlat_near_poly, proj4string=CRS(proj4string(poly)))
-
-    inside_poly = over(lonlat_near_poly, as(poly, 'SpatialPolygons'))
-
-    inside_poly = !is.na(inside_poly)
-
-    return(inside_poly)
-
-}
-
-#
-# Extract earthquake events > threshold for all sources
-#
+# Get GCMT + utility functions
+source('gcmt_subsetter.R', local=TRUE)
 
 eq_events = vector(mode='list', length=length(unit_source_grid_poly))
 for(i in 1:length(unit_source_grid_poly)){
-   
-    # Count as inside if EITHER the hypocentre, or the centroid, is inside 
-    inside_events_hypo = lonlat_in_poly(
-        gcmt[,c('hypo_lon', 'hypo_lat')], unit_source_grid_poly[[i]], buffer_width=buffer_width)
-    inside_events_centroid = lonlat_in_poly(
-        gcmt[,c('cent_lon', 'cent_lat')], unit_source_grid_poly[[i]], buffer_width=buffer_width)
-   
-    inside_events = (inside_events_hypo | inside_events_centroid)
- 
-    # Criterion for point selection - note we will keep the event if either rake1 or rake2 is within pi/4 of pure thrust
-    inside_keep = which( inside_events & (gcmt$Mw >= mw_threshold) & (gcmt$depth <= depth_threshold) & 
-        ((gcmt$rake1 >= rake_min & gcmt$rake1 <= rake_max) | (gcmt$rake2 >= rake_min & gcmt$rake2 <= rake_max) )
-        )
-
-    eq_events[[i]] = gcmt[inside_keep,]
+    eq_events[[i]] = get_gcmt_events_in_poly(names(unit_source_grid_poly)[i])
 }
 names(eq_events) = names(unit_source_grid_poly)
 
