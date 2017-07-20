@@ -109,6 +109,10 @@ get_gcmt_events_in_poly<-function(source_name,
     # Get the polygon
     poly = unit_source_grid_poly[[source_name]]
 
+    # If only looking at a subset of the polygon, we will use this
+    # variable to keep track of other regions [to avoid point double-counting]
+    poly_neighbour_segments = NULL
+
     # Get a subset of 'poly' with the right alongstrike indices
     if(!is.null(alongstrike_index_min) | !is.null(alongstrike_index_max)){
 
@@ -121,7 +125,7 @@ get_gcmt_events_in_poly<-function(source_name,
             stop('Polygon does not have"alngst_" attribute')
         }
 
-        poly_alongstrike_inds = poly[['alngst_']]
+        poly_alongstrike_index = as.numeric(as.character(poly[['alngst_']]))
 
         keep = which((poly_alongstrike_index >= alongstrike_index_min) & 
             (poly_alongstrike_index <= alongstrike_index_max))
@@ -129,7 +133,14 @@ get_gcmt_events_in_poly<-function(source_name,
         if(length(keep) == 0) stop('No indices to keep')
 
         # Get the subset of interest 
-        poly = poly[keep,]
+        poly_orig = poly
+        poly = poly_orig[keep,]
+
+        # Keep the 'remainder' of the polygon, to check whether events
+        # would be included in multiple segments
+        if(length(poly_alongstrike_index) > length(keep)){
+            poly_neighbour_segments = poly_orig[-keep,]
+        }
 
     }
 
@@ -142,7 +153,7 @@ get_gcmt_events_in_poly<-function(source_name,
     inside_events = (inside_events_hypo | inside_events_centroid)
  
     # Criterion for point selection - note we will keep the event if either
-    # rake1 or rake2 is within pi/4 of pure thrust
+    # rake1 or rake2 is within a given range of pure thrust
     inside_keep = which( inside_events & 
         (gcmt$Mw >= local_mw_threshold) & 
         (gcmt$depth <= local_depth_threshold) & 
@@ -150,7 +161,63 @@ get_gcmt_events_in_poly<-function(source_name,
             (gcmt$rake2 >= local_rake_min & gcmt$rake2 <= local_rake_max) )
         )
 
-    return(gcmt[inside_keep,])
+
+    output_gcmt = gcmt[inside_keep,]
+
+    # Keep track of double-counted points
+    output_gcmt$double_counted = rep(FALSE, length=length(inside_keep))
+    if(!is.null(poly_neighbour_segments)){
+        # Identify points that are also inside neighbour segments. 
+        inside_events_hypo = lonlat_in_poly(
+            output_gcmt[,c('hypo_lon', 'hypo_lat')], poly_neighbour_segments, buffer_width=local_buffer_width)
+        inside_events_centroid = lonlat_in_poly(
+            output_gcmt[,c('cent_lon', 'cent_lat')], poly_neighbour_segments, buffer_width=local_buffer_width)
+        inside_events = (inside_events_hypo | inside_events_centroid)
+        output_gcmt$double_counted = inside_events
+        
+    }
+
+    return(output_gcmt)
 }
 
 
+source_zone_events_plot<-function(source_name, eq_events, focsize_t1 = 6.5, focsize_t2 = 6.0){
+
+    library(RFOC)
+
+    plot(unit_source_grid_poly[[source_name]], main=source_name, border='grey', axes=TRUE)
+    points(eq_events$cent_lon, eq_events$cent_lat, cex=(eq_events$Mw-focsize_t1)**2, col='red')
+    # Make sure we don't miss points due to longitude convention
+    points(eq_events$cent_lon-360, eq_events$cent_lat, cex=(eq_events$Mw-focsize_t1)**2, col='red')
+    points(eq_events$cent_lon+360, eq_events$cent_lat, cex=(eq_events$Mw-focsize_t1)**2, col='red')
+
+    #
+    # Same plot as above, with beachballs
+    #
+
+    plot(unit_source_grid_poly[[source_name]], main=source_name, border='grey', axes=TRUE)
+
+    pol_centroid = as.numeric(coordinates(gCentroid(unit_source_grid_poly[[source_name]])))
+
+    for(j in 1:length(eq_events$cent_lon)){
+
+        lon_lat = c(eq_events$cent_lon[j], eq_events$cent_lat[j])
+        lon_lat = adjust_longitude_by_360_deg(lon_lat, pol_centroid)
+    
+        # Beach-ball details
+        mec = SDRfoc(eq_events$strk1[j], eq_events$dip1[j], eq_events$rake1[j], PLOT=FALSE)
+
+        fcol =  c( rgb(1,0,0, alpha=1), 'lightblue', 'green', 'orange', 'yellow', 'purple', 'black')[foc.icolor(mec$rake1)]
+
+        par(lwd=0.2) # Try to avoid strong lines on beachballs
+        try(
+            justfocXY(mec, lon_lat[1], lon_lat[2],
+                focsiz=4*((eq_events$Mw[j]-focsize_t2)/10)**2, xpd=TRUE, fcol=fcol,
+                fcolback='white'),
+            silent=TRUE
+            )
+        par(lwd=1)
+
+    }
+
+}

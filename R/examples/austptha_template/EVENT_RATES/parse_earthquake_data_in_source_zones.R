@@ -132,40 +132,8 @@ library(RFOC)
 
 for(i in 1:length(eq_events)){
 
-    plot(unit_source_grid_poly[[i]], main=names(unit_source_grid_poly)[i], border='grey', axes=TRUE)
-    points(eq_events[[i]]$cent_lon, eq_events[[i]]$cent_lat, cex=(eq_events[[i]]$Mw-6.5)**2, col='red')
-    # Make sure we don't miss points due to longitude convention
-    points(eq_events[[i]]$cent_lon-360, eq_events[[i]]$cent_lat, cex=(eq_events[[i]]$Mw-6.5)**2, col='red')
-    points(eq_events[[i]]$cent_lon+360, eq_events[[i]]$cent_lat, cex=(eq_events[[i]]$Mw-6.5)**2, col='red')
+    source_zone_events_plot(names(unit_source_grid_poly)[i], eq_events[[i]])
 
-    #
-    # Same plot as above, with beachballs
-    #
-
-    plot(unit_source_grid_poly[[i]], main=names(unit_source_grid_poly)[i], border='grey', axes=TRUE)
-
-    pol_centroid = as.numeric(coordinates(gCentroid(unit_source_grid_poly[[i]])))
-
-    for(j in 1:length(eq_events[[i]]$cent_lon)){
-
-        lon_lat = c(eq_events[[i]]$cent_lon[j], eq_events[[i]]$cent_lat[j])
-        lon_lat = adjust_longitude_by_360_deg(lon_lat, pol_centroid)
-    
-        # Beach-ball details
-        mec = SDRfoc(eq_events[[i]]$strk1[j], eq_events[[i]]$dip1[j], eq_events[[i]]$rake1[j], PLOT=FALSE)
-
-        fcol =  c( rgb(1,0,0, alpha=1), 'lightblue', 'green', 'orange', 'yellow', 'purple', 'black')[foc.icolor(mec$rake1)]
-
-        par(lwd=0.2) # Try to avoid strong lines on beachballs
-        try(
-            justfocXY(mec, lon_lat[1], lon_lat[2],
-                focsiz=4*((eq_events[[i]]$Mw[j]-6)/10)**2, xpd=TRUE, fcol=fcol,
-                fcolback='white'),
-            silent=TRUE
-            )
-        par(lwd=1)
-
-    }
 }
 
 dev.off()
