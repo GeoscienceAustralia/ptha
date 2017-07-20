@@ -12,6 +12,9 @@ library(rptha)
 config = new.env()
 source('config.R', local=config)
 
+gcmt_access = new.env()
+source('gcmt_subsetter.R', local=gcmt_access)
+
 #
 # INPUTS
 # 
@@ -19,8 +22,10 @@ source('config.R', local=config)
 sourcezone_parameter_file = config$sourcezone_parameter_file 
 sourcezone_parameters = read.csv(sourcezone_parameter_file, stringsAsFactors=FALSE)
 
-# Get the source-name. Segmented cases have an extra 'segment name' that distinguishes them
-source_segment_names = paste0(sourcezone_parameters$sourcename, sourcezone_parameters$segment_name)
+# Get the source-name. Segmented cases have an extra 'segment name' that
+# distinguishes them
+source_segment_names = paste0(sourcezone_parameters$sourcename, 
+    sourcezone_parameters$segment_name)
 
 # Never allow Mw_max to be greater than this
 MAXIMUM_ALLOWED_MW_MAX = config$MAXIMUM_ALLOWED_MW_MAX  # 9.8
@@ -73,6 +78,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     sourcepar$sourcezone_parameters_row = sourcezone_parameters_row
     source_name = sourcezone_parameters_row$sourcename
     sourcepar$name = source_name
+
    
     # We might be on a specific segment 
     segment_name = sourcezone_parameters_row$segment_name
@@ -80,13 +86,20 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
     # Find the lower/upper alongstrike numbers for this segment. If missing, we assume
     # the 'segment' is actually the entire source-zone
-    alongstrike_lower = as.numeric(sourcezone_parameters_row$segment_boundary_alongstrike_index_lower)
+    alongstrike_lower = as.numeric(
+        sourcezone_parameters_row$segment_boundary_alongstrike_index_lower)
     if(is.na(alongstrike_lower)) alongstrike_lower = 1
 
-    alongstrike_upper = as.numeric(sourcezone_parameters_row$segment_boundary_alongstrike_index_upper)
+    alongstrike_upper = as.numeric(
+        sourcezone_parameters_row$segment_boundary_alongstrike_index_upper)
     if(is.na(alongstrike_upper)) alongstrike_upper = Inf
 
     stopifnot(alongstrike_lower < alongstrike_upper)
+
+    # Get the CMT data in this segment
+    gcmt_data = gcmt_access$get_gcmt_events_in_poly(source_name, 
+        alongstrike_index_min=alongstrike_lower,
+        alongstrike_index_max=alongstrike_upper)
 
     # Get a vector which is true/false depending on whether each unit-source is
     # inside this particular segment
