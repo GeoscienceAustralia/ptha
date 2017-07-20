@@ -579,10 +579,12 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 ri = model_rates[i] 
                 # Likelihood function, exponential model. Account for fact that the 
                 # first/last time spacings are not known exactly
-                pr_data_given_model[i] = ( 
-                    exp(sum(dexp(dts, rate=ri, log=TRUE)))*
-                    (1-pexp(dts1_lower_bound, rate=ri))*
-                    (1-pexp(dts_last_lower_bound, rate=ri))
+                pr_data_given_model[i] = exp(
+                    # Sum log-likelihood for numerical stability
+                    sum(dexp(dts, rate=ri, log=TRUE)) + 
+                    # Integral over upper tails for first/last data points
+                    pexp(dts1_lower_bound, rate=ri, lower.tail=FALSE, log=TRUE) +
+                    pexp(dts_last_lower_bound, rate=ri, lower.tail=FALSE, log=TRUE)
                     )
             }
 
