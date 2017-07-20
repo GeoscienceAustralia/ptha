@@ -334,4 +334,25 @@ test_that("test_rupture_creation_and_probabilities", {
         isTRUE(all.equal(rate_function3(mws), rate_function2(mws), tol=1.0e-05)), 
         is_true())
 
+    # Alternative use of data to combine 
+    rate_function4 = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=Mw_count_duration,
+        Mw_obs_data=list(Mw=c(7.7, 8.0, 8.2), t=c(10, 30, 45))
+        )
+
+    expect_that(
+        isTRUE(all.equal(rate_function4(mws), rate_function2(mws), tol=1.0e-02)), 
+        is_true())
 })

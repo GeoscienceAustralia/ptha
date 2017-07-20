@@ -3,7 +3,8 @@
 \name{compute_slip_density_parameters}
 \alias{compute_slip_density_parameters}
 \title{Given Mw, compute parameters which characterise the 'probability
-distribution' of slip}
+distribution' of slip, supposing area varies as a log-normal distribution
+according to the Strasser (2010) scaling relation.}
 \usage{
 compute_slip_density_parameters(Mw, mu = 3e+10, constant = 9.05)
 }

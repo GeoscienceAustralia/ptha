@@ -2,8 +2,8 @@
 % Please edit documentation in R/rupture_probabilities.R
 \name{compute_moment_fraction_from_events_greater_or_equal_than_mwmin}
 \alias{compute_moment_fraction_from_events_greater_or_equal_than_mwmin}
-\title{Compute the fraction of seismic moment associated with earthquake > a
-threshold}
+\title{Compute the fraction of seismic moment associated with earthquakes having a
+magnitude above some threshold}
 \usage{
 compute_moment_fraction_from_events_greater_or_equal_than_mwmin(Mws, rate_Mws,
   moment_Mws, mwmin)

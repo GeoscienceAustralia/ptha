@@ -590,7 +590,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
         }
 
-        # Denominator in Bayes theorem
+        # Check that some models have non-zero probability
         sum_pr_data_given_model = sum(pr_data_given_model)
         if(sum_pr_data_given_model == 0){
             stop('Mw_count_duration data is impossible under every model')
