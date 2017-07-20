@@ -162,19 +162,28 @@ get_gcmt_events_in_poly<-function(source_name,
         )
 
 
-    output_gcmt = gcmt[inside_keep,]
+    if(length(inside_keep) > 0){
+        output_gcmt = gcmt[inside_keep,]
 
-    # Keep track of double-counted points
-    output_gcmt$double_counted = rep(FALSE, length=length(inside_keep))
-    if(!is.null(poly_neighbour_segments)){
-        # Identify points that are also inside neighbour segments. 
-        inside_events_hypo = lonlat_in_poly(
-            output_gcmt[,c('hypo_lon', 'hypo_lat')], poly_neighbour_segments, buffer_width=local_buffer_width)
-        inside_events_centroid = lonlat_in_poly(
-            output_gcmt[,c('cent_lon', 'cent_lat')], poly_neighbour_segments, buffer_width=local_buffer_width)
-        inside_events = (inside_events_hypo | inside_events_centroid)
-        output_gcmt$double_counted = inside_events
-        
+        # Keep track of double-counted points
+        output_gcmt$double_counted = rep(FALSE, length=length(inside_keep))
+        if(!is.null(poly_neighbour_segments)){
+            # Identify points that are also inside neighbour segments. 
+            inside_events_hypo = lonlat_in_poly(
+                output_gcmt[,c('hypo_lon', 'hypo_lat')], poly_neighbour_segments, 
+                buffer_width=local_buffer_width)
+            inside_events_centroid = lonlat_in_poly(
+                output_gcmt[,c('cent_lon', 'cent_lat')], poly_neighbour_segments, 
+                buffer_width=local_buffer_width)
+            inside_events = (inside_events_hypo | inside_events_centroid)
+            output_gcmt$double_counted = inside_events
+            
+        }
+    }else{
+        # If there is no data, return an empty data.frame, still with the
+        # correct names
+        output_gcmt = as.data.frame(matrix(0, nrow=0, ncol=ncol(gcmt)+1))
+        names(output_gcmt) = (names(gcmt), 'double_counted')
     }
 
     return(output_gcmt)
