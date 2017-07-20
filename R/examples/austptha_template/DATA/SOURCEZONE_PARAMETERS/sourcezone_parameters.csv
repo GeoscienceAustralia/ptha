@@ -10,10 +10,10 @@ kurilsjapan,,,,0.5,1,,,0.67,0.77,0.9,,,,0.7,0.95,1.2,,,,9,"Berryman et al (2015)
 kurilsjapan,_kurils,1,45,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,
 kurilsjapan,_japan,46,61,0.5,1,,,0.6,0.7,0.9,,,,0.7,0.95,1.2,,,,9,
 newhebrides,,,,0.5,1,,,0.27,0.37,0.73,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and mw_max_min values
-newhebrides,_matthewhunter,1,5,0.5,1,,,0.15,7.6,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al. (2015) coupling and Mw_max_min
-newhebrides,_south,6,16,0.5,1,,,0.15,8.3,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
-newhebrides,_central,17,27,0.5,1,,,0.6,7.6,0.8,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and Mw_max_min
-newhebrides,_north,28,34,0.5,1,,,0.15,8,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,_matthewhunter,1,5,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,_south,6,16,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,_central,17,27,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,_north,28,34,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
 puysegur,,,,1,1,,,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,Berryman et al. (2015) coupling and Mw_max_min
 solomon,,,,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
 solomon,_southeast,1,20,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
