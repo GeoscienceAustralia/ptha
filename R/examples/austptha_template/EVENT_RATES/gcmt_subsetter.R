@@ -183,7 +183,7 @@ get_gcmt_events_in_poly<-function(source_name,
         # If there is no data, return an empty data.frame, still with the
         # correct names
         output_gcmt = as.data.frame(matrix(0, nrow=0, ncol=ncol(gcmt)+1))
-        names(output_gcmt) = (names(gcmt), 'double_counted')
+        names(output_gcmt) = c(names(gcmt), 'double_counted')
     }
 
     return(output_gcmt)
