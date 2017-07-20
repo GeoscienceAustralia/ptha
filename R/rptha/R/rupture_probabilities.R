@@ -288,6 +288,12 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' \code{update_logic_tree_weights_with_data=TRUE}, this is used to re-weight
 #' parameter combinations in the logic tree, with more weight given to those
 #' which predict similar event frequencies as the data.
+#' @param Mw_obs_data list containing earthquake event data (corresponding to Mw_count_duration).
+#' It should contain a member 'Mw' with min(Mw) >= Mw_count_duration[1] and length(Mw) = 
+#' Mw_count_duration[2], and a member 't' with the same length as Mw, giving
+#' the time in years of the event since the observational start time. Note 
+#' that the time between the last event and the end of observations is inferred as 
+#' (Mw_count_duration[3] - t[length(t)]) 
 #' @param Mw_2_M0 function which takes an earthquake magnitude and returns the
 #' corresponding seismic moment M0
 #' @param account_for_moment_below_mwmin logical. If FALSE assume all
@@ -336,6 +342,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     Mw_frequency_distribution_prob = 1,
     update_logic_tree_weights_with_data = FALSE,
     Mw_count_duration = c(NA, NA, NA),
+    Mw_obs_data = list(Mw=NULL, t=NULL),
     Mw_2_M0 = function(x) M0_2_Mw(x, inverse=TRUE),
     account_for_moment_below_mwmin=FALSE){
 
@@ -537,22 +544,59 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         if( (data_thresh < min(Mw_seq)) | (data_thresh > max(Mw_seq)) ){
             stop('The Mw threshold of the data must be within [Mw_min, Mw_max]')
         }
-        
+       
         model_rates = all_par_prob*0
         for(i in 1:length(model_rates)){
             model_rates[i] = approx(Mw_seq, all_rate_matrix[i,], 
                 xout=data_thresh)$y
         }
-        pr_data_given_model = dpois(data_count, 
-            lambda = (model_rates*data_observation_duration))
 
+
+        # Compute the probability of observing the data, given each model
+        if(is.null(Mw_obs_data$Mw)){
+            # Assume poisson rate of events.
+
+            pr_data_given_model = dpois(data_count, 
+                lambda = (model_rates*data_observation_duration))
+
+        }else{
+            # Check consistency between this data and Mw_count_duration
+            stopifnot(length(Mw_obs_data$Mw) == data_count)
+            stopifnot(length(Mw_obs_data$Mw) == length(Mw_obs_data$t))
+            stopifnot(all(Mw_obs_data$Mw >= data_thresh))
+            # Times must be sorted
+            stopifnot(min(diff(Mw_obs_data$t)) > 0)
+            stopifnot(min(Mw_obs_data$t) >= 0)
+            stopifnot(max(Mw_obs_data$t) <= data_observation_duration)
+
+            # Compute times between events
+            dts = diff(Mw_obs_data$t)
+            dts1_lower_bound = Mw_obs_data$t[1]
+            dts_last_lower_bound = data_observation_duration - Mw_obs_data$t[data_count]
+            
+            pr_data_given_model = rep(NA, length=length(model_rates))
+            for(i in 1:length(model_rates)){
+                ri = model_rates[i] 
+                # Likelihood function, exponential model. Account for fact that the 
+                # first/last time spacings are not known exactly
+                pr_data_given_model[i] = ( 
+                    exp(sum(dexp(dts, rate=ri, log=TRUE)))*
+                    (1-pexp(dts1_lower_bound, rate=ri))*
+                    (1-pexp(dts_last_lower_bound, rate=ri))
+                    )
+            }
+
+        }
+
+        # Denominator in Bayes theorem
         sum_pr_data_given_model = sum(pr_data_given_model)
         if(sum_pr_data_given_model == 0){
             stop('Mw_count_duration data is impossible under every model')
         }
-        
-        all_par_prob =  all_par_prob * pr_data_given_model / 
-            sum(all_par_prob * pr_data_given_model)
+       
+        # Bayes theorem 
+        all_par_prob =  all_par_prob_prior * pr_data_given_model / 
+            sum(all_par_prob_prior * pr_data_given_model)
     }else{
 
         all_par_prob = all_par_prob_prior

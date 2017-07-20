@@ -84,8 +84,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     segment_name = sourcezone_parameters_row$segment_name
     source_segment_name = paste0(source_name, segment_name)
 
-    # Find the lower/upper alongstrike numbers for this segment. If missing, we assume
-    # the 'segment' is actually the entire source-zone
+    # Find the lower/upper alongstrike numbers for this segment. If missing, we
+    # assume the 'segment' is actually the entire source-zone
     alongstrike_lower = as.numeric(
         sourcezone_parameters_row$segment_boundary_alongstrike_index_lower)
     if(is.na(alongstrike_lower)) alongstrike_lower = 1
@@ -518,3 +518,22 @@ for(i in 1:length(source_segment_names)){
     write_rates_to_event_table(source_envs[[i]], scale_rate = rate_scale, add_rate=TRUE)
 }
 
+
+
+
+
+## for(i in 1:length(source_envs)){
+##     print('')
+##     print('##################')
+##     print(names(source_envs)[i])  
+##     xx = source_envs[[i]]$mw_rate_function(NA, return_all_logic_tree_branches=TRUE)
+##     print('    mean coupling')
+##     print(weighted.mean(xx$all_par$slip_rate, xx$all_par_prob)/source_envs[[i]]$sourcepar$slip)
+##     print('    mean b')
+##     print(weighted.mean(xx$all_par$b, xx$all_par_prob))
+##     print('    mean Mw_max')
+##     print(weighted.mean(xx$all_par$Mw_max, xx$all_par_prob))
+##     print('    mean Mw_max -- change')
+##     print(weighted.mean(xx$all_par$Mw_max, xx$all_par_prob) - weighted.mean(xx$all_par$Mw_max, xx$all_par_prob_prior))
+## 
+## }
