@@ -488,4 +488,67 @@ test_that("test_rupture_creation_and_probabilities", {
     kk = which(d7$all_par$Mw_max == 9.6)
     expect_that(all(d7$all_par_prob[kk] < d6_prob_adjusted[kk]), is_true())
 
+    #
+    #
+    # Check that with full Mw data, we really can 'filter' logic tree branches well,
+    # and get the correct one
+    #
+    #
+    slip_rate = c(0.1, 50, 90)/1000 # m/year
+    slip_rate_prob =  rep(1,length(slip_rate))/length(slip_rate)
+    b = c(0.7, 0.9, 1, 1.3)
+    b_prob = rep(1,length(b))/length(b)
+    Mw_min = 7.5
+    Mw_min_prob = 1
+    Mw_max = 9.4
+    Mw_max_prob = 1
+    Mw_freq_dist = c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')
+    Mw_freq_dist_prob = c(0.5, 0.5)
+
+    # Suppose true relation has:
+    # slip-rate = 50
+    # b = 1
+    # Mw_max = 9.4
+    # rate turns out to be 0.059 events with Mw>7.5 per year
+    # Characteristic Gutenberg richter
+    n = 1000
+    random_inv_quant = runif(n)
+    true_b = 1
+    random_Mw = -log10(random_inv_quant*10**(-true_b*7.5))
+    if(any(random_Mw > Mw_max)){
+        random_Mw[random_Mw > Mw_max] = Mw_max # Characteristic!
+    }
+    random_dt = rexp(n, rate=0.059)
+    Mw_count_duration = c(7.5, n, sum(random_dt)+1)
+    random_t = cumsum(random_dt)
+
+    rate_function8 = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        Mw_frequency_distribution=Mw_freq_dist,
+        Mw_frequency_distribution_prob = Mw_freq_dist_prob,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=Mw_count_duration,
+        Mw_obs_data=list(Mw=random_Mw, t=random_t)
+        )
+
+    xx = rate_function8(NA, return_all_logic_tree_branches=TRUE)
+    # Should have id'd the optional branch
+    k = which.max(xx$all_par_prob)
+    # Should be 'far' better than any other branch
+    expect_that(all(xx$all_par_prob[k] > 1.0e-08*xx$all_par_prob[-k]), is_true())
+    # Should match the inputs
+    expect_that(isTRUE(all.equal(xx$all_par$b[k], true_b)), is_true())
+    expect_that(isTRUE(all.equal(xx$all_par$slip_rate[k], 0.05)), is_true())
+    expect_that(xx$all_par$Mw_frequency_distribution[k] == 'characteristic_gutenberg_richter', is_true())
+
 })

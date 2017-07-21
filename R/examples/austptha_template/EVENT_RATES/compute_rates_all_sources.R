@@ -278,16 +278,24 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         conditional_probability_model = conditional_probability_model)    
 
     # Get data for rate function update
-    gcmt_data_for_rate_function = list(
-        # Magnitude
-        Mw = gcmt_data$Mw,
-        # Time since the start of observation, in years
-        t = (gcmt_data$julianDay1900 - gcmt_access$cmt_start_time_julianDay1900)/gcmt_access$days_in_year
-    )
+    if(nrow(gcmt_data) > 0){
+        gcmt_data_for_rate_function = list(
+            # Magnitude
+            Mw = gcmt_data$Mw,
+            # Time since the start of observation, in years
+            t = (gcmt_data$julianDay1900 - 
+                gcmt_access$cmt_start_time_julianDay1900)/gcmt_access$days_in_year
+        )
+    }else{
+        gcmt_data_for_rate_function = list(Mw = NULL, t = NULL)
+    }
+
+    MW_MIN = MW_MIN
 
     #
     # Build rate function
     #
+    
     mw_rate_function = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = as.numeric(sourcepar$slip * sourcepar$coupling),
         slip_rate_prob = as.numeric(sourcepar$coupling_p),

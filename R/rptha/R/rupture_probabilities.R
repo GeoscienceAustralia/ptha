@@ -598,8 +598,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             # Here, detailed temporal data was not provided. 
             # Assume poisson rate of events.
 
-            pr_data_given_model = dpois(data_count, 
-                lambda = (model_rates*data_observation_duration))
+            log_pr_data_given_model = dpois(data_count, 
+                lambda = (model_rates*data_observation_duration), 
+                log=TRUE)
 
         }else{
             # Detailed temporal data was provided.
@@ -613,18 +614,17 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             dts1_lower_bound = Mw_obs_data$t[1]
             dts_last_lower_bound = data_observation_duration - Mw_obs_data$t[data_count]
             
-            pr_data_given_model = rep(NA, length=length(model_rates))
+            log_pr_data_given_model = rep(NA, length=length(model_rates))
             for(i in 1:length(model_rates)){
                 ri = model_rates[i] 
                 # Likelihood function, exponential model. Account for fact that the 
                 # first/last time spacings are not known exactly
-                pr_data_given_model[i] = exp(
+                log_pr_data_given_model[i] = 
                     # Sum log-likelihood for numerical stability
                     sum(dexp(dts, rate=ri, log=TRUE)) + 
                     # Integral over upper tails for first/last data points
                     pexp(dts1_lower_bound, rate=ri, lower.tail=FALSE, log=TRUE) +
                     pexp(dts_last_lower_bound, rate=ri, lower.tail=FALSE, log=TRUE)
-                    )
             }
 
         }
@@ -673,20 +673,24 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
                 # Use linear interpolation to compute the density
                 log_dens_values = log(density_above_Mw_obs_threshold)
-                pr_data_given_model[i] = pr_data_given_model[i] * exp(sum(log_dens_values))
+                log_pr_data_given_model[i] = log_pr_data_given_model[i] + (sum(log_dens_values))
             }
 
         }
 
         # Check that some models have non-zero probability
-        sum_pr_data_given_model = sum(pr_data_given_model)
-        if(sum_pr_data_given_model == 0){
+        
+        if( all(!is.finite(log_pr_data_given_model)) ){
             stop('Mw_count_duration data is impossible under every model')
         }
-       
-        # Bayes theorem 
-        all_par_prob =  all_par_prob_prior * pr_data_given_model / 
-            sum(all_par_prob_prior * pr_data_given_model)
+     
+        # For numerical stability, rescale log_pr_data_given_model 
+        # This will not effect all_par_prob, but makes it numerically easier to compute
+        mx = max(log_pr_data_given_model)
+ 
+        # Bayes theorem, with likelihood scaled for numerical stability
+        all_par_prob =  all_par_prob_prior * exp(log_pr_data_given_model-mx) / 
+            sum(all_par_prob_prior * exp(log_pr_data_given_model-mx))
     }else{
 
         all_par_prob = all_par_prob_prior
