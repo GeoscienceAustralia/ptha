@@ -293,7 +293,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' (corresponding to Mw_count_duration) which is used to re-weight logic tree
 #' branches. This allows for more detailed use of data, as compared with the
 #' simple Mw_count_duration approach. The use of data is only attempted if
-#' "update_logic_tree_weights_with_data=TRUE" \cr
+#' "update_logic_tree_weights_with_data=TRUE". \cr
 #' Mw_obs_data may contain: (1) a member Mw_obs_data$Mw having moment-magnitude
 #' data for the historic events, and/or (2) a member Mw_obs_data$t, giving the
 #' time in years of the event **since the observational start time**. \cr 
@@ -305,7 +305,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' use of temporal data]. The data must have "min(Mw_obs_data$Mw) >=
 #' Mw_count_duration[1]" and "length(Mw_obs_data$Mw) = Mw_count_duration[2]".
 #' The likelihood is evaluated by numerically differentiating each modelled GR
-#' curve (normalised to a density for values about Mw_count_duration[1]). The
+#' curve (normalised to a density for values above Mw_count_duration[1]). The
 #' numerical differentiation uses a central difference over eps=1.0e-04
 #' magnitude units, which should be fairly accurate although not perfectly
 #' exact. \cr

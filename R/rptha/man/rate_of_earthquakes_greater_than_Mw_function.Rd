@@ -80,7 +80,7 @@ frequencies as the data.}
 (corresponding to Mw_count_duration) which is used to re-weight logic tree
 branches. This allows for more detailed use of data, as compared with the
 simple Mw_count_duration approach. The use of data is only attempted if
-"update_logic_tree_weights_with_data=TRUE" \cr
+"update_logic_tree_weights_with_data=TRUE". \cr
 Mw_obs_data may contain: (1) a member Mw_obs_data$Mw having moment-magnitude
 data for the historic events, and/or (2) a member Mw_obs_data$t, giving the
 time in years of the event **since the observational start time**. \cr 
@@ -91,7 +91,11 @@ If Mw_obs_data$Mw is not null, we use the likelihood of the 'Mw' data under
 each logic tree branch to re-weight the logic tree branches [in addition to
 use of temporal data]. The data must have "min(Mw_obs_data$Mw) >=
 Mw_count_duration[1]" and "length(Mw_obs_data$Mw) = Mw_count_duration[2]".
-\cr
+The likelihood is evaluated by numerically differentiating each modelled GR
+curve (normalised to a density for values above Mw_count_duration[1]). The
+numerical differentiation uses a central difference over eps=1.0e-04
+magnitude units, which should be fairly accurate although not perfectly
+exact. \cr
 If Mw_obs_data$t is not null, we assume event occurrence times are a
 realisation of a poisson process (treating the time before the first event
 and the time after the last event as censored observations). Note that the
@@ -99,7 +103,7 @@ time between the last event and the end of observations is inferred as
 (Mw_count_duration[3] - t[length(t)]), while the time before the first event
 is just t[1], so we must have Mw_obs_data$t[1] >= 0 and max(Mw_obs_data$t) <=
 Mw_count_duration[3]. \cr
-It is worth noting when the use of detailed temporal data is identical to the
+It is worth noting a situation when the use of detailed temporal data is identical to the
 simpler approach of providing only Mw_count_duration. Consider a case where
 Mw_obs_data$t=NULL and Mw_obs_data$Mw=NULL, and Mw_count_duration = c(7.5, 3,
 50). This will give the same answer as having Mw_obs_data$Mw=NULL,
