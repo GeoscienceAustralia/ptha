@@ -334,7 +334,9 @@ test_that("test_rupture_creation_and_probabilities", {
         isTRUE(all.equal(rate_function3(mws), rate_function2(mws), tol=1.0e-05)), 
         is_true())
 
-    # Alternative use of data to combine 
+    # Alternative use of data to combine, based on a poisson process with incomplete start/end times 
+    # Note that in this case, the time 'before' the first earthquake, and 'after' the last one, is
+    # treated as censored observations
     rate_function4 = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = slip_rate,
         slip_rate_prob = slip_rate_prob,
@@ -349,10 +351,141 @@ test_that("test_rupture_creation_and_probabilities", {
         event_conditional_probabilities = event_conditional_probabilities,
         update_logic_tree_weights_with_data=TRUE,
         Mw_count_duration=Mw_count_duration,
-        Mw_obs_data=list(Mw=c(7.7, 8.0, 8.2), t=c(10, 30, 45))
+        Mw_obs_data=list(Mw=NULL, t=c(10, 30, 45))
         )
 
     expect_that(
         isTRUE(all.equal(rate_function4(mws), rate_function2(mws), tol=1.0e-02)), 
         is_true())
+
+    # Mathematically, this one will give the 'same' result as the poisson
+    # distribution approach (rate_function3). This is because the 'time-between events'
+    # is 10, 20, 20 -- which adds exactly to 50 -- while the lower bounds of the 'start and end'
+    # earthquakes are zero, and from a censored viewpoint, the probability of
+    # these values is 1 [i.e. it is impossible to be less anyway]
+    rate_function5 = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=c(Mw_count_duration[1], 4, Mw_count_duration[3]),
+        Mw_obs_data=list(Mw=NULL, t=c(0, 10, 30, 50))
+        )
+
+    expect_that(
+        isTRUE(all.equal(rate_function5(mws), rate_function3(mws), tol=1.0e-12)), 
+        is_true())
+
+
+    #
+    # Try Mw update as well
+    #
+    slip_rate = c(0.1, 100)/1000 # m/year
+    slip_rate_prob =  c(0.5, 0.5)
+    b = 1
+    b_prob = 1
+    Mw_min = 7.5
+    Mw_min_prob = 1
+    Mw_max = c(8.3, 9.4, 9.6)
+    Mw_max_prob = c(1,1,1)/3
+  
+    # 
+    # Poisson-count approach 
+    #
+    rate_function6_a = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=c(Mw_count_duration[1], 4-1, Mw_count_duration[3]),
+        Mw_obs_data=list(Mw=NULL, t=NULL)
+        )
+    #
+    # Detailed times approach, setup to give identical answer to poisson-count approach
+    #
+    rate_function6_b = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=c(Mw_count_duration[1], 4, Mw_count_duration[3]),
+        Mw_obs_data=list(Mw=NULL, t=c(0, 10, 30, 50))
+        )
+
+    #
+    # Approach with Mw data as well as times. This should exclude the branch with low Mw_max
+    #
+    rate_function7 = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=c(Mw_count_duration[1], 4, Mw_count_duration[3]),
+        Mw_obs_data=list(Mw=c(7.6, 7.8, 8.301, 7.7), t=c(0, 10, 30, 50))
+        )
+
+    expect_that(
+        isTRUE(all.equal(rate_function6_a(mws), rate_function6_b(mws), tol=1.0e-12)), 
+        is_true())
+    
+
+    d6_a = rate_function6_a(NA, return_all_logic_tree_branches=TRUE)
+    d6_b = rate_function6_b(NA, return_all_logic_tree_branches=TRUE)
+    d7 = rate_function7(NA, return_all_logic_tree_branches=TRUE)
+
+    expect_that(isTRUE(all.equal(d6_a$all_par_prob, d6_b$all_par_prob, tol=1e-12)), is_true())
+
+    # Check that the rate function with Mw data 'zeroed' the logic tree branch
+    # with Mw_max < max_mw_observed
+    kk = which(d7$all_par$Mw_max < 8.301)
+    expect_that(d7$all_par_prob[kk] == 0, is_true())
+    
+    # Because the data contains no large Mw, it should have *slightly*
+    # increased our weight on the lower plausible Mw_max, and *slightly*
+    # decreased our weight on the higher one, compared to just providing the temporal data.
+    #
+    # Compute model 6 rates, assuming they know the branch with Mw = 8.3 has zero weight
+    d6_prob_adjusted = d6_a$all_par_prob
+    d6_prob_adjusted[kk] = 0
+    d6_prob_adjusted = d6_prob_adjusted/sum(d6_prob_adjusted)
+    
+    # Slight increase in weight to Mw = 9.4
+    kk = which(d7$all_par$Mw_max == 9.4)
+    expect_that(all(d7$all_par_prob[kk] > d6_prob_adjusted[kk]), is_true())
+    # Slight decrease in weight to Mw = 9.6
+    kk = which(d7$all_par$Mw_max == 9.6)
+    expect_that(all(d7$all_par_prob[kk] < d6_prob_adjusted[kk]), is_true())
+
 })

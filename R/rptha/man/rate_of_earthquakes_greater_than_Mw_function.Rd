@@ -71,16 +71,44 @@ earthquake timings follow a Poisson-process.}
 \item{Mw_count_duration}{numeric vector of length 3 providing some data. The
 first entry is an Mw value, the second is the number of events exceeding Mw
 at the site, and the third is the duration of observation (in years).  If
-\code{update_logic_tree_weights_with_data=TRUE}, this is used to re-weight
-parameter combinations in the logic tree, with more weight given to those
-which predict similar event frequencies as the data.}
+\code{update_logic_tree_weights_with_data=TRUE} but Mw_obs_data$t is not
+provided, this is used to re-weight parameter combinations in the logic
+tree, with more weight given to those which predict similar event
+frequencies as the data.}
 
-\item{Mw_obs_data}{list containing earthquake event data (corresponding to Mw_count_duration).
-It should contain a member 'Mw' with min(Mw) >= Mw_count_duration[1] and length(Mw) = 
-Mw_count_duration[2], and a member 't' with the same length as Mw, giving
-the time in years of the event since the observational start time. Note 
-that the time between the last event and the end of observations is inferred as 
-(Mw_count_duration[3] - t[length(t)])}
+\item{Mw_obs_data}{optional list containing earthquake event data
+(corresponding to Mw_count_duration) which is used to re-weight logic tree
+branches. This allows for more detailed use of data, as compared with the
+simple Mw_count_duration approach. The use of data is only attempted if
+"update_logic_tree_weights_with_data=TRUE" \cr
+Mw_obs_data may contain: (1) a member Mw_obs_data$Mw having moment-magnitude
+data for the historic events, and/or (2) a member Mw_obs_data$t, giving the
+time in years of the event **since the observational start time**. \cr 
+Either of the 'Mw' or 't' vectors vectors may also be NULL, in which case
+they will be ignored (and in the 't' case, we will just use Mw_count_duration
+if provided). \cr
+If Mw_obs_data$Mw is not null, we use the likelihood of the 'Mw' data under
+each logic tree branch to re-weight the logic tree branches [in addition to
+use of temporal data]. The data must have "min(Mw_obs_data$Mw) >=
+Mw_count_duration[1]" and "length(Mw_obs_data$Mw) = Mw_count_duration[2]".
+\cr
+If Mw_obs_data$t is not null, we assume event occurrence times are a
+realisation of a poisson process (treating the time before the first event
+and the time after the last event as censored observations). Note that the
+time between the last event and the end of observations is inferred as
+(Mw_count_duration[3] - t[length(t)]), while the time before the first event
+is just t[1], so we must have Mw_obs_data$t[1] >= 0 and max(Mw_obs_data$t) <=
+Mw_count_duration[3]. \cr
+It is worth noting when the use of detailed temporal data is identical to the
+simpler approach of providing only Mw_count_duration. Consider a case where
+Mw_obs_data$t=NULL and Mw_obs_data$Mw=NULL, and Mw_count_duration = c(7.5, 3,
+50). This will give the same answer as having Mw_obs_data$Mw=NULL,
+Mw_obs_data$t=c(0, 10, 30, 50), Mw_count_duration = c(7.5, 4, 50). Notice how
+A) the observed event times begin at 0 and end at the last observed event
+time; B) We need one more event than when we just provided the
+Mw_count_duration data! This is because the 'censored' information provides
+no information in this case [we already know 'time-between-events' >=0], and
+we end up with 3 useful 'time-between-event' values.}
 
 \item{Mw_2_M0}{function which takes an earthquake magnitude and returns the
 corresponding seismic moment M0}

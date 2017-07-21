@@ -285,15 +285,43 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' @param Mw_count_duration numeric vector of length 3 providing some data. The
 #' first entry is an Mw value, the second is the number of events exceeding Mw
 #' at the site, and the third is the duration of observation (in years).  If
-#' \code{update_logic_tree_weights_with_data=TRUE}, this is used to re-weight
-#' parameter combinations in the logic tree, with more weight given to those
-#' which predict similar event frequencies as the data.
-#' @param Mw_obs_data list containing earthquake event data (corresponding to Mw_count_duration).
-#' It should contain a member 'Mw' with min(Mw) >= Mw_count_duration[1] and length(Mw) = 
-#' Mw_count_duration[2], and a member 't' with the same length as Mw, giving
-#' the time in years of the event since the observational start time. Note 
-#' that the time between the last event and the end of observations is inferred as 
-#' (Mw_count_duration[3] - t[length(t)]) 
+#' \code{update_logic_tree_weights_with_data=TRUE} but Mw_obs_data$t is not
+#' provided, this is used to re-weight parameter combinations in the logic
+#' tree, with more weight given to those which predict similar event
+#' frequencies as the data.
+#' @param Mw_obs_data optional list containing earthquake event data
+#' (corresponding to Mw_count_duration) which is used to re-weight logic tree
+#' branches. This allows for more detailed use of data, as compared with the
+#' simple Mw_count_duration approach. The use of data is only attempted if
+#' "update_logic_tree_weights_with_data=TRUE" \cr
+#' Mw_obs_data may contain: (1) a member Mw_obs_data$Mw having moment-magnitude
+#' data for the historic events, and/or (2) a member Mw_obs_data$t, giving the
+#' time in years of the event **since the observational start time**. \cr 
+#' Either of the 'Mw' or 't' vectors vectors may also be NULL, in which case
+#' they will be ignored (and in the 't' case, we will just use Mw_count_duration
+#' if provided). \cr
+#' If Mw_obs_data$Mw is not null, we use the likelihood of the 'Mw' data under
+#' each logic tree branch to re-weight the logic tree branches [in addition to
+#' use of temporal data]. The data must have "min(Mw_obs_data$Mw) >=
+#' Mw_count_duration[1]" and "length(Mw_obs_data$Mw) = Mw_count_duration[2]".
+#' \cr
+#' If Mw_obs_data$t is not null, we assume event occurrence times are a
+#' realisation of a poisson process (treating the time before the first event
+#' and the time after the last event as censored observations). Note that the
+#' time between the last event and the end of observations is inferred as
+#' (Mw_count_duration[3] - t[length(t)]), while the time before the first event
+#' is just t[1], so we must have Mw_obs_data$t[1] >= 0 and max(Mw_obs_data$t) <=
+#' Mw_count_duration[3]. \cr
+#' It is worth noting when the use of detailed temporal data is identical to the
+#' simpler approach of providing only Mw_count_duration. Consider a case where
+#' Mw_obs_data$t=NULL and Mw_obs_data$Mw=NULL, and Mw_count_duration = c(7.5, 3,
+#' 50). This will give the same answer as having Mw_obs_data$Mw=NULL,
+#' Mw_obs_data$t=c(0, 10, 30, 50), Mw_count_duration = c(7.5, 4, 50). Notice how
+#' A) the observed event times begin at 0 and end at the last observed event
+#' time; B) We need one more event than when we just provided the
+#' Mw_count_duration data! This is because the 'censored' information provides
+#' no information in this case [we already know 'time-between-events' >=0], and
+#' we end up with 3 useful 'time-between-event' values.
 #' @param Mw_2_M0 function which takes an earthquake magnitude and returns the
 #' corresponding seismic moment M0
 #' @param account_for_moment_below_mwmin logical. If FALSE assume all
@@ -444,7 +472,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # Compute the rates for each final branch of the logic tree
     all_rate_matrix = matrix(NA, ncol = length(Mw_seq), 
         nrow=nrow(all_par_combo))
+    a_parameter = rep(NA, nrow(all_par_combo)) # GR 'a' parameter
     for(i in 1:nrow(all_rate_matrix)){
+
         # Get parameter vector
         par = all_par_combo[i,] 
         
@@ -462,7 +492,6 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # GR(rate-dx/2) - GR(rate+dx/2)
         lower_Mw = eq_Mw - table_Mw_increment/2
         upper_Mw = eq_Mw + table_Mw_increment/2
-
 
         if(account_for_moment_below_mwmin){
             # Compute the fraction of seismic moment associated with
@@ -515,13 +544,14 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # Back-calculate 'a'
         # 10^a = LHS/RHS
         # NOTE: This assumes that 'a' appears in Mfd as 10^(a) {only}
-        a_parameter = log10(LHS/RHS)
+        a_parameter[i] = log10(LHS/RHS)
 
         # Compute rates of exceedance for a truncated Gutenberg Richter model.
-        all_rate_vec = Mfd(Mw_seq, a = a_parameter, b = par$b, 
+        all_rate_vec = Mfd(Mw_seq, a = a_parameter[i], b = par$b, 
             Mw_min = par$Mw_min, Mw_max = par$Mw_max)
 
         all_rate_matrix[i,] = all_rate_vec
+
     }
 
 
@@ -529,7 +559,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     all_par_prob_prior = all_par_prob   
  
     if(update_logic_tree_weights_with_data){
+        #
         # Adjust the weights of logic-tree branches based on the data
+        #
 
         if(sum(is.na(Mw_count_duration)) > 0){
             msg = paste0('Must provide Mw_count_duration data if ', 
@@ -551,19 +583,22 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 xout=data_thresh)$y
         }
 
-
+        #
         # Compute the probability of observing the data, given each model
-        if(is.null(Mw_obs_data$Mw)){
+        #
+
+        #
+        # Temporal component of likelihood
+        #
+        if(is.null(Mw_obs_data$t)){
+            # Here, detailed temporal data was not provided. 
             # Assume poisson rate of events.
 
             pr_data_given_model = dpois(data_count, 
                 lambda = (model_rates*data_observation_duration))
 
         }else{
-            # Check consistency between this data and Mw_count_duration
-            stopifnot(length(Mw_obs_data$Mw) == data_count)
-            stopifnot(length(Mw_obs_data$Mw) == length(Mw_obs_data$t))
-            stopifnot(all(Mw_obs_data$Mw >= data_thresh))
+            # Detailed temporal data was provided.
             # Times must be sorted
             stopifnot(min(diff(Mw_obs_data$t)) > 0)
             stopifnot(min(Mw_obs_data$t) >= 0)
@@ -586,6 +621,55 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                     pexp(dts1_lower_bound, rate=ri, lower.tail=FALSE, log=TRUE) +
                     pexp(dts_last_lower_bound, rate=ri, lower.tail=FALSE, log=TRUE)
                     )
+            }
+
+        }
+
+        #
+        # Magnitude component of likelihood
+        #
+        if(!is.null(Mw_obs_data$Mw)){
+
+            # Check consistency between this data and Mw_count_duration
+            stopifnot(length(Mw_obs_data$Mw) == data_count)
+            stopifnot(all(Mw_obs_data$Mw >= data_thresh))
+
+            # If times were provided, they must be the same length
+            if(!is.null(Mw_obs_data$t)){
+                stopifnot(length(Mw_obs_data$Mw) == length(Mw_obs_data$t))
+            }
+
+            # Update the likelihood
+            for(i in 1:length(model_rates)){
+
+                Mw_obs_threshold = Mw_count_duration[1]
+                # GR parameters for this logic tree curve
+                a_par = a_parameter[i]
+                b_par = all_par_combo$b[i]
+                mw_min_par = all_par_combo$Mw_min[i]
+                mw_max_par = all_par_combo$Mw_max[i]
+
+                #
+                # Evaluate the 'density' for samples above Mw_observation_threshold 
+                #   = -(1/GR(Mw_obs_threshold))*[ derivative_of_GR_with_respect_to_Mw]
+                # (Because the CDF is ( 1  -(1/GR(Mw_obs_threshold))*GR(Mw) )
+                #
+                gr_mwmin = Mfd(Mw_obs_threshold, a = a_par, b=b_par, 
+                    Mw_min=mw_min_par, Mw_max=mw_max_par)
+                eps = 1e-04 # For numerical differentiation
+                density_above_Mw_obs_threshold = -1/(gr_mwmin*2*eps) * (
+                    Mfd(Mw_obs_data$Mw+eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
+                    Mfd(Mw_obs_data$Mw-eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
+                # Ensure the density is zero below Mw_obs_threshold [since the input format demands
+                # the input data does not contain values below Mw_obs_threshold]
+                density_above_Mw_obs_threshold = (Mw_obs_data$Mw >= Mw_obs_threshold) *
+                    density_above_Mw_obs_threshold
+
+                stopifnot(all(density_above_Mw_obs_threshold >= 0))
+
+                # Use linear interpolation to compute the density
+                log_dens_values = log(density_above_Mw_obs_threshold)
+                pr_data_given_model[i] = pr_data_given_model[i] * exp(sum(log_dens_values))
             }
 
         }
