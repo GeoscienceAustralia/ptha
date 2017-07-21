@@ -277,6 +277,14 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         event_table, 
         conditional_probability_model = conditional_probability_model)    
 
+    # Get data for rate function update
+    gcmt_data_for_rate_function = list(
+        # Magnitude
+        Mw = gcmt_data$Mw,
+        # Time since the start of observation, in years
+        t = (gcmt_data$julianDay1900 - gcmt_access$cmt_start_time_julianDay1900)/gcmt_access$days_in_year
+    )
+
     #
     # Build rate function
     #
@@ -297,7 +305,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         Mw_frequency_distribution = Mw_frequency_dists,
         Mw_frequency_distribution_prob = Mw_frequency_dists_p,
         update_logic_tree_weights_with_data=TRUE,
-        Mw_count_duration = c(gcmt_access$mw_threshold, nrow(gcmt_data), (2017+2/12 - 1976)),
+        Mw_count_duration = c(gcmt_access$mw_threshold, nrow(gcmt_data), 
+            gcmt_access$cmt_duration_years),
+        Mw_obs_data = gcmt_data_for_rate_function,
         account_for_moment_below_mwmin = TRUE
         )
 

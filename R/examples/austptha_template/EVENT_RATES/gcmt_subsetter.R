@@ -34,7 +34,24 @@ names(unit_source_grid_poly) = basename(dirname(dirname(dirname(
 #
 gcmt = read.csv(cmt_catalogue_csv)
 days_in_year = 365.25
-cmt_duration_years = diff(range(gcmt$julianDay1900))/days_in_year
+cmt_start_time_julian = julian(
+    strptime('1976-01-01 00:00:00', format='%Y-%m-%d %H:%M:%S', tz='Etc/UTC'),
+    origin=strptime('1900-01-01 00:00:00', format='%Y-%m-%d %H:%M:%S',
+        tz='Etc/UTC'))
+cmt_start_time_julianDay1900 = as.numeric(cmt_start_time_julian, units='days')
+cmt_end_time_julian = julian(
+    strptime('2017-03-01 00:00:00', format='%Y-%m-%d %H:%M:%S', tz='Etc/UTC'),
+    origin=strptime('1900-01-01 00:00:00', format='%Y-%m-%d %H:%M:%S',
+        tz='Etc/UTC'))
+cmt_end_time_julianDay1900 = as.numeric(cmt_end_time_julian, units='days')
+cmt_duration_years = (cmt_end_time_julianDay1900 - cmt_start_time_julianDay1900)/days_in_year 
+# Check the times are accurate by comparing with time between first/last
+# earthquake
+if( (cmt_duration_years < diff(range(gcmt$julianDay1900))/days_in_year) |
+    (cmt_duration_years > 1.0005* diff(range(gcmt$julianDay1900))/days_in_year) ){
+    stop('GCMT date/time inconsistencies')
+}
+
 
 #'
 #' Determine whether lonlat coordinates are inside a given polygon
