@@ -470,7 +470,7 @@ test_that("test_rupture_creation_and_probabilities", {
     # Check that the rate function with Mw data 'zeroed' the logic tree branch
     # with Mw_max < max_mw_observed
     kk = which(d7$all_par$Mw_max < 8.301)
-    expect_that(d7$all_par_prob[kk] == 0, is_true())
+    expect_that(all(d7$all_par_prob[kk] == 0), is_true())
     
     # Because the data contains no large Mw, it should have *slightly*
     # increased our weight on the lower plausible Mw_max, and *slightly*
