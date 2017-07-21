@@ -140,8 +140,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         ## Largest observed plus a small value,
         min_mw_max,
         # Middle Mw
-        #0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0) + 
-        #    min_mw_max),
+        0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0) + 
+            min_mw_max),
         # Another middle Mw
         Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, CI_sd=0),
         # Another middle Mw
@@ -206,7 +206,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
     }else{
 
-        sourcepar$slip = sourcezone_parameters_row$tectonic_slip
+        sourcepar$slip = as.numeric(sourcezone_parameters_row$tectonic_slip)*
+            as.numeric(sourcezone_parameters_row$convergent_fraction)
 
     }
 
@@ -502,8 +503,9 @@ for(i in 1:length(source_segment_names)){
     if(nrow(gcmt_data) > 0){
         rnk = rank(gcmt_data$Mw)
         N = nrow(gcmt_data)
+
         # Empirical rate 
-        aep = (N+1 - rnk) / (2017+2/12 - 1976)
+        aep = (N+1 - rnk) / gcmt_access$cmt_duration_years
 
         ordr = order(gcmt_data$Mw)
 

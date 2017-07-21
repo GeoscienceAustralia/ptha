@@ -14,7 +14,7 @@ newhebrides,_matthewhunter,1,5,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,Berrym
 newhebrides,_south,6,16,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
 newhebrides,_central,17,27,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and Mw_max_min
 newhebrides,_north,28,34,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
-puysegur,,,,1,1,,,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,Berryman et al. (2015) coupling and Mw_max_min
+puysegur,,,,1,0,35,1,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,"Berryman et al. (2015) coupling and Mw_max_min. Hayes and Furlong (2010) suggest the true subduction direction is quite obligue from our source boundary, and so we force the tectonic_slip in line with the value they suggest."
 solomon,,,,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
 solomon,_southeast,1,20,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
 solomon,_northwest,21,30,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
