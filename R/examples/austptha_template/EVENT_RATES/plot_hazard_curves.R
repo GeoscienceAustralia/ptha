@@ -2,31 +2,46 @@ library(rptha)
 config_env = new.env()
 source('config.R', local=config_env)
 
-# 
+# Files with stage-vs-exceedance-rate for every hazard point.
+# (We can't put these locations in config.R because they are created
+# by scripts in this folder) 
 rate_files = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/tsunami_*.nc')
-
 # Get all the rates
 rates = lapply(as.list(rate_files), f<-function(x) nc_open(x))
 names(rates) = basename(dirname(dirname(rate_files))) 
 
+# Check rate files are ordered by source-zone in the same way as key files in
+# 'config'
+stopifnot(all(names(rates) == config$source_names_1))
 
 # Other key variables
+# Gauge location information
 lon = ncvar_get(rates[[1]], 'lon')
 lat = ncvar_get(rates[[1]], 'lat')
 elev = ncvar_get(rates[[1]], 'elev')
-stage_seq = ncvar_get(rates[[1]], 'stage')
+# Sequence of stages at which exceedance rates are calculated,
+# for each station
+stage_seq = ncvar_get(rates[[1]], 'stage') 
+
+#' Find index of gauge nearest a given point
+#'
+get_station_index<-function(lon_p, lat_p){
+
+    lon_p_x = rep(lon_p, length.out=length(lon))
+    lat_p_x = rep(lat_p, length.out=length(lon))
+    site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
+
+    return(site)
+}
 
 #
-#
+# Make multi-panel stage-vs-exceedance-rate plots for a station (for both
+# uniform and stochastic slip, and upper and lower credible intervals)
 #
 plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose=FALSE){
 
-    # Find index of nearest gauge. FIXME: Do spherical coordinates here
-    lon_p_x = rep(lon_p, length.out=length(lon))
-    lat_p_x = rep(lat_p, length.out=length(lon))
-
-    #site = which.min(abs(lon-lon_p) + abs(lat - lat_p))
-    site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
+    # Find index of nearest gauge.
+    site = get_station_index(lon_p, lat_p)
 
     if(verbose){
         print(c('Coordinates: ', round(lon[site], 4), round(lat[site], 4)))
@@ -146,10 +161,8 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
     plot_y_range=c(1e-04, 1e+02), boxwex=0.1, verbose=TRUE, site_index = NULL, ...){
 
     if(is.null(site_index)){
-        # Find index of nearest gauge. FIXME: Do spherical coordinates here
-        lon_p_x = rep(lon_p, length.out=length(lon))
-        lat_p_x = rep(lat_p, length.out=length(lon))
-        site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
+        # Find index of nearest gauge.
+        site = get_station_index(lon_p, lat_p)
     }else{
         site = site_index
     }
@@ -222,9 +235,10 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
     points(unique_Mws, Mw_exceedance_rate_upper * rate_rescale, t='l', col='blue')
     points(unique_Mws, Mw_exceedance_rate_lower * rate_rescale, t='l', col='blue')
     grid()
+    abline(h=5*10**(seq(-4, 2)), lty='dotted', col='grey')
     abline(h=10**(seq(-4, 2)), lty='dotted', col='orange')
     mtext('Stage (m) and "Mw exceedance rate per century"', side=2, line=1.8)
-    title(paste0(source_zone, ': Mw vs stage (m) AND Mw vs exceedance rates \n @ ', 
+    title(paste0(source_zone,', ', slip_type, ' slip: Mw vs stage (m) AND Mw vs exceedance rates \n @ ', 
         round(site_lon, 3), ', ', round(site_lat, 3), ', ', round(site_elev, 3)))
 
     nc_close(fid)
@@ -236,7 +250,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
 # plot_wave_heights_at_a_station(lon_p, lat_p, source_zone='southamerica', slip_type = 'uniform', boxwex=0.1)
 
 
-station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
+plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
 
     if(station_name == ""){
         station_name = 'unnamed_station'
@@ -258,4 +272,115 @@ station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
     dev.off()
 }
 
-# station_exceedance_rate(151.42, -34.05, station_name = 'Sydney 100m')
+# plot_station_exceedance_rate_pdf(151.42, -34.05, station_name = 'Sydney_100m')
+
+#
+# Hazard deaggregation plot
+#
+get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "", 
+    slip_type = 'uniform', exceedance_rate = NULL, stage = NULL){
+
+    # Check input args
+    if(!is.null(exceedance_rate) | !is.null(stage)){
+        stop('Must provide either stage or exceedance rate')
+    }
+
+    site_index = get_station_index(lon_p, lat_p)
+    source_names = names(rates)
+
+    # Get tsunami files
+    if(slip_type == 'uniform'){
+        all_source_tsunami = config$all_source_uniform_slip_tsunami
+    }else if(slip_type == 'stochastic'){
+        all_source_tsunami = config$all_source_stochastic_slip_tsunami
+    }else{
+        stop('slip_type has invalid value -- must be either "uniform" or "stochastic"')
+    }
+
+
+    # Only one of stage/exceedance rate can be provided 
+    # If exceedance rate is provided, then use it to compute the stage
+    if(!is.null(exceedance_rate)){
+        if(!is.null(stage)) stop('Cannot provide both exceedance rate and stage')
+
+        # Sum the exceedance rates over all source-zones for the chosen site
+        rate_sum = ncvar_get(rates[[1]], 'event_rate_annual', 
+            start=c(1,site_index), count=c(-1,1))
+        for(i in 2:length(rates)){
+            rate_sum = rate_sum + ncvar_get(rates[[1]], 'event_rate_annual', 
+                start=c(1,site_index), count=c(-1,1))
+        }
+
+        stage_exceed = approx(rate_sum, stage_seq, xout=exceedance_rate)$y
+    }
+    # If exceedance rate is not provided, then stage must be
+    if(!is.null(stage)){
+        stage_exceed = stage
+    }
+
+    # Get unit-source locations & summary statistics
+    sources_list = list()
+    for(i in 1:length(source_names)){
+        sources_list[[i]] = list()
+        sources_list[[i]]$unit_source_statistics = read_table_from_netcdf(
+            config$unit_source_statistics_netcdf_files[i])
+        # Check that subfault numbers are sorted from 1 to max, since our
+        # algorithm relies on this
+        nr = nrow(sources_list[[i]]$unit_source_statistics)
+        stopifnot(all(sources_list[[i]]$unit_source_statistics$us_subfault_number == 1:nr))
+    }
+    names(sources_list) = source_names
+
+    # Get the contribution for each source-zone
+    for(i in 1:length(source_names)){
+        # One value for every unit source
+        nr = nrow(sources_list[[i]]$unit_source_statistics)
+        sources_list[[i]]$contribution = rep(0, length=nr)
+        sources_list[[i]]$stage_exceed = stage_exceed
+
+        # Extract required info from the netcdf files
+        fid = nc_open(all_source_tsunami[i], readunlim=FALSE)
+        event_index_string = ncvar_get(fid, 'event_index_string')
+        event_rates = ncvar_get(fid, 'event_rate_annual')
+        event_stage = ncvar_get(fid, 'max_stage', start=c(1,site_index), 
+            count=c(-1, 1))
+        if(slip_type == 'stochastic'){
+            event_slip = ncvar_get(fid, event_slip_string)
+        }
+        nc_close(fid)
+
+        # Find events with stage > value
+        events_exceeding = which(event_stage >= stage_exceed)
+
+        # Quick exit
+        if(length(events_exceeding) == 0) next
+
+        for(j in events_exceeding){
+            # Find unit-sources in event
+            us_id = get_unit_source_indices_in_event(data.frame(
+                event_index_string = event_index_string[j]))
+   
+            # Get slip on unit source [for weighting] 
+            if(slip_type == 'stochastic'){
+                unit_source_weights = as.numeric(strsplit(event_slip[j], '-')[[1]])
+            }else{
+                unit_source_weights = rep(1, length(us_id))
+            }
+
+            # Spread the rates over the active unit sources
+            local_rates = event_rates[j] * unit_source_weights/sum(unit_source_weights)
+
+            # Add to the store for the unit source
+            sources_list[[i]]$contribution[us_id] = sources_list[[i]]$contribution[us_id] + local_rates 
+    
+        }
+
+        # Logical check
+        stopifnot(all.equal(
+            sum(sources_list[[i]]$contribution), 
+            sum(event_rates * (event_stage >=stage_exceed) )) )
+    }
+
+    return(sources_list)
+
+}
