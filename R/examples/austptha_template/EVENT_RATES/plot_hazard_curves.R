@@ -368,7 +368,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
    
             # Get slip on unit source [for weighting] 
             if(slip_type == 'stochastic'){
-                unit_source_weights = as.numeric(strsplit(event_slip[j], '-')[[1]])
+                unit_source_weights = as.numeric(strsplit(event_slip[j], '_')[[1]])
             }else{
                 unit_source_weights = rep(1, length(us_id))
             }

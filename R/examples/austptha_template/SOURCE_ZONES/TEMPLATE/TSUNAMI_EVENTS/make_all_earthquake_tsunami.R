@@ -123,6 +123,11 @@ if(any(grepl('-subset', command_arguments))){
 # Read unit source statistics & uniform slip earthquake events
 unit_source_statistics = read_table_from_netcdf(unit_source_statistics_file)
 all_eq_events = read_table_from_netcdf(earthquake_events_file)
+# Find max number of characters required to store columns -- since this should
+# be passed as a lower bound to the output netcdf file
+max_nchar_unit_source_statistics = max(unlist(lapply(unit_source_statistics, f<-function(x) max(nchar(x)*is.character(x)))))
+max_nchar_all_eq_events = max(unlist(lapply(all_eq_events, f<-function(x) max(nchar(x)*is.character(x)))))
+
 
 
 # Potentially only look at a subset of events
@@ -297,7 +302,9 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     gauge_event_peak_to_trough,
     gauge_event_arrival_time,
     gauge_event_initial_stage,
-    stage_threshold_for_arrival_time){
+    stage_threshold_for_arrival_time,
+    max_nchar_all_eq_events,
+    max_nchar_unit_source_statistics){
 
     library(ncdf4)
 
@@ -326,7 +333,8 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
         unit_source_statistics$tide_gauge_file))
 
     dim_char_size = max(c(charlen_sourcename, charlen_event_index_string, 
-        charlen_initial_cond_string, charlen_tide_gauge_string))
+        charlen_initial_cond_string, charlen_tide_gauge_string,
+        max_nchar_all_eq_events, max_nchar_unit_source_statistics))
 
     dim_nchar = ncdim_def(name='max_nchar', units='', vals=1:dim_char_size, 
         unlim=FALSE,
@@ -726,7 +734,9 @@ if(make_file_only | (subset_only==FALSE)){
         gauge_event_peak_to_trough,
         gauge_event_arrival_time,
         gauge_event_initial_stage,
-        stage_threshold_for_arrival_time)
+        stage_threshold_for_arrival_time,
+        max_nchar_all_eq_events,
+        max_nchar_unit_source_statistics)
 
 }else{
     # Save the variables -- either direct to the netcdf, or to an individual RDS file
