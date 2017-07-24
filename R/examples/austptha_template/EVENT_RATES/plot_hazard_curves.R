@@ -312,7 +312,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         rate_sum = ncvar_get(rates[[1]], varname, 
             start=c(1,site_index), count=c(-1,1))
         for(i in 2:length(rates)){
-            rate_sum = rate_sum + ncvar_get(rates[[1]], varname, 
+            rate_sum = rate_sum + ncvar_get(rates[[i]], varname, 
                 start=c(1,site_index), count=c(-1,1))
         }
 
@@ -351,7 +351,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         event_stage = ncvar_get(fid, 'max_stage', start=c(1,site_index), 
             count=c(-1, 1))
         if(slip_type == 'stochastic'){
-            event_slip = ncvar_get(fid, event_slip_string)
+            event_slip = ncvar_get(fid, 'event_slip_string')
         }
         nc_close(fid)
 
