@@ -337,7 +337,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         nr = nrow(sources_list[[i]]$unit_source_statistics)
         sources_list[[i]]$contribution = rep(0, length=nr)
         sources_list[[i]]$stage_exceed = stage_exceed
-        sources_list[[i]]$station_location = c(lon[site], lat[site], elev[site])
+        sources_list[[i]]$station_location = c(lon[site_index], lat[site_index], elev[site_index])
 
         # Extract required info from the netcdf files
         fid = nc_open(all_source_tsunami[i], readunlim=FALSE)
@@ -386,6 +386,9 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
 
 }
 
+#
+#
+#
 plot_station_deaggregated_hazard<-function(deaggregated_hazard, scale = 1){
 
     plot(c(-40, 320), c(-80, 80), col=0, asp=1, xlab='lon', ylab='lat')
@@ -413,3 +416,5 @@ plot_station_deaggregated_hazard<-function(deaggregated_hazard, scale = 1){
 
 }
 
+# lon_p = 151.42
+# lat_p = -34.05
