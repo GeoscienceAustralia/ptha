@@ -304,10 +304,15 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         if(!is.null(stage)) stop('Cannot provide both exceedance rate and stage')
 
         # Sum the exceedance rates over all source-zones for the chosen site
-        rate_sum = ncvar_get(rates[[1]], 'event_rate_annual', 
+        if(slip_type == 'uniform'){
+            varname = 'uniform_slip_rate'
+        }else{
+            varname = 'stochastic_slip_rate'
+        }
+        rate_sum = ncvar_get(rates[[1]], varname, 
             start=c(1,site_index), count=c(-1,1))
         for(i in 2:length(rates)){
-            rate_sum = rate_sum + ncvar_get(rates[[1]], 'event_rate_annual', 
+            rate_sum = rate_sum + ncvar_get(rates[[1]], varname, 
                 start=c(1,site_index), count=c(-1,1))
         }
 
