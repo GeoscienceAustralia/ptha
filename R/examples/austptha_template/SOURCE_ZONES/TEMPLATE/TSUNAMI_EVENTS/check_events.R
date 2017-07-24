@@ -1,3 +1,13 @@
+#
+# Code which performs some basic logical checks on the main tsunami event
+# output netcdf files.
+#
+# Checks include:
+#     - mw is distributed as expected
+#     - mw is consistent with integral of (slip x area)
+#     - uniform slip area is equal to sum of area over unit sources
+#     - stochastic slip 'number of unit sources' is equal to stochastic slip 'number of slip values'
+#
 
 library(rptha)
 config_env = new.env()
@@ -10,13 +20,16 @@ unit_source_statistics_file = Sys.glob('unit_source_statistics_*.nc')
 
 unit_source_statistics = read_table_from_netcdf(unit_source_statistics_file)
 
+# Utility for testing
 assert<-function(istrue){
+
     if(istrue){
         print('PASS')
     }else{
         print('FAIL')
         stop()
     }
+
 }
 
 # Check that Mw-min, Mw-max / dMw range is represented
@@ -55,6 +68,11 @@ run_checks<-function(fid_local){
             }
         )
 
+        # Check number of unit sources and number of slips are equal, for each event
+        l1 = unlist(lapply(unit_sources_in, length))
+        l2 = unlist(lapply(event_slips, length))
+        assert(all(l1 == l2))
+
         moment_A = unlist(lapply(1:length(event_index_string), f<-function(x){
             sum(event_slips[[x]] * 
                 unit_source_statistics$width[unit_sources_in[[x]]] * 
@@ -67,6 +85,7 @@ run_checks<-function(fid_local){
 
     # Check that sum of unit source areas is the same as reported area 
     if(is_uniform_slip){
+
         event_index_string = ncvar_get(fid_local, 'event_index_string')
         unit_sources_in = lapply(as.list(event_index_string), f<-function(x){
             get_unit_source_indices_in_event(data.frame(event_index_string = x))
@@ -80,10 +99,12 @@ run_checks<-function(fid_local){
     }
 }
 
+# Check uniform slip
 fid_uniform = nc_open(all_uniform_eq_events_file, readunlim=FALSE)
 run_checks(fid_uniform)
 nc_close(fid_uniform)
 
+# Check stochastic slip
 fid_stochastic = nc_open(all_stochastic_eq_events_file, readunlim=FALSE)
 run_checks(fid_stochastic)
 nc_close(fid_stochastic)
