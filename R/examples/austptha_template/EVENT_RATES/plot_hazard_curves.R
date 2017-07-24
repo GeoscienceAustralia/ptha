@@ -238,7 +238,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
 
 station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
 
-    if(station_name = ""){
+    if(station_name == ""){
         station_name = 'unnamed_station'
     }
 
