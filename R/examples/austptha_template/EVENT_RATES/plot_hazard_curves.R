@@ -281,7 +281,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
     slip_type = 'uniform', exceedance_rate = NULL, stage = NULL){
 
     # Check input args
-    if(!is.null(exceedance_rate) | !is.null(stage)){
+    if(is.null(exceedance_rate) & is.null(stage)){
         stop('Must provide either stage or exceedance rate')
     }
 
@@ -337,6 +337,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         nr = nrow(sources_list[[i]]$unit_source_statistics)
         sources_list[[i]]$contribution = rep(0, length=nr)
         sources_list[[i]]$stage_exceed = stage_exceed
+        sources_list[[i]]$station_location = c(lon[site], lat[site], elev[site])
 
         # Extract required info from the netcdf files
         fid = nc_open(all_source_tsunami[i], readunlim=FALSE)
@@ -384,3 +385,31 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
     return(sources_list)
 
 }
+
+plot_station_deaggregated_hazard<-function(deaggregated_hazard, scale = 1){
+
+    plot(c(-40, 320), c(-80, 80), col=0, asp=1, xlab='lon', ylab='lat')
+
+    contrib_range = range(unlist(lapply(deaggregated_hazard, f<-function(x) range(x$contribution))))
+
+    scale = scale * 1/(contrib_range[2]) # Make make bar have size = 'scale' in degrees longitude
+
+    ncol = 200
+    mycol = rev(rainbow(255)[1:ncol])
+    
+
+    for(i in 1:length(deaggregated_hazard)){
+
+        xx = deaggregated_hazard[[i]]
+
+        colz = floor( (xx$contribution - contrib_range[1])/(contrib_range[2] - contrib_range[1]) * ncol)
+        colz = pmax(colz, 1)
+
+        arrows(xx$unit_source_statistics$lon_c, xx$unit_source_statistics$lat_c, 
+            xx$unit_source_statistics$lon_c, xx$unit_source_statistics$lat_c + xx$contribution * scale,
+            col = mycol[colz], length=0)
+    }
+    points(xx$station[1], xx$station[2], col='red', pch=19)
+
+}
+
