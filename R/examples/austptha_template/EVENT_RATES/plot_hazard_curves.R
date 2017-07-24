@@ -12,7 +12,7 @@ names(rates) = basename(dirname(dirname(rate_files)))
 
 # Check rate files are ordered by source-zone in the same way as key files in
 # 'config'
-stopifnot(all(names(rates) == config$source_names_1))
+stopifnot(all(names(rates) == config_env$source_names_1))
 
 # Other key variables
 # Gauge location information
@@ -290,9 +290,9 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
 
     # Get tsunami files
     if(slip_type == 'uniform'){
-        all_source_tsunami = config$all_source_uniform_slip_tsunami
+        all_source_tsunami = config_env$all_source_uniform_slip_tsunami
     }else if(slip_type == 'stochastic'){
-        all_source_tsunami = config$all_source_stochastic_slip_tsunami
+        all_source_tsunami = config_env$all_source_stochastic_slip_tsunami
     }else{
         stop('slip_type has invalid value -- must be either "uniform" or "stochastic"')
     }
@@ -323,7 +323,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
     for(i in 1:length(source_names)){
         sources_list[[i]] = list()
         sources_list[[i]]$unit_source_statistics = read_table_from_netcdf(
-            config$unit_source_statistics_netcdf_files[i])
+            config_env$unit_source_statistics_netcdf_files[i])
         # Check that subfault numbers are sorted from 1 to max, since our
         # algorithm relies on this
         nr = nrow(sources_list[[i]]$unit_source_statistics)
