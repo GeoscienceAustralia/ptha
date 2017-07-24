@@ -73,7 +73,8 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
 
         for(j in 1:length(rates)){
             x = rates[[j]]
-            site_rates[[i]][[j]] = ncvar_get(x, rate_var_nc_names[i], start=c(1,site), count=c(-1,1))
+            site_rates[[i]][[j]] = ncvar_get(x, rate_var_nc_names[i], 
+                start=c(1,site), count=c(-1,1))
             names(site_rates[[i]])[j] = names(rates)[j]
         }
     }
@@ -97,15 +98,16 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
         # Set up plot
         plot(range(stage_seq)*greens_adjust, c(rate_min, rate_max), col=0, log='xy',
             main=paste0(titlep, ' @(',
-                round(lon[site], 2), ',', round(lat[site], 2), ',', round(elev[site], 2), ')', 
-                greens_adjust_title),
+                round(lon[site], 2), ',', round(lat[site], 2), ',', 
+                round(elev[site], 2), ')', greens_adjust_title),
             xlab='Peak stage (m)', ylab = 'Exceedance Rate (events/year)' )
 
         site_rates_uniform_sum = site_rates_uniform[[1]]*0
 
         # Add rate curves, and keep running sum of total rate
         for(i in 1:length(site_rates_uniform)){
-            points(stage_seq*greens_adjust, site_rates_uniform[[i]], pch=19, t='o', col=i, cex=0.3)
+            points(stage_seq*greens_adjust, site_rates_uniform[[i]], pch=19, 
+                t='o', col=i, cex=0.3)
             site_rates_uniform_sum = site_rates_uniform_sum + site_rates_uniform[[i]]
         }
 
@@ -115,17 +117,18 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
         # Extras
         grid()
         abline(h=c(1e-02, 1e-04, 1e-06), lty='dotted', col='grey')
-        legend('topright', names(site_rates_uniform), col=1:length(site_rates_uniform), pch=19)
+        legend('topright', names(site_rates_uniform), 
+            col=1:length(site_rates_uniform), pch=19)
 
     }
 
     for(i in 1:length(rate_var_local_names)){
 
-        panel_rate_plot(stage_seq, site_rates[[i]], rate_min, rate_max, greens_adjust, site, 
-            titlep=rate_var_titles[i], greens_adjust_title)
+        panel_rate_plot(stage_seq, site_rates[[i]], rate_min, rate_max, 
+            greens_adjust, site, titlep=rate_var_titles[i], greens_adjust_title)
     }
         
-    return(invisible())
+    return(invisible(site))
 
 }
 
@@ -140,12 +143,23 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
 #' @param ... further arguments to plot
 #'
 plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 'uniform',
-    plot_y_range=c(1e-04, 1e+02), boxwex=1, ...){
+    plot_y_range=c(1e-04, 1e+02), boxwex=0.1, verbose=TRUE, site_index = NULL, ...){
 
-    # Find index of nearest gauge. FIXME: Do spherical coordinates here
-    lon_p_x = rep(lon_p, length.out=length(lon))
-    lat_p_x = rep(lat_p, length.out=length(lon))
-    site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
+    if(is.null(site_index)){
+        # Find index of nearest gauge. FIXME: Do spherical coordinates here
+        lon_p_x = rep(lon_p, length.out=length(lon))
+        lat_p_x = rep(lat_p, length.out=length(lon))
+        site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
+    }else{
+        site = site_index
+    }
+
+    site_lat = lat[site]
+    site_lon = lon[site]
+    site_elev = elev[site]
+  
+    print(paste0('Station info: ', site_lon, ', ', site_lat, ', ', site_elev, 
+        ', ', site))
 
     # Get the filename with max_stage
     if(slip_type == 'uniform'){
@@ -153,7 +167,8 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
         nc_file_ind = grep(source_zone, config_env$all_source_uniform_slip_tsunami)
 
         if(length(nc_file_ind) != 1){
-            stop(paste0('Could not find unique uniform slip file matching source_zone = ', source_zone))
+            stop(paste0('Could not find unique uniform slip file matching source_zone = ', 
+                source_zone))
         }
 
         nc_file = config_env$all_source_uniform_slip_tsunami[nc_file_ind]
@@ -163,7 +178,8 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
         nc_file_ind = grep(source_zone, config_env$all_source_stochastic_slip_tsunami)
 
         if(length(nc_file_ind) != 1){
-            stop(paste0('Could not find unique stochastic slip file matching source_zone = ', source_zone))
+            stop(paste0('Could not find unique stochastic slip file matching source_zone = ', 
+                source_zone))
         }
 
         nc_file = config_env$all_source_stochastic_slip_tsunami[nc_file_ind]
@@ -175,16 +191,71 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
     fid = nc_open(nc_file)
     gauge_max_stage = ncvar_get(fid, 'max_stage', start=c(1,site), count=c(-1,1))
     event_Mw = ncvar_get(fid, 'event_Mw')
+    event_nominal_rate = ncvar_get(fid, 'event_rate_annual')
+    event_nominal_rate_upper = ncvar_get(fid, 'event_rate_annual_upper_ci')
+    event_nominal_rate_lower = ncvar_get(fid, 'event_rate_annual_lower_ci')
+
     # Deal with finite-precision netcdf limitations
     event_Mw = round(event_Mw, 3)
+
+    unique_Mws = sort(unique(event_Mw))
+
+    # Exceedance rates. For plotting, set rate to a very small number, so the
+    # line dips to zero
+    Mw_exceedance_rate = pmax(1e-12, sapply(unique_Mws, 
+        f<-function(x) sum(event_nominal_rate*(event_Mw >= x)) ))
+    Mw_exceedance_rate_upper = pmax(1e-12, sapply(unique_Mws, 
+        f<-function(x) sum(event_nominal_rate_upper*(event_Mw >= x)) ))
+    Mw_exceedance_rate_lower = pmax(1e-12, sapply(unique_Mws, 
+        f<-function(x) sum(event_nominal_rate_lower*(event_Mw >= x)) ))
+
 
     stopifnot(length(gauge_max_stage) == length(event_Mw))
 
     # Make the plot
-    plot(range(event_Mw), plot_y_range, col=0, log='y', ...)
+    plot(range(event_Mw), plot_y_range, col=0, log='y', axes=FALSE, 
+        frame.plot=TRUE, xlab="Mw", ylab="", ...)
     boxplot(gauge_max_stage ~ event_Mw, at=unique(event_Mw), boxwex=boxwex, add=TRUE)
+
+    rate_rescale = 100
+    points(unique_Mws, Mw_exceedance_rate * rate_rescale, t='l', col='red')
+    points(unique_Mws, Mw_exceedance_rate_upper * rate_rescale, t='l', col='blue')
+    points(unique_Mws, Mw_exceedance_rate_lower * rate_rescale, t='l', col='blue')
+    grid()
+    abline(h=10**(seq(-4, 2)), lty='dotted', col='orange')
+    mtext('Stage (m) and "Mw exceedance rate per century"', side=2, line=1.8)
+    title(paste0(source_zone, ': Mw vs stage (m) AND Mw vs exceedance rates \n @ ', 
+        round(site_lon, 3), ', ', round(site_lat, 3), ', ', round(site_elev, 3)))
 
     nc_close(fid)
 
+    return(invisible(site))
+
+}
+# plot_wave_heights_at_a_station(lon_p, lat_p, source_zone='southamerica', slip_type = 'stochastic', boxwex=0.1)
+# plot_wave_heights_at_a_station(lon_p, lat_p, source_zone='southamerica', slip_type = 'uniform', boxwex=0.1)
+
+
+station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
+
+    if(station_name = ""){
+        station_name = 'unnamed_station'
+    }
+
+
+    pdf(paste0(station_name, '_stage_exceedance_rate.pdf'), width=12, height=10)
+
+    site_index = plot_rates_at_a_station(lon_p, lat_p)
+
+    for(i in 1:length(rates)){
+        par(mfrow=c(2,1))
+        plot_wave_heights_at_a_station(lon_p, lat_p, source_zone = names(rates)[i], 
+            slip_type = 'uniform', site_index=site_index)
+        plot_wave_heights_at_a_station(lon_p, lat_p, source_zone = names(rates)[i], 
+            slip_type = 'stochastic', site_index=site_index)
+    }
+
+    dev.off()
 }
 
+# station_exceedance_rate(151.42, -34.05, station_name = 'Sydney 100m')

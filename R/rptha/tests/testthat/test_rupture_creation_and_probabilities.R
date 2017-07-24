@@ -511,6 +511,10 @@ test_that("test_rupture_creation_and_probabilities", {
     # Mw_max = 9.4
     # rate turns out to be 0.059 events with Mw>7.5 per year
     # Characteristic Gutenberg richter
+
+    #
+    # Make a large random dataset 
+    #
     n = 1000
     random_inv_quant = runif(n)
     true_b = 1
@@ -522,6 +526,9 @@ test_that("test_rupture_creation_and_probabilities", {
     Mw_count_duration = c(7.5, n, sum(random_dt)+1)
     random_t = cumsum(random_dt)
 
+    #
+    # Do the analysis with the large random dataset
+    #
     rate_function8 = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = slip_rate,
         slip_rate_prob = slip_rate_prob,
@@ -540,11 +547,13 @@ test_that("test_rupture_creation_and_probabilities", {
         Mw_count_duration=Mw_count_duration,
         Mw_obs_data=list(Mw=random_Mw, t=random_t)
         )
-
+    #
+    # Check we identified the correct logic tree branch
+    #
     xx = rate_function8(NA, return_all_logic_tree_branches=TRUE)
     # Should have id'd the optional branch
     k = which.max(xx$all_par_prob)
-    # Should be 'far' better than any other branch
+    # Should be 'much much' better than any other branch
     expect_that(all(xx$all_par_prob[k] > 1.0e-08*xx$all_par_prob[-k]), is_true())
     # Should match the inputs
     expect_that(isTRUE(all.equal(xx$all_par$b[k], true_b)), is_true())
