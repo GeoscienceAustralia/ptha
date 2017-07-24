@@ -68,6 +68,8 @@ if(length(command_arguments) > 0){
     if(any(grepl('-make_file_only', command_arguments))){
         make_file_only=TRUE
         print('Making output file with empty flow variables')
+        # Remove any RDS-for-chunk files that might be left over from previous runs
+        unlink(config_env$tmp_RDS_dir, recursive=TRUE)
     }
 }
 
@@ -751,7 +753,7 @@ if(make_file_only | (subset_only==FALSE)){
         print('Writing to RDS')
 
         # Make directory for R images
-        tmp_RDS_dir = 'R_images_tmp'
+        tmp_RDS_dir = config_env$tmp_RDS_dir # 'R_images_tmp'
         dir.create(tmp_RDS_dir, showWarnings=FALSE)
 
         image_file = paste0(tmp_RDS_dir, '/', 

@@ -80,3 +80,6 @@ null_double = -999.999
 # netCDF output file size. However, it should not be too small to represent slip values
 # well. 4 seems a good choice [giving O(50m) of slip to 2 decimal places]
 stochastic_slip_table_significant_figures = 4
+
+# Temporary directory used when running 'unfinished' netcdf
+tmp_RDS_dir = 'R_images_tmp'

@@ -9,8 +9,14 @@
 # This script reads those outputs and puts them in the main netcdf output file.
 #
 
+#
+# Get local parameters code
+#
+config_env = new.env()
+source('config.R', local=config_env)
+
 library(ncdf4)
-all_R_images = Sys.glob('R_images_tmp/*.RDS') 
+all_R_images = Sys.glob(paste0(config_env$tmp_RDS_dir, '/*.RDS'))
 
 if( length(all_R_images) > 0 ){
    
