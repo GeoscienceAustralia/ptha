@@ -108,7 +108,7 @@ run_checks<-function(fid_local){
 
     # Check max stage, in chunks for memory efficiency
     ngauges = length(lat)
-    chunksize = 1000
+    chunksize = 1000/(ceiling(length(moment)/10000))
     gauge_chunks = parallel::splitIndices(ngauges, ceiling(ngauges/chunksize))
 
     # Should either be NA, or a positive number. Negative numbers were used for
@@ -128,11 +128,13 @@ run_checks<-function(fid_local){
             count=c(-1, count))
         stage_na_or_positive = ( is.na(max_stage) | (max_stage >= 0))
         initial_stage_negative_but_not_missing = ((initial_stage < 0) & (initial_stage > (config_env$null_double + 1)))
-        assert(all(stage_na_or_positive | initial_stage_negative_but_not_missing), 'negative peak stage error')
+        assert(all(stage_na_or_positive | initial_stage_negative_but_not_missing), 
+            paste0('negative peak stage error ', start, ' ', count))
 
         # It should be rare to have sites with max_stage negative.
         max_stage_negative_fraction = mean(max_stage < 0, na.rm=TRUE)
-        assert(max_stage_negative_fraction < 1/100, 'too many negative peak stages')
+        assert(max_stage_negative_fraction < 1/100, 
+            paste0('too many negative peak stages', start, ' ', count))
     
        
         # Find gauges that have NA -- these should be gauges with elevation >
@@ -143,7 +145,7 @@ run_checks<-function(fid_local){
                 elev[na_gauges] >= 0 | 
                 lat[na_gauges] >= config_env$lat_range[2] | 
                 lat[na_gauges] <= config_env$lat_range[1]), 
-                'na gauges with elev < 0, not in boundary regions'
+                paste0('na gauges with elev < 0, not in boundary regions ', start, ' ', count)
                 )
         }
     }
