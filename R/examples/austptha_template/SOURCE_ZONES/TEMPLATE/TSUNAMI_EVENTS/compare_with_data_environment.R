@@ -88,8 +88,8 @@ compare_event_with_gauge_time_series<-function(
         for(i in c(-1,0,1)){
             usch = unit_source_containing_hypocentre # shorthand
             nbr = which(
-                (unit_source_statistics$downdip_index == (unit_source_statistics$downdip_index[usch] + j)) &
-                (unit_source_statistics$alongstrike_index == (unit_source_statistics$alongstrike_index[usch] + i))
+                (unit_source_statistics$downdip_number == (unit_source_statistics$downdip_number[usch] + j)) &
+                (unit_source_statistics$alongstrike_number == (unit_source_statistics$alongstrike_number[usch] + i))
                 )
             if(length(nbr) > 1) stop('BUG! This should be impossible')
             if(length(nbr) == 1){
@@ -97,6 +97,7 @@ compare_event_with_gauge_time_series<-function(
             }
         }
     }
+    if(length(hypocentre_neighbours) == 0) stop('No unit source neighbours found')
 
     event_contains_hpc = rep(0, length(events_with_Mw[,1]))
     for(i in 1:length(events_with_Mw[,1])){
