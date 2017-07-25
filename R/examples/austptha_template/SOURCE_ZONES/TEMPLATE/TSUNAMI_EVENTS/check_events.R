@@ -7,7 +7,8 @@
 #     - mw is consistent with integral of (slip x area)
 #     - uniform slip area is equal to sum of area over unit sources
 #     - stochastic slip 'number of unit sources' is equal to stochastic slip 'number of slip values'
-#     - max_stage is non-negative at gauges with elevation < 0
+#     - max_stage is non-negative at gauges with elevation < 0, except for a tolerably small fraction of 
+#       'trapped' sites with initial deformation < 0 [e.g. lakes in the Okada subsidence zone]
 #
 
 library(rptha)
@@ -133,9 +134,9 @@ run_checks<-function(fid_local){
         # 0, or gauges in the boundary condition exclusion zone
         na_gauges = which(is.na(max_stage[1,]))
         if(length(na_gauges) > 0){
-            elev = ncvar_get(fid_local, 'elev', start=start, count=count)
-            lon = ncvar_get(fid_local, 'lon', start=start, count=count)
-            lat = ncvar_get(fid_local, 'lat', start=start, count=count)
+            elev = ncvar_get(fid_local, 'elev')
+            lon = ncvar_get(fid_local, 'lon')
+            lat = ncvar_get(fid_local, 'lat')
             assert(all(
                 elev[na_gauges] >= 0 | 
                 lat[na_gauges] >= config_env$lat_range[2] | 
