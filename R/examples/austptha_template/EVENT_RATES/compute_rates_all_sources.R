@@ -521,6 +521,42 @@ for(i in 1:length(source_segment_names)){
     abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange', lty='dotted')
 }
 
+# Globally integrated rates
+# Get all the information
+all_rate_curves = source_envs[[1]]$mw_rate_function(NA, return_all_logic_tree_branches=TRUE)
+mw = all_rate_curves$Mw_seq
+rate_vals = mw*0
+gcmt_global = data.frame()
+for(i in 1:length(source_segment_names)){
+    # Sum the rate value 
+    rate_vals = rate_vals + (
+        source_envs[[i]]$mw_rate_function(mw) * 
+        as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight))
+    # Get the GCMT data ONLY for the unsegmented models, so we avoid double-counting
+    if(source_envs[[i]]$segment_name == ''){
+        gcmt_global = rbind(gcmt_global, source_envs[[i]]$gcmt_data)
+    }
+
+}
+
+# Make the globally integrated plot
+plot(mw, rate_vals, t='o', log='y', xlab='Mw', ylab='Exceedance Rate (events/year)', 
+    main='All sources integrated rate', xlim=xlim, ylim=ylim)
+if(nrow(gcmt_global) > 0){
+    rnk = rank(gcmt_global$Mw)
+    N = nrow(gcmt_global)
+
+    # Empirical rate 
+    aep = (N+1 - rnk) / gcmt_access$cmt_duration_years
+
+    ordr = order(gcmt_global$Mw)
+
+    points(gcmt_global$Mw[ordr], aep[ordr], col='red', pch=19, t='o')
+
+}
+grid(col='orange')
+abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange', lty='dotted')
+
 dev.off()
 
 #
