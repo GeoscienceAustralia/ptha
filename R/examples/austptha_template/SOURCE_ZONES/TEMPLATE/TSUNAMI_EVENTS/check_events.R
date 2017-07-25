@@ -7,6 +7,7 @@
 #     - mw is consistent with integral of (slip x area)
 #     - uniform slip area is equal to sum of area over unit sources
 #     - stochastic slip 'number of unit sources' is equal to stochastic slip 'number of slip values'
+#     - max_stage is non-negative at gauges with elevation < 0
 #
 
 library(rptha)
@@ -92,11 +93,57 @@ run_checks<-function(fid_local){
             }
         )
         event_areas_B = unlist(lapply(unit_sources_in, 
-            f<-function(x) sum(unit_source_statistics$width[x]*unit_source_statistics$length[x])
+            f<-function(x){
+                sum(unit_source_statistics$width[x]*
+                    unit_source_statistics$length[x]) }
         ))
         assert(all(abs(event_area - event_areas_B) < 1.0e-06*event_area))
 
     }
+
+    # Check max stage, in chunks for memory efficiency
+    nevents = length(moment)
+    chunksize = 1000
+    event_chunks = parallel::splitIndices(nevents, ceiling(nevents/chunksize))
+    # Should either be NA, or a positive number. Negative numbers were used for
+    # 'incomplete' files.
+    # Note that if you have a lake overlapping the 'depression' part of the
+    # source-zone, then max_stage could be negative
+    for(i in 1:length(event_chunks)){
+        start = event_chunks[[i]][1]
+        count = length(event_chunks[[i]])
+        
+        # Check that EITHER: max_stage>=0, OR is.na(max_stage), OR initial
+        # stage is negative [the latter allows for trapped lakes in the Okada
+        # subsidence zone to have negative max_stage].
+        max_stage = ncvar_get(fid_local, 'max_stage', start=c(1, start), 
+            count=c(-1, count))
+        initial_stage = ncvar_get(fid_local, 'initial_stage', start=c(1, start), 
+            count=c(-1, count))
+        stage_na_or_positive = ( is.na(max_stage) | (max_stage >= 0))
+        initial_stage_negative_but_not_missing = ((initial_stage < 0) & (initial_stage > (config_env$null_double + 1)))
+        assert(all(stage_na_or_positive | initial_stage_negative_but_not_missing))
+
+        # It should be rare to have sites with max_stage negative.
+        max_stage_negative_fraction = mean(max_stage < 0, na.rm=TRUE)
+        assert(max_stage_negative_fraction < 1/100)
+    
+       
+        # Find gauges that have NA -- these should be gauges with elevation >
+        # 0, or gauges in the boundary condition exclusion zone
+        na_gauges = which(is.na(max_stage[1,]))
+        if(length(na_gauges) > 0){
+            elev = ncvar_get(fid_local, 'elev', start=start, count=count)
+            lon = ncvar_get(fid_local, 'lon', start=start, count=count)
+            lat = ncvar_get(fid_local, 'lat', start=start, count=count)
+            assert(all(
+                elev[na_gauges] >= 0 | 
+                lat[na_gauges] >= config_env$lat_range[2] | 
+                lat[na_gauges] <= config_env$lat_range[1])
+                )
+        }
+    }
+
 }
 
 # Check uniform slip

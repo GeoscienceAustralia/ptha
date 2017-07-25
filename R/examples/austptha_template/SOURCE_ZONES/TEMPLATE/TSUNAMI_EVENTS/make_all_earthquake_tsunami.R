@@ -267,7 +267,7 @@ if(make_file_only){
 
         valid_gauges_m = (c(NA, 1)[valid_gauges+1])
 
-        # Set 'invalid gauges' values to zero
+        # Set 'invalid gauges' values to NA
         for(j in 1:nevents){
             gauge_event_max_stage[j, gcl ] = 
                 modelled_flow_store[[i]][[j]][,1] * valid_gauges_m 
