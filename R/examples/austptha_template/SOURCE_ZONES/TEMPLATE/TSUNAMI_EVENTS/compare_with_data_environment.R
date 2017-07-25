@@ -82,10 +82,26 @@ compare_event_with_gauge_time_series<-function(
     unit_source_containing_hypocentre = find_unit_source_index_containing_point(
         event_hypocentre, unit_source_geometry, unit_source_statistics) 
 
+    # Find unit-source neighbours (within +-1 unit-sources in each direction)
+    hypocentre_neighbours = c()
+    for(j in c(-1,0,1)){
+        for(i in c(-1,0,1)){
+            usch = unit_source_containing_hypocentre # shorthand
+            nbr = which(
+                (unit_source_statistics$downdip_index == (unit_source_statistics$downdip_index[usch] + j)) &
+                (unit_source_statistics$alongstrike_index == (unit_source_statistics$alongstrike_index[usch] + i))
+                )
+            if(length(nbr) > 1) stop('BUG! This should be impossible')
+            if(length(nbr) == 1){
+                hypocentre_neighbours = c(hypocentre_neighbours, nbr)
+            }
+        }
+    }
+
     event_contains_hpc = rep(0, length(events_with_Mw[,1]))
     for(i in 1:length(events_with_Mw[,1])){
         event_contains_hpc[i] = any(get_unit_source_indices_in_event(
-            events_with_Mw[i,]) %in% unit_source_containing_hypocentre)
+            events_with_Mw[i,]) %in% c(unit_source_containing_hypocentre, hypocentre_neighbours))
     }
 
     if(sum(event_contains_hpc) == 0){
