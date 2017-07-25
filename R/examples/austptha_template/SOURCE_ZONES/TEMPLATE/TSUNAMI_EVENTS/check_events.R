@@ -102,17 +102,22 @@ run_checks<-function(fid_local){
 
     }
 
+    elev = ncvar_get(fid_local, 'elev')
+    lon = ncvar_get(fid_local, 'lon')
+    lat = ncvar_get(fid_local, 'lat')
+
     # Check max stage, in chunks for memory efficiency
-    nevents = length(moment)
+    ngauges = length(lat)
     chunksize = 1000
-    event_chunks = parallel::splitIndices(nevents, ceiling(nevents/chunksize))
+    gauge_chunks = parallel::splitIndices(ngauges, ceiling(ngauges/chunksize))
+
     # Should either be NA, or a positive number. Negative numbers were used for
     # 'incomplete' files.
     # Note that if you have a lake overlapping the 'depression' part of the
     # source-zone, then max_stage could be negative
-    for(i in 1:length(event_chunks)){
-        start = event_chunks[[i]][1]
-        count = length(event_chunks[[i]])
+    for(i in 1:length(gauge_chunks)){
+        start = gauge_chunks[[i]][1]
+        count = length(gauge_chunks[[i]])
         
         # Check that EITHER: max_stage>=0, OR is.na(max_stage), OR initial
         # stage is negative [the latter allows for trapped lakes in the Okada
@@ -132,11 +137,8 @@ run_checks<-function(fid_local){
        
         # Find gauges that have NA -- these should be gauges with elevation >
         # 0, or gauges in the boundary condition exclusion zone
-        na_gauges = which(is.na(max_stage[1,]))
+        na_gauges = gauge_chunks[[i]][which(is.na(max_stage[1,]))]
         if(length(na_gauges) > 0){
-            elev = ncvar_get(fid_local, 'elev')
-            lon = ncvar_get(fid_local, 'lon')
-            lat = ncvar_get(fid_local, 'lat')
             assert(all(
                 elev[na_gauges] >= 0 | 
                 lat[na_gauges] >= config_env$lat_range[2] | 
