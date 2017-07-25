@@ -69,7 +69,7 @@ nul_r_less_than = r_env$nul_r + 1
 max_stage = ncvar_get(output_nc_file, 'max_stage')
 nc_close(output_nc_file)
 
-sum_missing = sum(max_stage < nul_r, na.rm=TRUE)
+sum_missing = sum(max_stage < nul_r_less_than, na.rm=TRUE)
 if(sum_missing > 0){
     stop('ERROR: There are still unwritten values in the file')
 }else{
