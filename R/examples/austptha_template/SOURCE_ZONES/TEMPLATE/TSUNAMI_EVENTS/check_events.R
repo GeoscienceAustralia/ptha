@@ -23,13 +23,13 @@ unit_source_statistics_file = Sys.glob('unit_source_statistics_*.nc')
 unit_source_statistics = read_table_from_netcdf(unit_source_statistics_file)
 
 # Utility for testing
-assert<-function(istrue){
+assert<-function(istrue, msg=''){
 
     if(istrue){
         print('PASS')
     }else{
         print('FAIL')
-        stop()
+        stop(msg)
     }
 
 }
@@ -41,9 +41,9 @@ run_checks<-function(fid_local){
 
     # Check mw values are as desired
     mws = round(ncvar_get(fid_local, 'event_Mw'), 3)
-    assert(min(mws) == config_env$Mw_min)
-    assert(max(mws) == config_env$Mw_max)
-    assert(all(abs(diff(sort(unique(mws))) - config_env$dMw) <= 1.0e-13))
+    assert(min(mws) == config_env$Mw_min, 'mw_min problem')
+    assert(max(mws) == config_env$Mw_max, 'mw_max problem')
+    assert(all(abs(diff(sort(unique(mws))) - config_env$dMw) <= 1.0e-13), 'mw spacing problem')
 
     # Check mw is consistent with area and slip 
     moment = M0_2_Mw(mws, inverse=TRUE)
@@ -52,7 +52,7 @@ run_checks<-function(fid_local){
         event_area = ncvar_get(fid_local, 'event_area')    
         event_slip = ncvar_get(fid_local, 'event_slip')    
         moment_A = 3e+10 * event_area * 1e+06 * event_slip
-        assert(all(abs(moment - moment_A) < 1.0e-06*moment))
+        assert(all(abs(moment - moment_A) < 1.0e-06*moment), 'moment inconsistency')
 
     }else{
    
@@ -73,7 +73,7 @@ run_checks<-function(fid_local){
         # Check number of unit sources and number of slips are equal, for each event
         l1 = unlist(lapply(unit_sources_in, length))
         l2 = unlist(lapply(event_slips, length))
-        assert(all(l1 == l2))
+        assert(all(l1 == l2), 'inconsistent number of slips and unit sources, stochastic')
 
         moment_A = unlist(lapply(1:length(event_index_string), f<-function(x){
             sum(event_slips[[x]] * 
@@ -82,7 +82,7 @@ run_checks<-function(fid_local){
                 1e+06 * 3e+10)
         }))
         # Noting we store slip to a few significant figures, need some tolerance here
-        assert(all(abs(moment - moment_A) < 1.0e-03*moment))
+        assert(all(abs(moment - moment_A) < 1.0e-03*moment), 'moment inconsistency stochastic')
     }
 
     # Check that sum of unit source areas is the same as reported area 
@@ -98,7 +98,7 @@ run_checks<-function(fid_local){
                 sum(unit_source_statistics$width[x]*
                     unit_source_statistics$length[x]) }
         ))
-        assert(all(abs(event_area - event_areas_B) < 1.0e-06*event_area))
+        assert(all(abs(event_area - event_areas_B) < 1.0e-06*event_area), 'area inconsistency uniform')
 
     }
 
@@ -128,11 +128,11 @@ run_checks<-function(fid_local){
             count=c(-1, count))
         stage_na_or_positive = ( is.na(max_stage) | (max_stage >= 0))
         initial_stage_negative_but_not_missing = ((initial_stage < 0) & (initial_stage > (config_env$null_double + 1)))
-        assert(all(stage_na_or_positive | initial_stage_negative_but_not_missing))
+        assert(all(stage_na_or_positive | initial_stage_negative_but_not_missing), 'negative peak stage error')
 
         # It should be rare to have sites with max_stage negative.
         max_stage_negative_fraction = mean(max_stage < 0, na.rm=TRUE)
-        assert(max_stage_negative_fraction < 1/100)
+        assert(max_stage_negative_fraction < 1/100, 'too many negative peak stages')
     
        
         # Find gauges that have NA -- these should be gauges with elevation >
@@ -142,7 +142,8 @@ run_checks<-function(fid_local){
             assert(all(
                 elev[na_gauges] >= 0 | 
                 lat[na_gauges] >= config_env$lat_range[2] | 
-                lat[na_gauges] <= config_env$lat_range[1])
+                lat[na_gauges] <= config_env$lat_range[1]), 
+                'na gauges with elev < 0, not in boundary regions'
                 )
         }
     }
