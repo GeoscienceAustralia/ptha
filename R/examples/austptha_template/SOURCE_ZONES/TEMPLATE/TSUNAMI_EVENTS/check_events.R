@@ -108,7 +108,7 @@ run_checks<-function(fid_local){
 
     # Check max stage, in chunks for memory efficiency
     ngauges = length(lat)
-    chunksize = 1000/(ceiling(length(moment)/10000))
+    chunksize = ceiling(1000/(ceiling(length(moment)/10000)))
     gauge_chunks = parallel::splitIndices(ngauges, ceiling(ngauges/chunksize))
 
     # Should either be NA, or a positive number. Negative numbers were used for
@@ -127,7 +127,8 @@ run_checks<-function(fid_local){
         initial_stage = ncvar_get(fid_local, 'initial_stage', start=c(1, start), 
             count=c(-1, count))
         stage_na_or_positive = ( is.na(max_stage) | (max_stage >= 0))
-        initial_stage_negative_but_not_missing = ((initial_stage < 0) & (initial_stage > (config_env$null_double + 1)))
+        initial_stage_negative_but_not_missing = ((initial_stage < 0) & 
+            (initial_stage > (config_env$null_double + 1)))
         assert(all(stage_na_or_positive | initial_stage_negative_but_not_missing), 
             paste0('negative peak stage error ', start, ' ', count))
 
