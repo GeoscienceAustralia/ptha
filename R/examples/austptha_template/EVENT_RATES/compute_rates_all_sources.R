@@ -14,6 +14,7 @@ source('config.R', local=config)
 
 gcmt_access = new.env()
 source('gcmt_subsetter.R', local=gcmt_access)
+# FIXME: Edit GCMT data selection using strike of source-zone.
 
 #
 # INPUTS
@@ -60,6 +61,7 @@ nbins = config$logic_tree_parameter_subsampling_factor # 9
 # Get environment we can use to provide spatially variable convergence
 # information
 source('make_spatially_variable_source_zone_convergence_rates.R')
+# FIXME: Mappings to some Bird source-zones require manual edits.
 bird2003_env = event_conditional_probability_bird2003_factory(
     return_environment=TRUE)
 
@@ -140,12 +142,12 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         ## Largest observed plus a small value,
         min_mw_max,
         # Middle Mw
-        0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0) + 
+        0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=-1) + 
             min_mw_max),
         # Another middle Mw
-        Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, CI_sd=0),
+        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, CI_sd=0),
         # Another middle Mw
-        Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0),
+        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0),
         # Upper mw [Strasser + 1SD]
         Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=-1 ) )
     #
