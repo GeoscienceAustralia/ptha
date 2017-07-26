@@ -415,8 +415,10 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
         par(mfrow=c(2,1))
         plot_wave_heights_at_a_station(lon_p, lat_p, source_zone = names(rates)[i], 
             slip_type = 'uniform', site_index=site_index)
+        gc()
         plot_wave_heights_at_a_station(lon_p, lat_p, source_zone = names(rates)[i], 
             slip_type = 'stochastic', site_index=site_index)
+        gc()
     }
 
 
@@ -427,11 +429,12 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
             site_deagg = get_station_deaggregated_hazard(lon_p, lat_p, 
                 slip_type = slip_type, exceedance_rate=exceedance_rate)
             plot_station_deaggregated_hazard(site_deagg, scale=8)
-            points(lon, lat, col='grey', pch='.')
+            points(lon, lat, col=rgb(0.5, 0.5, 0.5, alpha=0.5), pch='.')
             points(lon_p, lat_p, col='red', pch=19, cex=2)
             title(paste0('Deaggregated hazard: ', slip_type, ' slip, AEP = ', 
                 signif(exceedance_rate,4), ',\n Peak stage = ', 
                 signif(site_deagg[[1]]$stage_exceed,4)))
+            rm(site_deagg); gc()
         }
     }
 
@@ -439,22 +442,22 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
 }
 
 
-# sites = list(
-#     'Cairns_100m' = c(146.34, -16.74),
-#     'Bundaberg_100m' = c(152.833, -24.137), 
-#     'Brisbane_100m' = c(153.72, -27.56),
-#     'Sydney_100m' = c(151.42, -34.05), 
-#     'Eden_100m' = c(150.188, -37.141),
-#     'Hobart_100m' = c(148.207, -42.897),
-#     'Adelaide_100m' = c(135.614, -35.328),
-#     'Perth_100m' = c(115.250, -31.832),
-#     'SteepPoint_100m' = c(112.958, -26.093),
-#     'Broome_100m' = c(120.74, -18.25),
-#     'Darwin_100m' = c(129.03, -11.88) 
-#     )
-# 
-# 
-# for(i in 1:length(sites)){
-#     plot_station_exceedance_rate_pdf(sites[[i]][1], sites[[i]][2], names(sites)[i])
-# } 
-
+## sites = list(
+##     'Cairns_100m' = c(146.34, -16.74),
+##     'Bundaberg_100m' = c(152.833, -24.137), 
+##     'Brisbane_100m' = c(153.72, -27.56),
+##     'Sydney_100m' = c(151.42, -34.05), 
+##     'Eden_100m' = c(150.188, -37.141),
+##     'Hobart_100m' = c(148.207, -42.897),
+##     'Adelaide_100m' = c(135.614, -35.328),
+##     'Perth_100m' = c(115.250, -31.832),
+##     'SteepPoint_100m' = c(112.958, -26.093),
+##     'Broome_100m' = c(120.74, -18.25),
+##     'Darwin_100m' = c(129.03, -11.88) 
+##     )
+## 
+## 
+## for(i in 1:length(sites)){
+##     plot_station_exceedance_rate_pdf(sites[[i]][1], sites[[i]][2], names(sites)[i])
+## } 
+## 
