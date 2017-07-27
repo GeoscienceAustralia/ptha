@@ -473,6 +473,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
     max_stage_color = 10, 
     greens_law_to_1m = FALSE,
     shapefile_output_dir=NULL,
+    shapefile_rate_names = NULL,
     ...){
 
     # Find the site in rates
@@ -502,7 +503,12 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             # Check sorting
             dsr = diff(sr)
             if(any(dsr) < 0) stop('Unsorted rates')
-            #
+            # Only use points with rate>0 to interpolate -- since rate=0 goes
+            # outside our model range -- and further, we might have multiple
+            # points with rate=0, which will confuse the approx function (needs
+            # the rates to be monotonic). We also append a 'stage=0' value to the start,
+            # and ensure it has a rate slightly above the peak rate, to ensure we have >= 2
+            # interpolation points in the approx function
             kk = which(sr > 0)
             site_stages_uniform[,i] = approx(c(sr[1]+0.001, sr[kk]), c(0,stages[kk]), 
                 xout=desired_rates, rule=2)$y
@@ -517,26 +523,49 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             dsr = diff(sr)
             if(any(dsr) < 0) stop('Unsorted rates')
 
+            # Only use points with rate>0 to interpolate -- since rate=0 goes
+            # outside our model range -- and further, we might have multiple
+            # points with rate=0, which will confuse the approx function (needs
+            # the rates to be monotonic). We also append a 'stage=0' value to the start,
+            # and ensure it has a rate slightly above the peak rate, to ensure we have >= 2
+            # interpolation points in the approx function
+
             kk = which(sr > 0)
             site_stages_stochastic[,i] = approx(c(sr[1]+0.001,sr[kk]), c(0,stages[kk]), 
                 xout=desired_rates, rule=2)$y
         }
     }
 
+    # Write out as shapefiles
     if(!is.null(shapefile_output_dir)){
+
         dir.create(shapefile_output_dir, recursive=TRUE, showWarnings=FALSE)
+
+        # Make uniform slip shapefile, with rates and elevation
         s1 = SpatialPoints(cbind(lon, lat), proj4string=CRS('+init=epsg:4326'))
-        s2 = SpatialPointsDataFrame(s1, data=as.data.frame(t(site_stages_uniform)))
+        local_data_frame = as.data.frame(t(site_stages_uniform))
+        if(!is.null(shapefile_rate_names)){
+            names(local_data_frame) = shapefile_rate_names
+        }
+        local_data_frame = cbind(local_data_frame, data.frame(elev=elev))
+        s2 = SpatialPointsDataFrame(s1, data=local_data_frame)
         writeOGR(s2, dsn=paste0(shapefile_output_dir, '/uniform_', source_zone),
             layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
 
+        # Make stochastic slip shapefile, with rates and elevation
         s1 = SpatialPoints(cbind(lon, lat), proj4string=CRS('+init=epsg:4326'))
-        s2 = SpatialPointsDataFrame(s1, data=as.data.frame(t(site_stages_stochastic)))
+        local_data_frame = as.data.frame(t(site_stages_stochastic))
+        if(!is.null(shapefile_rate_names)){
+            names(local_data_frame) = shapefile_rate_names
+        }
+        local_data_frame = cbind(local_data_frame, data.frame(elev=elev))
+        s2 = SpatialPointsDataFrame(s1, data=local_data_frame)
         writeOGR(s2, dsn=paste0(shapefile_output_dir, '/stochastic_', source_zone),
             layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
 
     }
 
+    # Rescale based on greens law, if desired
     if(greens_law_to_1m){
         rescale = pmax(0, -elev)**0.25
         greens_title = ", Green's law rescaled to 1m depth"
@@ -566,7 +595,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
     }
 
         
-
+    # Make the plot, for all desired_rates
     for(i in 1:length(desired_rates)){
         par(mfrow=c(2,1))
         # Uniform
@@ -574,8 +603,10 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             main=paste0(source_zone, ': Uniform slip, rate = ', 
                 signif(desired_rates[i]), greens_title),
             ...)
+        # arrow height
         ht = site_stages_uniform[i,]*rescale
-        o1 = order(ht)# Order arrows so long ones are plotted last
+        # Order arrows so long ones are plotted last -- makes it visually clearer
+        o1 = order(ht) 
         arrows(lon[o1], lat[o1], lon[o1], lat[o1] + ht[o1]*scale, 
             col=col_value(ht[o1]), length=0)
         grid()
@@ -586,8 +617,10 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             main=paste0(source_zone, ': Stochastic slip, rate = ', 
                 signif(desired_rates[i]), greens_title),
             ...)
-        ht = site_stages_stochastic[i,]*rescale
-        o1 = order(ht) # Order arrows so long ones are plotted last
+        # arrow height
+        ht = site_stages_stochastic[i,]*rescale 
+        # Order arrows so long ones are plotted last, for visual clarity
+        o1 = order(ht) 
         arrows(lon[o1], lat[o1], lon[o1], lat[o1] + ht[o1]*scale,
             col=col_value(ht[o1]), length=0)
         grid()
@@ -597,13 +630,14 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
     return(invisible())
 }
 
-#
+# Make a pdf for each source-zone, containing a number of different return periods
 for(source_name in names(rates)){
     pdf(paste0(source_name, '_stage_vs_exceedance_rate.pdf'), width=20, height=15)
     plot_source_zone_stage_vs_exceedance_rate(source_name, 
         desired_rates=c(1/100, 1/500, 1/1000, 1/5000, 1/10000, 1/50000, 1/100000),
         greens_law_to_1m=FALSE, 
         shapefile_output_dir=paste0('peakstage_shapefiles/', source_name),
+        shapefile_rate_names = c('R_100', 'R_500', 'R_1000', 'R_5000', 'R_10000', 'R_50000', 'R_100000'),
         xlim=c(40,320), ylim=c(-60,60), scale=1)
     dev.off()
 }
