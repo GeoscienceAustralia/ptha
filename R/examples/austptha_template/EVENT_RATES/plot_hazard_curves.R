@@ -461,3 +461,117 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
 ##     plot_station_exceedance_rate_pdf(sites[[i]][1], sites[[i]][2], names(sites)[i])
 ## } 
 ## 
+
+
+# For a given source-zone, plot the peak stage at every gauge associated with a
+# given exceedance rate.
+#
+plot_source_zone_stage_vs_exceedance_rate<-function(
+    source_zone, 
+    desired_rates=c(1/1000),
+    scale = 5,
+    max_stage_color = 10, 
+    greens_law_to_1m = FALSE,
+    ...){
+
+    # Find the site in rates
+    site = match(source_zone, names(rates))
+    if(length(site) != 1){
+        stop(paste0('Could not uniquely match ', source_zone, 
+            ' among all source-zones'))
+    }
+
+    site_stages_uniform = matrix(NA, nrow=length(desired_rates), ncol=length(lon))
+    site_stages_stochastic = matrix(NA, nrow=length(desired_rates), ncol=length(lon))
+
+    # Stage sequence that rates have been computed for
+    stages = ncvar_get(rates[[site]], 'stage')
+
+    # Get rates at every gauge, for every value in the stage sequence
+    site_rates_uniform = ncvar_get(rates[[site]], 'uniform_slip_rate')
+    site_rates_stochastic = ncvar_get(rates[[site]], 'stochastic_slip_rate')
+
+
+    # Compute stages for every desired rate, at every gauge
+    # Uniform slip
+    for(i in 1:length(lon)){
+
+        sr = site_rates_uniform[,i]
+        if(sr[1] > 0 & all(!is.na(sr))){
+            site_stages_uniform[,i] = approx(sr, stages, xout=desired_rates)$y
+        }
+    }
+    # Stochastic slip
+    for(i in 1:length(lon)){
+
+        sr = site_rates_stochastic[,i]
+        if(sr[1] > 0 & all(!is.na(sr))){
+            site_stages_stochastic[,i] = approx(sr, stages, xout=desired_rates)$y
+        }
+    }
+
+    if(greens_law_to_1m){
+        rescale = pmax(0, -elev)**0.25
+        greens_title = ", Green's law rescaled to 1m depth"
+    }else{
+        rescale = lon*0 + 1
+        greens_title = ''
+    }
+
+    # Make a plot
+    nc = 200
+    colscheme = rev(rainbow(255)[1:nc])
+
+    # Function to convert stage values to colors
+    col_value<-function(x){
+        colval = sqrt(pmin(x, max_stage_color)/max_stage_color) * nc
+        return(colscheme[round(colval)])
+    }
+    # Legend for wave heights, inside Australia!
+    arrow_legend<-function(){
+        lon_c = seq(130, 140, by=1)
+        lat_c = rep(-28, length=length(lon_c))
+        arrow_ht = seq(0.001, max_stage_color, len=length(lon_c))
+        arrows(lon_c, lat_c, lon_c, lat_c+arrow_ht*scale, col=col_value(arrow_ht),
+            length=0)
+        #rect(129, -28 - 1, 141, -28+11)
+        text(129+5, -28+7, paste0('Wave height \n of 0-', max_stage_color, 'm'))
+    }
+
+        
+
+    for(i in 1:length(desired_rates)){
+        par(mfrow=c(1,2))
+        # Uniform
+        plot(lon, lat, pch='.', col='grey', asp=1, 
+            main=paste0(source_zone, ': Uniform slip, rate = ', 
+                signif(desired_rates[i]), greens_title),
+            ...)
+        arrows(lon, lat, lon, lat + site_stages_uniform[i,]*scale*rescale, 
+            col=col_value(site_stages_uniform[i,]), length=0)
+        grid()
+        arrow_legend()
+
+        # Stochastic
+        plot(lon, lat, pch='.', col='grey', asp=1, 
+            main=paste0(source_zone, ': Stochastic slip, rate = ', 
+                signif(desired_rates[i]), greens_title),
+            ...)
+        arrows(lon, lat, lon, lat + site_stages_stochastic[i,]*scale*rescale,
+            col=col_value(site_stages_stochastic[i,]), length=0)
+        grid()
+        arrow_legend()
+    }
+
+    return(invisible())
+}
+
+#
+for(source_name in names(rates)){
+    pdf(paste0(source_name, '_stage_vs_exceedance_rate.pdf'), width=20, height=10)
+    plot_source_zone_stage_vs_exceedance_rate(source_name, 
+        desired_rates=c(1/100, 1/500, 1/1000, 1/5000, 1/10000, 1/50000, 1/100000),
+        greens_law_to_1m=FALSE, xlim=c(90,200), ylim=c(-60,30), scale=1)
+    dev.off()
+}
+
