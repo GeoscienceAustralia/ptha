@@ -472,6 +472,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
     scale = 5,
     max_stage_color = 10, 
     greens_law_to_1m = FALSE,
+    shapefile_output_dir=NULL,
     ...){
 
     # Find the site in rates
@@ -498,7 +499,13 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
 
         sr = site_rates_uniform[,i]
         if(sr[1] > 0 & all(!is.na(sr))){
-            site_stages_uniform[,i] = approx(sr, stages, xout=desired_rates)$y
+            # Check sorting
+            dsr = diff(sr)
+            if(any(dsr) < 0) stop('Unsorted rates')
+            #
+            kk = which(sr > 0)
+            site_stages_uniform[,i] = approx(c(sr[1]+0.001, sr[kk]), c(0,stages[kk]), 
+                xout=desired_rates, rule=2)$y
         }
     }
     # Stochastic slip
@@ -506,8 +513,28 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
 
         sr = site_rates_stochastic[,i]
         if(sr[1] > 0 & all(!is.na(sr))){
-            site_stages_stochastic[,i] = approx(sr, stages, xout=desired_rates)$y
+            # Check sorting
+            dsr = diff(sr)
+            if(any(dsr) < 0) stop('Unsorted rates')
+
+            kk = which(sr > 0)
+            site_stages_stochastic[,i] = approx(c(sr[1]+0.001,sr[kk]), c(0,stages[kk]), 
+                xout=desired_rates, rule=2)$y
         }
+    }
+
+    if(!is.null(shapefile_output_dir)){
+        dir.create(shapefile_output_dir, recursive=TRUE, showWarnings=FALSE)
+        s1 = SpatialPoints(cbind(lon, lat), proj4string=CRS('+init=epsg:4326'))
+        s2 = SpatialPointsDataFrame(s1, data=as.data.frame(t(site_stages_uniform)))
+        writeOGR(s2, dsn=paste0(shapefile_output_dir, '/uniform_', source_zone),
+            layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
+
+        s1 = SpatialPoints(cbind(lon, lat), proj4string=CRS('+init=epsg:4326'))
+        s2 = SpatialPointsDataFrame(s1, data=as.data.frame(t(site_stages_stochastic)))
+        writeOGR(s2, dsn=paste0(shapefile_output_dir, '/stochastic_', source_zone),
+            layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
+
     }
 
     if(greens_law_to_1m){
@@ -525,7 +552,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
     # Function to convert stage values to colors
     col_value<-function(x){
         colval = sqrt(pmin(x, max_stage_color)/max_stage_color) * nc
-        return(colscheme[round(colval)])
+        return(colscheme[pmin(pmax(1, round(colval)), nc)])
     }
     # Legend for wave heights, inside Australia!
     arrow_legend<-function(){
@@ -541,7 +568,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         
 
     for(i in 1:length(desired_rates)){
-        par(mfrow=c(1,2))
+        par(mfrow=c(2,1))
         # Uniform
         plot(lon, lat, pch='.', col='grey', asp=1, 
             main=paste0(source_zone, ': Uniform slip, rate = ', 
@@ -568,10 +595,12 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
 
 #
 for(source_name in names(rates)){
-    pdf(paste0(source_name, '_stage_vs_exceedance_rate.pdf'), width=20, height=10)
+    pdf(paste0(source_name, '_stage_vs_exceedance_rate.pdf'), width=20, height=15)
     plot_source_zone_stage_vs_exceedance_rate(source_name, 
         desired_rates=c(1/100, 1/500, 1/1000, 1/5000, 1/10000, 1/50000, 1/100000),
-        greens_law_to_1m=FALSE, xlim=c(90,200), ylim=c(-60,30), scale=1)
+        greens_law_to_1m=FALSE, 
+        shapefile_output_dir=paste0('peakstage_shapefiles/', source_name),
+        xlim=c(40,320), ylim=c(-60,60), scale=1)
     dev.off()
 }
 
