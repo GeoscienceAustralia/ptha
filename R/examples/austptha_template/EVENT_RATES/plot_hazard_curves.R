@@ -574,8 +574,10 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             main=paste0(source_zone, ': Uniform slip, rate = ', 
                 signif(desired_rates[i]), greens_title),
             ...)
-        arrows(lon, lat, lon, lat + site_stages_uniform[i,]*scale*rescale, 
-            col=col_value(site_stages_uniform[i,]), length=0)
+        ht = site_stages_uniform[i,]*rescale
+        o1 = order(ht)# Order arrows so long ones are plotted last
+        arrows(lon[o1], lat[o1], lon[o1], lat[o1] + ht[o1]*scale, 
+            col=col_value(ht[o1]), length=0)
         grid()
         arrow_legend()
 
@@ -584,8 +586,10 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             main=paste0(source_zone, ': Stochastic slip, rate = ', 
                 signif(desired_rates[i]), greens_title),
             ...)
-        arrows(lon, lat, lon, lat + site_stages_stochastic[i,]*scale*rescale,
-            col=col_value(site_stages_stochastic[i,]), length=0)
+        ht = site_stages_stochastic[i,]*rescale
+        o1 = order(ht) # Order arrows so long ones are plotted last
+        arrows(lon[o1], lat[o1], lon[o1], lat[o1] + ht[o1]*scale,
+            col=col_value(ht[o1]), length=0)
         grid()
         arrow_legend()
     }
