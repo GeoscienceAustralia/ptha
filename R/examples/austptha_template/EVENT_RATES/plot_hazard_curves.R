@@ -147,8 +147,16 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
 
 }
 
-#' Boxplot of wave-heights for all events from a given source-zone, for all Mw,
+#' Plot of wave-heights for all events from a given source-zone, for all Mw,
 #' at a station.
+#'
+#' Note that the plot made by this function changes greatly if
+#' split_into_subsets is not NULL! If the latter is NULL, then we box-plot stage
+#' by Mw, and add a plot of the Mw-vs-rate curve. However, if split_into_subsets
+#' is an integer, we instead plot stage-vs-exceedance rate the given number of
+#' times, each time with a distinct subset of the data. The idea is that if we
+#' have made 'enough' stochastic slip scenarios, then these rate curves should
+#' not significantly differ [say with 2 subsets]
 #'
 #' @param lon_p, lat_p station coordinates
 #' @param source_zone name of source_zone
@@ -162,9 +170,9 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
 #' assess whether we have enough events for convergence of the rate curve.
 #' @param ... further arguments to plot
 #'
-plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 'uniform',
-    plot_y_range=c(1e-04, 1e+02), boxwex=0.1, site_index = NULL, 
-    split_into_subsets=NULL, ...){
+plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, 
+    slip_type = 'uniform', plot_y_range=c(1e-04, 1e+02), boxwex=0.1, 
+    site_index = NULL, split_into_subsets=NULL, ...){
 
     if(is.null(site_index)){
         # Find index of nearest gauge.
@@ -183,10 +191,12 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
     # Get the filename with max_stage
     if(slip_type == 'uniform'){
 
-        nc_file_ind = grep(source_zone, config_env$all_source_uniform_slip_tsunami)
+        nc_file_ind = grep(source_zone, 
+            config_env$all_source_uniform_slip_tsunami)
 
         if(length(nc_file_ind) != 1){
-            stop(paste0('Could not find unique uniform slip file matching source_zone = ', 
+            stop(paste0(
+                'Could not find unique uniform slip file matching source_zone = ', 
                 source_zone))
         }
 
@@ -194,10 +204,12 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
 
     }else if(slip_type == 'stochastic'){
 
-        nc_file_ind = grep(source_zone, config_env$all_source_stochastic_slip_tsunami)
+        nc_file_ind = grep(source_zone, 
+            config_env$all_source_stochastic_slip_tsunami)
 
         if(length(nc_file_ind) != 1){
-            stop(paste0('Could not find unique stochastic slip file matching source_zone = ', 
+            stop(paste0(
+                'Could not find unique stochastic slip file matching source_zone = ', 
                 source_zone))
         }
 
@@ -220,11 +232,14 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
     # When plotting rates, multiply by this constant beforehand. 
     rate_rescale = 100
     if(is.null(split_into_subsets)){
+        #
+        # Boxplot stage by Mw
+        #
 
         unique_Mws = sort(unique(event_Mw))
 
-        # Exceedance rates. For plotting, set rate to a very small number, so the
-        # line dips to zero
+        # Exceedance rates. For plotting, set rate to a very small number, so
+        # the line dips to zero
         Mw_exceedance_rate = pmax(1e-12, sapply(unique_Mws, 
             f<-function(x) sum(event_nominal_rate*(event_Mw >= x)) ))
         Mw_exceedance_rate_upper = pmax(1e-12, sapply(unique_Mws, 
@@ -237,43 +252,65 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
         # Make the plot
         plot(range(event_Mw), plot_y_range, col=0, log='y', axes=FALSE, 
             frame.plot=TRUE, xlab="Mw", ylab="", ...)
-        boxplot(gauge_max_stage ~ event_Mw, at=unique(event_Mw), boxwex=boxwex, add=TRUE)
+        boxplot(gauge_max_stage ~ event_Mw, at=unique(event_Mw), boxwex=boxwex, 
+            add=TRUE)
 
         points(unique_Mws, Mw_exceedance_rate * rate_rescale, t='l', col='red')
-        points(unique_Mws, Mw_exceedance_rate_upper * rate_rescale, t='l', col='blue')
-        points(unique_Mws, Mw_exceedance_rate_lower * rate_rescale, t='l', col='blue')
+        points(unique_Mws, Mw_exceedance_rate_upper * rate_rescale, t='l', 
+            col='blue')
+        points(unique_Mws, Mw_exceedance_rate_lower * rate_rescale, t='l', 
+            col='blue')
 
         grid()
         abline(h=5*10**(seq(-4, 2)), lty='dotted', col='grey')
         abline(h=10**(seq(-4, 2)), lty='dotted', col='orange')
         mtext('Stage (m) and "Mw exceedance rate per century"', side=2, line=1.8)
-        title(paste0(source_zone,', ', slip_type, ' slip: Mw vs stage (m) AND Mw vs exceedance rates \n @ ', 
-            round(site_lon, 3), ', ', round(site_lat, 3), ', ', round(site_elev, 3)))
+        title(paste0(source_zone,', ', slip_type, 
+            ' slip: Mw vs stage (m) AND Mw vs exceedance rates \n @ ', 
+            round(site_lon, 3), ', ', round(site_lat, 3), ', ', 
+            round(site_elev, 3)))
     }else{
-
+        #
         # Plot stage vs exceedance rate, in subsets
+        #
         for(i in 1:split_into_subsets){
 
             subset = seq(i, length(event_Mw), by=split_into_subsets)
-            gauge_max_stage_subset = gauge_max_stage[subset]
-            event_nominal_rate_subset = event_nominal_rate[subset] * split_into_subsets * rate_rescale
-            event_nominal_rate_upper_subset = event_nominal_rate_upper[subset] * split_into_subsets * rate_rescale
-            event_nominal_rate_lower_subset = event_nominal_rate_lower[subset] * split_into_subsets * rate_rescale
 
-            stage_seq = seq(max(min(gauge_max_stage_subset), 1.0e-03), max(gauge_max_stage_subset), len=100)
-            stage_nominal_exceed = sapply(stage_seq, f<-function(x) sum(event_nominal_rate_subset * (gauge_max_stage_subset > x)))
-            stage_nominal_upper_exceed = sapply(stage_seq, f<-function(x) sum(event_nominal_rate_upper_subset * (gauge_max_stage_subset > x)))
-            stage_nominal_lower_exceed = sapply(stage_seq, f<-function(x) sum(event_nominal_rate_lower_subset * (gauge_max_stage_subset > x)))
- 
+            # Subset stages and nominal rates
+            gauge_max_stage_subset = gauge_max_stage[subset]
+            event_nominal_rate_subset = event_nominal_rate[subset] * 
+                split_into_subsets * rate_rescale
+            event_nominal_rate_upper_subset = event_nominal_rate_upper[subset] * 
+                split_into_subsets * rate_rescale
+            event_nominal_rate_lower_subset = event_nominal_rate_lower[subset] * 
+                split_into_subsets * rate_rescale
+
+            # Get stage-vs-exceedance rate, for the subset
+            stage_seq = seq(max(min(gauge_max_stage_subset), 1.0e-03), 
+                max(gauge_max_stage_subset), len=100)
+            stage_nominal_exceed = sapply(stage_seq, 
+                f<-function(x) sum(event_nominal_rate_subset * (gauge_max_stage_subset > x)))
+            stage_nominal_upper_exceed = sapply(stage_seq, 
+                f<-function(x) sum(event_nominal_rate_upper_subset * (gauge_max_stage_subset > x)))
+            stage_nominal_lower_exceed = sapply(stage_seq, 
+                f<-function(x) sum(event_nominal_rate_lower_subset * (gauge_max_stage_subset > x)))
+
+            # Plotting 
             if(i == 1){           
-                plot(stage_seq, stage_nominal_exceed, t='l', ylim=plot_y_range, log='xy', 
-                    xlab='Stage (m)', ylab='Exceedance per century', col=i)
-                points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, lty='dotted')
-                points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, lty='dotted')
+                plot(stage_seq, stage_nominal_exceed, t='l', ylim=plot_y_range, 
+                    log='xy', xlab='Stage (m)', ylab='Exceedance per century', 
+                    col=i)
+                points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, 
+                    lty='dotted')
+                points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, 
+                    lty='dotted')
             }else{
                 points(stage_seq, stage_nominal_exceed, t='l', col = i)
-                points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, lty='dotted')
-                points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, lty='dotted')
+                points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, 
+                    lty='dotted')
+                points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, 
+                    lty='dotted')
             }
             
         }
@@ -679,8 +716,10 @@ make_global_stage_return_period_plots<-function(){
     }
 }
 
+#
 # Make plots of stage-vs-exceedance rate, and Mw-vs-stage for each source, at a
 # bunch of sites
+#
 make_standard_site_exceedance_rate_plots<-function(){
 
     sites = list(
@@ -704,7 +743,10 @@ make_standard_site_exceedance_rate_plots<-function(){
  
 }
 
-make_tage_exceedance_rate_convergence_plot<-function(){
+#
+# A useful plot for examining if we have 'enough' stochastic slip events
+#
+make_stage_exceedance_rate_convergence_plot<-function(){
 
     sites = list(
         'Cairns_100m' = c(146.34, -16.74),
