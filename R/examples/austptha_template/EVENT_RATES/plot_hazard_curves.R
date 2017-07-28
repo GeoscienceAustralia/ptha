@@ -547,7 +547,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         if(!is.null(shapefile_rate_names)){
             names(local_data_frame) = shapefile_rate_names
         }
-        local_data_frame = cbind(local_data_frame, data.frame(elev=elev))
+        local_data_frame = cbind(local_data_frame, data.frame('elev'=as.numeric(elev)))
         s2 = SpatialPointsDataFrame(s1, data=local_data_frame)
         writeOGR(s2, dsn=paste0(shapefile_output_dir, '/uniform_', source_zone),
             layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
@@ -558,9 +558,22 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         if(!is.null(shapefile_rate_names)){
             names(local_data_frame) = shapefile_rate_names
         }
-        local_data_frame = cbind(local_data_frame, data.frame(elev=elev))
+        local_data_frame = cbind(local_data_frame, data.frame('elev'=as.numeric(elev)))
         s2 = SpatialPointsDataFrame(s1, data=local_data_frame)
         writeOGR(s2, dsn=paste0(shapefile_output_dir, '/stochastic_', source_zone),
+            layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
+
+        # Make shapefile with 'ratio of uniform to stochastic'
+        # uniform_stage/(stochastic_stage+eps)
+        s1 = SpatialPoints(cbind(lon, lat), proj4string=CRS('+init=epsg:4326'))
+        eps = 1.0e-06
+        local_data_frame = as.data.frame(t(site_stages_uniform)/(t(site_stages_stochastic)+eps))
+        if(!is.null(shapefile_rate_names)){
+            names(local_data_frame) = shapefile_rate_names
+        }
+        local_data_frame = cbind(local_data_frame, data.frame('elev'=as.numeric(elev)))
+        s2 = SpatialPointsDataFrame(s1, data=local_data_frame)
+        writeOGR(s2, dsn=paste0(shapefile_output_dir, '/uniform_on_stochastic_', source_zone),
             layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
 
     }
