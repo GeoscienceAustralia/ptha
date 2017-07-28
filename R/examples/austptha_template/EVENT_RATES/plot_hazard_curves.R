@@ -155,10 +155,16 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
 #' @param slip_type either 'uniform' or 'stochastic'
 #' @param plot_y_range y range of plot
 #' @param boxwex Bar thickness 
+#' @param site_index provide the index of lon_p/lat_p in lon/lat, thereby
+#' avoiding the nearest-neighbour search
+#' @param split_into_subsets If not NULL, split the events into the given number
+#' of subsets before plotting the stage-vs-exceedance-rate curve -- to help
+#' assess whether we have enough events for convergence of the rate curve.
 #' @param ... further arguments to plot
 #'
 plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 'uniform',
-    plot_y_range=c(1e-04, 1e+02), boxwex=0.1, verbose=TRUE, site_index = NULL, ...){
+    plot_y_range=c(1e-04, 1e+02), boxwex=0.1, site_index = NULL, 
+    split_into_subsets=NULL, ...){
 
     if(is.null(site_index)){
         # Find index of nearest gauge.
@@ -207,41 +213,73 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone, slip_type = 
     event_nominal_rate = ncvar_get(fid, 'event_rate_annual')
     event_nominal_rate_upper = ncvar_get(fid, 'event_rate_annual_upper_ci')
     event_nominal_rate_lower = ncvar_get(fid, 'event_rate_annual_lower_ci')
-
+    nc_close(fid)
     # Deal with finite-precision netcdf limitations
     event_Mw = round(event_Mw, 3)
 
-    unique_Mws = sort(unique(event_Mw))
-
-    # Exceedance rates. For plotting, set rate to a very small number, so the
-    # line dips to zero
-    Mw_exceedance_rate = pmax(1e-12, sapply(unique_Mws, 
-        f<-function(x) sum(event_nominal_rate*(event_Mw >= x)) ))
-    Mw_exceedance_rate_upper = pmax(1e-12, sapply(unique_Mws, 
-        f<-function(x) sum(event_nominal_rate_upper*(event_Mw >= x)) ))
-    Mw_exceedance_rate_lower = pmax(1e-12, sapply(unique_Mws, 
-        f<-function(x) sum(event_nominal_rate_lower*(event_Mw >= x)) ))
-
-
-    stopifnot(length(gauge_max_stage) == length(event_Mw))
-
-    # Make the plot
-    plot(range(event_Mw), plot_y_range, col=0, log='y', axes=FALSE, 
-        frame.plot=TRUE, xlab="Mw", ylab="", ...)
-    boxplot(gauge_max_stage ~ event_Mw, at=unique(event_Mw), boxwex=boxwex, add=TRUE)
-
+    # When plotting rates, multiply by this constant beforehand. 
     rate_rescale = 100
-    points(unique_Mws, Mw_exceedance_rate * rate_rescale, t='l', col='red')
-    points(unique_Mws, Mw_exceedance_rate_upper * rate_rescale, t='l', col='blue')
-    points(unique_Mws, Mw_exceedance_rate_lower * rate_rescale, t='l', col='blue')
-    grid()
-    abline(h=5*10**(seq(-4, 2)), lty='dotted', col='grey')
-    abline(h=10**(seq(-4, 2)), lty='dotted', col='orange')
-    mtext('Stage (m) and "Mw exceedance rate per century"', side=2, line=1.8)
-    title(paste0(source_zone,', ', slip_type, ' slip: Mw vs stage (m) AND Mw vs exceedance rates \n @ ', 
-        round(site_lon, 3), ', ', round(site_lat, 3), ', ', round(site_elev, 3)))
+    if(is.null(split_into_subsets)){
 
-    nc_close(fid)
+        unique_Mws = sort(unique(event_Mw))
+
+        # Exceedance rates. For plotting, set rate to a very small number, so the
+        # line dips to zero
+        Mw_exceedance_rate = pmax(1e-12, sapply(unique_Mws, 
+            f<-function(x) sum(event_nominal_rate*(event_Mw >= x)) ))
+        Mw_exceedance_rate_upper = pmax(1e-12, sapply(unique_Mws, 
+            f<-function(x) sum(event_nominal_rate_upper*(event_Mw >= x)) ))
+        Mw_exceedance_rate_lower = pmax(1e-12, sapply(unique_Mws, 
+            f<-function(x) sum(event_nominal_rate_lower*(event_Mw >= x)) ))
+
+        stopifnot(length(gauge_max_stage) == length(event_Mw))
+
+        # Make the plot
+        plot(range(event_Mw), plot_y_range, col=0, log='y', axes=FALSE, 
+            frame.plot=TRUE, xlab="Mw", ylab="", ...)
+        boxplot(gauge_max_stage ~ event_Mw, at=unique(event_Mw), boxwex=boxwex, add=TRUE)
+
+        points(unique_Mws, Mw_exceedance_rate * rate_rescale, t='l', col='red')
+        points(unique_Mws, Mw_exceedance_rate_upper * rate_rescale, t='l', col='blue')
+        points(unique_Mws, Mw_exceedance_rate_lower * rate_rescale, t='l', col='blue')
+
+        grid()
+        abline(h=5*10**(seq(-4, 2)), lty='dotted', col='grey')
+        abline(h=10**(seq(-4, 2)), lty='dotted', col='orange')
+        mtext('Stage (m) and "Mw exceedance rate per century"', side=2, line=1.8)
+        title(paste0(source_zone,', ', slip_type, ' slip: Mw vs stage (m) AND Mw vs exceedance rates \n @ ', 
+            round(site_lon, 3), ', ', round(site_lat, 3), ', ', round(site_elev, 3)))
+    }else{
+
+        # Plot stage vs exceedance rate, in subsets
+        for(i in 1:split_into_subsets){
+
+            subset = seq(i, length(event_Mw), by=split_into_subsets)
+            gauge_max_stage_subset = gauge_max_stage[subset]
+            event_nominal_rate_subset = event_nominal_rate[subset] * split_into_subsets * rate_rescale
+            event_nominal_rate_upper_subset = event_nominal_rate_upper[subset] * split_into_subsets * rate_rescale
+            event_nominal_rate_lower_subset = event_nominal_rate_lower[subset] * split_into_subsets * rate_rescale
+
+            stage_seq = seq(max(min(gauge_max_stage_subset), 1.0e-03), max(gauge_max_stage_subset), len=100)
+            stage_nominal_exceed = sapply(stage_seq, f<-function(x) sum(event_nominal_rate_subset * (gauge_max_stage_subset > x)))
+            stage_nominal_upper_exceed = sapply(stage_seq, f<-function(x) sum(event_nominal_rate_upper_subset * (gauge_max_stage_subset > x)))
+            stage_nominal_lower_exceed = sapply(stage_seq, f<-function(x) sum(event_nominal_rate_lower_subset * (gauge_max_stage_subset > x)))
+ 
+            if(i == 1){           
+                plot(stage_seq, stage_nominal_exceed, t='l', ylim=plot_y_range, log='xy', 
+                    xlab='Stage (m)', ylab='Exceedance per century', col=i)
+                points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, lty='dotted')
+                points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, lty='dotted')
+            }else{
+                points(stage_seq, stage_nominal_exceed, t='l', col = i)
+                points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, lty='dotted')
+                points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, lty='dotted')
+            }
+            
+        }
+
+    }
+
 
     return(invisible(site))
 
@@ -442,27 +480,6 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
 }
 
 
-## sites = list(
-##     'Cairns_100m' = c(146.34, -16.74),
-##     'Bundaberg_100m' = c(152.833, -24.137), 
-##     'Brisbane_100m' = c(153.72, -27.56),
-##     'Sydney_100m' = c(151.42, -34.05), 
-##     'Eden_100m' = c(150.188, -37.141),
-##     'Hobart_100m' = c(148.207, -42.897),
-##     'Adelaide_100m' = c(135.614, -35.328),
-##     'Perth_100m' = c(115.250, -31.832),
-##     'SteepPoint_100m' = c(112.958, -26.093),
-##     'Broome_100m' = c(120.74, -18.25),
-##     'Darwin_100m' = c(129.03, -11.88) 
-##     )
-## 
-## 
-## for(i in 1:length(sites)){
-##     plot_station_exceedance_rate_pdf(sites[[i]][1], sites[[i]][2], names(sites)[i])
-## } 
-## 
-
-
 # For a given source-zone, plot the peak stage at every gauge associated with a
 # given exceedance rate.
 #
@@ -643,15 +660,76 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
     return(invisible())
 }
 
-# Make a pdf for each source-zone, containing a number of different return periods
-for(source_name in names(rates)){
-    pdf(paste0(source_name, '_stage_vs_exceedance_rate.pdf'), width=20, height=15)
-    plot_source_zone_stage_vs_exceedance_rate(source_name, 
-        desired_rates=c(1/100, 1/500, 1/1000, 1/5000, 1/10000, 1/50000, 1/100000),
-        greens_law_to_1m=FALSE, 
-        shapefile_output_dir=paste0('peakstage_shapefiles/', source_name),
-        shapefile_rate_names = c('R_100', 'R_500', 'R_1000', 'R_5000', 'R_10000', 'R_50000', 'R_100000'),
-        xlim=c(40,320), ylim=c(-60,60), scale=1)
+
+#
+# Plot global peak-stage vs return period, for each source-zone
+#
+make_global_stage_return_period_plots<-function(){
+    # Make a pdf for each source-zone, containing a number of different return periods
+    for(source_name in names(rates)){
+        pdf(paste0(source_name, '_stage_vs_exceedance_rate.pdf'), width=20, height=15)
+        plot_source_zone_stage_vs_exceedance_rate(source_name, 
+            desired_rates=c(1/100, 1/500, 1/1000, 1/5000, 1/10000, 1/50000, 1/100000),
+            greens_law_to_1m=FALSE, 
+            shapefile_output_dir=paste0('peakstage_shapefiles/', source_name),
+            shapefile_rate_names = c('R_100', 'R_500', 'R_1000', 'R_5000', 'R_10000', 
+                'R_50000', 'R_100000'),
+            xlim=c(40,320), ylim=c(-60,60), scale=1)
+        dev.off()
+    }
+}
+
+# Make plots of stage-vs-exceedance rate, and Mw-vs-stage for each source, at a
+# bunch of sites
+make_standard_site_exceedance_rate_plots<-function(){
+
+    sites = list(
+        'Cairns_100m' = c(146.34, -16.74),
+        'Bundaberg_100m' = c(152.833, -24.137), 
+        'Brisbane_100m' = c(153.72, -27.56),
+        'Sydney_100m' = c(151.42, -34.05), 
+        'Eden_100m' = c(150.188, -37.141),
+        'Hobart_100m' = c(148.207, -42.897),
+        'Adelaide_100m' = c(135.614, -35.328),
+        'Perth_100m' = c(115.250, -31.832),
+        'SteepPoint_100m' = c(112.958, -26.093),
+        'Broome_100m' = c(120.74, -18.25),
+        'Darwin_100m' = c(129.03, -11.88) 
+        )
+    
+    
+    for(i in 1:length(sites)){
+        plot_station_exceedance_rate_pdf(sites[[i]][1], sites[[i]][2], names(sites)[i])
+    } 
+ 
+}
+
+make_tage_exceedance_rate_convergence_plot<-function(){
+
+    sites = list(
+        'Cairns_100m' = c(146.34, -16.74),
+        'Bundaberg_100m' = c(152.833, -24.137), 
+        'Brisbane_100m' = c(153.72, -27.56),
+        'Sydney_100m' = c(151.42, -34.05), 
+        'Eden_100m' = c(150.188, -37.141),
+        'Hobart_100m' = c(148.207, -42.897),
+        'Adelaide_100m' = c(135.614, -35.328),
+        'Perth_100m' = c(115.250, -31.832),
+        'SteepPoint_100m' = c(112.958, -26.093),
+        'Broome_100m' = c(120.74, -18.25),
+        'Darwin_100m' = c(129.03, -11.88) 
+        )
+
+    pdf('stage_convergence_plot.pdf', width=8, height=6)
+    for(i in 1:length(sites)){
+        for(source_name in names(rates)){
+            plot_wave_heights_at_a_station(
+                sites[[i]][1], sites[[i]][2], 
+                source_name, slip_type='stochastic', split_into_subsets=2)
+            title(paste0(names(sites)[i], ' : ', source_name))
+            grid()
+        }
+    }
     dev.off()
 }
 
