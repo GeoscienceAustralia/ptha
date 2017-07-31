@@ -287,8 +287,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
                 split_into_subsets * rate_rescale
 
             # Get stage-vs-exceedance rate, for the subset
-            stage_seq = seq(max(min(gauge_max_stage_subset), 1.0e-03), 
-                max(gauge_max_stage_subset), len=100)
+            stage_seq = 10**(seq(-2,1, len=100)) #seq(0.01, max(gauge_max_stage_subset), len=100)
             stage_nominal_exceed = sapply(stage_seq, 
                 f<-function(x) sum(event_nominal_rate_subset * (gauge_max_stage_subset > x)))
             stage_nominal_upper_exceed = sapply(stage_seq, 
