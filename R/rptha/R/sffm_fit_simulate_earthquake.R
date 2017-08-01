@@ -1033,8 +1033,8 @@ sffm_make_events_on_discretized_source<-function(
                 template_slip_matrix[sW:eW, sL:eL, drop=FALSE], 
                 sub_sample_size=sffm_sub_sample_size)
             # Ensure we have not accidently set part of the length/width to be fully zero
-            if(any(slip_matrix[sW,sL:eL] > 0) & (any(slip_matrix[eW, sL:eL]) > 0) &
-                any(slip_matrix(sW:eW, sL) > 0) & (any(slip_matrix[sW:eW, eL]) > 0)){
+            if(any(slip_matrix[sW,sL:eL] > 0) & any(slip_matrix[eW, sL:eL] > 0) &
+                any(slip_matrix[sW:eW, sL] > 0) & any(slip_matrix[sW:eW, eL] > 0)){
                 repeater = FALSE
             }
         }
