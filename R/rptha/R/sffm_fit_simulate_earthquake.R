@@ -1024,12 +1024,20 @@ sffm_make_events_on_discretized_source<-function(
         template_slip_matrix[peak_slip_row, peak_slip_col] = 1
         slip_matrix = dx * 0
 
-        # Simulate (possibly on sub-sampled grid) 
-        # Note we only sample on the 'non-zero slip area', i.e. sW:eW, sL:eL
-        slip_matrix[sW:eW, sL:eL] = sffm_simulate(
-            numerical_corner_wavenumbers, 
-            template_slip_matrix[sW:eW, sL:eL, drop=FALSE], 
-            sub_sample_size=sffm_sub_sample_size)
+        repeater = TRUE
+        while(repeater){
+            # Simulate (possibly on sub-sampled grid) 
+            # Note we only sample on the 'non-zero slip area', i.e. sW:eW, sL:eL
+            slip_matrix[sW:eW, sL:eL] = sffm_simulate(
+                numerical_corner_wavenumbers, 
+                template_slip_matrix[sW:eW, sL:eL, drop=FALSE], 
+                sub_sample_size=sffm_sub_sample_size)
+            # Ensure we have not accidently set part of the length/width to be fully zero
+            if(any(slip_matrix[sW,sL:eL] > 0) & (any(slip_matrix[eW, sL:eL]) > 0) &
+                any(slip_matrix(sW:eW, sL) > 0) & (any(slip_matrix[sW:eW, eL]) > 0)){
+                repeater = FALSE
+            }
+        }
 
         rm(template_slip_matrix)
 
