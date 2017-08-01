@@ -34,9 +34,10 @@ gauge_times = get_netcdf_gauge_output_times(all_tide_files[1])
 #' @param event_magnitude numeric earthquake magnitude. Events with this
 #' magnitude will be used for the plot
 #' @param event_hypocentre vector c(lon,lat) giving the location of a point on
-#' the rupture. All modelled earthquakes which are plotted will contain a unit-source
-#' within 1 scaling-law width/length of the unit-source containing this point.
-#' (The point must be inside a unit source.)
+#' the rupture. All modelled uniform slip earthquakes will contain a unit-source
+#' within 0.5 scaling-law width/length of the unit-source containing this point.
+#' (The point must be inside a unit source). If use_stochastic_slip=TRUE, then
+#' we will use stochastic events 'corresponding' to the above identified uniform events.
 #' @param event_start A POSIX.lt object giving the event start time (UTC), made
 #' with e.g.: 
 #'     event_start=strptime('2009-06-13 15:22:31', 
@@ -70,13 +71,10 @@ compare_event_with_gauge_time_series<-function(
   
     # Events with the right magnitude. Allow for some rounding error, due to
     # the use of float's in the netcdf file. 
-    if(!use_stochastic_slip){
-        keep = which(abs(earthquake_events$Mw - event_magnitude) < 1.0e-03)
-        events_with_Mw = earthquake_events[keep, ]
-    }else{
-        keep = which(abs(earthquake_events_stochastic$Mw - event_magnitude) < 1.0e-03)
-        events_with_Mw = earthquake_events_stochastic[keep, ]
-    }
+    # Use uniform slip events -- later, if use_stochastic_slip = TRUE, then
+    # we will extract those events which correspond to the uniform ones to keep
+    keep = which(abs(earthquake_events$Mw - event_magnitude) < 1.0e-03)
+    events_with_Mw = earthquake_events[keep, ]
   
     # Find which events contain the hypocentre, by finding which unit source
     # contains it
@@ -84,9 +82,9 @@ compare_event_with_gauge_time_series<-function(
         event_hypocentre, unit_source_geometry, unit_source_statistics) 
 
     # Allow events which 'touch' sites within uniform slip scaling law width and half length
-    expand_unit_source_alongstrike = ceiling(Mw_2_rupture_size(event_magnitude)[3]/
+    expand_unit_source_alongstrike = ceiling(Mw_2_rupture_size(event_magnitude)[3] * 0.5/
         unit_source_statistics$length[unit_source_containing_hypocentre])
-    expand_unit_source_downdip = ceiling(Mw_2_rupture_size(event_magnitude)[2]/
+    expand_unit_source_downdip = ceiling(Mw_2_rupture_size(event_magnitude)[2] * 0.5/
         unit_source_statistics$width[unit_source_containing_hypocentre])
 
     # Find unit-source neighbours (within a few unit-sources in each direction)
@@ -116,7 +114,23 @@ compare_event_with_gauge_time_series<-function(
         stop('No unit sources contain the provided hypocentre')
     }
 
-    events_with_Mw = events_with_Mw[which(event_contains_hpc == 1),]
+    if(use_stochastic_slip){
+        # Find stochastic slip events that correspond to the uniform events we would keep
+        # This way of selecting stochastic events should give an unbiased representation of the stochastic model.
+        # OTOH, if we just selected 'all stochastic events close enough to the target location', 
+        # we might introduce bias, since that approach would tend to select more 'broad' events at 
+        # more distant locations
+        stochastic_events_uniform_row = earthquake_events_stochastic$uniform_event_row
+        uniform_keepers = keep[which(event_contains_hpc == 1)]
+        stochastic_events_to_keep = which(stochastic_events_uniform_row %in% uniform_keepers)
+        # Replace events_with_Mw with the 'stochastic slip' version, containing events that
+        # correspond to the uniform events we would keep in the alternate case
+        # where use_stochastic_slip=FALSE
+        events_with_Mw = earthquake_events_stochastic[stochastic_events_to_keep,]
+    }else{
+        # Uniform slip (use_stochastic_slip=FALSE)
+        events_with_Mw = events_with_Mw[which(event_contains_hpc == 1),]
+    }
 
     plot_events_vs_gauges(events_with_Mw, event_start, gauge_ids, gauge_data, 
         plot_durations, gauge_ylims, output_dir_tag)
