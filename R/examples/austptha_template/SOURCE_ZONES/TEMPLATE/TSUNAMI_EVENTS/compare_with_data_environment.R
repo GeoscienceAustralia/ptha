@@ -34,8 +34,9 @@ gauge_times = get_netcdf_gauge_output_times(all_tide_files[1])
 #' @param event_magnitude numeric earthquake magnitude. Events with this
 #' magnitude will be used for the plot
 #' @param event_hypocentre vector c(lon,lat) giving the location of a point on
-#' the rupture. All modelled earthquakes which are plotted will contain this
-#' point, or a directly neighbouring unit-source. The point must be inside a unit source.
+#' the rupture. All modelled earthquakes which are plotted will contain a unit-source
+#' within 1 scaling-law width/length of the unit-source containing this point.
+#' (The point must be inside a unit source.)
 #' @param event_start A POSIX.lt object giving the event start time (UTC), made
 #' with e.g.: 
 #'     event_start=strptime('2009-06-13 15:22:31', 
@@ -82,10 +83,16 @@ compare_event_with_gauge_time_series<-function(
     unit_source_containing_hypocentre = find_unit_source_index_containing_point(
         event_hypocentre, unit_source_geometry, unit_source_statistics) 
 
-    # Find unit-source neighbours (within +-1 unit-sources in each direction)
+    # Allow events which 'touch' sites within uniform slip scaling law width and half length
+    expand_unit_source_alongstrike = ceiling(Mw_2_rupture_size(event_magnitude)[3]/
+        unit_source_statistics$length[unit_source_containing_hypocentre])
+    expand_unit_source_downdip = ceiling(Mw_2_rupture_size(event_magnitude)[2]/
+        unit_source_statistics$width[unit_source_containing_hypocentre])
+
+    # Find unit-source neighbours (within a few unit-sources in each direction)
     hypocentre_neighbours = c()
-    for(j in c(-1,0,1)){
-        for(i in c(-1,0,1)){
+    for(j in (seq(-expand_unit_source_downdip,expand_unit_source_downdip))){
+        for(i in (seq(-expand_unit_source_alongstrike,expand_unit_source_alongstrike))){
             usch = unit_source_containing_hypocentre # shorthand
             nbr = which(
                 (unit_source_statistics$downdip_number == (unit_source_statistics$downdip_number[usch] + j)) &
@@ -121,11 +128,11 @@ compare_event_with_gauge_time_series<-function(
 #' @param event_magnitude numeric earthquake magnitude. Make stochastic slip
 #' events with this magnitude
 #' @param event_hypocentre A vector c(lon,lat) giving the location of a point on
-#' the rupture. All modelled stochastic earthquakes are 'near' this point (if
-#' create_new=TRUE, then peak slip within half-a-width and half-a-length of the
+#' the rupture. If create_NEW = true, then all modelled stochastic earthquakes
+#' are 'near' this point (peak slip within half-a-width and half-a-length of the
 #' location, with width/length based on Strasser earthquake size scaling
-#' relations. If create_NEW=FALSE, then we use the same method as for
-#' compare_uniform_slip_event_with_gauge_time_series). 
+#' relations). If create_NEW = FALSE, then the same approach as
+#' \code{compare_event_with_gauge_time_series} is used (full scaling law width/length)
 #' @param number_of_sffm How many stochastic scenarios to simulate. Beware this
 #' is ignored if create_new = FALSE (default)
 #' @param zero_low_slip_cells_fraction number close to zero in [0,1). To reduce

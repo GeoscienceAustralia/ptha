@@ -69,7 +69,7 @@ plot_model_data<-function(model_index, event_data, event_metadata,
     # Try a model-data similarity statistic -- for at most 3 hours
     model_data_similarity_time_detailed = gauge_similarity_time_domain(
         data_t, data_s, model_t, model_s,
-        interp_dt = 15, allowed_lag_minutes=max_model_time_shift_min, 
+        interp_dt = 15, allowed_lag_minutes=c(-15, 0), 
         time_range = c(time_range[1], min(time_range[2], time_range[1] + 3*3600)),
         detailed=TRUE)
     model_data_similarity_time = model_data_similarity_time_detailed$objective

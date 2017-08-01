@@ -1,7 +1,7 @@
 
 
 gauge_similarity_time_domain<-function(data1_t, data1_s, data2_t, data2_s, interp_dt = NULL,
-    allowed_lag_minutes=15, time_range=range(data1_t), detailed=FALSE){
+    allowed_lag_minutes=c(-15, 0), time_range=range(data1_t), detailed=FALSE){
     
     if(is.null(interp_dt)){
         interp_dt = min(c(diff(data1_t), diff(data2_t)))
@@ -33,8 +33,19 @@ gauge_similarity_time_domain<-function(data1_t, data1_s, data2_t, data2_s, inter
         return(Em)
     }
 
+    # Test lags between min/max, with spacing of about 10s
+    # Implement our own brute force minimization, since optimize appears like it might not hit the minimum
     sec_in_min = 60
-    best_lag = optimize(f, interval=c(-1, 1)*sec_in_min*allowed_lag_minutes)
+    lag_vals = seq(sec_in_min * allowed_lag_minutes[1], sec_in_min*allowed_lag_minutes[2], 
+        length=max(1, ceiling(diff(allowed_lag_minutes)*60/10)) )
+    lag_f = lag_vals*0
+    for(i in 1:length(lag_vals)){
+        lag_f[i] = f(lag_vals[i])
+    }
+
+    #best_lag = optimize(f, interval=sec_in_min*allowed_lag_minutes)
+
+    best_lag = list(objective=min(lag_f), minimum = lag_vals[which.min(lag_f)])
 
     if(!detailed){
         return(best_lag$objective)
