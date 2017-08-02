@@ -151,6 +151,122 @@ run_checks<-function(fid_local){
         }
     }
 
+    if(!is_uniform_slip){
+        #
+        # Make a length/width scaling law plot
+        #
+
+        alongstrike_range = lapply(unit_sources_in, 
+            f<-function(x) range(unit_source_statistics$alongstrike_number[x]))
+        downdip_range = lapply(unit_sources_in, 
+            f<-function(x) range(unit_source_statistics$downdip_number[x]))
+
+        event_length = unlist(mapply(
+            f<-function(strk_ind, dip_ind){
+                # Compute the length, based on up-dip unit-sources
+                r1 = strk_ind[1]:strk_ind[2]
+                r2 = dip_ind[1]:dip_ind[2]
+                tokeep = which(
+                    (unit_source_statistics$downdip_number == r2[1]) & 
+                    (unit_source_statistics$alongstrike_number %in% r1)
+                )
+                sum(unit_source_statistics$length[tokeep])
+            }, 
+            alongstrike_range,
+            downdip_range 
+            ))
+
+        event_width = unlist(mapply(
+            f<-function(strk_ind, dip_ind){
+                # Compute the width, based on least-along-strike unit-sources
+                r1 = strk_ind[1]:strk_ind[2]
+                r2 = dip_ind[1]:dip_ind[2]
+                tokeep = which(
+                    (unit_source_statistics$downdip_number %in% r2) & 
+                    (unit_source_statistics$alongstrike_number == r1[1])
+                )
+                sum(unit_source_statistics$width[tokeep])
+            }, 
+            alongstrike_range,
+            downdip_range 
+            ))
+
+        event_area = unlist(lapply(unit_sources_in, 
+            f<-function(x) sum(unit_source_statistics$length[x] * 
+                unit_source_statistics$width[x])))
+        event_mean_slip = unlist(lapply(event_slips, 
+            f<-function(x) mean(x) ))
+        event_max_slip = unlist(lapply(event_slips, 
+            f<-function(x) max(x) ))
+
+        # Compute theoretical results
+        unique_mws = unique(mws)
+        scaling_law_dim = lapply(as.list(unique_mws), 
+            f<-function(x) Mw_2_rupture_size(x, detailed=TRUE, CI_sd=2))
+
+        # Convenience function for the plot
+        local_scaling_law_results<-function(var='area'){ 
+            areas_scaling = unlist(lapply(scaling_law_dim, f<-function(x) x$values[var]))
+            areas_scaling_pci = unlist(lapply(scaling_law_dim, f<-function(x) x$plus_CI[var]))
+            areas_scaling_mci = unlist(lapply(scaling_law_dim, f<-function(x) x$minus_CI[var]))
+
+            points(unique_mws, areas_scaling, t='l', col='red')
+            points(unique_mws, areas_scaling_pci, t='l', col='red', lty='dashed')
+            points(unique_mws, areas_scaling_mci, t='l', col='red', lty='dashed')
+        }
+
+        # Plotting
+        pdf(paste0('event_size_scaling_stochastic_', basename(dirname(getwd())), '.pdf'), 
+            width=10, height=10)
+
+        par(mfrow=c(3,2))
+
+        # Area
+        plot(mws, event_area, log='y', main='Stochastic event area with non-zero slip', 
+            xlab='Mw', ylab='km^2')
+        grid()
+        local_scaling_law_results('area')
+       
+        # Length
+        plot(mws, event_length, log='y', main='Stochastic event length', 
+            xlab='Mw', ylab='km')
+        grid()
+        local_scaling_law_results('length')
+
+        # Width 
+        plot(mws, event_width, log='y', main='Stochastic event width', 
+            xlab='Mw', ylab='km')
+        grid()
+        local_scaling_law_results('width')
+
+        # Mean slip
+        plot(mws, event_mean_slip, log='y', main='Stochastic event mean_slip', 
+            xlab='Mw', ylab='km')
+        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red')
+        median_ratio = aggregate(event_mean_slip, list(mws), median)
+        points(median_ratio[,1], median_ratio[,2], col='red')
+        grid()
+        # Peak slip
+        plot(mws, event_max_slip, log='y', main='Stochastic event max_slip', 
+            xlab='Mw', ylab='km')
+        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', lty='dashed')
+        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', lty='dashed')
+        median_ratio = aggregate(event_max_slip, list(mws), median)
+        points(median_ratio[,1], median_ratio[,2], col='red')
+        grid()
+
+        # Peak slip / mean slip
+        plot(mws, event_max_slip/event_mean_slip, log='y', main='Stochastic event max_slip/mean_slip', 
+            xlab='Mw', ylab='km')
+        grid()
+        median_ratio = aggregate(event_max_slip/event_mean_slip, list(mws), median)
+        points(median_ratio[,1], median_ratio[,2], col='red')
+        abline(h=3, col='red')
+
+        dev.off()
+
+    }
+
 }
 
 # Check uniform slip
