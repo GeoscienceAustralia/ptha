@@ -882,6 +882,9 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre){
 #' @param mu Shear modulus (Pascals)
 #' @param return_slip_raster logical. If TRUE, include the slip as a raster object in
 #' the output list. If FALSE, set the latter to NULL on output.
+#' @param uniform_slip logical. If TRUE, then the slip will be uniform on each rupture.
+#' This enables the rupture size to vary while still having uniform slip. By default it
+#' is FALSE, and stochastic slip is used.
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are
@@ -930,7 +933,8 @@ sffm_make_events_on_discretized_source<-function(
     sourcename="",
     sffm_sub_sample_size = c(1,1),
     mu=3e+10,
-    return_slip_raster=TRUE){
+    return_slip_raster=TRUE,
+    uniform_slip = FALSE){
 
     nx = max(discretized_source_statistics$alongstrike_number)
     ny = max(discretized_source_statistics$downdip_number)
@@ -1019,27 +1023,34 @@ sffm_make_events_on_discretized_source<-function(
         sW = bbox[1]
         eW = bbox[2]
 
-        # Ensure peak slip occurs in desired location
-        template_slip_matrix = dx * 0
-        template_slip_matrix[peak_slip_row, peak_slip_col] = 1
         slip_matrix = dx * 0
 
-        repeater = TRUE
-        while(repeater){
-            # Simulate (possibly on sub-sampled grid) 
-            # Note we only sample on the 'non-zero slip area', i.e. sW:eW, sL:eL
-            slip_matrix[sW:eW, sL:eL] = sffm_simulate(
-                numerical_corner_wavenumbers, 
-                template_slip_matrix[sW:eW, sL:eL, drop=FALSE], 
-                sub_sample_size=sffm_sub_sample_size)
-            # Ensure we have not accidently set part of the length/width to be fully zero
-            if(any(slip_matrix[sW,sL:eL] > 0) & any(slip_matrix[eW, sL:eL] > 0) &
-                any(slip_matrix[sW:eW, sL] > 0) & any(slip_matrix[sW:eW, eL] > 0)){
-                repeater = FALSE
-            }
-        }
+        if(!uniform_slip){
+            # Ensure peak slip occurs in desired location
+            template_slip_matrix = dx * 0
+            template_slip_matrix[peak_slip_row, peak_slip_col] = 1
 
-        rm(template_slip_matrix)
+            repeater = TRUE
+            while(repeater){
+                # Simulate (possibly on sub-sampled grid) 
+                # Note we only sample on the 'non-zero slip area', i.e. sW:eW, sL:eL
+                slip_matrix[sW:eW, sL:eL] = sffm_simulate(
+                    numerical_corner_wavenumbers, 
+                    template_slip_matrix[sW:eW, sL:eL, drop=FALSE], 
+                    sub_sample_size=sffm_sub_sample_size)
+                # Ensure we have not accidently set part of the length/width to be fully zero
+                if(any(slip_matrix[sW,sL:eL] > 0) & any(slip_matrix[eW, sL:eL] > 0) &
+                    any(slip_matrix[sW:eW, sL] > 0) & any(slip_matrix[sW:eW, eL] > 0)){
+                    repeater = FALSE
+                }
+            }
+
+            rm(template_slip_matrix)
+
+        }else{
+            # Use uniform slip -- will be rescaled later
+            slip_matrix[sW:eW, sL:eL] = 1
+        }
 
         # There will probably be many small but nonzero slip values
         # Set some to zero, so for efficiency later

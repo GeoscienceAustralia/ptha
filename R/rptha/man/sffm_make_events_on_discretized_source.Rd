@@ -8,7 +8,7 @@ sffm_make_events_on_discretized_source(discretized_source_statistics,
   target_location, target_event_mw, num_events = 1,
   vary_peak_slip_location = TRUE, zero_low_slip_cells_fraction = 0,
   sourcename = "", sffm_sub_sample_size = c(1, 1), mu = 3e+10,
-  return_slip_raster = TRUE)
+  return_slip_raster = TRUE, uniform_slip = FALSE)
 }
 \arguments{
 \item{discretized_source_statistics}{data.frame returned from e.g. 
@@ -46,6 +46,10 @@ returning the output.}
 
 \item{return_slip_raster}{logical. If TRUE, include the slip as a raster object in
 the output list. If FALSE, set the latter to NULL on output.}
+
+\item{uniform_slip}{logical. If TRUE, then the slip will be uniform on each rupture.
+This enables the rupture size to vary while still having uniform slip. By default it
+is FALSE, and stochastic slip is used.}
 }
 \value{
 A list with length = num_events. Each element of the list is a list

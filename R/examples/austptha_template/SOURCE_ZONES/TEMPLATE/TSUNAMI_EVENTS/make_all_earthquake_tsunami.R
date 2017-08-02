@@ -58,6 +58,14 @@ if(length(command_arguments) > 0){
             source_zone_name, '.nc')
         stochastic_slip = TRUE
     }
+
+    # We can also treat 'variable uniform slip' cases as stochastic slip
+    # This is simple, though perhaps not the most efficient approach
+    if(any(grepl('-variable_uniform_slip', command_arguments))){
+        earthquake_events_file = paste0('all_variable_uniform_slip_earthquake_events_', 
+            source_zone_name, '.nc')
+        stochastic_slip = TRUE
+    }
 }
 
 
