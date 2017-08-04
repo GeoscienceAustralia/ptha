@@ -196,7 +196,7 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
 ###############################################################
 
 source_name = basename(dirname(dirname(getwd())))
-event_basedirs_uniform = dirname(Sys.glob(paste0('../*_uniform/event_metadata.RDS')))
+event_basedirs_uniform = dirname(Sys.glob(paste0('../uniform_uniform/event_metadata.RDS')))
 event_basedirs_stochastic = gsub('uniform', 'stochastic', event_basedirs_uniform)
 event_basedirs_variable_uniform = gsub('uniform', 'variable_uniform', event_basedirs_uniform)
 
@@ -530,7 +530,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         plot(peak_slip_S, dS, log='xy', xlab='Peak slip', ylab='Stage range', 
             col='red', pch=as.character(peak_slip_dd), xlim=xlim1, ylim=ylim1)
         points(jitter(peak_slip_U), dU, col='blue', pch=19)
-        points(jitter(peak_slip_VU), dVUU, col='green', pch=19)
+        points(jitter(peak_slip_VU), dVU, col='green', pch=19)
         title(main=paste0('Peak slip vs stage range: ', 
             basename(names(uniform_slip_stats)[gauge_ind]),
             ' \n Random (red), Uniform (blue), VariUniform (green), Obs (black)'))
