@@ -98,7 +98,7 @@ for(RdataFile in all_Rdata){
 
         plot(c(0,1), c(0,1), axes=FALSE, col=0)
         legend('center', 
-            c('Data', paste0('Stoch. slip (', si, ')'), paste0('Unif. slip (', ui, ')', paste0('VarU. slip (', vui, ')'))), 
+            c('Data', paste0('Stoch. slip (', si, ')'), paste0('Unif. slip (', ui, ')'), paste0('VarU. slip (', vui, ')')), 
             bty='n',
             lty=c('solid', 'solid', 'longdash', 'solid'),
             col=c('black', 'red', 'blue', 'green'), pch=c(19, NA, NA, NA), cex= 2.0 + (nrow > 2),

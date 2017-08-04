@@ -414,7 +414,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         ldVU = length(dVU)
 
         boxplot(c(dU, dS, dVU) ~ c(rep('Uniform', ldU), rep('Stochastic', ldS), 
-                rep('VariableUniform', ldVU)), 
+                rep('VarUnif', ldVU)), 
             horizontal = TRUE, density=20, 
             col=c(rgb(1,0,0, alpha=0.3), rgb(0,0,1, alpha=0.3), 
                 rgb(0,1,0,alpha=0.3)),
