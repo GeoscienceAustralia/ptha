@@ -15,6 +15,9 @@ earthquake_events = read_table_from_netcdf(
 # NetCDF file with stochastic slip earthquake events
 earthquake_events_stochastic = read_table_from_netcdf(
     paste0('all_stochastic_slip_earthquake_events_', source_name, '.nc'))
+# NetCDF file with stochastic slip earthquake events
+earthquake_events_variable_uniform = read_table_from_netcdf(
+    paste0('all_variable_uniform_slip_earthquake_events_', source_name, '.nc'))
 # NetCDF file with unit-source statistics
 unit_source_statistics = read_table_from_netcdf(
     paste0('unit_source_statistics_', source_name, '.nc'))
@@ -67,7 +70,8 @@ compare_event_with_gauge_time_series<-function(
     plot_durations, 
     gauge_ylims, 
     output_dir_tag=NULL,
-    use_stochastic_slip = FALSE){
+    use_stochastic_slip = FALSE,
+    use_variable_uniform_slip = FALSE){
   
     # Events with the right magnitude. Allow for some rounding error, due to
     # the use of float's in the netcdf file. 
@@ -114,19 +118,49 @@ compare_event_with_gauge_time_series<-function(
         stop('No unit sources contain the provided hypocentre')
     }
 
-    if(use_stochastic_slip){
+    if(use_stochastic_slip | use_variable_uniform_slip){
+
+        if(use_variable_uniform_slip & use_stochastic_slip){
+            stop('Cannot have both use_stochastic_slip and use_variable_uniform_slip')
+        }
+
         # Find stochastic slip events that correspond to the uniform events we would keep
-        # This way of selecting stochastic events should give an unbiased representation of the stochastic model.
-        # OTOH, if we just selected 'all stochastic events close enough to the target location', 
-        # we might introduce bias, since that approach would tend to select more 'broad' events at 
-        # more distant locations
-        stochastic_events_uniform_row = earthquake_events_stochastic$uniform_event_row
-        uniform_keepers = keep[which(event_contains_hpc == 1)]
-        stochastic_events_to_keep = which(stochastic_events_uniform_row %in% uniform_keepers)
-        # Replace events_with_Mw with the 'stochastic slip' version, containing events that
-        # correspond to the uniform events we would keep in the alternate case
-        # where use_stochastic_slip=FALSE
-        events_with_Mw = earthquake_events_stochastic[stochastic_events_to_keep,]
+        # This way of selecting stochastic events should give an unbiased
+        # representation of the stochastic model.
+        # OTOH, if we just selected 'all stochastic events close enough to the
+        # target location', we might introduce bias, since that approach would
+        # tend to select more 'broad' events at more distant locations
+
+        if(use_stochastic_slip){
+            stochastic_events_uniform_row = 
+                earthquake_events_stochastic$uniform_event_row
+
+            uniform_keepers = keep[which(event_contains_hpc == 1)]
+
+            stochastic_events_to_keep = which(
+                stochastic_events_uniform_row %in% uniform_keepers)
+
+            # Replace events_with_Mw with the 'stochastic slip' version,
+            # containing events that correspond to the uniform events we would
+            # keep in the alternate case where use_stochastic_slip=FALSE
+            events_with_Mw = earthquake_events_stochastic[stochastic_events_to_keep,]
+
+        }else if(use_variable_uniform_slip){
+
+            variable_uniform_events_uniform_row = 
+                earthquake_events_variable_uniform$uniform_event_row
+
+            uniform_keepers = keep[which(event_contains_hpc == 1)]
+
+            variable_uniform_events_to_keep = which(
+                variable_uniform_events_uniform_row %in% uniform_keepers)
+            # Replace events_with_Mw with the 'variable_uniform slip' version,
+            # containing events that correspond to the uniform events we would
+            # keep in the alternate case where use_variable_uniform_slip=FALSE
+            events_with_Mw = earthquake_events_variable_uniform[
+                variable_uniform_events_to_keep,]
+        }
+
     }else{
         # Uniform slip (use_stochastic_slip=FALSE)
         events_with_Mw = events_with_Mw[which(event_contains_hpc == 1),]
@@ -225,7 +259,21 @@ plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids,
         if('slip' %in% names(events_with_Mw)){
             event_type = 'uniform'
         }else{
-            event_type = 'stochastic'
+            # Slip is either stochastic, or variable_uniform
+        
+            ess = events_with_Mw$event_slip_string
+            ess_split = sapply(ess, f<-function(x) strsplit(x, '_'))
+   
+            # If all slip values in a single event are the same, we are doing
+            # variable uniform 
+            is_variable_uniform = 
+                all(unlist(lapply(ess_split, f<-function(x) all(x == x[1]))))
+    
+            if(is_uniform_variable){
+                event_type = 'variable_uniform' 
+            }else{
+                event_type = 'stochastic'
+            }
         }
         output_dir = paste0(events_with_Mw$sourcename[1], '_', output_dir_tag, 
             '_', event_type)

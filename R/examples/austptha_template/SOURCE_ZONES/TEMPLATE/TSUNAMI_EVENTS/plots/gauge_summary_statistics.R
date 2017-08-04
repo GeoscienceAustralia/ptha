@@ -2,7 +2,8 @@
 library(rptha)
 source('time_domain_hybrid_norm.R')
 
-# Find part of the time-series on which we apply the fft.
+# Find part of the time-series on which we apply the model data comparison, and
+# make a plot
 #
 # Idea: Get region where the time is:
 # A) After the earthquake occurs
@@ -67,10 +68,12 @@ plot_model_data<-function(model_index, event_data, event_metadata,
     model_peak_freq = model_filtered_stats$mintomax_peak_frequency
 
     # Try a model-data similarity statistic -- for at most 3 hours
+    max_time_range_comparison_hours = 3
     model_data_similarity_time_detailed = gauge_similarity_time_domain(
         data_t, data_s, model_t, model_s,
         interp_dt = 15, allowed_lag_minutes=c(-15, 0), 
-        time_range = c(time_range[1], min(time_range[2], time_range[1] + 3*3600)),
+        time_range = c(time_range[1], 
+            min(time_range[2], time_range[1] + max_time_range_comparison_hours*3600)),
         detailed=TRUE)
     model_data_similarity_time = model_data_similarity_time_detailed$objective
     model_time_offset = model_data_similarity_time_detailed$minimum
@@ -139,7 +142,7 @@ plot_model_data<-function(model_index, event_data, event_metadata,
     )
 }
 
-#' Make a raster with the stochastic or uniform slip values
+#' Make a raster with the stochastic or uniform or variable_uniform slip values
 #'
 #' @param event_index index of stochastic slip values for table
 #' @param event_metadata data.frame with the event metadata, for a stochastic
@@ -178,7 +181,8 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
         ymn=-dy*nrow(slip_mat))
 
     # Limit output to regions where slip is non-zero
-    along_strike_keep = range(unit_source_statistics$alongstrike_number[slip_indices])
+    along_strike_keep = range(
+        unit_source_statistics$alongstrike_number[slip_indices])
 
     return(list(slip_rast=slip_rast, xlim=dx*c(along_strike_keep[1] - 1, 
         along_strike_keep[2])))
@@ -194,14 +198,17 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
 source_name = basename(dirname(dirname(getwd())))
 event_basedirs_uniform = dirname(Sys.glob(paste0('../*_uniform/event_metadata.RDS')))
 event_basedirs_stochastic = gsub('uniform', 'stochastic', event_basedirs_uniform)
+event_basedirs_variable_uniform = gsub('uniform', 'variable_uniform', event_basedirs_uniform)
 
 unit_source_statistics = read_table_from_netcdf(
     Sys.glob('../unit_source_statistics*.nc'))
 
+# Loop over all events
 for(dir_ind in 1:length(event_basedirs_uniform)){
 
     event_basedir_uniform = event_basedirs_uniform[dir_ind]
     event_basedir_stochastic = event_basedirs_stochastic[dir_ind]
+    event_basedir_variable_uniform = event_basedirs_variable_uniform[dir_ind]
 
     # Apply the plot for each gauge, uniform slip
     event_metadata = readRDS(paste0(event_basedir_uniform, '/event_metadata.RDS'))
@@ -209,6 +216,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     
     pdf(paste0(basename(event_basedir_uniform),'.pdf'), width=10, height=15)
     uniform_slip_stats = list()
+
+    # Loop over all gauges
     for(event_data_file in event_data_files){
     
         uniform_slip_stats[[event_data_file]] = list()
@@ -218,7 +227,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
             energies = plot_model_data(i, event_data, event_metadata, 
                 unit_source_statistics, time_window_hrs=12, event_gauge_name)
             uniform_slip_stats[[event_data_file]][[i]] = energies
-            # Also record the earthquake peak slip -- here just equal to the uniform slip
+            # Also record the earthquake peak slip -- here just equal to the
+            # uniform slip
             peak_slip = event_metadata$events_with_Mw$slip[i]
             uniform_slip_stats[[event_data_file]][[i]]$peak_slip = peak_slip
             
@@ -233,6 +243,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     
     pdf(paste0(basename(event_basedir_stochastic), '.pdf'), width=10, height=15)
     stochastic_slip_stats = list()
+    # Loop over all gauges
     for(event_data_file in event_data_files){
     
         stochastic_slip_stats[[event_data_file]] = list()
@@ -252,12 +263,40 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         }
     }
     dev.off()
-   
 
+    # Apply the plot for each gauge, variable_uniform slip
+    event_metadata = readRDS(paste0(event_basedir_variable_uniform, '/event_metadata.RDS'))
+    event_data_files = Sys.glob(paste0(event_basedir_variable_uniform, '/gauge*.RDS'))
+    
+    pdf(paste0(basename(event_basedir_variable_uniform), '.pdf'), width=10, height=15)
+    variable_uniform_slip_stats = list()
+    # Loop over all gauges
+    for(event_data_file in event_data_files){
+    
+        variable_uniform_slip_stats[[event_data_file]] = list()
+        event_data = readRDS(event_data_file)
+        event_gauge_name = basename(event_data_file)
+        for(i in 1:length(event_data$model_events)){
+            energies = plot_model_data(i, event_data, event_metadata, 
+                unit_source_statistics, time_window_hrs=12, event_gauge_name)
+            variable_uniform_slip_stats[[event_data_file]][[i]] = energies
+            # Also record the earthquake peak slip 
+            peak_slip = max(scan(text=gsub("_", " ", 
+                event_metadata$events_with_Mw$event_slip_string[i]), 
+                    quiet=TRUE))
+            variable_uniform_slip_stats[[event_data_file]][[i]]$peak_slip = peak_slip
+            variable_uniform_slip_stats[[event_data_file]][[i]]$peak_slip_downdip_ind = 
+                event_metadata$events_with_Mw$peak_slip_downdip_ind[i]
+        }
+    }
+    dev.off()
+
+    # Save the uniform, stochastic, and variable_uniform outputs to RDS
     output_name_base = gsub('_uniform', '', basename(event_basedir_uniform))
     saveRDS(list(
             uniform_slip_stats = uniform_slip_stats, 
-            stochastic_slip_stats = stochastic_slip_stats),
+            stochastic_slip_stats = stochastic_slip_stats,
+            variable_uniform_slip_stats=variable_uniform_slip_stats),
         file=paste0(output_name_base, '_energies.RDS'))
 
     # Compute some summary statistics -- ratios of banded energy in model +
@@ -270,6 +309,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     nstats = length(uniform_slip_stats[[1]][[1]]$energy_data)
     
     for(gauge_ind in 1:length(uniform_slip_stats)){
+
         # Investigate -- uniform slip
         energiesU_data = matrix(
             unlist(lapply(uniform_slip_stats[[gauge_ind]], 
@@ -282,7 +322,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
                 f<-function(x) x$energy_model)), 
             byrow=TRUE, ncol=nstats)
 
-        # Key information on the model performance
+        # Key information on the model performance, stochastic
         energiesS_data = matrix(
             unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
                 f<-function(x) x$energy_data)), 
@@ -293,16 +333,36 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
             unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
                 f<-function(x) x$energy_model)), 
             byrow=TRUE, ncol=nstats)
+
+        # Key information on the model performance, variable_uniform
+        energiesVU_data = matrix(
+            unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$energy_data)), 
+            byrow=TRUE, ncol=nstats)
+        # The energy of the data varies (slightly) because of changes in the
+        # model start time.
+        energiesVU_model = matrix(
+            unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$energy_model)), 
+            byrow=TRUE, ncol=nstats)
+
+
         # Key information on the model performance
         #summary(energiesS_model/energiesS_data)
         bp_widths = colMeans(energiesS_model) + 1.0e-010
+
         boxplot(energiesS_model/energiesS_data, width=bp_widths, 
             col=rgb(1.0, 0.0, 0.0, alpha=0.3), log='y', border='red', 
             names=c('<2 min', '2-6', '6-20', '20-60', '60-180', '>180'), las=2)
-        abline(h=1, col='red')
+
+        boxplot(energiesVU_model/energiesVU_data, width=bp_widths, 
+            col=rgb(0.0, 1.0, 0.0, alpha=0.3), log='y', border='green', 
+            add=TRUE)
+
         boxplot(energiesU_model/energiesU_data, width=bp_widths,
             col=rgb(0, 0, 1, alpha=0.3), add=TRUE, border='blue', 
             axes=FALSE)
+
         title(main = basename(names(uniform_slip_stats)[gauge_ind]))
         abline(h=1, col='red')
     }
@@ -310,7 +370,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     # Boxplot of stage range, vs data 
     par(mfrow=c(6,5))
     for(gauge_ind in 1:length(uniform_slip_stats)){
-
+    
+        # Uniform
         stageU_data = matrix(
             unlist(lapply(uniform_slip_stats[[gauge_ind]], 
                 f<-function(x) x$data_range)),
@@ -319,7 +380,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
             unlist(lapply(uniform_slip_stats[[gauge_ind]], 
                 f<-function(x) x$model_range)),
             byrow=TRUE, ncol=2)
-        
+       
+        # Stochastic 
         stageS_data = matrix(
             unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
                 f<-function(x) x$data_range)), 
@@ -328,62 +390,96 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
             unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
                 f<-function(x) x$model_range)),
             byrow=TRUE, ncol=2)
-    
+
+        # Variable uniform
+        stageVU_data = matrix(
+            unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$data_range)), 
+            byrow=TRUE, ncol=2)
+        stageVU_model = matrix(
+            unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$model_range)),
+            byrow=TRUE, ncol=2)
+
         dU = stageU_model[,2] - stageU_model[,1]
         dS = stageS_model[,2] - stageS_model[,1]
+        dVU = stageVU_model[,2] - stageVU_model[,1]
+
         dS_obs = stageS_data[,2] - stageS_data[,1]
         dU_obs = stageU_data[,2] - stageU_data[,1]
+        dVU_obs = stageVU_data[,2] - stageVU_data[,1]
+
         ldU = length(dU)
         ldS = length(dS)
-        boxplot(c(dU, dS) ~ c(rep('Uniform', ldU), rep('Stochastic', ldS)), 
+        ldVU = length(dVU)
+
+        boxplot(c(dU, dS, dVU) ~ c(rep('Uniform', ldU), rep('Stochastic', ldS), 
+                rep('VariableUniform', ldVU)), 
             horizontal = TRUE, density=20, 
-            col=c(rgb(1,0,0, alpha=0.3), rgb(0,0,1, alpha=0.3)),
-            border=c('red', 'blue'),
+            col=c(rgb(1,0,0, alpha=0.3), rgb(0,0,1, alpha=0.3), 
+                rgb(0,1,0,alpha=0.3)),
+            border=c('red', 'blue', 'green'),
             log='x')
         title(main=paste0('Stage range: ', 
             basename(names(uniform_slip_stats)[gauge_ind]),
-            ' \n Random (red), Uniform (blue), Obs (black)'))
+            ' \n Random (red), Uniform (blue), VarUnif (green), Obs (black)'))
         abline(v=dS_obs, col='black', lty='solid', lwd=2)
         abline(v=dU_obs, col='black', lty='solid', lwd=2)
+        abline(v=dVU_obs, col='black', lty='solid', lwd=2)
     }
     
     # Boxplot of model-data similarity statistic
     par(mfrow=c(6,5))
     similar_s_time = list()
     similar_u_time = list()
+    similar_vu_time = list()
     similar_s_spec = list()
     similar_u_spec = list()
+    similar_vu_spec = list()
     for(gauge_ind in 1:length(uniform_slip_stats)){
 
         similar_S = unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
+                f<-function(x) x$model_data_similarity_time))
+        similar_VU = unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
                 f<-function(x) x$model_data_similarity_time))
         similar_U = unlist(lapply(uniform_slip_stats[[gauge_ind]], 
                 f<-function(x) x$model_data_similarity_time))
 
         similar_s_time[[gauge_ind]] = similar_S
         similar_u_time[[gauge_ind]] = similar_U
+        similar_vu_time[[gauge_ind]] = similar_VU
 
-        similar_s_spec[[gauge_ind]] = unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
+        similar_s_spec[[gauge_ind]] = unlist(
+            lapply(stochastic_slip_stats[[gauge_ind]], 
                 f<-function(x) x$model_data_similarity_spec))
-        similar_u_spec[[gauge_ind]] = unlist(lapply(uniform_slip_stats[[gauge_ind]], 
+        similar_u_spec[[gauge_ind]] = unlist(
+            lapply(uniform_slip_stats[[gauge_ind]], 
                 f<-function(x) x$model_data_similarity_spec))
-
+        similar_vu_spec[[gauge_ind]] = unlist(
+            lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$model_data_similarity_spec))
 
         ldU = length(similar_U)
         ldS = length(similar_S)
-        boxplot(c(similar_U, similar_S) ~ c(rep('Uniform', ldU), rep('Stochastic', ldS)), 
+        ldVU = length(similar_VU)
+
+        boxplot(c(similar_U, similar_S, similar_VU) ~ c(rep('Uniform', ldU), 
+                rep('Stochastic', ldS), rep('VarUnif', ldVU)), 
             horizontal = TRUE, density=20, 
-            col=c(rgb(1,0,0, alpha=0.3), rgb(0,0,1, alpha=0.3)),
-            border=c('red', 'blue'),
+            col=c(rgb(1,0,0, alpha=0.3), rgb(0,0,1, alpha=0.3), 
+                rgb(0,1,0, alpha=0.3)),
+            border=c('red', 'blue', 'green'),
             log='x')
         title(main=paste0('Similarity statistic: ', 
             basename(names(uniform_slip_stats)[gauge_ind]),
-            ' \n Random (red), Uniform (blue), lower is better'))
+            ' \n Random (red), Uniform (blue), VariUnif (green), lower is better'))
     }
 
     # Plot stage range vs peak slip
     par(mfrow=c(6,5))
     for(gauge_ind in 1:length(uniform_slip_stats)){
+
+        # Uniform
         stageU_data = matrix(
             unlist(lapply(uniform_slip_stats[[gauge_ind]], 
                 f<-function(x) x$data_range)), 
@@ -394,7 +490,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
             byrow=TRUE, ncol=2)
         peak_slip_U = unlist(lapply(uniform_slip_stats[[gauge_ind]], 
             f<-function(x) x$peak_slip))
-        
+       
+        # Stochastic 
         stageS_data = matrix(
             unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
                 f<-function(x) x$data_range)),
@@ -408,25 +505,43 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         peak_slip_dd = unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
             f<-function(x) x$peak_slip_downdip_ind))
 
+        # Variable uniform
+        stageVU_data = matrix(
+            unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$data_range)),
+            byrow=TRUE, ncol=2)
+        stageVU_model = matrix(
+            unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$model_range)),
+            byrow=TRUE, ncol=2)
+        peak_slip_VU = unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+            f<-function(x) x$peak_slip))
+
+
         dU = stageU_model[,2] - stageU_model[,1]
         dS = stageS_model[,2] - stageS_model[,1]
+        dVU = stageVU_model[,2] - stageVU_model[,1]
         dS_obs = stageS_data[,2] - stageS_data[,1]
         dU_obs = stageU_data[,2] - stageU_data[,1]
+        dVU_obs = stageVU_data[,2] - stageVU_data[,1]
 
-        xlim1=range(c(peak_slip_S, peak_slip_U))
-        ylim1=range(c(dS, dU))
+        xlim1=range(c(peak_slip_S, peak_slip_U, peak_slip_VU))
+        ylim1=range(c(dS, dU, dVU))
         plot(peak_slip_S, dS, log='xy', xlab='Peak slip', ylab='Stage range', 
             col='red', pch=as.character(peak_slip_dd), xlim=xlim1, ylim=ylim1)
         points(jitter(peak_slip_U), dU, col='blue', pch=19)
+        points(jitter(peak_slip_VU), dVUU, col='green', pch=19)
         title(main=paste0('Peak slip vs stage range: ', 
             basename(names(uniform_slip_stats)[gauge_ind]),
-            ' \n Random (red), Uniform (blue), Obs (black)'))
+            ' \n Random (red), Uniform (blue), VariUniform (green), Obs (black)'))
 
     }
 
     # Plot stage range vs peak spectral period, for model and data
     par(mfrow=c(6,5))
     for(gauge_ind in 1:length(uniform_slip_stats)){
+
+        # Uniform
         stageU_data = matrix(
             unlist(lapply(uniform_slip_stats[[gauge_ind]], 
                 f<-function(x) x$data_range)), 
@@ -439,7 +554,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
             byrow=TRUE, ncol=2)
         freqU_model = unlist(lapply(uniform_slip_stats[[gauge_ind]], 
             f<-function(x) x$model_peak_freq))
-        
+       
+        # Stochastic 
         stageS_data = matrix(
             unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
                 f<-function(x) x$data_range)), 
@@ -453,26 +569,47 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         freqS_model = unlist(lapply(stochastic_slip_stats[[gauge_ind]], 
             f<-function(x) x$model_peak_freq))
 
+        # Variable uniform
+        stageVU_data = matrix(
+            unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$data_range)), 
+            byrow=TRUE, ncol=2)
+        freqVU_data = unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+            f<-function(x) x$data_peak_freq))
+        stageVU_model = matrix(
+            unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+                f<-function(x) x$model_range)),
+            byrow=TRUE, ncol=2)
+        freqVU_model = unlist(lapply(variable_uniform_slip_stats[[gauge_ind]], 
+            f<-function(x) x$model_peak_freq))
+
+
         dU = stageU_model[,2] - stageU_model[,1]
         dU_freq = freqU_model
         dS = stageS_model[,2] - stageS_model[,1]
         dS_freq = freqS_model
+        dVU = stageVU_model[,2] - stageVU_model[,1]
+        dVU_freq = freqVU_model
 
         dS_obs = stageS_data[,2] - stageS_data[,1]
         dS_obs_freq = freqS_data
+        dVU_obs = stageVU_data[,2] - stageVU_data[,1]
+        dVU_obs_freq = freqVU_data
         dU_obs = stageU_data[,2] - stageU_data[,1]
         dU_obs_freq = freqU_data
 
-        xlim1=range(c(dU_freq, dS_freq, dS_obs_freq, dU_obs_freq))
-        ylim1=range(c(dS, dU, dU_obs, dS_obs))
+        xlim1=range(c(dU_freq, dS_freq, dVU_freq, dS_obs_freq, dU_obs_freq, dVU_obs_freq))
+        ylim1=range(c(dS, dU, dU_obs, dS_obs, dVU_obs))
         plot(dS_freq, dS, log='xy', xlab='Peak frequency', ylab='Stage range', 
             col='red', pch=as.character(peak_slip_dd), xlim=xlim1, ylim=ylim1)
         points(jitter(dU_freq), dU, col='blue', pch=19)
+        points(jitter(dVU_freq), dVU, col='green', pch=19)
         points(dU_obs_freq, dU_obs, col='black', pch=15)
         points(dS_obs_freq, dS_obs, col='black', pch=15)
+        points(dVU_obs_freq, dVU_obs, col='black', pch=15)
         title(main=paste0('Spectral peak frequency vs stage range: ', 
             basename(names(uniform_slip_stats)[gauge_ind]),
-            ' \n Random (red), Uniform (blue), Obs (black)'))
+            ' \n Random (red), Uniform (blue), VariUnif (green), Obs (black)'))
 
     }
     dev.off()

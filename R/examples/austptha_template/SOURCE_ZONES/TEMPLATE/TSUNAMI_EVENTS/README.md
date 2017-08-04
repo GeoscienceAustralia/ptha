@@ -18,7 +18,7 @@ other things.
 
 # Step 2
 
-To make earthquake and tsunami events (for both stochastic and uniform slip),
+To make earthquake and tsunami events (for both stochastic, variable_uniform, and uniform slip),
 see [run_make_all_tsunami_events.PBS](run_make_all_tsunami_events.PBS). 
 
     qsub run_make_all_tsunami_events.PBS
@@ -37,7 +37,11 @@ If the job was killed, then not all of your stochastic slip tsunami have been cr
 You can create the unfinished stochastic slip with
 [run_unfinished_stochastic_earthquake_tsunami.R](run_unfinished_stochastic_earthquake_tsunami.R).
 
-    Rscript run_unfinished_stochastic_earthquake_tsunami.R
+    Rscript run_unfinished_stochastic_earthquake_tsunami.R --stochastic_slip
+
+and similarly for the variable_uniform slip events:
+
+    Rscript run_unfinished_stochastic_earthquake_tsunami.R --variable_uniform_slip
 
 This will split the remaining work over multiple jobs (so it is reasonably
 fast), and submit all jobs to the PBS queue. Each of those jobs will make an

@@ -21,38 +21,40 @@ source('config.R', local=config_env)
 
 command_arguments = commandArgs(trailingOnly=TRUE)
 
-# Memory we will allow in unit-sources, in MB. 
+# Set memory we will allow for unit-sources tsunami, in MB. 
 # It's a rough estimator -- should be a fraction of 1-nodes memory [e.g. using
 # 10 GB on a 32GB machine seemed to work ok]
-memory_for_unit_sources = config_env$memory_for_unit_sources #10 * 1024 
+memory_for_unit_sources = config_env$memory_for_unit_sources  
 
 # Number of cores in parallel [shared memory only]
 mc_cores = config_env$mc_cores
 
 # Run parameters
 
-# Pre-tsunami initial condition for linear model. Gauges with elev>msl are inactive
-msl = config_env$msl #0.0 
+# Pre-tsunami initial condition for linear model. Gauges with elev>msl are
+# inactive
+msl = config_env$msl 
 
 # Latitude range where gauges should be taken
-lat_range = config_env$lat_range #c(-72 + 2/60, 65 - 2/60) 
+lat_range = config_env$lat_range 
 
 # Record the wave arrival time as the time at which abs(stage) exceeds this
 # threshold
-stage_threshold_for_arrival_time = config_env$stage_threshold_for_arrival_time # 1.0e-03
+stage_threshold_for_arrival_time = config_env$stage_threshold_for_arrival_time 
 
 # Files to read
 source_zone_name = basename(dirname(getwd()))
 unit_source_statistics_file = paste0('unit_source_statistics_', 
     source_zone_name, '.nc')
-# Either uniform or stochastic slip
+# Either uniform or stochastic or variable_uniform slip
 # ... uniform slip is default
 earthquake_events_file = paste0('all_uniform_slip_earthquake_events_', 
     source_zone_name, '.nc')
 # .... but replace with stochastic slip if an argument -stochastic_slip was
-# passed to R on startup
+# passed to R on startup, or request -variable_uniform_slip 
 stochastic_slip = FALSE
 if(length(command_arguments) > 0){
+
     if(any(grepl('-stochastic_slip', command_arguments))){
         earthquake_events_file = paste0('all_stochastic_slip_earthquake_events_', 
             source_zone_name, '.nc')
@@ -62,11 +64,21 @@ if(length(command_arguments) > 0){
     # We can also treat 'variable uniform slip' cases as stochastic slip
     # This is simple, though perhaps not the most efficient approach
     if(any(grepl('-variable_uniform_slip', command_arguments))){
-        earthquake_events_file = paste0('all_variable_uniform_slip_earthquake_events_', 
+        earthquake_events_file = paste0(
+            'all_variable_uniform_slip_earthquake_events_', 
             source_zone_name, '.nc')
         stochastic_slip = TRUE
     }
 }
+
+# Setup output file name
+sourcename_dot_nc = paste0(source_zone_name, '.nc')
+output_file_name = paste0(
+    #Name of earthquake_events_file, with the 'sourcename.nc' cut off
+    gsub(sourcename_dot_nc, '', earthquake_events_file),
+    # add on tsunami_sourcename.nc 
+    'tsunami_', sourcename_dot_nc)
+
 
 
 # Do we only make the file (if -make_file_only was passed), or do we run the
@@ -76,16 +88,23 @@ if(length(command_arguments) > 0){
     if(any(grepl('-make_file_only', command_arguments))){
         make_file_only=TRUE
         print('Making output file with empty flow variables')
-        # Remove any RDS-for-chunk files that might be left over from previous runs
-        unlink(config_env$tmp_RDS_dir, recursive=TRUE)
+        # Remove any RDS-for-chunk files that might be left over from previous
+        # runs. Note this 'glob' corresponds to the 'image_file' created below
+        # if save_as_RDS=TRUE
+        old_RDS_files = Sys.glob(paste0(config_env$tmp_RDS_dir, '/',
+            gsub('.nc', '', output_file_name), '_RDS_*.RDS'))
+        unlink(old_RDS_files)
+
     }
 }
 
 # Check whether we only run a subset of events (this happens if commandline
 # arguments of the form " --subset 4 10" where passed. Here '4' is this_subset,
-# and 10 is number_of_subsets.)
+# and 10 is number_of_subsets.) Subsetting gives us a straightforward way to run
+# the code in parallel
 subset_only=FALSE
 if(any(grepl('-subset', command_arguments))){
+
     subset_only=TRUE
 
     command_ind = which(grepl('-subset', command_arguments))
@@ -100,17 +119,6 @@ if(any(grepl('-subset', command_arguments))){
     print(paste0('running subset ', this_subset, '/', number_of_subsets))
 
     # Better check that the output file exists
-
-    sourcename_dot_nc = paste0(source_zone_name, '.nc')
-
-    # Output filename (same as created in
-    # write_all_souce_zone_tsunami_statistics_to_netcdf)
-    output_file_name = paste0(
-        #Name of earthquake_events_file, with the 'sourcename.nc' cut off
-        gsub(sourcename_dot_nc, '', earthquake_events_file),
-        # add on tsunami_sourcename.nc 
-        'tsunami_', sourcename_dot_nc)
-
     if(!file.exists(output_file_name)){
         stop(paste0('Could not find output file ', output_file_name))
     }
@@ -126,7 +134,6 @@ if(any(grepl('-subset', command_arguments))){
 #
 # End input
 #
-
 ###############################################################################
 
 
@@ -135,9 +142,10 @@ unit_source_statistics = read_table_from_netcdf(unit_source_statistics_file)
 all_eq_events = read_table_from_netcdf(earthquake_events_file)
 # Find max number of characters required to store columns -- since this should
 # be passed as a lower bound to the output netcdf file
-max_nchar_unit_source_statistics = max(unlist(lapply(unit_source_statistics, f<-function(x) max(nchar(x)*is.character(x)))))
-max_nchar_all_eq_events = max(unlist(lapply(all_eq_events, f<-function(x) max(nchar(x)*is.character(x)))))
-
+max_nchar_unit_source_statistics = max(unlist(lapply(unit_source_statistics, 
+    f<-function(x) max(nchar(x)*is.character(x)))))
+max_nchar_all_eq_events = max(unlist(lapply(all_eq_events, 
+    f<-function(x) max(nchar(x)*is.character(x)))))
 
 
 # Potentially only look at a subset of events
@@ -161,12 +169,12 @@ gauge_times = get_netcdf_gauge_output_times(
     unit_source_statistics$tide_gauge_file[1])
 
 #
-# Partition the work among processes
+# Partition the work among processes [shared memory parallel]
 #
 nevents = length(all_eq_events[,1])
 ngauges = length(gauge_locations[,1])
 nunit_sources = length(unit_source_statistics[,1])
-real_bytes = 8  # size of an R real
+real_bytes = 8  # size of an R real number
 nvar = 3 # [stage, uh, vh]
 full_unit_sources_mem = real_bytes * nvar * length(gauge_times) * ngauges * 
     nunit_sources /(1024 * 1024)
@@ -193,26 +201,8 @@ local_summary_function<-function(flow_data){
 
 }
 
-#
-# Loop over chunks of gauges, computing the statistics as we go
-#
-
-#modelled_flow_store = vector(mode='list', length=length(gauge_chunks_list))
-#for(i in 1:length(gauge_chunks_list)){
-#
-#    gcl = gauge_chunks_list[[i]]
-#
-#    modelled_flow_store[[i]] = make_tsunami_event_from_unit_sources(
-#        earthquake_events = all_eq_events,
-#        unit_source_statistics = unit_source_statistics,
-#        unit_source_flow_files = unit_source_statistics$tide_gauge_file,
-#        indices_of_subset = gcl,
-#        summary_function = local_summary_function,
-#        msl=msl)
-#}
-
-
-# Parallel version of the above loop
+# Function to compute tsunami events for a 'chunk' of gauges. Used to farm
+# out the work in parallel
 parfun<-function(gcl){
     make_tsunami_event_from_unit_sources(
         earthquake_events = all_eq_events,
@@ -225,8 +215,8 @@ parfun<-function(gcl){
 }
 
 if(!make_file_only){
-    # Here we avoid use of mclapply, which seems to leave un-stopped worker nodes
-    # on NCI
+    # Here we avoid use of mclapply, which seems to leave un-stopped worker
+    # nodes on NCI
     cl = makeForkCluster(nnodes=mc_cores)
     modelled_flow_store = parLapply(cl=cl, X=gauge_chunks_list, fun=parfun)
     stopCluster(cl)
@@ -314,7 +304,8 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     gauge_event_initial_stage,
     stage_threshold_for_arrival_time,
     max_nchar_all_eq_events,
-    max_nchar_unit_source_statistics){
+    max_nchar_unit_source_statistics,
+    output_file_name){
 
     library(ncdf4)
 
@@ -609,16 +600,6 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
         us_max_depth_v, us_initial_condition_v, us_tide_gauge_file_v) )
 
 
-    #
-    # Make file
-    #
-    sourcename_dot_nc = paste0(source_zone_name, '.nc')
-    output_file_name = paste0(
-        #Name of earthquake_events_file, with the 'sourcename.nc' cut off
-        gsub(sourcename_dot_nc, '', earthquake_events_file),
-        # add on tsunami_sourcename.nc
-        'tsunami_', sourcename_dot_nc)
-
     output_nc_file = nc_create(output_file_name, vars=all_nc_var)
 
     #
@@ -746,7 +727,8 @@ if(make_file_only | (subset_only==FALSE)){
         gauge_event_initial_stage,
         stage_threshold_for_arrival_time,
         max_nchar_all_eq_events,
-        max_nchar_unit_source_statistics)
+        max_nchar_unit_source_statistics,
+        output_file_name)
 
 }else{
     # Save the variables -- either direct to the netcdf, or to an individual RDS file

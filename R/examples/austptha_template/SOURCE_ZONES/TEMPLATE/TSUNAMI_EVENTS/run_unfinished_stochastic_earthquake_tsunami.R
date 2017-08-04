@@ -27,6 +27,28 @@
 config_env = new.env()
 source('config.R', local=config_env)
 
+
+command_arguments = commandArgs(trailingOnly=TRUE)
+
+if(!(any(
+    grepl('-stochastic_slip', command_arguments) | 
+    grepl('-variable_uniform_slip', command_arguments)))
+    ){
+    stop('Must provide either -stochastic_slip or -variable_uniform_slip as commandline argument')
+}else{
+
+    # Avoid typing any(grepl(...)) so much
+    if(any(grepl('-stochastic_slip', command_arguments))){
+        stochastic_slip = TRUE
+    }else{
+        stopifnot(any(grepl('-variable_uniform_slip', command_arguments)))
+        # Variable uniform slip
+        stochastic_slip = FALSE
+    }
+
+}
+
+
 #
 # INPUTS: THESE MUST BE CONSISTENT WITH OTHER SCRIPTS FOR EVERYTHING TO WORK
 # DO NOT CHANGE WITHOUT UNDERSTANDING THOSE LINKAGES [commented below]
@@ -50,24 +72,49 @@ missing_data_less_than = config_env$null_double + 1
 # Template PBS script text -- note REPLACEWITHMID in final line, which will be auto-replaced
 # with 'missed' integers
 #
-pbs_text = "#!/bin/bash
-#PBS -P w85
-#PBS -q normal
-#PBS -l walltime=48:00:00
-#PBS -lmem=32GB
-#PBS -lncpus=16
-#PBS -l wd
+if(stochastic_slip){
 
-# Source key R modules -- not that you will need the right packages installed
-# as well (see comments in the script that is sourced)
-# NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
-source R_modules.sh
+    pbs_text = "#!/bin/bash
+    #PBS -P w85
+    #PBS -q normal
+    #PBS -l walltime=48:00:00
+    #PBS -lmem=32GB
+    #PBS -lncpus=16
+    #PBS -l wd
 
-nevents=$( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
-nsplit=$( expr $nevents / 4500 + 1 )
+    # Source key R modules -- not that you will need the right packages installed
+    # as well (see comments in the script that is sourced)
+    # NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
+    source R_modules.sh
 
-Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset REPLACEWITHMYID $nsplit --save_as_RDS
-"
+    nevents=$( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
+    nsplit=$( expr $nevents / 4500 + 1 )
+
+    Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset REPLACEWITHMYID $nsplit --save_as_RDS
+    "
+
+}else{
+
+    pbs_text = "#!/bin/bash
+    #PBS -P w85
+    #PBS -q normal
+    #PBS -l walltime=48:00:00
+    #PBS -lmem=32GB
+    #PBS -lncpus=16
+    #PBS -l wd
+
+    # Source key R modules -- not that you will need the right packages installed
+    # as well (see comments in the script that is sourced)
+    # NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
+    source R_modules.sh
+
+    nevents=$( ncdump -h all_variable_uniform_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
+    nsplit=$( expr $nevents / 4500 + 1 )
+
+    Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --subset REPLACEWITHMYID $nsplit --save_as_RDS
+    "
+
+}
 
 #
 # END INPUTS [do not change them without understanding cross-script linkages!]
@@ -84,7 +131,11 @@ library(ncdf4)
 source_zone = basename(dirname(getwd()))
 
 # Open (potentially incomplete) stochastic slip earthquake tsunami events file
-nc_file = paste0('all_stochastic_slip_earthquake_events_tsunami_', source_zone, '.nc')
+if(stochastic_slip){
+    nc_file = paste0('all_stochastic_slip_earthquake_events_tsunami_', source_zone, '.nc')
+}else{
+    nc_file = paste0('all_variable_uniform_slip_earthquake_events_tsunami_', source_zone, '.nc')
+}
 fid = nc_open(nc_file, readunlim=FALSE)
 
 # Number of events
@@ -111,7 +162,11 @@ for(i in 1:length(batch_inds)){
 if(length(missed) > 0){
     for(ii in missed){
         pbs_local = gsub('REPLACEWITHMYID', ii, pbs_text)
-        sub_script_name = paste0('temp_qsub_stochastic_extra_', ii, '.PBS')
+        if(stochastic_slip){
+            sub_script_name = paste0('temp_qsub_stochastic_extra_', ii, '.PBS')
+        }else{
+            sub_script_name = paste0('temp_qsub_variable_uniform_extra_', ii, '.PBS')
+        }
         cat(pbs_local, file=sub_script_name)
         qsub_command = paste0('qsub ', sub_script_name)
         system(qsub_command)

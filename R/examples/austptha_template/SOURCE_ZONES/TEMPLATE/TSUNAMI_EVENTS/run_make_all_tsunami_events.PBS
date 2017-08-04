@@ -17,13 +17,19 @@ Rscript make_all_earthquake_events.R
 # Make the uniform slip tsunami, all at once
 Rscript make_all_earthquake_tsunami.R
 
+# Make the file for the stochastic slip events
+Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
+
+# Make the file for the variable_uniform slip events
+Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --make_file_only
+
+
 ###############################################################################
 #
 # Make the stochastic slip tsunami, in batches
 #
 ###############################################################################
 
-Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
 
 ## Break into 'nsplit' batches. 
 #
@@ -47,8 +53,6 @@ for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --stochastic
 # Make the variable uniform slip tsunami, in batches
 #
 ###############################################################################
-
-Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --make_file_only
 
 ## Break into 'nsplit' batches. 
 #

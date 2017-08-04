@@ -1,3 +1,11 @@
+#
+# Make netcdf files describing the earthquake events, for the cases of:
+#
+# 1) Fixed size uniform slip earthquake events
+# 2) Stochastic slip, variable size earthquake events
+# 3) Uniform slip, variable size earthquake events
+#
+
 library(rptha)
 #
 # Get code for summing unit sources (only required for matching tide gauge
@@ -19,12 +27,13 @@ source('config.R', local=config_env)
 
 # Make events with magnitudes ranging from Mw_min to Mw_max, separated by dMw
 # These values do not have to correspond to Mw ranges that are assigned non-zero 
-# probability -- but they should fully contain the possible values
-Mw_min = config_env$Mw_min #7.2
-Mw_max = config_env$Mw_max #9.8
-dMw = config_env$dMw #0.1
+# probability -- but they should fully contain such possible values
+Mw_min = config_env$Mw_min 
+Mw_max = config_env$Mw_max 
+dMw = config_env$dMw 
 
-# Make at least N stochastic slip events for each uniform event
+# Make at least N stochastic and/or variable_uniform slip events for each
+# fixed-size uniform event
 number_stochastic_events_for_each_uniform_event = 
     config_env$number_stochastic_events_for_each_uniform_event
 # ... but ensure that there are at least M >> N stochastic slip events in each
@@ -139,12 +148,13 @@ write_table_to_netcdf(
 #
 # Stochastic slip events, and uniform-slip events with variable dimensions
 #
-for(uniform_variable_slip in c(FALSE, TRUE)){
+for(variable_uniform_slip in c(FALSE, TRUE)){
 
-    stochastic_events_store = vector(mode='list', length=length(all_eq_events[,1]))
+    stochastic_events_store = vector(mode='list', 
+        length=length(all_eq_events[,1]))
 
     for(i in 1:length(all_eq_events[,1])){
-        #print(i)
+
         eq_event = all_eq_events[i,]   
      
         # Find a centroid for the earthquake
@@ -152,20 +162,22 @@ for(uniform_variable_slip in c(FALSE, TRUE)){
         # The next steps assume the following condition holds
         stopifnot(all(unit_source_statistics$subfault_number[usi] == usi))
 
-        # Find mean of unit-source locations, accounting for spherical coordinates
+        # Find mean of unit-source locations, accounting for spherical
+        # coordinates
         unit_source_locations = cbind(unit_source_statistics$lon_c[usi], 
             unit_source_statistics$lat_c[usi])
         if(length(usi) > 1){
-            event_hypocentre = geomean(unit_source_locations, w=rep(1, length(usi)) )
+            event_hypocentre = geomean(unit_source_locations, 
+                w=rep(1, length(usi)) )
         }else{
             event_hypocentre = unit_source_locations
         }
 
         event_magnitude = eq_event$Mw
 
-        # Determine the number of stochastic events -- ensuring there are enough
-        # events in this magnitude category, and that there are a minimum number of
-        # events for each uniform slip event
+        # Determine the number of stochastic events -- ensuring there are
+        # enough events in this magnitude category, and that there are a
+        # minimum number of events for each uniform slip event
         number_of_uniform_events_with_same_magnitude = 
             sum(all_eq_events$Mw == event_magnitude)
 
@@ -183,10 +195,11 @@ for(uniform_variable_slip in c(FALSE, TRUE)){
             num_events = number_of_sffm,
             zero_low_slip_cells_fraction=0.0,
             sourcename = source_zone_name,
-            uniform_slip = uniform_variable_slip)
+            uniform_slip = variable_uniform_slip)
 
         events_with_Mw = sffm_events_to_table(all_events, 
-            slip_significant_figures=config_env$stochastic_slip_table_significant_figures)
+            slip_significant_figures=
+                config_env$stochastic_slip_table_significant_figures)
 
         # Add additional variables we will need. Use an obviously
         # floating point number to get the netcdf output to be in double
@@ -200,10 +213,13 @@ for(uniform_variable_slip in c(FALSE, TRUE)){
     }
     stochastic_events_table = do.call(rbind, stochastic_events_store)
 
-    if(!uniform_variable_slip){
+    if(!variable_uniform_slip){
+        #
         # Save stochastic events to csv
+        #
         write.csv(stochastic_events_table,
-            paste0('all_stochastic_slip_earthquake_events_', source_zone_name, '.csv'),
+            paste0('all_stochastic_slip_earthquake_events_', source_zone_name, 
+                '.csv'),
             row.names=FALSE, quote=FALSE)
         # Also save to netcdf
         eq_events_attr = c(
@@ -212,13 +228,18 @@ for(uniform_variable_slip in c(FALSE, TRUE)){
                 'slip_type' = 'stochastic slip'), 
             uss_attr)
         write_table_to_netcdf(stochastic_events_table,
-            paste0('all_stochastic_slip_earthquake_events_', source_zone_name, '.nc'),
+            paste0('all_stochastic_slip_earthquake_events_', source_zone_name, 
+                '.nc'),
             global_attributes_list = eq_events_attr,
             add_session_info_attribute=TRUE)
+
     }else{
-        # Save variable uniform slip events to csv
+        #
+        # Save variable_uniform slip events to csv
+        #
         write.csv(stochastic_events_table,
-            paste0('all_variable_uniform_slip_earthquake_events_', source_zone_name, '.csv'),
+            paste0('all_variable_uniform_slip_earthquake_events_', 
+                source_zone_name, '.csv'),
             row.names=FALSE, quote=FALSE)
         # Also save to netcdf
         eq_events_attr = c(
@@ -227,7 +248,8 @@ for(uniform_variable_slip in c(FALSE, TRUE)){
                 'slip_type' = 'variable uniform slip'), 
             uss_attr)
         write_table_to_netcdf(stochastic_events_table,
-            paste0('all_variable_uniform_slip_earthquake_events_', source_zone_name, '.nc'),
+            paste0('all_variable_uniform_slip_earthquake_events_', 
+                source_zone_name, '.nc'),
             global_attributes_list = eq_events_attr,
             add_session_info_attribute=TRUE)
 

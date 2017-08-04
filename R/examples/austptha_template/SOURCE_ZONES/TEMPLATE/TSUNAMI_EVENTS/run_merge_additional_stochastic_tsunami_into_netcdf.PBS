@@ -11,5 +11,6 @@
 # NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
 source R_modules.sh
 
-Rscript merge_additional_stochastic_tsunami_into_netcdf.R
+Rscript merge_additional_stochastic_tsunami_into_netcdf.R --stochastic_slip
+Rscript merge_additional_stochastic_tsunami_into_netcdf.R --variable_uniform_slip
 

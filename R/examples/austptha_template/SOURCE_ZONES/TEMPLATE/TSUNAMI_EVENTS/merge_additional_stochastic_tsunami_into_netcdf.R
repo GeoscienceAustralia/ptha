@@ -15,8 +15,18 @@
 config_env = new.env()
 source('config.R', local=config_env)
 
+command_arguments = commandArgs(trailingOnly=TRUE)
+
 library(ncdf4)
-all_R_images = Sys.glob(paste0(config_env$tmp_RDS_dir, '/*.RDS'))
+
+# The code can work with either stochastic slip, or variable uniform slip
+if(any(grepl('-stochastic_slip', command_arguments))){
+    all_R_images = Sys.glob(paste0(config_env$tmp_RDS_dir, '/*stochastic_slip*.RDS'))
+}else if(any(grepl('-variable_uniform_slip', command_arguments))){
+    all_R_images = Sys.glob(paste0(config_env$tmp_RDS_dir, '/*variable_uniform_slip*.RDS'))
+}else{
+    stop('Must provide either -stochastic_slip or -variable_uniform_slip as commandline arguments')
+}
 
 if( length(all_R_images) > 0 ){
    
