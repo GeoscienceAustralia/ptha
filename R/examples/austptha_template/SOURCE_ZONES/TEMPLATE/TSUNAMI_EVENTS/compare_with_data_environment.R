@@ -269,7 +269,7 @@ plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids,
             is_variable_uniform = 
                 all(unlist(lapply(ess_split, f<-function(x) all(x == x[1]))))
     
-            if(is_uniform_variable){
+            if(is_variable_uniform){
                 event_type = 'variable_uniform' 
             }else{
                 event_type = 'stochastic'
