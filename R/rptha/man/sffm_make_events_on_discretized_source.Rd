@@ -8,7 +8,8 @@ sffm_make_events_on_discretized_source(discretized_source_statistics,
   target_location, target_event_mw, num_events = 1,
   vary_peak_slip_location = TRUE, zero_low_slip_cells_fraction = 0,
   sourcename = "", sffm_sub_sample_size = c(1, 1), mu = 3e+10,
-  return_slip_raster = TRUE, uniform_slip = FALSE)
+  return_slip_raster = TRUE, uniform_slip = FALSE,
+  expand_length_if_width_limited = "random")
 }
 \arguments{
 \item{discretized_source_statistics}{data.frame returned from e.g. 
@@ -50,6 +51,16 @@ the output list. If FALSE, set the latter to NULL on output.}
 \item{uniform_slip}{logical. If TRUE, then the slip will be uniform on each rupture.
 This enables the rupture size to vary while still having uniform slip. By default it
 is FALSE, and stochastic slip is used.}
+
+\item{expand_length_if_width_limited}{logical or character ('random'). This
+governs what happens to the rupture length if the desired rupture width was
+larger than the available width on the discrete source-zone. For instance, by
+Strasser's scaling law, an Mw 9.5 has width which is log-normally
+distributed around a median of 283 km. Many source-zones will not have enough
+down-dip width to accommodate this. In that case, the width must be equal to
+the maximum source-zone width, while the length can either remain the same
+(if FALSE), or increase in proportion to the (width/desired_width) (if TRUE),
+or vary randomly between the behaviours with probability 0.5 (if 'random').}
 }
 \value{
 A list with length = num_events. Each element of the list is a list

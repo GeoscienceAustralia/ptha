@@ -885,6 +885,15 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre){
 #' @param uniform_slip logical. If TRUE, then the slip will be uniform on each rupture.
 #' This enables the rupture size to vary while still having uniform slip. By default it
 #' is FALSE, and stochastic slip is used.
+#' @param expand_length_if_width_limited logical or character ('random'). This
+#' governs what happens to the rupture length if the desired rupture width was
+#' larger than the available width on the discrete source-zone. For instance, by
+#' Strasser's scaling law, an Mw 9.5 has width which is log-normally
+#' distributed around a median of 283 km. Many source-zones will not have enough
+#' down-dip width to accommodate this. In that case, the width must be equal to
+#' the maximum source-zone width, while the length can either remain the same
+#' (if FALSE), or increase in proportion to the (width/desired_width) (if TRUE),
+#' or vary randomly between the behaviours with probability 0.5 (if 'random').
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are
@@ -934,7 +943,8 @@ sffm_make_events_on_discretized_source<-function(
     sffm_sub_sample_size = c(1,1),
     mu=3e+10,
     return_slip_raster=TRUE,
-    uniform_slip = FALSE){
+    uniform_slip = FALSE,
+    expand_length_if_width_limited = 'random'){
 
     nx = max(discretized_source_statistics$alongstrike_number)
     ny = max(discretized_source_statistics$downdip_number)
@@ -1013,6 +1023,39 @@ sffm_make_events_on_discretized_source<-function(
         num_L = min(ncol(dx), max(num_L, 1))
         num_W = round(slip_LW[2] / dy[peak_slip_row, peak_slip_col])
         num_W = min(nrow(dx), max(num_W, 1))
+
+        #print('')
+        #print(paste0('num_L: ', num_L, ' num_W: ', num_W))
+
+        if(expand_length_if_width_limited != FALSE){
+            # Check if the requested width is larger than the available width
+            # If so, we might increase the length, depending on the value of
+            # expand_length_if_width_limited
+            max_available_width = nrow(dx) * dy[peak_slip_row, peak_slip_col]
+            if(slip_LW[2] > max_available_width){
+                # The width is less than desired
+
+                width_deficit = num_W * dy[peak_slip_row, peak_slip_col] / slip_LW[2]
+
+                #print(paste0('width_deficit: ', width_deficit))
+
+                if(width_deficit < 1){
+                    alternative_length = slip_LW[1] / width_deficit
+                    alternative_num_L = round(alternative_length / dx[peak_slip_row, peak_slip_col])
+                    alternative_num_L = min(ncol(dx), max(alternative_num_L, 1))
+                   
+                    # Number to support the 'random' option  
+                    p = runif(1, min=0, max=1)
+                    if( (expand_length_if_width_limited == TRUE) |
+                        ((expand_length_if_width_limited == 'random') & (p>= 0.5))){
+                        #print('expanding')
+                        num_L = alternative_num_L
+                    }
+                }
+            }
+        }
+
+        #print(paste0('num_L: ', num_L, ' num_W: ', num_W))
 
         # Non-zero slip cover along-strike indices sL:eL, and down-dip indices
         # sW:eW. We try to make the peak slip location be the middle of the rupture,
@@ -1094,6 +1137,7 @@ sffm_make_events_on_discretized_source<-function(
             peak_slip_ind = c(peak_slip_row, peak_slip_col),
             numerical_corner_wavenumbers = numerical_corner_wavenumbers,
             physical_corner_wavenumbers = physical_corner_wavenumbers,
+            desired_LW = slip_LW[1:2],
             target_event_mw = target_event_mw,
             target_location = target_location,
             sourcename = sourcename)
