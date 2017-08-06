@@ -9,7 +9,8 @@ sffm_make_events_on_discretized_source(discretized_source_statistics,
   vary_peak_slip_location = TRUE, zero_low_slip_cells_fraction = 0,
   sourcename = "", sffm_sub_sample_size = c(1, 1), mu = 3e+10,
   return_slip_raster = TRUE, uniform_slip = FALSE,
-  expand_length_if_width_limited = "random")
+  expand_length_if_width_limited = "random",
+  clip_random_parameters_at_2sd = TRUE)
 }
 \arguments{
 \item{discretized_source_statistics}{data.frame returned from e.g. 
@@ -61,6 +62,11 @@ down-dip width to accommodate this. In that case, the width must be equal to
 the maximum source-zone width, while the length can either remain the same
 (if FALSE), or increase in proportion to the (width/desired_width) (if TRUE),
 or vary randomly between the behaviours with probability 0.5 (if 'random').}
+
+\item{clip_random_parameters_at_2sd}{logical. If TRUE, then when generating
+the random L/W/kcx/kcy, clip values at > 2standard_deviations (or < -2sd) to
+their nearest +-2sd counterpart. This will prevent e.g. large earthquakes
+occasionally having very narrow width, etc.}
 }
 \value{
 A list with length = num_events. Each element of the list is a list

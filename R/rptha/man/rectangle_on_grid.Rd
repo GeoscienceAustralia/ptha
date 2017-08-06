@@ -8,13 +8,18 @@ rectangle_on_grid(grid_LW, num_LW, target_centre,
   randomly_vary_around_target_centre = FALSE)
 }
 \arguments{
-\item{grid_LW}{vector of length 2 giving the number of rows, columns on the 2D grid}
+\item{grid_LW}{vector of length 2 giving the number of rows, columns on the
+2D grid}
 
 \item{num_LW}{vector of length 2 giving the desired number of rows,columns
 on the rectangular sub-region}
 
 \item{target_centre}{vector of length 2 giving the row,column indices on the
 2D grid where we would like the centre of the sub-region to be.}
+
+\item{randomly_vary_around_target_center}{logical. If TRUE, then randomly
+vary the output locations with the target_centre inside the rupture. If
+FALSE, then try to make the target_centre be the centre of the rupture.}
 }
 \value{
 integer vector of length 4. The first 2 entries are the min/max row
