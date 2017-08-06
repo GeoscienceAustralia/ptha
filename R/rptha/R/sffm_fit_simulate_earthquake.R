@@ -678,6 +678,9 @@ sffm_fit_parameters<-function(
 #' earthquake-magnitude
 #' @param cor_kcx_kcy_residual Pearson correlation between the log10(kcx) and
 #' log10(kcy) regression residuals
+#' @param clip_random_parameter_ranges_to_2sd logical. If FALSE, then use the standard
+#' scaling laws. If TRUE, then clip unit-normal random variables to +- 2SD before 
+#' using in scaling laws [thus removing very 'unusual' l/w/kcx/kcy values]
 #' @return a function f(Mw) which returns a vector or matrix with random
 #' length, width, kcx, kcy values to be used to simulate an sffm with a given magnitude.
 #' Units are km, km, km^{-1}, km^{-1} respectively.
@@ -725,11 +728,18 @@ sffm_make_random_lwkc_function<-function(
 
         N = length(Mw)
 
+        #
+        # Generate random L/W
+        # 
         #new_L = 10**( log10(L_Mw) + AWL_sigmas[3] * rnorm(N))
         new_L = 10**( log10(L_Mw) + AWL_sigmas[3] * rnorm_clipped(N))
 
         #new_W = 10**(log10(W_Mw) + AWL_sigmas[2] * rnorm(N))
         new_W = 10**(log10(W_Mw) + AWL_sigmas[2] * rnorm_clipped(N))
+
+        #
+        # For random kcx/kcy, we use correlated errors
+        #
 
         make_correlated_random_err<-function(N, correlation_coef){
 
@@ -790,7 +800,7 @@ sffm_make_random_lwkc_function<-function(
 #' on the rectangular sub-region
 #' @param target_centre vector of length 2 giving the row,column indices on the
 #' 2D grid where we would like the centre of the sub-region to be.
-#' @param randomly_vary_around_target_center logical. If TRUE, then randomly
+#' @param randomly_vary_around_target_centre logical. If TRUE, then randomly
 #' vary the output locations with the target_centre inside the rupture. If
 #' FALSE, then try to make the target_centre be the centre of the rupture. 
 #' @return integer vector of length 4. The first 2 entries are the min/max row
