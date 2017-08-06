@@ -24,7 +24,7 @@ dMw = 0.1
 number_stochastic_events_for_each_uniform_event = 10
 # ... but ensure that there are at least this many stochastic slip events in
 # each magnitude category
-minimum_number_stochastic_events_for_each_magnitude = 100
+minimum_number_stochastic_events_for_each_magnitude = 200
 
 ##############################################################################
 #

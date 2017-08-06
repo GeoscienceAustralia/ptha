@@ -694,9 +694,23 @@ sffm_fit_parameters<-function(
 sffm_make_random_lwkc_function<-function(
     log10kcx_regression_par=c(-0.54, 2.03, 0.22),
     log10kcy_regression_par=c(-0.41, 1.18, 0.19),
-    cor_kcx_kcy_residual = 0.68){
+    cor_kcx_kcy_residual = 0.68,
+    clip_random_parameter_ranges_to_2sd = FALSE){
 
     library(rptha)
+
+    # Function to generate 'possibly clipped' random numbers
+    rnorm_clipped<-function(N){
+
+        random_normal = rnorm(N)
+
+        if(clip_random_parameter_ranges_to_2sd){
+            kk = which(abs(random_normal) > 2)
+            if(length(kk) > 0) random_normal[kk] = 2*sign(random_normal[kk])
+        }
+
+        return(random_normal)
+    }
 
     # Make a function to simulate the parameters, with regression residuals
     # having the desired correlations
@@ -710,15 +724,30 @@ sffm_make_random_lwkc_function<-function(
         W_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x)['width'])
 
         N = length(Mw)
-        new_L = 10**( log10(L_Mw) + AWL_sigmas[3] * rnorm(N))
 
-        new_W = 10**(log10(W_Mw) + AWL_sigmas[2] * rnorm(N))
+        #new_L = 10**( log10(L_Mw) + AWL_sigmas[3] * rnorm(N))
+        new_L = 10**( log10(L_Mw) + AWL_sigmas[3] * rnorm_clipped(N))
+
+        #new_W = 10**(log10(W_Mw) + AWL_sigmas[2] * rnorm(N))
+        new_W = 10**(log10(W_Mw) + AWL_sigmas[2] * rnorm_clipped(N))
 
         make_correlated_random_err<-function(N, correlation_coef){
+
+            # Standard formula to make correlated random variables
             err_kcx = rnorm(N)
             err_kcy = correlation_coef * err_kcx + sqrt(1-correlation_coef**2)*rnorm(N)
+
+            # Possibly clip these variables too
+            if(clip_random_parameter_ranges_to_2sd){
+                kk = which(abs(err_kcx) > 2)
+                if(length(kk) > 0) err_kcx[kk] = 2 * sign(err_kcx[kk])
+                kk = which(abs(err_kcy) > 2)
+                if(length(kk) > 0) err_kcy[kk] = 2 * sign(err_kcy[kk])
+            }
+
             return(cbind(err_kcx, err_kcy))
         }
+
         err_kc = make_correlated_random_err(N, cor_kcx_kcy_residual)
         err_kcx = err_kc[,1]
         err_kcy = err_kc[,2]
@@ -755,11 +784,15 @@ sffm_make_random_lwkc_function<-function(
 #' and the impossible situations (by putting the centre somewhere else), in a manner
 #' which seems satisfactory for synthetic finite fault model simulation.
 #'
-#' @param grid_LW vector of length 2 giving the number of rows, columns on the 2D grid
+#' @param grid_LW vector of length 2 giving the number of rows, columns on the
+#' 2D grid
 #' @param num_LW vector of length 2 giving the desired number of rows,columns
 #' on the rectangular sub-region
 #' @param target_centre vector of length 2 giving the row,column indices on the
 #' 2D grid where we would like the centre of the sub-region to be.
+#' @param randomly_vary_around_target_center logical. If TRUE, then randomly
+#' vary the output locations with the target_centre inside the rupture. If
+#' FALSE, then try to make the target_centre be the centre of the rupture. 
 #' @return integer vector of length 4. The first 2 entries are the min/max row
 #' indices of the sub-region. The 3rd and 4th entries are the min/max column
 #' indices of the sub-region.
@@ -811,33 +844,56 @@ sffm_make_random_lwkc_function<-function(
 #'
 #' print('PASS')
 #'
-rectangle_on_grid<-function(grid_LW, num_LW, target_centre){        
+rectangle_on_grid<-function(grid_LW, num_LW, target_centre, 
+    randomly_vary_around_target_centre=FALSE){
 
         num_L = num_LW[1]
         num_W = num_LW[2]
 
-        # Non-zero slip cover along-strike indices sL:eL, and down-dip indices
-        # sW:eW. We try to make the peak slip location be the middle of the rupture,
-        # but there are practical difficulties
-        if(num_L%%2 == 0){
-            # Peak slip location cannot be in the middle exactly, so we
-            # randomly choose one location.
-            sL = target_centre[1] - num_L/2 + sample(c(0,1), size=1)
+        if(!randomly_vary_around_target_centre){
+            # Non-zero slip cover along-strike indices sL:eL
+            # ('start-length':'end-length'), and down-dip indices sW:eW. We try to
+            # make the peak slip location be the middle of the rupture, but there
+            # are practical difficulties
+            if(num_L%%2 == 0){
+                # target_centre[1] cannot be in the middle exactly, so randomly
+                # choose
+                sL = target_centre[1] - (num_L/2 - sample(c(0,1), size=1))
+            }else{
+                # target_centre[1] in the middle
+                sL = target_centre[1] - floor(num_L/2)
+            }
         }else{
-            sL = target_centre[1] - floor(num_L/2)
+            # Randomly set the lower along-strike location
+            sL = target_centre[1] - sample(0:(num_L-1), size=1)
         }
-        # If there are not enough unit sources, further constraints are needed
+
+        # If there are not enough unit sources, further constraints are needed.
+        # Note this ensures the final rupture has the desired length [(eL - sL
+        # + 1) = num_L], unless the source-zone is not large enough to hold the
+        # desired rupture (grid_LW[1] < num_L), in which case the rupture spans
+        # the entire source-zone length.
         sL = min(sL, grid_LW[1] - num_L + 1)
         sL = max(sL, 1)
         eL = min(sL + num_L - 1, grid_LW[1])
 
-        if(num_W%%2 == 0){
-            # Peak slip location cannot be in the middle exactly, so we
-            # randomly choose one location.
-            sW = target_centre[2] - num_W/2 + sample(c(0,1), size=1)
+        if(!randomly_vary_around_target_centre){
+            if(num_W%%2 == 0){
+
+                # Peak slip location cannot be in the middle exactly, so we
+                # randomly choose one location.
+                sW = target_centre[2] - (num_W/2 - sample(c(0,1), size=1))
+
+            }else{
+
+                sW = target_centre[2] - floor(num_W/2)
+
+            }
         }else{
-            sW = target_centre[2] - floor(num_W/2)
+            # Randomly set the up-dip location
+            sW = target_centre[2] - sample(0:(num_W-1), size=1)
         }
+
         # If there are not enough unit sources, further constraints are needed
         sW = min(sW, grid_LW[2] - num_W + 1)
         sW = max(sW, 1)
@@ -894,6 +950,10 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre){
 #' the maximum source-zone width, while the length can either remain the same
 #' (if FALSE), or increase in proportion to the (width/desired_width) (if TRUE),
 #' or vary randomly between the behaviours with probability 0.5 (if 'random').
+#' @param clip_random_parameters_at_2sd logical. If TRUE, then when generating
+#' the random L/W/kcx/kcy, clip values at > 2standard_deviations (or < -2sd) to
+#' their nearest +-2sd counterpart. This will prevent e.g. large earthquakes
+#' occasionally having very narrow width, etc.
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are
@@ -944,7 +1004,8 @@ sffm_make_events_on_discretized_source<-function(
     mu=3e+10,
     return_slip_raster=TRUE,
     uniform_slip = FALSE,
-    expand_length_if_width_limited = 'random'){
+    expand_length_if_width_limited = 'random',
+    clip_random_parameters_at_2sd = TRUE){
 
     nx = max(discretized_source_statistics$alongstrike_number)
     ny = max(discretized_source_statistics$downdip_number)
@@ -966,7 +1027,8 @@ sffm_make_events_on_discretized_source<-function(
 
     # Make the random kcx/kcy values appropriate for the magnitude. Simulatneously
     # make the length/width over which non-zero slip can occur
-    random_LWkc_function = sffm_make_random_lwkc_function()
+    random_LWkc_function = sffm_make_random_lwkc_function(
+        clip_random_parameter_ranges_to_2sd=clip_random_parameters_at_2sd)
     LWkc = random_LWkc_function(rep(target_event_mw, length=num_events))
     physical_corner_wavenumbers = LWkc[,3:4]
     nonzero_slip_LW = LWkc[,1:2]
@@ -1057,10 +1119,11 @@ sffm_make_events_on_discretized_source<-function(
 
         #print(paste0('num_L: ', num_L, ' num_W: ', num_W))
 
-        # Non-zero slip cover along-strike indices sL:eL, and down-dip indices
-        # sW:eW. We try to make the peak slip location be the middle of the rupture,
-        # but there are practical difficulties
-        bbox = rectangle_on_grid(dim(dx), c(num_W, num_L), c(peak_slip_row, peak_slip_col))
+        # Non-zero slip occurs within along-strike indices sL:eL, and down-dip
+        # indices sW:eW. 
+        # We allow the peak slip location to vary within the rupture.
+        bbox = rectangle_on_grid(dim(dx), c(num_W, num_L), c(peak_slip_row, peak_slip_col),
+            randomly_vary_around_target_centre = TRUE)
         sL = bbox[3]
         eL = bbox[4]
         sW = bbox[1]
@@ -1069,6 +1132,9 @@ sffm_make_events_on_discretized_source<-function(
         slip_matrix = dx * 0
 
         if(!uniform_slip){
+            #
+            # Simulate the sffm
+            #
             # Ensure peak slip occurs in desired location
             template_slip_matrix = dx * 0
             template_slip_matrix[peak_slip_row, peak_slip_col] = 1
@@ -1076,12 +1142,14 @@ sffm_make_events_on_discretized_source<-function(
             repeater = TRUE
             while(repeater){
                 # Simulate (possibly on sub-sampled grid) 
-                # Note we only sample on the 'non-zero slip area', i.e. sW:eW, sL:eL
+                # Note we only sample on the 'non-zero slip area', i.e. sW:eW,
+                # sL:eL
                 slip_matrix[sW:eW, sL:eL] = sffm_simulate(
                     numerical_corner_wavenumbers, 
                     template_slip_matrix[sW:eW, sL:eL, drop=FALSE], 
                     sub_sample_size=sffm_sub_sample_size)
-                # Ensure we have not accidently set part of the length/width to be fully zero
+                # Ensure we have not accidently set part of the length/width to
+                # be fully zero
                 if(any(slip_matrix[sW,sL:eL] > 0) & any(slip_matrix[eW, sL:eL] > 0) &
                     any(slip_matrix[sW:eW, sL] > 0) & any(slip_matrix[sW:eW, eL] > 0)){
                     repeater = FALSE

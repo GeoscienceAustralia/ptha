@@ -4,7 +4,8 @@
 \alias{rectangle_on_grid}
 \title{Make a rectangle with a given size and target location on a grid}
 \usage{
-rectangle_on_grid(grid_LW, num_LW, target_centre)
+rectangle_on_grid(grid_LW, num_LW, target_centre,
+  randomly_vary_around_target_centre = FALSE)
 }
 \arguments{
 \item{grid_LW}{vector of length 2 giving the number of rows, columns on the 2D grid}
