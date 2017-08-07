@@ -12,7 +12,7 @@ source('time_domain_hybrid_norm.R')
 # C) The DART is sampling with at least 60 seconds frequency
 # D) The entire window is <= 12 hours (so we can focus on the most significant waves)
 #
-plot_model_data<-function(model_index, event_data, event_metadata, 
+plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata, 
     unit_source_statistics, time_window_hrs=12, title_extra='',
     max_model_time_shift_min = 15){
 
@@ -142,6 +142,7 @@ plot_model_data<-function(model_index, event_data, event_metadata,
     )
 }
 
+
 #' Make a raster with the stochastic or uniform or variable_uniform slip values
 #'
 #' @param event_index index of stochastic slip values for table
@@ -224,7 +225,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         event_data = readRDS(event_data_file)
         event_gauge_name = basename(event_data_file)
         for(i in 1:length(event_data$model_events)){
-            energies = plot_model_data(i, event_data, event_metadata, 
+            energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
                 unit_source_statistics, time_window_hrs=12, event_gauge_name)
             uniform_slip_stats[[event_data_file]][[i]] = energies
             # Also record the earthquake peak slip -- here just equal to the
@@ -250,7 +251,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         event_data = readRDS(event_data_file)
         event_gauge_name = basename(event_data_file)
         for(i in 1:length(event_data$model_events)){
-            energies = plot_model_data(i, event_data, event_metadata, 
+            energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
                 unit_source_statistics, time_window_hrs=12, event_gauge_name)
             stochastic_slip_stats[[event_data_file]][[i]] = energies
             # Also record the earthquake peak slip 
@@ -277,7 +278,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         event_data = readRDS(event_data_file)
         event_gauge_name = basename(event_data_file)
         for(i in 1:length(event_data$model_events)){
-            energies = plot_model_data(i, event_data, event_metadata, 
+            energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
                 unit_source_statistics, time_window_hrs=12, event_gauge_name)
             variable_uniform_slip_stats[[event_data_file]][[i]] = energies
             # Also record the earthquake peak slip 
