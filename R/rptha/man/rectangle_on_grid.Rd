@@ -17,7 +17,7 @@ on the rectangular sub-region}
 \item{target_centre}{vector of length 2 giving the row,column indices on the
 2D grid where we would like the centre of the sub-region to be.}
 
-\item{randomly_vary_around_target_center}{logical. If TRUE, then randomly
+\item{randomly_vary_around_target_centre}{logical. If TRUE, then randomly
 vary the output locations with the target_centre inside the rupture. If
 FALSE, then try to make the target_centre be the centre of the rupture.}
 }

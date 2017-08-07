@@ -20,6 +20,10 @@ earthquake-magnitude}
 
 \item{cor_kcx_kcy_residual}{Pearson correlation between the log10(kcx) and
 log10(kcy) regression residuals}
+
+\item{clip_random_parameter_ranges_to_2sd}{logical. If FALSE, then use the standard
+scaling laws. If TRUE, then clip unit-normal random variables to +- 2SD before 
+using in scaling laws [thus removing very 'unusual' l/w/kcx/kcy values]}
 }
 \value{
 a function f(Mw) which returns a vector or matrix with random
