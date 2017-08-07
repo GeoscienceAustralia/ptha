@@ -358,15 +358,20 @@ compare_event_maxima_with_NGDC<-function(
     }
 
     # Green's law correction -- but not at DART buoys
-    correction_factors = (-all_gauge_lonlat[,3])**0.25
+    correction_factors = (-all_gauge_lonlat$elev[matching_stations])**0.25
     correction_factors[which(tsunami_obs$TYPE_MEASUREMENT_ID == 3)] = 1
+
+    distance_to_nearest = distHaversine(cbind(tsunami_obs$LONGITUDE, tsunami_obs$LATITUDE), 
+        all_gauge_lonlat[matching_stations,1:2])
 
     output = list(
         events = matching_events,
         matching_stations = matching_stations,
         gauge_lonlat = all_gauge_lonlat[matching_stations,],
         max_stage = max_stage_store,
-        greens_correction_factors,
+        greens_correction_factors=correction_factors,
+        gcf_mat = matrix(correction_factors, ncol=ncol(max_stage), nrow=nrow(max_stage), byrow=TRUE),
+        distance_to_nearest = distance_to_nearest,
         tsunami_obs = tsunami_obs,
         start_date = start_date,
         event_Mw = event_Mw,
