@@ -21,8 +21,8 @@ earthquake_events = read_table_from_netcdf(
 earthquake_events_stochastic = read_table_from_netcdf(
     paste0('all_stochastic_slip_earthquake_events_', source_name, '.nc'))
 # NetCDF file with stochastic slip earthquake events
-earthquake_events_variable_uniform = read_table_from_netcdf(
-    paste0('all_variable_uniform_slip_earthquake_events_', source_name, '.nc'))
+earthquake_events_variable_uniform = try(read_table_from_netcdf(
+    paste0('all_variable_uniform_slip_earthquake_events_', source_name, '.nc')))
 # NetCDF file with unit-source statistics
 unit_source_statistics = read_table_from_netcdf(
     paste0('unit_source_statistics_', source_name, '.nc'))
@@ -370,7 +370,8 @@ compare_event_maxima_with_NGDC<-function(
         gauge_lonlat = all_gauge_lonlat[matching_stations,],
         max_stage = max_stage_store,
         greens_correction_factors=correction_factors,
-        gcf_mat = matrix(correction_factors, ncol=ncol(max_stage), nrow=nrow(max_stage), byrow=TRUE),
+        gcf_mat = matrix(correction_factors, ncol=ncol(max_stage_store), 
+            nrow=nrow(max_stage_store), byrow=TRUE),
         distance_to_nearest = distance_to_nearest,
         tsunami_obs = tsunami_obs,
         start_date = start_date,
