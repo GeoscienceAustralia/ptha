@@ -29,12 +29,13 @@ for(RdataFile in all_Rdata){
             vu_score = 0.8*do.call(cbind, similar_vu_time) + 0.2*do.call(cbind, similar_vu_spec)
         }
 
+        # Find the median GoF statistic over all gauges
         stoc_score_median = apply(stoc_score, 1, median)
         unif_score_median = apply(unif_score, 1, median)
         vu_score_median = apply(vu_score, 1, median)
-        # Find the 'best' modelled events, using the 
-        # minimum(median of the goodness-of-fit metric at all
-        # gauges) as the definition of 'best'
+
+        # Find the 'best' modelled events, using the minimum(median of the
+        # goodness-of-fit metric at all gauges) as the definition of 'best'
         si = which.min(stoc_score_median)
         ui = which.min(unif_score_median)
         vui = which.min(vu_score_median)

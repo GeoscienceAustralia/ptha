@@ -507,6 +507,35 @@ lonlat2xyz<-function(p0, r = 6378137){
     return(cbind(x,y,z))
 }
 
+#' Nearest neighbours on the sphere
+#' 
+#' For each point in 'lonlat1', find the nearest point on 'lonlat2', assuming
+#' spherical (longitude, latitude) coordinates.
+#'
+#' @param lonlat1 2 column matrix with lon,lat coordinates -- we want to find the neigbour
+#' nearest to these points
+#' @param lonlat2 2 column matrix with lon,lat coordiantes. We will return the indices of points
+#' in this matrix which are nearest points in lonlat1
+#' @return Vector with length == length(lonlat1[,1]), and value giving an integer index into
+#' lonlat2
+#' @export
+#' @examples
+#'    # Find points in lonlat2 nearest to points in lonlat1
+#'    lonlat1 = matrix(cbind(c(0,0), c(10, 5), c(-10, 5), c(190, 0)), ncol=2, byrow=TRUE)
+#'    lonlat2 = matrix(cbind(c(0.5,0.5), c(0,5), c(-180,0)), ncol=2, byrow=TRUE)
+#'    index_match = lonlat_nearest_neighbours(lonlat1, lonlat2)
+#'    stopifnot(all(index_match = c(1,2,2,3)))
+#'
+lonlat_nearest_neighbours<-function(lonlat1, lonlat2){
+
+    xyz1 = lonlat2xyz(lonlat1)
+    xyz2 = lonlat2xyz(lonlat2)
+
+    output = knnx.index(data=xyz2, query=xyz1, k=1, algorithm = 'kd_tree')
+
+    return(output[,1])
+}
+
 #' Find the 'straight line' distance of point p0 to p1, i.e. the Euclidean
 #' distance between the points in 3D space. Both points are assumed to be on a sphere
 #'
