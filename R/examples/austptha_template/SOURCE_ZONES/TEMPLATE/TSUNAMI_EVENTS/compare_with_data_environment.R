@@ -320,20 +320,20 @@ compare_event_maxima_with_NGDC<-function(
     #
     # Open netcdf with peak stage info
     #
-    peak_stage_ncdf = paste0('all_uniform_slip_earthquake_events_tsunami', 
+    peak_stage_ncdf = paste0('all_uniform_slip_earthquake_events_tsunami_', 
         source_name, '.nc')
     if(use_stochastic_slip){
 
         stopifnot(use_variable_uniform_slip == FALSE)
 
-        peak_stage_ncdf = paste0('all_stochastic_slip_earthquake_events_tsunami', 
+        peak_stage_ncdf = paste0('all_stochastic_slip_earthquake_events_tsunami_', 
             source_name, '.nc')   
     }    
     if(use_variable_uniform_slip){
 
         stopifnot(use_stochastic_slip == FALSE)
 
-        peak_stage_ncdf = paste0('all_variable_uniform_slip_earthquake_events_tsunami', 
+        peak_stage_ncdf = paste0('all_variable_uniform_slip_earthquake_events_tsunami_', 
             source_name, '.nc')   
     }
     fid = nc_open(peak_stage_ncdf, readunlim=FALSE)
@@ -341,7 +341,7 @@ compare_event_maxima_with_NGDC<-function(
     # Find stations matching each observation
     matching_stations = lonlat_nearest_neighbours(
         cbind(tsunami_obs$LONGITUDE, tsunami_obs$LATITUDE), 
-        cbind(lon, lat))
+        all_gauge_lonlat[,1:2])
 
     # Get peak stages for all events and all gauges with observations
     max_stage_store = matrix(NA, nrow=length(matching_event_rows), 
@@ -357,11 +357,16 @@ compare_event_maxima_with_NGDC<-function(
 
     }
 
+    # Green's law correction -- but not at DART buoys
+    correction_factors = (-all_gauge_lonlat[,3])**0.25
+    correction_factors[which(tsunami_obs$TYPE_MEASUREMENT_ID == 3)] = 1
+
     output = list(
         events = matching_events,
         matching_stations = matching_stations,
         gauge_lonlat = all_gauge_lonlat[matching_stations,],
         max_stage = max_stage_store,
+        greens_correction_factors,
         tsunami_obs = tsunami_obs,
         start_date = start_date,
         event_Mw = event_Mw,
@@ -371,6 +376,7 @@ compare_event_maxima_with_NGDC<-function(
 
 }
 
+#'
 #' Plotting code for gauges
 #'
 plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids, 
