@@ -5,6 +5,11 @@ tsunami_model_config = new.env()
 source('../TSUNAMI_UNIT_SOURCE/config.R', local=tsunami_model_config, 
     chdir=TRUE)
 
+# Get the NGDC data
+ngdc_dir = '../../../../../DATA/TSUNAMI_OBS/NGDC_DATABASE/'
+ngdc = new.env()
+source(paste0(ngdc_dir, 'ngdc_env.R'), local=ngdc, chdir=TRUE)
+
 #
 # Data for this source zone
 #
@@ -26,53 +31,33 @@ unit_source_geometry = readOGR(dsn='../EQ_SOURCE/unit_source_grid',
     layer=source_name)
 # Tide gauge NetCDF files, sorted based on unit_source_statistics rows
 all_tide_files = unit_source_statistics$tide_gauge_file
-# Data.frame with the hazard-point (i.e. tide gauge) lon/lat/depth/ID 
+# Data.frame with the hazard-point (i.e. tide gauge) lon/lat/elev/ID 
 all_gauge_lonlat = get_netcdf_gauge_locations(all_tide_files[1]) 
 # Get the gauge output times [identical for all files]
 gauge_times = get_netcdf_gauge_output_times(all_tide_files[1])
 
-
-#' Plot uniform slip models and observations
+#' Given a magnitude and hypocentre, find earthquake events with the 'same'
+#' magnitude which contain (or are near) the hypocentre
 #'
 #' @param event_magnitude numeric earthquake magnitude. Events with this
 #' magnitude will be used for the plot
 #' @param event_hypocentre vector c(lon,lat) giving the location of a point on
 #' the rupture. All modelled uniform slip earthquakes will contain a unit-source
 #' within 0.5 scaling-law width/length of the unit-source containing this point.
-#' (The point must be inside a unit source). If use_stochastic_slip=TRUE, then
+#' (The point must be inside a unit source). If use_stochastic_slip_runs=TRUE, then
 #' we will use stochastic events 'corresponding' to the above identified uniform events.
-#' @param event_start A POSIX.lt object giving the event start time (UTC), made
-#' with e.g.: 
-#'     event_start=strptime('2009-06-13 15:22:31', 
-#'         format='%Y-%m-%d %H:%M:%S', tz='Etc/UTC')
-#' @param gauge_ids vector giving IDs of gauges at which to extract model
-#' predictions
-#' @param gauge_data character vector of gauge data, with one entry for each
-#' gauge_ids. It should give a filename where the de-tided data for that gauge
-#' is stored, and be sorted in an order corresponding to gauge_ids.
-#' @param plot_durations list with one entry for each gauge_id, containing
-#' numeric limits for plot x-axis of the form c(start_sec, end_sec). This gives
-#' the plot x-limits in seconds relative to the event_start time. 
-#' @param gauge_ylims list with one entry for each gauge_id, containing numeric
-#' limits for plot y-axis of the form c(ylower, yupper). This gives the plot
-#' y-limits in meters for the de-tided data and the model.
-#' @param output_dir_tag character giving a string to insert in the output
-#' directory containing model/obs data. If NULL, we do not make those outputs
-#' @param use_stochastic_slip logical. If TRUE, generate stochastic slip events.
-#' Otherwise use uniform slip
-#'
-compare_event_with_gauge_time_series<-function(
-    event_magnitude, 
-    event_hypocentre, 
-    event_start, 
-    gauge_ids, 
-    gauge_data, 
-    plot_durations, 
-    gauge_ylims, 
-    output_dir_tag=NULL,
-    use_stochastic_slip = FALSE,
-    use_variable_uniform_slip = FALSE){
-  
+#' If use_variable_uniform_slip_runs = TRUE, then we do as for stochastic_slip, in 
+#' the variable_uniform case.
+#' @param use_stochastic_slip_runs logical. If TRUE, return stochastic slip events
+#' that 'correspond to' the uniform slip event
+#' @param use_variable_uniform_slip_runs logical. If TRUE, return variable uniform
+#' slip events that 'correspond to' the uniform slip event
+find_events_near_point<-function(
+    event_magnitude,
+    event_hypocentre,
+    use_stochastic_slip_runs = FALSE,
+    use_variable_uniform_slip_runs = FALSE){
+
     # Events with the right magnitude. Allow for some rounding error, due to
     # the use of float's in the netcdf file. 
     # Use uniform slip events -- later, if use_stochastic_slip = TRUE, then
@@ -118,10 +103,10 @@ compare_event_with_gauge_time_series<-function(
         stop('No unit sources contain the provided hypocentre')
     }
 
-    if(use_stochastic_slip | use_variable_uniform_slip){
+    if(use_stochastic_slip_runs | use_variable_uniform_slip_runs){
 
-        if(use_variable_uniform_slip & use_stochastic_slip){
-            stop('Cannot have both use_stochastic_slip and use_variable_uniform_slip')
+        if(use_variable_uniform_slip_runs & use_stochastic_slip_runs){
+            stop('Cannot have both use_stochastic_slip_runs and use_variable_uniform_slip_runs')
         }
 
         # Find stochastic slip events that correspond to the uniform events we would keep
@@ -131,7 +116,7 @@ compare_event_with_gauge_time_series<-function(
         # target location', we might introduce bias, since that approach would
         # tend to select more 'broad' events at more distant locations
 
-        if(use_stochastic_slip){
+        if(use_stochastic_slip_runs){
             stochastic_events_uniform_row = 
                 earthquake_events_stochastic$uniform_event_row
 
@@ -142,10 +127,10 @@ compare_event_with_gauge_time_series<-function(
 
             # Replace events_with_Mw with the 'stochastic slip' version,
             # containing events that correspond to the uniform events we would
-            # keep in the alternate case where use_stochastic_slip=FALSE
+            # keep in the alternate case where use_stochastic_slip_runs=FALSE
             events_with_Mw = earthquake_events_stochastic[stochastic_events_to_keep,]
 
-        }else if(use_variable_uniform_slip){
+        }else if(use_variable_uniform_slip_runs){
 
             variable_uniform_events_uniform_row = 
                 earthquake_events_variable_uniform$uniform_event_row
@@ -156,15 +141,68 @@ compare_event_with_gauge_time_series<-function(
                 variable_uniform_events_uniform_row %in% uniform_keepers)
             # Replace events_with_Mw with the 'variable_uniform slip' version,
             # containing events that correspond to the uniform events we would
-            # keep in the alternate case where use_variable_uniform_slip=FALSE
+            # keep in the alternate case where use_variable_uniform_slip_runs=FALSE
             events_with_Mw = earthquake_events_variable_uniform[
                 variable_uniform_events_to_keep,]
         }
 
     }else{
-        # Uniform slip (use_stochastic_slip=FALSE)
+        # Uniform slip (use_stochastic_slip_runs=FALSE)
         events_with_Mw = events_with_Mw[which(event_contains_hpc == 1),]
     }
+
+    return(events_with_Mw)
+
+}
+
+
+#' Plot uniform (or stochastic or uniform-variable) slip models and observations
+#'
+#' @param event_magnitude numeric earthquake magnitude. Events with this
+#' magnitude will be used for the plot
+#' @param event_hypocentre vector c(lon,lat) giving the location of a point on
+#' the rupture. All modelled uniform slip earthquakes will contain a unit-source
+#' within 0.5 scaling-law width/length of the unit-source containing this point.
+#' (The point must be inside a unit source). If use_stochastic_slip=TRUE, then
+#' we will use stochastic events 'corresponding' to the above identified uniform events.
+#' @param event_start A POSIX.lt object giving the event start time (UTC), made
+#' with e.g.: 
+#'     event_start=strptime('2009-06-13 15:22:31', 
+#'         format='%Y-%m-%d %H:%M:%S', tz='Etc/UTC')
+#' @param gauge_ids vector giving IDs of gauges at which to extract model
+#' predictions
+#' @param gauge_data character vector of gauge data, with one entry for each
+#' gauge_ids. It should give a filename where the de-tided data for that gauge
+#' is stored, and be sorted in an order corresponding to gauge_ids.
+#' @param plot_durations list with one entry for each gauge_id, containing
+#' numeric limits for plot x-axis of the form c(start_sec, end_sec). This gives
+#' the plot x-limits in seconds relative to the event_start time. 
+#' @param gauge_ylims list with one entry for each gauge_id, containing numeric
+#' limits for plot y-axis of the form c(ylower, yupper). This gives the plot
+#' y-limits in meters for the de-tided data and the model.
+#' @param output_dir_tag character giving a string to insert in the output
+#' directory containing model/obs data. If NULL, we do not make those outputs
+#' @param use_stochastic_slip logical. If TRUE, return stochastic slip events
+#' that 'correspond to' the uniform slip event
+#' @param use_variable_uniform_slip logical. If TRUE, return variable uniform
+#' slip events that 'correspond to' the uniform slip event
+#'
+compare_event_with_gauge_time_series<-function(
+    event_magnitude, 
+    event_hypocentre, 
+    event_start, 
+    gauge_ids, 
+    gauge_data, 
+    plot_durations, 
+    gauge_ylims, 
+    output_dir_tag=NULL,
+    use_stochastic_slip = FALSE,
+    use_variable_uniform_slip = FALSE){
+
+    events_with_Mw = find_events_near_point(event_magnitude, 
+        event_hypocentre,
+        use_stochastic_slip_runs = use_stochastic_slip,
+        use_variable_uniform_slip_runs = use_variable_uniform_slip)  
 
     plot_events_vs_gauges(events_with_Mw, event_start, gauge_ids, gauge_data, 
         plot_durations, gauge_ylims, output_dir_tag)
@@ -247,7 +285,94 @@ compare_stochastic_slip_event_with_gauge_time_series<-function(
 
 }
 
-#' Plotting code
+
+#' Get modelled peak-stage data for comparison with ncdc
+#'
+#'
+compare_event_maxima_with_NGDC<-function(
+    start_date, 
+    event_Mw, 
+    event_hypocentre,
+    use_stochastic_slip = FALSE, 
+    use_variable_uniform_slip = FALSE){
+
+    event_year = as.numeric(format(start_date, '%Y'))
+    event_month = as.numeric(format(start_date, '%m'))
+    event_day = as.numeric(format(start_date, '%d'))
+
+    tsunami_obs = ngdc$get_tsunami_data_on_date(event_year,
+        event_month, event_day)
+
+    if(nrow(tsunami_obs) == 0){
+        print('No tsunami data found in NGDC database')
+        return(invisible())
+    }
+
+    matching_events = find_events_near_point(
+        event_Mw,
+        event_hypocentre,
+        use_stochastic_slip_runs = use_stochastic_slip,
+        use_variable_uniform_slip_runs = use_variable_uniform_slip
+        )
+
+    matching_event_rows = as.numeric(rownames(matching_events))
+
+    #
+    # Open netcdf with peak stage info
+    #
+    peak_stage_ncdf = paste0('all_uniform_slip_earthquake_events_tsunami', 
+        source_name, '.nc')
+    if(use_stochastic_slip){
+
+        stopifnot(use_variable_uniform_slip == FALSE)
+
+        peak_stage_ncdf = paste0('all_stochastic_slip_earthquake_events_tsunami', 
+            source_name, '.nc')   
+    }    
+    if(use_variable_uniform_slip){
+
+        stopifnot(use_stochastic_slip == FALSE)
+
+        peak_stage_ncdf = paste0('all_variable_uniform_slip_earthquake_events_tsunami', 
+            source_name, '.nc')   
+    }
+    fid = nc_open(peak_stage_ncdf, readunlim=FALSE)
+
+    # Find stations matching each observation
+    matching_stations = lonlat_nearest_neighbours(
+        cbind(tsunami_obs$LONGITUDE, tsunami_obs$LATITUDE), 
+        cbind(lon, lat))
+
+    # Get peak stages for all events and all gauges with observations
+    max_stage_store = matrix(NA, nrow=length(matching_event_rows), 
+        ncol = length(matching_stations))
+
+    for(i in 1:length(matching_stations)){
+
+        all_peak_stage = ncvar_get(fid, 'max_stage', 
+            start = c(1, matching_stations[i]), 
+            count=c(-1,1))
+
+        max_stage_store[,i] = all_peak_stage[matching_event_rows]
+
+    }
+
+    output = list(
+        events = matching_events,
+        matching_stations = matching_stations,
+        gauge_lonlat = all_gauge_lonlat[matching_stations,],
+        max_stage = max_stage_store,
+        tsunami_obs = tsunami_obs,
+        start_date = start_date,
+        event_Mw = event_Mw,
+        event_hypocentre = event_hypocentre)
+
+    return(output)
+
+}
+
+#' Plotting code for gauges
+#'
 plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids, 
     gauge_data, plot_durations, gauge_ylims, output_dir_tag=NULL){
 

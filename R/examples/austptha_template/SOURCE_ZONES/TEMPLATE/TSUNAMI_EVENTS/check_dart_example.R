@@ -5,7 +5,7 @@
 
 
 check_dart_env = new.env()
-source('compare_with_gauge_environment.R', local=check_dart_env)
+source('compare_with_data_environment.R', local=check_dart_env)
 
 ## INPUT PAR
 event_magnitude = 7.7 
