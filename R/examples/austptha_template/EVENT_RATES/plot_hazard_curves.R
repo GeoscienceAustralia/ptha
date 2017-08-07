@@ -27,9 +27,11 @@ stage_seq = ncvar_get(rates[[1]], 'stage')
 #'
 get_station_index<-function(lon_p, lat_p){
 
-    lon_p_x = rep(lon_p, length.out=length(lon))
-    lat_p_x = rep(lat_p, length.out=length(lon))
-    site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
+    #lon_p_x = rep(lon_p, length.out=length(lon))
+    #lat_p_x = rep(lat_p, length.out=length(lon))
+    #site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
+
+    site = lonlat_nearest_neigbours(cbind(lon_p, lat_p), cbind(lon, lat))
 
     return(site)
 }

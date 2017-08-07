@@ -155,15 +155,17 @@ get_netcdf_gauge_indices_near_points<-function(netcdf_file, lonlat){
     gauge_data = get_netcdf_gauge_locations(netcdf_file)
     lg = length(gauge_data[,1])
   
-    inds = rep(NA, length(lonlat[,1]))  
+    #inds = rep(NA, length(lonlat[,1]))  
 
-    for(i in 1:length(lonlat[,1])){
-        suppressWarnings({
-        inds[i] = which.min(distHaversine(
-            cbind(gauge_data$lon, gauge_data$lat), 
-            cbind(rep(lonlat[i,1], lg), rep(lonlat[i,2], lg))))
-        })
-    }
+    inds = lonlat_nearest_neighbours(lonlat, cbind(gauge_data$lon, gauge_data$lat))
+
+    #for(i in 1:length(lonlat[,1])){
+    #    suppressWarnings({
+    #    inds[i] = which.min(distHaversine(
+    #        cbind(gauge_data$lon, gauge_data$lat), 
+    #        cbind(rep(lonlat[i,1], lg), rep(lonlat[i,2], lg))))
+    #    })
+    #}
 
     return(inds)
 }
