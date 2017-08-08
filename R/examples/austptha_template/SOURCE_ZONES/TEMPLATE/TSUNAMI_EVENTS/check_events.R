@@ -15,11 +15,16 @@ library(rptha)
 config_env = new.env()
 source('config.R', local=config_env)
 
-
-all_uniform_eq_events_file = Sys.glob('all_uniform_slip_earthquake_events_tsunami_*.nc')
-all_stochastic_eq_events_file = Sys.glob('all_stochastic_slip_earthquake_events_tsunami_*.nc')
+# Netcdf filenames with tsunami and all events
+all_uniform_eq_events_file = Sys.glob(
+    'all_uniform_slip_earthquake_events_tsunami_*.nc')
+all_stochastic_eq_events_file = Sys.glob(
+    'all_stochastic_slip_earthquake_events_tsunami_*.nc')
+all_variable_uniform_eq_events_file = Sys.glob(
+    'all_variable_uniform_slip_earthquake_events_tsunami_*.nc')
 unit_source_statistics_file = Sys.glob('unit_source_statistics_*.nc')
 
+# 
 unit_source_statistics = read_table_from_netcdf(unit_source_statistics_file)
 
 # Utility for testing
@@ -34,25 +39,32 @@ assert<-function(istrue, msg=''){
 
 }
 
-# Check that Mw-min, Mw-max / dMw range is represented
-run_checks<-function(fid_local){
-
-    is_uniform_slip = ('event_area' %in% names(fid_local$var))
+#' Check that Mw-min, Mw-max / dMw range is represented
+#'
+#' @param fid_local netcdf file handle [i.e. result of nc_open('filename.nc')]
+#' @param slip_type character. 'uniform' or 'stochastic' or 'variable_uniform'
+#' @return the function environment. Should also print lots of 'PASS'
+#'   statements, and will make a png plot of earthquake scaling for
+#'   stochastic/variable_uniform slip. 
+#'
+run_checks<-function(fid_local, slip_type){
 
     # Check mw values are as desired
     mws = round(ncvar_get(fid_local, 'event_Mw'), 3)
     assert(min(mws) == config_env$Mw_min, 'mw_min problem')
     assert(max(mws) == config_env$Mw_max, 'mw_max problem')
-    assert(all(abs(diff(sort(unique(mws))) - config_env$dMw) <= 1.0e-13), 'mw spacing problem')
+    assert(all(abs(diff(sort(unique(mws))) - config_env$dMw) <= 1.0e-13), 
+        'mw spacing problem')
 
     # Check mw is consistent with area and slip 
     moment = M0_2_Mw(mws, inverse=TRUE)
-    if(is_uniform_slip){
+    if(slip_type == 'uniform'){
 
         event_area = ncvar_get(fid_local, 'event_area')    
         event_slip = ncvar_get(fid_local, 'event_slip')    
         moment_A = 3e+10 * event_area * 1e+06 * event_slip
-        assert(all(abs(moment - moment_A) < 1.0e-06*moment), 'moment inconsistency')
+        assert(all(abs(moment - moment_A) < 1.0e-06*moment), 
+            'moment inconsistency')
 
     }else{
    
@@ -73,7 +85,8 @@ run_checks<-function(fid_local){
         # Check number of unit sources and number of slips are equal, for each event
         l1 = unlist(lapply(unit_sources_in, length))
         l2 = unlist(lapply(event_slips, length))
-        assert(all(l1 == l2), 'inconsistent number of slips and unit sources, stochastic')
+        assert(all(l1 == l2), 
+            'inconsistent number of slips and unit sources, stochastic')
 
         moment_A = unlist(lapply(1:length(event_index_string), f<-function(x){
             sum(event_slips[[x]] * 
@@ -81,12 +94,14 @@ run_checks<-function(fid_local){
                 unit_source_statistics$length[unit_sources_in[[x]]] * 
                 1e+06 * 3e+10)
         }))
-        # Noting we store slip to a few significant figures, need some tolerance here
-        assert(all(abs(moment - moment_A) < 1.0e-03*moment), 'moment inconsistency stochastic')
+        # Noting we store slip to a few significant figures, need some
+        # tolerance here
+        assert(all(abs(moment - moment_A) < 1.0e-03*moment), 
+            'moment inconsistency stochastic')
     }
 
     # Check that sum of unit source areas is the same as reported area 
-    if(is_uniform_slip){
+    if(slip_type == 'uniform'){
 
         event_index_string = ncvar_get(fid_local, 'event_index_string')
         unit_sources_in = lapply(as.list(event_index_string), f<-function(x){
@@ -98,7 +113,8 @@ run_checks<-function(fid_local){
                 sum(unit_source_statistics$width[x]*
                     unit_source_statistics$length[x]) }
         ))
-        assert(all(abs(event_area - event_areas_B) < 1.0e-06*event_area), 'area inconsistency uniform')
+        assert(all(abs(event_area - event_areas_B) < 1.0e-06*event_area), 
+            'area inconsistency uniform')
 
     }
 
@@ -146,12 +162,13 @@ run_checks<-function(fid_local){
                 elev[na_gauges] >= 0 | 
                 lat[na_gauges] >= config_env$lat_range[2] | 
                 lat[na_gauges] <= config_env$lat_range[1]), 
-                paste0('na gauges with elev < 0, not in boundary regions ', start, ' ', count)
+                paste0('na gauges with elev < 0, not in boundary regions ', 
+                    start, ' ', count)
                 )
         }
     }
 
-    if(!is_uniform_slip){
+    if(slip_type != 'uniform'){
         #
         # Make a length/width scaling law plot
         #
@@ -200,7 +217,8 @@ run_checks<-function(fid_local){
         event_mean_slip_nonzero = unlist(lapply(event_slips, 
             f<-function(x) mean(x) ))
 
-        # Area of full rectangular region of slip, including effect of zero patches
+        # Area of full rectangular region of slip, including effect of zero
+        # patches
         event_area_all = unlist(mapply(
             f<-function(strk_ind, dip_ind){
                 # Compute the width, based on least-along-strike unit-sources
@@ -210,14 +228,16 @@ run_checks<-function(fid_local){
                     (unit_source_statistics$downdip_number %in% r2) & 
                     (unit_source_statistics$alongstrike_number %in% r1)
                 )
-                sum(unit_source_statistics$width[tokeep]*unit_source_statistics$length[tokeep])
+                sum(unit_source_statistics$width[tokeep] *
+                    unit_source_statistics$length[tokeep])
             }, 
             alongstrike_range,
             downdip_range 
             ))
 
         # Mean slip, including 'zero areas
-        event_mean_slip_all = event_mean_slip_nonzero * event_area_nonzero/event_area_all
+        event_mean_slip_all = event_mean_slip_nonzero * event_area_nonzero / 
+            event_area_all
 
         # Maximum slip
         event_max_slip = unlist(lapply(event_slips, 
@@ -230,91 +250,106 @@ run_checks<-function(fid_local){
 
         # Convenience function for the plot
         local_scaling_law_results<-function(var='area'){ 
-            areas_scaling = unlist(lapply(scaling_law_dim, f<-function(x) x$values[var]))
-            areas_scaling_pci = unlist(lapply(scaling_law_dim, f<-function(x) x$plus_CI[var]))
-            areas_scaling_mci = unlist(lapply(scaling_law_dim, f<-function(x) x$minus_CI[var]))
+
+            areas_scaling = unlist(lapply(scaling_law_dim, 
+                f<-function(x) x$values[var]))
+            areas_scaling_pci = unlist(lapply(scaling_law_dim, 
+                f<-function(x) x$plus_CI[var]))
+            areas_scaling_mci = unlist(lapply(scaling_law_dim, 
+                f<-function(x) x$minus_CI[var]))
 
             points(unique_mws, areas_scaling, t='l', col='red')
-            points(unique_mws, areas_scaling_pci, t='l', col='red', lty='dashed')
-            points(unique_mws, areas_scaling_mci, t='l', col='red', lty='dashed')
+            points(unique_mws, areas_scaling_pci, t='l', col='red', 
+                lty='dashed')
+            points(unique_mws, areas_scaling_mci, t='l', col='red', 
+                lty='dashed')
         }
 
         # Plotting
-        pdf(paste0('event_size_scaling_stochastic_', basename(dirname(getwd())), '.pdf'), 
-            width=13, height=10)
+        png_filename = paste0('event_size_scaling_', slip_type, '_', 
+                basename(dirname(getwd())), '.png')
+        png(png_filename, width=13, height=10, units='in', res=200)
 
         par(mfrow=c(3,3))
 
         # Area
         plot(mws, event_area_nonzero, log='y', 
-            main='Stochastic event area with non-zero slip', 
+            main='Event area with non-zero slip', 
             xlab='Mw', ylab='km^2')
         grid()
         local_scaling_law_results('area')
 
         # Area
         plot(mws, event_area_all, log='y', 
-            main='Stochastic event area (including zero slip cells)', 
+            main='Event area (including zero slip cells)', 
             xlab='Mw', ylab='km^2')
         grid()
         local_scaling_law_results('area')
 
         # Length
-        plot(mws, event_length, log='y', main='Stochastic event length', 
+        plot(mws, event_length, log='y', main='Event length', 
             xlab='Mw', ylab='km')
         grid()
         local_scaling_law_results('length')
 
         # Width 
-        plot(mws, event_width, log='y', main='Stochastic event width', 
+        plot(mws, event_width, log='y', main='Event width', 
             xlab='Mw', ylab='km')
         grid()
         local_scaling_law_results('width')
 
         # Mean slip
         plot(mws, event_mean_slip_nonzero, log='y', 
-            main='Stochastic event mean_slip on non-zero slip patches', 
+            main='Event mean_slip on non-zero slip patches', 
             xlab='Mw', ylab='km')
-        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', lty='dashed')
-        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', lty='dashed')
+        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', 
+            lty='dashed')
+        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
+            lty='dashed')
         median_ratio = aggregate(event_mean_slip_nonzero, list(mws), median)
         points(median_ratio[,1], median_ratio[,2], col='red')
         grid()
 
         # Mean slip
         plot(mws, event_mean_slip_all, log='y', 
-            main='Stochastic event mean_slip including zero-slip patches', 
+            main='Event mean_slip including zero-slip patches', 
             xlab='Mw', ylab='km')
-        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', lty='dashed')
-        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', lty='dashed')
+        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', 
+            lty='dashed')
+        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
+            lty='dashed')
         median_ratio = aggregate(event_mean_slip_all, list(mws), median)
         points(median_ratio[,1], median_ratio[,2], col='red')
         grid()
 
 
         # Peak slip
-        plot(mws, event_max_slip, log='y', main='Stochastic event max_slip', 
+        plot(mws, event_max_slip, log='y', main='Event max_slip', 
             xlab='Mw', ylab='km')
-        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', lty='dashed')
-        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', lty='dashed')
+        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', 
+            lty='dashed')
+        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
+            lty='dashed')
         median_ratio = aggregate(event_max_slip, list(mws), median)
         points(median_ratio[,1], median_ratio[,2], col='red')
         grid()
 
         # Peak slip / mean slip
         plot(mws, event_max_slip/event_mean_slip_nonzero, log='y', 
-            main='Stochastic event max_slip/mean_non-zero_slip', 
+            main='Event max_slip/mean_non-zero_slip', 
             xlab='Mw', ylab='km')
         grid()
-        median_ratio = aggregate(event_max_slip/event_mean_slip_nonzero, list(mws), median)
+        median_ratio = aggregate(event_max_slip/event_mean_slip_nonzero, 
+            list(mws), median)
         points(median_ratio[,1], median_ratio[,2], col='red')
         abline(h=3, col='red')
 
         plot(mws, event_max_slip/event_mean_slip_all, log='y', 
-            main='Stochastic event max_slip/mean_slip_including_zeros', 
+            main='Event max_slip/mean_slip_including_zeros', 
             xlab='Mw', ylab='km')
         grid()
-        median_ratio = aggregate(event_max_slip/event_mean_slip_all, list(mws), median)
+        median_ratio = aggregate(event_max_slip/event_mean_slip_all, list(mws), 
+            median)
         points(median_ratio[,1], median_ratio[,2], col='red')
         abline(h=3, col='red')
 
@@ -328,11 +363,16 @@ run_checks<-function(fid_local){
 
 # Check uniform slip
 fid_uniform = nc_open(all_uniform_eq_events_file, readunlim=FALSE)
-uniform_env = run_checks(fid_uniform)
+uniform_env = run_checks(fid_uniform, slip_type = 'uniform')
 nc_close(fid_uniform)
 
 # Check stochastic slip
 fid_stochastic = nc_open(all_stochastic_eq_events_file, readunlim=FALSE)
-stochastic_env = run_checks(fid_stochastic)
+stochastic_env = run_checks(fid_stochastic, slip_type = 'stochastic')
 nc_close(fid_stochastic)
+
+# Check variable_uniform slip
+fid_variable_uniform = nc_open(all_variable_uniform_eq_events_file, readunlim=FALSE)
+variable_uniform_env = run_checks(fid_variable_uniform, slip_type = 'variable_uniform')
+nc_close(fid_variable_uniform)
 
