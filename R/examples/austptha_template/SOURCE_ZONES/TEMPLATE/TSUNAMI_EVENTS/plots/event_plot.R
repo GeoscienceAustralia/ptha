@@ -176,7 +176,7 @@ for(RdataFile in all_Rdata){
         dev.off()
 
         # Plot up as gauges
-        multi_gauge_time_series_plot(ui, vi, vui, 
+        multi_gauge_time_series_plot(ui, si, vui, 
             png_name_stub=paste0('best_fit_', stat_name, '_gauges_plot')
             )
 
@@ -204,7 +204,7 @@ for(RdataFile in all_Rdata){
         ui = variable_to_uniform[i]
         si = i
         vui = i
-        multi_gauge_time_series_plot(ui, vi, vui, 
+        multi_gauge_time_series_plot(ui, si, vui, 
             png_name_stub=paste0('event_', ui, '_', i, '_gauges_plot')
             )
 
