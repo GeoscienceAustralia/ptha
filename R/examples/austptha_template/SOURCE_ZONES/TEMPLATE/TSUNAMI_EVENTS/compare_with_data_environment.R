@@ -418,10 +418,10 @@ compare_event_maxima_with_NGDC<-function(
         # NOTE THE DIRECTORY NAME IS THE SAME AS IN \code{plot_events_vs_gauges}
         # THAT'S IMPORTANT! FIXME: Clean this up!
         event_type = 'uniform'
-        if(is_variable_uniform_slip){
+        if(use_variable_uniform_slip){
             event_type = 'variable_uniform' 
         }
-        if(is_stochastic_slip){
+        if(uses_stochastic_slip){
             event_type = 'stochastic'
         }
         output_dir = paste0(events_with_Mw$sourcename[1], '_', output_dir_tag, 
