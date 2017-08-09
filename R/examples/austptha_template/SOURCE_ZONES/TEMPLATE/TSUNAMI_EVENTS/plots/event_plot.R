@@ -166,10 +166,6 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         # Only compare points with 'distance to nearest model result < 20000'
         kp = which(model_data$distance_to_nearest < 20000)
 
-        plot(ngdc_lonlat[kp,], asp=1, xlab="Lon", ylab="Lat", pch='.')
-        # Add all model points -- helps to see coast, etc
-        points(model_lonlat[,1:2], pch='.')
-
         
         # Apply sqrt transformation, to make it easier to see a range of scales
         ht = sqrt(model_data$tsunami_obs$WATER_HT[kp])
@@ -177,9 +173,17 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
 
         # Maybe scale arrows to improve visibility
         tmp = max(diff(range(ngdc_lonlat[kp,1])), diff(range(ngdc_lonlat[kp,2])))
-        # By default, largest vertical bar takes up 1/4 of vertical range
-        scaler = max(1, tmp * 0.25/max(c(max(ht), max(ms))) )
+        # By default, largest vertical bar takes up 1/5 of vertical range
+        vb = 0.2
+        scaler = max(1, tmp * vb/max(c(max(ht), max(ms))) )
         
+        plot_y_range = range(ngdc_lonlat_kp[,2])
+        plot_y_range[2] = plot_y_range[2] + vb * diff(plot_y_range)
+
+        plot(ngdc_lonlat[kp,], asp=1, xlab="Lon", ylab="Lat", pch='.',
+            ylim=plot_y_range)
+        # Add all model points -- helps to see coast, etc
+        points(model_lonlat[,1:2], pch='.')
 
         arrows(ngdc_lonlat[kp,1], ngdc_lonlat[kp,2], ngdc_lonlat[kp,1], 
             ngdc_lonlat[kp,2] + ht*scaler, length=0, lwd=2, col='black')
@@ -188,6 +192,7 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
             ngdc_lonlat[kp,2] + ms*scaler, length=0, lwd=0.5, 
             col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID[kp]])
         title(titlewords, cex.main=1.5)
+
     }
 
     # Maps for all events
@@ -220,6 +225,9 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         title(paste0('Gauge med(p/m): ', round(median(pred[kk]/meas[kk]), 2),
             ', med(|p-m|/m): ', round(median(abs(pred[kk]-meas[kk])/meas[kk]), 2)), 
             cex.main=1.5)
+
+        legend('topleft', legend = as.character(1:10), pch=rep(19, 10), 
+            col=cols10, bty='n')
     }
 
     scatter_panel_plot(NGDC_comparison$uniform, ui, 
