@@ -174,7 +174,7 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         arrows(ngdc_lonlat[,1],  ngdc_lonlat[,2], ngdc_lonlat[,1], 
             ngdc_lonlat[,2] + ms*scaler, length=0, lwd=1, 
             col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
-        title(titlewords)
+        title(titlewords, cex.main=1.5)
     }
 
     # Maps for all events
@@ -190,16 +190,16 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
     
         plot(c(0.01, 100), c(0.01, 100), log='xy', asp=1, xlab='Predicted',
             ylab='Measured', col=0)
-        points(
-            model_data$max_stage[ind,]*model_data$gcf_mat[ind,],
-            model_data$tsunami_obs$WATER_HT, 
-            pch=19, col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
+        pred = model_data$max_stage[ind,]*model_data$gcf_mat[ind,]
+        meas = model_data$tsunami_obs$WATER_HT
+        points(pred, meas, pch=19, 
+            col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
 
         abline(h=10**(seq(-2,2)), col='orange', lty='dotted')
         abline(v=10**(seq(-2,2)), col='orange', lty='dotted')
         abline(0,1,col='red')
 
-        title(titlewords) 
+        title(paste0(titlewords, ' ', round(cor(pred, meas), 2), cex.main=1.5)) 
     }
 
     scatter_panel_plot(NGDC_comparison$uniform, ui, 
