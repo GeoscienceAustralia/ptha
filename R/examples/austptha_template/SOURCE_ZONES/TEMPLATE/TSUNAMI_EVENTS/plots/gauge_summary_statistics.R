@@ -3,7 +3,9 @@ library(rptha)
 source('time_domain_hybrid_norm.R')
 
 # Find part of the time-series on which we apply the model data comparison, and
-# make a plot
+# make a plot. Although originally mainly for plotting, this function actually
+# extracts data in a useful way, and may be used just for that purpose with
+# make_plot=FALSE
 #
 # Idea: Get region where the time is:
 # A) After the earthquake occurs
@@ -14,7 +16,7 @@ source('time_domain_hybrid_norm.R')
 #
 plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata, 
     unit_source_statistics, time_window_hrs=12, title_extra='',
-    max_model_time_shift_min = 15){
+    max_model_time_shift_min = 15, make_plot=TRUE){
 
     # Start obs time = 30 min before model absolute value exceeds 0.5% of its
     # maxima, but start is never < 0 minutes post-event 
@@ -93,40 +95,42 @@ plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata
         (sum(energy_data[3:5]**2) + sum(energy_model[3:5]**2))
 
 
-    # Plot
-    par(mfrow=c(4,1))
-    par(mar=c(3,3,2,1))
-    ylim1 = range(c(data_range, model_range))
-    # Data
-    plot(data_t, data_s, t='l', ylim=ylim1, main=paste0('Data: ', title_extra), 
-        col='red')
-    points(model_t - model_time_offset, model_s, t='l', col='grey', lty='dashed')
-    grid()
-    abline(v=seq(min(data_t), max(data_t), by=3600), col='green', lty='dashed')
-    abline(v=range(data_t), col='orange', lty='dashed')
-    abline(h=data_range, col='brown', lty='dashed')
+    if(make_plot){
+        # Plot
+        par(mfrow=c(4,1))
+        par(mar=c(3,3,2,1))
+        ylim1 = range(c(data_range, model_range))
+        # Data
+        plot(data_t, data_s, t='l', ylim=ylim1, main=paste0('Data: ', title_extra), 
+            col='red')
+        points(model_t - model_time_offset, model_s, t='l', col='grey', lty='dashed')
+        grid()
+        abline(v=seq(min(data_t), max(data_t), by=3600), col='green', lty='dashed')
+        abline(v=range(data_t), col='orange', lty='dashed')
+        abline(h=data_range, col='brown', lty='dashed')
 
-    # Model
-    plot(model_t - model_time_offset, model_s, t='l', ylim=ylim1, 
-        main=paste0('Model: ', model_index, ' , Stat: ', round(model_data_similarity_time, 2), 
-        ' ', round(model_data_similarity_spec, 2)),
-        col='blue')
-    points(data_t, data_s, t='l', col='grey', lty='dashed')
-    grid()
-    abline(v=seq(min(data_t), max(data_t), by=3600), col='green', lty='dashed')
-    abline(h=model_range, col='brown', lty='dashed')
+        # Model
+        plot(model_t - model_time_offset, model_s, t='l', ylim=ylim1, 
+            main=paste0('Model: ', model_index, ' , Stat: ', round(model_data_similarity_time, 2), 
+            ' ', round(model_data_similarity_spec, 2)),
+            col='blue')
+        points(data_t, data_s, t='l', col='grey', lty='dashed')
+        grid()
+        abline(v=seq(min(data_t), max(data_t), by=3600), col='green', lty='dashed')
+        abline(h=model_range, col='brown', lty='dashed')
 
-    slip_rast_list = make_slip_raster(model_index, event_metadata$events_with_Mw, 
-        unit_source_statistics)
-    plot(slip_rast_list$slip_rast, asp=1, xlim=slip_rast_list$xlim)
+        slip_rast_list = make_slip_raster(model_index, event_metadata$events_with_Mw, 
+            unit_source_statistics)
+        plot(slip_rast_list$slip_rast, asp=1, xlim=slip_rast_list$xlim)
 
-    plot(1:6, energy_model/energy_data, log='y', type='h', lend=2, lwd=4, 
-        main = 'Energy model / Energy data', axes=FALSE, ylim=c(1e-02, 1e+02))
-    grid(col='orange')
-    abline(h=1, col='red')
-    axis(side=2)
-    axis(side=1, at=1:6, 
-        labels=c('<2 min', '2-6 min', '6-20', '20 - 60', '60 - 180', '>180'))
+        plot(1:6, energy_model/energy_data, log='y', type='h', lend=2, lwd=4, 
+            main = 'Energy model / Energy data', axes=FALSE, ylim=c(1e-02, 1e+02))
+        grid(col='orange')
+        abline(h=1, col='red')
+        axis(side=2)
+        axis(side=1, at=1:6, 
+            labels=c('<2 min', '2-6 min', '6-20', '20 - 60', '60 - 180', '>180'))
+    }
 
     return(list(
         bin_divisors = bin_divisors, 

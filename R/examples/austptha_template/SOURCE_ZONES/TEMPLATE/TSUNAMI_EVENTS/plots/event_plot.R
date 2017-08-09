@@ -144,7 +144,7 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
                     2, 2, 5,
                     3, 3, 6,
                     7, 8, 9), 
-        ncol=3, nrow=4, byrow=TRUE)
+        ncol=3, nrow=4, byrow=TRUE))
 
     par(mar=c(2,2,2,2))
 
@@ -158,30 +158,34 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         ngdc_lonlat = cbind(
             model_data$tsunami_obs$LONGITUDE,
             model_data$tsunami_obs$LATITUDE)
+
         # Ensure the longitudes are in the same range (e.g. -180-180 or 0-360)
         ngdc_lonlat = adjust_longitude_by_360_deg(ngdc_lonlat, 
             model_data$gauge_lonlat[,1:2])
 
-        plot(ngdc_lonlat, asp=1, xlab="Lon", ylab="Lat", pch='.')
-        points(model_lonlat[,1:2], pch='.')
+        # Only compare points with 'distance to nearest model result < 20000'
+        kp = which(model_data$distance_to_nearest < 20000)
+
+        plot(ngdc_lonlat[kp,], asp=1, xlab="Lon", ylab="Lat", pch='.')
+        points(model_lonlat[kp,1:2], pch='.')
 
         
         # Apply sqrt transformation, to make it easier to see a range of scales
-        ht = sqrt(model_data$tsunami_obs$WATER_HT)
-        ms  = sqrt(model_data$max_stage[ind,] * model_data$gcf_mat[ind,])
+        ht = sqrt(model_data$tsunami_obs$WATER_HT[kp])
+        ms  = sqrt(model_data$max_stage[ind,kp] * model_data$gcf_mat[ind,kp])
 
         # Maybe scale arrows to improve visibility
-        tmp = max(diff(range(ngdc_lonlat[,1])), diff(range(ngdc_lonlat[,2])))
+        tmp = max(diff(range(ngdc_lonlat[kp,1])), diff(range(ngdc_lonlat[kp,2])))
         # By default, largest vertical bar takes up 1/4 of vertical range
         scaler = max(1, tmp * 0.25/max(c(max(ht), max(ms))) )
         
 
-        arrows(ngdc_lonlat[,1], ngdc_lonlat[,2], ngdc_lonlat[,1], 
-            ngdc_lonlat[,2] + ht*scaler, length=0, lwd=2, col='black')
+        arrows(ngdc_lonlat[kp,1], ngdc_lonlat[kp,2], ngdc_lonlat[kp,1], 
+            ngdc_lonlat[kp,2] + ht*scaler, length=0, lwd=2, col='black')
         # Make the model results thinner, and color by the measurement type
-        arrows(ngdc_lonlat[,1],  ngdc_lonlat[,2], ngdc_lonlat[,1], 
-            ngdc_lonlat[,2] + ms*scaler, length=0, lwd=1, 
-            col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
+        arrows(ngdc_lonlat[kp,1],  ngdc_lonlat[kp,2], ngdc_lonlat[kp,1], 
+            ngdc_lonlat[kp,2] + ms*scaler, length=0, lwd=0.5, 
+            col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID[kp]])
         title(titlewords, cex.main=1.5)
     }
 
@@ -195,19 +199,23 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
 
     # Convenience function to plot predicted-vs-measured
     scatter_panel_plot<-function(model_data, ind, titlewords){
+       
+        # Only keep obs within 20km of model point 
+        kp = which(model_data$distance_to_nearest < 20000)
     
         plot(c(0.01, 100), c(0.01, 100), log='xy', asp=1, xlab='Predicted',
             ylab='Measured', col=0)
-        pred = model_data$max_stage[ind,]*model_data$gcf_mat[ind,]
-        meas = model_data$tsunami_obs$WATER_HT
+        pred = model_data$max_stage[ind,kp]*model_data$gcf_mat[ind,kp]
+        meas = model_data$tsunami_obs$WATER_HT[kp]
         points(pred, meas, pch=19, 
-            col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
+            col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID[kp]])
 
         abline(h=10**(seq(-2,2)), col='orange', lty='dotted')
         abline(v=10**(seq(-2,2)), col='orange', lty='dotted')
         abline(0,1,col='red')
 
         kk = which(model_data$tsunami_obs$TYPE_MEASUREMENT_ID %in% c(2,3))
+        kk = intersection(kk, kp)
 
         title(paste0('Gauge med(p/m): ', round(median(pred[kk]/meas[kk]), 2),
             ', med(|p-m|/m): ', round(median(abs(pred[kk]-meas[kk])/meas[kk]), 2)), 
