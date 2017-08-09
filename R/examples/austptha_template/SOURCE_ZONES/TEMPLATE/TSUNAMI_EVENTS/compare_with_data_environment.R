@@ -387,7 +387,7 @@ compare_event_maxima_with_NGDC<-function(
     # No correction at DART buoys -- assume gauge already has same depth
     # (will be OK so long as gauge is close to DART)
     kk = which(tsunami_obs$TYPE_MEASUREMENT_ID == 3)
-    correction_factors[] = 1
+    correction_factors[kk] = 1
     # Assume tide gauges in 10m water depth (for reference comparison purposes)
     # Experience indicates that tide gauges are generally lower than '1m-depth
     # greens law'
