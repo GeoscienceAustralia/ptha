@@ -15,7 +15,7 @@ all_Rdata = Sys.glob('*.Rdata')
 fid = nc_open(Sys.glob('../all_uniform_slip_earthquake_events_tsunami*.nc')[1],
     readunlim=FALSE)
 model_lonlat = cbind(ncvar_get(fid, 'lon'), ncvar_get(fid, 'lat'))
-close(fid)
+nc_close(fid)
 
 
 #'
@@ -143,27 +143,37 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
     par(mar=c(2,2,2,2))
 
     # A useful color scheme
-    cols10 = c(rainbow(6), terrain.colors(4))
+    cols10 = c(rev(rainbow(6)), terrain.colors(4))
 
-    # Convenience function to make a map with the runup
+    # Convenience function to make a map with the observed data
     map_panel_plot<-function(model_data, ind, titlewords){
         # First panel -- spatial plot of locations
-        ngdc_lonlat = cbind(model_data$tsunami_obs$LONGITUDE,
+        ngdc_lonlat = cbind(
+            model_data$tsunami_obs$LONGITUDE,
             model_data$tsunami_obs$LATITUDE)
         # Ensure the longitudes are in the same range (e.g. -180-180 or 0-360)
         adjust_longitude_by_360_deg(ngdc_lonlat, 
             model_data$gauge_lonlat[,1:2])
 
         plot(ngdc_lonlat, asp=1, xlab="Lon", ylab="Lat", pch='.')
-        points(model_lonlat[,1:2], pch='.', col='grey')
-        ht = model_data$tsunami_obs$WAVE_HT
+        points(model_lonlat[,1:2], pch='.')
+
+
+        ht = model_data$tsunami_obs$WATER_HT
+        ms  = model_data$max_stage[ind,] * model_data$gcf_mat[ind,]
+
+        # Maybe scale arrows to improve visibility
+        tmp = max(diff(range(ngdc_lonlat[,1])), diff(range(ngdc_lonlat[,2])))
+        # By default, largest vertical bar takes up 1/4 of vertical range
+        scaler = max(1, tmp * 0.25/max(c(max(ht), max(ms))) )
+        
+
         arrows(ngdc_lonlat[,1], ngdc_lonlat[,2], ngdc_lonlat[,1], 
-            ngdc_lonlat[,2] + ht, length=0, lwd=2, col='black')
-        gll = model_data$gauge_lonlat
-        ms  = model_data$max_stage * model_data$gcf_mat
+            ngdc_lonlat[,2] + ht*scaler, length=0, lwd=2, col='black')
         # Make the model results thinner, and color by the measurement type
-        arrows(gll[,1],  gll[,2], gll[,1], gll[,2] + ms[,ind], length=0,
-            lwd=1, col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
+        arrows(ngdc_lonlat[,1],  ngdc_lonlat[,2], ngdc_lonlat[,1], 
+            ngdc_lonlat[,2] + ms*scaler, length=0, lwd=1, 
+            col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
         title(titlewords)
     }
 
@@ -179,9 +189,10 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
     scatter_panel_plot<-function(model_data, ind, titlewords){
     
         plot(c(0.01, 100), c(0.01, 100), log='xy', asp=1, xlab='Predicted',
-            ylab='Measured')
-        points(model_data$max_stage[,ind]*model_data$gcf_mat[,ind],
-            model_data$tsunami_obs$WATER_HT[ind], 
+            ylab='Measured', col=0)
+        points(
+            model_data$max_stage[ind,]*model_data$gcf_mat[ind,],
+            model_data$tsunami_obs$WATER_HT, 
             pch=19, col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
 
         abline(h=10**(seq(-2,2)), col='orange', lty='dotted')
