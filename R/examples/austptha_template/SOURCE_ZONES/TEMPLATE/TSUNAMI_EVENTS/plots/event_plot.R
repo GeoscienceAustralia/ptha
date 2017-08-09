@@ -167,7 +167,8 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         kp = which(model_data$distance_to_nearest < 20000)
 
         plot(ngdc_lonlat[kp,], asp=1, xlab="Lon", ylab="Lat", pch='.')
-        points(model_lonlat[kp,1:2], pch='.')
+        # Add all model points -- helps to see coast, etc
+        points(model_lonlat[,1:2], pch='.')
 
         
         # Apply sqrt transformation, to make it easier to see a range of scales
@@ -214,8 +215,7 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         abline(v=10**(seq(-2,2)), col='orange', lty='dotted')
         abline(0,1,col='red')
 
-        kk = which(model_data$tsunami_obs$TYPE_MEASUREMENT_ID %in% c(2,3))
-        kk = intersect(kk, kp)
+        kk = which(model_data$tsunami_obs$TYPE_MEASUREMENT_ID[kp] %in% c(2,3))
 
         title(paste0('Gauge med(p/m): ', round(median(pred[kk]/meas[kk]), 2),
             ', med(|p-m|/m): ', round(median(abs(pred[kk]-meas[kk])/meas[kk]), 2)), 
