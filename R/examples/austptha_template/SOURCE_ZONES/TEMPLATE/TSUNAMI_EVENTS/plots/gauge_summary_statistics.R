@@ -220,7 +220,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     event_metadata = readRDS(paste0(event_basedir_uniform, '/event_metadata.RDS'))
     event_data_files = Sys.glob(paste0(event_basedir_uniform, '/gauge*.RDS'))
     
-    pdf(paste0(basename(event_basedir_uniform),'.pdf'), width=10, height=15)
+    #pdf(paste0(basename(event_basedir_uniform),'.pdf'), width=10, height=15)
     uniform_slip_stats = list()
 
     # Loop over all gauges
@@ -231,7 +231,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         event_gauge_name = basename(event_data_file)
         for(i in 1:length(event_data$model_events)){
             energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
-                unit_source_statistics, time_window_hrs=12, event_gauge_name)
+                unit_source_statistics, time_window_hrs=12, event_gauge_name,
+                make_plot=FALSE)
             uniform_slip_stats[[event_data_file]][[i]] = energies
             # Also record the earthquake peak slip -- here just equal to the
             # uniform slip
@@ -241,13 +242,13 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         }
     
     }
-    dev.off()
+    #dev.off()
     
     # Apply the plot for each gauge, stochastic slip
     event_metadata = readRDS(paste0(event_basedir_stochastic, '/event_metadata.RDS'))
     event_data_files = Sys.glob(paste0(event_basedir_stochastic, '/gauge*.RDS'))
     
-    pdf(paste0(basename(event_basedir_stochastic), '.pdf'), width=10, height=15)
+    #pdf(paste0(basename(event_basedir_stochastic), '.pdf'), width=10, height=15)
     stochastic_slip_stats = list()
     # Loop over all gauges
     for(event_data_file in event_data_files){
@@ -257,7 +258,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         event_gauge_name = basename(event_data_file)
         for(i in 1:length(event_data$model_events)){
             energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
-                unit_source_statistics, time_window_hrs=12, event_gauge_name)
+                unit_source_statistics, time_window_hrs=12, event_gauge_name, make_plot=FALSE)
             stochastic_slip_stats[[event_data_file]][[i]] = energies
             # Also record the earthquake peak slip 
             peak_slip = max(scan(text=gsub("_", " ", 
@@ -268,13 +269,13 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
                 event_metadata$events_with_Mw$peak_slip_downdip_ind[i]
         }
     }
-    dev.off()
+    #dev.off()
 
     # Apply the plot for each gauge, variable_uniform slip
     event_metadata = readRDS(paste0(event_basedir_variable_uniform, '/event_metadata.RDS'))
     event_data_files = Sys.glob(paste0(event_basedir_variable_uniform, '/gauge*.RDS'))
     
-    pdf(paste0(basename(event_basedir_variable_uniform), '.pdf'), width=10, height=15)
+    #pdf(paste0(basename(event_basedir_variable_uniform), '.pdf'), width=10, height=15)
     variable_uniform_slip_stats = list()
     # Loop over all gauges
     for(event_data_file in event_data_files){
@@ -284,7 +285,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         event_gauge_name = basename(event_data_file)
         for(i in 1:length(event_data$model_events)){
             energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
-                unit_source_statistics, time_window_hrs=12, event_gauge_name)
+                unit_source_statistics, time_window_hrs=12, event_gauge_name, make_plot=FALSE)
             variable_uniform_slip_stats[[event_data_file]][[i]] = energies
             # Also record the earthquake peak slip 
             peak_slip = max(scan(text=gsub("_", " ", 
@@ -295,7 +296,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
                 event_metadata$events_with_Mw$peak_slip_downdip_ind[i]
         }
     }
-    dev.off()
+    #dev.off()
 
     # Save the uniform, stochastic, and variable_uniform outputs to RDS
     output_name_base = gsub('_uniform', '', basename(event_basedir_uniform))

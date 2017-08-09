@@ -215,7 +215,7 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         abline(0,1,col='red')
 
         kk = which(model_data$tsunami_obs$TYPE_MEASUREMENT_ID %in% c(2,3))
-        kk = intersection(kk, kp)
+        kk = intersect(kk, kp)
 
         title(paste0('Gauge med(p/m): ', round(median(pred[kk]/meas[kk]), 2),
             ', med(|p-m|/m): ', round(median(abs(pred[kk]-meas[kk])/meas[kk]), 2)), 
