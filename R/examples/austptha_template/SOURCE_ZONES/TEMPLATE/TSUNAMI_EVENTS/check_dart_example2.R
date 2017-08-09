@@ -32,7 +32,7 @@ check_dart_env$compare_event_with_gauge_time_series(
     output_dir_tag = 'puysegur_2009_07_15_Mw78_uniform')
 dev.off()
 # Store NGDC comparison data
-compare_event_maxima_with_NGDC(
+check_dart_env$compare_event_maxima_with_NGDC(
     event_start,
     event_magnitude,
     event_hypocentre,
@@ -55,7 +55,7 @@ check_dart_env$compare_event_with_gauge_time_series(
     use_stochastic_slip=TRUE)
 dev.off()
 # Store NGDC comparison data
-compare_event_maxima_with_NGDC(
+check_dart_env$compare_event_maxima_with_NGDC(
     event_start,
     event_magnitude,
     event_hypocentre,
@@ -80,7 +80,7 @@ check_dart_env$compare_event_with_gauge_time_series(
     )
 dev.off()
 # Store NGDC comparison data
-compare_event_maxima_with_NGDC(
+check_dart_env$compare_event_maxima_with_NGDC(
     event_start,
     event_magnitude,
     event_hypocentre,
