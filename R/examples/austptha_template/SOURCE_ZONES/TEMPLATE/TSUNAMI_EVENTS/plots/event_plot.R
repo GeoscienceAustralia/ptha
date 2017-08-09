@@ -4,11 +4,39 @@
 
 library(rptha)
 
-# R image files from gauge_summary_statistics.R
+#'
+#' R image files from gauge_summary_statistics.R
+#'
 all_Rdata = Sys.glob('*.Rdata')
 
-# Files from NGDC comparison
+#'
+#' lon/lat gauge coordinates, to help make plotting interpretable
+#'
+fid = nc_open(Sys.glob('../all_uniform_slip_earthquake_events_tsunami*.nc')[1],
+    readunlim=FALSE)
+model_lonlat = cbind(ncvar_get(fid, 'lon'), ncvar_get(fid, 'lat'))
+close(fid)
+
+
+#'
+#' Files from NGDC comparison
+#'
 all_NGDC_comparison_RDS = Sys.glob('../*/event_NGDC_comparison.RDS')
+
+# Order the NGDC files into 'uniform', 'stochastic', 'variable_uniform'
+order_NGDC_RDS = c(
+    grep('uniform_uniform', all_NGDC_comparison_RDS),
+    grep('stochastic_stochastic', all_NGDC_comparison_RDS),
+    grep('variable_uniform_variable_uniform', all_NGDC_comparison_RDS)
+    )
+stopifnot(
+    (length(order_NGDC_RDS) == length(all_NGDC_comparison_RDS)) &
+    (length(unique(order_NGDC_RDS)) == length(all_NGDC_comparison_RDS))
+    )
+all_NGDC_comparison_RDS = all_NGDC_comparison_RDS[order_NGDC_RDS]
+# Read the NGDC RDS files into a list, with suitable names
+NGDC_comparison = lapply(as.list(all_NGDC_comparison_RDS), readRDS)
+names(NGDC_comparison) = c('uniform', 'stochastic', 'variable_uniform')
 
 
 #' Plot all gauge data and selected model results as time-series
@@ -104,11 +132,73 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
 #' The function assumes the existence of ....
 #'
 #' @param 
-ngdc_comparison_plot<-function(ui, vi, uvi, png_name_stub){
+ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
 
+    output_png = paste0(output_dir, '/', output_name_base, '_', 
+        png_name_stub, '.png')
+    
+    png(output_png, width=15, height = 10, units='in', 
+        res=300)
+    par(mfrow=c(2,3))
+    par(mar=c(2,2,2,2))
 
+    # A useful color scheme
+    cols10 = c(rainbow(6), terrain.colors(4))
 
+    # Convenience function to make a map with the runup
+    map_panel_plot<-function(model_data, ind, titlewords){
+        # First panel -- spatial plot of locations
+        ngdc_lonlat = cbind(model_data$tsunami_obs$LONGITUDE,
+            model_data$tsunami_obs$LATITUDE)
+        # Ensure the longitudes are in the same range (e.g. -180-180 or 0-360)
+        adjust_longitude_by_360_deg(ngdc_lonlat, 
+            model_data$gauge_lonlat[,1:2])
 
+        plot(ngdc_lonlat, asp=1, xlab="Lon", ylab="Lat", pch='.')
+        points(model_lonlat[,1:2], pch='.', col='grey')
+        ht = model_data$tsunami_obs$WAVE_HT
+        arrows(ngdc_lonlat[,1], ngdc_lonlat[,2], ngdc_lonlat[,1], 
+            ngdc_lonlat[,2] + ht, length=0, lwd=2, col='black')
+        gll = model_data$gauge_lonlat
+        ms  = model_data$max_stage * model_data$gcf_mat
+        # Make the model results thinner, and color by the measurement type
+        arrows(gll[,1],  gll[,2], gll[,1], gll[,2] + ms[,ind], length=0,
+            lwd=1, col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
+        title(titlewords)
+    }
+
+    # Maps for all events
+    map_panel_plot(NGDC_comparison$uniform, ui, 
+        paste0('Uniform event ', ui))
+    map_panel_plot(NGDC_comparison$stochastic, si, 
+        paste0('Stochastic event ', si))
+    map_panel_plot(NGDC_comparison$variable_uniform, vui, 
+        paste0('Variable_uniform event ', vui))
+
+    # Convenience function to plot predicted-vs-measured
+    scatter_panel_plot<-function(model_data, ind, titlewords){
+    
+        plot(c(0.01, 100), c(0.01, 100), log='xy', asp=1, xlab='Predicted',
+            ylab='Measured')
+        points(model_data$max_stage[,ind]*model_data$gcf_mat[,ind],
+            model_data$tsunami_obs$WATER_HT[ind], 
+            pch=19, col=cols10[model_data$tsunami_obs$TYPE_MEASUREMENT_ID])
+
+        abline(h=10**(seq(-2,2)), col='orange', lty='dotted')
+        abline(v=10**(seq(-2,2)), col='orange', lty='dotted')
+        abline(0,1,col='red')
+
+        title(titlewords) 
+    }
+
+    scatter_panel_plot(NGDC_comparison$uniform, ui, 
+        paste0('Uniform event ', ui))
+    scatter_panel_plot(NGDC_comparison$stochastic, si, 
+        paste0('Stochastic event ', si))
+    scatter_panel_plot(NGDC_comparison$variable_uniform, vui, 
+        paste0('Variable_uniform event ', vui))
+
+    dev.off()
 }
 
 #
@@ -179,6 +269,9 @@ for(RdataFile in all_Rdata){
         multi_gauge_time_series_plot(ui, si, vui, 
             png_name_stub=paste0('best_fit_', stat_name, '_gauges_plot')
             )
+        ngdc_comparison_plot(ui, si, vui, 
+            png_name_stub=paste0('best_fit_', stat_name, '_NGDC_plot')
+            )
 
     }
 
@@ -211,11 +304,17 @@ for(RdataFile in all_Rdata){
             png_name_stub=paste0('event_', ui, '_', i, '_gauges_plot'),
             output_dir=output_dir
             )
+        ngdc_comparison_plot(ui, si, vui, 
+            png_name_stub=paste0('event_', ui, '_', i, '_NGDC_plot'),
+            output_dir=output_dir
+            )
 
     }
     
 
     # Remove nearly all objects, except the ones controlling the outer loop
-    rm(list=setdiff(ls(all=TRUE), c('RdataFile', 'all_Rdata')))
+    rm(list=setdiff( ls(all=TRUE),
+            c('RdataFile', 'all_Rdata', 'all_NGDC_comparison_RDS')
+        ))
 
 }
