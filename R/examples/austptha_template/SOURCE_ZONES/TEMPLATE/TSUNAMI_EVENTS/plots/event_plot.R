@@ -199,7 +199,8 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         abline(v=10**(seq(-2,2)), col='orange', lty='dotted')
         abline(0,1,col='red')
 
-        title(paste0(titlewords, ' ', round(median(pred/meas), 2)), 
+        title(paste0(titlewords, ', med(pred/meas): ', round(median(pred/meas), 2),
+            ', med(|pred-meas|/meas): ', round(median(abs(pred-meas)/meas), 2)), 
             cex.main=1.5)
     }
 
