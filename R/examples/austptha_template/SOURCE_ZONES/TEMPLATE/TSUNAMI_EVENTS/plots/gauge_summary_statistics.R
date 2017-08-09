@@ -197,7 +197,7 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
 ###############################################################
 
 source_name = basename(dirname(dirname(getwd())))
-event_basedirs_uniform = dirname(Sys.glob(paste0('../uniform_uniform/event_metadata.RDS')))
+event_basedirs_uniform = dirname(Sys.glob(paste0('../*uniform_uniform/event_metadata.RDS')))
 event_basedirs_stochastic = gsub('uniform', 'stochastic', event_basedirs_uniform)
 event_basedirs_variable_uniform = gsub('uniform', 'variable_uniform', event_basedirs_uniform)
 

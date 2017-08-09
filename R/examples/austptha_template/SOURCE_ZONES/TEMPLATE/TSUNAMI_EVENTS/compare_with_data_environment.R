@@ -343,8 +343,12 @@ compare_event_maxima_with_NGDC<-function(
     #
     # Open netcdf with peak stage info
     #
+    
+    # Default case (maybe overwritten below)
     peak_stage_ncdf = paste0('all_uniform_slip_earthquake_events_tsunami_', 
         source_name, '.nc')
+
+    # Fix the name, if stochastic or uniform is used
     if(use_stochastic_slip){
 
         stopifnot(use_variable_uniform_slip == FALSE)
