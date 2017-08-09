@@ -1214,7 +1214,7 @@ sffm_make_events_on_discretized_source<-function(
             initial_moment = initial_moment,
             peak_slip_ind = c(peak_slip_row, peak_slip_col),
             numerical_corner_wavenumbers = numerical_corner_wavenumbers,
-            physical_corner_wavenumbers = physical_corner_wavenumbers,
+            physical_corner_wavenumbers = physical_corner_wavenumbers[j,1:2],
             desired_LW = slip_LW[1:2],
             target_event_mw = target_event_mw,
             target_location = target_location,

@@ -137,19 +137,18 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
     output_png = paste0(output_dir, '/', output_name_base, '_', 
         png_name_stub, '.png')
     
-    png(output_png, width=15, height = 18, units='in', 
+    png(output_png, width=15, height = 10, units='in', 
         res=200)
     #par(mfrow=c(2,3))
-    layout(matrix(c(1, 1, 4,
-                    2, 2, 5,
-                    3, 3, 6,
-                    7, 8, 9), 
-        ncol=3, nrow=4, byrow=TRUE))
+    layout(matrix(c(1, 1, 4, 7
+                    2, 2, 5, 8
+                    3, 3, 6, 9),
+        ncol=4, nrow=3, byrow=TRUE))
 
     par(mar=c(2,2,2,2))
 
     # A useful color scheme
-    cols10 = c(rev(rainbow(6)), terrain.colors(4))
+    cols10 = c(c('hotpink', 'orange'), rev(rainbow(6))[3:6], terrain.colors(4))
 
     # Convenience function to make a map with the observed data
     # Use sqrt vertical scale
@@ -177,7 +176,7 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         vb = 0.2
         scaler = max(1, tmp * vb/max(c(max(ht), max(ms))) )
         
-        plot_y_range = range(ngdc_lonlat_kp[,2])
+        plot_y_range = range(ngdc_lonlat[kp,2])
         plot_y_range[2] = plot_y_range[2] + vb * diff(plot_y_range)
 
         plot(ngdc_lonlat[kp,], asp=1, xlab="Lon", ylab="Lat", pch='.',
@@ -240,13 +239,13 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
     # Final plot -- slip rasters
     slip_rast1 = make_slip_raster(1, uniform_slip_stats[[1]][[ui]]$events_with_Mw, 
         unit_source_statistics)
-    plot(slip_rast1$slip_rast, xlim=slip_rast1$xlim, asp=1)
+    image(slip_rast1$slip_rast, xlim=slip_rast1$xlim, col=rev(terrain.colors(255)))
     slip_rast1 = make_slip_raster(1, stochastic_slip_stats[[1]][[si]]$events_with_Mw, 
         unit_source_statistics)
-    plot(slip_rast1$slip_rast, xlim=slip_rast1$xlim, asp=1)
+    image(slip_rast1$slip_rast, xlim=slip_rast1$xlim, col=rev(terrain.colors(255)))
     slip_rast1 = make_slip_raster(1, variable_uniform_slip_stats[[1]][[vui]]$events_with_Mw, 
         unit_source_statistics)
-    plot(slip_rast1$slip_rast, xlim=slip_rast1$xlim, asp=1)
+    image(slip_rast1$slip_rast, xlim=slip_rast1$xlim, col=rev(terrain.colors(255)))
 
     dev.off()
 }
