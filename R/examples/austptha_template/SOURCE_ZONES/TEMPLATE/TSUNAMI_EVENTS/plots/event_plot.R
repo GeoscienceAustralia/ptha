@@ -137,30 +137,38 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
     output_png = paste0(output_dir, '/', output_name_base, '_', 
         png_name_stub, '.png')
     
-    png(output_png, width=15, height = 10, units='in', 
-        res=300)
-    par(mfrow=c(2,3))
+    png(output_png, width=15, height = 18, units='in', 
+        res=200)
+    #par(mfrow=c(2,3))
+    layout(matrix(c(1, 1, 4,
+                    2, 2, 5,
+                    3, 3, 6,
+                    7, 8, 9), 
+        ncol=3, nrow=4, byrow=TRUE)
+
     par(mar=c(2,2,2,2))
 
     # A useful color scheme
     cols10 = c(rev(rainbow(6)), terrain.colors(4))
 
     # Convenience function to make a map with the observed data
+    # Use sqrt vertical scale
     map_panel_plot<-function(model_data, ind, titlewords){
         # First panel -- spatial plot of locations
         ngdc_lonlat = cbind(
             model_data$tsunami_obs$LONGITUDE,
             model_data$tsunami_obs$LATITUDE)
         # Ensure the longitudes are in the same range (e.g. -180-180 or 0-360)
-        adjust_longitude_by_360_deg(ngdc_lonlat, 
+        ngdc_lonlat = adjust_longitude_by_360_deg(ngdc_lonlat, 
             model_data$gauge_lonlat[,1:2])
 
         plot(ngdc_lonlat, asp=1, xlab="Lon", ylab="Lat", pch='.')
         points(model_lonlat[,1:2], pch='.')
 
-
-        ht = model_data$tsunami_obs$WATER_HT
-        ms  = model_data$max_stage[ind,] * model_data$gcf_mat[ind,]
+        
+        # Apply sqrt transformation, to make it easier to see a range of scales
+        ht = sqrt(model_data$tsunami_obs$WATER_HT)
+        ms  = sqrt(model_data$max_stage[ind,] * model_data$gcf_mat[ind,])
 
         # Maybe scale arrows to improve visibility
         tmp = max(diff(range(ngdc_lonlat[,1])), diff(range(ngdc_lonlat[,2])))
@@ -199,8 +207,10 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         abline(v=10**(seq(-2,2)), col='orange', lty='dotted')
         abline(0,1,col='red')
 
-        title(paste0('med(p/m): ', round(median(pred/meas), 2),
-            ', med(|p-m|/m): ', round(median(abs(pred-meas)/meas), 2)), 
+        kk = which(model_data$tsunami_obs$TYPE_MEASUREMENT_ID %in% c(2,3))
+
+        title(paste0('Gauge med(p/m): ', round(median(pred[kk]/meas[kk]), 2),
+            ', med(|p-m|/m): ', round(median(abs(pred[kk]-meas[kk])/meas[kk]), 2)), 
             cex.main=1.5)
     }
 
@@ -210,6 +220,17 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         paste0('Stochastic event ', si))
     scatter_panel_plot(NGDC_comparison$variable_uniform, vui, 
         paste0('Variable_uniform event ', vui))
+
+    # Final plot -- slip rasters
+    slip_rast1 = make_slip_raster(1, uniform_slip_stats[[1]][[ui]]$events_with_Mw, 
+        unit_source_statistics)
+    plot(slip_rast1$slip_rast, xlim=slip_rast1$xlim, asp=1)
+    slip_rast1 = make_slip_raster(1, stochastic_slip_stats[[1]][[si]]$events_with_Mw, 
+        unit_source_statistics)
+    plot(slip_rast1$slip_rast, xlim=slip_rast1$xlim, asp=1)
+    slip_rast1 = make_slip_raster(1, variable_uniform_slip_stats[[1]][[vui]]$events_with_Mw, 
+        unit_source_statistics)
+    plot(slip_rast1$slip_rast, xlim=slip_rast1$xlim, asp=1)
 
     dev.off()
 }

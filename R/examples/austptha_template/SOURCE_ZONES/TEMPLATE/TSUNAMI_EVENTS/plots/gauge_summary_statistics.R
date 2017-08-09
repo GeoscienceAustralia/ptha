@@ -138,7 +138,8 @@ plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata
         model_peak_freq = model_peak_freq, data_peak_freq = data_peak_freq,
         model_data_similarity_time=model_data_similarity_time,
         model_data_similarity_spec = model_data_similarity_spec,
-        model_time_offset = model_time_offset)
+        model_time_offset = model_time_offset,
+        events_with_Mw = event_metadata$events_with_Mw[model_index,])
     )
 }
 
