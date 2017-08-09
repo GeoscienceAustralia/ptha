@@ -3,13 +3,19 @@
 #
 
 library(rptha)
+
+# R image files from gauge_summary_statistics.R
 all_Rdata = Sys.glob('*.Rdata')
+
+# Files from NGDC comparison
+all_NGDC_comparison_RDS = Sys.glob('../*/event_NGDC_comparison.RDS')
 
 
 #' Plot all gauge data and selected model results as time-series
 #'
 #' Note this function assumes the existence of a number of variables from the 
-#' *.Rdata session referenced above 
+#' *.Rdata session referenced above. So for it to work, one of those sessions
+#' needs to be loaded already.
 #'
 #' @param ui index of the uniform slip event in 
 #'     uniform_slip_stats[[i]][[ui]]
@@ -20,7 +26,7 @@ all_Rdata = Sys.glob('*.Rdata')
 #' @param png_name_stub character for the last part of the png filename
 #' @return nothing but make a nice plot
 #'
-gauge_plot<-function(ui, si, vui, png_name_stub){
+multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub){
 
     n_gauges = length(uniform_slip_stats)
     
@@ -93,6 +99,22 @@ gauge_plot<-function(ui, si, vui, png_name_stub){
     dev.off()
 }
 
+#' Various plots comparing uniform and variable slip events with NGDC data
+#'
+#' The function assumes the existence of ....
+#'
+#' @param 
+ngdc_comparison_plot<-function(ui, vi, uvi, png_name_stub){
+
+
+
+
+}
+
+#
+# Make lots of gauge comparison plots, and some summary statistics stuff.
+#
+
 for(RdataFile in all_Rdata){
 
     # Load the Rimage associated with gauge_summary_statistics.R
@@ -154,7 +176,7 @@ for(RdataFile in all_Rdata){
         dev.off()
 
         # Plot up as gauges
-        gauge_plot(ui, vi, vui, 
+        multi_gauge_time_series_plot(ui, vi, vui, 
             png_name_stub=paste0('best_fit_', stat_name, '_gauges_plot')
             )
 
@@ -182,7 +204,7 @@ for(RdataFile in all_Rdata){
         ui = variable_to_uniform[i]
         si = i
         vui = i
-        gauge_plot(ui, vi, vui, 
+        multi_gauge_time_series_plot(ui, vi, vui, 
             png_name_stub=paste0('event_', ui, '_', i, '_gauges_plot')
             )
 
