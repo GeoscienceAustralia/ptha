@@ -26,7 +26,7 @@ all_NGDC_comparison_RDS = Sys.glob('../*/event_NGDC_comparison.RDS')
 #' @param png_name_stub character for the last part of the png filename
 #' @return nothing but make a nice plot
 #'
-multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub){
+multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
 
     n_gauges = length(uniform_slip_stats)
     
@@ -39,7 +39,7 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub){
         strsplit(basename(names(uniform_slip_stats)), split='_'), 
         f<-function(x) substr(x[2], 1, 5)))
 
-    output_png = paste0(output_name_base, '_', png_name_stub, '.png')
+    output_png = paste0(output_dir, '/', output_name_base, '_', png_name_stub, '.png')
     png(output_png, width=7.5*ncol, height = max(nrow,5), units='in', 
         res=300)
     par(mfrow=c(nrow, ncol))
@@ -199,13 +199,17 @@ for(RdataFile in all_Rdata){
 
     variable_to_uniform = match(uniform_event_rows, unique(uniform_event_rows))
 
+    output_dir = 'event_fig'
+    dir.create(output_dir, showWarnings=FALSE)
+
     for(i in 1:length(variable_to_uniform)){
         # Indices of corresponding uniform, stochastic, and variable uniform
         ui = variable_to_uniform[i]
         si = i
         vui = i
         multi_gauge_time_series_plot(ui, si, vui, 
-            png_name_stub=paste0('event_', ui, '_', i, '_gauges_plot')
+            png_name_stub=paste0('event_', ui, '_', i, '_gauges_plot'),
+            output_dir=output_dir
             )
 
     }
