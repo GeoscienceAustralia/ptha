@@ -337,7 +337,7 @@ run_checks<-function(fid_local, slip_type){
         # Peak slip / mean slip
         plot(mws, event_max_slip/event_mean_slip_nonzero, log='y', 
             main='Event max_slip/mean_non-zero_slip', 
-            xlab='Mw', ylab='km')
+            xlab='Mw', ylab='')
         grid()
         median_ratio = aggregate(event_max_slip/event_mean_slip_nonzero, 
             list(mws), median)
@@ -346,7 +346,7 @@ run_checks<-function(fid_local, slip_type){
 
         plot(mws, event_max_slip/event_mean_slip_all, log='y', 
             main='Event max_slip/mean_slip_including_zeros', 
-            xlab='Mw', ylab='km')
+            xlab='Mw', ylab='')
         grid()
         median_ratio = aggregate(event_max_slip/event_mean_slip_all, list(mws), 
             median)
