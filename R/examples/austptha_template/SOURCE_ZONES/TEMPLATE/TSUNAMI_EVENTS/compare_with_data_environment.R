@@ -36,6 +36,8 @@ all_gauge_lonlat = get_netcdf_gauge_locations(all_tide_files[1])
 # Get the gauge output times [identical for all files]
 gauge_times = get_netcdf_gauge_output_times(all_tide_files[1])
 
+
+
 #' Given a magnitude and hypocentre, find earthquake events with the 'same'
 #' magnitude which contain (or are near) the hypocentre
 #'
@@ -44,14 +46,15 @@ gauge_times = get_netcdf_gauge_output_times(all_tide_files[1])
 #' @param event_hypocentre vector c(lon,lat) giving the location of a point on
 #' the rupture. All modelled uniform slip earthquakes will contain a unit-source
 #' within 0.5 scaling-law width/length of the unit-source containing this point.
-#' (The point must be inside a unit source). If use_stochastic_slip_runs=TRUE, then
-#' we will use stochastic events 'corresponding' to the above identified uniform events.
-#' If use_variable_uniform_slip_runs = TRUE, then we do as for stochastic_slip, in 
-#' the variable_uniform case.
-#' @param use_stochastic_slip_runs logical. If TRUE, return stochastic slip events
-#' that 'correspond to' the uniform slip event
-#' @param use_variable_uniform_slip_runs logical. If TRUE, return variable uniform
-#' slip events that 'correspond to' the uniform slip event
+#' (The point must be inside a unit source). If use_stochastic_slip_runs=TRUE,
+#' then we will use stochastic events 'corresponding' to the above identified
+#' uniform events.  If use_variable_uniform_slip_runs = TRUE, then we do as for
+#' stochastic_slip, in the variable_uniform case.
+#' @param use_stochastic_slip_runs logical. If TRUE, return stochastic slip
+#' events that 'correspond to' the uniform slip event
+#' @param use_variable_uniform_slip_runs logical. If TRUE, return variable
+#' uniform slip events that 'correspond to' the uniform slip event
+#' @return data.frame with metadata for the relevant events
 find_events_near_point<-function(
     event_magnitude,
     event_hypocentre,
@@ -70,10 +73,13 @@ find_events_near_point<-function(
     unit_source_containing_hypocentre = find_unit_source_index_containing_point(
         event_hypocentre, unit_source_geometry, unit_source_statistics) 
 
-    # Allow events which 'touch' sites within uniform slip scaling law width and half length
-    expand_unit_source_alongstrike = ceiling(Mw_2_rupture_size(event_magnitude)[3] * 0.5/
+    # Allow events which 'touch' sites within uniform slip scaling law width
+    # and half length
+    expand_unit_source_alongstrike = ceiling(
+        Mw_2_rupture_size(event_magnitude)[3] * 0.5/
         unit_source_statistics$length[unit_source_containing_hypocentre])
-    expand_unit_source_downdip = ceiling(Mw_2_rupture_size(event_magnitude)[2] * 0.5/
+    expand_unit_source_downdip = ceiling(
+        Mw_2_rupture_size(event_magnitude)[2] * 0.5/
         unit_source_statistics$width[unit_source_containing_hypocentre])
 
     # Find unit-source neighbours (within a few unit-sources in each direction)
@@ -82,8 +88,10 @@ find_events_near_point<-function(
         for(i in (seq(-expand_unit_source_alongstrike,expand_unit_source_alongstrike))){
             usch = unit_source_containing_hypocentre # shorthand
             nbr = which(
-                (unit_source_statistics$downdip_number == (unit_source_statistics$downdip_number[usch] + j)) &
-                (unit_source_statistics$alongstrike_number == (unit_source_statistics$alongstrike_number[usch] + i))
+                (unit_source_statistics$downdip_number == 
+                    (unit_source_statistics$downdip_number[usch] + j)) &
+                (unit_source_statistics$alongstrike_number == 
+                    (unit_source_statistics$alongstrike_number[usch] + i))
                 )
             if(length(nbr) > 1) stop('BUG! This should be impossible')
             if(length(nbr) == 1){
@@ -95,8 +103,10 @@ find_events_near_point<-function(
 
     event_contains_hpc = rep(0, length(events_with_Mw[,1]))
     for(i in 1:length(events_with_Mw[,1])){
-        event_contains_hpc[i] = any(get_unit_source_indices_in_event(
-            events_with_Mw[i,]) %in% c(unit_source_containing_hypocentre, hypocentre_neighbours))
+        event_contains_hpc[i] = any(
+            get_unit_source_indices_in_event(events_with_Mw[i,]) %in% 
+            c(unit_source_containing_hypocentre, hypocentre_neighbours)
+            )
     }
 
     if(sum(event_contains_hpc) == 0){
@@ -109,7 +119,8 @@ find_events_near_point<-function(
             stop('Cannot have both use_stochastic_slip_runs and use_variable_uniform_slip_runs')
         }
 
-        # Find stochastic slip events that correspond to the uniform events we would keep
+        # Find stochastic slip events that correspond to the uniform events we
+        # would keep
         # This way of selecting stochastic events should give an unbiased
         # representation of the stochastic model.
         # OTOH, if we just selected 'all stochastic events close enough to the
@@ -141,7 +152,8 @@ find_events_near_point<-function(
                 variable_uniform_events_uniform_row %in% uniform_keepers)
             # Replace events_with_Mw with the 'variable_uniform slip' version,
             # containing events that correspond to the uniform events we would
-            # keep in the alternate case where use_variable_uniform_slip_runs=FALSE
+            # keep in the alternate case where
+            # use_variable_uniform_slip_runs=FALSE
             events_with_Mw = earthquake_events_variable_uniform[
                 variable_uniform_events_to_keep,]
         }
@@ -164,7 +176,8 @@ find_events_near_point<-function(
 #' the rupture. All modelled uniform slip earthquakes will contain a unit-source
 #' within 0.5 scaling-law width/length of the unit-source containing this point.
 #' (The point must be inside a unit source). If use_stochastic_slip=TRUE, then
-#' we will use stochastic events 'corresponding' to the above identified uniform events.
+#' we will use stochastic events 'corresponding' to the above identified
+#' uniform events.
 #' @param event_start A POSIX.lt object giving the event start time (UTC), made
 #' with e.g.: 
 #'     event_start=strptime('2009-06-13 15:22:31', 
@@ -199,7 +212,8 @@ compare_event_with_gauge_time_series<-function(
     use_stochastic_slip = FALSE,
     use_variable_uniform_slip = FALSE){
 
-    events_with_Mw = find_events_near_point(event_magnitude, 
+    events_with_Mw = find_events_near_point(
+        event_magnitude, 
         event_hypocentre,
         use_stochastic_slip_runs = use_stochastic_slip,
         use_variable_uniform_slip_runs = use_variable_uniform_slip)  
@@ -211,14 +225,19 @@ compare_event_with_gauge_time_series<-function(
 
 #' Stochastic slip variant of \code{compare_event_with_gauge_time_series}
 #'
+#' Note this routine is largely defunct, because \code{compare_event_with_gauge_time_series}
+#' treats all cases [so long as tsunami events have already been created]
+#'
 #' @param event_magnitude numeric earthquake magnitude. Make stochastic slip
 #' events with this magnitude
 #' @param event_hypocentre A vector c(lon,lat) giving the location of a point on
-#' the rupture. If create_NEW = true, then all modelled stochastic earthquakes
+#' the rupture. If create_NEW = TRUE, then all modelled stochastic earthquakes
 #' are 'near' this point (peak slip within half-a-width and half-a-length of the
 #' location, with width/length based on Strasser earthquake size scaling
 #' relations). If create_NEW = FALSE, then the same approach as
-#' \code{compare_event_with_gauge_time_series} is used (full scaling law width/length)
+#' \code{compare_event_with_gauge_time_series} is used (finding 'nearby' uniform slip
+#' events with fixed dimensions, and keeping corresponding stochastic/variable_uniform
+#' events)
 #' @param number_of_sffm How many stochastic scenarios to simulate. Beware this
 #' is ignored if create_new = FALSE (default)
 #' @param zero_low_slip_cells_fraction number close to zero in [0,1). To reduce
@@ -285,7 +304,7 @@ compare_stochastic_slip_event_with_gauge_time_series<-function(
 
 }
 
-
+#'
 #' Get modelled peak-stage data for comparison with ncdc
 #'
 #'
@@ -294,8 +313,10 @@ compare_event_maxima_with_NGDC<-function(
     event_Mw, 
     event_hypocentre,
     use_stochastic_slip = FALSE, 
-    use_variable_uniform_slip = FALSE){
+    use_variable_uniform_slip = FALSE,
+    output_dir_tag=NULL){
 
+    # Get the NGDC data for the event (on the same day)
     event_year = as.numeric(format(start_date, '%Y'))
     event_month = as.numeric(format(start_date, '%m'))
     event_day = as.numeric(format(start_date, '%d'))
@@ -308,14 +329,16 @@ compare_event_maxima_with_NGDC<-function(
         return(invisible())
     }
 
-    matching_events = find_events_near_point(
+
+    # Get the database events that are similar
+    events_with_Mw = find_events_near_point(
         event_Mw,
         event_hypocentre,
         use_stochastic_slip_runs = use_stochastic_slip,
         use_variable_uniform_slip_runs = use_variable_uniform_slip
         )
 
-    matching_event_rows = as.numeric(rownames(matching_events))
+    matching_event_rows = as.numeric(rownames(events_with_Mw))
 
     #
     # Open netcdf with peak stage info
@@ -326,14 +349,16 @@ compare_event_maxima_with_NGDC<-function(
 
         stopifnot(use_variable_uniform_slip == FALSE)
 
-        peak_stage_ncdf = paste0('all_stochastic_slip_earthquake_events_tsunami_', 
+        peak_stage_ncdf = paste0(
+            'all_stochastic_slip_earthquake_events_tsunami_', 
             source_name, '.nc')   
     }    
     if(use_variable_uniform_slip){
 
         stopifnot(use_stochastic_slip == FALSE)
 
-        peak_stage_ncdf = paste0('all_variable_uniform_slip_earthquake_events_tsunami_', 
+        peak_stage_ncdf = paste0(
+            'all_variable_uniform_slip_earthquake_events_tsunami_', 
             source_name, '.nc')   
     }
     fid = nc_open(peak_stage_ncdf, readunlim=FALSE)
@@ -357,15 +382,25 @@ compare_event_maxima_with_NGDC<-function(
 
     }
 
-    # Green's law correction -- but not at DART buoys
+    # Green's law correction
     correction_factors = (-all_gauge_lonlat$elev[matching_stations])**0.25
+    # No correction at DART buoys -- assume gauge already has same depth
+    # (will be OK so long as gauge is close to DART)
     correction_factors[which(tsunami_obs$TYPE_MEASUREMENT_ID == 3)] = 1
+    # Assume tide gauges in 10m water depth (for reference comparison purposes)
+    # Experience indicates that tide gauges are generally lower than '1m-depth
+    # greens law'
+    correction_factors[which(tsunami_obs$TYPE_MEASUREMENT_ID == 2)] = 
+        (-all_gauge_lonlat$elev[matching_stations]/10)**0.25
 
-    distance_to_nearest = distHaversine(cbind(tsunami_obs$LONGITUDE, tsunami_obs$LATITUDE), 
+    # Record the distance between observation point and nearest model gauge.
+    # It is wise to filter-out pairs that are not sufficiently close.
+    distance_to_nearest = distHaversine(
+        cbind(tsunami_obs$LONGITUDE, tsunami_obs$LATITUDE), 
         all_gauge_lonlat[matching_stations,1:2])
 
     output = list(
-        events = matching_events,
+        events = events_with_Mw,
         matching_stations = matching_stations,
         gauge_lonlat = all_gauge_lonlat[matching_stations,],
         max_stage = max_stage_store,
@@ -378,12 +413,31 @@ compare_event_maxima_with_NGDC<-function(
         event_Mw = event_Mw,
         event_hypocentre = event_hypocentre)
 
-    return(output)
+    if(!is.null(output_dir_tag)){
+        # Make output directory if it does not already exist
+        # NOTE THE DIRECTORY NAME IS THE SAME AS IN \code{plot_events_vs_gauges}
+        # THAT'S IMPORTANT! FIXME: Clean this up!
+        event_type = 'uniform'
+        if(is_variable_uniform_slip){
+            event_type = 'variable_uniform' 
+        }
+        if(is_stochastic_slip){
+            event_type = 'stochastic'
+        }
+        output_dir = paste0(events_with_Mw$sourcename[1], '_', output_dir_tag, 
+            '_', event_type)
+        dir.create(output_dir, showWarnings=FALSE)
+
+        saveRDS(output, paste0(output_dir, '/event_NGDC_comparison.RDS'))
+    }
+
+    return(invisible(output))
 
 }
 
 #'
-#' Plotting code for gauges
+#' Plotting code for gauges. Also saves outputs in RDS format (important
+#' side-effect that is exploited by other code in ./plots)
 #'
 plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids, 
     gauge_data, plot_durations, gauge_ylims, output_dir_tag=NULL){
