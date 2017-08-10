@@ -140,8 +140,8 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
     png(output_png, width=15, height = 10, units='in', 
         res=200)
     #par(mfrow=c(2,3))
-    layout(matrix(c(1, 1, 4, 7
-                    2, 2, 5, 8
+    layout(matrix(c(1, 1, 4, 7,
+                    2, 2, 5, 8,
                     3, 3, 6, 9),
         ncol=4, nrow=3, byrow=TRUE))
 
