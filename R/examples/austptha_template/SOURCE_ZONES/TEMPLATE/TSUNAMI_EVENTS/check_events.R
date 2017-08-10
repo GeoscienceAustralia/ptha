@@ -357,7 +357,7 @@ run_checks<-function(fid_local, slip_type){
             main='Event max_slip/mean_slip_including_zeros', 
             xlab='Mw', ylab='')
         grid()
-        add_quartiles(event_max_slip/event_mean_slip_all)
+        add_quartiles(mws, event_max_slip/event_mean_slip_all)
         abline(h=3, col='red')
 
         dev.off()
