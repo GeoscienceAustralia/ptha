@@ -14,9 +14,15 @@ source('time_domain_hybrid_norm.R')
 # C) The DART is sampling with at least 60 seconds frequency
 # D) The entire window is <= 12 hours (so we can focus on the most significant waves)
 #
-plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata, 
-    unit_source_statistics, time_window_hrs=12, title_extra='',
-    max_model_time_shift_min = 15, make_plot=TRUE){
+plot_model_gauge_vs_data_gauge<-function(
+    model_index, 
+    event_data, 
+    event_metadata, 
+    unit_source_statistics, 
+    time_window_hrs=12, 
+    title_extra='',
+    max_model_time_shift_min = 15, 
+    make_plot=TRUE){
 
     # Start obs time = 30 min before model absolute value exceeds 0.5% of its
     # maxima, but start is never < 0 minutes post-event 
@@ -25,10 +31,11 @@ plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata
         5.0e-03*peak_abs_modelled_stage))
     obs_time_zero = max(event_data$model_times[tmp] - 0.5 * 3600, 0)
 
-    # The data has a column 'allowed', which is FALSE before a manually identified
-    # start time [used to skip over Rayleigh waves], and TRUE after.
+    # The data has a column 'allowed', which is FALSE before a manually
+    # identified start time [used to skip over Rayleigh waves], and TRUE after.
     min_allowed_data_index = min(which(event_data$gauge_obs$allowed))
-    obs_time_zero = max(obs_time_zero, event_data$gauge_obs_times[min_allowed_data_index])
+    obs_time_zero = max(obs_time_zero, 
+        event_data$gauge_obs_times[min_allowed_data_index])
     obs_time_max = obs_time_zero + 3600 * (time_window_hrs) 
 
     # Identify the time region bounding where the DART sampling rate is <= 1
@@ -48,22 +55,27 @@ plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata
     time_range = as.numeric(c(event_data$gauge_obs_times[min(obs_keep)], 
         event_data$gauge_obs_times[max(obs_keep)]))
 
-    # Extract the desired subset of the data, and the model
+    # Extract the desired subset of the data
     data_inds = which(event_data$gauge_obs_times > time_range[1] & 
         event_data$gauge_obs_times < time_range[2])
     data_t = as.numeric(event_data$gauge_obs_times[data_inds])
     data_s = event_data$gauge_obs$resid[data_inds]
-    # Get the data range [previously used filtering, but since using better DART extraction this is no-longer required]
+    # Get the data range [previously used filtering, but since using better
+    # DART extraction this is no-longer required]
     data_filtered_stats = gauge_range_filtered(data_t, data_s, 
         filter_freq=1/(0.001*60), interp_dt=15, detailed=TRUE)
     data_range = range(data_s) #data_filtered_stats$range
     data_peak_freq = data_filtered_stats$mintomax_peak_frequency
 
-    model_inds = which( (event_data$model_times > (time_range[1] - 60*max_model_time_shift_min)) & 
-        (event_data$model_times < (time_range[2] + 60*max_model_time_shift_min) ) )
+    # Extract the desired subset of the model
+    model_inds = which( (event_data$model_times > 
+        (time_range[1] - 60*max_model_time_shift_min)) & 
+        (event_data$model_times < (time_range[2] + 60*max_model_time_shift_min)))
     model_s = event_data$model_events[[model_index]][1,model_inds,1]
     model_t = event_data$model_times[model_inds]
-    # Get the model range [previously used filtering, but since using better DART extraction this is no-longer required]
+
+    # Get the model range [we previously used this for filtering, but since
+    # using better DART extraction this is no-longer required]
     model_filtered_stats = gauge_range_filtered(model_t, model_s, 
         filter_freq=1/(0.001*60), interp_dt=15, detailed=TRUE)
     model_range = range(model_s) #model_filtered_stats$range
@@ -71,12 +83,21 @@ plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata
 
     # Try a model-data similarity statistic -- for at most 3 hours
     max_time_range_comparison_hours = 3
+    # Allow the model to be time-shifted (delayed) by up to 15 minutes. The
+    # allowed delay is at least 2 min, at most 15 min, but [1/50 *
+    # (model_t[1])] if the latter is between 2min and 15 min. See Watada et al
+    # (2014) for example of time delays for Tohoku and Chile
+    allowed_model_time_delay_min = pmax(-15, pmin(-2, -1/50 * (model_t[1]/60)))
+
     model_data_similarity_time_detailed = gauge_similarity_time_domain(
-        data_t, data_s, model_t, model_s,
-        interp_dt = 15, allowed_lag_minutes=c(-15, 0), 
+        data_t, data_s, 
+        model_t, model_s,
+        interp_dt = 15, 
+        allowed_lag_minutes=c(allowed_model_time_delay_min, 0), 
         time_range = c(time_range[1], 
             min(time_range[2], time_range[1] + max_time_range_comparison_hours*3600)),
         detailed=TRUE)
+
     model_data_similarity_time = model_data_similarity_time_detailed$objective
     model_time_offset = model_data_similarity_time_detailed$minimum
 
@@ -89,7 +110,8 @@ plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata
     energy_model = gauge_energy_banding(model_t, model_s, interp_dt=15, 
         bin_divisors = bin_divisors)
 
-    # Compute a spectral measure of model similarity, using the 6-20, 20-60, and 60-180 min bands:
+    # Compute a spectral measure of model similarity, using the 6-20, 20-60,
+    # and 60-180 min bands:
     # 1 - 2*(energy_data .dot. energy_model)/( |energy_data|^2 + |energy_model|^2)
     model_data_similarity_spec = 1 - 2*sum(energy_data[3:5]*energy_model[3:5])/
         (sum(energy_data[3:5]**2) + sum(energy_model[3:5]**2))
@@ -100,31 +122,40 @@ plot_model_gauge_vs_data_gauge<-function(model_index, event_data, event_metadata
         par(mfrow=c(4,1))
         par(mar=c(3,3,2,1))
         ylim1 = range(c(data_range, model_range))
+
         # Data
-        plot(data_t, data_s, t='l', ylim=ylim1, main=paste0('Data: ', title_extra), 
-            col='red')
-        points(model_t - model_time_offset, model_s, t='l', col='grey', lty='dashed')
+        plot(data_t, data_s, t='l', ylim=ylim1, 
+            main=paste0('Data: ', title_extra), col='red')
+        points(model_t - model_time_offset, model_s, t='l', col='grey', 
+            lty='dashed')
         grid()
-        abline(v=seq(min(data_t), max(data_t), by=3600), col='green', lty='dashed')
+        abline(v=seq(min(data_t), max(data_t), by=3600), col='green', 
+            lty='dashed')
         abline(v=range(data_t), col='orange', lty='dashed')
         abline(h=data_range, col='brown', lty='dashed')
 
         # Model
-        plot(model_t - model_time_offset, model_s, t='l', ylim=ylim1, 
-            main=paste0('Model: ', model_index, ' , Stat: ', round(model_data_similarity_time, 2), 
-            ' ', round(model_data_similarity_spec, 2)),
+        plot(model_t - model_time_offset, model_s, t='l', ylim=ylim1,
+            main=paste0('Model: ', model_index, ' , Stat: ',
+                round(model_data_similarity_time, 2),
+                ' ', round(model_data_similarity_spec, 2)),
             col='blue')
         points(data_t, data_s, t='l', col='grey', lty='dashed')
         grid()
-        abline(v=seq(min(data_t), max(data_t), by=3600), col='green', lty='dashed')
+        abline(v=seq(min(data_t), max(data_t), by=3600), col='green', 
+            lty='dashed')
         abline(h=model_range, col='brown', lty='dashed')
 
-        slip_rast_list = make_slip_raster(model_index, event_metadata$events_with_Mw, 
+        # Slip raster
+        slip_rast_list = make_slip_raster(model_index,
+            event_metadata$events_with_Mw, 
             unit_source_statistics)
         plot(slip_rast_list$slip_rast, asp=1, xlim=slip_rast_list$xlim)
 
+        # Banded energy-in-model vs energy-in-data
         plot(1:6, energy_model/energy_data, log='y', type='h', lend=2, lwd=4, 
-            main = 'Energy model / Energy data', axes=FALSE, ylim=c(1e-02, 1e+02))
+            main = 'Energy model / Energy data', axes=FALSE, 
+            ylim=c(1e-02, 1e+02))
         grid(col='orange')
         abline(h=1, col='red')
         axis(side=2)
@@ -201,10 +232,16 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
 #
 ###############################################################
 
+#
+# Identify data directories [made with 'check_dart.R' in '..']
+#
 source_name = basename(dirname(dirname(getwd())))
-event_basedirs_uniform = dirname(Sys.glob(paste0('../*uniform_uniform/event_metadata.RDS')))
-event_basedirs_stochastic = gsub('uniform', 'stochastic', event_basedirs_uniform)
-event_basedirs_variable_uniform = gsub('uniform', 'variable_uniform', event_basedirs_uniform)
+event_basedirs_uniform = dirname(
+    Sys.glob(paste0('../*uniform_uniform/event_metadata.RDS')))
+event_basedirs_stochastic = gsub('uniform', 'stochastic', 
+    event_basedirs_uniform)
+event_basedirs_variable_uniform = gsub('uniform', 'variable_uniform', 
+    event_basedirs_uniform)
 
 unit_source_statistics = read_table_from_netcdf(
     Sys.glob('../unit_source_statistics*.nc'))
@@ -230,9 +267,9 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         event_data = readRDS(event_data_file)
         event_gauge_name = basename(event_data_file)
         for(i in 1:length(event_data$model_events)){
-            energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
-                unit_source_statistics, time_window_hrs=12, event_gauge_name,
-                make_plot=FALSE)
+            energies = plot_model_gauge_vs_data_gauge(i, event_data, 
+                event_metadata, unit_source_statistics, time_window_hrs=12, 
+                event_gauge_name, make_plot=FALSE)
             uniform_slip_stats[[event_data_file]][[i]] = energies
             # Also record the earthquake peak slip -- here just equal to the
             # uniform slip
@@ -245,10 +282,11 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     #dev.off()
     
     # Apply the plot for each gauge, stochastic slip
-    event_metadata = readRDS(paste0(event_basedir_stochastic, '/event_metadata.RDS'))
-    event_data_files = Sys.glob(paste0(event_basedir_stochastic, '/gauge*.RDS'))
+    event_metadata = readRDS(
+        paste0(event_basedir_stochastic, '/event_metadata.RDS'))
+    event_data_files = Sys.glob(
+        paste0(event_basedir_stochastic, '/gauge*.RDS'))
     
-    #pdf(paste0(basename(event_basedir_stochastic), '.pdf'), width=10, height=15)
     stochastic_slip_stats = list()
     # Loop over all gauges
     for(event_data_file in event_data_files){
@@ -256,10 +294,15 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         stochastic_slip_stats[[event_data_file]] = list()
         event_data = readRDS(event_data_file)
         event_gauge_name = basename(event_data_file)
+
+        # Loop over all events
         for(i in 1:length(event_data$model_events)){
-            energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
-                unit_source_statistics, time_window_hrs=12, event_gauge_name, make_plot=FALSE)
+
+            energies = plot_model_gauge_vs_data_gauge(i, event_data, 
+                event_metadata, unit_source_statistics, time_window_hrs=12, 
+                event_gauge_name, make_plot=FALSE)
             stochastic_slip_stats[[event_data_file]][[i]] = energies
+
             # Also record the earthquake peak slip 
             peak_slip = max(scan(text=gsub("_", " ", 
                 event_metadata$events_with_Mw$event_slip_string[i]), 
@@ -269,13 +312,13 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
                 event_metadata$events_with_Mw$peak_slip_downdip_ind[i]
         }
     }
-    #dev.off()
 
     # Apply the plot for each gauge, variable_uniform slip
-    event_metadata = readRDS(paste0(event_basedir_variable_uniform, '/event_metadata.RDS'))
-    event_data_files = Sys.glob(paste0(event_basedir_variable_uniform, '/gauge*.RDS'))
+    event_metadata = readRDS(
+        paste0(event_basedir_variable_uniform, '/event_metadata.RDS'))
+    event_data_files = Sys.glob(
+        paste0(event_basedir_variable_uniform, '/gauge*.RDS'))
     
-    #pdf(paste0(basename(event_basedir_variable_uniform), '.pdf'), width=10, height=15)
     variable_uniform_slip_stats = list()
     # Loop over all gauges
     for(event_data_file in event_data_files){
@@ -283,20 +326,25 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         variable_uniform_slip_stats[[event_data_file]] = list()
         event_data = readRDS(event_data_file)
         event_gauge_name = basename(event_data_file)
+
+        # Loop over all events
         for(i in 1:length(event_data$model_events)){
-            energies = plot_model_gauge_vs_data_gauge(i, event_data, event_metadata, 
-                unit_source_statistics, time_window_hrs=12, event_gauge_name, make_plot=FALSE)
+
+            energies = plot_model_gauge_vs_data_gauge(i, event_data, 
+                event_metadata, unit_source_statistics, time_window_hrs=12, 
+                event_gauge_name, make_plot=FALSE)
             variable_uniform_slip_stats[[event_data_file]][[i]] = energies
+
             # Also record the earthquake peak slip 
             peak_slip = max(scan(text=gsub("_", " ", 
                 event_metadata$events_with_Mw$event_slip_string[i]), 
                     quiet=TRUE))
-            variable_uniform_slip_stats[[event_data_file]][[i]]$peak_slip = peak_slip
+            variable_uniform_slip_stats[[event_data_file]][[i]]$peak_slip = 
+                peak_slip
             variable_uniform_slip_stats[[event_data_file]][[i]]$peak_slip_downdip_ind = 
                 event_metadata$events_with_Mw$peak_slip_downdip_ind[i]
         }
     }
-    #dev.off()
 
     # Save the uniform, stochastic, and variable_uniform outputs to RDS
     output_name_base = gsub('_uniform', '', basename(event_basedir_uniform))
@@ -545,6 +593,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     }
 
     # Plot stage range vs peak spectral period, for model and data
+
     par(mfrow=c(6,5))
     for(gauge_ind in 1:length(uniform_slip_stats)){
 
@@ -605,7 +654,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         dU_obs = stageU_data[,2] - stageU_data[,1]
         dU_obs_freq = freqU_data
 
-        xlim1=range(c(dU_freq, dS_freq, dVU_freq, dS_obs_freq, dU_obs_freq, dVU_obs_freq))
+        xlim1=range(c(dU_freq, dS_freq, dVU_freq, dS_obs_freq, dU_obs_freq, 
+            dVU_obs_freq))
         ylim1=range(c(dS, dU, dU_obs, dS_obs, dVU_obs))
         plot(dS_freq, dS, log='xy', xlab='Peak frequency', ylab='Stage range', 
             col='red', pch=as.character(peak_slip_dd), xlim=xlim1, ylim=ylim1)
