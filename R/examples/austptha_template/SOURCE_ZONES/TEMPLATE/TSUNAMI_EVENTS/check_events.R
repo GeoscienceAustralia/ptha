@@ -266,7 +266,11 @@ run_checks<-function(fid_local, slip_type){
         }
 
         # Convenience function to add the median value of a model variable to a plot
-        add_median<-function(mws, var){
+        add_quartiles<-function(mws, var){
+            lowerq_var = aggregate(var, list(mws), f<-function(x) quantile(x, p=0.25, type=6))
+            points(lowerq_var[,1], lowerq_var[,2], col='orange')
+            upperq_var = aggregate(var, list(mws), f<-function(x) quantile(x, p=0.75, type=6))
+            points(upperq_var[,1], upperq_var[,2], col='orange')
             median_var = aggregate(var, list(mws), f<-function(x) median(x))
             points(median_var[,1], median_var[,2], col='red')
         }
@@ -284,7 +288,7 @@ run_checks<-function(fid_local, slip_type){
             xlab='Mw', ylab='km^2')
         grid()
         local_scaling_law_results('area')
-        add_median(mws, event_area_nonzero)
+        add_quartiles(mws, event_area_nonzero)
 
         # Area
         plot(mws, event_area_all, log='y', 
@@ -292,21 +296,21 @@ run_checks<-function(fid_local, slip_type){
             xlab='Mw', ylab='km^2')
         grid()
         local_scaling_law_results('area')
-        add_median(mws, event_area_all)
+        add_quartiles(mws, event_area_all)
 
         # Length
         plot(mws, event_length, log='y', main='Event length', 
             xlab='Mw', ylab='km')
         grid()
         local_scaling_law_results('length')
-        add_median(mws, event_length)
+        add_quartiles(mws, event_length)
 
         # Width 
         plot(mws, event_width, log='y', main='Event width', 
             xlab='Mw', ylab='km')
         grid()
         local_scaling_law_results('width')
-        add_median(mws, event_width)
+        add_quartiles(mws, event_width)
 
         # Mean slip
         plot(mws, event_mean_slip_nonzero, log='y', 
@@ -316,8 +320,7 @@ run_checks<-function(fid_local, slip_type){
             lty='dashed')
         points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
             lty='dashed')
-        median_ratio = aggregate(event_mean_slip_nonzero, list(mws), median)
-        points(median_ratio[,1], median_ratio[,2], col='red')
+        add_quartiles(mws, event_mean_slip_nonzero)
         grid()
 
         # Mean slip
@@ -328,8 +331,7 @@ run_checks<-function(fid_local, slip_type){
             lty='dashed')
         points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
             lty='dashed')
-        median_ratio = aggregate(event_mean_slip_all, list(mws), median)
-        points(median_ratio[,1], median_ratio[,2], col='red')
+        add_quartiles(mws, event_mean_slip_all)
         grid()
 
 
@@ -340,8 +342,7 @@ run_checks<-function(fid_local, slip_type){
             lty='dashed')
         points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
             lty='dashed')
-        median_ratio = aggregate(event_max_slip, list(mws), median)
-        points(median_ratio[,1], median_ratio[,2], col='red')
+        add_quartiles(mws, event_max_slip)
         grid()
 
         # Peak slip / mean slip
@@ -349,18 +350,14 @@ run_checks<-function(fid_local, slip_type){
             main='Event max_slip/mean_non-zero_slip', 
             xlab='Mw', ylab='')
         grid()
-        median_ratio = aggregate(event_max_slip/event_mean_slip_nonzero, 
-            list(mws), median)
-        points(median_ratio[,1], median_ratio[,2], col='red')
+        add_quartiles(mws, event_max_slip/event_mean_slip_nonzero)
         abline(h=3, col='red')
 
         plot(mws, event_max_slip/event_mean_slip_all, log='y', 
             main='Event max_slip/mean_slip_including_zeros', 
             xlab='Mw', ylab='')
         grid()
-        median_ratio = aggregate(event_max_slip/event_mean_slip_all, list(mws), 
-            median)
-        points(median_ratio[,1], median_ratio[,2], col='red')
+        add_quartiles(event_max_slip/event_mean_slip_all)
         abline(h=3, col='red')
 
         dev.off()
