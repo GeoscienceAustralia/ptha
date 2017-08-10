@@ -18,26 +18,6 @@ model_lonlat = cbind(ncvar_get(fid, 'lon'), ncvar_get(fid, 'lat'))
 nc_close(fid)
 
 
-#'
-#' Files from NGDC comparison
-#'
-all_NGDC_comparison_RDS = Sys.glob('../*/event_NGDC_comparison.RDS')
-
-# Order the NGDC files into 'uniform', 'stochastic', 'variable_uniform'
-order_NGDC_RDS = c(
-    grep('uniform_uniform', all_NGDC_comparison_RDS),
-    grep('stochastic_stochastic', all_NGDC_comparison_RDS),
-    grep('variable_uniform_variable_uniform', all_NGDC_comparison_RDS)
-    )
-stopifnot(
-    (length(order_NGDC_RDS) == length(all_NGDC_comparison_RDS)) &
-    (length(unique(order_NGDC_RDS)) == length(all_NGDC_comparison_RDS))
-    )
-all_NGDC_comparison_RDS = all_NGDC_comparison_RDS[order_NGDC_RDS]
-# Read the NGDC RDS files into a list, with suitable names
-NGDC_comparison = lapply(as.list(all_NGDC_comparison_RDS), readRDS)
-names(NGDC_comparison) = c('uniform', 'stochastic', 'variable_uniform')
-
 
 #' Plot all gauge data and selected model results as time-series
 #'
@@ -165,6 +145,10 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         # Only compare points with 'distance to nearest model result < 20000'
         kp = which(model_data$distance_to_nearest < 20000)
 
+        if(length(kp) == 0){
+            plot(c(0,1), c(0,1), main='No points within distance')
+            return(invisible())
+        }
         
         # Apply sqrt transformation, to make it easier to see a range of scales
         ht = sqrt(model_data$tsunami_obs$WATER_HT[kp])
@@ -219,6 +203,7 @@ ngdc_comparison_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
         abline(v=10**(seq(-2,2)), col='orange', lty='dotted')
         abline(0,1,col='red')
 
+        # Only report statistics for tidal gauges and deep ocean gauges
         kk = which(model_data$tsunami_obs$TYPE_MEASUREMENT_ID[kp] %in% c(2,3))
 
         title(paste0('Gauge med(p/m): ', round(median(pred[kk]/meas[kk]), 2),
@@ -258,6 +243,26 @@ for(RdataFile in all_Rdata){
 
     # Load the Rimage associated with gauge_summary_statistics.R
     attach(RdataFile)
+
+    #'
+    #' Files from NGDC comparison
+    #'
+    all_NGDC_comparison_RDS = Sys.glob(paste0('../', output_name_base, '*/event_NGDC_comparison.RDS'))
+
+    # Order the NGDC files into 'uniform', 'stochastic', 'variable_uniform'
+    order_NGDC_RDS = c(
+        grep('uniform_uniform', all_NGDC_comparison_RDS),
+        grep('stochastic_stochastic', all_NGDC_comparison_RDS),
+        grep('variable_uniform_variable_uniform', all_NGDC_comparison_RDS)
+        )
+    stopifnot(
+        (length(order_NGDC_RDS) == length(all_NGDC_comparison_RDS)) &
+        (length(unique(order_NGDC_RDS)) == length(all_NGDC_comparison_RDS))
+        )
+    all_NGDC_comparison_RDS = all_NGDC_comparison_RDS[order_NGDC_RDS]
+    # Read the NGDC RDS files into a list, with suitable names
+    NGDC_comparison = lapply(as.list(all_NGDC_comparison_RDS), readRDS)
+    names(NGDC_comparison) = c('uniform', 'stochastic', 'variable_uniform')
 
     # Make plots of 'optimal' model based on 3 different goodness of fit
     # measures
@@ -363,7 +368,8 @@ for(RdataFile in all_Rdata){
 
     # Remove nearly all objects, except the ones controlling the outer loop
     rm(list=setdiff( ls(all=TRUE),
-            c('RdataFile', 'all_Rdata', 'all_NGDC_comparison_RDS')
+            c('RdataFile', 'all_Rdata', 'multi_gauge_time_series_plot', 'ngdc_comparison_plot',
+                'model_lonlat')
         ))
 
 }
