@@ -364,10 +364,10 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
 
         boxplot(energiesVU_model/energiesVU_data, width=bp_widths, 
             col=rgb(0.0, 1.0, 0.0, alpha=0.3), log='y', border='green', 
-            add=TRUE)
+            add=TRUE, axes=FALSE)
 
         boxplot(energiesU_model/energiesU_data, width=bp_widths,
-            col=rgb(0, 0, 1, alpha=0.3), add=TRUE, border='blue', 
+            col=rgb(0, 0, 1, alpha=0.3), add=TRUE, border='blue',
             axes=FALSE)
 
         title(main = basename(names(uniform_slip_stats)[gauge_ind]))

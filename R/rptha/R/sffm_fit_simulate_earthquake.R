@@ -1069,7 +1069,7 @@ sffm_make_events_on_discretized_source<-function(
 
     desired_M0 = M0_2_Mw(target_event_mw, inverse=TRUE)
 
-    #source_info = list()
+    # Function to generate the j'th event
     slip_generator_fun<-function(j){
 
         # Define the allowed ranges of the peak slip location
@@ -1079,8 +1079,10 @@ sffm_make_events_on_discretized_source<-function(
         target_alongstrike_range_max = min(nx, target_alongstrike + peak_slip_unit_source_window[2])
 
         # Randomly sample the peak slip location
-        peak_slip_row = sample(target_downdip_range_min:target_downdip_range_max, size=1)
-        peak_slip_col = sample(target_alongstrike_range_min:target_alongstrike_range_max, size=1)
+        peak_slip_row = sample(target_downdip_range_min:target_downdip_range_max, 
+            size=1)
+        peak_slip_col = sample(target_alongstrike_range_min:target_alongstrike_range_max, 
+            size=1)
 
         # Choose random 'numerical' corner wavenumbers
         numerical_corner_wavenumbers = physical_corner_wavenumbers[j,1:2] * 
@@ -1089,6 +1091,8 @@ sffm_make_events_on_discretized_source<-function(
 
         # Find indices where we allow non-zero slip.
         slip_LW = nonzero_slip_LW[j,1:2]
+        # Translate the desired length/width to the number of unit sources
+        # along the length and width
         # Must include at least 1x1 unit source, though could have as many as
         # the entire source zone allows.
         num_L = round(slip_LW[1] / dx[peak_slip_row, peak_slip_col])
@@ -1096,48 +1100,63 @@ sffm_make_events_on_discretized_source<-function(
         num_W = round(slip_LW[2] / dy[peak_slip_row, peak_slip_col])
         num_W = min(nrow(dx), max(num_W, 1))
 
-        #print('')
-        #print(paste0('num_L: ', num_L, ' num_W: ', num_W))
 
         if(expand_length_if_width_limited != FALSE){
+            #
             # Check if the requested width is larger than the available width
             # If so, we might increase the length, depending on the value of
             # expand_length_if_width_limited
+            #
+
+            # Available width on the source-zone at the peak-slip location
             max_available_width = nrow(dx) * dy[peak_slip_row, peak_slip_col]
+
             if(slip_LW[2] > max_available_width){
-                # The width is less than desired
+                # The width is definitely less than desired
 
-                width_deficit = num_W * dy[peak_slip_row, peak_slip_col] / slip_LW[2]
-
-                #print(paste0('width_deficit: ', width_deficit))
+                width_deficit = num_W * dy[peak_slip_row, peak_slip_col] / 
+                    slip_LW[2]
 
                 if(width_deficit < 1){
+
+                    # Compute a length to make-up for the width deficit
+
                     alternative_length = slip_LW[1] / width_deficit
-                    alternative_num_L = round(alternative_length / dx[peak_slip_row, peak_slip_col])
+                    alternative_num_L = round(alternative_length / 
+                        dx[peak_slip_row, peak_slip_col])
                     alternative_num_L = min(ncol(dx), max(alternative_num_L, 1))
                    
                     # Number to support the 'random' option  
                     p = runif(1, min=0, max=1)
+
                     if( (expand_length_if_width_limited == TRUE) |
-                        ((expand_length_if_width_limited == 'random') & (p>= 0.5))){
-                        #print('expanding')
+                        ((expand_length_if_width_limited == 'random') & 
+                            (p>= 0.5)) ){
+
                         num_L = alternative_num_L
+
                     }
+
                 }
             }
         }
 
-        #print(paste0('num_L: ', num_L, ' num_W: ', num_W))
 
         # Non-zero slip occurs within along-strike indices sL:eL, and down-dip
         # indices sW:eW. 
         # We allow the peak slip location to vary within the rupture.
-        bbox = rectangle_on_grid(dim(dx), c(num_W, num_L), c(peak_slip_row, peak_slip_col),
+        bbox = rectangle_on_grid(dim(dx), c(num_W, num_L), 
+            c(peak_slip_row, peak_slip_col), 
             randomly_vary_around_target_centre = TRUE)
+
         sL = bbox[3]
         eL = bbox[4]
         sW = bbox[1]
         eW = bbox[2]
+
+        # By our construction above, we should not have changed num_L, num_W
+        stopifnot((eL - sL + 1) == num_L)
+        stopifnot((eW - sW + 1) == num_W)
 
         slip_matrix = dx * 0
 
@@ -1145,6 +1164,7 @@ sffm_make_events_on_discretized_source<-function(
             #
             # Simulate the sffm
             #
+
             # Ensure peak slip occurs in desired location
             template_slip_matrix = dx * 0
             template_slip_matrix[peak_slip_row, peak_slip_col] = 1
@@ -1160,9 +1180,11 @@ sffm_make_events_on_discretized_source<-function(
                     sub_sample_size=sffm_sub_sample_size)
                 # Ensure we have not accidently set part of the length/width to
                 # be fully zero
-                if(any(slip_matrix[sW,sL:eL] > 0) & any(slip_matrix[eW, sL:eL] > 0) &
-                    any(slip_matrix[sW:eW, sL] > 0) & any(slip_matrix[sW:eW, eL] > 0)){
-                    repeater = FALSE
+                if( any(slip_matrix[sW, sL:eL] > 0) & 
+                    any(slip_matrix[eW, sL:eL] > 0) &
+                    any(slip_matrix[sW:eW, sL] > 0) & 
+                    any(slip_matrix[sW:eW, eL] > 0)){
+                        repeater = FALSE
                 }
             }
 
@@ -1176,8 +1198,11 @@ sffm_make_events_on_discretized_source<-function(
         # There will probably be many small but nonzero slip values
         # Set some to zero, so for efficiency later
         threshold_level = zero_low_slip_cells_fraction 
+
         slip_sorted = sort(slip_matrix, decreasing=FALSE)
+
         cumulative_slip_sorted = cumsum(slip_sorted)
+
         if(threshold_level == 0){
             slip_threshold = 0
         }else{
@@ -1189,7 +1214,9 @@ sffm_make_events_on_discretized_source<-function(
                 slip_threshold = 0
             }
         }
+
         slip_matrix = slip_matrix * (slip_matrix > slip_threshold)
+
         rm(slip_sorted, cumulative_slip_sorted)
 
         # Ensure M0 is correct
