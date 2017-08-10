@@ -265,6 +265,12 @@ run_checks<-function(fid_local, slip_type){
                 lty='dashed')
         }
 
+        # Convenience function to add the median value of a model variable to a plot
+        add_median<-function(mws, var){
+            median_var = aggregate(var, list(mws), f<-function(x) median(x))
+            points(median_var[,1], median_var[,2], col='red')
+        }
+
         # Plotting
         png_filename = paste0('event_size_scaling_', slip_type, '_', 
                 basename(dirname(getwd())), '.png')
@@ -278,6 +284,7 @@ run_checks<-function(fid_local, slip_type){
             xlab='Mw', ylab='km^2')
         grid()
         local_scaling_law_results('area')
+        add_median(mws, event_area_nonzero)
 
         # Area
         plot(mws, event_area_all, log='y', 
@@ -285,18 +292,21 @@ run_checks<-function(fid_local, slip_type){
             xlab='Mw', ylab='km^2')
         grid()
         local_scaling_law_results('area')
+        add_median(mws, event_area_all)
 
         # Length
         plot(mws, event_length, log='y', main='Event length', 
             xlab='Mw', ylab='km')
         grid()
         local_scaling_law_results('length')
+        add_median(mws, event_length)
 
         # Width 
         plot(mws, event_width, log='y', main='Event width', 
             xlab='Mw', ylab='km')
         grid()
         local_scaling_law_results('width')
+        add_median(mws, event_width)
 
         # Mean slip
         plot(mws, event_mean_slip_nonzero, log='y', 

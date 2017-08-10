@@ -210,7 +210,10 @@ compare_event_with_gauge_time_series<-function(
     gauge_ylims, 
     output_dir_tag=NULL,
     use_stochastic_slip = FALSE,
-    use_variable_uniform_slip = FALSE){
+    use_variable_uniform_slip = FALSE,
+    make_plot=TRUE){
+
+    make_plot = make_plot
 
     events_with_Mw = find_events_near_point(
         event_magnitude, 
@@ -219,7 +222,7 @@ compare_event_with_gauge_time_series<-function(
         use_variable_uniform_slip_runs = use_variable_uniform_slip)  
 
     plot_events_vs_gauges(events_with_Mw, event_start, gauge_ids, gauge_data, 
-        plot_durations, gauge_ylims, output_dir_tag)
+        plot_durations, gauge_ylims, output_dir_tag, make_plot=make_plot)
 
 }
 
@@ -277,7 +280,10 @@ compare_stochastic_slip_event_with_gauge_time_series<-function(
     plot_durations, 
     gauge_ylims,
     output_dir_tag=NULL,
-    create_new = FALSE){
+    create_new = FALSE,
+    make_plot = TRUE){
+
+    make_plot = make_plot
 
     if(create_new){
         # Make new events
@@ -293,13 +299,15 @@ compare_stochastic_slip_event_with_gauge_time_series<-function(
             slip_significant_figures=4)
 
         plot_events_vs_gauges(events_with_Mw, event_start, gauge_ids, 
-            gauge_data, plot_durations, gauge_ylims, output_dir_tag)
+            gauge_data, plot_durations, gauge_ylims, output_dir_tag,
+            make_plot=make_plot)
     }else{
         # Get events from existing table
         compare_event_with_gauge_time_series(event_magnitude, event_hypocentre, 
             event_start, gauge_ids, gauge_data, plot_durations, gauge_ylims, 
             output_dir_tag=output_dir_tag,
-            use_stochastic_slip = TRUE)
+            use_stochastic_slip = TRUE,
+            make_plot = make_plot)
     }
 
 }
@@ -443,10 +451,13 @@ compare_event_maxima_with_NGDC<-function(
 
 #'
 #' Plotting code for gauges. Also saves outputs in RDS format (important
-#' side-effect that is exploited by other code in ./plots)
+#' side-effect that is exploited by other code in ./plots). In some instances
+#' we might not want the plot, just the latter side effect, and can pass
+#' make_plot=FALSE to ensure that.
 #'
 plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids, 
-    gauge_data, plot_durations, gauge_ylims, output_dir_tag=NULL){
+    gauge_data, plot_durations, gauge_ylims, output_dir_tag=NULL,
+    make_plot=TRUE){
 
     gauge_subset_indices = sapply(gauge_ids, 
         f<-function(x) which.min(abs(x - all_gauge_lonlat$gaugeID)))
@@ -493,19 +504,21 @@ plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids,
             event_start, 
             units='secs')
 
-        for(j in 1:length(model_events)){
-            if(any(is.na(gauge_ylims[[i]]))){
-                gauge_ylims[[i]] = c(min(gauge_obs$resid), max(gauge_obs$resid))
+        if(make_plot){
+            for(j in 1:length(model_events)){
+                if(any(is.na(gauge_ylims[[i]]))){
+                    gauge_ylims[[i]] = c(min(gauge_obs$resid), max(gauge_obs$resid))
+                }
+                plot(gauge_times, model_events[[j]][1, , 1], t='l', 
+                    xlab='Time from event (s)', ylab='Stage (m)', 
+                    xlim=plot_durations[[i]], ylim=c(gauge_ylims[[i]]))
+                points(gauge_obs_times, gauge_obs$resid, t='l', col='blue')
+                grid()
+                abline(v=(-200:200)*3600, col='green')
+                title(paste0('Modelled and observed stage, gauge: ', gauge_ids[i], 
+                    ', Mw: ', events_with_Mw$Mw[j]),
+                    sub = events_with_Mw$event_index_string[j])
             }
-            plot(gauge_times, model_events[[j]][1, , 1], t='l', 
-                xlab='Time from event (s)', ylab='Stage (m)', 
-                xlim=plot_durations[[i]], ylim=c(gauge_ylims[[i]]))
-            points(gauge_obs_times, gauge_obs$resid, t='l', col='blue')
-            grid()
-            abline(v=(-200:200)*3600, col='green')
-            title(paste0('Modelled and observed stage, gauge: ', gauge_ids[i], 
-                ', Mw: ', events_with_Mw$Mw[j]),
-                sub = events_with_Mw$event_index_string[j])
         }
 
         # Store the model/gauge time-series for other analysis
