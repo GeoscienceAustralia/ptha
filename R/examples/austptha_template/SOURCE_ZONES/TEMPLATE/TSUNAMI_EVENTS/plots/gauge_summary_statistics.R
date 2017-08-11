@@ -814,8 +814,6 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     legend('bottomright', c('Stoch.', 'VarUnif.', 'Unif'), 
         col=c('red', 'green', 'blue'), pch=19)
 
-    dev.off()
-
     #
     # Source slip properties vs goodness of fit
     #
@@ -862,6 +860,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         'Variable_uniform slip GOF spatial (point-size ~ area)', ylim=zlims)
     panel_plot(uniform_slip_source, med_gts_U, 
         'Uniform slip GOF spatial (point-size ~ area)', ylim=zlims)
+
+    dev.off()
 
 
     #
