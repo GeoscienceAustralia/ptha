@@ -41,10 +41,12 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
     n_gauges = length(uniform_slip_stats)
 
     if(length(ui) > 1){
+        more_than_one_event = TRUE
         stopifnot(length(ui) == n_gauges)
         stopifnot(length(si) == n_gauges)
         stopifnot(length(vui) == n_gauges)
     }else{
+        more_than_one_event = FALSE 
         stopifnot(length(ui) == 1) 
         stopifnot(length(si) == 1) 
         stopifnot(length(vui) == 1)
@@ -109,17 +111,29 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
     }
 
     # Add a legend
-    plot(c(0,1), c(0,1), axes=FALSE, col=0)
-    legend('center', 
-        c('Data', paste0('Stoch. slip (', si, ')'), 
-            paste0('Unif. slip (', ui, ')'), 
-            paste0('VarU. slip (', vui, ')')), 
-        bty='n',
-        lty=c('solid', 'solid', 'longdash', 'solid'),
-        col=c('black', 'red', 'blue', 'green'), 
-        pch=c(19, NA, NA, NA), cex= 2.0 + (nrow > 2),
-        pt.cex=1,
-        ncol=2) 
+    if(more_than_one_event){
+        plot(c(0,1), c(0,1), axes=FALSE, col=0)
+        legend('center', 
+            c('Data', 'Stoch. slip', 'Unif. slip ', 'VarU. slip'), 
+            bty='n',
+            lty=c('solid', 'solid', 'longdash', 'solid'),
+            col=c('black', 'red', 'blue', 'green'), 
+            pch=c(19, NA, NA, NA), cex= 2.0 + (nrow > 2),
+            pt.cex=1,
+            ncol=2) 
+    }else{
+        plot(c(0,1), c(0,1), axes=FALSE, col=0)
+        legend('center', 
+            c('Data', paste0('Stoch. slip (', si, ')'), 
+                paste0('Unif. slip (', ui, ')'), 
+                paste0('VarU. slip (', vui, ')')), 
+            bty='n',
+            lty=c('solid', 'solid', 'longdash', 'solid'),
+            col=c('black', 'red', 'blue', 'green'), 
+            pch=c(19, NA, NA, NA), cex= 2.0 + (nrow > 2),
+            pt.cex=1,
+            ncol=2) 
+    }
 
     dev.off()
 }
@@ -350,9 +364,9 @@ for(RdataFile in all_Rdata){
         #
         # Plot the 'gauge specific best' event at each gauge.  
         #
-        si = apply(stoc_score, 1, which.min)
-        ui = apply(unif_score, 1, which.min)
-        vui = apply(vu_score, 1, which.min)
+        si = apply(stoc_score, 2, which.min)
+        ui = apply(unif_score, 2, which.min)
+        vui = apply(vu_score, 2, which.min)
         multi_gauge_time_series_plot(ui, si, vui, 
             png_name_stub=paste0('LOCAL_best_fit_', stat_name, '_gauges_plot')
             )
