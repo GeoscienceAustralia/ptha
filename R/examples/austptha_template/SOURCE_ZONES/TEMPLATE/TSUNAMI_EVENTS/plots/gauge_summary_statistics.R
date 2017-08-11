@@ -233,7 +233,7 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
 
     # Return peak slip location for variable slip [or centriod for constant
     # slip]
-    if(diff(range(max_slip_loc)) > 1.0e-02){
+    if(diff(range(slip_vals)) > 1.0e-02){
         
         peak_slip_loc = c(unit_source_statistics$lon_c[slip_indices[max_slip_loc]],
             unit_source_statistics$lat_c[slip_indices[max_slip_loc]])
