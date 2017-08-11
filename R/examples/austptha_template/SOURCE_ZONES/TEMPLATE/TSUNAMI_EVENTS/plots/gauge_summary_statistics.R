@@ -851,7 +851,6 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
 
         plot(alongstrike_locs, GOF, 
             cex= 1.0*sqrt(approx_area/min(approx_area)),
-            #col = rainbow(12)[pmin(10, pmax(0, floor((GOF-0.4)*10))+1)],
             col = downdip_locs,
             xlab='Alongstrike location', ylab='GOF', ...)
         title(titleword, cex.main=1.5)

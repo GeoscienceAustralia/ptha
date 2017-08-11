@@ -36,10 +36,17 @@ gauge_similarity_time_domain<-function(
     data1_interp$x = interp1_t$x[which(interp1_t$x >= mint & interp1_t$x <= maxt)]
     data1_interp$y = interp1_t$y[which(interp1_t$x >= mint & interp1_t$x <= maxt)]
    
-    # Compute statistic from Lorito et al., 2008, eqn 2 
+    ## Compute statistic from Lorito et al., 2008, eqn 2 
+    #   = 1 - 2*(a.b)/(a.a + b.b)
+    ## Note this is mathematically identical to (a-b).(a-b) / (a.a + b.b), i.e. normalised least squares
     f<-function(lag){ 
         data2_interp = approx(data2_t - lag, data2_s, xout = data1_interp$x, rule=2)
-        Em = 1 - 2*sum(data1_interp$y * data2_interp$y)/( sum(data1_interp$y^2) + sum(data2_interp$y^2))
+
+        # Try weights
+        #w = abs(data1_interp$y) + 0.1*max(abs(data1_interp$y))
+        w = 1
+
+        Em = 1 - 2*sum(w*w*data1_interp$y * data2_interp$y)/( sum(w*w*data1_interp$y^2) + sum(w*w*data2_interp$y^2))
         return(Em)
     }
 

@@ -26,17 +26,34 @@ nc_close(fid)
 #' needs to be loaded already.
 #'
 #' @param ui index of the uniform slip event in 
-#'     uniform_slip_stats[[i]][[ui]]
+#'     uniform_slip_stats[[i]][[ui]]. Can be an integer (to plot one event),
+#'     or a vector of length = n_gauges (to plot a different event at each gauge).
 #' @param si index of the stochastic slip event in 
-#'     stochastic_slip_stats[[i]][[ui]]
+#'     stochastic_slip_stats[[i]][[ui]]. Can be integer or vector, as for ui.
 #' @param vui index of the variable_uniform slip event in 
-#'     variable_uniform_slip_stats[[i]][[ui]]
+#'     variable_uniform_slip_stats[[i]][[ui]]. Can be integer or vector, as for ui.
 #' @param png_name_stub character for the last part of the png filename
 #' @return nothing but make a nice plot
 #'
-multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = '.'){
+multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = '.',
+    allow_time_offset=TRUE){
 
     n_gauges = length(uniform_slip_stats)
+
+    if(length(ui) > 1){
+        stopifnot(length(ui) == n_gauges)
+        stopifnot(length(si) == n_gauges)
+        stopifnot(length(vui) == n_gauges)
+    }else{
+        stopifnot(length(ui) == 1) 
+        stopifnot(length(si) == 1) 
+        stopifnot(length(vui) == 1)
+
+        ui = rep(ui, len = n_gauges)
+        si = rep(si, len = n_gauges)
+        vui = rep(vui, len = n_gauges)
+    }
+
     
     # Split the plot into nrow/ncol rows and columns
     ncol = (n_gauges > 7) + 1
@@ -57,9 +74,9 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
     # Make a panel plot for each gauge observation
     for(i in 1:n_gauges){
 
-        uss = uniform_slip_stats[[i]][[ui]]
-        sss = stochastic_slip_stats[[i]][[si]]
-        svu = variable_uniform_slip_stats[[i]][[vui]]
+        uss = uniform_slip_stats[[i]][[ui[i]]]
+        sss = stochastic_slip_stats[[i]][[si[i]]]
+        svu = variable_uniform_slip_stats[[i]][[vui[i]]]
 
         xmin = min(c(sss$data_t, sss$model_t))
         xlim = c(xmin, xmin+4.0*3600)
@@ -76,11 +93,11 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
             cex=0.4)
         points(svu$data_t, svu$data_s, t='o', col='black', pch=19, 
             cex=0.4)
-        points(uss$model_t - uss$model_time_offset, uss$model_s, 
+        points(uss$model_t - uss$model_time_offset*allow_time_offset, uss$model_s, 
             t='l', col='blue', lwd=2, lty='longdash')
-        points(sss$model_t - sss$model_time_offset, sss$model_s, 
+        points(sss$model_t - sss$model_time_offset*allow_time_offset, sss$model_s, 
             t='l', col='red', lwd=1)
-        points(svu$model_t - svu$model_time_offset, svu$model_s, t='l', 
+        points(svu$model_t - svu$model_time_offset*allow_time_offset, svu$model_s, t='l', 
             col='green', lwd=1)
         abline(v = seq(xmin + 1, xmin + 7*3600, len=7), col='tan2', xpd=TRUE)
         abline(h=0, col='tan2')
@@ -302,7 +319,10 @@ for(RdataFile in all_Rdata){
         si = which.min(stoc_score_median)
         ui = which.min(unif_score_median)
         vui = which.min(vu_score_median)
-        
+       
+        #
+        # Plot the single 'overall best' model event at all gauges.
+        # 
         output_png = paste0(output_name_base, '_allmodel_goodness_fit_', 
             stat_name, '_plot.png')
         png(output_png, width=13, height = 5, units='in', res=300)
@@ -325,6 +345,16 @@ for(RdataFile in all_Rdata){
             )
         ngdc_comparison_plot(ui, si, vui, 
             png_name_stub=paste0('best_fit_', stat_name, '_NGDC_plot')
+            )
+
+        #
+        # Plot the 'gauge specific best' event at each gauge.  
+        #
+        si = apply(stoc_score, 1, which.min)
+        ui = apply(unif_score, 1, which.min)
+        vui = apply(vu_score, 1, which.min)
+        multi_gauge_time_series_plot(ui, si, vui, 
+            png_name_stub=paste0('LOCAL_best_fit_', stat_name, '_gauges_plot')
             )
 
     }
