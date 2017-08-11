@@ -239,6 +239,7 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
             unit_source_statistics$lat_c[slip_indices[max_slip_loc]])
 
         peak_slip_alongstrike = unit_source_statistics$alongstrike_number[slip_indices[max_slip_loc]]
+        peak_slip_downdip = unit_source_statistics$downdip_number[slip_indices[max_slip_loc]]
 
     }else{
 
@@ -249,6 +250,7 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
             cbind(unit_source_statistics$lon_c[1], unit_source_statistics$lat_c[1]))
 
         peak_slip_alongstrike = mean(unit_source_statistics$alongstrike_number[slip_indices])
+        peak_slip_downdip = mean(unit_source_statistics$downdip_number[slip_indices])
     }
 
     return(list(
@@ -260,7 +262,8 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
         dy = dy,
         approx_L = dx*(diff(alongstrike_keep)+1),
         approx_W = dy*(diff(downdip_keep)+1),
-        peak_slip_alongstrike=peak_slip_alongstrike)
+        peak_slip_alongstrike=peak_slip_alongstrike,
+        peak_slip_downdip=peak_slip_downdip)
         )
 }
 
@@ -840,6 +843,8 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
 
         alongstrike_locs = unlist(lapply(slip_source, 
             f<-function(x) x$peak_slip_alongstrike))
+        downdip_locs = unlist(lapply(slip_source, 
+            f<-function(x) x$peak_slip_downdip))
 
         approx_area = unlist(lapply(slip_source, 
             f<-function(x) x$approx_L*x$approx_W))
@@ -847,7 +852,7 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         plot(alongstrike_locs, GOF, 
             cex= 1.0*sqrt(approx_area/min(approx_area)),
             #col = rainbow(12)[pmin(10, pmax(0, floor((GOF-0.4)*10))+1)],
-            col = rainbow(120)[pmin(100, floor(GOF*100))+1],
+            col = downdip_locs,
             xlab='Alongstrike location', ylab='GOF', ...)
         title(titleword, cex.main=1.5)
     }
