@@ -238,7 +238,7 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
         peak_slip_loc = c(unit_source_statistics$lon_c[slip_indices[max_slip_loc]],
             unit_source_statistics$lat_c[slip_indices[max_slip_loc]])
 
-        peak_slip_alongstrike = unit_source_statistics$alongstrike_number[max_slip_loc]
+        peak_slip_alongstrike = unit_source_statistics$alongstrike_number[slip_indices[max_slip_loc]]
 
     }else{
 
