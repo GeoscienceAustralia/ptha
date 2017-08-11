@@ -81,14 +81,22 @@ plot_model_gauge_vs_data_gauge<-function(
     model_range = range(model_s) #model_filtered_stats$range
     model_peak_freq = model_filtered_stats$mintomax_peak_frequency
 
+    #
+    # Model-vs-data similarity statistic  
+    # 
+
+    # Allow the model to be time-shifted (delayed) by up to a few minutes to
+    # get the 'best' goodness of fit statistic. The maximum allowed delay is
+    # at least 2 min, at most 15 min (for far away stations), but [1/50 *
+    # (model_t[1])] if the latter is between 2min and 15 min. See Watada et al
+    # (2014) for example of time delays for Tohoku and Chile 2010 -- attributed
+    # to loading etc.
+    allowed_model_time_delay_min = pmax(-15, pmin(-2, -1/50 * (model_t[1]/60)))
+    stopifnot( (allowed_model_time_delay_min >= -15) & 
+               (allowed_model_time_delay_min <= -2) )
+
     # Try a model-data similarity statistic -- for at most 3 hours
     max_time_range_comparison_hours = 3
-    # Allow the model to be time-shifted (delayed) by up to 15 minutes. The
-    # allowed delay is at least 2 min, at most 15 min, but [1/50 *
-    # (model_t[1])] if the latter is between 2min and 15 min. See Watada et al
-    # (2014) for example of time delays for Tohoku and Chile
-    allowed_model_time_delay_min = pmax(-15, pmin(-2, -1/50 * (model_t[1]/60)))
-
     model_data_similarity_time_detailed = gauge_similarity_time_domain(
         data_t, data_s, 
         model_t, model_s,
@@ -211,18 +219,49 @@ make_slip_raster<-function(event_index, event_metadata, unit_source_statistics){
     # Make a raster with the slip values. Let dx/dy be based on the dx/dy at
     # the peak slip location. This is inexact but will give the idea.
     max_slip_loc = which.max(slip_vals)
-    dx = unit_source_statistics$length[slip_indices[max_slip_loc]]
-    dy = unit_source_statistics$width[slip_indices[max_slip_loc]]
+    dx = mean(unit_source_statistics$length[slip_indices])
+    dy = mean(unit_source_statistics$width[slip_indices])
 
     slip_rast = raster(slip_mat, xmn=0, xmx = dx*ncol(slip_mat), ymx=0, 
         ymn=-dy*nrow(slip_mat))
 
     # Limit output to regions where slip is non-zero
-    along_strike_keep = range(
+    alongstrike_keep = range(
         unit_source_statistics$alongstrike_number[slip_indices])
+    downdip_keep = range(
+        unit_source_statistics$downdip_number[slip_indices])
 
-    return(list(slip_rast=slip_rast, xlim=dx*c(along_strike_keep[1] - 1, 
-        along_strike_keep[2])))
+    # Return peak slip location for variable slip [or centriod for constant
+    # slip]
+    if(diff(range(max_slip_loc)) > 1.0e-02){
+        
+        peak_slip_loc = c(unit_source_statistics$lon_c[slip_indices[max_slip_loc]],
+            unit_source_statistics$lat_c[slip_indices[max_slip_loc]])
+
+        peak_slip_alongstrike = unit_source_statistics$alongstrike_number[max_slip_loc]
+
+    }else{
+
+        peak_slip_loc = c(mean_angle(unit_source_statistics$lon_c[slip_indices]),
+            mean_angle(unit_source_statistics$lat_c[slip_indices]))
+        # Make sure longitude has same domain as original points
+        peak_slip_loc = adjust_longitude_by_360_deg(peak_slip_loc, 
+            cbind(unit_source_statistics$lon_c[1], unit_source_statistics$lat_c[1]))
+
+        peak_slip_alongstrike = mean(unit_source_statistics$alongstrike_number[slip_indices])
+    }
+
+    return(list(
+        slip_rast=slip_rast, 
+        xlim=dx*c(alongstrike_keep[1] - 1, alongstrike_keep[2]), 
+        alongstrike_keep = alongstrike_keep,
+        downdip_keep = downdip_keep,
+        dx = dx, 
+        dy = dy,
+        approx_L = dx*(diff(alongstrike_keep)+1),
+        approx_W = dy*(diff(downdip_keep)+1),
+        peak_slip_alongstrike=peak_slip_alongstrike)
+        )
 }
 
 
@@ -422,7 +461,10 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         abline(h=1, col='red')
     }
 
-    # Boxplot of stage range, vs data 
+    #
+    # Boxplot of stage range, vs data, for all model types
+    #
+
     par(mfrow=c(6,5))
     for(gauge_ind in 1:length(uniform_slip_stats)){
     
@@ -482,8 +524,11 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         abline(v=dU_obs, col='black', lty='solid', lwd=2)
         abline(v=dVU_obs, col='black', lty='solid', lwd=2)
     }
-    
-    # Boxplot of model-data similarity statistic
+   
+    # 
+    # Boxplot of model-data similarity statistic, for all model types
+    #
+
     par(mfrow=c(6,5))
     similar_s_time = list()
     similar_u_time = list()
@@ -530,7 +575,10 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
             ' \n Random (red), Uniform (blue), VariUnif (green), lower is better'))
     }
 
-    # Plot stage range vs peak slip
+    #
+    # Plot stage range vs peak slip for all models
+    #
+
     par(mfrow=c(6,5))
     for(gauge_ind in 1:length(uniform_slip_stats)){
 
@@ -592,7 +640,9 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
 
     }
 
-    # Plot stage range vs peak spectral period, for model and data
+    #
+    # Plot stage range vs peak spectral period, for models and data
+    #
 
     par(mfrow=c(6,5))
     for(gauge_ind in 1:length(uniform_slip_stats)){
@@ -669,7 +719,153 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
             ' \n Random (red), Uniform (blue), VariUnif (green), Obs (black)'))
 
     }
+
+
+    #
+    # Image plot of model-data similarity statistic
+    #
+    
+    gauge_time_stat_S = matrix(NA, ncol=length(stochastic_slip_stats), 
+        nrow=length(stochastic_slip_stats[[1]]))
+    gauge_time_stat_VU = gauge_time_stat_S
+
+    for(i in 1:length(stochastic_slip_stats) ){
+        for(j in 1:length(stochastic_slip_stats[[1]]) ){
+            gauge_time_stat_S[j,i] = 
+                stochastic_slip_stats[[i]][[j]]$model_data_similarity_time
+            gauge_time_stat_VU[j,i] = 
+                variable_uniform_slip_stats[[i]][[j]]$model_data_similarity_time
+        }
+    }
+
+    gauge_time_stat_U = matrix(NA, ncol=length(uniform_slip_stats), 
+        nrow=length(uniform_slip_stats[[1]]))
+    for(i in 1:length(uniform_slip_stats) ){
+        for(j in 1:length(uniform_slip_stats[[1]]) ){
+            gauge_time_stat_U[j,i] = 
+                uniform_slip_stats[[i]][[j]]$model_data_similarity_time
+        }
+    }
+
+    # Get the median over gauges, for each event
+    med_gts_S = apply(gauge_time_stat_S, 1, median)
+    med_gts_VU = apply(gauge_time_stat_VU, 1, median)
+    med_gts_U = apply(gauge_time_stat_U, 1, median)
+
+    zlims = range(c(range(gauge_time_stat_S), range(gauge_time_stat_U), 
+        range(gauge_time_stat_VU)))
+
+    par(mfrow=c(3,1))
+    par(mar=c(4,4,2,2))
+    image(gauge_time_stat_S, col=terrain.colors(255), xlab='Events', ylab='Gauges', 
+        main='Stochastic slip time-similarity statistic (points give event median)',
+        cex.main=1.5, zlim=zlims)
+    points(seq(0,1, len=length(med_gts_S)), med_gts_S)
+    grid(col='purple'); abline(h=0.5, col='red')
+    image(gauge_time_stat_VU, col=terrain.colors(255), xlab='Events', ylab='Gauges',
+        main='Variable uniform slip time-similarity statistic (points give event median)',
+        cex.main=1.5, zlim=zlims)
+    points(seq(0,1, len=length(med_gts_VU)), med_gts_VU)
+    grid(col='purple'); abline(h=0.5, col='red')
+    image(gauge_time_stat_U, col=terrain.colors(255), xlab='Events', ylab='Gauges',
+        main='Uniform slip time-similarity statistic (points give event median)',
+        cex.main=1.5, zlim=zlims)
+    points(seq(0,1, len=length(med_gts_U)), med_gts_U)
+    grid(col='purple'); abline(h=0.5, col='red')
+
+    #
+    # Plots comparing the distributions of the 'median goodness of fit' stat for
+    # each Gauge.
+    #
+
+    par(mfrow=c(2,2))
+    qqplot(med_gts_S, med_gts_VU, 
+        main='Stochastic vs variable-uniform median GOF',
+        xlab='Stochastic', ylab='Variable uniform', asp=1)
+    abline(0,1,col='red')
+    grid()
+    abline(h=0.5, v=0.5, col='orange')
+
+    qqplot(med_gts_S, med_gts_U, 
+        main='Stochastic vs uniform median GOF',
+        xlab='Stochastic', ylab='Uniform', asp=1)
+    abline(0,1,col='red')
+    grid()
+    abline(h=0.5, v=0.5, col='orange')
+
+    qqplot(med_gts_S, med_gts_U, 
+        main='Variable-uniform vs uniform median GOF',
+        xlab='Variable-uniform', ylab='Uniform',
+        asp=1)
+    abline(0,1,col='red')
+    grid()
+    abline(h=0.5, v=0.5, col='orange')
+
+    #boxplot(c(med_gts_S, med_gts_VU, med_gts_U) ~ 
+    #    c(rep('Stoc.', length(med_gts_S)), rep('VarUnif.', length(med_gts_VU)),
+    #        rep('Unif', length(med_gts_U))), col=c('red', 'green', 'blue'),
+    #    horizontal=TRUE)
+
+    plot(ecdf(med_gts_S), col='red', main='', xlim=zlims)
+    plot(ecdf(med_gts_VU), col='green', add=TRUE, main='', xlim=zlims)
+    plot(ecdf(med_gts_U), col='blue', add=TRUE, main='', xlim=zlims)
+    abline(v=0.5, col='orange')
+    title('Median GOF statistic, ECDF ')
+    legend('bottomright', c('Stoch.', 'VarUnif.', 'Unif'), 
+        col=c('red', 'green', 'blue'), pch=19)
+
     dev.off()
 
+    #
+    # Source slip properties vs goodness of fit
+    #
+    stochastic_slip_source = lapply(stochastic_slip_stats[[1]], 
+        f<-function(x){
+            make_slip_raster(1, x$events_with_Mw,
+                unit_source_statistics = unit_source_statistics)}
+        )
+    variable_uniform_slip_source = lapply(variable_uniform_slip_stats[[1]], 
+        f<-function(x){
+            make_slip_raster(1, x$events_with_Mw,
+                unit_source_statistics = unit_source_statistics)}
+        )
+    uniform_slip_source = lapply(uniform_slip_stats[[1]], 
+        f<-function(x){
+            make_slip_raster(1, x$events_with_Mw,
+                unit_source_statistics = unit_source_statistics)}
+        )
+ 
+    #
+    # Plot goodness of fit vs location
+    #
+    panel_plot<-function(slip_source, GOF, titleword='', ...){
+
+        alongstrike_locs = unlist(lapply(slip_source, 
+            f<-function(x) x$peak_slip_alongstrike))
+
+        approx_area = unlist(lapply(slip_source, 
+            f<-function(x) x$approx_L*x$approx_W))
+
+        plot(alongstrike_locs, GOF, 
+            cex= 1.0*sqrt(approx_area/min(approx_area)),
+            #col = rainbow(12)[pmin(10, pmax(0, floor((GOF-0.4)*10))+1)],
+            col = rainbow(120)[pmin(100, floor(GOF*100))+1],
+            xlab='Alongstrike location', ylab='GOF', ...)
+        title(titleword, cex.main=1.5)
+    }
+
+    par(mfrow=c(2,2))
+    zlims = range(c(med_gts_S, med_gts_VU, med_gts_U))
+    panel_plot(stochastic_slip_source, med_gts_S, 
+        'Stochastic slip GOF spatial (point-size ~ area)', ylim=zlims)
+    panel_plot(variable_uniform_slip_source, med_gts_VU, 
+        'Variable_uniform slip GOF spatial (point-size ~ area)', ylim=zlims)
+    panel_plot(uniform_slip_source, med_gts_U, 
+        'Uniform slip GOF spatial (point-size ~ area)', ylim=zlims)
+
+
+    #
+    #
+    #
     save.image(paste0('gauge_summary_stats_session_', output_name_base, '.Rdata'))
 }

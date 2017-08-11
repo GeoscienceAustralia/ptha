@@ -1,7 +1,21 @@
 
-
-gauge_similarity_time_domain<-function(data1_t, data1_s, data2_t, data2_s, interp_dt = NULL,
-    allowed_lag_minutes=c(-15, 0), time_range=range(data1_t), detailed=FALSE){
+#
+# Function to measure the 'similarity' between 2 time-series [stage-gauges]
+#
+# gauge1: data1_t, data1_s ; vectors of time/stage values
+# gauge2: data2_t, data2_s ; vectors of time/stage values [note times do not
+#   need to correspond exactly to data1_t, since interpolation is used to create
+#   a common time scale]
+#
+gauge_similarity_time_domain<-function(
+    data1_t, 
+    data1_s, 
+    data2_t, 
+    data2_s, 
+    interp_dt = NULL,
+    allowed_lag_minutes=c(-15, 0), 
+    time_range=range(data1_t), 
+    detailed=FALSE){
     
     if(is.null(interp_dt)){
         interp_dt = min(c(diff(data1_t), diff(data2_t)))
@@ -12,10 +26,6 @@ gauge_similarity_time_domain<-function(data1_t, data1_s, data2_t, data2_s, inter
         time_range[2], by = interp_dt), rule=2)
 
     # Find min/max of data, and associated times
-    #peak_stage_info = gauge_range_filtered(data1_t, data1_s, interp_dt = interp_dt, 
-    #    filter_freq = peak_stage_high_pass_cutoff, detailed=TRUE)
-    #mint = min(c(peak_stage_info$min_stage_time, peak_stage_info$max_stage_time))
-    #maxt = max(c(peak_stage_info$min_stage_time, peak_stage_info$max_stage_time))
     newt = time_range
     mint = min(newt)
     maxt = max(newt)
