@@ -7,13 +7,16 @@ source('time_domain_hybrid_norm.R')
 # extracts data in a useful way, and may be used just for that purpose with
 # make_plot=FALSE
 #
-# Idea: Get region where the time is:
+# Idea: Plot comparison when the time is:
 # A) After the earthquake occurs
 # B) The time is not more than half-an-hour before the modelled |stage| exceeds
 #    0.5% of its maximum absolute value
-# C) The DART is sampling with at least 60 seconds frequency
-# D) The entire window is <= 12 hours (so we can focus on the most significant waves)
-#   - But summary statistics are computed over a shorter period.
+# C) The start-time/end-time do not exceed the start/end of the DART sampling
+#    with at least 60 seconds frequency
+# D) The entire window is <= 12 hours long (so we can focus on the most significant waves)
+#   - But summary statistics are computed over a potentially shorter period -- ending
+#     at most 3 hours after the data maxima occurs
+#
 plot_model_gauge_vs_data_gauge<-function(
     model_index, 
     event_data, 
@@ -90,20 +93,22 @@ plot_model_gauge_vs_data_gauge<-function(
     # at least 2 min, at most 15 min (for far away stations), but [1/50 *
     # (model_t[1])] if the latter is between 2min and 15 min. See Watada et al
     # (2014) for example of time delays for Tohoku and Chile 2010 -- attributed
-    # to loading etc.
+    # to loading, etc.
     allowed_model_time_delay_min = pmax(-15, pmin(-2, -1/50 * (model_t[1]/60)))
     stopifnot( (allowed_model_time_delay_min >= -15) & 
                (allowed_model_time_delay_min <= -2) )
 
-    # Try a model-data similarity statistic -- for at most 3 hours
-    max_time_range_comparison_hours = 3
+    # Try a model-data similarity statistic
+    post_peak_time_range_comparison_hours = 3
+    data_max_time = data_t[which.max(abs(data_s))]
+
     model_data_similarity_time_detailed = gauge_similarity_time_domain(
         data_t, data_s, 
         model_t, model_s,
         interp_dt = 15, 
         allowed_lag_minutes=c(allowed_model_time_delay_min, 0), 
         time_range = c(time_range[1], 
-            min(time_range[2], time_range[1] + max_time_range_comparison_hours*3600)),
+            min(time_range[2], data_max_time + post_peak_time_range_comparison_hours*3600)),
         detailed=TRUE)
 
     model_data_similarity_time = model_data_similarity_time_detailed$objective

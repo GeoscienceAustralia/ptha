@@ -2,7 +2,7 @@
 #
 # Function to measure the 'similarity' between 2 time-series [stage-gauges]
 #
-# gauge1: data1_t, data1_s ; vectors of time/stage values
+# gauge1: data1_t, data1_s ; vectors of time/stage values -- should correspond to DATA.
 # gauge2: data2_t, data2_s ; vectors of time/stage values [note times do not
 #   need to correspond exactly to data1_t, since interpolation is used to create
 #   a common time scale]
@@ -39,14 +39,21 @@ gauge_similarity_time_domain<-function(
     ## Compute statistic from Lorito et al., 2008, eqn 2 
     #   = 1 - 2*(a.b)/(a.a + b.b)
     ## Note this is mathematically identical to (a-b).(a-b) / (a.a + b.b), i.e. normalised least squares
-    f<-function(lag){ 
+    ## We can add weights to emphasise the points with significant waves 
+    f<-function(lag, weighted=TRUE){ 
         data2_interp = approx(data2_t - lag, data2_s, xout = data1_interp$x, rule=2)
 
-        # Try weights
-        #w = abs(data1_interp$y) + 0.1*max(abs(data1_interp$y))
-        w = 1
+        if(weighted){
+            # Weight large-abs-value points more. Minimum point weight is not
+            # less than 1/3 maximum point weight.
+            w = pmax(abs(data1_interp$y),  max(abs(data1_interp$y))/3)
+        }else{
+            # Weight all points equally
+            w = 1
+        }
 
-        Em = 1 - 2*sum(w*w*data1_interp$y * data2_interp$y)/( sum(w*w*data1_interp$y^2) + sum(w*w*data2_interp$y^2))
+        Em = 1 - 2*sum(w*w*data1_interp$y * data2_interp$y)/
+            ( sum(w*w*data1_interp$y^2) + sum(w*w*data2_interp$y^2))
         return(Em)
     }
 

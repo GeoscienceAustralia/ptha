@@ -80,6 +80,7 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
         sss = stochastic_slip_stats[[i]][[si[i]]]
         svu = variable_uniform_slip_stats[[i]][[vui[i]]]
 
+        # Choose the x-limits of the plot based on the stochastic slip x-limits
         xmin = min(c(sss$data_t, sss$model_t))
         xlim = c(xmin, xmin+4.0*3600)
 
