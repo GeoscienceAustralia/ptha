@@ -21,7 +21,7 @@ Mw_max = 9.8
 dMw = 0.1
 
 # Make at least this many stochastic slip events for each uniform event
-number_stochastic_events_for_each_uniform_event = 10
+number_stochastic_events_for_each_uniform_event = 15
 # ... but ensure that there are at least this many stochastic slip events in
 # each magnitude category
 minimum_number_stochastic_events_for_each_magnitude = 200

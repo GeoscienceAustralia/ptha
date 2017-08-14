@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P w85
 #PBS -q normal
-#PBS -l walltime=6:00:00
+#PBS -l walltime=8:00:00
 #PBS -lmem=32GB
 #PBS -lncpus=16
 #PBS -l wd
@@ -11,6 +11,5 @@
 # NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
 source R_modules.sh
 
-Rscript merge_additional_stochastic_tsunami_into_netcdf.R --stochastic_slip &
-Rscript merge_additional_stochastic_tsunami_into_netcdf.R --variable_uniform_slip &
-wait
+Rscript merge_additional_stochastic_tsunami_into_netcdf.R --stochastic_slip
+Rscript merge_additional_stochastic_tsunami_into_netcdf.R --variable_uniform_slip

@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P w85
 #PBS -q normal
-#PBS -l walltime=48:00:00
+#PBS -l walltime=36:00:00
 #PBS -lmem=32GB
 #PBS -lncpus=16
 #PBS -l wd
@@ -24,48 +24,65 @@ Rscript make_all_earthquake_tsunami.R --stochastic_slip --make_file_only
 Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --make_file_only
 
 
-###############################################################################
-#
-# Make the stochastic slip tsunami, in batches
-#
-###############################################################################
+nevents1=$( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
+eventsThreshold=20000
+
+if [ "$nevents1" -lt "$eventsThreshold" ] 
+then
+
+    ###############################################################################
+    #
+    # Make the stochastic slip tsunami, in batches, on this qsub job
+    #
+    ###############################################################################
 
 
-## Break into 'nsplit' batches. 
-#
-# nsplit=1 for nevents < 4500
-# nsplit=2 for 4500 <= nevents < (2*4500)
-# nsplit=3 for (2*4500) <= nevents < (3*4500)
-# ...
-#
-# The code works by counting the table_rows in the file with stochastic slip earthquake events,
-# then doing integer division by 4500 and adding 1
-#
-nevents=$( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
-nsplit=$( expr $nevents / 4500 + 1 )
+    ## Break into 'nsplit' batches. 
+    #
+    # nsplit=1 for nevents < 4500
+    # nsplit=2 for 4500 <= nevents < (2*4500)
+    # nsplit=3 for (2*4500) <= nevents < (3*4500)
+    # ...
+    #
+    # The code works by counting the table_rows in the file with stochastic slip earthquake events,
+    # then doing integer division by 4500 and adding 1
+    #
+    nevents=$( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
+    nsplit=$( expr $nevents / 4500 + 1 )
 
-# This loop runs the $nsplit jobs
-for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset $i $nsplit ; done
+    # This loop runs the $nsplit jobs
+    for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset $i $nsplit ; done
 
 
-###############################################################################
-#
-# Make the variable uniform slip tsunami, in batches
-#
-###############################################################################
+    ###############################################################################
+    #
+    # Make the variable uniform slip tsunami, in batches
+    #
+    ###############################################################################
 
-## Break into 'nsplit' batches. 
-#
-# nsplit=1 for nevents < 4500
-# nsplit=2 for 4500 <= nevents < (2*4500)
-# nsplit=3 for (2*4500) <= nevents < (3*4500)
-# ...
-#
-# The code works by counting the table_rows in the file with stochastic slip earthquake events,
-# then doing integer division by 4500 and adding 1
-#
-nevents=$( ncdump -h all_variable_uniform_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
-nsplit=$( expr $nevents / 4500 + 1 )
+    ## Break into 'nsplit' batches. 
+    #
+    # nsplit=1 for nevents < 4500
+    # nsplit=2 for 4500 <= nevents < (2*4500)
+    # nsplit=3 for (2*4500) <= nevents < (3*4500)
+    # ...
+    #
+    # The code works by counting the table_rows in the file with stochastic slip earthquake events,
+    # then doing integer division by 4500 and adding 1
+    #
+    nevents=$( ncdump -h all_variable_uniform_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
+    nsplit=$( expr $nevents / 4500 + 1 )
 
-# This loop runs the $nsplit jobs
-for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --subset $i $nsplit ; done
+    # This loop runs the $nsplit jobs
+    for i in $(seq 1 $nsplit); do Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --subset $i $nsplit ; done
+
+else
+    #
+    # Set off the jobs in separate qsub batches -- since there are too many to
+    # run efficiently on this qsub job
+    #
+    Rscript run_unfinished_stochastic_earthquake_tsunami.R --stochastic_slip
+
+    Rscript run_unfinished_stochastic_earthquake_tsunami.R --variable_uniform_slip
+fi
+
