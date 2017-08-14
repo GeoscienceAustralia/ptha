@@ -34,12 +34,13 @@ The way to tell if this has happened is to examine raijin's job files (.o and
 contain statements to that effect. 
 
 If the job was killed, then not all of your stochastic slip tsunami have been created. 
-You can create the unfinished stochastic slip with
+You can create the unfinished stochastic slip with (Note: Currently this is automatically executed
+if there are > 20000 events in stochastic event set):
 [run_unfinished_stochastic_earthquake_tsunami.R](run_unfinished_stochastic_earthquake_tsunami.R).
 
     Rscript run_unfinished_stochastic_earthquake_tsunami.R --stochastic_slip
 
-and similarly for the variable_uniform slip events:
+and similarly for the variable_uniform slip events (also automatically executed with > 20000 events):
 
     Rscript run_unfinished_stochastic_earthquake_tsunami.R --variable_uniform_slip
 
@@ -48,20 +49,24 @@ fast), and submit all jobs to the PBS queue. Each of those jobs will make an
 RDS file with its portion of the unfinished results. Those are not initially
 written to the main netCDF output file, to avoid the chance of multiple processes
 trying to write to the same file at once (which is unsupported and can lead to data loss).
-However, once all the 'unfinished' runs are finished, we put the data into the
+
+Once all the 'unfinished' runs are finished, we put the data into the
 main netcdf file using the script
 [run_merge_additional_stochastic_tsunami_into_netcdf.PBS](run_merge_additional_stochastic_tsunami_into_netcdf.PBS)
 
     qsub run_merge_additional_stochastic_tsunami_into_netcdf.PBS
 
-Once that has finished and you have confirmed the netCDF files are ok, you
-might want to delete the folder R_images_tmp that was used to store temporary
-RDS files. 
+This has to be executed manually. Once that has finished and you have confirmed
+the netCDF files are ok, you might want to delete the folder R_images_tmp that
+was used to store temporary RDS files. 
 
 # Step 4
 
 At this point all the stochastic and uniform slip events have been created, and it is 
 time to check the results. 
+
+The script [check_events.R](check_events.R) can be used to plot properties of the earthquake
+events, and sanity check peak wave heights, earthquake magnitudes, earthquake dimensions, etc.
 
 The script [check_dart_example.R](check_dart_example.R) gives an example of comparing
 model scenarios to tide gauge data -- but obviously the file paths etc will need to be
