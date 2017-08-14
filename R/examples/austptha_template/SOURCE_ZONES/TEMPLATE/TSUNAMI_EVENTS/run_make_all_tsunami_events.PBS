@@ -25,7 +25,7 @@ Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --make_file_only
 
 
 nevents1=$( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
-eventsThreshold=20000
+eventsThreshold=35000
 
 if [ "$nevents1" -lt "$eventsThreshold" ] 
 then

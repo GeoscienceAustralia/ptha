@@ -35,12 +35,12 @@ contain statements to that effect.
 
 If the job was killed, then not all of your stochastic slip tsunami have been created. 
 You can create the unfinished stochastic slip with (Note: Currently this is automatically executed
-if there are > 20000 events in stochastic event set):
+by Step 2, IF there are > 'a threshold number' of events in stochastic event set):
 [run_unfinished_stochastic_earthquake_tsunami.R](run_unfinished_stochastic_earthquake_tsunami.R).
 
     Rscript run_unfinished_stochastic_earthquake_tsunami.R --stochastic_slip
 
-and similarly for the variable_uniform slip events (also automatically executed with > 20000 events):
+and similarly for the variable_uniform slip events (also may be automatically executed in Step 2):
 
     Rscript run_unfinished_stochastic_earthquake_tsunami.R --variable_uniform_slip
 
