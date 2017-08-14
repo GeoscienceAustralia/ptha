@@ -1283,7 +1283,7 @@ sffm_events_to_table<-function(all_sffm_events, slip_significant_figures=NULL){
     # This is a clumsy way of integrating an array with irregular length into
     # each row of a data.frame
     event_index_string = unlist(lapply(all_sffm_events, 
-        f<-function(x) paste0(which(c(x$slip_matrix) > 0), sep="-", collapse="")))
+        f<-function(x) paste0(which(c(x$slip_matrix) > 0), "-", collapse="")))
 
     # Collapse the slip on unit sources with non-zero slip to a character, possibly
     # with a reduction in the number of significant figures
@@ -1295,14 +1295,14 @@ sffm_events_to_table<-function(all_sffm_events, slip_significant_figures=NULL){
     if(is.null(slip_significant_figures)){
         event_slip_string = unlist(lapply(all_sffm_events, 
             f<-function(x){
-                paste0(c(x$slip_matrix[x$slip_matrix > 0]), sep="_", collapse="")
+                paste0(c(x$slip_matrix[x$slip_matrix > 0]), "_", collapse="")
             }
         ))
     }else{
         event_slip_string = unlist(lapply(all_sffm_events, 
             f<-function(x){
                 paste0(c(signif(x$slip_matrix[x$slip_matrix > 0],slip_significant_figures)), 
-                    sep="_", collapse="")
+                    "_", collapse="")
             }))
     }
 

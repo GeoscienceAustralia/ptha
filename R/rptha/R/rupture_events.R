@@ -327,7 +327,7 @@ get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statisti
         # Make a character vector, where each entry is a string
         # with all unit source indices for that event, separated by '-'
         event_index_string = unlist(lapply(event$event_indices, 
-            f<-function(x) paste0(x, sep="-", collapse="")))
+            f<-function(x) paste0(x, "-", collapse="")))
         local_source_name = rep(source_zone_name, length(event_index_string))
 
         event_statistics = cbind(event_statistics, 
