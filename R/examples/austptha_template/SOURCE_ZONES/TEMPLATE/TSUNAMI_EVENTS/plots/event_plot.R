@@ -358,7 +358,8 @@ for(RdataFile in all_Rdata){
 
         # Plot up as gauges
         multi_gauge_time_series_plot(ui, si, vui, 
-            png_name_stub=paste0('best_fit_', stat_name, '_gauges_plot')
+            png_name_stub=paste0('best_fit_', stat_name, '_gauges_plot'),
+            allow_time_offset=(state_name != 'spec')
             )
         ngdc_comparison_plot(ui, si, vui, 
             png_name_stub=paste0('best_fit_', stat_name, '_NGDC_plot')
@@ -371,7 +372,8 @@ for(RdataFile in all_Rdata){
         ui = apply(unif_score, 2, which.min)
         vui = apply(vu_score, 2, which.min)
         multi_gauge_time_series_plot(ui, si, vui, 
-            png_name_stub=paste0('LOCAL_best_fit_', stat_name, '_gauges_plot')
+            png_name_stub=paste0('LOCAL_best_fit_', stat_name, '_gauges_plot'),
+            allow_time_offset=(state_name != 'spec')
             )
 
     }
