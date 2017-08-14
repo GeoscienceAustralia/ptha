@@ -13,7 +13,7 @@ source('time_domain_hybrid_norm.R')
 #    0.5% of its maximum absolute value
 # C) The DART is sampling with at least 60 seconds frequency
 # D) The entire window is <= 12 hours (so we can focus on the most significant waves)
-#
+#   - But summary statistics are computed over a shorter period.
 plot_model_gauge_vs_data_gauge<-function(
     model_index, 
     event_data, 
