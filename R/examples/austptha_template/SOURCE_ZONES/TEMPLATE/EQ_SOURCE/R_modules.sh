@@ -1,6 +1,11 @@
+# Code to load R modules ON NCI ONLY
+
+# For NCI, have to be explicit about R's makefile configuration (not normally needed on typical systems)
 export R_MAKEVARS_USER='~/.R/Makeconf'
+# I had issues with NCI's proj, so installed my own
 export LD_LIBRARY_PATH=/short/w85/gxd547/PTHA_Aust/SOURCE/geos/lib:/short/w85/gxd547/PTHA_Aust/SOURCE/proj4/proj.4.9.1/proj-4.9.1/build/lib:$LD_LIBRARY_PATH
 export PATH=/short/w85/gxd547/PTHA_Aust/SOURCE/geos/bin:/short/w85/gxd547/PTHA_Aust/SOURCE/proj4/proj.4.9.1/proj-4.9.1/build/bin:$PATH
+# This is another NCI specific tweak for building the package
 export _R_CHECK_FORCE_SUGGESTS_=FALSE
 
 module load R/3.3.0 
