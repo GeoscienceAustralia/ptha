@@ -34,17 +34,19 @@ The way to tell if this has happened is to examine raijin's job files (.o and
 contain statements to that effect. 
 
 If the job was killed, then not all of your stochastic slip tsunami have been created. 
-You can create the unfinished stochastic slip with (Note: Currently this is automatically executed
-by Step 2, IF there are > 'a threshold number' of events in stochastic event set):
+You can create the unfinished stochastic slip with 
 [run_unfinished_stochastic_earthquake_tsunami.R](run_unfinished_stochastic_earthquake_tsunami.R).
+(Note: Currently this is automatically executed by Step 2, IF there are more than some
+threshold number of events in stochastic event set):
 
     Rscript run_unfinished_stochastic_earthquake_tsunami.R --stochastic_slip
 
-and similarly for the variable_uniform slip events (also may be automatically executed in Step 2):
+and similarly for the variable_uniform slip events (also will be automatically
+executed in Step 2 if there are many events):
 
     Rscript run_unfinished_stochastic_earthquake_tsunami.R --variable_uniform_slip
 
-This will split the remaining work over multiple jobs (so it is reasonably
+The above commands split the remaining work over multiple PBS jobs (so it is reasonably
 fast), and submit all jobs to the PBS queue. Each of those jobs will make an
 RDS file with its portion of the unfinished results. Those are not initially
 written to the main netCDF output file, to avoid the chance of multiple processes
@@ -65,9 +67,10 @@ On large source-zones, in some instances it is possible for the unit-source, gau
 and earthquake event properties to not be correctly written to the files of the form
 all_SLIP_TYPE_slip_earthquake_tsunami_SOURCEZONE.nc files. This happens if R
 runs out of memory just after creating those files (i.e. so the file exists, but the
-variables are not written to it). In that case, you can re-write the data
-to the file separately (without effecting any flow variables), with a command 
-like the following (here for variable_uniform slip):
+variables are not written to it). You might not even notice this until running
+test code below. If this happens, then a 'quick fix' is to re-write the data to
+the file separately (without affecting any flow variables). That can be done
+with a command like the following (here for variable_uniform slip):
 
     Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --only_update_non_flow_variables
 
