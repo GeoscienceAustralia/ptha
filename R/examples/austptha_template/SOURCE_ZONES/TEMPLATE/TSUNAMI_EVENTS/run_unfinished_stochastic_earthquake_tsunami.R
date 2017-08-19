@@ -87,7 +87,7 @@ if(stochastic_slip){
     # NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
     source R_modules.sh
 
-    nevents=$( ncdump -h all_stochastic_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
+    nevents=$( ncdump -h all_stochastic_slip_earthquake_events_tsunami_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
     nsplit=$( expr $nevents / 4500 + 1 )
 
     Rscript make_all_earthquake_tsunami.R --stochastic_slip --subset REPLACEWITHMYID $nsplit --save_as_RDS
@@ -108,7 +108,7 @@ if(stochastic_slip){
     # NOTE THIS IS ONLY FOR NCI, COMMENT OUT OTHERWISE
     source R_modules.sh
 
-    nevents=$( ncdump -h all_variable_uniform_slip_earthquake_events_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
+    nevents=$( ncdump -h all_variable_uniform_slip_earthquake_events_tsunami_*.nc | grep 'table_rows = UNLI' | awk '{print $6}' | tr '(' ' ' )
     nsplit=$( expr $nevents / 4500 + 1 )
 
     Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --subset REPLACEWITHMYID $nsplit --save_as_RDS

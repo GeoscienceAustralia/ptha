@@ -67,7 +67,7 @@ if( length(all_R_images) > 0 ){
 # At this point, check that everything has finished
 r_env = new.env()
 load(all_R_images[i], envir=r_env)
-output_nc_file = nc_open(r_env$output_file_name, readunlim=FALSE, write=TRUE)
+output_nc_file = nc_open(r_env$output_file_name, readunlim=FALSE, write=FALSE)
 # Find 'un-written data' flag, which is -999.999
 # Because netcdf will only store to float precision, we just check for values which are
 # less than the following [they should all be float(-999.999) ]
