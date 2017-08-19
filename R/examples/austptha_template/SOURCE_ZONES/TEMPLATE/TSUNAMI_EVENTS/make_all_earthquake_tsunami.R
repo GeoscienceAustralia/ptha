@@ -624,7 +624,7 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
 
     }else{
         # Assume the file already exists, and just update some variables
-        output_nc_file = nc_open(output_file_name)
+        output_nc_file = nc_open(output_file_name, readunlim=FALSE, write=TRUE)
     }
 
     #
