@@ -60,6 +60,18 @@ This has to be executed manually. Once that has finished and you have confirmed
 the netCDF files are ok, you might want to delete the folder R_images_tmp that
 was used to store temporary RDS files. 
 
+
+On large source-zones, in some instances it is possible for the unit-source, gauge
+and earthquake event properties to not be correctly written to the files of the form
+all_SLIP_TYPE_slip_earthquake_tsunami_SOURCEZONE.nc files. This happens if R
+runs out of memory just after creating those files (i.e. so the file exists, but the
+variables are not written to it). In that case, you can re-write the data
+to the file separately (without effecting any flow variables), with a command 
+like the following (here for variable_uniform slip):
+
+    Rscript make_all_earthquake_tsunami.R --variable_uniform_slip --only_update_non_flow_variables
+
+
 # Step 4
 
 At this point all the stochastic and uniform slip events have been created, and it is 
@@ -67,6 +79,7 @@ time to check the results.
 
 The script [check_events.R](check_events.R) can be used to plot properties of the earthquake
 events, and sanity check peak wave heights, earthquake magnitudes, earthquake dimensions, etc.
+Failures might indicate problems in writing the output files -- see above for possible fixes.
 
 The script [check_dart_example.R](check_dart_example.R) gives an example of comparing
 model scenarios to tide gauge data -- but obviously the file paths etc will need to be

@@ -225,7 +225,7 @@ parfun<-function(gcl){
         all_flow_variables=FALSE)
 }
 
-if(!make_file_only){
+if(!(make_file_only | only_update_non_flow_variables)){
     # Here we avoid use of mclapply, which seems to leave un-stopped worker
     # nodes on NCI
     cl = makeForkCluster(nnodes=mc_cores)
