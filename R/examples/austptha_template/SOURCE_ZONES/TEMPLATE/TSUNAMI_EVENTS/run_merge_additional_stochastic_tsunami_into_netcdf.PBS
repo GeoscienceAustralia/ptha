@@ -2,8 +2,8 @@
 #PBS -P w85
 #PBS -q normal
 #PBS -l walltime=8:00:00
-#PBS -lmem=32GB
-#PBS -lncpus=16
+#PBS -lmem=8GB
+#PBS -lncpus=1
 #PBS -l wd
 
 # Source key R modules -- not that you will need the right packages installed
