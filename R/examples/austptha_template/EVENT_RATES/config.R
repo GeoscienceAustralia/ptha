@@ -127,7 +127,7 @@ sourcezone_log_directory  = 'source_zone_parameter_logs'
 # Small values conserve memory -- large values may be faster (up to a point) but use more
 # memory.
 point_chunk_size_uniform = 10000
-point_chunk_size_stochastic = 1000
+point_chunk_size_stochastic = 500
 
 # 
 # Make 'stage_seq', and ordered set of stage values for which we compute the
