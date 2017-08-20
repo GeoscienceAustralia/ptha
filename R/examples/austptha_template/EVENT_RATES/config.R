@@ -46,7 +46,7 @@ bird2003_steps_data_zip_file = '../DATA/BIRD_PLATE_BOUNDARIES/PB2002_steps.dat.t
 # treat tectonic convergence in a direction within this much of 'pure thrust' as 
 # contributing to the seismic moment which is balanced by earthquakes. 
 #
-rake_deviation_thrust_events = 45 # Degrees
+rake_deviation_thrust_events = 50 # Degrees
 
 #
 # File with parameters for all source-zones, that we use to make source-zone

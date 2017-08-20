@@ -364,25 +364,25 @@ run_checks<-function(fid_local, slip_type){
 
     }
 
-    return(environment())
+    return(invisible(environment()))
 
 }
 
 # Check uniform slip
 fid_uniform = nc_open(all_uniform_eq_events_file, readunlim=FALSE)
-uniform_env = run_checks(fid_uniform, slip_type = 'uniform')
+run_checks(fid_uniform, slip_type = 'uniform')
 nc_close(fid_uniform)
 print('Uniform done')
 
 # Check stochastic slip
 fid_stochastic = nc_open(all_stochastic_eq_events_file, readunlim=FALSE)
-stochastic_env = run_checks(fid_stochastic, slip_type = 'stochastic')
+run_checks(fid_stochastic, slip_type = 'stochastic')
 nc_close(fid_stochastic)
 print('Stochastic done')
 
 # Check variable_uniform slip
 fid_variable_uniform = nc_open(all_variable_uniform_eq_events_file, readunlim=FALSE)
-variable_uniform_env = run_checks(fid_variable_uniform, slip_type = 'variable_uniform')
+run_checks(fid_variable_uniform, slip_type = 'variable_uniform')
 nc_close(fid_variable_uniform)
 print('Variable_uniform done')
 

@@ -105,9 +105,11 @@ lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
 #' @param local_mw_threshold keep earthquakes with magnitude >= this
 #' @param local_depth_threshold keep earthquakes with depth <= this
 #' @param local_rake_min, local_rake_max  keep earthquakes with rake inside
-#'   this range [either rake1, or rake2]
+#'   this range [either rake1, or perhaps rake2 (if use_both_gcmt_solutions==TRUE)]
 #' @param local_buffer_width buffer polygon by this many degrees before running
 #'   point-in-polygon test.
+#' @param use_both_gcmt_solutions Use either rake1 or rake2 when testing for
+#'   event inclusion.
 #' @return subset of gCMT catalogue
 #'
 get_gcmt_events_in_poly<-function(source_name, 
@@ -117,7 +119,8 @@ get_gcmt_events_in_poly<-function(source_name,
     local_depth_threshold = depth_threshold, 
     local_rake_min = rake_min,
     local_rake_max = rake_max, 
-    local_buffer_width=buffer_width){
+    local_buffer_width=buffer_width,
+    use_both_gcmt_solutions=FALSE){
 
     if(!(source_name %in% names(unit_source_grid_poly))){
         stop(paste0('No matching source_name for ', source_name))
@@ -175,7 +178,7 @@ get_gcmt_events_in_poly<-function(source_name,
         (gcmt$Mw >= local_mw_threshold) & 
         (gcmt$depth <= local_depth_threshold) & 
         ((gcmt$rake1 >= local_rake_min & gcmt$rake1 <= local_rake_max) | 
-            (gcmt$rake2 >= local_rake_min & gcmt$rake2 <= local_rake_max) )
+            (gcmt$rake2 >= local_rake_min & gcmt$rake2 <= local_rake_max & use_both_gcmt_solutions) )
         )
 
 
