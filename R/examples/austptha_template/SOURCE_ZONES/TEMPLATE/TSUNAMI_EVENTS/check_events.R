@@ -39,6 +39,17 @@ assert<-function(istrue, msg=''){
 
 }
 
+# Get lon/lat/elev/gaugeID from tide gauge file, to cross-check with values in
+# nc file
+tg_file = nc_open(unit_source_statistics$tide_gauge_file[1], readunlim=FALSE)
+orig_lon_lat_elev = data.frame(
+    lon = ncvar_get(tg_file, 'lon'),
+    lat = ncvar_get(tg_file, 'lat'),
+    elev = ncvar_get(tg_file, 'elev'),
+    gaugeID = ncvar_get(tg_file, 'gaugeID'))
+nc_close(tg_file)
+
+
 #' Check that Mw-min, Mw-max / dMw range is represented
 #'
 #' @param fid_local netcdf file handle [i.e. result of nc_open('filename.nc')]
@@ -48,6 +59,21 @@ assert<-function(istrue, msg=''){
 #'   stochastic/variable_uniform slip. 
 #'
 run_checks<-function(fid_local, slip_type){
+
+    # Check gauge values against those in the file
+    lon = ncvar_get(fid_local, 'lon')
+    assert(all(lon == orig_lon_lat_elev$lon), 'lon inconsistent')
+    rm(lon)
+    lat = ncvar_get(fid_local, 'lat')
+    assert(all(lon == orig_lon_lat_elev$lat), 'lat inconsistent')
+    rm(lat)
+    elev = ncvar_get(fid_local, 'elev')
+    assert(all(lon == orig_lon_elev_elev$elev), 'elev inconstitent')
+    rm(elev)
+    gaugeID = ncvar_get(fid_local, 'gaugeID')
+    assert(all(lon == orig_lon_gaugeID_gaugeID$gaugeID), 'ID inconsistent')
+    rm(gaugeID)
+
 
     # Check mw values are as desired
     mws = round(ncvar_get(fid_local, 'event_Mw'), 3)

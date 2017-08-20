@@ -88,12 +88,15 @@ if(length(command_arguments) > 0){
     if(any(grepl('-make_file_only', command_arguments))){
         make_file_only=TRUE
         print('Making output file with empty flow variables')
-        # Remove any RDS-for-chunk files that might be left over from previous
-        # runs. Note this 'glob' corresponds to the 'image_file' created below
-        # if save_as_RDS=TRUE
-        old_RDS_files = Sys.glob(paste0(config_env$tmp_RDS_dir, '/',
-            gsub('.nc', '', output_file_name), '_RDS_*.RDS'))
-        unlink(old_RDS_files)
+
+        if(!any(grepl('-keep_RDS', command_arguments))){
+            # Remove any RDS-for-chunk files that might be left over from previous
+            # runs. Note this 'glob' corresponds to the 'image_file' created below
+            # if save_as_RDS=TRUE
+            old_RDS_files = Sys.glob(paste0(config_env$tmp_RDS_dir, '/',
+                gsub('.nc', '', output_file_name), '_RDS_*.RDS'))
+            unlink(old_RDS_files)
+        }
 
     }
 }
@@ -622,22 +625,27 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
 
         output_nc_file = nc_create(output_file_name, vars=all_nc_var)
 
-    }else{
-        # Assume the file already exists, and just update some variables
-        output_nc_file = nc_open(output_file_name, readunlim=FALSE, write=TRUE)
+        #
+        # Add global attributes
+        #
+        ncatt_put(output_nc_file, varid=0, attname='earthquake_events_file',
+            attval=normalizePath(earthquake_events_file), prec='text')
+        ncatt_put(output_nc_file, varid=0, attname='unit_source_statistics_file',
+            attval=normalizePath(unit_source_statistics_file), prec='text')
+        ncatt_put(output_nc_file, varid=0, attname='source_zone_name',
+            attval=source_zone_name, prec='text')
+        ncatt_put(output_nc_file, varid=0, attname='parent_script_name',
+            attval=parent_script_name(), prec='text')
+
+        nc_close(output_nc_file)
+
+        gc()
+
+        
     }
 
-    #
-    # Add global attributes
-    #
-    ncatt_put(output_nc_file, varid=0, attname='earthquake_events_file',
-        attval=normalizePath(earthquake_events_file), prec='text')
-    ncatt_put(output_nc_file, varid=0, attname='unit_source_statistics_file',
-        attval=normalizePath(unit_source_statistics_file), prec='text')
-    ncatt_put(output_nc_file, varid=0, attname='source_zone_name',
-        attval=source_zone_name, prec='text')
-    ncatt_put(output_nc_file, varid=0, attname='parent_script_name',
-        attval=parent_script_name(), prec='text')
+    # Assume the file already exists, and just update some variables
+    output_nc_file = nc_open(output_file_name, readunlim=FALSE, write=TRUE)
 
     #
     # Add variables: gauge locations
