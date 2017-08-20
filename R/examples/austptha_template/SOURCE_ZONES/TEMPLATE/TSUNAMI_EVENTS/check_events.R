@@ -45,7 +45,7 @@ tg_file = nc_open(unit_source_statistics$tide_gauge_file[1], readunlim=FALSE)
 orig_lon_lat_elev = data.frame(
     lon = ncvar_get(tg_file, 'lon'),
     lat = ncvar_get(tg_file, 'lat'),
-    elev = ncvar_get(tg_file, 'elev'),
+    elev = ncvar_get(tg_file, 'elevation0'),
     gaugeID = ncvar_get(tg_file, 'gaugeID'))
 nc_close(tg_file)
 
@@ -65,13 +65,13 @@ run_checks<-function(fid_local, slip_type){
     assert(all(lon == orig_lon_lat_elev$lon), 'lon inconsistent')
     rm(lon)
     lat = ncvar_get(fid_local, 'lat')
-    assert(all(lon == orig_lon_lat_elev$lat), 'lat inconsistent')
+    assert(all(lat == orig_lon_lat_elev$lat), 'lat inconsistent')
     rm(lat)
     elev = ncvar_get(fid_local, 'elev')
-    assert(all(lon == orig_lon_elev_elev$elev), 'elev inconstitent')
+    assert(all(elev == orig_lon_lat_elev$elev), 'elev inconstitent')
     rm(elev)
     gaugeID = ncvar_get(fid_local, 'gaugeID')
-    assert(all(lon == orig_lon_gaugeID_gaugeID$gaugeID), 'ID inconsistent')
+    assert(all(gaugeID == orig_lon_lat_elev$gaugeID), 'ID inconsistent')
     rm(gaugeID)
 
 
