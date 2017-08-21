@@ -11,3 +11,4 @@
 source R_modules.sh
 Rscript compute_rates_all_sources.R
 Rscript compute_station_hazard_curves.R
+Rscript plot_hazard_curves.R
