@@ -213,7 +213,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
 
         nc_file = config_env$all_source_uniform_slip_tsunami[nc_file_ind]
 
-    }else if(slip_type in c('stochastic', 'variable_uniform')){
+    }else if(slip_type %in% c('stochastic', 'variable_uniform')){
 
         if(slip_type == 'stochastic'){
             nc_file_ind = grep(source_zone, 
@@ -430,7 +430,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         event_rates = ncvar_get(fid, 'event_rate_annual')
         event_stage = ncvar_get(fid, 'max_stage', start=c(1,site_index), 
             count=c(-1, 1))
-        if(slip_type in c('stochastic', 'variable_uniform')){
+        if(slip_type %in% c('stochastic', 'variable_uniform')){
             event_slip = ncvar_get(fid, 'event_slip_string')
         }
         nc_close(fid)
@@ -447,7 +447,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
                 event_index_string = event_index_string[j]))
    
             # Get slip on unit source [for weighting] 
-            if(slip_type in c('stochastic', 'variable_uniform')){
+            if(slip_type %in% c('stochastic', 'variable_uniform')){
                 unit_source_weights = as.numeric(strsplit(event_slip[j], '_')[[1]])
             }else{
                 unit_source_weights = rep(1, length(us_id))
