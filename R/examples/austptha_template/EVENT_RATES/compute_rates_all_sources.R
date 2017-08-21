@@ -425,7 +425,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         nc_close(fid)
 
         # Put rates onto the stochastic and variable uniform slip table nc file
-        for(slip_type %in% c('stochastic', 'variable_uniform')){
+        for(slip_type in c('stochastic', 'variable_uniform')){
 
             event_table_fileC = paste0(
                 '../SOURCE_ZONES/', source_name, 
@@ -583,7 +583,9 @@ for(i in 1:length(source_segment_names)){
 }
 
 
-
+#
+# Insert a test here, to confirm that rates are written to all files?
+#
 
 
 ## for(i in 1:length(source_envs)){

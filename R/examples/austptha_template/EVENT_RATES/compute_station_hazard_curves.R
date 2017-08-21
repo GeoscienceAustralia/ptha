@@ -248,17 +248,22 @@ create_rate_netcdf_file<-function(
     uniform_rate_v = ncvar_def(
         name='uniform_slip_rate', units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate of peak stage for uniform slip events')
+        longname = 'exceedance rate of peak stage for uniform slip events',
+        missval=NA,
+        prec='float')
 
     uniform_rate_upper_v = ncvar_def(
         name='uniform_slip_rate_upper_ci', units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate (upper credible interval) of peak stage for uniform slip events')
+        longname = 'exceedance rate (upper credible interval) of peak stage for uniform slip events',
+        missval=NA,
+        prec='float')
 
     uniform_rate_lower_v = ncvar_def(
         name='uniform_slip_rate_lower_ci', units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate (lower credible interval) of peak stage for uniform slip events')
+        longname = 'exceedance rate (lower credible interval) of peak stage for uniform slip events',
+        missval=NA, prec='float')
 
     all_nc_var = c(all_nc_var,
         list(uniform_rate_v, uniform_rate_upper_v, uniform_rate_lower_v))
@@ -270,19 +275,22 @@ create_rate_netcdf_file<-function(
         name='stochastic_slip_rate', 
         units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate of peak stage for stochastic slip events')
+        longname = 'exceedance rate of peak stage for stochastic slip events',
+        missval=NA, prec='float')
 
     stochastic_rate_upper_v = ncvar_def(
         name='stochastic_slip_rate_upper_ci', 
         units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate (upper credible interval) of peak stage for stochastic slip events')
+        longname = 'exceedance rate (upper credible interval) of peak stage for stochastic slip events',
+        missval=NA, prec='float')
 
     stochastic_rate_lower_v = ncvar_def(
         name='stochastic_slip_rate_lower_ci', 
         units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate (lower credible interval) of peak stage for stochastic slip events')
+        longname = 'exceedance rate (lower credible interval) of peak stage for stochastic slip events',
+        missval=NA, prec='float')
 
     all_nc_var = c(all_nc_var, 
         list(stochastic_rate_v, stochastic_rate_upper_v, 
@@ -295,19 +303,22 @@ create_rate_netcdf_file<-function(
         name='variable_uniform_slip_rate', 
         units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate of peak stage for variable_uniform slip events')
+        longname = 'exceedance rate of peak stage for variable_uniform slip events',
+        missval=NA, prec='float')
 
     variable_uniform_rate_upper_v = ncvar_def(
         name='variable_uniform_slip_rate_upper_ci', 
         units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate (upper credible interval) of peak stage for variable_uniform slip events')
+        longname = 'exceedance rate (upper credible interval) of peak stage for variable_uniform slip events',
+        missval=NA, prec='float')
 
     variable_uniform_rate_lower_v = ncvar_def(
         name='variable_uniform_slip_rate_lower_ci', 
         units='events per year',
         dim=list(dim_stage_seq, dim_station), 
-        longname = 'exceedance rate (lower credible interval) of peak stage for variable_uniform slip events')
+        longname = 'exceedance rate (lower credible interval) of peak stage for variable_uniform slip events',
+        missval=NA, prec='float')
 
     all_nc_var = c(all_nc_var, 
         list(variable_uniform_rate_v, variable_uniform_rate_upper_v, 
