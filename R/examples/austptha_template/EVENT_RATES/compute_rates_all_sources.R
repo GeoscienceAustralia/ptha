@@ -424,29 +424,35 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         ncvar_put_extra(fid, 'event_rate_annual_lower_ci', event_rates_lower)
         nc_close(fid)
 
-        # Put rates onto the stochastic slip table nc file
-        event_table_fileC = paste0('../SOURCE_ZONES/', source_name, 
-            '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_',
-            source_name, '.nc')
-        fid = nc_open(event_table_fileC, readunlim=FALSE, write=TRUE)
+        # Put rates onto the stochastic and variable uniform slip table nc file
+        for(slip_type %in% c('stochastic', 'variable_uniform')){
 
-        # Index corresponding to uniform slip row
-        event_uniform_event_row = ncvar_get(fid, 'event_uniform_event_row')
-        # Number of events corresponding to event row
-        nevents = table(event_uniform_event_row)
-        names_nevents = as.numeric(names(nevents))
-        stopifnot(all(names_nevents == 1:length(event_rates)))
-        # Make an array giving the number of events matching the
-        # uniform_event_row, for every stochastic event
-        nevents_broad = nevents[match(event_uniform_event_row, names_nevents )]
+            event_table_fileC = paste0(
+                '../SOURCE_ZONES/', source_name, 
+                '/TSUNAMI_EVENTS/all_', slip_type, 
+                '_slip_earthquake_events_tsunami_',
+                source_name, '.nc')
 
-        ncvar_put_extra(fid, 'event_rate_annual', 
-            event_rates[event_uniform_event_row]/nevents_broad)
-        ncvar_put_extra(fid, 'event_rate_annual_upper_ci', 
-            event_rates_upper[event_uniform_event_row]/nevents_broad)
-        ncvar_put_extra(fid, 'event_rate_annual_lower_ci', 
-            event_rates_lower[event_uniform_event_row]/nevents_broad)
-        nc_close(fid)
+            fid = nc_open(event_table_fileC, readunlim=FALSE, write=TRUE)
+
+            # Index corresponding to uniform slip row
+            event_uniform_event_row = ncvar_get(fid, 'event_uniform_event_row')
+            # Number of events corresponding to event row
+            nevents = table(event_uniform_event_row)
+            names_nevents = as.numeric(names(nevents))
+            stopifnot(all(names_nevents == 1:length(event_rates)))
+            # Make an array giving the number of events matching the
+            # uniform_event_row, for every stochastic/variable_uniform event
+            nevents_broad = nevents[match(event_uniform_event_row, names_nevents )]
+
+            ncvar_put_extra(fid, 'event_rate_annual', 
+                event_rates[event_uniform_event_row]/nevents_broad)
+            ncvar_put_extra(fid, 'event_rate_annual_upper_ci', 
+                event_rates_upper[event_uniform_event_row]/nevents_broad)
+            ncvar_put_extra(fid, 'event_rate_annual_lower_ci', 
+                event_rates_lower[event_uniform_event_row]/nevents_broad)
+            nc_close(fid)
+        }
 
     })
 

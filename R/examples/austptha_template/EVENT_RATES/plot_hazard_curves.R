@@ -38,7 +38,7 @@ get_station_index<-function(lon_p, lat_p){
 
 #
 # Make multi-panel stage-vs-exceedance-rate plots for a station (for both
-# uniform and stochastic slip, and upper and lower credible intervals)
+# uniform and stochastic and variable_uniform slip, and upper and lower credible intervals)
 #
 plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose=FALSE){
 
@@ -50,7 +50,7 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
     }
 
     #
-    # Get uniform and stochastic rates in a list
+    # Get uniform and stochastic and variable_uniform rates in a list
     #
     # Access will be like, e.g.
     #     site_rates$uniform$puysegur, site_rates$stochastic_lower_ci$southamerica
@@ -59,26 +59,35 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
     rate_var_nc_names = c(
         'uniform_slip_rate', 
         'stochastic_slip_rate', 
+        'variable_uniform_slip_rate', 
         'uniform_slip_rate_lower_ci', 
         'stochastic_slip_rate_lower_ci', 
+        'variable_uniform_slip_rate_lower_ci', 
         'uniform_slip_rate_upper_ci', 
-        'stochastic_slip_rate_upper_ci') 
+        'stochastic_slip_rate_upper_ci',
+        'variable_uniform_slip_rate_upper_ci') 
     # Names corresponding to rate_var_nc_names, which we will use in the site_rates list
     rate_var_local_names = c(
         'uniform', 
         'stochastic', 
+        'variable_uniform',
         'uniform_lower_ci', 
         'stochastic_lower_ci', 
+        'variable_uniform_lower_ci', 
         'uniform_upper_ci', 
-        'stochastic_upper_ci') 
+        'stochastic_upper_ci',
+        'variable_uniform_upper_ci') 
     # Titles corresponding to plots of the above variables 
     rate_var_titles = c(
         'Uniform slip tsunami peak stage exceedance rates', 
         'Stochastic slip tsunami peak stage exceedance rates', 
+        'Variable_uniform slip tsunami peak stage exceedance rates', 
         'Uniform slip tsunami peak stage exceedance rates, lower CI', 
         'Stochastic slip tsunami peak stage exceedance rates, lower CI', 
+        'Variable_uniform slip tsunami peak stage exceedance rates, lower CI', 
         'Uniform slip tsunami peak stage exceedance rates, upper CI', 
-        'Stochastic slip tsunami peak stage exceedance rates, upper CI')
+        'Stochastic slip tsunami peak stage exceedance rates, upper CI',
+        'Variable_uniform slip tsunami peak stage exceedance rates, upper CI')
 
     # Read into the data structure
     site_rates = vector(mode='list', length=length(rate_var_nc_names))
@@ -97,7 +106,7 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
     }
 
     # Plot parameters
-    par(mfrow=c(3,2))
+    par(mfrow=c(3,3))
     rate_min = 1e-07
     rate_max = 3*max(unlist(lapply(site_rates$uniform, max)))
     rate_max = 3*max(rate_max, max(unlist(lapply(site_rates$stochastic, max))))
@@ -157,12 +166,12 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
 #' by Mw, and add a plot of the Mw-vs-rate curve. However, if split_into_subsets
 #' is an integer, we instead plot stage-vs-exceedance rate the given number of
 #' times, each time with a distinct subset of the data. The idea is that if we
-#' have made 'enough' stochastic slip scenarios, then these rate curves should
-#' not significantly differ [say with 2 subsets]
+#' have made 'enough' stochastic or variable_uniform slip scenarios, then these
+#' rate curves should not significantly differ [say with 2 subsets]
 #'
 #' @param lon_p, lat_p station coordinates
 #' @param source_zone name of source_zone
-#' @param slip_type either 'uniform' or 'stochastic'
+#' @param slip_type either 'uniform' or 'stochastic' or 'variable_uniform'
 #' @param plot_y_range y range of plot
 #' @param boxwex Bar thickness 
 #' @param site_index provide the index of lon_p/lat_p in lon/lat, thereby
@@ -204,22 +213,32 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
 
         nc_file = config_env$all_source_uniform_slip_tsunami[nc_file_ind]
 
-    }else if(slip_type == 'stochastic'){
+    }else if(slip_type %in% c('stochastic', 'variable_uniform')){
 
-        nc_file_ind = grep(source_zone, 
-            config_env$all_source_stochastic_slip_tsunami)
+        if(slip_type == 'stochastic'){
+            nc_file_ind = grep(source_zone, 
+                config_env$all_source_stochastic_slip_tsunami)
+        }else if(slip_type == 'variable_uniform'){
+            nc_file_ind = grep(source_zone, 
+                config_env$all_source_variable_uniform_slip_tsunami)
+        }
 
         if(length(nc_file_ind) != 1){
             stop(paste0(
-                'Could not find unique stochastic slip file matching source_zone = ', 
-                source_zone))
+                'Could not find unique ', slip_type, 
+                ' slip file matching source_zone = ',  source_zone))
         }
 
-        nc_file = config_env$all_source_stochastic_slip_tsunami[nc_file_ind]
+        if(slip_type == 'stochastic'){
+            nc_file = config_env$all_source_stochastic_slip_tsunami[nc_file_ind]
+        }else{
+            nc_file = config_env$all_source_variable_uniform_slip_tsunami[nc_file_ind]
+        }
 
     }else{
         stop('unrecognized slip type')
     }
+
 
     fid = nc_open(nc_file)
     gauge_max_stage = ncvar_get(fid, 'max_stage', start=c(1,site), count=c(-1,1))
@@ -228,12 +247,14 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     event_nominal_rate_upper = ncvar_get(fid, 'event_rate_annual_upper_ci')
     event_nominal_rate_lower = ncvar_get(fid, 'event_rate_annual_lower_ci')
     nc_close(fid)
+
     # Deal with finite-precision netcdf limitations
     event_Mw = round(event_Mw, 3)
 
     # When plotting rates, multiply by this constant beforehand. 
     rate_rescale = 100
     if(is.null(split_into_subsets)){
+
         #
         # Boxplot stage by Mw
         #
@@ -322,6 +343,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     return(invisible(site))
 
 }
+# plot_wave_heights_at_a_station(lon_p, lat_p, source_zone='southamerica', slip_type = 'variable_uniform', boxwex=0.1)
 # plot_wave_heights_at_a_station(lon_p, lat_p, source_zone='southamerica', slip_type = 'stochastic', boxwex=0.1)
 # plot_wave_heights_at_a_station(lon_p, lat_p, source_zone='southamerica', slip_type = 'uniform', boxwex=0.1)
 
@@ -345,8 +367,10 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         all_source_tsunami = config_env$all_source_uniform_slip_tsunami
     }else if(slip_type == 'stochastic'){
         all_source_tsunami = config_env$all_source_stochastic_slip_tsunami
+    }else if(slip_type == 'variable_uniform'){
+        all_source_tsunami = config_env$all_source_variable_uniform_slip_tsunami
     }else{
-        stop('slip_type has invalid value -- must be either "uniform" or "stochastic"')
+        stop('slip_type has invalid value -- must be either "uniform" or "stochastic" or "variable_uniform"')
     }
 
 
@@ -358,9 +382,12 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         # Sum the exceedance rates over all source-zones for the chosen site
         if(slip_type == 'uniform'){
             varname = 'uniform_slip_rate'
-        }else{
+        }else if(slip_type == 'stochastic'){
             varname = 'stochastic_slip_rate'
+        }else if(slip_type == 'variable_uniform'){
+            varname = 'variable_uniform_slip_rate'
         }
+
         rate_sum = ncvar_get(rates[[1]], varname, 
             start=c(1,site_index), count=c(-1,1))
         for(i in 2:length(rates)){
@@ -394,7 +421,8 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         nr = nrow(sources_list[[i]]$unit_source_statistics)
         sources_list[[i]]$contribution = rep(0, length=nr)
         sources_list[[i]]$stage_exceed = stage_exceed
-        sources_list[[i]]$station_location = c(lon[site_index], lat[site_index], elev[site_index])
+        sources_list[[i]]$station_location = c(lon[site_index], 
+            lat[site_index], elev[site_index])
 
         # Extract required info from the netcdf files
         fid = nc_open(all_source_tsunami[i], readunlim=FALSE)
@@ -402,7 +430,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         event_rates = ncvar_get(fid, 'event_rate_annual')
         event_stage = ncvar_get(fid, 'max_stage', start=c(1,site_index), 
             count=c(-1, 1))
-        if(slip_type == 'stochastic'){
+        if(slip_type %in% c('stochastic', 'variable_uniform')){
             event_slip = ncvar_get(fid, 'event_slip_string')
         }
         nc_close(fid)
@@ -419,7 +447,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
                 event_index_string = event_index_string[j]))
    
             # Get slip on unit source [for weighting] 
-            if(slip_type == 'stochastic'){
+            if(slip_type %in% c('stochastic', 'variable_uniform')){
                 unit_source_weights = as.numeric(strsplit(event_slip[j], '_')[[1]])
             }else{
                 unit_source_weights = rep(1, length(us_id))
@@ -429,7 +457,8 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
             local_rates = event_rates[j] * unit_source_weights/sum(unit_source_weights)
 
             # Add to the store for the unit source
-            sources_list[[i]]$contribution[us_id] = sources_list[[i]]$contribution[us_id] + local_rates 
+            sources_list[[i]]$contribution[us_id] = 
+                sources_list[[i]]$contribution[us_id] + local_rates 
     
         }
 
@@ -450,7 +479,8 @@ plot_station_deaggregated_hazard<-function(deaggregated_hazard, scale = 1){
 
     plot(c(-40, 320), c(-80, 80), col=0, asp=1, xlab='lon', ylab='lat')
 
-    contrib_range = range(unlist(lapply(deaggregated_hazard, f<-function(x) range(x$contribution))))
+    contrib_range = range(unlist(lapply(
+        deaggregated_hazard, f<-function(x) range(x$contribution))))
 
     scale = scale * 1/(contrib_range[2]) # Make make bar have size = 'scale' in degrees longitude
 
@@ -462,11 +492,13 @@ plot_station_deaggregated_hazard<-function(deaggregated_hazard, scale = 1){
 
         xx = deaggregated_hazard[[i]]
 
-        colz = floor( (xx$contribution - contrib_range[1])/(contrib_range[2] - contrib_range[1]) * ncol)
+        colz = floor( (xx$contribution - contrib_range[1])/
+            (contrib_range[2] - contrib_range[1]) * ncol)
         colz = pmax(colz, 1)
 
         arrows(xx$unit_source_statistics$lon_c, xx$unit_source_statistics$lat_c, 
-            xx$unit_source_statistics$lon_c, xx$unit_source_statistics$lat_c + xx$contribution * scale,
+            xx$unit_source_statistics$lon_c, 
+            xx$unit_source_statistics$lat_c + xx$contribution * scale,
             col = mycol[colz], length=0)
     }
     points(xx$station[1], xx$station[2], col='red', pch=19)
@@ -483,7 +515,7 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
     }
 
 
-    pdf(paste0(station_name, '_stage_exceedance_rate.pdf'), width=12, height=10)
+    pdf(paste0(station_name, '_stage_exceedance_rate.pdf'), width=17, height=10)
 
     site_index = plot_rates_at_a_station(lon_p, lat_p)
 
@@ -495,11 +527,14 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
         plot_wave_heights_at_a_station(lon_p, lat_p, source_zone = names(rates)[i], 
             slip_type = 'stochastic', site_index=site_index)
         gc()
+        plot_wave_heights_at_a_station(lon_p, lat_p, source_zone = names(rates)[i], 
+            slip_type = 'variable_uniform', site_index=site_index)
+        gc()
     }
 
 
     for(exceedance_rate in c(1/50, 1/100, 1/500, 1/1000, 1/2500)){
-        for(slip_type in c('uniform', 'stochastic')){
+        for(slip_type in c('uniform', 'stochastic', 'variable_uniform')){
             # Deaggregated hazard 
             par(mfrow=c(1,1))
             site_deagg = get_station_deaggregated_hazard(lon_p, lat_p, 
@@ -538,8 +573,12 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             ' among all source-zones'))
     }
 
-    site_stages_uniform = matrix(NA, nrow=length(desired_rates), ncol=length(lon))
-    site_stages_stochastic = matrix(NA, nrow=length(desired_rates), ncol=length(lon))
+    site_stages_uniform = matrix(NA, nrow=length(desired_rates), 
+        ncol=length(lon))
+    site_stages_stochastic = matrix(NA, nrow=length(desired_rates), 
+        ncol=length(lon))
+    site_stages_variable_uniform = matrix(NA, nrow=length(desired_rates), 
+        ncol=length(lon))
 
     # Stage sequence that rates have been computed for
     stages = ncvar_get(rates[[site]], 'stage')
@@ -547,6 +586,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
     # Get rates at every gauge, for every value in the stage sequence
     site_rates_uniform = ncvar_get(rates[[site]], 'uniform_slip_rate')
     site_rates_stochastic = ncvar_get(rates[[site]], 'stochastic_slip_rate')
+    site_rates_variable_uniform = ncvar_get(rates[[site]], 'variable_uniform_slip_rate')
 
 
     # Compute stages for every desired rate, at every gauge
@@ -561,11 +601,13 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             # Only use points with rate>0 to interpolate -- since rate=0 goes
             # outside our model range -- and further, we might have multiple
             # points with rate=0, which will confuse the approx function (needs
-            # the rates to be monotonic). We also append a 'stage=0' value to the start,
-            # and ensure it has a rate slightly above the peak rate, to ensure we have >= 2
-            # interpolation points in the approx function
+            # the rates to be monotonic). We also append a 'stage=0' value to
+            # the start, and ensure it has a rate slightly above the peak rate,
+            # to ensure we have >= 2 interpolation points in the approx
+            # function
             kk = which(sr > 0)
-            site_stages_uniform[,i] = approx(c(sr[1]+0.001, sr[kk]), c(0,stages[kk]), 
+            site_stages_uniform[,i] = approx(
+                c(sr[1]+0.001, sr[kk]), c(0,stages[kk]), 
                 xout=desired_rates, rule=2)$y
         }
     }
@@ -581,12 +623,37 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             # Only use points with rate>0 to interpolate -- since rate=0 goes
             # outside our model range -- and further, we might have multiple
             # points with rate=0, which will confuse the approx function (needs
-            # the rates to be monotonic). We also append a 'stage=0' value to the start,
-            # and ensure it has a rate slightly above the peak rate, to ensure we have >= 2
-            # interpolation points in the approx function
+            # the rates to be monotonic). We also append a 'stage=0' value to
+            # the start, and ensure it has a rate slightly above the peak rate,
+            # to ensure we have >= 2 interpolation points in the approx
+            # function
 
             kk = which(sr > 0)
-            site_stages_stochastic[,i] = approx(c(sr[1]+0.001,sr[kk]), c(0,stages[kk]), 
+            site_stages_stochastic[,i] = approx(c(sr[1]+0.001,sr[kk]), 
+                c(0,stages[kk]), 
+                xout=desired_rates, rule=2)$y
+        }
+    }
+    # Variable uniform slip
+    for(i in 1:length(lon)){
+
+        sr = site_rates_variable_uniform[,i]
+        if(sr[1] > 0 & all(!is.na(sr))){
+            # Check sorting
+            dsr = diff(sr)
+            if(any(dsr) < 0) stop('Unsorted rates')
+
+            # Only use points with rate>0 to interpolate -- since rate=0 goes
+            # outside our model range -- and further, we might have multiple
+            # points with rate=0, which will confuse the approx function (needs
+            # the rates to be monotonic). We also append a 'stage=0' value to
+            # the start, and ensure it has a rate slightly above the peak rate,
+            # to ensure we have >= 2 interpolation points in the approx
+            # function
+
+            kk = which(sr > 0)
+            site_stages_variable_uniform[,i] = approx(c(sr[1]+0.001,sr[kk]), 
+                c(0,stages[kk]), 
                 xout=desired_rates, rule=2)$y
         }
     }
@@ -618,6 +685,17 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         writeOGR(s2, dsn=paste0(shapefile_output_dir, '/stochastic_', source_zone),
             layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
 
+        # Make variable_uniform slip shapefile, with rates and elevation
+        s1 = SpatialPoints(cbind(lon, lat), proj4string=CRS('+init=epsg:4326'))
+        local_data_frame = as.data.frame(t(site_stages_variable_uniform))
+        if(!is.null(shapefile_rate_names)){
+            names(local_data_frame) = shapefile_rate_names
+        }
+        local_data_frame = cbind(local_data_frame, data.frame('elev'=as.numeric(elev)))
+        s2 = SpatialPointsDataFrame(s1, data=local_data_frame)
+        writeOGR(s2, dsn=paste0(shapefile_output_dir, '/variable_uniform_', source_zone),
+            layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
+
         # Make shapefile with 'ratio of uniform to stochastic'
         # uniform_stage/(stochastic_stage+eps)
         s1 = SpatialPoints(cbind(lon, lat), proj4string=CRS('+init=epsg:4326'))
@@ -629,6 +707,19 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         local_data_frame = cbind(local_data_frame, data.frame('elev'=as.numeric(elev)))
         s2 = SpatialPointsDataFrame(s1, data=local_data_frame)
         writeOGR(s2, dsn=paste0(shapefile_output_dir, '/uniform_on_stochastic_', source_zone),
+            layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
+
+        # Make shapefile with 'ratio of variable_uniform to stochastic'
+        # variable_uniform_stage/(stochastic_stage+eps)
+        s1 = SpatialPoints(cbind(lon, lat), proj4string=CRS('+init=epsg:4326'))
+        eps = 1.0e-06
+        local_data_frame = as.data.frame(t(site_stages_variable_uniform)/(t(site_stages_stochastic)+eps))
+        if(!is.null(shapefile_rate_names)){
+            names(local_data_frame) = shapefile_rate_names
+        }
+        local_data_frame = cbind(local_data_frame, data.frame('elev'=as.numeric(elev)))
+        s2 = SpatialPointsDataFrame(s1, data=local_data_frame)
+        writeOGR(s2, dsn=paste0(shapefile_output_dir, '/variable_uniform_on_stochastic_', source_zone),
             layer=source_zone, driver='ESRI Shapefile', overwrite=TRUE)
 
     }
@@ -665,8 +756,11 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         
     # Make the plot, for all desired_rates
     for(i in 1:length(desired_rates)){
-        par(mfrow=c(2,1))
+        par(mfrow=c(3,1))
+        
+        #
         # Uniform
+        #
         plot(lon, lat, pch='.', col='grey', asp=1, 
             main=paste0(source_zone, ': Uniform slip, rate = ', 
                 signif(desired_rates[i]), greens_title),
@@ -680,7 +774,9 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         grid()
         arrow_legend()
 
+        #
         # Stochastic
+        #
         plot(lon, lat, pch='.', col='grey', asp=1, 
             main=paste0(source_zone, ': Stochastic slip, rate = ', 
                 signif(desired_rates[i]), greens_title),
@@ -689,6 +785,22 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         ht = site_stages_stochastic[i,]*rescale 
         # Order arrows so long ones are plotted last, for visual clarity
         o1 = order(ht) 
+        arrows(lon[o1], lat[o1], lon[o1], lat[o1] + ht[o1]*scale,
+            col=col_value(ht[o1]), length=0)
+        grid()
+        arrow_legend()
+
+        #
+        # Variable uniform
+        #
+        plot(lon, lat, pch='.', col='grey', asp=1, 
+            main=paste0(source_zone, ': Variable uniform slip, rate = ', 
+                signif(desired_rates[i]), greens_title),
+            ...)
+        # arrow height
+        ht = site_stages_variable_uniform[i,]*rescale
+        # Order arrows so long ones are plotted last, for visual clarity
+        o1 = order(ht)
         arrows(lon[o1], lat[o1], lon[o1], lat[o1] + ht[o1]*scale,
             col=col_value(ht[o1]), length=0)
         grid()
@@ -703,15 +815,18 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
 # Plot global peak-stage vs return period, for each source-zone
 #
 make_global_stage_return_period_plots<-function(){
-    # Make a pdf for each source-zone, containing a number of different return periods
+    # Make a pdf for each source-zone, containing a number of different return
+    # periods
     for(source_name in names(rates)){
-        pdf(paste0(source_name, '_stage_vs_exceedance_rate.pdf'), width=20, height=15)
+        pdf(paste0(source_name, '_stage_vs_exceedance_rate.pdf'), width=20, 
+            height=22)
         plot_source_zone_stage_vs_exceedance_rate(source_name, 
-            desired_rates=c(1/100, 1/500, 1/1000, 1/5000, 1/10000, 1/50000, 1/100000),
+            desired_rates=c(1/100, 1/500, 1/1000, 1/5000, 1/10000, 1/50000, 
+                1/100000),
             greens_law_to_1m=FALSE, 
             shapefile_output_dir=paste0('peakstage_shapefiles/', source_name),
-            shapefile_rate_names = c('R_100', 'R_500', 'R_1000', 'R_5000', 'R_10000', 
-                'R_50000', 'R_100000'),
+            shapefile_rate_names = c('R_100', 'R_500', 'R_1000', 'R_5000', 
+                'R_10000', 'R_50000', 'R_100000'),
             xlim=c(40,320), ylim=c(-60,60), scale=1)
         dev.off()
     }
@@ -739,8 +854,9 @@ make_standard_site_exceedance_rate_plots<-function(){
     
     
     for(i in 1:length(sites)){
-        plot_station_exceedance_rate_pdf(sites[[i]][1], sites[[i]][2], names(sites)[i])
-    } 
+        plot_station_exceedance_rate_pdf(sites[[i]][1], sites[[i]][2], 
+            names(sites)[i])
+    }
  
 }
 
@@ -765,14 +881,36 @@ make_stage_exceedance_rate_convergence_plot<-function(){
 
     pdf('stage_convergence_plot.pdf', width=8, height=6)
     for(i in 1:length(sites)){
+
         for(source_name in names(rates)){
+
             plot_wave_heights_at_a_station(
                 sites[[i]][1], sites[[i]][2], 
                 source_name, slip_type='stochastic', split_into_subsets=2)
-            title(paste0(names(sites)[i], ' : ', source_name))
+
+            title(paste0(names(sites)[i], ' (stochastic): ', source_name))
+
+            grid()
+
+            plot_wave_heights_at_a_station(
+                sites[[i]][1], sites[[i]][2], 
+                source_name, slip_type='variable_uniform', split_into_subsets=2)
+
+            title(paste0(names(sites)[i], ' (variable_uniform): ', source_name))
+
             grid()
         }
     }
     dev.off()
 }
 
+#
+# If this code is called from Rscript, then make the plots
+#
+if(interactive() == FALSE){
+
+    make_stage_exceedance_rate_convergence_plot()
+    make_standard_site_exceedance_rate_plots()
+    make_global_stage_return_period_plots()
+
+}

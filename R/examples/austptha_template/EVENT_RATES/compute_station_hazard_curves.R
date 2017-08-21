@@ -1,6 +1,6 @@
 #
-# Script to compute stage-vs-exceedance-rate curves for all gauges, for 
-# all source-zones.
+# Script to compute stage-vs-exceedance-rate curves for all gauges, for all
+# source-zones.
 #
 
 library(rptha)
@@ -14,11 +14,16 @@ source('config.R', local=config)
 # INPUTS
 #
 
-# NetCDF files with uniform slip max_stage for every point, and also event rates
+# NetCDF files with uniform slip max_stage for every point, and also event
+# rates
 all_source_uniform_slip_tsunami = config$all_source_uniform_slip_tsunami
 
-# NetCDF files with stochastic slip max_stage for every point, and also event rates
+# NetCDF files with stochastic slip max_stage for every point, and also event
+# rates
 all_source_stochastic_slip_tsunami = config$all_source_stochastic_slip_tsunami 
+# ... and variable_uniform
+all_source_variable_uniform_slip_tsunami =
+    config$all_source_variable_uniform_slip_tsunami 
 
 # Apply hazard curve computation / data extraction to chunks of data
 # We read in (nevents x point_chunk_size) max stage values at once, and then
@@ -210,8 +215,10 @@ create_rate_netcdf_file<-function(
     stage_seq, 
     uniform_slip_rates, 
     stochastic_slip_rates,
+    variable_uniform_slip_rates,
     uniform_slip_tsunami_file, 
-    stochastic_slip_tsunami_file){
+    stochastic_slip_tsunami_file,
+    variable_uniform_slip_tsunami_file){
 
     # Dimension for rate curve
     dim_stage_seq = ncdim_def('stage', 'm', vals=stage_seq, unlim=FALSE,
@@ -256,7 +263,9 @@ create_rate_netcdf_file<-function(
     all_nc_var = c(all_nc_var,
         list(uniform_rate_v, uniform_rate_upper_v, uniform_rate_lower_v))
 
+    #
     # Variables for rates, stochastic slip
+    #
     stochastic_rate_v = ncvar_def(
         name='stochastic_slip_rate', 
         units='events per year',
@@ -276,7 +285,33 @@ create_rate_netcdf_file<-function(
         longname = 'exceedance rate (lower credible interval) of peak stage for stochastic slip events')
 
     all_nc_var = c(all_nc_var, 
-        list(stochastic_rate_v, stochastic_rate_upper_v, stochastic_rate_lower_v))
+        list(stochastic_rate_v, stochastic_rate_upper_v, 
+            stochastic_rate_lower_v))
+
+    #
+    # Variables for rates, variable_uniform slip
+    #
+    variable_uniform_rate_v = ncvar_def(
+        name='variable_uniform_slip_rate', 
+        units='events per year',
+        dim=list(dim_stage_seq, dim_station), 
+        longname = 'exceedance rate of peak stage for variable_uniform slip events')
+
+    variable_uniform_rate_upper_v = ncvar_def(
+        name='variable_uniform_slip_rate_upper_ci', 
+        units='events per year',
+        dim=list(dim_stage_seq, dim_station), 
+        longname = 'exceedance rate (upper credible interval) of peak stage for variable_uniform slip events')
+
+    variable_uniform_rate_lower_v = ncvar_def(
+        name='variable_uniform_slip_rate_lower_ci', 
+        units='events per year',
+        dim=list(dim_stage_seq, dim_station), 
+        longname = 'exceedance rate (lower credible interval) of peak stage for variable_uniform slip events')
+
+    all_nc_var = c(all_nc_var, 
+        list(variable_uniform_rate_v, variable_uniform_rate_upper_v, 
+            variable_uniform_rate_lower_v))
 
     # Make name for output file
     sourcename_dot_nc = paste0(source_name, '.nc')
@@ -293,6 +328,9 @@ create_rate_netcdf_file<-function(
     ncatt_put(output_fid, varid=0, 
         attname = 'stochastic_slip_tsunami_event_file',
         attval=normalizePath(stochastic_slip_tsunami_file), prec='text')
+    ncatt_put(output_fid, varid=0, 
+        attname = 'variable_uniform_slip_tsunami_event_file',
+        attval=normalizePath(variable_uniform_slip_tsunami_file), prec='text')
     ncatt_put(output_fid, varid=0, attname='source_zone_name',
         attval=source_name, prec='text')
     ncatt_put(output_fid, varid=0, attname='parent_script_name',
@@ -312,26 +350,36 @@ create_rate_netcdf_file<-function(
         uniform_slip_rates$rates_lower_ci)
 
     # Put stochastic slip stage exceedance rates on file
-    ncvar_put(output_fid, stochastic_rate_v, stochastic_slip_rates$rates)
+    ncvar_put(output_fid, stochastic_rate_v, 
+        stochastic_slip_rates$rates)
     ncvar_put(output_fid, stochastic_rate_upper_v, 
         stochastic_slip_rates$rates_upper_ci)
     ncvar_put(output_fid, stochastic_rate_lower_v, 
         stochastic_slip_rates$rates_lower_ci)
+
+    # Put variable_uniform slip stage exceedance rates on file
+    ncvar_put(output_fid, variable_uniform_rate_v, 
+        variable_uniform_slip_rates$rates)
+    ncvar_put(output_fid, variable_uniform_rate_upper_v, 
+        variable_uniform_slip_rates$rates_upper_ci)
+    ncvar_put(output_fid, variable_uniform_rate_lower_v, 
+        variable_uniform_slip_rates$rates_lower_ci)
 
     nc_close(output_fid)
 
     return(invisible(output_file_name))
 }
 
-#stop()
 # Get point info
 gauge_points = read_lon_lat_elev(all_source_uniform_slip_tsunami[1])
 
 # Names of sources
 source_names = basename(dirname(dirname(all_source_uniform_slip_tsunami)))
 
-# Double-check that uniform/stochastic files are both ordered by source_name 
-stopifnot(all(source_names == basename(dirname(dirname(all_source_stochastic_slip_tsunami)))  ) )
+# Double-check that uniform/stochastic/variable_uniform files are both ordered
+# by source_name 
+stopifnot(all(source_names == basename(dirname(dirname(all_source_stochastic_slip_tsunami)))))
+stopifnot(all(source_names == basename(dirname(dirname(all_source_variable_uniform_slip_tsunami)))))
 
 for(i in 1:length(source_names)){
 
@@ -339,6 +387,8 @@ for(i in 1:length(source_names)){
     source_name = source_names[i]
     uniform_slip_tsunami_file = all_source_uniform_slip_tsunami[i]
     stochastic_slip_tsunami_file = all_source_stochastic_slip_tsunami[i]
+    variable_uniform_slip_tsunami_file = all_source_variable_uniform_slip_tsunami[i]
+    
 
     # Get uniform slip outputs
     uniform_slip_rates = source_zone_stage_exceedance_rates(
@@ -353,15 +403,27 @@ for(i in 1:length(source_names)){
     # Remove memory from cluster
     parLapply(mycluster, as.list(1:MC_CORES), gc)
 
+    # Get variable_uniform slip outputs
+    variable_uniform_slip_rates = source_zone_stage_exceedance_rates(
+        variable_uniform_slip_tsunami_file, gauge_points,
+        point_chunk_size=point_chunk_size_stochastic, stage_seq=stage_seq)
+
+    # Remove memory from cluster
+    parLapply(mycluster, as.list(1:MC_CORES), gc)
+
     # Write out to a file 'tsunami_stage_exceedance_rates_SOURCENAME.nc'
     # in the same folder as uniform_slip_tsunami_file
     create_rate_netcdf_file(
         source_name, gauge_points, stage_seq,
-        uniform_slip_rates, stochastic_slip_rates,
-        uniform_slip_tsunami_file, stochastic_slip_tsunami_file)
+        uniform_slip_rates, 
+        stochastic_slip_rates, 
+        variable_uniform_slip_rates,
+        uniform_slip_tsunami_file, 
+        stochastic_slip_tsunami_file,
+        variable_uniform_slip_tsunami_file)
 
     # Save some memory
-    rm(uniform_slip_rates, stochastic_slip_rates)
+    rm(uniform_slip_rates, stochastic_slip_rates, variable_uniform_slip_rates)
     gc()
 }
 

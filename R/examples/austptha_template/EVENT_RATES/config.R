@@ -184,6 +184,11 @@ all_source_stochastic_slip_tsunami = Sys.glob(
     '../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_*.nc')
 
 
+#
+# NetCDF files with stochastic slip max_stage for every hazard point, and also a place rates for every event
+#
+all_source_variable_uniform_slip_tsunami = Sys.glob(
+    '../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_variable_uniform_slip_earthquake_events_tsunami_*.nc')
 
 
 ##### END INPUTS
@@ -225,6 +230,7 @@ source_names_1 = basename(dirname(dirname(unit_source_statistics_netcdf_files)))
 source_names_2 = basename(dirname(dirname(dirname(unit_source_grid_polygon_shapefiles))))
 source_names_3 = basename(dirname(dirname(all_source_uniform_slip_tsunami)))
 source_names_4 = basename(dirname(dirname(all_source_stochastic_slip_tsunami)))
+source_names_5 = basename(dirname(dirname(all_source_variable_uniform_slip_tsunami)))
 
 if(!all(source_names_1 == source_names_2)){
     stop('unit_source_statistics_netcdf_files and unit_source_grid_polygon_shapefiles must refer to the same source-zones, in the same order')
@@ -234,5 +240,8 @@ if(!all(source_names_1 == source_names_3)){
 }
 if(!all(source_names_1 == source_names_4)){
     stop('unit_source_statistics_netcdf_files and all_source_stochastic_slip_tsunami must refer to the same source-zones, in the same order')
+}
+if(!all(source_names_1 == source_names_5)){
+    stop('unit_source_statistics_netcdf_files and all_source_variable_uniform_slip_tsunami must refer to the same source-zones, in the same order')
 }
 
