@@ -7,7 +7,7 @@ source('config.R', local=config_env)
 # by scripts in this folder) 
 rate_files = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/tsunami_*.nc')
 # Get all the rates
-rates = lapply(as.list(rate_files), f<-function(x) nc_open(x))
+rates = lapply(as.list(rate_files), f<-function(x) nc_open(x, readunlim=FALSE))
 names(rates) = basename(dirname(dirname(rate_files))) 
 
 # Check rate files are ordered by source-zone in the same way as key files in
@@ -240,7 +240,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     }
 
 
-    fid = nc_open(nc_file)
+    fid = nc_open(nc_file, readunlim=FALSE)
     gauge_max_stage = ncvar_get(fid, 'max_stage', start=c(1,site), count=c(-1,1))
     event_Mw = ncvar_get(fid, 'event_Mw')
     event_nominal_rate = ncvar_get(fid, 'event_rate_annual')
