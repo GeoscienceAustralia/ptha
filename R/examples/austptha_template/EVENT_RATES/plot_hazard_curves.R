@@ -910,7 +910,7 @@ make_stage_exceedance_rate_convergence_plot<-function(){
 if(interactive() == FALSE){
 
     make_stage_exceedance_rate_convergence_plot()
-    make_standard_site_exceedance_rate_plots()
     make_global_stage_return_period_plots()
+    make_standard_site_exceedance_rate_plots()
 
 }
