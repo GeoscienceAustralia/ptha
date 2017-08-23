@@ -149,6 +149,7 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
         output$area_absigma = area_absigma
         output$width_absigma = width_absigma
         output$length_absigma = length_absigma
+        output$relation = relation
     }
 
     return(output)
