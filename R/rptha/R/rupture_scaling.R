@@ -35,11 +35,18 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' Compute earthquake rupture area, width and length from Mw based on an
 #' empirical scaling relation
 #'
-#' Units are km and km^2
+#' Output units are km and km^2
 #'
-#' @param Mw Moment Magnitude 
-#' @param relation Name for the scaling relation ('Strasser' uses the subduction
-#' interface event relation for Strasser et al 2010.)
+#' @param Mw Moment Magnitude (must have length(Mw) == 1)
+#' @param relation Name for the scaling relation. 'Strasser' uses the subduction
+#' interface event relation for Strasser et al 2010; 'Strasser-intraslab' uses the
+#' subduction intraslab relations of Strasser et al 2010 [for this case, 
+#' Strasser et al 2010 suggest the width sigma might be too small, but we make
+#' no effort to correct that]; 'AllenHayes' uses the interface relations of
+#' Allen and Hayes (2017, Table 2), with sigma for prediction based on the sigma value
+#' for the log10(L / or W / or A) of the orthogonal regression. Note this case 
+#' has Area and Width being multi-segment linear; 'AllenHayes-inslab' gives the 
+#' inslab relations of Allen and Hayes (2017, Table 5)
 #' @param detailed logical. If False return a vector with area/width/length,
 #' otherwise provide a list with the latter as well as information on
 #' log10-standard-deviations
@@ -55,26 +62,76 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' @examples
 #' rupture_statistics1 = Mw_2_rupture_size(9.0)
 #' rupture_statistics2 = Mw_2_rupture_size(9.0, detailed=TRUE)
+#'
 Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
     CI_sd=1){
 
+    # Assumes Mw is not a vector
+    stopifnot(length(Mw) == 1)
+
     if(relation == 'Strasser'){
 
-        # Area
+        # Strasser's subduction relations
         area_absigma = c(-3.476, 0.952, 0.304)
-        area = 10**(area_absigma[1] + Mw*area_absigma[2])
-
-        # Width
         width_absigma = c(-0.882, 0.351, 0.173)
-        width = 10**(width_absigma[1] + Mw*width_absigma[2])
-
-        # Length
         length_absigma = c(-2.477, 0.585, 0.180)
-        length = 10**(length_absigma[1] + Mw*length_absigma[2])
+
+    }else if(relation == 'Strasser-intraslab'){
+
+        # Strasser's intraslab relations 
+        area_absigma = c(-3.225, 0.890, 0.184)
+        width_absigma = c(-1.058, 0.356, 0.067)
+        length_absigma = c(-2.350, 0.562, 0.146)
+
+    }else if(relation == 'AllenHayes'){
+        # Allen and Hayes, 2017 Interface rupture scaling coef (table 2)
+        # 
+        #
+        # These are based on orthogonal regression,
+        # but for prediction we only include the 'x' sigma value from the paper 
+        # (which I have confirmed is the error on 'the LHS of the equations as
+        # written in the paper')
+        #
+        # Some relations change above a magnitude threshold
+        Mw_above_thresh = (Mw > 8.63)
+        if(!Mw_above_thresh){
+            area_absigma = c(-5.62, 1.22, 0.256)
+        }else{
+            area_absigma = c(2.23, 0.31, 0.256)
+        }
+
+        length_absigma = c(-2.90, 0.63, 0.182)
+
+        Mw_above_thresh = (Mw > 8.67)
+        if(!Mw_above_thresh){
+            width_absigma = c(-1.91, 0.48, 0.137)
+        }else{
+            width_absigma = c(2.29, 0.0, 0.137)
+        }
+
+    }else if(relation == 'AllenHayes-inslab'){
+        # Allen and Hayes, 2017 Inslab rupture scaling coef (table 5)
+
+        length_absigma = c(-3.03, 0.63, 0.14)
+        width_absigma = c(-1.01, 0.35, 0.15)
+        area_absigma = c(-3.89,  0.96, 0.19)
+
+    }else if(relation == 'AllenHayes-outer-rise'){
+        # Allen and Hayes, 2017 Outer Rise rupture scaling coef (table 5)
+        # 
+
+        length_absigma = c(-2.87, 0.63, 0.08)
+        width_absigma = c(-1.18, 0.35, 0.08)
+        area_absigma = c(-3.89, 0.96, 0.11)
 
     }else{
+
         stop(paste0('Relation value ', relation, ' not recognized'))
     }
+
+    area = 10**(area_absigma[1] + Mw*area_absigma[2])
+    width = 10**(width_absigma[1] + Mw*width_absigma[2])
+    length = 10**(length_absigma[1] + Mw*length_absigma[2])
 
     output = c(area, width, length)
     names(output) = c('area', 'width', 'length')
