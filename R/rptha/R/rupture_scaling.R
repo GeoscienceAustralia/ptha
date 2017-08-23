@@ -38,7 +38,7 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' Output units are km and km^2
 #'
 #' @param Mw Moment Magnitude (must have length(Mw) == 1)
-#' @param relation Name for the scaling relation. 'Strasser' uses the subduction
+#' @param relation Name for the scaling relation. 'Strasser' (default) uses the subduction
 #' interface event relation for Strasser et al 2010; 'Strasser-intraslab' uses the
 #' subduction intraslab relations of Strasser et al 2010 [for this case, 
 #' Strasser et al 2010 suggest the width sigma might be too small, but we make
@@ -60,9 +60,12 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' of each variable (which can be used to compute any other confidence interval).
 #' @export
 #' @examples
+#' # Using the Strasser et al subduction scaling relation by default
 #' rupture_statistics1 = Mw_2_rupture_size(9.0)
 #' rupture_statistics2 = Mw_2_rupture_size(9.0, detailed=TRUE)
-#'
+#' # Try Allen and Hayes relation
+#' rupture_statistics3 = Mw_2_rupture_size(9.0, relation='AllenHayes', 
+#'     detailed=TRUE, CI_sd=2)
 Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
     CI_sd=1){
 
