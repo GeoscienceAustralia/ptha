@@ -23,19 +23,11 @@ for(i in 1:length(gauge_ids)){
     gauge_ylims[[i]] = NA #c(-1, 1) * 2
 }
 
+event_basename = 'tonga_2009_03_19_Mw7.7'
+
 ## END INPUT PAR
 
-pdf('tonga_2009_03_19_Mw7.7.pdf', width=10, height=5)
-check_dart_env$compare_event_with_gauge_time_series(
-    event_magnitude,
-    event_hypocentre,
-    event_start, 
-    gauge_ids, 
-    gauge_data,
-    plot_durations= plot_durations,
-    gauge_ylims = gauge_ylims)
-dev.off()
-
+source('check_dart_include.R')
 
 ############################################################################
 #
@@ -68,15 +60,7 @@ for(i in 1:length(gauge_ids)){
     gauge_ylims[[i]] = NA #c(-1, 1) * 2
 }
 
+event_basename = 'samoa_2009_09_29_Mw8.1'
 ## END INPUT PAR
 
-pdf('samoa_2009_09_29_Mw8.1.pdf', width=10, height=5)
-check_dart_env$compare_event_with_gauge_time_series(
-    event_magnitude,
-    event_hypocentre,
-    event_start, 
-    gauge_ids, 
-    gauge_data,
-    plot_durations= plot_durations,
-    gauge_ylims = gauge_ylims)
-dev.off()
+source('check_dart_include.R')

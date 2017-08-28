@@ -20,7 +20,7 @@ earthquake_events = read_table_from_netcdf(
 # NetCDF file with stochastic slip earthquake events
 earthquake_events_stochastic = read_table_from_netcdf(
     paste0('all_stochastic_slip_earthquake_events_', source_name, '.nc'))
-# NetCDF file with stochastic slip earthquake events
+# NetCDF file with variable-uniform slip earthquake events
 earthquake_events_variable_uniform = try(read_table_from_netcdf(
     paste0('all_variable_uniform_slip_earthquake_events_', source_name, '.nc')))
 # NetCDF file with unit-source statistics
@@ -127,11 +127,12 @@ find_events_near_point<-function(
         # target location', we might introduce bias, since that approach would
         # tend to select more 'broad' events at more distant locations
 
+        uniform_keepers = keep[which(event_contains_hpc == 1)]
+
         if(use_stochastic_slip_runs){
+
             stochastic_events_uniform_row = 
                 earthquake_events_stochastic$uniform_event_row
-
-            uniform_keepers = keep[which(event_contains_hpc == 1)]
 
             stochastic_events_to_keep = which(
                 stochastic_events_uniform_row %in% uniform_keepers)
@@ -145,8 +146,6 @@ find_events_near_point<-function(
 
             variable_uniform_events_uniform_row = 
                 earthquake_events_variable_uniform$uniform_event_row
-
-            uniform_keepers = keep[which(event_contains_hpc == 1)]
 
             variable_uniform_events_to_keep = which(
                 variable_uniform_events_uniform_row %in% uniform_keepers)

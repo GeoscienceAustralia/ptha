@@ -1,5 +1,6 @@
 #
-# Code for casual analysis of earthquakes in our source zones
+# Code containing experimental/random analysis of earthquakes in our source zones
+# Not part of main scripts. (FIXME: Consider removing from version control)
 #
 
 # Get GCMT + utility functions
@@ -138,3 +139,234 @@ for(i in 1:length(eq_events)){
 
 dev.off()
 
+#'
+#' Alternative parameterisation of gamma distribution
+#'
+dgamma2<-function(x, alpha, mean_rate, log=FALSE){
+    shape = alpha
+    rate = mean_rate * alpha
+    dgamma(x, shape=shape, rate=rate, log=log)
+}
+
+pgamma2<-function(q, alpha, mean_rate = 1, lower.tail = TRUE, log.p = FALSE){
+    shape = alpha
+    rate = mean_rate * alpha
+    pgamma(q, shape=shape, rate=rate, lower.tail=lower.tail, log.p=log.p)
+}
+
+qgamma2<-function(p, alpha, mean_rate = 1, lower.tail = TRUE, log.p = FALSE){
+    shape = alpha
+    rate = mean_rate * alpha
+    qgamma(q, shape=shape, rate=rate, lower.tail=lower.tail, log.p=log.p)
+}
+
+rgamma2<-function(n, alpha, mean_rate = 1){
+    shape = alpha
+    rate = mean_rate * alpha
+    rgamma(n, shape=shape, rate=rate)
+}
+
+#'
+#' Negative log-likelihood for a model where time-between-events have a gamma distribution,
+#' with a global shape parameter, and a source-zone specific mean rate
+#
+nll_regional_gamma2<-function(par, data=eq_events, 
+    obs_start = cmt_start_time_julianDay1900, 
+    obs_end = cmt_end_time_julianDay1900, 
+    dt_limit_days = 0,
+    mean_rate_lower_limit = 0.001,
+    return_vector=FALSE){
+
+    # par is a vector with the (global) shape parameter, followed by a 'mean_rate' parameter
+    # for each source-zone
+
+    alpha = par[1]
+    stopifnot(length(par)-1 == length(data))
+
+    if(any(par[-1] < mean_rate_lower_limit)) return(Inf)
+
+    nll_site = rep(NA, length=length(data))
+
+    for(i in 1:length(data)){
+
+        data_times = data[[i]]$julianDay1900
+        mean_rate = par[i+1]
+
+        if(length(data_times) == 0){
+            # No events -- so we know the time-between-events is at least obs_end-obs_start
+            nll_site[i] = -pgamma2(
+                (obs_end - obs_start)/days_in_year, 
+                alpha, mean_rate, lower.tail=FALSE, log.p=TRUE)
+        }
+
+        if(length(data_times) == 1){
+            # We only have bounds on the time between the observed event and the ones before/after
+            nll_site[i] = 
+                -pgamma2((data_times - obs_start)/days_in_year, 
+                    alpha, mean_rate, lower.tail=FALSE, log.p=TRUE) -
+                pgamma((obs_end - data_times)/days_in_year, 
+                    alpha, mean_rate, lower.tail=FALSE, log.p=TRUE)
+        }
+
+        if(length(data_times) > 1){
+            # Censored start and end time spacings, standard treatment for data inside
+            nll_site[i] = -sum(
+                dgamma2(pmax(dt_limit_days, diff(data_times))/days_in_year, 
+                    alpha, mean_rate, log=TRUE)) -
+                pgamma2((data_times[1] - obs_start)/days_in_year, 
+                    alpha, mean_rate, lower.tail=FALSE, log.p=TRUE) -
+                pgamma2((obs_end - data_times[length(data_times)])/days_in_year, 
+                    alpha, mean_rate, lower.tail=FALSE, log.p=TRUE)
+
+        }
+    }
+
+    if(return_vector){
+        return(nll_site)
+    }else{
+        return(sum(nll_site))
+    }
+}
+
+
+starting_par = c(0.5, pmax(0.003, 
+unlist(lapply(eq_events, nrow))/
+    ((cmt_end_time_julianDay1900 -cmt_start_time_julianDay1900)/days_in_year)))
+
+# Basic fitting
+if(FALSE){
+    fit1$par = starting_par
+    for(i in 1:50){
+        fit1 = optim(fit1$par, nll_regional_gamma2, method='Nelder-Mead')
+        print(fit1$value)
+    }
+
+    # Drop izumariana -- any impact?
+    fit2 = optim(starting_par[-c(2,6)], f<-function(par) nll_regional_gamma2(par, data=eq_events[-c(1,5)]))
+    # Just southamerica
+    fit3 = optim(starting_par[c(1,8)], f<-function(par) nll_regional_gamma2(par, data=eq_events[7]))
+
+    starting_par2 = starting_par * 2
+    fit2$par = starting_par2
+    for(i in 1:50){
+        fit2 = optim(fit2$par, nll_regional_gamma2, method='Nelder-Mead')
+        print(fit2$value)
+    }
+
+}
+#
+# Simulate some data
+# 
+simulate_fitted_model<-function(par, n=100){
+
+    random_egs = lapply(as.list(par[-1]), 
+        f<-function(x) cumsum(rgamma2(n, alpha=par[1], mean_rate=x)))
+
+    return(random_egs)
+}
+
+# Plot synthetic data vs model
+if(FALSE){
+    random_egs = simulate_fitted_model(fit1$par)
+
+    par(mfrow=c(length(random_egs), 1))
+    par(mfrow=c(8,1))
+    par(mar=c(0,0,0,0)+1)
+    for(i in 1:length(random_egs)){
+        plot(random_egs[[i]], rep(1, length(random_egs[[i]])), t='h', xlim=c(0, 50))
+        title(names(eq_events)[i], line=-5, cex.main=2, col.main='red')
+        points((eq_events[[i]]$julianDay1900 - cmt_start_time_julianDay1900)/days_in_year, 
+            rep(1.5, length(eq_events[[i]]$julianDay1900)), 
+            t='h', col='green')
+    }
+
+    nevents_obs = unlist(lapply(eq_events, nrow))
+    nevents_model = replicate(100, 
+        { sim = simulate_fitted_model(fit1$par); unlist(lapply(sim, f<-function(x) sum(x<(2017-1976)))) })
+}
+
+if(FALSE){
+    #
+    # Check for bias in parameter estimates
+    #
+    bias_check = replicate(1000,
+        {sim = rgamma2(100, alpha=0.5, mean_rate=1/3); 
+        sim_keep = which(cumsum(sim) < (2017-1976));
+        if(length(sim_keep) > 0){
+            sim = sim[sim_keep]
+        }else{
+            sim = sim[1]
+        };
+        fit = optim(par=c(0.4, 1/3), 
+            f<-function(par) -sum(dgamma2(sim, par[1], par[2], log=TRUE)))$par;
+        fit = c(fit, length(sim)) }
+        )
+}
+
+#
+# More complex testing for bias
+#
+# Simulate data 'like' the GCMT data (i.e. some given start/end time), with
+# known parameters, and try to fit the data to it
+#
+#stop()
+true_par = starting_par
+max_j = 100 #1000
+# If regular_samples = FALSE, do a 'large sample' test -- in that case, our method has little
+# bias -- whereas for small samples, the bias is large
+regular_sample = TRUE 
+counts = matrix(NA, ncol=max_j, nrow=length(true_par)-1)
+fitted_par = matrix(NA, ncol=max_j, nrow=length(true_par))
+for(j in 1:max_j){
+
+    print(j)
+    random_data = simulate_fitted_model(true_par, n=500)
+
+    for(i in 1:length(random_data)){
+        # Make hypothetical time-series with duration = gcmt duration
+
+        # Start 50 years before gcmt obs start time
+        cm = random_data[[i]] * days_in_year + cmt_start_time_julianDay1900 - 50*days_in_year
+
+        if(max(cm) < cmt_end_time_julianDay1900) stop()
+
+        if(regular_sample){
+            keep = which(cm > cmt_start_time_julianDay1900 & cm < cmt_end_time_julianDay1900)
+            if(length(keep) > 0){
+               random_data[[i]] = data.frame(julianDay1900 = cm[keep])
+            }else{
+               random_data[[i]] = data.frame(julianDay1900 = c())
+            }
+        }else{
+            # Use this to keep all data, for large sample test purposes
+            random_data[[i]] = data.frame(julianDay1900 = cm)
+        }
+    }
+
+    counts[,j] = unlist(lapply(random_data, nrow))
+
+    myfit = optim(true_par, nll_regional_gamma2, data=random_data)
+    for(k in 1:5){
+        myfit = optim(myfit$par, nll_regional_gamma2, data=random_data)
+    }
+        
+    fitted_par[,j] = myfit$par
+}
+
+summary(t(fitted_par))
+true_par
+
+# Result: In small samples, significant bias
+
+##  #
+##  # Try with nls.lm
+##  #
+##  nll_regional_gamma2_b <-function(par){
+##  
+##      nll_regional_gamma2(par, return_vector=TRUE)
+##  
+##  }
+##  
+##  library(minpack.lm)
+##  
+##  nls.lm(par=fit1$par, fn=nll_regional_gamma2_b)
