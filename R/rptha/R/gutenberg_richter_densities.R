@@ -37,7 +37,7 @@
 #' true_b = 1 
 #' 
 #' # Generate random Mw events above mw_min << mw_min_eg
-#' random_Mw = qGR(runif(1e+06), b=true_b, mw_min=mw_min_eg - 1.0)
+#' random_Mw = rGR(1e+06, b=true_b, mw_min=mw_min_eg - 1.0)
 #' # Round the data to 1 dp, i.e. nearest 0.1
 #' delta = 0.1 # Consistent with use of round(x, 1)
 #' rounded_random_Mw = round(random_Mw, 1)
@@ -166,7 +166,7 @@ pGR<-function(q, b, mw_min){
 #' true_b = 1 
 #' 
 #' # Generate random Mw events above mw_min << mw_min_eg
-#' random_Mw = qGR(runif(1e+06), b=true_b, mw_min=mw_min_eg - 1.0)
+#' random_Mw = rGR(1e+06, b=true_b, mw_min=mw_min_eg - 1.0)
 #' # Round the data to 1 dp, i.e. nearest 0.1
 #' delta = 0.1 # Consistent with use of round(x, 1)
 #' rounded_random_Mw = round(random_Mw, 1)
@@ -293,7 +293,7 @@ qGR<-function(p, b, mw_min){
 #' true_b = 1 
 #' 
 #' # Generate random Mw events above mw_min << mw_min_eg
-#' random_Mw = qGR(runif(1e+06), b=true_b, mw_min=mw_min_eg - 1.0)
+#' random_Mw = rGR(1e+06, b=true_b, mw_min=mw_min_eg - 1.0)
 #' # Round the data to 1 dp, i.e. nearest 0.1
 #' delta = 0.1 # Consistent with use of round(x, 1)
 #' rounded_random_Mw = round(random_Mw, 1)
@@ -423,7 +423,7 @@ dGR<-function(x, b, mw_min){
 #' true_b = 1 
 #' 
 #' # Generate random Mw events above mw_min << mw_min_eg
-#' random_Mw = qGR(runif(1e+06), b=true_b, mw_min=mw_min_eg - 1.0)
+#' random_Mw = rGR(1e+06, b=true_b, mw_min=mw_min_eg - 1.0)
 #' # Round the data to 1 dp, i.e. nearest 0.1
 #' delta = 0.1 # Consistent with use of round(x, 1)
 #' rounded_random_Mw = round(random_Mw, 1)
