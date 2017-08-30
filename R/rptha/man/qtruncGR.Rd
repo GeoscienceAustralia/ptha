@@ -19,5 +19,11 @@ qtruncGR(p, b, mw_min, mw_max = Inf)
 vector with Mw values having non-exceedance probabilities p
 }
 \description{
-Note corresponding functions ptruncGR, qtruncGR, dtruncGR, rtruncGR
+Note corresponding functions ptruncGR, qtruncGR, dtruncGR, rtruncGR. See ?rtruncGR
+for an example of using the functions for b estimation.
+}
+\examples{
+# 90th percentile of truncated GR 
+Mw_90 = qtruncGR(0.9, b=1.2, mw_min = 5.5, mw_max = 8.0)
+
 }

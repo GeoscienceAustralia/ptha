@@ -19,5 +19,12 @@ dtruncGR(x, b, mw_min, mw_max = Inf)
 vector with Mw values having non-exceedance probabilities p
 }
 \description{
-Note corresponding functions ptruncGR, qtruncGR, dtruncGR, rtruncGR
+Note corresponding functions ptruncGR, qtruncGR, dtruncGR, rtruncGR. See ?rtruncGR
+for an example of using the functions for b estimation
+}
+\examples{
+# Get the probability density for some random Mw values
+random_Mw = rtruncGR(10, b=0.7, mw_min=6.0, mw_max = 9.5)
+random_density = dtruncGR(random_Mw, b=0.7, mw_min=6.0, mw_max=9.5)
+
 }

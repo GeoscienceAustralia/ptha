@@ -126,7 +126,7 @@ stopifnot(abs(fitJRd$minimum - true_b) < 0.01)
 
 
 #
-# SUMMARY: If the data is rounded to 1dp, then offset mw_min by -0.05, irrespective
+# SUMMARY: If the data is rounded to 1dp, then offset mw_min by -delta/2, irrespective
 # of whether the data is also measured with random error.
 #
 }
