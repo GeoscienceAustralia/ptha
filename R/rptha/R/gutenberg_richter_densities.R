@@ -360,7 +360,7 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #' @param catalogue_lists list-of-lists, containing a single list for each catalogue. 
 #'  For each catalogue, the list must have components 'mw_min', 'duration' (giving
 #'  the minimum magnitude and observation duration), and a vector 'mw' giving the
-#'  mw_values (may be NA, in which case it is assumed)
+#'  mw_values (may be NA, in which case it is assumed). See the example
 #' @param start_par vector of length 2 giving starting values for the rate of events
 #'  above the minimum mw_min, and the gutenberg-richter b value  
 #' @param mw_max maximum magnitude for the source zone. Can be Inf.
@@ -401,15 +401,20 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #'         ptruncGR(mw_mins, b=true_b, mw_min=min(mw_mins), mw_max=mw_max))
 #'     # Number of events
 #'     nevents = rpois(3, lambda=true_rates_above_mwmin * durations)
+#'     #
+#'     # MAKE catalogue_lists HERE
+#'     #
 #'     catalogue_lists = list()
 #'     for(i in 1:3){
 #'         # Do the i'th catalogue
 #'         catalogue_lists[[i]] = list()
 #' 
+#'         # Insert duration value
 #'         catalogue_lists[[i]]$duration = durations[i] 
+#'         # Insert mw_min value
 #'         catalogue_lists[[i]]$mw_min = mw_mins[i] 
 #' 
-#'         # Mw values -- special notation if nevents = 0
+#'         # Insert mw values -- special notation if nevents = 0
 #'         if(nevents[i] > 0){
 #'             # Generate random mw values
 #'             catalogue_lists[[i]]$mw = rtruncGR(nevents[i], b=true_b, 
@@ -420,6 +425,7 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #'             catalogue_lists[[i]]$mw = NA
 #'         }
 #'     }
+#'     # Now the catalogue_lists data is created
 #' 
 #'     # Estimate the 'true_rate_above_6' and 'true_b', with starting guesses of
 #'     # 0.5 and 1 respectively
@@ -457,7 +463,7 @@ fit_truncGR_multiple_catalogues<-function(catalogue_lists, start_par,
 
     # Record catalogues with no observations 
     no_obs = unlist(lapply(catalogue_lists, 
-        f<-function(x) (length(x$mw ==1) & is.na(x$mw))))
+        f<-function(x) (length(x$mw) ==1 & is.na(x$mw))))
 
     # Check all mw are consistent with mw_min
     for(i in 1:ncat){
