@@ -26,8 +26,10 @@ If FALSE, just return the fit (i.e. output from \code{optim})}
 }
 \value{
 See return_environment above. By default, returns an object where fit$par
-  contains c('estimated rate of events above min(mw_min)', 'estimated b'). See
-  the examples for a technique to extract parameter uncertainties from the fit
+  contains c('estimated rate of events above min(mw_min)', 'estimated b'). The
+  units of the rate is ('events-per-unit-of_catalogue-duration) (e.g.
+  typically events per year). See the examples for a technique to extract
+  parameter uncertainties from the fit
 }
 \description{
 This routine estimates the rate of earthquakes and the Gutenberg Richter b
@@ -122,5 +124,9 @@ print(summary(store_rate))
 # 2-standard-deviation confidence intervals (should be approximately 0.95)
 print(mean(abs(store_b - true_b) < 2*store_b_sd))
 print(mean(abs(store_rate - true_rate_above_6) < 2*store_rate_sd))
+# The mean fitted value should generally be close to the true value -- the
+# bounds here should very very rarely fail
+stopifnot(abs(mean(store_b) - true_b) < 0.05)
+stopifnot(abs(mean(store_rate) - true_rate_above_6) < 0.05)
 
 }

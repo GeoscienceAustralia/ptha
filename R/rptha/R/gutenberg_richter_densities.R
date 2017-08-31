@@ -454,6 +454,10 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #' # 2-standard-deviation confidence intervals (should be approximately 0.95)
 #' print(mean(abs(store_b - true_b) < 2*store_b_sd))
 #' print(mean(abs(store_rate - true_rate_above_6) < 2*store_rate_sd))
+#' # The mean fitted value should generally be close to the true value -- the
+#' # bounds here should very very rarely fail
+#' stopifnot(abs(mean(store_b) - true_b) < 0.05)
+#' stopifnot(abs(mean(store_rate) - true_rate_above_6) < 0.05)
 #'
 fit_truncGR_multiple_catalogues<-function(catalogue_lists, start_par, 
     mw_max=Inf, return_environment = FALSE, ...){
@@ -488,6 +492,7 @@ fit_truncGR_multiple_catalogues<-function(catalogue_lists, start_par,
     negloglik_fun<-function(par){
 
         rate = par[1]
+        if(rate <= 0) return(Inf)
         b = par[2]
 
         nll = 0
