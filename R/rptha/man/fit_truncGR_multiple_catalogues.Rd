@@ -12,7 +12,7 @@ fit_truncGR_multiple_catalogues(catalogue_lists, start_par, mw_max = Inf,
 \item{catalogue_lists}{list-of-lists, containing a single list for each catalogue. 
 For each catalogue, the list must have components 'mw_min', 'duration' (giving
 the minimum magnitude and observation duration), and a vector 'mw' giving the
-mw_values (may be NA, in which case it is assumed)}
+mw_values (may be NA, in which case it is assumed). See the example}
 
 \item{start_par}{vector of length 2 giving starting values for the rate of events
 above the minimum mw_min, and the gutenberg-richter b value}
@@ -71,15 +71,20 @@ for(jj in 1:Nreps){
         ptruncGR(mw_mins, b=true_b, mw_min=min(mw_mins), mw_max=mw_max))
     # Number of events
     nevents = rpois(3, lambda=true_rates_above_mwmin * durations)
+    #
+    # MAKE catalogue_lists HERE
+    #
     catalogue_lists = list()
     for(i in 1:3){
         # Do the i'th catalogue
         catalogue_lists[[i]] = list()
 
+        # Insert duration value
         catalogue_lists[[i]]$duration = durations[i] 
+        # Insert mw_min value
         catalogue_lists[[i]]$mw_min = mw_mins[i] 
 
-        # Mw values -- special notation if nevents = 0
+        # Insert mw values -- special notation if nevents = 0
         if(nevents[i] > 0){
             # Generate random mw values
             catalogue_lists[[i]]$mw = rtruncGR(nevents[i], b=true_b, 
@@ -90,6 +95,7 @@ for(jj in 1:Nreps){
             catalogue_lists[[i]]$mw = NA
         }
     }
+    # Now the catalogue_lists data is created
 
     # Estimate the 'true_rate_above_6' and 'true_b', with starting guesses of
     # 0.5 and 1 respectively

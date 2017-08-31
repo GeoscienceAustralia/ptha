@@ -368,8 +368,10 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #'   If FALSE, just return the fit (i.e. output from \code{optim})
 #' @param ... further arguments to \code{optim}
 #' @return See return_environment above. By default, returns an object where fit$par
-#'   contains c('estimated rate of events above min(mw_min)', 'estimated b'). See
-#'   the examples for a technique to extract parameter uncertainties from the fit
+#'   contains c('estimated rate of events above min(mw_min)', 'estimated b'). The
+#'   units of the rate is ('events-per-unit-of_catalogue-duration) (e.g.
+#'   typically events per year). See the examples for a technique to extract
+#'   parameter uncertainties from the fit
 #' @export
 #' @examples
 #' #
@@ -461,9 +463,11 @@ fit_truncGR_multiple_catalogues<-function(catalogue_lists, start_par,
     mw_mins = unlist(lapply(catalogue_lists, f<-function(x) x$mw_min))
     durations = unlist(lapply(catalogue_lists, f<-function(x) x$duration))
 
+    if(any(durations <= 0)) stop('Error: Duration must be positive')
+
     # Record catalogues with no observations 
     no_obs = unlist(lapply(catalogue_lists, 
-        f<-function(x) (length(x$mw) ==1 & is.na(x$mw))))
+        f<-function(x) (length(x$mw) == 1 & is.na(x$mw[1]))))
 
     # Check all mw are consistent with mw_min
     for(i in 1:ncat){
