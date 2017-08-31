@@ -20,15 +20,22 @@ vector with random Mw values
 Note corresponding functions pGR, qGR, dGR, rGR
 }
 \examples{
+# Basic usage
+random_Mw_samples = rGR(10, b=1, mw_min=5)
+
+#
+# EXAMPLES OF FITTING WITH MAXIMUM LIKELIHOOD
 #
 # Suppose we have some data, and fit the GR above Mw = mw_min_eg. What happens, 
 # in cases where the data is raw, rounded, and/or perturbed randomly
 #
 
+# Negative log-likelihood function 
 negloglik_GR<-function(b, x, mw_min){
     -sum(log(dGR(x, b, mw_min)))
 }
 
+# Negative log-likelihood function for data 'rounded' to the nearest 0.1 
 negloglik_GR_binned<-function(b, x, mw_min, delta=0.1){
     -sum(log(pGR(x+delta/2, b, mw_min) - pGR(pmax(x-delta/2, mw_min), b, mw_min)))
 }
