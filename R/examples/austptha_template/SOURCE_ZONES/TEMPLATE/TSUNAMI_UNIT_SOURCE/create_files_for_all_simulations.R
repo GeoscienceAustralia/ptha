@@ -49,6 +49,16 @@ for(file_ind in 1:length(config_env$initial_condition_files)){
         'sed -i s:STAGEDEFORMATIONFILEREPLACEME:', 
         initial_condition_file, ':g *')
     system(sed_input_deformation_replace_command)
+
+    sed_input_deformation_replace_command = paste0(
+        'sed -i s:ELEVATIONFILEREPLACEME:', 
+        config_env$elevation_data_file, ':g *')
+    system(sed_input_deformation_replace_command)
+
+    sed_input_deformation_replace_command = paste0(
+        'sed -i s:HAZARDPOINTSFILEREPLACEME:', 
+        config_env$hazard_points_file, ':g *')
+    system(sed_input_deformation_replace_command)
   
     # Start fresh
     setwd(base_dir)

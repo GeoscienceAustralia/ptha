@@ -14,3 +14,15 @@ all_runs_dir = 'unit_source_tsunami'
 # all_runs_dir/run_initial_condition/)
 all_runs_output_base_dir = normalizePath(paste0('./OUTPUTS/', site_name))
 # all_runs_output_base_dir = paste0('/g/data/w85/tsunami/AustPTHA/version1/unit_sources/', site_name)
+
+# Elevation grid for tsunami model runs
+elevation_data_file = normalizePath('../../../DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif')
+
+# Hazard points file for tsunami model runs
+hazard_points_file = normalizePath('../../../DATA/HAZARD_POINTS/merged_hazard_points_blocked.csv')
+
+# Basic sanity checks
+stopifnot(file.exists(elevation_data_file))
+stopifnot(file.exists(hazard_points_file_file))
+stopifnot(length(initial_condition_files) > 0)
+stopifnot(all(file.exists(initial_condition_files)))
