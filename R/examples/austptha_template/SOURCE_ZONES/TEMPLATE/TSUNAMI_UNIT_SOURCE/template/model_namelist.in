@@ -10,7 +10,7 @@
     final_time = 129600.0
     timestepping_method = 'linear'
     cfl = 0.7
-    hazard_points_file = '/short/w85/tsunami/MODELS/AustPTHA/DATA/HAZARD_POINTS/merged_hazard_points.csv'
+    hazard_points_file = '/short/w85/tsunami/MODELS/AustPTHA/DATA/HAZARD_POINTS/merged_hazard_points_blocked.csv'
     skip_header_hazard_points_file=1
     record_max_U = FALSE
     output_grid_timeseries = FALSE

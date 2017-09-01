@@ -10,6 +10,11 @@ input_args = c(
 library(rgdal)
 library(raster)
 
+# Tricks to avoid blowing out the JOBFS space on NCI
+dir.create('tmp', showWarnings=FALSE)
+rasterOptions(tmpdir='tmp')
+Sys.setenv(TMPDIR = 'tmp')
+
 r1 = raster(input_args[1])
 r2 = raster(input_args[2])
 p1 = readOGR(dsn=input_args[3], layer=input_args[3])
