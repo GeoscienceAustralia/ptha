@@ -14,7 +14,7 @@ extremeS=-89.9958333
 # Copy locally
 cp $GEBCO_2014 GEBCO_2014_W$W-E$E-S$extremeS-N$extremeN.nc
 
-# Change extents
+# Change extents -- USE GMT 4 FOR THIS
 grdedit -R$W/$E/$extremeS/$extremeN -S GEBCO_2014_W$W-E$E-S$extremeS-N$extremeN.nc
 
 # Downsample from 30 arc-seconds to 1 arc-minute
