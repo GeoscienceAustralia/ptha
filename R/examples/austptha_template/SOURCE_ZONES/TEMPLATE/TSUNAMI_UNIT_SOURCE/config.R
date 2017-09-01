@@ -14,6 +14,7 @@ all_runs_dir = 'unit_source_tsunami'
 # all_runs_dir/run_initial_condition/)
 all_runs_output_base_dir = normalizePath(paste0('./OUTPUTS/', site_name))
 # all_runs_output_base_dir = paste0('/g/data/w85/tsunami/AustPTHA/version1/unit_sources/', site_name)
+# all_runs_output_base_dir = paste0('/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/', site_name, '/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/')
 
 # Elevation grid for tsunami model runs
 elevation_data_file = normalizePath('../../../DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif')
