@@ -383,7 +383,7 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #' mw_max = 9.5 # Could be Inf to fit pure Gutenberg Richter
 #' mw_mins = c(9.0, 7.5, 6.0) # Compleness magnitudes
 #' durations = c(100, 160, 40) # Observation times
-#' true_rate_above_6 = 0.5 # We will estimate this value from simulated data
+#' true_rate_above_min_mwmin = 0.5 # We will estimate this value from simulated data
 #' true_b = 0.8 # We will estimate this value from simulated data
 #' 
 #' 
@@ -399,15 +399,15 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #' for(jj in 1:Nreps){
 #' 
 #'     # Simulate random catalogues
-#'     true_rates_above_mwmin = true_rate_above_6 * (1-
+#'     true_rates_above_mwmin = true_rate_above_min_mwmin * (1-
 #'         ptruncGR(mw_mins, b=true_b, mw_min=min(mw_mins), mw_max=mw_max))
 #'     # Number of events
-#'     nevents = rpois(3, lambda=true_rates_above_mwmin * durations)
+#'     nevents = rpois(length(mw_mins), lambda=true_rates_above_mwmin * durations)
 #'     #
 #'     # MAKE catalogue_lists HERE
 #'     #
 #'     catalogue_lists = list()
-#'     for(i in 1:3){
+#'     for(i in 1:length(mw_mins)){
 #'         # Do the i'th catalogue
 #'         catalogue_lists[[i]] = list()
 #' 
@@ -429,10 +429,10 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #'     }
 #'     # Now the catalogue_lists data is created
 #' 
-#'     # Estimate the 'true_rate_above_6' and 'true_b', with starting guesses of
+#'     # Estimate the 'true_rate_above_min_mwmin' and 'true_b', with starting guesses of
 #'     # 0.5 and 1 respectively
 #'     myfit = fit_truncGR_multiple_catalogues(catalogue_lists=catalogue_lists, 
-#'         start_par=c(0.5, 1), mw_max=9.5, hessian=TRUE)
+#'         start_par=c(0.5, 1), mw_max=mw_max, hessian=TRUE)
 #' 
 #' 
 #'     # Store the outputs, so we can study the performance of the estimators
@@ -448,16 +448,16 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #' 
 #' # store_b should be close to true_b, at least on average
 #' print(summary(store_b))
-#' # store_rate should be close to true_rate_above_6, at least on average
+#' # store_rate should be close to true_rate_above_min_mwmin, at least on average
 #' print(summary(store_rate))
 #' # Compute the fraction of cases which had the true value inside
 #' # 2-standard-deviation confidence intervals (should be approximately 0.95)
 #' print(mean(abs(store_b - true_b) < 2*store_b_sd))
-#' print(mean(abs(store_rate - true_rate_above_6) < 2*store_rate_sd))
+#' print(mean(abs(store_rate - true_rate_above_min_mwmin) < 2*store_rate_sd))
 #' # The mean fitted value should generally be close to the true value -- the
 #' # bounds here should very very rarely fail
 #' stopifnot(abs(mean(store_b) - true_b) < 0.05)
-#' stopifnot(abs(mean(store_rate) - true_rate_above_6) < 0.05)
+#' stopifnot(abs(mean(store_rate) - true_rate_above_min_mwmin) < 0.05)
 #'
 fit_truncGR_multiple_catalogues<-function(catalogue_lists, start_par, 
     mw_max=Inf, return_environment = FALSE, ...){
