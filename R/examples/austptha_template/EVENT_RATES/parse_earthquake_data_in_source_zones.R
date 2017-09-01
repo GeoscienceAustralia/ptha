@@ -12,6 +12,58 @@ for(i in 1:length(unit_source_grid_poly)){
 }
 names(eq_events) = names(unit_source_grid_poly)
 
+# Get isc-gem data
+isc_gem_subsetter = new.env()
+source('isc_gem_subsetter.R', local=isc_gem_subsetter)
+isc_events = vector(mode='list', length=length(unit_source_grid_poly))
+for(i in 1:length(unit_source_grid_poly)){
+    isc_events[[i]] = isc_gem_subsetter$get_isc_gem_events_in_poly(names(unit_source_grid_poly)[i])
+}
+names(isc_events) = names(unit_source_grid_poly)
+
+
+#
+# Compare event counts with poisson
+#
+yearly_event_rates<-function(i){
+    
+    data = eq_events[[i]]
+    # Ignore incomplete 2017
+    all_years = 1976:2016
+    event_years = sapply(data$datetime, 
+        f<-function(x) as.numeric(strsplit(as.character(x),'/', fixed=TRUE)[[1]][1]))
+
+    yearly_count = sapply(all_years, f<-function(x) sum(event_years == x))
+   
+    mean_rate = mean(yearly_count)
+
+    # Record the empirical and theoretical frequencies with which we get
+    # particular #'s of events
+    ycr = 0:(max(yearly_count)+2)
+    empirical = ycr*0
+    pois = ycr*0
+    neprob_data = ycr*0
+    
+    for(i in 1:length(ycr)){
+        # Observed frequency
+        empirical[i] = mean(yearly_count==ycr[i])
+        # Theoretical frequency, given the observed mean rate
+        pois[i] = dpois(ycr[i], lambda=mean_rate)
+        # Probability of getting this many or fewer such events, assuming poisson model is correct
+        neprob_data[i] = pbinom(sum(yearly_count==ycr[i]), size=length(yearly_count), p=pois[i]) 
+    }
+
+    print(c('Mean: ', mean(yearly_count), 'Variance: ', var(yearly_count), ' Mean/Variance:', mean(yearly_count)/var(yearly_count)))
+
+    output=data.frame(ycr=ycr, empirical=empirical, pois=pois, neprob_data=neprob_data)
+ 
+    return(output)
+}
+for(i in 1:length(eq_events)){
+    print(names(eq_events)[i])
+    print(yearly_event_rates(i))
+}
+
 #
 # Get rate of events > threshold on source-zone
 #

@@ -10,6 +10,7 @@ source('config.R', local=config)
 cmt_catalogue_csv = config$cmt_catalogue_csv 
 unit_source_grid_polygon_shapefiles = config$unit_source_grid_polygon_shapefiles 
 
+
 # Properties of earthquake events we extract
 mw_threshold = config$MW_MIN 
 depth_threshold = config$depth_threshold #70 # depth < depth_threshold
@@ -51,7 +52,6 @@ if( (cmt_duration_years < diff(range(gcmt$julianDay1900))/days_in_year) |
     (cmt_duration_years > 1.0005* diff(range(gcmt$julianDay1900))/days_in_year) ){
     stop('GCMT date/time inconsistencies')
 }
-
 
 #'
 #' Determine whether lonlat coordinates are inside a given polygon

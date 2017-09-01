@@ -21,6 +21,8 @@ buffer_width = 0.2
 # See also 'rake_deviation_thrust_events' below
 #
 
+isc_gem_catalogue_csv = "/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Earthquake_catalogues/isc-gem-catalogue-version4/parsed_gem_catalogue.csv"
+
 #######################################################################################
 #
 # PARAMETERS CONTROLLING MODELLED RATE OF EARTHQUAKES ON EACH SOURCE-ZONE
