@@ -9,7 +9,7 @@ Mw_2_rupture_size_inverse(area, relation = "Strasser", CI_sd = 0)
 \arguments{
 \item{area}{numeric area}
 
-\item{relation}{Type of scaling relation used ('Strasser')}
+\item{relation}{Type of scaling relation used (e.g. 'Strasser', see ?Mw_2_rupture_size)}
 
 \item{CI_sd}{numeric (can be positive or negative). Positive values correspond to
 lower Mw, negative values to higher Mw.}
