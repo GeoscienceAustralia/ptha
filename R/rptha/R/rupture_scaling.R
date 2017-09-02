@@ -162,7 +162,7 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
 #' It currently does not give information on length or width.
 #' 
 #' @param area numeric area
-#' @param relation Type of scaling relation used ('Strasser')
+#' @param relation Type of scaling relation used (e.g. 'Strasser', see ?Mw_2_rupture_size)
 #' @param CI_sd numeric (can be positive or negative). Positive values correspond to
 #' lower Mw, negative values to higher Mw.
 #' @return values of Mw
@@ -182,7 +182,7 @@ Mw_2_rupture_size_inverse<-function(area, relation='Strasser', CI_sd = 0){
     if(length(CI_sd) > 1) stop('length(CI_sd) must = 1')
   
     # log10(area) = Mw*area_coef[2] + area_coef[1] + CI_sd*area_coef[3] 
-    area_coef = Mw_2_rupture_size(6.0, detailed=TRUE)$area_absigma 
+    area_coef = Mw_2_rupture_size(6.0, relation=relation, detailed=TRUE)$area_absigma 
 
     Mw = (log10(area) - area_coef[1] - CI_sd*area_coef[3])/area_coef[2]
 
