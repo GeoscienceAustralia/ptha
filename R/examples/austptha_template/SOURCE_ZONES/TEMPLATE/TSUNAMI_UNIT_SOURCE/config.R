@@ -12,7 +12,7 @@ all_runs_dir = 'unit_source_tsunami'
 
 # The output will go inside here (with sub folders corresponding to
 # all_runs_dir/run_initial_condition/)
-all_runs_output_base_dir = normalizePath(paste0('./OUTPUTS/', site_name))
+all_runs_output_base_dir = paste0('./OUTPUTS/', site_name)
 # all_runs_output_base_dir = paste0('/g/data/w85/tsunami/AustPTHA/version1/unit_sources/', site_name)
 # all_runs_output_base_dir = paste0('/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/', site_name, '/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/')
 
@@ -24,6 +24,6 @@ hazard_points_file = normalizePath('../../../DATA/HAZARD_POINTS/merged_hazard_po
 
 # Basic sanity checks
 stopifnot(file.exists(elevation_data_file))
-stopifnot(file.exists(hazard_points_file_file))
+stopifnot(file.exists(hazard_points_file))
 stopifnot(length(initial_condition_files) > 0)
 stopifnot(all(file.exists(initial_condition_files)))
