@@ -229,8 +229,10 @@ slip_from_Mw_area_mu<-function(Mw, area, mu=3e+10, constant=9.05){
 #' @examples
 #' x = slip_from_Mw(9.0) # Should be roughly 10m
 #' @export
-slip_from_Mw<-function(Mw, mu=3e+10, 
-    area_function=function(Mw){Mw_2_rupture_size(Mw)[1]}, constant=9.05){
+slip_from_Mw<-function(Mw, 
+    mu=3e+10, 
+    area_function=function(Mw){Mw_2_rupture_size(Mw, relation='Strasser')[1]}, 
+    constant=9.05){
 
         # Area in m^2
         area = sapply(Mw, area_function)*1e+06

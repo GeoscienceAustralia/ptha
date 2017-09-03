@@ -6,16 +6,21 @@
 with moment magnitude Mw.}
 \usage{
 get_all_earthquake_events_of_magnitude_Mw(Mw, unit_source_stats, mu = 3e+10,
-  constant = 9.05)
+  constant = 9.05, relation = "Strasser")
 }
 \arguments{
 \item{Mw}{Moment magnitude.}
 
-\item{unit_source_stats}{Output of discretized_source_approximate_summary_statistics or similar.}
+\item{unit_source_stats}{Output of
+discretized_source_approximate_summary_statistics or similar.}
 
 \item{mu}{Shear modulus in Pascals.}
 
 \item{constant}{value of constant passed to \code{M0_2_Mw}}
+
+\item{relation}{The scaling relation used  to determine width,
+length and area. This is the argument 'relation' passed to
+\code{Mw_2_rupture_size}}
 }
 \value{
 A list with information which can be used to create all events.

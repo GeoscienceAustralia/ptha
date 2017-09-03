@@ -4,11 +4,13 @@
 \alias{plot_earthquake_event_properties}
 \title{Graphical checks of earthquake events}
 \usage{
-plot_earthquake_event_properties(all_eq_events)
+plot_earthquake_event_properties(all_eq_events, relation = "Strasser")
 }
 \arguments{
 \item{all_eq_events}{data.frame with all earthquake events. This could be
 generated using the function \code{get_all_earthquake_events}}
+
+\item{relation}{the scaling relation type used for theoretical comparison (see \code{Mw_2_rupture_size})}
 }
 \value{
 nothing, but make a plot

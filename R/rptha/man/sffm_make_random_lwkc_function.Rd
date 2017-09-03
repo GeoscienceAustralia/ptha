@@ -7,7 +7,8 @@ finite fault models.}
 \usage{
 sffm_make_random_lwkc_function(log10kcx_regression_par = c(-0.54, 2.03, 0.22),
   log10kcy_regression_par = c(-0.41, 1.18, 0.19),
-  cor_kcx_kcy_residual = 0.68, clip_random_parameter_ranges_to_2sd = FALSE)
+  cor_kcx_kcy_residual = 0.68, clip_random_parameter_ranges_to_2sd = FALSE,
+  relation = "Strasser")
 }
 \arguments{
 \item{log10kcx_regression_par}{vector of length 3 with the gradient,
@@ -24,6 +25,8 @@ log10(kcy) regression residuals}
 \item{clip_random_parameter_ranges_to_2sd}{logical. If FALSE, then use the standard
 scaling laws. If TRUE, then clip unit-normal random variables to +- 2SD before 
 using in scaling laws [thus removing very 'unusual' l/w/kcx/kcy values]}
+
+\item{relation}{scaling relation type passed to \code{Mw_2_rupture_size}}
 }
 \value{
 a function f(Mw) which returns a vector or matrix with random

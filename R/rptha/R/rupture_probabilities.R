@@ -15,14 +15,15 @@
 #' @param Mw the moment magnitude
 #' @param mu Shear Modulus (Pascals)
 #' @param constant Value of constant passed to \code{M0_2_Mw}
+#' @param relation scaling relation type, passed to \code{Mw_2_rupture_size}
 #' @return A list containing 1) The log10(Slip) mean and stanard deviation and
 #' 2) The associated mean slip (mean of the untransformed slip)
 #'
-compute_slip_density_parameters<-function(Mw, mu=3e+10, constant=9.05){
+compute_slip_density_parameters<-function(Mw, mu=3e+10, constant=9.05, relation='Strasser'){
 
     M0 = M0_2_Mw(Mw, inverse=TRUE, constant=constant)
 
-    size_scaling = Mw_2_rupture_size(Mw, detailed=TRUE, CI_sd=1)
+    size_scaling = Mw_2_rupture_size(Mw, relation=relation, detailed=TRUE, CI_sd=1)
 
     # km
     mu_log10_area = log10(size_scaling$values['area'])

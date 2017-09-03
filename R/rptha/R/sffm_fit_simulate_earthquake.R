@@ -681,6 +681,7 @@ sffm_fit_parameters<-function(
 #' @param clip_random_parameter_ranges_to_2sd logical. If FALSE, then use the standard
 #' scaling laws. If TRUE, then clip unit-normal random variables to +- 2SD before 
 #' using in scaling laws [thus removing very 'unusual' l/w/kcx/kcy values]
+#' @param relation scaling relation type passed to \code{Mw_2_rupture_size}
 #' @return a function f(Mw) which returns a vector or matrix with random
 #' length, width, kcx, kcy values to be used to simulate an sffm with a given magnitude.
 #' Units are km, km, km^{-1}, km^{-1} respectively.
@@ -698,9 +699,12 @@ sffm_make_random_lwkc_function<-function(
     log10kcx_regression_par=c(-0.54, 2.03, 0.22),
     log10kcy_regression_par=c(-0.41, 1.18, 0.19),
     cor_kcx_kcy_residual = 0.68,
-    clip_random_parameter_ranges_to_2sd = FALSE){
+    clip_random_parameter_ranges_to_2sd = FALSE,
+    relation='Strasser'){
 
     library(rptha)
+
+    relation = relation
 
     # Function to generate 'possibly clipped' random numbers
     rnorm_clipped<-function(N){
@@ -721,20 +725,18 @@ sffm_make_random_lwkc_function<-function(
 
         # Get regression coefficients for log10(L), log10(W). Note the value
         # of 7.5 for Mw is arbitrary
-        AWL_sigmas = Mw_2_rupture_size(7.5, detailed=TRUE)$log10_sigmas
+        AWL_sigmas = Mw_2_rupture_size(7.5, relation=relation, detailed=TRUE)$log10_sigmas
 
-        L_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x)['length'])
-        W_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x)['width'])
+        L_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x, relation=relation)['length'])
+        W_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x, relation=relation)['width'])
 
         N = length(Mw)
 
         #
         # Generate random L/W
         # 
-        #new_L = 10**( log10(L_Mw) + AWL_sigmas[3] * rnorm(N))
         new_L = 10**( log10(L_Mw) + AWL_sigmas[3] * rnorm_clipped(N))
 
-        #new_W = 10**(log10(W_Mw) + AWL_sigmas[2] * rnorm(N))
         new_W = 10**(log10(W_Mw) + AWL_sigmas[2] * rnorm_clipped(N))
 
         #
@@ -964,6 +966,7 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 #' the random L/W/kcx/kcy, clip values at > 2standard_deviations (or < -2sd) to
 #' their nearest +-2sd counterpart. This will prevent e.g. large earthquakes
 #' occasionally having very narrow width, etc.
+#' @param relation Scaling relation type, passed to 'Mw_2_rupture_size'
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are
@@ -1015,14 +1018,15 @@ sffm_make_events_on_discretized_source<-function(
     return_slip_raster=TRUE,
     uniform_slip = FALSE,
     expand_length_if_width_limited = 'random',
-    clip_random_parameters_at_2sd = TRUE){
+    clip_random_parameters_at_2sd = TRUE,
+    relation='Strasser'){
 
     nx = max(discretized_source_statistics$alongstrike_number)
     ny = max(discretized_source_statistics$downdip_number)
 
     # Get 'typical' rupture dimensions, and allow the peak slip location
     # to be within L/2, W/2 of the CMT location
-    rs = Mw_2_rupture_size(target_event_mw)
+    rs = Mw_2_rupture_size(target_event_mw, relation=relation)
     if(vary_peak_slip_location){
         mean_us_width = mean(discretized_source_statistics$width)
         mean_us_length = mean(discretized_source_statistics$length)

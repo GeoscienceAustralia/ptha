@@ -6,7 +6,8 @@
 distribution' of slip, supposing area varies as a log-normal distribution
 according to the Strasser (2010) scaling relation.}
 \usage{
-compute_slip_density_parameters(Mw, mu = 3e+10, constant = 9.05)
+compute_slip_density_parameters(Mw, mu = 3e+10, constant = 9.05,
+  relation = "Strasser")
 }
 \arguments{
 \item{Mw}{the moment magnitude}
@@ -14,6 +15,8 @@ compute_slip_density_parameters(Mw, mu = 3e+10, constant = 9.05)
 \item{mu}{Shear Modulus (Pascals)}
 
 \item{constant}{Value of constant passed to \code{M0_2_Mw}}
+
+\item{relation}{scaling relation type, passed to \code{Mw_2_rupture_size}}
 }
 \value{
 A list containing 1) The log10(Slip) mean and stanard deviation and

@@ -10,7 +10,7 @@ sffm_make_events_on_discretized_source(discretized_source_statistics,
   sourcename = "", sffm_sub_sample_size = c(1, 1), mu = 3e+10,
   return_slip_raster = TRUE, uniform_slip = FALSE,
   expand_length_if_width_limited = "random",
-  clip_random_parameters_at_2sd = TRUE)
+  clip_random_parameters_at_2sd = TRUE, relation = "Strasser")
 }
 \arguments{
 \item{discretized_source_statistics}{data.frame returned from e.g. 
@@ -67,6 +67,8 @@ or vary randomly between the behaviours with probability 0.5 (if 'random').}
 the random L/W/kcx/kcy, clip values at > 2standard_deviations (or < -2sd) to
 their nearest +-2sd counterpart. This will prevent e.g. large earthquakes
 occasionally having very narrow width, etc.}
+
+\item{relation}{Scaling relation type, passed to 'Mw_2_rupture_size'}
 }
 \value{
 A list with length = num_events. Each element of the list is a list

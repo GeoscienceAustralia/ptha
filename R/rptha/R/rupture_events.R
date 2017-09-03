@@ -14,12 +14,17 @@
 #' dimensions.
 #'
 #' @param Mw Moment magnitude.
-#' @param unit_source_stats Output of discretized_source_approximate_summary_statistics or similar.
+#' @param unit_source_stats Output of
+#' discretized_source_approximate_summary_statistics or similar.
 #' @param mu Shear modulus in Pascals.
 #' @param constant value of constant passed to \code{M0_2_Mw}
+#' @param relation The scaling relation used  to determine width,
+#' length and area. This is the argument 'relation' passed to
+#' \code{Mw_2_rupture_size}
 #' @return A list with information which can be used to create all events.
 #' @export
-get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, constant=9.05){
+get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.0e+10, constant=9.05,
+    relation='Strasser'){
 
     # Quick check that the input table is ok
     if(!all(unit_source_stats$subfault_number == 1:length(unit_source_stats[,1]))){
@@ -30,7 +35,7 @@ get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.
     
 
     ## Get scaling-relation based area, width, length
-    rupture_stats = Mw_2_rupture_size(Mw, detailed=TRUE, CI_sd = 2.0)
+    rupture_stats = Mw_2_rupture_size(Mw, relation=relation, detailed=TRUE, CI_sd = 2.0)
     desired_ALW = rupture_stats$values
 
     # Record M0 for later testing
@@ -400,9 +405,10 @@ get_unit_source_indices_in_event<-function(earthquake_event){
 #'
 #' @param all_eq_events data.frame with all earthquake events. This could be
 #' generated using the function \code{get_all_earthquake_events}
+#' @param relation the scaling relation type used for theoretical comparison (see \code{Mw_2_rupture_size})
 #' @return nothing, but make a plot
 #' @export
-plot_earthquake_event_properties<-function(all_eq_events){
+plot_earthquake_event_properties<-function(all_eq_events, relation='Strasser'){
     
     par(mfrow=c(3,2))
 
@@ -427,7 +433,7 @@ plot_earthquake_event_properties<-function(all_eq_events){
 
     for(i in 1:length(mw_seq)){
 
-        scaling_results = Mw_2_rupture_size(mw_seq[i], detailed=TRUE, CI_sd=2)
+        scaling_results = Mw_2_rupture_size(mw_seq[i], relation=relation, detailed=TRUE, CI_sd=2)
 
         mw_area_theory[i] = scaling_results$values['area']
         mw_area_theory_p2sd[i] = scaling_results$plus_CI['area']
