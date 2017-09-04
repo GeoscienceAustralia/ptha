@@ -28,7 +28,7 @@ desired_subfault_length = 50 # km
 desired_subfault_width = 50 # km
 
 # Get the rake (from a file)
-all_sourcezone_par = read.csv(config$sourcezone_parameter_file, header=TRUE, 
+all_sourcezone_par = read.csv(sourcezone_parameter_file, header=TRUE, 
     stringsAsFactors=FALSE)
 source_rows = which(all_sourcezone_par$sourcename == site_name)[1]
 # A vector with the desired rake angle (one entry per sourcezone)
