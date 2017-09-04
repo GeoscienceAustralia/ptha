@@ -272,7 +272,9 @@ run_checks<-function(fid_local, slip_type){
         # Compute theoretical results
         unique_mws = unique(mws)
         scaling_law_dim = lapply(as.list(unique_mws), 
-            f<-function(x) Mw_2_rupture_size(x, detailed=TRUE, CI_sd=2))
+            f<-function(x){
+                Mw_2_rupture_size(x, relation=config_env$scaling_relation_type, 
+                    detailed=TRUE, CI_sd=2)})
 
         # Convenience function for the plot
         local_scaling_law_results<-function(var='area'){ 
@@ -338,13 +340,16 @@ run_checks<-function(fid_local, slip_type){
         local_scaling_law_results('width')
         add_quartiles(mws, event_width)
 
+        slip_from_Mw_unique_mws = slip_from_Mw(unique_mws, 
+            relation=config_env$scaling_relation_type)
+
         # Mean slip
         plot(mws, event_mean_slip_nonzero, log='y', 
             main='Event mean_slip on non-zero slip patches', 
             xlab='Mw', ylab='km')
-        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', 
+        points(unique_mws, slip_from_Mw_unique_mws, t='l', col='red', 
             lty='dashed')
-        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
+        points(unique_mws, slip_from_Mw_unique_mws*3, t='l', col='red', 
             lty='dashed')
         add_quartiles(mws, event_mean_slip_nonzero)
         grid()
@@ -353,9 +358,9 @@ run_checks<-function(fid_local, slip_type){
         plot(mws, event_mean_slip_all, log='y', 
             main='Event mean_slip including zero-slip patches', 
             xlab='Mw', ylab='km')
-        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', 
+        points(unique_mws, slip_from_Mw_unique_mws, t='l', col='red', 
             lty='dashed')
-        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
+        points(unique_mws, slip_from_Mw_unique_mws*3, t='l', col='red', 
             lty='dashed')
         add_quartiles(mws, event_mean_slip_all)
         grid()
@@ -364,9 +369,9 @@ run_checks<-function(fid_local, slip_type){
         # Peak slip
         plot(mws, event_max_slip, log='y', main='Event max_slip', 
             xlab='Mw', ylab='km')
-        points(unique_mws, slip_from_Mw(unique_mws), t='l', col='red', 
+        points(unique_mws, slip_from_Mw_unique_mws, t='l', col='red', 
             lty='dashed')
-        points(unique_mws, slip_from_Mw(unique_mws)*3, t='l', col='red', 
+        points(unique_mws, slip_from_Mw_unique_mws*3, t='l', col='red', 
             lty='dashed')
         add_quartiles(mws, event_max_slip)
         grid()

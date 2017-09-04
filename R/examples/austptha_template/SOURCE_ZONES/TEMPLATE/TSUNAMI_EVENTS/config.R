@@ -1,5 +1,18 @@
 # Key variables required by scripts in this folder
 
+#
+# Scaling relation type
+#
+sourcezone_parameter_file = 
+    '../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv'
+stopifnot(file.exists(sourcezone_parameter_file))
+
+all_sourcezone_par = read.csv(config$sourcezone_parameter_file, header=TRUE, 
+    stringsAsFactors=FALSE)
+source_rows = which(all_sourcezone_par$sourcename == site_name)[1]
+
+scaling_relation_type = all_sourcezone_par$scaling_relation[source_rows]
+
 ############################################################################
 #
 # Parameters determining the event magnitudes modelled / number of events, etc.

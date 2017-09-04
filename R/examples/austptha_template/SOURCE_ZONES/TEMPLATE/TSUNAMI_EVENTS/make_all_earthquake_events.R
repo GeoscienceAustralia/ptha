@@ -99,7 +99,8 @@ all_eq_events = get_all_earthquake_events(
     Mmin=Mw_min, 
     Mmax=Mw_max, 
     dMw=dMw, 
-    source_zone_name = source_zone_name)
+    source_zone_name = source_zone_name,
+    relation = config_env$scaling_relation_type)
 
 # Add an annual rate variable that we can change later, with a value that is
 # obviously double-precision [so the netcdf data type is correctly inferred]
@@ -114,7 +115,7 @@ all_eq_events$rate_annual_lower_ci = rep(config_env$null_double,
 # Make the plot
 pdf(paste0('event_size_scaling_', source_zone_name, '.pdf'), 
     width=10, height=10)
-plot_earthquake_event_properties(all_eq_events)
+plot_earthquake_event_properties(all_eq_events, relation=config_env$scaling_relation_type)
 dev.off()
 
 # Save key unit source statistics to csv
@@ -197,7 +198,8 @@ for(i in 1:length(all_eq_events[,1])){
         num_events = number_of_sffm,
         zero_low_slip_cells_fraction=0.0,
         sourcename = source_zone_name,
-        uniform_slip = FALSE)
+        uniform_slip = FALSE,
+        relation = config_env$scaling_relation_type)
 
     events_with_Mw = sffm_events_to_table(all_events, 
         slip_significant_figures=

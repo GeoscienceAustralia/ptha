@@ -278,6 +278,8 @@ get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.
 #' @param source_zone_name name of the source-zone. This will be
 #' put in the table. Even though the entire column is constant, it can be useful 
 #' useful when working with tables that combine results from many sources.
+#' @param relation Scaling relation type (e.g. 'Strasser'), passed as argument 'relation'
+#' to \code{get_all_earthquake_events_of_magnitude_Mw}
 #' @return A large table containing information on all earthquake events, and
 #' the unit sources they involve
 #' @export
@@ -305,7 +307,7 @@ get_all_earthquake_events_of_magnitude_Mw<-function(Mw, unit_source_stats, mu=3.
 #'
 get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statistics = NULL,
     Mmin=7.5, Mmax = 9.6, dMw = 0.1, mu=3.0e+10, constant=9.05, target_location = NULL,
-    source_zone_name = NA){
+    source_zone_name = NA, relation='Strasser'){
 
     if(is.null(unit_source_statistics)){
 
@@ -317,11 +319,13 @@ get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statisti
             approx_dx = 5000, approx_dy = 5000)
     }
 
+    relation = relation
+
     ## Get all earthquake events
     all_eq_events = lapply(as.list(seq(Mmin, Mmax, dMw)), 
         f<-function(x){ 
             get_all_earthquake_events_of_magnitude_Mw(x, unit_source_statistics, 
-                mu=mu, constant=constant)}
+                mu=mu, constant=constant, relation=relation)}
         )
 
     source_zone_name = source_zone_name

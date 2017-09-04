@@ -10,6 +10,10 @@ ngdc_dir = '../../../../../DATA/TSUNAMI_OBS/NGDC_DATABASE/'
 ngdc = new.env()
 source(paste0(ngdc_dir, 'ngdc_env.R'), local=ngdc, chdir=TRUE)
 
+# Local config
+config_env = new.env()
+source('config.R', local=config_env)
+
 #
 # Data for this source zone
 #
@@ -77,11 +81,11 @@ find_events_near_point<-function(
 
     # Allow events which 'touch' sites within uniform slip scaling law width
     # and half length
-    expand_unit_source_alongstrike = ceiling(
-        Mw_2_rupture_size(event_magnitude)[3] * 0.5/
+    local_AWL = Mw_2_rupture_size(event_magnitude, 
+        relation=config_env$scaling_relation_type)
+    expand_unit_source_alongstrike = ceiling(local_AWL[3] * 0.5/
         unit_source_statistics$length[unit_source_containing_hypocentre])
-    expand_unit_source_downdip = ceiling(
-        Mw_2_rupture_size(event_magnitude)[2] * 0.5/
+    expand_unit_source_downdip = ceiling(local_AWL[2] * 0.5/
         unit_source_statistics$width[unit_source_containing_hypocentre])
 
     # Find unit-source neighbours (within a few unit-sources in each direction)
@@ -294,7 +298,8 @@ compare_stochastic_slip_event_with_gauge_time_series<-function(
             target_event_mw = event_magnitude,
             num_events = number_of_sffm,
             zero_low_slip_cells_fraction=zero_low_slip_cells_fraction,
-            sourcename = source_name)
+            sourcename = source_name,
+            relation=config_env$scaling_relation_type)
 
         events_with_Mw = sffm_events_to_table(all_events, 
             slip_significant_figures=4)
