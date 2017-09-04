@@ -26,15 +26,17 @@ earthquake_events_variable_uniform = try(read_table_from_netcdf(
 # NetCDF file with unit-source statistics
 unit_source_statistics = read_table_from_netcdf(
     paste0('unit_source_statistics_', source_name, '.nc'))
-# Shapefile with unit-source grid geometry
-unit_source_geometry = readOGR(dsn='../EQ_SOURCE/unit_source_grid', 
-    layer=source_name)
 # Tide gauge NetCDF files, sorted based on unit_source_statistics rows
 all_tide_files = unit_source_statistics$tide_gauge_file
 # Data.frame with the hazard-point (i.e. tide gauge) lon/lat/elev/ID 
 all_gauge_lonlat = get_netcdf_gauge_locations(all_tide_files[1]) 
 # Get the gauge output times [identical for all files]
 gauge_times = get_netcdf_gauge_output_times(all_tide_files[1])
+# Shapefile with unit-source grid geometry
+unit_source_geometry = readOGR(
+    dsn=paste0(dirname(dirname(dirname(unit_source_statistics$initial_condition_file[1]))),
+        '/unit_source_grid'),
+    layer=source_name)
 
 
 

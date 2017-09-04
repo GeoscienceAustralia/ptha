@@ -19,6 +19,9 @@ source('sum_tsunami_unit_sources.R', local=sum_sources)
 tsunami_unit_source_config = new.env()
 source('../TSUNAMI_UNIT_SOURCE/config.R', local=tsunami_unit_source_config, 
     chdir=TRUE)
+unit_source_basedir = dirname(dirname(dirname(
+    tsunami_unit_source_config$initial_condition_files[1])))
+
 #
 # Get local parameters code
 #
@@ -44,8 +47,8 @@ minimum_number_stochastic_events_for_each_magnitude =
 #
 # Read the discretized sources geometry
 #
-discretized_sources_file = normalizePath(
-    '../EQ_SOURCE/all_discretized_sources.RDS')
+discretized_sources_file = normalizePath(paste0(unit_source_basedir, 
+    '/all_discretized_sources.RDS'))
 all_discretized_sources = readRDS(discretized_sources_file)
 
 source_zone_name=names(all_discretized_sources)[1]
