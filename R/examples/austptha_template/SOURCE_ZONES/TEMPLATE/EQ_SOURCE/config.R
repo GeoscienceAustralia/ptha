@@ -6,7 +6,8 @@ site_name = basename(dirname(getwd()))
 
 # csv file with parameters for source-zone. We will use this to get the rake
 # for the source-zone unit-sources
-sourcezone_parameter_file = '../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv'
+sourcezone_parameter_file = 
+    '../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv'
 stopifnot(file.exists(sourcezone_parameter_file))
 
 output_base_dir = paste0('/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/',

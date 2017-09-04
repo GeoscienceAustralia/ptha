@@ -5,7 +5,8 @@ site_name = basename(dirname(getwd()))
 # This should expand to a vector of all the initial stage 'tif' filenames you
 # want to run
 initial_condition_files = normalizePath(
-    Sys.glob(paste0('../EQ_SOURCE/Unit_source_data/', site_name, '/', site_name, '*.tif')))
+    Sys.glob(paste0('/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/', site_name,
+        '/EQ_SOURCE/Unit_source_data/', site_name, '/', site_name, '*.tif')))
 
 # The runs will occur inside this folder (which will be created)
 all_runs_dir = 'unit_source_tsunami'
