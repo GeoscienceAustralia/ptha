@@ -4,13 +4,16 @@
 \alias{slip_from_Mw}
 \title{Compute slip given Mw (and optionally mu, and a function to compute the area from Mw)}
 \usage{
-slip_from_Mw(Mw, mu = 3e+10, area_function = function(Mw) {    
-  Mw_2_rupture_size(Mw, relation = "Strasser")[1] }, constant = 9.05)
+slip_from_Mw(Mw, mu = 3e+10, relation = "Strasser",
+  area_function = function(Mw) {     Mw_2_rupture_size(Mw, relation =
+  relation)[1] }, constant = 9.05)
 }
 \arguments{
 \item{Mw}{Moment magnitude}
 
 \item{mu}{Shear Modulus (Pascals)}
+
+\item{relation}{Scaling relation type. Value of relation passed to \code{Mw_2_rupture_size}}
 
 \item{area_function}{function which returns the area (in km^2) given Mw}
 
