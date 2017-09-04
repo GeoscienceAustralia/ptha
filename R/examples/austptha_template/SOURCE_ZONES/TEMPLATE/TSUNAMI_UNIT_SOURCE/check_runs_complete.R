@@ -7,7 +7,7 @@
 config_env = new.env()
 source('config.R', local=config_env)
 
-unit_sources_output_basedir = dirname(config_env$all_runs_output_base_dir) #'/g/data/w85/tsunami/AustPTHA/version1/unit_sources/'
+unit_sources_output_basedir = dirname(config_env$all_runs_output_base_dir) #'/g/data/.....
 
 # Useful utility for 'fast' tail
 tail_file<-function(filename, n=1){
