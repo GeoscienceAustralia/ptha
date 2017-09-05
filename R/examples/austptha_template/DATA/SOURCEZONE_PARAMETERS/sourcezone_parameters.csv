@@ -30,3 +30,4 @@ sunda,_java,,,1,59,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2
 sunda,_sumatra,,,60,88,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
 sunda,_andaman,,,89,117,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
 sunda,_arakan,,,118,141,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,Coupling based on Andaman. Mw-max-min based on CMT [although it was a normal fault] – noting Cummins (2007) suggested much higher values
+alaskaaleutians,,90,Strasser,,,1,1,,,0.42,0.55,0.77,,,,0.7,0.95,1.2,,,,9.2,Berryman et al. (2015) coupling and Mw_max_min
