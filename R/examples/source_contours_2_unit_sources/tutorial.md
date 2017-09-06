@@ -197,8 +197,9 @@ comes directly from that script.
 In typical usage of '[produce_unit_sources.R](produce_unit_sources.R)', the
 user would edit the input parameters to define the source contour filename(s),
 the assumed earthquake rake, the desired unit-source length and width, the
-resolution of the output raster, and some numerical parameters, the most
-important of which are the sub-unit-source grid spacing.
+resolution of the output raster, and some numerical parameters (e.g.
+controlling the level of sub-unit-source detail used; optional unit-source slip
+tapering; etc).
 
 If Kajiura filtering is to be applied, then the user must also provide an
 elevation raster (in lon-lat coordinates, with elevation in m, and negative
@@ -321,7 +322,7 @@ cell_integration_scale = c(2000, 2000)
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 12
+MC_CORES = 1
 
 # Option to illustrate 3d interactive plot creation
 #
@@ -371,7 +372,10 @@ marianas.shp, ..., and related dbf, shx, and prj files), while the
 DOWNDIP_LINES directory only contains a single downdip lines shapefile for each
 source contour, with the start of the filename matching the CONTOURS filenames
 (e.g.  alaska_downdip.shp, marianas_downdip.shp, ... and related dbf, shx and
-prj files). 
+prj files). Note also if there is only one source-contour and corresponding
+downdip-lines, then the code could be run with:
+
+    Rscript produce_unit_sources.R 1
 
 Whether or not the code is run with `Rscript`, or with `source` from within R,
 the working directory must be the directory containing
@@ -389,40 +393,46 @@ too coarse, you can expect numerical artefacts.
 
 If the code successfully runs, it will generate: 
 * a set of tiff files (one for each unit source) with the computed tsunami
-deformation for each unit source (assuming 1m of earthquake slip).
+deformation for each unit source (assuming 1m of earthquake slip). These are
+in a subdirectory of the user-defined output directory (see example usage below).
 * a pdf file for each source zone, with various plots that can be used to check
-that the unit sources and tsunami deformations seem sensible.
-* an RDS file for each unit source. This is a native R format file, and contains
-the tsunami unit sources as a native R data-structure. It can be useful for
-programming and debugging, since it contains the underlying data (such as
-sub-unit-source points, exact unit source discretization, etc.). If using it
-for debugging, you can ensure that more information is saved by setting
+that the unit sources and tsunami deformations seem sensible. This should appear
+in the current working directory.
+* an RDS file for each unit source (stored in the same directory as the tiff
+files). This is a native R format file, and contains the tsunami unit sources
+as a native R data-structure. It can be useful for programming and debugging,
+since it contains the underlying data (such as sub-unit-source points, exact
+unit source discretization, etc.). If using it for debugging, you can ensure
+that more information is saved by setting
 `minimise_tsunami_unit_source_output=FALSE`. This is not done by default, since
 the output files can be rather large.
 
 
 Here, we show a plot of the sum of all the unit-source tif files (equivalent to
-uniform slip of 1m on the entire source zone).
+uniform slip of 1m on the entire source zone). 
 
 
 ```r
 # Names of raster files
 all_unit_source_raster_files = Sys.glob('./OUTPUTS/Unit_source_data/alaska/*.tif')
-# Create a new raster to hold the sum
+# Read the first raster file
 r1 = raster(all_unit_source_raster_files[1])
-# Do the sum 
+# Add the other raster files to r1
 for(i in 2:length(all_unit_source_raster_files)){
     raster_i = raster(all_unit_source_raster_files[i])
     r1 = r1 + raster_i
 }
 
-# Plot the raster, and overlap the source contours
-plot(r1, main=paste0('Vertical deformation from the sum of all \n',
+# Plot the sum raster (r1)
+plot(r1, 
+    main=paste0('Vertical deformation from the sum of all \n',
         'unit-source rasters, with input source contour lines'), 
-    xlab='Lon', ylab='Lat',
+    xlab='Lon', 
+    ylab='Lat',
     legend.args=list(text='Vertical deformation (m)', side=2))
 # Add contours, with colour varying with depth
-plot(alaska, add=TRUE, lty='dashed', col=heat.colors(70)[alaska$level+1], lwd=2)
+plot(alaska, add=TRUE, lty='dashed', col=heat.colors(70)[alaska$level+1], 
+    lwd=2)
 ```
 
 ![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
@@ -430,51 +440,54 @@ plot(alaska, add=TRUE, lty='dashed', col=heat.colors(70)[alaska$level+1], lwd=2)
 
 # Tips
 
-* If you don't like the shape of the unit-sources, then try editing the downdip-lines
-shapefile to make the unit-sources reasonably orthogonal and with reasonably consistent
-sizes. Smoothing of input contours may also be helpful in some instances.
+* If you don't like the shape of the unit-sources, then try editing the
+downdip-lines shapefile to make the unit-sources reasonably orthogonal and with
+reasonably consistent sizes. Smoothing of input contours may also be helpful in
+some instances.
 
-* If `slip_edge_taper_width > 0`, then instead of having uniform slip, each unit-source
-has its slip smoothed to zero around the edges. To do this, the original
-unit-source slip (1 inside the unit source, 0 outside) is convolved with a
-circular filter with radius `slip_edge_taper_width`. This implies that if two
-neighbouring unit-sources are added, their smoothed slips will sum to 1 - and so the
-smoothing should have no effect in the interior of uniform slip multi-source
-rupture. However, smoothing can be useful to reduce artefacts caused by the
-slip discontinuity at the boundaries of the rupture. For example, if the
+* If `slip_edge_taper_width > 0`, then instead of having uniform slip, each
+unit-source has its slip smoothed (tapered) to zero around the edges. To do
+this, the original unit-source slip (1 inside the unit source, 0 outside) is
+convolved with a circular filter with radius `slip_edge_taper_width`. This
+implies that if two neighbouring unit-sources are added, their smoothed slips
+will sum to 1, and so the smoothing should have no effect in the interior of
+uniform slip multi-source rupture. It also implies that the slip extends
+outside the unit-source, with distance corresponding to
+`slip_edge_taper_width`. Smoothing can be useful to reduce artefacts caused by
+the slip discontinuity at the boundaries of the rupture. For example, if the
 rupture top-edge is buried a few km below the earth surface, then for
 relatively low dips, the Okada solution implies a sharp 'ridge' of deformation
 along the upper edge of the unit-source.  Although mathematically this is
 correct, it is enhanced by the slip dropping discontinuously from '1' to '0',
 which might not be physically realistic. Slip tapering smooths out such
-features. 
+features (to some extent). 
 
-* You should visually check that the computed initial conditions seem
-reasonable. If the subgrid point spacing is too coarse, or the input contours
-are poorly behaved, then artefacts can occur, particularly near the trench.
-Typically these are spikes in deformation, and **can be prevented by using a
-finer `cell_integration_scale`**. Numerically it is challenging to compute very
-shallow ruptures over irregular source contours, because the Okada solutions
-for each sub-unit-source become very concentrated at shallow depths (high
-peaks/troughs of slip over a narrow area), and we rely on exact cancellation of
-neighbouring peaks/troughs to avoid artefacts.
+* You should visually check that the computed vertical deformation points (or
+raster tiffs) seem reasonable. If the subgrid point spacing is too coarse, or
+the input contours are poorly behaved, then artefacts can occur, particularly
+near the trench. Typically these are spikes in deformation, and **can be
+prevented by using a finer `cell_integration_scale`**. Numerically it is
+challenging to compute very shallow ruptures over irregular source contours,
+because the Okada solutions for each sub-unit-source become very concentrated
+at shallow depths (high peaks/troughs of slip over a narrow area), and we rely
+on exact cancellation of neighbouring peaks/troughs to avoid artefacts.
 
-* If using Kajiura filtering with unit-sources, you can either apply the Kajiura
-filter to the unit sources directly before summing them
+* If using Kajiura filtering with unit-sources, you can either apply the
+Kajiura filter to the unit sources directly before summing them
 ('filtering-before-combining'), or you can sum the unit sources and
 subsequently apply the Kajiura filter ('filtering-after-combining'). The above
 code directly supports 'filtering-before-combining'( see codes in the
-combine_tsunami_sources folder for 'filtering-after-combining'). Mathematically
-the problem is linear, and there should be no difference between these two
-cases. However, in practice our Kajiura filtering algorithm involves some
-interpolation to move to and from cartesian and spherical coordinates. This
-leads to some discretization error, and the approach of
-'filtering-before-combining' is numerically more sensitive to this than
-'filtering-after-combining'. If this is a problem you might consider using the
-'filtering-after-combining' approach. The basic issue that that in the
-filtering-before-combining approach, individual unit source deformations can
-have steep gradients that would be cancelled by neighbouring sources after
-combination. These steep gradients cause relatively high smoothing with the
-Kajiura filter, especially if `slip_edge_taper_width=0`. To avoid artefacts any
-discretization errors in this smoothing must cancel with those from
-neighbouring unit source deformations.
+[../combine_tsunami_sources](combine_tsunami_sources) folder for
+'filtering-after-combining'). Mathematically the problem is linear, and there
+should be no difference between these two cases. However, in practice our
+Kajiura filtering algorithm involves some interpolation to move to and from
+cartesian and spherical coordinates. This leads to some discretization error,
+and the approach of 'filtering-before-combining' is numerically more sensitive
+to this than 'filtering-after-combining'. If this is a problem you might
+consider using the 'filtering-after-combining' approach. The basic issue that
+that in the filtering-before-combining approach, individual unit source
+deformations can have steep gradients that would be cancelled by neighbouring
+sources after combination. These steep gradients cause relatively high
+smoothing with the Kajiura filter, especially if `slip_edge_taper_width=0`. To
+avoid artefacts any discretization errors in this smoothing must cancel with
+those from neighbouring unit source deformations.
