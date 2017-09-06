@@ -105,7 +105,7 @@ cell_integration_scale = c(2000, 2000)
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
-MC_CORES = 12
+MC_CORES = 1
 
 # Option to illustrate 3d interactive plot creation
 #
