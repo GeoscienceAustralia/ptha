@@ -3,6 +3,7 @@
 #
 # Scaling relation type
 #
+site_name = basename(dirname(getwd()))
 sourcezone_parameter_file = 
     '../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv'
 stopifnot(file.exists(sourcezone_parameter_file))
