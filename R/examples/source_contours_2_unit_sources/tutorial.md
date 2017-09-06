@@ -42,9 +42,9 @@ The unit sources will be arranged in a logically rectangular grid which covers
 the source contours. The number of unit-sources down-dip and along-strike is
 chosen based on the user-provided value for the desired unit-source length and
 width. The user can precisely control the location of the along-strike
-boundaries of the unit-sources by providing a 'downdip_lines' shapefile (see
-below). The down-dip boundaries between unit sources are always created by the
-code.
+boundaries of the unit-sources by providing a 'downdip-lines' shapefile (see
+`alaska_downdip` below). The down-dip boundaries between unit sources are
+always created by the code.
 
 # Example data
 
@@ -128,11 +128,11 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 
 # Creation of downdip lines
 
-The downdip lines shapefile is used to define the along-strike boundaries of the
-unit sources. An initial downdip lines shapefile can be created with the script
-'[make_initial_downdip_lines.R](make_initial_downdip_lines.R)'. Similar code is pasted
-below to illustrate the process (although this takes advantage of the fact we already read
-the source contours). 
+The downdip lines shapefile is used to define the along-strike boundaries of
+the unit sources. An initial downdip lines shapefile can be created with the
+script '[make_initial_downdip_lines.R](make_initial_downdip_lines.R)'. Similar
+code is pasted below to illustrate the process (although this takes advantage
+of the fact we already read the source contours). 
 
 ```r
 # This file is created
@@ -151,10 +151,10 @@ ds1 = create_downdip_lines_on_source_contours_improved(
 
 # Convert to a SpatialLinesDataFrame (this is the data structure R uses for
 # line-shapefiles)
-downdip_lines = downdip_lines_to_SpatialLinesDataFrame(ds1)
+alaska_downdip = downdip_lines_to_SpatialLinesDataFrame(ds1)
 
 # Write to a shapefile
-writeOGR(downdip_lines, 
+writeOGR(alaska_downdip, 
     dsn=out_shapefile, 
     layer=gsub('.shp', '', basename(out_shapefile)),
     driver='ESRI Shapefile', overwrite=TRUE)
@@ -164,44 +164,28 @@ Here we plot the source contours and downdip lines, to illustrate how they
 relate to each other. 
 
 ```r
-plot(source_contours, col='black', asp=1, axes=TRUE)
-```
-
-```
-## Error in plot(source_contours, col = "black", asp = 1, axes = TRUE): object 'source_contours' not found
-```
-
-```r
-plot(downdip_lines, add=TRUE, col='red')
-```
-
-```
-## Error in plot.xy(xy.coords(x, y), type = type, ...): plot.new has not been called yet
-```
-
-```r
+plot(alaska, col='black', asp=1, axes=TRUE)
+plot(alaska_downdip, add=TRUE, col='red')
 legend('topleft', c('Source contours', 'Downdip Lines'), 
     lty=c(1,1), col=c('black', 'red'))
 ```
 
-```
-## Error in strwidth(legend, units = "user", cex = cex, font = text.font): plot.new has not been called yet
-```
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png)
 
-Note that if you are unhappy with the spacing or orthogonality of the
-`downdip_lines`, you can simply edit the corresponding shapefile (defined as
+Note that if you are unhappy with the spacing or orthogonality of the downdip-lines
+(`alaska_downdip`), you can simply edit the corresponding shapefile (defined as
 `out_shapefile` above) in GIS, before proceeding to make the unit-sources.
 Broadly speaking, we would like the downdip-lines to intersect the contours in
-a nearly-orthogonal way, while avoiding large 'kinks' in the downdip lines, and
-retaining a fairly even spacing of downdip lines.  These goals will lead to
+a nearly-orthogonal way, while avoiding large 'kinks' in the downdip-lines, and
+retaining a fairly even spacing of downdip-lines. These goals will lead to
 unit-sources that have a fairly standard looking Okada-type deformation, all of
 which are a similar size (which is desirable when distributing earthquakes over
 the source zone). Unfortunately the goals of 'orthogonality' and 'equal size'
 are also somewhat in contradiction with each other! While the code above (which
-creates the downdip lines) tries to find a good solution, it can fail either
+creates the downdip-lines) tries to find a good solution, it can fail either
 due to data input errors (i.e. user error), or simply because the algorithm is
 not well suited to the contours you provide. Therefore, user inspection of the
-downdip lines (and optional editing) are strongly encouraged.
+downdip-lines (and optional editing) are strongly encouraged.
 
 
 # Setting input parameters in produce_unit_sources.R
@@ -379,7 +363,7 @@ The above command would run the 10th shapefile from within CONTOURS (assuming
 alphabetical ordering). The main purpose of this option is to facilitate
 running each sourcezone separately in a HPC environment (since it is relatively
 easy to automatically submit many jobs with different integer arguments). Note
-that in this case, the filenames of the source contours and downdip lines must
+that in this case, the filenames of the source contours and downdip-lines must
 match, and no other files should be contained in their directories.
 
 In either case the working directory must be the directory containing
@@ -429,24 +413,16 @@ plot(r1, main=paste0('Vertical deformation from the sum of all \n',
         'unit-source rasters, with input source contour lines'), 
     xlab='Lon', ylab='Lat',
     legend.args=list(text='Vertical deformation (m)', side=2))
+# Add contours, with colour varying with depth
+plot(alaska, add=TRUE, lty='dotted', col=heat.colors(70)[alaska$level+1])
 ```
 
 ![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
 
-```r
-# Add contours, with colour varying with depth
-plot(source_contours, add=TRUE, lty='dotted', 
-    col=heat.colors(70)[source_contours$level+1])
-```
-
-```
-## Error in plot(source_contours, add = TRUE, lty = "dotted", col = heat.colors(70)[source_contours$level + : object 'source_contours' not found
-```
-
 
 # Tips
 
-* If you don't like the shape of the unit-sources, then try editing the downdip lines
+* If you don't like the shape of the unit-sources, then try editing the downdip-lines
 shapefile to make the unit-sources reasonably orthogonal and with reasonably consistent
 sizes. Smoothing of input contours may also be helpful in some instances.
 
