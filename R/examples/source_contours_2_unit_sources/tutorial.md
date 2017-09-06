@@ -34,8 +34,9 @@ depths are stored in the shapefile attribute table, with an attribute name
 The source contours will be used to define the unit sources, so they should
 only cover areas where you want unit sources to be made. On a typical
 subduction zone they would extend from the subduction zone trench to a depth
-of around 50 km, though the latter depth may vary (see e.g.  Berryman et al.,
-2015). 
+of around 50 km, though the latter depth may vary (see e.g. *Berryman et al.,
+2015, The GEM Faulted Earth Subduction Interface Characterisation Project:
+Version 2.0 – April 2015*)
 
 The unit sources will be arranged in a logically rectangular grid which covers
 the source contours. The number of unit-sources down-dip and along-strike is
@@ -44,7 +45,6 @@ width. The user can precisely control the location of the along-strike
 boundaries of the unit-sources by providing a 'downdip_lines' shapefile (see
 below). The down-dip boundaries between unit sources are always created by the
 code.
-
 
 # Example data
 
