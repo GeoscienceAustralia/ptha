@@ -64,15 +64,19 @@ North Pacific. The code below demonstrates how to read them in R and make a basi
 **Note the code in this section is not required when using
 '[produce_unit_sources.R](produce_unit_sources.R)' -- however, we include
 this to demonstrate the input data requirements**
-```{r, eval=TRUE, echo=FALSE, warnings=FALSE}
-# Load packages early to avoid noisy messages
-suppressPackageStartupMessages(library(rgdal))
-suppressPackageStartupMessages(library(rptha))
+
+
+Here we load the rptha package. This causes numerous other packages to be
+loaded automatically, which lead to various messages being printed to the
+console.
+```{r, eval=TRUE, echo=TRUE}
+# Load packages. Various messages are printed -- this is normal
+library(rptha)
 ```
 
+Here we read the source contours shapefile, and make a plot
 ```{r, eval=TRUE, echo=TRUE}
 # Read the shapefile
-library(rgdal)
 alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska', verbose=FALSE)
 
 # Print some information about it

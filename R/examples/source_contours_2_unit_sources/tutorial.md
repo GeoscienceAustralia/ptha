@@ -57,15 +57,101 @@ North Pacific. The code below demonstrates how to read them in R and make a basi
 '[produce_unit_sources.R](produce_unit_sources.R)' -- however, we include
 this to demonstrate the input data requirements**
 
+
+Here we load the rptha package. This causes numerous other packages to be
+loaded automatically, which lead to various messages being printed to the
+console.
+
+```r
+# Load packages. Various messages are printed -- this is normal
+library(rptha)
+```
+
+```
+## Loading required package: rgeos
+```
+
+```
+## rgeos version: 0.3-23, (SVN revision 546)
+##  GEOS runtime version: 3.5.0-CAPI-1.9.0 r4084 
+##  Linking to sp version: 1.2-4 
+##  Polygon checking: TRUE
+```
+
+```
+## Loading required package: rgdal
+```
+
+```
+## Loading required package: methods
+```
+
+```
+## Loading required package: sp
+```
+
+```
+## rgdal: version: 1.2-7, (SVN revision 660)
+##  Geospatial Data Abstraction Library extensions to R successfully loaded
+##  Loaded GDAL runtime: GDAL 2.1.3, released 2017/20/01
+##  Path to GDAL shared files: /usr/share/gdal/2.1
+##  Loaded PROJ.4 runtime: Rel. 4.9.2, 08 September 2015, [PJ_VERSION: 492]
+##  Path to PROJ.4 shared files: (autodetected)
+##  Linking to sp version: 1.2-4
+```
+
+```
+## Loading required package: geosphere
+```
+
+```
+## Loading required package: raster
+```
+
+```
+## Loading required package: FNN
+```
+
+```
+## Loading required package: minpack.lm
+```
+
+```
+## Loading required package: geometry
+```
+
+```
+## Loading required package: magic
+```
+
+```
+## Loading required package: abind
+```
+
+```
+## 
+## Attaching package: 'magic'
+```
+
+```
+## The following object is masked from 'package:raster':
+## 
+##     shift
+```
+
+```
+## Loading required package: ncdf4
+```
+
 ```
 ## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
 ## loading 'rptha'
 ```
 
+Here we read the source contours shapefile, and make a plot
 
 ```r
 # Read the shapefile
-library(rgdal)
 alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska', verbose=FALSE)
 
 # Print some information about it
