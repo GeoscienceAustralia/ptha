@@ -130,15 +130,11 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 
 The downdip lines shapefile is used to define the along-strike boundaries of the
 unit sources. An initial downdip lines shapefile can be created with the script
-'[make_initial_downdip_lines.R](make_initial_downdip_lines.R)'. The code is pasted
-below to illustrate the process. 
+'[make_initial_downdip_lines.R](make_initial_downdip_lines.R)'. Similar code is pasted
+below to illustrate the process (although this takes advantage of the fact we already read
+the source contours). 
 
 ```r
-#
-# This file defines the subduction interface -- it is provided by the user
-#
-source_shapefile = 'CONTOURS/alaska.shp'
-
 # This file is created
 out_shapefile = 'DOWNDIP_LINES/alaska_downdip.shp'
 
@@ -148,22 +144,9 @@ desired_unit_source_length = 50
 # We will need the rptha package for a few functions below
 library(rptha)
 
-# Read the contours
-source_contours = readOGR(source_shapefile, 
-    layer=gsub('.shp','',basename(source_shapefile)))
-```
-
-```
-## OGR data source with driver: ESRI Shapefile 
-## Source: "CONTOURS/alaska.shp", layer: "alaska"
-## with 10 features
-## It has 1 fields
-```
-
-```r
 # Make the downdip lines
 ds1 = create_downdip_lines_on_source_contours_improved(
-    source_contours, 
+    alaska, 
     desired_unit_source_length=desired_unit_source_length)
 
 # Convert to a SpatialLinesDataFrame (this is the data structure R uses for
@@ -182,12 +165,28 @@ relate to each other.
 
 ```r
 plot(source_contours, col='black', asp=1, axes=TRUE)
+```
+
+```
+## Error in plot(source_contours, col = "black", asp = 1, axes = TRUE): object 'source_contours' not found
+```
+
+```r
 plot(downdip_lines, add=TRUE, col='red')
+```
+
+```
+## Error in plot.xy(xy.coords(x, y), type = type, ...): plot.new has not been called yet
+```
+
+```r
 legend('topleft', c('Source contours', 'Downdip Lines'), 
     lty=c(1,1), col=c('black', 'red'))
 ```
 
-![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png)
+```
+## Error in strwidth(legend, units = "user", cex = cex, font = text.font): plot.new has not been called yet
+```
 
 Note that if you are unhappy with the spacing or orthogonality of the
 `downdip_lines`, you can simply edit the corresponding shapefile (defined as
@@ -430,10 +429,19 @@ plot(r1, main=paste0('Vertical deformation from the sum of all \n',
         'unit-source rasters, with input source contour lines'), 
     xlab='Lon', ylab='Lat',
     legend.args=list(text='Vertical deformation (m)', side=2))
-plot(source_contours, add=TRUE, lty='dotted')
 ```
 
 ![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
+
+```r
+# Add contours, with colour varying with depth
+plot(source_contours, add=TRUE, lty='dotted', 
+    col=heat.colors(70)[source_contours$level+1])
+```
+
+```
+## Error in plot(source_contours, add = TRUE, lty = "dotted", col = heat.colors(70)[source_contours$level + : object 'source_contours' not found
+```
 
 
 # Tips
