@@ -7,7 +7,7 @@
 config_env = new.env()
 source('config.R', local=config_env)
 
-unit_sources_output_basedir = dirname(config_env$all_runs_output_base_dir) #'/g/data/.....
+unit_sources_output_basedir = config_env$all_runs_output_base_dir #'/g/data/.....
 
 # Useful utility for 'fast' tail
 tail_file<-function(filename, n=1){
@@ -22,8 +22,8 @@ tail_file<-function(filename, n=1){
 check_models_have_been_run<-function(sourcename=config_env$site_name, verbose=FALSE){
 
     # Note: These file paths might need to be changed in other applications.
-    all_logs = Sys.glob(paste0(unit_sources_output_basedir, sourcename, '/unit_source_tsunami/RUN_*/*/log*'))
-    all_unit_sources = Sys.glob(paste0(unit_sources_output_basedir, sourcename, '/unit_source_tsunami/RUN_*'))
+    all_logs = Sys.glob(paste0(unit_sources_output_basedir, '/unit_source_tsunami/RUN_*/*/log*'))
+    all_unit_sources = Sys.glob(paste0(unit_sources_output_basedir, '/unit_source_tsunami/RUN_*'))
 
     if(verbose){
         print(paste0('Number of logfiles: ', length(all_logs)))
