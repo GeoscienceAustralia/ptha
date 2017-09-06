@@ -16,6 +16,7 @@ suppressPackageStartupMessages(library(raster))
 # A vector with shapefile names for all contours that we want to convert to
 # unit sources
 all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp') # Matches all shapefiles in CONTOURS
+all_sourcezone_downdip_shapefiles = Sys.glob('./DOWNDIP_LINES/*.shp') # Matches all shapefiles in DOWNDIP_LINES
 
 # Desired unit source geometric parameters
 desired_subfault_length = 50 # km
@@ -39,9 +40,10 @@ deep_subunitsource_point_spacing = 4000 #m
 # Taper edges of unit_source slip with circular filter having this radius (m)
 # This can be useful to avoid features of the Okada solution associated with
 # slip discontinuities at the rupture edges. 
-# E.G. For ruptures with shallow top depth, the Okada solution suggests a high
-# 'ridge' of deformation just above the top-edge, which is entirely due to the
-# discontinuity in the slip. Slip tapering will smooth out such features.
+# E.G. For ruptures with shallow (but non-zero) top depth, the Okada solution
+# suggests a high 'ridge' of deformation just above the top-edge, which is
+# entirely due to the discontinuity in the slip. Slip tapering will smooth out
+# such features.
 slip_edge_taper_width = 10000
 
 # For computational efficiency, only compute the okada deformation at
@@ -80,12 +82,26 @@ kajiura_use_threshold = 1.0e-03
 # can be observed especially when summing tsunami sources.
 # A numerically easier alternative is to apply kajiura AFTER summing
 # the sources [see script in 'combine_tsunami_sources' folder]
-kajiura_grid_spacing = 2000 # m
+kajiura_grid_spacing = 1000 # m
 
 # Cell size for output rasters
 # The computation time will scale inversely with tsunami_source_cellsize^2
 # Here we use a relatively coarse discretization, for demonstration purposes
 tsunami_source_cellsize = 4/60 # degrees. 
+
+# Spatial scale for sub-cell point integration
+# During the Okada computation, points with "abs(deformation) > 10% of max(abs(deformation)"
+# will have deformations re-computed as the average of the 16 Okada point values
+# around point p. These 16 points have coordinates:
+#     points = expand.grid(p[1] + cell_integration_scale[1]*c(-1,-1/3,1/3,1), 
+#                          p[2] + cell_integration_scale[2]*c(-1,-1/3,1/3,1))
+# If 'cell_integration_scale' is close to half the grid size, then this is an approximation
+# of the within-pixel average Okada deformation. We do this because near the trench,
+# the Okada deformation might not be smooth [e.g. when rupture depth --> 0], and this
+# reduces the chance of artificial 'spikes' in the Okada deformation.
+# In the code below, this is only applied along the 'top' row of unit-sources
+# where the trench depth might --> 0.
+cell_integration_scale = c(2000, 2000)
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
@@ -103,6 +119,11 @@ make_pdf_plot = FALSE
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
+
+# Location to save outputs. Make sure it ends with a '/'
+output_base_dir = './OUTPUTS/'
+# Make it if it does not exist!
+dir.create(output_base_dir, recursive=TRUE, showWarnings=FALSE)
 
 
 ## ---- takeCommandLineParameter ----
@@ -127,6 +148,7 @@ if(interactive() == FALSE){
 
     # Get a vector with all contours that we want to convert to unit sources
     all_sourcezone_shapefiles = all_sourcezone_shapefiles[source_index]
+    all_sourcezone_downdip_shapefiles = all_sourcezone_downdip_shapefiles[source_index]
     sourcezone_rake = sourcezone_rake[source_index]
 
 }
@@ -144,25 +166,34 @@ print('Making discretized sources ...')
 for(source_shapefile_index in 1:length(all_sourcezone_shapefiles)){
 
     source_shapefile = all_sourcezone_shapefiles[source_shapefile_index]
+    source_downdip_lines = all_sourcezone_downdip_shapefiles[source_shapefile_index]
     
     # Extract a name for the source
     sourcename = gsub('.shp', '', basename(source_shapefile))
     
-    # Create unit sources for source_shapefile
+    print('Create unit sources from source_shapefile...')
     discretized_sources[[sourcename]] = 
         discretized_source_from_source_contours(source_shapefile, 
-            desired_subfault_length, desired_subfault_width, make_plot=TRUE)
+            desired_subfault_length, desired_subfault_width, make_plot=TRUE,
+            downdip_lines = source_downdip_lines)
 
-    # Get unit source summary stats
+    print('Get unit source summary stats...')
     discretized_sources_statistics[[sourcename]] = 
-        #discretized_source_approximate_summary_statistics(
-        discretized_source_summary_statistics(
+        discretized_source_approximate_summary_statistics(
+        #discretized_source_summary_statistics(
             discretized_sources[[sourcename]],
             default_rake = sourcezone_rake[source_shapefile_index],
             make_plot=TRUE)
+
+    print('Save unit-source grid as shapefile...')
+    usg = unit_source_grid_to_SpatialPolygonsDataFrame(
+        discretized_sources[[sourcename]]$unit_source_grid)
+    proj4string(usg) = '+init=epsg:4326'
+    writeOGR(usg, dsn=paste0(output_base_dir, 'unit_source_grid'),
+        layer=sourcename, driver='ESRI Shapefile', overwrite=TRUE)
 }
 
-saveRDS(discretized_sources, 'all_discretized_sources.RDS')
+saveRDS(discretized_sources, paste0(output_base_dir, 'all_discretized_sources.RDS'))
 
 
 dev.off() # Save pdf plot
@@ -244,7 +275,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
 
     gc()
     
-    source_output_dir = paste0('Unit_source_data/', sourcename, '/')
+    source_output_dir = paste0(output_base_dir, 'Unit_source_data/', sourcename, '/')
     dir.create(source_output_dir, showWarnings=FALSE, recursive=TRUE)
 
     library(parallel)
@@ -264,6 +295,9 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             max(shallow_subunitsource_point_spacing, min(depth_range)), 
             deep_subunitsource_point_spacing)
         approx_dy = approx_dx
+
+        # Use within-pixel integration for Okada along the top-row of unit-sources
+        local_cell_integration_scale = cell_integration_scale * (down_dip_index == 1)
       
         tsunami_ = make_tsunami_unit_source(
             down_dip_index, 
@@ -281,7 +315,8 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             minimal_output=minimise_tsunami_unit_source_output, 
             verbose=FALSE,
             dstmx=okada_distance_factor,
-            edge_taper_width=slip_edge_taper_width)
+            edge_taper_width=slip_edge_taper_width,
+            cell_integration_scale=local_cell_integration_scale)
 
         # Save as RDS 
         output_RDS_file =  paste0(source_output_dir, sourcename, '_', 
@@ -348,7 +383,8 @@ if(make_3d_interactive_plot){
     # NOTE: The next line will need to be changed interactively
     sourcename = 'alaska'
     all_tsunami = lapply(
-        Sys.glob(paste0('Unit_source_data/', sourcename , '/', sourcename, '*.RDS')), 
+        Sys.glob(paste0(output_base_dir, '/Unit_source_data/', 
+            sourcename , '/', sourcename, '*.RDS')),
         readRDS)
 
     print('Computing unit sources for plotting in parallel...')

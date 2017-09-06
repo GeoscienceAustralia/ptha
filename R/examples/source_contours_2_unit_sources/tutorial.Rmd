@@ -46,8 +46,14 @@ of around 50 km, though the latter depth may vary (see e.g.  Berryman et al.,
 2015). 
 
 The unit sources will be arranged in a logically rectangular grid which covers
-the source contours. The number of unit-sources down-dip and along-strike is chosen
-based on the user-provided value for the desired unit-source length and width. 
+the source contours. The number of unit-sources down-dip and along-strike is
+chosen based on the user-provided value for the desired unit-source length and
+width. The user can precisely control the location of the along-strike
+boundaries of the unit-sources by providing a 'downdip_lines' shapefile, or use
+code to make the latter automatically from the contours. The best approach
+(implemented here) is to create the downdip-lines from the source contours as
+outlined below, and then edit it later in GIS if required. 
+
 
 # Example data
 
@@ -76,6 +82,46 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
     scales=list(draw=TRUE), aspect='iso')
 ```
 
+# Creation of downdip lines
+
+The downdip lines shapefile is used to define the along-strike boundaries of the
+unit sources. An initial downdip lines shapefile can be created with the script
+'[make_initial_downdip_lines.R](make_initial_downdip_lines.R)'. The code is pasted
+below to illustrate the process.
+```{r, eval=TRUE, echo=TRUE}
+#
+# This file defines the subduction interface -- it is provided by the user
+#
+source_shapefile = 'CONTOURS/alaska.shp'
+
+# This file is created
+out_shapefile = 'DOWNDIP_LINES/alaska_downdip.shp'
+
+# Set the along-strike spacing of the unit-sources in km
+desired_unit_source_length = 50
+
+library(rptha) 
+
+# Read the contours
+source_contours = readOGR(source_shapefile, 
+    layer=gsub('.shp','',basename(source_shapefile)))
+
+# Make the downdip lines
+ds1 = create_downdip_lines_on_source_contours_improved(
+    source_contours, 
+    desired_unit_source_length=desired_unit_source_length)
+
+# Convert to a SpatialLinesDataFrame (this is the data structure R uses for
+# line-shapefiles)
+out_shp = downdip_lines_to_SpatialLinesDataFrame(ds1)
+
+# Write to a shapefile
+writeOGR(out_shp, 
+    dsn=out_shapefile, 
+    layer=gsub('.shp', '', basename(out_shapefile)),
+    driver='ESRI Shapefile', overwrite=TRUE)
+```
+
 # Input parameters
 
 The code below comes directly from
@@ -90,9 +136,9 @@ important of which are the sub-unit-source grid spacing.
 If Kajiura filtering is to be applied, then the user must also provide an
 elevation raster (in lon-lat coordinates, with elevation in m, and negative
 value being below MSL). The input source zones should of course have longitudes
-inside the extent of the raster (if they are off by 360 degrees then the code
-will make the correction). Use of Kajiura filtering will cause the code to run
-more slowly.
+inside the extent of the raster (although if they are off by 360 degrees then
+the code will make the correction). Use of Kajiura filtering will cause the
+code to run more slowly.
 
 Note that more than one source-contour shapefile can be provided -- the code
 will loop over them.
@@ -105,6 +151,7 @@ this case each core will run separate unit sources, until all are completed.
 ```
 
 # Running the script
+
 Assuming the rptha package has been successfully installed, the script can be
 run from within R using the syntax:
 
@@ -121,19 +168,21 @@ is setup to run a single shapefile, selected with an integer argument, e.g.:
     Rscript produce_unit_sources.R 10
 
 The above command would run the 10th shapefile from within CONTOURS (assuming
-alphabetical ordering).  The main purpose of this option is to facilitate
+alphabetical ordering). The main purpose of this option is to facilitate
 running each sourcezone separately in a HPC environment (since it is relatively
-easy to automatically submit many jobs with different integer arguments).
+easy to automatically submit many jobs with different integer arguments). Note
+that in this case, the filenames of the source contours and downdip lines must
+match, and no other files should be contained in their directories.
 
 In either case the working directory must be the directory containing
 '[produce_unit_sources.R](produce_unit_sources.R)'.
 
-The speed of the code depends heavily on a number of input parameters. If it is too
-slow, you can try decreasing the `tsunami_source_cellsize`. More dangerously
-you can try increasing the `subunitsource_point_spacing` parameters, or
-increasing the `kajiura_grid_spacing` (the latter only matters if you provide
-elevation data). But if the parameters in the last sentence are too coarse,
-you can expect numerical artefacts.
+The speed of the code depends heavily on a number of input parameters. If it is
+too slow, you can try decreasing the `tsunami_source_cellsize`. More
+dangerously you can try increasing the `subunitsource_point_spacing`
+parameters, or increasing the `kajiura_grid_spacing` (the latter only matters
+if you provide elevation data). But if the parameters in the last sentence are
+too coarse, you can expect numerical artefacts.
 
 
 # Outputs
@@ -177,12 +226,12 @@ features.
 * You should visually check that the computed initial conditions seem
 reasonable. If the subgrid point spacing is too coarse, or the input contours
 are poorly behaved, then artefacts can occur, particularly near the trench.
-Typically these are minor spikes in deformation, and can be reduced by Kajiura
-filtering and by using a finer sub-unit-source point spacing. Numerically it is
-challenging to compute very shallow ruptures over irregular source contours,
-because the Okada solutions for each sub-unit-source become very concentrated
-at shallow depths (high peaks/troughs of slip over a narrow area), and we rely
-on exact cancellation of neighbouring peaks/troughs to avoid artefacts.
+Typically these are minor spikes in deformation, and can be prevented by using a
+finer `cell_integration_scale`. Numerically it is challenging to compute very
+shallow ruptures over irregular source contours, because the Okada solutions
+for each sub-unit-source become very concentrated at shallow depths (high
+peaks/troughs of slip over a narrow area), and we rely on exact cancellation of
+neighbouring peaks/troughs to avoid artefacts.
 
 * If using Kajiura filtering with unit-sources, you can either apply the Kajiura
 filter to the unit sources directly before summing them

@@ -38,8 +38,14 @@ of around 50 km, though the latter depth may vary (see e.g.  Berryman et al.,
 2015). 
 
 The unit sources will be arranged in a logically rectangular grid which covers
-the source contours. The number of unit-sources down-dip and along-strike is chosen
-based on the user-provided value for the desired unit-source length and width. 
+the source contours. The number of unit-sources down-dip and along-strike is
+chosen based on the user-provided value for the desired unit-source length and
+width. The user can precisely control the location of the along-strike
+boundaries of the unit-sources by providing a 'downdip_lines' shapefile, or use
+code to make the latter automatically from the contours. The best approach
+(implemented here) is to create the downdip-lines from the source contours as
+outlined below, and then edit it later in GIS if required. 
+
 
 # Example data
 
@@ -114,6 +120,117 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 
 ![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png)
 
+# Creation of downdip lines
+
+The downdip lines shapefile is used to define the along-strike boundaries of the
+unit sources. An initial downdip lines shapefile can be created with the script
+'[make_initial_downdip_lines.R](make_initial_downdip_lines.R)'. The code is pasted
+below to illustrate the process.
+
+```r
+#
+# This file defines the subduction interface -- it is provided by the user
+#
+source_shapefile = 'CONTOURS/alaska.shp'
+
+# This file is created
+out_shapefile = 'DOWNDIP_LINES/alaska_downdip.shp'
+
+# Set the along-strike spacing of the unit-sources in km
+desired_unit_source_length = 50
+
+library(rptha) 
+```
+
+```
+## Loading required package: rgeos
+```
+
+```
+## rgeos version: 0.3-23, (SVN revision 546)
+##  GEOS runtime version: 3.5.0-CAPI-1.9.0 r4084 
+##  Linking to sp version: 1.2-4 
+##  Polygon checking: TRUE
+```
+
+```
+## Loading required package: geosphere
+```
+
+```
+## Loading required package: raster
+```
+
+```
+## Loading required package: FNN
+```
+
+```
+## Loading required package: minpack.lm
+```
+
+```
+## Loading required package: geometry
+```
+
+```
+## Loading required package: magic
+```
+
+```
+## Loading required package: abind
+```
+
+```
+## 
+## Attaching package: 'magic'
+```
+
+```
+## The following object is masked from 'package:raster':
+## 
+##     shift
+```
+
+```
+## Loading required package: ncdf4
+```
+
+```
+## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
+## loading 'rptha'
+```
+
+```r
+# Read the contours
+source_contours = readOGR(source_shapefile, 
+    layer=gsub('.shp','',basename(source_shapefile)))
+```
+
+```
+## OGR data source with driver: ESRI Shapefile 
+## Source: "CONTOURS/alaska.shp", layer: "alaska"
+## with 10 features
+## It has 1 fields
+```
+
+```r
+# Make the downdip lines
+ds1 = create_downdip_lines_on_source_contours_improved(
+    source_contours, 
+    desired_unit_source_length=desired_unit_source_length)
+
+# Convert to a SpatialLinesDataFrame (this is the data structure R uses for
+# line-shapefiles)
+out_shp = downdip_lines_to_SpatialLinesDataFrame(ds1)
+
+# Write to a shapefile
+writeOGR(out_shp, 
+    dsn=out_shapefile, 
+    layer=gsub('.shp', '', basename(out_shapefile)),
+    driver='ESRI Shapefile', overwrite=TRUE)
+```
+
 # Input parameters
 
 The code below comes directly from
@@ -128,9 +245,9 @@ important of which are the sub-unit-source grid spacing.
 If Kajiura filtering is to be applied, then the user must also provide an
 elevation raster (in lon-lat coordinates, with elevation in m, and negative
 value being below MSL). The input source zones should of course have longitudes
-inside the extent of the raster (if they are off by 360 degrees then the code
-will make the correction). Use of Kajiura filtering will cause the code to run
-more slowly.
+inside the extent of the raster (although if they are off by 360 degrees then
+the code will make the correction). Use of Kajiura filtering will cause the
+code to run more slowly.
 
 Note that more than one source-contour shapefile can be provided -- the code
 will loop over them.
@@ -146,14 +263,6 @@ this case each core will run separate unit sources, until all are completed.
 # Gareth Davies, Geoscience Australia 2015
 #
 suppressPackageStartupMessages(library(rptha))
-```
-
-```
-## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
-## loading 'rptha'
-```
-
-```r
 suppressPackageStartupMessages(library(raster))
 
 ###############################################################################
@@ -165,6 +274,7 @@ suppressPackageStartupMessages(library(raster))
 # A vector with shapefile names for all contours that we want to convert to
 # unit sources
 all_sourcezone_shapefiles = Sys.glob('./CONTOURS/*.shp') # Matches all shapefiles in CONTOURS
+all_sourcezone_downdip_shapefiles = Sys.glob('./DOWNDIP_LINES/*.shp') # Matches all shapefiles in DOWNDIP_LINES
 
 # Desired unit source geometric parameters
 desired_subfault_length = 50 # km
@@ -188,9 +298,10 @@ deep_subunitsource_point_spacing = 4000 #m
 # Taper edges of unit_source slip with circular filter having this radius (m)
 # This can be useful to avoid features of the Okada solution associated with
 # slip discontinuities at the rupture edges. 
-# E.G. For ruptures with shallow top depth, the Okada solution suggests a high
-# 'ridge' of deformation just above the top-edge, which is entirely due to the
-# discontinuity in the slip. Slip tapering will smooth out such features.
+# E.G. For ruptures with shallow (but non-zero) top depth, the Okada solution
+# suggests a high 'ridge' of deformation just above the top-edge, which is
+# entirely due to the discontinuity in the slip. Slip tapering will smooth out
+# such features.
 slip_edge_taper_width = 10000
 
 # For computational efficiency, only compute the okada deformation at
@@ -229,12 +340,26 @@ kajiura_use_threshold = 1.0e-03
 # can be observed especially when summing tsunami sources.
 # A numerically easier alternative is to apply kajiura AFTER summing
 # the sources [see script in 'combine_tsunami_sources' folder]
-kajiura_grid_spacing = 2000 # m
+kajiura_grid_spacing = 1000 # m
 
 # Cell size for output rasters
 # The computation time will scale inversely with tsunami_source_cellsize^2
 # Here we use a relatively coarse discretization, for demonstration purposes
 tsunami_source_cellsize = 4/60 # degrees. 
+
+# Spatial scale for sub-cell point integration
+# During the Okada computation, points with "abs(deformation) > 10% of max(abs(deformation)"
+# will have deformations re-computed as the average of the 16 Okada point values
+# around point p. These 16 points have coordinates:
+#     points = expand.grid(p[1] + cell_integration_scale[1]*c(-1,-1/3,1/3,1), 
+#                          p[2] + cell_integration_scale[2]*c(-1,-1/3,1/3,1))
+# If 'cell_integration_scale' is close to half the grid size, then this is an approximation
+# of the within-pixel average Okada deformation. We do this because near the trench,
+# the Okada deformation might not be smooth [e.g. when rupture depth --> 0], and this
+# reduces the chance of artificial 'spikes' in the Okada deformation.
+# In the code below, this is only applied along the 'top' row of unit-sources
+# where the trench depth might --> 0.
+cell_integration_scale = c(2000, 2000)
 
 # Number of cores for parallel parts. Values > 1 will only work on shared
 # memory linux machines.
@@ -252,9 +377,15 @@ make_pdf_plot = FALSE
 # Option to reduce the size of RDS output
 # TRUE should be fine for typical usage
 minimise_tsunami_unit_source_output = TRUE
+
+# Location to save outputs. Make sure it ends with a '/'
+output_base_dir = './OUTPUTS/'
+# Make it if it does not exist!
+dir.create(output_base_dir, recursive=TRUE, showWarnings=FALSE)
 ```
 
 # Running the script
+
 Assuming the rptha package has been successfully installed, the script can be
 run from within R using the syntax:
 
@@ -271,19 +402,21 @@ is setup to run a single shapefile, selected with an integer argument, e.g.:
     Rscript produce_unit_sources.R 10
 
 The above command would run the 10th shapefile from within CONTOURS (assuming
-alphabetical ordering).  The main purpose of this option is to facilitate
+alphabetical ordering). The main purpose of this option is to facilitate
 running each sourcezone separately in a HPC environment (since it is relatively
-easy to automatically submit many jobs with different integer arguments).
+easy to automatically submit many jobs with different integer arguments). Note
+that in this case, the filenames of the source contours and downdip lines must
+match, and no other files should be contained in their directories.
 
 In either case the working directory must be the directory containing
 '[produce_unit_sources.R](produce_unit_sources.R)'.
 
-The speed of the code depends heavily on a number of input parameters. If it is too
-slow, you can try decreasing the `tsunami_source_cellsize`. More dangerously
-you can try increasing the `subunitsource_point_spacing` parameters, or
-increasing the `kajiura_grid_spacing` (the latter only matters if you provide
-elevation data). But if the parameters in the last sentence are too coarse,
-you can expect numerical artefacts.
+The speed of the code depends heavily on a number of input parameters. If it is
+too slow, you can try decreasing the `tsunami_source_cellsize`. More
+dangerously you can try increasing the `subunitsource_point_spacing`
+parameters, or increasing the `kajiura_grid_spacing` (the latter only matters
+if you provide elevation data). But if the parameters in the last sentence are
+too coarse, you can expect numerical artefacts.
 
 
 # Outputs
@@ -327,12 +460,12 @@ features.
 * You should visually check that the computed initial conditions seem
 reasonable. If the subgrid point spacing is too coarse, or the input contours
 are poorly behaved, then artefacts can occur, particularly near the trench.
-Typically these are minor spikes in deformation, and can be reduced by Kajiura
-filtering and by using a finer sub-unit-source point spacing. Numerically it is
-challenging to compute very shallow ruptures over irregular source contours,
-because the Okada solutions for each sub-unit-source become very concentrated
-at shallow depths (high peaks/troughs of slip over a narrow area), and we rely
-on exact cancellation of neighbouring peaks/troughs to avoid artefacts.
+Typically these are minor spikes in deformation, and can be prevented by using a
+finer `cell_integration_scale`. Numerically it is challenging to compute very
+shallow ruptures over irregular source contours, because the Okada solutions
+for each sub-unit-source become very concentrated at shallow depths (high
+peaks/troughs of slip over a narrow area), and we rely on exact cancellation of
+neighbouring peaks/troughs to avoid artefacts.
 
 * If using Kajiura filtering with unit-sources, you can either apply the Kajiura
 filter to the unit sources directly before summing them
