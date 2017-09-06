@@ -188,6 +188,7 @@ legend('topleft', c('Source contours', 'Downdip Lines'),
 ```
 
 ![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png)
+
 Note that if you are unhappy with the spacing or orthogonality of the
 `downdip_lines`, you can simply edit the corresponding shapefile (defined as
 `out_shapefile` above) in GIS, before proceeding to make the unit-sources.
@@ -407,6 +408,33 @@ sub-unit-source points, exact unit source discretization, etc.). If using it
 for debugging, you can ensure that more information is saved by setting
 `minimise_tsunami_unit_source_output=FALSE`. This is not done by default, since
 the output files can be rather large.
+
+
+Here, we show a plot of the sum of all the unit-source tif files (equivalent to
+uniform slip of 1m on the entire source zone).
+
+
+```r
+# Names of raster files
+all_unit_source_raster_files = Sys.glob('./OUTPUTS/Unit_source_data/alaska/*.tif')
+# Create a new raster to hold the sum
+r1 = raster(all_unit_source_raster_files[1])
+# Do the sum 
+for(i in 2:length(all_unit_source_raster_files)){
+    raster_i = raster(all_unit_source_raster_files[i])
+    r1 = r1 + raster_i
+}
+
+# Plot the raster, and overlap the source contours
+plot(r1, main=paste0('Vertical deformation from the sum of all \n',
+        'unit-source rasters, with input source contour lines'), 
+    xlab='Lon', ylab='Lat',
+    legend.args=list(text='Vertical deformation (m)', side=2))
+plot(source_contours, add=TRUE, lty='dotted')
+```
+
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
+
 
 # Tips
 
