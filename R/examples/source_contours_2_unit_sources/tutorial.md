@@ -477,7 +477,7 @@ Kajiura filter to the unit sources directly before summing them
 ('filtering-before-combining'), or you can sum the unit sources and
 subsequently apply the Kajiura filter ('filtering-after-combining'). The above
 code directly supports 'filtering-before-combining'( see codes in the
-[../combine_tsunami_sources](combine_tsunami_sources) folder for
+[../combine_tsunami_sources](../combine_tsunami_sources) folder for
 'filtering-after-combining'). Mathematically the problem is linear, and there
 should be no difference between these two cases. However, in practice our
 Kajiura filtering algorithm involves some interpolation to move to and from
