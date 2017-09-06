@@ -62,11 +62,6 @@ Here we load the rptha package. This causes numerous other packages to be
 loaded automatically, which lead to various messages being printed to the
 console.
 
-```r
-# Load packages. Various messages are printed -- this is normal
-library(rptha)
-```
-
 ```
 ## Loading required package: rgeos
 ```
