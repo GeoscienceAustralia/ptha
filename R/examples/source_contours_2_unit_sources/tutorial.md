@@ -359,14 +359,22 @@ is setup to run a single shapefile, selected with an integer argument, e.g.:
 
     Rscript produce_unit_sources.R 10
 
-The above command would run the 10th shapefile from within CONTOURS (assuming
-alphabetical ordering). The main purpose of this option is to facilitate
-running each sourcezone separately in a HPC environment (since it is relatively
-easy to automatically submit many jobs with different integer arguments). Note
-that in this case, the filenames of the source contours and downdip-lines must
-match, and no other files should be contained in their directories.
+The above command would run using the 10th shapefile from within CONTOURS
+(assuming alphabetical ordering), and the 10th file within DOWNDIP_LINES. The
+main purpose of this option is to facilitate running each sourcezone separately
+in a HPC environment (since it is relatively easy to automatically submit many
+jobs with different integer arguments). **Note for this to work, the contents
+of the CONTOURS and DOWNDIP_LINES DIRECTORIES must correspond when
+alphabetically ordered**. The easiest way to achieve this is to ensure the
+CONTOURS directory only contains source contour shapefiles (e.g. alaska.shp,
+marianas.shp, ..., and related dbf, shx, and prj files), while the
+DOWNDIP_LINES directory only contains a single downdip lines shapefile for each
+source contour, with the start of the filename matching the CONTOURS filenames
+(e.g.  alaska_downdip.shp, marianas_downdip.shp, ... and related dbf, shx and
+prj files). 
 
-In either case the working directory must be the directory containing
+Whether or not the code is run with `Rscript`, or with `source` from within R,
+the working directory must be the directory containing
 '[produce_unit_sources.R](produce_unit_sources.R)'.
 
 The speed of the code depends heavily on a number of input parameters. If it is
