@@ -7,7 +7,7 @@ sourcezone_parameter_file =
     '../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv'
 stopifnot(file.exists(sourcezone_parameter_file))
 
-all_sourcezone_par = read.csv(config$sourcezone_parameter_file, header=TRUE, 
+all_sourcezone_par = read.csv(sourcezone_parameter_file, header=TRUE, 
     stringsAsFactors=FALSE)
 source_rows = which(all_sourcezone_par$sourcename == site_name)[1]
 
