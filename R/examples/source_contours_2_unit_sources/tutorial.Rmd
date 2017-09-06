@@ -97,7 +97,7 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
 The downdip lines shapefile is used to define the along-strike boundaries of the
 unit sources. An initial downdip lines shapefile can be created with the script
 '[make_initial_downdip_lines.R](make_initial_downdip_lines.R)'. The code is pasted
-below to illustrate the process.
+below to illustrate the process. 
 ```{r, eval=TRUE, echo=TRUE}
 #
 # This file defines the subduction interface -- it is provided by the user
@@ -124,19 +124,32 @@ ds1 = create_downdip_lines_on_source_contours_improved(
 
 # Convert to a SpatialLinesDataFrame (this is the data structure R uses for
 # line-shapefiles)
-out_shp = downdip_lines_to_SpatialLinesDataFrame(ds1)
+downdip_lines = downdip_lines_to_SpatialLinesDataFrame(ds1)
 
 # Write to a shapefile
-writeOGR(out_shp, 
+writeOGR(downdip_lines, 
     dsn=out_shapefile, 
     layer=gsub('.shp', '', basename(out_shapefile)),
     driver='ESRI Shapefile', overwrite=TRUE)
 ```
 
-# Input parameters
+Here we plot the source contours and downdip lines, to illustrate how they
+relate to each other. Note that if you are unhappy with the spacing or
+orthogonality of the `downdip_lines`, you can simply edit the corresponding
+shapefile (defined as `out_shapefile` above) in GIS, before proceeding to make
+the unit-sources. 
+```{r, eval=TRUE, echo=TRUE}
+plot(source_contours, col='black', asp=1, axes=TRUE)
+plot(downdip_lines, add=TRUE, col='red')
+legend('topleft', c('Source contours', 'Downdip Lines'), 
+    lty=c(1,1), col=c('black', 'red'))
+```
 
-The code below comes directly from
-'[produce_unit_sources.R](produce_unit_sources.R)'.
+# Setting input parameters in produce_unit_sources.R
+
+To make the unit-sources, the script
+'[produce_unit_sources.R](produce_unit_sources.R)' is used. The code below
+comes directly from that script.
 
 In typical usage of '[produce_unit_sources.R](produce_unit_sources.R)', the
 user would edit the input parameters to define the source contour filename(s),
