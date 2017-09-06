@@ -69,7 +69,7 @@ this to demonstrate the input data requirements**
 Here we load the rptha package. This causes numerous other packages to be
 loaded automatically, which lead to various messages being printed to the
 console.
-```{r, eval=TRUE, echo=FALSE}
+```{r, eval=TRUE, echo=TRUE, results='hide', warnings=FALSE, message=FALSE}
 # Load packages. Various messages are printed (most suppressed here) -- 
 # you can ignore warnings about 'changing locked binding'..
 library(rptha)
