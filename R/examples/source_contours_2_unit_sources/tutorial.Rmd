@@ -64,11 +64,16 @@ North Pacific. The code below demonstrates how to read them in R and make a basi
 **Note the code in this section is not required when using
 '[produce_unit_sources.R](produce_unit_sources.R)' -- however, we include
 this to demonstrate the input data requirements**
+```{r, eval=TRUE, echo=FALSE, warnings=FALSE}
+# Load packages early to avoid noisy messages
+suppressPackageStartupMessages(library(rgdal))
+suppressPackageStartupMessages(library(rptha))
+```
 
 ```{r, eval=TRUE, echo=TRUE}
 # Read the shapefile
-suppressPackageStartupMessages(library(rgdal))
-alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska')
+library(rgdal)
+alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska', verbose=FALSE)
 
 # Print some information about it
 summary(alaska)
@@ -100,7 +105,8 @@ out_shapefile = 'DOWNDIP_LINES/alaska_downdip.shp'
 # Set the along-strike spacing of the unit-sources in km
 desired_unit_source_length = 50
 
-library(rptha) 
+# We will need the rptha package for a few functions below
+library(rptha)
 
 # Read the contours
 source_contours = readOGR(source_shapefile, 

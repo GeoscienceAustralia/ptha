@@ -57,21 +57,17 @@ North Pacific. The code below demonstrates how to read them in R and make a basi
 '[produce_unit_sources.R](produce_unit_sources.R)' -- however, we include
 this to demonstrate the input data requirements**
 
+```
+## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
+## loading 'rptha'
+```
+
 
 ```r
 # Read the shapefile
-suppressPackageStartupMessages(library(rgdal))
-alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska')
-```
+library(rgdal)
+alaska = readOGR(dsn='CONTOURS/alaska.shp', layer='alaska', verbose=FALSE)
 
-```
-## OGR data source with driver: ESRI Shapefile 
-## Source: "CONTOURS/alaska.shp", layer: "alaska"
-## with 10 features
-## It has 1 fields
-```
-
-```r
 # Print some information about it
 summary(alaska)
 ```
@@ -118,7 +114,7 @@ spplot(alaska, main='Alaska sourcezone contours giving the interface depth in km
     scales=list(draw=TRUE), aspect='iso')
 ```
 
-![plot of chunk unnamed-chunk-2](figure/unnamed-chunk-2-1.png)
+![plot of chunk unnamed-chunk-3](figure/unnamed-chunk-3-1.png)
 
 # Creation of downdip lines
 
@@ -139,69 +135,9 @@ out_shapefile = 'DOWNDIP_LINES/alaska_downdip.shp'
 # Set the along-strike spacing of the unit-sources in km
 desired_unit_source_length = 50
 
-library(rptha) 
-```
+# We will need the rptha package for a few functions below
+library(rptha)
 
-```
-## Loading required package: rgeos
-```
-
-```
-## rgeos version: 0.3-23, (SVN revision 546)
-##  GEOS runtime version: 3.5.0-CAPI-1.9.0 r4084 
-##  Linking to sp version: 1.2-4 
-##  Polygon checking: TRUE
-```
-
-```
-## Loading required package: geosphere
-```
-
-```
-## Loading required package: raster
-```
-
-```
-## Loading required package: FNN
-```
-
-```
-## Loading required package: minpack.lm
-```
-
-```
-## Loading required package: geometry
-```
-
-```
-## Loading required package: magic
-```
-
-```
-## Loading required package: abind
-```
-
-```
-## 
-## Attaching package: 'magic'
-```
-
-```
-## The following object is masked from 'package:raster':
-## 
-##     shift
-```
-
-```
-## Loading required package: ncdf4
-```
-
-```
-## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
-## loading 'rptha'
-```
-
-```r
 # Read the contours
 source_contours = readOGR(source_shapefile, 
     layer=gsub('.shp','',basename(source_shapefile)))
