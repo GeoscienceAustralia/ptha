@@ -414,7 +414,7 @@ plot(r1, main=paste0('Vertical deformation from the sum of all \n',
     xlab='Lon', ylab='Lat',
     legend.args=list(text='Vertical deformation (m)', side=2))
 # Add contours, with colour varying with depth
-plot(alaska, add=TRUE, lty='dotted', col=heat.colors(70)[alaska$level+1])
+plot(alaska, add=TRUE, lty='dashed', col=heat.colors(70)[alaska$level+1], lwd=2)
 ```
 
 ![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
