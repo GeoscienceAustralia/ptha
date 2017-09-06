@@ -23,14 +23,15 @@ all_sourcezone_downdip_shapefiles =  paste0(
 stopifnot(length(all_sourcezone_shapefiles) == 1)
 stopifnot(length(all_sourcezone_downdip_shapefiles) == 1)
 
-# Desired unit source geometric parameters
-desired_subfault_length = 50 # km
-desired_subfault_width = 50 # km
-
-# Get the rake (from a file)
+# Get the rake and desired length/width from a file
 all_sourcezone_par = read.csv(sourcezone_parameter_file, header=TRUE, 
     stringsAsFactors=FALSE)
 source_rows = which(all_sourcezone_par$sourcename == site_name)[1]
+
+# Desired unit source geometric parameters
+desired_subfault_length = as.numeric(all_sourcezone_par$approx_unit_source_length[source_rows]) # km
+desired_subfault_width = as.numeric(all_sourcezone_par$approx_unit_source_width[source_rows]) # km
+
 # A vector with the desired rake angle (one entry per sourcezone)
 sourcezone_rake = rep(as.numeric(all_sourcezone_par$rake[source_rows]),
     len=length(all_sourcezone_shapefiles)) # degrees

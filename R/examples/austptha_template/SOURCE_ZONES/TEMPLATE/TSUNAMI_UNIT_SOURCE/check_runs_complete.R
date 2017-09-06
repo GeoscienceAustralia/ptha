@@ -68,7 +68,7 @@ check_models_have_been_run<-function(sourcename=config_env$site_name, verbose=FA
 check_model_gauge_integrity<-function(sourcename=config_env$site_name, verbose=FALSE){
 
     library(ncdf4)
-    all_netcdf_gauges = Sys.glob(paste0(unit_sources_output_basedir, sourcename,
+    all_netcdf_gauges = Sys.glob(paste0(unit_sources_output_basedir,
         '/unit_source_tsunami/RUN_*/*/Gauge*.nc'))
 
     if(verbose){
