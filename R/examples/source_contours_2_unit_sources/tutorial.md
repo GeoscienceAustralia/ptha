@@ -41,10 +41,9 @@ The unit sources will be arranged in a logically rectangular grid which covers
 the source contours. The number of unit-sources down-dip and along-strike is
 chosen based on the user-provided value for the desired unit-source length and
 width. The user can precisely control the location of the along-strike
-boundaries of the unit-sources by providing a 'downdip_lines' shapefile, or use
-code to make the latter automatically from the contours. The best approach
-(implemented here) is to create the downdip-lines from the source contours as
-outlined below, and then edit it later in GIS if required. 
+boundaries of the unit-sources by providing a 'downdip_lines' shapefile (see
+below). The down-dip boundaries between unit sources are always created by the
+code.
 
 
 # Example data
@@ -179,10 +178,7 @@ writeOGR(downdip_lines,
 ```
 
 Here we plot the source contours and downdip lines, to illustrate how they
-relate to each other. Note that if you are unhappy with the spacing or
-orthogonality of the `downdip_lines`, you can simply edit the corresponding
-shapefile (defined as `out_shapefile` above) in GIS, before proceeding to make
-the unit-sources. 
+relate to each other. 
 
 ```r
 plot(source_contours, col='black', asp=1, axes=TRUE)
@@ -192,6 +188,21 @@ legend('topleft', c('Source contours', 'Downdip Lines'),
 ```
 
 ![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png)
+Note that if you are unhappy with the spacing or orthogonality of the
+`downdip_lines`, you can simply edit the corresponding shapefile (defined as
+`out_shapefile` above) in GIS, before proceeding to make the unit-sources.
+Broadly speaking, we would like the downdip-lines to intersect the contours in
+a nearly-orthogonal way, while avoiding large 'kinks' in the downdip lines, and
+retaining a fairly even spacing of downdip lines.  These goals will lead to
+unit-sources that have a fairly standard looking Okada-type deformation, all of
+which are a similar size (which is desirable when distributing earthquakes over
+the source zone). Unfortunately the goals of 'orthogonality' and 'equal size'
+are also somewhat in contradiction with each other! While the code above (which
+creates the downdip lines) tries to find a good solution, it can fail either
+due to data input errors (i.e. user error), or simply because the algorithm is
+not well suited to the contours you provide. Therefore, user inspection of the
+downdip lines (and optional editing) are strongly encouraged.
+
 
 # Setting input parameters in produce_unit_sources.R
 
