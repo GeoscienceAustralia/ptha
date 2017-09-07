@@ -18,8 +18,9 @@ other things.
 
 # Step 2
 
-To make earthquake and tsunami events (for both stochastic, variable_uniform, and uniform slip),
-see [run_make_all_tsunami_events.PBS](run_make_all_tsunami_events.PBS). 
+To make earthquake and tsunami events (for both stochastic, variable_uniform,
+and uniform slip), see
+[run_make_all_tsunami_events.PBS](run_make_all_tsunami_events.PBS). 
 
     qsub run_make_all_tsunami_events.PBS
 
@@ -27,14 +28,14 @@ see [run_make_all_tsunami_events.PBS](run_make_all_tsunami_events.PBS).
 
 On large source-zones, the final stochastic_slip generation step (from Step 2)
 might not complete [say if the above script is killed due to exceeding time
-limits]. If that happens, you need to follow Step 3 (otherwise skip to Step 4). 
+limits]. If that happens, you need to follow Step 3 - otherwise, skip now to Step 4. 
 
 The way to tell if this has happened is to examine raijin's job files (.o and
 .e files generated when the job ends). If the job was killed, they will
 contain statements to that effect. 
 
-If the job was killed, then not all of your stochastic slip tsunami have been created. 
-You can create the unfinished stochastic slip with 
+If the job was killed, then not all of your stochastic slip tsunami have been
+created.  You can create the unfinished stochastic slip with 
 [run_unfinished_stochastic_earthquake_tsunami.R](run_unfinished_stochastic_earthquake_tsunami.R).
 (Note: Currently this is automatically executed by Step 2, IF there are more than some
 threshold number of events in stochastic event set):
@@ -61,7 +62,6 @@ main netcdf file using the script
 This has to be executed manually. Once that has finished and you have confirmed
 the netCDF files are ok, you might want to delete the folder R_images_tmp that
 was used to store temporary RDS files. 
-
 
 On large source-zones, in some instances it is possible for the unit-source, gauge
 and earthquake event properties to not be correctly written to the files of the form

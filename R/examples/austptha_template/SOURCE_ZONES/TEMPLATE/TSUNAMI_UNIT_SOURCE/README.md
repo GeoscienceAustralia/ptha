@@ -24,11 +24,11 @@ used to make directory structures for all model runs (using some definitions
 in [config.R](config.R)). 
 
 We make directories for all model runs by modifying template files in the
-[template](template) folder. This allows us to define separate output directories
-and initial conditions (i.e. tsunami unit sources) for every model run. Note
-that files in the [template](template) folder define the input elevation data,
-the model resolution, the hazard point files, and other model configuration
-issues. These may need to be modified depending on your applications.
+[template](template) folder. This allows us to define separate output
+directories and initial conditions (i.e. tsunami unit sources) for every model
+run. Note that files in the [template](template) folder define other model
+configuration options (e.g. resolution), which may need to be modified
+depending on your applications.
 
 Once the [template](template) files are ok, to create a separate SWALS model
 that runs for each unit-source, do: 
@@ -49,7 +49,7 @@ using 'numactl' when running multiple jobs on a single node. It is run with:
 
 The above needs to be done repeatedly, until all model runs are completed.
 
-Note if you are running multiple source-zones, it may be preferable to use the
+**NOTE**: If you are running multiple source-zones, it may be preferable to use the
 alternative script [../../run_16.sh](../../run_16.sh). The latter is run from
 it's own directory, and has the advantage of being able to run models from more
 than one source-zone (if it doesn't find 16 models to run on a single
@@ -65,7 +65,7 @@ R* using:
    
 ```r 
     # Read the functions into R
-    source(check_runs_complete.R)
+    source('check_runs_complete.R')
     # This is used to check for models that seem to have not completed
     check_models_have_been_run()
     # If the above is ok, then try this to check that gauge outputs exist and
