@@ -107,7 +107,7 @@ if(kajiura){
                 spherical_input = TRUE)
     }
 }else{
-    # No smoothing, just copy the raster
+    # No smoothing, just copy the raster to support the plot below
     for(i in 1:length(stochastic_slip_events)){
         stochastic_slip_events[[i]]$source_raster_smooth = stochastic_slip_events[[i]]$source_raster
     }
