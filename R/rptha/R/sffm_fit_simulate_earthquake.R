@@ -1050,7 +1050,7 @@ sffm_make_events_on_discretized_source<-function(
     # Find the along-strike/down-dip unit source index near the target_location
     target_unit_source_index = which.min(distHaversine(
         discretized_source_statistics[,c('lon_c', 'lat_c')], 
-        matrix(target_location, ncol=2, nrow=length(nx), byrow=TRUE)))
+        matrix(target_location, ncol=2, nrow=nx, byrow=TRUE)))
     target_alongstrike = discretized_source_statistics$alongstrike_number[target_unit_source_index]
     target_downdip = discretized_source_statistics$downdip_number[target_unit_source_index]
 
@@ -1082,11 +1082,21 @@ sffm_make_events_on_discretized_source<-function(
         target_alongstrike_range_min = max(1, target_alongstrike - peak_slip_unit_source_window[2])
         target_alongstrike_range_max = min(nx, target_alongstrike + peak_slip_unit_source_window[2])
 
-        # Randomly sample the peak slip location
-        peak_slip_row = sample(target_downdip_range_min:target_downdip_range_max, 
-            size=1)
-        peak_slip_col = sample(target_alongstrike_range_min:target_alongstrike_range_max, 
-            size=1)
+        if(vary_peak_slip_location){
+            # Randomly sample the peak slip location
+            peak_slip_row = sample(target_downdip_range_min:target_downdip_range_max, 
+                size=1)
+            peak_slip_col = sample(target_alongstrike_range_min:target_alongstrike_range_max, 
+                size=1)
+        }else{
+            # Work-around for the fact that sample(3:3, size=1) randomly
+            # samples from 1:3, not just 3! That's dangerous behaviour, and is
+            # flagged in the help page '?sample'
+            stopifnot(target_downdip_range_min == target_downdip_range_max)
+            stopifnot(target_alongstrike_range_min == target_alongstrike_range_max)
+            peak_slip_row = target_downdip_range_max
+            peak_slip_col = target_alongstrike_range_max
+        }
 
         # Choose random 'numerical' corner wavenumbers
         numerical_corner_wavenumbers = physical_corner_wavenumbers[j,1:2] * 
