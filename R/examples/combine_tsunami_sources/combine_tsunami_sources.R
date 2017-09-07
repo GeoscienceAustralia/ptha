@@ -7,6 +7,9 @@
 # slip distributions: Evaluation of synthetic source models. JGR,
 # doi:10.1002/2015JB012272
 #
+# Note this code requires that the tutorial in ../source_contours_2_unit_sources
+# has been successfully run.
+#
 
 library(rptha)
 
@@ -28,7 +31,6 @@ all_discretized_source_RDS =
 
 # Earthquake parameters
 desired_Mw = 9.0
-mu = 3e+10
 target_location = c(212, 60) # Approximate Lon, Lat of rupture (will stochastically vary)
 number_of_sffm = 3 # How many stochastic events to make
 
@@ -68,8 +70,10 @@ stochastic_slip_events_table = sffm_events_to_table(stochastic_slip_events)
 # For each stochastic slip event, compute the vertical deformation by summing
 # the unit-sources 
 for(i in 1:length(stochastic_slip_events)){
-    # Get the contributing events and their slip from the table. This data is stored
-    # as a seperated string, so we need to extract it
+
+    # Get the contributing event indices and their slip from the table. This data is
+    # stored as a seperated string (with separators '-' and '_' respectively),
+    # so we need to extract it.
     event_inds = as.numeric(strsplit(stochastic_slip_events_table$event_index_string[i], '-')[[1]])
     event_slip = as.numeric(strsplit(stochastic_slip_events_table$event_slip_string[i], '_')[[1]])
 
@@ -114,6 +118,10 @@ if(kajiura){
 
 }
 
+
+#
+# Make a plot -- this will vary randomly each time the code is run
+#
 png('Deformation_plot.png', width=15, height=9, units='in', res=300)
 par(mfrow=c(2,3))
 par(mar=c(3,2,1,1))
