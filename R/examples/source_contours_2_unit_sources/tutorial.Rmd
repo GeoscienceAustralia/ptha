@@ -310,11 +310,12 @@ on exact cancellation of neighbouring peaks/troughs to avoid artefacts.
 Kajiura filter to the unit sources directly before summing them
 ('filtering-before-combining'), or you can sum the unit sources and
 subsequently apply the Kajiura filter ('filtering-after-combining'). The above
-code directly supports 'filtering-before-combining'( see codes in the
-[../combine_tsunami_sources](../combine_tsunami_sources) folder for
-'filtering-after-combining'). Mathematically the problem is linear, and there
-should be no difference between these two cases. However, in practice our
-Kajiura filtering algorithm involves some interpolation to move to and from
+code directly supports 'filtering-before-combining' (see codes toward the end
+of the
+[../combine_tsunami_sources/combine_tsunami_sources.R](../combine_tsunami_sources/combine_tsunami_sources.R)
+script for 'filtering-after-combining'). Mathematically the problem is linear,
+and there should be no difference between these two cases. However, in practice
+our Kajiura filtering algorithm involves some interpolation to move to and from
 cartesian and spherical coordinates. This leads to some discretization error,
 and the approach of 'filtering-before-combining' is numerically more sensitive
 to this than 'filtering-after-combining'. If this is a problem you might

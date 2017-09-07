@@ -90,8 +90,8 @@ kajiura = FALSE
 if(kajiura){
     # Apply kajiura to the raster. This can be less artefact prone than applying
     # it first to the unit sources, and then summing. Although mathematically the
-    # two are equivalent, numerically the unit source approach is much more prone to
-    # artefacts
+    # two are equivalent, numerically the unit source approach is somewhat more
+    # prone to artefacts
 
     for(i in 1:length(stochastic_slip_events)){
         stochastic_slip_events[[i]]$source_raster_smooth = 
