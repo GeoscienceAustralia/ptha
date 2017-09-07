@@ -23,10 +23,6 @@ compute the rate of earthquake events on a source.
 combine_tsunami_sources
 -----------------------
 
-[Example script](combine_tsunami_sources/combine_tsunami_gauges.R) to convert
-from tsunami unit sources to tsunami event offshore wave heights (assuming the
-URSGA solver was used for tsunami propagation).
-
 [Example script](combine_tsunami_sources/combine_tsunami_sources.R) to make
 random slip tsunami from unit source initial conditions.
 

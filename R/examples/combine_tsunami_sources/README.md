@@ -1,8 +1,7 @@
-[combine_tsunami_gauges.R](combine_tsunami_gauges.R) -- Code to combine tsunami
-unit-source tide-gauges into events. Currently has hard-coded paths to input
-data.
-
 [combine_tsunami_sources.R](combine_tsunami_sources.R) -- Code to combine
-tsunami unit-source initial conditions into event initial conditions. Kajiura
-filter is applied after combining the unit sources, since numerically this
-approach is less prone to artefacts caused by interpolation/discretization.
+tsunami unit-source initial conditions into event initial conditions. It also 
+shows how to apply Kajiura filtering after combining the unit sources (although
+activating that code requires setting kajiura=TRUE and pointing the code to
+appropriate elevation data).
+
+

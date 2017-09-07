@@ -39,7 +39,7 @@ the process. In general, the user is encouraged to provide their own
 tsunami propagation code, although one option is provided in [propagation](../propagation).
   * If a linear propagation code is used then the user can optionally compute
 the tsunami for each unit-source separately and then [combine them
-later](examples/combine_tsunami_sources/combine_tsunami_gauges.R). This is relatively
+later](examples/austptha_template/SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS). This is relatively
 efficient, but only theoretically valid for tsunami with a sufficiently small
 amplitude-to-depth ratio (or equivalently, with sufficiently small velocities).
 The tsunami propagation results are generally stored at offshore points, and
@@ -60,6 +60,8 @@ Installation from source
 ------------------------
 
 ### Standard install
+
+These notes apply to linux. 
 
 To build rptha, you firstly need to install the R packages that it depends on.
 The usual way to get these is to start R, and do:
@@ -96,6 +98,16 @@ You can also give other people copies of the rptha_XXXXX.tar.gz file to install
 themselves (provided they are running a similar environment to you, and have
 the package dependencies installed).
 
+### Windows 
+
+On Windows, building R packages is more challenging, and the developer does not 
+generally build the package on Windows machines. Users attempting to do this
+should first seriously consider installing a linux virtual machine instead. If 
+you still wish to attempt a windows build, then familiarise yourself with the
+general issues in building R packages for windows
+(http://cran.us.r-project.org/bin/windows/Rtools/), and proceed along the above
+lines once appropriate dependencies are installed.
+
 ### Install on NCI
 
 * To install on NCI is more challenging. See some detailed notes in the [install/NCI](install/NCI) directory
@@ -103,7 +115,8 @@ the package dependencies installed).
 
 Usage
 -----
-To learn to use rptha, you can look at the [examples](examples) directory, as well as the package documentation
+To learn to use rptha, you can look at the [examples](examples) directory, as
+well as the package documentation
 
 
 
