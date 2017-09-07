@@ -22,7 +22,7 @@ sourcename = 'alaska'
 # Read the discretized source info which was created when making the unit
 # sources. This list should have an element with name = sourcename
 all_discretized_sources = readRDS(
-    '../source_contours_2_unit_sources/all_discretized_sources.RDS')
+    '../source_contours_2_unit_sources/OUTPUTS/all_discretized_sources.RDS')
 
 # Define the (m/year) SEISMICALLY COUPLED tectonic convergence on the sourcezone.
 # We use same values as global PTHA paper, and account for the interface dip
