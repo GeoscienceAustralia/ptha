@@ -34,3 +34,10 @@ Although not heavily using the rptha package, this contains example scripts to
 [make hazard points](make_hazard_points/make_hazard_pts.R) (i.e. offshore
 points where the tsunami tide-gauges are recorded)
 
+
+austptha_template
+-----------------
+
+Template codes used for a 'real' large-scale PTHA for Australia. Includes code
+for generating unit-source tsunami, running hydrodynamic models, creating
+stochastic and uniform slip events, and hazard computation.
