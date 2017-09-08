@@ -67,7 +67,7 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
     float *pafScanline;
     int   nXSize = GDALGetRasterBandXSize( hBand );
     int   nYSize = GDALGetRasterBandYSize( hBand );
-    pafScanline = (float *) malloc(sizeof(float));
+    pafScanline = (float *) CPLMalloc(sizeof(float));
 
     double xleft, ytop, dx, dy;
     xleft = adfGeoTransform[0];
@@ -80,6 +80,9 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
     double z00, z01, z10, z11;
     double z_interp_x0, z_interp_x1;
     double x_local, y_local;
+
+    // Try to avoid too much cache use
+    GDALSetCacheMax(1048576);
 
     // j is the index of x,y,z
     for ( j = 0; j < N; j++){
@@ -192,7 +195,7 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
 
     }
 
-    free(pafScanline) ;
+    CPLFree(pafScanline) ;
 
     return;
 }
@@ -360,7 +363,7 @@ void read_gdal_raster(char inputFile[], double x[], double y[], double z[], int 
 
     //pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize);
     //pafScanline = (float *) malloc(sizeof(float)*nXSize);
-    pafScanline = (float *) malloc(sizeof(float));
+    pafScanline = (float *) CPLMalloc(sizeof(float));
 
     int j, i, xindex, yindex, xoff, yoff;
     double xweight, yweight;
@@ -373,6 +376,9 @@ void read_gdal_raster(char inputFile[], double x[], double y[], double z[], int 
         //GDALRasterIO(hBand, GF_Read, 0, j, nXSize, 1, 
         //              pafScanline, nXSize, 1, GDT_Float32, 
         //              0, 0);
+
+    // Try to avoid too much cache use
+    GDALSetCacheMax(1048576);
 
     // j is the index of x,y,z
     for ( j = 0; j < N; j++){
@@ -484,6 +490,8 @@ void read_gdal_raster(char inputFile[], double x[], double y[], double z[], int 
         }
 
     }
+
+    CPLFree(pafScanline);
 
     GDALClose(hDataset);
 
