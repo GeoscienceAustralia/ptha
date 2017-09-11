@@ -79,6 +79,9 @@ check_model_gauge_integrity<-function(sourcename=config_env$site_name, verbose=F
     if(length(all_netcdf_gauges) == 1) stop('Only one netcdf gauge found')
 
     for(i in 1:length(all_netcdf_gauges)){
+
+        if(verbose) print(i)
+
         f1 = all_netcdf_gauges[i]
         fid = nc_open(f1, readunlim=FALSE)
         lon = try(ncvar_get(fid, varid='lon', count=-1))
