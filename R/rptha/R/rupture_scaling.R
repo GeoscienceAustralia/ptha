@@ -45,7 +45,8 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' no effort to correct that]; 'AllenHayes' uses the interface relations of
 #' Allen and Hayes (2017, Table 2), with sigma for prediction based on the sigma value
 #' for the log10(L / or W / or A) of the orthogonal regression. Note this case 
-#' has Area and Width being multi-segment linear; 'AllenHayes-inslab' gives the 
+#' has Area and Width being multi-segment linear, and we slightly modify the mw thresholds
+#' in the paper to exactly agree with the line segment intersections; 'AllenHayes-inslab' gives the 
 #' inslab relations of Allen and Hayes (2017, Table 5)
 #' @param detailed logical. If False return a vector with area/width/length,
 #' otherwise provide a list with the latter as well as information on
@@ -96,7 +97,11 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
         # written in the paper')
         #
         # Some relations change above a magnitude threshold
-        Mw_above_thresh = (Mw > 8.63)
+    
+        # area_mw_threshold is close to 8.63 -- here we make exactly equal to
+        # line intersection
+        area_Mw_threshold = (5.62 + 2.23)/(1.22-0.31) 
+        Mw_above_thresh = (Mw > area_Mw_threshold)
         if(!Mw_above_thresh){
             area_absigma = c(-5.62, 1.22, 0.256)
         }else{
@@ -105,7 +110,10 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
 
         length_absigma = c(-2.90, 0.63, 0.182)
 
-        Mw_above_thresh = (Mw > 8.67)
+        # width_mw_threshold is close to 8.7 -- here we make it exactly equal
+        # to the line intersection
+        width_mw_threshold = (2.29 + 1.91)/0.48
+        Mw_above_thresh = (Mw > width_mw_threshold)
         if(!Mw_above_thresh){
             width_absigma = c(-1.91, 0.48, 0.137)
         }else{
@@ -168,23 +176,39 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
 #' @return values of Mw
 #' @export
 #' @examples
-#'    Mw = 8.0
-#'    # Get detailed information on the expected rupture size range
-#'    area0 = Mw_2_rupture_size(Mw, detailed=TRUE, CI_sd = 2)
-#'    # Find Mw such that area0$values[1] is a lower 2-sigma area
-#'    Mw_squeezed = Mw_2_rupture_size_inverse(area0$values[1], CI_sd = -2)
-#'    # Confirm that it worked
-#'    area1 = Mw_2_rupture_size(Mw_squeezed, detailed=TRUE, CI_sd = 2)
-#'    # The minus_CI component of area1 should equal area0
-#'    stopifnot(abs(area1$minus_CI[1] - area0$values[1]) < 1.0e-04)
+#'    for(Mw in c(8.0, 8.67, 9.0)){
+#'        for(relation in c('Strasser', 'AllenHayes')){
+#'            Mw = 8.0
+#'            # Get detailed information on the expected rupture size range
+#'            area0 = Mw_2_rupture_size(Mw, relation=relation, detailed=TRUE, CI_sd = 2)
+#'            # Find Mw such that area0$values[1] is a lower 2-sigma area
+#'            Mw_squeezed = Mw_2_rupture_size_inverse(area0$values[1], relation=relation, CI_sd = -2)
+#'            # Confirm that it worked
+#'            area1 = Mw_2_rupture_size(Mw_squeezed, relation=relation, detailed=TRUE, CI_sd = 2)
+#'            # The minus_CI component of area1 should equal area0
+#'            stopifnot(abs(area1$minus_CI[1] - area0$values[1]) < 1.0e-04)
+#'        }
+#'    }
 Mw_2_rupture_size_inverse<-function(area, relation='Strasser', CI_sd = 0){
 
     if(length(CI_sd) > 1) stop('length(CI_sd) must = 1')
+
+    if(length(area) > 1) stop('length(area) must = 1')
   
     # log10(area) = Mw*area_coef[2] + area_coef[1] + CI_sd*area_coef[3] 
     area_coef = Mw_2_rupture_size(6.0, relation=relation, detailed=TRUE)$area_absigma 
 
     Mw = (log10(area) - area_coef[1] - CI_sd*area_coef[3])/area_coef[2]
+        
+
+    if(relation == 'AllenHayes'){ 
+        # Deal with piecewise linear area relation
+        area_Mw_threshold = (5.62 + 2.23)/(1.22-0.31) 
+        if(Mw > area_Mw_threshold){
+            area_coef = Mw_2_rupture_size(Mw, relation=relation, detailed=TRUE)$area_absigma
+            Mw = (log10(area) - area_coef[1] - CI_sd*area_coef[3])/area_coef[2]
+        }
+    }
 
     names(Mw) = NULL
 

@@ -23,13 +23,17 @@ Given an area, this function computes the Mw value such that
 It currently does not give information on length or width.
 }
 \examples{
-   Mw = 8.0
-   # Get detailed information on the expected rupture size range
-   area0 = Mw_2_rupture_size(Mw, detailed=TRUE, CI_sd = 2)
-   # Find Mw such that area0$values[1] is a lower 2-sigma area
-   Mw_squeezed = Mw_2_rupture_size_inverse(area0$values[1], CI_sd = -2)
-   # Confirm that it worked
-   area1 = Mw_2_rupture_size(Mw_squeezed, detailed=TRUE, CI_sd = 2)
-   # The minus_CI component of area1 should equal area0
-   stopifnot(abs(area1$minus_CI[1] - area0$values[1]) < 1.0e-04)
+   for(Mw in c(8.0, 8.67, 9.0)){
+       for(relation in c('Strasser', 'AllenHayes')){
+           Mw = 8.0
+           # Get detailed information on the expected rupture size range
+           area0 = Mw_2_rupture_size(Mw, relation=relation, detailed=TRUE, CI_sd = 2)
+           # Find Mw such that area0$values[1] is a lower 2-sigma area
+           Mw_squeezed = Mw_2_rupture_size_inverse(area0$values[1], relation=relation, CI_sd = -2)
+           # Confirm that it worked
+           area1 = Mw_2_rupture_size(Mw_squeezed, relation=relation, detailed=TRUE, CI_sd = 2)
+           # The minus_CI component of area1 should equal area0
+           stopifnot(abs(area1$minus_CI[1] - area0$values[1]) < 1.0e-04)
+       }
+   }
 }
