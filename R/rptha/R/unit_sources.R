@@ -1530,6 +1530,9 @@ plot_unit_source_interior_points_cartesian<-function(us){
 #' @export
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){
+    
+    # To run the example we still need 'require'
+    requireNamespace(rgl)
 
     if(is.null(us$unit_source_cartesian)){
         msg = paste0('us is not a CARTESIAN unit source. \n',
@@ -1560,8 +1563,6 @@ plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso',
 
     # Get the pan3d function -- suppress printing of the example where it is
     # defined
-    # To run the example we still need 'require'
-    requireNamespace(rgl)
     tmp = capture.output(example(rgl.setMouseCallbacks))
     tmp = capture.output(pan3d(3))
 
