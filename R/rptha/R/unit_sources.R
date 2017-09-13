@@ -1561,7 +1561,7 @@ plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso',
     # Get the pan3d function -- suppress printing of the example where it is
     # defined
     # To run the example we still need 'require'
-    require(rgl)
+    requireNamespace(rgl)
     tmp = capture.output(example(rgl.setMouseCallbacks))
     tmp = capture.output(pan3d(3))
 
