@@ -21,7 +21,7 @@
 #' stopifnot(all(f(0) == c(0,0)))
 #' stopifnot(all(f(1) == c(0,2)))
 #' stopifnot(all(f(0.5) == c(2,2)))
-#'
+#' @import stats
 #' @export
 make_line_interpolation_fun<-function(coords, distance){
 
@@ -49,7 +49,7 @@ make_line_interpolation_fun<-function(coords, distance){
 #' @return A list of functions (one for each line). See
 #' \code{make_line_interpolation_fun} for information on what they do. The list
 #' is named based on the corresponding contour depth
-#' 
+#' @import geosphere
 #' @export
 make_source_contours_interpolation_function_list<-function(
     source_contours,
@@ -296,6 +296,7 @@ get_quality_matrix<-function(s_matrix, source_contours_interpolator_list){
 #' @import geosphere
 #' @import graphics
 #' @import sp
+#' @import minpack.lm
 #' @export
 create_downdip_lines_on_source_contours_improved<-function(
     source_contours,
@@ -451,6 +452,7 @@ create_downdip_lines_on_source_contours_improved<-function(
 #' 
 #' @param new_xy output from \code{create_downdip_lines_on_source_contours_improved}
 #' @return a SpatialLinesDataFrame with the downdip lines
+#' @import sp
 #' @export
 downdip_lines_to_SpatialLinesDataFrame<-function(new_xy){
 
@@ -489,7 +491,8 @@ downdip_lines_to_SpatialLinesDataFrame<-function(new_xy){
 #' @param make_plot Logical. Make a plot of the source contours and downdip lines
 #' @return A list of matrices giving the x,y,depth locations of the mid_line_with_cutpoints,
 #' ordered along strike.
-#' 
+#' @import geosphere
+#' @import sp
 #' @export
 #'
 mid_line_with_cutpoints_from_downdip_sldf_and_source_contours<-function(
@@ -562,7 +565,7 @@ mid_line_with_cutpoints_from_downdip_sldf_and_source_contours<-function(
 #' orthogonality there. Can reduce numerical artefacts at the trench
 #' @param make_plot logical (TRUE/FALSE) Plot the result
 #' @return a list with the 3d lines
-#'
+#' @import geosphere
 #' @export
 #'
 create_downdip_lines_on_source_contours<-function(

@@ -119,6 +119,7 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' number-of-sources-along-strike; fine_downdip_transects A 3 dimensional array
 #' containing densly spaced points along the down-dip transects, which might be
 #' useful for defining sub-unit-source points for tsunami source integration
+#' @import rgdal
 #'
 #' @export
 #'
@@ -789,7 +790,10 @@ get_discretized_source_outline<-function(discretized_source){
 #' the actual dx, dy of the grid points (not exactly the same as the approximate
 #' values); 'grid_points' grid points inside the source in the cartesian
 #' coordinate system; 'grid_point_polygons' a polygon associated with the grid points
-#'
+#' @import graphics
+#' @import methods
+#' @import geosphere
+#' @import FNN
 #' @export
 unit_source_interior_points_cartesian<-function(
     discretized_source,
@@ -1049,6 +1053,7 @@ unit_source_interior_points_cartesian<-function(
 #' @return A list containing grid points in the polygon and other useful information.
 #' @import sp
 #' @import rgeos
+#' @import methods
 #' @export
 compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     rotation_origin = NULL, rotation_x_axis_vector = NULL,
@@ -1458,7 +1463,7 @@ get_depth_dip_at_unit_source_interior_points<-function(
 #' @param us List with unit source interior points information: Output of
 #' 'unit_source_interior_points_cartesian' or similar. 
 #' @return nothing but make a plot
-#'
+#' @import graphics
 #' @export
 plot_unit_source_interior_points_cartesian<-function(us){
 
@@ -1520,7 +1525,7 @@ plot_unit_source_interior_points_cartesian<-function(us){
 #' @param add_zero_plane Draw a plane at depth = 0
 #' @param ... further arguments to plot3d (or points3d if add=TRUE)
 #' @return Nothing, but make a plot
-#' 
+#' @import utils
 #' @export
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){

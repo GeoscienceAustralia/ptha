@@ -624,8 +624,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                     # Sum log-likelihood for numerical stability
                     sum(dexp(dts, rate=ri, log=TRUE)) + 
                     # Integral over upper tails for first/last data points
-                    pexp(dts1_lower_bound, rate=ri, lower.tail=FALSE, log=TRUE) +
-                    pexp(dts_last_lower_bound, rate=ri, lower.tail=FALSE, log=TRUE)
+                    pexp(dts1_lower_bound, rate=ri, lower.tail=FALSE, log.p=TRUE) +
+                    pexp(dts_last_lower_bound, rate=ri, lower.tail=FALSE, log.p=TRUE)
             }
 
         }

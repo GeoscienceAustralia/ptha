@@ -7,6 +7,7 @@
 #' entry from \code{discretized_source_from_source_contours}.
 #' @return SpatialPolygonsDataFrame, with attributes giving the down-dip
 #' and along-strike indices of each polygon.
+#' @import sp
 #' @export
 #'
 unit_source_grid_to_SpatialPolygonsDataFrame<-function(unit_source_grid){
@@ -72,6 +73,7 @@ unit_source_grid_to_SpatialPolygonsDataFrame<-function(unit_source_grid){
 #' outside the polygons. xy_perturbation_m can be a matrix of the same shape as xy,
 #' in which case it is added to xy before depth computation. This turns out to be convenient
 #' for computing dip.
+#' @import sp
 #' @export
 #'
 make_contour_interpolator<-function(mid_line_with_cutpoints, 
@@ -214,7 +216,8 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
 #' @param edge2 matrix of x,y,z coordinates. 
 #' @return xyz coordinates interpolated at xy. Note that x,y should be the same
 #' as the input x,y (we return them anyway for debugging/testing purposes)
-#' 
+#' @import stats
+#' @import minpack.lm
 edge_source_interpolator<-function(xy, edge1, edge2){
     #interpolating_quad){
 

@@ -474,7 +474,8 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
 #' @param all_tsunami_rast list of rasters corresponding to all_tsunami
 #' @param discrete_source discrete source information for sourcename
 #' @return Nothing, but make a plot
-#'
+#' @import graphics
+#' @import methods
 #' @export
 plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami, 
     all_tsunami_rast, discrete_source){

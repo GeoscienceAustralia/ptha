@@ -15,7 +15,7 @@
 #' @param add_session_info_attribute if true, add a global attribute containing information from sessionInfo()
 #' @param force_v4 logical Do we create a netcdf4 file (TRUE) or not (FALSE, default)
 #' @return nothing, but save the file
-#'
+#' @import ncdf4
 #' @export
 #'
 #' @examples
@@ -142,6 +142,7 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
 #'
 #' @param filename netcdf file
 #' @return data.frame with the data
+#' @import ncdf4
 #' @export
 #'
 read_table_from_netcdf<-function(filename){
