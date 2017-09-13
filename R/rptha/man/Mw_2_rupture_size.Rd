@@ -18,7 +18,7 @@ no effort to correct that]; 'AllenHayes' uses the interface relations of
 Allen and Hayes (2017, Table 2), with sigma for prediction based on the sigma value
 for the log10(L / or W / or A) of the orthogonal regression. Note this case 
 has Area and Width being multi-segment linear, and we slightly modify the mw thresholds
-in the paper to exactly agree with the line intersections; 'AllenHayes-inslab' gives the 
+in the paper to exactly agree with the line segment intersections; 'AllenHayes-inslab' gives the 
 inslab relations of Allen and Hayes (2017, Table 5)}
 
 \item{detailed}{logical. If False return a vector with area/width/length,

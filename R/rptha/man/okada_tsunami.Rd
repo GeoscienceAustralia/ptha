@@ -3,7 +3,7 @@
 \name{okada_tsunami}
 \alias{okada_tsunami}
 \title{Compute ground surface displacements in linear elastic half-space from known
-subfault ruptures, using Okada's (1985) solution for rectangular subfaults}
+subfault ruptures, using Okada's (1985) solution for rectangular subfaults.}
 \usage{
 okada_tsunami(elon, elat, edep, strk, dip, lnth, wdt, disl1, disl2, rlon, rlat,
   dstmx = 9e+20, dstmx_min = 20, verbose = FALSE)
@@ -45,7 +45,8 @@ east,north, and vertical directions. Often we are only interested in the
 latter.
 }
 \description{
-Complex ruptures can be treated using multiple sub-faults
+Complex ruptures can be treated using multiple sub-faults. We assume lambda = mu
+(so Poisson's ratio = 0.25).
 }
 \examples{
 # Simple example -- pure thrust fault

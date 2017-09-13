@@ -1,8 +1,9 @@
 #'
 #' Compute ground surface displacements in linear elastic half-space from known
-#' subfault ruptures, using Okada's (1985) solution for rectangular subfaults
+#' subfault ruptures, using Okada's (1985) solution for rectangular subfaults.
 #' 
-#' Complex ruptures can be treated using multiple sub-faults
+#' Complex ruptures can be treated using multiple sub-faults. We assume lambda = mu
+#' (so Poisson's ratio = 0.25).
 #'
 #' @param elon -- numeric vector with x rupture centroid location (m)
 #' @param elat -- numeric vector with y of rupture centroid location (m)
