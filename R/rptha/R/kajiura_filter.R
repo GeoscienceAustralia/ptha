@@ -491,7 +491,8 @@ kajiura_smooth_raster<-function(
 
     xyz_spherical[kajiura_inds,3] = smoothed_perturbation[,3]
 
-    smoothed_raster = rptha:::.local_rasterFromXYZ(xyz_spherical,
+    #smoothed_raster = .local_rasterFromXYZ(xyz_spherical,
+    smoothed_raster = rasterFromXYZ(xyz_spherical,
         res=res(source_raster), crs=CRS(proj4string(source_raster)))
 
     return(smoothed_raster)
