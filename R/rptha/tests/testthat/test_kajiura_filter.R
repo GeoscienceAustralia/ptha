@@ -209,8 +209,10 @@ test_that('test_kajiura_filter_3', {
     # are 'the same'
     #
 
-    elevation_rast = rasterFromXYZ(cbind(xyDef[,1:2], -depths))
-    deformation_rast = rasterFromXYZ(xyDef)
+    elevation_rast = .local_rasterFromXYZ(cbind(xyDef[,1:2], -depths))
+    #elevation_rast = rasterFromXYZ(cbind(xyDef[,1:2], -depths))
+    deformation_rast = .local_rasterFromXYZ(xyDef)
+    #deformation_rast = rasterFromXYZ(xyDef)
 
     deformation_kj = kajiura_smooth_raster(
         deformation_rast,

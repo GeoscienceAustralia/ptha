@@ -194,42 +194,42 @@ make_tsunami_unit_source<-function(
 
 # I introduced this to work-around an old bug in library(raster),
 # but that was reported and fixed some time ago. Con
-#.local_rasterFromXYZ<-function(xyz, crs = NA, res=c(NA,NA), ...){
-#
-#    xs = sort(unique(xyz[,1]))
-#    ys = sort(unique(xyz[,2]))
-#
-#    dxs = mean(diff(xs))
-#    dys = mean(diff(ys))
-#
-#    # If res is provided, use it
-#    if(!is.na(res[1])){
-#        stopifnot(abs(dxs - res[1])/res[1] < 1.0e-05)
-#        dxs = res[1]
-#    }
-#    if(!is.na(res[2])){
-#        stopifnot(abs(dys - res[2])/res[2] < 1.0e-05)
-#        dys = res[2]
-#    }
-#
-#    # Check that x and y are evenly spaced
-#    sd_x = sd(diff(xs))
-#    sd_y = sd(diff(ys))
-#    stopifnot(sd_x/dxs < 1.0e-05)
-#    stopifnot(sd_y/dys < 1.0e-05)
-#
-#    # Find raster extents
-#    xmn = xs[1] - dxs*0.5
-#    xmx = xs[length(xs)] + dxs*0.5
-#    ymn = ys[1] - dys*0.5
-#    ymx = ys[length(ys)] + dys*0.5
-#
-#    output = raster(xmn=xmn, xmx=xmx, ymn=ymn, ymx=ymx, crs=crs, res=c(dxs, dys))
-#    cells = cellFromXY(output, xyz[,1:2])
-#
-#    output[cells] = xyz[,3]
-#    return(output)
-#}
+.local_rasterFromXYZ<-function(xyz, crs = NA, res=c(NA,NA), ...){
+
+    xs = sort(unique(xyz[,1]))
+    ys = sort(unique(xyz[,2]))
+
+    dxs = mean(diff(xs))
+    dys = mean(diff(ys))
+
+    # If res is provided, use it
+    if(!is.na(res[1])){
+        stopifnot(abs(dxs - res[1])/res[1] < 1.0e-05)
+        dxs = res[1]
+    }
+    if(!is.na(res[2])){
+        stopifnot(abs(dys - res[2])/res[2] < 1.0e-05)
+        dys = res[2]
+    }
+
+    # Check that x and y are evenly spaced
+    sd_x = sd(diff(xs))
+    sd_y = sd(diff(ys))
+    stopifnot(sd_x/dxs < 1.0e-05)
+    stopifnot(sd_y/dys < 1.0e-05)
+
+    # Find raster extents
+    xmn = xs[1] - dxs*0.5
+    xmx = xs[length(xs)] + dxs*0.5
+    ymn = ys[1] - dys*0.5
+    ymx = ys[length(ys)] + dys*0.5
+
+    output = raster(xmn=xmn, xmx=xmx, ymn=ymn, ymx=ymx, crs=crs, res=c(dxs, dys))
+    cells = cellFromXY(output, xyz[,1:2])
+
+    output[cells] = xyz[,3]
+    return(output)
+}
 
 
 #' Convert the tsunami unit source to a z-displacement raster
@@ -269,7 +269,8 @@ tsunami_unit_source_2_raster<-function(tsunami_unit_source, filename=NULL,
 
     # Currently use local version of rasterFromXYZ to deal with some bugs in it
     # (which have been reported)
-    outrast = rasterFromXYZ(xyz, crs=CRS('+init=epsg:4326'), res=res)
+    outrast = .local_rasterFromXYZ(xyz, crs=CRS('+init=epsg:4326'), res=res)
+    #outrast = rasterFromXYZ(xyz, crs=CRS('+init=epsg:4326'), res=res)
 
     # Free up memory
     rm(xyz); gc()
