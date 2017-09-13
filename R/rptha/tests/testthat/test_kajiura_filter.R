@@ -209,8 +209,8 @@ test_that('test_kajiura_filter_3', {
     # are 'the same'
     #
 
-    elevation_rast = rptha:::.local_rasterFromXYZ(cbind(xyDef[,1:2], -depths))
-    deformation_rast = rptha:::.local_rasterFromXYZ(xyDef)
+    elevation_rast = rasterFromXYZ(cbind(xyDef[,1:2], -depths))
+    deformation_rast = rasterFromXYZ(xyDef)
 
     deformation_kj = kajiura_smooth_raster(
         deformation_rast,
