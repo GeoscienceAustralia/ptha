@@ -476,6 +476,7 @@ unit_source_cartesian_to_okada_tsunami_source<-function(us, rake,
 #' @return Nothing, but make a plot
 #' @import graphics
 #' @import methods
+#' @import grDevices
 #' @export
 plot_all_tsunami_unit_sources<-function(sourcename, all_tsunami, 
     all_tsunami_rast, discrete_source){

@@ -220,7 +220,7 @@ sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_paramet
         new_reg_par[1:2] = reg_par[1:2] / sub_sample_size
 
         if(class(tg_mat) == 'RasterLayer'){
-            new_tg_mat = raster(new_tg_max, xmn = extent(tg_mat)@xmin, 
+            new_tg_mat = raster(new_tg_mat, xmn = extent(tg_mat)@xmin, 
                 xmx = extent(tg_mat)@xmax, ymn = extent(tg_mat)@ymin,
                 ymx = extent(tg_mat)@ymax)
         }

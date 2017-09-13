@@ -64,7 +64,7 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
                 var_prec[i] = 'char'
             }else{
                 stop(paste0('Cannot automatically detect var_prec for column ', 
-                    i,' based on first entry ', datafame[i,1]))
+                    i,' based on first entry ', dataframe[i,1]))
             }
         }
     }

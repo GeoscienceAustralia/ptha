@@ -1464,6 +1464,7 @@ get_depth_dip_at_unit_source_interior_points<-function(
 #' 'unit_source_interior_points_cartesian' or similar. 
 #' @return nothing but make a plot
 #' @import graphics
+#' @import grDevices
 #' @export
 plot_unit_source_interior_points_cartesian<-function(us){
 

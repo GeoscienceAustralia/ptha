@@ -38,5 +38,4 @@ f = make_line_interpolation_fun(cbind(x,y), distance)
 stopifnot(all(f(0) == c(0,0)))
 stopifnot(all(f(1) == c(0,2)))
 stopifnot(all(f(0.5) == c(2,2)))
-
 }
