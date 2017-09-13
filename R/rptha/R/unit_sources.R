@@ -1047,7 +1047,8 @@ unit_source_interior_points_cartesian<-function(
 #' array as a unit_source_grid. This is needed if edge_taper_width>0, since we
 #' need to find sub-grid points inside neighbouring polygons. 
 #' @return A list containing grid points in the polygon and other useful information.
-#'
+#' @import sp
+#' @import rgeos
 #' @export
 compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     rotation_origin = NULL, rotation_x_axis_vector = NULL,

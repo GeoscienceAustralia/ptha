@@ -293,6 +293,9 @@ get_quality_matrix<-function(s_matrix, source_contours_interpolator_list){
 #' This will generally lead to low-quality lines, but can be useful for debugging purposes.
 #' @param make_plot logical. Plot the contours + downdip lines
 #' @return a list with the 3d lines
+#' @import geosphere
+#' @import graphics
+#' @import sp
 #' @export
 create_downdip_lines_on_source_contours_improved<-function(
     source_contours,

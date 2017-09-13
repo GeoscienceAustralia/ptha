@@ -192,8 +192,10 @@ make_tsunami_unit_source<-function(
     return(tsunami_unit_source)
 }
 
-# I introduced this to work-around an old bug in library(raster),
-# but that was reported and fixed some time ago. Con
+#' I introduced this to work-around an old bug in library(raster),
+#' but that was reported and fixed some time ago. 
+#' @import stats
+#' @import raster
 .local_rasterFromXYZ<-function(xyz, crs = NA, res=c(NA,NA), ...){
 
     xs = sort(unique(xyz[,1]))
