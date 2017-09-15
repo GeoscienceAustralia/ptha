@@ -47,7 +47,10 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' for the log10(L / or W / or A) of the orthogonal regression. Note this case 
 #' has Area and Width being multi-segment linear, and we slightly modify the mw thresholds
 #' in the paper to exactly agree with the line segment intersections; 'AllenHayes-inslab' gives the 
-#' inslab relations of Allen and Hayes (2017, Table 5)
+#' inslab relations of Allen and Hayes (2017, Table 5); 'AllenHayes-outer-rise' gives the outer-rise
+#' relations of Allen and Hayes (2017, Table 5); 'Blaser-normal' gives the normal relations of Blaser
+#' et al (2010). Note these authors didn't give area relations, so herein the area coefficients are
+#' derived assuming area = length x width, and zero correlation of the length and width residuals.
 #' @param detailed logical. If False return a vector with area/width/length,
 #' otherwise provide a list with the latter as well as information on
 #' log10-standard-deviations
@@ -134,6 +137,17 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
         length_absigma = c(-2.87, 0.63, 0.08)
         width_absigma = c(-1.18, 0.35, 0.08)
         area_absigma = c(-3.89, 0.96, 0.11)
+
+    }else if(relation == 'Blaser-normal'){
+
+        length_absigma = c(-1.61, 0.46, 0.17)
+        width_absigma =  c(-1.08, 0.34, 0.16)
+        # Blaser do not provide area, but if Area = length*width then
+        # this follows directly IF WE SUPPOSE ZERO CORRELATION BETWEEN 'length'
+        # and 'width' residuals (which is a good approximation based on their data,
+        # provided as a supplement to the paper).
+        area_absigma = c(length_absigma[1:2] + width_absigma[1:2],
+                        sqrt(length_absigma[3]**2 + width_absigma[3]**2))
 
     }else{
 

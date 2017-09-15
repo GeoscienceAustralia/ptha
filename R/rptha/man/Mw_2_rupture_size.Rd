@@ -19,7 +19,10 @@ Allen and Hayes (2017, Table 2), with sigma for prediction based on the sigma va
 for the log10(L / or W / or A) of the orthogonal regression. Note this case 
 has Area and Width being multi-segment linear, and we slightly modify the mw thresholds
 in the paper to exactly agree with the line segment intersections; 'AllenHayes-inslab' gives the 
-inslab relations of Allen and Hayes (2017, Table 5)}
+inslab relations of Allen and Hayes (2017, Table 5); 'AllenHayes-outer-rise' gives the outer-rise
+relations of Allen and Hayes (2017, Table 5); 'Blaser-normal' gives the normal relations of Blaser
+et al (2010). Note these authors didn't give area relations, so herein the area coefficients are
+derived assuming area = length x width, and zero correlation of the length and width residuals.}
 
 \item{detailed}{logical. If False return a vector with area/width/length,
 otherwise provide a list with the latter as well as information on
