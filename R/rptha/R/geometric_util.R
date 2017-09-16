@@ -627,7 +627,6 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
 #' @param verbose logical. Print progress information
 #' @return SpatialPointsDataFrame along SL, with data identifying the
 #' corresponding line index in SL
-#' @import stats
 #' @import sp
 #' @export
 approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE, 

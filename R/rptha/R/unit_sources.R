@@ -1526,7 +1526,7 @@ plot_unit_source_interior_points_cartesian<-function(us){
 #' @param add_zero_plane Draw a plane at depth = 0
 #' @param ... further arguments to plot3d (or points3d if add=TRUE)
 #' @return Nothing, but make a plot
-#' @import utils
+#' @importFrom utils capture.output
 #' @export
 plot3d_unit_source_interior_points_cartesian<-function(us, aspect='iso', 
     add=FALSE, add_zero_plane=TRUE, ...){

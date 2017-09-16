@@ -431,7 +431,7 @@ kajiura_filter<-function(xyDef,
 #' @param spherical_input TRUE/FALSE. Is input raster in lon/lat coordinates.
 #' If NULL, then use isLonLat to determine this
 #' @return a raster (source raster with kajiura filter applied)
-#'
+#' @import raster
 #' @export
 #'
 kajiura_smooth_raster<-function(

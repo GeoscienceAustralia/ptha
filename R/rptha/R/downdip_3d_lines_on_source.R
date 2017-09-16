@@ -21,7 +21,6 @@
 #' stopifnot(all(f(0) == c(0,0)))
 #' stopifnot(all(f(1) == c(0,2)))
 #' stopifnot(all(f(0.5) == c(2,2)))
-#' @import stats
 #' @export
 make_line_interpolation_fun<-function(coords, distance){
 

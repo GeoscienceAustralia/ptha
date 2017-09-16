@@ -149,6 +149,7 @@ sffm_get_numerical_wavenumbers<-function(tg_mat){
 #' 6431-6451, doi:10.1002/2015JB012272. \cr
 #'
 #' @export
+#' @import raster
 #' @examples
 #'
 #' #

@@ -216,7 +216,6 @@ make_contour_interpolator<-function(mid_line_with_cutpoints,
 #' @param edge2 matrix of x,y,z coordinates. 
 #' @return xyz coordinates interpolated at xy. Note that x,y should be the same
 #' as the input x,y (we return them anyway for debugging/testing purposes)
-#' @import stats
 #' @import minpack.lm
 edge_source_interpolator<-function(xy, edge1, edge2){
     #interpolating_quad){
