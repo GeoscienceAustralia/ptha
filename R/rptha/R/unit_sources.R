@@ -120,6 +120,8 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' containing densly spaced points along the down-dip transects, which might be
 #' useful for defining sub-unit-source points for tsunami source integration
 #' @import rgdal
+#' @importFrom stats approx approxfun dexp dpois fft optim optimize pexp rnorm runif sd splinefun
+#' @importFrom utils example sessionInfo
 #'
 #' @export
 #'
