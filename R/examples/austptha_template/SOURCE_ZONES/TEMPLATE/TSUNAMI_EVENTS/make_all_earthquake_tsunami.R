@@ -735,7 +735,7 @@ write_all_source_zone_tsunami_statistics_to_netcdf<-function(
     ncvar_put(output_nc_file, 'us_alongstrike_number', unit_source_statistics$alongstrike_number); gc()
     ncvar_put(output_nc_file, 'us_subfault_number', unit_source_statistics$subfault_number); gc()
     ncvar_put(output_nc_file, 'us_max_depth', unit_source_statistics$max_depth); gc()
-    ncvar_put(output_nc_file, 'us_initial_condition_file', unit_source_statistics$initial_condition); gc()
+    ncvar_put(output_nc_file, 'us_initial_condition_file', unit_source_statistics$initial_condition_file); gc()
     ncvar_put(output_nc_file, 'us_tide_gauge_file', unit_source_statistics$tide_gauge_file); gc()
 
     # Finish and flush to disk
