@@ -38,6 +38,7 @@ ryuku,,50,50,90,Strasser,,,1,1,,,0.34,0.44,0.8,,,,0.7,0.95,1.2,,,,8.5,Berryman e
 hjort,,50,45,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Berryman et al. (2015) coupling and Mw_max_min. Slightly reduce the width to avoid having only 1 layer of unit-sources
 makran,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
 macquarienorth,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,"Considering only thrust events, the largest event was about Mw 7.0 (1977-07)"
-outerrisesunda,,50,50,-90,Blaser-normal,,,1,0,0.5,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,"Largest Mw is the 1977 Mw 8.3 event. Slip rate based on the assumption that the moment rate is ~ 0.5% of that for the sunda Arc [J.G., based on Sleep (2012)]"
+outerrisesunda,,50,50,-90,Blaser-normal,,,1,0,0.5,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Largest Mw is the 1977 Mw 8.3 event. Slip rate based on the assumption that the moment rate is ~ 0.5% of that for the sunda Arc [J.G. based on Sleep (2012)]
 timor,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.5,Berryman et al. (2015) coupling and Mw_max_min
-arutrough,,50,50,-90,Blaser-normal,,,1,0,22,0.9,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,Default coupling; Mw_max_min from ISC-GEM catalogue; Slip and convergent fraction based on traces provided by J.G. 
+arutrough,,50,50,-90,Blaser-normal,,,1,0,22,0.9,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,Default coupling. Slip rate from JG.  Mw_max_min from ISC-GEM catalogue.  Slip and convergent fraction nominal values based on traces provided by J.G.
+flores,,50,50,90,Strasser,,,1,0,20,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.9,"Mw_max_min from inversion reported in Griffin et al (2015), Evaluation of onshore digital elevation models for …; Slip nominal value based on J.G. traces but note substantial spatial variability"
