@@ -47,7 +47,7 @@ banda_detachment,,50,50,-90,Blaser-normal,,,1,0,60,1,0.0001,0.1,0.7,,,,0.7,0.95,
 se_sulawesi,,50,50,90,Strasser,,,1,0,10,1,0.0001,0.1,0.7,,,,0.7,0.95,1.2,,,,7.2,Slip-rate based on J.G. traces 
 tolo_thrust,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Default coupling etc. 
 tanimbar,,50,50,-90,Blaser-normal,,,1,0,2,1,0.0001,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Default coupling etc. Slip from JG traces
-southseram,,50,50,90,Strasser,,,1,0,0.1,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Default coupling etc. Slip from JG traces
+seramsouth,,50,50,90,Strasser,,,1,0,0.1,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Default coupling etc. Slip from JG traces
 north_sulawesi,,50,50,90,Strasser,,,1,0,40,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.9,Default coupling etc. Slip from JG traces. Mw_max_min from Berryman et al.
 outer_rise_timor,,50,50,-90,Blaser-normal,,,1,0,0.16,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Default coupling etc. Slip from JG traces
 sangihe,,50,50,90,Strasser,,,1,0,48,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
