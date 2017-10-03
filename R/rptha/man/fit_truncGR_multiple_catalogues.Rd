@@ -50,11 +50,14 @@ event magnitudes follow a truncated GR distribution with known mw_max.
 # and complete for 100 years before that above Mw 9.0 (perhaps with no earthquakes in 
 # any of the cases)
 #
-mw_max = 9.5 # Could be Inf to fit pure Gutenberg Richter
+mw_max = Inf # Could be finite, or use Inf to fit pure Gutenberg Richter
 mw_mins = c(9.0, 7.5, 6.0) # Compleness magnitudes
 durations = c(100, 160, 40) # Observation times
-true_rate_above_min_mwmin = 0.5 # We will estimate this value from simulated data
-true_b = 0.8 # We will estimate this value from simulated data
+
+# We will estimate the following 'true' values from simulated data to
+# evaluate the statistical method
+true_rate_above_min_mwmin = 0.5 
+true_b = 0.8 
 
 
 # Repeat the fit 'Nreps' times on different simulated data, to get an idea of 
@@ -65,6 +68,16 @@ store_b = rep(NA, Nreps)
 store_rate = rep(NA, Nreps)
 store_b_sd = rep(NA, Nreps)
 store_rate_sd = rep(NA, Nreps)
+
+# Use these to store a fit to 'only' the most recent catalogue, for comparison
+store_b_r = rep(NA, Nreps)
+store_rate_r = rep(NA, Nreps)
+store_b_sd_r = rep(NA, Nreps)
+store_rate_sd_r = rep(NA, Nreps)
+
+# Use this to store the analytical Kijko & Smit estimator (2012)
+store_ks_b = rep(NA, Nreps)
+
 
 for(jj in 1:Nreps){
 
@@ -102,7 +115,11 @@ for(jj in 1:Nreps){
     # Estimate the 'true_rate_above_min_mwmin' and 'true_b', with starting guesses of
     # 0.5 and 1 respectively
     myfit = fit_truncGR_multiple_catalogues(catalogue_lists=catalogue_lists, 
-        start_par=c(0.5, 1), mw_max=mw_max, hessian=TRUE)
+        start_par=c(0.5, 1), mw_max=mw_max, hessian=TRUE, control=list(reltol=1e-12))
+
+    # Compare with fit to only recent data 
+    basic_fit =  fit_truncGR_multiple_catalogues(catalogue_lists=catalogue_lists[3],
+        start_par=c(0.5, 1), mw_max=mw_max, hessian=TRUE, control=list(reltol=1e-12))
 
 
     # Store the outputs, so we can study the performance of the estimators
@@ -111,6 +128,26 @@ for(jj in 1:Nreps){
     sds = sqrt(diag(solve(myfit$hessian)))
     store_b_sd[jj] = sds[2]
     store_rate_sd[jj] = sds[1]
+
+
+    # Store the basic-fit outputs, for comparison
+    store_b_r[jj] = basic_fit$par[2]
+    store_rate_r[jj] = basic_fit$par[1]
+    sds = sqrt(diag(solve(basic_fit$hessian)))
+    store_b_sd_r[jj] = sds[2]
+    store_rate_sd_r[jj] = sds[1]
+
+    # Compare with 'b' estimator from Kijko and Smit (2012)
+    # Note this requires mw_max = Infinity, whereas the other 2 approaches
+    # don't need that.
+    ns = unlist(lapply(catalogue_lists, f<-function(x) length(x$mw)))
+    bs = unlist(lapply(catalogue_lists, f<-function(x) 1/(log(10) * ( mean(x$mw) - x$mw_min)) ))
+    # If a catalogue has no data, remove it
+    not_missing = unlist(lapply(catalogue_lists, f<-function(x) !all(is.na(x$mw))))
+    bs = bs[which(not_missing)]
+    ns = ns[which(not_missing)]
+    store_ks_b[jj] = 1/( sum(ns/sum(ns) * 1/bs))
+
 }
 #
 # Report on results of all Nreps fits
@@ -126,7 +163,15 @@ print(mean(abs(store_b - true_b) < 2*store_b_sd))
 print(mean(abs(store_rate - true_rate_above_min_mwmin) < 2*store_rate_sd))
 # The mean fitted value should generally be close to the true value -- the
 # bounds here should very very rarely fail
-stopifnot(abs(mean(store_b) - true_b) < 0.05)
+stopifnot(abs(mean(store_b) - true_b) < 0.07)
 stopifnot(abs(mean(store_rate) - true_rate_above_min_mwmin) < 0.05)
+
+# Compare variance of fit using the current multi-catalogue method, the method
+# of Kijko and Smit (2012), and the approach of only fitting the 'best'
+# catalogue. 
+print(summary(store_b - true_b)) # Current approach -- lowest variance
+print(summary(store_ks_b - true_b)) # Kijko-Smit 2012 neat analytical formula
+print(summary(store_b_r - true_b)) # Pure Aki applied to the best catalogue
+
 
 }
