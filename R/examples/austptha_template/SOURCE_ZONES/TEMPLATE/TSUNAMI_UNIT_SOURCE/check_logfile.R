@@ -70,8 +70,9 @@ all_logs = Sys.glob(
 
 # Try ordering them along-strike/down-dip
 us_name = basename(dirname(dirname(all_logs)))
-dip_ind = sapply(us_name, f<-function(x) strsplit(x, '_')[[1]][[4]])
-strike_ind = sapply(us_name, f<-function(x) strsplit(x, '_')[[1]][[5]])
+n = length(strsplit(us_name[1], '_')[[1]])
+dip_ind = sapply(us_name, f<-function(x) strsplit(x, '_')[[1]][[n-1]])
+strike_ind = sapply(us_name, f<-function(x) strsplit(x, '_')[[1]][[n]])
 dip_strike = cbind(as.numeric(dip_ind), as.numeric(strike_ind))
 o1 = order(dip_strike[,2], dip_strike[,1])
 all_logs = all_logs[o1] # Now in correct order
