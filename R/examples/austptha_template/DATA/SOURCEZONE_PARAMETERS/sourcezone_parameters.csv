@@ -52,11 +52,13 @@ north_sulawesi,,50,50,90,Strasser,,,1,0,40,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.9,
 outer_rise_timor,,50,50,-90,Blaser-normal,,,1,0,0.16,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Default coupling etc. Slip from JG traces
 sangihe,,50,50,90,Strasser,,,1,0,48,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
 sangihe_backthrust,,50,50,90,Strasser,,,1,0,25,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
-mankowari,,50,50,90,Strasser,,,1,0,20,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,Convergent rate mixture of Bird (~ 22mm/year) and Jono’s estimate (~15mm/year). Mw_max from GCMT and ISC-GEM
+manokwari,,50,50,90,Strasser,,,1,0,20,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,Convergent rate mixture of Bird (~ 22mm/year) and Jono’s estimate (~15mm/year). Mw_max from GCMT and ISC-GEM
 newguinea,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.2,Mw_max from Berryman et al. 
-massau,,50,50,90,Strasser,,,1,0,12,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Convergence from Jono
+mussau,,50,50,90,Strasser,,,1,0,12,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Convergence from Jono
 moresby_trough,,50,50,90,Strasser,,,1,0,3.5,1,0,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Convergence averaged from Jono’s inputs
 trobriand,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Default values. 
 outerrisesolomon,,50,50,-90,Blaser-normal,,,1,0,0.7,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,Default values. Convergence from Jono’s inputs.
 outerrisenewhebrides,,50,50,-90,Blaser-normal,,,1,0,0.7,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,"Default values, except there was an Mw 7.7 outer rise in the south in 1995. Convergence with Jono’s inputs"
-outerise_kermadectonga,,50,50,-90,Blaser-normal,,,1,0,1,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,"Default values, convergence based on mean value provided by Jono. We use the GCMT Mw 8.1 outer-rise in 2009 in the North for minimum mw_max. Subsequent inversions suggest that event was a mixture of outer-rise and subduction thrust, but anyway we keep the Mw 8.1 here. "
+outerrise_kermadectonga,,50,50,-90,Blaser-normal,,,1,0,1,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,"Default values, convergence based on mean value provided by Jono. We use the GCMT Mw 8.1 outer-rise in 2009 in the North for minimum mw_max. Subsequent inversions suggest that event was a mixture of outer-rise and subduction thrust, but anyway we keep the Mw 8.1 here. "
+manus,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.5,Berryman et al Mw_max. 
+philippine,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,"Berryman et al Mw_max is lower than values in GCMT and ISC-GEM, so we rely on the latter. "
