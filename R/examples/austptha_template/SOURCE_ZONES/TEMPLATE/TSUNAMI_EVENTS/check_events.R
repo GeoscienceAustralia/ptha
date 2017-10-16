@@ -346,7 +346,7 @@ run_checks<-function(fid_local, slip_type){
         # Mean slip
         plot(mws, event_mean_slip_nonzero, log='y', 
             main='Event mean_slip on non-zero slip patches', 
-            xlab='Mw', ylab='km')
+            xlab='Mw', ylab='m')
         points(unique_mws, slip_from_Mw_unique_mws, t='l', col='red', 
             lty='dashed')
         points(unique_mws, slip_from_Mw_unique_mws*3, t='l', col='red', 
@@ -357,7 +357,7 @@ run_checks<-function(fid_local, slip_type){
         # Mean slip
         plot(mws, event_mean_slip_all, log='y', 
             main='Event mean_slip including zero-slip patches', 
-            xlab='Mw', ylab='km')
+            xlab='Mw', ylab='m')
         points(unique_mws, slip_from_Mw_unique_mws, t='l', col='red', 
             lty='dashed')
         points(unique_mws, slip_from_Mw_unique_mws*3, t='l', col='red', 
@@ -368,7 +368,7 @@ run_checks<-function(fid_local, slip_type){
 
         # Peak slip
         plot(mws, event_max_slip, log='y', main='Event max_slip', 
-            xlab='Mw', ylab='km')
+            xlab='Mw', ylab='m')
         points(unique_mws, slip_from_Mw_unique_mws, t='l', col='red', 
             lty='dashed')
         points(unique_mws, slip_from_Mw_unique_mws*3, t='l', col='red', 
