@@ -62,4 +62,4 @@ outerrisenewhebrides,,50,50,-90,Blaser-normal,,,1,0,0.7,1,0.3,0.5,0.7,,,,0.7,0.9
 outerrise_kermadectonga,,50,50,-90,Blaser-normal,,,1,0,1,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,"Default values, convergence based on mean value provided by Jono. We use the GCMT Mw 8.1 outer-rise in 2009 in the North for minimum mw_max. Subsequent inversions suggest that event was a mixture of outer-rise and subduction thrust, but anyway we keep the Mw 8.1 here. "
 manus,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.5,Berryman et al Mw_max. 
 philippine,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,"Berryman et al Mw_max is lower than values in GCMT and ISC-GEM, so we rely on the latter. "
-outerrise_puysegur,,50,50,-90,Blaser-normal,,,1,0,0.2,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,"Default values, convergence based on Jono’s values"
+outerrise_puysegur,,50,50,-90,Blaser-normal,,,1,0,0.2,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,"Default values, convergence based on Jono’s values"
