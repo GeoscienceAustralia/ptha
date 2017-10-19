@@ -1,5 +1,9 @@
 #
-# Find the 'Bird' convergence rates along our unit-source top edges
+# Find the subduction zone convergence rates along our unit-source top edges
+#
+# Note I often refer to the underlying data as 'Bird2003' or similar. However,
+# nowadays we are actually using a dataset based on a combination of Bird's
+# plate model and Jonathan Griffin's work.
 #
 suppressPackageStartupMessages(library(rptha))
 
@@ -8,9 +12,9 @@ config = new.env()
 source('config.R', local=config)
 
 #'
-#' Map Bird (2003) convergence data onto our unit-sources
+#' Map subduction zone convergence data onto our unit-sources
 #
-#' # Read Bird's data and setup key information required to make conditional
+#' # Read data and setup key information required to make conditional
 #' # probability functions
 #' make_conditional_probability_function = event_conditional_probability_bird2003_factory()
 #' 
@@ -26,19 +30,22 @@ source('config.R', local=config)
 event_conditional_probability_bird2003_factory<-function(return_environment=FALSE){
 
     #
-    # Parse bird's data (which is zipped for compression)
-    # 
-
+    # Parse the subduction convergence rate data
+    # This merges the 'Bird-2002' model (published 2003) and Jonathan Griffin's work.
+    #
     bird_data = config$bird2003_steps_data_zip_file 
-    bd = read.table(
+    bd = read.csv(
             unz(description=bird_data, 
-                filename=basename(gsub('\\.zip', '', bird_data))) 
+                filename=basename(gsub('\\.zip', '', bird_data))),
+            stringsAsFactors=FALSE
         )
+    names(bd) = c('lon1', 'lat1', 'lon2', 'lat2', 'vel_rl', 'vel_div', 'name', 
+        'class', 'vel_L2R', 'azi', 'collator')
 
     # See table 2 of the bird paper for definitions of the data columns
-    names(bd) = c('id', 'plateboundary', 'lon1', 'lat1', 'lon2', 'lat2', 
-        'length', 'azi', 'vel_L2R', 'vel_azi', 'vel_div', 'vel_rl', 
-        'elev', 'age', 'class')
+    #names(bd) = c('id', 'plateboundary', 'lon1', 'lat1', 'lon2', 'lat2', 
+    #    'length', 'azi', 'vel_L2R', 'vel_azi', 'vel_div', 'vel_rl', 
+    #    'elev', 'age', 'class')
     bird_centroid = midPoint(
         as.matrix(bd[,c('lon1', 'lat1')]), 
         as.matrix(bd[,c('lon2', 'lat2')]), 
@@ -84,13 +91,26 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
     #
     # Find Bird centroid nearest to top_edges
     #
-    nearest_bird_point<-function(p){
+    # Need to have a separate treatment for 'normal' and 'other' source-zones,
+    # because the 'outer-rise' convergence traces are close to the subduction ones.
+    nearest_bird_point<-function(p, normal_faulting=FALSE){
         p_mat = bird_centroid*0
         p_mat[,1] = as.numeric(p[1])
         p_mat[,2] = as.numeric(p[2])
 
         # Bypass warnings about longitudes > 180 [which does not cause problems]
         suppressWarnings({ distances =  distHaversine(p_mat, bird_centroid) })
+
+        # Make sure that normal faults only select from sites with class==Normal
+        normal_events = which(bird_data$class == 'Normal')
+        if(normal_faulting){
+            # Artificially increase the distance to 'non-normal' events
+            distances[-normal_events] = distances[-normal_events] + 1e+12
+        }else{
+            # Artificially increase the distance to 'normal' events
+            distances[normal_events] = distances[normal_events] + 1e+12
+        }
+
         k = which.min(distances)
         output = c(k, distances[k])
         return(output)
@@ -107,6 +127,9 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
         di = ti[,1]*0 # Store distances to nearest bird point
         ki = ti[,1]*0 # Store index of nearest bird point
 
+        ti_rake = ti$rake[1] # must be constant on each source-zone, and eq -90 or 90
+        stopifnot(all( (ti$rake == ti_rake) & (ti_rake %in% c(-90, 90)) ))
+
         lines_list = vector(mode='list', length=length(di))
         for(j in 1:nrow(ti)){
 
@@ -115,8 +138,11 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
             deg2rad = pi/180
             half_width_surface = as.numeric(ti$width[j])/2 * 1000 * cos(deg2rad*ti$dip[j])
             top_point_top_edge_approx = destPoint(top_point, ti$strike[j]-90, half_width_surface)
+            
+            is_normal_faulting = (ti_rake == -90)
 
-            output = nearest_bird_point(top_point_top_edge_approx)
+            # Get nearest convergence data point
+            output = nearest_bird_point(top_point_top_edge_approx, normal_faulting=is_normal_faulting)
             di[j] = output[2]
             ki[j] = output[1]
 
@@ -207,22 +233,29 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
                 ui = get_unit_source_indices_in_event(events_with_Mw[i,])
                 areas = uss$length[ui] * uss$width[ui]
 
-                # Note with bird's data, negative 'vel_div' means convergence
-                # Here we use the convergent component of the slip vector
-                #convergent_slip = pmax(0, -uss$bird_vel_div[ui])
-
                 # Get convergence on each unit source, but zero it on unit-sources outside of the segment
                 # Allow consideration of right-lateral component, limited by the allowed rake deviation
-                div_vec = pmax(0, -uss$bird_vel_div[ui]) * local_is_in_segment[ui]
+                stopifnot(all(uss$rake == uss$rake[1])) # Fixed rake
+                stopifnot(all(uss$rake %in% c(-90, 90))) # Pure normal, or pure thrust
+                if(uss$rake[1] == -90){
+                    # Normal -- in this case, positive vel_div contributes to
+                    # the seismic moment
+                    div_vec = pmax(0, uss$bird_vel_div[ui]) * local_is_in_segment[ui]
+                }else{
+                    # Thrust -- in this case, negative vel_div contributes to
+                    # the seismic moment
+                    div_vec = pmax(0, -uss$bird_vel_div[ui]) * local_is_in_segment[ui]
+                }
+                if(max(div_vec) <= 0) stop('No tectonic moment on this source -- suggests an input bug')
+
                 rl_vec = uss$bird_vel_rl[ui] * local_is_in_segment[ui]
                 deg2rad = pi/180
                 allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
-                # Restrict angle to +- rake_deviation_thrust_events of pure thrust
+                # Restrict angle to +- rake_deviation_thrust_events of pure thrust (or pure normal)
                 rl_vec = sign(rl_vec) * pmin(abs(rl_vec), div_vec * tan(allowed_rake_deviation_radians)) 
                 convergent_slip = sqrt(rl_vec**2 + div_vec**2)
 
                 # Here we use the 'full' slip vector
-                #convergent_slip = pmax(0, sign(-uss$bird_vel_div[ui])) * sqrt(uss$bird_vel_div[ui]**2 + uss$bird_vel_rl[ui]**2)
                 long_term_slip_near_event[i] = sum(areas * convergent_slip)/sum(areas)
             }
 

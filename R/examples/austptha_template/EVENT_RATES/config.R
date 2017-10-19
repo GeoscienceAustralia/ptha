@@ -30,15 +30,18 @@ isc_gem_catalogue_csv = "/media/gareth/Windows7_OS/Users/gareth/Documents/work/A
 #######################################################################################
 
 #
-# Path to a zipped version of the file 'PB2002_steps.dat.txt' from the supplementary
-# material of Peter Bird's 2003 paper:
+# Path to a zipped version of the file derived largely from the
+# 'PB2002_steps.dat.txt' from the supplementary material of Peter Bird's 2003
+# paper:
 #   Bird, P. An updated digital model of plate boundaries. 
 #   Geochemistry Geophysics Geosystems, 2003, 4, 1-52
+# The file is also derived from similar data based on Jonathan Griffin's work for
+# this project (mainly around Indonesia). 
 #
 # This is used to define spatially variable convergence rates, for source-zones where
 # the input parameter file indicates that Bird's model should be used.
 #
-bird2003_steps_data_zip_file = '../DATA/BIRD_PLATE_BOUNDARIES/PB2002_steps.dat.txt.zip'
+bird2003_steps_data_zip_file = '../DATA/BIRD_PLATE_BOUNDARIES/sourcezone_traces_table_merged.csv.zip'
 
 
 #
@@ -59,7 +62,7 @@ sourcezone_parameter_file = '../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters
 # Increment between Mw values in the earthquake_events table. We will check
 # that the table holds the same value
 # FIXME: This value must be identical to the value in
-# ../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/make_all_earthquake_events.R
+# ../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/config.R
 # and correspond to the spacing between alternative Mw values in the earthquake
 # event table. It should not have more than 3 figures after the decimal point.
 dMw = 0.1
@@ -170,7 +173,7 @@ unit_source_statistics_netcdf_files = Sys.glob(
 # Paths to shapefiles containing unit-source grid (one for each source-zone). 
 #
 unit_source_grid_polygon_shapefiles = Sys.glob(
-    # '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
+    # '../SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
     '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/MODELS/AustPTHA/SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
 
 #

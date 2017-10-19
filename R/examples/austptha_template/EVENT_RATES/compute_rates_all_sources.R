@@ -58,6 +58,9 @@ nbins = config$logic_tree_parameter_subsampling_factor # 9
 # END INPUTS
 #
 
+# Currently the code only treats pure normal or pure thrust events
+stopifnot(all(sp$rake[!is.na(sp$rake)] %in% c(-90, 90)))
+
 # Get environment we can use to provide spatially variable convergence
 # information
 source('make_spatially_variable_source_zone_convergence_rates.R')
@@ -81,7 +84,6 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     source_name = sourcezone_parameters_row$sourcename
     sourcepar$name = source_name
 
-   
     # We might be on a specific segment 
     segment_name = sourcezone_parameters_row$segment_name
     source_segment_name = paste0(source_name, segment_name)
@@ -142,18 +144,18 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         ## Largest observed plus a small value,
         min_mw_max,
         # Middle Mw
-        0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=-1) + 
+        0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=-1) + 
             min_mw_max),
         # Another middle Mw
-        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, CI_sd=0),
+        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, relation = sourcepar$scaling_relation, CI_sd=0),
         # Another middle Mw
-        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0),
+        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=0),
         # Upper mw [Strasser + 1SD]
-        Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=-1 ) )
+        Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=-1) )
     #
     # Simple test -- all weight on full source rupture area 
-    #sourcepar$Mw_max = c(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0),
-    #    Mw_2_rupture_size_inverse(sourcepar$area_in_segment, CI_sd=0)+0.01)
+    #sourcepar$Mw_max = c(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=0),
+    #    Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=0)+0.01)
     #
 
     # Ensure ordered
@@ -176,27 +178,39 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     #
 
     if(sourcezone_parameters_row$use_bird_convergence == 1){
-
         #
         # Idea: If plate convergence vector is between
-        # "+-config$rake_deviation_thrust_events" of pure thrust,
+        # "+-config$rake_deviation_thrust_events" of pure thrust (or normal),
         # then use the raw vector. Otherwise, project it onto the nearest
         # within that range
         #
         # This is consistent with our use of data, which extracts earthquakes
-        # with rake being within some deviation of pure thrust.
+        # with rake being within some deviation of pure thrust (or normal)
         #
-        
-        # Shorthand divergent and right-lateral velocity 
-        # NOTE: We zero velocities that are not on this segment.
-        div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div) * is_in_segment
+        #
+        # FIXME: The logic below only works for pure thrust (rake = 90), or pure
+        # normal (rake = -90)
+        stopifnot(all(bird2003_env$unit_source_tables[[source_name]]$rake %in% c(-90, 90)))
+
+        if(bird2003_env$unit_source_tables[[source_name]]$rake[1] == -90){
+            # Normal -- in this case, positive 'vel_div' values contribute to the seismic moment
+            div_vec = pmax(0, bird2003_env$unit_source_tables[[source_name]]$bird_vel_div) * is_in_segment
+        }else{
+            # Thrust -- in this case, negative 'vel_div' values contribute to the seismic moment
+            div_vec = pmax(0, -bird2003_env$unit_source_tables[[source_name]]$bird_vel_div) * is_in_segment
+        }
+        if(max(div_vec) <= 0) stop(paste0('No tectonic moment on source ', source_name, '-- suggests an input bug'))
+
+        # Shorthand divergent (or convergent) and right-lateral velocity 
+        # NOTE: We zero velocities that are not on this segment. Also using abs(divergent_velocity),
+        # we compute positive tectonic moment for both normal and thrust events. 
         bvrl =  bird2003_env$unit_source_tables[[source_name]]$bird_vel_rl * is_in_segment
 
         # Limit lateral component of motion that we consider, based on the permitted rake
         # deviation from pure thrust
         deg2rad = pi/180
         allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
-        rl_vec = sign(bvrl) *pmin(abs(bvrl), div_vec*tan(allowed_rake_deviation_radians))
+        rl_vec = sign(bvrl) * pmin(abs(bvrl), div_vec*tan(allowed_rake_deviation_radians))
 
         # NOTE: If we have segmentation, then this source-zone averaged slip
         # value will be a localised value. 
