@@ -58,7 +58,8 @@ source_zone_name=names(all_discretized_sources)[1]
 # construct the earthquake events.
 #
 unit_source_statistics = discretized_source_approximate_summary_statistics(
-    all_discretized_sources[[1]])
+    all_discretized_sources[[1]], 
+    default_rake = config_env$rake)
 
 #
 # Append the filenames of the unit source initial conditions to the

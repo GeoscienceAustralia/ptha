@@ -13,6 +13,8 @@ all_sourcezone_par = read.csv(sourcezone_parameter_file, header=TRUE,
 source_rows = which(all_sourcezone_par$sourcename == site_name)[1]
 
 scaling_relation_type = all_sourcezone_par$scaling_relation[source_rows]
+rake = as.numeric(all_sourcezone_par$rake[source_rows])
+
 
 ############################################################################
 #
