@@ -1043,7 +1043,8 @@ sffm_make_events_on_discretized_source<-function(
     # Make the random kcx/kcy values appropriate for the magnitude. Simulatneously
     # make the length/width over which non-zero slip can occur
     random_LWkc_function = sffm_make_random_lwkc_function(
-        clip_random_parameter_ranges_to_2sd=clip_random_parameters_at_2sd)
+        clip_random_parameter_ranges_to_2sd=clip_random_parameters_at_2sd,
+        relation=relation)
     LWkc = random_LWkc_function(rep(target_event_mw, length=num_events))
     physical_corner_wavenumbers = LWkc[,3:4]
     nonzero_slip_LW = LWkc[,1:2]
