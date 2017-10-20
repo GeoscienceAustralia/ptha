@@ -3,7 +3,7 @@
 # If everything has run correctly, the numbers should be identical
 #
 
-library(rgdal, quietly=TRUE)
+library(rptha, quietly=TRUE)
 
 all_dir = dirname(dirname(Sys.glob('*/EQ_SOURCE/config.R')))
 all_dir = setdiff(all_dir, 'TEMPLATE') # remove TEMPLATE
@@ -32,7 +32,16 @@ for(i in 1:length(output_base)){
     file_list[[i]]$netcdf_files = netcdf_files
     file_list[[i]]$num_netcdf_files = length(netcdf_files)
 
+    if(length(netcdf_files) > 0){
+        # Check that 'station' is the unlimited dimension in the netcdf file
+        fid = nc_open(netcdf_files[1], readunlim=FALSE)
+        file_list[[i]]$station_is_unlim = fid$dim$station$unlim
+        nc_close(fid)
+    }else{
+        file_list[[i]]$station_is_unlim=FALSE
+    }
 
+    # Read the unit source grid shapefile
     mypol = try(readOGR(paste0(ob, '/EQ_SOURCE/unit_source_grid/', nme, '.shp'),
         layer=nme, verbose=FALSE))
     file_list[[i]]$mypol = mypol
@@ -65,6 +74,7 @@ lapply(file_list,
         c(x$num_unit_source_tifs, 
           x$num_netcdf_files, 
           x$num_unit_sources, 
+          x$station_is_unlim,
           ifelse( class(x$mypol) != 'try-error', length(unique(x$mypol$dwndp_n)), -1),
           x$match,
           x$has_tsunami_max_stage_pdf,
@@ -73,188 +83,178 @@ lapply(file_list,
          ) }
     )
 
-
-##  $alaskaaleutians
-##  [1] "312"      "312"      "312"      "4"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "FALSE"   
-##  
-##  $arutrough
-##  [1] "6"        "6"        "6"        "1"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "FALSE"   
-##  
-##  $banda_detachment
-##  [1] "26"       "26"       "26"       "2"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "FALSE"   
-##  
-##  $cascadia
-##  [1] "66"       "66"       "66"       "3"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "FALSE"   
-##  
-##  $flores
-##  [1] "80"       "80"       "80"       "2"        "Match OK" "TRUE"     "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $hjort
-##  [1] "26"       "26"       "26"       "2"        "Match OK" "TRUE"     "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $izumariana
-##  [1] "140"      "140"      "140"      "2"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "TRUE"    
-##  
-##  $kermadectonga
-##  [1] "207"      "207"      "207"      "3"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "TRUE"    
-##  
-##  $kurilsjapan
-##  [1] "244"      "244"      "244"      "4"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "TRUE"    
-##  
-##  $macquarienorth
-##  [1] "13"       "13"       "13"       "1"        "Match OK" "TRUE"     "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $makran
-##  [1] "96"       "96"       "96"       "6"        "Match OK" "TRUE"     "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $manokwari
-##  [1] "7"             "14"            "7"             "1"            
-##  [5] "Match failure" "FALSE"         "FALSE"         "FALSE"        
-##  
-##  $manus
-##  [1] "36"            "2"             "36"            "1"            
-##  [5] "Match failure" "FALSE"         "FALSE"         "FALSE"        
-##  
-##  $mexico
-##  [1] "174"      "174"      "174"      "3"        "Match OK" "TRUE"     "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $moresby_trough
-##  [1] "26"                       "0"                       
-##  [3] "26"                       "2"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $mussau
-##  [1] "8"                        "0"                       
-##  [3] "8"                        "1"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $newguinea
-##  [1] "46"                       "0"                       
-##  [3] "46"                       "2"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $newhebrides
-##  [1] "68"       "68"       "68"       "2"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "FALSE"   
-##  
-##  $north_sulawesi
-##  [1] "44"       "44"       "44"       "4"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $outer_rise_timor
-##  [1] "22"       "22"       "22"       "1"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $outerrise_kermadectonga
-##  [1] "54"                       "0"                       
-##  [3] "54"                       "1"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $outerrise_puysegur
-##  [1] "14"                       "0"                       
-##  [3] "14"                       "1"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $outerrisenewhebrides
-##  [1] "35"                       "0"                       
-##  [3] "35"                       "1"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $outerrisesolomon
-##  [1] "35"                       "0"                       
-##  [3] "35"                       "1"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $outerrisesunda
-##  [1] "122"      "122"      "122"      "1"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $philippine
-##  [1] "66"                       "0"                       
-##  [3] "66"                       "2"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $puysegur
-##  [1] "34"       "34"       "34"       "2"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "TRUE"    
-##  
-##  $ryuku
-##  [1] "120"      "120"      "120"      "3"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $sandwich
-##  [1] "28"       "28"       "28"       "2"        "Match OK" "TRUE"     "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $sangihe
-##  [1] "26"       "26"       "26"       "2"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $sangihe_backthrust
-##  [1] "30"       "30"       "30"       "2"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $se_sulawesi
-##  [1] "11"       "11"       "11"       "1"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $seram_thrust
-##  [1] "24"       "24"       "24"       "2"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $seramsouth
-##  [1] "5"                        "0"                       
-##  [3] "5"                        "1"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-##  
-##  $solomon
-##  [1] "92"       "92"       "92"       "2"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "FALSE"   
-##  
-##  $southamerica
-##  [1] "660"      "660"      "660"      "4"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $sunda
-##  [1] "492"      "492"      "492"      "4"        "Match OK" "TRUE"     "TRUE"    
-##  [8] "FALSE"   
-##  
-##  $tanimbar
-##  [1] "12"       "12"       "12"       "2"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $timor
-##  [1] "66"       "66"       "66"       "3"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $tolo_thrust
-##  [1] "6"        "6"        "6"        "1"        "Match OK" "FALSE"    "FALSE"   
-##  [8] "FALSE"   
-##  
-##  $trobriand
-##  [1] "12"                       "0"                       
-##  [3] "12"                       "1"                       
-##  [5] "... cannot attempt match" "FALSE"                   
-##  [7] "FALSE"                    "FALSE"                   
-
+##
+##
+## $alaskaaleutians
+## [1] "312"      "312"      "312"      "TRUE"     "4"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $arutrough
+## [1] "6"        "6"        "6"        "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $banda_detachment
+## [1] "26"       "26"       "26"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $cascadia
+## [1] "66"       "66"       "66"       "TRUE"     "3"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $flores
+## [1] "80"       "80"       "80"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $hjort
+## [1] "26"       "26"       "26"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $izumariana
+## [1] "140"      "140"      "140"      "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $kermadectonga
+## [1] "207"      "207"      "207"      "TRUE"     "3"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $kurilsjapan
+## [1] "244"      "244"      "244"      "TRUE"     "4"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $macquarienorth
+## [1] "13"       "13"       "13"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $makran
+## [1] "96"       "96"       "96"       "TRUE"     "6"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $manokwari
+## [1] "7"        "7"        "7"        "FALSE"    "1"        "Match OK" "TRUE"    
+## [8] "FALSE"    "FALSE"   
+## 
+## $manus
+## [1] "36"       "36"       "36"       "FALSE"    "1"        "Match OK" "TRUE"    
+## [8] "FALSE"    "FALSE"   
+## 
+## $mexico
+## [1] "174"      "174"      "174"      "TRUE"     "3"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $moresby_trough
+## [1] "26"       "26"       "26"       "FALSE"    "2"        "Match OK" "FALSE"   
+## [8] "FALSE"    "FALSE"   
+## 
+## $mussau
+## [1] "8"        "8"        "8"        "FALSE"    "1"        "Match OK" "FALSE"   
+## [8] "FALSE"    "FALSE"   
+## 
+## $newguinea
+## [1] "46"       "46"       "46"       "FALSE"    "2"        "Match OK" "FALSE"   
+## [8] "FALSE"    "FALSE"   
+## 
+## $newhebrides
+## [1] "68"       "68"       "68"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $north_sulawesi
+## [1] "44"       "44"       "44"       "TRUE"     "4"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $outer_rise_timor
+## [1] "22"       "22"       "22"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $outerrise_kermadectonga
+## [1] "54"       "54"       "54"       "FALSE"    "1"        "Match OK" "FALSE"   
+## [8] "FALSE"    "FALSE"   
+## 
+## $outerrise_puysegur
+## [1] "14"                       "0"                       
+## [3] "14"                       "FALSE"                   
+## [5] "1"                        "... cannot attempt match"
+## [7] "FALSE"                    "FALSE"                   
+## [9] "FALSE"                   
+## 
+## $outerrisenewhebrides
+## [1] "35"       "35"       "35"       "FALSE"    "1"        "Match OK" "FALSE"   
+## [8] "FALSE"    "FALSE"   
+## 
+## $outerrisesolomon
+## [1] "35"       "35"       "35"       "FALSE"    "1"        "Match OK" "FALSE"   
+## [8] "FALSE"    "FALSE"   
+## 
+## $outerrisesunda
+## [1] "122"      "122"      "122"      "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $philippine
+## [1] "66"       "66"       "66"       "FALSE"    "2"        "Match OK" "FALSE"   
+## [8] "FALSE"    "FALSE"   
+## 
+## $puysegur
+## [1] "34"       "34"       "34"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $ryuku
+## [1] "120"      "120"      "120"      "TRUE"     "3"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $sandwich
+## [1] "28"       "28"       "28"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $sangihe
+## [1] "26"       "26"       "26"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $sangihe_backthrust
+## [1] "30"       "30"       "30"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $se_sulawesi
+## [1] "11"       "11"       "11"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $seram_thrust
+## [1] "24"       "24"       "24"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $seramsouth
+## [1] "5"                        "0"                       
+## [3] "5"                        "FALSE"                   
+## [5] "1"                        "... cannot attempt match"
+## [7] "FALSE"                    "FALSE"                   
+## [9] "FALSE"                   
+## 
+## $solomon
+## [1] "92"       "92"       "92"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $southamerica
+## [1] "660"      "660"      "660"      "FALSE"    "4"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $sunda
+## [1] "492"      "492"      "492"      "TRUE"     "4"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
+## 
+## $tanimbar
+## [1] "12"       "12"       "12"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $timor
+## [1] "66"       "66"       "66"       "TRUE"     "3"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $tolo_thrust
+## [1] "6"        "6"        "6"        "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "FALSE"   
+## 
+## $trobriand
+## [1] "12"                       "0"                       
+## [3] "12"                       "FALSE"                   
+## [5] "1"                        "... cannot attempt match"
+## [7] "FALSE"                    "FALSE"                   
+## [9] "FALSE"        
+## 
