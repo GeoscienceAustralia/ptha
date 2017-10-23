@@ -83,8 +83,9 @@ lapply(file_list,
          ) }
     )
 
+## EXAMPLE OUTPUT WHEN EVERYTHING IS DONE ##
 ##
-##
+## 
 ## $alaskaaleutians
 ## [1] "312"      "312"      "312"      "TRUE"     "4"        "Match OK" "TRUE"    
 ## [8] "TRUE"     "TRUE"    
@@ -130,28 +131,28 @@ lapply(file_list,
 ## [8] "TRUE"     "TRUE"    
 ## 
 ## $manokwari
-## [1] "7"        "7"        "7"        "FALSE"    "1"        "Match OK" "TRUE"    
-## [8] "FALSE"    "FALSE"   
+## [1] "7"        "7"        "7"        "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $manus
-## [1] "36"       "36"       "36"       "FALSE"    "1"        "Match OK" "TRUE"    
-## [8] "FALSE"    "FALSE"   
+## [1] "36"       "36"       "36"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $mexico
 ## [1] "174"      "174"      "174"      "TRUE"     "3"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $moresby_trough
-## [1] "26"       "26"       "26"       "FALSE"    "2"        "Match OK" "FALSE"   
-## [8] "FALSE"    "FALSE"   
+## [1] "26"       "26"       "26"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $mussau
-## [1] "8"        "8"        "8"        "FALSE"    "1"        "Match OK" "FALSE"   
-## [8] "FALSE"    "FALSE"   
+## [1] "8"        "8"        "8"        "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $newguinea
-## [1] "46"       "46"       "46"       "FALSE"    "2"        "Match OK" "FALSE"   
-## [8] "FALSE"    "FALSE"   
+## [1] "46"       "46"       "46"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $newhebrides
 ## [1] "68"       "68"       "68"       "TRUE"     "2"        "Match OK" "TRUE"    
@@ -159,38 +160,35 @@ lapply(file_list,
 ## 
 ## $north_sulawesi
 ## [1] "44"       "44"       "44"       "TRUE"     "4"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $outer_rise_timor
 ## [1] "22"       "22"       "22"       "TRUE"     "1"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $outerrise_kermadectonga
-## [1] "54"       "54"       "54"       "FALSE"    "1"        "Match OK" "FALSE"   
-## [8] "FALSE"    "FALSE"   
+## [1] "54"       "54"       "54"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $outerrise_puysegur
-## [1] "14"                       "0"                       
-## [3] "14"                       "FALSE"                   
-## [5] "1"                        "... cannot attempt match"
-## [7] "FALSE"                    "FALSE"                   
-## [9] "FALSE"                   
+## [1] "14"       "14"       "14"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $outerrisenewhebrides
-## [1] "35"       "35"       "35"       "FALSE"    "1"        "Match OK" "FALSE"   
-## [8] "FALSE"    "FALSE"   
+## [1] "35"       "35"       "35"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $outerrisesolomon
-## [1] "35"       "35"       "35"       "FALSE"    "1"        "Match OK" "FALSE"   
-## [8] "FALSE"    "FALSE"   
+## [1] "35"       "35"       "35"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $outerrisesunda
 ## [1] "122"      "122"      "122"      "TRUE"     "1"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $philippine
-## [1] "66"       "66"       "66"       "FALSE"    "2"        "Match OK" "FALSE"   
-## [8] "FALSE"    "FALSE"   
+## [1] "66"       "66"       "66"       "TRUE"     "2"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $puysegur
 ## [1] "34"       "34"       "34"       "TRUE"     "2"        "Match OK" "TRUE"    
@@ -198,42 +196,39 @@ lapply(file_list,
 ## 
 ## $ryuku
 ## [1] "120"      "120"      "120"      "TRUE"     "3"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $sandwich
 ## [1] "28"       "28"       "28"       "TRUE"     "2"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $sangihe
 ## [1] "26"       "26"       "26"       "TRUE"     "2"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $sangihe_backthrust
 ## [1] "30"       "30"       "30"       "TRUE"     "2"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $se_sulawesi
 ## [1] "11"       "11"       "11"       "TRUE"     "1"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $seram_thrust
 ## [1] "24"       "24"       "24"       "TRUE"     "2"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $seramsouth
-## [1] "5"                        "0"                       
-## [3] "5"                        "FALSE"                   
-## [5] "1"                        "... cannot attempt match"
-## [7] "FALSE"                    "FALSE"                   
-## [9] "FALSE"                   
+## [1] "5"        "5"        "5"        "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $solomon
 ## [1] "92"       "92"       "92"       "TRUE"     "2"        "Match OK" "TRUE"    
 ## [8] "TRUE"     "TRUE"    
 ## 
 ## $southamerica
-## [1] "660"      "660"      "660"      "FALSE"    "4"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [1] "660"      "660"      "660"      "TRUE"     "4"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $sunda
 ## [1] "492"      "492"      "492"      "TRUE"     "4"        "Match OK" "TRUE"    
@@ -241,20 +236,17 @@ lapply(file_list,
 ## 
 ## $tanimbar
 ## [1] "12"       "12"       "12"       "TRUE"     "2"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $timor
 ## [1] "66"       "66"       "66"       "TRUE"     "3"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $tolo_thrust
 ## [1] "6"        "6"        "6"        "TRUE"     "1"        "Match OK" "TRUE"    
-## [8] "TRUE"     "FALSE"   
+## [8] "TRUE"     "TRUE"    
 ## 
 ## $trobriand
-## [1] "12"                       "0"                       
-## [3] "12"                       "FALSE"                   
-## [5] "1"                        "... cannot attempt match"
-## [7] "FALSE"                    "FALSE"                   
-## [9] "FALSE"        
+## [1] "12"       "12"       "12"       "TRUE"     "1"        "Match OK" "TRUE"    
+## [8] "TRUE"     "TRUE"    
 ## 

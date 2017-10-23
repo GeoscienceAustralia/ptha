@@ -52,55 +52,6 @@ if( (cmt_duration_years < diff(range(gcmt$julianDay1900))/days_in_year) |
 }
 
 #'
-#' Determine whether lonlat coordinates are inside a given polygon
-#'
-#' Takes care of different longitude conventions (i.e. offsets longitude by 360
-#' as required to be inside polygon). If buffer_width is provided, then poly is
-#' buffered by this amount prior to testing inclusion. Buffer_width should be
-#' in degrees, which means the 'buffer distance' is not identical everywhere.
-#'
-#' @param lonlat 2 column matrix with longitude/latitude of points
-#' @param poly SpatialPolygons object
-#' @param buffer width thickness of buffer to apply to poly before testing the point inclusion.
-#' @return logical vector with one entry for every row in lonlat.
-#' @export
-#' @examples
-#' # Point p
-#'   p = matrix( c(-180, 10, 180, 10), ncol=2, byrow=TRUE) # Same point with different longitude conventions
-#'   poly_coords = matrix(c(170, 9, 190, 9, 190, 11, 170, 11), ncol=2, byrow=TRUE)
-#'   poly_sp = SpatialPolygons(list(Polygons(list(Polygon(poly_coords)), ID='1')), proj4string=CRS("+init=epsg:4326"))
-#'   is_inside = lonlat_in_poly(p, poly_sp)
-#'   stopifnot(all(is_inside==TRUE))
-lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
-
-    if(is.null(dim(lonlat))) dim(lonlat) = c(length(lonlat)/2, 2)
-
-    if(buffer_width != 0){
-        poly = gBuffer(poly, width=buffer_width, byid=TRUE)
-    }
-
-    # Find point on poly, which is used to determine the longitude convention
-    # of 'poly'. Note this will not be the exact centroid for lon/lat --
-    # doesn't matter
-    point_in_poly = as.numeric(coordinates(gCentroid(poly)))
-
-    # Extend to same dimensions as lonlat
-    point_in_poly = matrix(point_in_poly, nrow=length(lonlat[,1]), ncol=2, byrow=TRUE)
-
-    # Make sure longitude convention is the same as for the polygon
-    lonlat_near_poly = adjust_longitude_by_360_deg(lonlat, point_in_poly)
-
-    lonlat_near_poly = SpatialPoints(lonlat_near_poly, proj4string=CRS(proj4string(poly)))
-
-    inside_poly = over(lonlat_near_poly, as(poly, 'SpatialPolygons'))
-
-    inside_poly = !is.na(inside_poly)
-
-    return(inside_poly)
-
-}
-
-#'
 #' Extract earthquake events > threshold for a source-zone or segment
 #'
 #' Spatial inclusion is judged by testing both hypocentres and centroids [if
