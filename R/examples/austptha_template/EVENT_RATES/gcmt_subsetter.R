@@ -118,7 +118,10 @@ lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
 #'   point-in-polygon test.
 #' @param use_both_gcmt_solutions Use either rake1 or rake2 when testing for
 #'   event inclusion.
-#' @param filter_by_strike Logical. If TRUE, also consider the strike when accepting/rejecting gcmt data
+#' @param filter_by_strike Logical. If TRUE, also consider the strike when
+#'   accepting/rejecting gcmt data
+#' @param allowed_strike_deviation. Accepted events must have strike within
+#'   this many degrees of the nearest unit source strike.
 #' @param unit_source_table Unit source table for this source zone (only required if filter_by_strike=TRUE)
 #' @param
 #' @return subset of gCMT catalogue
