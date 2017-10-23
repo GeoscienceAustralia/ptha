@@ -6,8 +6,7 @@
 #
 # These values were also copied to the all_*_earthquake_events_tsunami_*.nc files
 #
-# The code has been corrected, and we implemented the following script to correct
-# the rake values in incorrectly written files.
+# The code has been corrected, but this code shows how to make a manual correction
 
 run_me = FALSE
 

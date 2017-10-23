@@ -226,7 +226,7 @@ stopifnot(file.exists(bird2003_steps_data_zip_file))
 if(logic_tree_parameter_subsampling_factor < 3){
     stop(
         paste0('The logic_tree_parameter_subsampling_factor should not be less than \n',
-        'the number of parameter values for b (or Mw_max, or coupling) provided in the \n',
+        'the number of parameter values for b provided in the \n',
         ' source-zone parameter file. Normally we provide 3 values for each, so this error is \n',
         ' produced if logic_tree_parameter_subsampling_factor < 3') 
     )
