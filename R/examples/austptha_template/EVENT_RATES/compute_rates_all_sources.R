@@ -144,18 +144,18 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         ## Largest observed plus a small value,
         min_mw_max,
         # Middle Mw
-        0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=-1) + 
+        0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=-1) + 
             min_mw_max),
         # Another middle Mw
-        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, relation = sourcepar$scaling_relation, CI_sd=0),
+        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
         # Another middle Mw
-        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=0),
+        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
         # Upper mw [Strasser + 1SD]
-        Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=-1) )
+        Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=-1) )
     #
     # Simple test -- all weight on full source rupture area 
-    #sourcepar$Mw_max = c(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=0),
-    #    Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcepar$scaling_relation, CI_sd=0)+0.01)
+    #sourcepar$Mw_max = c(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
+    #    Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0)+0.01)
     #
 
     # Ensure ordered
