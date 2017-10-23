@@ -59,7 +59,7 @@ nbins = config$logic_tree_parameter_subsampling_factor # 9
 #
 
 # Currently the code only treats pure normal or pure thrust events
-stopifnot(all(sp$rake[!is.na(sp$rake)] %in% c(-90, 90)))
+stopifnot(all(sourcezone_parameters$rake[!is.na(sourcezone_parameters$rake)] %in% c(-90, 90)))
 
 # Get environment we can use to provide spatially variable convergence
 # information

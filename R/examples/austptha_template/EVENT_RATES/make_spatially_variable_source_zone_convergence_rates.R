@@ -102,7 +102,7 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
         suppressWarnings({ distances =  distHaversine(p_mat, bird_centroid) })
 
         # Make sure that normal faults only select from sites with class==Normal
-        normal_events = which(bird_data$class == 'Normal')
+        normal_events = which(bd$class == 'Normal')
         if(normal_faulting){
             # Artificially increase the distance to 'non-normal' events
             distances[-normal_events] = distances[-normal_events] + 1e+12
