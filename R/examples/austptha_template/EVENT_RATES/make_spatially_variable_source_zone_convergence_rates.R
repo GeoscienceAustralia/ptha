@@ -250,8 +250,8 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
 
                 rl_vec = uss$bird_vel_rl[ui] * local_is_in_segment[ui]
                 deg2rad = pi/180
-                allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
-                # Restrict angle to +- rake_deviation_thrust_events of pure thrust (or pure normal)
+                allowed_rake_deviation_radians = config$rake_deviation * deg2rad
+                # Restrict angle to +- rake_deviation of pure thrust (or pure normal)
                 rl_vec = sign(rl_vec) * pmin(abs(rl_vec), div_vec * tan(allowed_rake_deviation_radians)) 
                 convergent_slip = sqrt(rl_vec**2 + div_vec**2)
 

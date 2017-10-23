@@ -180,7 +180,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     if(sourcezone_parameters_row$use_bird_convergence == 1){
         #
         # Idea: If plate convergence vector is between
-        # "+-config$rake_deviation_thrust_events" of pure thrust (or normal),
+        # "+-config$rake_deviation" of pure thrust (or normal),
         # then use the raw vector. Otherwise, project it onto the nearest
         # within that range
         #
@@ -209,7 +209,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         # Limit lateral component of motion that we consider, based on the permitted rake
         # deviation from pure thrust
         deg2rad = pi/180
-        allowed_rake_deviation_radians = config$rake_deviation_thrust_events * deg2rad
+        allowed_rake_deviation_radians = config$rake_deviation * deg2rad
         rl_vec = sign(bvrl) * pmin(abs(bvrl), div_vec*tan(allowed_rake_deviation_radians))
 
         # NOTE: If we have segmentation, then this source-zone averaged slip

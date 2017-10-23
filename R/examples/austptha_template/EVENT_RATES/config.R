@@ -18,7 +18,7 @@ depth_threshold = 71 # km
 buffer_width = 0.2 
 
 #
-# See also 'rake_deviation_thrust_events' below
+# See also 'rake_deviation' below
 #
 
 isc_gem_catalogue_csv = "/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Earthquake_catalogues/isc-gem-catalogue-version4/parsed_gem_catalogue.csv"
@@ -45,13 +45,17 @@ bird2003_steps_data_zip_file = '../DATA/BIRD_PLATE_BOUNDARIES/sourcezone_traces_
 
 
 #
-# When looking at historical earthquake data, interpret 'thrust' earthquakes as
-# those whose rake deviates from 90 degrees by less than this number [e.g. a
-# value of 45 means events within [90-45, 90+45] are treated as thrust]. Likewise,
+# When looking at historical earthquake data, interpret 'thrust' (or normal)
+# earthquakes as those whose rake deviates from 90 degrees (resp -90) by less
+# than this number [e.g. a value of 45 means events within [90-45, 90+45] are
+# treated as thrust, and [-90-45, -90+45] are normal]. Likewise,
 # treat tectonic convergence in a direction within this much of 'pure thrust' as 
 # contributing to the seismic moment which is balanced by earthquakes. 
 #
-rake_deviation_thrust_events = 50 # Degrees
+rake_deviation = 50 # Degrees
+
+# As above for strike
+strike_deviation = 50 # Degrees
 
 #
 # File with parameters for all source-zones, that we use to make source-zone

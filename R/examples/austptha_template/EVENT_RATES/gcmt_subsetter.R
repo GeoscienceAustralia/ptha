@@ -15,9 +15,17 @@ unit_source_grid_polygon_shapefiles = config$unit_source_grid_polygon_shapefiles
 mw_threshold = config$MW_MIN 
 depth_threshold = config$depth_threshold #70 # depth < depth_threshold
 buffer_width = config$buffer_width # Events are inside polygon, after polygon is buffered by 'buffer_width' degrees
-# Events have rake_min <= rake1 <= rake_max; OR rake_min <= rake2 <= rake_max
-rake_min = 90 - config$rake_deviation_thrust_events  
-rake_max = 90 + config$rake_deviation_thrust_events  
+allowed_rake_deviation = config$rake_deviation
+
+# Function to determine whether an 'angle' (degrees) is within 'allowed_angle_deviation' of a target
+# angle (all in degrees). Accounts for circularity
+angle_within_dtheta_of_target<-function(angle, target_angle, allowed_angle_deviation){
+
+    ( (target_angle - angle)%%360 <= allowed_angle_deviation) | 
+    ( (angle - target_angle)%%360 <= allowed_angle_deviation)
+
+}
+
 
 #
 # Read all unit-source grid shapefiles into a list, with names corresponding to
@@ -104,12 +112,15 @@ lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
 #'   segment of interest ends
 #' @param local_mw_threshold keep earthquakes with magnitude >= this
 #' @param local_depth_threshold keep earthquakes with depth <= this
-#' @param local_rake_min, local_rake_max  keep earthquakes with rake inside
-#'   this range [either rake1, or perhaps rake2 (if use_both_gcmt_solutions==TRUE)]
+#' @param target_rake_value Keep events within 'allowed_rake_deviation' of 'target_rake_value'
+#' @param allowed_rake_deviation If rake varies from ideal value by less than this, then 
 #' @param local_buffer_width buffer polygon by this many degrees before running
 #'   point-in-polygon test.
 #' @param use_both_gcmt_solutions Use either rake1 or rake2 when testing for
 #'   event inclusion.
+#' @param filter_by_strike Logical. If TRUE, also consider the strike when accepting/rejecting gcmt data
+#' @param unit_source_table Unit source table for this source zone (only required if filter_by_strike=TRUE)
+#' @param
 #' @return subset of gCMT catalogue
 #'
 get_gcmt_events_in_poly<-function(source_name, 
@@ -117,10 +128,15 @@ get_gcmt_events_in_poly<-function(source_name,
     alongstrike_index_max = NULL,
     local_mw_threshold = mw_threshold, 
     local_depth_threshold = depth_threshold, 
-    local_rake_min = rake_min,
-    local_rake_max = rake_max, 
+    target_rake_value = 90,
+    allowed_rake_deviation = config$rake_deviation, 
     local_buffer_width=buffer_width,
-    use_both_gcmt_solutions=FALSE){
+    use_both_gcmt_solutions=FALSE,
+    filter_by_strike = FALSE,
+    allowed_strike_deviation = NA,
+    unit_source_table = NULL){
+
+    target_rake_value = target_rake_value
 
     if(!(source_name %in% names(unit_source_grid_poly))){
         stop(paste0('No matching source_name for ', source_name))
@@ -143,6 +159,13 @@ get_gcmt_events_in_poly<-function(source_name,
         # Ensure name-mangling in shapefile has not changed
         if( !('alngst_' %in% names(poly)) ){
             stop('Polygon does not have"alngst_" attribute')
+        }
+
+        # Get unit-source table
+        if(!is.null(unit_source_table)){
+            keep = which(unit_source_table$alongstrike_number >= alongstrike_index_min &
+                unit_source_table$alongstrike_number <= alongstrike_index_max)
+            unit_source_table = unit_source_table[keep,]
         }
 
         poly_alongstrike_index = as.numeric(as.character(poly[['alngst_']]))
@@ -171,18 +194,77 @@ get_gcmt_events_in_poly<-function(source_name,
         gcmt[,c('cent_lon', 'cent_lat')], poly, buffer_width=local_buffer_width)
    
     inside_events = (inside_events_hypo | inside_events_centroid)
- 
+
+    # Other criteria we have (might not be used, see below)
+    mw_depth_ok = (gcmt$Mw >= local_mw_threshold) & (gcmt$depth <= local_depth_threshold)
+    # Note we need to be careful about circularity of angles when checking for rakes
+    rake1_ok = angle_within_dtheta_of_target(gcmt$rake1, target_rake_value, allowed_rake_deviation)
+    rake2_ok = angle_within_dtheta_of_target(gcmt$rake2, target_rake_value, allowed_rake_deviation)
+
+    if(filter_by_strike){
+        # Determine whether strike1 and strike2 are within some threshold of
+        # the nearest unit-source strike value
+        
+        if(is.null(unit_source_table)){
+            stop('Must provide unit_source_table if filter_by_strike==TRUE')
+        }
+
+        if(is.na(allowed_strike_deviation)){
+            stop('Must provide allowed_strike_deviation if filter_by_strike==TRUE')
+        }
+
+        #
+        # Compute the strike of the nearest unit source for each point that
+        # might be inside
+        #       
+        # Variable to hold the strike value of the nearest unit source
+        nearest_strike = rep(NA, length(inside_events))
+        # For every earthquake in the 'inside-events' group, find the strike of
+        # the nearest unit-source
+        for(i in 1:length(inside_events)){
+            if(inside_events[i] & mw_depth_ok[i]){
+                # Unit source coordinates in this segment
+                p2 = cbind(unit_source_table$lon_c, unit_source_table$lat_c)
+                # Earthquake coordinates (centroid based)
+                p1 = p2*0
+                p1[,1] = gcmt$cent_lon[i]
+                p1[,2] = gcmt$cent_lat[i]
+                # Nearest unit source strike
+                nearest_uss = which.min(distHaversine(p1, p2))
+                nearest_strike[i] = unit_source_table$strike[nearest_uss]%%360
+            }
+        }
+        
+        # Is the strike close to the desired value?
+        strike1_ok = angle_within_dtheta_of_target(gcmt$strk1, nearest_strike, 
+            allowed_strike_deviation)
+        strike1_ok[which(is.na(strike1_ok))] = FALSE
+        strike2_ok = angle_within_dtheta_of_target(gcmt$strk2, nearest_strike, 
+            allowed_strike_deviation)
+        strike2_ok[which(is.na(strike2_ok))] = FALSE
+
+    }else{
+        # Do not limit the selected events based on strike
+        strike1_ok = rep(TRUE, length(inside_events))
+        strike2_ok = rep(TRUE, length(inside_events))
+    }
+
+    # If we don't use both gcmt solutions, then ensure 'strike2/rake2' the same
+    # as strike1/rake1
+    if(!use_both_gcmt_solutions){
+        strike2_ok = strike1_ok
+        rake2_ok = rake1_ok
+    }
+    
     # Criterion for point selection - note we will keep the event if either
     # rake1 or rake2 is within a given range of pure thrust
-    inside_keep = which( inside_events & 
-        (gcmt$Mw >= local_mw_threshold) & 
-        (gcmt$depth <= local_depth_threshold) & 
-        ((gcmt$rake1 >= local_rake_min & gcmt$rake1 <= local_rake_max) | 
-            (gcmt$rake2 >= local_rake_min & gcmt$rake2 <= local_rake_max & use_both_gcmt_solutions) )
+    inside_keep = which( inside_events & mw_depth_ok &
+            ((rake1_ok & strike1_ok) | (rake2_ok & strike2_ok) )
         )
 
 
     if(length(inside_keep) > 0){
+
         output_gcmt = gcmt[inside_keep,]
 
         # Keep track of double-counted points
