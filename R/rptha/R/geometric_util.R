@@ -4,14 +4,42 @@
 # Gareth Davies, Geoscience Australia 2015
 #
 
-#suppressPackageStartupMessages(library(rgeos))
-#suppressPackageStartupMessages(library(sp))
-#suppressPackageStartupMessages(library(rgdal))
+#' Test if 'angle' is within 'dtheta' of 'target_angle'
+#'
+#' Function to determine whether the difference between 'angle' and 'target
+#' angle' is less than or equal to 'dtheta'. ALL ANGLES ARE IN DEGREES.
+#' Accounts for circularity of angles. 
+#'
+#' @param angle vector of angles
+#' @param target_angle vector of target angles
+#' @dtheta vector of 'dthetas' or 'angular deviations'
+#' @return logical vector with the same length as angle
+#' @export
+#'
+#' @examples
+#'    angle = c(340:359, 0:50)
+#'    target_angle = 15
+#'    dtheta = 25
+#'    nearby = angle_within_dtheta_of_target(angle, target_angle, dtheta)
+#'
+#'    # Should evaluate TRUE for angles in [350, 0] and [0, 40]
+#'    expected_result = c(rep(FALSE, 10), rep(TRUE, 51), rep(FALSE, 10))
+#'    stopifnot(all(nearby == expected_result))
+#'
+#'    # Check that more extreme circularity is ok
+#'    for(dev in c(-360*2, 360*3)){
+#'        angle2 = angle + dev
+#'        nearby2 = angle_within_dtheta_of_target(angle2, target_angle, dtheta)
+#'        stopifnot(all(nearby == expected_result))
+#'    }
+#'    
+angle_within_dtheta_of_target<-function(angle, target_angle, dtheta){
 
-## FIXME: At the moment we use a script to fix a bug in geosphere's antipodal
-## I have reported the bug, when it it fixed remove this
-#library(geosphere)
-#source('override_antipodal_geosphere.R')
+    ( (target_angle - angle)%%360 <= dtheta ) | 
+    ( (angle - target_angle)%%360 <= dtheta )
+
+}
+
 
 #' Compute distances between 2 points defined by (lon,lat,depth)
 #'

@@ -17,12 +17,38 @@ depth_threshold = config$depth_threshold #70 # depth < depth_threshold
 buffer_width = config$buffer_width # Events are inside polygon, after polygon is buffered by 'buffer_width' degrees
 allowed_rake_deviation = config$rake_deviation
 
-# Function to determine whether an 'angle' (degrees) is within 'allowed_angle_deviation' of a target
-# angle (all in degrees). Accounts for circularity
-angle_within_dtheta_of_target<-function(angle, target_angle, allowed_angle_deviation){
+#' Test if 'angle' is within 'dtheta' of 'target_angle'
+#'
+#' Function to determine whether the difference between 'angle' and 'target
+#' angle' is less than or equal to 'dtheta'. ALL ANGLES ARE IN DEGREES.
+#' Accounts for circularity of angles. 
+#'
+#' @param angle vector of angles
+#' @param target_angle vector of target angles
+#' @dtheta vector of 'dthetas' or 'angular deviations'
+#' @return logical vector with the same length as angle
+#'
+#' @examples
+#'    angle = c(340:359, 0:50)
+#'    target_angle = 15
+#'    dtheta = 25
+#'    nearby = angle_within_dtheta_of_target(angle, target_angle, dtheta)
+#'
+#'    # Should evaluate TRUE for angles in [350, 0] and [0, 40]
+#'    expected_result = c(rep(FALSE, 10), rep(TRUE, 51), rep(FALSE, 10))
+#'    stopifnot(all(nearby == expected_result))
+#'
+#'    # Check that more extreme circularity is ok
+#'    for(dev in c(-360*2, 360*3)){
+#'        angle2 = angle + dev
+#'        nearby2 = angle_within_dtheta_of_target(angle2, target_angle, dtheta)
+#'        stopifnot(all(nearby == expected_result))
+#'    }
+#'    
+angle_within_dtheta_of_target<-function(angle, target_angle, dtheta){
 
-    ( (target_angle - angle)%%360 <= allowed_angle_deviation) | 
-    ( (angle - target_angle)%%360 <= allowed_angle_deviation)
+    ( (target_angle - angle)%%360 <= dtheta ) | 
+    ( (angle - target_angle)%%360 <= dtheta )
 
 }
 
@@ -64,12 +90,12 @@ if( (cmt_duration_years < diff(range(gcmt$julianDay1900))/days_in_year) |
 #'
 #' Determine whether lonlat coordinates are inside a given polygon
 #'
-#' Takes care of different longitude conventions (e.g. offsets by 360n).
+#' Takes care of different longitude conventions (i.e. offsets longitude by 360
+#' as required to be inside polygon). If buffer_width is provided, then poly is
+#' buffered by this amount prior to testing inclusion. Buffer_width should be
+#' in the same units as poly's coordinates.
 #'
-#' If buffer_width is provided, then poly is buffered by this amount prior
-#' to testing inclusion. Buffer_width should be in the same units as poly's coordinates.
-#'
-#' @param lonlat 2 column matrix with longitude/latitude
+#' @param lonlat 2 column matrix with longitude/latitude of points
 #' @param poly SpatialPolygons object
 #' @param buffer width thickness of buffer to apply to poly before testing the point inclusion.
 #' @return logical vector with one entry for every row in lonlat.
@@ -80,7 +106,9 @@ lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
         poly = gBuffer(poly, width=buffer_width, byid=TRUE)
     }
 
-    # Find point on poly, which is used to determine the longitude convention of 'poly'
+    # Find point on poly, which is used to determine the longitude convention
+    # of 'poly'. Note this will not be the exact centroid for lon/lat --
+    # doesn't matter
     point_in_poly = as.numeric(coordinates(gCentroid(poly)))
 
     # Extend to same dimensions as lonlat
