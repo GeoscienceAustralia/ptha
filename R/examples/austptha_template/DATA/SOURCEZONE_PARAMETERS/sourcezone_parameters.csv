@@ -1,10 +1,10 @@
 sourcename,segment_name,approx_unit_source_length,approx_unit_source_width,rake,scaling_relation,segment_boundary_alongstrike_index_lower,segment_boundary_alongstrike_index_upper,row_weight, use_bird_convergence, tectonic_slip, convergent_fraction, cmin, cpref, cmax,cmin_p,cpref_p,cmax_p, bmin, bpref, bmax,bmin_p,bpref_p,bmax_p, mw_max_observed,notes
-izumariana,,50,50,90,Strasser,,,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.2,"Berryman et al (2015) suggest coupling values: [Izubonin, 0.1, 0.2, 0.7;   Marianas, 0.1, 0.2, 0.7]; and mw_max_min=7.25"
+izumariana,,50,50,90,Strasser,,,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.25,"Berryman et al (2015) suggest coupling values: [Izubonin, 0.1, 0.2, 0.7;   Marianas, 0.1, 0.2, 0.7]; and mw_max_min=7.25"
 izumariana,_izubonin,,,,,1,27,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.25,
 izumariana,_marianas,,,,,28,70,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.25,
 kermadectonga,,50,50,90,Strasser,,,0.5,1,,,0.21,0.31,0.72,,,,0.7,0.95,1.2,,,,8.1,"Berryman et al. (2015) suggest coupling values of 0.2, 0.31, 0.72; and mw_max_min = 8.1"
-kermadectonga,_tonga,,,,,1,22,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al
-kermadectonga,_kermadec,,,,,23,56,0.5,1,,,0.2,0.3,0.75,,,,0.7,0.95,1.2,,,,8.1,Berryman et al
+kermadectonga,_tonga,,,,,1,23,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al
+kermadectonga,_kermadec,,,,,24,56,0.5,1,,,0.2,0.3,0.75,,,,0.7,0.95,1.2,,,,8.1,Berryman et al
 kermadectonga,_hikurangi,,,,,57,69,0.5,1,,,0.4,0.54,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al
 kurilsjapan,,50,50,90,Strasser,,,0.5,1,,,0.67,0.77,0.9,,,,0.7,0.95,1.2,,,,9,"Berryman et al (2015) suggest coupling values: 0.67, 0.77, 0.9, and Mw_max_min of 9.0 (Tohoku 2011)"
 kurilsjapan,_kurils,,,,,1,45,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,
@@ -12,8 +12,8 @@ kurilsjapan,_japan,,,,,46,61,0.5,1,,,0.6,0.7,0.9,,,,0.7,0.95,1.2,,,,9,
 newhebrides,,50,50,90,Strasser,,,0.5,1,,,0.27,0.37,0.73,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and mw_max_min values
 newhebrides,_matthewhunter,,,,,1,5,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al. (2015) coupling and Mw_max_min
 newhebrides,_south,,,,,6,16,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
-newhebrides,_central,,,,,17,27,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and Mw_max_min
-newhebrides,_north,,,,,28,34,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,_central,,,,,17,26,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,_north,,,,,27,34,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,Berryman et al. (2015) coupling and Mw_max_min
 puysegur,,50,50,90,Strasser,,,1,0,35,1,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,"Berryman et al. (2015) coupling and Mw_max_min. Hayes and Furlong (2010) suggest the true subduction direction is quite obligue from our source boundary, and so we force the tectonic_slip in line with the value they suggest."
 solomon,,50,50,90,Strasser,,,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
 solomon,_southeast,,,,,1,20,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
@@ -23,43 +23,48 @@ southamerica,,50,50,90,Strasser,,,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.5,Ber
 southamerica,_patagonia,,,,,1,34,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al. (2015) coupling and Mw_max_min
 southamerica,_central_chile,,,,,35,60,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.5,Berryman et al. (2015) coupling and Mw_max_min
 southamerica,_northern_chile,,,,,61,88,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.6,Berryman et al. (2015) coupling and Mw_max_min
-southamerica,_peru,,,,,89,138,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
-southamerica,_ecuador,,,,,139,165,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.8,Berryman et al. (2015) coupling and Mw_max_min
+southamerica,_peru,,,,,89,137,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
+southamerica,_ecuador,,,,,138,165,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.8,Berryman et al. (2015) coupling and Mw_max_min
 sunda,,50,50,90,Strasser,,,0.5,1,,,0.44,0.54,0.79,,,,0.7,0.95,1.2,,,,9,"Berryman et al. (2015) coupling and Mw_max_min. As well as this ‘sunda as one segment’ branch, we have segmented branches which cover the source below"
-sunda,_java,,,,,1,59,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and Mw_max_min [note the Mw 8.3 was however a normal fault]
-sunda,_sumatra,,,,,60,88,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
-sunda,_andaman,,,,,89,117,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
-sunda,_arakan,,,,,118,141,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,Coupling based on Andaman. Mw-max-min based on CMT [although it was a normal fault] – noting Cummins (2007) suggested much higher values
-alaskaaleutians,,50,50,90,Strasser,,,1,1,,,0.42,0.55,0.77,,,,0.7,0.95,1.2,,,,9.2,Berryman et al. (2015) coupling and Mw_max_min
+sunda,_java,,,,,1,39,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8.3,Berryman et al. (2015) coupling and Mw_max_min [note the Mw 8.3 was however a normal fault]
+sunda,_sumatra,,,,,40,68,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
+sunda,_andaman,,,,,69,97,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,Berryman et al. (2015) coupling and Mw_max_min
+sunda,_arakan,,,,,98,123,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,Coupling based on Andaman. Mw-max-min based on CMT [although it was a normal fault] – noting Cummins (2007) suggested much higher values
+alaskaaleutians,,50,50,90,Strasser,,,0.5,1,,,0.42,0.55,0.77,,,,0.7,0.95,1.2,,,,9.2,Berryman et al. (2015) coupling and Mw_max_min
+alaskaaleutians,_eastern,,,,,1,29,0.5,1,,,0.6,0.8,1,,,,0.7,0.95,1.2,,,,9.2,"Use Berryman et al (2015) to estimate coupling (although they have more sub-sources than I have, so combination of values has some subjectivity). Note Mw_max_min in Berryman et al seems low, accepting that 1964 event was Mw 9.2, so here I use the latter"
+alaskaaleutians,_western,,,,,30,67,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,9.2,Berryman et al (2015) 
+alaskaaleutians,_komandorski,,,,,68,78,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al (2015) 
 cascadia,,50,50,90,Strasser,,,1,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.8,Berryman et al. (2015) coupling and Mw_max_min
 mexico,,50,50,90,Strasser,,,1,1,,,0.37,0.6,0.81,,,,0.7,0.95,1.2,,,,8.2,Berryman et al. (2015) coupling and Mw_max_min
 sandwich,,50,50,90,Strasser,,,1,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.5,Berryman et al. (2015) coupling and Mw_max_min
-ryuku,,50,50,90,Strasser,,,1,1,,,0.34,0.44,0.8,,,,0.7,0.95,1.2,,,,8.5,Berryman et al. (2015) coupling and Mw_max_min
+ryuku,,50,50,90,Strasser,,,0.5,1,,,0.34,0.44,0.8,,,,0.7,0.95,1.2,,,,8.5,Berryman et al. (2015) coupling and Mw_max_min
+,_nankai,,,,,1,13,0.5,1,,,0.8,0.9,1,,,,0.7,0.95,1.2,,,,8.5,Berryman et al. (2015) coupling and Mw_max_min
+,_ryuku,,,,,14,40,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8,Berryman et al. (2015) coupling and Mw_max_min
 hjort,,50,45,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Berryman et al. (2015) coupling and Mw_max_min. Slightly reduce the width to avoid having only 1 layer of unit-sources
 makran,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,Berryman et al. (2015) coupling and Mw_max_min
-macquarienorth,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,"Considering only thrust events, the largest event was about Mw 7.0 (1977-07)"
-outerrisesunda,,50,50,-90,Blaser-normal,,,1,0,0.5,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Largest Mw is the 1977 Mw 8.3 event. Slip rate based on the assumption that the moment rate is ~ 0.5% of that for the sunda Arc [J.G. based on Sleep (2012)]
-timor,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.2,"Note that the Berryman et al (2015) ‘Timor’ is not this place, but more the western end of our ‘flores’ source"
-arutrough,,50,50,-90,Blaser-normal,,,1,0,22,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,Default coupling. Slip rate from JG.  Mw_max_min from ISC-GEM catalogue.  
-flores,,50,50,90,Strasser,,,1,0,20,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.9,"Mw_max_min from inversion reported in Griffin et al (2015), Evaluation of onshore digital elevation models for …; Slip nominal value based on J.G. traces but note substantial spatial variability"
+macquarienorth,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,"Considering only thrust events, the largest event was about Mw 7.0 (1977-07)"
+outerrisesunda,,50,50,-90,Blaser-normal,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,"Largest Mw is the 1977 Mw 8.3 event. Slip rate based on the assumption that the moment rate is ~ 0.5% of that for the sunda Arc [J.G., based on Sleep (2012)]"
+timor,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,"Note that the Berryman et al (2015) ‘Timor’ is not this place, but more the western end of our ‘flores’ source"
+arutrough,,50,50,-90,Blaser-normal,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,Default coupling. Slip rate from JG.  Mw_max_min from ISC-GEM catalogue.  
+flores,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.9,"Mw_max_min from inversion reported in Griffin et al (2015), Evaluation of onshore digital elevation models for …; Slip nominal value based on J.G. traces but note substantial spatial variability"
 seram_thrust,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,Mw_max_min from Berryman et al.
-banda_detachment,,50,50,-90,Blaser-normal,,,1,0,60,1,0.0001,0.1,0.7,,,,0.7,0.95,1.2,,,,7.25,"Slip-rate based on J.G. traces. Note GEM’s historical earthquake archive suggests an Mw 8.8 here in 1629, whereas Liu and Harris (2013) put it further east around Seram"
-se_sulawesi,,50,50,90,Strasser,,,1,0,10,1,0.0001,0.1,0.7,,,,0.7,0.95,1.2,,,,7.25,Slip-rate based on J.G. traces 
+banda_detachment,,50,50,-90,Blaser-normal,,,1,1,,,0.0001,0.1,0.7,,,,0.7,0.95,1.2,,,,7.25,"Slip-rate based on J.G. traces. Note GEM’s historical earthquake archive suggests an Mw 8.8 here in 1629, whereas Liu and Harris (2013) put it further east around Seram"
+se_sulawesi,,50,50,90,Strasser,,,1,1,,,0.0001,0.1,0.7,,,,0.7,0.95,1.2,,,,7.25,Slip-rate based on J.G. traces 
 tolo_thrust,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default coupling etc. 
-tanimbar,,50,50,-90,Blaser-normal,,,1,0,2,1,0.0001,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default coupling etc. Slip from JG traces
-seramsouth,,50,50,90,Strasser,,,1,0,0.1,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default coupling etc. Slip from JG traces
-north_sulawesi,,50,50,90,Strasser,,,1,0,40,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.9,Default coupling etc. Slip from JG traces. Mw_max_min from Berryman et al.
-outer_rise_timor,,50,50,-90,Blaser-normal,,,1,0,0.16,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default coupling etc. Slip from JG traces
-sangihe,,50,50,90,Strasser,,,1,0,48,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
-sangihe_backthrust,,50,50,90,Strasser,,,1,0,25,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
-manokwari,,50,50,90,Strasser,,,1,0,20,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,Convergent rate mixture of Bird (~ 22mm/year) and Jono’s estimate (~15mm/year). Mw_max from GCMT and ISC-GEM
+tanimbar,,50,50,-90,Blaser-normal,,,1,1,,,0.0001,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default coupling etc. Slip from JG traces
+seramsouth,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default coupling etc. Slip from JG traces
+north_sulawesi,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.9,Default coupling etc. Slip from JG traces. Mw_max_min from Berryman et al.
+outer_rise_timor,,50,50,-90,Blaser-normal,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default coupling etc. Slip from JG traces
+sangihe,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
+sangihe_backthrust,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
+manokwari,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,Convergent rate mixture of Bird (~ 22mm/year) and Jono’s estimate (~15mm/year). Mw_max from GCMT and ISC-GEM
 newguinea,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.2,Mw_max from Berryman et al. 
-mussau,,50,50,90,Strasser,,,1,0,12,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Convergence from Jono
-moresby_trough,,50,50,90,Strasser,,,1,0,3.5,1,0,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Convergence averaged from Jono’s inputs
+mussau,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Convergence from Jono
+moresby_trough,,50,50,90,Strasser,,,1,1,,,0,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Convergence averaged from Jono’s inputs
 trobriand,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default values. 
-outerrisesolomon,,50,50,-90,Blaser-normal,,,1,0,0.7,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default values. Convergence from Jono’s inputs.
-outerrisenewhebrides,,50,50,-90,Blaser-normal,,,1,0,0.7,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,"Default values, except there was an Mw 7.7 outer rise in the south in 1995. Convergence with Jono’s inputs"
-outerrise_kermadectonga,,50,50,-90,Blaser-normal,,,1,0,1,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,"Default values, convergence based on mean value provided by Jono. We use the GCMT Mw 8.1 outer-rise in 2009 in the North for minimum mw_max. Subsequent inversions suggest that event was a mixture of outer-rise and subduction thrust, but anyway we keep the Mw 8.1 here. "
+outerrisesolomon,,50,50,-90,Blaser-normal,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,Default values. Convergence from Jono’s inputs.
+outerrisenewhebrides,,50,50,-90,Blaser-normal,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,"Default values, except there was an Mw 7.7 outer rise in the south in 1995. Convergence with Jono’s inputs"
+outerrise_kermadectonga,,50,50,-90,Blaser-normal,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,"Default values, convergence based on mean value provided by Jono. We use the GCMT Mw 8.1 outer-rise in 2009 in the North for minimum mw_max. Subsequent inversions suggest that event was a mixture of outer-rise and subduction thrust, but anyway we keep the Mw 8.1 here. "
 manus,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.5,Berryman et al Mw_max. 
 philippine,,50,50,90,Strasser,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,"Berryman et al Mw_max is lower than values in GCMT and ISC-GEM, so we rely on the latter. "
-outerrise_puysegur,,50,50,-90,Blaser-normal,,,1,0,0.2,1,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,"Default values, convergence based on Jono’s values"
+outerrise_puysegur,,50,50,-90,Blaser-normal,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,"Default values, convergence based on Jono’s values"
