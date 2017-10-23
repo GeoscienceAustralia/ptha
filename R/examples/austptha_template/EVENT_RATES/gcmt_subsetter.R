@@ -1,6 +1,6 @@
 # 
-# Routines to extract data from e.g. the CMT catalogue, or the ISC-GEM catalogue, 
-# within polygons that define our source-zones
+# Routines to extract data from the CMT catalogue within polygons that define
+# our source-zones
 #
 library(rptha)
 config = new.env()
