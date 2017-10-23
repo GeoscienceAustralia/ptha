@@ -7,8 +7,8 @@
 # PARAMETERS CONTROLLING SELECTION OF EVENTS FROM GLOBAL CMT CATALOGUE
 #
 #######################################################################################
-cmt_catalogue_csv = '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Earthquake_catalogues/Global_CMT_catalogue/GCMT_1976_2017.csv'
-#cmt_catalogue_csv = '../../../DATA/EARTHQUAKE/Earthquake_catalogues/Global_CMT_catalogue/GCMT_1976_2017.csv'
+#cmt_catalogue_csv = '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Earthquake_catalogues/Global_CMT_catalogue/GCMT_1976_2017.csv'
+cmt_catalogue_csv = '../../../DATA/EARTHQUAKE/Earthquake_catalogues/Global_CMT_catalogue/GCMT_1976_2017.csv'
 
 # Only use events with depth < depth_threshold
 depth_threshold = 71 # km
@@ -18,10 +18,10 @@ depth_threshold = 71 # km
 buffer_width = 0.2 
 
 #
-# See also 'rake_deviation' below
+# See also 'rake_deviation' and 'strike_deviation' below
 #
 
-isc_gem_catalogue_csv = "/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Earthquake_catalogues/isc-gem-catalogue-version4/parsed_gem_catalogue.csv"
+#isc_gem_catalogue_csv = "/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Earthquake_catalogues/isc-gem-catalogue-version4/parsed_gem_catalogue.csv"
 
 #######################################################################################
 #
@@ -80,7 +80,7 @@ dMw = 0.1
 # at least some earthquake events with non-zero probability!
 #
 MAXIMUM_ALLOWED_MW_MAX = 9.6
-MINIMUM_ALLOWED_MW_MAX = 7.65
+MINIMUM_ALLOWED_MW_MAX = 7.25
 
 #
 # Only assign non-zero probability to earthquakes with Mw greater than MW_MIN.
@@ -177,8 +177,8 @@ unit_source_statistics_netcdf_files = Sys.glob(
 # Paths to shapefiles containing unit-source grid (one for each source-zone). 
 #
 unit_source_grid_polygon_shapefiles = Sys.glob(
-    # '../SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
-    '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/MODELS/AustPTHA/SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
+     '../SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
+    #'/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/MODELS/AustPTHA/SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
 
 #
 # NetCDF files with uniform slip max_stage for every hazard point, and also a place for rates for every event
