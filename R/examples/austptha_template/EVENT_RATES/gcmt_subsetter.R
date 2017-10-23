@@ -113,17 +113,16 @@ lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
 #' @param local_mw_threshold keep earthquakes with magnitude >= this
 #' @param local_depth_threshold keep earthquakes with depth <= this
 #' @param target_rake_value Keep events within 'allowed_rake_deviation' of 'target_rake_value'
-#' @param allowed_rake_deviation If rake varies from ideal value by less than this, then 
+#' @param allowed_rake_deviation See 'target_rake_value' above
 #' @param local_buffer_width buffer polygon by this many degrees before running
 #'   point-in-polygon test.
-#' @param use_both_gcmt_solutions Use either rake1 or rake2 when testing for
+#' @param use_both_gcmt_solutions. Use either rake1 or rake2 when testing for
 #'   event inclusion.
 #' @param filter_by_strike Logical. If TRUE, also consider the strike when
 #'   accepting/rejecting gcmt data
 #' @param allowed_strike_deviation. Accepted events must have strike within
-#'   this many degrees of the nearest unit source strike.
+#'   this many degrees of the nearest unit source strike. Only matters if filter_by_strike==TRUE
 #' @param unit_source_table Unit source table for this source zone (only required if filter_by_strike=TRUE)
-#' @param
 #' @return subset of gCMT catalogue
 #'
 get_gcmt_events_in_poly<-function(source_name, 
