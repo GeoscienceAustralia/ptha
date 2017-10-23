@@ -12,7 +12,7 @@
 #'
 #' @param angle vector of angles
 #' @param target_angle vector of target angles
-#' @dtheta vector of 'dthetas' or 'angular deviations'
+#' @param dtheta vector of 'dthetas' or 'angular deviations'
 #' @return logical vector with the same length as angle
 #' @export
 #'

@@ -25,7 +25,7 @@ allowed_rake_deviation = config$rake_deviation
 #'
 #' @param angle vector of angles
 #' @param target_angle vector of target angles
-#' @dtheta vector of 'dthetas' or 'angular deviations'
+#' @param dtheta vector of 'dthetas' or 'angular deviations'
 #' @return logical vector with the same length as angle
 #'
 #' @examples
@@ -93,7 +93,7 @@ if( (cmt_duration_years < diff(range(gcmt$julianDay1900))/days_in_year) |
 #' Takes care of different longitude conventions (i.e. offsets longitude by 360
 #' as required to be inside polygon). If buffer_width is provided, then poly is
 #' buffered by this amount prior to testing inclusion. Buffer_width should be
-#' in the same units as poly's coordinates.
+#' in degrees, which means the 'buffer distance' is not identical everywhere.
 #'
 #' @param lonlat 2 column matrix with longitude/latitude of points
 #' @param poly SpatialPolygons object
