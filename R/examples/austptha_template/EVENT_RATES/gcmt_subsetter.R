@@ -17,42 +17,6 @@ depth_threshold = config$depth_threshold #70 # depth < depth_threshold
 buffer_width = config$buffer_width # Events are inside polygon, after polygon is buffered by 'buffer_width' degrees
 allowed_rake_deviation = config$rake_deviation
 
-#' Test if 'angle' is within 'dtheta' of 'target_angle'
-#'
-#' Function to determine whether the difference between 'angle' and 'target
-#' angle' is less than or equal to 'dtheta'. ALL ANGLES ARE IN DEGREES.
-#' Accounts for circularity of angles. 
-#'
-#' @param angle vector of angles
-#' @param target_angle vector of target angles
-#' @param dtheta vector of 'dthetas' or 'angular deviations'
-#' @return logical vector with the same length as angle
-#'
-#' @examples
-#'    angle = c(340:359, 0:50)
-#'    target_angle = 15
-#'    dtheta = 25
-#'    nearby = angle_within_dtheta_of_target(angle, target_angle, dtheta)
-#'
-#'    # Should evaluate TRUE for angles in [350, 0] and [0, 40]
-#'    expected_result = c(rep(FALSE, 10), rep(TRUE, 51), rep(FALSE, 10))
-#'    stopifnot(all(nearby == expected_result))
-#'
-#'    # Check that more extreme circularity is ok
-#'    for(dev in c(-360*2, 360*3)){
-#'        angle2 = angle + dev
-#'        nearby2 = angle_within_dtheta_of_target(angle2, target_angle, dtheta)
-#'        stopifnot(all(nearby == expected_result))
-#'    }
-#'    
-angle_within_dtheta_of_target<-function(angle, target_angle, dtheta){
-
-    ( (target_angle - angle)%%360 <= dtheta ) | 
-    ( (angle - target_angle)%%360 <= dtheta )
-
-}
-
-
 #
 # Read all unit-source grid shapefiles into a list, with names corresponding to
 # source-zones
@@ -99,8 +63,17 @@ if( (cmt_duration_years < diff(range(gcmt$julianDay1900))/days_in_year) |
 #' @param poly SpatialPolygons object
 #' @param buffer width thickness of buffer to apply to poly before testing the point inclusion.
 #' @return logical vector with one entry for every row in lonlat.
-#'
+#' @export
+#' @examples
+#' # Point p
+#'   p = matrix( c(-180, 10, 180, 10), ncol=2, byrow=TRUE) # Same point with different longitude conventions
+#'   poly_coords = matrix(c(170, 9, 190, 9, 190, 11, 170, 11), ncol=2, byrow=TRUE)
+#'   poly_sp = SpatialPolygons(list(Polygons(list(Polygon(poly_coords)), ID='1')), proj4string=CRS("+init=epsg:4326"))
+#'   is_inside = lonlat_in_poly(p, poly_sp)
+#'   stopifnot(all(is_inside==TRUE))
 lonlat_in_poly<-function(lonlat, poly, buffer_width = 0){
+
+    if(is.null(dim(lonlat))) dim(lonlat) = c(length(lonlat)/2, 2)
 
     if(buffer_width != 0){
         poly = gBuffer(poly, width=buffer_width, byid=TRUE)
