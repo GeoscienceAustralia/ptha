@@ -101,9 +101,18 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     stopifnot(alongstrike_lower < alongstrike_upper)
 
     # Get the CMT data in this segment
+    target_rake = bird2003_env$unit_source_tables[[source_name]]$rake[1]
+    stopifnot(target_rake %in% c(-90, 90))
+    stopifnot(all(bird2003_env$unit_source_tables[[source_name]]$rake == target_rake))
+
+    # Get GCMT data in this source-zone, if it is 'near-enough' to pure thrust or normal
+    # Many default parameters controlling events we select are define in config.R.
     gcmt_data = gcmt_access$get_gcmt_events_in_poly(source_name, 
         alongstrike_index_min=alongstrike_lower,
-        alongstrike_index_max=alongstrike_upper)
+        alongstrike_index_max=alongstrike_upper,
+        target_rake_value=target_rake,
+        unit_source_table = bird2003_env$unit_source_tables[[source_name]])
+
 
     # Get a vector which is true/false depending on whether each unit-source is
     # inside this particular segment

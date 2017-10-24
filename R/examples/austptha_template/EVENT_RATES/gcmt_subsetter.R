@@ -85,9 +85,9 @@ get_gcmt_events_in_poly<-function(source_name,
     target_rake_value = 90,
     allowed_rake_deviation = config$rake_deviation, 
     local_buffer_width=buffer_width,
-    use_both_gcmt_solutions=FALSE,
-    filter_by_strike = FALSE,
-    allowed_strike_deviation = NA,
+    use_both_gcmt_solutions=TRUE,
+    filter_by_strike = TRUE,
+    allowed_strike_deviation = config$strike_deviation,
     unit_source_table = NULL){
 
     target_rake_value = target_rake_value
