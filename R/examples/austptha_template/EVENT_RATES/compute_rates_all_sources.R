@@ -137,7 +137,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     #
     # Coupling
     #
-    sourcepar$coupling   = c(0.05, 0.5, 0.95) #sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
+    #sourcepar$coupling   = c(0.05, 0.5, 0.95)  # Agnostic approach
+    sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     sourcepar$coupling = approx(as.numeric(sourcepar$coupling), n=nbins)$y
     sourcepar$coupling_p = rep(1, length(sourcepar$coupling))/length(sourcepar$coupling)
 
@@ -149,18 +150,19 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         sourcezone_parameters_row$mw_max_observed + mw_observed_perturbation,
         MINIMUM_ALLOWED_MW_MAX)
 
+    max_mw_max_strasser = Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=-1) 
+
     sourcepar$Mw_max = c(
         ## Largest observed plus a small value,
         min_mw_max,
         # Middle Mw
-        0.5*(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=-1) + 
-            min_mw_max),
+        0.5*(max_mw_max_strasser + min_mw_max),
         # Another middle Mw
         #Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
         # Another middle Mw
         #Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
         # Upper mw [Strasser + 1SD]
-        Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=-1) )
+        max_mw_max_strasser)
     #
     # Simple test -- all weight on full source rupture area 
     #sourcepar$Mw_max = c(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
