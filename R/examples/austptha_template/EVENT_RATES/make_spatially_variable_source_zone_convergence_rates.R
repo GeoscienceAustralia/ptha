@@ -194,7 +194,7 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
     #'
     make_conditional_probability_function_uniform_slip<-function(source_name, is_in_segment){
 
-        unit_source_match = grep( source_name, names(unit_source_tables) )
+        unit_source_match = which(names(unit_source_tables) == source_name) #grep( source_name, names(unit_source_tables) )
 
         if(length(unit_source_match) != 1){
             print(unit_source_match)
