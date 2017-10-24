@@ -44,3 +44,12 @@ run it from within R as
 ```r
     source('checkruns.R')
 ```
+
+
+### move_nc_files_and_replace_with_symbolic_links.R
+
+Code to move netcdf files in */TSUNAMI_EVENTS/*.nc onto NCI's gdata filesystem,
+and replace the local files with symbolic links. To reduce the risk of
+accidental deletions, the script renames the existing nc files (by appending
+BACKUP to their name). These files can be manually deleted later if required.
+
