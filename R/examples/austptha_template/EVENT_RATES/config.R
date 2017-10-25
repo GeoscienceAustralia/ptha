@@ -60,6 +60,9 @@ strike_deviation = 50 # Degrees
 # Should we use a uniform prior for coupling?
 use_uniform_coupling_prior = TRUE
 
+# Should we use GCMT to update logic tree weights
+update_logic_tree_weights_with_data = TRUE
+
 #
 # File with parameters for all source-zones, that we use to make source-zone
 # specific rate curves.

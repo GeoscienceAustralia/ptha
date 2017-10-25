@@ -344,7 +344,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         computational_increment = 0.01,
         Mw_frequency_distribution = Mw_frequency_dists,
         Mw_frequency_distribution_prob = Mw_frequency_dists_p,
-        update_logic_tree_weights_with_data=TRUE,
+        update_logic_tree_weights_with_data=config$update_logic_tree_weights_with_data,
         Mw_count_duration = c(gcmt_access$mw_threshold, nrow(gcmt_data), 
             gcmt_access$cmt_duration_years),
         Mw_obs_data = gcmt_data_for_rate_function,
