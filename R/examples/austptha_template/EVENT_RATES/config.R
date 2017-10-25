@@ -15,7 +15,7 @@ depth_threshold = 71 # km
 
 # Events are treated as inside the source-zone, if either the GCMT hypocentre or GCMT centroid
 # is inside the source-zone-polygon, after the polygon is buffered by 'buffer_width' degrees
-buffer_width = 0.2 
+buffer_width = 0.4
 
 #
 # See also 'rake_deviation' and 'strike_deviation' below

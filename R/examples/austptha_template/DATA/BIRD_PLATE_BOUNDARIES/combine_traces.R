@@ -1,10 +1,67 @@
 #
 # Combine subuction zone trace information from multiple sources to a single table
 #
+
+# Make sure traces_table.csv is the last one -- since we need to apply some hacks to it
 sources  = c('bird_traces_table.csv', 'Arakan_traces_table.csv', 'Seramsouth_traces_table.csv', 'traces_table.csv')
+
+#
+# Data to help tweak outer-rise parameters from traces_table.csv
+#
+
+#
+# Original annual_slip_x_area derived for outer-rise sources
+#
+outer_rise_slip_x_area = list(
+    outer_rise_sunda          = 113999950,
+    outer_rise_puysegur       = 5640785  ,
+    outer_rise_tonga_kermadec = 141119555,
+    outer_rise_new_hebrides   = 68660116,
+    outer_rise_timor          = 5179095,
+    outer_rise_solomons       = 67016122)
+
+# Annual slip_x_area derived for 'corresponding subduction zones' in units of m^3 / year
+subduction_slip_x_area = list(
+    outer_rise_sunda         = 48458909870,
+    outer_rise_puysegur      = 1101709520,
+    outer_rise_tonga_kermadec= 42457361492,
+    outer_rise_new_hebrides  = 14296631957,
+    outer_rise_timor         = 2433991591,
+    outer_rise_solomons      = 17372316500)
+
+#
+# Ratio of outer-rise moment rate to subduction-zone moment rate
+#
+outer_rise_multiplier = 0.06
 
 for(i in 1:length(sources)){
     newtab = read.csv(sources[i])
+
+    if(sources[i] == 'traces_table.csv'){
+        print('FIXING traces_table.csv')
+        # Initially, JG assigned outer-rise source-zones a moment rate of ~
+        # 0.4% of the corresponding subduction-zone rate, based on estimates in
+        # Sleep (2012). However, comparison with observed earthquake rates
+        # indicated that much higher values were required (e.g. 6%, rather than 0.4%).
+
+        # Hence, here we apply a 'fix' to the data
+        tofix = names(outer_rise_slip_x_area)    
+        for(i in 1:length(tofix)){
+
+            current_moment_ratio = outer_rise_slip_x_area[[tofix[i]]] / subduction_slip_x_area[[tofix[i]]]
+
+            # Assume 'relative' rates of velocities are correct, but they need to be rescaled
+            indices_to_fix = which(grepl(tofix[i], newtab$name))
+
+            velocity_scale = outer_rise_multiplier / current_moment_ratio
+            print(c(tofix[i], current_moment_ratio, outer_rise_multiplier, velocity_scale, length(indices_to_fix)))
+
+            newtab$RL_vel[indices_to_fix]  = newtab$RL_vel[indices_to_fix]  * velocity_scale
+            newtab$Div_vel[indices_to_fix] = newtab$Div_vel[indices_to_fix] * velocity_scale
+            newtab$Vel_L2R[indices_to_fix] = newtab$Vel_L2R[indices_to_fix] * velocity_scale
+        }
+
+    }
 
     if(i == 1){
         bigtab = newtab

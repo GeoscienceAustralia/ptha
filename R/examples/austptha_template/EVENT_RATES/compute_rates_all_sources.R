@@ -111,6 +111,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         alongstrike_index_min=alongstrike_lower,
         alongstrike_index_max=alongstrike_upper,
         target_rake_value=target_rake,
+        filter_by_strike = (target_rake != -90), # For normal fault sources, allow the strike to go either way (like outer rise events)
         unit_source_table = bird2003_env$unit_source_tables[[source_name]])
 
 
@@ -613,6 +614,11 @@ for(i in 1:length(source_segment_names)){
 #
 
 
+#
+#
+#
+save.image('compute_rates_all_sources_session.RData')
+
 ## for(i in 1:length(source_envs)){
 ##     print('')
 ##     print('##################')
@@ -628,3 +634,63 @@ for(i in 1:length(source_segment_names)){
 ##     print(weighted.mean(xx$all_par$Mw_max, xx$all_par_prob) - weighted.mean(xx$all_par$Mw_max, xx$all_par_prob_prior))
 ## 
 ## }
+
+#
+# Various other one-off computations that were required
+#
+if(FALSE){
+
+    #
+    # Moment rate from GCMT on sources with outer-rise
+    # 
+    thrust_sources = c('sunda', 'kermadectonga', 'puysegur', 'newhebrides', 'timor', 'solomon')
+    outerrise_sources = c('outerrisesunda', 'outerrise_kermadectonga', 'outerrise_puysegur', 
+        'outerrisenewhebrides', 'outer_rise_timor', 'outerrisesolomon')
+
+    thrust_moment_rate = unlist(lapply(source_envs[thrust_sources], f<-function(x) sum(M0_2_Mw(x$gcmt_data$Mw, inverse=TRUE))))
+    normal_moment_rate = unlist(lapply(source_envs[outerrise_sources], f<-function(x) sum(M0_2_Mw(x$gcmt_data$Mw, inverse=TRUE))))
+
+    sum(normal_moment_rate)/sum(thrust_moment_rate)
+
+    #
+    # Cross check values
+    #
+    sources_2 = c('kurilsjapan', 'izumariana', 'mexico', 'southamerica', 'alaskaaleutians')
+    thrust_moment_rate2 = rep(NA, length(sources_2))
+    normal_moment_rate2 = rep(NA, length(sources_2))
+    for(i in 1:length(sources_2)){
+        # Thrust events
+        gcmt_subset = gcmt_access$get_gcmt_events_in_poly(sources_2[i], target_rake_value=90, 
+            filter_by_strike=TRUE, unit_source_table=bird2003_env$unit_source_tables[[sources_2[i]]])
+        thrust_moment_rate2[i] = sum(M0_2_Mw(gcmt_subset$Mw, inverse=TRUE))
+        # Normal events
+        gcmt_subset = gcmt_access$get_gcmt_events_in_poly(sources_2[i], target_rake_value=-90, 
+            filter_by_strike=FALSE)
+        normal_moment_rate2[i] = sum(M0_2_Mw(gcmt_subset$Mw, inverse=TRUE))
+    }
+
+    sum(normal_moment_rate2)/sum(thrust_moment_rate2)
+
+    ## Combined
+
+    sum(c(normal_moment_rate2, normal_moment_rate))/sum(c(thrust_moment_rate2, thrust_moment_rate))
+
+
+    #
+    # Moment rate on sources with outer-rise. This was used to correct the originally estimated
+    # moment rates on outer-rise sources (which were too low)
+    thrust_sources = c('sunda', 'kermadectonga', 'puysegur', 'newhebrides', 'timor', 'solomon')
+    for(i in 1:length(thrust_sources)){
+        uss = bird2003_env$unit_source_tables[[thrust_sources[i]]]
+        slip_x_area = sum(uss$length*uss$width*1e+06*pmax(0, -uss$bird_vel_div/1000))
+        print(c(thrust_sources[i], slip_x_area))
+    }
+    outerrise_sources = c('outerrisesunda', 'outerrise_kermadectonga', 'outerrise_puysegur', 
+        'outerrisenewhebrides', 'outer_rise_timor', 'outerrisesolomon')
+    for(i in 1:length(outerrise_sources)){
+        uss = bird2003_env$unit_source_tables[[outerrise_sources[i]]]
+        slip_x_area = sum(uss$length*uss$width*1e+06*pmax(0, uss$bird_vel_div/1000))
+        print(c(outerrise_sources[i], slip_x_area))
+    }
+
+}
