@@ -606,7 +606,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         }else{
             # Detailed temporal data was provided.
             # Times must be sorted
-            stopifnot(min(diff(Mw_obs_data$t)) > 0)
+            stopifnot(min(diff(Mw_obs_data$t)) >= 0)
             stopifnot(min(Mw_obs_data$t) >= 0)
             stopifnot(max(Mw_obs_data$t) <= data_observation_duration)
 
