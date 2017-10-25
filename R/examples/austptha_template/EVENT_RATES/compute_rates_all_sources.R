@@ -138,8 +138,11 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     #
     # Coupling
     #
-    #sourcepar$coupling   = c(0.05, 0.5, 0.95)  # Agnostic approach
-    sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
+    if(config$use_uniform_coupling_prior){
+        sourcepar$coupling   = c(0.01, 0.5, 0.99)  # Agnostic approach
+    }else{
+        sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
+    }
     sourcepar$coupling = approx(as.numeric(sourcepar$coupling), n=nbins)$y
     sourcepar$coupling_p = rep(1, length(sourcepar$coupling))/length(sourcepar$coupling)
 

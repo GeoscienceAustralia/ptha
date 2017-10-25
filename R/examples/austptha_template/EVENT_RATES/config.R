@@ -57,6 +57,9 @@ rake_deviation = 50 # Degrees
 # As above for strike
 strike_deviation = 50 # Degrees
 
+# Should we use a uniform prior for coupling?
+use_uniform_coupling_prior = TRUE
+
 #
 # File with parameters for all source-zones, that we use to make source-zone
 # specific rate curves.
