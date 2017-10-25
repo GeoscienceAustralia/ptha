@@ -96,13 +96,19 @@ curve (normalised to a density for values above Mw_count_duration[1]). The
 numerical differentiation uses a central difference over eps=1.0e-04
 magnitude units, which should be fairly accurate although not perfectly
 exact. \cr
-If Mw_obs_data$t is not null, we assume event occurrence times are a
-realisation of a poisson process (treating the time before the first event
-and the time after the last event as censored observations). Note that the
-time between the last event and the end of observations is inferred as
-(Mw_count_duration[3] - t[length(t)]), while the time before the first event
-is just t[1], so we must have Mw_obs_data$t[1] >= 0 and max(Mw_obs_data$t) <=
-Mw_count_duration[3]. \cr
+If Mw_obs_data$t is not null (NOT RECOMMENDED DUE TO BIAS, see below), then
+we assume event occurrence times are a realisation of a Poisson process
+(treating the time before the first event and the time after the last event
+as censored observations). BEWARE THAT CENSORED MAXIMUM LIKELIHOOD IS BIASED
+DOWNWARD FOR THIS PROBLEM, SEE
+https://stats.stackexchange.com/questions/133347/ml-estimate-of-exponential-distribution-with-censored-data
+In practice it is better to use the 'Poisson counts' approach above, but we
+include the censored approach because it will generalise to non-Poisson interevent
+times more easily (not currently implemented). With the censored approach,
+that the time between the last event and the end of observations is inferred
+as (Mw_count_duration[3] - t[length(t)]), while the time before the first
+event is just t[1], so we must have Mw_obs_data$t[1] >= 0 and
+max(Mw_obs_data$t) <= Mw_count_duration[3]. \cr
 It is worth noting a situation when the use of detailed temporal data is identical to the
 simpler approach of providing only Mw_count_duration. Consider a case where
 Mw_obs_data$t=NULL and Mw_obs_data$Mw=NULL, and Mw_count_duration = c(7.5, 3,

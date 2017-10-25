@@ -506,7 +506,7 @@ parfun<-function(i){
     capture.output(output$sourcepar, file=log_filename)
 }
 # Run for all source zones
-if(MC_CORES > 1){
+if(config$MC_CORES > 1){
     library(parallel)
     source_envs = mclapply(as.list(1:length(source_segment_names)), parfun, 
         mc.cores=config$MC_CORES)
@@ -526,7 +526,8 @@ pdf('rate_curves_on_source_zones.pdf', width=9, height=7)
 for(i in 1:length(source_segment_names)){
      
     # Get all the information
-    all_rate_curves = source_envs[[i]]$mw_rate_function(NA, return_all_logic_tree_branches=TRUE)
+    all_rate_curves = source_envs[[i]]$mw_rate_function(NA, 
+        return_all_logic_tree_branches=TRUE)
 
     mw = all_rate_curves$Mw_seq
     plot(xlim, ylim, log='y', col=0, xlab='Mw', ylab='Exceedance Rate')
@@ -543,7 +544,8 @@ for(i in 1:length(source_segment_names)){
         points(mw, curve, t='l', col='grey')
     }
 
-    points(mw, source_envs[[i]]$mw_rate_function(mw), t='o', col='black', pch=17, cex=0.5)
+    points(mw, source_envs[[i]]$mw_rate_function(mw), t='o', col='black', 
+        pch=17, cex=0.5)
 
     # Mean prior curve
     mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)

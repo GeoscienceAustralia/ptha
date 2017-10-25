@@ -791,7 +791,7 @@ rotate_cartesian2d<-function(points, origin, x_axis_vector, inverse=FALSE){
 #'
 #' @param lonlat 2 column matrix with longitude/latitude of points
 #' @param poly SpatialPolygons object
-#' @param buffer width thickness of buffer to apply to poly before testing the point inclusion.
+#' @param buffer_width thickness of buffer to apply to poly before testing the point inclusion.
 #' @return logical vector with one entry for every row in lonlat.
 #' @export
 #' @examples
