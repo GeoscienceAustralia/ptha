@@ -246,7 +246,6 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
                     # the seismic moment
                     div_vec = pmax(0, -uss$bird_vel_div[ui]) * local_is_in_segment[ui]
                 }
-                if(max(div_vec) <= 0) stop('No tectonic moment on this source -- suggests an input bug')
 
                 rl_vec = uss$bird_vel_rl[ui] * local_is_in_segment[ui]
                 deg2rad = pi/180
