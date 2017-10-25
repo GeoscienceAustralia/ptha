@@ -139,7 +139,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     # Coupling
     #
     if(config$use_uniform_coupling_prior){
-        sourcepar$coupling   = c(0.01, 0.5, 0.99)  # Agnostic approach
+        sourcepar$coupling   = c(0.3, 0.7, 1.5)  # Agnostic approach, but avoid very low coupling (e.g to account for Cascadia type sites)
     }else{
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     }
@@ -313,10 +313,11 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     if(nrow(gcmt_data) > 0){
         gcmt_data_for_rate_function = list(
             # Magnitude
-            Mw = gcmt_data$Mw,
+            Mw = gcmt_data$Mw, 
             # Time since the start of observation, in years
-            t = (gcmt_data$julianDay1900 - 
-                gcmt_access$cmt_start_time_julianDay1900)/gcmt_access$days_in_year
+            #t = (gcmt_data$julianDay1900 - 
+            #    gcmt_access$cmt_start_time_julianDay1900)/gcmt_access$days_in_year
+            t = NULL # Censored likelihood is biased for rates, better to use poisson count approach.
         )
     }else{
         gcmt_data_for_rate_function = list(Mw = NULL, t = NULL)
@@ -495,16 +496,25 @@ names(source_envs) = source_segment_names
 source_log_dir = config$sourcezone_log_directory
 dir.create(source_log_dir, showWarnings=FALSE)
 
-for(i in 1:length(source_segment_names)){
-
-    source_envs[[i]] = source_rate_environment_fun(
-        sourcezone_parameters[i,])
+# Function to run in parallel over all source zones
+parfun<-function(i){
+    output = source_rate_environment_fun(sourcezone_parameters[i,])
 
     # Write parameters to a log for later checks
-    log_filename = paste0(source_log_dir, '/', names(source_envs)[i], 
+    log_filename = paste0(source_log_dir, '/', source_segment_names[i], 
         '_', i, '.log')
-    capture.output(source_envs[[i]]$sourcepar, file=log_filename)
+    capture.output(output$sourcepar, file=log_filename)
 }
+# Run for all source zones
+if(MC_CORES > 1){
+    library(parallel)
+    source_envs = mclapply(as.list(1:length(source_segment_names)), parfun, 
+        mc.cores=config$MC_CORES)
+}else{
+    source_envs = lapply(as.list(1:length(source_segment_names)),
+        parfun)
+}
+names(source_envs) = source_segment_names
 
 #
 # Plot all the rate curves to a single pdf
@@ -534,6 +544,10 @@ for(i in 1:length(source_segment_names)){
     }
 
     points(mw, source_envs[[i]]$mw_rate_function(mw), t='o', col='black', pch=17, cex=0.5)
+
+    # Mean prior curve
+    mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)
+    points(mw, mean_prior_curve, t='l', lwd=2, col='orange', lty='dashed')
 
     # Add empirical Mw-vs-rate for GCMT data
     gcmt_data = source_envs[[i]]$gcmt_data

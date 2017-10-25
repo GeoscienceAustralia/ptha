@@ -86,7 +86,7 @@ dMw = 0.1
 # at least some earthquake events with non-zero probability!
 #
 MAXIMUM_ALLOWED_MW_MAX = 9.6
-MINIMUM_ALLOWED_MW_MAX = 7.25
+MINIMUM_ALLOWED_MW_MAX = 7.65
 
 #
 # Only assign non-zero probability to earthquakes with Mw greater than MW_MIN.
@@ -117,7 +117,7 @@ Mw_frequency_distribution_weights = c(0.7, 0.3) # Must sum to give 1.0
 # Beware the computational time scales with a high power of this number, so large values will
 # slow the computation greatly.
 #
-logic_tree_parameter_subsampling_factor = 9
+logic_tree_parameter_subsampling_factor = 15
 
 # Inverse quantiles used for lower and upper credible intervals
 lower_ci_inv_quantile = 0.025
