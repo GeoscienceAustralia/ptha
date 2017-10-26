@@ -94,11 +94,6 @@ source_zone_stage_exceedance_rates<-function(
 
     lgp = length(gauge_points[,1])
 
-    # Check that gauges are ordered as expected
-    local_gauge_points = read_lon_lat_elev(tsunami_file)
-    stopifnot(all(local_gauge_points == gauge_points))
-    rm(local_gauge_points)
-
     # Store the rates at every stage in stage_seq
     output_rates = matrix( NA, nrow=stage_seq_len, ncol=lgp )
     output_rates_lower_ci = matrix( NA, nrow=stage_seq_len, ncol=lgp )
@@ -111,6 +106,7 @@ source_zone_stage_exceedance_rates<-function(
     fid = nc_open(tsunami_file, readunlim=FALSE)
 
     # Get rate for every event
+    # FIXME: Cheaper to get it from non-tsunami file
     event_rate = ncvar_get(fid, 'event_rate_annual')
     event_rate_lower = ncvar_get(fid, 'event_rate_annual_lower_ci')
     event_rate_upper = ncvar_get(fid, 'event_rate_annual_upper_ci')

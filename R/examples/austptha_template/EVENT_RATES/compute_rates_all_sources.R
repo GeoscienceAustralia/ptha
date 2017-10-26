@@ -14,7 +14,6 @@ source('config.R', local=config)
 
 gcmt_access = new.env()
 source('gcmt_subsetter.R', local=gcmt_access)
-# FIXME: Edit GCMT data selection using strike of source-zone.
 
 #
 # INPUTS
@@ -64,7 +63,6 @@ stopifnot(all(sourcezone_parameters$rake[!is.na(sourcezone_parameters$rake)] %in
 # Get environment we can use to provide spatially variable convergence
 # information
 source('make_spatially_variable_source_zone_convergence_rates.R')
-# FIXME: Mappings to some Bird source-zones require manual edits.
 bird2003_env = event_conditional_probability_bird2003_factory(
     return_environment=TRUE)
 
@@ -167,11 +165,6 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         #Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
         # Upper mw [Strasser + 1SD]
         max_mw_max_strasser)
-    #
-    # Simple test -- all weight on full source rupture area 
-    #sourcepar$Mw_max = c(Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
-    #    Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0)+0.01)
-    #
 
     # Ensure ordered
     sourcepar$Mw_max = sort(sourcepar$Mw_max)
@@ -363,7 +356,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
-    event_rates_upper = as.numeric(
+    # FIXME: For now, I am putting dummy values in the upper/lower CI. Should 
+    # revisit to treat multi-segment sources
+    event_rates_upper = event_rates + 0*as.numeric(
         event_conditional_probabilities * 
         (mw_rate_function(event_table$Mw - dMw/2, 
             quantiles=config$upper_ci_inv_quantile) - 
@@ -373,7 +368,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
     # Lower credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
-    event_rates_lower = as.numeric(
+    # FIXME: For now, I am putting dummy values in the upper/lower CI. Should 
+    # revisit to treat multi-segment sources
+    event_rates_lower = event_rates + 0*as.numeric(
         event_conditional_probabilities * 
         (mw_rate_function(event_table$Mw - dMw/2, 
             quantiles=config$lower_ci_inv_quantile) - 
@@ -576,18 +573,23 @@ for(i in 1:length(source_segment_names)){
     num_diff<-function(x, y){
         # Quick numerical derivative
         N = length(x)
-        c( (y[2]-y[1])/(x[2]-x[1]), (y[3:N] - y[1:(N-2)])/(x[3:N] - x[1:(N-2)]), (y[N] - y[N-1])/(x[N] - x[N-1]))
+        c( (y[2]-y[1])/(x[2]-x[1]), 
+           (y[3:N] - y[1:(N-2)])/(x[3:N] - x[1:(N-2)]), 
+           (y[N] - y[N-1])/(x[N] - x[N-1]) )
     }
 
     plot_derivs <-function(var, prior=FALSE){
         vars = sort(unique(all_rate_curves$all_par[[var]]))
-        vars_cdf = sapply(vars, f<-function(x) sum(all_rate_curves$all_par_prob*(all_rate_curves$all_par[[var]] <= x)))
-        vars_cdf_prior = sapply(vars, f<-function(x) sum(all_rate_curves$all_par_prob_prior*(all_rate_curves$all_par[[var]] <= x)))
+        vars_cdf = sapply(vars, f<-function(x){
+            sum(all_rate_curves$all_par_prob*(all_rate_curves$all_par[[var]] <= x))} )
+        vars_cdf_prior = sapply(vars, f<-function(x){
+            sum(all_rate_curves$all_par_prob_prior*(all_rate_curves$all_par[[var]] <= x))})
         vars_dens = num_diff(vars, vars_cdf)
         vars_dens_prior = num_diff(vars, vars_cdf_prior)
         var_info=list(x=vars, density=vars_dens, prior_density=vars_dens_prior)
 
-        plot(vars, vars_dens, t='h', lend=1, ylim=c(0, max(vars_dens)), main=paste0(var, ' density'), xlab=var, ylab='density')
+        plot(vars, vars_dens, t='h', lend=1, ylim=c(0, max(vars_dens)), 
+            main=paste0(var, ' density'), xlab=var, ylab='density')
         points(vars, vars_dens_prior, t='l', col='red', lty='dotted')
 
         return(invisible(var_info))
@@ -604,7 +606,8 @@ for(i in 1:length(source_segment_names)){
 
 # Globally integrated rates
 # Get all the information
-all_rate_curves = source_envs[[1]]$mw_rate_function(NA, return_all_logic_tree_branches=TRUE)
+all_rate_curves = source_envs[[1]]$mw_rate_function(NA, 
+    return_all_logic_tree_branches=TRUE)
 mw = all_rate_curves$Mw_seq
 rate_vals = mw*0
 gcmt_global = data.frame()
@@ -613,7 +616,8 @@ for(i in 1:length(source_segment_names)){
     rate_vals = rate_vals + (
         source_envs[[i]]$mw_rate_function(mw) * 
         as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight))
-    # Get the GCMT data ONLY for the unsegmented models, so we avoid double-counting
+    # Get the GCMT data ONLY for the unsegmented models, so we avoid
+    # double-counting
     if(source_envs[[i]]$segment_name == ''){
         gcmt_global = rbind(gcmt_global, source_envs[[i]]$gcmt_data)
     }
@@ -657,6 +661,103 @@ for(i in 1:length(source_segment_names)){
     rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
     write_rates_to_event_table(source_envs[[i]], scale_rate = rate_scale, add_rate=TRUE)
 }
+
+###   #
+###   # Write to netcdf with a sourcezone specific approach
+###   #
+###   sourcenames = sourcezone_parameters$sourcename
+###   unique_sourcenames = unique(sourcenames)
+###   for(i in 1:length(unique_sourcenames)){
+###       # When ruptures include segmentation, we need to integrate multiple source_envs
+###       k = which(sourcenames == unique_sourcenames[[i]])
+###   
+###       # Extract key data for all segments
+###       segment_altb = list() # all logic tree branches
+###       segment_event_cond_prob = list()
+###       segment_event_Mw = list()
+###       segment_row_weight = list()
+###       for(j in 1:length(k)){
+###           kj = k[j]
+###           segment_altb[[j]] = source_envs[[kj]]$mw_rate_function(NA, 
+###               return_all_logic_tree_branches=TRUE)
+###           segment_event_cond_prob[[j]] = source_envs[[kj]]$event_conditional_probabilities
+###           segment_event_Mw[[j]] = source_envs[[kj]]$event_table$Mw
+###           segment_row_weight[[j]] = source_envs[[kj]]$sourcezone_parameters_row$row_weight
+###   
+###           # Mw values should be consistent
+###           stopifnot( all(segment_event_Mw[[j]] == segment_event_Mw[[1]]) )
+###           stopifnot( length(segment_event_cond_prob[[j]]) == length(segment_event_cond_prob[[1]]) )
+###       }
+###   
+###       mw_events = sort(unique(segment_event_Mw[[1]]))
+###       mw_bin_lower = mw_events - config$dMw/2
+###       mw_bin_upper = mw_events + config$dMw/2
+###   
+###       source_event_rates_mean = segment_event_cond_prob[[1]]*0
+###       source_event_rates_upper_CI = segment_event_cond_prob[[1]]*0
+###       source_event_rates_lower_CI = segment_event_cond_prob[[1]]*0
+###   
+###       # Loop over Mw bins defining event magnitudes
+###       for(m in 1:length(mw_events)){
+###           # Indices of events with Mw == mw_events[j] (identical for all segments, as checked above)
+###           evnts = which(segment_event_Mw[[1]] == mw_events[m])
+###   
+###           # Loop over every segment and get rate-vs-probability curve for the m'th mw_bin
+###           rate_vs_prob_sorted = list()
+###           for(j in 1:length(segment_altb)){
+###               # For every logic tree branch, get the rate of events in [
+###               # mw_bin_lower[m], mw_bin_upper[m] ]
+###               logic_tree_rate_in_bin = apply(segment_altb[[j]]$all_rate_matrix, 1, 
+###                   f<-function(x){
+###                        diff(approx(segment_altb[[j]]$Mw_seq, x, xout=c(mw_bin_upper[m], mw_bin_lower[m]))$y)
+###                        }
+###               )
+###   
+###               # Probability of each logic tree branch (assuming the segment is 'true')
+###               logic_tree_prob = segment_altb[[j]]$all_par_prob
+###   
+###               rate_order = order(logic_tree_rate_in_bin)
+###               # Make a rate-vs-prob curve
+###               r1 = logic_tree_rate_in_bin[rate_order]
+###               p1 = logic_tree_prob[rate_order]
+###               p1_cumsum = cumsum(p1)
+###               rate_vs_prob_sorted[[j]] = list(r1=r1, p1=p1, p1_cumsum=p1_cumsum)
+###           }
+###   
+###           for(e in evnts){
+###               # Conditional probability of the event on this segment (given
+###               # that an event of the same Mw occurred)
+###   
+###               r1 = c()
+###               p1 = c()
+###               for(j in 1:length(segment_altb)){
+###                   # Rate at which event 'e' is generated by each logic tree branch
+###                   r1 = c(r1, rate_vs_prob_sorted[[j]]$r1*segment_event_cond_prob[[j]][e])
+###                   p1 = c(p1, rate_vs_prob_sorted[[j]]$p1)
+###               }
+###           }
+###       }
+###   
+###           # Must multiply the posterior probability for each branch by it's row
+###           # weight (i.e. heuristically representing the probability of the branch
+###           # being 'right')
+###           row_weight = source_envs[[kj]]$sourcepar$sourcezone_parameters_row$row_weight
+###   
+###           if(j == 1){
+###               mws = all_logic_tree_branches$Mw_seq
+###               posterior_prob = all_logic_tree_branches$all_par_prob * row_weight
+###               rate_matrix = all_logic_tree_branches$all_rate_matrix
+###           }else{
+###               stopifnot(all(mws == all_logic_tree_branches$Mw_seq))
+###               rate_matrix = rbind(rate_matrix, all_logic_tree_branches$all_rate_matrix)
+###               posterior_prob = c(posterior_prob, all_logic_tree_branches$all_par_prob*row_weight)
+###           }
+###   
+###       }
+###   
+###       #event_rate = apply(rate_matrix, 2, FUN<-function(x) sum(x*posterior_prob))
+###       
+###   }
 
 
 #

@@ -243,6 +243,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     fid = nc_open(nc_file, readunlim=FALSE)
     gauge_max_stage = ncvar_get(fid, 'max_stage', start=c(1,site), count=c(-1,1))
     event_Mw = ncvar_get(fid, 'event_Mw')
+    # FIXME: Get from non-tsunami file -- cheaper read
     event_nominal_rate = ncvar_get(fid, 'event_rate_annual')
     event_nominal_rate_upper = ncvar_get(fid, 'event_rate_annual_upper_ci')
     event_nominal_rate_lower = ncvar_get(fid, 'event_rate_annual_lower_ci')
@@ -426,6 +427,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
 
         # Extract required info from the netcdf files
         fid = nc_open(all_source_tsunami[i], readunlim=FALSE)
+        # FIXME: Cheaper to read from non_tsunami file
         event_index_string = ncvar_get(fid, 'event_index_string')
         event_rates = ncvar_get(fid, 'event_rate_annual')
         event_stage = ncvar_get(fid, 'max_stage', start=c(1,site_index), 
