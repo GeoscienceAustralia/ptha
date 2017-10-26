@@ -117,7 +117,7 @@ Mw_frequency_distribution_weights = c(0.7, 0.3) # Must sum to give 1.0
 # Beware the computational time scales with a high power of this number, so large values will
 # slow the computation greatly.
 #
-logic_tree_parameter_subsampling_factor = 15
+logic_tree_parameter_subsampling_factor = 20
 
 # Inverse quantiles used for lower and upper credible intervals
 lower_ci_inv_quantile = 0.025

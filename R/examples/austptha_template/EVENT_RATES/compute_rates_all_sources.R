@@ -139,7 +139,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     # Coupling
     #
     if(config$use_uniform_coupling_prior){
-        sourcepar$coupling   = c(0.3, 0.7, 1.5)  # Agnostic approach, but avoid very low coupling (e.g to account for Cascadia type sites)
+        sourcepar$coupling   = c(0.3, 0.8, 1.3)  # Agnostic approach, but avoid very low coupling (e.g to account for Cascadia type sites)
     }else{
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     }
@@ -504,6 +504,7 @@ parfun<-function(i){
     log_filename = paste0(source_log_dir, '/', source_segment_names[i], 
         '_', i, '.log')
     capture.output(output$sourcepar, file=log_filename)
+    return(output)
 }
 # Run for all source zones
 if(config$MC_CORES > 1){
@@ -530,6 +531,7 @@ for(i in 1:length(source_segment_names)){
         return_all_logic_tree_branches=TRUE)
 
     mw = all_rate_curves$Mw_seq
+    par(mfrow=c(1,1))
     plot(xlim, ylim, log='y', col=0, xlab='Mw', ylab='Exceedance Rate')
 
     # We will plot quantiles 0, 0.1, 0.2, ... 0.8, 0.9, (1.0-eps) 
@@ -565,11 +567,39 @@ for(i in 1:length(source_segment_names)){
         points(gcmt_data$Mw[ordr], aep[ordr], col='red', pch=19, t='o')
 
     }
-    
 
     title(names(source_envs)[i])
     grid(col='orange')
     abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange', lty='dotted')
+
+    # Posterior of slip, Mw_max, and b
+    num_diff<-function(x, y){
+        # Quick numerical derivative
+        N = length(x)
+        c( (y[2]-y[1])/(x[2]-x[1]), (y[3:N] - y[1:(N-2)])/(x[3:N] - x[1:(N-2)]), (y[N] - y[N-1])/(x[N] - x[N-1]))
+    }
+
+    plot_derivs <-function(var, prior=FALSE){
+        vars = sort(unique(all_rate_curves$all_par[[var]]))
+        vars_cdf = sapply(vars, f<-function(x) sum(all_rate_curves$all_par_prob*(all_rate_curves$all_par[[var]] <= x)))
+        vars_cdf_prior = sapply(vars, f<-function(x) sum(all_rate_curves$all_par_prob_prior*(all_rate_curves$all_par[[var]] <= x)))
+        vars_dens = num_diff(vars, vars_cdf)
+        vars_dens_prior = num_diff(vars, vars_cdf_prior)
+        var_info=list(x=vars, density=vars_dens, prior_density=vars_dens_prior)
+
+        plot(vars, vars_dens, t='h', lend=1, ylim=c(0, max(vars_dens)), main=paste0(var, ' density'), xlab=var, ylab='density')
+        points(vars, vars_dens_prior, t='l', col='red', lty='dotted')
+
+        return(invisible(var_info))
+    }
+
+    par(mfrow=c(2,2))
+    
+    plot_derivs('slip_rate')
+    plot_derivs('Mw_max')
+    plot_derivs('b')
+    # Dummy plot to fill the page
+    plot(0:1, col='white')
 }
 
 # Globally integrated rates
@@ -591,6 +621,7 @@ for(i in 1:length(source_segment_names)){
 }
 
 # Make the globally integrated plot
+par(mfrow=c(1,1))
 plot(mw, rate_vals, t='o', log='y', xlab='Mw', ylab='Exceedance Rate (events/year)', 
     main='All sources integrated rate', xlim=xlim, ylim=ylim)
 if(nrow(gcmt_global) > 0){
