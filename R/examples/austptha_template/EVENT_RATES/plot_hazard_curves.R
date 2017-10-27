@@ -599,7 +599,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         if(sr[1] > 0 & all(!is.na(sr))){
             # Check sorting
             dsr = diff(sr)
-            if(any(dsr) < 0) stop('Unsorted rates')
+            if(any(dsr > 0)) stop('Unsorted rates')
             # Only use points with rate>0 to interpolate -- since rate=0 goes
             # outside our model range -- and further, we might have multiple
             # points with rate=0, which will confuse the approx function (needs
@@ -620,7 +620,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         if(sr[1] > 0 & all(!is.na(sr))){
             # Check sorting
             dsr = diff(sr)
-            if(any(dsr) < 0) stop('Unsorted rates')
+            if(any(dsr > 0)) stop('Unsorted rates')
 
             # Only use points with rate>0 to interpolate -- since rate=0 goes
             # outside our model range -- and further, we might have multiple
@@ -643,7 +643,7 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
         if(sr[1] > 0 & all(!is.na(sr))){
             # Check sorting
             dsr = diff(sr)
-            if(any(dsr) < 0) stop('Unsorted rates')
+            if(any(dsr > 0)) stop('Unsorted rates')
 
             # Only use points with rate>0 to interpolate -- since rate=0 goes
             # outside our model range -- and further, we might have multiple
