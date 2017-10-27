@@ -787,11 +787,11 @@ for(i in 1:length(source_segment_names)){
 ##             }
 ##             ##
 ##             ## Bound on 0.95 quantile
-##             # optimize(best_CI, lower=0.95, upper=1, alpha=0.95, in_segment=c(2,3), type='upper', maximum=FALSE)
+##             # optimize(robust_quantile, lower=0.95, upper=1, alpha=0.95, in_segment=c(2,3), type='upper', maximum=FALSE)
 ##             ## Bound on 0.025 quantile
-##             # optimize(best_CI, lower=0., upper=0.025, alpha=0.025, in_segment=c(2,3), type='lower', maximum=TRUE)
+##             # optimize(robust_quantile, lower=0., upper=0.025, alpha=0.025, in_segment=c(2,3), type='lower', maximum=TRUE)
 ##         } 
-##     }    
+##     }
 ## }
 
 
