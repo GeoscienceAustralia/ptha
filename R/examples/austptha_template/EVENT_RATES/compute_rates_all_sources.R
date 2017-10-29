@@ -778,8 +778,12 @@ for(i in 1:length(source_segment_names)){
 ##                     si = in_segment[i]
 ##                     p1_cs = rate_vs_prob_sorted[[si]]$p1_cumsum
 ##                     ks[i] = sum(p1_cs < all_alphas[i])
-##                     secp = segment_event_cond_prob[[si]][e]
-##                     indiv_rates[i] = rate_vs_prob_sorted[[si]]$r1[ks[i]] * secp
+##                     if(ks[i] > 0){
+##                         secp = segment_event_cond_prob[[si]][e]
+##                         indiv_rates[i] = rate_vs_prob_sorted[[si]]$r1[ks[i]] * secp
+##                     }else{
+##                         indiv_rates[i] = 0
+##                     }
 ##                 } 
 ##
 ##                 return(sum(indiv_rates))

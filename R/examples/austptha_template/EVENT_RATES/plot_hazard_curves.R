@@ -202,7 +202,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     # Get the filename with max_stage
     if(slip_type == 'uniform'){
 
-        nc_file_ind = grep(source_zone, 
+        nc_file_ind = grep(paste0('_tsunami_', source_zone), 
             config_env$all_source_uniform_slip_tsunami)
 
         if(length(nc_file_ind) != 1){
@@ -216,10 +216,10 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     }else if(slip_type %in% c('stochastic', 'variable_uniform')){
 
         if(slip_type == 'stochastic'){
-            nc_file_ind = grep(source_zone, 
+            nc_file_ind = grep(paste0('_tsunami_', source_zone), 
                 config_env$all_source_stochastic_slip_tsunami)
         }else if(slip_type == 'variable_uniform'){
-            nc_file_ind = grep(source_zone, 
+            nc_file_ind = grep(paste0('_tsunami_', source_zone), 
                 config_env$all_source_variable_uniform_slip_tsunami)
         }
 
