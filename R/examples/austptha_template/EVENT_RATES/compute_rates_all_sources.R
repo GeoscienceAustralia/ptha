@@ -29,6 +29,7 @@ source_segment_names = paste0(sourcezone_parameters$sourcename,
 
 # Never allow Mw_max to be greater than this
 MAXIMUM_ALLOWED_MW_MAX = config$MAXIMUM_ALLOWED_MW_MAX  # 9.8
+MAXIMUM_ALLOWED_MW_MAX_NORMAL = config$MAXIMUM_ALLOWED_MW_MAX_NORMAL
 # Never allow Mw_max to be less than this
 MINIMUM_ALLOWED_MW_MAX = config$MINIMUM_ALLOWED_MW_MAX  # 7.65
 
@@ -173,7 +174,12 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     stopifnot(all(diff(sourcepar$Mw_max) > 0))
     # Ensure all Mw meet out constraints
     sourcepar$Mw_max = pmax(sourcepar$Mw_max, min_mw_max)
-    sourcepar$Mw_max = pmin(sourcepar$Mw_max, MAXIMUM_ALLOWED_MW_MAX)
+    
+    if(target_rake == -90){
+        sourcepar$Mw_max = pmin(sourcepar$Mw_max, MAXIMUM_ALLOWED_MW_MAX_NORMAL)
+    }else{
+        sourcepar$Mw_max = pmin(sourcepar$Mw_max, MAXIMUM_ALLOWED_MW_MAX)
+    }
 
     # Interpolate
     sourcepar$Mw_max = approx(sourcepar$Mw_max, n=nbins)$y
