@@ -189,7 +189,8 @@ unit_source_statistics_netcdf_files = Sys.glob(
 # Paths to shapefiles containing unit-source grid (one for each source-zone). 
 #
 unit_source_grid_polygon_shapefiles = Sys.glob(
-     '../SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
+    '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
+    # '../SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
     #'/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/MODELS/AustPTHA/SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
 
 #
