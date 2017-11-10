@@ -105,7 +105,7 @@ https://stats.stackexchange.com/questions/133347/ml-estimate-of-exponential-dist
 In practice it is better to use the 'Poisson counts' approach above, but we
 include the censored approach because it will generalise to non-Poisson interevent
 times more easily (not currently implemented). With the censored approach,
-that the time between the last event and the end of observations is inferred
+note the time between the last event and the end of observations is inferred
 as (Mw_count_duration[3] - t[length(t)]), while the time before the first
 event is just t[1], so we must have Mw_obs_data$t[1] >= 0 and
 max(Mw_obs_data$t) <= Mw_count_duration[3]. \cr
@@ -137,7 +137,8 @@ then the function returns upper/lower/median rates of the logic tree as well
 as the probability weighted mean rate. \cr
 If the optional argument \code{return_all_logic_tree_branches=TRUE} is
 passed, then the function returns a list containing a data.frame with all
-combinations of parameters, a vector with their respective
+combinations of parameters, a vector with the Gutenberg-Richter 'a' parameters
+(that are derived from the latter in the current function), a vector with the respective
 probabilities(weights), a vector with the Mw sequence at which the function
 is tabulated, and a matrix with the tabulated values for every branch of the
 logic tree. The latter option can be used to scrutinize the results from each
@@ -155,7 +156,7 @@ Only one of these optional arguments can be passed at a time.
 }
 \description{
 Create a function f(Mw) which returns the rate of events with 
-magnitude > Mw. Here Mw is a vector of earthquake magnitudes. \cr
+magnitude >= Mw. Here Mw is a vector of earthquake magnitudes. \cr
 The user provides parameters for a variant of the truncated Gutenberg Richter
 model, although the parameter 'a' is adjusted to match the long-term
 seismogenic slip rate (m/year). Details are explained below. \cr
