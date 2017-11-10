@@ -194,7 +194,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' Get a function to compute the rate of earthquakes with magnitude > Mw
 #'
 #' Create a function f(Mw) which returns the rate of events with 
-#' magnitude > Mw. Here Mw is a vector of earthquake magnitudes. \cr
+#' magnitude >= Mw. Here Mw is a vector of earthquake magnitudes. \cr
 #' The user provides parameters for a variant of the truncated Gutenberg Richter
 #' model, although the parameter 'a' is adjusted to match the long-term
 #' seismogenic slip rate (m/year). Details are explained below. \cr
@@ -319,7 +319,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' In practice it is better to use the 'Poisson counts' approach above, but we
 #' include the censored approach because it will generalise to non-Poisson interevent
 #' times more easily (not currently implemented). With the censored approach,
-#' that the time between the last event and the end of observations is inferred
+#' note the time between the last event and the end of observations is inferred
 #' as (Mw_count_duration[3] - t[length(t)]), while the time before the first
 #' event is just t[1], so we must have Mw_obs_data$t[1] >= 0 and
 #' max(Mw_obs_data$t) <= Mw_count_duration[3]. \cr
@@ -347,7 +347,8 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' as the probability weighted mean rate. \cr
 #' If the optional argument \code{return_all_logic_tree_branches=TRUE} is
 #' passed, then the function returns a list containing a data.frame with all
-#' combinations of parameters, a vector with their respective
+#' combinations of parameters, a vector with the Gutenberg-Richter 'a' parameters
+#' (that are derived from the latter in the current function), a vector with the respective
 #' probabilities(weights), a vector with the Mw sequence at which the function
 #' is tabulated, and a matrix with the tabulated values for every branch of the
 #' logic tree. The latter option can be used to scrutinize the results from each
@@ -802,7 +803,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                           Mw_seq = Mw_seq,
                           all_par_prob = all_par_prob,
                           all_par_prob_prior = all_par_prob_prior,
-                          all_par = all_par_combo)
+                          all_par = all_par_combo,
+                          a_parameter = a_parameter)
             return(output)
         }
 
@@ -868,12 +870,12 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
 }
 
-#' Evaluate the rate of earthquakes with magnitude > Mw using a doubly
+#' Evaluate the rate of earthquakes with magnitude >= Mw using a doubly
 #' truncated Gutenberg Richter distribution.
 #'
 #' The Gutenberg Richter distribution gives the number of earthquakes with
 #' magnitude > Mw as:\cr
-#' N_{GR}(x > Mw) = 10^(a-bMw) \cr
+#' N_{GR}(x >= Mw) = 10^(a-bMw) \cr
 #' where a and b are constants. Note 10^(a) is the rate of earthquakes with Mw >
 #' 0. \cr
 #' By differentiating N_{GR} we can estimate the number of events with 
@@ -886,10 +888,11 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 #' For the truncated Gutenberg Richter distribution, n(Mw) is truncated between
 #' lower and upper Mw limits (i.e. set to zero outside these limits). \cr
 #' We then have the equivalent of N_{GR} for the truncated distribution as: \cr
-#' N_{TGR}(x > Mw) = 10^(-max(Mw, Mw_min)*b + a) - 10^(-Mw_max*b + a) \cr
-#' Notice that now, 10^(a) is no-longer the rate of earthquakes with Mw > 0 --
+#' N_{TGR}(x >= Mw) = 10^(-max(Mw, Mw_min)*b + a) - 10^(-Mw_max*b + a) \cr
+#' Notice that now, 10^(a) is no-longer the rate of earthquakes with Mw >= 0 --
 #' instead that rate is :\cr
-#' N_{TGR}(x > Mw_min) = 10^(a - b*Mw_min) - 10^(a - b*Mw_max) \cr
+#' N_{TGR}(x >= Mw_min) = 10^(a - b*Mw_min) - 10^(a - b*Mw_max) \cr
+#' (because there are no events with magnitude <= Mw_min)
 #'
 #' @param Mw Moment magnitude
 #' @param a The a parameter
@@ -914,12 +917,12 @@ Mw_exceedance_rate_truncated_gutenberg_richter<-function(
 #' variant of the Gutenberg Richter distribution.
 #' 
 #' The 'pure' Gutenberg Richter distribution gives the number of earthquakes
-#' with magnitude > Mw as:\cr
-#' N_{GR}(x > Mw) = 10^(a-bMw) \cr
+#' with magnitude >= Mw as:\cr
+#' N_{GR}(x >= Mw) = 10^(a-bMw) \cr
 #' where a and b are constants. Note 10^(a) is the rate of earthquakes with Mw
-#' > 0. \cr
+#' >= 0. \cr
 #' The characteristic formulation used here ajusts this as: \cr
-#' N_{GR}(x > Mw) = 10^(a-bMw) if Mw_min <= Mw <= Mw_max \cr
+#' N_{GR}(x >= Mw) = 10^(a-bMw) if Mw_min <= Mw <= Mw_max \cr
 #' ~~~~~~~~~~~~~  = 10^(a-bMw_min) if Mw < Mw_min \cr
 #' ~~~~~~~~~~~~~  = 0 if Mw > Mw_max \cr
 #' This means that the rate of earthquakes of size EXACTLY Mw_max is finite.

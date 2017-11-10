@@ -11,7 +11,7 @@ lonlat_in_poly(lonlat, poly, buffer_width = 0)
 
 \item{poly}{SpatialPolygons object}
 
-\item{buffer}{width thickness of buffer to apply to poly before testing the point inclusion.}
+\item{buffer_width}{thickness of buffer to apply to poly before testing the point inclusion.}
 }
 \value{
 logical vector with one entry for every row in lonlat.
