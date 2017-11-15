@@ -78,6 +78,11 @@ bird2003_env = event_conditional_probability_bird2003_factory(
 #' it's environment, so we have easy access to key variables
 #'
 #' @param sourcezone_parameters_row row from sourcezone_parameters table
+#' @param unsegmented_edge_rate_multiplier Factor by which we increase the
+#'   conditional probability of ruptures on the edge of the source-zone. Used to
+#'   make the spatial distribution of moment release on the source better
+#'   approximate the desired value. If NULL, it is computed, or ignored (see
+#'   also config$edge_correct_event_rates)
 #' @return the function environment
 #'
 source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edge_rate_multiplier=NULL){
@@ -142,7 +147,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     stopifnot(all(bird2003_env$unit_source_tables[[source_name]]$rake == target_rake))
 
     # Get GCMT data in this source-zone, if it is 'near-enough' to pure thrust or normal
-    # Many default parameters controlling events we select are define in config.R.
+    # Many default parameters controlling events we select are defined in config.R.
     gcmt_data = gcmt_access$get_gcmt_events_in_poly(source_name, 
         alongstrike_index_min=alongstrike_lower,
         alongstrike_index_max=alongstrike_upper,
@@ -152,7 +157,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
 
 
     # Get a vector which is true/false depending on whether each unit-source is
-    # inside this particular segment. (Not to be confused with is_a_segment, which is a scaler logical,
+    # inside this particular segment. (Not to be confused with 'is_a_segment', which is a scaler logical,
     # telling us if the current source is just a segment of a source-zone)
     is_in_segment = 
         ((bird2003_env$unit_source_tables[[source_name]]$alongstrike_number >= alongstrike_lower) &
@@ -176,7 +181,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # Coupling
     #
     if(config$use_uniform_coupling_prior){
-        sourcepar$coupling   = c(0.3, 0.8, 1.3)  # Agnostic approach, but avoid very low coupling (e.g to account for Cascadia type sites)
+        # Agnostic approach, but avoid very low coupling (e.g to account for Cascadia type sites)
+        sourcepar$coupling   = c(0.3, 0.8, 1.3)      
     }else{
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     }
@@ -191,7 +197,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         sourcezone_parameters_row$mw_max_observed + mw_observed_perturbation,
         MINIMUM_ALLOWED_MW_MAX)
 
-    max_mw_max_strasser = Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=-1) 
+    max_mw_max_strasser = Mw_2_rupture_size_inverse(sourcepar$area_in_segment, 
+        relation = sourcezone_parameters_row$scaling_relation, CI_sd=-1) 
 
     sourcepar$Mw_max = c(
         ## Largest observed plus a small value,
@@ -274,18 +281,18 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             w = unit_source_areas * is_in_segment)
 
     }else{
+        # Using a constant convergence rate everywhere
 
         sourcepar$slip = as.numeric(sourcezone_parameters_row$tectonic_slip)*
             as.numeric(sourcezone_parameters_row$convergent_fraction)
 
-        # Constant convergence rate everywhere in the segment
         div_vec = rep(sourcepar$slip, length(unit_source_areas)) * is_in_segment
 
     }
 
     # Account for non-zero dip, and convert from mm/year to m/year -- only
     # averaging over unit-sources in the segment.
-    mean_dip = mean_angle(bird2003_env$unit_source_tables[[source_name]]$dip[which(is_in_segment)])
+    mean_dip = mean_angle(bird2003_env$unit_source_tables[[source_name]]$dip[which(is_in_segment == 1)])
     sourcepar$mean_dip = mean_dip
     deg2rad = pi/180
     cos_dip = cos(mean_dip*deg2rad)
@@ -462,7 +469,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             f2 = fun_to_optimize(10.0)
 
             if(isTRUE(all.equal(f1, f2))){
-                # This should only happen if events on the boundary all have a-prior weight of zero.
+                # This should only happen if events on the boundary all have
+                # a-prior weight of zero, which should only happen for 'is_a_segment'
+                # cases
                 msg = paste0('Use of an edge multiplier is having no impact on source ', source_segment_name)
                 stop(msg)
             }else{
