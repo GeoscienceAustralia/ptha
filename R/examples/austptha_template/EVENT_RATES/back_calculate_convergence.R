@@ -47,8 +47,8 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
     }
 
     # Check input arguments
-    k = is.null(uss) + is.null(event_rates) + is.null(event_Mw) + is.null(event_index_string) + is.null(event_slip)
-    if(! (k %in% c(0, 5)){
+    k = is.null(uss) + is.null(event_rates) + is.null(event_Mw) + is.null(event_index_string) + is.null(slip)
+    if(! (k %in% c(0, 5))){
         msg = 'You must either provide NO event properties, or ALL of them'
         stop(msg)
     }
@@ -57,7 +57,8 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
         stop('Function only works with non-null event properties as arguments if slip_type=="uniform"')
     }
 
-    real_data_from_file = (k==5)
+    # Useful flag, to know if we get values from a file or not
+    read_data_from_file = (k==5)
 
     # Get the unit source summary statistics
     if(read_data_from_file){
@@ -80,6 +81,7 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
         uss = uss
     }
 
+    # Get the event data
     if(read_data_from_file){
 
         # Find the relevant netcdf file
@@ -115,6 +117,7 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
 
     }
 
+    # Convert event_index_string to an easier-to-use form
     eis = sapply(event_index_string,
         f<-function(x) as.numeric(strsplit(x, split="-")[[1]]), simplify=FALSE)
 
@@ -137,6 +140,7 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
         for(i in 1:length(eis)){
             ess[[i]] = eis[[i]]*0 + slip[i]
         }
+
     }else{
         # Non-uniform slip -- the data MUST be read from a file, as enforced above
         event_slip_string = ncvar_get(fid, 'event_slip_string')
@@ -145,7 +149,7 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
             f<-function(x) as.numeric(strsplit(x, split="_")[[1]]),
             simplify=FALSE)
     }
-    nc_close(fid)
+    if(read_data_from_file) nc_close(fid)
 
 
     if(edge_multiplier != 0){
@@ -172,9 +176,14 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
         # Do not change anything, but make 'new_' variables containing the OLD
         # data -- so that the code below works
         new_event_rates = event_rates
+        new_conditional_probability = event_rates*0
         for(i in 1:length(unique_Mw)){
             k = which(event_Mw == unique_Mw[i])
-            new_conditional_probability[k] = 1/length(k)
+            if(all(event_rates[k] == 0)){
+                new_conditional_probability[k] = 1/length(k)
+            }else{
+                new_conditional_probability[k] = new_event_rates[k]/sum(new_event_rates[k])
+            }
         }
     }
     

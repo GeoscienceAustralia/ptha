@@ -80,7 +80,12 @@ bird2003_env = event_conditional_probability_bird2003_factory(
 #' @param sourcezone_parameters_row row from sourcezone_parameters table
 #' @return the function environment
 #'
-source_rate_environment_fun<-function(sourcezone_parameters_row){
+source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edge_rate_multiplier=NULL){
+
+    #
+    # PART 1
+    # Read parameters, basic datasets, etc
+    #
 
     # Store key parameters for easy write-out later
     sourcepar = list()
@@ -93,15 +98,39 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     segment_name = sourcezone_parameters_row$segment_name
     source_segment_name = paste0(source_name, segment_name)
 
+    # If the input segment_name is blank, then we are on a 'full-zource-zone'. For some
+    # operations we need to be careful if this is not the case
+    is_a_segment = (sourcezone_parameters_row$segment_name != '')
+    # Check this is right    
+    if(is_a_segment){
+        if(sum(sourcezone_parameters$sourcename == sourcezone_parameters_row$sourcename)<=1){
+            msg = paste0('Segment name provided on source with only one entry on ', 
+                        'sourcezone_parameters. \n In this case the segment name should be blank,',
+                        ' or there should be another segment in the table')
+            stop(msg)
+        }
+    }else{
+        if(sum(sourcezone_parameters$sourcename == sourcezone_parameters_row$sourcename) != 1){
+            msg = paste0('Source appears more than once, but segment name is blank')
+            stop(msg)
+        }
+    }
+
     # Find the lower/upper alongstrike numbers for this segment. If missing, we
     # assume the 'segment' is actually the entire source-zone
     alongstrike_lower = as.numeric(
         sourcezone_parameters_row$segment_boundary_alongstrike_index_lower)
-    if(is.na(alongstrike_lower)) alongstrike_lower = 1
+    if(is.na(alongstrike_lower)){
+        alongstrike_lower = 1
+        stopifnot(!is_a_segment)
+    }
 
     alongstrike_upper = as.numeric(
         sourcezone_parameters_row$segment_boundary_alongstrike_index_upper)
-    if(is.na(alongstrike_upper)) alongstrike_upper = Inf
+    if(is.na(alongstrike_upper)){
+        alongstrike_upper = Inf
+        stopifnot(!is_a_segment)
+    }
 
     stopifnot(alongstrike_lower < alongstrike_upper)
 
@@ -121,7 +150,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
 
     # Get a vector which is true/false depending on whether each unit-source is
-    # inside this particular segment
+    # inside this particular segment. (Not to be confused with is_a_segment, which is a scaler logical,
+    # telling us if the current source is just a segment of a source-zone)
     is_in_segment = 
         ((bird2003_env$unit_source_tables[[source_name]]$alongstrike_number >= alongstrike_lower) &
          (bird2003_env$unit_source_tables[[source_name]]$alongstrike_number <= alongstrike_upper))
@@ -194,6 +224,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     sourcepar$Mw_max_p = rep(1, length(sourcepar$Mw_max) )/length(sourcepar$Mw_max)
 
     #
+    # PART 2.
     # Tectonic convergence rate
     #
 
@@ -245,6 +276,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         sourcepar$slip = as.numeric(sourcezone_parameters_row$tectonic_slip)*
             as.numeric(sourcezone_parameters_row$convergent_fraction)
 
+        # Constant convergence rate everywhere in the segment
+        div_vec = rep(sourcepar$slip, length(unit_source_areas)) * is_in_segment
+
     }
 
     # Account for non-zero dip, and convert from mm/year to m/year -- only
@@ -271,6 +305,13 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
     stopifnot( all(event_table$Mw == sort(event_table$Mw)) )
     # Check we didn't destroy the table by rouding!
     stopifnot( all( (diff(event_table$Mw) == 0) | ( abs(diff(event_table$Mw) - dMw) < 1.0e-12 ) ) )
+
+    #
+    # PART 3
+    # Get a preliminary event conditional probability model; use it to compute
+    # the mw_rate_function, then update the event conditional probability model
+    # (this will not affect the mw_rate_function)
+    #
 
     #
     # Event conditional probabilities
@@ -310,6 +351,10 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
 
     }
 
+    # NOTE: These conditional probabilities may be updated to deal with 'edge-effects'
+    # further in the code. The aim is to make the integrated slip more consistent with
+    # moment conservation -- whereas the current approach tends to concentrate moment
+    # release more towards the centre of the rupture.
     event_conditional_probabilities = get_event_probabilities_conditional_on_Mw(
         event_table, 
         conditional_probability_model = conditional_probability_model)    
@@ -357,6 +402,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         account_for_moment_below_mwmin = TRUE
         )
 
+    # Nearly finished .....
     #
     # Optionally adjust the conditional probability of the events, to better satisfy spatial
     # variations in seismic moment conservation
@@ -392,9 +438,10 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
             model = back_calculate_convergence_env$output$integrated_slip
 
             #
-            # We want the shape to be like 'div_vec'. Coupling might rescale this. Return 
-            # A goodness of fit value that reflects that, unless we explicitly request to
-            # return the above function environment
+            # We want the shape of the convergent slip to be like 'div_vec'.
+            # Coupling might rescale this. Return a goodness of fit value that
+            # reflects that, unless we explicitly request to return the above
+            # function environment
             #
             if(!return_conditional_probabilities){ 
                 output = sum( is_in_segment*( model/sum(model) - div_vec/sum(div_vec) )**2 )
@@ -405,28 +452,51 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
             return(output)
         }
 
-        # If we are on a segmented source zone, on a segment where
-        # the rate of events on the boundary = 0, then changing edge_multiplier might
-        # have no effect. Check that
-        f1 = fun_to_optimize(0.0)
-        f2 = fun_to_optimize(10.0)
-        if(isTRUE(all.equal(f1, f2))){
-            # This should only happen if events on the boundary all have a-prior weight of zero.
-            # That implies we are in a segmented source-zone
-            # In that case, we should not change anything
+
+        if(!is_a_segment){
+
+            # Tests to weed out problematic cases
+            f1 = fun_to_optimize(0.0)
+            f2 = fun_to_optimize(10.0)
+
+            if(isTRUE(all.equal(f1, f2))){
+                # This should only happen if events on the boundary all have a-prior weight of zero.
+                msg = paste0('Use of an edge multiplier is having no impact on source ', source_segment_name)
+                stop(msg)
+            }else{
+                # Find the optimal edge_multiplier
+                best_edge_mult = optimize(fun_to_optimize, lower=0, upper=30)
+                # Check that results are not hitting these boundaries
+                if(best_edge_mult$minimum < 1.0e-03 | best_edge_mult$minimum > 29.999){
+                    print(paste0('Check edge_multiplier on ', source_segment_name))
+                }
+                # Get the conditional probabilities from the 'best' edge_multiplier
+                best_conv_env = fun_to_optimize(best_edge_mult$minimum, return_conditional_probabilities=TRUE)
+                event_conditional_probabilities = best_conv_env$new_conditional_probability
+            }
+
         }else{
-            # Find the optimal edge_multiplier
-            best_edge_mult = optimize(fun_to_optimize, lower=0, upper=30)
-            # Check that results are not crazy
-            if(best_conv_env$minimum < 1.0e-03 | best_conv_env$minimum > 29.999){
-                print(paste0('Check edge_multiplier on ', source_name))
+            #
+            # We are on a segment. It might be hard to stably estimate the edge_multiplier, because
+            # the edge events might have little impact on the convergence on this source. Therefore,
+            # it seems better to use the edge_multiplier from the unsegmented source
+            if( is.null(unsegmented_edge_rate_multiplier) ){
+                msg = 'Must provide an unsegmented_edge_rate_multiplier on segments'
+                stop(msg)
+            }
+            best_edge_mult = list()
+            best_edge_mult$minimum = unsegmented_edge_rate_multiplier
+            if(best_edge_mult$minimum < 1.0e-03 | best_edge_mult$minimum > 29.999){
+                print(paste0('Check edge_multiplier on ', source_segment_name))
             }
             # Get the conditional probabilities from the 'best' edge_multiplier
             best_conv_env = fun_to_optimize(best_edge_mult$minimum, return_conditional_probabilities=TRUE)
             event_conditional_probabilities = best_conv_env$new_conditional_probability
         }
-
+        sourcepar$best_edge_multiplier = best_edge_mult
     }
+
+
 
     #
     # Nominal rates on all events
@@ -596,8 +666,10 @@ source_log_dir = config$sourcezone_log_directory
 dir.create(source_log_dir, showWarnings=FALSE)
 
 # Function to run in parallel over all source zones
-parfun<-function(i){
-    output = source_rate_environment_fun(sourcezone_parameters[i,])
+parfun<-function(i, unsegmented_edge_rate_multiplier=NULL){
+
+    output = source_rate_environment_fun(sourcezone_parameters[i,],
+        unsegmented_edge_rate_multiplier = unsegmented_edge_rate_multiplier)
 
     # Write parameters to a log for later checks
     log_filename = paste0(source_log_dir, '/', source_segment_names[i], 
@@ -605,16 +677,73 @@ parfun<-function(i){
     capture.output(output$sourcepar, file=log_filename)
     return(output)
 }
+
+#
 # Run for all source zones
-if(config$MC_CORES > 1){
-    library(parallel)
-    source_envs = mclapply(as.list(1:length(source_segment_names)), parfun, 
-        mc.cores=config$MC_CORES)
-}else{
-    source_envs = lapply(as.list(1:length(source_segment_names)),
-        parfun)
-}
+#
+source_envs = vector(mode=list, length = length(source_segment_names))
 names(source_envs) = source_segment_names
+
+# Do all unsegmented cases first. This is done, because we will use edge_multipliers
+# from unsegmented segments to treat segmented cases (because stably and consistently 
+# estimating edge_multipliers may be tricky with segmented cases, given that the multipliers
+# may have little impact on some segments)
+unseg = which(sourcezone_parameters$segment_name == '')
+if(config$MC_CORES > 1){
+    # Parallel run
+    library(parallel)
+    if(length(unseg) > 0){
+        source_envs[unseg] = mclapply(as.list(1:length(source_segment_names))[unseg], parfun, 
+            mc.cores=config$MC_CORES)
+    }
+}else{
+    # Serial run
+    if(length(unseg) > 0){
+        source_envs[unseg] = lapply(as.list(1:length(source_segment_names))[unseg],
+            parfun)
+    }
+}
+
+# Get the edge_multiplier for the segmented models, and copy to the unsegmented models
+unsegmented_edge_rate_multiplier = vector(mode='list', length=length(sourcezone_segment_names))
+if(config$edge_correct_event_rates){
+    for(i in 1:length(source_segment_names)){
+        if(i %in% unseg){
+            k = which(sourcezone_parameters$sourcename == sourcezone_parameters[i])
+            # Copy the edge_multiplier from the unsegmented model to all other models on the same source
+            for(j in k){
+                unsegmented_edge_rate_multiplier[[j]] = source_envs[[i]]$best_edge_mult$minimum
+            }
+        }
+    }
+}
+
+#
+# Finally run segmented models
+#
+seg = which(sourcezone_parameters$segment_name != '')
+if(config$MC_CORES > 1){
+    # Parallel run
+    library(parallel)
+
+    if(length(seg) > 0){
+        source_envs[seg] = mcmapply(parfun, 
+            i = as.list(1:length(source_segment_names))[seg], 
+            unsegmented_edge_rate_multiplier=unsegmented_edge_rate_multiplier[seg], 
+            SIMPLIFY=FALSE,
+            mc.cores=config$MC_CORES)
+    }
+
+}else{
+    # Serial run
+    if(length(seg) > 0){
+        source_envs[seg] = mapply(parfun, 
+            i=as.list(1:length(source_segment_names))[seg],
+            unsegmented_edge_rate_multiplier=unsegmented_edge_rate_multiplier[seg], 
+            SIMPLIFY=FALSE)
+    }
+}
+
 
 #
 # Plot all the rate curves to a single pdf
