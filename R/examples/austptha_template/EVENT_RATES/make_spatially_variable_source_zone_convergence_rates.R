@@ -259,6 +259,7 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
             }
 
             # Set the conditional proability as proportional to [event area x long-term-slip]
+            # (Davies et al., 2017). Equivalent to [long-term-slip/event-slip]
             conditional_probability = (events_with_Mw$area * long_term_slip_near_event)
             conditional_probability = conditional_probability/sum(conditional_probability)
 
@@ -273,7 +274,6 @@ event_conditional_probability_bird2003_factory<-function(return_environment=FALS
                     conditional_probability=conditional_probability,
                     events_with_Mw = events_with_Mw)
                 return(output)
-
             }
 
         }

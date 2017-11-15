@@ -63,6 +63,11 @@ use_uniform_coupling_prior = TRUE
 # Should we use GCMT to update logic tree weights
 update_logic_tree_weights_with_data = TRUE
 
+# Should we apply an edge correction to the conditional probabilities of events?
+# This tries to avoid under-estimation of the moment release rate near the edges
+# of source-zones, which occurs with methods that do not account for this boundary
+edge_correct_event_rates = TRUE
+
 #
 # File with parameters for all source-zones, that we use to make source-zone
 # specific rate curves.

@@ -15,6 +15,12 @@ source('config.R', local=config)
 gcmt_access = new.env()
 source('gcmt_subsetter.R', local=gcmt_access)
 
+
+if(config$edge_correct_event_rates){
+    edge_correct = new.env()
+    source('back_calculate_convergence.R', local=edge_correct)
+}
+
 #
 # INPUTS
 # 
@@ -351,6 +357,76 @@ source_rate_environment_fun<-function(sourcezone_parameters_row){
         account_for_moment_below_mwmin = TRUE
         )
 
+    #
+    # Optionally adjust the conditional probability of the events, to better satisfy spatial
+    # variations in seismic moment conservation
+    #
+    if(config$edge_correct_event_rates){
+        #
+        # Derive new event conditional probabilities which better represent
+        # spatial variations in tectonic slip. We do this by inflating the
+        # conditional probabilities of 'edge_events' (i.e. events which
+        # occur on the boundary of the unsegmented source-zone) by a factor 'edge_multiplier'.
+        #
+        # Here, we find an 'edge_multiplier' that well represents spatial
+        # variations in convergence.
+        #
+        fun_to_optimize<-function(edge_multiplier, return_conditional_probabilities=FALSE){
+
+            # Rates based on the 'edge_multiplier = 0' case
+            event_rates = event_conditional_probabilities * 
+                (mw_rate_function(event_table$Mw - dMw/2) - 
+                 mw_rate_function(event_table$Mw + dMw/2) )
+
+            # Compute spatially variable integrated slip, given the edge_multiplier argument
+            back_calculate_convergence_env = new.env()
+            back_calculate_convergence_env = edge_correct$back_calculate_convergence(
+                sourcename=source_name,
+                slip_type='uniform',
+                edge_multiplier=edge_multiplier,
+                uss = bird2003_env$unit_source_tables[[source_name]],
+                event_rates = event_rates,
+                event_Mw = event_table$Mw,
+                event_index_string = event_table$event_index_string,
+                slip = event_table$slip)
+            model = back_calculate_convergence_env$output$integrated_slip
+
+            #
+            # We want the shape to be like 'div_vec'. Coupling might rescale this. Return 
+            # A goodness of fit value that reflects that, unless we explicitly request to
+            # return the above function environment
+            #
+            if(!return_conditional_probabilities){ 
+                output = sum( is_in_segment*( model/sum(model) - div_vec/sum(div_vec) )**2 )
+            }else{
+                # This is useful once we know the best edge_multiplier
+                output = back_calculate_convergence_env
+            }
+            return(output)
+        }
+
+        # If we are on a segmented source zone, on a segment where
+        # the rate of events on the boundary = 0, then changing edge_multiplier might
+        # have no effect. Check that
+        f1 = fun_to_optimize(0.0)
+        f2 = fun_to_optimize(10.0)
+        if(isTRUE(all.equal(f1, f2))){
+            # This should only happen if events on the boundary all have a-prior weight of zero.
+            # That implies we are in a segmented source-zone
+            # In that case, we should not change anything
+        }else{
+            # Find the optimal edge_multiplier
+            best_edge_mult = optimize(fun_to_optimize, lower=0, upper=30)
+            # Check that results are not crazy
+            if(best_conv_env$minimum < 1.0e-03 | best_conv_env$minimum > 29.999){
+                print(paste0('Check edge_multiplier on ', source_name))
+            }
+            # Get the conditional probabilities from the 'best' edge_multiplier
+            best_conv_env = fun_to_optimize(best_edge_mult$minimum, return_conditional_probabilities=TRUE)
+            event_conditional_probabilities = best_conv_env$new_conditional_probability
+        }
+
+    }
 
     #
     # Nominal rates on all events
