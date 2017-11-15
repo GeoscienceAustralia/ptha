@@ -106,12 +106,14 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         if(sum(sourcezone_parameters$sourcename == sourcezone_parameters_row$sourcename)<=1){
             msg = paste0('Segment name provided on source with only one entry on ', 
                         'sourcezone_parameters. \n In this case the segment name should be blank,',
-                        ' or there should be another segment in the table')
+                        ' or there should be another segment in the table. Check ', source_segment_name)
             stop(msg)
         }
     }else{
-        if(sum(sourcezone_parameters$sourcename == sourcezone_parameters_row$sourcename) != 1){
-            msg = paste0('Source appears more than once, but segment name is blank')
+        if(sum(sourcezone_parameters$sourcename == sourcezone_parameters_row$sourcename & 
+                (sourcezone_parameters$segment_name == '')) != 1){
+            msg = paste0('Source appears more than once with blank segment names. Check', 
+                source_segment_name)
             stop(msg)
         }
     }
@@ -473,6 +475,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
                 # Get the conditional probabilities from the 'best' edge_multiplier
                 best_conv_env = fun_to_optimize(best_edge_mult$minimum, return_conditional_probabilities=TRUE)
                 event_conditional_probabilities = best_conv_env$new_conditional_probability
+                rm(best_conv_env)
+                gc()
             }
 
         }else{
@@ -492,6 +496,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             # Get the conditional probabilities from the 'best' edge_multiplier
             best_conv_env = fun_to_optimize(best_edge_mult$minimum, return_conditional_probabilities=TRUE)
             event_conditional_probabilities = best_conv_env$new_conditional_probability
+            rm(best_conv_env)
+            gc()
         }
         sourcepar$best_edge_multiplier = best_edge_mult
     }
