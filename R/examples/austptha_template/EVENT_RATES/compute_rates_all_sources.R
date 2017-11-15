@@ -681,9 +681,6 @@ parfun<-function(i, unsegmented_edge_rate_multiplier=NULL){
 #
 # Run for all source zones
 #
-source_envs = vector(mode=list, length = length(source_segment_names))
-names(source_envs) = source_segment_names
-
 # Do all unsegmented cases first. This is done, because we will use edge_multipliers
 # from unsegmented segments to treat segmented cases (because stably and consistently 
 # estimating edge_multipliers may be tricky with segmented cases, given that the multipliers
@@ -705,11 +702,11 @@ if(config$MC_CORES > 1){
 }
 
 # Get the edge_multiplier for the segmented models, and copy to the unsegmented models
-unsegmented_edge_rate_multiplier = vector(mode='list', length=length(sourcezone_segment_names))
+unsegmented_edge_rate_multiplier = vector(mode='list', length=length(source_segment_names))
 if(config$edge_correct_event_rates){
     for(i in 1:length(source_segment_names)){
         if(i %in% unseg){
-            k = which(sourcezone_parameters$sourcename == sourcezone_parameters[i])
+            k = which(sourcezone_parameters$sourcename == sourcezone_parameters$sourcename[i])
             # Copy the edge_multiplier from the unsegmented model to all other models on the same source
             for(j in k){
                 unsegmented_edge_rate_multiplier[[j]] = source_envs[[i]]$best_edge_mult$minimum
