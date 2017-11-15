@@ -18,7 +18,7 @@ This code is licensed under a BSD 3-clause license. See the [license deed](LICEN
 
 ## Contacts
 
-**Lee Davidson**  
+**Gareth Davies**  
 *Lead Developer*  
-Geoscience Australia  
-<lee.davidson@ga.gov.au>  
+Geoscience Australia
+<gareth.davies@ga.gov.au>
