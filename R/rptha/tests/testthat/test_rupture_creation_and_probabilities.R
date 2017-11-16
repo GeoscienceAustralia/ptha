@@ -488,6 +488,29 @@ test_that("test_rupture_creation_and_probabilities", {
     kk = which(d7$all_par$Mw_max == 9.6)
     expect_that(all(d7$all_par_prob[kk] < d6_prob_adjusted[kk]), is_true())
 
+    # Example where we don't change our weights on mw_max
+    rate_function6_a_donot_update_mwmax_weights = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=c(Mw_count_duration[1], 4-1, Mw_count_duration[3]),
+        Mw_obs_data=list(Mw=NULL, t=NULL),
+        mw_max_posterior_equals_mw_max_prior = TRUE
+        )
+    # Compare with the earlier rate_function6. They are quite different.
+    x1 = rate_function6_a(7.6)
+    x2 = rate_function6_a_donot_update_mwmax_weights(7.6)
+    expect_that( abs(x1-x2) < 0.4*x1 & abs(x1-x2) > 0.3*x1, is_true())
+
     #
     #
     # Check that with full Mw data, we really can 'filter' logic tree branches well,

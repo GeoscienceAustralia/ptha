@@ -363,6 +363,9 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' exceedance rate of Mw for that parameter combination. This can be useful for
 #' some monte-carlo computations. \cr
 #' Only one of these optional arguments can be passed at a time.
+#' @param mw_max_posterior_equals_mw_max_prior logical. If TRUE, then do the Bayesian
+#' update on a 'per-mw-max' level, i.e. the posterior of mw_max will be the
+#' same as the prior of mw_max.
 #' @export
 #'
 rate_of_earthquakes_greater_than_Mw_function<-function(
@@ -384,7 +387,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     Mw_count_duration = c(NA, NA, NA),
     Mw_obs_data = list(Mw=NULL, t=NULL),
     Mw_2_M0 = function(x) M0_2_Mw(x, inverse=TRUE),
-    account_for_moment_below_mwmin=FALSE){
+    account_for_moment_below_mwmin=FALSE,
+    mw_max_posterior_equals_mw_max_prior = FALSE){
 
     # Check data
     stopifnot(length(slip_rate) == length(slip_rate_prob))
@@ -708,6 +712,20 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         all_par_prob = all_par_prob_prior
 
     }
+
+    if(mw_max_posterior_equals_mw_max_prior){
+        # Change the all_par_prob to ensure that mw_max posterior is the same
+        # as mw_max prior. This is like we did the weight update for each mw_max separately.
+        mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
+        stopifnot(isTRUE(all.equal(sum(mw_max_post_prob[,2]), 1.0)))
+        match_mw_max = match(all_par_combo$Mw_max, mw_max_post_prob[,1])
+        k = which(all_par_prob > 0) # Avoid possibility of division by zero if priors included zero
+        all_par_prob[k] = all_par_prob[k]/mw_max_post_prob[match_mw_max[k],2] * (1/length(mw_max_post_prob[,2]))
+        # Check that we equalized over Mw_max 
+        mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
+        stopifnot(isTRUE(all.equal(mw_max_post_prob[,2], mw_max_post_prob[1,2] + 0*mw_max_post_prob[,2])))
+    }
+
 
     # Compute the average rate
     final_rates = rep(0, length(Mw_seq))

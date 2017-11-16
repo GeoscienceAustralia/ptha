@@ -125,7 +125,8 @@ event_rates_function = rate_of_earthquakes_greater_than_Mw_function(
     Mw_frequency_distribution_prob = Mw_frequency_dists_prob,
     update_logic_tree_weights_with_data = (!any(is.na(Mw_count_durations_CMT))), 
     Mw_count_duration = Mw_count_durations_CMT, 
-    account_for_moment_below_mwmin = TRUE)
+    account_for_moment_below_mwmin = TRUE,
+    mw_max_posterior_equals_mw_max_prior=FALSE)
 
 # Example: Compute rate of events exceeding Mw 9.0. Should be around 1/540.
 # Small variations can arise depending on the unit-source discretization

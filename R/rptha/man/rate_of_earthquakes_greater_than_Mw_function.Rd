@@ -12,7 +12,8 @@ rate_of_earthquakes_greater_than_Mw_function(slip_rate, slip_rate_prob, b,
   Mw_frequency_distribution_prob = 1,
   update_logic_tree_weights_with_data = FALSE, Mw_count_duration = c(NA, NA,
   NA), Mw_obs_data = list(Mw = NULL, t = NULL), Mw_2_M0 = function(x)
-  M0_2_Mw(x, inverse = TRUE), account_for_moment_below_mwmin = FALSE)
+  M0_2_Mw(x, inverse = TRUE), account_for_moment_below_mwmin = FALSE,
+  mw_max_posterior_equals_mw_max_prior = FALSE)
 }
 \arguments{
 \item{slip_rate}{numeric vector with 1 or more long-term seismogenic slip
@@ -127,6 +128,10 @@ corresponding seismic moment M0}
 seismically coupled slip occurs due to earthquakes with Mw > Mwmin. If TRUE,
 estimate the fraction of seismically coupled slip that occurs due to
 earthquakes with Mw > Mwmin, and use that when computing the rates.}
+
+\item{mw_max_posterior_equals_mw_max_prior}{logical. If TRUE, then do the Bayesian
+update on a 'per-mw-max' level, i.e. the posterior of mw_max will be the
+same as the prior of mw_max.}
 }
 \value{
 Function f(Mw) of a numeric vector Mw, which by default returns the
