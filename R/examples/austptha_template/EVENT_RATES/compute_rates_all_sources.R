@@ -472,7 +472,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
                 # This should only happen if events on the boundary all have
                 # a-prior weight of zero, which should only happen for 'is_a_segment'
                 # cases
-                msg = paste0('Use of an edge multiplier is having no impact on source ', source_segment_name)
+                msg = paste0('Use of an edge multiplier is having no impact on source ', 
+                    source_segment_name)
                 stop(msg)
             }else{
                 # Find the optimal edge_multiplier

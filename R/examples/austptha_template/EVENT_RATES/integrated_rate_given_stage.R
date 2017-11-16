@@ -19,6 +19,7 @@ gauge_points$gaugeID = ncvar_get(fid, 'gaugeID')
 rate_mat_template = ncvar_get(fid, 'stochastic_slip_rate')*0
 nc_close(fid)
 
+# Lists to store the rate, integrated over all source-zones
 stochastic_slip_rates = list(
     rates=rate_mat_template, 
     rates_upper_ci = rate_mat_template, 
@@ -26,7 +27,7 @@ stochastic_slip_rates = list(
 uniform_slip_rates = stochastic_slip_rates
 variable_uniform_slip_rates = stochastic_slip_rates
 
-
+# Accumulate the data from the files
 for(i in 1:length(all_tsunami_stage_exceedance_rates)){
     
     fid = nc_open(all_tsunami_stage_exceedance_rates[i], readunlim=FALSE)
