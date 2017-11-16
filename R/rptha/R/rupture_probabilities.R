@@ -714,6 +714,13 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     }
 
     if(mw_max_posterior_equals_mw_max_prior){
+        if(!is.na(Mw_count_duration[1])){
+            if( any((Mw_max_prob > 0) & (Mw_max < Mw_count_duration[1])) ){
+                stop(paste0('Mw_max prior puts non-zero weight on value that is less ',
+                    'than the observations. \n This means some prior values are impossible, \n', 
+                    'and we cannot satisfy mw_max_posterior_equals_mw_max_prior'))
+            }
+        }
         # Change the all_par_prob to ensure that mw_max posterior is the same
         # as mw_max prior. This is like we did the weight update for each mw_max separately.
         mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
