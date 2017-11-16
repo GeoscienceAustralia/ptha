@@ -234,3 +234,58 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
 # yy2 = back_calculate_convergence('sunda', slip_type='stochastic')
 # plot(yy2$lon_c, yy2$integrated_slip, col=yy2$downdip_number, pch=19)
 # points(yy$lon_c, yy$integrated_slip, col=yy$downdip_number)
+
+batch_plot_convergence<-function(){
+    
+    for(i in 1:length(config$source_names_1)){
+
+        sname = config$source_names_1[i]
+        print(sname)
+
+        source_uniform = back_calculate_convergence(sname, 'uniform')
+        source_stochastic = back_calculate_convergence(sname, 'stochastic')
+        source_variable_uniform = back_calculate_convergence(sname, 'variable_uniform')
+
+        normalizer = max(source_uniform$output$integrated_slip)
+
+        panel_plot<-function(source_X, normalizer, type, size_scale=NULL){
+
+            if(is.null(size_scale)){
+                size_scale = source_X$output$integrated_slip
+            }
+            plot(source_X$output$lon_c, source_X$output$lat_c, 
+                cex=size_scale/normalizer, asp=1, 
+                main=paste0(sname, ' ', type)); grid()
+            v = cbind(-cos(source_X$uss$strike/180*pi)*size_scale, 
+                      sin(source_X$uss$strike/180*pi)*size_scale)*100 + 1.0e-06
+            arrows(source_X$output$lon_c, source_X$output$lat_c,
+                source_X$output$lon_c + v[,1], source_X$output$lat_c + v[,2], 
+                length=0, col='red')
+        }
+
+        par(mfrow=c(1,3))
+        panel_plot(source_uniform, normalizer, 'Uniform')
+        panel_plot(source_stochastic, normalizer, 'Stochastic')
+        panel_plot(source_variable_uniform, normalizer, 'Variable-uniform')
+
+        # Look at rate of > 9.0
+        u1 = rowSums(as.matrix(source_uniform$output[,35:43]))
+        s1 = rowSums(as.matrix(source_stochastic$output[,35:43]))
+        vu1 = rowSums(as.matrix(source_variable_uniform$output[,35:43]))
+        normalizer = max(u1)
+
+        par(mfrow=c(1,3))
+        panel_plot(source_uniform, normalizer, 'Uniform >= 9', u1)
+        panel_plot(source_stochastic, normalizer, 'Stochastic >= 9', s1)
+        panel_plot(source_variable_uniform, normalizer, 'Variable-uniform >= 9', vu1)
+
+        #plot(c(0,1), col='white')
+    }
+
+}
+
+pdf('convergence_integrated.pdf', width=18, height=6)
+batch_plot_convergence()
+dev.off()
+
+

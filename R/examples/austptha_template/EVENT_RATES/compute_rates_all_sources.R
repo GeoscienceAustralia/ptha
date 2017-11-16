@@ -667,6 +667,13 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             ncvar_put_extra(fid, 'event_rate_annual_lower_ci', 
                 event_rates_lower[event_uniform_event_row]/nevents_broad)
             nc_close(fid)
+
+            # FIXME: Should also write to the non '_tsunami_' file
+            #event_table_fileD = paste0(
+            #    '../SOURCE_ZONES/', source_name, 
+            #    '/TSUNAMI_EVENTS/all_', slip_type, 
+            #    '_slip_earthquake_events_',
+            #    source_name, '.nc')
         }
 
     })
