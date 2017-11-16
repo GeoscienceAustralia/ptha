@@ -717,13 +717,19 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # Change the all_par_prob to ensure that mw_max posterior is the same
         # as mw_max prior. This is like we did the weight update for each mw_max separately.
         mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
+        mw_max_prior_prob = aggregate(Mw_max_prob, list(Mw_max), sum)
+
         stopifnot(isTRUE(all.equal(sum(mw_max_post_prob[,2]), 1.0)))
-        match_mw_max = match(all_par_combo$Mw_max, mw_max_post_prob[,1])
+        stopifnot(isTRUE(all.equal(sum(mw_max_prior_prob[,2]), 1.0)))
+
+        match_mw_max1 = match(all_par_combo$Mw_max, mw_max_post_prob[,1])
+        match_mw_max2 = match(all_par_combo$Mw_max, mw_max_prior_prob[,1])
+
         k = which(all_par_prob > 0) # Avoid possibility of division by zero if priors included zero
-        all_par_prob[k] = all_par_prob[k]/mw_max_post_prob[match_mw_max[k],2] * (1/length(mw_max_post_prob[,2]))
+        all_par_prob[k] = all_par_prob[k]/mw_max_post_prob[match_mw_max1[k],2] * mw_max_prior_prob[match_mw_max2[k],2]
         # Check that we equalized over Mw_max 
         mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
-        stopifnot(isTRUE(all.equal(mw_max_post_prob[,2], mw_max_post_prob[1,2] + 0*mw_max_post_prob[,2])))
+        stopifnot(isTRUE(all.equal(mw_max_post_prob[,2], mw_max_prior_prob[,2])))
     }
 
 
