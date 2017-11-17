@@ -6,10 +6,11 @@
 \usage{
 sffm_make_events_on_discretized_source(discretized_source_statistics,
   target_location, target_event_mw, num_events = 1,
-  vary_peak_slip_location = TRUE, zero_low_slip_cells_fraction = 0,
-  sourcename = "", sffm_sub_sample_size = c(1, 1), mu = 3e+10,
-  return_slip_raster = TRUE, uniform_slip = FALSE,
-  expand_length_if_width_limited = "random",
+  vary_peak_slip_location = TRUE,
+  vary_peak_slip_alongstrike_downdip_extent = NULL,
+  zero_low_slip_cells_fraction = 0, sourcename = "",
+  sffm_sub_sample_size = c(1, 1), mu = 3e+10, return_slip_raster = TRUE,
+  uniform_slip = FALSE, expand_length_if_width_limited = "random",
   clip_random_parameters_at_2sd = TRUE, relation = "Strasser")
 }
 \arguments{
@@ -30,6 +31,12 @@ Strasser's scaling relations. See vary_peak_slip_location}
 \item{vary_peak_slip_location}{If TRUE, vary the peak slip location in a window
 around the target location, as described above. If FALSE, use the same peak
 slip location for every synthetic event}
+
+\item{vary_peak_slip_alongstrike_downdip_extent}{If not NULL, an integer vector of length 4
+containing ranges for the alongstrike number, and downdip number. The peak slip
+will be randomly varied in this region. The vector should be of the form
+c(range(alongstrike_number), range(downdip_number)). If this is provided,
+must also have vary_peak_slip=TRUE.}
 
 \item{zero_low_slip_cells_fraction}{real between 0 and 1. If > 0,
 then we zero all of the smallest slip values, which contribute < 'zero_low_slip_cells_fraction'
