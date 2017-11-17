@@ -122,4 +122,18 @@ puysegur_sffm_event1 = sffm_make_events_on_discretized_source(
 # Plot the slip raster for the first 6 synthetic events
 par(mfrow=c(3,2))
 for(i in 1:6) plot(puysegur_sffm_event1[[i]]$slip_raster)
+
+# Now do the same, but force them to have peak slip on the top row
+puysegur_sffm_event2 = sffm_make_events_on_discretized_source(
+    puysegur_summary_statistics,
+    target_location = c(166.568, -45.745),
+    target_event_mw = 7.8,
+    vary_peak_slip_location = TRUE,
+    vary_peak_slip_alongstrike_downdip_extent = c(11, 12, 1, 1),
+    num_events = 10)
+
+# Plot the slip raster for the first 6 synthetic events
+par(mfrow=c(3,2))
+for(i in 1:6) plot(puysegur_sffm_event2[[i]]$slip_raster)
+
 }
