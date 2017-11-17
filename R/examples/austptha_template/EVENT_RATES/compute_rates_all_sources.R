@@ -524,15 +524,16 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
 
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
-    # FIXME: If there is optional segmentation, then we should not be 'averaging' over
-    # high quantiles on the segmented and unsegmented sources. 
-    # Further, if we restrict attention to multi-segment sources, then adding
-    # the quantiles provides some upper bound to the quantile of the sum (at
-    # least for a smaller quantile value, see
-    # https://stats.stackexchange.com/questions/310210/bounds-on-quantiles-of-the-sum-of-possibly-dependent-random-variables),
-    # but the actual value would depend on an unspecified dependency structure
-    # for logic-tree branches between segments.
-    # OTOH, it may have some heuristic value
+    # NOTE: Later we sum over [row-weights x event_rates_upper] on segmented
+    # (or optionally segmented) source-zones. This is valid if we assume
+    # that ALL representations of the source behave like separate, real sources, with
+    # the given fraction of the moment rate, AND furthermore that epistemic uncertainties
+    # in all the sources are co-monotonic [which sounds a sensible assumption, because it
+    # prevents us 'averaging away' the risk of rare events].
+    # It is clearly reasonable for separate segments to be like separate, real sources. It is
+    # less obvious that the 'full-source-zone' model should be as well, but we can think of 
+    # this as us representing the source as having 'some tendency for rupture-segment-sized events,
+    # but also some tendency to behave as a full source-zone.
     event_rates_upper = as.numeric(
         event_conditional_probabilities * 
         (mw_rate_function(event_table$Mw - dMw/2, 
@@ -543,15 +544,16 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
 
     # Lower credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
-    # FIXME: If there is optional segmentation, then we should not be 'averaging' over
-    # high quantiles on the segmented and unsegmented sources. 
-    # Further, if we restrict attention to multi-segment sources, then adding
-    # the quantiles provides some upper bound to the quantile of the sum (at
-    # least for a smaller quantile value, see
-    # https://stats.stackexchange.com/questions/310210/bounds-on-quantiles-of-the-sum-of-possibly-dependent-random-variables),
-    # but the actual value would depend on an unspecified dependency structure
-    # for logic-tree branches between segments.
-    # OTOH, it may have some heuristic value
+    # NOTE: Later we sum over [row-weights x event_rates_upper] on segmented
+    # (or optionally segmented) source-zones. This is valid if we assume
+    # that ALL representations of the source behave like separate, real sources, with
+    # the given fraction of the moment rate, AND furthermore that epistemic uncertainties
+    # in all the sources are co-monotonic [which sounds a sensible assumption, because it
+    # prevents us 'averaging away' the risk of rare events]
+    # It is clearly reasonable for separate segments to be like separate, real sources. It is
+    # less obvious that the 'full-source-zone' model should be as well, but we can think of 
+    # this as us representing the source as having 'some tendency for rupture-segment-sized events,
+    # but also some tendency to behave as a full source-zone.
     event_rates_lower = as.numeric(
         event_conditional_probabilities * 
         (mw_rate_function(event_table$Mw - dMw/2, 
@@ -619,8 +621,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         # Put rates onto the event table nc file
         fid = nc_open(event_table_file, readunlim=FALSE, write=TRUE)
         ncvar_put_extra(fid, 'rate_annual', event_rates)
-        # FIXME: In cases with segmentation, the summation approach is not
-        # rigorous for quantiles (fine for the mean)
+        # Summation of credible intervals OK for co-monotonic epistemic uncertainties
         ncvar_put_extra(fid, 'rate_annual_upper_ci', event_rates_upper)
         ncvar_put_extra(fid, 'rate_annual_lower_ci', event_rates_lower)
         nc_close(fid)
@@ -631,8 +632,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             source_name, '.nc')
         fid = nc_open(event_table_fileB, readunlim=FALSE, write=TRUE)
         ncvar_put_extra(fid, 'event_rate_annual', event_rates)
-        # FIXME: In cases with segmentation, the summation approach is not
-        # rigorous for quantiles (fine for the mean)
+        # Summation of credible intervals OK for co-monotonic epistemic uncertainties
         ncvar_put_extra(fid, 'event_rate_annual_upper_ci', event_rates_upper)
         ncvar_put_extra(fid, 'event_rate_annual_lower_ci', event_rates_lower)
         nc_close(fid)
@@ -660,20 +660,43 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
 
             ncvar_put_extra(fid, 'event_rate_annual', 
                 event_rates[event_uniform_event_row]/nevents_broad)
-            # FIXME: In cases with segmentation, the summation approach is not
-            # rigorous for quantiles (fine for the mean)
+            # Summation of credible intervals OK for co-monotonic epistemic uncertainties
             ncvar_put_extra(fid, 'event_rate_annual_upper_ci', 
                 event_rates_upper[event_uniform_event_row]/nevents_broad)
             ncvar_put_extra(fid, 'event_rate_annual_lower_ci', 
                 event_rates_lower[event_uniform_event_row]/nevents_broad)
             nc_close(fid)
 
-            # FIXME: Should also write to the non '_tsunami_' file
-            #event_table_fileD = paste0(
-            #    '../SOURCE_ZONES/', source_name, 
-            #    '/TSUNAMI_EVENTS/all_', slip_type, 
-            #    '_slip_earthquake_events_',
-            #    source_name, '.nc')
+            #
+            # Now to the same, for the file that contains only the earthquakes
+            # 
+            event_table_fileD = paste0(
+                '../SOURCE_ZONES/', source_name, 
+                '/TSUNAMI_EVENTS/all_', slip_type, 
+                '_slip_earthquake_events_',
+                source_name, '.nc')
+
+            fid = nc_open(event_table_fileD, readunlim=FALSE, write=TRUE)
+
+            # Index corresponding to uniform slip row
+            event_uniform_event_row = ncvar_get(fid, 'uniform_event_row')
+            # Number of events corresponding to event row
+            nevents = table(event_uniform_event_row)
+            names_nevents = as.numeric(names(nevents))
+            stopifnot(all(names_nevents == 1:length(event_rates)))
+            # Make an array giving the number of events matching the
+            # uniform_event_row, for every stochastic/variable_uniform event
+            nevents_broad = nevents[match(event_uniform_event_row, names_nevents )]
+
+            ncvar_put_extra(fid, 'rate_annual', 
+                event_rates[event_uniform_event_row]/nevents_broad)
+            # Summation of credible intervals OK for co-monotonic epistemic uncertainties
+            ncvar_put_extra(fid, 'rate_annual_upper_ci', 
+                event_rates_upper[event_uniform_event_row]/nevents_broad)
+            ncvar_put_extra(fid, 'rate_annual_lower_ci', 
+                event_rates_lower[event_uniform_event_row]/nevents_broad)
+            nc_close(fid)
+
         }
 
     })
@@ -906,7 +929,13 @@ for(i in 1:length(source_segment_names)){
 }
 #
 # Now add rates to netcdf files, scaled by the row_weight to allow multiple
-# weighted models of the source-zone segmentation
+# weighted models of the source-zone segmentation. Note we are adding epistemic
+# credible intervals of rates here too. This is ok if the epistemic uncertainties
+# are co-monotonic [i.e. 95% quantile of segmentA ==> 95% quantile of segmentB
+# and segment C and the full source-zone]. That avoids risk-reduction through averaging,
+# which seems a reasonable approach [given it's hard to specify 'correlations' between
+# our epistemic uncertainties on different sources, but we could well imagine the 
+# correlations not being zero]
 #
 for(i in 1:length(source_segment_names)){
     rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
