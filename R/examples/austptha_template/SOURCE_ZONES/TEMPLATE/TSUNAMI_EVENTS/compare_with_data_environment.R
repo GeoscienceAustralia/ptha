@@ -299,6 +299,7 @@ compare_stochastic_slip_event_with_gauge_time_series<-function(
             num_events = number_of_sffm,
             zero_low_slip_cells_fraction=zero_low_slip_cells_fraction,
             sourcename = source_name,
+            mu=config_env$shear_modulus,
             relation=config_env$scaling_relation_type)
 
         events_with_Mw = sffm_events_to_table(all_events, 

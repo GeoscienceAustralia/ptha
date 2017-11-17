@@ -938,6 +938,11 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 #' @param vary_peak_slip_location If TRUE, vary the peak slip location in a window
 #' around the target location, as described above. If FALSE, use the same peak
 #' slip location for every synthetic event
+#' @param vary_peak_slip_alongstrike_downdip_extent If not NULL, an integer vector of length 4
+#' containing ranges for the alongstrike number, and downdip number. The peak slip
+#' will be randomly varied in this region. The vector should be of the form
+#' c(range(alongstrike_number), range(downdip_number)). If this is provided,
+#' must also have vary_peak_slip=TRUE. 
 #' @param zero_low_slip_cells_fraction real between 0 and 1. If > 0,
 #' then we zero all of the smallest slip values, which contribute < 'zero_low_slip_cells_fraction'
 #' to the sum of all slip values on the rupture. A conservative value is 0, 
@@ -1012,6 +1017,7 @@ sffm_make_events_on_discretized_source<-function(
     target_event_mw, 
     num_events = 1,
     vary_peak_slip_location=TRUE,
+    vary_peak_slip_alongstrike_downdip_extent = NULL,
     zero_low_slip_cells_fraction=0.0,
     sourcename="",
     sffm_sub_sample_size = c(1,1),
@@ -1025,22 +1031,76 @@ sffm_make_events_on_discretized_source<-function(
     nx = max(discretized_source_statistics$alongstrike_number)
     ny = max(discretized_source_statistics$downdip_number)
 
-    # Get 'typical' rupture dimensions, and allow the peak slip location
-    # to be within L/2, W/2 of the CMT location
-    rs = Mw_2_rupture_size(target_event_mw, relation=relation)
-    if(vary_peak_slip_location){
-        mean_us_width = mean(discretized_source_statistics$width)
-        mean_us_length = mean(discretized_source_statistics$length)
-        peak_slip_unit_source_window = c(
-            ceiling(0.5*rs['width']/mean_us_width),
-            ceiling(0.5*rs['length']/mean_us_length))
-    }else{
-        # Constant peak slip location
-        peak_slip_unit_source_window = c(0, 0)
-    }
-        
+    # Find the along-strike/down-dip unit source index near the target_location
+    target_unit_source_index = which.min(distHaversine(
+        discretized_source_statistics[,c('lon_c', 'lat_c')], 
+        matrix(target_location, ncol=2, nrow=nx, byrow=TRUE)))
+    target_alongstrike = discretized_source_statistics$alongstrike_number[target_unit_source_index]
+    target_downdip = discretized_source_statistics$downdip_number[target_unit_source_index]
 
-    # Make the random kcx/kcy values appropriate for the magnitude. Simulatneously
+    #
+    # Find the range of downdip/alongstrike indices where the peak slip location may be
+    #
+    if(is.null(vary_peak_slip_alongstrike_downdip_extent)){
+
+        if(vary_peak_slip_location){
+            # Get 'typical' rupture dimensions, and allow the peak slip location
+            # to be within L/2, W/2 of the CMT location
+            rs = Mw_2_rupture_size(target_event_mw, relation=relation)
+            mean_us_width = mean(discretized_source_statistics$width)
+            mean_us_length = mean(discretized_source_statistics$length)
+            peak_slip_unit_source_window = c(
+                ceiling(0.5*rs['width']/mean_us_width),
+                ceiling(0.5*rs['length']/mean_us_length))
+        }else{
+            # Constant peak slip location
+            peak_slip_unit_source_window = c(0, 0)
+        }
+            
+        # Define the allowed ranges of the peak slip location
+        target_downdip_range_min = max(1, target_downdip - peak_slip_unit_source_window[1])
+        target_downdip_range_max = min(ny, target_downdip + peak_slip_unit_source_window[1])
+        target_alongstrike_range_min = max(1, target_alongstrike - peak_slip_unit_source_window[2])
+        target_alongstrike_range_max = min(nx, target_alongstrike + peak_slip_unit_source_window[2])
+
+    }else{
+
+        if(!vary_peak_slip_location){
+            msg = paste0('A non-NULL value was passed to vary_peak_slip_alongstrike_downdip_extent \n', 
+                ' along with vary_peak_slip_location=FALSE. This is illegal as it suggests an input error')
+            stop(msg)
+        }
+
+        #
+        # User provides a vector with integer values:
+        # c(target_alongstrike_range_min, target_alongstrike_range_max, target_downdip_range_min, target_downdip_range_max)
+        #
+        stopifnot( length(vary_peak_slip_alongstrike_downdip_extent) == 4 )
+        stopifnot(  round(vary_peak_slip_alongstrike_downdip_extent) == 
+            vary_peak_slip_alongstrike_downdip_extent  )
+
+        target_alongstrike_range_min = vary_peak_slip_alongstrike_downdip_extent[1]
+        target_alongstrike_range_max = vary_peak_slip_alongstrike_downdip_extent[2]
+        target_downdip_range_min = vary_peak_slip_alongstrike_downdip_extent[3]
+        target_downdip_range_max = vary_peak_slip_alongstrike_downdip_extent[4]
+
+        stopifnot(target_alongstrike >= target_alongstrike_range_min)
+        stopifnot(target_alongstrike <= target_alongstrike_range_max)
+        stopifnot(target_downdip >= target_downdip_range_min)
+        stopifnot(target_downdip <= target_downdip_range_max)
+
+    }
+
+    # Extra careful
+    stopifnot(target_alongstrike_range_min >= 1)
+    stopifnot(target_downdip_range_min >= 1)
+    stopifnot(target_alongstrike_range_max <= nx)
+    stopifnot(target_downdip_range_max <= ny)
+    stopifnot(target_alongstrike_range_min <= target_alongstrike_range_max)
+    stopifnot(target_downdip_range_min <= target_downdip_range_max)
+    
+
+    # Make the random kcx/kcy values appropriate for the magnitude. Simultaneously
     # make the length/width over which non-zero slip can occur
     random_LWkc_function = sffm_make_random_lwkc_function(
         clip_random_parameter_ranges_to_2sd=clip_random_parameters_at_2sd,
@@ -1048,13 +1108,6 @@ sffm_make_events_on_discretized_source<-function(
     LWkc = random_LWkc_function(rep(target_event_mw, length=num_events))
     physical_corner_wavenumbers = LWkc[,3:4]
     nonzero_slip_LW = LWkc[,1:2]
-
-    # Find the along-strike/down-dip unit source index near the target_location
-    target_unit_source_index = which.min(distHaversine(
-        discretized_source_statistics[,c('lon_c', 'lat_c')], 
-        matrix(target_location, ncol=2, nrow=nx, byrow=TRUE)))
-    target_alongstrike = discretized_source_statistics$alongstrike_number[target_unit_source_index]
-    target_downdip = discretized_source_statistics$downdip_number[target_unit_source_index]
 
     # Get average dx/dy for unit sources, where dx is along-strike and dy is
     # down-dip
@@ -1078,18 +1131,23 @@ sffm_make_events_on_discretized_source<-function(
     # Function to generate the j'th event
     slip_generator_fun<-function(j){
 
-        # Define the allowed ranges of the peak slip location
-        target_downdip_range_min = max(1, target_downdip - peak_slip_unit_source_window[1])
-        target_downdip_range_max = min(ny, target_downdip + peak_slip_unit_source_window[1])
-        target_alongstrike_range_min = max(1, target_alongstrike - peak_slip_unit_source_window[2])
-        target_alongstrike_range_max = min(nx, target_alongstrike + peak_slip_unit_source_window[2])
-
         if(vary_peak_slip_location){
-            # Randomly sample the peak slip location
-            peak_slip_row = sample(target_downdip_range_min:target_downdip_range_max, 
-                size=1)
-            peak_slip_col = sample(target_alongstrike_range_min:target_alongstrike_range_max, 
-                size=1)
+            # Randomly sample the peak slip location. We are careful about the
+            # behaviour of 'sample' when the first argument is not a vector
+            # (see ?sample)
+            if(target_downdip_range_max != target_downdip_range_min){
+                peak_slip_row = sample(target_downdip_range_min:target_downdip_range_max, 
+                    size=1)
+            }else{
+                peak_slip_row = target_downdip_range_max
+            }
+            if(target_alongstrike_range_min != target_alongstrike_range_max){
+                peak_slip_col = sample(target_alongstrike_range_min:target_alongstrike_range_max, 
+                    size=1)
+            }else{
+                peak_slip_col = target_alongstrike_range_max
+            }
+
         }else{
             # Work-around for the fact that sample(3:3, size=1) randomly
             # samples from 1:3, not just 3! That's dangerous behaviour, and is

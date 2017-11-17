@@ -88,7 +88,7 @@ run_checks<-function(fid_local, slip_type){
 
         event_area = ncvar_get(fid_local, 'event_area')    
         event_slip = ncvar_get(fid_local, 'event_slip')    
-        moment_A = 3e+10 * event_area * 1e+06 * event_slip
+        moment_A = config_env$shear_modulus * event_area * 1e+06 * event_slip
         assert(all(abs(moment - moment_A) < 1.0e-06*moment), 
             'moment inconsistency')
 
@@ -118,7 +118,7 @@ run_checks<-function(fid_local, slip_type){
             sum(event_slips[[x]] * 
                 unit_source_statistics$width[unit_sources_in[[x]]] * 
                 unit_source_statistics$length[unit_sources_in[[x]]] * 
-                1e+06 * 3e+10)
+                1e+06 * config_env$shear_modulus)
         }))
         # Noting we store slip to a few significant figures, need some
         # tolerance here
@@ -341,6 +341,7 @@ run_checks<-function(fid_local, slip_type){
         add_quartiles(mws, event_width)
 
         slip_from_Mw_unique_mws = slip_from_Mw(unique_mws, 
+            mu=config_env$shear_modulus,
             relation=config_env$scaling_relation_type)
 
         # Mean slip

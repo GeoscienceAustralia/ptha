@@ -100,6 +100,7 @@ all_eq_events = get_all_earthquake_events(
     Mmin=Mw_min, 
     Mmax=Mw_max, 
     dMw=dMw, 
+    mu=config_env$shear_modulus,
     source_zone_name = source_zone_name,
     relation = config_env$scaling_relation_type)
 
@@ -140,7 +141,8 @@ write.csv(all_eq_events,
 # Also save earthquake events to netcdf
 eq_events_attr = c(
     list('unit_source_statistics_file' = unit_source_statistics_file,
-        'slip_type' = 'uniform slip'), 
+        'slip_type' = 'uniform slip',
+        'shear_modulus' = as.character(config_env$shear_modulus)), 
     uss_attr)
 all_eq_events_nc_file = paste0('all_uniform_slip_earthquake_events_', 
     source_zone_name, '.nc')
@@ -161,7 +163,7 @@ for(i in 1:length(all_eq_events[,1])){
 
     eq_event = all_eq_events[i,]   
  
-    # Find a centroid for the earthquake
+    # Find a central point location for the earthquake
     usi = get_unit_source_indices_in_event(eq_event)
     # The next steps assume the following condition holds
     stopifnot(all(unit_source_statistics$subfault_number[usi] == usi))
@@ -171,10 +173,10 @@ for(i in 1:length(all_eq_events[,1])){
     unit_source_locations = cbind(unit_source_statistics$lon_c[usi], 
         unit_source_statistics$lat_c[usi])
     if(length(usi) > 1){
-        event_hypocentre = geomean(unit_source_locations, 
+        event_location = geomean(unit_source_locations, 
             w=rep(1, length(usi)) )
     }else{
-        event_hypocentre = unit_source_locations
+        event_location = unit_source_locations
     }
 
     event_magnitude = eq_event$Mw
@@ -191,14 +193,21 @@ for(i in 1:length(all_eq_events[,1])){
             number_of_uniform_events_with_same_magnitude)
         )
 
+    peak_slip_alongstrike_downdip_extent = c(
+        range(unit_source_statistics$alongstrike_number[usi]),
+        range(unit_source_statistics$downdip_number[usi]))
+
     # Make stochastic events
     all_events = sffm_make_events_on_discretized_source(
         unit_source_statistics,    
-        target_location = event_hypocentre,
+        target_location = event_location,
         target_event_mw = event_magnitude,
         num_events = number_of_sffm,
+        vary_peak_slip_location=TRUE,
+        vary_peak_slip_alongstrike_downdip_extent = peak_slip_alongstrike_downdip_extent,
         zero_low_slip_cells_fraction=0.0,
         sourcename = source_zone_name,
+        mu = config_env$shear_modulus,
         uniform_slip = FALSE,
         relation = config_env$scaling_relation_type)
 
@@ -229,7 +238,8 @@ write.csv(stochastic_events_table,
 eq_events_attr = c(
     list('unit_source_statistics_file' = unit_source_statistics_file,
          'corresponding_uniform_slip_events_file' = all_eq_events_nc_file, 
-        'slip_type' = 'stochastic slip'), 
+        'slip_type' = 'stochastic slip',
+        'shear_modulus' = as.character(config_env$shear_modulus)), 
     uss_attr)
 write_table_to_netcdf(stochastic_events_table,
     paste0('all_stochastic_slip_earthquake_events_', source_zone_name, 
@@ -325,7 +335,8 @@ write.csv(variable_uniform_events_table,
 eq_events_attr = c(
     list('unit_source_statistics_file' = unit_source_statistics_file,
          'corresponding_uniform_slip_events_file' = all_eq_events_nc_file, 
-        'slip_type' = 'variable uniform slip'), 
+        'slip_type' = 'variable uniform slip',
+        'shear_modulus' = as.character(config_env$shear_modulus)), 
     uss_attr)
 write_table_to_netcdf(variable_uniform_events_table,
     paste0('all_variable_uniform_slip_earthquake_events_', 

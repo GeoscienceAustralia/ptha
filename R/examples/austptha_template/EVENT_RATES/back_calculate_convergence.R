@@ -279,13 +279,23 @@ batch_plot_convergence<-function(){
         panel_plot(source_stochastic, normalizer, 'Stochastic >= 9', s1)
         panel_plot(source_variable_uniform, normalizer, 'Variable-uniform >= 9', vu1)
 
+        # Look at rate of < 8.5
+        u1 = rowSums(as.matrix(source_uniform$output[,17:30]))
+        s1 = rowSums(as.matrix(source_stochastic$output[,17:30]))
+        vu1 = rowSums(as.matrix(source_variable_uniform$output[,17:30]))
+        normalizer = max(u1)
+
+        par(mfrow=c(1,3))
+        panel_plot(source_uniform, normalizer, 'Uniform <= 8.5', u1)
+        panel_plot(source_stochastic, normalizer, 'Stochastic <= 8.5', s1)
+        panel_plot(source_variable_uniform, normalizer, 'Variable-uniform <= 8.5', vu1)
         #plot(c(0,1), col='white')
     }
 
 }
 
-pdf('convergence_integrated.pdf', width=18, height=6)
-batch_plot_convergence()
-dev.off()
+#pdf('convergence_integrated.pdf', width=18, height=6)
+#batch_plot_convergence()
+#dev.off()
 
 
