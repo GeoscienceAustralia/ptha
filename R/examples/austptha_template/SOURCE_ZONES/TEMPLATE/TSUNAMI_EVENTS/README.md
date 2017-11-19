@@ -14,7 +14,9 @@ solver.
 Define key parameters by modifying [config.R](config.R). These parameters
 control e.g. the range of earthquake magnitudes that our tsunami events cover, 
 the number of stochastic slip events created, computational options, among
-other things. 
+other things. Also, ensure that the parameters in the user input table
+[../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv](../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv)
+are up to date (see the README in that folder for more information).
 
 # Step 2
 
