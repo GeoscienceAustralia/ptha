@@ -19,7 +19,14 @@ other things.
 Also, ensure that the parameters in the user input table
 [../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv](../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv)
 are up to date (see the [README](../../../DATA/SOURCEZONE_PARAMETERS/README.md)
-in that folder for more information).
+in that folder for more information). In earlier steps of this analysis, you should
+have selected the sourcename, rake, and the desired unit source length and width. Before
+running the current scripts, you also need to set the `scaling_relation` and `shear_modulus`
+in this file (since they are required to define earthquake events). 
+
+Other source_zone.csv parameters only affect the rate of events, and so can be
+modified later in the analysis (after event creation) without having to re-run
+the event creation.
 
 # Step 2
 

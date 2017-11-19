@@ -36,12 +36,18 @@ segments, which collectively should cover the entire source, and not overlap
 with each other. The relative influence of the unsegmented and segmented
 representations can be controlled with the row_weight, mentioned further below. 
 
+This must be set before creating the unit-sources using scripts in
+[../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/).
+
 approx_unit_source_length
 -------------------------
 
 The desired length (along-strike) of unit-sources in km. *Note this is currently
 ignored, since the along-strike spacing of unit-sources is determined by the
 sourcename_downdip.shp shapefile*. 
+
+This must be set before creating the unit-sources using scripts in
+[../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/).
 
 approx_unit_source_width
 ------------------------
@@ -54,6 +60,9 @@ Note that the width is measured down-dip, not along the surface of the earth.
 
 Note that there should only be one unit_source_width for each source-zone.
 
+This must be set before creating the unit-sources using scripts in
+[../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/).
+
 rake
 ----
 
@@ -61,6 +70,8 @@ The desired rake (in degrees) of events on the source. Currently only pure thrus
 
 Note that there should only be one rake for each source-zone.
 
+This must be set before creating the unit-sources using scripts in
+[../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/).
 
 scaling_relation
 ----------------
@@ -69,6 +80,11 @@ Name of the scaling relation used to relate earthquake area, length and width
 to magnitude. It should correspond to a scaling relation accepted by the
 `rptha` function `Mw_2_rupture_size`. 
 
+If segmentation is used, the scaling_relation of all segments must be identical
+to the scaling_relation on the unsegmented source.
+
+This must be set before creating the tsunami events using the scripts in
+[../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/](../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/).
 
 shear_modulus
 -------------
@@ -80,6 +96,9 @@ from 2 to 7, although lower values may occur in shallow areas.
 Note only a single value can be used on each source-zone (i.e. all segments
 must have the same value as on the unsegmented source).
 
+This must be set before creating the tsunami events using the scripts in
+[../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/](../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/).
+
 segment_boundary_alongstrike_index_lower
 ----------------------------------------
 
@@ -90,6 +109,8 @@ running
 [../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/produce_unit_sources.R](produce_unit_sources.R). It
 will show the locations of the unit sources, and have an attribute table with their alongstrike and downdip indices.
 
+This must be set before computing the event rates in:
+[../../EVENT_RATES/](../../EVENT_RATES).
 
 segment_boundary_alongstrike_index_upper
 ----------------------------------------
