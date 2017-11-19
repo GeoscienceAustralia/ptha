@@ -36,7 +36,7 @@ segments, which collectively should cover the entire source, and not overlap
 with each other. The relative influence of the unsegmented and segmented
 representations can be controlled with the row_weight, mentioned further below. 
 
-This must be set before creating the unit-sources using scripts in
+This must be finalised before creating the unit-sources using scripts in
 [../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/).
 
 approx_unit_source_length
@@ -46,7 +46,7 @@ The desired length (along-strike) of unit-sources in km. *Note this is currently
 ignored, since the along-strike spacing of unit-sources is determined by the
 sourcename_downdip.shp shapefile*. 
 
-This must be set before creating the unit-sources using scripts in
+This must be finalised before creating the unit-sources using scripts in
 [../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/).
 
 approx_unit_source_width
@@ -60,7 +60,7 @@ Note that the width is measured down-dip, not along the surface of the earth.
 
 Note that there should only be one unit_source_width for each source-zone.
 
-This must be set before creating the unit-sources using scripts in
+This must be finalised before creating the unit-sources using scripts in
 [../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/).
 
 rake
@@ -70,7 +70,7 @@ The desired rake (in degrees) of events on the source. Currently only pure thrus
 
 Note that there should only be one rake for each source-zone.
 
-This must be set before creating the unit-sources using scripts in
+This must be finalised before creating the unit-sources using scripts in
 [../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/).
 
 scaling_relation
@@ -83,7 +83,7 @@ to magnitude. It should correspond to a scaling relation accepted by the
 If segmentation is used, the scaling_relation of all segments must be identical
 to the scaling_relation on the unsegmented source.
 
-This must be set before creating the tsunami events using the scripts in
+This must be finalised before creating the tsunami events using the scripts in
 [../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/](../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/).
 
 shear_modulus
@@ -96,7 +96,7 @@ from 2 to 7, although lower values may occur in shallow areas.
 Note only a single value can be used on each source-zone (i.e. all segments
 must have the same value as on the unsegmented source).
 
-This must be set before creating the tsunami events using the scripts in
+This must be finalised before creating the tsunami events using the scripts in
 [../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/](../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/).
 
 segment_boundary_alongstrike_index_lower
@@ -109,8 +109,7 @@ running
 [../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/produce_unit_sources.R](produce_unit_sources.R). It
 will show the locations of the unit sources, and have an attribute table with their alongstrike and downdip indices.
 
-This must be set before computing the event rates in:
-[../../EVENT_RATES/](../../EVENT_RATES).
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
 segment_boundary_alongstrike_index_upper
 ----------------------------------------
@@ -118,6 +117,7 @@ segment_boundary_alongstrike_index_upper
 This defines the upper-bound of the alongstrike-index of unit sources that are inside the segment. See
 the previous definition for details.
 
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
 row_weight
 ----------
@@ -138,6 +138,8 @@ If you want to put 80% of the weight on the unsegmented treatment, then you
 should set the unsegmented weight to 0.8, and all the segmented weights to 0.2.
 
 Row weights cannot be negative! 
+
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
 use_bird_convergence
 --------------------
@@ -160,12 +162,16 @@ part of the transform fraction. This can account for the possibility of
 uncertainties in the direction of motion. See the latter config file for more
 information.
 
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
+
 
 tectonic_slip
 -------------
 
 This should be blank if use_bird_convergence=1. Otherwise, it gives the assumed
 plate boundary convergence rate in mm/year, for the entire source. 
+
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
 convergent_fraction
 --------------------
@@ -179,6 +185,7 @@ by this before it is used. This means that e.g.  (tectonic_slip = 20,
 convergent_fraction=0.5) will give identical results to (tectonic_slip = 10,
 convergent_fraction=1). 
 
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
 cmin, cpref, cmax
 -----------------
@@ -190,6 +197,8 @@ Beware that these values may or may not be used, depending on options in
 [../../EVENT_RATES/config.R](../../EVENT_RATES/config.R). Parameters in the latter
 file also allow for a greater range of coupling values to be used, by interpolating between
 the three provided values.
+
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
 cmin_p,cpref_p,cmax_p
 ---------------------
@@ -206,6 +215,8 @@ bmin, bpref, bmax
 
 Three values which define the Gutenberg-Richter b values for the source-zone or
 segment that are used in the logic tree. 
+
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
 bmin_p,bpref_p,bmax_p
 ---------------------
@@ -226,6 +237,8 @@ non-zero weight. Note that a small number is added to this before use to ensure
 that the largest historical earthquake is possible under our logic-tree
 branches. See
 [../../EVENT_RATES/config.R](../../EVENT_RATES/config.R)
+
+This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
 notes
 ------

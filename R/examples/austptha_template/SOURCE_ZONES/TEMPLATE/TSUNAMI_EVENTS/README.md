@@ -26,7 +26,9 @@ in this file (since they are required to define earthquake events).
 
 Other source_zone.csv parameters only affect the rate of events, and so can be
 modified later in the analysis (after event creation) without having to re-run
-the event creation.
+the codes in this directory. On the other hand, if you want to use a different
+scaling_relation or shear_modulus, you will have to re-run the codes in this
+directory.
 
 # Step 2
 
