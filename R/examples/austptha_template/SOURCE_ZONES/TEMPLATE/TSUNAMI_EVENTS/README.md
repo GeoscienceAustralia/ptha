@@ -18,7 +18,7 @@ other things.
 
 Also, ensure that the parameters in the user input table
 [../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv](../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv)
-are up to date (see the [README][../../../DATA/SOURCEZONE_PARAMETERS/README.md]
+are up to date (see the [README](../../../DATA/SOURCEZONE_PARAMETERS/README.md)
 in that folder for more information).
 
 # Step 2
