@@ -2,7 +2,7 @@ Code for making earthquake and tsunami events
 ---------------------------------------------
 
 Codes in this folder should be run after all unit-source tsunami runs are
-complete (see [../TSUNAMI_UNIT_SOURCES](tsunami_unit_sources) ).
+complete (see [../TSUNAMI_UNIT_SOURCES](../TSUNAMI_UNIT_SOURCES) ).
 
 The code is designed to work on raijin.nci.org.au, using the SWALS model, 
 and will need to be ported to work on any other platform / or with any other 
@@ -14,9 +14,12 @@ solver.
 Define key parameters by modifying [config.R](config.R). These parameters
 control e.g. the range of earthquake magnitudes that our tsunami events cover, 
 the number of stochastic slip events created, computational options, among
-other things. Also, ensure that the parameters in the user input table
+other things. 
+
+Also, ensure that the parameters in the user input table
 [../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv](../../../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv)
-are up to date (see the README in that folder for more information).
+are up to date (see the [README][../../../DATA/SOURCEZONE_PARAMETERS/README.md]
+in that folder for more information).
 
 # Step 2
 

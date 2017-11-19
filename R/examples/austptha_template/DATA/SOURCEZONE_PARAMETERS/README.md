@@ -168,7 +168,7 @@ segment that are used in the logic tree.
 Beware that these values may or may not be used, depending on options in
 [../../EVENT_RATES/config.R](../../EVENT_RATES/config.R). Parameters in the latter
 file also allow for a greater range of coupling values to be used, by interpolating between
-the three provided values).
+the three provided values.
 
 cmin_p,cpref_p,cmax_p
 ---------------------
