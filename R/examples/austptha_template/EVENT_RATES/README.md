@@ -7,15 +7,26 @@ have been run before trying to run codes here.
 
 ## Running 
 
-Once the prerequesite steps are complete, edit [config.R](config.R) in this
-folder to set parameters used in the event rate computation. Then, assuming
-everything is correctly configured, the codes can be run (on NCI) with:
+To run this code, you must have created the unit-sources, run the tsunami models,
+and created the earthquake events. See sub-folders in
+[../SOURCE_ZONES/TEMPLATE/](../SOURCE_ZONES/TEMPLATE) for more information.
+
+You also need to decide on 'final' parameter values for the source-zone, and how
+it is segmented. These are specified in
+[../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv](../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters.csv).
+For more information on these parameters, see 
+[../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters/README.md](../DATA/SOURCEZONE_PARAMETERS/README.md).
+
+You also need to edit [config.R](config.R) in this folder, to set parameters
+used in the event rate computation. See the comments in that script for more details.
+
+Then, assuming everything is correctly configured, the codes can be run (on
+NCI) with:
 
     qsub run_compute_rates_and_station_hazard_curves.PBS
 
 With slight modifications, one could also just 'source' the above script on
 another machine.
-
 
 
 ## Details
