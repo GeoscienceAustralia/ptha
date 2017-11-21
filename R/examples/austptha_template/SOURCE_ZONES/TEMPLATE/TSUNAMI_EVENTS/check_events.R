@@ -104,8 +104,10 @@ run_checks<-function(fid_local, slip_type){
         # Check file consistency
         event_area2 = ncvar_get(fid2, 'area')    
         event_slip2 = ncvar_get(fid2, 'slip')    
-        assert(all(event_area == event_area2), 'area mismatch in 2 files')
-        assert(all(event_slip == event_slip2), 'slip mismatch in 2 files')
+        # Note -- it is possible for floating-point-level differences in the 2
+        # files to occur.
+        assert(all(abs(event_area - event_area2) <= 1.0e-07 * pmin(event_area, event_area2)), 'area mismatch in 2 files')
+        assert(all(abs(event_slip - event_slip2) <= 1.0e-07 * pmin(event_slip, event_slip2)), 'slip mismatch in 2 files')
         rm(event_area2, event_slip2)
 
 
