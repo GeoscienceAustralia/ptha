@@ -30,7 +30,7 @@ unit_source_statistics = read_table_from_netcdf(unit_source_statistics_file)
 # Utility for testing
 assert<-function(istrue, msg=''){
 
-    if(istrue){
+    if(!is.nan(istrue) & !is.na(istrue) & istrue){
         print('PASS')
     }else{
         print('FAIL')
@@ -60,6 +60,11 @@ nc_close(tg_file)
 #'
 run_checks<-function(fid_local, slip_type){
 
+    # Get the companion file that should have the same earthquake event data,
+    # but no tsunami event data
+    companion_events_file = gsub('_tsunami', '', fid$filename, fixed=TRUE)
+    fid2 = nc_open(companion_events_file, readunlim=FALSE)
+
     # Check gauge values against those in the file
     lon = ncvar_get(fid_local, 'lon')
     assert(all(lon == orig_lon_lat_elev$lon), 'lon inconsistent')
@@ -81,6 +86,9 @@ run_checks<-function(fid_local, slip_type){
     assert(max(mws) == config_env$Mw_max, 'mw_max problem')
     assert(all(abs(diff(sort(unique(mws))) - config_env$dMw) <= 1.0e-13), 
         'mw spacing problem')
+    mws2 = round(ncvar_get(fid2, 'Mw'), 3)
+    assert(all(mws2 == mws), 'mw mismatch in 2 files')
+    rm(mws2)
 
     # Check mw is consistent with area and slip 
     moment = M0_2_Mw(mws, inverse=TRUE)
@@ -88,9 +96,18 @@ run_checks<-function(fid_local, slip_type){
 
         event_area = ncvar_get(fid_local, 'event_area')    
         event_slip = ncvar_get(fid_local, 'event_slip')    
+        
         moment_A = config_env$shear_modulus * event_area * 1e+06 * event_slip
         assert(all(abs(moment - moment_A) < 1.0e-06*moment), 
             'moment inconsistency')
+
+        # Check file consistency
+        event_area2 = ncvar_get(fid2, 'area')    
+        event_slip2 = ncvar_get(fid2, 'slip')    
+        assert(all(event_area == event_area2), 'area mismatch in 2 files')
+        assert(all(event_slip == event_slip2), 'slip mismatch in 2 files')
+        rm(event_area2, event_slip2)
+
 
     }else{
    
@@ -124,6 +141,14 @@ run_checks<-function(fid_local, slip_type){
         # tolerance here
         assert(all(abs(moment - moment_A) < 1.0e-03*moment), 
             'moment inconsistency stochastic')
+
+        # Confirm file consistency
+        eis = ncvar_get(fid2, 'event_index_string')
+        assert(all(eis == event_index_string), 'event_index_string mismatch in 2 files')
+        rm(eis)
+        ess = ncvar_get(fid2, 'event_slip_string')
+        assert(all(ess == event_slip_string), 'event_slip_string mismatch in 2 files')
+        rm(ess)
     }
 
     # Check that sum of unit source areas is the same as reported area 
@@ -141,6 +166,10 @@ run_checks<-function(fid_local, slip_type){
         ))
         assert(all(abs(event_area - event_areas_B) < 1.0e-06*event_area), 
             'area inconsistency uniform')
+
+        eis = ncvar_get(fid2, 'event_index_string')
+        assert(all(eis == event_index_string), 'event_index_string mismatch in 2 files')
+        rm(eis)
 
     }
 
@@ -395,6 +424,8 @@ run_checks<-function(fid_local, slip_type){
         dev.off()
 
     }
+
+    nc_close(fid2)
 
     return(invisible(environment()))
 
