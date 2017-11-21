@@ -62,7 +62,7 @@ run_checks<-function(fid_local, slip_type){
 
     # Get the companion file that should have the same earthquake event data,
     # but no tsunami event data
-    companion_events_file = gsub('_tsunami', '', fid$filename, fixed=TRUE)
+    companion_events_file = gsub('_tsunami', '', fid_local$filename, fixed=TRUE)
     fid2 = nc_open(companion_events_file, readunlim=FALSE)
 
     # Check gauge values against those in the file
