@@ -22,7 +22,9 @@ in the paper to exactly agree with the line segment intersections; 'AllenHayes-i
 inslab relations of Allen and Hayes (2017, Table 5); 'AllenHayes-outer-rise' gives the outer-rise
 relations of Allen and Hayes (2017, Table 5); 'Blaser-normal' gives the normal relations of Blaser
 et al (2010). Note these authors didn't give area relations, so herein the area coefficients are
-derived assuming area = length x width, and zero correlation of the length and width residuals.}
+derived assuming area = length x width, and zero correlation of the length and width residuals.; 
+'Thingbaijam-subduction' gives the subduction relations of Thingbaijam et al. (2017); 'Thingbaijam-normal'
+gives the normal fault scaling relations from Thingbaijam et al. (2017);}
 
 \item{detailed}{logical. If False return a vector with area/width/length,
 otherwise provide a list with the latter as well as information on
