@@ -51,7 +51,8 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' relations of Allen and Hayes (2017, Table 5); 'Blaser-normal' gives the normal relations of Blaser
 #' et al (2010). Note these authors didn't give area relations, so herein the area coefficients are
 #' derived assuming area = length x width, and zero correlation of the length and width residuals.; 
-#' 'Thingbaijam-subduction' gives the subduction relations of Thingbaijam et al. (2017)
+#' 'Thingbaijam-subduction' gives the subduction relations of Thingbaijam et al. (2017); 'Thingbaijam-normal'
+#' gives the normal fault scaling relations from Thingbaijam et al. (2017);
 #' @param detailed logical. If False return a vector with area/width/length,
 #' otherwise provide a list with the latter as well as information on
 #' log10-standard-deviations
@@ -156,6 +157,12 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
         length_absigma = c(-2.412, 0.583, 0.107)
         width_absigma = c(-0.880, 0.366, 0.099)
         area_absigma = c(-3.292, 0.949, 0.150)
+
+    }else if(relation == 'Thingbaijam-normal'){
+        # See table 1 of their paper
+        length_absigma = c(-1.722, 0.485, 0.128)
+        width_absigma = c(-0.829, 0.323, 0.128)
+        area_absigma = c(-2.551, 0.808, 0.181)
 
     }else{
 
