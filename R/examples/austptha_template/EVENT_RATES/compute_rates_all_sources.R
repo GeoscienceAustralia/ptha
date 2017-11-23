@@ -860,8 +860,8 @@ for(i in 1:length(source_segment_names)){
 
     # Also read rates that were just written to file -- this will be for the whole source-zone
     fid = nc_open(source_envs[[i]]$event_table_file, readunlim=FALSE)
-    event_rates_file = ncvar_get(fid, 'event_rate_annual')
-    event_Mw_file = round(ncvar_get(fid, 'event_Mw'), 3)
+    event_rates_file = ncvar_get(fid, 'rate_annual')
+    event_Mw_file = round(ncvar_get(fid, 'Mw'), 3)
     nc_close(fid)
     empirical_mean_curve = sapply(mw, f<-function(x) sum(event_rates_file * (event_Mw_file >= x)))
     points(mw, empirical_mean_curve, pch=19, cex=0.2, col='pink')
