@@ -1,6 +1,8 @@
 #
 # Plot time-series of the 'optimal' events vs DART buoys
 #
+PLOT_DURATION_HOURS = as.numeric(commandArgs(trailingOnly=TRUE)[1])
+if(is.na(plot_duration_hours)) stop('Must pass numeric number of hours for x axis')
 
 library(rptha)
 
@@ -82,7 +84,7 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
 
         # Choose the x-limits of the plot based on the stochastic slip x-limits
         xmin = min(c(sss$data_t, sss$model_t))
-        xlim = c(xmin, xmin+4.0*3600)
+        xlim = c(xmin, xmin+PLOT_DURATION_HOURS*3600)
 
         ymin = min(c(uss$data_s, uss$model_s, sss$data_s, sss$model_s, 
             svu$model_s, svu$data_s))
