@@ -796,6 +796,31 @@ for(i in 1:length(source_envs)){
     }
 }
 
+
+#
+# OUTPUT RATES TO NETCDF FILES BELOW HERE
+#
+
+# Zero rates in netcdf files by setting scale_rate to zero
+for(i in 1:length(source_segment_names)){
+    write_rates_to_event_table(source_envs[[i]], scale_rate = 0.0, add_rate=FALSE)
+}
+#
+# Now add rates to netcdf files, scaled by the row_weight to allow multiple
+# weighted models of the source-zone segmentation. Note we are adding epistemic
+# credible intervals of rates here too. This is ok if the epistemic uncertainties
+# are co-monotonic [i.e. 95% quantile of segmentA ==> 95% quantile of segmentB
+# and segment C and the full source-zone]. That avoids risk-reduction through averaging,
+# which seems a reasonable approach [given it's hard to specify 'correlations' between
+# our epistemic uncertainties on different sources, but we could well imagine the 
+# correlations not being zero]
+#
+for(i in 1:length(source_segment_names)){
+    rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
+    write_rates_to_event_table(source_envs[[i]], scale_rate = rate_scale, add_rate=TRUE)
+}
+
+
 #
 # Plot all the rate curves to a single pdf
 #
@@ -828,8 +853,18 @@ for(i in 1:length(source_segment_names)){
     points(mw, source_envs[[i]]$mw_rate_function(mw), t='o', col='black', 
         pch=17, cex=0.5)
 
+    # Plot the by-earthquake-event rates, integrated. Should be 'the same' (up
+    # to mw discretization) as the fitted curve
     empirical_mean_curve = sapply(mw, f<-function(x) sum(source_envs[[i]]$event_rates * (source_envs[[i]]$event_table$Mw >= x)))
     points(mw, empirical_mean_curve, pch=19, cex=0.2, col='green')
+
+    # Also read rates that were just written to file -- this will be for the whole source-zone
+    fid = nc_open(source_envs[[i]]$event_table_file, readunlim=FALSE)
+    event_rates_file = ncvar_get(fid, 'event_rate_annual')
+    event_Mw_file = round(ncvar_get(fid, 'event_Mw'), 3)
+    nc_close(fid)
+    empirical_mean_curve = sapply(mw, f<-function(x) sum(event_rates_file * (event_Mw_file >= x)))
+    points(mw, empirical_mean_curve, pch=19, cex=0.2, col='pink')
 
     # Mean prior curve
     mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)
@@ -929,29 +964,6 @@ grid(col='orange')
 abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange', lty='dotted')
 
 dev.off()
-
-#
-# OUTPUT RATES TO NETCDF FILES BELOW HERE
-#
-
-# Zero rates in netcdf files by setting scale_rate to zero
-for(i in 1:length(source_segment_names)){
-    write_rates_to_event_table(source_envs[[i]], scale_rate = 0.0, add_rate=FALSE)
-}
-#
-# Now add rates to netcdf files, scaled by the row_weight to allow multiple
-# weighted models of the source-zone segmentation. Note we are adding epistemic
-# credible intervals of rates here too. This is ok if the epistemic uncertainties
-# are co-monotonic [i.e. 95% quantile of segmentA ==> 95% quantile of segmentB
-# and segment C and the full source-zone]. That avoids risk-reduction through averaging,
-# which seems a reasonable approach [given it's hard to specify 'correlations' between
-# our epistemic uncertainties on different sources, but we could well imagine the 
-# correlations not being zero]
-#
-for(i in 1:length(source_segment_names)){
-    rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
-    write_rates_to_event_table(source_envs[[i]], scale_rate = rate_scale, add_rate=TRUE)
-}
 
 ## #
 ## # Write to netcdf with a sourcezone specific approach
