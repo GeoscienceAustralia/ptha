@@ -613,7 +613,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
 
             if(any(output_var < 0.0)) stop('negative rate')
 
-            ncvar_put(fid, varname, event_rate*scale_rate + extra_rate)
+            ncvar_put(fid, varname, output_var)
 
             return(invisible())
         }
@@ -787,6 +787,14 @@ if(config$MC_CORES > 1){
     }
 }
 
+#
+# Quick check for order mistakes
+#
+for(i in 1:length(source_envs)){
+    if(names(source_envs)[i] != source_envs[[i]]$source_segment_name){
+        print(paste0('Problem with ', names(source_envs[i])))
+    }
+}
 
 #
 # Plot all the rate curves to a single pdf
@@ -819,6 +827,9 @@ for(i in 1:length(source_segment_names)){
 
     points(mw, source_envs[[i]]$mw_rate_function(mw), t='o', col='black', 
         pch=17, cex=0.5)
+
+    empirical_mean_curve = sapply(mw, f<-function(x) sum(source_envs[[i]]$event_rates * (source_envs[[i]]$event_table$Mw >= x)))
+    points(mw, empirical_mean_curve, pch=19, cex=0.2, col='green')
 
     # Mean prior curve
     mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)
