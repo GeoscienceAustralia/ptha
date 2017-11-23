@@ -2,7 +2,7 @@
 # Plot time-series of the 'optimal' events vs DART buoys
 #
 PLOT_DURATION_HOURS = as.numeric(commandArgs(trailingOnly=TRUE)[1])
-if(is.na(plot_duration_hours)) stop('Must pass numeric number of hours for x axis')
+if(is.na(PLOT_DURATION_HOURS)) stop('Must pass numeric number of hours for x axis')
 
 library(rptha)
 
