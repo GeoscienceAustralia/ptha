@@ -76,8 +76,7 @@ read_lon_lat_elev<-function(nc_file){
 #' 
 #' @param tsunami_file netcdf filename with tsunami max_stage / rates, for
 #'     every gauge and event
-#' @param gauge_points data.frame with gauge coordinates and elevation, to
-#'     check that point ordering in tsunami_file is as expected
+#' @param gauge_points data.frame with gauge coordinates and elevation
 #' @param point_chunk_size Number of gauges for which we read max_stage
 #'     simultaneously
 #' @param stage_seq stages at which we return the integrated exceedance rate
