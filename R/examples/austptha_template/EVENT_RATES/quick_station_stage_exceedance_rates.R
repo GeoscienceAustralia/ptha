@@ -66,13 +66,15 @@ er = cumsum(stage_rate_all$event_rate[odr])
 er_up = cumsum(stage_rate_all$event_rate_upper[odr])
 er_lo = cumsum(stage_rate_all$event_rate_lower[odr])
 
-# Plot it #
+#
+# Plot the data
+#
 plot(stg, er, t='l', log='xy', xlim=c(0.01, max(stg)))
 grid()
 points(stg, er_up, t='l', col='red')
 points(stg, er_lo, t='l', col='red')
 
-# Compare with the file
+# Compare with the values in the file
 fid = nc_open('tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc', 
     readunlim=FALSE)
 stages = fid$dim$stage$vals
