@@ -48,7 +48,7 @@ the unit-sources.
 [integrated_rate_given_stage.R](integrated_rate_given_stage.R)
 used to compute the stage-vs-exceedance rate curves at each hazard point,
 integrated over all source zones. Note that for the credible interval
-compuitation, we assume that uncertainties at all source-zones behave
+computation, we assume that uncertainties at all source-zones behave
 co-monotonically (i.e. there is no cancellation of uncertainty due to
 averaging epistemic uncertainties at different sites). The co-mononotonic
 assumption follows Davies et al (2017), and is a conservative treatment,
