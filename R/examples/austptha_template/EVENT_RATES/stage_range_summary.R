@@ -340,7 +340,7 @@ save.image('model_data_envelope_summary_statistics.Rdata')
 # if 2 variable_uniform slip models have the same area and Mw. This
 # even happens for single unit-source stochastic models
 #
-for(i in 1:12){
+for(i in 1:length(all_Rdata)){
     print(paste0('################', i))
     print(basename(all_Rdata[i]))
     print(c(uniform_store[[i]]$nunique_models, '/', length(uniform_store[[i]]$model[,1])))
