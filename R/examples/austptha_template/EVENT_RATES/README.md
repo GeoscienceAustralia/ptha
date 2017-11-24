@@ -58,16 +58,20 @@ uncertainties across source-zones.
 [gcmt_subsetter.R](gcmt_subsetter.R) was used to extract subsets of the GCMT data
 for later analysis.
 
+[back_calculate_convergence.R](back_calculate_convergence.R) contains code to 
+calculate and plot the slip rate on each unit source implied by the model. This
+can be compared with the plate-tectonic models which were used to determine the
+event rates. In combination with a numerical optimization routine, it may also
+be used to determine how much the conditional probability of source-zone-edge
+earthquake events should be increased in order to best match the spatial distribution
+of plate convergence.
+
 ## Plotting routines
 
 [plot_hazard_curves.R](plot_hazard_curves.R) contains a function to plot the
 wave height exceedance rates for both stochastic slip and uniform slip, at a
 station. There are lots of useful disgnostic plots here that can help to understand the analysis.
 
-[back_calculate_convergence.R](back_calculate_convergence.R) contains code to 
-calculate and plot the slip rate on each unit source implied by the model. This
-can be compared with the plate-tectonic models which were used to determine the
-event rates.
 
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
 contains code to 'independently' calculate the stage exceedance rate curves at a point
