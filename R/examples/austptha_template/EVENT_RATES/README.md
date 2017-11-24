@@ -45,8 +45,48 @@ rates for all tsunami events
 used to map Bird (2003) plate-boundary convergence rates onto the top-edge of
 the unit-sources. 
 
+[integrated_rate_given_stage.R](integrated_rate_given_stage.R)
+used to compute the stage-vs-exceedance rate curves at each hazard point,
+integrated over all source zones. Note that for the credible interval
+compuitation, we assume that uncertainties at all source-zones behave
+co-monotonically (i.e. there is no cancellation of uncertainty due to
+averaging epistemic uncertainties at different sites). The co-mononotonic
+assumption follows Davies et al (2017), and is a conservative treatment,
+used to avoid having to specify the dependency structure of our epistemic
+uncertainties across source-zones. 
+
+[gcmt_subsetter.R](gcmt_subsetter.R) was used to extract subsets of the GCMT data
+for later analysis.
+
 ## Plotting routines
 
 [plot_hazard_curves.R](plot_hazard_curves.R) contains a function to plot the
 wave height exceedance rates for both stochastic slip and uniform slip, at a
-station.
+station. There are lots of useful disgnostic plots here that can help to understand the analysis.
+
+[back_calculate_convergence.R](back_calculate_convergence.R) contains code to 
+calculate and plot the slip rate on each unit source implied by the model. This
+can be compared with the plate-tectonic models which were used to determine the
+event rates.
+
+[quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
+contains code to 'independently' calculate the stage exceedance rate curves at a point
+(i.e. not relying on the above codes [compute_station_hazard_curves.R](compute_station_hazard_curves.R)
+or  [integrated_rate_given_stage.R](integrated_rate_given_stage.R) ). This was done
+as a partial check on the correctness of the latter routines (in the
+absence of more exact tests, we can at least confirm that we get the same answer
+using 2 different methods -- that's the idea behind this routine).
+
+[plot_peak_stage_1m_slip.R](plot_peak_stage_1m_slip.R) can be used to plot the peak stage
+at a chosen hazard point resulting from every single unit-source tsunami. It's
+useful as a sanity check on the tsunami model results.
+
+## Other routines
+
+[stage_range_summary.R](stage_range_summary.R) contains basic checks on the performance
+of the uniform, stochastic, and variable uniform models vs DART measurements. 
+
+[slip_simulator.R](slip_simulator.R) is a simple (and experimental) code to
+place fixed-size earthquake events on a source-zone, so as to spatially match
+some idea of moment conservation.
+
