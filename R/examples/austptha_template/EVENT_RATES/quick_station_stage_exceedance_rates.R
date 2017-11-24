@@ -73,6 +73,9 @@ plot(stg, er, t='l', log='xy', xlim=c(0.01, max(stg)))
 grid()
 points(stg, er_up, t='l', col='red')
 points(stg, er_lo, t='l', col='red')
+title(paste0('Stage-vs-exceedance rate @ (', round(lon,2), ', ', 
+    round(lat, 2), 
+    ') \n Comparison of file values (points) and separate calculation (lines)'))
 
 # Compare with the values in the file
 fid = nc_open('tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc', 
@@ -83,8 +86,8 @@ ers_up = ncvar_get(fid, 'stochastic_slip_rate_upper_ci', start=c(1,ni), count=c(
 ers_lo = ncvar_get(fid, 'stochastic_slip_rate_lower_ci', start=c(1,ni), count=c(-1,1))
 nc_close(fid)
 
-points(stages, ers, pch=19, cex=0.6, col='brown')
-points(stages, ers_up, pch=19, cex=0.6, col='pink')
-points(stages, ers_lo, pch=19, cex=0.6, col='pink')
+points(stages, ers, pch=19, cex=1.0, col='brown')
+points(stages, ers_up, pch=19, cex=1.0, col='pink')
+points(stages, ers_lo, pch=19, cex=1.0, col='pink')
 
 
