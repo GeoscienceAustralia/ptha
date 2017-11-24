@@ -69,7 +69,7 @@ get_unit_source_wave_heights<-function(lon, lat, verbose=FALSE){
 
 plot_unit_source_wave_heights<-function(lon, lat, verbose=FALSE, bar_scale=5, 
     xlim=NULL, ylim=NULL, rake_range = c(-Inf, Inf), 
-    unit_source_wave_heights=NULL){
+    unit_source_wave_heights=NULL, main=NULL){
 
     if(is.null(unit_source_wave_heights)){
         unit_source_wave_heights = get_unit_source_wave_heights(lon, lat, verbose=verbose)
@@ -88,7 +88,9 @@ plot_unit_source_wave_heights<-function(lon, lat, verbose=FALSE, bar_scale=5,
     stg_max = max(stage)
     stg_scaled = stage/stg_max
 
-    colRamp = colorRamp(c('purple', 'blue', 'lightblue', 'green', 'yellow', 'orange', 'red'))
+    colRamp = colorRamp(c('purple', 'blue', 'lightblue', 'green', 
+        'yellow', 'yellow', 'orange', 'orange', 'orange', 'orange', 'red', 
+        'red', 'red', 'red'))
     stg_cols = colRamp(stg_scaled)
     stg_cols = rgb(stg_cols[,1], stg_cols[,2], stg_cols[,3], maxColorValue=255)
 
@@ -97,5 +99,70 @@ plot_unit_source_wave_heights<-function(lon, lat, verbose=FALSE, bar_scale=5,
     arrows(all_us_info$lon[ord], all_us_info$lat[ord],
         all_us_info$lon[ord], (all_us_info$lat + stg_scaled*bar_scale)[ord],
         col = stg_cols[ord], length=0)
-        
+  
+    # Use the raster package to add a legend, by making a 'fake' raster then
+    # plotting with legend_only=TRUE 
+    u1 = raster(matrix(c(0, stg_max), ncol=2, nrow=2))
+    stg_cols = colRamp(seq(0,1,len=100))
+    stg_cols = rgb(stg_cols[,1], stg_cols[,2], stg_cols[,3], maxColorValue=255)
+    
+    plot(u1, col=stg_cols, legend.only=TRUE, add=TRUE)
+    
+    if(!is.null(main)){
+        title(main=main)
+    }else{
+        ni = lonlat_nearest_neighbours(cbind(lon, lat), cbind(hp$lon, hp$lat))
+        title(main=paste0('Peak stage due to each 1m-slip unit-source at hazard point (', 
+            round(hp$lon[ni], 3), ', ', round(hp$lat[ni], 3), ')\n elev = ', 
+            round(hp$elev[ni], 3), '; gaugeID = ', round(hp$gaugeID[ni],2),
+            '; Rake-range = [', min(all_us_info$rake[keep_stage]), ', ', 
+            max(all_us_info$rake[keep_stage]), ']'))
+    }
 }
+
+
+site_plot_unit_source_impacts<-function(){
+
+    sites = list(
+        'Cairns_100m' = c(146.34, -16.74),
+        'Bundaberg_100m' = c(152.833, -24.137), 
+        'Brisbane_100m' = c(153.72, -27.56),
+        'Sydney_100m' = c(151.42, -34.05), 
+        'Eden_100m' = c(150.188, -37.141),
+        'Hobart_100m' = c(148.207, -42.897),
+        'Adelaide_100m' = c(135.614, -35.328),
+        'Perth_100m' = c(115.250, -31.832),
+        'SteepPoint_100m' = c(112.958, -26.093),
+        'Broome_100m' = c(120.74, -18.25),
+        'Darwin_100m' = c(129.03, -11.88) 
+        )
+
+    pdf('unit_source_wave_heights.pdf', width=10, height=7)
+
+    for(i in 1:length(sites)){
+        lon = sites[[i]][1]
+        lat = sites[[i]][2]
+
+        unit_source_wh = get_unit_source_wave_heights(lon, lat, verbose=TRUE)
+
+        # Global plot thrust faults
+        plot_unit_source_wave_heights(lon, lat, rake_range=c(80,100),
+            unit_source_wave_heights = unit_source_wh)
+        # Global plot normal faults
+        plot_unit_source_wave_heights(lon, lat, rake_range=c(-100,-80),
+            unit_source_wave_heights = unit_source_wh)
+
+        # Local plot thrust faults
+        plot_unit_source_wave_heights(lon, lat, rake_range=c(80,100),
+            xlim=c(80, 200), ylim=c(-60, 10),
+            unit_source_wave_heights = unit_source_wh)
+        # Local plot normal faults
+        plot_unit_source_wave_heights(lon, lat, rake_range=c(-100,-80),
+            xlim=c(80, 200), ylim=c(-60, 10),
+            unit_source_wave_heights = unit_source_wh)
+    }
+
+    dev.off()
+
+}
+
