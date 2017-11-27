@@ -12,7 +12,7 @@ tsunami_files = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_stochastic_slip_e
 library(rptha)
 
 # Get hazard points -- faster to not use the '_tsunami' file
-fid = nc_open(gsub('_tsunami', '', tsunami_files[1], fixed=TRUE), readunlim=FALSE)
+fid = nc_open(tsunami_files[1], readunlim=FALSE)
 n = length(fid$dim$station$vals)
 hp = data.frame(
     lon     = rep(NA, n),
@@ -34,10 +34,10 @@ ni = lonlat_nearest_neighbours(cbind(lon, lat), cbind(hp$lon, hp$lat))
 
 # Get stage and rates, for each source
 
-stage_rate = list()
+stage_rate = vector(mode='list', length=length(tsunami_files))
 names(stage_rate) = basename(dirname(dirname(tsunami_files)))
 for(i in 1:length(tsunami_files)){
-    print(i)
+    print(basename(tsunami_files[i]))
     fid = nc_open(tsunami_files[i], readunlim=FALSE)
 
     event_rate = ncvar_get(fid, 'event_rate_annual')
