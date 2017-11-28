@@ -837,7 +837,7 @@ if(config$MC_CORES > 1){
 #
 for(i in 1:length(source_envs)){
     if(names(source_envs)[i] != source_envs[[i]]$source_segment_name){
-        print(paste0('Problem with ', names(source_envs[i])))
+        print(paste0('Problem with ', names(source_envs)[i]))
     }
 }
 
