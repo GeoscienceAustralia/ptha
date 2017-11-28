@@ -96,7 +96,7 @@ dMw = 0.1
 # at least some earthquake events with non-zero probability!
 #
 MAXIMUM_ALLOWED_MW_MAX = 9.6
-MINIMUM_ALLOWED_MW_MAX = 7.65
+MINIMUM_ALLOWED_MW_MAX = 7.35
 MAXIMUM_ALLOWED_MW_MAX_NORMAL = 9.0
 
 #

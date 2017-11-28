@@ -217,7 +217,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         bird2003_env$unit_source_tables[[source_name]]$width[which_is_in_segment],
         by=list(bird2003_env$unit_source_tables[[source_name]]$alongstrike_number[which_is_in_segment]),
         sum)
-    mean_sourcezone_width = mean(sourcezone_widths)
+    mean_sourcezone_width = mean(sourcezone_widths$x)
 
     max_mw_max_strasser_width = uniroot(
         f<-function(x){ 
@@ -242,7 +242,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             max_mw_max_strasser)
     }else{
 
-        stop('Scaling relation mw_max < max observed')
+        stop(paste0('Scaling relation mw_max < max observed @', source_segment_name))
     }
 
     # Ensure ordered
@@ -747,13 +747,25 @@ dir.create(source_log_dir, showWarnings=FALSE)
 # Function to run in parallel over all source zones
 parfun<-function(i, unsegmented_edge_rate_multiplier=NULL){
 
-    output = source_rate_environment_fun(sourcezone_parameters[i,],
-        unsegmented_edge_rate_multiplier = unsegmented_edge_rate_multiplier)
+    output = try( source_rate_environment_fun(sourcezone_parameters[i,],
+        unsegmented_edge_rate_multiplier = unsegmented_edge_rate_multiplier))
 
-    # Write parameters to a log for later checks
-    log_filename = paste0(source_log_dir, '/', source_segment_names[i], 
-        '_', i, '.log')
-    capture.output(output$sourcepar, file=log_filename)
+    if(!is.environment(output)){
+        # Return an environment if it fails. This should make debugging easier
+        failed_environment = as.environment(list(
+            source_rate_environment_fun_return_value = as.list(output),
+            i = i,
+            sourcezone_parameters_i = sourcezone_parameters[i,],
+            unsegmented_edge_rate_multiplier = unsegmented_edge_rate_multiplier))
+
+        output = failed_environment
+    }else{
+        # It seems to have worked.
+        # Write parameters to a log for later checks
+        log_filename = paste0(source_log_dir, '/', source_segment_names[i], 
+            '_', i, '.log')
+        capture.output(output$sourcepar, file=log_filename)
+    }
     return(output)
 }
 
