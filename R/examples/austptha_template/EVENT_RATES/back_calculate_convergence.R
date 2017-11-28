@@ -294,8 +294,10 @@ batch_plot_convergence<-function(){
 
 }
 
-#pdf('convergence_integrated.pdf', width=18, height=6)
-#batch_plot_convergence()
-#dev.off()
+make_plot<-function(){
+    pdf('convergence_integrated.pdf', width=18, height=6)
+    batch_plot_convergence()
+    dev.off()
+}
 
 

@@ -1145,6 +1145,11 @@ dev.off()
 #
 save.image('compute_rates_all_sources_session.RData')
 
+if(config$edge_correct_event_rates){
+    edge_correct$make_plot()
+}
+
+
 ## for(i in 1:length(source_envs)){
 ##     print('')
 ##     print('##################')
