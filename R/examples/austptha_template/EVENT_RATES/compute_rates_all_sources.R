@@ -970,10 +970,7 @@ for(i in 1:length(source_segment_names)){
 }
 
 # Globally integrated rates
-# Get all the information
-all_rate_curves = source_envs[[1]]$mw_rate_function(NA, 
-    return_all_logic_tree_branches=TRUE)
-mw = all_rate_curves$Mw_seq
+mw = seq(MW_MIN, MAXIMUM_ALLOWED_MW_MAX, by=dMw) #all_rate_curves$Mw_seq
 rate_vals = mw*0
 gcmt_global = data.frame()
 for(i in 1:length(source_segment_names)){
@@ -994,7 +991,7 @@ par(mfrow=c(1,1))
 plot(mw, rate_vals, t='o', log='y', xlab='Mw', ylab='Exceedance Rate (events/year)', 
     main='All sources integrated rate', xlim=xlim, ylim=ylim)
 if(nrow(gcmt_global) > 0){
-    rnk = rank(gcmt_global$Mw)
+    rnk = rank(gcmt_global$Mw, ties='random')
     N = nrow(gcmt_global)
 
     # Empirical rate 
@@ -1003,6 +1000,17 @@ if(nrow(gcmt_global) > 0){
     ordr = order(gcmt_global$Mw)
 
     points(gcmt_global$Mw[ordr], aep[ordr], col='red', pch=19, t='o')
+
+    # Add poisson type confidence intervals
+    upper_ci = ordr*0
+    lower_ci = ordr*0
+    for(ii in ordr){
+        p1 = poisson.test(N+1-rnk[ii], T=gcmt_access$cmt_duration_years, conf.level=0.95)
+        upper_ci[ii] = p1$conf.int[2]
+        lower_ci[ii] = p1$conf.int[1]
+    }
+    points(gcmt_global$Mw[ordr], lower_ci[ordr], t='l', col='red', lty='dashed', lwd=2)
+    points(gcmt_global$Mw[ordr], upper_ci[ordr], t='l', col='red', lty='dashed', lwd=2)
 
 }
 grid(col='orange')
