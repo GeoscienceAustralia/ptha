@@ -162,6 +162,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     is_in_segment = 
         ((bird2003_env$unit_source_tables[[source_name]]$alongstrike_number >= alongstrike_lower) &
          (bird2003_env$unit_source_tables[[source_name]]$alongstrike_number <= alongstrike_upper))
+    which_is_in_segment = which(is_in_segment)
 
     # Source area 
     unit_source_areas = bird2003_env$unit_source_tables[[source_name]]$length * 
@@ -197,20 +198,52 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         sourcezone_parameters_row$mw_max_observed + mw_observed_perturbation,
         MINIMUM_ALLOWED_MW_MAX)
 
-    max_mw_max_strasser = Mw_2_rupture_size_inverse(sourcepar$area_in_segment, 
+    # Upper bound mw-max --> scaling relation, with area at -1 standard deviation
+    max_mw_max_strasser_area = Mw_2_rupture_size_inverse(sourcepar$area_in_segment, 
         relation = sourcezone_parameters_row$scaling_relation, CI_sd=-1) 
+    
+    # Alternative upper bound mw-max --> scaling relation, with width at -2 standard deviation
+    # This is a good idea from a practical perspective, because I generate variable-uniform
+    # and stochastic slip events by simulating width/length within +-2 SD limits. If width
+    # cannot accomodate this, then it is truncated (and in 50% of cases, length
+    # is expanded commensurately, while in the other 50% of cases, length is
+    # unchanged). If I allow Mw_max such that the source-zone width is < 2 standard deviations
+    # below the scaling value, then I will end up having very small area earthquakes in the
+    # cases where width is truncated, but length is not expanded. On some
+    # source-zones, this can lead to 100s of metres of mean slip even for e.g.
+    # Mw 9.1 earthquakes (say on Manus which is only 1-unit-source down-dip, but long enough
+    # to have an area-based Mw_max of 9.15).
+    sourcezone_widths = aggregate(
+        bird2003_env$unit_source_tables[[source_name]]$width[which_is_in_segment],
+        by=list(bird2003_env$unit_source_tables[[source_name]]$alongstrike_number[which_is_in_segment]),
+        sum)
+    mean_sourcezone_width = mean(sourcezone_widths)
 
-    sourcepar$Mw_max = c(
-        ## Largest observed plus a small value,
-        min_mw_max,
-        # Middle Mw
-        0.5*(max_mw_max_strasser + min_mw_max),
-        # Another middle Mw
-        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment/2, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
-        # Another middle Mw
-        #Mw_2_rupture_size_inverse(sourcepar$area_in_segment, relation = sourcezone_parameters_row$scaling_relation, CI_sd=0),
-        # Upper mw [Strasser + 1SD]
-        max_mw_max_strasser)
+    max_mw_max_strasser_width = uniroot(
+        f<-function(x){ 
+            output = Mw_2_rupture_size(x, relation=sourcezone_parameters_row$scaling_relation,
+                detailed=TRUE, CI_sd=2)$minus_CI['width'] - mean_sourcezone_width
+            return(output)
+            },
+        interval=c(2, 20), # Mw must be between these bounds!
+        tol=1e-10
+        )$root
+
+    max_mw_max_strasser = min(max_mw_max_strasser_area, max_mw_max_strasser_width)
+
+    if(max_mw_max_strasser > min_mw_max){
+
+        sourcepar$Mw_max = c(
+            # Largest observed plus a small value,
+            min_mw_max,
+            # Middle Mw
+            0.5*(max_mw_max_strasser + min_mw_max),
+            # Upper mw [Strasser - 1SD area, OR Strasser -2SD width]
+            max_mw_max_strasser)
+    }else{
+
+        stop('Scaling relation mw_max < max observed')
+    }
 
     # Ensure ordered
     sourcepar$Mw_max = sort(sourcepar$Mw_max)

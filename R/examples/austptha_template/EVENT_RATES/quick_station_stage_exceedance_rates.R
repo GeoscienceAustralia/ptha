@@ -8,25 +8,19 @@ lon = 151.41
 lat = -34.08
 
 tsunami_files = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_*.nc')
+gauge_file = 'tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc'
 
 library(rptha)
 
 # Get hazard points -- faster to not use the '_tsunami' file
-fid = nc_open(tsunami_files[1], readunlim=FALSE)
+fid = nc_open(gauge_file, readunlim=FALSE)
 n = length(fid$dim$station$vals)
 hp = data.frame(
-    lon     = rep(NA, n),
-    lat     = rep(NA, n),
-    elev    = rep(NA, n),
-    gaugeID = rep(NA, n)
+    lon     = ncvar_get(fid, 'lon'),
+    lat     = ncvar_get(fid, 'lat'),
+    elev    = ncvar_get(fid, 'elev'),
+    gaugeID = ncvar_get(fid, 'gaugeID')
     )
-for(i in 1:n){
-    hp$lon[i] = ncvar_get(fid, 'lon', start=i, count=1)
-    hp$lat[i] = ncvar_get(fid, 'lat', start=i, count=1)
-    hp$elev[i] = ncvar_get(fid, 'elev', start=i, count=1)
-    hp$gaugeID[i] = ncvar_get(fid, 'gaugeID', start=i, count=1)
-    if(i%%100 == 1) print(i)
-}
 nc_close(fid)
 
 # Find index of point nearest to lon/lat
@@ -70,18 +64,7 @@ er = cumsum(stage_rate_all$event_rate[odr])
 er_up = cumsum(stage_rate_all$event_rate_upper[odr])
 er_lo = cumsum(stage_rate_all$event_rate_lower[odr])
 
-#
-# Plot the data
-#
-plot(stg, er, t='l', log='xy', xlim=c(0.01, max(stg)))
-grid()
-points(stg, er_up, t='l', col='red')
-points(stg, er_lo, t='l', col='red')
-title(paste0('Stage-vs-exceedance rate @ (', round(lon,2), ', ', 
-    round(lat, 2), 
-    ') \n Comparison of file values (points) and separate calculation (lines)'))
-
-# Compare with the values in the file
+# We will compare with the values in the file
 fid = nc_open('tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc', 
     readunlim=FALSE)
 stages = fid$dim$stage$vals
@@ -90,10 +73,25 @@ ers_up = ncvar_get(fid, 'stochastic_slip_rate_upper_ci', start=c(1,ni), count=c(
 ers_lo = ncvar_get(fid, 'stochastic_slip_rate_lower_ci', start=c(1,ni), count=c(-1,1))
 nc_close(fid)
 
-points(stages, ers, pch=19, cex=1.0, col='brown')
-points(stages, ers_up, pch=19, cex=1.0, col='pink')
-points(stages, ers_lo, pch=19, cex=1.0, col='pink')
 
+#
+# Plot the data
+#
+plot_stage_vs_rate<-function(){
+    xmax = max(stg*(er>0), na.rm=TRUE)
+    plot(stg, er, t='l', log='xy', xlim=c(min(0.01, max(xmax-0.005, 1.0e-05)), xmax),
+        xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
+    grid(col='brown')
+    points(stg, er_up, t='l', col='red')
+    points(stg, er_lo, t='l', col='red')
+    title(paste0('Stage-vs-exceedance rate @ (', round(hp$lon[ni],3), ', ', 
+        round(hp$lat[ni], 2), 
+        ') \n Comparison of file values (points) and separate calculation (lines)'))
+
+    points(stages, ers, pch=19, cex=1.0, col='brown')
+    points(stages, ers_up, pch=19, cex=1.0, col='pink')
+    points(stages, ers_lo, pch=19, cex=1.0, col='pink')
+}
 
 #
 # Function to examine the distribution of earthquake magnitudes
@@ -101,8 +99,16 @@ points(stages, ers_lo, pch=19, cex=1.0, col='pink')
 peak_stage_magnitude_summary<-function(stage_threshold, source_zone){
 
     is_site = as.character(stage_rate_all$site) == source_zone
-    
-    k = which( (stage_rate_all$peak_stage > stage_threshold) & is_site)
+
+    mw_max = max(stage_rate_all$event_Mw[is_site & stage_rate_all$event_rate > 0])
+    mw_min = min(stage_rate_all$event_Mw[is_site & stage_rate_all$event_rate > 0])
+
+    if(is.finite(mw_max) & is.finite(mw_min)){
+        k = which( (stage_rate_all$peak_stage > stage_threshold) & is_site & (stage_rate_all$event_rate>0) &
+            stage_rate_all$event_Mw >= mw_min & stage_rate_all$event_Mw <= mw_max)
+    }else{
+        k = c()
+    }
 
     if(length(k) == 0){
         output = NA
@@ -125,10 +131,12 @@ peak_stage_magnitude_summary<-function(stage_threshold, source_zone){
     return(output)
 }
 
+#
+# Plot
+#
 plot_deaggregation_summary<-function(stage_threshold){
 
     k = which( (stage_rate_all$peak_stage > stage_threshold) & (stage_rate_all$event_rate > 0))
-
     if(length(k) == 0){
         plot(c(0, 1), c(0, 1), 
             main=paste0('No events exceeding stage_threshold = ', stage_threshold))
@@ -139,28 +147,49 @@ plot_deaggregation_summary<-function(stage_threshold){
         rate_by_source = aggregate(stage_rate_all$event_rate[k], 
             by=list(source_zone=as.character(stage_rate_all$site[k])), sum)
 
-        dotchart(rate_by_source$x, labels=rate_by_source[,1], 
-            main=paste0('Rate of events from each source-zone with \n stage exceeding ', stage_threshold),
-            xlab='Rate (events/year)')
+        # Color the top 3 source-zones differently
+        m1 = order(rate_by_source$x, decreasing=TRUE)
+
+        if(length(m1) > 10){
+            # Plot at most 10 source-zones
+            rate_by_source = rate_by_source[m1[1:10],]
+            m1 = order(rate_by_source$x, decreasing=TRUE)
+        }
+
+        colz = c('grey', 'red')[ 1 + (( (1:length(m1)) %in% m1[1:3]) & (rate_by_source$x > 0))]
+
+        #dotchart(rate_by_source$x, labels=rate_by_source[,1], 
+        #    main=paste0('All source-zones: Rate of events with \n stage exceeding ', stage_threshold),
+        #    xlab='Rate (events/year)', 
+        #    color=colz)
+        oldmar = par('mar')
+        par('mar' = oldmar + c(0, 8, 0, 0)) # new margins to allow source-zone names to fit on plot
+        barplot(rate_by_source$x[m1], names.arg=as.character(rate_by_source[m1,1]),
+            col=colz[m1], density=100, horiz=TRUE, las=1, xlab='Rate (events/year)', 
+            main=paste0('Top ', length(m1), ' source-zones: Rate of events with \n peak_stage > ', stage_threshold, 
+                ' @ (', round(hp$lon[ni],3), ', ', round(hp$lat[ni],3), ')')
+            )
+        par('mar' = oldmar) # Back to old margins
 
         # Also plot rate-vs-Mw for the 3 largest contributors 
-        m1 = order(rate_by_source$x, decreasing=TRUE)
         for(i in 1:min(length(m1), 3)){
             # Name of source-zone
             sz = rate_by_source[m1[i], 1]
             rate_by_Mw = peak_stage_magnitude_summary(stage_threshold, sz) 
             dotchart(rate_by_Mw[,2], 
-                labels=paste0(rate_by_Mw[,1], ' (', round(rate_by_Mw$fraction_events, 3), ')'),
-                xlab='Rate (events/year)', ylab='')
-            mtext(side=2, 'Magnitude (fraction that exceed)', line=2.3)
-            title(paste0(sz, ': Exceedance rates vs magnitude'))
+                labels=paste0(rate_by_Mw[,1], ' (', round(rate_by_Mw$fraction_events*100, 1), ')'),
+                xlab='Rate > stage_threshold (events/year)', ylab='')
+            mtext(side=2, 'Magnitude (and % of events)', line=2.3)
+            title(paste0(sz, ': Rate > stage_threshold (', signif(stage_threshold, 2), 
+                ') by magnitude \n (and % events exceeding stage_threshold)'))
         }
     }
 }
 
-png(paste0('deagg_summary_', lon, '_', lat, '.png'), width=10, height=7, res=200, units='in')
-
-plot_deaggregation_summary(1.5)
-
+pdf(paste0('station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
+plot_stage_vs_rate()
+plot_deaggregation_summary(0.3)
+plot_deaggregation_summary(1.0)
+plot_deaggregation_summary(2.0)
 dev.off()
 
