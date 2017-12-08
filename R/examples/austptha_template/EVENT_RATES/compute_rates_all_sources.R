@@ -970,7 +970,7 @@ for(i in 1:length(source_segment_names)){
 }
 
 # Globally integrated rates
-mw = seq(MW_MIN, MAXIMUM_ALLOWED_MW_MAX, by=dMw) #all_rate_curves$Mw_seq
+mw = seq(MW_MIN, MAXIMUM_ALLOWED_MW_MAX, by=dMw/2) #all_rate_curves$Mw_seq
 rate_vals = mw*0
 gcmt_global = data.frame()
 for(i in 1:length(source_segment_names)){
