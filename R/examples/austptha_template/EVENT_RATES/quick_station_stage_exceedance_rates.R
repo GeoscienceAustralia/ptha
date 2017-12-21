@@ -88,13 +88,20 @@ quick_source_deagg<-function(lon, lat){
         points(stg, er_up, t='l', col='red')
         points(stg, er_lo, t='l', col='red')
         title(paste0('Stage-vs-exceedance rate @ (', round(hp$lon[ni],3), ', ', 
-            round(hp$lat[ni], 2), 
-            ') \n Comparison of file values (points) and separate calculation (lines)'))
+            round(hp$lat[ni], 2), ', ', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
+            ') \n (Lines and points should overlap)'))
 
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
         points(stages, ers_lo, pch=19, cex=1.0, col='pink')
+
+        legend('bottomleft', 
+            c('Peak stage exceedance rate (mean over all logic-tree branches)',
+              '95% credible interval'),
+            col=c('brown', 'pink'),
+            pch=c(19, 19))
     }
+    
 
     #
     # Function to examine the distribution of earthquake magnitudes
@@ -152,7 +159,7 @@ quick_source_deagg<-function(lon, lat){
         k = which( (stage_rate_all$peak_stage > stage_threshold) & (stage_rate_all$event_rate > 0))
         if(length(k) == 0){
             plot(c(0, 1), c(0, 1), 
-                main=paste0('No events exceeding stage_threshold = ', stage_threshold))
+                main=paste0('No events exceeding stage_threshold = ', stage_threshold, 'm'))
         }else{
 
             par(mfrow=c(2,2))
@@ -182,7 +189,7 @@ quick_source_deagg<-function(lon, lat){
                 col=colz[m1], density=100, horiz=TRUE, las=1, 
                 xlab='Rate (events/year)', 
                 main=paste0('Top ', length(m1), 
-                    ' source-zones: Rate of events with \n peak_stage > ', stage_threshold, 
+                    ' source-zones: Rate of events with \n peak_stage > ', stage_threshold, 'm', 
                     ' @ (', round(hp$lon[ni],3), ', ', round(hp$lat[ni],3), ')')
                 )
             par('mar' = oldmar) # Back to old margins

@@ -27,10 +27,6 @@ stage_seq = ncvar_get(rates[[1]], 'stage')
 #'
 get_station_index<-function(lon_p, lat_p){
 
-    #lon_p_x = rep(lon_p, length.out=length(lon))
-    #lat_p_x = rep(lat_p, length.out=length(lon))
-    #site = which.min(distHaversine(cbind(lon_p_x, lat_p_x), cbind(lon, lat)))
-
     site = lonlat_nearest_neighbours(cbind(lon_p, lat_p), cbind(lon, lat))
 
     return(site)
@@ -121,7 +117,7 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
     panel_rate_plot<-function(stage_seq, site_rates_uniform, rate_min, rate_max, 
         greens_adjust, site, titlep, greens_adjust_title){
     
-        # Set up plot
+        # Set up 'empty' plot
         plot(range(stage_seq)*greens_adjust, c(rate_min, rate_max), col=0, log='xy',
             main=paste0(titlep, ' @(',
                 round(lon[site], 2), ',', round(lat[site], 2), ',', 
