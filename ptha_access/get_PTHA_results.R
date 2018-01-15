@@ -14,49 +14,32 @@ if(!exists('.HAVE_SOURCED_CONFIG')) source('R/config.R', local=TRUE, chdir=FALSE
 #' @examples
 #' puysegur_data = get_source_zone_events_data('puysegur')
 #'
-get_source_zone_events_data<-function(source_zone){
+get_source_zone_events_data<-function(source_zone, slip_type='uniform'){
+
+    stopifnot(slip_type %in% c('uniform', 'stochastic', 'variable_uniform'))
 
     #
     # Get the earthquake events data
     #
-    csv_web_addr = paste0(.GDATA_HTTP_BASE_LOCATION, 'SOURCE_ZONES/', 
-        source_zone, '/TSUNAMI_EVENTS/all_eq_events_', source_zone, '.csv')    
+    nc_web_addr = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
+        source_zone, '/TSUNAMI_EVENTS/all_', slip_type, 
+        '_slip_earthquake_events_', source_zone, '.nc')    
 
-    events_data = read.csv(csv_web_addr, stringsAsFactors=FALSE)
+    events_data = read_table_from_netcdf(nc_web_addr)
 
     #
     # Get the unit source summary statistics
     #
-    csv_web_addr = paste0(.GDATA_HTTP_BASE_LOCATION, 'SOURCE_ZONES/', 
+    nc_web_addr = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
         source_zone, '/TSUNAMI_EVENTS/unit_source_statistics_', source_zone, 
-        '.csv')    
+        '.nc')    
 
-    unit_source_statistics = read.csv(csv_web_addr, stringsAsFactors=FALSE)
+    unit_source_statistics = read_table_from_netcdf(nc_web_addr)
 
-    #
-    # Get the netcdf gauge files, by reading a text file that contains their
-    # locations. We then have to re-order the result to match the row-order
-    # in unit_source_statistics
-    #
-    text_web_addr = paste0(.GDATA_HTTP_BASE_LOCATION, 'SOURCE_ZONES/', 
-        source_zone, '/TSUNAMI_UNIT_SOURCE/gauge_files_list.txt')    
+    gauge_netcdf_files = unit_source_statistics$tide_gauge_file 
 
-    gauge_netcdf_files = readLines(text_web_addr)
-
-    # Order the gauge files in the same way as the unit sources
-    unit_source_flag = gsub('.tif', '/', basename(unit_source_statistics$initial_condition_file))
-    gauge_netcdf_files_reordered = rep(NA, length(gauge_netcdf_files))
-    for(i in 1:length(unit_source_flag)){
-        # Find the netcdf file corresponding to the unit source
-        ind = grep(unit_source_flag[i], gauge_netcdf_files)
-        if(length(ind)!= 1) stop('Error in matching of gauge files and unit sources')
-
-        gauge_netcdf_files_reordered[i] = gauge_netcdf_files[ind]
-    }
-  
     # Append the web address to the files 
-    gauge_netcdf_files_reordered = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
-        source_zone, '/TSUNAMI_UNIT_SOURCE/', gauge_netcdf_files_reordered) 
+    gauge_netcdf_files_reordered = sapply(gauge_netcdf_files, adjust_path_to_gdata_base_location)
 
     output = list()
     output[['events']] = events_data
@@ -128,13 +111,17 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
     }
 
     # Read and sum the rasters
-    r1 = raster(event_rasters_base[1])
-    if(length(event_rasters_base) > 1){
-        for(i in 2:length(event_rasters_base)){
-            r1 = r1 + raster(event_rasters_base[i])
-        }
+    variable_slip = ('event_slip_string' %in% names(event_data))
+    if(variable_slip){
+        slip = as.numeric(strsplit(event_data$event_slip_string, '_')[[1]])
+    }else{
+        slip = rep(event_data$slip, length(event_rasters_base))
     }
-    r1 = r1 * event_slip
+
+    r1 = raster(event_rasters_base[1])*0
+    for(i in 1:length(event_rasters_base)){
+        r1 = r1 + slip[i] * raster(event_rasters_base[i])
+    }
 
     return(r1)
 }

@@ -155,17 +155,7 @@ get_netcdf_gauge_indices_near_points<-function(netcdf_file, lonlat){
     gauge_data = get_netcdf_gauge_locations(netcdf_file)
     lg = length(gauge_data[,1])
   
-    #inds = rep(NA, length(lonlat[,1]))  
-
     inds = lonlat_nearest_neighbours(lonlat, cbind(gauge_data$lon, gauge_data$lat))
-
-    #for(i in 1:length(lonlat[,1])){
-    #    suppressWarnings({
-    #    inds[i] = which.min(distHaversine(
-    #        cbind(gauge_data$lon, gauge_data$lat), 
-    #        cbind(rep(lonlat[i,1], lg), rep(lonlat[i,2], lg))))
-    #    })
-    #}
 
     return(inds)
 }
@@ -179,7 +169,8 @@ get_netcdf_gauge_indices_near_points<-function(netcdf_file, lonlat){
 
     test_indices = sample(1:length(gauge_points[,1]), size=10, replace=TRUE)
 
-    derived_indices = get_netcdf_gauge_indices_near_points(netcdf_file, gauge_points[test_indices,1:2])
+    derived_indices = get_netcdf_gauge_indices_near_points(netcdf_file, 
+        gauge_points[test_indices,1:2])
 
     # It is possible that derived_indices != test_indices, if there are
     # repeated lon/lat points in the gauges

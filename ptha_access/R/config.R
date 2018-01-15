@@ -1,14 +1,54 @@
 suppressPackageStartupMessages(library(rgdal))
+suppressPackageStartupMessages(library(sf))
 
 #
 # Define the initial part of key web-addresses where our data can be accessed
 #
 
 # Netcdf data -- this location allows remote query/subsetting
-.GDATA_OPENDAP_BASE_LOCATION = 'http://dapds00.nci.org.au/thredds/dodsC/fj6/PTHA/AustPTHA/v2017/'
-
+#
+# We include a flag that ensures strings are long enough
+# FIXME: Can reduce stringlength
+max_stringlength = '[stringlength=4096]'
+#
+.GDATA_OPENDAP_BASE_LOCATION = paste0(max_stringlength, 
+    'http://dapds00.nci.org.au/thredds/dodsC/fj6/PTHA/AustPTHA_1/')
+#
 # Non-netcdf data -- this location only allows download
-.GDATA_HTTP_BASE_LOCATION = 'http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA/v2017/'
+.GDATA_HTTP_BASE_LOCATION = 'http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/'
+
+#'
+#' Some files on gdata contain paths like /g/data/fj6/PTHA/AustPTHA_1/....
+#' We want to replace the start of this path with the .GDATA_OPENDAP_BASE_LOCATION
+#'
+#' @param filepath The path of the file, starting with /g/data/fj6/....
+#' @return The same filepath, with prefix suitable for remote access
+#'
+adjust_path_to_gdata_base_location<-function(filepath, prefix_type='opendap'){
+
+    if(length(filepath) != 1) stop('adjust_path_to_gdata_base_location is not vectorized')
+
+    split_path = strsplit(filepath,'/')[[1]]
+    k = grep('AustPTHA_1', split_path)
+    ls = length(split_path)
+    if(length(k) == 0) stop('did not find AustPTHA_1 in path')
+
+    if(k < ls){
+        new_base_path = paste(split_path[(k+1):ls], collapse='/')
+    }else{
+        new_base_path = ''
+    }
+
+    if(prefix_type == 'opendap'){
+        new_base_path = paste0(.GDATA_OPENDAP_BASE_LOCATION, new_base_path)
+    }
+    if(prefix_type == 'http'){
+        new_base_path = paste0(.GDATA_HTTP_BASE_LOCATION, new_base_path)
+    }
+
+    return(new_base_path)
+
+}
 
 
 #
@@ -32,7 +72,9 @@ suppressPackageStartupMessages(library(rgdal))
         layer_name = gsub('.shp', '', basename(.all_sourcezone_unit_source_grids[i]))
         unit_source_grids[[layer_name]] = readOGR(.all_sourcezone_unit_source_grids[i], 
             layer=layer_name, verbose=FALSE)
-        names(unit_source_grids[[i]]) = c('downdip_index', 'alongstrike_index')
+        #unit_source_grids[[layer_name]] = st_read(.all_sourcezone_unit_source_grids[i], 
+        #    layer=layer_name, verbose=FALSE)
+        names(unit_source_grids[[i]])[1:2] = c('downdip_index', 'alongstrike_index')
         unit_source_grids[[i]]$sourcezone = rep(layer_name, len=length(unit_source_grids[[i]]$downdip_index))
     }
 
@@ -46,12 +88,28 @@ unit_source_grids = .read_all_unit_source_grids()
 #'
 #' @return hazard_points_spdf SpatialPointsDataFrame containing the hazard points
 .read_hazard_points<-function(){
-    # Read as csv
-    hazard_points = read.csv('DATA/HAZARD_POINTS/merged_hazard_points.csv')
-    # The 3rd column contains an numeric 'ID'. It is a decimal number. The fractional
+
+    source('R/sum_tsunami_unit_sources.R', local=TRUE)
+    
+    # Find a file that contains hazard points. Easiest way is to read them from a tide gauge file
+    unit_source_stats_alaska = paste0(.GDATA_OPENDAP_BASE_LOCATION, 
+        'SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVENTS/unit_source_statistics_alaskaaleutians.nc')
+    fid = nc_open(unit_source_stats_alaska)
+    tg_filename = ncvar_get(fid, 'tide_gauge_file')[1]
+    nc_close(fid)
+    # Read the hazard points
+    tg_filename = adjust_path_to_gdata_base_location(tg_filename)
+    hazard_points = try(get_netcdf_gauge_locations(tg_filename))
+    if(class(hazard_points) == 'try-error'){
+        stop('hazard point read failed')
+    }
+
+    # The data contains an numeric 'gaugeID'. It is a decimal number. The fractional
     # part 
-    hp_type = round(hazard_points$ID - trunc(hazard_points$ID), 1)*10
-    hp_type_char = c('shallow', 'intermediate', 'deep', 'intermediateG', 'DART')[hp_type+1]
+    hp_type = match( 
+        round(hazard_points$gaugeID - trunc(hazard_points$gaugeID), 1)*10,
+        c(0, 1, 2, 3, 4, 5))
+    hp_type_char = c('shallow', 'intermediate', 'deep', 'intermediateG', 'DART', 'gridded')[hp_type]
     hazard_points = cbind(hazard_points, data.frame(point_category=hp_type_char))
 
     hazard_points_spdf = SpatialPointsDataFrame(coords = hazard_points[,1:2], 
@@ -61,15 +119,18 @@ unit_source_grids = .read_all_unit_source_grids()
     #kk = which(hp_type_char != 'intermediateG')
     #hazard_points_spdf = hazard_points_spdf[kk,]
     #browser()
-    dartp = which(hp_type_char == 'DART')
+    clip_points = FALSE
+    if(clip_points){
+        dartp = which(hp_type_char == 'DART')
 
-    clip_region = readOGR(dsn='DATA/HAZARD_POINTS/point_filter_polygon', 
-        layer='point_filter_polygon', verbose=FALSE)
-    suppressWarnings({proj4string(clip_region) = proj4string(hazard_points_spdf)})
+        clip_region = readOGR(dsn='DATA/HAZARD_POINTS/point_filter_polygon', 
+            layer='point_filter_polygon', verbose=FALSE)
+        suppressWarnings({proj4string(clip_region) = proj4string(hazard_points_spdf)})
 
-    clip_region_keep = which(!is.na(over(as(hazard_points_spdf, 'SpatialPoints'), clip_region)))
+        clip_region_keep = which(!is.na(over(as(hazard_points_spdf, 'SpatialPoints'), clip_region)))
 
-    hazard_points_spdf = hazard_points_spdf[c(clip_region_keep, dartp),]
+        hazard_points_spdf = hazard_points_spdf[c(clip_region_keep, dartp),]
+    }
 
     return(hazard_points_spdf)
 }
