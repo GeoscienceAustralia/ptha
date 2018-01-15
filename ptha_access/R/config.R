@@ -95,7 +95,7 @@ unit_source_grids = .read_all_unit_source_grids()
     unit_source_stats_alaska = paste0(.GDATA_OPENDAP_BASE_LOCATION, 
         'SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVENTS/unit_source_statistics_alaskaaleutians.nc')
     fid = nc_open(unit_source_stats_alaska)
-    tg_filename = ncvar_get(fid, 'tide_gauge_file')[1]
+    tg_filename = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(4096,1))[1]
     nc_close(fid)
     # Read the hazard points
     tg_filename = adjust_path_to_gdata_base_location(tg_filename)

@@ -17,6 +17,7 @@ test_sum_tsunami_unit_sources(gauge_netcdf_file)
 # for Puysegur. Obviously this will have to be updated each time
 # the database changes.
 test_puysegur<-function(){
+    stop('Still need to update this test based on the new data structure')
     source('./get_PTHA_results.R', local=TRUE)
 
     puysegur = get_source_zone_events_data('puysegur')
