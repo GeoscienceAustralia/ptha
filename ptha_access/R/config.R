@@ -87,49 +87,73 @@ unit_source_grids = .read_all_unit_source_grids()
 #' Wrap in a function to avoid adding many variables to the environment
 #'
 #' @return hazard_points_spdf SpatialPointsDataFrame containing the hazard points
-.read_hazard_points<-function(){
+.read_hazard_points<-function(refresh=FALSE){
 
     source('R/sum_tsunami_unit_sources.R', local=TRUE)
-    
-    # Find a file that contains hazard points. Easiest way is to read them from a tide gauge file
-    unit_source_stats_alaska = paste0(.GDATA_OPENDAP_BASE_LOCATION, 
-        'SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVENTS/unit_source_statistics_alaskaaleutians.nc')
-    fid = nc_open(unit_source_stats_alaska)
-    tg_filename = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(4096,1))[1]
-    nc_close(fid)
-    # Read the hazard points
-    tg_filename = adjust_path_to_gdata_base_location(tg_filename)
-    hazard_points = try(get_netcdf_gauge_locations(tg_filename))
-    if(class(hazard_points) == 'try-error'){
-        stop('hazard point read failed')
-    }
+   
+    if(refresh | !file.exists('DATA/hazard_points_spdf/hazard_points_spdf.shp')){ 
 
-    # The data contains an numeric 'gaugeID'. It is a decimal number. The fractional
-    # part 
-    hp_type = match( 
-        round(hazard_points$gaugeID - trunc(hazard_points$gaugeID), 1)*10,
-        c(0, 1, 2, 3, 4, 5))
-    hp_type_char = c('shallow', 'intermediate', 'deep', 'intermediateG', 'DART', 'gridded')[hp_type]
-    hazard_points = cbind(hazard_points, data.frame(point_category=hp_type_char))
+        # Find a file that contains hazard points. Easiest way is to read them from a tide gauge file
+        unit_source_stats_alaska = paste0(.GDATA_OPENDAP_BASE_LOCATION, 
+            'SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVENTS/unit_source_statistics_alaskaaleutians.nc')
+        fid = nc_open(unit_source_stats_alaska)
+        tg_filename = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(4096,1))[1]
+        nc_close(fid)
+        # Read the hazard points
+        tg_filename = adjust_path_to_gdata_base_location(tg_filename)
+        hazard_points = try(get_netcdf_gauge_locations(tg_filename))
 
-    hazard_points_spdf = SpatialPointsDataFrame(coords = hazard_points[,1:2], 
-        data=hazard_points[,-c(1:2)], proj4string=CRS('+init=epsg:4326'))
+        # Make sure all columns are numeric (some read as 'array' from netcdf)
+        for(i in 1:ncol(hazard_points)){
+            hazard_points[,i] = as.numeric(hazard_points[,i])
+        }
 
-    # Only display a subset of points -- we could do this in a more complex way easily
-    #kk = which(hp_type_char != 'intermediateG')
-    #hazard_points_spdf = hazard_points_spdf[kk,]
-    #browser()
-    clip_points = FALSE
-    if(clip_points){
-        dartp = which(hp_type_char == 'DART')
+        if(class(hazard_points) == 'try-error'){
+            stop('hazard point read failed. This may occur with slower internet connections, so you could try again')
+        }
 
-        clip_region = readOGR(dsn='DATA/HAZARD_POINTS/point_filter_polygon', 
-            layer='point_filter_polygon', verbose=FALSE)
-        suppressWarnings({proj4string(clip_region) = proj4string(hazard_points_spdf)})
+        # The data contains an numeric 'gaugeID'. It is a decimal number. The fractional
+        # part 
+        hp_type = match( 
+            round(hazard_points$gaugeID - trunc(hazard_points$gaugeID), 1)*10,
+            c(0, 1, 2, 3, 4, 5))
+        hp_type_char = c('shallow', 'intermediate', 'deep', 'intermediateG', 'DART', 'gridded')[hp_type]
+        hazard_points = cbind(hazard_points, data.frame(point_category=hp_type_char))
 
-        clip_region_keep = which(!is.na(over(as(hazard_points_spdf, 'SpatialPoints'), clip_region)))
+        hazard_points_spdf = SpatialPointsDataFrame(coords = hazard_points[,1:2], 
+            data=hazard_points, proj4string=CRS('+init=epsg:4326'))
 
-        hazard_points_spdf = hazard_points_spdf[c(clip_region_keep, dartp),]
+        # Only display a subset of points -- we could do this in a more complex way easily
+        #kk = which(hp_type_char != 'intermediateG')
+        #hazard_points_spdf = hazard_points_spdf[kk,]
+        #browser()
+        clip_points = FALSE
+        if(clip_points){
+            stop('need to provide point_filter_polygon')
+            dartp = which(hp_type_char == 'DART')
+
+            clip_region = readOGR(dsn='DATA/HAZARD_POINTS/point_filter_polygon', 
+                layer='point_filter_polygon', verbose=FALSE)
+            suppressWarnings({proj4string(clip_region) = proj4string(hazard_points_spdf)})
+
+            clip_region_keep = which(!is.na(over(as(hazard_points_spdf, 'SpatialPoints'), clip_region)))
+
+            hazard_points_spdf = hazard_points_spdf[c(clip_region_keep, dartp),]
+        }
+
+
+        writeOGR(hazard_points_spdf, dsn='DATA/hazard_points_spdf', 
+            layer='hazard_points_spdf', driver='ESRI Shapefile',
+            overwrite=TRUE)
+
+    }else{
+
+        hazard_points_spdf = readOGR('DATA/hazard_points_spdf', layer='hazard_points_spdf', 
+            verbose=FALSE)
+        # Fix abbreviated name
+        k = which(names(hazard_points_spdf) == 'pnt_ctg')
+        names(hazard_points_spdf)[k] = 'point_category'
+
     }
 
     return(hazard_points_spdf)

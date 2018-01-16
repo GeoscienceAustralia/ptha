@@ -70,12 +70,22 @@ get_netcdf_gauge_locations<-function(netcdf_file, indices_of_subset = NULL){
 
     fid = nc_open(netcdf_file, readunlim=FALSE)
 
+    # Most files have the elevation in a variable 'elevation0',
+    # but some have it in a variable 'elev'
+    elev_var_name = 'elevation0'
+    if(length(grep(elev_var_name, names(fid$var))) == 0){
+        elev_var_name = 'elev'
+        if(length(grep(elev_var_name, names(fid$var))) == 0){
+            stop(paste0('No elevation variable found in file ', netcdf_file))
+        }
+    }
+
     if(is.null(indices_of_subset)){
         # Read everything
         gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
         lon = ncvar_get(fid, 'lon')
         lat = ncvar_get(fid, 'lat')
-        elev = ncvar_get(fid, 'elevation0')
+        elev = ncvar_get(fid, elev_var_name)
 
     }else{
         ## Determine whether we are on a remote filesystem
@@ -118,7 +128,7 @@ get_netcdf_gauge_locations<-function(netcdf_file, indices_of_subset = NULL){
             lon = lon[contig_match]
             lat = ncvar_get(fid, 'lat', start=contiguous_inds[1], count=length(contiguous_inds))
             lat = lat[contig_match]
-            elev = ncvar_get(fid, 'elevation0', start=contiguous_inds[1], count=length(contiguous_inds))
+            elev = ncvar_get(fid, elev_var_name, start=contiguous_inds[1], count=length(contiguous_inds))
             elev = elev[contig_match]
 
         #}
@@ -187,10 +197,30 @@ get_netcdf_gauge_indices_near_points<-function(netcdf_file, lonlat){
 #'
 #' @param netcdf_file file with netcdf tide gauge data
 #' @param region_poly SpatialPolygons object, inside which we want to know the
-#' indices of all gauges.
+#' indices of all gauges. Alternatively it can be a 2 column matrix with x/y defining the polygon
 #' @param return integer vector with indices of gauges inside the polygon
 #' @export
 get_netcdf_gauge_indices_in_polygon<-function(netcdf_file, region_poly){
+
+    if(is.matrix(region_poly)){
+        # If region_poly is a matrix, assume it is giving lon/lat coordinates
+
+        if(!((ncol(region_poly) == 2) & (nrow(region_poly) > 2))){
+            print(region_poly)
+            stop('If region_poly is a matrix, it must have 2 columns and more than 2 rows, in order to represent a polygon')
+        }
+
+        rp_dim = dim(region_poly)
+
+        # Close the polygon if it is not closed
+        if(!all(region_poly[1,] == region_poly[rp_dim[1],])){
+            region_poly = rbind(region_poly, region_poly[rp_dim[1],])
+        }
+
+        region_poly = SpatialPolygons(list(Polygons(list(
+            Polygon(region_poly, hole=FALSE)), ID=1)),
+            proj4string=CRS("+init=epsg:4326"))
+    }
 
     gauge_points = get_netcdf_gauge_locations(netcdf_file)
 
