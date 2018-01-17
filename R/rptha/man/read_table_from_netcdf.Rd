@@ -4,10 +4,15 @@
 \alias{read_table_from_netcdf}
 \title{Read a netcdf file into a data.frame}
 \usage{
-read_table_from_netcdf(filename)
+read_table_from_netcdf(filename, desired_rows = NULL)
 }
 \arguments{
 \item{filename}{netcdf file}
+
+\item{desired_rows}{integer vector giving the rows to extract. If null, read everything.
+Note that rows are read in contiguous chunks (up to 100 at once) for efficiency. For
+small datasets it may well be faster to read everything. However, for large datasets
+over remote connections this is not possible.}
 }
 \value{
 data.frame with the data
