@@ -141,18 +141,61 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
 #' or is compatible with it.
 #'
 #' @param filename netcdf file
+#' @param desired_rows integer vector giving the rows to extract. If null, read everything.
+#'   Note that rows are read in contiguous chunks (up to 100 at once) for efficiency. For
+#'   small datasets it may well be faster to read everything. However, for large datasets
+#'   over remote connections this is not possible.
 #' @return data.frame with the data
 #' @import ncdf4
 #' @export
 #'
-read_table_from_netcdf<-function(filename){
+read_table_from_netcdf<-function(filename, desired_rows = NULL){
 
     fid = nc_open(filename)
     nc_var_names = unlist(lapply(fid$var, f<-function(x) x$name))
 
     var_list = list()
     for(i in 1:length(nc_var_names)){
-        var_list[[nc_var_names[i]]] = c(ncvar_get(fid, varid=nc_var_names[i]))
+        #print(i)
+        if(is.null(desired_rows)){
+            # Get the entire variable
+            var_list[[nc_var_names[i]]] = c(ncvar_get(fid, varid=nc_var_names[i]))
+        }else{
+            #
+            # Get only a few rows
+            # Read them in chunks of size chunk_size (defined below),
+            # because that tends to be faster. 
+            #
+
+            temp_var = rep(NA, length(desired_rows))
+            n = fid$var[[nc_var_names[i]]]$ndim
+
+            max_rows = fid$var[[nc_var_names[i]]]$varsize[n]
+            chunk_size = 100
+
+            for(j in seq(min(desired_rows), max(desired_rows), by=chunk_size)){
+
+                search_inds = j:(min(max_rows, j+chunk_size-1))
+
+                k = which(desired_rows %in% search_inds)
+                if(length(k) == 0) next
+                index_match = match(desired_rows[k], search_inds)
+                search_inds = search_inds[1:max(index_match)]
+
+                # Characters will have > 1 dimension, so we need this trick
+                # to specify start/end
+                start = rep(1, length=n)
+                count = rep(-1, length=n)
+
+                start[n] = j
+                count[n] = diff(range(search_inds)) + 1
+
+                myvar = c(ncvar_get(fid, varid=nc_var_names[i], start=start, count=count))
+
+                temp_var[k] = myvar[index_match]
+            }
+            var_list[[nc_var_names[i]]] = temp_var
+        }
     }
 
     output_df = as.data.frame(var_list, stringsAsFactors=FALSE)

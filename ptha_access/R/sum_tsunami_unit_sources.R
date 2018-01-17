@@ -204,6 +204,7 @@ get_netcdf_gauge_indices_in_polygon<-function(netcdf_file, region_poly){
 
     if(is.matrix(region_poly)){
         # If region_poly is a matrix, assume it is giving lon/lat coordinates
+        # Then convert to a polygon below
 
         if(!((ncol(region_poly) == 2) & (nrow(region_poly) > 2))){
             print(region_poly)

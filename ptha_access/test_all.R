@@ -3,11 +3,18 @@ source('./R/sum_tsunami_unit_sources.R', local=TRUE)
 source('./R/config.R', local=TRUE)
 
 # Make a file on NCI to use to test
-test_file = "unit_source_tsunami/RUN_20161121104520_puysegur_1_1/RUN_ID100001_20161123_082248.005/Gauges_data_ID100001.nc"
-source_zone = 'puysegur'
-gauge_netcdf_file = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
-     source_zone, '/TSUNAMI_UNIT_SOURCE/', test_file) 
+#test_file = "unit_source_tsunami/RUN_20161121104520_puysegur_1_1/RUN_ID100001_20161123_082248.005/Gauges_data_ID100001.nc"
+#source_zone = 'puysegur'
+#gauge_netcdf_file = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
+#     source_zone, '/TSUNAMI_UNIT_SOURCE/', test_file) 
 
+# Find a file that contains hazard points. Easiest way is to read them from a tide gauge file
+unit_source_stats_puysegur = paste0(.GDATA_OPENDAP_BASE_LOCATION, 
+    'SOURCE_ZONES/puysegur/TSUNAMI_EVENTS/unit_source_statistics_puysegur.nc')
+fid = nc_open(unit_source_stats_puysegur)
+gauge_netcdf_file = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(4096,1))[1]
+nc_close(fid)
+gauge_netcdf_file = adjust_path_to_gdata_base_location(gauge_netcdf_file)
 
 # Run the unit tests in sum_tsunami_unit_sources.R
 test_sum_tsunami_unit_sources(gauge_netcdf_file)

@@ -3,8 +3,12 @@
 #
 
 suppressPackageStartupMessages(library(raster))
-if(!exists('.HAVE_SOURCED_CONFIG')) source('R/config.R', local=TRUE, chdir=FALSE)
+if(!exists('config_env')){
+    config_env = new.env()
+    source('R/config.R', local=config_env, chdir=FALSE)
+}
 source('R/sum_tsunami_unit_sources.R')
+ 
 
 #' Read key summary statistics for earthquake events on the source-zone
 #'
@@ -21,23 +25,23 @@ source('R/sum_tsunami_unit_sources.R')
 #' @examples
 #' puysegur_data = get_source_zone_events_data('puysegur')
 #'
-get_source_zone_events_data<-function(source_zone, slip_type='uniform'){
+get_source_zone_events_data<-function(source_zone, slip_type='uniform', desired_event_rows = NULL){
 
     stopifnot(slip_type %in% c('uniform', 'stochastic', 'variable_uniform'))
 
     #
     # Get the earthquake events data
     #
-    nc_web_addr = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
-        source_zone, '/TSUNAMI_EVENTS/all_', slip_type, 
+    nc_web_addr = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
+        'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/all_', slip_type, 
         '_slip_earthquake_events_', source_zone, '.nc')    
 
-    events_data = read_table_from_netcdf(nc_web_addr)
+    events_data = read_table_from_netcdf(nc_web_addr, desired_rows = desired_event_rows)
 
     #
     # Get the unit source summary statistics
     #
-    nc_web_addr = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
+    nc_web_addr = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
         source_zone, '/TSUNAMI_EVENTS/unit_source_statistics_', source_zone, 
         '.nc')    
 
@@ -46,7 +50,8 @@ get_source_zone_events_data<-function(source_zone, slip_type='uniform'){
     gauge_netcdf_files = unit_source_statistics$tide_gauge_file 
 
     # Append the web address to the files 
-    gauge_netcdf_files_reordered = sapply(gauge_netcdf_files, adjust_path_to_gdata_base_location)
+    gauge_netcdf_files_reordered = sapply(gauge_netcdf_files, 
+        config_env$adjust_path_to_gdata_base_location)
 
     output = list()
     output[['events']] = events_data
@@ -105,7 +110,7 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
     }
 
     # Figure out the raster names on NCI
-    event_rasters_online = paste0(.GDATA_HTTP_BASE_LOCATION, 
+    event_rasters_online = paste0(config_env$.GDATA_HTTP_BASE_LOCATION, 
         event_rasters_base)
 
     # Loop over all rasters, and if we can't find them in local directories,
@@ -164,8 +169,6 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
 
     if(!any(grepl('rptha', .packages(all=TRUE)))){
         stop('This function requires the rptha package to be installed, but the latter cannot be detected')
-    }else{
-        source('R/sum_tsunami_unit_sources.R', local=TRUE)
     }
 
     # Case of user-provided point IDs
@@ -202,7 +205,6 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
         szed$events[event_ID,], 
         szed$unit_source_statistics, 
         szed$gauge_netcdf_files,
-        #get_flow_time_series_function = get_flow_time_series_SWALS,  
         indices_of_subset=indices_of_subset, 
         verbose=FALSE,
         summary_function=NULL)
@@ -280,12 +282,31 @@ parse_ID_point_index_to_index<-function(netcdf_file, hazard_point_gaugeID, targe
 #' @param hazard_point_gaugeID numerical gaugeID of the hazard point of interest
 #' @param target_point vector with c(lon, lat) of the target point
 #' @param target_index integer index of the hazard point in the file
-#' @param
-get_stage_exceedance_rate_curve_at_hazard_point<-function(hazard_point_gaugeID = NULL, 
-    target_point=NULL, target_index = NULL){
+#' @param source_name Name of source-zone. If NULL, then return the rates for
+#'     the sum over all source-zones
+#' @param make_plot If TRUE, plot the stage vs return period curve for stochastic slip
+#' @param non_stochastic_slip_sources If TRUE, also return curves for uniform
+#'     and variable_uniform slip events
+#' @return list containing return period info for the source-zone
+#'
+get_stage_exceedance_rate_curve_at_hazard_point<-function(
+    hazard_point_gaugeID = NULL, 
+    target_point =NULL, 
+    target_index = NULL,
+    source_name = NULL,
+    make_plot = FALSE,
+    non_stochastic_slip_sources=FALSE,
+    only_mean_rate_curve=FALSE){
 
-    stage_exceedance_rate_curves_file = paste0(.GDATA_OPENDAP_BASE_LOCATION,
-        'EVENT_RATES/tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc')
+    if(is.null(source_name)){
+        source_name = 'sum_over_all_source_zones'
+        stage_exceedance_rate_curves_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION,
+            'EVENT_RATES/tsunami_stage_exceedance_rates_', source_name, '.nc')
+    }else{
+        stage_exceedance_rate_curves_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION,
+            'SOURCE_ZONES/', source_name, '/TSUNAMI_EVENTS/tsunami_stage_exceedance_rates_', 
+            source_name, '.nc')
+    }
 
     # Parse the input arguments into a target index
     target_index = parse_ID_point_index_to_index(
@@ -296,33 +317,118 @@ get_stage_exceedance_rate_curve_at_hazard_point<-function(hazard_point_gaugeID =
 
     output = list()
     output$stage = fid$dim$stage$vals 
-    vars = c('stochastic_slip_rate', 'stochastic_slip_rate_upper_ci', 'stochastic_slip_rate_lower_ci',
-        'uniform_slip_rate', 'uniform_slip_rate_upper_ci', 'uniform_slip_rate_lower_ci',
-        'variable_uniform_slip_rate', 'variable_uniform_slip_rate_upper_ci', 'variable_uniform_slip_rate_lower_ci')
+
+    vars = 'stochastic_slip_rate'
+    if(non_stochastic_slip_sources){
+        vars = c(vars, 'uniform_slip_rate', 'variable_uniform_slip_rate')
+    }
+    if(!only_mean_rate_curve){
+        vars = c(vars, paste0(vars,'_upper_ci'), paste0(vars, '_lower_ci'))
+    }
+
     # Read the file
     for(i in 1:length(vars)){
         output[[vars[i]]] = ncvar_get(fid, vars[i],  start=c(1, target_index), count=c(-1,1))
     }
 
-    output$lon = ncvar_get(fid, 'lon', start=target_index, count=1)
-    output$lat = ncvar_get(fid, 'lat', start=target_index, count=1)
-    output$elev = ncvar_get(fid, 'elev', start=target_index, count=1)
-    output$gaugeID = ncvar_get(fid, 'gaugeID', start=target_index, count=1)
+    if(!only_mean_rate_curve){
+        output$lon = ncvar_get(fid, 'lon', start=target_index, count=1)
+        output$lat = ncvar_get(fid, 'lat', start=target_index, count=1)
+        output$elev = ncvar_get(fid, 'elev', start=target_index, count=1)
+        output$gaugeID = ncvar_get(fid, 'gaugeID', start=target_index, count=1)
+    }
+    output$target_index = target_index
+    output$source_name = source_name
+    output$stage_exceedance_rate_curves_file = stage_exceedance_rate_curves_file
 
     nc_close(fid)
-
+    
+    if(make_plot){
+        title = paste0('Tsunami wave height exceedance rates (stochastic slip, ', source_name, ')\n',
+            'site = (', round(output$lon,3), ',', round(output$lat, 3), '); depth = ', 
+            round(output$elev, 1), ' m; ID = ', round(output$gaugeID,3)) 
+        options(scipen=5)
+        plot(output$stage, output$stochastic_slip_rate, log='xy',
+            xlim=c(0.02, 20), ylim=c(1.0e-04, 1), t='o', 
+            xlab='Maximum tsunami waterlevel above MSL', 
+            ylab = 'Exceedance Rate (events/year)',
+            main = title)
+        points(output$stage, output$stochastic_slip_rate_upper, 
+            t='l', col='red')
+        points(output$stage, output$stochastic_slip_rate_lower, 
+            t='l', col='red')
+        abline(v=c(0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), col='orange', lty='dotted')
+        abline(h=10**(seq(-6,0)), col='orange', lty='dotted')
+        legend('topright', c('Mean estimated rate', '95% Credible Interval'), col=c('black', 'red'), 
+            lty=c('solid', 'solid'), pch=c(1, NA), bg='white')
+    }
     return(output)
 }
 
-#
-# For a point, get a list which contains (for each source-zone),
-# Mw, max_stage
-#
+#' Get stage vs exceedance rate curve for EVERY source-zone
+#'
+#' We loop over 'get_stage_exceedance_rate_curve_at_hazard_point'
+#'
+#' @param hazard_point_gaugeID numerical gaugeID of the hazard point of interest
+#' @param target_point vector with c(lon, lat) of the target point
+#' @param target_index integer index of the hazard point in the file
+#' @param non_stochastic_slip_sources If TRUE, also get uniform and variable uniform rate curves
+#' @param only_mean_rate_curve If TRUE, do not get credible interval rate curves
+#' @return List of lists with the return period info for each source-zone
+#'
+get_stage_exceedance_rate_curves_all_sources<-function(
+    hazard_point_gaugeID = NULL, 
+    target_point = NULL, 
+    target_index = NULL,
+    non_stochastic_slip_sources=FALSE,
+    only_mean_rate_curve=FALSE){
+
+    all_sources = config_env$source_names_all
+
+    outputs = vector(mode='list', length=length(all_sources))
+
+    for(i in 1:length(all_sources)){
+
+        if(i == 1){
+            # On the first pass, we might not pass target_index
+            outputs[[i]] = get_stage_exceedance_rate_curve_at_hazard_point(
+                hazard_point_gaugeID,
+                target_point,
+                target_index, 
+                source_name = all_sources[i],
+                non_stochastic_slip_sources = non_stochastic_slip_sources,
+                only_mean_rate_curve=only_mean_rate_curve)
+        }else{
+            # On the second pass, we can pass target_index, which is faster
+            outputs[[i]] = get_stage_exceedance_rate_curve_at_hazard_point(
+                target_index = outputs[[1]]$target_index, 
+                source_name = all_sources[i],
+                non_stochastic_slip_sources = non_stochastic_slip_sources,
+                only_mean_rate_curve=only_mean_rate_curve)
+        }
+        names(outputs)[i] = all_sources[i]
+
+    }
+    return(outputs)
+}
+
+#'
+#' For a point, get a list which contains (for each source-zone),
+#' Mw, max_stage, event_rate. Combined with a 'desired' max stage,
+#' this can be used to select events for further study.
+#'
+#' @param hazard_point_gaugeID numerical gaugeID of the hazard point of interest
+#' @param target_point vector with c(lon, lat) of the target point
+#' @param target_index integer index of the hazard point in the file
+#' @param all_source_names vector with the source names to extract data from
+#' @return list (one entry for each source) containing a list with 
+#'   peak_stage, Mw, event_rate
+#'
 get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL, 
     target_point=NULL, target_index = NULL, all_source_names = NULL){
 
 
-    stage_exceedance_rate_curves_file = paste0(.GDATA_OPENDAP_BASE_LOCATION,
+    stage_exceedance_rate_curves_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION,
         'EVENT_RATES/tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc')
     # Parse the input arguments into a target index
     target_index = parse_ID_point_index_to_index(
@@ -334,34 +440,57 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
     }
 
     output = vector(mode='list', length=length(all_source_names))
-    names(output) == all_source_names
+    names(output) = all_source_names
 
+    max_errors = 10
     for(i in 1:length(all_source_names)){
     
         nm = all_source_names[i]
         print(nm)
+        try_again = TRUE
 
-        nc_file1 = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
-            nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_', 
-            nm, '.nc')
-        fid1 = nc_open(nc_file1, readunlim=FALSE)
-        local_max_stage = ncvar_get(fid1, 'max_stage', start=c(1,target_index), 
-            count=c(fid1$dim$event$len,1))
-        nc_close(fid1)
+        counter = 0
+        max_tries = 10
+        while(try_again){
 
-        nc_file2 = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
-            nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_', 
-            nm, '.nc')
-        fid2 = nc_open(nc_file2, readunlim=FALSE)
-        local_Mw = ncvar_get(fid2, 'Mw')
-        nc_close(fid2)
+            counter = counter + 1
 
-        output[[i]] = list(
-            Mw = local_Mw,
-            max_stage = local_max_stage,
-            target_index=target_index
-            )
+            nc_file1 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
+                nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_', 
+                nm, '.nc')
+            fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
+            local_max_stage = try(ncvar_get(fid1, 'max_stage', start=c(1,target_index), 
+                count=c(fid1$dim$event$len,1)))
+            nc_close(fid1)
 
+            nc_file2 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
+                nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_', 
+                nm, '.nc')
+            fid2 = nc_open(nc_file2, readunlim=FALSE, suppress_dimvals=TRUE)
+            local_Mw = try(ncvar_get(fid2, 'Mw'))
+            local_rate = try(ncvar_get(fid2, 'rate_annual'))
+            nc_close(fid2)
+
+            output[[i]] = list(
+                Mw = local_Mw,
+                max_stage = local_max_stage,
+                local_rate = local_rate,
+                target_index=target_index
+                )
+
+            if(class(local_Mw) == 'try-error' | 
+                class(local_max_stage) == 'try-error' | 
+                class(local_rate) == 'try-error'){
+
+                if(counter <= max_tries){
+                    try_again = TRUE
+                    print('remote read failed, trying again')
+                }
+
+            }else{
+                try_again = FALSE
+            }
+        }
     }
 
     return(output)
