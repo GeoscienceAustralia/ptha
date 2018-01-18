@@ -1,5 +1,4 @@
 suppressPackageStartupMessages(library(rgdal))
-suppressPackageStartupMessages(library(sf))
 
 #
 # Should we re-download all map data, even if the data is locally cached?
