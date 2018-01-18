@@ -55,18 +55,25 @@ source_names_all = c(
 #
 # Define the initial part of key web-addresses where our data can be accessed
 #
+if(file.exists('/g/data/fj6/PTHA/AustPTHA_1')){
+    # We are on the NCI filesystem, read the data locally
+    .GDATA_OPENDAP_BASE_LOCATION = '/g/data/fj6/PTHA/AustPTHA_1/'
+    .GDATA_HTTP_BASE_LOCATION = '/g/data/fj6/PTHA/AustPTHA_1/'
 
-# Netcdf data -- this location allows remote query/subsetting
-#
-# We include a flag that ensures strings are long enough
-# FIXME: Can reduce stringlength
-max_stringlength = '[stringlength=4096]'
-#
-.GDATA_OPENDAP_BASE_LOCATION = paste0(max_stringlength, 
-    'http://dapds00.nci.org.au/thredds/dodsC/fj6/PTHA/AustPTHA_1/')
-#
-# Non-netcdf data -- this location only allows download
-.GDATA_HTTP_BASE_LOCATION = 'http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/'
+}else{
+    # We are not on the nci filesystem
+    # These locations allow remote query/subsetting
+    #
+    # We include a flag that ensures strings are long enough
+    # FIXME: Can reduce stringlength
+    max_stringlength = '[stringlength=4096]'
+    #
+    .GDATA_OPENDAP_BASE_LOCATION = paste0(max_stringlength, 
+        'http://dapds00.nci.org.au/thredds/dodsC/fj6/PTHA/AustPTHA_1/')
+    #
+    # Non-netcdf data -- this location only allows download
+    .GDATA_HTTP_BASE_LOCATION = 'http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/'
+}
 
 #'
 #' Some files on gdata contain paths like /g/data/fj6/PTHA/AustPTHA_1/....
