@@ -551,7 +551,14 @@ summarise_events<-function(events_near_desired_stage){
  
     obs = cbind(jitter(magnitude_prop_mid, 0.0001), peak_slip, mean_slip, nsources, peak_slip_alongstrike)
     obs = apply(obs, 2, f<-function(x) qnorm(rank(x)/(length(x)+1)))
-    mh_distance = mahalanobis(obs, center=mean(obs), cov=cov(obs))
+    if(nrow(obs) > ncol(obs)){
+        # We can do a mahalanobis distance calculation
+        mh_distance = mahalanobis(obs, center=mean(obs), cov=cov(obs))
+    }else{
+        # Too few events for mahalanobis distance. Instead prioritize events with
+        # intermediate magnitudes
+        mh_distance = abs(magnitude_prop_mid - 0.5) 
+    }
 
     # Undo reproducible random jitter
     .Random.seed <<- oldseed
