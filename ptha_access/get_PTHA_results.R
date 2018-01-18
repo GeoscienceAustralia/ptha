@@ -540,9 +540,21 @@ summarise_events<-function(events_near_desired_stage){
 
     magnitude_prop_mid = 0.5*(magnitude_prop_le + magnitude_prop_lt)
 
+    # Reproducible jitter
+    if(exists('.Random.seed')){
+        oldseed = .Random.seed
+    }else{
+        p = runif(1) # Now we will have a random seed
+        oldseed = .Random.seed
+    }
+    set.seed(1)
+ 
     obs = cbind(jitter(magnitude_prop_mid, 0.0001), peak_slip, mean_slip, nsources, peak_slip_alongstrike)
     obs = apply(obs, 2, f<-function(x) qnorm(rank(x)/(length(x)+1)))
     mh_distance = mahalanobis(obs, center=mean(obs), cov=cov(obs))
+
+    # Undo reproducible random jitter
+    .Random.seed <<- oldseed
 
     return(data.frame(mws, peak_slip, mean_slip, nsources, peak_slip_alongstrike, 
         magnitude_prop_mid, mh_distance))
