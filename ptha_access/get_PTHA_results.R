@@ -7,7 +7,7 @@ if(!exists('config_env')){
     config_env = new.env()
     source('R/config.R', local=config_env, chdir=FALSE)
 }
-source('R/sum_tsunami_unit_sources.R')
+source('R/sum_tsunami_unit_sources.R', local=TRUE)
  
 
 #' Read key summary statistics for earthquake events on the source-zone
@@ -62,7 +62,7 @@ get_source_zone_events_data<-function(source_zone, slip_type='uniform', desired_
     return(invisible(output))
 }
 
-#' Create initial conditions for tsunami model
+#' Create initial conditions (i.e. water surface deformation) for tsunami model
 #'
 #' @param source_zone_events_data output from \code{get_source_zone_events_data}
 #' @param event_ID integer ID, corresponding to the row-index of the event in
@@ -149,6 +149,7 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
 #' @param store_by_gauge Return the flow variables as a list with one gauge per
 #' entry. Otherwise, return as a list with one event_ID per entry
 #' @return Flow time-series
+#'
 get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID, 
     hazard_point_ID = NULL, target_polygon = NULL, target_points=NULL, target_indices = NULL,
     store_by_gauge=TRUE){
@@ -442,51 +443,69 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
     output = vector(mode='list', length=length(all_source_names))
     names(output) = all_source_names
 
-    max_errors = 10
+    # Download the data for all sourcezones
     for(i in 1:length(all_source_names)){
     
         nm = all_source_names[i]
         print(nm)
         try_again = TRUE
 
+        # Allow for the download to fail up to 'max_tries' times
         counter = 0
-        max_tries = 10
+        max_tries = 20
+        has_vars = c(FALSE, FALSE)
         while(try_again){
 
             counter = counter + 1
 
-            nc_file1 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
-                nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_', 
-                nm, '.nc')
-            fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
-            local_max_stage = try(ncvar_get(fid1, 'max_stage', start=c(1,target_index), 
-                count=c(fid1$dim$event$len,1)))
-            nc_close(fid1)
+            # Read the max stage
+            if(!has_vars[1]){
+                nc_file1 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
+                    nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_', 
+                    nm, '.nc')
+                fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
+                local_max_stage = try(ncvar_get(fid1, 'max_stage', start=c(1,target_index), 
+                    count=c(fid1$dim$event$len,1)))
+                local_period = try(ncvar_get(fid1, 'period', start=c(1,target_index), 
+                    count=c(fid1$dim$event$len,1)))
+                nc_close(fid1)
+                if(class(local_max_stage) != 'try-error' | class(local_period) == 'try-error') has_vars[1] = TRUE
+            }
 
-            nc_file2 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
-                nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_', 
-                nm, '.nc')
-            fid2 = nc_open(nc_file2, readunlim=FALSE, suppress_dimvals=TRUE)
-            local_Mw = try(ncvar_get(fid2, 'Mw'))
-            local_rate = try(ncvar_get(fid2, 'rate_annual'))
-            nc_close(fid2)
+            # Read Mw and the event rate from the file that doesn't contain the tsunami
+            # wave heights, because the read access is faster
+            if(!has_vars[2]){
+                nc_file2 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
+                    nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_', 
+                    nm, '.nc')
+                fid2 = nc_open(nc_file2, readunlim=FALSE, suppress_dimvals=TRUE)
+                local_Mw = try(ncvar_get(fid2, 'Mw'))
+                local_rate = try(ncvar_get(fid2, 'rate_annual'))
+                nc_close(fid2)
+                if((class(local_Mw) != 'try-error') & 
+                   (class(local_rate) != 'try-error')) has_vars[2] = TRUE
+            }
 
             output[[i]] = list(
                 Mw = local_Mw,
                 max_stage = local_max_stage,
+                period = local_period,
                 local_rate = local_rate,
                 target_index=target_index
                 )
 
-            if(class(local_Mw) == 'try-error' | 
-                class(local_max_stage) == 'try-error' | 
-                class(local_rate) == 'try-error'){
+            # Error handling
+            if(!all(has_vars == TRUE)){
 
                 if(counter <= max_tries){
                     try_again = TRUE
                     print('remote read failed, trying again')
                 }
 
+                if(counter > max_tries){
+                    try_again = FALSE
+                    print('remote read failed too many times, skipping')
+                }
             }else{
                 try_again = FALSE
             }
@@ -495,3 +514,37 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
 
     return(output)
 }
+
+
+
+summarise_events<-function(events_near_desired_stage){
+
+    # shorthand
+    ends = events_near_desired_stage
+   
+    mws = ends$events$Mw
+    rates = ends$events$rate_annual
+    peak_slip = sapply(ends$events$event_slip_string, 
+        f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])),
+        USE.NAMES=FALSE)
+    mean_slip = sapply(ends$events$event_slip_string, 
+        f<-function(x) mean(as.numeric(strsplit(x, '_')[[1]])),
+        USE.NAMES=FALSE)
+    nsources = sapply(ends$events$event_slip_string, 
+        f<-function(x) length(as.numeric(strsplit(x, '_')[[1]])),
+        USE.NAMES=FALSE)
+    peak_slip_alongstrike = ends$events$peak_slip_alongstrike_ind 
+
+    magnitude_prop_le = sapply(mws, f<-function(x) sum(rates * (mws <= x)))/sum(rates)
+    magnitude_prop_lt = sapply(mws, f<-function(x) sum(rates * (mws < x)))/sum(rates)
+
+    magnitude_prop_mid = 0.5*(magnitude_prop_le + magnitude_prop_lt)
+
+    obs = cbind(jitter(magnitude_prop_mid, 0.0001), peak_slip, mean_slip, nsources, peak_slip_alongstrike)
+    obs = apply(obs, 2, f<-function(x) qnorm(rank(x)/(length(x)+1)))
+    mh_distance = mahalanobis(obs, center=mean(obs), cov=cov(obs))
+
+    return(data.frame(mws, peak_slip, mean_slip, nsources, peak_slip_alongstrike, 
+        magnitude_prop_mid, mh_distance))
+}
+
