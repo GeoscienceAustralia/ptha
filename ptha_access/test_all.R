@@ -1,6 +1,6 @@
 # Read key codes
-source('./R/sum_tsunami_unit_sources.R', local=TRUE)
-source('./R/config.R', local=TRUE)
+source('R/sum_tsunami_unit_sources.R', local=TRUE)
+source('R/config.R', local=TRUE)
 
 # Make a file on NCI to use to test
 #test_file = "unit_source_tsunami/RUN_20161121104520_puysegur_1_1/RUN_ID100001_20161123_082248.005/Gauges_data_ID100001.nc"

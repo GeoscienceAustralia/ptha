@@ -5,8 +5,10 @@
 suppressPackageStartupMessages(library(raster))
 if(!exists('config_env')){
     config_env = new.env()
-    source('R/config.R', local=config_env, chdir=FALSE)
+    source('R/config.R', local=config_env)
 }
+get_supporting_data = new.env()
+source('R/get_supporting_data.R', local=get_supporting_data)
 source('R/sum_tsunami_unit_sources.R', local=TRUE)
  
 
@@ -515,8 +517,10 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
     return(output)
 }
 
-
-
+#'
+#' Function to summarize event properties. This MAY help
+#' in choosing one or a few scenarios from a set of scenarios. 
+#'
 summarise_events<-function(events_near_desired_stage){
 
     # shorthand

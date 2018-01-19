@@ -27,7 +27,9 @@ REFRESH_MAP = config_env$REFRESH_MAP
 
     if(REFRESH_MAP | (length(all_sourcezone_unit_source_grids) == 0)){
         # Download the shapefiles
-        source('R/get_unit_source_grid_shapefiles.R', local=TRUE)
+        get_shapefile_env = new.env()
+        source('R/get_supporting_data.R', local=get_shapefile_env)
+        get_shapefile_env$download_all_unit_source_grid_shapefiles()
         # Find names of all the shapefiles
         all_sourcezone_unit_source_grids = Sys.glob('SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
     }
