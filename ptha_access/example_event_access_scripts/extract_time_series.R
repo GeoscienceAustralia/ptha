@@ -201,13 +201,13 @@ for(ir in 1:length(all_desired_rates)){
     }
 
 
-    output_rdata_file = paste0('time_series_extraction_image_', return_period_point[1], 
+    output_rdata_file_local = paste0('time_series_extraction_image_', return_period_point[1], 
         '_', return_period_point[2],'_', signif(return_period_info$elev,4),
         '_', signif(desired_rate, 4), '_', signif(desired_stage, 4), 
         '_.Rdata')
-    save.image(file=output_rdata_file)
+    save.image(file=output_rdata_file_local)
 
-    output_rdata_file[ir] = output_rdata_file
+    output_rdata_file[ir] = output_rdata_file_local
 
     # Save memory
     rm(sourcezone_waves, event_summaries, chosen_events, sourcezone_event_stage_Mw,
