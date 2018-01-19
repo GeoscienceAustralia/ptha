@@ -96,7 +96,7 @@ for(ir in 1:length(all_desired_rates)){
 
     # Check that the summed exceedance rate over all sources is indeed equal to the desired rate.
     # Otherwise something has gone wrong
-    stopifnot(all.equal(sum(desired_stage_exceedance_rate_by_source), desired_rate))
+    stopifnot(isTRUE(all.equal(sum(desired_stage_exceedance_rate_by_source), desired_rate, tol=1.0e-06)))
 
     # Choose source_zones with non-zero rate -- up to 4 here
     n = min(max(1, max(which(desired_stage_exceedance_rate_by_source > 0))), 4)
@@ -188,7 +188,7 @@ for(ir in 1:length(all_desired_rates)){
         flow = sw$flow[[site]]
         max_stage_summary = sourcezone_event_stage_Mw[[i]]$max_stage[sourcezone_event_inds_near_desired_stage[[i]]]
         for(j in 1:length(chosen_events[[i]])){
-            stopifnot(all.equal(max(flow[j,,1]), max_stage_summary[chosen_events[[i]][j]], tolerance=1.0e-05))
+            stopifnot(isTRUE(all.equal(max(flow[j,,1]), max_stage_summary[chosen_events[[i]][j]], tolerance=1.0e-05)))
         }
         print(paste0('PASS peak wave height test', i))
     }
