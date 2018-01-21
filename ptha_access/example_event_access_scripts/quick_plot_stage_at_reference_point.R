@@ -83,8 +83,8 @@ for(i in 1:length(udr)){
     k = which(desired_rate == udr[i])
     source_contrib = aggregate(proportion_rate[k], by=list(sourcename[k]), FUN=mean)
 
-    total_source_contrib = udr
-    other_source_contrib = udr - sum(source_contrib$x)
+    total_source_contrib = udr[i]
+    other_source_contrib = udr[i] - sum(source_contrib$x)
     
     plot_names = c(source_contrib[,1], 'other')
     plot_weight = c(source_contrib[,2], max(0, other_source_contrib))
