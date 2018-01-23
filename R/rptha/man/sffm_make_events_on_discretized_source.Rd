@@ -158,9 +158,12 @@ puysegur_sffm_event_unif = sffm_make_events_on_discretized_source(
 par(mfrow=c(3,2))
 for(i in 1:6) plot(puysegur_sffm_event_unif[[i]]$slip_raster)
 
-# This example is like above, except we do not include variability in the rupture size
-# We also never expand the length if the width is limited. (Could alternatively always do this
-# by setting the corresponding argument to TRUE)  
+# This example is like above, except we remove variability in the rupture size.
+# We also never expand the length if the width is limited. We could alternatively always expand
+# the length if the width was limited, by setting the corresponding argument to TRUE.
+# Note that with this setup, there may be slight randomness IF the rupture length or width 
+# includes an even number of unit sources -- because in that case, there is no true 'centre',
+# and so the code will randomly choose a centre among one of the equally likely candidates. 
 puysegur_sffm_event_unif_fixed = sffm_make_events_on_discretized_source(
    puysegur_summary_statistics,
    target_location = c(166.568, -45.745),
