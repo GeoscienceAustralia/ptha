@@ -21,8 +21,9 @@ sffm_make_events_on_discretized_source(discretized_source_statistics,
 
 \item{target_location}{numeric vector c(lon,lat) giving a desired rupture
 location. The exact meaning of this location varies, depending on other options below.
-But by default the peak slip will be distributed stochastically around the
-unit source with centre nearest to this point, within a region of
+In general, we use the target_location to identify a particular unit source (the one
+with centre closest to the target_location). But by default the peak slip will be distributed 
+stochastically around the latter location, within a region of
 approximately (L/2, W/2), where L, W are the length/width of uniform-slip
 earthquakes of this magnitude based on Strasser's scaling relations. See the
 related options \code{vary_peak_slip_location}, and \code{peak_slip_location_near_centre}.}
@@ -32,10 +33,12 @@ related options \code{vary_peak_slip_location}, and \code{peak_slip_location_nea
 \item{num_events}{number of stochastic slip scenarios to produce.}
 
 \item{vary_peak_slip_location}{If TRUE, vary the peak slip location in a window
-around the target location, with size of approximately (L/2, W/2), where L, W are the
+around the target_location (more specifically, vary in a window around the
+unit source with centre nearest the target location). 
+The window in which we vary the location has size of approximately (L/2, W/2), where L, W are the
 length/width of uniform-slip earthquakes of this magnitude based on
 the provided scaling relation type (default 'Strasser'). If FALSE, make the peak
-slip location be the target_location, for every synthetic event.}
+slip location be the unit source nearest to the target_location, for every synthetic event.}
 
 \item{vary_peak_slip_alongstrike_downdip_extent}{If not NULL, an integer vector of length 4
 containing RANGES for the alongstrike number, and downdip number. The peak slip
@@ -64,8 +67,7 @@ returning the output.}
 the output list. If FALSE, set the latter to NULL on output.}
 
 \item{uniform_slip}{logical. If TRUE, then the slip will be uniform on each rupture.
-This enables the rupture size to vary while still having uniform slip. By default it
-is FALSE, and stochastic slip is used.}
+By default it is FALSE, and stochastic slip is used.}
 
 \item{expand_length_if_width_limited}{logical or character ('random'). This
 governs what happens to the rupture length if the desired rupture width was
@@ -132,7 +134,8 @@ puysegur_summary_statistics = discretized_source_summary_statistics(
     puysegur_discretized_source,
     approx_dx=5000,
     approx_dy=5000)
-# Make stochastic slip events, with location/magnitude based on 2009/07/15
+
+# 1. Make stochastic slip events, with location/magnitude based on 2009/07/15
 # puysegur earthquake
 puysegur_sffm_event1 = sffm_make_events_on_discretized_source(
     puysegur_summary_statistics,
@@ -145,7 +148,7 @@ par(mfrow=c(3,2))
 for(i in 1:6) plot(puysegur_sffm_event1[[i]]$slip_raster)
 
 
-# Alternative approach using uniform slip
+# 2. Alternative approach using uniform slip
 # This example has uniform slip, and keeps the centre of the rupture in nearly the same place,
 # but still has variable rupture size
 puysegur_sffm_event_unif = sffm_make_events_on_discretized_source(
@@ -161,8 +164,8 @@ puysegur_sffm_event_unif = sffm_make_events_on_discretized_source(
 par(mfrow=c(3,2))
 for(i in 1:6) plot(puysegur_sffm_event_unif[[i]]$slip_raster)
 
-# Another alternative approach using uniform slip.
-# This example is like above, except we remove variability in the rupture size.
+# 3. Another alternative approach using uniform slip.
+# This example is like 2 above, except we remove variability in the rupture size.
 # We also never expand the length if the width is limited. (We could alternatively always expand
 # the length if the width was limited, by setting the corresponding argument to TRUE).
 # Note that with this setup, there may be slight randomness IF the rupture length or width 
@@ -184,7 +187,7 @@ puysegur_sffm_event_unif_fixed = sffm_make_events_on_discretized_source(
 par(mfrow=c(3,2))
 for(i in 1:6) plot(puysegur_sffm_event_unif_fixed[[i]]$slip_raster)
 
-# Another example with stochastic slip
+# 4. Another example with stochastic slip
 # Do stochastic slip again, but force them to have peak slip on the top row
 puysegur_sffm_event2 = sffm_make_events_on_discretized_source(
     puysegur_summary_statistics,
