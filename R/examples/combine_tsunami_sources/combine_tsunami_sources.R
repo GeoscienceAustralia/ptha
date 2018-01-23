@@ -7,6 +7,9 @@
 # slip distributions: Evaluation of synthetic source models. JGR,
 # doi:10.1002/2015JB012272
 #
+# With slight modifications, this code can also generate uniforms slip events
+#
+#
 # Note this code requires that the tutorial in ../source_contours_2_unit_sources
 # has been successfully run.
 #
@@ -54,15 +57,35 @@ if(!(all(file.exists(unit_source_raster_files)))){
 unit_source_rasters = lapply(as.list(unit_source_raster_files), f<-function(x) raster(x))
 
 #
-# Make the stochastic slip events
+# Make the stochastic slip events. 
+# Note many of these options can be varied, e.g. to remove stochasticity in the rupture size or location, or to
+# use uniform slip. 
+# We often use default values below -- but name them to draw your attention to the existence of these options.
+# See ?sffm_make_events_on_discretized_source for further information.
 #
 stochastic_slip_events = sffm_make_events_on_discretized_source(
     discretized_source_statistics = discretized_source_statistics, 
     target_location = target_location,
     target_event_mw = desired_Mw,
     num_events = number_of_sffm,
-    vary_peak_slip_location=TRUE,
-    sourcename = sourcename)
+    # Enhanced variability in the event location
+    vary_peak_slip_location=TRUE, 
+    sourcename = sourcename,
+    # Use stochastic slip
+    uniform_slip = FALSE, 
+    # If the desired width is > source-zone width, then in 50% of cases,
+    # increase the length to compensate. In the other 50% of cases do not
+    # change the length. 
+    expand_length_if_width_limited = 'random', 
+    # Randomly vary length, width, and corner wavenumber parameters
+    use_deterministic_LWkc=FALSE, 
+    # If randomly varying length, width, and corner wavenumbers, limit variation to 2SD
+    clip_random_parameters_at_2sd = TRUE, 
+    # Scaling relation passed to 'Mw_2_rupture_size'
+    relation='Strasser', 
+    # Do not put the peak slip near the rupture centre (because real
+    # earthquakes don't consistently do that)
+    peak_slip_location_near_centre=FALSE)
 
 # Store as table
 stochastic_slip_events_table = sffm_events_to_table(stochastic_slip_events)
