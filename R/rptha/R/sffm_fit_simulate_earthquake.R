@@ -933,32 +933,34 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 
 #' Make synthetic finite fault models on a discretized source
 #'
-#' Currently only the S_{NCF} model from Davies et al. (2015) is implemented.
-#' The corner wave-number parameters are generated stochastically based on
-#' the regression relations provided therein. The peak slip location varies
-#' about the target_location, often with some stochasticity, depending on other
-#' arguments. Note this function can also be used to create uniform slip events.
+#' Generate stochastic slip models (or uniform slip models) on a discretized source.
+#' Stochastic slip models are generated using the S_{NCF} model from Davies et
+#' al. (2015). The corner wave-number parameters are generated (by default stochastically)
+#' based on the regression relations provided therein. The peak slip location
+#' varies about the target_location, often with some stochasticity, depending
+#' on other arguments. The rupture length and width also vary stochastically
+#' by default. 
 #' 
-#' @param discretized_source_statistics data.frame returned from e.g. 
+#' @param discretized_source_statistics data.frame returned from 
 #' \code{discretized_source_summary_statistics} or
 #' \code{discretized_source_approximate_summary_statistics}
 #' @param target_location numeric vector c(lon,lat) giving a desired rupture
 #' location. The exact meaning of this location varies, depending on other options below.
-#' But by default the peak slip will be distributed stochastically around this
-#' point within a region of approximately (L/2, W/2), where L, W are the
-#' length/width of uniform-slip earthquakes of this magnitude based on
-#' Strasser's scaling relations. See the related options \code{vary_peak_slip_location}, and
-#' \code{peak-slip_location_near_centre}. 
+#' But by default the peak slip will be distributed stochastically around the
+#' unit source with centre nearest to this point, within a region of
+#' approximately (L/2, W/2), where L, W are the length/width of uniform-slip
+#' earthquakes of this magnitude based on Strasser's scaling relations. See the
+#' related options \code{vary_peak_slip_location}, and \code{peak_slip_location_near_centre}. 
 #' @param target_event_mw desired magnitude of the earthquake
-#' @param num_events number of stochastic slip scenarios to produce
+#' @param num_events number of stochastic slip scenarios to produce.
 #' @param vary_peak_slip_location If TRUE, vary the peak slip location in a window
 #' around the target location, with size of approximately (L/2, W/2), where L, W are the
 #' length/width of uniform-slip earthquakes of this magnitude based on
 #' the provided scaling relation type (default 'Strasser'). If FALSE, make the peak
-#' slip location be the target lcoation for every synthetic event
+#' slip location be the target_location, for every synthetic event.
 #' @param vary_peak_slip_alongstrike_downdip_extent If not NULL, an integer vector of length 4
 #' containing RANGES for the alongstrike number, and downdip number. The peak slip
-#' will be randomly varied in this region (i.e. the point is to allow the user to
+#' will be randomly varied in this region (i.e. the idea is to allow the user to
 #' control the size of the region in which the peak slip varies about the target_location). The 
 #' vector should be of the form c(range(alongstrike_number), range(downdip_number)). 
 #' If this option is provided, you must also have vary_peak_slip=TRUE. 
@@ -989,7 +991,7 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 #' scaling relation value, (if FALSE), or increase in proportion to the
 #' (desired_width/width) (if TRUE). Alternatively, we can vary randomly between
 #' the latter behaviours with probability 0.5 (if 'random').
-#' @param use_deterministic_LWkc logical. If FALSE, then randomly vary length and width
+#' @param use_deterministic_LWkc logical. If FALSE (default), then randomly vary length and width
 #' and corner wavenumbers, using the predictive uncertainty terms in the relevant scaling
 #' relations. (Note the kcx/kcy relations are from Davies et al. (2015), for the S_{NCF} model).
 #' If TRUE, then just use the 'median' scaling relation values, without random variations.
@@ -1043,6 +1045,7 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 #' for(i in 1:6) plot(puysegur_sffm_event1[[i]]$slip_raster)
 #'
 #'
+#' # Alternative approach using uniform slip
 #' # This example has uniform slip, and keeps the centre of the rupture in nearly the same place,
 #' # but still has variable rupture size
 #' puysegur_sffm_event_unif = sffm_make_events_on_discretized_source(
@@ -1058,12 +1061,14 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 #' par(mfrow=c(3,2))
 #' for(i in 1:6) plot(puysegur_sffm_event_unif[[i]]$slip_raster)
 #'
+#' # Another alternative approach using uniform slip.
 #' # This example is like above, except we remove variability in the rupture size.
-#' # We also never expand the length if the width is limited. We could alternatively always expand
-#' # the length if the width was limited, by setting the corresponding argument to TRUE.
+#' # We also never expand the length if the width is limited. (We could alternatively always expand
+#' # the length if the width was limited, by setting the corresponding argument to TRUE).
 #' # Note that with this setup, there may be slight randomness IF the rupture length or width 
 #' # includes an even number of unit sources -- because in that case, there is no true 'centre',
-#' # and so the code will randomly choose a centre among one of the equally likely candidates. 
+#' # of the rupture based on the unit source count, and so the code will
+#' # randomly choose a centre among one of the equally likely candidates. 
 #' puysegur_sffm_event_unif_fixed = sffm_make_events_on_discretized_source(
 #'    puysegur_summary_statistics,
 #'    target_location = c(166.568, -45.745),
@@ -1079,8 +1084,8 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 #' par(mfrow=c(3,2))
 #' for(i in 1:6) plot(puysegur_sffm_event_unif_fixed[[i]]$slip_raster)
 #'
-#'
-#' # Now do stochastic slip again, but force them to have peak slip on the top row
+#' # Another example with stochastic slip
+#' # Do stochastic slip again, but force them to have peak slip on the top row
 #' puysegur_sffm_event2 = sffm_make_events_on_discretized_source(
 #'     puysegur_summary_statistics,
 #'     target_location = c(166.568, -45.745),
