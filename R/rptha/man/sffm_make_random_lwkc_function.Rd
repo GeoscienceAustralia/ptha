@@ -8,7 +8,7 @@ finite fault models.}
 sffm_make_random_lwkc_function(log10kcx_regression_par = c(-0.54, 2.03, 0.22),
   log10kcy_regression_par = c(-0.41, 1.18, 0.19),
   cor_kcx_kcy_residual = 0.68, clip_random_parameter_ranges_to_2sd = FALSE,
-  relation = "Strasser")
+  relation = "Strasser", force_deterministic = FALSE)
 }
 \arguments{
 \item{log10kcx_regression_par}{vector of length 3 with the gradient,
@@ -27,6 +27,11 @@ scaling laws. If TRUE, then clip unit-normal random variables to +- 2SD before
 using in scaling laws [thus removing very 'unusual' l/w/kcx/kcy values]}
 
 \item{relation}{scaling relation type passed to \code{Mw_2_rupture_size}}
+
+\item{force_deterministic}{logical Default FALSE. If TRUE, then do not
+sample from the predictive uncertainty (i.e. return the same magnitude based
+values of L,W,kcx,kcy every time). This is generally undesirable (because
+L,W,kcx,kcy show high variability). However, sometimes this level of user control is useful.}
 }
 \value{
 a function f(Mw) which returns a vector or matrix with random
@@ -49,5 +54,11 @@ print(lwkc(7.5)) # More random parameters
 print(lwkc(9.2)) # Larger L, W, and smaller kc
 # The function can also take a vector, in which case it returns a matrix with one row for each Mw.
 print(lwkc(c(7.5, 8.0, 8.5, 9.0)))
+# Usage in deterministic mode
+lwkc_deterministic = sffm_make_random_lwkc_function(force_deterministic=TRUE)
+x1 = lwkc_deterministic(8.0)
+x2 = lwkc_deterministic(8.0)
+# x1 and x2 should be the same
+stopifnot(all(x1 == x2))
 
 }
