@@ -973,6 +973,10 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 #' their nearest +-2sd counterpart. This will prevent e.g. large earthquakes
 #' occasionally having very narrow width, etc.
 #' @param relation Scaling relation type, passed to 'Mw_2_rupture_size'
+#' @param target_location_near centre logical If TRUE, then put the 'target location'
+#' near the centre of the rupture. This is probably not a good idea (hence default FALSE),
+#' because real earthquakes might not have peak slip near the centre. But it may be useful in
+#' some circumstances. 
 #' @return A list with length = num_events. Each element of the list is a list
 #' containing the entries slip_matrix, slip_raster, initial_moment, peak_slip_ind,
 #' numerical_corner_wavenumbers, which should be self-explanatory if you are
@@ -1011,6 +1015,21 @@ rectangle_on_grid<-function(grid_LW, num_LW, target_centre,
 #' par(mfrow=c(3,2))
 #' for(i in 1:6) plot(puysegur_sffm_event1[[i]]$slip_raster)
 #'
+#'
+#' # This example has uniform slip, and keeps the centre of the rupture in nearly the same place.
+#' puysegur_sffm_event_unif = sffm_make_events_on_discretized_source(
+#'    puysegur_summary_statistics,
+#'    target_location = c(166.568, -45.745),
+#'    target_event_mw = 7.8,
+#'    vary_peak_slip_location = FALSE,
+#'    num_events = 10,
+#'    uniform_slip=TRUE,
+#'    target_location_near_centre=TRUE)
+#'
+#' # Plot the slip raster for the first 6 synthetic events
+#' par(mfrow=c(3,2))
+#' for(i in 1:6) plot(puysegur_sffm_event_unif[[i]]$slip_raster)
+#'
 #' # Now do the same, but force them to have peak slip on the top row
 #' puysegur_sffm_event2 = sffm_make_events_on_discretized_source(
 #'     puysegur_summary_statistics,
@@ -1039,7 +1058,8 @@ sffm_make_events_on_discretized_source<-function(
     uniform_slip = FALSE,
     expand_length_if_width_limited = 'random',
     clip_random_parameters_at_2sd = TRUE,
-    relation='Strasser'){
+    relation='Strasser',
+    target_location_near_centre = FALSE){
 
     nx = max(discretized_source_statistics$alongstrike_number)
     ny = max(discretized_source_statistics$downdip_number)
@@ -1234,7 +1254,7 @@ sffm_make_events_on_discretized_source<-function(
         # We allow the peak slip location to vary within the rupture.
         bbox = rectangle_on_grid(dim(dx), c(num_W, num_L), 
             c(peak_slip_row, peak_slip_col), 
-            randomly_vary_around_target_centre = TRUE)
+            randomly_vary_around_target_centre = (!target_location_near_centre))
 
         sL = bbox[3]
         eL = bbox[4]

@@ -11,7 +11,8 @@ sffm_make_events_on_discretized_source(discretized_source_statistics,
   zero_low_slip_cells_fraction = 0, sourcename = "",
   sffm_sub_sample_size = c(1, 1), mu = 3e+10, return_slip_raster = TRUE,
   uniform_slip = FALSE, expand_length_if_width_limited = "random",
-  clip_random_parameters_at_2sd = TRUE, relation = "Strasser")
+  clip_random_parameters_at_2sd = TRUE, relation = "Strasser",
+  target_location_near_centre = FALSE)
 }
 \arguments{
 \item{discretized_source_statistics}{data.frame returned from e.g. 
@@ -76,6 +77,11 @@ their nearest +-2sd counterpart. This will prevent e.g. large earthquakes
 occasionally having very narrow width, etc.}
 
 \item{relation}{Scaling relation type, passed to 'Mw_2_rupture_size'}
+
+\item{target_location_near}{centre logical If TRUE, then put the 'target location'
+near the centre of the rupture. This is probably not a good idea (hence default FALSE),
+because real earthquakes might not have peak slip near the centre. But it may be useful in
+some circumstances.}
 }
 \value{
 A list with length = num_events. Each element of the list is a list
@@ -122,6 +128,21 @@ puysegur_sffm_event1 = sffm_make_events_on_discretized_source(
 # Plot the slip raster for the first 6 synthetic events
 par(mfrow=c(3,2))
 for(i in 1:6) plot(puysegur_sffm_event1[[i]]$slip_raster)
+
+
+# This example has uniform slip, and keeps the centre of the rupture in nearly the same place.
+puysegur_sffm_event_unif = sffm_make_events_on_discretized_source(
+   puysegur_summary_statistics,
+   target_location = c(166.568, -45.745),
+   target_event_mw = 7.8,
+   vary_peak_slip_location = FALSE,
+   num_events = 10,
+   uniform_slip=TRUE,
+   target_location_near_centre=TRUE)
+
+# Plot the slip raster for the first 6 synthetic events
+par(mfrow=c(3,2))
+for(i in 1:6) plot(puysegur_sffm_event_unif[[i]]$slip_raster)
 
 # Now do the same, but force them to have peak slip on the top row
 puysegur_sffm_event2 = sffm_make_events_on_discretized_source(
