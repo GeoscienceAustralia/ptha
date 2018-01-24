@@ -1207,8 +1207,8 @@ sffm_make_events_on_discretized_source<-function(
             force_deterministic = TRUE)
     }
     LWkc = local_LWkc_function(rep(target_event_mw, length=num_events))
-    physical_corner_wavenumbers = LWkc[,3:4]
-    nonzero_slip_LW = LWkc[,1:2]
+    physical_corner_wavenumbers = LWkc[,3:4, drop=FALSE]
+    nonzero_slip_LW = LWkc[,1:2, drop=FALSE]
 
     # Get average dx/dy for unit sources, where dx is along-strike and dy is
     # down-dip
