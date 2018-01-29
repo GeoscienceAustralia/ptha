@@ -252,14 +252,15 @@ run_checks<-function(fid_local, slip_type){
 
         event_width = unlist(mapply(
             f<-function(strk_ind, dip_ind){
-                # Compute the width, based on least-along-strike unit-sources
+                # Compute the width, by averaging over all slices along-strike
                 r1 = strk_ind[1]:strk_ind[2]
                 r2 = dip_ind[1]:dip_ind[2]
                 tokeep = which(
                     (unit_source_statistics$downdip_number %in% r2) & 
-                    (unit_source_statistics$alongstrike_number == r1[1])
+                    #(unit_source_statistics$alongstrike_number == r1[1])
+                    (unit_source_statistics$alongstrike_number %in% r1)
                 )
-                sum(unit_source_statistics$width[tokeep])
+                sum(unit_source_statistics$width[tokeep])/length(r1)
             }, 
             alongstrike_range,
             downdip_range 
