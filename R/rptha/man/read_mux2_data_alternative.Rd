@@ -16,7 +16,7 @@ see \code{read_mux2_data} for details
 }
 \description{
 This function does basically the same thing as the previous read_mux2_data
-file.  It is arguably more elegant. I had hoped it would be faster but it does not seem to be
+file (for GAR15 file_subtype only). It is arguably more elegant. 
 significantly faster. Anyway it might be useful for debugging so I keep it
 here, but am not exporting it into the package namespace
 }

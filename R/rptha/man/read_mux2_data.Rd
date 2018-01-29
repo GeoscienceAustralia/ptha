@@ -4,7 +4,8 @@
 \alias{read_mux2_data}
 \title{Read mux2 data format}
 \usage{
-read_mux2_data(mux2file, inds = NULL, return_nstations_only = FALSE)
+read_mux2_data(mux2file, inds = NULL, return_nstations_only = FALSE,
+  file_subtype = "GAR15")
 }
 \arguments{
 \item{mux2file}{character. Filename of a mux2 file which is to be read}
@@ -16,6 +17,11 @@ useful if you want to work on the stations in chunks (e.g. to save memory)}
 the number of stations in the file FOR WHICH TIMESERIES DATA IS RECORDED.
 This might not be the same as the number of stations, because of the 'in_grids'
 treatment.}
+
+\item{file_subtype}{string with either 'GAR15' or 'PTHA2008'. The former corresponds
+to a version of the mux2 file from 2015, and the latter corresponds to a version that
+was used in the 2008 Australian PTHA (at least at some time). The mux2 file format
+has been varied over time, so it is possible that neither of these works}
 }
 \value{
 A list with entries mux2file, loc, t, wave, wave_tail which

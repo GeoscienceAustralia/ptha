@@ -18,6 +18,10 @@
 #' the number of stations in the file FOR WHICH TIMESERIES DATA IS RECORDED.
 #' This might not be the same as the number of stations, because of the 'in_grids'
 #' treatment.
+#' @param file_subtype string with either 'GAR15' or 'PTHA2008'. The former corresponds
+#' to a version of the mux2 file from 2015, and the latter corresponds to a version that
+#' was used in the 2008 Australian PTHA (at least at some time). The mux2 file format
+#' has been varied over time, so it is possible that neither of these works
 #' @return A list with entries mux2file, loc, t, wave, wave_tail which
 #' hold the data from the file
 #' @export
@@ -32,7 +36,8 @@
 #' summary(x$loc)
 #' }
 #'
-read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
+read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE,
+    file_subtype='GAR15'){
 
     # Read mux2data into mux2data object
     tgscon = file(mux2file,'rb')
@@ -109,73 +114,159 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
         id[i] = paste(mm, sep="", collapse="")
     }
 
-    # Find points inside the grids
-    in_grids = (ig >= 0)
-    
-    if(return_nstations_only){
+
+    # At this point out treatment of the file types varies
+    if(file_subtype == 'GAR15'){
+
+        # Find points inside the grids
+        in_grids = (ig >= 0)
+        
+        if(return_nstations_only){
+            close(tgscon)
+            return(sum(in_grids))
+        }
+
+        # Key location summary statistics
+        loc = data.frame(
+            geolat=geolat[in_grids],
+            geolong=geolong[in_grids],
+            mclat=mclat[in_grids],
+            mclong=mclong[in_grids],
+            ig=ig[in_grids],
+            ilon=ilon[in_grids],
+            ilat=ilat[in_grids],
+            z=z[in_grids],
+            center_lat=center_lat[in_grids],
+            center_lon=center_lon[in_grids],
+            offset=offset[in_grids],
+            az=az[in_grids],
+            baz=baz[in_grids],
+            dt=dt[in_grids],
+            id=id[in_grids])
+
+        # Read the timeseries data
+        nsta2 = sum(in_grids)
+        wave = matrix(NA, ncol=nt[1], nrow=nsta2)
+        wavet = rep(NA, nt[1])
+        wave_tail = NA
+
+        for(i in 1:(nt[1]+2)){
+            # For files with hazard points outside the domain, this seems
+            # necessary
+            if(i %in% c(1,2)){
+                # First 2 rows have nsta points, and basically contain header type
+                # information
+                mm = readBin(tgscon, what='double', n=nsta, size=4)
+                next
+            }else{
+                # Remaining rows have nsta2+1 points (includes a time
+                # value)
+                mm = readBin(tgscon, what='double', n=nsta2+1, size=4)
+            }
+
+            if( (i > 2) & (length(mm) == (nsta2+1))){
+                wavet[i-2] = mm[1]
+                wave[,i-2] = mm[-1]
+            }else{
+                print('Warning: length of wave data not as expected')
+                wave_tail = mm
+                break
+            }
+        }
+
         close(tgscon)
-        return(sum(in_grids))
-    }
 
-    # Key location summary statistics
-    loc = data.frame(
-        geolat=geolat[in_grids],
-        geolong=geolong[in_grids],
-        mclat=mclat[in_grids],
-        mclong=mclong[in_grids],
-        ig=ig[in_grids],
-        ilon=ilon[in_grids],
-        ilat=ilat[in_grids],
-        z=z[in_grids],
-        center_lat=center_lat[in_grids],
-        center_lon=center_lon[in_grids],
-        offset=offset[in_grids],
-        az=az[in_grids],
-        baz=baz[in_grids],
-        dt=dt[in_grids],
-        id=id[in_grids])
-
-    # Read the timeseries data
-    nsta2 = sum(in_grids)
-    wave = matrix(NA, ncol=nt[1], nrow=nsta2)
-    wavet = rep(NA, nt[1])
-    wave_tail = NA
-
-    for(i in 1:(nt[1]+2)){
-        # For files with hazard points outside the domain, this seems
-        # necessary
-        if(i %in% c(1,2)){
-            # First 2 rows have nsta points, and basically contain header type
-            # information
-            mm = readBin(tgscon, what='double', n=nsta, size=4)
-            next
+        if(is.null(inds)){
+            output = list(mux2file=mux2file, loc=loc, t=wavet, wave=wave, wave_tail=wave_tail)
         }else{
-            # Remaining rows have nsta2+1 points (includes a time
-            # value)
-            mm = readBin(tgscon, what='double', n=nsta2+1, size=4)
+
+            if( min(inds) <= 0 ) stop('inds must all be > 0')
+            if( max(inds) > length(loc[,1]) ) stop('inds must all be <= number of stations')
+
+            output = list(mux2file=mux2file, loc=loc[inds,], t=wavet, 
+                wave=wave[inds,], wave_tail=wave_tail)
+        }
+    
+        # END of specific treatment for GAR15 file_subtype
+
+    }else if(file_subtype == 'PTHA2008'){
+
+
+        # Find points inside the grids
+        #in_grids = (ig >= 0)
+        in_grids = 1:length(geolat)
+        
+        if(return_nstations_only){
+            close(tgscon)
+            return(sum(in_grids))
         }
 
-        if( (i > 2) & (length(mm) == (nsta2+1))){
-            wavet[i-2] = mm[1]
-            wave[,i-2] = mm[-1]
-        }else{
-            print('Warning: length of wave data not as expected')
-            wave_tail = mm
-            break
+        # Key location summary statistics
+        loc = data.frame(
+            geolat=geolat,
+            geolong=geolong,
+            mclat=mclat,
+            mclong=mclong,
+            ig=ig,
+            ilon=ilon,
+            ilat=ilat,
+            z=z,
+            center_lat=center_lat,
+            center_lon=center_lon,
+            offset=offset,
+            az=az,
+            baz=baz,
+            dt=dt,
+            id=id)
+
+        # Read the timeseries data
+
+        # Recording for each station 'starts' and 'ends' at a particular time
+        t_start = readBin(tgscon, what='int', n=nsta, size=4)
+        t_end = readBin(tgscon, what='int', n=nsta, size=4)
+
+        # Now read the remainder of the file. Here 'n' will be too large, unless every
+        # gauge recorded every event
+        binary_dump = readBin(tgscon, what='double', n=nsta*max(t_end), size=4)
+
+        wave = matrix(0, ncol=max(t_end), nrow=nsta)
+        wavet = rep(NA, max(t_end))
+
+        counter = 0
+        for(i in 1:length(wavet)){
+            counter = counter+1
+            local_t = binary_dump[counter] #readBin(tgscon, what='double', n=1, size=4)
+            if(length(local_t) == 0){
+                stop('READING ERROR, length(local_t) == 0')
+            }
+            wavet[i] = local_t
+            kk = which(t_start <= i & t_end >= i)
+            if(length(kk) > 0){
+                local_wave = binary_dump[counter + (1:length(kk))] #readBin(tgscon, what='double', n=length(kk), size=4)
+                wave[kk,i] = local_wave 
+                counter = counter+length(kk)
+            }
         }
-    }
 
-    close(tgscon)
+        close(tgscon)
 
-    if(is.null(inds)){
-        output = list(mux2file=mux2file, loc=loc, t=wavet, wave=wave, wave_tail=wave_tail)
-    }else{
+        # If we correctly parsed the file, this should be true
+        stopifnot(counter == length(binary_dump))
 
-        if( min(inds) <= 0 ) stop('inds must all be > 0')
-        if( max(inds) > length(loc[,1]) ) stop('inds must all be <= number of stations')
 
-        output = list(mux2file=mux2file, loc=loc[inds,], t=wavet, 
-            wave=wave[inds,], wave_tail=wave_tail)
+        # Output
+        if(is.null(inds)){
+            output = list(mux2file=mux2file, loc=loc, t=wavet, wave=wave)
+        }else{
+
+            if( min(inds) <= 0 ) stop('inds must all be > 0')
+            if( max(inds) > length(loc[,1]) ) stop('inds must all be <= number of stations')
+
+            output = list(mux2file=mux2file, loc=loc[inds,], t=wavet, 
+                wave=wave[inds,])
+        }
+
+
     }
 
     return(output)
@@ -206,7 +297,8 @@ read_mux2_data<-function(mux2file, inds=NULL, return_nstations_only=FALSE){
 #' read a mux2 data file
 #'
 #' This function does basically the same thing as the previous read_mux2_data
-#' file.  It is arguably more elegant. I had hoped it would be faster but it does not seem to be
+#' file (for GAR15 file_subtype only). It is arguably more elegant. 
+# I had hoped it would be faster but it does not seem to be
 #' significantly faster. Anyway it might be useful for debugging so I keep it
 #' here, but am not exporting it into the package namespace
 #'
