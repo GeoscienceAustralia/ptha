@@ -557,7 +557,13 @@ summarise_events<-function(events_near_desired_stage){
     obs = apply(obs, 2, f<-function(x) qnorm(rank(x)/(length(x)+1)))
     if(nrow(obs) > ncol(obs)){
         # We can do a mahalanobis distance calculation
-        mh_distance = mahalanobis(obs, center=mean(obs), cov=cov(obs))
+        mh_distance = try(mahalanobis(obs, center=mean(obs), cov=cov(obs)))
+        if(class(mh_distance) == 'try-error'){
+            # Mahalanobis distance failed (perhaps too few events, or
+            # problematic input data leading to singular covariance matrix.
+            # Prioritize events with intermediate magnitudes
+            mh_distance = abs(magnitude_prop_mid - 0.5) 
+        }
     }else{
         # Too few events for mahalanobis distance. Instead prioritize events with
         # intermediate magnitudes
