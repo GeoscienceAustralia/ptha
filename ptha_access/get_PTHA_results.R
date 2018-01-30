@@ -554,20 +554,18 @@ summarise_events<-function(events_near_desired_stage){
     set.seed(1)
  
     obs = cbind(jitter(magnitude_prop_mid, 0.0001), peak_slip, mean_slip, nsources, peak_slip_alongstrike)
-    if(nrow(obs) > ncol(obs)){
+    if(nrow(obs) > 1){
         # We can do a mahalanobis distance calculation
         obs = apply(obs, 2, f<-function(x) qnorm(rank(x)/(length(x)+1)))
-        mh_distance = try(mahalanobis(obs, center=mean(obs), cov=cov(obs)))
+        mh_distance = try(mahalanobis(obs, center=mean(obs), cov=cov(obs)), silent=TRUE)
         if(class(mh_distance) == 'try-error'){
             # Mahalanobis distance failed (perhaps too few events, or
-            # problematic input data leading to singular covariance matrix.
+            # problematic input data leading to singular covariance matrix).
             # Prioritize events with intermediate magnitudes
             mh_distance = abs(magnitude_prop_mid - 0.5) 
         }
     }else{
-        # Too few events for mahalanobis distance. Instead prioritize events with
-        # intermediate magnitudes
-        mh_distance = abs(magnitude_prop_mid - 0.5) 
+        mh_distance = 0
     }
 
     # Undo reproducible random jitter
