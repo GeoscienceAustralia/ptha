@@ -471,7 +471,8 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 local_period = try(ncvar_get(fid1, 'period', start=c(1,target_index), 
                     count=c(fid1$dim$event$len,1)))
                 nc_close(fid1)
-                if(class(local_max_stage) != 'try-error' | class(local_period) == 'try-error') has_vars[1] = TRUE
+                if((class(local_max_stage) != 'try-error') & 
+                    (class(local_period) != 'try-error')) has_vars[1] = TRUE
             }
 
             # Read Mw and the event rate from the file that doesn't contain the tsunami
