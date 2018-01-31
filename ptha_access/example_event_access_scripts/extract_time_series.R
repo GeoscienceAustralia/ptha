@@ -76,7 +76,7 @@ for(ir in 1:length(all_desired_rates)){
         desired_rate = approx(
             return_period_info$stage,
             return_period_info$stochastic_slip_rate, 
-            xout=desired_rate)$y
+            xout=desired_stage)$y
     }
     # Check everything is consistent
     if(is.na(desired_stage) | is.na(desired_rate)){
