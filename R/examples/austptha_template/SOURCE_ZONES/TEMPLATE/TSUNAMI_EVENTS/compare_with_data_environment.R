@@ -43,37 +43,56 @@ unit_source_geometry = readOGR(
     layer=source_name)
 
 
-
-#' Given a magnitude and hypocentre, find earthquake events with the 'same'
-#' magnitude which contain (or are near) the hypocentre
 #'
-#' @param event_magnitude numeric earthquake magnitude. Events with this
-#' magnitude will be used for the plot
-#' @param event_hypocentre vector c(lon,lat) giving the location of a point on
-#' the rupture. All modelled uniform slip earthquakes will contain a unit-source
-#' within 0.5 scaling-law width/length of the unit-source containing this point.
-#' (The point must be inside a unit source). If use_stochastic_slip_runs=TRUE,
-#' then we will use stochastic events 'corresponding' to the above identified
-#' uniform events.  If use_variable_uniform_slip_runs = TRUE, then we do as for
-#' stochastic_slip, in the variable_uniform case.
-#' @param use_stochastic_slip_runs logical. If TRUE, return stochastic slip
-#' events that 'correspond to' the uniform slip event
-#' @param use_variable_uniform_slip_runs logical. If TRUE, return variable
-#' uniform slip events that 'correspond to' the uniform slip event
-#' @return data.frame with metadata for the relevant events
+#' Find earthquake events near a point close to a given magnitude
+#'
+#' This is actually just a wrapper for other functions which treat
+#' the 'variable mu' and 'fixed mu' cases
+#'  
+#'
 find_events_near_point<-function(
     event_magnitude,
     event_hypocentre,
     use_stochastic_slip_runs = FALSE,
-    use_variable_uniform_slip_runs = FALSE){
+    use_variable_uniform_slip_runs = FALSE,
+    fixed_mu = TRUE){
 
-    # Events with the right magnitude. Allow for some rounding error, due to
-    # the use of float's in the netcdf file. 
-    # Use uniform slip events -- later, if use_stochastic_slip = TRUE, then
-    # we will extract those events which correspond to the uniform ones to keep
-    keep = which(abs(earthquake_events$Mw - event_magnitude) < 1.0e-03)
-    events_with_Mw = earthquake_events[keep, ]
-  
+    event_magnitude1 = event_magnitude
+    event_hypocentre1 = event_hypocentre
+    use_stochastic_slip_runs1 = use_stochastic_slip_runs
+    use_variable_uniform_slip_runs1 = use_variable_uniform_slip_runs
+    fixed_mu1 = fixed_mu
+
+    if(fixed_mu1){
+        # Use fixed mu. 
+        events_with_Mw = find_events_near_point_fixed_mu(
+            event_magnitude = event_magnitude1,
+            event_hypocentre = event_hypocentre1,
+            use_stochastic_slip_runs = use_stochastic_slip_runs1,
+            use_variable_uniform_slip_runs = use_variable_uniform_slip_runs1)
+    }else{
+        # Use variable mu
+        events_with_Mw = find_events_near_point_variable_mu(
+            event_magnitude = event_magnitude1,
+            event_hypocentre = event_hypocentre1,
+            use_stochastic_slip_runs = use_stochastic_slip_runs1,
+            use_variable_uniform_slip_runs = use_variable_uniform_slip_runs1)
+
+    }
+
+    return(events_with_Mw)
+}
+
+#' Given hypocentre c(lon,lat), find the index of the unit-source closest to it,
+#' and the indices of unit-sources that are within L/2, W/2 of it. Here L,W
+#' are computed from the 'median' value of the provided scaling relation
+#'
+find_unit_sources_near_hypocentre<-function(
+    event_hypocentre,
+    unit_source_geometry,
+    unit_source_statistics,
+    event_magnitude){
+
     # Find which events contain the hypocentre, by finding which unit source
     # contains it
     unit_source_containing_hypocentre = find_unit_source_index_containing_point(
@@ -107,11 +126,178 @@ find_events_near_point<-function(
     }
     if(length(hypocentre_neighbours) == 0) stop('No unit source neighbours found')
 
+    output = c(unit_source_containing_hypocentre, hypocentre_neighbours)
+
+    return(output)
+
+}
+
+#' Function similar to find_events_near_point_fixed_mu, but with variable mu.
+#' i.e. considering shear modulus depth dependence, re-compute the magnitude
+#' of every event and find events 'near' the desired magnitude that have
+#' unit-sources near the desired hypocentre
+#'
+#' @param event_magnitude numeric earthquake magnitude. Events close to this
+#' magnitude will be selected 
+#' @param event_hypocentre vector c(lon,lat) giving the location of a point on
+#' the rupture. All modelled uniform slip earthquakes will contain a unit-source
+#' within 0.5 scaling-law width/length of the unit-source containing this point.
+#' (The point must be inside a unit source). If use_stochastic_slip_runs=TRUE,
+#' then we will use stochastic events 'corresponding' to the above identified
+#' uniform events.  If use_variable_uniform_slip_runs = TRUE, then we do as for
+#' stochastic_slip, in the variable_uniform case.
+#' @param use_stochastic_slip_runs logical. If TRUE, return stochastic slip
+#' events that 'correspond to' the uniform slip event
+#' @param use_variable_uniform_slip_runs logical. If TRUE, return variable
+#' uniform slip events that 'correspond to' the uniform slip event
+#' @return data.frame with metadata for the relevant events
+#'
+find_events_near_point_variable_mu<-function(
+    event_magnitude,
+    event_hypocentre,
+    use_stochastic_slip_runs = FALSE,
+    use_variable_uniform_slip_runs = FALSE){
+
+    if(use_stochastic_slip_runs & use_variable_slip_runs){
+        stop("Cannot use both stochastic and variable slip at once")
+    }
+
+    # Compute shear modulus given depth
+    mu_fun<-function(dpth){
+        # Point values based on plot of Lay and Bilek (2007), limited to 10GPA in shallow areas
+        # See
+        #/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Shear_modulus
+        depths = c(0, 7.5, 15, 35, 9999)
+        mu = c(10, 10, 30, 67, 67)*1e+09
+        output = 10**(approx(depths, log10(mu), xout=dpth)$y)
+        return(output)
+    }
+
+    #
+    # Compute Mw, considering variation in shear modulus
+    #
+
+    # Preliminary variables from unit-source statistics
+    depth = unit_source_statistics$depth
+    mu_variable = mu_fun(depth)
+    area = unit_source_statistics$length*unit_source_statistics$width
+
+    # Get event indices, event slips, and mus
+    if(use_stochastic_slip_runs | use_variable_uniform_slip_runs){
+        # Not uniform slip format
+
+        if(use_stochastic_slip_runs){
+            events = earthquake_events_stochastic
+        }else if(use_variable_uniform_slip_runs){
+            events = earthquake_events_variable_uniform
+        }          
+
+        event_inds = sapply(events$event_index_string, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
+        event_slips = sapply(events$event_slip_string, f<-function(x) as.numeric(strsplit(x, '_')[[1]]))
+
+    }else{
+        # Uniform slip format. We extract data in the same form as would be used for variable slip
+        events = earthquake_events
+
+        event_inds = sapply(events$event_index_string, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
+        # Expand slip to the same format as we have for variable slip events
+        event_slips = event_inds
+        for(i in 1:length(event_slips)){
+            event_slips[[i]] = event_slips[[i]] * 0 + events$slip[i]
+        }
+
+    }
+
+    # Seismic moment
+    moment = rep(NA, length(event_inds))
+    for(i in 1:length(event_inds)){
+        slip = event_slips[[i]]
+        inds = event_inds[[i]]
+        areas = area[inds]
+        mu = mu_variable[inds]
+
+        moment[i] = sum(slip * areas * 1e+06 * mu)
+    }
+
+    event_Mw_variable_mu = M0_2_Mw(moment)
+    # Store magnitude in the outputs
+    events$Mw_variable_mu = event_Mw_variable_mu
+
+    # Find indices of unit sources containing the hypocentre, and those within
+    # 1/2 length and 1/2 width of an earthquake with typical size (given the scaling 
+    # relation)
+    unit_sources_near_hypocentre = find_unit_sources_near_hypocentre(
+        event_hypocentre,
+        unit_source_geometry,
+        unit_source_statistics,
+        event_magnitude)
+
+    # Find events with the right magnitude, and which involve the right unit sources
+    keep = rep(FALSE, length(moment))
+    for(i in 1:length(keep)){
+        test1 = ( abs(event_Mw_variable_mu[i] - event_magnitude) < (config_env$dMw*0.5) )
+        # FIXME: Consider replacing this with a check on whether peak_slip_downdip_ind 
+        # is in the event set. Will that always be in the corresponding uniform
+        # slip event?
+        test2 = any( event_inds[[i]] %in% unit_sources_near_hypocentre)
+        if(test1 & test2) keep[i] = TRUE 
+    }
+
+    if(sum(keep) > 0){
+        output = events[which(keep),]
+    }else{
+        stop('No events')
+    }
+
+    return(output)
+
+}
+
+#' Given a magnitude and hypocentre, find earthquake events with the 'same'
+#' magnitude which contain (or are near) the hypocentre
+#'
+#' @param event_magnitude numeric earthquake magnitude. Events with this
+#' magnitude will be used for the plot
+#' @param event_hypocentre vector c(lon,lat) giving the location of a point on
+#' the rupture. All modelled uniform slip earthquakes will contain a unit-source
+#' within 0.5 scaling-law width/length of the unit-source containing this point.
+#' (The point must be inside a unit source). If use_stochastic_slip_runs=TRUE,
+#' then we will use stochastic events 'corresponding' to the above identified
+#' uniform events.  If use_variable_uniform_slip_runs = TRUE, then we do as for
+#' stochastic_slip, in the variable_uniform case.
+#' @param use_stochastic_slip_runs logical. If TRUE, return stochastic slip
+#' events that 'correspond to' the uniform slip event
+#' @param use_variable_uniform_slip_runs logical. If TRUE, return variable
+#' uniform slip events that 'correspond to' the uniform slip event
+#' @return data.frame with metadata for the relevant events
+find_events_near_point_fixed_mu<-function(
+    event_magnitude,
+    event_hypocentre,
+    use_stochastic_slip_runs = FALSE,
+    use_variable_uniform_slip_runs = FALSE){
+
+    # Events with the right magnitude. Allow for some rounding error, due to
+    # the use of float's in the netcdf file. Also allow to select events that are
+    # 'within dMw/2' of the desired magnitude, which is relevant for variable mu cases.
+    # Use uniform slip events -- later, if use_stochastic_slip = TRUE, then
+    # we will extract those events which correspond to the uniform ones to keep
+    keep = which(abs(earthquake_events$Mw - event_magnitude) < (config_env$dMw/2) )
+    events_with_Mw = earthquake_events[keep, ]
+ 
+    # Find indices of unit sources containing the hypocentre, and those within
+    # 1/2 length and 1/2 width of an earthquake with typical size given the scaling 
+    # relation
+    unit_sources_near_hypocentre = find_unit_sources_near_hypocentre(
+        event_hypocentre,
+        unit_source_geometry,
+        unit_source_statistics,
+        event_magnitude)
+    
     event_contains_hpc = rep(0, length(events_with_Mw[,1]))
     for(i in 1:length(events_with_Mw[,1])){
         event_contains_hpc[i] = any(
             get_unit_source_indices_in_event(events_with_Mw[i,]) %in% 
-            c(unit_source_containing_hypocentre, hypocentre_neighbours)
+            unit_sources_near_hypocentre
             )
     }
 
@@ -164,7 +350,7 @@ find_events_near_point<-function(
         }
 
     }else{
-        # Uniform slip (use_stochastic_slip_runs=FALSE)
+        # Uniform slip
         events_with_Mw = events_with_Mw[which(event_contains_hpc == 1),]
     }
 

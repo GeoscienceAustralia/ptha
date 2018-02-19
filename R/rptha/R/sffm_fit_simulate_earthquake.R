@@ -875,59 +875,59 @@ sffm_make_random_lwkc_function<-function(
 rectangle_on_grid<-function(grid_LW, num_LW, target_centre, 
     randomly_vary_around_target_centre=FALSE){
 
-        num_L = num_LW[1]
-        num_W = num_LW[2]
+    num_L = num_LW[1]
+    num_W = num_LW[2]
 
-        if(!randomly_vary_around_target_centre){
-            # Non-zero slip cover along-strike indices sL:eL
-            # ('start-length':'end-length'), and down-dip indices sW:eW. We try to
-            # make the peak slip location be the middle of the rupture, but there
-            # are practical difficulties
-            if(num_L%%2 == 0){
-                # target_centre[1] cannot be in the middle exactly, so randomly
-                # choose
-                sL = target_centre[1] - (num_L/2 - sample(c(0,1), size=1))
-            }else{
-                # target_centre[1] in the middle
-                sL = target_centre[1] - floor(num_L/2)
-            }
+    if(!randomly_vary_around_target_centre){
+        # Non-zero slip cover along-strike indices sL:eL
+        # ('start-length':'end-length'), and down-dip indices sW:eW. We try to
+        # make the peak slip location be the middle of the rupture, but there
+        # are practical difficulties
+        if(num_L%%2 == 0){
+            # target_centre[1] cannot be in the middle exactly, so randomly
+            # choose
+            sL = target_centre[1] - (num_L/2 - sample(c(0,1), size=1))
         }else{
-            # Randomly set the lower along-strike location
-            sL = target_centre[1] - sample(0:(num_L-1), size=1)
+            # target_centre[1] in the middle
+            sL = target_centre[1] - floor(num_L/2)
         }
+    }else{
+        # Randomly set the lower along-strike location
+        sL = target_centre[1] - sample(0:(num_L-1), size=1)
+    }
 
-        # If there are not enough unit sources, further constraints are needed.
-        # Note this ensures the final rupture has the desired length [(eL - sL
-        # + 1) = num_L], unless the source-zone is not large enough to hold the
-        # desired rupture (grid_LW[1] < num_L), in which case the rupture spans
-        # the entire source-zone length.
-        sL = min(sL, grid_LW[1] - num_L + 1)
-        sL = max(sL, 1)
-        eL = min(sL + num_L - 1, grid_LW[1])
+    # If there are not enough unit sources, further constraints are needed.
+    # Note this ensures the final rupture has the desired length [(eL - sL
+    # + 1) = num_L], unless the source-zone is not large enough to hold the
+    # desired rupture (grid_LW[1] < num_L), in which case the rupture spans
+    # the entire source-zone length.
+    sL = min(sL, grid_LW[1] - num_L + 1)
+    sL = max(sL, 1)
+    eL = min(sL + num_L - 1, grid_LW[1])
 
-        if(!randomly_vary_around_target_centre){
-            if(num_W%%2 == 0){
+    if(!randomly_vary_around_target_centre){
+        if(num_W%%2 == 0){
 
-                # Peak slip location cannot be in the middle exactly, so we
-                # randomly choose one location.
-                sW = target_centre[2] - (num_W/2 - sample(c(0,1), size=1))
+            # Peak slip location cannot be in the middle exactly, so we
+            # randomly choose one location.
+            sW = target_centre[2] - (num_W/2 - sample(c(0,1), size=1))
 
-            }else{
-
-                sW = target_centre[2] - floor(num_W/2)
-
-            }
         }else{
-            # Randomly set the up-dip location
-            sW = target_centre[2] - sample(0:(num_W-1), size=1)
+
+            sW = target_centre[2] - floor(num_W/2)
+
         }
+    }else{
+        # Randomly set the up-dip location
+        sW = target_centre[2] - sample(0:(num_W-1), size=1)
+    }
 
-        # If there are not enough unit sources, further constraints are needed
-        sW = min(sW, grid_LW[2] - num_W + 1)
-        sW = max(sW, 1)
-        eW = min(sW + num_W - 1, grid_LW[2])
+    # If there are not enough unit sources, further constraints are needed
+    sW = min(sW, grid_LW[2] - num_W + 1)
+    sW = max(sW, 1)
+    eW = min(sW + num_W - 1, grid_LW[2])
 
-        return(c(sL, eL, sW, eW))
+    return(c(sL, eL, sW, eW))
 }
 
 
