@@ -11,68 +11,76 @@ stopifnot(exists('event_basename'))
 # Uniform slip
 #
 
-check_dart_env$compare_event_with_gauge_time_series(
-    event_magnitude,
-    event_hypocentre,
-    event_start,
-    gauge_ids,
-    gauge_data,
-    plot_durations= plot_durations,
-    gauge_ylims = gauge_ylims,
-    output_dir_tag = paste0(event_basename, '_uniform'),
-    make_plot=FALSE)
-# Store NGDC comparison data
-check_dart_env$compare_event_maxima_with_NGDC(
-    event_start,
-    event_magnitude,
-    event_hypocentre,
-    output_dir_tag = paste0(event_basename, '_uniform'))
+for(variable_mu in c(TRUE, FALSE){
 
-#
-# Stochastic slip
-#
+    if(variable_mu){
+        extra_name = ''
+    }else{
+        extra_name = '_varyMu'
+    }
 
-check_dart_env$compare_event_with_gauge_time_series(
-    event_magnitude,
-    event_hypocentre,
-    event_start,
-    gauge_ids,
-    gauge_data,
-    plot_durations= plot_durations,
-    gauge_ylims = gauge_ylims,
-    output_dir_tag = paste0(event_basename, '_stochastic'),
-    make_plot=FALSE,
-    use_stochastic_slip=TRUE)
-# Store NGDC comparison data
-check_dart_env$compare_event_maxima_with_NGDC(
-    event_start,
-    event_magnitude,
-    event_hypocentre,
-    output_dir_tag = paste0(event_basename, '_stochastic'),
-    use_stochastic_slip = TRUE)
+    check_dart_env$compare_event_with_gauge_time_series(
+        event_magnitude,
+        event_hypocentre,
+        event_start,
+        gauge_ids,
+        gauge_data,
+        plot_durations= plot_durations,
+        gauge_ylims = gauge_ylims,
+        output_dir_tag = paste0(event_basename, extra_name, '_uniform'),
+        make_plot=FALSE)
+    # Store NGDC comparison data
+    #check_dart_env$compare_event_maxima_with_NGDC(
+    #    event_start,
+    #    event_magnitude,
+    #    event_hypocentre,
+    #    output_dir_tag = paste0(event_basename, '_uniform'))
 
-#
-# Variable uniform slip
-#
+    #
+    # Stochastic slip
+    #
 
-check_dart_env$compare_event_with_gauge_time_series(
-    event_magnitude,
-    event_hypocentre,
-    event_start,
-    gauge_ids,
-    gauge_data,
-    plot_durations= plot_durations,
-    gauge_ylims = gauge_ylims,
-    output_dir_tag = paste0(event_basename, '_variable_uniform'),
-    make_plot=FALSE,
-    use_variable_uniform=TRUE
-    )
-# Store NGDC comparison data
-check_dart_env$compare_event_maxima_with_NGDC(
-    event_start,
-    event_magnitude,
-    event_hypocentre,
-    output_dir_tag = paste0(event_basename, '_variable_uniform'),
-    use_variable_uniform_slip = TRUE)
+    check_dart_env$compare_event_with_gauge_time_series(
+        event_magnitude,
+        event_hypocentre,
+        event_start,
+        gauge_ids,
+        gauge_data,
+        plot_durations= plot_durations,
+        gauge_ylims = gauge_ylims,
+        output_dir_tag = paste0(event_basename, extra_name, '_stochastic'),
+        make_plot=FALSE,
+        use_stochastic_slip=TRUE)
+    # Store NGDC comparison data
+    #check_dart_env$compare_event_maxima_with_NGDC(
+    #    event_start,
+    #    event_magnitude,
+    #    event_hypocentre,
+    #    output_dir_tag = paste0(event_basename, '_stochastic'),
+    #    use_stochastic_slip = TRUE)
 
+    #
+    # Variable uniform slip
+    #
 
+    check_dart_env$compare_event_with_gauge_time_series(
+        event_magnitude,
+        event_hypocentre,
+        event_start,
+        gauge_ids,
+        gauge_data,
+        plot_durations= plot_durations,
+        gauge_ylims = gauge_ylims,
+        output_dir_tag = paste0(event_basename, extra_name, '_variable_uniform'),
+        make_plot=FALSE,
+        use_variable_uniform=TRUE
+        )
+    # Store NGDC comparison data
+    #check_dart_env$compare_event_maxima_with_NGDC(
+    #    event_start,
+    #    event_magnitude,
+    #    event_hypocentre,
+    #    output_dir_tag = paste0(event_basename, '_variable_uniform'),
+    #    use_variable_uniform_slip = TRUE)
+
+}

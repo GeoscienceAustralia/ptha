@@ -57,6 +57,7 @@ find_events_near_point<-function(
     use_variable_uniform_slip_runs = FALSE,
     fixed_mu = TRUE){
 
+    # Local input args
     event_magnitude1 = event_magnitude
     event_hypocentre1 = event_hypocentre
     use_stochastic_slip_runs1 = use_stochastic_slip_runs
@@ -77,7 +78,6 @@ find_events_near_point<-function(
             event_hypocentre = event_hypocentre1,
             use_stochastic_slip_runs = use_stochastic_slip_runs1,
             use_variable_uniform_slip_runs = use_variable_uniform_slip_runs1)
-
     }
 
     return(events_with_Mw)
@@ -164,8 +164,8 @@ find_events_near_point_variable_mu<-function(
 
     # Compute shear modulus given depth
     mu_fun<-function(dpth){
-        # Point values based on plot of Lay and Bilek (2007), limited to 10GPA in shallow areas
-        # See
+        ## Point values based on plot of Lay and Bilek (2007), limited to 10GPA in shallow areas
+        ## See
         #/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Shear_modulus
         depths = c(0, 7.5, 15, 35, 9999)
         mu = c(10, 10, 30, 67, 67)*1e+09
@@ -192,14 +192,17 @@ find_events_near_point_variable_mu<-function(
             events = earthquake_events_variable_uniform
         }          
 
-        event_inds = sapply(events$event_index_string, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
-        event_slips = sapply(events$event_slip_string, f<-function(x) as.numeric(strsplit(x, '_')[[1]]))
+        event_inds = sapply(events$event_index_string, 
+            f<-function(x) as.numeric(strsplit(x, '-')[[1]]), simplify=FALSE)
+        event_slips = sapply(events$event_slip_string, 
+            f<-function(x) as.numeric(strsplit(x, '_')[[1]]), simplify=FALSE)
 
     }else{
         # Uniform slip format. We extract data in the same form as would be used for variable slip
         events = earthquake_events
 
-        event_inds = sapply(events$event_index_string, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
+        event_inds = sapply(events$event_index_string, 
+            f<-function(x) as.numeric(strsplit(x, '-')[[1]]), simplify=FALSE)
         # Expand slip to the same format as we have for variable slip events
         event_slips = event_inds
         for(i in 1:length(event_slips)){
@@ -402,7 +405,8 @@ compare_event_with_gauge_time_series<-function(
     output_dir_tag=NULL,
     use_stochastic_slip = FALSE,
     use_variable_uniform_slip = FALSE,
-    make_plot=TRUE){
+    make_plot=TRUE,
+    fixed_mu=TRUE){
 
     make_plot = make_plot
 
@@ -410,7 +414,8 @@ compare_event_with_gauge_time_series<-function(
         event_magnitude, 
         event_hypocentre,
         use_stochastic_slip_runs = use_stochastic_slip,
-        use_variable_uniform_slip_runs = use_variable_uniform_slip)  
+        use_variable_uniform_slip_runs = use_variable_uniform_slip,
+        fixed_mu = fixed_mu)  
 
     plot_events_vs_gauges(events_with_Mw, event_start, gauge_ids, gauge_data, 
         plot_durations, gauge_ylims, output_dir_tag, make_plot=make_plot)
