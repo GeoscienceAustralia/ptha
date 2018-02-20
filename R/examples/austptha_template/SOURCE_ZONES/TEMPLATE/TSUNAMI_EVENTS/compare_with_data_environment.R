@@ -732,11 +732,11 @@ plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids,
 
         # Store the model/gauge time-series for other analysis
         if(save_outputs){
-                if('Mw_variable_mu' %in% names(events_with_Mw)){
-                    mw_name = round(median(events_with_Mw$Mw_variable_mu), 3)
-                }else{
-                    mw_name = round(median(events_with_Mw$Mw), 3)
-                }
+            if('Mw_variable_mu' %in% names(events_with_Mw)){
+                mw_name = round(median(events_with_Mw$Mw_variable_mu), 3)
+            }else{
+                mw_name = round(median(events_with_Mw$Mw), 3)
+            }
 
             saveRDS(list(model_events = model_events, model_times = gauge_times, 
                 gauge_obs = gauge_obs, gauge_obs_times = gauge_obs_times),
