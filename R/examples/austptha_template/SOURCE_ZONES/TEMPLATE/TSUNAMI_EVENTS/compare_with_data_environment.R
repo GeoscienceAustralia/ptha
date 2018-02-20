@@ -43,46 +43,6 @@ unit_source_geometry = readOGR(
     layer=source_name)
 
 
-#'
-#' Find earthquake events near a point close to a given magnitude
-#'
-#' This is actually just a wrapper for other functions which treat
-#' the 'variable mu' and 'fixed mu' cases
-#'  
-#'
-find_events_near_point<-function(
-    event_magnitude,
-    event_hypocentre,
-    use_stochastic_slip_runs = FALSE,
-    use_variable_uniform_slip_runs = FALSE,
-    fixed_mu = TRUE){
-
-    # Local input args
-    event_magnitude1 = event_magnitude
-    event_hypocentre1 = event_hypocentre
-    use_stochastic_slip_runs1 = use_stochastic_slip_runs
-    use_variable_uniform_slip_runs1 = use_variable_uniform_slip_runs
-    fixed_mu1 = fixed_mu
-
-    if(fixed_mu1){
-        # Use fixed mu. 
-        events_with_Mw = find_events_near_point_fixed_mu(
-            event_magnitude = event_magnitude1,
-            event_hypocentre = event_hypocentre1,
-            use_stochastic_slip_runs = use_stochastic_slip_runs1,
-            use_variable_uniform_slip_runs = use_variable_uniform_slip_runs1)
-    }else{
-        # Use variable mu
-        events_with_Mw = find_events_near_point_variable_mu(
-            event_magnitude = event_magnitude1,
-            event_hypocentre = event_hypocentre1,
-            use_stochastic_slip_runs = use_stochastic_slip_runs1,
-            use_variable_uniform_slip_runs = use_variable_uniform_slip_runs1)
-    }
-
-    return(events_with_Mw)
-}
-
 #' Given hypocentre c(lon,lat), find the index of the unit-source closest to it,
 #' and the indices of unit-sources that are within L/2, W/2 of it. Here L,W
 #' are computed from the 'median' value of the provided scaling relation
@@ -131,6 +91,48 @@ find_unit_sources_near_hypocentre<-function(
     return(output)
 
 }
+
+#'
+#' Find earthquake events near a point close to a given magnitude
+#'
+#' This is actually just a wrapper for other functions which treat
+#' the 'variable mu' and 'fixed mu' cases. See those functions for
+#' documentation
+#'  
+#'
+find_events_near_point<-function(
+    event_magnitude,
+    event_hypocentre,
+    use_stochastic_slip_runs = FALSE,
+    use_variable_uniform_slip_runs = FALSE,
+    fixed_mu = TRUE){
+
+    # Local input args
+    event_magnitude1 = event_magnitude
+    event_hypocentre1 = event_hypocentre
+    use_stochastic_slip_runs1 = use_stochastic_slip_runs
+    use_variable_uniform_slip_runs1 = use_variable_uniform_slip_runs
+    fixed_mu1 = fixed_mu
+
+    if(fixed_mu1){
+        # Use fixed mu. 
+        events_with_Mw = find_events_near_point_fixed_mu(
+            event_magnitude = event_magnitude1,
+            event_hypocentre = event_hypocentre1,
+            use_stochastic_slip_runs = use_stochastic_slip_runs1,
+            use_variable_uniform_slip_runs = use_variable_uniform_slip_runs1)
+    }else{
+        # Use variable mu
+        events_with_Mw = find_events_near_point_variable_mu(
+            event_magnitude = event_magnitude1,
+            event_hypocentre = event_hypocentre1,
+            use_stochastic_slip_runs = use_stochastic_slip_runs1,
+            use_variable_uniform_slip_runs = use_variable_uniform_slip_runs1)
+    }
+
+    return(events_with_Mw)
+}
+
 
 #' Function similar to find_events_near_point_fixed_mu, but with variable mu.
 #' i.e. considering shear modulus depth dependence, re-compute the magnitude
@@ -425,7 +427,9 @@ compare_event_with_gauge_time_series<-function(
 #' Stochastic slip variant of \code{compare_event_with_gauge_time_series}
 #'
 #' Note this routine is largely defunct, because \code{compare_event_with_gauge_time_series}
-#' treats all cases [so long as tsunami events have already been created]
+#' treats all cases [so long as tsunami events have already been created]. This
+#' routine cannot treat variable 'mu' (because that is a currently post-processing step,
+#' not deep in the rptha package)
 #'
 #' @param event_magnitude numeric earthquake magnitude. Make stochastic slip
 #' events with this magnitude
@@ -520,7 +524,8 @@ compare_event_maxima_with_NGDC<-function(
     event_hypocentre,
     use_stochastic_slip = FALSE, 
     use_variable_uniform_slip = FALSE,
-    output_dir_tag=NULL){
+    output_dir_tag=NULL,
+    fixed_mu = TRUE){
 
     # Get the NGDC data for the event (on the same day)
     event_year = as.numeric(format(start_date, '%Y'))
@@ -541,7 +546,8 @@ compare_event_maxima_with_NGDC<-function(
         event_Mw,
         event_hypocentre,
         use_stochastic_slip_runs = use_stochastic_slip,
-        use_variable_uniform_slip_runs = use_variable_uniform_slip
+        use_variable_uniform_slip_runs = use_variable_uniform_slip,
+        fixed_mu = fixed_mu
         )
 
     matching_event_rows = as.numeric(rownames(events_with_Mw))
@@ -713,18 +719,29 @@ plot_events_vs_gauges<-function(events_with_Mw, event_start, gauge_ids,
                 points(gauge_obs_times, gauge_obs$resid, t='l', col='blue')
                 grid()
                 abline(v=(-200:200)*3600, col='green')
+                if('Mw_variable_mu' %in% names(events_with_Mw)){
+                    mw_name = round(events_with_Mw$Mw_variable_mu[j], 3)
+                }else{
+                    mw_name = round(events_with_Mw$Mw[j], 3)
+                }
                 title(paste0('Modelled and observed stage, gauge: ', gauge_ids[i], 
-                    ', Mw: ', events_with_Mw$Mw[j]),
+                    ', Mw: ', mw_name),
                     sub = events_with_Mw$event_index_string[j])
             }
         }
 
         # Store the model/gauge time-series for other analysis
         if(save_outputs){
+                if('Mw_variable_mu' %in% names(events_with_Mw)){
+                    mw_name = round(median(events_with_Mw$Mw_variable_mu), 3)
+                }else{
+                    mw_name = round(median(events_with_Mw$Mw), 3)
+                }
+
             saveRDS(list(model_events = model_events, model_times = gauge_times, 
                 gauge_obs = gauge_obs, gauge_obs_times = gauge_obs_times),
                 file = paste0(output_dir, '/gauge_', gauge_ids[i], '_Mw_', 
-                    events_with_Mw$Mw[1], '.RDS'))
+                    mw_name, '.RDS'))
         }
 
         rm(model_events, gauge_obs, gauge_obs_times)
