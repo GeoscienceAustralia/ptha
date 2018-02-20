@@ -160,7 +160,7 @@ find_events_near_point_variable_mu<-function(
     use_stochastic_slip_runs = FALSE,
     use_variable_uniform_slip_runs = FALSE){
 
-    if(use_stochastic_slip_runs & use_variable_slip_runs){
+    if(use_stochastic_slip_runs & use_variable_uniform_slip_runs){
         stop("Cannot use both stochastic and variable slip at once")
     }
 
@@ -240,7 +240,7 @@ find_events_near_point_variable_mu<-function(
     # Find events with the right magnitude, and which involve the right unit sources
     keep = rep(FALSE, length(moment))
     for(i in 1:length(keep)){
-        test1 = ( abs(event_Mw_variable_mu[i] - event_magnitude) < (config_env$dMw*0.5) )
+        test1 = ( abs(event_Mw_variable_mu[i] - event_magnitude) < (config_env$dMw*1.5) )
         # FIXME: Consider replacing this with a check on whether peak_slip_downdip_ind 
         # is in the event set. Will that always be in the corresponding uniform
         # slip event?
@@ -283,10 +283,10 @@ find_events_near_point_fixed_mu<-function(
 
     # Events with the right magnitude. Allow for some rounding error, due to
     # the use of float's in the netcdf file. Also allow to select events that are
-    # 'within dMw/2' of the desired magnitude, which is relevant for variable mu cases.
+    # 'within dMw*1.5' of the desired magnitude, which is relevant for variable mu cases.
     # Use uniform slip events -- later, if use_stochastic_slip = TRUE, then
     # we will extract those events which correspond to the uniform ones to keep
-    keep = which(abs(earthquake_events$Mw - event_magnitude) < (config_env$dMw/2) )
+    keep = which(abs(earthquake_events$Mw - event_magnitude) < (config_env$dMw*1.5) )
     events_with_Mw = earthquake_events[keep, ]
  
     # Find indices of unit sources containing the hypocentre, and those within

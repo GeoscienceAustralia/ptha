@@ -304,7 +304,6 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     event_metadata = readRDS(paste0(event_basedir_uniform, '/event_metadata.RDS'))
     event_data_files = Sys.glob(paste0(event_basedir_uniform, '/gauge*.RDS'))
     
-    #pdf(paste0(basename(event_basedir_uniform),'.pdf'), width=10, height=15)
     uniform_slip_stats = list()
 
     # Loop over all gauges
@@ -326,7 +325,6 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
         }
     
     }
-    #dev.off()
     
     # Apply the plot for each gauge, stochastic slip
     event_metadata = readRDS(
@@ -735,12 +733,17 @@ for(dir_ind in 1:length(event_basedirs_uniform)){
     
     gauge_time_stat_S = matrix(NA, ncol=length(stochastic_slip_stats), 
         nrow=length(stochastic_slip_stats[[1]]))
-    gauge_time_stat_VU = gauge_time_stat_S
-
     for(i in 1:length(stochastic_slip_stats) ){
         for(j in 1:length(stochastic_slip_stats[[1]]) ){
             gauge_time_stat_S[j,i] = 
                 stochastic_slip_stats[[i]][[j]]$model_data_similarity_time
+        }
+    }
+
+    gauge_time_stat_VU = matrix(NA, ncol=length(variable_uniform_slip_stats), 
+        nrow=length(variable_uniform_slip_stats[[1]]))
+    for(i in 1:length(variable_uniform_slip_stats) ){
+        for(j in 1:length(variable_uniform_slip_stats[[1]]) ){
             gauge_time_stat_VU[j,i] = 
                 variable_uniform_slip_stats[[i]][[j]]$model_data_similarity_time
         }

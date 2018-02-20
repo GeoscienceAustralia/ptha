@@ -11,7 +11,7 @@ stopifnot(exists('event_basename'))
 # Uniform slip
 #
 
-for(variable_mu in c(TRUE, FALSE){
+for(variable_mu in c(TRUE, FALSE)){
 
     if(variable_mu){
         extra_name = '_varyMu'
