@@ -381,60 +381,85 @@ for(RdataFile in all_Rdata){
             allow_time_offset=(stat_name != 'spec')
             )
 
-    }
 
-    #
-    # Make gauges plots for EVERY event 
-    # We plot uniform / stochastic / variable uniform on each figure.
-    # Since introducing mu variation, there can be differing numbers of events
-    # between the stochastic and variable_uniform events. If we run out of events
-    # of the variable_uniform or stochastic variety, then we just keep plotting
-    # the last one
-    #
-
-    # Devise a mapping between the uniform slip events (no variation), and the
-    # corresponding stochastic and variable_uniform events
-    #uniform_event_rows = event_metadata$events_with_Mw$uniform_event_row
-    uniform_event_rows_stochastic = NGDC_comparison$stochastic$events$uniform_event_row
-    uniform_event_rows_variable_uniform = NGDC_comparison$variable_uniform$events$uniform_event_row
-
-    stopifnot(
-        length(uniform_event_rows_stochastic) == length(stochastic_slip_stats[[1]]))
-    stopifnot(
-        length(uniform_event_rows_variable_uniform) == length(variable_uniform_slip_stats[[1]]))
-    #stopifnot(
-    #    length(unique(uniform_event_rows)) == length(uniform_slip_stats[[1]]))
-
-    variable_to_uniform_stochastic = match(uniform_event_rows_stochastic, unique(uniform_event_rows))
-    variable_to_uniform_variable_uniform = match(uniform_event_rows_variable_uniform, unique(uniform_event_rows))
-
-    output_dir = 'event_fig'
-    dir.create(output_dir, showWarnings=FALSE)
-
-    n = max(length(variable_to_uniform_stochastic), length(variable_to_uniform_variable_uniform))
-
-    for(i in 1:n){
-        # Indices of corresponding uniform, stochastic, and variable uniform
-        # We plot the uniform event corresponding to the stochastic event, unless
-        # we have run out of stochastic events
-        if(n <= length(variable_to_uniform_stochastic)){
-            ui = variable_to_uniform_stochastic[i]
-        }else{
-            ui = variable_to_uniform_variable_uniform[i]
+        #
+        # Plot the 'second best' and 'third best' events at each gauge
+        #
+        for(rnk in c(2,3)){
+            si = which(rank(stoc_score_median) == rnk)
+            ui = which(rank(unif_score_median) == rnk)
+            vui = which(rank(vu_store_median) == rnk)
+           
+            if(rnk == 2){
+                file_head = 'second_best_fit'
+            }else if(rnk == 3){
+                file_head = 'third_best_fit'
+            } 
+            # Plot up as gauges
+            multi_gauge_time_series_plot(ui, si, vui, 
+                png_name_stub=paste0(file_head, stat_name, '_gauges_plot'),
+                allow_time_offset=(stat_name != 'spec')
+                )
+            ngdc_comparison_plot(ui, si, vui, 
+                png_name_stub=paste0(file_head, stat_name, '_NGDC_plot')
+                )
         }
-        si = min(i, length(variable_to_uniform_stochastic))
-        vui = min(i, length(variable_to_uniform_variable_uniform))
-
-        multi_gauge_time_series_plot(ui, si, vui, 
-            png_name_stub=paste0('event_', ui, '_', si, '_', vui, '_gauges_plot'),
-            output_dir=output_dir
-            )
-        ngdc_comparison_plot(ui, si, vui, 
-            png_name_stub=paste0('event_', ui, '_', si, '_', vui, '_NGDC_plot'),
-            output_dir=output_dir
-            )
 
     }
+
+    ## #
+    ## # Make gauges plots for EVERY event 
+    ## # We plot uniform / stochastic / variable uniform on each figure.
+    ## # Since introducing mu variation, there can be differing numbers of events
+    ## # between the stochastic and variable_uniform events. This code broke at that
+    ## # stage, and is not yet fixed
+    ## #
+    ## stop('FIXME HERE')
+    ## # Devise a mapping between the uniform slip events (no variation), and the
+    ## # corresponding stochastic and variable_uniform events
+    ## #uniform_event_rows = event_metadata$events_with_Mw$uniform_event_row
+    ## uniform_event_rows_stochastic = NGDC_comparison$stochastic$events$uniform_event_row
+    ## uniform_event_rows_variable_uniform = NGDC_comparison$variable_uniform$events$uniform_event_row
+
+    ## stopifnot(
+    ##     length(uniform_event_rows_stochastic) == length(stochastic_slip_stats[[1]]))
+    ## stopifnot(
+    ##     length(uniform_event_rows_variable_uniform) == length(variable_uniform_slip_stats[[1]]))
+    ## #stopifnot(
+    ## #    length(unique(uniform_event_rows)) == length(uniform_slip_stats[[1]]))
+
+    ## variable_to_uniform_stochastic = match(uniform_event_rows_stochastic, 
+    ##     unique(uniform_event_rows_stochastic))
+    ## variable_to_uniform_variable_uniform = match(uniform_event_rows_variable_uniform, 
+    ##     unique(uniform_event_rows_variable_uniform))
+
+    ## output_dir = 'event_fig'
+    ## dir.create(output_dir, showWarnings=FALSE)
+
+    ## n = max(length(variable_to_uniform_stochastic), length(variable_to_uniform_variable_uniform))
+
+    ## for(i in 1:n){
+    ##     # Indices of corresponding uniform, stochastic, and variable uniform
+    ##     # We plot the uniform event corresponding to the stochastic event, unless
+    ##     # we have run out of stochastic events
+    ##     if(n <= length(variable_to_uniform_stochastic)){
+    ##         ui = variable_to_uniform_stochastic[i]
+    ##     }else{
+    ##         ui = variable_to_uniform_variable_uniform[i]
+    ##     }
+    ##     si = min(i, length(variable_to_uniform_stochastic))
+    ##     vui = min(i, length(variable_to_uniform_variable_uniform))
+
+    ##     multi_gauge_time_series_plot(ui, si, vui, 
+    ##         png_name_stub=paste0('event_', ui, '_', si, '_', vui, '_gauges_plot'),
+    ##         output_dir=output_dir
+    ##         )
+    ##     ngdc_comparison_plot(ui, si, vui, 
+    ##         png_name_stub=paste0('event_', ui, '_', si, '_', vui, '_NGDC_plot'),
+    ##         output_dir=output_dir
+    ##         )
+
+    ## }
     
 
     # Remove nearly all objects, except the ones controlling the outer loop

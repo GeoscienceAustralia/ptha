@@ -199,6 +199,11 @@ find_events_near_point_variable_mu<-function(
         event_slips = sapply(events$event_slip_string, 
             f<-function(x) as.numeric(strsplit(x, '_')[[1]]), simplify=FALSE)
 
+        # Get the indices in the 'corresponding uniform slip' event
+        event_inds_uniform = sapply(earthquake_events$event_index_string,
+            f<-function(x) as.numeric(strsplit(x, '-')[[1]]), simplify=FALSE)
+        event_inds_uniform = event_inds_uniform[events$uniform_event_row]
+
     }else{
         # Uniform slip format. We extract data in the same form as would be used for variable slip
         events = earthquake_events
@@ -210,6 +215,11 @@ find_events_near_point_variable_mu<-function(
         for(i in 1:length(event_slips)){
             event_slips[[i]] = event_slips[[i]] * 0 + events$slip[i]
         }
+
+        # Get the indices in the 'corresponding uniform slip' event
+        # Obviously for uniform slip this is just 'event_inds', but for
+        # other slip styles it is different
+        event_inds_uniform = event_inds
 
     }
 
@@ -241,10 +251,11 @@ find_events_near_point_variable_mu<-function(
     keep = rep(FALSE, length(moment))
     for(i in 1:length(keep)){
         test1 = ( abs(event_Mw_variable_mu[i] - event_magnitude) < (config_env$dMw*1.5) )
-        # FIXME: Consider replacing this with a check on whether peak_slip_downdip_ind 
-        # is in the event set. Will that always be in the corresponding uniform
-        # slip event?
-        test2 = any( event_inds[[i]] %in% unit_sources_near_hypocentre)
+        # Keep events if the CORRESPONDING UNIFORM EVENT contained any unit sources near the hypocentre
+        # We do this to avoid bias due to the random event size. If we performed a similar test
+        # based on 'event_inds', then large, low slip events would have a disproportionately high
+        # chance of being selected because they have a larger area. This would distort the comparison
+        test2 = any( event_inds_uniform[[i]] %in% unit_sources_near_hypocentre)
         if(test1 & test2) keep[i] = TRUE 
     }
 
