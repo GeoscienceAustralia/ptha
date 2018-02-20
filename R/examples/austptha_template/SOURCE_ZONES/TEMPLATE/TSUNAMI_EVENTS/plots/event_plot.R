@@ -386,14 +386,14 @@ for(RdataFile in all_Rdata){
         # Plot the 'second best' and 'third best' events at each gauge
         #
         for(rnk in c(2,3)){
-            si = which(rank(stoc_score_median) == rnk)
-            ui = which(rank(unif_score_median) == rnk)
-            vui = which(rank(vu_store_median) == rnk)
+            si = order(stoc_score_median)[rnk]
+            ui = order(unif_score_median)[rnk]
+            vui = order(vu_score_median)[rnk]
            
             if(rnk == 2){
-                file_head = 'second_best_fit'
+                file_head = 'second_best_fit_'
             }else if(rnk == 3){
-                file_head = 'third_best_fit'
+                file_head = 'third_best_fit_'
             } 
             # Plot up as gauges
             multi_gauge_time_series_plot(ui, si, vui, 
