@@ -1,4 +1,10 @@
-all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*.Rdata')
+variable_mu = TRUE
+
+if(variable_mu){
+    all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*varyMu.Rdata')
+}else{
+    all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*[0-9].Rdata')
+}
 
 uniform_store = list()
 stochastic_store = list()
@@ -79,6 +85,16 @@ meds_uniform          = unlist(lapply(uniform_store         , f<-function(x) med
 # [1] 0.3333333 0.8333333 0.0000000 0.0000000 0.6666667 0.0000000 0.2142857
 # [8] 0.0000000 0.2894737 0.0000000 0.8333333 0.3030303 0.0000000 0.5000000
 # [15] 0.5000000
+## 4TH RUN 16 CASES Mw-variability-0.15
+# [1] 0.4722222 0.6388889 0.0000000 0.0000000 0.5263158 0.2500000 0.1481481
+# [8] 0.0000000 0.2268041 0.0000000 0.7125000 0.7311828 0.4040404 0.0000000
+# [15] 0.4901961 0.4375000
+## 5TH RUN 16 CASES mu-variability & Mw-variability-0.15
+# [1] 0.36666667 0.77419355 0.00000000 0.00000000 0.52631579 0.46153846
+# [7] 0.10000000 0.00000000 0.15217391 0.00000000 0.56944444 0.49450549
+# [13] 0.22666667 0.09090909 0.47706422 0.28409091
+
+
 meds_stochastic       = unlist(lapply(stochastic_store      , f<-function(x) median(colMeans(x$model > x$data))))
 ## PRELIMINARY
 # [1] 0.6444444 0.8944444 0.6176471 0.1111111 0.7952381 0.1761905 0.4438596 0.8244444 0.4939394 0.2825397 0.7595238 0.5833333
@@ -88,6 +104,15 @@ meds_stochastic       = unlist(lapply(stochastic_store      , f<-function(x) med
 # [1] 0.6222222 0.9277778 0.5549020 0.1000000 0.8555556 0.6333333 0.2714286
 # [8] 0.1000000 0.5175439 0.1777778 0.8566667 0.5464646 0.2380952 0.8309524
 #[15] 0.5190476
+## 4TH RUN 16 CASES Mw-variability-0.15
+# [1] 0.6314815 0.9185185 0.5725490 0.1500000 0.8175439 0.6000000 0.2827160
+# [8] 0.1222222 0.4927835 0.2353535 0.7650000 0.8275986 0.5569024 0.2676768
+# [15] 0.7823529 0.5533333
+## 5TH RUN 16 CASES mu-variability & Mw-variability-0.15
+# [1] 0.58880309 0.91990847 0.42026144 0.17880795 0.83082707 0.84615385
+# [7] 0.29446064 0.07246377 0.40831629 0.19553073 0.55456172 0.63519471
+# [13] 0.47129909 0.42986425 0.78581363 0.47242921
+
 meds_variable_uniform = unlist(lapply(variable_uniform_store, f<-function(x) median(colMeans(x$model > x$data))))
 ## PRELIMINARY
 # [1] 0.35555556 0.65555556 0.18823529 0.02222222 0.49047619 0.11904762 0.25964912 0.61666667 0.27474747 0.14920635 0.50714286 0.44047619
@@ -97,6 +122,101 @@ meds_variable_uniform = unlist(lapply(variable_uniform_store, f<-function(x) med
 # [1] 0.38888889 0.76111111 0.20588235 0.06666667 0.53333333 0.25000000
 # [7] 0.15476190 0.03750000 0.27017544 0.04444444 0.66000000 0.27777778
 #[13] 0.10476190 0.49047619 0.41190476
+## 4TH RUN 16 CASES Mw-variability-0.15
+# [1] 0.39444444 0.74074074 0.21895425 0.03888889 0.53684211 0.37777778
+# [7] 0.16419753 0.04722222 0.26735395 0.07878788 0.80000000 0.62473118
+# [13] 0.33905724 0.14141414 0.49477124 0.44166667
+## 5TH RUN 16 CASES mu-variability Mw-variability-0.15
+# [1] 0.37044146 0.72325581 0.15490196 0.07594937 0.52029520 0.61025641
+# [7] 0.16806723 0.04196643 0.18490823 0.04454976 0.59275618 0.44222222
+# [13] 0.26091954 0.24238876 0.52620690 0.34050445
+
+## SUMMARY OF 4TH RUN -- fixed mu & mw variability -- compare with similar variable mu run below
+## nk = c(2, 6) # Remove events with Mw < 7.8, so we can apply the analysis to 'all Mw>=7.8 events in 2007-2015'.
+## > summary(meds_variable_uniform[-nk])
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+## 0.03889 0.14710 0.30320 0.32770 0.48150 0.80000 
+## > summary(meds_stochastic[-nk])
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  0.1222  0.2714  0.5551  0.5041  0.7316  0.8276 
+## > summary(meds_uniform[-nk])
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##  0.0000  0.0000  0.3154  0.2964  0.4857  0.7312 
+#
+#
+## > ks.test(meds_uniform[-nk], 'punif')
+## 
+## 	One-sample Kolmogorov-Smirnov test
+## 
+## data:  meds_uniform[-nk]
+## D = 0.35714, p-value = 0.05623
+## alternative hypothesis: two-sided
+## 
+## Warning message:
+## In ks.test(meds_uniform[-nk], "punif") :
+##   ties should not be present for the Kolmogorov-Smirnov test
+## > ks.test(meds_stochastic[-nk], 'punif')
+## 
+## 	One-sample Kolmogorov-Smirnov test
+## 
+## data:  meds_stochastic[-nk]
+## D = 0.1724, p-value = 0.7385
+## alternative hypothesis: two-sided
+## 
+## > ks.test(meds_variable_uniform[-nk], 'punif')
+## 
+## 	One-sample Kolmogorov-Smirnov test
+## 
+## data:  meds_variable_uniform[-nk]
+## D = 0.3203, p-value = 0.08898
+## alternative hypothesis: two-sided
+
+
+
+#
+#
+## SUMMARY OF 5th RUN -- variable mu & mw variability -- compare with similar fixed mu run above
+## > nk = c(2, 6) # Remove events with Mw < 7.8.
+## > summary(meds_uniform[-nk])
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+## 0.00000 0.02273 0.18940 0.23480 0.44950 0.56940 
+## > summary(meds_stochastic[-nk])
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+## 0.07246 0.32290 0.45060 0.45280 0.58020 0.83080 
+## > summary(meds_variable_uniform[-nk])
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+## 0.04197 0.15820 0.25170 0.28330 0.42430 0.59280 
+##
+## > ks.test(meds_uniform[-nk], 'punif')
+## 
+## 	One-sample Kolmogorov-Smirnov test
+## 
+## data:  meds_uniform[-nk]
+## D = 0.43056, p-value = 0.01114
+## alternative hypothesis: two-sided
+## 
+## Warning message:
+## In ks.test(meds_uniform[-nk], "punif") :
+##   ties should not be present for the Kolmogorov-Smirnov test
+## > ks.test(meds_stochastic[-nk], 'punif')
+## 
+## 	One-sample Kolmogorov-Smirnov test
+## 
+## data:  meds_stochastic[-nk]
+## D = 0.22195, p-value = 0.4332
+## alternative hypothesis: two-sided
+## 
+## > ks.test(meds_variable_uniform[-nk], 'punif')
+## 
+## 	One-sample Kolmogorov-Smirnov test
+## 
+## data:  meds_variable_uniform[-nk]
+## D = 0.40724, p-value = 0.01302
+## alternative hypothesis: two-sided
+
+
+
+
 meds2_uniform          = (lapply(uniform_store         , f<-function(x) (colMeans(x$model > x$data))))
 meds2_stochastic       = (lapply(stochastic_store      , f<-function(x) (colMeans(x$model > x$data))))
 meds2_variable_uniform = (lapply(variable_uniform_store, f<-function(x) (colMeans(x$model > x$data))))
@@ -509,8 +629,11 @@ meds2_variable_uniform = (lapply(variable_uniform_store, f<-function(x) (colMean
 ## $gauge_summary_stats_session_sunda_sumatra_2010_04_06_Mw7.8.Rdata
 ## [1] 0.5714286 0.2523810
 
-save.image('model_data_envelope_summary_statistics.Rdata')
-
+if(variable_mu){
+    save.image('model_data_envelope_summary_statistics_varyMu.Rdata')
+}else{
+    save.image('model_data_envelope_summary_statistics.Rdata')
+}
 #
 # Info on number of unique models [since double-ups can occur, e.g.
 # if 2 variable_uniform slip models have the same area and Mw. This
