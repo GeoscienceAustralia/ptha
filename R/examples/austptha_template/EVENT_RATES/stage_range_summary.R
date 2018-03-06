@@ -270,21 +270,24 @@ score_gauge<-function(dta, fake_data_by_perturbing_random_model=FALSE){
     # For the data, get the rank of its stage-range at each gauge, and then apply
     # multi_gauge_summary_fun across all gauges
     if(!fake_data_by_perturbing_random_model){
+        # Typical case
         data_mat = dta$data
     }else{
+        # Testing-only case.
         # Make up some fake data by perturbing the model data. This is only
         # useful for testing the performance of the method (e.g. that the results
         # suggest the null hypothesis is satisfied, when it really is!)
+        #
         data_mat = dta$data * NA
         fake_data_ind = sample(1:length(dta$model[,1]), size=1)
         fake_data = dta$model[fake_data_ind,] + 1.0e-04*runif(nc)
         for(i in 1:nr) data_mat[i,] = fake_data
     }
-    data_summary = apply(dta$model < data_mat, 2, f<-function(x) sum(x)) # equivalent of 'model_ranks' for data
-    data_sum2 = multi_gauge_summary_fun(data_summary)
+    data_ranks = apply(dta$model < data_mat, 2, f<-function(x) sum(x)) # equivalent of 'model_ranks' for data
+    data_summary = multi_gauge_summary_fun(data_ranks)
 
     # This gives an empirical quantile of 'data statistic' relative to 'model statistic'
-    output = (sum(model_summary < data_sum2) + 0.5)/(length(model_summary)+1)
+    output = (sum(model_summary < data_summary) + 0.5)/(length(model_summary)+1)
 
     return(output)
 }
@@ -333,6 +336,5 @@ for(i in 1:NN){
 ad.test(p_store_stoc, punif)
 ad.test(p_store_unif, punif)
 ad.test(p_store_vary_unif, punif)
-
 
 
