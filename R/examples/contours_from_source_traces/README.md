@@ -25,7 +25,7 @@ The shapefile attribute tables contain some important parameters that are used t
         2. These dip values need to respect the concavity. For example if the concavity is 'Up', then the dip at the trench must be greater than the deeper dip; and conversely for concave down contours. Further, the parabola needs to intersect `Max_depth` (not necessarily true for 'Up' contours, see discussion below).
 
 ## Running the code
-Once the source-trace shapefiles are created, you should open the script [run_convert_traces_to_contours.R](run_convert_traces_to_contours.R), and edit the variable `source_traces` to point to the traces you'd like to convert to contours (this can contain one or more files). One that has been done, you run the code from the command line with:
+Once the source-trace shapefiles are created, you should open the script [run_convert_traces_to_contours.R](run_convert_traces_to_contours.R), and edit the variable `source_traces` to point to the traces you'd like to convert to contours (this can contain one or more files). Once that has been done, you run the code from the command line with:
 
     Rscript run_convert_traces_to_contours.R
 
