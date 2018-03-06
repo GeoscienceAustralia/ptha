@@ -9,7 +9,7 @@ other key fault parameters, but don't have higher quality information (such as S
 *Note the contours will generally require manual editing to remove kinks and other artefacts. We suggest this code be used as a starting point in the contour definition only.*
 
 ## Shapefile format
-Examples of the input shapefile are in the directories timor, tanimbar, and tolo_thrust.
+Examples of the input shapefile are in the directories [timor](timor), [tanimbar](tanimbar), and [tolo_thrust](tolo_thrust). These are examples only, and we do not claim that these inputs lead to a realistic representation of these source-zones. 
 
 Notice how the traces are ordered along-strike, with end-points of each trace segment matching.
 
@@ -19,9 +19,10 @@ The shapefile attribute tables contain some important parameters that are used t
 2. `Concavity`: Either 'Linear' or 'Up' or 'Down'. 
     * In the case of 'Linear', we assume the fault dips linearly. In this case, there needs to be an attribute named `Dip` which gives the dip of the fault in degrees 
     * In the case of 'Up' or 'Down', we assume the fault dips parabolically, either concave-up or concave-down. In this case you need to provide an attribute named `Dip_0` giving the dip (degrees) at the trench, and another attribute with a name like `Dip_10` giving the dip (degrees) at the depth specified after the underscore (i.e. 10km the latter example -- but you could specify any other depth that was less than `Max_depth` and greater than zero). The dip values need to respect the concavity. For example if the concavity is 'Up', then the dip at the trench must be greater than the deeper dip; and conversely for concave down contours.
+3. As discussed above, for 'Linear' concavity you need an attribute `Dip`, while for other concavities you need `Dip_0`, and `Dip_XX` where XX is the depth at which the dip is defined (e.g. `Dip_30` if the dip is specified at 30km depth)
 
 ## Running the code
-Once the contours are created, you should open the file [run_convert_traces_to_contours.R](run_convert_traces_to_contours.R), and edit the variable `source_traces` to point to the traces you'd like to convert to contours (this can contain one or more files). Then you run the code from the command line with:
+Once the source-trace shapefiles are created, you should open the script [run_convert_traces_to_contours.R](run_convert_traces_to_contours.R), and edit the variable `source_traces` to point to the traces you'd like to convert to contours (this can contain one or more files). One that has been done, you run the code from the command line with:
 
     Rscript run_convert_traces_to_contours.R
 
