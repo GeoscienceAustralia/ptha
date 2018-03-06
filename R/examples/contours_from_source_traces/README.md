@@ -32,7 +32,7 @@ Once the source-trace shapefiles are created, you should open the script [run_co
 The above command will make contour shapefiles in the CONTOURS directory, which should be further checked and edited to remove jagged artefacts.
 
 ## Troubleshooting
-The code tries to provide useful error messages. One problem I have seen repeatedly is that, in the case of a `Concavity`='Up' parabolic fault, the user may accidently specify parameters that do not allow the source to reach `Max_depth` (i.e. the parabola turning point occurs at a depth less than `Max_depth`). If that happens, you'll get an error message something like this, which tells you to edit the input data:
+The code tries to provide useful error messages. One problem I have seen repeatedly is that, in the case of a parabolic fault with `Concavity`='Up', the user may accidently specify parameters that do not allow the source to reach `Max_depth` (i.e. the parabola turning point occurs at a depth less than `Max_depth`). If that happens, you'll get an error message something like this, which tells you to edit the input data:
 
     OGR data source with driver: ESRI Shapefile
     Source: "tanimbar", layer: "tanimbar"
