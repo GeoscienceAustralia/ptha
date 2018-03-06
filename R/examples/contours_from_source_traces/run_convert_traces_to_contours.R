@@ -122,7 +122,7 @@ for(i in 1:length(source_traces)){
             ' has non-linear concavity, so must have exactly 2 attributes starting with',
             ' "Dip_" followed by the depth at which the dip applies. But it does not.'))
 
-        # Extract dip from name
+        # Extract depth from name
         dip_depths = as.numeric(sapply(names(mytrace)[dip_cols], 
             f<-function(x) as.numeric(strsplit(x, '_')[[1]][2])))
 
@@ -142,7 +142,7 @@ for(i in 1:length(source_traces)){
         mindepth = 0 # Constant
         mindepth_dip = as.numeric(mytrace$Dip_0) # Can vary
         # Dip at some depth
-        dip_depth = as.numeric(mytrace$Dip_0) * 0 + max(dip_depths) # Can vary
+        dip_depth = as.numeric(mytrace$Dip_0) * 0 + max(dip_depths) # Fixed by the shapefile format
         mytrace$Dip = as.numeric(mytrace@data[, dip_cols[which.max(dip_depths)]]) # Can vary
 
 
