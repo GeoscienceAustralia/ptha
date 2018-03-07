@@ -25,9 +25,7 @@ output_dir = 'CONTOURS'
 #
 ############################################################################
 
-library(raster)
-library(rgdal)
-library(rgeos)
+library(rptha)
 # Key computational routines
 source('collate_source_traces.R') 
 #
