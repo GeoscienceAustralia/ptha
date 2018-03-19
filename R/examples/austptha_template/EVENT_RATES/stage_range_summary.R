@@ -280,7 +280,11 @@ score_gauge<-function(dta, fake_data_by_perturbing_random_model=FALSE){
         #
         data_mat = dta$data * NA
         fake_data_ind = sample(1:length(dta$model[,1]), size=1)
-        fake_data = dta$model[fake_data_ind,] + 1.0e-04*runif(nc)
+        # Here is our random data -- a perturbation on a model result. Because
+        # the statistic is rank based, the size of the perturbation is not an
+        # issue, so long as it is 'small enough' to not push the random data 
+        # outside the typically observed range. 
+        fake_data = dta$model[fake_data_ind,] + 1.0e-04*(0.5 - runif(nc))
         for(i in 1:nr) data_mat[i,] = fake_data
     }
     data_ranks = apply(dta$model < data_mat, 2, f<-function(x) sum(x)) # equivalent of 'model_ranks' for data

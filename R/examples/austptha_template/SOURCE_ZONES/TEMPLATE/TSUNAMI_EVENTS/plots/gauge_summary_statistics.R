@@ -36,10 +36,15 @@ plot_model_gauge_vs_data_gauge<-function(
 
     # The data has a column 'allowed', which is FALSE before a manually
     # identified start time [used to skip over Rayleigh waves], and TRUE after.
-    min_allowed_data_index = min(which(event_data$gauge_obs$allowed))
+    # It goes FALSE again beyond the graphical window we used to extract DART data,
+    # which is often designed to finish and avoid some artefact
+    min_allowed_data_index = min(which(event_data$gauge_obs$allowed & (event_data$gauge_obs$zoom == 1)))
     obs_time_zero = max(obs_time_zero, 
         event_data$gauge_obs_times[min_allowed_data_index])
     obs_time_max = obs_time_zero + 3600 * (time_window_hrs) 
+    max_allowed_data_index = max(which(event_data$gauge_obs$allowed & (event_data$gauge_obs$zoom == 1)))
+    obs_time_max = min(obs_time_max, 
+        event_data$gauge_obs_times[max_allowed_data_index])
 
     # Identify the time region bounding where the DART sampling rate is <= 1
     # minutes
