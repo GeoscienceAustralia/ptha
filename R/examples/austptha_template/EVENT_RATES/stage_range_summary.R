@@ -241,11 +241,11 @@ for(i in 1:length(all_Rdata)){
 
 
 #
-# Score each event, by comparing the 'gauge-averaged' exceedance rate of
+# Score each event, by comparing the 'gauge-averaged' non-exceedance rate of
 # the observed stage range, to that predicted by the model
 #
 multi_gauge_summary_fun = median # mean 
-score_gauge<-function(dta, fake_data_by_perturbing_random_model=FALSE){
+score_gauge<-function(dta, fake_data_by_perturbing_random_model=FALSE, return_environment=FALSE){
     # For each model run, get the rank of its stage-range at each gauge, and then
     # apply multi_gauge_summary_fun across all gauges. 
     nr = nrow(dta$model)
@@ -293,7 +293,11 @@ score_gauge<-function(dta, fake_data_by_perturbing_random_model=FALSE){
     # This gives an empirical quantile of 'data statistic' relative to 'model statistic'
     output = (sum(model_summary < data_summary) + 0.5)/(length(model_summary)+1)
 
-    return(output)
+    if(return_environment){
+        return(environment())
+    }else{
+        return(output)
+    }
 }
 
 # Compute 'scores' for the data, for all observed events, with each earthquake generation type
@@ -301,20 +305,71 @@ stoc_fit = unlist(lapply(stochastic_store, score_gauge))
 unif_fit = unlist(lapply(uniform_store, score_gauge))
 vary_unif_fit = unlist(lapply(variable_uniform_store, score_gauge))
 
+# Plot results for all cases
+if(variable_mu){
+    pdf('Gauge_statistic_sampling_distributions_varyMu.pdf', width=10, height=2.5)
+}else{
+    pdf('Gauge_statistic_sampling_distributions.pdf', width=10, height=2.5)
+}
+
+for(i in 1:length(stoc_fit)){
+    par(mfrow=c(1,3))
+   
+    event_lab = gsub('gauge_summary_stats_session_', '', basename(all_Rdata[i]) )
+    # Variable uniform 
+    vary_unif_env = score_gauge(variable_uniform_store[[i]], return_environment=TRUE)
+    n = length(vary_unif_env$model_summary)
+    hist(vary_unif_env$model_summary/(n), col='green', main='Uniform slip stoc. size',
+        xlab=paste0('S ', event_lab))
+    abline(v=vary_unif_env$data_summary/(n), lwd=4)
+
+    # Uniform
+    unif_env = score_gauge(uniform_store[[i]], return_environment=TRUE)
+    n = length(unif_env$model_summary)
+    hist(unif_env$model_summary/(n), col='blue', main='Uniform slip fixed size',
+        xlab=paste0('S ', event_lab))
+    abline(v=unif_env$data_summary/(n), lwd=4)
+
+    # Stochastic slip
+    stoc_env = score_gauge(stochastic_store[[i]], return_environment=TRUE)
+    n = length(stoc_env$model_summary)
+    hist(stoc_env$model_summary/(n), col='red', main='Heterogeneous slip',
+        xlab=paste0('S ', event_lab))
+    abline(v=stoc_env$data_summary/(n), lwd=4)
+}
+dev.off()
+
 # Record events to remove {GCMT Mw < 7.7}. Nice because the sample becomes 'the
 # whole population of events > Mw 7.7 at DART 2007-2015' bar some aftershocks. 
 # Otherwise, we include a few Mw GCMT 7.6's, which were opportunistically included
 # because they were near Australia. Qualitative message is the same either way.
-nk = c(2, 6)
+nk = c(3, 8)
 # Just looking at these small samples, we see for unif and vary_unif, much
 # of the distribution is above 50% (corresponding to model underestimation)
 # ks.test seems too weak to distinguish this -- recall it is well known to
 # not have much tail influence. But the Anderson-Darling test
 # (which involves tail weighting) does better. 
 library(ADGofTest)
-ad.test(unif_fit[-nk], punif)
-ad.test(vary_unif_fit[-nk], punif)
-ad.test(stoc_fit[-nk], punif)
+unif_ad = ad.test(unif_fit[-nk], punif)
+unif_ad
+vary_unif_ad = ad.test(vary_unif_fit[-nk], punif)
+vary_unif_ad
+stoc_ad = ad.test(stoc_fit[-nk], punif)
+stoc_ad
+
+if(variable_mu){
+    pdf('Null_hypothesis_test_varyMu.pdf', width=10, height=3)
+}else{
+    pdf('Null_hypothesis_test.pdf', width=10, height=3)
+}
+par(mfrow=c(1,3))
+hist(unif_fit[-nk], col='blue', main='F(S) over all events, uniform slip fixed size', xlab='F(s)', xlim=c(0,1), ylim=c(0, 6))
+text(0.3, 5, paste0('p = ', signif(unif_ad$p.value, 3)), cex=2.0) 
+hist(vary_unif_fit[-nk], col='green', main='F(S) over all events, uniform slip stoch. size', xlab='F(s)', xlim=c(0,1), ylim=c(0,6))
+text(0.3, 5, paste0('p = ', signif(vary_unif_ad$p.value, 3)), cex=2.0) 
+hist(stoc_fit[-nk], col='red', main='F(S) over all events, heterogeneous slip', xlab='F(s)', xlim=c(0,1), ylim=c(0,6))
+text(0.2, 5, paste0('p = ', signif(stoc_ad$p.value, 3)), cex=2.0) 
+dev.off()
 
 #
 # Now test that if data is 'random', then the ad.test returns non-significant results
