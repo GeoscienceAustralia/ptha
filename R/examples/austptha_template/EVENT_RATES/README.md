@@ -72,7 +72,6 @@ of plate convergence.
 wave height exceedance rates for both stochastic slip and uniform slip, at a
 station. There are lots of useful disgnostic plots here that can help to understand the analysis.
 
-
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
 contains code to 'independently' calculate the stage exceedance rate curves at a point
 (i.e. not relying on the above codes [compute_station_hazard_curves.R](compute_station_hazard_curves.R)
@@ -85,6 +84,10 @@ using 2 different methods -- that's the idea behind this routine).
 at a chosen hazard point resulting from every single unit-source tsunami. It's
 useful as a sanity check on the tsunami model results.
 
+[convergence_rates_plots_comparison_methods.R](convergence_rates_plots_comparison_methods.R) can
+be used to graphically compare back-calculated convergence given different assumptions. The main
+purpose is to highlight the significance of edge-correction of event rates.
+
 ## Other routines
 
 [stage_range_summary.R](stage_range_summary.R) contains basic checks on the performance
@@ -94,6 +97,3 @@ of the uniform, stochastic, and variable uniform models vs DART measurements.
 place fixed-size earthquake events on a source-zone, so as to spatially match
 some idea of moment conservation.
 
-[convergence_rates_plots_comparison_methods.R](convergence_rates_plots_comparison_methods.R) can
-be used to graphically compare back-calculated convergence given different assumptions. The main
-purpose is to highlight the significance of edge-correction of event rates.
