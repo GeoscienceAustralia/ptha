@@ -94,3 +94,6 @@ of the uniform, stochastic, and variable uniform models vs DART measurements.
 place fixed-size earthquake events on a source-zone, so as to spatially match
 some idea of moment conservation.
 
+[convergence_rates_plots_comparison_methods.R](convergence_rates_plots_comparison_methods.R) can
+be used to graphically compare back-calculated convergence given different assumptions. The main
+purpose is to highlight the significance of edge-correction of event rates.
