@@ -182,8 +182,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # Coupling
     #
     if(config$use_uniform_coupling_prior){
-        # Agnostic approach, but avoid very low coupling (e.g to account for Cascadia type sites)
-        sourcepar$coupling   = c(0.3, 0.8, 1.3)      
+        sourcepar$coupling   = config$uniform_coupling_prior 
     }else{
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     }
