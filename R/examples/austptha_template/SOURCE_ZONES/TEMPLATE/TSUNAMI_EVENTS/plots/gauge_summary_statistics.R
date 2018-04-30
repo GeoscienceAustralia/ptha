@@ -48,7 +48,7 @@ plot_model_gauge_vs_data_gauge<-function(
     peak_stage_time = event_data$gauge_obs_times[peak_stage_index]
     # Do not start comparison later than "10min before peak data stage". May be overruled by the
     # 'min_allowed_data_index' later, or if the DART sampling frequency is too low.
-    latest_comparison_start_time = max(peak_stage_time - 10*60, 0) 
+    latest_comparison_start_time = max(as.double(peak_stage_time, units='secs') - 10*60, 0) 
     obs_time_zero = min(obs_time_zero, latest_comparison_start_time)
 
     # Adjust the beginning of the model-data comparison time to be within the
