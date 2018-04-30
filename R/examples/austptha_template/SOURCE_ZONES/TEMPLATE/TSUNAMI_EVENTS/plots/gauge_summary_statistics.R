@@ -39,10 +39,23 @@ plot_model_gauge_vs_data_gauge<-function(
     # It goes FALSE again beyond the graphical window we used to extract DART data,
     # which is often designed to finish and avoid some artefact
     min_allowed_data_index = min(which(event_data$gauge_obs$allowed & (event_data$gauge_obs$zoom == 1)))
+    max_allowed_data_index = max(which(event_data$gauge_obs$allowed & (event_data$gauge_obs$zoom == 1)))
+
+    # Do not allow the start of the model data comparison to occur AFTER the peak
+    # stage of the observation.
+    i1i2 = min_allowed_data_index:max_allowed_data_index
+    peak_stage_index = min_allowed_data_index -1 + which.max(event_data$gauge_obs$resid[i1i2])
+    peak_stage_time = event_data$gauge_obs_times[peak_stage_index]
+    # Do not start comparison later than "10min before peak data stage". May be overruled by the
+    # 'min_allowed_data_index' later, or if the DART sampling frequency is too low.
+    latest_comparison_start_time = max(peak_stage_time - 10*60, 0) 
+    obs_time_zero = min(obs_time_zero, latest_comparison_start_time)
+
+    # Adjust the beginning of the model-data comparison time to be within the
+    # allowed range of the data
     obs_time_zero = max(obs_time_zero, 
         event_data$gauge_obs_times[min_allowed_data_index])
     obs_time_max = obs_time_zero + 3600 * (time_window_hrs) 
-    max_allowed_data_index = max(which(event_data$gauge_obs$allowed & (event_data$gauge_obs$zoom == 1)))
     obs_time_max = min(obs_time_max, 
         event_data$gauge_obs_times[max_allowed_data_index])
 
