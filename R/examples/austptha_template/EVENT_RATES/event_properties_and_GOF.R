@@ -27,9 +27,11 @@ family_stats<-function(gauge_stats, unit_source_statistics){
 
     # Get the peak slip for each model scenario
     if('event_slip_string' %in% names(gauge_stats[[1]][[1]]$events_with_Mw)){
-        peak_slip_sum = unlist(lapply(gauge_stats[[1]], f<-function(x) max(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]]))))
+        peak_slip_sum = unlist(lapply(gauge_stats[[1]], 
+            f<-function(x) max(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]]))))
         # Mean slip 
-        mean_slip_sum = unlist(lapply(gauge_stats[[1]], f<-function(x) mean(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]]))))
+        mean_slip_sum = unlist(lapply(gauge_stats[[1]], 
+            f<-function(x) mean(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]]))))
     }else{
         peak_slip_sum = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$slip))
         mean_slip_sum = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$slip))
@@ -42,25 +44,25 @@ family_stats<-function(gauge_stats, unit_source_statistics){
             return(area)
         }))
 
-    # Length -- we find the alongstrike range of the event, and sum the near trench lengths
+    # Length -- we find the alongstrike range of the event, and count the near trench lengths
     length = unlist(lapply(gauge_stats[[1]], f<-function(x){
             inds = as.numeric(strsplit(x$events_with_Mw$event_index_string, '-')[[1]])
             alongstrike_range = range(unit_source_statistics$alongstrike_number[inds])
             inds2 = which(unit_source_statistics$alongstrike_number >= alongstrike_range[1] & 
                           unit_source_statistics$alongstrike_number <= alongstrike_range[2] & 
                           unit_source_statistics$downdip_number == 1)
-            length = sum(unit_source_statistics$length[inds2])
+            length = length(inds2) #sum(unit_source_statistics$length[inds2])
             return(length)
             }))
             
-    # width -- we find the downdip range of the event, and sum the widths at the least-along-strike location
+    # width -- we find the downdip range of the event, and count the widths at the least-along-strike location
     width = unlist(lapply(gauge_stats[[1]], f<-function(x){
             inds = as.numeric(strsplit(x$events_with_Mw$event_index_string, '-')[[1]])
             downdip_range = range(unit_source_statistics$downdip_number[inds])
             inds2 = which(unit_source_statistics$downdip_number >= downdip_range[1] & 
                           unit_source_statistics$downdip_number <= downdip_range[2] & 
                           unit_source_statistics$alongstrike_number == unit_source_statistics$alongstrike_number[inds[1]])
-            width = sum(unit_source_statistics$width[inds2])
+            width = length(inds2) #sum(unit_source_statistics$width[inds2])
             return(width)
             }))
             
@@ -69,15 +71,21 @@ family_stats<-function(gauge_stats, unit_source_statistics){
         # Variable slip
 
         # Corner wavenumbers
-        corner_wavenumber_x = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$physical_corner_wavenumber_x))
-        corner_wavenumber_y = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$physical_corner_wavenumber_y))
+        corner_wavenumber_x = unlist(lapply(gauge_stats[[1]], 
+            f<-function(x) x$events_with_Mw$physical_corner_wavenumber_x))
+        corner_wavenumber_y = unlist(lapply(gauge_stats[[1]], 
+            f<-function(x) x$events_with_Mw$physical_corner_wavenumber_y))
 
         # Peak slip location
-        peak_slip_downdip = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$peak_slip_downdip_ind))
-        peak_slip_alongstrike = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$peak_slip_alongstrike_ind))
-    }else{
-        # Both uniform slip models
+        peak_slip_downdip = unlist(lapply(gauge_stats[[1]], 
+            f<-function(x) x$events_with_Mw$peak_slip_downdip_ind))
+        peak_slip_alongstrike = unlist(lapply(gauge_stats[[1]], 
+            f<-function(x) x$events_with_Mw$peak_slip_alongstrike_ind))
 
+    }else{
+        #
+        # Both uniform slip models
+        #
         corner_wavenumber_x = width*NA
         corner_wavenumber_y = width*NA
 
@@ -142,4 +150,71 @@ names(variable_uniform_stat) = basename(all_Rdata)
 
 save.image('event_properties_and_GOF_session.Rdata')
 
+#
+# Useful plotting code below
+#
+
+# Plot the variables by rank, and highlight the 5 with 'best fit' in red
+myplot<-function(stat, rank_transform=FALSE){
+    stat = stat[rev(order(stat$gf)),] # Order to put the 'good' ones on top in the plot
+    if(rank_transform){
+        pairs(apply(stat, 2, rank), col=(rank(stat$gf) <= 5) + 1)
+    }else{
+        pairs(stat, col=(rank(stat$gf) <= 5) + 1)
+    }
+}
+
+# Do a 'myplot' type plot, for all events
+pdf_events_myplot<-function(stats, type=''){
+    file_name = paste0('Rank_statistic_plots_', type, '.pdf')
+    pdf(file_name, width=12, height=10)
+    for(i in 1:length(stats)){
+        par(oma=c(0,0,3,0))
+        # Plot the raw data. Often harder to see the 'spread' because
+        # points cluster around the distribution
+        myplot(stats[[i]])
+        title(names(stats)[i], outer=TRUE)
+        # Plot the data ranks. Easier to see if the good models are 'broadly uniformly'
+        # drawn from the data, or not
+        myplot(stats[[i]], rank_transform=TRUE)
+        title(names(stats)[i], outer=TRUE)
+    }
+    dev.off()
+}
+
+# Get the rank of the statistic for the n-'best' events
+# in terms of the other events.
+best_event_quantiles<-function(stats, nbest=3){
+
+    # Store a list (one entry per variable), each containing
+    # an array with one row for each event, and one column for
+    # each value of nbest
+    myvar = names(stats[[1]])
+    nvar = length(myvar) # 10 variables we look at
+    output = vector(mode='list', length=nvar)
+    names(output) = myvar
+    for(i in 1:length(myvar)){
+        output[[i]] = matrix(NA, ncol=nbest, nrow=length(stats))
+        rownames(output[[i]]) = names(stats)
+    }
+
+    for(j in 1:length(stats)){ # Every event
+        for(i in 1:nvar){ # Every variable
+            for(k in 1:nbest){ # best, 2nd best, ... nbest best.
+                # Get the i'th variable for the j'th event
+                var_of_interest = stats[[j]][[myvar[i]]]
+                # Find the one with goodness-of-fit rank = k (rank=1 is best-fit)
+                gof_value = stats[[j]][['gf']]
+                eoi = which(rank(gof_value, ties='first') == k)# Beware ties treatment
+                # Find the fraction of var_of_interest that are < this
+                empirical_fraction_less_than = 
+                    sum(var_of_interest <= var_of_interest[eoi])/(length(var_of_interest)+1)
+                if(is.na(empirical_fraction_less_than)) browser()
+                output[[i]][j,k] = empirical_fraction_less_than
+            }
+        }
+    }
+
+    return(output)
+}
 
