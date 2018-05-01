@@ -148,7 +148,11 @@ names(uniform_stat) = basename(all_Rdata)
 names(stochastic_stat) = basename(all_Rdata)
 names(variable_uniform_stat) = basename(all_Rdata)
 
-save.image('event_properties_and_GOF_session.Rdata')
+if(variable_mu){
+    save.image('event_properties_and_GOF_session_varyMu.Rdata')
+}else{
+    save.image('event_properties_and_GOF_session.Rdata')
+}
 
 #
 # Useful plotting code below
