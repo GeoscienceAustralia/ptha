@@ -186,7 +186,10 @@ find_events_near_point_variable_mu<-function(
 
     # Get event indices, event slips, and mus
     if(use_stochastic_slip_runs | use_variable_uniform_slip_runs){
+        #
         # Not uniform slip format
+        # Includes heterogeneous slip, and variable-size uniform slip
+        #
 
         if(use_stochastic_slip_runs){
             events = earthquake_events_stochastic
@@ -205,7 +208,10 @@ find_events_near_point_variable_mu<-function(
         event_inds_uniform = event_inds_uniform[events$uniform_event_row]
 
     }else{
-        # Uniform slip format. We extract data in the same form as would be used for variable slip
+        #
+        # Uniform slip fixed-size format. We extract data in the same form as
+        # would be used for variable slip
+        #
         events = earthquake_events
 
         event_inds = sapply(events$event_index_string, 
