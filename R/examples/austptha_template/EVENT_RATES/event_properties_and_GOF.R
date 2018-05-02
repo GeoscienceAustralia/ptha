@@ -226,6 +226,60 @@ pdf_events_statistics_plot<-function(stats, type=''){
     dev.off()
 }
 
+# Alternative plot showing statistics of 'good' events in comparison with
+# 'all simulated' events
+events_scaling_plot<-function(stats, title_extra=""){
+   
+    # Number of events we will call 'good' 
+    ng = 10
+
+    all_mw   = unlist(lapply(stats, f<-function(x) x$Mw))
+    good_mw   = unlist(lapply(stats, f<-function(x) x$Mw[order(x$gf)[1:ng]]))
+
+    all_vs_good<-function(var){
+        all_var = unlist(lapply(stats, f<-function(x) x[[var]]))
+        good_var = unlist(lapply(stats, f<-function(x) x[[var]][order(x$gf)[1:ng]]))
+
+        plot(all_mw, all_var, log='y', main=paste0(var, title_extra), 
+            col=rgb(0,0,0,alpha=0.05), pch=19, xlab="Mw", ylab=var)
+        points(good_mw, good_var, col='red', pch=19)
+
+        # Add quantiles of 'ambient' result
+        quants = c(0.05, 0.2, 0.5, 0.8, 0.95)
+        cols = c('purple', 'blue', 'green', 'blue', 'purple')
+        labels = c('Middle 90%', 'Middle 60%', 'median')
+        for(i in 1:length(quants)){
+            mw_ambient = aggregate(all_var, by=list(all_mw), f<-function(x) quantile(x, p=quants[i]))
+            LWD = 1#-2*abs(0.5-quants[i])**1.2 # line width
+            points(mw_ambient[,1], mw_ambient[,2], t='l', col=cols[i], lwd=LWD)
+        }
+        legend('bottomright', c('Models', 'Top 10 Models', labels), col=c('black', 'red', cols[1:3]), 
+            lty=c(NA, NA, rep('solid', 3)), pch=c(19, 19, rep(NA, 3)))
+        
+
+        return(invisible(environment()))
+    }
+
+    par(mfrow=c(2,3))
+    area = all_vs_good('area')
+    peak_slip = all_vs_good('peak_slip')
+    mean_slip = all_vs_good('mean_slip')
+    length = all_vs_good('length')
+    width = all_vs_good('width')
+    stage_range_median = all_vs_good('stage_range_median')
+
+    return(invisible(environment()))
+}
+
+#
+# Make the plot
+#
+pdf('event_properties_with_good_fitting_events.pdf', width=12, height=8)
+events_scaling_plot(stochastic_stat, title_extra=' heterogeneous slip')
+events_scaling_plot(variable_uniform_stat, title_extra=' variable_uniform slip')
+events_scaling_plot(uniform_stat, title_extra=' fixed_uniform slip')
+dev.off()
+
 # Get the rank of the statistic for the n-'best' events
 # in terms of the other events.
 best_event_quantiles<-function(stats, nbest=5){
@@ -255,7 +309,7 @@ best_event_quantiles<-function(stats, nbest=5){
                 # Find the fraction of var_of_interest that are < the value associated with 'eoi'
                 empirical_fraction_less_than = 
                     sum(var_of_interest <= var_of_interest[eoi])/(length(var_of_interest)+1)
-                if(is.na(empirical_fraction_less_than)) browser()
+                #if(is.na(empirical_fraction_less_than)) browser()
                 output[[i]][j,k] = empirical_fraction_less_than
             }
         }
@@ -263,4 +317,7 @@ best_event_quantiles<-function(stats, nbest=5){
 
     return(output)
 }
+
+
+
 
