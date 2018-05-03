@@ -187,7 +187,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     }
     # We may have put some weight on 'aseismic' behaviour in the magnitude range of interest
-    sourcepar$prob_Mmax_below_Mmin == as.numeric(sourcezone_parameters_row$prob_Mmax_below_Mmin)
+    sourcepar$prob_Mmax_below_Mmin = as.numeric(sourcezone_parameters_row$prob_Mmax_below_Mmin)
     if(sourcepar$prob_Mmax_below_Mmin == 0){
         sourcepar$coupling = approx(as.numeric(sourcepar$coupling), n=nbins)$y
         sourcepar$coupling_p = rep(1, nbins)/nbins
