@@ -186,6 +186,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     }else{
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     }
+    # We may have put some weight on 'aseismic' behaviour in the magnitude range of interest
+    sourcepar$prob_Mmax_below_Mmin == as.numeric(sourcezone_parameters_row$prob_Mmax_below_Mmin)
     if(sourcepar$prob_Mmax_below_Mmin == 0){
         sourcepar$coupling = approx(as.numeric(sourcepar$coupling), n=nbins)$y
         sourcepar$coupling_p = rep(1, nbins)/nbins
@@ -418,6 +420,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             #    gcmt_access$cmt_start_time_julianDay1900)/gcmt_access$days_in_year
             t = NULL # Censored likelihood is biased for rates, better to use poisson count approach.
         )
+
+        if(min(sourcepar$coupling) == 0) stop('Cannot have zero coupling logic tree branch when GCMT data is present')
     }else{
         gcmt_data_for_rate_function = list(Mw = NULL, t = NULL)
     }
