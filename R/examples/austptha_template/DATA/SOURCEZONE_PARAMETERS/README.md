@@ -193,7 +193,7 @@ cmin, cpref, cmax
 Three values which define the coupling-coefficients for the source-zone or
 segment that are used in the logic tree. 
 
-Beware that these values may or may not be used, depending on options in
+**Beware that these values may or may not be used**, depending on options in
 [../../EVENT_RATES/config.R](../../EVENT_RATES/config.R). Parameters in the latter
 file also allow for a greater range of coupling values to be used, by interpolating between
 the three provided values.
@@ -239,6 +239,13 @@ branches. See
 [../../EVENT_RATES/config.R](../../EVENT_RATES/config.R)
 
 This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
+
+
+prob_Mmax_below_Mmin
+----------------------
+
+The prior probability that the source zone does NOT have any seismicity above our Mw-min.
+This can be used to treat source-zones that might be inactive.
 
 notes
 ------
