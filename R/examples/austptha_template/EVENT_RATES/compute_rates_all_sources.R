@@ -186,8 +186,16 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     }else{
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     }
-    sourcepar$coupling = approx(as.numeric(sourcepar$coupling), n=nbins)$y
-    sourcepar$coupling_p = rep(1, length(sourcepar$coupling))/length(sourcepar$coupling)
+    if(sourcepar$prob_Mmax_below_Mmin == 0){
+        sourcepar$coupling = approx(as.numeric(sourcepar$coupling), n=nbins)$y
+        sourcepar$coupling_p = rep(1, nbins)/nbins
+    }else{
+        # We have a certain probability of '0' coupling.
+        p0 = sourcepar$prob_Mmax_below_Mmin
+        stopifnot(p0 > 0 & p0 <= 1 & nbins > 1)
+        sourcepar$coupling = c(0, approx(as.numeric(sourcepar$coupling), n=nbins-1)$y)
+        sourcepar$coupling_p = c(p0, rep(1-p0, (nbins-1))/(nbins-1) )
+    }
 
     #
     # Mw_max
