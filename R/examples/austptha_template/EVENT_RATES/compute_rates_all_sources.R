@@ -175,7 +175,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # Gutenberg Richter b-value
     #
     sourcepar$b = sourcezone_parameters_row[1, c('bmin', 'bpref', 'bmax')]
-    sourcepar$b = approx(as.numeric(sourcepar$b), n=nbins)$y
+    sourcepar$b = approx(as.numeric(sourcepar$b), n=nbins*config$b_subsampling_increase)$y
     sourcepar$b_p = rep(1, length(sourcepar$b))/length(sourcepar$b)
 
     #
@@ -192,7 +192,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # However, we assign probabilities consistent with a uniform distribution
     # (the log spacing is to improve numerical aspects of the discretization,
     # we are not claiming that log(coupling) is uniformly distributed)
-    sourcepar$coupling = exp(approx(log(as.numeric(sourcepar$coupling)), n=nbins)$y)
+    sourcepar$coupling = exp(approx(log(as.numeric(sourcepar$coupling)), n=nbins*config$coupling_subsampling_increase)$y)
     # Discretize the probabilities as a uniform distribution (NOT log-uniform!)
     bin_size = diff(c(min(sourcepar$coupling), sourcepar$coupling, max(sourcepar$coupling)), lag=2)/2
     sourcepar$coupling_p = bin_size/sum(bin_size)
@@ -278,7 +278,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     }
 
     # Interpolate
-    sourcepar$Mw_max = approx(sourcepar$Mw_max, n=nbins)$y
+    sourcepar$Mw_max = approx(sourcepar$Mw_max, n=nbins*config$mwmax_subsampling_increase)$y
 
     # Assign equal probabilities to all
     sourcepar$Mw_max_p = rep(1, length(sourcepar$Mw_max) )/length(sourcepar$Mw_max)
@@ -454,7 +454,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         sourcezone_total_area = sourcepar$area_in_segment, 
         event_table = event_table,
         event_conditional_probabilities = event_conditional_probabilities,
-        computational_increment = 0.01,
+        computational_increment = 0.02,
         Mw_frequency_distribution = Mw_frequency_dists,
         Mw_frequency_distribution_prob = Mw_frequency_dists_p,
         update_logic_tree_weights_with_data=config$update_logic_tree_weights_with_data,

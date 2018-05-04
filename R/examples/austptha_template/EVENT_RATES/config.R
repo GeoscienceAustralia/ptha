@@ -132,16 +132,24 @@ mw_observed_perturbation = 0.05
 Mw_frequency_distribution_types = c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')
 Mw_frequency_distribution_weights = c(0.7, 0.3) # Must sum to give 1.0
 
-
 #
 # Interpolate logic-tree parameter variation over this many values, all assumed to have
 # equal rate. For example, if we provide source_coupling = c(0.1, 0.2, 0.7), then the
-# actual coupling values will be "approx(source_coupling, n=logic_tree_parameter_subsampling_factor)$y"
+# actual coupling values will be computed as
+# >   k = logic_tree_parameter_subsampling_factor*coupling_subsampling_increase
+# >   approx(source_coupling, n=k)$y
 #
 # Beware the computational time scales with a high power of this number, so large values will
 # slow the computation greatly.
 #
 logic_tree_parameter_subsampling_factor = 20
+# Use these parameters to increase the number of bins for particular variables
+# e.g. a value of 2 would lead to (2*logic_tree_parameter_subsampling_factor) bins
+# for the given variable. This can be useful because you may need to use a finer
+# discretization for some variables than others.
+coupling_subsampling_increase = 1
+mwmax_subsampling_increase = 2
+b_subsampling_increase = 1
 
 # Inverse quantiles used for lower and upper credible intervals
 lower_ci_inv_quantile = 0.025
