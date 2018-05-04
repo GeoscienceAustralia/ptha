@@ -182,21 +182,30 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # Coupling
     #
     if(config$use_uniform_coupling_prior){
-        sourcepar$coupling   = config$uniform_coupling_prior 
+        sourcepar$coupling  = config$uniform_coupling_prior 
     }else{
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
     }
+
+    if(any(sourcepar$coupling == 0)) stop('Cannot treat coupling of zero, instead set prob_Mmax_below_Mmin > 0')
+    # Log spacing to equally resolve all coupling values in a relative sense
+    # However, we assign probabilities consistent with a uniform distribution
+    # (the log spacing is to improve numerical aspects of the discretization,
+    # we are not claiming that log(coupling) is uniformly distributed)
+    sourcepar$coupling = exp(approx(log(as.numeric(sourcepar$coupling)), n=nbins)$y)
+    # Discretize the probabilities as a uniform distribution (NOT log-uniform!)
+    bin_size = diff(c(min(sourcepar$coupling), sourcepar$coupling, max(sourcepar$coupling)), lag=2)/2
+    sourcepar$coupling_p = bin_size/sum(bin_size)
+
     # We may have put some weight on 'aseismic' behaviour in the magnitude range of interest
     sourcepar$prob_Mmax_below_Mmin = as.numeric(sourcezone_parameters_row$prob_Mmax_below_Mmin)
-    if(sourcepar$prob_Mmax_below_Mmin == 0){
-        sourcepar$coupling = approx(as.numeric(sourcepar$coupling), n=nbins)$y
-        sourcepar$coupling_p = rep(1, nbins)/nbins
-    }else{
+    if(sourcepar$prob_Mmax_below_Mmin > 0){
         # We have a certain probability of '0' coupling.
+        # Append that as an additional bin
         p0 = sourcepar$prob_Mmax_below_Mmin
-        stopifnot(p0 > 0 & p0 <= 1 & nbins > 1)
-        sourcepar$coupling = c(0, approx(as.numeric(sourcepar$coupling), n=nbins-1)$y)
-        sourcepar$coupling_p = c(p0, rep(1-p0, (nbins-1))/(nbins-1) )
+        stopifnot(p0 > 0 & p0 <= 1)
+        sourcepar$coupling = c(0, sourcepar$coupling)
+        sourcepar$coupling_p = c(p0, sourcepar$coupling_p * (1-p0))
     }
 
     #
@@ -911,7 +920,8 @@ for(i in 1:length(source_segment_names)){
 
     # Plot the by-earthquake-event rates, integrated. Should be 'the same' (up
     # to mw discretization) as the fitted curve
-    empirical_mean_curve = sapply(mw, f<-function(x) sum(source_envs[[i]]$event_rates * (source_envs[[i]]$event_table$Mw >= x)))
+    empirical_mean_curve = sapply(mw, 
+        f<-function(x) sum(source_envs[[i]]$event_rates * (source_envs[[i]]$event_table$Mw >= x)))
     points(mw, empirical_mean_curve, pch=19, cex=0.2, col='green')
 
     # Also read rates that were just written to file -- this will be for the whole source-zone

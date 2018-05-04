@@ -19,6 +19,8 @@ For more information on these parameters, see
 
 You also need to edit [config.R](config.R) in this folder, to set parameters
 used in the event rate computation. See the comments in that script for more details.
+*It is essential that users understand what these parameters do, otherwise your computation
+might be completely different to what you wanted!*
 
 Then, assuming everything is correctly configured, the codes can be run (on
 NCI) with:

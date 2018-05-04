@@ -181,7 +181,7 @@ convergent fraction of the plate boundary convergence rate in mm/year, for the
 entire source. 
 
 The implementation is very simple -- the tectonic_slip variable is multiplied
-by this before it is used. This means that e.g.  (tectonic_slip = 20,
+by this before it is used. This means that e.g. (tectonic_slip = 20,
 convergent_fraction=0.5) will give identical results to (tectonic_slip = 10,
 convergent_fraction=1). 
 
@@ -200,6 +200,16 @@ the three provided values.
 
 This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
+Do not make any of these values equal to zero. If you want zero coupling, then
+assign a nonzero value to prob_Mmax_below_Mmin. The reason for this is that we
+numerically discretize the coupling coefficients with a logarithmic spacing, so
+that in a relative sense we can resolve both small and low couplings. Obviously
+one cannot take the log of zero, so zero coupling is not allowed. This should
+NOT be interpreted to mean that log(coupling) is uniformly distributed. Rather,
+it is a numerical improvement to the discretization. We still use a uniform
+distribution to interpolate the prior density among the provided coupling
+values - but then we numerically discretize that density with a log spacing.
+
 cmin_p,cpref_p,cmax_p
 ---------------------
 
@@ -207,8 +217,8 @@ cmin_p,cpref_p,cmax_p
 for the source-zone or segment that are used in the logic tree. 
 
 *BEWARE CURRENTLY THESE VALUES ARE IGNORED, AND EACH COUPLING COEFFICIENT IS
-ASSIGNED THE SAME WEIGHT*. This can be changed by modifying code in
-[../../EVENT_RATES/compute_rates_all_sources.R](../../EVENT_RATES/compute_rates_all_sources.R)
+ASSIGNED THE SAME WEIGHT*.
+
 
 bmin, bpref, bmax
 -----------------
@@ -224,7 +234,7 @@ bmin_p,bpref_p,bmax_p
 **NOT USED.** Three values which define the weights of Gutenberg-Richter b values
 for the source-zone or segment that are used in the logic tree. 
 
-*BEWARE CURRENTLY THESE VALUES ARE IGNORED, AND EACH COUPLING COEFFICIENT IS
+*BEWARE CURRENTLY THESE VALUES ARE IGNORED, AND EACH b COEFFICIENT IS
 ASSIGNED THE SAME WEIGHT*. This can be changed by modifying code in
 [../../EVENT_RATES/compute_rates_all_sources.R](../../EVENT_RATES/compute_rates_all_sources.R)
 
@@ -245,7 +255,7 @@ prob_Mmax_below_Mmin
 ----------------------
 
 The prior probability that the source zone does NOT have any seismicity above our Mw-min.
-This can be used to treat source-zones that might be inactive.
+This can be used to treat source-zones that might be inactive. 
 
 notes
 ------

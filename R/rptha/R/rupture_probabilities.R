@@ -459,7 +459,6 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     }
     table_Mw_increment = table_Mw_increment[1]
 
-
     # Shorthand notation
     eq_Mw = event_table$Mw
     eq_slip = event_table$slip
