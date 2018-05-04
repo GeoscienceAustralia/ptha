@@ -933,7 +933,9 @@ for(i in 1:length(source_segment_names)){
     points(mw, empirical_mean_curve, pch=19, cex=0.2, col='pink')
 
     # Mean prior curve
-    mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)
+    #mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)
+    mean_prior_curve = apply(all_rate_curves$all_rate_matrix, 2, 
+        f<-function(x) weighted.mean(x, w=all_rate_curves$all_par_prob_prior))
     points(mw, mean_prior_curve, t='l', lwd=2, col='orange', lty='dashed')
 
     # Add empirical Mw-vs-rate for GCMT data

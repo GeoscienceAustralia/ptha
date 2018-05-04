@@ -102,12 +102,13 @@ This must be finalised before creating the tsunami events using the scripts in
 segment_boundary_alongstrike_index_lower
 ----------------------------------------
 
-This should be blank for unsegmented rows. On segments, it gives an integer, corresponding
-to the alongstrike-index of the unit-source where the segment begins. To select this value,
-you will need to look at the unit_source_grid shapefile that is created when
-running
+This should be blank for unsegmented rows. On segments, it gives an integer,
+corresponding to the alongstrike-index of the unit-source where the segment
+begins. To select this value, you will need to look at the unit_source_grid
+shapefile that is created when running
 [../../SOURCE_ZONES/TEMPLATE/EQ_SOURCE/produce_unit_sources.R](produce_unit_sources.R). It
-will show the locations of the unit sources, and have an attribute table with their alongstrike and downdip indices.
+will show the locations of the unit sources, and have an attribute table with
+their alongstrike and downdip indices.
 
 This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
