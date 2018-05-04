@@ -865,26 +865,27 @@ for(i in 1:length(source_envs)){
 #
 # OUTPUT RATES TO NETCDF FILES BELOW HERE
 #
+if(config$write_to_netcdf){
 
-# Zero rates in netcdf files by setting scale_rate to zero
-for(i in 1:length(source_segment_names)){
-    write_rates_to_event_table(source_envs[[i]], scale_rate = 0.0, add_rate=FALSE)
+    # Zero rates in netcdf files by setting scale_rate to zero
+    for(i in 1:length(source_segment_names)){
+        write_rates_to_event_table(source_envs[[i]], scale_rate = 0.0, add_rate=FALSE)
+    }
+    #
+    # Now add rates to netcdf files, scaled by the row_weight to allow multiple
+    # weighted models of the source-zone segmentation. Note we are adding epistemic
+    # credible intervals of rates here too. This is ok if the epistemic uncertainties
+    # are co-monotonic [i.e. 95% quantile of segmentA ==> 95% quantile of segmentB
+    # and segment C and the full source-zone]. That avoids risk-reduction through averaging,
+    # which seems a reasonable approach [given it's hard to specify 'correlations' between
+    # our epistemic uncertainties on different sources, but we could well imagine the 
+    # correlations not being zero]
+    #
+    for(i in 1:length(source_segment_names)){
+        rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
+        write_rates_to_event_table(source_envs[[i]], scale_rate = rate_scale, add_rate=TRUE)
+    }
 }
-#
-# Now add rates to netcdf files, scaled by the row_weight to allow multiple
-# weighted models of the source-zone segmentation. Note we are adding epistemic
-# credible intervals of rates here too. This is ok if the epistemic uncertainties
-# are co-monotonic [i.e. 95% quantile of segmentA ==> 95% quantile of segmentB
-# and segment C and the full source-zone]. That avoids risk-reduction through averaging,
-# which seems a reasonable approach [given it's hard to specify 'correlations' between
-# our epistemic uncertainties on different sources, but we could well imagine the 
-# correlations not being zero]
-#
-for(i in 1:length(source_segment_names)){
-    rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
-    write_rates_to_event_table(source_envs[[i]], scale_rate = rate_scale, add_rate=TRUE)
-}
-
 
 #
 # Plot all the rate curves to a single pdf

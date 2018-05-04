@@ -2,6 +2,11 @@
 # Set key user-defined parameters in this file
 #
 
+
+# Set this to FALSE for test/plotting based runs where I don't want to touch
+# the main netcdf files
+write_to_netcdf = TRUE
+
 #######################################################################################
 #
 # PARAMETERS CONTROLLING SELECTION OF EVENTS FROM GLOBAL CMT CATALOGUE
