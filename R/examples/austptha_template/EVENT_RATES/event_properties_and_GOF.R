@@ -82,6 +82,20 @@ family_stats<-function(gauge_stats, unit_source_statistics){
             return(width)
             }))
 
+
+    area_including_zeros  = unlist(lapply(gauge_stats[[1]], f<-function(x){
+            inds = as.numeric(strsplit(x$events_with_Mw$event_index_string, '-')[[1]])
+            downdip_range = range(unit_source_statistics$downdip_number[inds])
+            alongstrike_range = range(unit_source_statistics$alongstrike_number[inds])
+            k = which(
+                    unit_source_statistics$downdip_number >= downdip_range[1] &
+                    unit_source_statistics$downdip_number <= downdip_range[2] &
+                    unit_source_statistics$alongstrike_number >= alongstrike_range[1] &
+                    unit_source_statistics$alongstrike_number <= alongstrike_range[2] )
+            area = sum(unit_source_statistics$length[k] * unit_source_statistics$width[k])
+            return(area)
+        }))
+
     # Magnitude.
     if( 'Mw_variable_mu' %in% names(gauge_stats[[1]][[1]]$events_with_Mw) ){
         # Variable shear modulus case
@@ -137,6 +151,7 @@ family_stats<-function(gauge_stats, unit_source_statistics){
         area = area,
         length=length, 
         width=width, 
+        area_including_zeros = area_including_zeros,
         Mw = Mw,
         corner_wavenumber_x = corner_wavenumber_x, 
         corner_wavenumber_y = corner_wavenumber_y,
@@ -190,6 +205,7 @@ if(variable_mu){
 }else{
     save.image('event_properties_and_GOF_session.Rdata')
 }
+stop('Deliberate stop here')
 
 #
 # Useful plotting code below
@@ -231,7 +247,7 @@ pdf_events_statistics_plot<-function(stats, type=''){
 events_scaling_plot<-function(stats, title_extra=""){
    
     # Number of events we will call 'good' 
-    ng = 10
+    ng = 5
 
     all_mw   = unlist(lapply(stats, f<-function(x) x$Mw))
     good_mw   = unlist(lapply(stats, f<-function(x) x$Mw[order(x$gf)[1:ng]]))
@@ -318,6 +334,59 @@ best_event_quantiles<-function(stats, nbest=5){
     return(output)
 }
 
+#
+#
+#
+st2 = best_event_quantiles(stochastic_stat, nbest=5)
+vu2 = best_event_quantiles(variable_uniform_stat, nbest=5)
+uu2 = best_event_quantiles(uniform_stat, nbest=5)
 
+#
+#
+#
+quantile_adjuster<-function(st2, var, colind = 'mean'){
 
+    # Sort the quantiles for best, 2nd best, 3rd best, ...
+    sorted_var = apply(st2[[var]], 2, sort)
+
+    # Get mean of sorted rows. This gives a sense of the quantile-match between
+    # the 'good' events and 'all events'
+    if(colind == 'mean'){
+        mean_of_sorted = apply(sorted_var, 1, mean)
+    }else{
+        mean_of_sorted = sorted_var[,colind]
+    }
+    #stopifnot(all(diff(mean_of_sorted) > 0))
+
+    # For an unbiased model, mean_of_sorted should be reasonably close to the
+    # following
+    ideal = seq(1,length(mean_of_sorted))/(length(mean_of_sorted)+1) 
+
+    # We can fit a cubic that follows this curve. Note that the cubic
+    # f(x) = a*x + b*x^2 + (1-a-b)*x^3
+    # will always pass through 0 and 1. We can compute a/b by minimisation.
+    #
+    x = c(0, ideal, 1)
+    y = c(0, mean_of_sorted, 1)
+    cubic_01<-function(a,x) a[1]*x + a[2]*x^2 + (1-a[1]-a[2])*x^3
+    cubic_01_deriv<-function(a, x) a[1] + 2*a[2]*x + 3*(1-a[1]-a[2])*x^2
+    
+    best_parameters = optim(c(1, 0), f<-function(a) sum((cubic_01(a,x) - y)^2))
+
+    plot(x, y, xlim=c(0,1), ylim=c(0,1), xlab='Uniform [0-1]', 
+        ylab='Quantile of good fitting models \n relative to model family')
+    title(var)
+    xl = seq(0, 1, len=101)
+    points(xl, cubic_01(best_parameters$par, xl), t='l', col='red')
+    grid(); abline(0,1,col='green')
+
+}
+
+par(mfrow=c(3,4))
+quantile_adjuster(st2, 'area')
+for(i in 1:3) quantile_adjuster(st2, 'area', colind=i)
+quantile_adjuster(vu2, 'area')
+for(i in 1:3) quantile_adjuster(vu2, 'area', colind=i)
+quantile_adjuster(uu2, 'area')
+for(i in 1:3) quantile_adjuster(uu2, 'area', colind=i)
 
