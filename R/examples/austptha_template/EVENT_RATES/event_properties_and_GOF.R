@@ -260,12 +260,12 @@ events_scaling_plot<-function(stats, title_extra=""){
             col=rgb(0,0,0,alpha=0.05), pch=19, xlab="Mw", ylab=var)
         points(good_mw, good_var, col='red', pch=19)
 
-        # Add quantiles of 'ambient' result
+        # Add quantiles of 'ambient' result, for visual reference
         quants = c(0.05, 0.2, 0.5, 0.8, 0.95)
         cols = c('purple', 'blue', 'green', 'blue', 'purple')
         labels = c('Middle 90%', 'Middle 60%', 'median')
         for(i in 1:length(quants)){
-            mw_ambient = aggregate(all_var, by=list(all_mw), f<-function(x) quantile(x, p=quants[i]))
+            mw_ambient = aggregate(all_var, by=list(round(all_mw,1)), f<-function(x) quantile(x, p=quants[i]))
             LWD = 1#-2*abs(0.5-quants[i])**1.2 # line width
             points(mw_ambient[,1], mw_ambient[,2], t='l', col=cols[i], lwd=LWD)
         }
@@ -290,7 +290,11 @@ events_scaling_plot<-function(stats, title_extra=""){
 #
 # Make the plot
 #
-pdf('event_properties_with_good_fitting_events.pdf', width=12, height=8)
+if(variable_mu){
+    pdf('event_properties_with_good_fitting_events_varyMu.pdf', width=12, height=8)
+}else{
+    pdf('event_properties_with_good_fitting_events.pdf', width=12, height=8)
+}
 events_scaling_plot(stochastic_stat, title_extra=' heterogeneous slip')
 events_scaling_plot(variable_uniform_stat, title_extra=' variable_uniform slip')
 events_scaling_plot(uniform_stat, title_extra=' fixed_uniform slip')
@@ -335,16 +339,19 @@ best_event_quantiles<-function(stats, nbest=5){
 }
 
 #
-#
+# Find how the statistics of 'good' events are distributed, compared
+# with their 'corresponding family of model scenarios'
 #
 st2 = best_event_quantiles(stochastic_stat, nbest=5)
 vu2 = best_event_quantiles(variable_uniform_stat, nbest=5)
 uu2 = best_event_quantiles(uniform_stat, nbest=5)
 
 #
+# Estimate a possible bias correction for the models, based on
+# the summary_statistic 'var'
 #
-#
-quantile_adjuster<-function(st2, var, colind = 'mean'){
+quantile_adjuster<-function(st2, var, colind = 'mean', title_start=""){
+    library(ADGofTest)
 
     # Sort the quantiles for best, 2nd best, 3rd best, ...
     sorted_var = apply(st2[[var]], 2, sort)
@@ -374,19 +381,33 @@ quantile_adjuster<-function(st2, var, colind = 'mean'){
     best_parameters = optim(c(1, 0), f<-function(a) sum((cubic_01(a,x) - y)^2))
 
     plot(x, y, xlim=c(0,1), ylim=c(0,1), xlab='Uniform [0-1]', 
-        ylab='Quantile of good fitting models \n relative to model family')
-    title(var)
+        ylab='Quantile of good fitting models')
+    extra_title=""
+    # If we are only using a single column, add a p-value for uniformity
+    if(is.numeric(colind)) extra_title = signif(ad.test(mean_of_sorted)$p.value,3)
+    title(paste0(title_start, var, ' ', extra_title))
     xl = seq(0, 1, len=101)
     points(xl, cubic_01(best_parameters$par, xl), t='l', col='red')
     grid(); abline(0,1,col='green')
 
 }
 
-par(mfrow=c(3,4))
-quantile_adjuster(st2, 'area')
-for(i in 1:3) quantile_adjuster(st2, 'area', colind=i)
-quantile_adjuster(vu2, 'area')
-for(i in 1:3) quantile_adjuster(vu2, 'area', colind=i)
-quantile_adjuster(uu2, 'area')
-for(i in 1:3) quantile_adjuster(uu2, 'area', colind=i)
+#
+# Plot of the quantile adjustments
+#
+if(variable_mu){
+    pdf('quantile_adjustment_variable_mu.pdf', width=10, height=9)
+}else{
+    pdf('quantile_adjustment.pdf', width=10, height=9)
+}
 
+for(var in c('mean_slip', 'area', 'peak_slip', 'area_including_zeros')){
+    par(mfrow=c(3,4))
+    quantile_adjuster(st2, var, title_start='stoc ')
+    for(i in 1:3) quantile_adjuster(st2, var, colind=i, title_start='stoc ')
+    quantile_adjuster(vu2, var, title_start='VU ')
+    for(i in 1:3) quantile_adjuster(vu2, var, colind=i, title_start='VU ')
+    quantile_adjuster(uu2, var, title_start='U ')
+    for(i in 1:3) quantile_adjuster(uu2, var, colind=i, title_start='U ')
+}
+dev.off()
