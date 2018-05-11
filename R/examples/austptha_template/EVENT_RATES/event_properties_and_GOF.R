@@ -269,7 +269,7 @@ events_scaling_plot<-function(stats, title_extra=""){
             LWD = 1#-2*abs(0.5-quants[i])**1.2 # line width
             points(mw_ambient[,1], mw_ambient[,2], t='l', col=cols[i], lwd=LWD)
         }
-        legend('bottomright', c('Models', 'Top 10 Models', labels), col=c('black', 'red', cols[1:3]), 
+        legend('bottomright', c('Models', paste0('Top ', ng, ' Models'), labels), col=c('black', 'red', cols[1:3]), 
             lty=c(NA, NA, rep('solid', 3)), pch=c(19, 19, rep(NA, 3)))
         
 
