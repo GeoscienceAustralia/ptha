@@ -1,10 +1,10 @@
 #
-# See if there are any 'general' patterns between GOF statistics and event
-# properties. E.G. Maybe the 'good' events consistently have small area
+# See if there are any 'general' patterns between DART-buoy GOF statistics and
+# event properties. 
+# For instance, we might imagine the 'good' events consistently have small area
 # compared to the corresponding family, or low peak slip compared to the
-# corresponding family, etc.
-#
-# This might help us design better models, or filter out unrealistic events.
+# corresponding family, etc. If we find relationships like these, it
+# might help us design better models, or filter out unrealistic events.
 #
 
 #' Extract statistics from the "corresponding family of model scenarios"
@@ -17,7 +17,7 @@
 #' the rupture properties
 #' 
 #' @param gauge_stats object like 'stochastic_slip_stats' or 'uniform_slip_stats', etc, as created
-#' by the script gauge_summary_statistics.R {in e.g. SOURCE_ZONES/sourcename/TSUNAMI_EVENTS/plots/ }
+#' by the script gauge_summary_statistics.R {in e.g. SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/plots/ }
 #' @param unit_source_statistics the unit source statistics
 #'
 family_stats<-function(gauge_stats, unit_source_statistics){
@@ -28,6 +28,7 @@ family_stats<-function(gauge_stats, unit_source_statistics){
     # Convert from list of lists to matrix
     for(i in 1:length(gf_mat)) gf_mat[[i]] = unlist(gf_mat[[i]])
     gf_mat = matrix(unlist(gf_mat), ncol=length(gf_mat))
+    # Use the 'median GF over all dart buoys' as our GOF value
     gf_median = apply(gf_mat, 1, median)
 
     # Get the peak wave height (median over all darts). This is a crude indicator 
@@ -189,9 +190,12 @@ for(i in 1:length(all_Rdata)){
     load(all_Rdata[i], envir=event_env)
 
     # Main computation here
-    stochastic_stat[[i]] = family_stats(event_env$stochastic_slip_stats, event_env$unit_source_statistics)
-    uniform_stat[[i]] = family_stats(event_env$uniform_slip_stats, event_env$unit_source_statistics)
-    variable_uniform_stat[[i]] = family_stats(event_env$variable_uniform_slip_stats, event_env$unit_source_statistics)
+    stochastic_stat[[i]] = family_stats(event_env$stochastic_slip_stats, 
+        event_env$unit_source_statistics)
+    uniform_stat[[i]] = family_stats(event_env$uniform_slip_stats, 
+        event_env$unit_source_statistics)
+    variable_uniform_stat[[i]] = family_stats(event_env$variable_uniform_slip_stats, 
+        event_env$unit_source_statistics)
 }
 event_env = new.env() # Clear the memory
 # Put informative names on the lists
@@ -265,14 +269,15 @@ events_scaling_plot<-function(stats, title_extra=""){
         cols = c('purple', 'blue', 'green', 'blue', 'purple')
         labels = c('Middle 90%', 'Middle 60%', 'median')
         for(i in 1:length(quants)){
-            mw_ambient = aggregate(all_var, by=list(round(all_mw,1)), f<-function(x) quantile(x, p=quants[i]))
+            mw_ambient = aggregate(all_var, by=list(round(all_mw,1)), 
+                f<-function(x) quantile(x, p=quants[i]))
             LWD = 1#-2*abs(0.5-quants[i])**1.2 # line width
             points(mw_ambient[,1], mw_ambient[,2], t='l', col=cols[i], lwd=LWD)
         }
-        legend('bottomright', c('Models', paste0('Top ', ng, ' Models'), labels), col=c('black', 'red', cols[1:3]), 
-            lty=c(NA, NA, rep('solid', 3)), pch=c(19, 19, rep(NA, 3)))
+        legend('bottomright', c('Models', paste0('Top ', ng, ' Models'), labels), 
+            col=c('black', 'red', cols[1:3]), lty=c(NA, NA, rep('solid', 3)), 
+            pch=c(19, 19, rep(NA, 3)))
         
-
         return(invisible(environment()))
     }
 
@@ -326,7 +331,8 @@ best_event_quantiles<-function(stats, nbest=5){
                 # Find the one with goodness-of-fit rank = k (rank=1 is best-fit)
                 gof_value = stats[[j]][['gf']]
                 eoi = which(rank(gof_value, ties='first') == k)# Beware ties treatment
-                # Find the fraction of var_of_interest that are < the value associated with 'eoi'
+                # Find the fraction of var_of_interest that are < the value
+                # associated with 'eoi'
                 empirical_fraction_less_than = 
                     sum(var_of_interest <= var_of_interest[eoi])/(length(var_of_interest)+1)
                 #if(is.na(empirical_fraction_less_than)) browser()
@@ -342,19 +348,19 @@ best_event_quantiles<-function(stats, nbest=5){
 # Find how the statistics of 'good' events are distributed, compared
 # with their 'corresponding family of model scenarios'
 #
-st2 = best_event_quantiles(stochastic_stat, nbest=5)
-vu2 = best_event_quantiles(variable_uniform_stat, nbest=5)
-uu2 = best_event_quantiles(uniform_stat, nbest=5)
+stochastic_best_event_quantiles = best_event_quantiles(stochastic_stat, nbest=5)
+variable_uniform_best_event_quantiles = best_event_quantiles(variable_uniform_stat, nbest=5)
+uniform_best_event_quantiles = best_event_quantiles(uniform_stat, nbest=5)
 
 #
 # Estimate a possible bias correction for the models, based on
 # the summary_statistic 'var'
 #
-quantile_adjuster<-function(st2, var, colind = 'mean', title_start=""){
+quantile_adjuster<-function(stochastic_best_event_quantiles, var, colind = 'mean', title_start=""){
     library(ADGofTest)
 
     # Sort the quantiles for best, 2nd best, 3rd best, ...
-    sorted_var = apply(st2[[var]], 2, sort)
+    sorted_var = apply(stochastic_best_event_quantiles[[var]], 2, sort)
 
     # Get mean of sorted rows. This gives a sense of the quantile-match between
     # the 'good' events and 'all events'
@@ -375,21 +381,60 @@ quantile_adjuster<-function(st2, var, colind = 'mean', title_start=""){
     #
     x = c(0, ideal, 1)
     y = c(0, mean_of_sorted, 1)
-    cubic_01<-function(a,x) a[1]*x + a[2]*x^2 + (1-a[1]-a[2])*x^3
+    cubic_01<-function(a,x){
+        if(a[1] < 0) return(rep(9999, length(x)))
+        a[1]*x + a[2]*x^2 + (1-a[1]-a[2])*x^3
+    }
     cubic_01_deriv<-function(a, x) a[1] + 2*a[2]*x + 3*(1-a[1]-a[2])*x^2
-    
-    best_parameters = optim(c(1, 0), f<-function(a) sum((cubic_01(a,x) - y)^2))
 
-    plot(x, y, xlim=c(0,1), ylim=c(0,1), xlab='Uniform [0-1]', 
-        ylab='Quantile of good fitting models')
+    # We can also fit a '2-piece linear' function, as an alternative to the cubic
+    bi_linear<-function(a, x){ 
+        if(any(a>1 | a<0)) return(rep(99999, length(x)))
+        # Two-piece linear fit joining c(0,0), c(a[1], a[2]), c(1,1)
+        g1 = (a[2]-0)/(a[1]-0)
+        g2 = (1 - a[2])/(1 - a[1])
+        output = g1 * (x - 0)*(x <= a[1]) + (g2 * (x-1) + 1) * (x > a[1])
+        return(output)
+    }
+    bi_linear_deriv<-function(a,x){
+        if(any(a>1 | a<0)) return(rep(99999, length(x)))
+        # Two-piece linear fit joining c(0,0), c(a[1], a[2]), c(1,1)
+        g1 = (a[2]-0)/(a[1]-0)
+        g2 = (1 - a[2])/(1 - a[1])
+        
+        g1 * (x<=a[1]) + g2*(x>a[1])
+    }
+   
+    # Find the best parameters 
+    best_parameters = optim(c(1, 0), f<-function(a) sum((cubic_01(a,x) - y)^2))
+    best_parameters_bilinear = optim(c(0.5, 0.5), f<-function(a) sum((bi_linear(a,x) - y)^2))
+
+    plot(x, y, xlim=c(0,1), ylim=c(0,1), 
+        ylab='Q good relative to all ',
+        xlab='Q good relative to good')
     extra_title=""
     # If we are only using a single column, add a p-value for uniformity
-    if(is.numeric(colind)) extra_title = signif(ad.test(mean_of_sorted)$p.value,3)
+    if(is.numeric(colind)) extra_title = signif(ad.test(mean_of_sorted)$p.value, 3)
     title(paste0(title_start, var, ' ', extra_title))
-    xl = seq(0, 1, len=101)
-    points(xl, cubic_01(best_parameters$par, xl), t='l', col='red')
+    xl = seq(-0.001, 1.001, len=1001)
+    cubic_vals = cubic_01(best_parameters$par, xl) 
+    points(xl, cubic_vals, t='l', col='red')
     grid(); abline(0,1,col='green')
+    bilin_vals = bi_linear(best_parameters_bilinear$par, xl) 
+    points(xl, bilin_vals, t='l', col='purple')
 
+    #
+    # If the old event rates are uniform (in a group with events having quantile E_q),
+    # then the new rates are bias_adjustment_factor(E_q)/sum(bias_adjustment_factor(E_q))
+    # 
+    bias_adjustment_factor<-function(x){
+        (approx(cubic_vals, xl, xout=x)$y - approx(cubic_vals, xl, xout=x-1.0e-06)$y)/1.0e-06
+    }
+    bias_adjustment_factor_bilinear<-function(x){
+        (approx(bilin_vals, xl, xout=x)$y - approx(bilin_vals, xl, xout=x-1.0e-06)$y)/1.0e-06
+    }
+
+    return(invisible(environment()))
 }
 
 #
@@ -401,13 +446,22 @@ if(variable_mu){
     pdf('quantile_adjustment.pdf', width=10, height=9)
 }
 
-for(var in c('mean_slip', 'area', 'peak_slip', 'area_including_zeros')){
+stochastic_quantile_adjust = list()
+variable_uniform_quantile_adjust = list()
+uniform_quantile_adjust = list()
+for(var in c('mean_slip', 'area', 'area_including_zeros', 'peak_slip')){
     par(mfrow=c(3,4))
-    quantile_adjuster(st2, var, title_start='stoc ')
-    for(i in 1:3) quantile_adjuster(st2, var, colind=i, title_start='stoc ')
-    quantile_adjuster(vu2, var, title_start='VU ')
-    for(i in 1:3) quantile_adjuster(vu2, var, colind=i, title_start='VU ')
-    quantile_adjuster(uu2, var, title_start='U ')
-    for(i in 1:3) quantile_adjuster(uu2, var, colind=i, title_start='U ')
+    stochastic_quantile_adjust[[var]] = quantile_adjuster(stochastic_best_event_quantiles, var, title_start='stoc ')
+    for(i in 1:3) quantile_adjuster(stochastic_best_event_quantiles, var, colind=i, title_start='stoc ')
+    variable_uniform_quantile_adjust[[var]] = quantile_adjuster(variable_uniform_best_event_quantiles, var, title_start='VU ')
+    for(i in 1:3) quantile_adjuster(variable_uniform_best_event_quantiles, var, colind=i, title_start='VU ')
+    uniform_quantile_adjust[[var]] = quantile_adjuster(uniform_best_event_quantiles, var, title_start='U ')
+    for(i in 1:3) quantile_adjuster(uniform_best_event_quantiles, var, colind=i, title_start='U ')
 }
 dev.off()
+
+if(variable_mu){
+    save.image('event_properties_and_GOF_session_varyMu_end.Rdata')
+}else{
+    save.image('event_properties_and_GOF_session_end.Rdata')
+}
