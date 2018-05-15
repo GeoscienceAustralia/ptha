@@ -363,12 +363,18 @@ if(variable_mu){
     pdf('Null_hypothesis_test.pdf', width=10, height=3)
 }
 par(mfrow=c(1,3))
-hist(unif_fit[-nk], col='blue', main='F(S) over all events, uniform slip fixed size', xlab='F(s)', xlim=c(0,1), ylim=c(0, 6))
+hist(unif_fit[-nk], col='blue', 
+    main='F(S) over all events, uniform slip fixed size', 
+    xlab='F(s)', xlim=c(0,1), ylim=c(0, 6))
 text(0.3, 5, paste0('p = ', signif(unif_ad$p.value, 3)), cex=2.0) 
-hist(vary_unif_fit[-nk], col='green', main='F(S) over all events, uniform slip stoch. size', xlab='F(s)', xlim=c(0,1), ylim=c(0,6))
+hist(vary_unif_fit[-nk], col='green', 
+    main='F(S) over all events, uniform slip stoch. size', 
+    xlab='F(s)', xlim=c(0,1), ylim=c(0,6))
 text(0.3, 5, paste0('p = ', signif(vary_unif_ad$p.value, 3)), cex=2.0) 
-hist(stoc_fit[-nk], col='red', main='F(S) over all events, heterogeneous slip', xlab='F(s)', xlim=c(0,1), ylim=c(0,6))
-text(0.2, 5, paste0('p = ', signif(stoc_ad$p.value, 3)), cex=2.0) 
+hist(stoc_fit[-nk], col='red', 
+    main='F(S) over all events, heterogeneous slip', 
+    xlab='F(s)', xlim=c(0,1), ylim=c(0,6))
+text(0.2, 5, paste0('p = ', signif(stoc_ad$p.value, 3)), cex=2.0)
 dev.off()
 
 #
@@ -381,13 +387,16 @@ p_store_unif = rep(NA, NN)
 p_store_vary_unif = rep(NA, NN)
 for(i in 1:NN){
     print(i)
-    null_stoc_fit = unlist(lapply(stochastic_store, f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
+    null_stoc_fit = unlist(lapply(stochastic_store, 
+        f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
     p_store_stoc[i] = ad.test(null_stoc_fit[-nk], punif)$p.value
 
-    null_unif_fit = unlist(lapply(uniform_store, f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
+    null_unif_fit = unlist(lapply(uniform_store, 
+        f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
     p_store_unif[i] = ad.test(null_unif_fit[-nk], punif)$p.value
 
-    null_vary_unif_fit = unlist(lapply(variable_uniform_store, f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
+    null_vary_unif_fit = unlist(lapply(variable_uniform_store, 
+        f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
     p_store_vary_unif[i] = ad.test(null_vary_unif_fit[-nk], punif)$p.value
 }
 # The 'p_store_xxx' variables should look like random samples from a uniform

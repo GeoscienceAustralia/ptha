@@ -99,10 +99,11 @@ dMw = 0.1
 # Bounds on the Mw-max parameter used for each source zone.
 # For example, Berryman et al (2015) suggest Mw_max should be <= 9.6 everywhere.
 # No advice is given for normal faults, however, the largest observed normal
-# fault event was Mw 8.3 (Sumba 1977), vs 9.5 for thrust (Chile). Doglioni et al. (2015)
-# suggest that all else being equal, normal faults generate smaller earthquakes
-# than strike-slip or thrust faults. Burbidge et al (2008) used a maximum Mw-max of 9.0
-# for normal fault sources in their analysis.
+# fault event was Mw 8.5 (Sanriku 1933, see Okal et al., 2016), vs 9.5 for
+# thrust (Chile). Doglioni et al. (2015) suggest that all else being equal,
+# normal faults generate smaller earthquakes than strike-slip or thrust faults.
+# Burbidge et al (2008) used a maximum Mw-max of 9.0 for normal fault sources
+# in their analysis.
 #
 # The minimum_allowed_Mw_max value is not physical, but it should be greater than 
 # the smallest earthquakes we simulate on all source-zones, to ensure we have

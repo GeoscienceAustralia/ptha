@@ -90,6 +90,12 @@ useful as a sanity check on the tsunami model results.
 be used to graphically compare back-calculated convergence given different assumptions. The main
 purpose is to highlight the significance of edge-correction of event rates.
 
+[variable_mu_checks.R](variable_mu_checks.R) makes some plots to compare Mw-frequency curves
+with fixed and variable mu.
+
+[event_properties_and_GOF.R](event_properties_and_GOF.R) shows some investigation of relationships
+between rupture geometry and goodness-of-fit. 
+
 ## Other routines
 
 [stage_range_summary.R](stage_range_summary.R) contains basic checks on the performance

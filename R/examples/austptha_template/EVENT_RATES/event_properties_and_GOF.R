@@ -1,10 +1,19 @@
 #
 # See if there are any 'general' patterns between DART-buoy GOF statistics and
 # event properties. 
+#
 # For instance, we might imagine the 'good' events consistently have small area
 # compared to the corresponding family, or low peak slip compared to the
 # corresponding family, etc. If we find relationships like these, it
 # might help us design better models, or filter out unrealistic events.
+#
+# If we develop a bias-adjustment method, key questions are:
+# -- Does it still lead to good 'coverage statistics' for the 'corresponding family of model scenarios'?
+#    -- Can test this by applying the method within the statistical tests code
+# -- How does the hazard from the 'corrected' stochastic and variable-uniform slip models compare?
+#    -- Can test this by applying the method at a few sites, before applying it fully
+#
+#
 #
 
 #' Extract statistics from the "corresponding family of model scenarios"
@@ -216,15 +225,19 @@ stop('Deliberate stop here')
 #
 
 # For a single event, plot the variables for all models (by value, or by rank),
-# and highlight the 5 with 'best fit' in red. This helps us 'eyeball'
+# and highlight the 'top few (ng=...)' with 'best fit' in red. This helps us 'eyeball'
 # relations, e.g. to notice if the good models always have a 'low' or 'high'
 # value of the statistic
 event_statistics_plot<-function(stat, rank_transform=FALSE){
+
+    # Number of 'best fit' scenarios to highlight in red
+    ng = 5
+
     stat = stat[rev(order(stat$gf)),] # Order to put the 'good' ones on top in the plot
     if(rank_transform){
-        pairs(apply(stat, 2, rank), col=(rank(stat$gf) <= 5) + 1)
+        pairs(apply(stat, 2, rank), col=(rank(stat$gf) <= ng) + 1)
     }else{
-        pairs(stat, col=(rank(stat$gf) <= 5) + 1)
+        pairs(stat, col=(rank(stat$gf) <= ng) + 1)
     }
 }
 
@@ -305,15 +318,17 @@ events_scaling_plot(variable_uniform_stat, title_extra=' variable_uniform slip')
 events_scaling_plot(uniform_stat, title_extra=' fixed_uniform slip')
 dev.off()
 
-# Get the rank of the statistic for the n-'best' events
-# in terms of the other events.
+#
+# Get the rank of the statistic for the n-'best' events in terms of the other
+# events in the corresponding family of model scenarios
+#
 best_event_quantiles<-function(stats, nbest=5){
 
     # Store a list (one entry per variable), each containing
     # an array with one row for each event, and one column for
     # each value of nbest
     myvar = names(stats[[1]])
-    nvar = length(myvar) # 10 variables we look at
+    nvar = length(myvar) # number of variables we look at
     output = vector(mode='list', length=nvar)
     names(output) = myvar
     # Prepare data structure
