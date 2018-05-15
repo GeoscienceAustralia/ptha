@@ -686,7 +686,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
                 stopifnot(all(density_above_Mw_obs_threshold >= 0))
 
-                # Use linear interpolation to compute the density
+                # Add the Mw-related log-likelihood terms to the full log likelihood
                 log_dens_values = log(density_above_Mw_obs_threshold)
                 log_pr_data_given_model[i] = log_pr_data_given_model[i] + (sum(log_dens_values))
             }
@@ -712,6 +712,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
     }
 
+    # Optionally, ENFORCE mw-max-posterior to be mw-max prior.
+    # A user might want to do this e.g. if they want a fixed uncertainty in Mw-max, 
+    # irrespective of the data. Obviously this option is not a pure Bayesian update.
     if(mw_max_posterior_equals_mw_max_prior){
         if(!is.na(Mw_count_duration[1])){
             if( any((Mw_max_prob > 0) & (Mw_max < Mw_count_duration[1])) ){
