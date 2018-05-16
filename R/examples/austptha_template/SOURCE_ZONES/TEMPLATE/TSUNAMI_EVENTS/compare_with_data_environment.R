@@ -165,15 +165,15 @@ find_events_near_point_variable_mu<-function(
     }
 
     # Compute shear modulus given depth
-    mu_fun<-function(dpth){
-        ## Point values based on plot of Lay and Bilek (2007), limited to 10GPA in shallow areas
-        ## See
-        #/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Shear_modulus
-        depths = c(0, 7.5, 15, 35, 9999)
-        mu = c(10, 10, 30, 67, 67)*1e+09
-        output = 10**(approx(depths, log10(mu), xout=dpth)$y)
-        return(output)
-    }
+    #mu_fun<-function(dpth){
+    #    ## Point values based on plot of Lay and Bilek (2007), limited to 10GPA in shallow areas
+    #    ## See
+    #    #/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Shear_modulus
+    #    depths = c(0, 7.5, 15, 35, 9999)
+    #    mu = c(10, 10, 30, 67, 67)*1e+09
+    #    output = 10**(approx(depths, log10(mu), xout=dpth)$y)
+    #    return(output)
+    #}
 
     #
     # Compute Mw, considering variation in shear modulus
@@ -181,7 +181,8 @@ find_events_near_point_variable_mu<-function(
 
     # Preliminary variables from unit-source statistics
     depth = unit_source_statistics$depth
-    mu_variable = mu_fun(depth)
+    #mu_variable = mu_fun(depth)
+    mu_variable = shear_modulus_depth(depth)
     area = unit_source_statistics$length*unit_source_statistics$width
 
     # Get event indices, event slips, and mus

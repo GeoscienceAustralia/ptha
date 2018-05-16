@@ -18,18 +18,18 @@ match_file<-function(files, file){
     return(files[ind])
 }
 
-#
-# Variable shear modulus function
-#
-mu_fun<-function(dd){
-    # Point values based on plot of Lay and Bilek (2007)
-    # See
-    #/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Shear_modulus
-    depths = c(0, 7.5, 15, 35, 9999)
-    mu = c(10, 10, 30, 67, 67)*1e+09
-    output = 10**(approx(depths, log10(mu), xout=dd)$y)
-    return(output)
-}
+##
+## Variable shear modulus function
+##
+#mu_fun<-function(dd){
+#    # Point values based on plot of Lay and Bilek (2007)
+#    # See
+#    #/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Shear_modulus
+#    depths = c(0, 7.5, 15, 35, 9999)
+#    mu = c(10, 10, 30, 67, 67)*1e+09
+#    output = 10**(approx(depths, log10(mu), xout=dd)$y)
+#    return(output)
+#}
 
 #
 # Plot function
@@ -64,7 +64,8 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
     #
     depth = sourcezone_events$unit_source_statistics$depth
     mu_constant = depth * 0 + 3e+10
-    mu_variable = mu_fun(depth)
+    #mu_variable = mu_fun(depth)
+    mu_variable = shear_modulus_depth(depth)
     area = sourcezone_events$unit_source_statistics$length * 
         sourcezone_events$unit_source_statistics$width
     # Pre-allocate memory and populate in loop
