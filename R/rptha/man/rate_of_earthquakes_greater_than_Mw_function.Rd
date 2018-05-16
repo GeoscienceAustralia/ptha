@@ -162,7 +162,7 @@ Only one of these optional arguments can be passed at a time.
 \description{
 Create a function f(Mw) which returns the rate of events with 
 magnitude >= Mw. Here Mw is a vector of earthquake magnitudes. \cr
-The user provides parameters for a variant of the truncated Gutenberg Richter
+The user provides parameters for a variant of the Gutenberg Richter
 model, although the parameter 'a' is adjusted to match the long-term
 seismogenic slip rate (m/year). Details are explained below. \cr
 To account for uncertainties in the GR model parameters, the user may specify

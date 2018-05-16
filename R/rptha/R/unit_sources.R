@@ -1641,3 +1641,179 @@ find_unit_source_index_containing_point<-function(point_xy,
 
     return(unit_source_statistics$subfault_number[output_ind])
 }
+
+#' Vertical variation of shear modulus with depth
+#'
+#' Contains models of the shear modulus (Pascals) as a function of depth (km)
+#'
+#' @param depth vector of depths in km. See below for interpretation
+#' @param type curve type. 
+#' @return Shear modulus (Pa) at each provided depth value. Options are 'default'
+#' 
+#' @details type='default' is a fit by eye to a running median of Bilek and
+#' Lay's (1999) variable rigidity data, with a lower limit of 10GPa for depths
+#' less than 7.5km (reflecting values used to model tsunamis in a few shallow
+#' earthquakes, Geist and Bilek, 2001), and an upper limit of 67 GPa for depths
+#' above 35km (reflecting values from PREM, Dziewonski and Anderson 1981). Note
+#' that 'depth' for this type is interpreted as 'depth below solid earth'. \cr 
+#' type='prem' gives the PREM values from table 4 (second part) of Dziewonski and Anderson 1981.
+#' Note that 'depth' here is 'depth below MSL'.
+#'
+#' @export
+#' @examples
+#'    # Make up some depths
+#'    depth_values = c(0, 7.5, 15, 35, 100) 
+#'    # Get the shear modulus at each
+#'    mu = shear_modulus_depth(depth_values, type='default')
+#'    # Note the test below illustrates how mu varies with depth in this 'default' model
+#'    stopifnot(all(abs(mu - c(10, 10, 30, 67, 67)*1e+09) < 1))
+#'
+#'    #
+#'    # Compare the default model with Bilek and Lay (1999) data. 
+#'    #
+#'    bl99 = BilekLay99_magnitude_depth_duration()
+#'    #
+#'    # Shear modulus estimate, End-member 1. 
+#'    # Often called the 'constant stress drop' model
+#'    #
+#'    rho = 2.7e+03 # kg/m^3
+#'    L = 10000 # m
+#'    # Note the use of a 'normalised duration' in the paper
+#'    normalised_duration = bl99$Duration * (M0_2_Mw(6.0, inverse=TRUE)/M0_2_Mw(bl99$Mw, inverse=TRUE))**(1/3)
+#'    mu = rho * L^2 / (0.8 * normalised_duration)**2 # (Equation 4 in the paper)
+#'
+#'    plot(bl99$Depth, mu, log='y', xlab='Depth (km) ', ylab='Shear modulus (Pa)')
+#'    # Assume bl99 gives depth below MSL, and that ocean depth is ~ 4km
+#'    points(seq(0,100)+4, shear_modulus_depth(seq(0,100)), t='l', col='green')
+#'    # Get a moving median of mu, in 2km depth bins
+#'    depth_bins = round(bl99$Depth/2)
+#'    moving_median = aggregate(mu, list(depth_bins), median)
+#'    points(moving_median[,1]*2, moving_median$x, t='o', col='orange')
+#'    # Common mean value for subduction zones
+#'    abline(h=3e+10, col='black')
+#'    # PREM
+#'    points(seq(1,99, by=0.1), shear_modulus_depth(seq(1,99, by=0.1), type='prem'), t='l', col='blue')
+#'
+#'    legend('bottomright', 
+#'        c('Shear modulus (Constant Stress Drop model)', 'Median in 2km depth bins', 
+#'            'Model, with depth adjusted to MSL assuming 4km ocean depth', '30 GPa', 
+#'            'PREM (not designed for subduction interfaces)'), 
+#'        pch=c(1, 1, NA, NA, NA), lty=c(NA, 1, 1, 1, 1), col=c('black', 'orange', 'green', 'black', 'blue'))
+#'
+shear_modulus_depth<-function(depth, type='default'){
+
+    if(type == 'default'){
+
+        # This is an approximate fit to Bilek and Lay's data, with a lower
+        # limit of 10 GPa (below 7.5km depth), and an upper limit of 67 GPa
+        # (above 35km depth).
+        depths_curve = c(0, 7.5, 15, 35, 9999)
+        mu_curve = c(10, 10, 30, 67, 67)*1e+09
+        output = 10**(approx(depths_curve, log10(mu_curve), xout=depth)$y)
+
+    }else if(type == 'prem'){
+        # Table 4 (bottom) of Dziewonski and Anderson 1981
+        depths_curve = c(0, 3, 3.0001, 15, 15.0001, 24.4, 24.4001, 40, 60, 80, 80.001, 100.0)
+        vs = c(0, 0, 3.191, 3.191, 3.889, 3.889, 4.438, 4.472, 4.464, 4.457, 4.376, 4.369)
+        dens = c(1.02, 1.02, 2.6, 2.6, 2.9, 2.9, 3.38, 3.38, 3.38, 3.37, 3.37, 3.37)
+        # mu = vs^2 * rho
+        mu = (vs*1e+03)**2 * dens*1e+03
+
+        output = 10**(approx(depths_curve, log10(mu), xout=depth)$y)
+
+    }else{
+
+        stop(paste0('Did not recognize shear modulus depth curve type = ', type))
+
+    }
+
+    return(output)
+}
+
+#' Data on earthquake magnitude, depth, and rupture duration
+#'
+#' This function returns magnitude, depth, duration, and site
+#' from the data in the supplementary material of the paper
+#' "Bilek and Lay (1999) Rigidity variations with depth along interplate
+#' megathrust faults in subduction zones, Nature, 400:443-446". 
+#'
+#' @return A data.frame with columns 'Mw' (magnitude), 'Depth' (km), 'Duration'
+#' (s), and 'Site'
+#'
+#' @export
+#'
+BilekLay99_magnitude_depth_duration<-function(){
+
+    structure(list(Mw = c(5.63, 6.31, 5.5, 5.87, 5.94, 5.63, 5.17, 
+    6.15, 5.41, 5.54, 6.95, 5.33, 6.41, 6.21, 6.14, 5.87, 6.38, 5.35, 
+    5.47, 5.96, 5.67, 6.18, 5.92, 5.98, 5.59, 6.89, 5.98, 5.38, 6.16, 
+    6.38, 5.65, 5.85, 5.2, 6.44, 5.83, 6.33, 5.95, 5.26, 6.14, 5.8, 
+    5.6, 6.6, 5.2, 5.5, 5.8, 5.3, 6, 5.4, 5.7, 5.6, 6.6, 5.7, 5.46, 
+    5.96, 5.83, 5.25, 5.57, 5.57, 5.88, 6.49, 5.42, 5.48, 5.49, 6.28, 
+    5.63, 5.78, 5.37, 5.41, 5.32, 6.7, 5.56, 5.81, 5.94, 5.3, 5.33, 
+    6.46, 6.16, 6.29, 5.64, 5.77, 5.46, 5.51, 5.79, 6.16, 5.56, 5.59, 
+    5.71, 5.52, 5.74, 5.5, 6.05, 5.64, 6.86, 5.5, 5.6, 5.78, 6.14, 
+    5.68, 5.98, 6.05, 6.58, 5.98, 5.85, 6.13, 5.92, 5.9, 5.99, 5.32, 
+    5.88, 6.92, 6.32, 6, 6.77, 6.2, 6.3, 5.9, 6.7, 5.4, 6.6, 5.52, 
+    5.83, 5.51, 5.86, 7.09, 5.57, 5.95, 5.78, 7.34, 5.68, 6.6, 6.45, 
+    6.03, 5.46, 5.2, 5.32, 6.1, 5.6, 5.71, 5.92, 6.18, 5.87, 5.68, 
+    5.74, 6.67, 6.57, 5.78, 5.65, 5.6, 5.78, 5.6, 6.45, 6.4, 5.56, 
+    5.75, 5.72, 7.21, 6.01, 5.74, 6.72, 5.45, 5.59, 5.28, 5.74, 5.97, 
+    5.47, 5.67, 6.3, 5.76, 5.74, 5.8, 6.27, 6.35, 7.29, 7.1, 5.7, 
+    5.8, 6.1, 5.5, 5.8, 5.6, 6.1, 5.9, 7.7, 6.3, 5.6, 5.5, 5.8, 6, 
+    6, 6.2, 6.3, 6.4, 6.6, 6.2, 5.7, 6.3, 6, 5.7, 6.8, 5.7, 5.5, 
+    5.5, 6.1, 5.9, 6.6, 5.7, 5.7, 6.6, 5.7, 5.7, 5.7, 6.3, 5.8, 6, 
+    5.7, 5.1, 6.1, 5.5, 6, 5.7, 5.9, 5.9, 5.6, 5.6, 6.6, 5.9, 6, 
+    5.7, 5.6, 6), Depth = c(21L, 14L, 12L, 31L, 6L, 12L, 7L, 8L, 
+    8L, 43L, 37L, 4L, 9L, 6L, 6L, 33L, 5L, 44L, 41L, 30L, 32L, 5L, 
+    13L, 18L, 12L, 7L, 14L, 41L, 47L, 50L, 15L, 17L, 28L, 14L, 24L, 
+    7L, 12L, 44L, 9L, 8L, 33L, 16L, 18L, 7L, 28L, 16L, 13L, 33L, 
+    13L, 17L, 20L, 33L, 20L, 32L, 34L, 38L, 17L, 17L, 19L, 31L, 16L, 
+    35L, 32L, 7L, 7L, 8L, 7L, 17L, 18L, 21L, 7L, 15L, 7L, 29L, 17L, 
+    10L, 36L, 8L, 20L, 8L, 9L, 29L, 7L, 10L, 10L, 15L, 37L, 15L, 
+    38L, 20L, 39L, 33L, 23L, 28L, 36L, 14L, 7L, 36L, 10L, 16L, 21L, 
+    15L, 17L, 17L, 5L, 29L, 38L, 27L, 32L, 30L, 18L, 10L, 15L, 5L, 
+    24L, 7L, 9L, 20L, 19L, 17L, 12L, 8L, 6L, 11L, 16L, 19L, 17L, 
+    22L, 7L, 22L, 13L, 20L, 20L, 7L, 14L, 25L, 10L, 13L, 27L, 20L, 
+    21L, 11L, 7L, 16L, 25L, 5L, 16L, 24L, 17L, 14L, 13L, 13L, 7L, 
+    13L, 20L, 13L, 7L, 7L, 11L, 22L, 10L, 19L, 20L, 13L, 8L, 10L, 
+    22L, 15L, 6L, 21L, 10L, 10L, 11L, 23L, 16L, 25L, 19L, 6L, 12L, 
+    9L, 22L, 11L, 24L, 9L, 32L, 21L, 39L, 40L, 12L, 17L, 27L, 46L, 
+    30L, 41L, 14L, 7L, 7L, 15L, 21L, 7L, 13L, 24L, 38L, 6L, 44L, 
+    28L, 5L, 20L, 18L, 23L, 22L, 20L, 22L, 20L, 19L, 21L, 6L, 38L, 
+    29L, 19L, 38L, 47L, 34L, 21L, 49L, 9L, 27L, 33L, 26L, 9L), Duration = c(1L, 
+    4L, 3L, 3L, 6L, 3L, 1L, 8L, 2L, 1L, 6L, 5L, 7L, 6L, 5L, 3L, 7L, 
+    2L, 1L, 3L, 2L, 8L, 4L, 6L, 3L, 10L, 4L, 1L, 1L, 1L, 3L, 4L, 
+    9L, 4L, 1L, 4L, 3L, 1L, 9L, 6L, 1L, 10L, 2L, 9L, 3L, 1L, 4L, 
+    1L, 7L, 2L, 10L, 1L, 2L, 3L, 3L, 1L, 3L, 3L, 5L, 7L, 3L, 3L, 
+    3L, 9L, 8L, 8L, 6L, 2L, 3L, 6L, 9L, 3L, 11L, 2L, 1L, 13L, 3L, 
+    11L, 2L, 11L, 8L, 3L, 7L, 13L, 6L, 4L, 3L, 4L, 1L, 3L, 3L, 1L, 
+    6L, 2L, 1L, 3L, 10L, 2L, 6L, 5L, 7L, 4L, 4L, 3L, 14L, 5L, 3L, 
+    1L, 3L, 6L, 5L, 9L, 9L, 12L, 1L, 7L, 12L, 2L, 6L, 2L, 3L, 4L, 
+    5L, 13L, 3L, 3L, 3L, 10L, 5L, 4L, 8L, 2L, 3L, 5L, 3L, 5L, 3L, 
+    3L, 3L, 4L, 3L, 3L, 4L, 11L, 7L, 6L, 3L, 4L, 4L, 3L, 8L, 6L, 
+    4L, 4L, 2L, 12L, 8L, 7L, 10L, 2L, 3L, 3L, 4L, 7L, 4L, 3L, 6L, 
+    4L, 6L, 4L, 9L, 7L, 11L, 7L, 4L, 1L, 3L, 6L, 4L, 5L, 3L, 7L, 
+    7L, 7L, 2L, 2L, 1L, 4L, 9L, 3L, 1L, 2L, 6L, 1L, 4L, 9L, 6L, 3L, 
+    11L, 4L, 1L, 1L, 3L, 11L, 1L, 2L, 9L, 5L, 2L, 1L, 3L, 5L, 2L, 
+    3L, 3L, 2L, 8L, 1L, 3L, 2L, 1L, 3L, 3L, 2L, 2L, 6L, 3L, 1L, 2L, 
+    6L), Site = structure(c(4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 
+    4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 
+    4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 4L, 1L, 1L, 1L, 
+    1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+    1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+    1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+    1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 
+    1L, 1L, 1L, 1L, 1L, 1L, 1L, 1L, 5L, 5L, 5L, 5L, 5L, 5L, 5L, 5L, 
+    5L, 5L, 5L, 5L, 5L, 5L, 5L, 5L, 5L, 5L, 5L, 5L, 5L, 2L, 2L, 2L, 
+    2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 
+    2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 2L, 
+    2L, 2L, 2L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 6L, 
+    6L, 6L, 6L, 6L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 
+    3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 
+    3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L, 3L), .Label = c("Alaska", 
+    "CentralAmerica", "Chile", "Japan", "Mexico", "Peru"), class = "factor")), .Names = c("Mw", 
+    "Depth", "Duration", "Site"), class = "data.frame", row.names = c(NA, 
+    -230L))
+
+}

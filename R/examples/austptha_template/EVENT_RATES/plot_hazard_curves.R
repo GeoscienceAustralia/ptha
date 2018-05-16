@@ -391,8 +391,9 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
             rate_sum = rate_sum + ncvar_get(rates[[i]], varname, 
                 start=c(1,site_index), count=c(-1,1))
         }
-
-        stage_exceed = approx(rate_sum, stage_seq, xout=exceedance_rate)$y
+        # Note rate_sum might finish with repeated zeros. Ensure the 'min' of
+        # stage_seq having zero rate is used for interpolation in this region
+        stage_exceed = approx(rate_sum, stage_seq, xout=exceedance_rate, ties='min')$y
     }
     # If exceedance rate is not provided, then stage must be
     if(!is.null(stage)){

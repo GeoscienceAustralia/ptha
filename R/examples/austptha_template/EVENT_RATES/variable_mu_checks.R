@@ -110,7 +110,10 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
     Mw_mu_vary = M0_2_Mw(moment2)
 
     # Here we compute the exceedance rate
-    mws = seq(7.15, 9.95, by=0.01)
+    Mw_bin_size = 0.1
+    # Note our fixed-mu Mws range 7.2, 7.3, ...
+    # These rates can be interpreted as representing a 'bin' of events
+    mws = seq(7.15, 9.95, by=Mw_bin_size) 
     rate_mu_fixed = sapply(mws, f<-function(x) sum(sourcezone_events$events$rate_annual * (Mw_mu_fixed >= x)))
     rate_mu_fixed_lower = sapply(mws, f<-function(x) sum(sourcezone_events$events$rate_annual_lower_ci * (Mw_mu_fixed >= x)))
     rate_mu_fixed_upper = sapply(mws, f<-function(x) sum(sourcezone_events$events$rate_annual_upper_ci * (Mw_mu_fixed >= x)))
@@ -123,6 +126,8 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
     grid()
     title(paste0('Rates with fixed and variable mu, ', sourcezone))
 
+    abline(h=c(1/500, 1/1000, 1/2500), col='brown', lty='dotted')
+
     # Return the key data as output
     output = data.frame(mws=mws, rate_mu_fixed=rate_mu_fixed, rate_mu_vary=rate_mu_vary)
     return(output)
@@ -133,6 +138,8 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
 # Main run code
 #
 all_source_zones = sort(unique(sourcezone_parameters$sourcename))
+rate_curves_store = vector(mode='list', length=length(all_source_zones))
+names(rate_curves_store) = all_source_zones
 
 pdf('Mw_rate_curves_with_and_without_mu_variation.pdf', width=10, height=8)
 for(i in 1:length(all_source_zones)){
@@ -154,6 +161,8 @@ for(i in 1:length(all_source_zones)){
         global_rates[,2:3] = global_rates[,2:3] + tmp[,2:3]
     }
 
+    # Store the results
+    rate_curves_store[[i]] = tmp
 }
 #
 # Plot the globally integrated rate
@@ -166,5 +175,18 @@ title('Globally integrated rates')
 
 dev.off()
 
+save.image('variable_mu_checks_session.Rdata')
 
+# Look at how much mw changes at different return periods as a result of varying mu
+# We generally see a small shift that doesn't change much with return period, but
+# varies by source-zone.
+mw_change = lapply(rate_curves_store, 
+    f<-function(x){ try(
+        # Note that x[,2] and x[,3] are rates, which are decreasing but might
+        # finish with a collection of zeros. In that case, we want to use the 
+        # minimum magnitude corresponding to rate=0 for interpolation. The ties='min'
+        # argument takes care of that.
+        approx(x[,2], x[,1], xout=c(1/100, 1/500, 1/1000, 1/2500), ties='min')$y - 
+        approx(x[,3], x[,1], xout=c(1/100, 1/500, 1/1000, 1/2500), ties='min')$y
+    )} )
 
