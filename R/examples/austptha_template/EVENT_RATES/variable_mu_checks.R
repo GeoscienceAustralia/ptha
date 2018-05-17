@@ -227,11 +227,12 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
 
         # Compute stage-vs-rate with various rate adjustment factors
         stages = rates_dart$stage
-        rates_raw = sapply(stages, f<-function(x) sum(event_rate * (max_stage_dart$max_stage > x)))
-        rates_1 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_peak_slip_fixed_mu * (max_stage_dart$max_stage > x)))
-        rates_2 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_peak_slip_variable_mu * (max_stage_dart$max_stage > x)))
-        rates_3 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_area_including_zeros_fixed_mu * (max_stage_dart$max_stage > x)))
-        rates_4 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_area_including_zeros_variable_mu * (max_stage_dart$max_stage > x)))
+        event_stages = max_stage_dart[[1]]$max_stage
+        rates_raw = sapply(stages, f<-function(x) sum(event_rate * (event_stages > x)))
+        rates_1 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_peak_slip_fixed_mu * (event_stages > x)))
+        rates_2 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_peak_slip_variable_mu * (event_stages > x)))
+        rates_3 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_area_including_zeros_fixed_mu * (event_stages > x)))
+        rates_4 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_area_including_zeros_variable_mu * (event_stages > x)))
 
         plot(stages, rates_raw, log='xy', ylim=c(1.0e-05, 1), xlim=c(0.01, 10), t='l')
         points(stages, rates_1, t='l', col='red')
@@ -239,7 +240,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
         points(stages, rates_3, t='l', col='blue')
         points(stages, rates_4, t='l', col='orange')
         grid()
-        abline(h=c(1/500, 1/1000, 1/2500, 1/10000))
+        abline(h=c(1/500, 1/1000, 1/2500, 1/10000), col='pink', lty='dashed')
         legend('bottomleft', 
             c('Raw', 'slip_fixed_mu', 'slip_v_mu', 'area_fixed_mu', 'area_v_mu'),
             col=c('black', 'red', 'green', 'blue', 'orange'),
