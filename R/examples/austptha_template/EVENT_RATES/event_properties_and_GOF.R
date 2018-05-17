@@ -184,7 +184,7 @@ if(variable_mu){
     all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*[0-9].Rdata')
 }
 print(paste0(' Remove the normal fault Mw 7.7 from Kermadec, and the 7.65, so that \n',
-    ' we consistently examine 'thrust-like' events that are above Mw 7.7 by GCMT. '))
+    ' we consistently examine thrust-like events that are above Mw 7.7 by GCMT. '))
 all_Rdata = all_Rdata[-c(3,8),]
 
 # Store the statistics in a list (one entry per historical event)
