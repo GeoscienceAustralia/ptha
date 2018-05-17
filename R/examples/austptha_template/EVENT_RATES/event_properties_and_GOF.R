@@ -326,7 +326,7 @@ dev.off()
 # events in the corresponding family of model scenarios which have peak-slip-location
 # near the location of the top-nbest events
 #
-best_event_quantiles<-function(stats, nbest=5){
+best_event_quantiles<-function(stats, nbest=3){
 
     # Store a list (one entry per variable), each containing
     # an array with one row for each event, and one column for
@@ -383,9 +383,9 @@ best_event_quantiles<-function(stats, nbest=5){
 # Find how the statistics of 'good' events are distributed, compared
 # with their 'corresponding family of model scenarios'
 #
-stochastic_best_event_quantiles = best_event_quantiles(stochastic_stat, nbest=5)
-variable_uniform_best_event_quantiles = best_event_quantiles(variable_uniform_stat, nbest=5)
-uniform_best_event_quantiles = best_event_quantiles(uniform_stat, nbest=5)
+stochastic_best_event_quantiles = best_event_quantiles(stochastic_stat, nbest=3)
+variable_uniform_best_event_quantiles = best_event_quantiles(variable_uniform_stat, nbest=3)
+uniform_best_event_quantiles = best_event_quantiles(uniform_stat, nbest=3)
 
 #
 # Estimate a possible bias correction for the models, based on
