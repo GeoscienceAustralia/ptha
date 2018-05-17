@@ -85,7 +85,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
 
     }else{
 
-        stop('Unknown slip type')
+        stop(paste0('Unsupported slip type "', slip_type, '" (should be either "stochastic" or "variable_uniform")'))
 
     }
 
