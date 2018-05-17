@@ -304,7 +304,7 @@ plot(global_rates[,1], pmax(global_rates[,2], 1e-100), t='o', log='y',
     ylim=c(1e-04,10), xlab="Mw", ylab='Exceedance rate')
 points(global_rates[,1], pmax(global_rates[,3], 1e-100), t='l', col='red')
 grid()
-title('Globally integrated rates')
+title('Globally integrated rates (ignoring non-Strasser sources)')
 
 dev.off()
 
