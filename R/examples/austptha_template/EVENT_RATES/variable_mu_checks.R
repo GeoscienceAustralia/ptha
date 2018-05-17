@@ -222,10 +222,12 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
     for(i in 1:nrow(nearby_points)){
 
         # Get the peak stage
+        # Firstly read an exceedance rate curve (although we only use the stages, and the index of the nearest point)
         rates_dart = ptha$get_stage_exceedance_rate_curve_at_hazard_point(
             target_point = nearby_points[i,])
         max_stage_dart = ptha$get_peak_stage_at_point_for_each_event(
-            target_index = rates_dart$target_index, all_source_names=sourcezone)
+            target_index = rates_dart$target_index, all_source_names=sourcezone,
+            slip_type=slip_type)
 
         # Compute stage-vs-rate with various rate adjustment factors
         stages = rates_dart$stage

@@ -428,7 +428,8 @@ get_stage_exceedance_rate_curves_all_sources<-function(
 #'   peak_stage, Mw, event_rate
 #'
 get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL, 
-    target_point=NULL, target_index = NULL, all_source_names = NULL){
+    target_point=NULL, target_index = NULL, all_source_names = NULL,
+    slip_type = 'stochastic'){
 
 
     stage_exceedance_rate_curves_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION,
@@ -440,6 +441,16 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
 
     if(is.null(all_source_names)){
         all_source_names = basename(dirname(Sys.glob('SOURCE_ZONES/*/EQ_SOURCE')))
+    }
+
+    if(slip_type == 'stochastic'){
+        file_base = 'all_stochastic_slip_earthquake_events_'
+    }else if(slip_type == 'variable_uniform'){
+        file_base = 'all_variable_uniform_slip_earthquake_events_'
+    }else if(slip_type == 'uniform'){
+        file_base = 'all_uniform_slip_earthquake_events_'
+    }else{
+        stop('unrecognized slip_type')
     }
 
     output = vector(mode='list', length=length(all_source_names))
@@ -463,7 +474,7 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
             # Read the max stage
             if(!has_vars[1]){
                 nc_file1 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
-                    nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_', 
+                    nm, '/TSUNAMI_EVENTS/', file_base, 'tsunami_', 
                     nm, '.nc')
                 fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
                 local_max_stage = try(ncvar_get(fid1, 'max_stage', start=c(1,target_index), 
@@ -479,7 +490,7 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
             # wave heights, because the read access is faster
             if(!has_vars[2]){
                 nc_file2 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
-                    nm, '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_', 
+                    nm, '/TSUNAMI_EVENTS/', file_base, 
                     nm, '.nc')
                 fid2 = nc_open(nc_file2, readunlim=FALSE, suppress_dimvals=TRUE)
                 local_Mw = try(ncvar_get(fid2, 'Mw'))
@@ -494,7 +505,8 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 max_stage = local_max_stage,
                 period = local_period,
                 local_rate = local_rate,
-                target_index=target_index
+                target_index=target_index,
+                slip_type=slip_type
                 )
 
             # Error handling
