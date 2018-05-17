@@ -183,6 +183,9 @@ if(variable_mu){
 }else{
     all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*[0-9].Rdata')
 }
+print(paste0(' Remove the normal fault Mw 7.7 from Kermadec, and the 7.65, so that \n',
+    ' we consistently examine 'thrust-like' events that are above Mw 7.7 by GCMT. '))
+all_Rdata = all_Rdata[-c(3,8),]
 
 # Store the statistics in a list (one entry per historical event)
 uniform_stat = vector(mode='list', length=length(all_Rdata))
@@ -218,7 +221,7 @@ if(variable_mu){
 }else{
     save.image('event_properties_and_GOF_session.Rdata')
 }
-stop('Deliberate stop here')
+#stop('Deliberate stop here')
 
 #
 # Useful plotting code below
