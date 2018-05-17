@@ -227,11 +227,11 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
 
         # Compute stage-vs-rate with various rate adjustment factors
         stages = rates_dart$stage
-        rates_raw = sapply(stages, f<-function(x) sum(rates_raw * (stages > x)))
-        rates_1 = sapply(stages, f<-function(x) sum(rates_raw * rate_adjustment_peak_slip_fixed_mu * (stages > x)))
-        rates_2 = sapply(stages, f<-function(x) sum(rates_raw * rate_adjustment_peak_slip_variable_mu * (stages > x)))
-        rates_3 = sapply(stages, f<-function(x) sum(rates_raw * rate_adjustment_area_including_zeros_fixed_mu * (stages > x)))
-        rates_4 = sapply(stages, f<-function(x) sum(rates_raw * rate_adjustment_area_including_zeros_variable_mu * (stages > x)))
+        rates_raw = sapply(stages, f<-function(x) sum(event_rate * (stages > x)))
+        rates_1 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_peak_slip_fixed_mu * (stages > x)))
+        rates_2 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_peak_slip_variable_mu * (stages > x)))
+        rates_3 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_area_including_zeros_fixed_mu * (stages > x)))
+        rates_4 = sapply(stages, f<-function(x) sum(event_rate * rate_adjustment_area_including_zeros_variable_mu * (stages > x)))
 
         plot(stages, rates_raw, log='xy', ylim=c(1.0e-05, 1), xlim=c(0.01, 10), t='l')
         points(stages, rates_1, t='l', col='red')
