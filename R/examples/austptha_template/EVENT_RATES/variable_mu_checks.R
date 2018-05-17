@@ -175,7 +175,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
 
         # Variable mu, peak slip
         tmp = bias_adjust_peak_slip_variable_mu(slip_empirical_quantile)
-        rate_adjustment_peak_slip_fixed_mu[k] = tmp/sum(tmp)*length(tmp)
+        rate_adjustment_peak_slip_variable_mu[k] = tmp/sum(tmp)*length(tmp)
         # Fixed mu, peak slip
         tmp = bias_adjust_peak_slip_fixed_mu(slip_empirical_quantile)
         rate_adjustment_peak_slip_fixed_mu[k] = tmp/sum(tmp)*length(tmp)
@@ -215,7 +215,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
     #
     # Plot dart stages, one site per panel
     #
-    par(mfrow=c(2,2))
+    par(mfrow=c(3,1))
     stage_rate_list = vector(mode='list', length=nrow(nearby_points))
     for(i in 1:nrow(nearby_points)){
 
@@ -241,7 +241,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
         points(stages, rates_4, t='l', col='orange')
         grid()
         abline(h=c(1/500, 1/1000, 1/2500, 1/10000), col='pink', lty='dashed')
-        legend('bottomleft', 
+        legend('topright', 
             c('Raw', 'slip_fixed_mu', 'slip_v_mu', 'area_fixed_mu', 'area_v_mu'),
             col=c('black', 'red', 'green', 'blue', 'orange'),
             pch=rep(NA, 5), lty=rep(1,5))
@@ -310,12 +310,16 @@ save.image(paste0('variable_mu_checks_session_', slip_type, '.Rdata'))
 # We generally see a small shift that doesn't change much with return period, but
 # varies by source-zone.
 mw_change = lapply(rate_curves_store, 
-    f<-function(x){ try(
+    f<-function(y){ 
+        x = y$mw_rates
+        try(
         # Note that x[,2] and x[,3] are rates, which are decreasing but might
         # finish with a collection of zeros. In that case, we want to use the 
         # minimum magnitude corresponding to rate=0 for interpolation. The ties='min'
         # argument takes care of that.
         approx(x[,2], x[,1], xout=c(1/100, 1/500, 1/1000, 1/2500), ties='min')$y - 
         approx(x[,3], x[,1], xout=c(1/100, 1/500, 1/1000, 1/2500), ties='min')$y
-    )} )
+    )}
+)
+
 
