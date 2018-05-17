@@ -323,7 +323,8 @@ dev.off()
 
 #
 # Get the rank of the statistic for the n-'best' events in terms of the other
-# events in the corresponding family of model scenarios
+# events in the corresponding family of model scenarios which have peak-slip-location
+# near the location of the top-nbest events
 #
 best_event_quantiles<-function(stats, nbest=5){
 
@@ -342,17 +343,33 @@ best_event_quantiles<-function(stats, nbest=5){
 
     # Populate data structure
     for(j in 1:length(stats)){ # Every event
+
+        # Find the range of alongstrike indices that 'good' events have
+        # We do this because for a good GOF, it is generally required to
+        # be 'near' a particular location
+        
+        gof_value = stats[[j]][['gf']]
+        good_gof_values = which(rank(gof_value, ties='first') <= nbest) # Beware ties treatment
+        good_alongstrike_locations_range = stats[[j]][['peak_slip_alongstrike']][good_gof_values]
+        good_alongstrike_locations_range = c(
+            floor(min(good_alongstrike_locations_range-1)),
+            ceiling(max(good_alongstrike_locations_range+1)))
+        # Events in a 'good' alongstrike location
+        good_alongstrike_inds = which(
+            (stats[[j]]['peak_slip_alongstrike'] >= good_alongstrike_locations_range[1]) &
+            (stats[[j]]['peak_slip_alongstrike'] <= good_alongstrike_locations_range[2]) )
+        #print(c('event', j, '; good locations ', good_alongstrike_locations_range,'; nevents ', length(good_alongstrike_inds)))
+
         for(i in 1:nvar){ # Every variable
             for(k in 1:nbest){ # 1st best, 2nd best, ... nbest best.
                 # Get the i'th variable for the j'th event
                 var_of_interest = stats[[j]][[myvar[i]]]
                 # Find the one with goodness-of-fit rank = k (rank=1 is best-fit)
-                gof_value = stats[[j]][['gf']]
                 eoi = which(rank(gof_value, ties='first') == k)# Beware ties treatment
                 # Find the fraction of var_of_interest that are < the value
                 # associated with 'eoi'
                 empirical_fraction_less_than = 
-                    sum(var_of_interest <= var_of_interest[eoi])/(length(var_of_interest)+1)
+                    sum(var_of_interest[good_alongstrike_inds] <= var_of_interest[eoi])/(length(var_of_interest[good_alongstrike_inds])+1)
                 #if(is.na(empirical_fraction_less_than)) browser()
                 output[[i]][j,k] = empirical_fraction_less_than
             }

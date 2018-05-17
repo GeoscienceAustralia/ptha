@@ -18,19 +18,6 @@ match_file<-function(files, file){
     return(files[ind])
 }
 
-##
-## Variable shear modulus function
-##
-#mu_fun<-function(dd){
-#    # Point values based on plot of Lay and Bilek (2007)
-#    # See
-#    #/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/EARTHQUAKE/Shear_modulus
-#    depths = c(0, 7.5, 15, 35, 9999)
-#    mu = c(10, 10, 30, 67, 67)*1e+09
-#    output = 10**(approx(depths, log10(mu), xout=dd)$y)
-#    return(output)
-#}
-
 #
 # Plot function
 #
@@ -44,7 +31,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
     stochastic_file = match_file(
         gsub('_tsunami', '', config$all_source_stochastic_slip_tsunami, fixed=TRUE),
         paste0('all_stochastic_slip_earthquake_events_', sourcezone, '.nc'))
-    stochastic_eq_file = gsub('_tsunami', '', stochastic_file, fixed=TRUE)
+    #stochastic_eq_file = gsub('_tsunami', '', stochastic_file, fixed=TRUE)
     sourcezone_events$events = read_table_from_netcdf(stochastic_eq_file)
 
     # Get the unit source statistics
@@ -52,23 +39,25 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
         paste0('unit_source_statistics_', sourcezone, '.nc'))
     sourcezone_events$unit_source_statistics = read_table_from_netcdf(uss_file)
 
+    #
+    # Extract event properties from the file
+    #
+
     # Event indices
     event_inds = lapply(sourcezone_events$events$event_index_string, 
         f<-function(x) as.numeric(strsplit(x, '-')[[1]]) )
     event_slip = lapply(sourcezone_events$events$event_slip_string, 
         f<-function(x) as.numeric(strsplit(x, '_')[[1]]) )
-
-
-    #
-    # Extract event properties from the file
-    #
     depth = sourcezone_events$unit_source_statistics$depth
+    # Shear modulus
     mu_constant = depth * 0 + 3e+10
-    #mu_variable = mu_fun(depth)
     mu_variable = shear_modulus_depth(depth)
+    # Unit source area
     area = sourcezone_events$unit_source_statistics$length * 
         sourcezone_events$unit_source_statistics$width
+    #
     # Pre-allocate memory and populate in loop
+    #
     moment1 = rep(0, length(event_inds)) 
     moment2 = rep(0, length(event_slip))
     nonzero_rupture_area = rep(0, length(event_slip))
@@ -76,6 +65,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
     area_80pc = rep(0, length(event_slip))
     area_50pc= rep(0, length(event_slip))
     peak_slip = rep(0, length(event_slip))
+    # Loop over all events
     for(i in 1:length(moment1)){
         inds = event_inds[[i]]
         slip = event_slip[[i]]
@@ -107,14 +97,14 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
 
 
     # If mu is variable, we can consider it a relabeling of magnitude.
-    Mw_mu_fixed = round(M0_2_Mw(moment1), 1) # Rounding is 'almost' not needed, just accounting for numerical imprecision in file storage 
+    Mw_mu_fixed = round(M0_2_Mw(moment1), 1) # Rounding is 'almost' not needed -- just accounting for numerical imprecision in file storage 
     Mw_mu_vary = M0_2_Mw(moment2)
 
     # Here we compute the exceedance rate
-    Mw_bin_size = 0.1
     # Note our fixed-mu Mws range 7.2, 7.3, ...
     # These rates can be interpreted as representing a 'bin' of events
-    mws = seq(7.15, 9.95, by=Mw_bin_size) 
+    Mw_bin_size = 0.1
+    mws = seq(7.15, 9.95, by=Mw_bin_size) # Lower bin boundary
     rate_mu_fixed = sapply(mws, f<-function(x) sum(sourcezone_events$events$rate_annual * (Mw_mu_fixed >= x)))
     rate_mu_fixed_lower = sapply(mws, f<-function(x) sum(sourcezone_events$events$rate_annual_lower_ci * (Mw_mu_fixed >= x)))
     rate_mu_fixed_upper = sapply(mws, f<-function(x) sum(sourcezone_events$events$rate_annual_upper_ci * (Mw_mu_fixed >= x)))
@@ -127,7 +117,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone){
     grid()
     title(paste0('Rates with fixed and variable mu, ', sourcezone))
 
-    abline(h=c(1/500, 1/1000, 1/2500), col='brown', lty='dotted')
+    abline(h=c(1/500, 1/1000, 1/2500, 1/10000), col='brown', lty='dotted')
 
     # Return the key data as output
     output = data.frame(mws=mws, rate_mu_fixed=rate_mu_fixed, rate_mu_vary=rate_mu_vary)
