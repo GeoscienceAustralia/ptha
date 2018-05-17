@@ -216,6 +216,8 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
     # Plot dart stages, one site per panel
     #
     par(mfrow=c(3,1))
+    oldmar = par('mar')
+    par(mar=c(2,3,3,2))
     stage_rate_list = vector(mode='list', length=nrow(nearby_points))
     for(i in 1:nrow(nearby_points)){
 
@@ -253,7 +255,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
             rates_slip_var_mu = rates_2, rates_area_const_mu = rates_3, 
             rates_area_var_mu = rates_4)
     }
-
+    par(mar=oldmar)
     # Return the key data as output
     output1 = data.frame(mws=mws, rate_mu_fixed=rate_mu_fixed, rate_mu_vary=rate_mu_vary)
 
@@ -270,7 +272,7 @@ rate_curves_store = vector(mode='list', length=length(all_source_zones))
 names(rate_curves_store) = all_source_zones
 slip_type = 'stochastic'
 
-pdf(paste0('Mw_rate_curves_with_and_without_mu_variation_', slip_type, '.pdf'), width=10, height=8)
+pdf(paste0('Mw_rate_curves_with_and_without_mu_variation_', slip_type, '.pdf'), width=10, height=12)
 for(i in 1:length(all_source_zones)){
 
     # Only work on subduction and thrust type zones, because we use a different
