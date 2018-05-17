@@ -321,8 +321,8 @@ mw_change = lapply(rate_curves_store,
         # finish with a collection of zeros. In that case, we want to use the 
         # minimum magnitude corresponding to rate=0 for interpolation. The ties='min'
         # argument takes care of that.
-        approx(x[,2], x[,1], xout=c(1/100, 1/500, 1/1000, 1/2500), ties='min')$y - 
-        approx(x[,3], x[,1], xout=c(1/100, 1/500, 1/1000, 1/2500), ties='min')$y
+        approx(x[,2], x[,1], xout=c(1/100, 1/500, 1/1000, 1/2500), ties=min)$y - 
+        approx(x[,3], x[,1], xout=c(1/100, 1/500, 1/1000, 1/2500), ties=min)$y
     )}
 )
 
