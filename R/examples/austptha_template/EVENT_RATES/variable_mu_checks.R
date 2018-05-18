@@ -1,3 +1,13 @@
+#
+# This script can be used to check how various 'bias adjustment' methods
+# defined in 'event_properties_and_GOF.R' affect the stage exceedance rates
+# and magnitude exceedance rates. It also looks at the impact of variable
+# shear modulus
+#
+# NB: Set the slip_type variable (towards the bottom of the script, in the main
+# run code) to either 'stochastic' or 'variable_uniform' 
+#
+
 library(rptha)
 
 # Read key user variables
@@ -38,7 +48,7 @@ match_file<-function(files, file){
 }
 
 #
-# Plot function
+# Plot function. This does the main 'grunt work' 
 #
 plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip_type='stochastic'){
 
@@ -54,10 +64,6 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
             paste0('all_stochastic_slip_earthquake_events_', sourcezone, '.nc'))
         sourcezone_events$events = read_table_from_netcdf(stochastic_eq_file)
 
-        tsunami_file = match_file(
-            config$all_source_stochastic_slip_tsunami,
-            paste0('all_stochastic_slip_earthquake_events_tsunami_', sourcezone, '.nc'))
-
         # Functions for bias adjustment of rates
         bias_adjust_peak_slip_fixed_mu = ep_fixed_mu$stochastic_quantile_adjust$peak_slip$bias_adjustment_factor
         bias_adjust_peak_slip_variable_mu = ep_variable_mu$stochastic_quantile_adjust$peak_slip$bias_adjustment_factor
@@ -71,10 +77,6 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
             gsub('_tsunami', '', config$all_source_variable_uniform_slip_tsunami, fixed=TRUE),
             paste0('all_variable_uniform_slip_earthquake_events_', sourcezone, '.nc'))
         sourcezone_events$events = read_table_from_netcdf(variable_uniform_eq_file)
-
-        tsunami_file = match_file(
-            config$all_source_variable_uniform_slip_tsunami,
-            paste0('all_variable_uniform_slip_earthquake_events_tsunami_', sourcezone, '.nc'))
 
         # Functions for bias adjustment of rates
         bias_adjust_peak_slip_fixed_mu = ep_fixed_mu$variable_uniform_quantile_adjust$peak_slip$bias_adjustment_factor
@@ -122,7 +124,7 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
     nonzero_rupture_area = rep(0, length(event_slip))
     full_rupture_area = rep(0, length(event_slip))
     peak_slip = rep(0, length(event_slip))
-    # Loop over all events
+    # Loop over all events and compute their properties
     for(i in 1:length(moment_fixed_mu)){
 
         inds = event_inds[[i]]
@@ -144,8 +146,10 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
     }
 
     # Magnitude
+    # For the fixed magnitude case, rounding is 'almost' not needed -- but it
+    # helps deal with floating point inexact-ness in file storage 
+    Mw_mu_fixed = round(M0_2_Mw(moment_fixed_mu), 1) 
     # If mu is variable, we can consider it a relabeling of magnitude.
-    Mw_mu_fixed = round(M0_2_Mw(moment_fixed_mu), 1) # Rounding is 'almost' not needed -- just accounting for numerical imprecision in file storage 
     Mw_mu_vary = M0_2_Mw(moment_variable_mu)
 
 
@@ -269,10 +273,11 @@ plot_sourcezone_rate_curve_with_fixed_and_variable_mu<-function(sourcezone, slip
 #
 # Main run code
 #
+
+slip_type = 'stochastic' # variable_uniform
 all_source_zones = sort(unique(sourcezone_parameters$sourcename))
 rate_curves_store = vector(mode='list', length=length(all_source_zones))
 names(rate_curves_store) = all_source_zones
-slip_type = 'stochastic'
 
 pdf(paste0('Mw_rate_curves_with_and_without_mu_variation_', slip_type, '.pdf'), width=10, height=12)
 for(i in 1:length(all_source_zones)){

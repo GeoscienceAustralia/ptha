@@ -2,10 +2,11 @@
 # See if there are any 'general' patterns between DART-buoy GOF statistics and
 # event properties. 
 #
-# For instance, we might imagine the 'good' events consistently have small area
-# compared to the corresponding family, or low peak slip compared to the
-# corresponding family, etc. If we find relationships like these, it
-# might help us design better models, or filter out unrealistic events.
+# For instance, it could be (hypothetically) that the 'good' events
+# consistently have small area compared to the corresponding family, or low
+# peak slip compared to the corresponding family, etc. If we find relationships
+# like these, it is suggestive of model biases. This might help us design
+# better models, or filter out unrealistic events.
 #
 # If we develop a bias-adjustment method, key questions are:
 # -- Does it still lead to good 'coverage statistics' for the 'corresponding family of model scenarios'?
