@@ -192,7 +192,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # However, we assign probabilities consistent with a uniform distribution
     # (the log spacing is to improve numerical aspects of the discretization,
     # we are not claiming that log(coupling) is uniformly distributed)
-    sourcepar$coupling = exp(approx(log(as.numeric(sourcepar$coupling)), n=nbins*config$coupling_subsampling_increase)$y)
+    sourcepar$coupling = exp(approx(log(as.numeric(sourcepar$coupling)), 
+        n=nbins*config$coupling_subsampling_increase)$y)
     # Discretize the probabilities as a uniform distribution (NOT log-uniform!)
     bin_size = diff(c(min(sourcepar$coupling), sourcepar$coupling, max(sourcepar$coupling)), lag=2)/2
     sourcepar$coupling_p = bin_size/sum(bin_size)
@@ -254,8 +255,6 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         sourcepar$Mw_max = c(
             # Largest observed plus a small value,
             min_mw_max,
-            # Middle Mw
-            0.5*(max_mw_max_strasser + min_mw_max),
             # Upper mw [Strasser - 1SD area, OR Strasser -2SD width]
             max_mw_max_strasser)
     }else{
@@ -270,18 +269,19 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     stopifnot(all(diff(sourcepar$Mw_max) > 0))
     # Ensure all Mw meet out constraints
     sourcepar$Mw_max = pmax(sourcepar$Mw_max, min_mw_max)
-    
+
+    # Interpolate
+    sourcepar$Mw_max = approx(sourcepar$Mw_max, n=nbins*config$mwmax_subsampling_increase)$y
+    # Assign equal probabilities to all
+    sourcepar$Mw_max_p = rep(1, length(sourcepar$Mw_max) )/length(sourcepar$Mw_max)
+   
+    # Clip AFTER interpolation 
     if(target_rake == -90){
         sourcepar$Mw_max = pmin(sourcepar$Mw_max, MAXIMUM_ALLOWED_MW_MAX_NORMAL)
     }else{
         sourcepar$Mw_max = pmin(sourcepar$Mw_max, MAXIMUM_ALLOWED_MW_MAX)
     }
 
-    # Interpolate
-    sourcepar$Mw_max = approx(sourcepar$Mw_max, n=nbins*config$mwmax_subsampling_increase)$y
-
-    # Assign equal probabilities to all
-    sourcepar$Mw_max_p = rep(1, length(sourcepar$Mw_max) )/length(sourcepar$Mw_max)
 
     #
     # PART 2.
