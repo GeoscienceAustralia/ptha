@@ -3,7 +3,14 @@ Key configuration parameters for each source-zone
 
 The csv file [sourcezone_parameters.csv](sourcezone_parameters.csv) contains
 key geometric parameters for each sourcezone, that must be configured correctly
-for everything to work. The parameters are:
+for everything to work. 
+
+Beware that depending on how the scripts are configured (in scripts that refer
+to this file), not all of these parameters may be used. For example, in the
+Australian PTHA I have used a uniform prior coupling, and ranges for the
+b-value based on the source type.
+
+The parameters are:
 
 sourcename
 ----------
@@ -98,6 +105,9 @@ must have the same value as on the unsegmented source).
 
 This must be finalised before creating the tsunami events using the scripts in
 [../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/](../../SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/).
+
+However, it is possible to subsequently treat variable shear-modulus by
+recomputing magnitudes for these scenarios assuming variable rigidity.
 
 segment_boundary_alongstrike_index_lower
 ----------------------------------------

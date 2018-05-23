@@ -123,7 +123,7 @@ for(ir in 1:length(all_desired_rates)){
     )
     names(sourcezone_event_inds_near_desired_stage) = source_zones_of_interest
 
-    # Check we did not have zero events. If we do, remote that source-zone from the list
+    # Check we did not have zero events. If we do, remove that source-zone from the list
     n_near_events = unlist(lapply(sourcezone_event_inds_near_desired_stage, length))
     if(any(n_near_events == 0)){
         keepers = which(n_near_events > 0)

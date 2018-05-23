@@ -32,7 +32,7 @@ sunda,_andaman,,,,Strasser,3,69,97,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,0,Be
 sunda,_arakan,,,,Strasser,3,98,123,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,0,Coupling based on Andaman. Mw-max-min based on CMT [although it was a normal fault] – noting Cummins (2007) suggested much higher values
 alaskaaleutians,,50,50,90,Strasser,3,,,0.5,1,,,0.42,0.55,0.77,,,,0.7,0.95,1.2,,,,9.2,0,Berryman et al. (2015) coupling and Mw_max_min
 alaskaaleutians,_eastern,,,,Strasser,3,1,29,0.5,1,,,0.6,0.8,1,,,,0.7,0.95,1.2,,,,9.2,0,"Use Berryman et al (2015) to estimate coupling (although they have more sub-sources than I have, so combination of values has some subjectivity). Note Mw_max_min in Berryman et al seems low, accepting that 1964 event was Mw 9.2, so here I use the latter"
-alaskaaleutians,_western,,,,Strasser,3,30,67,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,9.2,0,Berryman et al (2015) 
+alaskaaleutians,_western,,,,Strasser,3,30,67,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.7,0,"Berryman et al (2015), except their Mw-max is 9.2, which is not referenced and might be a mistaken reference to the 1964 event? We use 8.7 based on 1965 event in GEM catalogue"
 alaskaaleutians,_komandorski,,,,Strasser,3,68,78,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al (2015) 
 cascadia,,50,50,90,Strasser,3,,,1,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.8,0,Berryman et al. (2015) coupling and Mw_max_min
 mexico,,50,50,90,Strasser,3,,,1,1,,,0.37,0.6,0.81,,,,0.7,0.95,1.2,,,,8.2,0,Berryman et al. (2015) coupling and Mw_max_min
