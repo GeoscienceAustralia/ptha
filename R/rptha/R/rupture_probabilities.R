@@ -596,6 +596,35 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         for(i in 1:length(model_rates)){
             model_rates[i] = approx(Mw_seq, all_rate_matrix[i,], 
                 xout=data_thresh)$y
+            # Could also set Mfd based on all_par_combo$Mw_frequency_distribution[i]
+            # and then do
+            # model_rates[i] = Mfd(data_thresh, a=a_parameter[i], b=all_par_combo$b[i],
+            #                      Mw_min=-Inf, Mw_max=all_par_combo$Mw_max[i])
+            #
+            #
+            # EXTENSION TO TREAT DATA ERRORS, OR MU VARIATION
+            #
+            # Suppose that the {OBSERVED Mw} = ( {Mw_in_event_table} + dMw ),
+            # where dMw is a perturbation, with KNOWN distribution that does
+            # not depend on Mw_in_event_table. Suppose dMw is defined
+            # empirically with a sample of say 1000. 
+            # If Mfd gives the exceedance rate for any value of
+            # {Mw_in_event_table} then the mean rate of observed events above
+            # data_thresh is mean_over_all_dMw{Mfd(data_thresh - dMw)}
+            # i.e. if we have a dMw distribution [ in the case of variable
+            # shear modulus, this can come from the known distribution of mu,
+            # since dMw ~ 2/3log10(mu/constant_mu)] then we can compute the
+            # rate of observations exceeding data_thresh 
+            #
+            # For illustration
+            # N = 1e+07
+            # y = rexp(N) # Like {Mw_in_event_table}
+            # delta = rgamma(N, shape=1, scale=2) # Like dMw
+            # observed = y + delta # Like OBSERVED_Mw
+            # data_thresh=4
+            # # These 2 numbers should be equal for a large enough sample
+            # pr_observed_gt_4_A = mean(observed > data_thresh)
+            # pr_observed_gt_4_B = mean(pexp(data_thresh - delta, lower.tail=FALSE))
         }
 
         #

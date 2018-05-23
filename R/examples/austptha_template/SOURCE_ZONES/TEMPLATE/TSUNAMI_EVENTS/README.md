@@ -40,6 +40,11 @@ and uniform slip), see
 
     qsub run_make_all_tsunami_events.PBS
 
+It is important to realise that the events are made at a fixed sequence of earthquake
+magnitudes (e.g. 7.2, 7.3, .... 9.8), assuming a constant shear modulus (specified in
+the sourcezone_parameters.csv file mentioned above). Later you may consider the
+impact of a variable shear modulus by re-labelling the magnitude of these events.
+
 # Step 3
 
 On large source-zones, the final stochastic_slip generation step (from Step 2)
