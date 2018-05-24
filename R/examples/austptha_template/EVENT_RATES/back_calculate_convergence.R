@@ -242,6 +242,13 @@ batch_plot_convergence<-function(){
         sname = config$source_names_1[i]
         print(sname)
 
+        # Try to reduce memory
+        source_uniform = NULL
+        source_stochastic = NULL
+        source_variable_uniform = NULL
+        gc()
+
+        # Calculate convergence
         source_uniform = back_calculate_convergence(sname, 'uniform')
         source_stochastic = back_calculate_convergence(sname, 'stochastic')
         source_variable_uniform = back_calculate_convergence(sname, 'variable_uniform')
