@@ -34,6 +34,18 @@ subduction_slip_x_area = list(
 #
 outer_rise_multiplier = 0.06
 
+# Nominal shear modulus values
+sub_shear_mod = 3e+10
+ors_shear_mod = 6e+10
+
+# Nominal dip values
+sub_dip = 15/180*pi
+ors_dip = 45/180*pi
+
+#
+# Read each of the sources csv files into a big array
+# When we pass through 'traces_table.csv', apply a correction to the outer-rise events
+#
 for(i in 1:length(sources)){
     newtab = read.csv(sources[i])
 
@@ -46,15 +58,16 @@ for(i in 1:length(sources)){
 
         # Hence, here we apply a 'fix' to the data
         tofix = names(outer_rise_slip_x_area)    
-        for(i in 1:length(tofix)){
+        for(j in 1:length(tofix)){
 
-            current_moment_ratio = outer_rise_slip_x_area[[tofix[i]]] / subduction_slip_x_area[[tofix[i]]]
+            current_moment_ratio = (outer_rise_slip_x_area[[tofix[j]]]*ors_shear_mod/cos(ors_dip)) / 
+                                   (subduction_slip_x_area[[tofix[j]]]*sub_shear_mod/cos(sub_dip))
 
             # Assume 'relative' rates of velocities are correct, but they need to be rescaled
-            indices_to_fix = which(grepl(tofix[i], newtab$name))
+            indices_to_fix = which(grepl(tofix[j], newtab$name))
 
             velocity_scale = outer_rise_multiplier / current_moment_ratio
-            print(c(tofix[i], current_moment_ratio, outer_rise_multiplier, velocity_scale, length(indices_to_fix)))
+            print(c(tofix[j], current_moment_ratio, outer_rise_multiplier, velocity_scale, length(indices_to_fix)))
 
             newtab$RL_vel[indices_to_fix]  = newtab$RL_vel[indices_to_fix]  * velocity_scale
             newtab$Div_vel[indices_to_fix] = newtab$Div_vel[indices_to_fix] * velocity_scale
