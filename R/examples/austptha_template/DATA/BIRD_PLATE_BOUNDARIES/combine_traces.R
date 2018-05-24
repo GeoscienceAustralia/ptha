@@ -32,7 +32,7 @@ subduction_slip_x_area = list(
 #
 # Ratio of outer-rise moment rate to subduction-zone moment rate
 #
-outer_rise_multiplier = 0.06
+outer_rise_multiplier = 0.11
 
 # Nominal shear modulus values
 sub_shear_mod = 3e+10
@@ -54,7 +54,7 @@ for(i in 1:length(sources)){
         # Initially, JG assigned outer-rise source-zones a moment rate of ~
         # 0.4% of the corresponding subduction-zone rate, based on estimates in
         # Sleep (2012). However, comparison with observed earthquake rates
-        # indicated that much higher values were required (e.g. 6%, rather than 0.4%).
+        # indicated that much higher values were required 
 
         # Hence, here we apply a 'fix' to the data
         tofix = names(outer_rise_slip_x_area)    
