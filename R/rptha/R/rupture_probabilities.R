@@ -605,26 +605,36 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             # EXTENSION TO TREAT DATA ERRORS, OR MU VARIATION
             #
             # Suppose that the {OBSERVED Mw} = ( {Mw_in_event_table} + dMw ),
-            # where dMw is a perturbation, with KNOWN distribution that does
-            # not depend on Mw_in_event_table. Suppose dMw is defined
-            # empirically with a sample of say 1000. 
+            # where dMw is a perturbation, with KNOWN distribution that 
+            # depends on Mw_in_event_table. 
             # If Mfd gives the exceedance rate for any value of
-            # {Mw_in_event_table} then the mean rate of observed events above
-            # data_thresh is mean_over_all_dMw{Mfd(data_thresh - dMw)}
+            # {Mw_in_event_table}, and 'mfd' is its derivative wrt Mw_in_event_table,
+            # then the mean rate of {OBSERVED Mw} above data_thresh is:
+            #     integral_wrt_y{ mfd(y) * (1 - Pr(dMw > data_thresh - y | y)) } from [-Inf, Inf]
             # i.e. if we have a dMw distribution [ in the case of variable
-            # shear modulus, this can come from the known distribution of mu,
-            # since dMw ~ 2/3log10(mu/constant_mu)] then we can compute the
-            # rate of observations exceeding data_thresh 
+            # shear modulus with small earthquakes, this can come from the
+            # known distribution of mu, since dMw ~ 2/3log10(mu/constant_mu)]
+            # then we can compute the rate of observations exceeding
+            # data_thresh 
             #
-            # For illustration
+            ## For illustration
             # N = 1e+07
-            # y = rexp(N) # Like {Mw_in_event_table}
-            # delta = rgamma(N, shape=1, scale=2) # Like dMw
+            # y = rexp(N) # Like {Mw_in_event_table}. So 'Mfd' is like 'pexp' and 'mfd' is like 'dexp'
+            # delta = rgamma(N, shape=1, scale=2+y) # Like dMs, with a distribution that depends on y
             # observed = y + delta # Like OBSERVED_Mw
-            # data_thresh=4
+            # data_thresh = 4 # Say we want the rate of observed>data_thresh
+            # #This function gives the analytical solution
+            # f<-function(y,x) dexp(y) * (1-pgamma(x-y, shape=1, scale=2+y))
             # # These 2 numbers should be equal for a large enough sample
             # pr_observed_gt_4_A = mean(observed > data_thresh)
-            # pr_observed_gt_4_B = mean(pexp(data_thresh - delta, lower.tail=FALSE))
+            # pr_observed_gt_4_B = integrate(f, lower=-2, upper=20, x=data_thresh)
+            # Further, the integral is also 'the same' (for large enough N) as
+            # mean(1-pgamma(data_thresh - y, shape=1, scale=2+y))
+           
+            # Mdf = XXXX
+            # mdf = XXXX
+            # magnitude_error_sample = random_Mw_measurement_errors(1000, observed_Mw = data_thresh)
+            # model_rates[i] = XXXXX
         }
 
         #
