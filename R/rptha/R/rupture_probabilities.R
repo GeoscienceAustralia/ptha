@@ -953,37 +953,46 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
             ## Further, the integral is also 'the same' (for large enough N) as
             ## mean(1-pgamma(data_thresh - y, shape=1, scale=2+y))
            
-            # Numerically compute the integral (over y) of 
-            #   (1 - cdf_mw_observation_error(data_thresh - y, y))*(derivative_of_Mfd_at_y)
-            integration_eps = 0.01
-            # Initially try a small-ish range of mw-error to reduce the expense
-            # of the integration
-            allowed_mw_error = 0.1
-            Mw_true = seq(data_thresh-allower_mw_error, data_thresh+allowed_mw_error, by=integration_eps)
-            cdf_complement = 1 - cdf_mw_observation_error(data_thresh - Mw_true, Mw_true)
-            for(iters in 1:6){
-                # Potentially grow allowed_mw_error, up to a multiple of 2**max(iters) times the initial value
-                if( (cdf_complement[1] > 0) | (cdf_complement[length(cdf_complement)] < 1) ){
-                    # Increase the allowed_mw_error
-                    allowed_mw_error = allowed_mw_error * 2
-                    Mw_true = seq(data_thresh-allower_mw_error, data_thresh+allowed_mw_error, by=integration_eps)
-                    cdf_complement = 1 - cdf_mw_observation_error(data_thresh - Mw_true, Mw_true)
-                }else{
-                    break
-                }
-            }
-            if((cdf_complement[1] > 0) | (cdf_complement[length(cdf_complement)] < 1)){
-                stop(paste0('Allowed range of Mw error should not exceed (+-)', allowed_mw_error, 
-                    ' magnitude units, but the provided function indicates more extreme errors are possible.',
-                    ' Please clip the magnitude errors to be within the allowed range (note the use of a smaller',
-                    ' range can be more efficient)'))
-            }
+            ## Numerically compute the integral (over y) of 
+            ##   (1 - cdf_mw_observation_error(data_thresh - y, y))*(derivative_of_Mfd_at_y)
+            #integration_eps = 0.01
+            ## Initially try a small-ish range of mw-error to reduce the expense
+            ## of the integration
+            #allowed_mw_error = 0.1
+            #Mw_true = seq(data_thresh-allowed_mw_error, data_thresh+allowed_mw_error, by=integration_eps)
+            #cdf_complement = 1 - cdf_mw_observation_error(data_thresh - Mw_true, Mw_true)
+            #for(iters in 1:6){
+            #    # Potentially grow allowed_mw_error, up to a multiple of 2**max(iters) times the initial value
+            #    if( (cdf_complement[1] > 0) | (cdf_complement[length(cdf_complement)] < 1) ){
+            #        # Increase the allowed_mw_error
+            #        allowed_mw_error = allowed_mw_error * 2
+            #        Mw_true = seq(data_thresh-allower_mw_error, data_thresh+allowed_mw_error, by=integration_eps)
+            #        cdf_complement = 1 - cdf_mw_observation_error(data_thresh - Mw_true, Mw_true)
+            #    }else{
+            #        break
+            #    }
+            #}
+            #if((cdf_complement[1] > 0) | (cdf_complement[length(cdf_complement)] < 1)){
+            #    stop(paste0('Allowed range of Mw error should not exceed (+-)', allowed_mw_error, 
+            #        ' magnitude units, but the provided function indicates more extreme errors are possible.',
+            #        ' Please clip the magnitude errors to be within the allowed range (note the use of a smaller',
+            #        ' range can be more efficient)'))
+            #}
 
-            incremental_rate = - (
-                Mfd(Mw_true+integration_eps/2, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
-                Mfd(Mw_true-integration_eps/2, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
-            # Numerical integration of the 'observed rate' of events > data_thresh
-            model_rates[i] = sum(incremental_rate * cdf_complement)
+            #incremental_rate = - (
+            #    Mfd(Mw_true+integration_eps/2, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
+            #    Mfd(Mw_true-integration_eps/2, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
+            ## Numerical integration of the 'observed rate' of events > data_thresh
+            #model_rates[i] = sum(incremental_rate * cdf_complement)
+            Mfd_local<-function(y) Mfd(y, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
+            # 
+            # Below for the integration, we assume the absolute Mw errors are always < 0.5
+            # Good to add some check to ensure that is the case
+            #
+            if(cdf_mw_observation_error(-0.5 , data_thresh+0.5) > 0) stop('mw_observation_error is too large')
+            if(cdf_mw_observation_error( 0.5 , data_thresh-0.5) < 1) stop('mw_observation_error is too large')
+            model_rates[i] = exceedance_rate_of_observed(Mfd_local, cfd_mw_observation_error, data_thresh,
+                true_value_range = c(data_thresh-0.5, data_thresh+0.5), integration_eps=0.01)
         }
     }
 
@@ -1135,5 +1144,71 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
     }
 
     return(all_par_prob)
+}
+
+#' Exceedance rate of observations with random errors
+#'
+#' Suppose that: \cr
+#' cdf_obs_error(obs_err, y) is the CDF of obs_err given the true value 'y'; \cr
+#' the observed value is (y+obs_err); \cr
+#' the exceedance rate of y is exceedance_true(y); \cr
+#' Then this function computes the exceedance rate of the observed_value above data_value, i.e. \cr
+#' integral { (1 - cdf_obs_error(data_value - y | y)) * (-d(exceedance_true)/d(true_value) ) } dy \cr
+#' This is done with numerical integration
+#'
+#' @param exceedance_true exceedance rate function R(y) of a single variable
+#' @param cdf_obs_error function F(x,y) giving the CDF of the error if y is fixed
+#' @param data_thresh the function will return the rate of observations above data_thresh
+#' @param true_value_range range of the true value to integrate over
+#' @param integration_eps numerically integrate with this spacing
+#' @return value of the integral, which gives the rate of 'observed' (= true + error) that
+#' are greater than data_thresh
+#'
+#' @export
+#' @examples
+#'
+#' # Make a problem with known rate functions and error models, then compute the answer
+#' # in multiple ways, and check it works 
+#' N = 1e+06
+#' y = rexp(N) # The true value. This has exceedance rate function '(1-pexp)'
+#' delta = rgamma(N, shape=1, scale=2+y) # The error, with a distribution that depends on the true value
+#' observed = y + delta # The observed value
+#' data_thresh = 4 # Say we want the rate of observed>data_thresh
+#' # Integration of this function gives the analytical solution
+#' f<-function(y,x) dexp(y) * (1-pgamma(x-y, shape=1, scale=2+y))
+#' # These 2 numbers should be equal for a large enough sample
+#' pr_observed_gt_4_A = mean(observed > data_thresh)
+#' pr_observed_gt_4_B = integrate(f, lower=-2, upper=20, x=data_thresh)
+#' # Further, the integral is also 'the same' (for large enough N) as
+#' pr_observed_gt_4_C = mean(1-pgamma(data_thresh - y, shape=1, scale=2+y))
+#' 
+#' #
+#' # Here we evaluate the solution with the current function
+#' #
+#' ex_true<-function(y) (1-pexp(y))
+#' cdf_obs_error<-function(x, y) v1 = pgamma(x, shape=1, scale=2+y)
+#' val = exceedance_rate_of_observed(ex_true, cdf_obs_error, data_thresh,
+#'    true_value_range = c(0, 20))
+#' stopifnot(abs(val - pr_observed_gt_4_B$value) < 1.0e-06)
+#'
+exceedance_rate_of_observed<-function(exceedance_true, cdf_obs_error, data_value,
+    true_value_range, integration_eps=0.01){
+
+    stopifnot(length(data_value) == 1)
+    # Numerically compute the integral (over y) of 
+    #   (1 - cdf_obs_error(data_value - y, y))*(derivative_of_exceedance_true_at_y)
+    # Initially try a small-ish range of mw-error to reduce the expense
+    # of the integration
+    lower= true_value_range[1]
+    upper = true_value_range[2]
+    value_true = seq(lower, upper, by=integration_eps)
+    cdf_complement = 1 - cdf_obs_error(data_value - value_true, value_true)
+
+    incremental_rate = - (
+        exceedance_true(value_true+integration_eps/2) - 
+        exceedance_true(value_true-integration_eps/2) )
+    # Numerical integration of the 'observed rate' of events > data_value
+    output = sum(incremental_rate * cdf_complement)
+    return(output)
 }
 
