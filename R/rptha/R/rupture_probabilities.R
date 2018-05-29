@@ -923,74 +923,16 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
             #    xout=data_thresh)$y
             model_rates[i] = Mfd(data_thresh, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
         }else{
-            ##
-            ## EXTENSION TO TREAT DATA ERRORS, OR MU VARIATION
-            ##
-            ## Suppose that the {OBSERVED Mw} = ( {Mw_in_event_table} + dMw ),
-            ## where dMw is a perturbation, with KNOWN distribution that 
-            ## depends on Mw_in_event_table. 
-            ## If Mfd gives the exceedance rate for any value of
-            ## {Mw_in_event_table}, and 'mfd' is its derivative wrt Mw_in_event_table,
-            ## then the mean rate of {OBSERVED Mw} above data_thresh is:
-            ##     integral_wrt_y{ mfd(y) * (1 - Pr(dMw <= data_thresh - y | y)) } from [-Inf, Inf]
-            ## i.e. if we have a dMw distribution [ in the case of variable
-            ## shear modulus with small earthquakes, this can come from the
-            ## known distribution of mu, since dMw ~ 2/3log10(mu/constant_mu)]
-            ## then we can compute the rate of observations exceeding
-            ## data_thresh 
-            ##
-            ### For illustration of the concept, here's an artificial example
-            ## N = 1e+07
-            ## y = rexp(N) # Like {Mw_in_event_table}. So 'Mfd' is like 'pexp' and 'mfd' is like 'dexp'
-            ## delta = rgamma(N, shape=1, scale=2+y) # Like dMs, with a distribution that depends on y
-            ## observed = y + delta # Like OBSERVED_Mw
-            ## data_thresh = 4 # Say we want the rate of observed>data_thresh
-            ## #This function gives the analytical solution
-            ## f<-function(y,x) dexp(y) * (1-pgamma(x-y, shape=1, scale=2+y))
-            ## # These 2 numbers should be equal for a large enough sample
-            ## pr_observed_gt_4_A = mean(observed > data_thresh)
-            ## pr_observed_gt_4_B = integrate(f, lower=-2, upper=20, x=data_thresh)
-            ## Further, the integral is also 'the same' (for large enough N) as
-            ## mean(1-pgamma(data_thresh - y, shape=1, scale=2+y))
-           
-            ## Numerically compute the integral (over y) of 
-            ##   (1 - cdf_mw_observation_error(data_thresh - y, y))*(derivative_of_Mfd_at_y)
-            #integration_eps = 0.01
-            ## Initially try a small-ish range of mw-error to reduce the expense
-            ## of the integration
-            #allowed_mw_error = 0.1
-            #Mw_true = seq(data_thresh-allowed_mw_error, data_thresh+allowed_mw_error, by=integration_eps)
-            #cdf_complement = 1 - cdf_mw_observation_error(data_thresh - Mw_true, Mw_true)
-            #for(iters in 1:6){
-            #    # Potentially grow allowed_mw_error, up to a multiple of 2**max(iters) times the initial value
-            #    if( (cdf_complement[1] > 0) | (cdf_complement[length(cdf_complement)] < 1) ){
-            #        # Increase the allowed_mw_error
-            #        allowed_mw_error = allowed_mw_error * 2
-            #        Mw_true = seq(data_thresh-allower_mw_error, data_thresh+allowed_mw_error, by=integration_eps)
-            #        cdf_complement = 1 - cdf_mw_observation_error(data_thresh - Mw_true, Mw_true)
-            #    }else{
-            #        break
-            #    }
-            #}
-            #if((cdf_complement[1] > 0) | (cdf_complement[length(cdf_complement)] < 1)){
-            #    stop(paste0('Allowed range of Mw error should not exceed (+-)', allowed_mw_error, 
-            #        ' magnitude units, but the provided function indicates more extreme errors are possible.',
-            #        ' Please clip the magnitude errors to be within the allowed range (note the use of a smaller',
-            #        ' range can be more efficient)'))
-            #}
-
-            #incremental_rate = - (
-            #    Mfd(Mw_true+integration_eps/2, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
-            #    Mfd(Mw_true-integration_eps/2, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
-            ## Numerical integration of the 'observed rate' of events > data_thresh
-            #model_rates[i] = sum(incremental_rate * cdf_complement)
-            Mfd_local<-function(y) Mfd(y, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
-            # 
+            #
+            # EXTENSION TO TREAT DATA ERRORS, OR MU VARIATION
+            #
             # Below for the integration, we assume the absolute Mw errors are always < 0.5
             # Good to add some check to ensure that is the case
             #
             if(cdf_mw_observation_error(-0.5 , data_thresh+0.5) > 0) stop('mw_observation_error is too large')
             if(cdf_mw_observation_error( 0.5 , data_thresh-0.5) < 1) stop('mw_observation_error is too large')
+            #
+            Mfd_local<-function(y) Mfd(y, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
             model_rates[i] = exceedance_rate_of_observed(Mfd_local, cdf_mw_observation_error, data_thresh,
                 true_value_range = c(data_thresh-0.5, data_thresh+0.5), integration_eps=0.01)
         }
