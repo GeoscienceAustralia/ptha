@@ -435,6 +435,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     for(i in 1:nrow(all_par_combo)){
         all_par_prob[i] = prod(all_par_combo_prob[i,])    
     }
+    rm(all_par_combo_prob)
   
     # Check the summed probabilities still = 1
     stopifnot(isTRUE(all.equal(sum(all_par_prob), 1.0)))
@@ -574,177 +575,11 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     all_par_prob_prior = all_par_prob   
  
     if(update_logic_tree_weights_with_data){
-        #
-        # Adjust the weights of logic-tree branches based on the data
-        #
+        # Update the logic tree weights using probided data sets
+        all_par_prob = compute_updated_logic_tree_weights(Mw_seq, all_rate_matrix, 
+            all_par_combo, a_parameter, all_par_prob_prior, Mw_count_duration,
+            Mw_obs_data)
 
-        if(sum(is.na(Mw_count_duration)) > 0){
-            msg = paste0('Must provide Mw_count_duration data if ', 
-                'update_logic_tree_weights_with_data=TRUE')
-            stop(msg)
-        }
-
-        data_thresh = Mw_count_duration[1]
-        data_count = Mw_count_duration[2]
-        data_observation_duration = Mw_count_duration[3]
-        
-        if( (data_thresh < min(Mw_seq)) | (data_thresh > max(Mw_seq)) ){
-            stop('The Mw threshold of the data must be within [Mw_min, Mw_max]')
-        }
-       
-        model_rates = all_par_prob*0
-        for(i in 1:length(model_rates)){
-            model_rates[i] = approx(Mw_seq, all_rate_matrix[i,], 
-                xout=data_thresh)$y
-            # Could also set Mfd based on all_par_combo$Mw_frequency_distribution[i]
-            # and then do
-            # model_rates[i] = Mfd(data_thresh, a=a_parameter[i], b=all_par_combo$b[i],
-            #                      Mw_min=-Inf, Mw_max=all_par_combo$Mw_max[i])
-            #
-            #
-            # EXTENSION TO TREAT DATA ERRORS, OR MU VARIATION
-            #
-            # Suppose that the {OBSERVED Mw} = ( {Mw_in_event_table} + dMw ),
-            # where dMw is a perturbation, with KNOWN distribution that 
-            # depends on Mw_in_event_table. 
-            # If Mfd gives the exceedance rate for any value of
-            # {Mw_in_event_table}, and 'mfd' is its derivative wrt Mw_in_event_table,
-            # then the mean rate of {OBSERVED Mw} above data_thresh is:
-            #     integral_wrt_y{ mfd(y) * (1 - Pr(dMw > data_thresh - y | y)) } from [-Inf, Inf]
-            # i.e. if we have a dMw distribution [ in the case of variable
-            # shear modulus with small earthquakes, this can come from the
-            # known distribution of mu, since dMw ~ 2/3log10(mu/constant_mu)]
-            # then we can compute the rate of observations exceeding
-            # data_thresh 
-            #
-            ## For illustration
-            # N = 1e+07
-            # y = rexp(N) # Like {Mw_in_event_table}. So 'Mfd' is like 'pexp' and 'mfd' is like 'dexp'
-            # delta = rgamma(N, shape=1, scale=2+y) # Like dMs, with a distribution that depends on y
-            # observed = y + delta # Like OBSERVED_Mw
-            # data_thresh = 4 # Say we want the rate of observed>data_thresh
-            # #This function gives the analytical solution
-            # f<-function(y,x) dexp(y) * (1-pgamma(x-y, shape=1, scale=2+y))
-            # # These 2 numbers should be equal for a large enough sample
-            # pr_observed_gt_4_A = mean(observed > data_thresh)
-            # pr_observed_gt_4_B = integrate(f, lower=-2, upper=20, x=data_thresh)
-            # Further, the integral is also 'the same' (for large enough N) as
-            # mean(1-pgamma(data_thresh - y, shape=1, scale=2+y))
-           
-            # Mdf = XXXX
-            # mdf = XXXX
-            # magnitude_error_sample = random_Mw_measurement_errors(1000, observed_Mw = data_thresh)
-            # model_rates[i] = XXXXX
-        }
-
-        #
-        # Compute the probability of observing the data, given each model
-        #
-
-        #
-        # Temporal component of likelihood
-        #
-        if(is.null(Mw_obs_data$t)){
-            # Here, detailed temporal data was not provided. 
-            # Assume poisson rate of events.
-
-            log_pr_data_given_model = dpois(data_count, 
-                lambda = (model_rates*data_observation_duration), 
-                log=TRUE)
-
-        }else{
-            msg = paste0('Warning: Censored ML gives a biased estimate of the rates for \n',
-                'a Poisson process, it is likely better to set Mw_obs_data$t=NULL, \n',
-                'while retaining the Mw_obs_data$Mw values')
-            print(msg)
-            # Detailed temporal data was provided.
-            # Times must be sorted
-            stopifnot(min(diff(Mw_obs_data$t)) >= 0)
-            stopifnot(min(Mw_obs_data$t) >= 0)
-            stopifnot(max(Mw_obs_data$t) <= data_observation_duration)
-
-            # Compute times between events
-            dts = diff(Mw_obs_data$t)
-            dts1_lower_bound = Mw_obs_data$t[1]
-            dts_last_lower_bound = data_observation_duration - Mw_obs_data$t[data_count]
-            
-            log_pr_data_given_model = rep(NA, length=length(model_rates))
-            for(i in 1:length(model_rates)){
-                ri = model_rates[i] 
-                # Likelihood function, exponential model. Account for fact that the 
-                # first/last time spacings are not known exactly
-                log_pr_data_given_model[i] = 
-                    # Sum log-likelihood for numerical stability
-                    sum(dexp(dts, rate=ri, log=TRUE)) + 
-                    # Integral over upper tails for first/last data points
-                    pexp(dts1_lower_bound, rate=ri, lower.tail=FALSE, log.p=TRUE) +
-                    pexp(dts_last_lower_bound, rate=ri, lower.tail=FALSE, log.p=TRUE)
-            }
-
-        }
-
-        #
-        # Magnitude component of likelihood
-        #
-        if(!is.null(Mw_obs_data$Mw)){
-
-            # Check consistency between this data and Mw_count_duration
-            stopifnot(length(Mw_obs_data$Mw) == data_count)
-            stopifnot(all(Mw_obs_data$Mw >= data_thresh))
-
-            # If times were provided, they must be the same length
-            if(!is.null(Mw_obs_data$t)){
-                stopifnot(length(Mw_obs_data$Mw) == length(Mw_obs_data$t))
-            }
-
-            # Update the likelihood
-            for(i in 1:length(model_rates)){
-
-                Mw_obs_threshold = Mw_count_duration[1]
-                # GR parameters for this logic tree curve
-                a_par = a_parameter[i]
-                b_par = all_par_combo$b[i]
-                mw_min_par = all_par_combo$Mw_min[i]
-                mw_max_par = all_par_combo$Mw_max[i]
-
-                #
-                # Evaluate the 'density' for samples above Mw_observation_threshold 
-                #   = -(1/GR(Mw_obs_threshold))*[ derivative_of_GR_with_respect_to_Mw]
-                # (Because the CDF is ( 1  -(1/GR(Mw_obs_threshold))*GR(Mw) )
-                #
-                gr_mwmin = Mfd(Mw_obs_threshold, a = a_par, b=b_par, 
-                    Mw_min=mw_min_par, Mw_max=mw_max_par)
-                eps = 1e-04 # For numerical differentiation
-                density_above_Mw_obs_threshold = -1/(gr_mwmin*2*eps) * (
-                    Mfd(Mw_obs_data$Mw+eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
-                    Mfd(Mw_obs_data$Mw-eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
-                # Ensure the density is zero below Mw_obs_threshold [since the input format demands
-                # the input data does not contain values below Mw_obs_threshold]
-                density_above_Mw_obs_threshold = (Mw_obs_data$Mw >= Mw_obs_threshold) *
-                    density_above_Mw_obs_threshold
-
-                stopifnot(all(density_above_Mw_obs_threshold >= 0))
-
-                # Add the Mw-related log-likelihood terms to the full log likelihood
-                log_dens_values = log(density_above_Mw_obs_threshold)
-                log_pr_data_given_model[i] = log_pr_data_given_model[i] + (sum(log_dens_values))
-            }
-
-        }
-
-        # Check that some models have non-zero probability
-        
-        if( all(!is.finite(log_pr_data_given_model)) ){
-            stop('Mw_count_duration data is impossible under every model')
-        }
-     
-        # For numerical stability, rescale log_pr_data_given_model 
-        # This will not effect all_par_prob, but makes it numerically easier to compute
-        mx = max(log_pr_data_given_model)
- 
-        # Bayes theorem, with likelihood scaled for numerical stability
-        all_par_prob =  all_par_prob_prior * exp(log_pr_data_given_model-mx) / 
-            sum(all_par_prob_prior * exp(log_pr_data_given_model-mx))
     }else{
 
         all_par_prob = all_par_prob_prior
@@ -1014,3 +849,197 @@ Mw_exceedance_rate_characteristic_gutenberg_richter<-function(
     output = N_mag_gt_Mw*(Mw <= Mw_max)
     return(output)
 }
+
+# Update logic tree weights using data
+#
+# 
+compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_combo, 
+    a_parameter, all_par_prob_prior, Mw_count_duration, Mw_obs_data){
+
+    #
+    # Adjust the weights of logic-tree branches based on the data
+    #
+    if(sum(is.na(Mw_count_duration)) > 0){
+        msg = paste0('Must provide Mw_count_duration data if ', 
+            'update_logic_tree_weights_with_data=TRUE')
+        stop(msg)
+    }
+
+    data_thresh = Mw_count_duration[1]
+    data_count = Mw_count_duration[2]
+    data_observation_duration = Mw_count_duration[3]
+    
+    if( (data_thresh < min(Mw_seq)) | (data_thresh > max(Mw_seq)) ){
+        stop('The Mw threshold of the data must be within [Mw_min, Mw_max]')
+    }
+   
+    model_rates = all_par_prob_prior*0
+    for(i in 1:length(model_rates)){
+        model_rates[i] = approx(Mw_seq, all_rate_matrix[i,], 
+            xout=data_thresh)$y
+        # Could also set Mfd based on all_par_combo$Mw_frequency_distribution[i]
+        # and then do
+        # model_rates[i] = Mfd(data_thresh, a=a_parameter[i], b=all_par_combo$b[i],
+        #                      Mw_min=-Inf, Mw_max=all_par_combo$Mw_max[i])
+        #
+        #
+        # EXTENSION TO TREAT DATA ERRORS, OR MU VARIATION
+        #
+        # Suppose that the {OBSERVED Mw} = ( {Mw_in_event_table} + dMw ),
+        # where dMw is a perturbation, with KNOWN distribution that 
+        # depends on Mw_in_event_table. 
+        # If Mfd gives the exceedance rate for any value of
+        # {Mw_in_event_table}, and 'mfd' is its derivative wrt Mw_in_event_table,
+        # then the mean rate of {OBSERVED Mw} above data_thresh is:
+        #     integral_wrt_y{ mfd(y) * (1 - Pr(dMw > data_thresh - y | y)) } from [-Inf, Inf]
+        # i.e. if we have a dMw distribution [ in the case of variable
+        # shear modulus with small earthquakes, this can come from the
+        # known distribution of mu, since dMw ~ 2/3log10(mu/constant_mu)]
+        # then we can compute the rate of observations exceeding
+        # data_thresh 
+        #
+        ## For illustration
+        # N = 1e+07
+        # y = rexp(N) # Like {Mw_in_event_table}. So 'Mfd' is like 'pexp' and 'mfd' is like 'dexp'
+        # delta = rgamma(N, shape=1, scale=2+y) # Like dMs, with a distribution that depends on y
+        # observed = y + delta # Like OBSERVED_Mw
+        # data_thresh = 4 # Say we want the rate of observed>data_thresh
+        # #This function gives the analytical solution
+        # f<-function(y,x) dexp(y) * (1-pgamma(x-y, shape=1, scale=2+y))
+        # # These 2 numbers should be equal for a large enough sample
+        # pr_observed_gt_4_A = mean(observed > data_thresh)
+        # pr_observed_gt_4_B = integrate(f, lower=-2, upper=20, x=data_thresh)
+        # Further, the integral is also 'the same' (for large enough N) as
+        # mean(1-pgamma(data_thresh - y, shape=1, scale=2+y))
+       
+        # Mdf = XXXX
+        # mdf = XXXX
+        # magnitude_error_sample = random_Mw_measurement_errors(1000, observed_Mw = data_thresh)
+        # model_rates[i] = XXXXX
+    }
+
+    #
+    # Compute the probability of observing the data, given each model
+    #
+
+    #
+    # Temporal component of likelihood
+    #
+    if(is.null(Mw_obs_data$t)){
+        # Here, detailed temporal data was not provided. 
+        # Assume poisson rate of events.
+
+        log_pr_data_given_model = dpois(data_count, 
+            lambda = (model_rates*data_observation_duration), 
+            log=TRUE)
+
+    }else{
+        msg = paste0('Warning: Censored ML gives a biased estimate of the rates for \n',
+            'a Poisson process, it is likely better to set Mw_obs_data$t=NULL, \n',
+            'while retaining the Mw_obs_data$Mw values')
+        print(msg)
+        # Detailed temporal data was provided.
+        # Times must be sorted
+        stopifnot(min(diff(Mw_obs_data$t)) >= 0)
+        stopifnot(min(Mw_obs_data$t) >= 0)
+        stopifnot(max(Mw_obs_data$t) <= data_observation_duration)
+
+        # Compute times between events
+        dts = diff(Mw_obs_data$t)
+        dts1_lower_bound = Mw_obs_data$t[1]
+        dts_last_lower_bound = data_observation_duration - Mw_obs_data$t[data_count]
+        
+        log_pr_data_given_model = rep(NA, length=length(model_rates))
+        for(i in 1:length(model_rates)){
+            ri = model_rates[i] 
+            # Likelihood function, exponential model. Account for fact that the 
+            # first/last time spacings are not known exactly
+            log_pr_data_given_model[i] = 
+                # Sum log-likelihood for numerical stability
+                sum(dexp(dts, rate=ri, log=TRUE)) + 
+                # Integral over upper tails for first/last data points
+                pexp(dts1_lower_bound, rate=ri, lower.tail=FALSE, log.p=TRUE) +
+                pexp(dts_last_lower_bound, rate=ri, lower.tail=FALSE, log.p=TRUE)
+        }
+
+    }
+
+    #
+    # Magnitude component of likelihood
+    #
+    if(!is.null(Mw_obs_data$Mw)){
+
+        # Check consistency between this data and Mw_count_duration
+        stopifnot(length(Mw_obs_data$Mw) == data_count)
+        stopifnot(all(Mw_obs_data$Mw >= data_thresh))
+
+        # If times were provided, they must be the same length
+        if(!is.null(Mw_obs_data$t)){
+            stopifnot(length(Mw_obs_data$Mw) == length(Mw_obs_data$t))
+        }
+
+        # Update the likelihood
+        for(i in 1:length(model_rates)){
+
+            Mw_obs_threshold = Mw_count_duration[1]
+            # GR parameters for this logic tree curve
+            a_par = a_parameter[i]
+            b_par = all_par_combo$b[i]
+            mw_min_par = all_par_combo$Mw_min[i]
+            mw_max_par = all_par_combo$Mw_max[i]
+            Mfd_type = all_par_combo$Mw_frequency_distribution
+
+            if(Mfd_type == 'truncated_gutenberg_richter'){
+                Mfd = Mw_exceedance_rate_truncated_gutenberg_richter
+            }else if(Mfd_type == 'characteristic_gutenberg_richter'){
+                Mfd = Mw_exceedance_rate_characteristic_gutenberg_richter
+            }else{
+                stop(paste0(" Value of Mw_frequency_distribution: ",
+                    Mfd_type, " not recognized"))
+            }       
+             
+
+            #
+            # Evaluate the 'density' for samples above Mw_observation_threshold 
+            #   = -(1/GR(Mw_obs_threshold))*[ derivative_of_GR_with_respect_to_Mw]
+            # (Because the CDF is ( 1  -(1/GR(Mw_obs_threshold))*GR(Mw) )
+            #
+            gr_mwmin = Mfd(Mw_obs_threshold, a = a_par, b=b_par, 
+                Mw_min=mw_min_par, Mw_max=mw_max_par)
+            eps = 1e-04 # For numerical differentiation
+            density_above_Mw_obs_threshold = -1/(gr_mwmin*2*eps) * (
+                Mfd(Mw_obs_data$Mw+eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
+                Mfd(Mw_obs_data$Mw-eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
+            # Ensure the density is zero below Mw_obs_threshold [since the input format demands
+            # the input data does not contain values below Mw_obs_threshold]
+            density_above_Mw_obs_threshold = (Mw_obs_data$Mw >= Mw_obs_threshold) *
+                density_above_Mw_obs_threshold
+
+            stopifnot(all(density_above_Mw_obs_threshold >= 0))
+
+            # Add the Mw-related log-likelihood terms to the full log likelihood
+            log_dens_values = log(density_above_Mw_obs_threshold)
+            log_pr_data_given_model[i] = log_pr_data_given_model[i] + (sum(log_dens_values))
+        }
+
+    }
+
+    # Check that some models have non-zero probability
+    
+    if( all(!is.finite(log_pr_data_given_model)) ){
+        stop('Mw_count_duration data is impossible under every model')
+    }
+ 
+    # For numerical stability, rescale log_pr_data_given_model 
+    # This will not effect all_par_prob, but makes it numerically easier to compute
+    mx = max(log_pr_data_given_model)
+
+    # Bayes theorem, with likelihood scaled for numerical stability
+    all_par_prob =  all_par_prob_prior * exp(log_pr_data_given_model-mx) / 
+        sum(all_par_prob_prior * exp(log_pr_data_given_model-mx))
+
+
+
+    return(all_par_prob)
+}
+
