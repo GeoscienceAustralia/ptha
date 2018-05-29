@@ -1038,8 +1038,6 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
     all_par_prob =  all_par_prob_prior * exp(log_pr_data_given_model-mx) / 
         sum(all_par_prob_prior * exp(log_pr_data_given_model-mx))
 
-
-
     return(all_par_prob)
 }
 
