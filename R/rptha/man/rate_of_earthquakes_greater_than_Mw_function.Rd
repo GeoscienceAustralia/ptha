@@ -13,7 +13,8 @@ rate_of_earthquakes_greater_than_Mw_function(slip_rate, slip_rate_prob, b,
   update_logic_tree_weights_with_data = FALSE, Mw_count_duration = c(NA, NA,
   NA), Mw_obs_data = list(Mw = NULL, t = NULL), Mw_2_M0 = function(x)
   M0_2_Mw(x, inverse = TRUE), account_for_moment_below_mwmin = FALSE,
-  mw_max_posterior_equals_mw_max_prior = FALSE)
+  mw_max_posterior_equals_mw_max_prior = FALSE,
+  mw_observation_error_cdf = NULL)
 }
 \arguments{
 \item{slip_rate}{numeric vector with 1 or more long-term seismogenic slip
@@ -132,6 +133,12 @@ earthquakes with Mw > Mwmin, and use that when computing the rates.}
 \item{mw_max_posterior_equals_mw_max_prior}{logical. If TRUE, then do the Bayesian
 update on a 'per-mw-max' level, i.e. the posterior of mw_max will be the
 same as the prior of mw_max.}
+
+\item{mw_observation_error_cdf}{If not NULL, a function F(x, Mw_true) giving the
+probability that {(Mw_obs - Mw_true) <= x} if Mw-true takes a known value. Here
+the observed Mw_obs has some error. In other words, if Mw_true is fixed,
+then F is a cumulative distribution function for the error in Mw_obs. While this
+CDF does not have to be a function of Mw_true, it is useful to allow that.}
 }
 \value{
 Function f(Mw) of a numeric vector Mw, which by default returns the
