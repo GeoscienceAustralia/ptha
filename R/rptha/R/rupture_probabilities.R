@@ -569,57 +569,33 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         all_rate_matrix[i,] = all_rate_vec
 
     }
-
+    # Store 'a' in all par combo (allows access from outside the function)
+    all_par_combo$a = all_par_combo$a_parameter
 
     # Save original probabilities in case we update them
     all_par_prob_prior = all_par_prob   
  
     if(update_logic_tree_weights_with_data){
-        # Update the logic tree weights using probided data sets
+        # Update the logic tree weights using provided data sets
         all_par_prob = compute_updated_logic_tree_weights(Mw_seq, all_rate_matrix, 
-            all_par_combo, a_parameter, all_par_prob_prior, Mw_count_duration,
-            Mw_obs_data)
+            all_par_combo, all_par_prob_prior, Mw_count_duration,
+            Mw_obs_data, mw_max_posterior_equals_mw_max_prior)
+
+        all_par_prob_with_Mw_error = all_par_prob
 
     }else{
-
+        # Posterior = Prior
         all_par_prob = all_par_prob_prior
-
+        all_par_prob_with_Mw_error = all_par_prob
     }
-
-    # Optionally, ENFORCE mw-max-posterior to be mw-max prior.
-    # A user might want to do this e.g. if they want a fixed uncertainty in Mw-max, 
-    # irrespective of the data. Obviously this option is not a pure Bayesian update.
-    if(mw_max_posterior_equals_mw_max_prior){
-        if(!is.na(Mw_count_duration[1])){
-            if( any((Mw_max_prob > 0) & (Mw_max < Mw_count_duration[1])) ){
-                stop(paste0('Mw_max prior puts non-zero weight on value that is less ',
-                    'than the observations. \n This means some prior values are impossible, \n', 
-                    'and we cannot satisfy mw_max_posterior_equals_mw_max_prior'))
-            }
-        }
-        # Change the all_par_prob to ensure that mw_max posterior is the same
-        # as mw_max prior. This is like we did the weight update for each mw_max separately.
-        mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
-        mw_max_prior_prob = aggregate(Mw_max_prob, list(Mw_max), sum)
-
-        stopifnot(isTRUE(all.equal(sum(mw_max_post_prob[,2]), 1.0)))
-        stopifnot(isTRUE(all.equal(sum(mw_max_prior_prob[,2]), 1.0)))
-
-        match_mw_max1 = match(all_par_combo$Mw_max, mw_max_post_prob[,1])
-        match_mw_max2 = match(all_par_combo$Mw_max, mw_max_prior_prob[,1])
-
-        k = which(all_par_prob > 0) # Avoid possibility of division by zero if priors included zero
-        all_par_prob[k] = all_par_prob[k]/mw_max_post_prob[match_mw_max1[k],2] * mw_max_prior_prob[match_mw_max2[k],2]
-        # Check that we equalized over Mw_max 
-        mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
-        stopifnot(isTRUE(all.equal(mw_max_post_prob[,2], mw_max_prior_prob[,2])))
-    }
-
+    gc()
 
     # Compute the average rate
     final_rates = rep(0, length(Mw_seq))
+    final_rates_with_Mw_error = rep(0, length(Mw_seq))
     for(i in 1:nrow(all_rate_matrix)){
         final_rates = final_rates + all_par_prob[i] * all_rate_matrix[i,]
+        final_rates_with_Mw_error = final_rates_with_Mw_error + all_par_prob_with_Mw_error[i] * all_rate_matrix[i,]
     }
 
     # Store the max/min rates from all branches of the logic tree,
@@ -628,27 +604,38 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     upper_rate = apply(all_rate_matrix, 2, max)
     lower_rate = apply(all_rate_matrix, 2, min)
 
-    quantile_rate_fun<-function(rates, p){
+    quantile_rate_fun<-function(rates, p, with_mw_error=FALSE){
         sorted_rates = sort(rates, index.return=TRUE)
-        sorted_prob = all_par_prob[sorted_rates$ix]
+        if(with_mw_error){
+            sorted_prob = all_par_prob_with_Mw_error[sorted_rates$ix]
+        }else{
+            sorted_prob = all_par_prob[sorted_rates$ix]
+        }
         cumulative_sorted_prob = cumsum(sorted_prob)
         # The median occurs when the cumulative probability >= 0.5
         ind = min(which(cumulative_sorted_prob >= p))
         return(sorted_rates$x[ind])
     }
 
+
     # Compute the 50th percentile
     median_rate = apply(all_rate_matrix, 2, 
         f<-function(rates) quantile_rate_fun(rates, p=0.5)
         )
+    median_rate_with_Mw_error = apply(all_rate_matrix, 2, 
+        f<-function(rates) quantile_rate_fun(rates, p=0.5, with_mw_error=TRUE)
+        )
+
 
     # For the output function, if we exceed the bounds on the LHS we can return
     # the most extreme value, and on the RHS we should return zero.
     # We take care of the LHS in approxfun, and the RHS below.
     output_function = approxfun(Mw_seq, final_rates, rule=2)
+    output_function_with_Mw_error = approxfun(Mw_seq, final_rates_with_Mw_error, rule=2)
     upper_function = approxfun(Mw_seq, upper_rate, rule=2)
     lower_function = approxfun(Mw_seq, lower_rate, rule=2)
     median_function = approxfun(Mw_seq, median_rate, rule=2)
+    median_function_with_Mw_error = approxfun(Mw_seq, median_rate_with_Mw_error, rule=2)
 
     # Function to compute the rate, with a number of useful extra options
     #
@@ -674,7 +661,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         bounds=FALSE, 
         return_all_logic_tree_branches=FALSE, 
         quantiles=NULL,
-        return_random_curve=FALSE){
+        return_random_curve=FALSE,
+        use_mw_error=FALSE){
 
         # Check input arguments for accidental nulls
         input_args = as.list(match.call())
@@ -711,7 +699,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                           all_par_prob = all_par_prob,
                           all_par_prob_prior = all_par_prob_prior,
                           all_par = all_par_combo,
-                          a_parameter = a_parameter)
+                          a_parameter = a_parameter,
+                          all_par_prob_with_Mw_error=all_par_prob_with_Mw_error)
             return(output)
         }
 
@@ -720,21 +709,35 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
             stopifnot(bounds==FALSE & return_all_logic_tree_branches==FALSE)
 
-            par = sample(1:length(all_par_combo[,1]), size=1, 
-                prob=all_par_prob)
+            if(use_mw_error){
+                par = sample(1:length(all_par_combo[,1]), size=1, 
+                    prob=all_par_prob_with_Mw_error)
+            }else{
+                par = sample(1:length(all_par_combo[,1]), size=1, 
+                    prob=all_par_prob)
+            }
+        
             output = approx(Mw_seq, all_rate_matrix[par,], xout=Mw, rule=2)$y *
                 (Mw <= max_Mw_max)
             return(output)
         }
 
         # Typical case
-        output = (Mw <= (max_Mw_max))*output_function(Mw)
+        if(use_mw_error){
+            output = (Mw <= (max_Mw_max))*output_function_with_Mw_error(Mw)
+        }else{
+            output = (Mw <= (max_Mw_max))*output_function(Mw)
+        }
 
         if(bounds){
             # Compute some summary statistics
             output_up = (Mw <= max_Mw_max)*upper_function(Mw)
             output_low = (Mw <= max_Mw_max)*lower_function(Mw)
-            output_med = (Mw <= max_Mw_max)*median_function(Mw)
+            if(use_mw_error){
+                output_med = (Mw <= max_Mw_max)*median_function_with_Mw_error(Mw)
+            }else{
+                output_med = (Mw <= max_Mw_max)*median_function(Mw)
+            }
            
             if(length(Mw) == 1){ 
                 output = c(output, output_low, output_up, output_med)
@@ -757,7 +760,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             for(i in 1:length(quantiles)){
                 # For each quantile, evaluate the rate curve with interpolation
                 quantile_rate = apply(all_rate_matrix, 2, 
-                    f<-function(rate) quantile_rate_fun(rate, p=quantiles[i]))
+                    f<-function(rate) quantile_rate_fun(rate, p=quantiles[i], use_mw_error))
                 if(length(Mw) == 1){
                     output[i] = 
                         approx(Mw_seq, quantile_rate, xout=Mw, rule=2)$y * 
@@ -854,7 +857,8 @@ Mw_exceedance_rate_characteristic_gutenberg_richter<-function(
 #
 # 
 compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_combo, 
-    a_parameter, all_par_prob_prior, Mw_count_duration, Mw_obs_data){
+    a_parameter, all_par_prob_prior, Mw_count_duration, Mw_obs_data, 
+    mw_max_posterior_equals_mw_max_prior){
 
     #
     # Adjust the weights of logic-tree branches based on the data
@@ -879,7 +883,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
             xout=data_thresh)$y
         # Could also set Mfd based on all_par_combo$Mw_frequency_distribution[i]
         # and then do
-        # model_rates[i] = Mfd(data_thresh, a=a_parameter[i], b=all_par_combo$b[i],
+        # model_rates[i] = Mfd(data_thresh, a=all_par_combo$a[i], b=all_par_combo$b[i],
         #                      Mw_min=-Inf, Mw_max=all_par_combo$Mw_max[i])
         #
         #
@@ -983,7 +987,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
 
             Mw_obs_threshold = Mw_count_duration[1]
             # GR parameters for this logic tree curve
-            a_par = a_parameter[i]
+            a_par = all_par_combo$a[i]
             b_par = all_par_combo$b[i]
             mw_min_par = all_par_combo$Mw_min[i]
             mw_max_par = all_par_combo$Mw_max[i]
@@ -1037,6 +1041,36 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
     # Bayes theorem, with likelihood scaled for numerical stability
     all_par_prob =  all_par_prob_prior * exp(log_pr_data_given_model-mx) / 
         sum(all_par_prob_prior * exp(log_pr_data_given_model-mx))
+
+
+    # Optionally, ENFORCE mw-max-posterior to be mw-max prior.
+    # A user might want to do this e.g. if they want a fixed uncertainty in Mw-max, 
+    # irrespective of the data. Obviously this option is not a pure Bayesian update.
+    if(mw_max_posterior_equals_mw_max_prior){
+        if(!is.na(Mw_count_duration[1])){
+            if( any((Mw_max_prob > 0) & (Mw_max < Mw_count_duration[1])) ){
+                stop(paste0('Mw_max prior puts non-zero weight on value that is less ',
+                    'than the observations. \n This means some prior values are impossible, \n', 
+                    'and we cannot satisfy mw_max_posterior_equals_mw_max_prior'))
+            }
+        }
+        # Change the all_par_prob to ensure that mw_max posterior is the same
+        # as mw_max prior. This is like we did the weight update for each mw_max separately.
+        mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
+        mw_max_prior_prob = aggregate(Mw_max_prob, list(Mw_max), sum)
+
+        stopifnot(isTRUE(all.equal(sum(mw_max_post_prob[,2]), 1.0)))
+        stopifnot(isTRUE(all.equal(sum(mw_max_prior_prob[,2]), 1.0)))
+
+        match_mw_max1 = match(all_par_combo$Mw_max, mw_max_post_prob[,1])
+        match_mw_max2 = match(all_par_combo$Mw_max, mw_max_prior_prob[,1])
+
+        k = which(all_par_prob > 0) # Avoid possibility of division by zero if priors included zero
+        all_par_prob[k] = all_par_prob[k]/mw_max_post_prob[match_mw_max1[k],2] * mw_max_prior_prob[match_mw_max2[k],2]
+        # Check that we equalized over Mw_max 
+        mw_max_post_prob = aggregate(all_par_prob, list(all_par_combo$Mw_max), sum)
+        stopifnot(isTRUE(all.equal(mw_max_post_prob[,2], mw_max_prior_prob[,2])))
+    }
 
     return(all_par_prob)
 }
