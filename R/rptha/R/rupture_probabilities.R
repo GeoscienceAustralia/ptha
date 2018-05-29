@@ -1148,17 +1148,22 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
 
 #' Exceedance rate of observations with random errors
 #'
-#' Suppose that: \cr
+#' Suppose that a process generates values 'y' from a known exceedance rate
+#' function (such as a Gutenberg-Richter distribution with fixed parameters),
+#' and we observe 'y + obs_error' where obs_error has a known distribution
+#' dependent on the value of 'y'. This function can calculate the exceedance
+#' rate of the observations. \cr
+#' Written another way, suppose:
+#' the rate of true values that exceed y is exceedance_true(y); \cr
 #' cdf_obs_error(obs_err, y) is the CDF of obs_err given the true value 'y'; \cr
 #' the observed value is (y+obs_err); \cr
-#' the exceedance rate of y is exceedance_true(y); \cr
-#' Then this function computes the exceedance rate of the observed_value above data_value, i.e. \cr
+#' Then this function computes the rate at which observed_value is above data_value, i.e. \cr
 #' integral { (1 - cdf_obs_error(data_value - y | y)) * (-d(exceedance_true)/d(true_value) ) } dy \cr
 #' This is done with numerical integration
 #'
 #' @param exceedance_true exceedance rate function R(y) of a single variable
 #' @param cdf_obs_error function F(x,y) giving the CDF of the error if y is fixed
-#' @param data_thresh the function will return the rate of observations above data_thresh
+#' @param data_value the function will return the rate of observations above data_value
 #' @param true_value_range range of the true value to integrate over
 #' @param integration_eps numerically integrate with this spacing
 #' @return value of the integral, which gives the rate of 'observed' (= true + error) that
@@ -1169,11 +1174,15 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
 #'
 #' # Make a problem with known rate functions and error models, then compute the answer
 #' # in multiple ways, and check it works 
-#' N = 1e+06
+#' N = 1e+06 # Just make this large enough for the numerical integration to work
 #' y = rexp(N) # The true value. This has exceedance rate function '(1-pexp)'
 #' delta = rgamma(N, shape=1, scale=2+y) # The error, with a distribution that depends on the true value
 #' observed = y + delta # The observed value
 #' data_thresh = 4 # Say we want the rate of observed>data_thresh
+#'
+#' # The example allows us to compute rate(observed>data_thresh) empirically,
+#' # and analytically, and check that exceedance_rate_of_observed also gives the right answer
+#' 
 #' # Integration of this function gives the analytical solution
 #' f<-function(y,x) dexp(y) * (1-pgamma(x-y, shape=1, scale=2+y))
 #' # These 2 numbers should be equal for a large enough sample
