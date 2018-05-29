@@ -991,7 +991,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
             #
             if(cdf_mw_observation_error(-0.5 , data_thresh+0.5) > 0) stop('mw_observation_error is too large')
             if(cdf_mw_observation_error( 0.5 , data_thresh-0.5) < 1) stop('mw_observation_error is too large')
-            model_rates[i] = exceedance_rate_of_observed(Mfd_local, cfd_mw_observation_error, data_thresh,
+            model_rates[i] = exceedance_rate_of_observed(Mfd_local, cdf_mw_observation_error, data_thresh,
                 true_value_range = c(data_thresh-0.5, data_thresh+0.5), integration_eps=0.01)
         }
     }
