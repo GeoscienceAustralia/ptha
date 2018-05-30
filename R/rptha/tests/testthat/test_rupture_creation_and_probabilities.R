@@ -583,4 +583,96 @@ test_that("test_rupture_creation_and_probabilities", {
     expect_that(isTRUE(all.equal(xx$all_par$slip_rate[k], 0.05)), is_true())
     expect_that(xx$all_par$Mw_frequency_distribution[k] == 'characteristic_gutenberg_richter', is_true())
 
+
+    #
+    # Modelling of Mw observation errors
+    #
+
+    # Uniform errors
+    error_sd = 0.12
+    cdf_mw_error<-function(x, mw_true){
+        output = pnorm(x, mean=0, sd=error_sd) #punif(x, -0.4, 0.4)
+        # Clip it because our implementation requires finite support
+        output[x <= -0.5] = 0
+        output[x >= 0.5] = 1 
+        return(output)
+    }
+    # Only have variation in slip - rate
+    slip_rate = seq(0.07, 0.1, len=1000) # m/year
+    slip_rate_prob = rep(1, len=1000)/length(slip_rate)
+    b = 1
+    b_prob = 1
+    Mw_min = 7. 
+    Mw_min_prob = 1
+    Mw_max = 9.40
+    Mw_max_prob = 1
+    Mw_count_duration = c(7.6, 4, 50)
+
+    rate_no_mw_error = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        Mw_frequency_distribution='characteristic_gutenberg_richter',
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=Mw_count_duration,
+        account_for_moment_below_mwmin=TRUE)
+
+    rate_mw_error = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        Mw_frequency_distribution='characteristic_gutenberg_richter',
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=Mw_count_duration,
+        account_for_moment_below_mwmin=TRUE,
+        mw_observation_error_cdf = cdf_mw_error)
+
+        # These should be exactly equal (i.e. same code paths)
+        expect_that(rate_mw_error(7.6) == rate_no_mw_error(7.6), is_true())
+        
+        # Look at the detailed curve weights
+        p1 = rate_mw_error(NA, return_all_logic_tree_branches=TRUE)
+        # Check consistency between derived 'a' parameters and the slip parameters
+        slip_range = max(slip_rate)/min(slip_rate)
+        a_range = max(p1$all_par$a) - min(p1$all_par$a)
+        expect_that( abs(10**(a_range) - slip_range) < 1.0e-06, is_true())
+
+        # When we account for mw observation errors, the rate should decrease
+        # 
+        r1 = rate_mw_error(7.6, account_for_mw_obs_error = FALSE)
+        r2 = rate_mw_error(7.6, account_for_mw_obs_error=TRUE)
+        expect_that( r1 > r2, is_true())
+
+        # Given normal errors, the expected change in the ML estimate of the 'a' parameter
+        # is due to Tinti and Mulargia (1985). I don't have that paper but it is discussed in:
+        # Rhoads, 1996, Estimation of the Gutenberg-Richter relation allowing for individual earthquake magnitude uncertainties
+        # Tectonophysics 258:71-83 
+        expected_ml_difference = error_sd^2 * (b*log(10))^2 * log10(exp(1))/2
+        # Check that the 'maximum likelihood' value of a does indeed change by
+        # this amount, up to some tolerance
+        i1 = which.max(p1$all_par_prob)
+        i2 = which.max(p1$all_par_prob_with_Mw_error)
+        ml1 = p1$all_par$a[i1]
+        ml2 = p1$all_par$a[i2]
+        # The 'no observation error' value should be larger, because with obs
+        # errors, we expect an artificial increase in the rate of events.
+        expect_that(ml1 > ml2, is_true())
+        rel_err = (ml1 - ml2)/expected_ml_difference
+        expect_that( rel_err > 1 & rel_err < 1.001, is_true())
 })

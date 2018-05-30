@@ -583,7 +583,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
  
     if(update_logic_tree_weights_with_data){
         # Update the logic tree weights using provided data sets
-        all_par_prob = compute_updated_logic_tree_weights(Mw_seq, all_rate_matrix, 
+        all_par_prob = compute_updated_logic_tree_weights(Mw_seq,
             all_par_combo, all_par_prob_prior, Mw_count_duration,
             Mw_obs_data, mw_max_posterior_equals_mw_max_prior)
 
@@ -594,8 +594,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         }else{
             # Update the logic tree weights using provided data sets
             all_par_prob_with_Mw_error = compute_updated_logic_tree_weights(
-                Mw_seq, all_rate_matrix, 
-                all_par_combo, all_par_prob_prior, Mw_count_duration,
+                Mw_seq, all_par_combo, all_par_prob_prior, Mw_count_duration,
                 Mw_obs_data, mw_max_posterior_equals_mw_max_prior,
                 cdf_mw_observation_error=mw_observation_error_cdf)
         }
@@ -672,6 +671,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # of each branch), and evaluate the exceedance rate of Mw for that
     # parameter combination. This can be useful for some monte-carlo
     # computations.
+    # @param account_for_mw_obs_error Use curve weights that account for errors in the 
+    # observations that were used to derive the curve weights
     # @return Depends on the input arguments, see comments above.
     output_function2<-function(
         Mw, 
@@ -679,7 +680,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         return_all_logic_tree_branches=FALSE, 
         quantiles=NULL,
         return_random_curve=FALSE,
-        use_mw_error=FALSE){
+        account_for_mw_obs_error=FALSE){
 
         # Check input arguments for accidental nulls
         input_args = as.list(match.call())
@@ -726,7 +727,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
             stopifnot(bounds==FALSE & return_all_logic_tree_branches==FALSE)
 
-            if(use_mw_error){
+            if(account_for_mw_obs_error){
                 par = sample(1:length(all_par_combo[,1]), size=1, 
                     prob=all_par_prob_with_Mw_error)
             }else{
@@ -740,7 +741,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         }
 
         # Typical case
-        if(use_mw_error){
+        if(account_for_mw_obs_error){
             output = (Mw <= (max_Mw_max))*output_function_with_Mw_error(Mw)
         }else{
             output = (Mw <= (max_Mw_max))*output_function(Mw)
@@ -750,7 +751,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             # Compute some summary statistics
             output_up = (Mw <= max_Mw_max)*upper_function(Mw)
             output_low = (Mw <= max_Mw_max)*lower_function(Mw)
-            if(use_mw_error){
+            if(account_for_mw_obs_error){
                 output_med = (Mw <= max_Mw_max)*median_function_with_Mw_error(Mw)
             }else{
                 output_med = (Mw <= max_Mw_max)*median_function(Mw)
@@ -777,7 +778,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             for(i in 1:length(quantiles)){
                 # For each quantile, evaluate the rate curve with interpolation
                 quantile_rate = apply(all_rate_matrix, 2, 
-                    f<-function(rate) quantile_rate_fun(rate, p=quantiles[i], use_mw_error))
+                    f<-function(rate) quantile_rate_fun(rate, p=quantiles[i], account_for_mw_obs_error))
                 if(length(Mw) == 1){
                     output[i] = 
                         approx(Mw_seq, quantile_rate, xout=Mw, rule=2)$y * 
@@ -872,8 +873,11 @@ Mw_exceedance_rate_characteristic_gutenberg_richter<-function(
 
 # Update logic tree weights using data
 #
+# This is a computational-workhorse routine used in
+# rate_of_earthquakes_greater_than_Mw_function
+#
 # 
-compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_combo, 
+compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo, 
     all_par_prob_prior, Mw_count_duration, Mw_obs_data, 
     mw_max_posterior_equals_mw_max_prior, cdf_mw_observation_error=NULL){
 
@@ -934,7 +938,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
             #
             Mfd_local<-function(y) Mfd(y, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
             model_rates[i] = exceedance_rate_of_observed(Mfd_local, cdf_mw_observation_error, data_thresh,
-                true_value_range = c(data_thresh-0.5, data_thresh+0.5), integration_eps=0.01)
+                true_value_range = c(data_thresh-0.5, data_thresh+0.5), integration_dy=0.01)
         }
     }
 
@@ -1095,33 +1099,54 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
 #' and we observe 'y + obs_error' where obs_error has a known distribution
 #' dependent on the value of 'y'. This function can calculate the exceedance
 #' rate of the observations. \cr
-#' Written another way, suppose:
+#' Written another way, suppose: \cr
 #' the rate of true values that exceed y is exceedance_true(y); \cr
 #' cdf_obs_error(obs_err, y) is the CDF of obs_err given the true value 'y'; \cr
 #' the observed value is (y+obs_err); \cr
 #' Then this function computes the rate at which observed_value is above data_value, i.e. \cr
 #' integral { (1 - cdf_obs_error(data_value - y | y)) * (-d(exceedance_true)/d(true_value) ) } dy \cr
-#' This is done with numerical integration
+#' This is done with numerical integration. \cr
+#' The user should specify the limits of the integration
+#' (true_value_range_with_nontrivial_cdf_value). This must be such that 
+#' if true_value = true_value_range_with_nontrivial_cdf_value[1], then it 
+#' is impossible for an error to make the observed value
+#' greater than data_value; and if true_value = true_value_range_with_nontrivial_cdf_value[2], 
+#' then it is impossible for an error to make the observed value less than data_value.
 #'
-#' @param exceedance_true exceedance rate function R(y) of a single variable
-#' @param cdf_obs_error function F(x,y) giving the CDF of the error if y is fixed
+#' @param exceedance_true exceedance rate function R(y) giving the rate of
+#' events with (true_value > y)
+#' @param cdf_obs_error function F(x,y) giving the CDF of the error (x)
+#' assuming the true_value (y) is fixed
 #' @param data_value the function will return the rate of observations above data_value
-#' @param true_value_range range of the true value to integrate over
-#' @param integration_eps numerically integrate with this spacing
+#' @param true_value_range_with_nontrivial_cdf_value range of the true_value over 
+#' which the 'cdf complement' term \cr
+#' (1 - cdf_obs_error(data_value - y | y)) \cr
+#' might be in (0,1). Supposing cdf_obs_error has a finite support, then for
+#' large enough y, this term will always be 1, and for small enough y it will always
+#' be zero. By providing these limits we make the integration more efficient. 
+#' If it does not have finite support then the integration will only be approximate
+#' (but it may be very good if the probability of large errors is sufficiently small outside
+#' the specified range -- this happens in the first example).
+#' @param integration_dy numerically integrate with this spacing
 #' @return value of the integral, which gives the rate of 'observed' (= true + error) that
 #' are greater than data_thresh
 #'
 #' @export
 #' @examples
 #'
-#' # Make a problem with known rate functions and error models, then compute the answer
-#' # in multiple ways, and check it works 
-#' N = 1e+06 # Just make this large enough for the numerical integration to work
-#' y = rexp(N) # The true value. This has exceedance rate function '(1-pexp)'
-#' delta = rgamma(N, shape=1, scale=2+y) # The error, with a distribution that depends on the true value
-#' observed = y + delta # The observed value
-#' data_thresh = 4 # Say we want the rate of observed>data_thresh
-#'
+#' # First example: Make a problem with known rate functions and error models,
+#' # then compute the answer in multiple ways, and check it works 
+#' N = 1e+06 # Also compare with large random sample
+#' # Samples of the true value. This has exceedance rate function '(1-pexp)',
+#' # supposing the overall rate of events is 1
+#' y = rexp(N) 
+#' # Samples of the error, with a distribution that depends on the true value.
+#' # So this has cdf(x,y)=pgamma(x, shape=1, scale=2+y)
+#' delta = rgamma(N, shape=1, scale=2+y) 
+#' # The observed value
+#' observed = y + delta 
+#' data_thresh = 4 # We want the rate of observed>data_thresh
+#' 
 #' # The example allows us to compute rate(observed>data_thresh) empirically,
 #' # and analytically, and check that exceedance_rate_of_observed also gives the right answer
 #' 
@@ -1129,37 +1154,92 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_rate_matrix, all_par_co
 #' f<-function(y,x) dexp(y) * (1-pgamma(x-y, shape=1, scale=2+y))
 #' # These 2 numbers should be equal for a large enough sample
 #' pr_observed_gt_4_A = mean(observed > data_thresh)
-#' pr_observed_gt_4_B = integrate(f, lower=-2, upper=20, x=data_thresh)
+#' pr_observed_gt_4_B = integrate(f, lower=0, upper=20, x=data_thresh, rel.tol=1e-08)
 #' # Further, the integral is also 'the same' (for large enough N) as
 #' pr_observed_gt_4_C = mean(1-pgamma(data_thresh - y, shape=1, scale=2+y))
 #' 
 #' #
 #' # Here we evaluate the solution with the current function
-#' #
 #' ex_true<-function(y) (1-pexp(y))
 #' cdf_obs_error<-function(x, y) v1 = pgamma(x, shape=1, scale=2+y)
+#' # Even though the error density for this problem has infinite support,
+#' # the probability of 'large' errors is small enough that we can get a practically
+#' # exact answer using a 'large' true_value_range_with_nontrivial_cdf_value.
 #' val = exceedance_rate_of_observed(ex_true, cdf_obs_error, data_thresh,
-#'    true_value_range = c(0, 20))
-#' stopifnot(abs(val - pr_observed_gt_4_B$value) < 1.0e-06)
-#'
+#'    true_value_range_with_nontrivial_cdf_value = c(0, 20))
+#' stopifnot(abs(val - pr_observed_gt_4_B$value) < 5.0e-06)
+#' 
+#' 
+#' #
+#' # Second example: More earthquake-like. We look at how data errors
+#' # change the exceedance rate of observed events, compared to the 
+#' # rate without error. For Gutenberg Richter type models, the effect
+#' # of symmetric data errors is to increase the rate of 'observed' exceedances, because
+#' # there are more smaller events (so it is more common for 'low value + positive error' to
+#' # cause an exceedance, than for 'high value + negative error' to cause a non-exceedance)
+#' #
+#' 
+#' # A hypothetical 'true' exceedance rate function of GR type
+#' exceedance_true<-function(x){
+#'     Mw_exceedance_rate_truncated_gutenberg_richter(x, a=6, b=1, Mw_min=-Inf, Mw_max=9.4)
+#' }
+#' # Compare results with negligably small and large errors
+#' er1<-function(x, mw_true) punif(x, -0.0001, 0.0001)
+#' er2<-function(x, mw_true) punif(x, -0.1, 0.1)
+#' er3<-function(x, mw_true) punif(x, -0.4, 0.4)
+#' 
+#' # Compare the 'no error' case to the 'negligable error' case
+#' data_value=7.6
+#' exceedance_no_error = exceedance_true(data_value)
+#' exceedance_small_error = exceedance_rate_of_observed(exceedance_true, er1, data_value=data_value,
+#'    true_value_range_with_nontrivial_cdf_value=c(data_value-0.001, data_value+0.001), 
+#'    integration_dy=1e-05) # Note true_value_range_with_nontrivial_cdf_value is too large (no problem, just less efficient) 
+#' stopifnot(abs(exceedance_no_error - exceedance_small_error) < 1.0e-08)
+#' 
+#' # Next case has a small but non-negligable error
+#' exceedance_mid_error = exceedance_rate_of_observed(exceedance_true, er2, data_value=data_value,
+#'    true_value_range_with_nontrivial_cdf_value=c(data_value-0.15, data_value+0.15), 
+#'    integration_dy=1e-03)
+#' # Should be slightly larger than the 'no error' case, because smaller events
+#' # are more frequent, so there are more 'smaller events with positive errors'
+#' # than there are 'higher events with negative errors'
+#' stopifnot(exceedance_mid_error > exceedance_no_error)
+#' # Compare with another numerical integral
+#' f<-function(x) -(exceedance_true(x+1.0e-06) - exceedance_true(x-1.0e-06))/(2e-06) * (1 - er2(data_value - x, x))
+#' target_value = integrate(f, lower=7.4, upper=11, rel.tol=1e-08)
+#' stopifnot(abs(target_value$value - exceedance_mid_error) < 3.0e-08)
+#' 
+#' # Next case has a larger error
+#' exceedance_high_error = exceedance_rate_of_observed(exceedance_true, er3, data_value=data_value,
+#'    true_value_range_with_nontrivial_cdf_value=c(data_value-0.45, data_value+0.45), 
+#'    integration_dy=1e-03)
+#' # Again the rate should have increased
+#' stopifnot(exceedance_high_error > exceedance_mid_error)
+#' # Compare with another numerical integral
+#' f<-function(x) -(exceedance_true(x+1.0e-06) - exceedance_true(x-1.0e-06))/(2e-06) * (1 - er3(data_value - x, x))
+#' target_value = integrate(f, lower=7., upper=11, rel.tol=1e-08)
+#' stopifnot(abs(target_value$value - exceedance_high_error) < 3.0e-08)
+#'  
 exceedance_rate_of_observed<-function(exceedance_true, cdf_obs_error, data_value,
-    true_value_range, integration_eps=0.01){
+    true_value_range_with_nontrivial_cdf_value, integration_dy=0.01){
 
     stopifnot(length(data_value) == 1)
     # Numerically compute the integral (over y) of 
     #   (1 - cdf_obs_error(data_value - y, y))*(derivative_of_exceedance_true_at_y)
     # Initially try a small-ish range of mw-error to reduce the expense
     # of the integration
-    lower= true_value_range[1]
-    upper = true_value_range[2]
-    value_true = seq(lower, upper, by=integration_eps)
+    lower= true_value_range_with_nontrivial_cdf_value[1]
+    upper = true_value_range_with_nontrivial_cdf_value[2]
+    value_true = seq(lower, upper, by=integration_dy)
     cdf_complement = 1 - cdf_obs_error(data_value - value_true, value_true)
 
     incremental_rate = - (
-        exceedance_true(value_true+integration_eps/2) - 
-        exceedance_true(value_true-integration_eps/2) )
+        exceedance_true(value_true+integration_dy/2) - 
+        exceedance_true(value_true-integration_dy/2) )
     # Numerical integration of the 'observed rate' of events > data_value
-    output = sum(incremental_rate * cdf_complement)
+    # Note we add in the rate of events above 'upper' (which should never have errors making them
+    # below data_value)
+    output = sum(incremental_rate * cdf_complement) + exceedance_true(upper + integration_dy/2)
     return(output)
 }
 
