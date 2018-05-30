@@ -938,7 +938,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
             #
             Mfd_local<-function(y) Mfd(y, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
             model_rates[i] = exceedance_rate_of_observed(Mfd_local, cdf_mw_observation_error, data_thresh,
-                true_value_range = c(data_thresh-0.5, data_thresh+0.5), integration_dy=0.01)
+                true_value_range_with_nontrivial_cdf_value = c(data_thresh-0.5, data_thresh+0.5), integration_dy=0.01)
         }
     }
 
