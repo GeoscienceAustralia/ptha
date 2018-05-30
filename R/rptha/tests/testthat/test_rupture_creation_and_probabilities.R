@@ -585,7 +585,7 @@ test_that("test_rupture_creation_and_probabilities", {
 
 
     #
-    # Modelling of Mw observation errors
+    # Modelling accounting for Mw observation errors
     #
 
     # Uniform errors
@@ -607,6 +607,7 @@ test_that("test_rupture_creation_and_probabilities", {
     Mw_max = 9.40
     Mw_max_prob = 1
     Mw_count_duration = c(7.6, 4, 50)
+    Mw_obs_data = list(Mw=c(7.63, 8.0, 7.84, 7.73), t=NULL)
 
     rate_no_mw_error = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = slip_rate,
@@ -624,7 +625,7 @@ test_that("test_rupture_creation_and_probabilities", {
         update_logic_tree_weights_with_data=TRUE,
         Mw_count_duration=Mw_count_duration,
         account_for_moment_below_mwmin=TRUE)
-
+    # This one uses Mw_count_duration, but not Mw_obs_data
     rate_mw_error = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = slip_rate,
         slip_rate_prob = slip_rate_prob,
@@ -643,36 +644,228 @@ test_that("test_rupture_creation_and_probabilities", {
         account_for_moment_below_mwmin=TRUE,
         mw_observation_error_cdf = cdf_mw_error)
 
-        # These should be exactly equal (i.e. same code paths)
-        expect_that(rate_mw_error(7.6) == rate_no_mw_error(7.6), is_true())
-        
-        # Look at the detailed curve weights
-        p1 = rate_mw_error(NA, return_all_logic_tree_branches=TRUE)
-        # Check consistency between derived 'a' parameters and the slip parameters
-        slip_range = max(slip_rate)/min(slip_rate)
-        a_range = max(p1$all_par$a) - min(p1$all_par$a)
-        expect_that( abs(10**(a_range) - slip_range) < 1.0e-06, is_true())
+    # These should be exactly equal (i.e. same code paths)
+    expect_that(rate_mw_error(7.6) == rate_no_mw_error(7.6), is_true())
+    
+    # Look at the detailed curve weights
+    p1 = rate_mw_error(NA, return_all_logic_tree_branches=TRUE)
+    # Check consistency between derived 'a' parameters and the slip parameters
+    slip_range = max(slip_rate)/min(slip_rate)
+    a_range = max(p1$all_par$a) - min(p1$all_par$a)
+    expect_that( abs(10**(a_range) - slip_range) < 1.0e-06, is_true())
 
-        # When we account for mw observation errors, the rate should decrease
-        # 
-        r1 = rate_mw_error(7.6, account_for_mw_obs_error = FALSE)
-        r2 = rate_mw_error(7.6, account_for_mw_obs_error=TRUE)
-        expect_that( r1 > r2, is_true())
+    # When we account for mw observation errors, the rate should decrease
+    # 
+    r1 = rate_mw_error(7.6, account_for_mw_obs_error = FALSE)
+    r2 = rate_mw_error(7.6, account_for_mw_obs_error=TRUE)
+    expect_that( r1 > r2, is_true())
 
-        # Given normal errors, the expected change in the ML estimate of the 'a' parameter
-        # is due to Tinti and Mulargia (1985). I don't have that paper but it is discussed in:
-        # Rhoads, 1996, Estimation of the Gutenberg-Richter relation allowing for individual earthquake magnitude uncertainties
-        # Tectonophysics 258:71-83 
-        expected_ml_difference = error_sd^2 * (b*log(10))^2 * log10(exp(1))/2
-        # Check that the 'maximum likelihood' value of a does indeed change by
-        # this amount, up to some tolerance
-        i1 = which.max(p1$all_par_prob)
-        i2 = which.max(p1$all_par_prob_with_Mw_error)
-        ml1 = p1$all_par$a[i1]
-        ml2 = p1$all_par$a[i2]
-        # The 'no observation error' value should be larger, because with obs
-        # errors, we expect an artificial increase in the rate of events.
-        expect_that(ml1 > ml2, is_true())
-        rel_err = (ml1 - ml2)/expected_ml_difference
-        expect_that( rel_err > 1 & rel_err < 1.001, is_true())
+    # Given normal errors, the expected change in the ML estimate of the 'a' parameter
+    # is due to Tinti and Mulargia (1985). I don't have that paper but it is discussed in:
+    # Rhoads, 1996, Estimation of the Gutenberg-Richter relation allowing for individual earthquake magnitude uncertainties
+    # Tectonophysics 258:71-83 
+    expected_ml_difference = error_sd^2 * (b*log(10))^2 * log10(exp(1))/2
+    # Check that the 'maximum likelihood' value of a does indeed change by
+    # this amount, up to some tolerance
+    i1 = which.max(p1$all_par_prob)
+    i2 = which.max(p1$all_par_prob_with_Mw_error)
+    ml1 = p1$all_par$a[i1]
+    ml2 = p1$all_par$a[i2]
+    # The 'no observation error' value should be larger, because with obs
+    # errors, we expect an artificial increase in the rate of events.
+    expect_that(ml1 > ml2, is_true())
+    # Check that the probability update is consistent with the ML solution
+    rel_err = (ml1 - ml2)/expected_ml_difference
+    expect_that( rel_err > 1 & rel_err < 1.001, is_true())
+
+    #
+    # Now repeat similarly to above, but use actual Mw observations.
+    # We must allow 'b' to vary to get anything out of this
+    # 
+    # Uniform errors
+    error_sd = 0.12
+    cdf_mw_error<-function(x, mw_true){
+        output = pnorm(x, mean=0, sd=error_sd) #punif(x, -0.4, 0.4)
+        # Clip it because our implementation requires finite support
+        output[x <= -0.5] = 0
+        output[x >= 0.5] = 1 
+        return(output)
+    }
+    # Only have variation in slip - rate
+    slip_rate = seq(0.07, 0.1, len=100) # m/year
+    slip_rate_prob = rep(1, len=100)/length(slip_rate)
+    b = seq(0.7, 1.2, len=10)
+    b_prob = rep(1,length(b))/length(b)
+    Mw_min = 7. 
+    Mw_min_prob = 1
+    Mw_max = 9.40
+    Mw_max_prob = 1
+    Mw_count_duration = c(7.6, 4, 50)
+    Mw_obs_data = list(Mw=c(7.63, 8.0, 7.84, 7.73), t=NULL)
+
+    rate_mw_error_2B = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        Mw_frequency_distribution='characteristic_gutenberg_richter',
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=Mw_count_duration,
+        Mw_obs_data = Mw_obs_data,
+        account_for_moment_below_mwmin=TRUE,
+        mw_observation_error_cdf = cdf_mw_error)
+    # FIXME: Add a test for this case (beyond just that 'it runs', which is
+    # nonetheless something I suppose!)
+
+
+    #
+    #
+    # Check that with full Mw data, we really can 'filter' logic tree branches well,
+    # and get the correct one, including consideration of Mw observation error
+    #
+    #
+    
+    slip_rate = seq(4, 12, len=30)/1000 # m/year
+    slip_rate_prob =  rep(1,length(slip_rate))/length(slip_rate)
+    b = seq(0.7, 1.1, len=30)
+    b_prob = rep(1,length(b))/length(b)
+    Mw_min = 7.5
+    Mw_min_prob = 1
+    Mw_max = 12 # Effectively unbounded
+    Mw_max_prob = 1
+    Mw_freq_dist = c('truncated_gutenberg_richter', 'characteristic_gutenberg_richter')
+    Mw_freq_dist_prob = c(0.5, 0.5)
+
+    #
+    # Make a large random dataset 
+    #
+    set.seed(123)
+    obs_duration_multiplier = 1 # Use this to scale the size/duration of the data
+    n = 1000 * obs_duration_multiplier
+    true_b = 1
+    true_a = 5.5
+    rate_above_7 = 10**(true_a - true_b * 7)
+    rate_above_7.5 = 10**(true_a - true_b * 7.5)
+    random_Mw = rGR(n, b=true_b, mw_min=7) #-log10(random_inv_quant*10**(-true_b*7.0))
+    if(any(random_Mw > Mw_max)){
+        random_Mw[random_Mw > Mw_max] = Mw_max # Characteristic!
+    }
+    # Add a random error to the magnitude observations, clipped to +- 0.5
+    obs_random_Mw = random_Mw + pmax(-0.5, pmin(0.5, rnorm(length(random_Mw), mean=0, sd=error_sd)))
+    k = which(obs_random_Mw >= Mw_min)
+    obs_random_Mw = obs_random_Mw[k]
+    Mw_count_duration = c(7.5, length(obs_random_Mw), n/rate_above_7)
+
+    #stop()
+
+    #
+    # Version without using the full Mw observation data
+    # This one is unable to constrain 'b' much because it only
+    # knows the rate of events above 7.5, not their distribution
+    #
+    rate_function_simple = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        Mw_frequency_distribution=Mw_freq_dist,
+        Mw_frequency_distribution_prob = Mw_freq_dist_prob,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=Mw_count_duration,
+        Mw_obs_data=list(Mw=NULL, t=NULL),
+        mw_observation_error_cdf = cdf_mw_error
+        )
+
+    #
+    # This fit is like the previous, but we use the actual Mw values
+    # In theory this should allow us to constrain 'b' better
+    #
+    rate_function_3000 = rate_of_earthquakes_greater_than_Mw_function(
+        slip_rate = slip_rate,
+        slip_rate_prob = slip_rate_prob,
+        b = b,
+        b_prob = b_prob,
+        Mw_min = Mw_min,
+        Mw_min_prob = Mw_min_prob,
+        Mw_max = Mw_max,
+        Mw_max_prob = Mw_max_prob,
+        sourcezone_total_area = sourcezone_total_area,
+        event_table = earthquake_event_table,
+        event_conditional_probabilities = event_conditional_probabilities,
+        Mw_frequency_distribution=Mw_freq_dist,
+        Mw_frequency_distribution_prob = Mw_freq_dist_prob,
+        update_logic_tree_weights_with_data=TRUE,
+        Mw_count_duration=Mw_count_duration,
+        Mw_obs_data=list(Mw=obs_random_Mw, t=NULL),
+        mw_observation_error_cdf = cdf_mw_error
+        )
+
+    r1 = rate_function_simple(7.5)
+    r2 = rate_function_simple(7.5, account_for_mw_obs_error=TRUE)
+    r3 = rate_function_3000(7.5)
+    r4 = rate_function_3000(7.5, account_for_mw_obs_error=TRUE)
+
+    all_logic_tree_simple = rate_function_simple(NA, return_all_logic_tree_branches=TRUE)
+    i1 = order(all_logic_tree_simple$all_par_prob_with_Mw_error, decreasing=TRUE)[1:50]
+
+    all_logic_tree_3000 = rate_function_3000(NA, return_all_logic_tree_branches=TRUE)
+    i3 = order(all_logic_tree_3000$all_par_prob_with_Mw_error, decreasing=TRUE)[1:50]
+   
+    # This one should constrain b better because it uses Mw data 
+    summary(all_logic_tree_3000$all_par[i3,])
+    # This one should not constrain b as well
+    summary(all_logic_tree_simple$all_par[i1,])
+
+    # To check the ML fit of the random data, can use this routine
+    fitted_no_obs_error = fit_truncGR_multiple_catalogues(
+        list(list(mw_min=7.5, duration=Mw_count_duration[3], mw=obs_random_Mw)), 
+        start=c(0.05, 1))
+    ml_b_ignoring_errors = fitted_no_obs_error$par[2]
+
+    # Check the 'b' and 'a' values
+    a_3000_mw_error = weighted.mean(all_logic_tree_3000$all_par$a, all_logic_tree_3000$all_par_prob_with_Mw_error)
+    a_3000_no_mw_error = weighted.mean(all_logic_tree_3000$all_par$a, all_logic_tree_3000$all_par_prob)
+    b_3000_mw_error = weighted.mean(all_logic_tree_3000$all_par$b, all_logic_tree_3000$all_par_prob_with_Mw_error)
+    b_3000_no_mw_error = weighted.mean(all_logic_tree_3000$all_par$b, all_logic_tree_3000$all_par_prob)
+    # Use of mw-error or not has little effect (but of course 'a' parameter should
+    # be smaller, for a similar reason as noted in an earlier test referring to Rhoads paper). 
+    # In this problem, since the error is independent of 'b', we do not expect
+    # additional errors in 'b' due to error treatment. However, we will get
+    # much better 'b' in the _3000 case than in the _simple case because the
+    # latter ignores the Mw distribution Beware these thresholds might need to
+    # vary if the problem is adjusted.
+    expect_that(a_3000_mw_error - a_3000_no_mw_error < 0 & 
+                abs(a_3000_mw_error - a_3000_no_mw_error) < 0.05, 
+                is_true())
+    expect_that(abs(b_3000_mw_error - b_3000_no_mw_error) < 0.002, is_true())
+    expect_that(abs(b_3000_mw_error - ml_b_ignoring_errors) < 0.03, is_true())
+
+    a_simple_mw_error = weighted.mean(all_logic_tree_simple$all_par$a, all_logic_tree_simple$all_par_prob_with_Mw_error)
+    a_simple_no_mw_error = weighted.mean(all_logic_tree_simple$all_par$a, all_logic_tree_simple$all_par_prob)
+    b_simple_mw_error = weighted.mean(all_logic_tree_simple$all_par$b, all_logic_tree_simple$all_par_prob_with_Mw_error)
+    b_simple_no_mw_error = weighted.mean(all_logic_tree_simple$all_par$b, all_logic_tree_simple$all_par_prob)
+
+    expect_that(a_simple_mw_error - a_simple_no_mw_error < 0 & 
+                abs(a_simple_mw_error - a_simple_no_mw_error) < 0.05, 
+                is_true())
+    expect_that(abs(b_simple_mw_error - b_simple_no_mw_error) < 0.002, is_true())
+    # Key point: 'b' is estimated more poorly when we ignore the magnitude data
+    expect_that(abs(b_simple_mw_error - ml_b_ignoring_errors) > abs(b_3000_mw_error - ml_b_ignoring_errors), 
+        is_true())
+
+
 })

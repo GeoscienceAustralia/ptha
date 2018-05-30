@@ -611,7 +611,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     final_rates_with_Mw_error = rep(0, length(Mw_seq))
     for(i in 1:nrow(all_rate_matrix)){
         final_rates = final_rates + all_par_prob[i] * all_rate_matrix[i,]
-        final_rates_with_Mw_error = final_rates_with_Mw_error + all_par_prob_with_Mw_error[i] * all_rate_matrix[i,]
+        final_rates_with_Mw_error = final_rates_with_Mw_error + 
+            all_par_prob_with_Mw_error[i] * all_rate_matrix[i,]
     }
 
     # Store the max/min rates from all branches of the logic tree,
@@ -620,6 +621,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     upper_rate = apply(all_rate_matrix, 2, max)
     lower_rate = apply(all_rate_matrix, 2, min)
 
+    # Function to compute quantiles (describing epistemic uncertainty)
+    # of the logic tree curves at different exceedance rates
     quantile_rate_fun<-function(rates, p, with_mw_error=FALSE){
         sorted_rates = sort(rates, index.return=TRUE)
         if(with_mw_error){
@@ -671,8 +674,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # of each branch), and evaluate the exceedance rate of Mw for that
     # parameter combination. This can be useful for some monte-carlo
     # computations.
-    # @param account_for_mw_obs_error Use curve weights that account for errors in the 
-    # observations that were used to derive the curve weights
+    # @param account_for_mw_obs_error Use curve weights that account for errors
+    # in the observations that were used to derive the curve weights
     # @return Depends on the input arguments, see comments above.
     output_function2<-function(
         Mw, 
@@ -685,8 +688,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # Check input arguments for accidental nulls
         input_args = as.list(match.call())
 
-        # If we actually provided the 'quantiles' argument, then it's unlikely we want
-        # a NULL value, however, a typo could create this. Check here for that situation.
+        # If we actually provided the 'quantiles' argument, then it's unlikely
+        # we want a NULL value, however, a typo could create this. Check here
+        # for that situation.
         if('quantiles' %in% names(input_args)){
             if(is.null(quantiles)){
                 print(paste0('Deliberately passed null value to the optional argument "quantiles"',
@@ -778,7 +782,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             for(i in 1:length(quantiles)){
                 # For each quantile, evaluate the rate curve with interpolation
                 quantile_rate = apply(all_rate_matrix, 2, 
-                    f<-function(rate) quantile_rate_fun(rate, p=quantiles[i], account_for_mw_obs_error))
+                    f<-function(rate) quantile_rate_fun(rate, p=quantiles[i], 
+                        account_for_mw_obs_error))
                 if(length(Mw) == 1){
                     output[i] = 
                         approx(Mw_seq, quantile_rate, xout=Mw, rule=2)$y * 
@@ -881,6 +886,12 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
     all_par_prob_prior, Mw_count_duration, Mw_obs_data, 
     mw_max_posterior_equals_mw_max_prior, cdf_mw_observation_error=NULL){
 
+    # These numbers are repeatedly used when we treat magnitude errors. 
+    # We assume finite support in the mw error, with a max absolute value
+    max_obs_mw_error = 0.5
+    # and do numerical integration with a given 'dy' increment.
+    integration_dy = 0.01
+
     #
     # Adjust the weights of logic-tree branches based on the data
     #
@@ -925,20 +936,35 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
         if(is.null(cdf_mw_observation_error)){
             #model_rates[i] = approx(Mw_seq, all_rate_matrix[i,], 
             #    xout=data_thresh)$y
-            model_rates[i] = Mfd(data_thresh, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
+            model_rates[i] = Mfd(data_thresh, a = a_par, b=b_par, 
+                Mw_min=mw_min_par, Mw_max=mw_max_par)
         }else{
             #
             # EXTENSION TO TREAT DATA ERRORS, OR MU VARIATION
             #
-            # Below for the integration, we assume the absolute Mw errors are always < 0.5
-            # Good to add some check to ensure that is the case
+            # Below for the integration, we assume the absolute Mw errors are
+            # always < 0.5. Good to add some check to ensure that is the case
             #
-            if(cdf_mw_observation_error(-0.5 , data_thresh+0.5) > 0) stop('mw_observation_error is too large')
-            if(cdf_mw_observation_error( 0.5 , data_thresh-0.5) < 1) stop('mw_observation_error is too large')
+            tmp = cdf_mw_observation_error(-max_obs_mw_error , 
+                data_thresh+max_obs_mw_error)
+            if(tmp > 0){
+                stop('mw_observation_error is too large')
+            }
+            tmp = cdf_mw_observation_error( max_obs_mw_error , 
+                data_thresh-max_obs_mw_error)
+            if(tmp < 1){
+                stop('mw_observation_error is too large')
+            }
             #
-            Mfd_local<-function(y) Mfd(y, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
-            model_rates[i] = exceedance_rate_of_observed(Mfd_local, cdf_mw_observation_error, data_thresh,
-                true_value_range_with_nontrivial_cdf_value = c(data_thresh-0.5, data_thresh+0.5), integration_dy=0.01)
+            Mfd_local<-function(y){
+                Mfd(y, a=a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par)
+            }
+
+            int_range = data_thresh + c(-1,1)*max_obs_mw_error 
+            model_rates[i] = exceedance_rate_of_observed(Mfd_local, 
+                cdf_mw_observation_error, data_thresh,
+                true_value_range_with_nontrivial_cdf_value = int_range, 
+                integration_dy=integration_dy)
         }
     }
 
@@ -1001,7 +1027,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
         # Update the likelihood
         for(i in 1:length(model_rates)){
 
-            Mw_obs_threshold = Mw_count_duration[1]
+            data_thresh = Mw_count_duration[1]
             # GR parameters for this logic tree curve
             a_par = all_par_combo$a[i]
             b_par = all_par_combo$b[i]
@@ -1021,24 +1047,57 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
 
             #
             # Evaluate the 'density' for samples above Mw_observation_threshold 
-            #   = -(1/GR(Mw_obs_threshold))*[ derivative_of_GR_with_respect_to_Mw]
-            # (Because the CDF is ( 1  -(1/GR(Mw_obs_threshold))*GR(Mw) )
+            #   = -(1/GR(data_thresh))*[ derivative_of_GR_with_respect_to_Mw]
+            # (Because the CDF is ( 1  -(1/GR(data_thresh))*GR(Mw) )
             #
-            gr_mwmin = Mfd(Mw_obs_threshold, a = a_par, b=b_par, 
-                Mw_min=mw_min_par, Mw_max=mw_max_par)
-            eps = 1e-04 # For numerical differentiation
-            density_above_Mw_obs_threshold = -1/(gr_mwmin*2*eps) * (
-                Mfd(Mw_obs_data$Mw+eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
-                Mfd(Mw_obs_data$Mw-eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
-            # Ensure the density is zero below Mw_obs_threshold [since the input format demands
-            # the input data does not contain values below Mw_obs_threshold]
-            density_above_Mw_obs_threshold = (Mw_obs_data$Mw >= Mw_obs_threshold) *
-                density_above_Mw_obs_threshold
+            if(is.null(cdf_mw_observation_error)){
+                #
+                # Ignoring observation errors in Mw data
+                #
+                gr_mwmin = Mfd(data_thresh, a = a_par, b=b_par, 
+                    Mw_min=mw_min_par, Mw_max=mw_max_par)
+                eps = 1e-04 # For numerical differentiation
+                density_above_data_thresh = -1/(gr_mwmin*2*eps) * (
+                    Mfd(Mw_obs_data$Mw+eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
+                    Mfd(Mw_obs_data$Mw-eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
+            }else{
+                #
+                # Treating observation errors in Mw data
+                #
+                Mfd_local<-function(y){
+                    Mfd(y, a=a_par, b=b_par, Mw_min=-Inf, Mw_max=mw_max_par)
+                }
 
-            stopifnot(all(density_above_Mw_obs_threshold >= 0))
+                int_range = data_thresh + c(-1,1)*max_obs_mw_error
+                gr_mwmin = exceedance_rate_of_observed(Mfd_local,
+                    cdf_mw_observation_error, data_thresh, 
+                    true_value_range_with_nontrivial_cdf_value=int_range,
+                    integration_dy = integration_dy)
+
+                eps = 1e-04 # For numerical differentiation
+                # Compute the density in a few steps:
+                # density = -1/(gr_mwmin*2*eps) ( rate_plus_eps - rate_minus_eps)
+                rate_plus_eps = sapply(Mw_obs_data$Mw + eps, f<-function(x){
+                    exceedance_rate_of_observed(Mfd_local,
+                        cdf_mw_observation_error, x, 
+                        true_value_range_with_nontrivial_cdf_value=(x+c(-1, 1)*max_obs_mw_error),
+                        integration_dy = integration_dy)
+                })
+                rate_minus_eps = sapply(Mw_obs_data$Mw - eps, f<-function(x){
+                    exceedance_rate_of_observed(Mfd_local,
+                        cdf_mw_observation_error, x, 
+                        true_value_range_with_nontrivial_cdf_value=(x+c(-1, 1)*max_obs_mw_error),
+                        integration_dy = integration_dy)
+                })
+
+                density_above_data_thresh = -1/(2*eps*gr_mwmin)*
+                    (rate_plus_eps - rate_minus_eps)
+            }
+
+            stopifnot(all(density_above_data_thresh >= 0))
 
             # Add the Mw-related log-likelihood terms to the full log likelihood
-            log_dens_values = log(density_above_Mw_obs_threshold)
+            log_dens_values = log(density_above_data_thresh)
             log_pr_data_given_model[i] = log_pr_data_given_model[i] + (sum(log_dens_values))
         }
 
@@ -1047,7 +1106,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
     # Check that some models have non-zero probability
     
     if( all(!is.finite(log_pr_data_given_model)) ){
-        stop('Mw_count_duration data is impossible under every model')
+        stop('Mw data is impossible under every model')
     }
  
     # For numerical stability, rescale log_pr_data_given_model 
