@@ -40,8 +40,8 @@ dependent on the value of 'y'. This function can calculate the exceedance
 rate of the observations. \cr
 Written another way, suppose: \cr
 the rate of true values that exceed y is exceedance_true(y); \cr
-cdf_obs_error(obs_err, y) is the CDF of obs_err given the true value 'y'; \cr
-the observed value is (y+obs_err); \cr
+cdf_obs_error(x, y) gives the probability that obs_error > x, given that the true value is 'y'; \cr
+the observed_value is (y+obs_err); \cr
 Then this function computes the rate at which observed_value is above data_value, i.e. \cr
 integral { (1 - cdf_obs_error(data_value - y | y)) * (-d(exceedance_true)/d(true_value) ) } dy \cr
 This is done with numerical integration. \cr
