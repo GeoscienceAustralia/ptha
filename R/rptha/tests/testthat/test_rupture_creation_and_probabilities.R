@@ -609,6 +609,7 @@ test_that("test_rupture_creation_and_probabilities", {
     Mw_count_duration = c(7.6, 4, 50)
     Mw_obs_data = list(Mw=c(7.63, 8.0, 7.84, 7.73), t=NULL)
 
+    # Compute the rate function, ignoring Mw-observation-errors
     rate_no_mw_error = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = slip_rate,
         slip_rate_prob = slip_rate_prob,
@@ -625,6 +626,8 @@ test_that("test_rupture_creation_and_probabilities", {
         update_logic_tree_weights_with_data=TRUE,
         Mw_count_duration=Mw_count_duration,
         account_for_moment_below_mwmin=TRUE)
+
+    # Compute the rate function, accounting for Mw-observation-errors
     # This one uses Mw_count_duration, but not Mw_obs_data
     rate_mw_error = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = slip_rate,
@@ -679,8 +682,11 @@ test_that("test_rupture_creation_and_probabilities", {
     expect_that( rel_err > 1 & rel_err < 1.001, is_true())
 
     #
-    # Now repeat similarly to above, but use actual Mw observations.
-    # We must allow 'b' to vary to get anything out of this
+    # Next test..
+    # Somewhat similar to above, but use all Mw observations, not
+    # just the Mw_count_duration information.
+    # This should allow 'b' to be better constrained (if there are enough
+    # observations).
     # 
     # Uniform errors
     error_sd = 0.12
@@ -723,12 +729,19 @@ test_that("test_rupture_creation_and_probabilities", {
         mw_observation_error_cdf = cdf_mw_error)
     # FIXME: Add a test for this case (beyond just that 'it runs', which is
     # nonetheless something I suppose!)
+    # Note the test below covers this topic as well, and actually involves 
+    # quantitative checks
 
 
     #
     #
     # Check that with full Mw data, we really can 'filter' logic tree branches well,
-    # and get the correct one, including consideration of Mw observation error
+    # and get the correct one, including consideration of Mw observation error.
+    # 
+    # In particular, we find that estimates of 'b' are improved by using the full data.
+    # For this problem, the impact of considering Mw observation errors is pretty
+    # small, but we can nonetheless check that the difference conforms with 
+    # mathematical requirements (e.g. reduced 'a' value when errors are considered)
     #
     #
     
@@ -744,7 +757,8 @@ test_that("test_rupture_creation_and_probabilities", {
     Mw_freq_dist_prob = c(0.5, 0.5)
 
     #
-    # Make a large random dataset 
+    # Make a large random dataset, which we will use to update the logic-tree weights.
+    # Note we include observation error.
     #
     set.seed(123)
     obs_duration_multiplier = 1 # Use this to scale the size/duration of the data
@@ -763,12 +777,11 @@ test_that("test_rupture_creation_and_probabilities", {
     obs_random_Mw = obs_random_Mw[k]
     Mw_count_duration = c(7.5, length(obs_random_Mw), n/rate_above_7)
 
-    #stop()
 
     #
-    # Version without using the full Mw observation data
-    # This one is unable to constrain 'b' much because it only
-    # knows the rate of events above 7.5, not their distribution
+    # Fit without using the full Mw observation data
+    # This one is unable to constrain 'b' very well, because it only
+    # knows the rate of events above 7.5, not their distribution.
     #
     rate_function_simple = rate_of_earthquakes_greater_than_Mw_function(
         slip_rate = slip_rate,
@@ -791,7 +804,7 @@ test_that("test_rupture_creation_and_probabilities", {
         )
 
     #
-    # This fit is like the previous, but we use the actual Mw values
+    # This fit is like the previous, but we use the actual Mw values.
     # In theory this should allow us to constrain 'b' better
     #
     rate_function_3000 = rate_of_earthquakes_greater_than_Mw_function(
@@ -814,21 +827,24 @@ test_that("test_rupture_creation_and_probabilities", {
         mw_observation_error_cdf = cdf_mw_error
         )
 
-    r1 = rate_function_simple(7.5)
-    r2 = rate_function_simple(7.5, account_for_mw_obs_error=TRUE)
-    r3 = rate_function_3000(7.5)
-    r4 = rate_function_3000(7.5, account_for_mw_obs_error=TRUE)
-
-    all_logic_tree_simple = rate_function_simple(NA, return_all_logic_tree_branches=TRUE)
-    i1 = order(all_logic_tree_simple$all_par_prob_with_Mw_error, decreasing=TRUE)[1:50]
-
-    all_logic_tree_3000 = rate_function_3000(NA, return_all_logic_tree_branches=TRUE)
-    i3 = order(all_logic_tree_3000$all_par_prob_with_Mw_error, decreasing=TRUE)[1:50]
-   
-    # This one should constrain b better because it uses Mw data 
-    summary(all_logic_tree_3000$all_par[i3,])
-    # This one should not constrain b as well
-    summary(all_logic_tree_simple$all_par[i1,])
+    ##
+    ## These quantities are useful to check if debugging
+    ## 
+    #r1 = rate_function_simple(7.5)
+    #r2 = rate_function_simple(7.5, account_for_mw_obs_error=TRUE)
+    #r3 = rate_function_3000(7.5)
+    #r4 = rate_function_3000(7.5, account_for_mw_obs_error=TRUE)
+    #
+    #all_logic_tree_simple = rate_function_simple(NA, return_all_logic_tree_branches=TRUE)
+    #i1 = order(all_logic_tree_simple$all_par_prob_with_Mw_error, decreasing=TRUE)[1:50]
+    #
+    #all_logic_tree_3000 = rate_function_3000(NA, return_all_logic_tree_branches=TRUE)
+    #i3 = order(all_logic_tree_3000$all_par_prob_with_Mw_error, decreasing=TRUE)[1:50]
+    # 
+    ## This one should constrain b better because it uses Mw data 
+    #summary(all_logic_tree_3000$all_par[i3,])
+    ## This one should not constrain b as well
+    #summary(all_logic_tree_simple$all_par[i1,])
 
     # To check the ML fit of the random data, can use this routine
     fitted_no_obs_error = fit_truncGR_multiple_catalogues(
@@ -863,7 +879,9 @@ test_that("test_rupture_creation_and_probabilities", {
                 abs(a_simple_mw_error - a_simple_no_mw_error) < 0.05, 
                 is_true())
     expect_that(abs(b_simple_mw_error - b_simple_no_mw_error) < 0.002, is_true())
-    # Key point: 'b' is estimated more poorly when we ignore the magnitude data
+    # Key point: 'b' is estimated more poorly when we ignore the magnitude data.
+    # At least, this should happen most of the time, depending on data-size /
+    # randomness, etc.
     expect_that(abs(b_simple_mw_error - ml_b_ignoring_errors) > abs(b_3000_mw_error - ml_b_ignoring_errors), 
         is_true())
 
