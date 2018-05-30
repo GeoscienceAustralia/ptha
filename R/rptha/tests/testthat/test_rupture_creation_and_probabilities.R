@@ -835,10 +835,10 @@ test_that("test_rupture_creation_and_probabilities", {
     #r3 = rate_function_3000(7.5)
     #r4 = rate_function_3000(7.5, account_for_mw_obs_error=TRUE)
     #
-    #all_logic_tree_simple = rate_function_simple(NA, return_all_logic_tree_branches=TRUE)
+    all_logic_tree_simple = rate_function_simple(NA, return_all_logic_tree_branches=TRUE)
     #i1 = order(all_logic_tree_simple$all_par_prob_with_Mw_error, decreasing=TRUE)[1:50]
     #
-    #all_logic_tree_3000 = rate_function_3000(NA, return_all_logic_tree_branches=TRUE)
+    all_logic_tree_3000 = rate_function_3000(NA, return_all_logic_tree_branches=TRUE)
     #i3 = order(all_logic_tree_3000$all_par_prob_with_Mw_error, decreasing=TRUE)[1:50]
     # 
     ## This one should constrain b better because it uses Mw data 
