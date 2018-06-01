@@ -1302,3 +1302,178 @@ exceedance_rate_of_observed<-function(exceedance_true, cdf_obs_error, data_value
     return(output)
 }
 
+
+
+#' Conditional empirical cumulative distribution function
+#'
+#' Make a function to which returns the ecdf of 'x' conditional on the values of
+#' 'conditional_var'. The input 'conditional_var' must be drawn from a finite set of
+#' evenly spaced values.  For instance, the 'conditional_var' might take values
+#' in 7.1, 7.2, 7.3, ...  9.3. All values in this set must occur at least once
+#' in 'conditional_var'.\cr
+#' These are restrictive assumptions, designed a specific application. This
+#' function is not really a 'general purpose' conditional ecdf creator. \cr
+#' The code works by grouping values of 'x' by their value of 'conditional_var',
+#' and computing the ecdf for each group. The returned function
+#' F(x,conditional_var) then uses these grouped ecdf's to estimate the ecdf of 'x'
+#' given *any* value of 'conditional_var', by interpolation.
+#'
+#' @param x numeric vector of x values for which we wish to compute the conditional ecdf
+#' @param conditional_var numeric vector of conditional_var values satisfying the constraints described above
+#' @return a function F(x,y) giving the ecdf of x, conditional on the fact that conditional_var=y. 
+#'
+#' @export
+#' @examples
+#' 
+#' # Make conditional_vars that satisfies the assumptions of this routine
+#' unique_conditional_vars = seq(7.2, 9.3, by=0.1)
+#' conditional_vars = rep(unique_conditional_vars, each=50)
+#' 
+#' # Make 'x' a symmetric perturbation about conditional_vars
+#' x = rep(seq(-0.5, 0.5, length=50), length.out=length(conditional_vars)) + conditional_vars
+#' 
+#' # Make the ecdf
+#' ecdf_conditional = make_conditional_ecdf(x, conditional_vars)
+#' 
+#' #
+#' # Below we perform various tests on ecdf_conditional. These give useful
+#' # insight into its properties, which users should understand. 
+#' #
+#' 
+#' # By construction in this example, there is a 50% chance of being <= the
+#' # conditional value
+#' stopifnot(all(ecdf_conditional(unique_conditional_vars, unique_conditional_vars) == 0.5))
+#' 
+#' # By construction, 40% of values should be beneath conditional_var-0.1
+#' m1 = ecdf_conditional(7.6, 7.7)
+#' stopifnot(m1 == 0.4)
+#' # BUT, if we evaluate the function at conditional values that are not in
+#' # unique_conditional_vars, then the relation will only hold approximately, due
+#' # to the interpolation involved
+#' random_conditional = runif(40, min(unique_conditional_vars), max(unique_conditional_vars))
+#' m2 = ecdf_conditional(random_conditional - 0.1, random_conditional)
+#' stopifnot(all(abs(m2 - 0.4) < 0.02))
+#' #
+#' # Confirm that extremes hold at interpolated values. Because of the
+#' # interpolation, the following would not work using 0.5 in place of 0.6
+#' #
+#' m3 = ecdf_conditional(random_conditional-0.6, random_conditional)
+#' stopifnot(all(m3 == 0))
+#' m4 = ecdf_conditional(random_conditional+0.6, random_conditional)
+#' stopifnot(all(m4 == 1))
+#' 
+#' # If we evaluate the function outside of the unique_conditional_vars, it will use
+#' # the nearest value
+#' stopifnot(ecdf_conditional(7.4, min(unique_conditional_vars)) == 
+#'           ecdf_conditional(7.4, min(unique_conditional_vars) - 10))
+#' stopifnot(ecdf_conditional(9.4, max(unique_conditional_vars)) == 
+#'           ecdf_conditional(9.4, max(unique_conditional_vars) + 10))
+#' 
+#' #
+#' # Example showing how event rates in a Gutenberg-Richter function are affected
+#' # by measurement errors
+#' #
+#' Mfd_true_mw<-function(x) Mw_exceedance_rate_truncated_gutenberg_richter(x,
+#'     a=5.5, b=1, Mw_min=-Inf, Mw_max=9.3)
+#' # Error uniformly distributed between +-(0.2 + Mw/50)
+#' observation_error_ecdf = make_conditional_ecdf(
+#'     rep(seq(-1, 1, length=50), length.out=length(conditional_vars))*(0.2 + conditional_vars/50),
+#'     conditional_vars)
+#' true_rate_8 = Mfd_true_mw(8.0)
+#' observed_rate_8 = exceedance_rate_of_observed(
+#'     exceedance_true=Mfd_true_mw, 
+#'     cdf_obs_error=observation_error_ecdf, 
+#'     data_value = 8.0,
+#'     true_value_range_with_nontrivial_cdf_value=c(7.4, 8.6))
+#' # We should have more frequent 'observed > 8' than 'true > 8' for
+#' # a Gutenberg Richter Mfd with symmetric errors
+#' stopifnot(observed_rate_8 > true_rate_8)
+#' # Check it, by comparison with an analytical version of the ecdf
+#' observation_error_ecdf2<-function(x, y) pmax(0, pmin(1, (x - (-0.2-y/50))/(0.2+y/50 - (-0.2 - y/50))))
+#' observed_rate_8b = exceedance_rate_of_observed(
+#'     exceedance_true=Mfd_true_mw, 
+#'     cdf_obs_error=observation_error_ecdf2, 
+#'     data_value = 8.0,
+#'     true_value_range_with_nontrivial_cdf_value=c(7.4, 8.6))
+#' rate_difference_1 = (observed_rate_8 - true_rate_8)
+#' rate_difference_2 = (observed_rate_8b - true_rate_8)
+#' # The answers should be close
+#' stopifnot(abs(rate_difference_1 - rate_difference_2) < 0.1*rate_difference_1)
+#' 
+#' # The empirical ecdf should be close to the exact ecdf
+#' random_x = runif(1e+05, -0.5, 0.5)
+#' random_conditional = runif(1e+05, 7.2, 9.3)
+#' p1 = observation_error_ecdf( random_x, random_conditional)
+#' p2 = observation_error_ecdf2(random_x, random_conditional)
+#' stopifnot(max(abs(p1-p2)) < 0.02)
+#' 
+#' 
+make_conditional_ecdf<-function(x, conditional_var){
+
+    # Figure out the range of 'true' conditional_var values
+    conditional_var_values_binned = sort(unique(conditional_var))
+
+    spacing = diff(conditional_var_values_binned)
+
+    if(!isTRUE(all.equal(spacing, rep(spacing[1], length(spacing))))){
+        stop('Unique conditional_var values are not evenly spaced, which is required by make_conditional_ecdf')
+    }
+    spacing = spacing[1]
+
+    # Sort the x to facilitate lookup later
+    num_conditional_var = length(conditional_var_values_binned)
+    x_ecdfs = vector(mode='list', length=num_conditional_var)
+    for(i in 1:num_conditional_var){
+        k = which(conditional_var == conditional_var_values_binned[i])
+        x_ecdfs[[i]] = ecdf(x[k]) 
+    }
+    names(x_ecdfs) = as.character(conditional_var_values_binned)
+
+    # Function to do the interpolation
+    cdf_x_conditional<-function(xs, cond_var){
+    
+        # Ensure that input arguments have compatible lengths
+        if(length(xs) != length(cond_var)){
+            if(length(cond_var) == 1){
+                cond_var = xs * 0 + cond_var
+            }else if(length(xs) == 1){
+                xs = cond_var*0 + xs
+            }else{
+                stop('Incompatible lengths of xs and cond_var')
+            }
+        }
+
+        # Find lower/upper
+        cond_var_lower_ind = findInterval(cond_var, conditional_var_values_binned)
+        cond_var_upper_ind = cond_var_lower_ind + 1
+
+        cond_var_lower_ind[cond_var_lower_ind < 1] = 1
+        cond_var_upper_ind[cond_var_upper_ind > num_conditional_var] = num_conditional_var
+    
+        # Weights for interpolation 
+        w_lower = (conditional_var_values_binned[cond_var_upper_ind] - cond_var)/spacing
+        w_lower[w_lower < 0] = 0
+        w_lower[w_lower > 1] = 1
+        w_upper = (1-w_lower)
+
+        output_lower = w_lower * 0 - 1
+        output_upper = output_lower 
+
+        # Lookup the values in each true mw
+        for(i in 1:num_conditional_var){
+            k = which(cond_var_lower_ind == i)
+            if(length(k) > 0) output_lower[k] = x_ecdfs[[i]](xs[k])
+            k = which(cond_var_upper_ind == i)
+            if(length(k) > 0) output_upper[k] = x_ecdfs[[i]](xs[k])
+        }
+
+        stopifnot(all(output_lower >= 0) & all(output_upper >= 0))
+
+        output = w_lower*output_lower + w_upper*output_upper
+
+        return(output)
+    }
+
+    return(cdf_x_conditional)
+
+}
