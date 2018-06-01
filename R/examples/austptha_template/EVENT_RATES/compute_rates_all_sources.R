@@ -366,6 +366,63 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # Check we didn't destroy the table by rouding!
     stopifnot( all( (diff(event_table$Mw) == 0) | ( abs(diff(event_table$Mw) - dMw) < 1.0e-12 ) ) )
 
+    if(target_rake == 90){
+        #
+        # Cumulative distribution function of the difference between the 'variable shear modulus'
+        # magnitude, and the 'fixed shear modulus' magnitude. By treating these differences as
+        # 'errors in observed magnitudes', we get a convenient method of treating variable shear 
+        # modulus.
+        # This will differ depending on whether we compute the function using
+        # uniform/variable-uniform/heterogeneous slip scenarios. However, experimentation
+        # suggests the variation is not great, although uniform has clearer 'discretization'
+        # artefacts due to reduced variability. So we use stochastic
+        #
+
+        unit_source_depth = bird2003_env$unit_source_tables[[source_name]]$depth
+        unit_source_mu_variable = shear_modulus_depth(unit_source_depth, type='default')
+    
+        stochastic_slip_event_table_file = paste0('../SOURCE_ZONES/', source_name, 
+        '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_', source_name, '.nc')
+
+        # Get slip and indices
+        stochastic_slip_fid = nc_open(stochastic_slip_event_table_file, readunlim=FALSE)
+        stoc_event_slip_string = ncvar_get(stochastic_slip_fid, 'event_slip_string')
+        stoc_event_index_string = ncvar_get(stochastic_slip_fid, 'event_index_string')
+        stoc_mw_mu_constant = ncvar_get(stochastic_slip_fid, 'Mw')
+        stoc_mw_mu_constant = round(stoc_mw_mu_constant, 3) # Address imperfect floating point storage in netcdf
+        nc_close(stochastic_slip_fid); rm(stochastic_slip_fid)
+
+        stoc_ess = lapply(stoc_event_slip_string, f<-function(x) as.numeric(strsplit(x, '_')[[1]]))
+        stoc_eis = lapply(stoc_event_index_string, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
+
+        stoc_mw_mu_variable = rep(NA, length(stoc_ess)) 
+        for(ei in 1:length(stoc_mw_mu_variable)){
+            inds = stoc_eis[[ei]]
+            slp = stoc_ess[[ei]]
+            stoc_moment = sum(unit_source_areas[inds] * 1e+06 * unit_source_mu_variable[inds] * slp)
+            stoc_mw_mu_variable[ei] = M0_2_Mw(stoc_moment)
+        }
+        # Save memory
+        rm(stoc_ess, stoc_eis, stoc_event_slip_string, stoc_event_index_string)
+
+        # Difference between variable slip and uniform slip shear modulus
+        mw_obs_deviation = stoc_mw_mu_variable - stoc_mw_mu_constant
+        # Sanity check (specific to our case)
+        stopifnot( (min(mw_obs_deviation) > -0.32) & (max(mw_obs_deviation) < 0.25) )
+   
+        # Conditional empirical CDF of difference between 'Mw observation' and
+        # 'Mw with constant shear modulus' 
+        mw_deviation_cdf_variable_shear_modulus = make_conditional_ecdf(mw_obs_deviation, stoc_mw_mu_constant)
+
+        # Reduce memory
+        rm(mw_obs_deviation, stoc_mw_mu_constant); gc()
+
+    }else{
+        # For normal fault events, ignore shear modulus variations
+        mw_deviation_cdf_variable_shear_modulus = NULL
+    }
+    
+
     #
     # PART 3
     # Get a preliminary event conditional probability model; use it to compute
@@ -461,7 +518,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         Mw_count_duration = c(gcmt_access$mw_threshold, nrow(gcmt_data), 
             gcmt_access$cmt_duration_years),
         Mw_obs_data = gcmt_data_for_rate_function,
-        account_for_moment_below_mwmin = TRUE
+        account_for_moment_below_mwmin = TRUE,
+        mw_observation_error_cdf = mw_deviation_cdf_variable_shear_modulus
         )
 
     # Nearly finished .....
@@ -575,6 +633,10 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         (mw_rate_function(event_table$Mw - dMw/2) - 
          mw_rate_function(event_table$Mw + dMw/2) )
 
+    event_rates_mu_vary = event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, account_for_mw_obs_error=TRUE) - 
+         mw_rate_function(event_table$Mw + dMw/2, account_for_mw_obs_error=TRUE) )
+
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
     # NOTE: Later we sum over [row-weights x event_rates_upper] on segmented
@@ -593,6 +655,14 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             quantiles=config$upper_ci_inv_quantile) - 
          mw_rate_function(event_table$Mw + dMw/2, 
             quantiles=config$upper_ci_inv_quantile) )
+        )
+
+    event_rates_upper_mu_vary = as.numeric(
+        event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, 
+            quantiles=config$upper_ci_inv_quantile, account_for_mw_obs_error=TRUE) - 
+         mw_rate_function(event_table$Mw + dMw/2, 
+            quantiles=config$upper_ci_inv_quantile, account_for_mw_obs_error=TRUE) )
         )
 
     # Lower credible interval bound. Wrap in as.numeric to avoid having a 1
@@ -614,6 +684,14 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
          mw_rate_function(event_table$Mw + dMw/2, 
             quantiles=config$lower_ci_inv_quantile) )
         )
+    event_rates_lower_mu_vary = as.numeric(
+        event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, 
+            quantiles=config$lower_ci_inv_quantile, account_for_mw_obs_error=TRUE) - 
+         mw_rate_function(event_table$Mw + dMw/2, 
+            quantiles=config$lower_ci_inv_quantile, account_for_mw_obs_error=TRUE) )
+        )
+
 
     return(environment())
 
