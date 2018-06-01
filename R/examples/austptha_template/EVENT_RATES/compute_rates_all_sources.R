@@ -367,15 +367,21 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     stopifnot( all( (diff(event_table$Mw) == 0) | ( abs(diff(event_table$Mw) - dMw) < 1.0e-12 ) ) )
 
     if(target_rake == 90){
+        # Treatment of variable shear modulus 
         #
-        # Cumulative distribution function of the difference between the 'variable shear modulus'
-        # magnitude, and the 'fixed shear modulus' magnitude. By treating these differences as
-        # 'errors in observed magnitudes', we get a convenient method of treating variable shear 
-        # modulus.
-        # This will differ depending on whether we compute the function using
-        # uniform/variable-uniform/heterogeneous slip scenarios. However, experimentation
-        # suggests the variation is not great, although uniform has clearer 'discretization'
-        # artefacts due to reduced variability. So we use stochastic
+        # Here we compute the conditional cumulative distribution function of the
+        # difference between the 'variable shear modulus' magnitude, and the
+        # 'fixed shear modulus' magnitude. It is conditional on the 'fixed
+        # shear modulus' magnitude. By treating these differences as 'errors in
+        # observed magnitudes', we get a convenient method of treating variable
+        # shear modulus in the analysis.
+        #
+        # The empirical CDF will differ depending on whether we compute the
+        # function using uniform/variable-uniform/heterogeneous slip scenarios.
+        # However, experimentation suggests the variation is not great,
+        # although uniform-slip-with-fixed-size has clearer 'discretization'
+        # artefacts due to reduced variability. So we use stochastic slip to
+        # derive the ecdf
         #
 
         unit_source_depth = bird2003_env$unit_source_tables[[source_name]]$depth
@@ -423,7 +429,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         mw_deviation_cdf_variable_shear_modulus = make_conditional_ecdf(mw_obs_deviation, stoc_mw_mu_constant)
 
         # Reduce memory
-        rm(mw_obs_deviation, stoc_mw_mu_constant); gc()
+        rm(mw_obs_deviation, stoc_mw_mu_constant, stoc_mw_mu_variable, 
+            unit_source_depth, unit_source_mu_variable); gc()
 
     }else{
         # For normal fault events, ignore shear modulus variations
