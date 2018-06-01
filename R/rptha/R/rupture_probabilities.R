@@ -1428,6 +1428,10 @@ make_conditional_ecdf<-function(x, conditional_var){
         x_ecdfs[[i]] = ecdf(x[k]) 
     }
     names(x_ecdfs) = as.character(conditional_var_values_binned)
+    
+    # Reduce the memory of the function environment (might reduce memory
+    # associated with cdf_x_conditional)
+    rm(conditional_var, x, k); gc()
 
     # Function to do the interpolation
     cdf_x_conditional<-function(xs, cond_var){

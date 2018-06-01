@@ -120,6 +120,7 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
     # Convert event_index_string to an easier-to-use form
     eis = sapply(event_index_string,
         f<-function(x) as.numeric(strsplit(x, split="-")[[1]]), simplify=FALSE)
+    rm(event_index_string); gc()
 
     # Flag events which have a unit-source at the edge of the rupture
     uss_alongstrike_range = range(uss$alongstrike_number)
@@ -148,6 +149,7 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
         ess = sapply(event_slip_string,
             f<-function(x) as.numeric(strsplit(x, split="_")[[1]]),
             simplify=FALSE)
+        rm(event_slip_string); gc()
     }
     if(read_data_from_file) nc_close(fid)
 
