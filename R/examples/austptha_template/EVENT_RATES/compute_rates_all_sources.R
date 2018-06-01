@@ -395,9 +395,13 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         stoc_ess = lapply(stoc_event_slip_string, f<-function(x) as.numeric(strsplit(x, '_')[[1]]))
         stoc_eis = lapply(stoc_event_index_string, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
 
+        # Compute magnitude with variable shear modulus
         stoc_mw_mu_variable = rep(NA, length(stoc_ess)) 
+        to_keep = rep(TRUE, length(stoc_ess))
         for(ei in 1:length(stoc_mw_mu_variable)){
             inds = stoc_eis[[ei]]
+            # Record events that are not in the current segment.
+            if(!any(is_in_segment[inds])) to_keep[ei] = FALSE
             slp = stoc_ess[[ei]]
             stoc_moment = sum(unit_source_areas[inds] * 1e+06 * unit_source_mu_variable[inds] * slp)
             stoc_mw_mu_variable[ei] = M0_2_Mw(stoc_moment)
@@ -409,7 +413,11 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         mw_obs_deviation = stoc_mw_mu_variable - stoc_mw_mu_constant
         # Sanity check (specific to our case)
         stopifnot( (min(mw_obs_deviation) > -0.32) & (max(mw_obs_deviation) < 0.25) )
-   
+
+        keepers = which(to_keep)
+        if(length(keepers) == 0) stop('Error: No events in segment. This suggests a bug')
+        mw_obs_deviation = mw_obs_deviation[keepers]
+        stoc_mw_mu_constant = stoc_mw_mu_constant[keepers] 
         # Conditional empirical CDF of difference between 'Mw observation' and
         # 'Mw with constant shear modulus' 
         mw_deviation_cdf_variable_shear_modulus = make_conditional_ecdf(mw_obs_deviation, stoc_mw_mu_constant)
@@ -692,6 +700,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             quantiles=config$lower_ci_inv_quantile, account_for_mw_obs_error=TRUE) )
         )
 
+    gc()
 
     return(environment())
 
@@ -880,7 +889,7 @@ if(config$MC_CORES > 1){
     library(parallel)
     if(length(unseg) > 0){
         source_envs[unseg] = mclapply(as.list(1:length(source_segment_names))[unseg], parfun, 
-            mc.cores=config$MC_CORES)
+            mc.cores=config$MC_CORES, mc.cleanup=9L)
     }
 }else{
     # Serial run
@@ -917,7 +926,7 @@ if(config$MC_CORES > 1){
             i = as.list(1:length(source_segment_names))[seg], 
             unsegmented_edge_rate_multiplier=unsegmented_edge_rate_multiplier[seg], 
             SIMPLIFY=FALSE,
-            mc.cores=config$MC_CORES)
+            mc.cores=config$MC_CORES, mc.cleanup=9L)
     }
 
 }else{

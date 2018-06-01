@@ -1391,28 +1391,8 @@ module domain_mod
 
                 !! FIXME: Consider adding coriolis
 
-                !! Source term associated with spherical coordinates for the uvd advection term
+                !! Source term associated with spherical coordinates for the pressure gradient term
                 !!
-                !! Using the product rule for derivatives we can write
-                ! R cos(lat) dlon * [(uvd)_{lat+} - (uvd)_{lat-}] = flux - source
-                !! where
-                ! (flux)  = [ (uvd R cos(lat) dlon)_{lat+} - (uvd R cos(lat) dlon)_{lat-} ] 
-                ! (source) = uvd [(R cos(lat) dlon)_{lat+} - (R cos(lat) dlon)_{lat-}]
-                !! This puts the equations in flux-conservative form as required for finite volumes.
-                !! So here we add the source term
-
-                domain%explicit_source(i, j, UH) = domain%explicit_source(i, j, UH) + &
-                    advection_beta * domain%velocity(i, j, UH) * domain%U(i, j, VH) * &
-                    (domain%distance_bottom_edge(j+1) - domain%distance_bottom_edge(j))
-
-                !
-                ! Similarly for the v^2h + gh^2/2 term in the VH momentum equation
-                !
-
-                domain%explicit_source(i, j, VH) = domain%explicit_source(i, j, VH) + &
-                    advection_beta * domain%velocity(i, j, VH) * domain%U(i, j, VH) * &
-                    (domain%distance_bottom_edge(j+1) - domain%distance_bottom_edge(j))
-
                 domain%explicit_source(i, j, VH) = domain%explicit_source(i, j, VH) + &
                     half_gravity * domain%depth(i, j) * domain%depth(i, j) * &
                     (domain%distance_bottom_edge(j+1) - domain%distance_bottom_edge(j))
