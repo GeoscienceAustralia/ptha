@@ -1189,7 +1189,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
 #' @param integration_dy numerically integrate with this spacing
 #' @return value of the integral, which gives the rate of 'observed' (= true + error) that
 #' are greater than data_thresh
-#'
+#' @importFrom stats ecdf
 #' @export
 #' @examples
 #'
