@@ -43,6 +43,10 @@ Supplementary codes which are used in the above process are:
 [compute_rates_all_sources.R](compute_rates_all_sources.R), used to compute
 rates for all tsunami events
 
+[append_variable_mu_variables_to_event_netcdf.R](append_variable_mu_variables_to_event_netcdf.R), used
+to insert new columns into the netcdf files to store some results under the assumption of
+variable shear modulus (for thrust events only).
+
 [make_spatially_variable_source_zone_convergence_rates.R](make_spatially_variable_source_zone_convergence_rates.R),
 used to map Bird (2003) plate-boundary convergence rates onto the top-edge of
 the unit-sources. 
