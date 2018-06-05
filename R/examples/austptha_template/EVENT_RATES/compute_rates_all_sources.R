@@ -658,6 +658,11 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         (mw_rate_function(event_table$Mw - dMw/2, account_for_mw_obs_error=TRUE) - 
          mw_rate_function(event_table$Mw + dMw/2, account_for_mw_obs_error=TRUE) )
 
+    # Get the fraction of the logic-tree which places non-zero weight on the event
+    # being possible
+    event_weight_with_nonzero_rate = mw_rate_function(event_table$Mw, 
+        epistemic_nonzero_weight=TRUE)
+
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
     # NOTE: Later we sum over [row-weights x event_rates_upper] on segmented
@@ -771,14 +776,26 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             return(invisible())
         }
 
+        #
         # Put rates onto the event table nc file
+        # Uniform slip, deterministic size, fixed mu
+        #
         fid = nc_open(event_table_file, readunlim=FALSE, write=TRUE)
         ncvar_put_extra(fid, 'rate_annual', event_rates)
         # Summation of credible intervals OK for co-monotonic epistemic uncertainties
         ncvar_put_extra(fid, 'rate_annual_upper_ci', event_rates_upper)
         ncvar_put_extra(fid, 'rate_annual_lower_ci', event_rates_lower)
 
-        # FIXME: Put variable shear modulus rates onto the file
+        #
+        # As above with variable shear modulus
+        #
+        ncvar_put_extra(fid, 'variable_mu_rate_annual', event_rates_mu_vary)
+        # Summation of credible intervals OK for co-monotonic epistemic uncertainties
+        ncvar_put_extra(fid, 'variable_mu_rate_annual_upper_ci', event_rates_upper_mu_vary)
+        ncvar_put_extra(fid, 'variable_mu_rate_annual_lower_ci', event_rates_lower_mu_vary)
+
+        # Compute the weight_with_nonzero_rate variable and add to file
+        ncvar_put_extra(fid, 'weight_with_nonzero_rate', event_weight_with_nonzero_rate)
 
         nc_close(fid)
 
@@ -813,21 +830,40 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             nevents = table(event_uniform_event_row)
             names_nevents = as.numeric(names(nevents))
             stopifnot(all(names_nevents == 1:length(event_rates)))
-            # Make an array giving the number of events matching the
-            # uniform_event_row, for every stochastic/variable_uniform event
-            nevents_broad = nevents[match(event_uniform_event_row, names_nevents )]
 
-            # FIXME: adjust the event weights based on the bias-correction
-            # earlier
+            # Compute an adjustment to the event weights based on the
+            # bias-correction from earlier
+            # Use peak-slip to do this
+            event_peak_slip = ncvar_get(fid, 'event_slip_string')
+            event_peak_slip = sapply(event_peak_slip, f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])))
+            event_bias_adjustment = event_peak_slip * 0
+            # Get the function which gives weights to events (having similar
+            # Mw and location) based on their peak slip quantiles
+            if(slip_type == 'stochastic'){
+                bias_adjustment_function = config$peak_slip_bias_adjustment_stochastic
+            }else if(slip_type == 'variable_uniform'){
+                bias_adjustment_function = config$peak_slip_bias_adjustment_variable_uniform
+            }else{
+                stop('slip_type not recognized')
+            }
+            # Compute the weights
+            for(euer in names_nevents){
+                k = which(event_uniform_event_row == euer) 
+                quantiles_of_peak_slip = rank(event_peak_slip[k], ties.method='first')/(length(k)+1)
+                bias_adjuster = bias_adjustment_function(quantiles_of_peak_slip)
+                bias_adjuster = bias_adjuster/sum(bias_adjuster)
+                event_bias_adjustment[k] = bias_adjuster
+            }
 
             ncvar_put_extra(fid, 'event_rate_annual', 
-                event_rates[event_uniform_event_row]/nevents_broad)
+                event_rates[event_uniform_event_row] * event_bias_adjustment)
             # Summation of credible intervals OK for co-monotonic epistemic
             # uncertainties
             ncvar_put_extra(fid, 'event_rate_annual_upper_ci', 
-                event_rates_upper[event_uniform_event_row]/nevents_broad)
+                event_rates_upper[event_uniform_event_row] * event_bias_adjustment)
             ncvar_put_extra(fid, 'event_rate_annual_lower_ci', 
-                event_rates_lower[event_uniform_event_row]/nevents_broad)
+                event_rates_lower[event_uniform_event_row] * event_bias_adjustment)
+
             nc_close(fid)
 
             #
@@ -847,25 +883,46 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             nevents = table(event_uniform_event_row)
             names_nevents = as.numeric(names(nevents))
             stopifnot(all(names_nevents == 1:length(event_rates)))
-            # Make an array giving the number of events matching the
-            # uniform_event_row, for every stochastic/variable_uniform event
-            nevents_broad = nevents[match(event_uniform_event_row, names_nevents )]
 
-            # FIXME: adjust the event weights based on the bias-correction
-            # earlier
+            # Compute an adjustment to the event weights based on the
+            # bias-correction from earlier
+            # Use peak-slip to do this
+            event_peak_slip = ncvar_get(fid, 'event_slip_string')
+            event_peak_slip = sapply(event_peak_slip, f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])))
+            event_bias_adjustment = event_peak_slip * 0
+            # Compute the weights
+            for(euer in names_nevents){
+                k = which(event_uniform_event_row == euer) 
+                quantiles_of_peak_slip = rank(event_peak_slip[k], ties.method='first')/(length(k)+1)
+                bias_adjuster = bias_adjustment_function(quantiles_of_peak_slip)
+                bias_adjuster = bias_adjuster/sum(bias_adjuster)
+                event_bias_adjustment[k] = bias_adjuster
+            }
 
             ncvar_put_extra(fid, 'rate_annual', 
-                event_rates[event_uniform_event_row]/nevents_broad)
+                event_rates[event_uniform_event_row] * event_bias_adjustment)
             # Summation of credible intervals OK for co-monotonic epistemic uncertainties
             ncvar_put_extra(fid, 'rate_annual_upper_ci', 
-                event_rates_upper[event_uniform_event_row]/nevents_broad)
+                event_rates_upper[event_uniform_event_row] * event_bias_adjustment)
             ncvar_put_extra(fid, 'rate_annual_lower_ci', 
-                event_rates_lower[event_uniform_event_row]/nevents_broad)
+                event_rates_lower[event_uniform_event_row] * event_bias_adjustment)
+
+            # Compute the weight_with_nonzero_rate variable and add to file
+            ncvar_put_extra(fid, 'weight_with_nonzero_rate', 
+                event_weight_with_nonzero_rate[event_uniform_event_row])
+
 
             #
-            # FIXME: Put the variable_mu rates onto the file Note they do not
+            # Put the variable_mu rates onto the file. Note they do not
             # go onto the '_tsunami' file (just the 'events only' file)
             #
+            ncvar_put_extra(fid, 'variable_mu_rate_annual', 
+                event_rates_mu_vary[event_uniform_event_row] * event_bias_adjustment)
+            # Summation of credible intervals OK for co-monotonic epistemic uncertainties
+            ncvar_put_extra(fid, 'variable_mu_rate_annual_upper_ci', 
+                event_rates_upper_mu_vary[event_uniform_event_row] * event_bias_adjustment)
+            ncvar_put_extra(fid, 'variable_mu_rate_annual_lower_ci', 
+                event_rates_lower_mu_vary[event_uniform_event_row] * event_bias_adjustment)
 
             nc_close(fid)
 

@@ -192,6 +192,36 @@ stage_seq = exp(seq(log(stage_seq_min), log(stage_seq_max), len=stage_seq_len))
 MC_CORES = 16
 
 
+###########################################################################
+#
+# Functions to weight individual stochastic and variable_uniform events that
+# have the same corresponding uniform event. 
+# This allows us to attempt to address biases, such as (hypothetically)
+# variable_uniform_events being too low-slip on average, or stochastic_slip
+# events being too high-slip on average.
+# We do not try to adjust determinstic-size-uniform-slip events
+#
+# If you do not want to perform adjustment, replace these functions with 
+# constant functions (e.g. peak_slip_bias_adjustment_XXXX<-function(x) x=1)
+#
+###########################################################################
+peak_slip_bias_adjustment_table = read.csv('peak_slip_quantile_adjustment_factors.csv')
+peak_slip_bias_adjustment_stochastic = approxfun(
+    peak_slip_bias_adjustment_table$peak_slip_quantile,
+    peak_slip_bias_adjustment_table$weight_stochastic)
+peak_slip_bias_adjustment_variable_uniform = approxfun(
+    peak_slip_bias_adjustment_table$peak_slip_quantile,
+    peak_slip_bias_adjustment_table$weight_variable_uniform)
+# Variable shear modulus case
+peak_slip_bias_adjustment_table_mu_vary = read.csv('peak_slip_quantile_adjustment_factors_varyMu.csv')
+peak_slip_bias_adjustment_stochastic_mu_vary = approxfun(
+    peak_slip_bias_adjustment_table_mu_vary$peak_slip_quantile,
+    peak_slip_bias_adjustment_table_mu_vary$weight_stochastic)
+peak_slip_bias_adjustment_variable_uniform_mu_vary = approxfun(
+    peak_slip_bias_adjustment_table_mu_vary$peak_slip_quantile,
+    peak_slip_bias_adjustment_table_mu_vary$weight_variable_uniform)
+
+
 #######################################################################################
 #
 # PARAMETERS POINTING TO PATHS OF FILES ALREADY CREATED IN THE TSUNAMI_EVENTS PHASE

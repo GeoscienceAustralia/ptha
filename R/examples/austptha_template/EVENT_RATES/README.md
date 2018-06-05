@@ -22,6 +22,12 @@ used in the event rate computation. See the comments in that script for more det
 *It is essential that users understand what these parameters do, otherwise your computation
 might be completely different to what you wanted!*
 
+One input to the [config.R](config.R) script consists of a csv file describing
+functions used bias-correct event weights (with the same magnitude and general
+location) based on their peak slip. We used the script
+[event_properties_and_GOF.R](event_properties_and_GOF.R) to make these, based
+on the DART buoy comparisons. 
+
 Then, assuming everything is correctly configured, the codes can be run (on
 NCI) with:
 

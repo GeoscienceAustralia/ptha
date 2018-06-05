@@ -177,7 +177,6 @@ family_stats<-function(gauge_stats, unit_source_statistics){
 # Main script here
 #
 #
-
 variable_mu = FALSE
 if(variable_mu){
     all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*varyMu.Rdata')
@@ -497,8 +496,24 @@ for(var in c('mean_slip', 'area', 'area_including_zeros', 'peak_slip')){
 }
 dev.off()
 
+#
+# Save the quantile adjustment factors for stochastic and variable_uniform
+# events, for peak slip. 
+#
+psq = seq(0,1,len=51)
+tabulated_quantile_adjustment_factors = cbind(
+    peak_slip_quantile = psq,
+    weight_stochastic = stochastic_quantile_adjust[['peak_slip']]$bias_adjustment_factor(psq),
+    weight_variable_uniform = variable_uniform_quantile_adjust[['peak_slip']]$bias_adjustment_factor(psq))
+
 if(variable_mu){
+    write.csv(tabulated_quantile_adjustment_factors,
+        file='peak_slip_quantile_adjustment_factors_varyMu.csv',
+        row.names=FALSE)
     save.image('event_properties_and_GOF_session_varyMu_end.Rdata')
 }else{
+    write.csv(tabulated_quantile_adjustment_factors,
+        file='peak_slip_quantile_adjustment_factors.csv',
+        row.names=FALSE)
     save.image('event_properties_and_GOF_session_end.Rdata')
 }
