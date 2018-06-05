@@ -521,6 +521,12 @@ test_that("test_rupture_creation_and_probabilities", {
         c(  1,   1,  1, 2/3, 2/3, 2/3, 2/3, 1/3, 1/3, 1/3, 0, 0) 
     expect_that(isTRUE(all(abs(possibility_mw - expected_possibility) < 1.0e-06)), 
         is_true())
+    # Should not matter whether we account for Mw obs error
+    possibility_mw = rate_function6_a_donot_update_mwmax_weights(
+        c(7.6, 8.2, 8.29, 8.3, 8.4, 9.3, 9.39, 9.4, 9.5, 9.59, 9.6, 9.7), 
+        epistemic_nonzero_weight=TRUE, account_for_mw_obs_error=TRUE)
+    expect_that(isTRUE(all(abs(possibility_mw - expected_possibility) < 1.0e-06)), 
+        is_true())
 
     #
     #

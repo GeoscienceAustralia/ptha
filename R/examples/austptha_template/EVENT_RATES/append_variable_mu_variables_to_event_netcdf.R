@@ -32,23 +32,16 @@ append_variable_mu_variables_to_earthquake_event_files<-function(netcdf_file){
 
     vars_to_add = paste0('variable_mu_', c('Mw', 'rate_annual', 
         'rate_annual_lower_ci', 'rate_annual_upper_ci'))
+    vars_to_add = c(vars_to_add, 'weight_with_nonzero_rate')
+    # Add the variables
+    table_rows_dim = fid$dim$table_rows
+    for(varname in vars_to_add){
+        # Do not add the variable if it already exists
+        if(varname %in% names(fid$var)) next
 
-    # Check whether we have already appended the variables
-    if(any(vars_to_add %in% names(fid$var))){
-        if(!all(vars_to_add %in% names(fid$var))){
-            nc_close(fid)
-            stop(paste0(netcdf_file, ' has some variable_mu_ variables appended, but not all'))
-        }
-        # Otherwise, the file has already been created with the right stuff,
-        # and we don't need to do anything
-    }else{
-        # Add the variables
-        table_rows_dim = fid$dim$table_rows
-        for(varname in vars_to_add){
-            new_var = ncvar_def(varname, units="", dim=table_rows_dim, prec='double') 
-            fid = ncvar_add(fid, new_var)
-            ncvar_put(fid, new_var, vals=rep(-1.0, table_rows_dim$len))
-        }
+        new_var = ncvar_def(varname, units="", dim=table_rows_dim, prec='double') 
+        fid = ncvar_add(fid, new_var)
+        ncvar_put(fid, new_var, vals=rep(-1.0, table_rows_dim$len))
     }
 
     # Flush to file   
