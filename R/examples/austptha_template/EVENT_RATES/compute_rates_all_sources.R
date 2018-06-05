@@ -395,7 +395,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         #
         stochastic_slip_event_table_file = paste0('../SOURCE_ZONES/', source_name, 
         '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_', source_name, '.nc')
-
+        stochastic_slip_fid = nc_open(stochastic_slip_event_table_file)
         stoc_mw_mu_constant = ncvar_get(stochastic_slip_fid, 'Mw')
         stoc_mw_mu_constant = round(stoc_mw_mu_constant, 3) # Address imperfect floating point storage in netcdf
         stoc_mw_mu_variable = ncvar_get(stochastic_slip_fid, 'variable_mu_Mw')
