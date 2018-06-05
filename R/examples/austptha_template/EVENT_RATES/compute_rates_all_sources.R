@@ -1105,9 +1105,15 @@ for(i in 1:length(source_segment_names)){
     fid = nc_open(source_envs[[i]]$event_table_file, readunlim=FALSE)
     event_rates_file = ncvar_get(fid, 'rate_annual')
     event_Mw_file = round(ncvar_get(fid, 'Mw'), 3)
+    event_rates_file_variable_mu = ncvar_get(fid, 'variable_mu_rate_annual')
+    event_Mw_file_variable_mu = ncvar_get(fid, 'variable_mu_Mw')
     nc_close(fid)
-    empirical_mean_curve = sapply(mw, f<-function(x) sum(event_rates_file * (event_Mw_file >= x)))
+    empirical_mean_curve = sapply(mw, 
+        f<-function(x) sum(event_rates_file * (event_Mw_file >= x)))
     points(mw, empirical_mean_curve, pch=19, cex=0.2, col='pink')
+    empirical_mean_curve_variable_mu = sapply(mw, 
+        f<-function(x) sum(event_rates_file_variable_mu * (event_Mw_file_variable_mu >= x)))
+    points(mw, empirical_mean_curve_variable_mu, pch=19, cex=0.2, col='blue')
 
     # Mean prior curve
     #mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)
