@@ -366,54 +366,55 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # Check we didn't destroy the table by rouding!
     stopifnot( all( (diff(event_table$Mw) == 0) | ( abs(diff(event_table$Mw) - dMw) < 1.0e-12 ) ) )
 
-    if(target_rake == 90){
+    include_variable_shear_modulus = (target_rake == 90)
+    if(include_variable_shear_modulus){
         # Treatment of variable shear modulus 
         #
-        # Here we compute the conditional cumulative distribution function of the
-        # difference between the 'variable shear modulus' magnitude, and the
-        # 'fixed shear modulus' magnitude. It is conditional on the 'fixed
-        # shear modulus' magnitude. By treating these differences as 'errors in
-        # observed magnitudes', we get a convenient method of treating variable
-        # shear modulus in the analysis.
+        # Here we compute the conditional cumulative distribution function of
+        # the magnitude-difference (i.e. between the 'variable shear modulus'
+        # magnitude, and the 'fixed shear modulus' magnitude). It is
+        # conditional on the 'fixed shear modulus' magnitude. By treating these
+        # differences as 'errors in observed magnitudes', we get a convenient
+        # method of treating variable shear modulus in the analysis.
         #
-        # The empirical CDF will differ depending on whether we compute the
-        # function using uniform/variable-uniform/heterogeneous slip scenarios.
-        # However, experimentation suggests the variation is not great,
-        # although uniform-slip-with-fixed-size has clearer 'discretization'
-        # artefacts due to reduced variability. So we use stochastic slip to
-        # derive the ecdf
+        # WE USE HETEROGENEOUS SLIP MODELS TO COMPUTE THE magnitude-difference
+        # CDF IN ALL CASES! 
+        # Why? The empirical CDF of magnitude-difference will actually differ
+        # depending on whether we compute the function using
+        # uniform/variable-uniform/heterogeneous slip scenarios.
+        # However, experimentation suggests the impact of this variation on our
+        # rate models is small. Heuristically, this is because the CDF affects
+        # the 'observed magnitude rates' via a convolution integral, so
+        # deviations are 'averaged out' in that process.
+        # It is much simpler in terms of our workflow to use a single model, so
+        # that is implemented here
+        # The empirical CDF based on uniform-slip-with-fixed-size has
+        # clearer 'discretization' artefacts due to reduced variability. So we
+        # use stochastic slip to derive the empirical CDF, as the large number
+        # of events + natural variability leads to a nicely behaved function.
         #
-
-        unit_source_depth = bird2003_env$unit_source_tables[[source_name]]$depth
-        unit_source_mu_variable = shear_modulus_depth(unit_source_depth, type='default')
-    
         stochastic_slip_event_table_file = paste0('../SOURCE_ZONES/', source_name, 
         '/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_', source_name, '.nc')
 
-        # Get slip and indices
-        stochastic_slip_fid = nc_open(stochastic_slip_event_table_file, readunlim=FALSE)
-        stoc_event_slip_string = ncvar_get(stochastic_slip_fid, 'event_slip_string')
-        stoc_event_index_string = ncvar_get(stochastic_slip_fid, 'event_index_string')
         stoc_mw_mu_constant = ncvar_get(stochastic_slip_fid, 'Mw')
         stoc_mw_mu_constant = round(stoc_mw_mu_constant, 3) # Address imperfect floating point storage in netcdf
-        nc_close(stochastic_slip_fid); rm(stochastic_slip_fid)
+        stoc_mw_mu_variable = ncvar_get(stochastic_slip_fid, 'variable_mu_Mw')
 
-        stoc_ess = lapply(stoc_event_slip_string, f<-function(x) as.numeric(strsplit(x, '_')[[1]]))
-        stoc_eis = lapply(stoc_event_index_string, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
-
-        # Compute magnitude with variable shear modulus
-        stoc_mw_mu_variable = rep(NA, length(stoc_ess)) 
-        to_keep = rep(TRUE, length(stoc_ess))
-        for(ei in 1:length(stoc_mw_mu_variable)){
-            inds = stoc_eis[[ei]]
-            # Record events that are not in the current segment.
-            if(!any(is_in_segment[inds])) to_keep[ei] = FALSE
-            slp = stoc_ess[[ei]]
-            stoc_moment = sum(unit_source_areas[inds] * 1e+06 * unit_source_mu_variable[inds] * slp)
-            stoc_mw_mu_variable[ei] = M0_2_Mw(stoc_moment)
+        # If we have segmentation, then we should only look at events which touch the segment
+        to_keep = rep(TRUE, length(stoc_mw_mu_variable))
+        if(is_a_segment){
+            # Read the event indices, and identify events that do not touch the current segment
+            stoc_eis = ncvar_get(stochastic_slip_fid, 'event_index_string')
+            stoc_eis = lapply(stoc_eis, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
+            for(ei in 1:length(stoc_mw_mu_variable)){
+                inds = stoc_eis[[ei]]
+                # Record events that are not in the current segment.
+                if(!any(is_in_segment[inds])) to_keep[ei] = FALSE
+            }
+            # Save memory
+            rm(stoc_eis)
         }
-        # Save memory
-        rm(stoc_ess, stoc_eis, stoc_event_slip_string, stoc_event_index_string)
+        nc_close(stochastic_slip_fid); rm(stochastic_slip_fid)
 
         # Difference between variable slip and uniform slip shear modulus
         mw_obs_deviation = stoc_mw_mu_variable - stoc_mw_mu_constant
@@ -426,14 +427,15 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         stoc_mw_mu_constant = stoc_mw_mu_constant[keepers] 
         # Conditional empirical CDF of difference between 'Mw observation' and
         # 'Mw with constant shear modulus' 
-        mw_deviation_cdf_variable_shear_modulus = make_conditional_ecdf(mw_obs_deviation, stoc_mw_mu_constant)
+        mw_deviation_cdf_variable_shear_modulus = make_conditional_ecdf(mw_obs_deviation, 
+            stoc_mw_mu_constant)
 
         # Reduce memory
-        rm(mw_obs_deviation, stoc_mw_mu_constant, stoc_mw_mu_variable, 
-            unit_source_depth, unit_source_mu_variable); gc()
+        rm(mw_obs_deviation, stoc_mw_mu_constant, stoc_mw_mu_variable, keepers, to_keep); gc()
 
     }else{
         # For normal fault events, ignore shear modulus variations
+        # Often we only have one 
         mw_deviation_cdf_variable_shear_modulus = NULL
     }
     
@@ -462,6 +464,10 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         # considers whether the event is in the segment
         conditional_probability_model<-function(event_table_with_fixed_Mw){
 
+            # Note for uniform-slip models with fixed rigidity, inverse-slip is
+            # proportional to area (with magnitude fixed).
+            # That is the case treated here (notwithstanding perturbations to
+            # deal with variable slip or rigidity).
             slip_inv = 1/event_table_with_fixed_Mw$slip
 
             # Find the fraction of the unit sources in each event which are 
@@ -771,9 +777,15 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         # Summation of credible intervals OK for co-monotonic epistemic uncertainties
         ncvar_put_extra(fid, 'rate_annual_upper_ci', event_rates_upper)
         ncvar_put_extra(fid, 'rate_annual_lower_ci', event_rates_lower)
+
+        # FIXME: Put variable shear modulus rates onto the file
+
         nc_close(fid)
 
-        # Put rates onto the uniform slip table nc file
+        # Put rates onto the uniform slip table nc file that also has tsunami
+        # summary stats. We do not store the variable mu information here (easier
+        # implementation, plus it is generally more efficient to read from the
+        # non-tsunami file)
         event_table_fileB = paste0('../SOURCE_ZONES/', source_name, 
             '/TSUNAMI_EVENTS/all_uniform_slip_earthquake_events_tsunami_',
             source_name, '.nc')
@@ -805,9 +817,13 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             # uniform_event_row, for every stochastic/variable_uniform event
             nevents_broad = nevents[match(event_uniform_event_row, names_nevents )]
 
+            # FIXME: adjust the event weights based on the bias-correction
+            # earlier
+
             ncvar_put_extra(fid, 'event_rate_annual', 
                 event_rates[event_uniform_event_row]/nevents_broad)
-            # Summation of credible intervals OK for co-monotonic epistemic uncertainties
+            # Summation of credible intervals OK for co-monotonic epistemic
+            # uncertainties
             ncvar_put_extra(fid, 'event_rate_annual_upper_ci', 
                 event_rates_upper[event_uniform_event_row]/nevents_broad)
             ncvar_put_extra(fid, 'event_rate_annual_lower_ci', 
@@ -835,6 +851,9 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             # uniform_event_row, for every stochastic/variable_uniform event
             nevents_broad = nevents[match(event_uniform_event_row, names_nevents )]
 
+            # FIXME: adjust the event weights based on the bias-correction
+            # earlier
+
             ncvar_put_extra(fid, 'rate_annual', 
                 event_rates[event_uniform_event_row]/nevents_broad)
             # Summation of credible intervals OK for co-monotonic epistemic uncertainties
@@ -842,6 +861,12 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 event_rates_upper[event_uniform_event_row]/nevents_broad)
             ncvar_put_extra(fid, 'rate_annual_lower_ci', 
                 event_rates_lower[event_uniform_event_row]/nevents_broad)
+
+            #
+            # FIXME: Put the variable_mu rates onto the file Note they do not
+            # go onto the '_tsunami' file (just the 'events only' file)
+            #
+
             nc_close(fid)
 
         }

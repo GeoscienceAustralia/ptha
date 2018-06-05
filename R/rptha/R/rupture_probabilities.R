@@ -339,6 +339,14 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' seismically coupled slip occurs due to earthquakes with Mw > Mwmin. If TRUE,
 #' estimate the fraction of seismically coupled slip that occurs due to
 #' earthquakes with Mw > Mwmin, and use that when computing the rates.
+#' @param mw_observation_error_cdf If not NULL, a function F(x, Mw_true) giving the
+#' probability that {(Mw_obs - Mw_true) <= x} if Mw-true takes a known value. Here
+#' the observed Mw_obs has some error. In other words, if Mw_true is fixed,
+#' then F is a cumulative distribution function for the error in Mw_obs. While this
+#' CDF does not have to be a function of Mw_true, it is useful to allow that.
+#' @param mw_max_posterior_equals_mw_max_prior logical. If TRUE, then do the Bayesian
+#' update on a 'per-mw-max' level, i.e. the posterior of mw_max will be the
+#' same as the prior of mw_max.
 #' @return Function f(Mw) of a numeric vector Mw, which by default returns the
 #' rate of events with magnitude > Mw. It has a number of optional arguments.
 #' \cr
@@ -362,15 +370,15 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' probability equal to the probability of each branch), and evaluate the
 #' exceedance rate of Mw for that parameter combination. This can be useful for
 #' some monte-carlo computations. \cr
-#' Only one of these optional arguments can be passed at a time.
-#' @param mw_max_posterior_equals_mw_max_prior logical. If TRUE, then do the Bayesian
-#' update on a 'per-mw-max' level, i.e. the posterior of mw_max will be the
-#' same as the prior of mw_max.
-#' @param mw_observation_error_cdf If not NULL, a function F(x, Mw_true) giving the
-#' probability that {(Mw_obs - Mw_true) <= x} if Mw-true takes a known value. Here
-#' the observed Mw_obs has some error. In other words, if Mw_true is fixed,
-#' then F is a cumulative distribution function for the error in Mw_obs. While this
-#' CDF does not have to be a function of Mw_true, it is useful to allow that.
+#' If the optional argument \code{epistemic_nonzero_weight=TRUE} is passed, then
+#' return the logic-tree weight assigned to non-zero Mw exceedance rates. This
+#' gives the 'weight with which we think the given magnitude is possible', and
+#' is a useful descriptor of epistemic uncertainties.
+#' Only one of the above optional arguments can be passed at a time.
+#' If the optional argument \code{account_for_mw_obs_error=TRUE} is passed, then
+#' do the above computations using the posterior weights that account for Mw observation
+#' error. By default we use the posterior weights that ignore Mw observation error, irrespective
+#' of whether the empirical CDF of the mw errors was provided.
 #' @export
 #'
 rate_of_earthquakes_greater_than_Mw_function<-function(
@@ -606,13 +614,22 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     }
     gc()
 
-    # Compute the average rate
+    # Compute the average rate, and also the fraction of logic-tree curves
+    # which say the event is possible
     final_rates = rep(0, length(Mw_seq))
+    epistemic_nonzero_weight = rep(0, length(Mw_seq))
     final_rates_with_Mw_error = rep(0, length(Mw_seq))
+    epistemic_nonzero_weight_with_Mw_error = rep(0, length(Mw_seq))
     for(i in 1:nrow(all_rate_matrix)){
+        # Mean rates
         final_rates = final_rates + all_par_prob[i] * all_rate_matrix[i,]
         final_rates_with_Mw_error = final_rates_with_Mw_error + 
             all_par_prob_with_Mw_error[i] * all_rate_matrix[i,]
+        # For each Mw, the weight of logic-tree curves having non-zero rate
+        epistemic_nonzero_weight = epistemic_nonzero_weight + 
+            all_par_prob[i] * (all_rate_matrix[i,] > 0)
+        epistemic_nonzero_weight_with_Mw_error = epistemic_nonzero_weight_with_Mw_error +
+            all_par_prob_with_Mw_error[i] * (all_rate_matrix[i,] > 0)
     }
 
     # Store the max/min rates from all branches of the logic tree,
@@ -656,6 +673,11 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     median_function = approxfun(Mw_seq, median_rate, rule=2)
     median_function_with_Mw_error = approxfun(Mw_seq, median_rate_with_Mw_error, rule=2)
 
+    epistemic_nonzero_weight_function = approxfun(Mw_seq, 
+        epistemic_nonzero_weight, rule=2) #, method='constant', f=0)
+    epistemic_nonzero_weight_function_with_Mw_error = approxfun(Mw_seq, 
+        epistemic_nonzero_weight_with_Mw_error, rule=2) #, method='constant', f=0)
+
     # Function to compute the rate, with a number of useful extra options
     #
     # @param Mw the Mw value at which the rate is desired
@@ -674,6 +696,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # of each branch), and evaluate the exceedance rate of Mw for that
     # parameter combination. This can be useful for some monte-carlo
     # computations.
+    # @param epistemic_nonzero_weight return the weight of rate curves with
+    # non-zero rate for the given Mw. This is 'the extent our logic-tree says
+    # an event is possible' irrespective of the return period
     # @param account_for_mw_obs_error Use curve weights that account for errors
     # in the observations that were used to derive the curve weights
     # @return Depends on the input arguments, see comments above.
@@ -683,6 +708,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         return_all_logic_tree_branches=FALSE, 
         quantiles=NULL,
         return_random_curve=FALSE,
+        epistemic_nonzero_weight=FALSE,
         account_for_mw_obs_error=FALSE){
 
         # Check input arguments for accidental nulls
@@ -703,12 +729,13 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         # Check that at most one 'special option' is taken
         quantiles_not_null = !is.null(quantiles)
         options_sum = bounds + return_all_logic_tree_branches + 
-            quantiles_not_null + return_random_curve
+            quantiles_not_null + return_random_curve + epistemic_nonzero_weight
 
         if(options_sum > 1){
             msg = paste0('At most one of bounds, ', 
                 'return_all_logic_tree_branches, ',
-                '!is.null(quantiles), and return_random_curve can be TRUE')
+                '!is.null(quantiles), return_random_curve, ',
+                'and epistemic_nonzero_weight can be TRUE')
             stop(msg)
         }
 
@@ -741,6 +768,16 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         
             output = approx(Mw_seq, all_rate_matrix[par,], xout=Mw, rule=2)$y *
                 (Mw <= max_Mw_max)
+            return(output)
+        }
+
+        if(epistemic_nonzero_weight){
+            # Return the weight associated with nonzero rates 
+            if(account_for_mw_obs_error){
+                output = epistemic_nonzero_weight_function_with_Mw_error(Mw)
+            }else{
+                output = epistemic_nonzero_weight_function(Mw)
+            }  
             return(output)
         }
 
@@ -795,6 +832,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 }
             }
         }
+
+
 
         return(output)
     }

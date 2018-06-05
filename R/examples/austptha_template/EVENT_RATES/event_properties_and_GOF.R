@@ -370,7 +370,8 @@ best_event_quantiles<-function(stats, nbest=3){
                 # Find the fraction of var_of_interest that are < the value
                 # associated with 'eoi'
                 empirical_fraction_less_than = 
-                    sum(var_of_interest[good_alongstrike_inds] <= var_of_interest[eoi])/(length(var_of_interest[good_alongstrike_inds])+1)
+                    sum(var_of_interest[good_alongstrike_inds] <= var_of_interest[eoi])/
+                    (length(var_of_interest[good_alongstrike_inds])+1)
                 #if(is.na(empirical_fraction_less_than)) browser()
                 output[[i]][j,k] = empirical_fraction_less_than
             }

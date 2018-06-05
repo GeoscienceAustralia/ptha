@@ -1,6 +1,6 @@
-context('test_rupture_creation_and_probabilities')
+#context('test_rupture_creation_and_probabilities')
 
-test_that("test_rupture_creation_and_probabilities", {
+#test_that("test_rupture_creation_and_probabilities", {
     # Alaska source zone computations
 
     alaska_contour_shapefile = './testshp/alaska.shp'
@@ -511,6 +511,17 @@ test_that("test_rupture_creation_and_probabilities", {
     x2 = rate_function6_a_donot_update_mwmax_weights(7.6)
     expect_that( abs(x1-x2) < 0.4*x1 & abs(x1-x2) > 0.3*x1, is_true())
 
+    # Check that we get the nonzero event weight correct
+    possibility_mw = rate_function6_a_donot_update_mwmax_weights(
+        c(7.6, 8.2, 8.29, 8.3, 8.4, 9.3, 9.39, 9.4, 9.5, 9.59, 9.6, 9.7), 
+        epistemic_nonzero_weight=TRUE)
+    # Considering we use a truncated GR, the possibility associated with Mw-max
+    # should be zero
+    expected_possibility = 
+        c(  1,   1,  1, 2/3, 2/3, 2/3, 2/3, 1/3, 1/3, 1/3, 0, 0) 
+    expect_that(isTRUE(all(abs(possibility_mw - expected_possibility) < 1.0e-06)), 
+        is_true())
+
     #
     #
     # Check that with full Mw data, we really can 'filter' logic tree branches well,
@@ -886,4 +897,4 @@ test_that("test_rupture_creation_and_probabilities", {
         is_true())
 
 
-})
+#})

@@ -164,7 +164,15 @@ function will randomly pick a parameter combination from the logic tree (with
 probability equal to the probability of each branch), and evaluate the
 exceedance rate of Mw for that parameter combination. This can be useful for
 some monte-carlo computations. \cr
-Only one of these optional arguments can be passed at a time.
+If the optional argument \code{epistemic_nonzero_weight=TRUE} is passed, then
+return the logic-tree weight assigned to non-zero Mw exceedance rates. This
+gives the 'weight with which we think the given magnitude is possible', and
+is a useful descriptor of epistemic uncertainties.
+Only one of the above optional arguments can be passed at a time.
+If the optional argument \code{account_for_mw_obs_error=TRUE} is passed, then
+do the above computations using the posterior weights that account for Mw observation
+error. By default we use the posterior weights that ignore Mw observation error, irrespective
+of whether the empirical CDF of the mw errors was provided.
 }
 \description{
 Create a function f(Mw) which returns the rate of events with 
