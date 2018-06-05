@@ -1,6 +1,6 @@
-#context('test_rupture_creation_and_probabilities')
+context('test_rupture_creation_and_probabilities')
 
-#test_that("test_rupture_creation_and_probabilities", {
+test_that("test_rupture_creation_and_probabilities", {
     # Alaska source zone computations
 
     alaska_contour_shapefile = './testshp/alaska.shp'
@@ -897,4 +897,4 @@
         is_true())
 
 
-#})
+})
