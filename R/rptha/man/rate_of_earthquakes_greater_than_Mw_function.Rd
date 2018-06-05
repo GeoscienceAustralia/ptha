@@ -167,11 +167,12 @@ some monte-carlo computations. \cr
 If the optional argument \code{epistemic_nonzero_weight=TRUE} is passed, then
 return the logic-tree weight assigned to non-zero Mw exceedance rates. This
 gives the 'weight with which we think the given magnitude is possible', and
-is a useful descriptor of epistemic uncertainties.
-Only one of the above optional arguments can be passed at a time.
+is a useful descriptor of epistemic uncertainties. \cr
+ONLY ONE OF THE ABOVE OPTIONAL ARGUMENTS CAN BE PASSED AT A TIME.
 If the optional argument \code{account_for_mw_obs_error=TRUE} is passed, then
 do the above computations using the posterior weights that account for Mw observation
-error. By default we use the posterior weights that ignore Mw observation error, irrespective
+error. This may be combined with any other optional argument. By default we
+use the posterior weights that ignore Mw observation error, irrespective
 of whether the empirical CDF of the mw errors was provided.
 }
 \description{
