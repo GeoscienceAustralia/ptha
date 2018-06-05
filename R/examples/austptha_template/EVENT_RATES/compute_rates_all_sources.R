@@ -659,7 +659,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
          mw_rate_function(event_table$Mw + dMw/2, account_for_mw_obs_error=TRUE) )
 
     # Get the fraction of the logic-tree which places non-zero weight on the event
-    # being possible
+    # being possible.
+    # FIXME: Account for segmentation
     event_weight_with_nonzero_rate = mw_rate_function(event_table$Mw, 
         epistemic_nonzero_weight=TRUE)
 
@@ -779,6 +780,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         #
         # Put rates onto the event table nc file
         # Uniform slip, deterministic size, fixed mu
+        # Notice there is no 'bias correction' for uniform slip events
         #
         fid = nc_open(event_table_file, readunlim=FALSE, write=TRUE)
         ncvar_put_extra(fid, 'rate_annual', event_rates)
@@ -802,7 +804,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         # Put rates onto the uniform slip table nc file that also has tsunami
         # summary stats. We do not store the variable mu information here (easier
         # implementation, plus it is generally more efficient to read from the
-        # non-tsunami file)
+        # non-tsunami file). Also, there is no bias correction for uniform-slip-fixed-size
         event_table_fileB = paste0('../SOURCE_ZONES/', source_name, 
             '/TSUNAMI_EVENTS/all_uniform_slip_earthquake_events_tsunami_',
             source_name, '.nc')
@@ -813,13 +815,32 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         ncvar_put_extra(fid, 'event_rate_annual_lower_ci', event_rates_lower)
         nc_close(fid)
 
+        #
         # Put rates onto the stochastic and variable uniform slip table nc file
+        # For these cases we consider bias correction as well as shear modulus variation
+        #
         for(slip_type in c('stochastic', 'variable_uniform')){
 
-            event_table_fileC = paste0(
-                '../SOURCE_ZONES/', source_name, 
-                '/TSUNAMI_EVENTS/all_', slip_type, 
-                '_slip_earthquake_events_tsunami_',
+            # Get the function which gives weights to events (having similar
+            # Mw and location) based on their peak slip quantiles
+            if(slip_type == 'stochastic'){
+                bias_adjustment_function = config$peak_slip_bias_adjustment_stochastic
+                bias_adjustment_function_variable_mu = config$peak_slip_bias_adjustment_stochastic_mu_vary
+            }else if(slip_type == 'variable_uniform'){
+                bias_adjustment_function = config$peak_slip_bias_adjustment_variable_uniform
+                bias_adjustment_function_variable_mu = config$peak_slip_bias_adjustment_variable_uniform_mu_vary
+            }else{
+                stop('slip_type not recognized')
+            }
+
+            #
+            # Open the _tsunami file for writing
+            # As above, this file does not store variable shear modulus info,
+            # mainly because it is inconvenient to add the information (given
+            # I did not originally define the file to have it). 
+            #
+            event_table_fileC = paste0('../SOURCE_ZONES/', source_name, 
+                '/TSUNAMI_EVENTS/all_', slip_type, '_slip_earthquake_events_tsunami_',
                 source_name, '.nc')
 
             fid = nc_open(event_table_fileC, readunlim=FALSE, write=TRUE)
@@ -837,15 +858,6 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             event_peak_slip = ncvar_get(fid, 'event_slip_string')
             event_peak_slip = sapply(event_peak_slip, f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])))
             event_bias_adjustment = event_peak_slip * 0
-            # Get the function which gives weights to events (having similar
-            # Mw and location) based on their peak slip quantiles
-            if(slip_type == 'stochastic'){
-                bias_adjustment_function = config$peak_slip_bias_adjustment_stochastic
-            }else if(slip_type == 'variable_uniform'){
-                bias_adjustment_function = config$peak_slip_bias_adjustment_variable_uniform
-            }else{
-                stop('slip_type not recognized')
-            }
             # Compute the weights
             for(euer in names_nevents){
                 k = which(event_uniform_event_row == euer) 
@@ -867,12 +879,12 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             nc_close(fid)
 
             #
-            # Now to the same, for the file that contains only the earthquakes
+            # Now to the same, for the file that contains only the earthquakes.
+            # However, this file stores variable mu information, and has bias adjustment 
+            # that varies for the fixed-mu and variable-mu cases
             # 
-            event_table_fileD = paste0(
-                '../SOURCE_ZONES/', source_name, 
-                '/TSUNAMI_EVENTS/all_', slip_type, 
-                '_slip_earthquake_events_',
+            event_table_fileD = paste0('../SOURCE_ZONES/', source_name, 
+                '/TSUNAMI_EVENTS/all_', slip_type, '_slip_earthquake_events_',
                 source_name, '.nc')
 
             fid = nc_open(event_table_fileD, readunlim=FALSE, write=TRUE)
@@ -890,13 +902,20 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             event_peak_slip = ncvar_get(fid, 'event_slip_string')
             event_peak_slip = sapply(event_peak_slip, f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])))
             event_bias_adjustment = event_peak_slip * 0
+            event_bias_adjustment_variable_mu = event_peak_slip * 0
             # Compute the weights
             for(euer in names_nevents){
                 k = which(event_uniform_event_row == euer) 
                 quantiles_of_peak_slip = rank(event_peak_slip[k], ties.method='first')/(length(k)+1)
+                # Fixed mu case
                 bias_adjuster = bias_adjustment_function(quantiles_of_peak_slip)
                 bias_adjuster = bias_adjuster/sum(bias_adjuster)
                 event_bias_adjustment[k] = bias_adjuster
+                # Variable mu case
+                bias_adjuster = bias_adjustment_function_variable_mu(quantiles_of_peak_slip)
+                bias_adjuster = bias_adjuster/sum(bias_adjuster)
+                event_bias_adjustment_variable_mu[k] = bias_adjuster
+
             }
 
             ncvar_put_extra(fid, 'rate_annual', 
@@ -917,12 +936,12 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             # go onto the '_tsunami' file (just the 'events only' file)
             #
             ncvar_put_extra(fid, 'variable_mu_rate_annual', 
-                event_rates_mu_vary[event_uniform_event_row] * event_bias_adjustment)
+                event_rates_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
             # Summation of credible intervals OK for co-monotonic epistemic uncertainties
             ncvar_put_extra(fid, 'variable_mu_rate_annual_upper_ci', 
-                event_rates_upper_mu_vary[event_uniform_event_row] * event_bias_adjustment)
+                event_rates_upper_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
             ncvar_put_extra(fid, 'variable_mu_rate_annual_lower_ci', 
-                event_rates_lower_mu_vary[event_uniform_event_row] * event_bias_adjustment)
+                event_rates_lower_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
 
             nc_close(fid)
 

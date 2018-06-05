@@ -775,9 +775,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
         if(epistemic_nonzero_weight){
             # Return the weight associated with nonzero rates 
             if(account_for_mw_obs_error){
-                output = epistemic_nonzero_weight_function_with_Mw_error(Mw)
+                output = epistemic_nonzero_weight_function_with_Mw_error(Mw) * (Mw <= max_Mw_max)
             }else{
-                output = epistemic_nonzero_weight_function(Mw)
+                output = epistemic_nonzero_weight_function(Mw) * (Mw <= max_Mw_max)
             }  
             return(output)
         }
