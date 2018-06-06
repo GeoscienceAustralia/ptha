@@ -6,7 +6,8 @@
 config = new.env()
 source('config.R', local=config)
 
-check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file, variable_uniform_slip_tsunami_file){
+check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file, 
+    variable_uniform_slip_tsunami_file){
 
     fids = list()
     fids_t = list()
@@ -22,6 +23,11 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file, 
     # Variable uniform slip
     fids$vuni = nc_open(gsub('_tsunami', '', variable_uniform_slip_tsunami_file), readunlim=FALSE)
     fids_t$vuni = nc_open(variable_uniform_slip_tsunami_file, readunlim=FALSE)
+
+    # Unit source statistics
+    uss_file = Sys.glob(paste0(dirname(uniform_slip_tsunami_file), '/unit_source_statistics_*.nc'))
+    if(length(uss_file) != 1) stop('matching multiple unit-source files')
+    uss = read_table_from_netcdf(uss_file)
 
 
     # Check that the event rates in the _tsunami and regular files are the
@@ -79,11 +85,99 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file, 
         }
     }
 
-    # FIXME: Check weight with nonzero rate
+    # Check weight with nonzero rate is sensible
+    for(nme in c('unif', 'stoc', 'vuni')){
+
+        weight_with_nonzero_rate = ncvar_get(fids[[nme]], 'weight_with_nonzero_rate')
+        event_rate = ncvar_get(fids[[nme]], 'rate_annual')
+        mw = round(ncvar_get(fids[[nme]], 'Mw'), 3) # Deal with imperfect netcdf floating point storage
+
+        print(paste0('Range weight_with_nonzero_rate: ',
+                    min(weight_with_nonzero_rate), ' ', 
+                    max(weight_with_nonzero_rate), collapse=" "))
+
+        k = which(weight_with_nonzero_rate == 0)
+        k2 = which(event_rate == 0)
+        if(!all(k == k2)){
+            stop('conflict between weight_with_nonzero_rate and rate_annual')
+        }
+ 
+        # We should not have events with Mw > config$MAXIMUM_ALLOWED_MW_MAX
+        if(uss$rake[1] == 90){
+            mw_max_limit = config$MAXIMUM_ALLOWED_MW_MAX
+        }else if(uss$rake[1] == -90){
+            mw_max_limit = config$MAXIMUM_ALLOWED_MW_MAX_NORMAL
+        }else{
+            stop('Rake is neither pure thrust nor pure normal')
+        } 
+        mw_min_limit = config$MINIMUM_ALLOWED_MW_MAX
+
+        # Mw-max is respected
+        k = which(mw > mw_max_limit)
+        if(length(k) > 0){
+            if(!all(weight_with_nonzero_rate[k] == 0)){
+                stop('weight_with_nonzero_rate is > 0 for events beyond the upper limit')
+            }else{
+
+            }
+        } 
+
+        # Mw-min is respected
+        k = which(mw < mw_min_limit)
+        stopifnot(length(k) > 0)
+        if(!all(abs(weight_with_nonzero_rate[k] - 1) < 1.0e-06)){
+            stop('weight_with_nonzero_rate is not equal to 1 below the mw_max_lower_limit')
+        }
+    }
 
 
     # FIXME: Check that the quantile adjustment is sensible (conforms with
     # interpolation functions in config)
+    for(nme in c('stoc', 'vuni')){
+
+        uniform_event_row = ncvar_get(fids[[nme]], 'uniform_event_row')
+        event_slip_string = ncvar_get(fids[[nme]], 'event_slip_string')
+        peak_slip = sapply(event_slip_string, f<-function(x) max(as.numeric(strsplit(x,'_')[[1]])))
+        event_rate = ncvar_get(fids[[nme]], 'rate_annual')
+        event_rate_mu_vary = ncvar_get(fids[[nme]], 'variable_mu_rate_annual')
+
+        unique_uniform_event_row = unique(uniform_event_row)
+
+        # Get the bias adjustment functions
+        if(nme == 'stoc'){
+            bias_adjuster_fixed_mu = config$peak_slip_bias_adjustment_stochastic
+            bias_adjuster_vary_mu = config$peak_slip_bias_adjustment_stochastic_mu_vary
+        }else if(nme == 'vuni'){
+            bias_adjuster_fixed_mu = config$peak_slip_bias_adjustment_variable_uniform
+            bias_adjuster_vary_mu = config$peak_slip_bias_adjustment_variable_uniform_mu_vary
+        }else{
+            stop(paste0('invalid nme ', nme))
+        }
+
+        # Do the test
+        for(uuer in unique_uniform_event_row){
+            k = which(uniform_event_row == uuer)
+            quantiles = rank(peak_slip[k], ties='first')/(length(k)+1)
+
+            expected_ratios_fixed_mu = bias_adjuster_fixed_mu(quantiles)
+            expected_ratios_vary_mu = bias_adjuster_vary_mu(quantiles)
+
+            overall_rate_fixed_mu = sum(event_rate[k])
+            overall_rate_vary_mu = sum(event_rate_mu_vary[k])
+
+            err1 = max(abs(overall_rate_fixed_mu * expected_ratios_fixed_mu/sum(expected_ratios_fixed_mu) - event_rate[k]))
+            err2 = max(abs(overall_rate_vary_mu * expected_ratios_vary_mu/sum(expected_ratios_vary_mu) - event_rate_mu_vary[k]))
+
+            if(!(err1 <= 1.0e-06*overall_rate_fixed_mu)){
+                stop(paste0('issue with bias adjustment fixed mu ', uuer))
+            }
+    
+            if(!(err2 <= 1.0e-06*overall_rate_vary_mu)){
+                stop(paste0('issue with bias adjustment variable mu ', uuer))
+            }
+        }
+        
+    }
 
     for(i in 1:length(fids)) nc_close(fids[[i]])
     for(i in 1:length(fids_t)) nc_close(fids_t[[i]])
@@ -94,6 +188,8 @@ for(i in 1:length(config$all_source_uniform_slip_tsunami)){
     print('######################')
     print(basename(dirname(dirname(config$all_source_uniform_slip_tsunami[i]))))
     print(' ')
-    check_source(config$all_source_uniform_slip_tsunami[i], config$all_source_stochastic_slip_tsunami[i], config$all_source_variable_uniform_slip_tsunami[i])
+    check_source(config$all_source_uniform_slip_tsunami[i], 
+        config$all_source_stochastic_slip_tsunami[i], 
+        config$all_source_variable_uniform_slip_tsunami[i])
 }
 

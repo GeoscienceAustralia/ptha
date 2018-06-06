@@ -1118,6 +1118,9 @@ if(config$write_to_netcdf){
 xlim = c(7.0, 9.7)
 ylim = c(1.0e-06, 10)
 pdf('rate_curves_on_source_zones.pdf', width=9, height=7)
+mw_global = seq(xlim[1]-dMw/2, xlim[2]+dMw/2, by=0.1)
+global_exceedance_rate_mw_variable_mu = mw_global*0
+global_exceedance_rate_mw_fixed_mu = mw_global*0
 for(i in 1:length(source_segment_names)){
      
     # Get all the information
@@ -1163,6 +1166,15 @@ for(i in 1:length(source_segment_names)){
         f<-function(x) sum(event_rates_file_variable_mu * (event_Mw_file_variable_mu >= x)))
     points(mw, empirical_mean_curve_variable_mu, pch=19, cex=0.2, col='blue')
 
+    # Compute global empirical rate for a plot later.
+    row_weight = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
+    global_exceedance_rate_mw_variable_mu = global_exceedance_rate_mw_variable_mu + 
+        row_weight * sapply(mw_global, f<-function(x){
+            sum(event_rates_file_variable_mu * (event_Mw_file_variable_mu >= x))})
+    global_exceedance_rate_mw_fixed_mu = global_exceedance_rate_mw_fixed_mu + 
+        row_weight * sapply(mw_global, f<-function(x){
+            sum(event_rates_file * (event_Mw_file >= x))})
+
     # Mean prior curve
     #mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)
     mean_prior_curve = apply(all_rate_curves$all_rate_matrix, 2, 
@@ -1186,7 +1198,8 @@ for(i in 1:length(source_segment_names)){
 
     title(names(source_envs)[i])
     grid(col='orange')
-    abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange', lty='dotted')
+    abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), 
+        col='orange', lty='dotted')
 
     # Posterior of slip, Mw_max, and b
     num_diff<-function(x, y){
@@ -1197,7 +1210,9 @@ for(i in 1:length(source_segment_names)){
            (y[N] - y[N-1])/(x[N] - x[N-1]) )
     }
 
+    # Convenience plotting function
     plot_derivs <-function(var, prior=FALSE){
+
         vars = sort(unique(all_rate_curves$all_par[[var]]))
         vars_cdf = sapply(vars, f<-function(x){
             sum(all_rate_curves$all_par_prob*(all_rate_curves$all_par[[var]] <= x))} )
@@ -1214,11 +1229,19 @@ for(i in 1:length(source_segment_names)){
         return(invisible(var_info))
     }
 
+    # A few more plots showing the posterior distribution of parameters
+
     par(mfrow=c(2,2))
     
     plot_derivs('slip_rate')
     plot_derivs('Mw_max')
     plot_derivs('b')
+
+    # Add a plot showing the weight that mw is possible
+    mw_is_possible = source_envs[[i]]$mw_rate_function(mw_global, epistemic_nonzero_weight)
+    plot(mw_global, mw_is_possible, title='Weight that Mw is possible', ylim=c(0,1), t='h')
+    grid()
+
     # Dummy plot to fill the page
     plot(0:1, col='white')
 }
@@ -1226,6 +1249,7 @@ for(i in 1:length(source_segment_names)){
 # Globally integrated rates
 mw = seq(MW_MIN, MAXIMUM_ALLOWED_MW_MAX, by=dMw/2) #all_rate_curves$Mw_seq
 rate_vals = mw*0
+rate_vals_variable_mu = mw*0
 gcmt_global = data.frame()
 for(i in 1:length(source_segment_names)){
     # Sum the rate value 
@@ -1237,7 +1261,6 @@ for(i in 1:length(source_segment_names)){
     if(source_envs[[i]]$segment_name == ''){
         gcmt_global = rbind(gcmt_global, source_envs[[i]]$gcmt_data)
     }
-
 }
 
 # Make the globally integrated plot
@@ -1245,6 +1268,7 @@ par(mfrow=c(1,1))
 plot(mw, rate_vals, t='o', log='y', xlab='Mw', ylab='Exceedance Rate (events/year)', 
     main='All sources integrated rate', xlim=xlim, ylim=ylim)
 if(nrow(gcmt_global) > 0){
+
     rnk = rank(gcmt_global$Mw, ties='random')
     N = nrow(gcmt_global)
 
@@ -1266,9 +1290,14 @@ if(nrow(gcmt_global) > 0){
     points(gcmt_global$Mw[ordr], lower_ci[ordr], t='l', col='red', lty='dashed', lwd=2)
     points(gcmt_global$Mw[ordr], upper_ci[ordr], t='l', col='red', lty='dashed', lwd=2)
 
+    # Add rates derived from files
+    points(global_mw, global_exceedance_rate_mw_variable_mu, t='l', col='blue')
+    points(global_mw, global_exceedance_rate_mw_fixed_mu, t='l', col='purple')
+
 }
 grid(col='orange')
-abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange', lty='dotted')
+abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange', 
+    lty='dotted')
 
 dev.off()
 
