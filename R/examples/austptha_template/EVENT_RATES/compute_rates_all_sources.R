@@ -850,16 +850,25 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         #
         for(slip_type in c('stochastic', 'variable_uniform')){
 
-            # Get the function which gives weights to events (having similar
-            # Mw and location) based on their peak slip quantiles
-            if(slip_type == 'stochastic'){
-                bias_adjustment_function = config$peak_slip_bias_adjustment_stochastic
-                bias_adjustment_function_variable_mu = config$peak_slip_bias_adjustment_stochastic_mu_vary
-            }else if(slip_type == 'variable_uniform'){
-                bias_adjustment_function = config$peak_slip_bias_adjustment_variable_uniform
-                bias_adjustment_function_variable_mu = config$peak_slip_bias_adjustment_variable_uniform_mu_vary
+            # Get the function which applies bias-correction to event weights
+            # based on the peak slip quantiles.
+            if(target_rake == 90){
+                # Bias adjustment depends on slip type and shear modulus treatment
+                if(slip_type == 'stochastic'){
+                    bias_adjustment_function = config$peak_slip_bias_adjustment_stochastic
+                    bias_adjustment_function_variable_mu = config$peak_slip_bias_adjustment_stochastic_mu_vary
+                }else if(slip_type == 'variable_uniform'){
+                    bias_adjustment_function = config$peak_slip_bias_adjustment_variable_uniform
+                    bias_adjustment_function_variable_mu = config$peak_slip_bias_adjustment_variable_uniform_mu_vary
+                }else{
+                    stop('slip_type not recognized')
+                }
             }else{
-                stop('slip_type not recognized')
+                # Do not adjust for normal faults, as we don't have enough test
+                # data. In particular we should not treat fixed and variable shear modulus
+                # differently because for normal faults we always assume mu=60
+                bias_adjustment_function<-function(x) 1 + 0*x
+                bias_adjustment_function_variable_mu<-function(x) 1 + 0*x
             }
 
             #

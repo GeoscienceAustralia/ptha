@@ -134,10 +134,10 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
     }
 
 
-    # FIXME: Check that the quantile adjustment is sensible (conforms with
+    # Check that the quantile adjustment is sensible (conforms with
     # interpolation functions in config)
     for(nme in c('stoc', 'vuni')){
-
+       
         uniform_event_row = ncvar_get(fids[[nme]], 'uniform_event_row')
         event_slip_string = ncvar_get(fids[[nme]], 'event_slip_string')
         peak_slip = sapply(event_slip_string, f<-function(x) max(as.numeric(strsplit(x,'_')[[1]])))
@@ -147,14 +147,21 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         unique_uniform_event_row = unique(uniform_event_row)
 
         # Get the bias adjustment functions
-        if(nme == 'stoc'){
-            bias_adjuster_fixed_mu = config$peak_slip_bias_adjustment_stochastic
-            bias_adjuster_vary_mu = config$peak_slip_bias_adjustment_stochastic_mu_vary
-        }else if(nme == 'vuni'){
-            bias_adjuster_fixed_mu = config$peak_slip_bias_adjustment_variable_uniform
-            bias_adjuster_vary_mu = config$peak_slip_bias_adjustment_variable_uniform_mu_vary
+        if(uss$rake[1] == 90){
+            if(nme == 'stoc'){
+                bias_adjuster_fixed_mu = config$peak_slip_bias_adjustment_stochastic
+                bias_adjuster_vary_mu = config$peak_slip_bias_adjustment_stochastic_mu_vary
+            }else if(nme == 'vuni'){
+                bias_adjuster_fixed_mu = config$peak_slip_bias_adjustment_variable_uniform
+                bias_adjuster_vary_mu = config$peak_slip_bias_adjustment_variable_uniform_mu_vary
+            }else{
+                stop(paste0('invalid nme ', nme))
+            }
         }else{
-            stop(paste0('invalid nme ', nme))
+            # For non-thrust events, we do not do bias adjustment or treat
+            # variable shear modulus
+            bias_adjuster_fixed_mu<-function(x) 1 + x*0
+            bias_adjuster_vary_mu<-function(x) 1 + x*0
         }
 
         # Do the test

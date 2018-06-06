@@ -203,6 +203,7 @@ MC_CORES = 16
 #
 # If you do not want to perform adjustment, replace these functions with 
 # constant functions (e.g. peak_slip_bias_adjustment_XXXX<-function(x) x=1)
+# Currently we do this replacement for normal-fault events (inside compute_rates_all_sources.R)
 #
 ###########################################################################
 peak_slip_bias_adjustment_table = read.csv('peak_slip_quantile_adjustment_factors.csv')
