@@ -78,6 +78,10 @@ be used to determine how much the conditional probability of source-zone-edge
 earthquake events should be increased in order to best match the spatial distribution
 of plate convergence.
 
+[check_event_netcdf_files.R](check_event_netcdf_files.R) performs various
+sanity checks on the netcdf files that are updated by
+[compute_rates_all_sources.R](compute_rates_all_sources.R). 
+
 ## Plotting routines
 
 [plot_hazard_curves.R](plot_hazard_curves.R) contains a function to plot the
