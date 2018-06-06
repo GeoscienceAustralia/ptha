@@ -1254,8 +1254,6 @@ for(i in 1:length(source_segment_names)){
     plot(mw_global, mw_is_possible, title='Weight that Mw is possible', ylim=c(0,1), t='h')
     grid()
 
-    # Dummy plot to fill the page
-    plot(0:1, col='white')
 }
 
 # Globally integrated rates
