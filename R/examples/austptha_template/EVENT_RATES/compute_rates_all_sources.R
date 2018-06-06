@@ -394,7 +394,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         # that is implemented here
         # The empirical CDF based on uniform-slip-with-fixed-size has
         # clearer 'discretization' artefacts due to reduced variability. So we
-        use stochastic slip to derive the empirical CDF, as the large number
+        # use stochastic slip to derive the empirical CDF, as the large number
         # of events + natural variability leads to a nicely behaved function.
         #
         stochastic_slip_event_table_file = paste0('../SOURCE_ZONES/', source_name, 
@@ -673,7 +673,10 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     #
     # Get the fraction of the logic-tree which places non-zero weight on the
     # event being possible. This is nice for heuristically describing epistemic
-    # uncertainties
+    # uncertainties.
+    #
+    # Note that since the event rates are evaluated as GR(Mw-dMw/2) - GR(Mw+dMw/2),
+    # it makes most sense to evaluate this term at Mw-dMw/2
     #
     # For segments, we need to be careful to not 'double-count' events which
     # are in 2 segments. In that case the conditional probability model is
@@ -691,7 +694,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     }
     event_weight_with_nonzero_rate = (event_conditional_probabilities > 0) * 
         fraction_in_segment *
-        mw_rate_function(event_table$Mw, epistemic_nonzero_weight=TRUE)
+        mw_rate_function(event_table$Mw-dMw/2, epistemic_nonzero_weight=TRUE)
 
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
@@ -1238,7 +1241,7 @@ for(i in 1:length(source_segment_names)){
     plot_derivs('b')
 
     # Add a plot showing the weight that mw is possible
-    mw_is_possible = source_envs[[i]]$mw_rate_function(mw_global, epistemic_nonzero_weight)
+    mw_is_possible = source_envs[[i]]$mw_rate_function(mw_global, epistemic_nonzero_weight=TRUE)
     plot(mw_global, mw_is_possible, title='Weight that Mw is possible', ylim=c(0,1), t='h')
     grid()
 

@@ -36,7 +36,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         for(nme in c('unif', 'stoc', 'vuni')){
             r1 = ncvar_get(fids[[nme]], var)
             r2 = ncvar_get(fids_t[[nme]], paste0('event_', var))
-            if(!all(abs(r1 - r2) < 1.0e-09)){
+            if(!all(abs(r1 - r2) < 1.0e-10)){
                 stop(paste0('rates do not match ', var, ' ', nme ))
             }
         }
@@ -62,6 +62,9 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             # selected in the quantile computation -- and the difference in the selected
             # curves could be arbitrarly large (e.g. if one curve assigns a rate of zero)
             # This is not super-common but does happen
+            # Furthermore, we apply different bias-correction methods for variable_mu and
+            # regular events (for stochastic and variable_uniform), which adds
+            # greatly to the variability on the ratios for individual events
             ratios = (r1+1e-200)/(r2+1e-200)
             print(paste0(c('Event rate change due to variable mu, ', var, ' ', nme, ' :', 
                 round(c(min(ratios), median(ratios), max(ratios)),4)), collapse=" "))
