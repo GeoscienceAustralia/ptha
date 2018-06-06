@@ -92,16 +92,18 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
         }else if(slip_type == 'variable_uniform'){
             tsunami_events_file = config$all_source_variable_uniform_slip_tsunami[which_uss_file]
         }
+        # For speed of reading, use the file that only contains earthquake events
+        tsunami_events_file = gsub('_tsunami', '', tsunami_events_file)
 
 
         # Get the relevant data
         fid = nc_open(tsunami_events_file, readunlim=FALSE)
 
         # Event rates -- may be modified if edge_multiplier != 0
-        event_rates = ncvar_get(fid, 'event_rate_annual')
+        event_rates = ncvar_get(fid, 'rate_annual')
 
         # Event magnitudes
-        event_Mw = ncvar_get(fid, 'event_Mw')
+        event_Mw = ncvar_get(fid, 'Mw')
         unique_Mw = sort(unique(event_Mw))
 
         # Unit source indices in each event
@@ -130,7 +132,7 @@ back_calculate_convergence<-function(sourcename, slip_type='uniform', edge_multi
     if(slip_type == 'uniform'){
 
         if(read_data_from_file){
-            slip = ncvar_get(fid, 'event_slip')
+            slip = ncvar_get(fid, 'slip')
         }else{
             # Bring argument into function environment
             slip = slip

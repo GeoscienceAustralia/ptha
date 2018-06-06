@@ -79,6 +79,12 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file, 
         }
     }
 
+    # FIXME: Check weight with nonzero rate
+
+
+    # FIXME: Check that the quantile adjustment is sensible (conforms with
+    # interpolation functions in config)
+
     for(i in 1:length(fids)) nc_close(fids[[i]])
     for(i in 1:length(fids_t)) nc_close(fids_t[[i]])
 }

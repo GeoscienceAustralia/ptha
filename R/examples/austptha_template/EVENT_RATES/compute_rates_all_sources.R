@@ -352,7 +352,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     sourcepar$slip = sourcepar$slip/cos_dip * 1/1000
 
     #
-    # Event table
+    # Get the event table. We need to pass this to the rate function (so it can
+    # moment balance)
     #
     event_table_file = paste0('../SOURCE_ZONES/', source_name, 
         '/TSUNAMI_EVENTS/all_uniform_slip_earthquake_events_', 
@@ -366,6 +367,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # Check we didn't destroy the table by rouding!
     stopifnot( all( (diff(event_table$Mw) == 0) | ( abs(diff(event_table$Mw) - dMw) < 1.0e-12 ) ) )
 
+    #
+    # Treatment of variable shear modulus (mathematically, it's like a 'magnitude-observation-error')
+    #
     include_variable_shear_modulus = (target_rake == 90)
     if(include_variable_shear_modulus){
         # Treatment of variable shear modulus 
@@ -390,7 +394,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         # that is implemented here
         # The empirical CDF based on uniform-slip-with-fixed-size has
         # clearer 'discretization' artefacts due to reduced variability. So we
-        # use stochastic slip to derive the empirical CDF, as the large number
+        use stochastic slip to derive the empirical CDF, as the large number
         # of events + natural variability leads to a nicely behaved function.
         #
         stochastic_slip_event_table_file = paste0('../SOURCE_ZONES/', source_name, 
@@ -400,12 +404,17 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         stoc_mw_mu_constant = round(stoc_mw_mu_constant, 3) # Address imperfect floating point storage in netcdf
         stoc_mw_mu_variable = ncvar_get(stochastic_slip_fid, 'variable_mu_Mw')
 
+        # Difference between variable vs uniform shear modulus
+        mw_obs_deviation = stoc_mw_mu_variable - stoc_mw_mu_constant
+        # Sanity check (specific to our case)
+        stopifnot( (min(mw_obs_deviation) > -0.32) & (max(mw_obs_deviation) < 0.25) )
+
         # If we have segmentation, then we should only look at events which touch the segment
         to_keep = rep(TRUE, length(stoc_mw_mu_variable))
         if(is_a_segment){
             # Read the event indices, and identify events that do not touch the current segment
             stoc_eis = ncvar_get(stochastic_slip_fid, 'event_index_string')
-            stoc_eis = lapply(stoc_eis, f<-function(x) as.numeric(strsplit(x, '-')[[1]]))
+            stoc_eis = sapply(stoc_eis, f<-function(x) as.numeric(strsplit(x, '-')[[1]]), simplify=FALSE)
             for(ei in 1:length(stoc_mw_mu_variable)){
                 inds = stoc_eis[[ei]]
                 # Record events that are not in the current segment.
@@ -415,12 +424,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             rm(stoc_eis)
         }
         nc_close(stochastic_slip_fid); rm(stochastic_slip_fid)
-
-        # Difference between variable slip and uniform slip shear modulus
-        mw_obs_deviation = stoc_mw_mu_variable - stoc_mw_mu_constant
-        # Sanity check (specific to our case)
-        stopifnot( (min(mw_obs_deviation) > -0.32) & (max(mw_obs_deviation) < 0.25) )
-
+        # Restrict CDF based on events in the segment 
         keepers = which(to_keep)
         if(length(keepers) == 0) stop('Error: No events in segment. This suggests a bug')
         mw_obs_deviation = mw_obs_deviation[keepers]
@@ -444,7 +448,7 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # PART 3
     # Get a preliminary event conditional probability model; use it to compute
     # the mw_rate_function, then update the event conditional probability model
-    # (this will not affect the mw_rate_function)
+    # to deal with edge-effects (this will not affect the mw_rate_function)
     #
 
     #
@@ -492,12 +496,16 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # NOTE: These conditional probabilities may be updated to deal with 'edge-effects'
     # further in the code. The aim is to make the integrated slip more consistent with
     # moment conservation -- whereas the current approach tends to concentrate moment
-    # release more towards the centre of the rupture.
+    # release more towards the centre of the rupture, because by construction we have less
+    # events touching unit-sources at the source-zone along-strike extremes
+    # than we have events touching the middle of the source-zone.
     event_conditional_probabilities = get_event_probabilities_conditional_on_Mw(
         event_table, 
         conditional_probability_model = conditional_probability_model)    
 
-    # Get data for rate function update
+    #
+    # Get earthquake magnitude data for rate function update
+    #
     if(nrow(gcmt_data) > 0){
         gcmt_data_for_rate_function = list(
             # Magnitude
@@ -508,7 +516,9 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             t = NULL # Censored likelihood is biased for rates, better to use poisson count approach.
         )
 
-        if(min(sourcepar$coupling) == 0) stop('Cannot have zero coupling logic tree branch when GCMT data is present')
+        if(min(sourcepar$coupling) == 0){
+            stop('Cannot have zero coupling logic tree branch when GCMT data is present')
+        }
     }else{
         gcmt_data_for_rate_function = list(Mw = NULL, t = NULL)
     }
@@ -530,6 +540,8 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         Mw_max_prob = sourcepar$Mw_max_p,
         # Need to pass the local segment area here 
         sourcezone_total_area = sourcepar$area_in_segment, 
+        # Note we pass the 'full' event table, but in segments some of these
+        # events will have conditional probability of zero
         event_table = event_table,
         event_conditional_probabilities = event_conditional_probabilities,
         computational_increment = 0.02,
@@ -658,11 +670,28 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
         (mw_rate_function(event_table$Mw - dMw/2, account_for_mw_obs_error=TRUE) - 
          mw_rate_function(event_table$Mw + dMw/2, account_for_mw_obs_error=TRUE) )
 
-    # Get the fraction of the logic-tree which places non-zero weight on the event
-    # being possible.
-    # FIXME: Account for segmentation
-    event_weight_with_nonzero_rate = mw_rate_function(event_table$Mw, 
-        epistemic_nonzero_weight=TRUE)
+    #
+    # Get the fraction of the logic-tree which places non-zero weight on the
+    # event being possible. This is nice for heuristically describing epistemic
+    # uncertainties
+    #
+    # For segments, we need to be careful to not 'double-count' events which
+    # are in 2 segments. In that case the conditional probability model is
+    # partially weighted in each, and we should make sure the
+    # weight_with_nonzero_rate is as well
+    #
+    if(is_a_segment){
+        fraction_in_segment = sapply(event_table$event_index_string, f<-function(x){
+            inds = as.numeric(strsplit(x, '-')[[1]])
+            output = mean(is_in_segment[inds])
+            return(output)
+        })
+    }else{
+        fraction_in_segment = 1
+    }
+    event_weight_with_nonzero_rate = (event_conditional_probabilities > 0) * 
+        fraction_in_segment *
+        mw_rate_function(event_table$Mw, epistemic_nonzero_weight=TRUE)
 
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
@@ -676,20 +705,16 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # less obvious that the 'full-source-zone' model should be as well, but we can think of 
     # this as us representing the source as having 'some tendency for rupture-segment-sized events,
     # but also some tendency to behave as a full source-zone.
-    event_rates_upper = as.numeric(
-        event_conditional_probabilities * 
-        (mw_rate_function(event_table$Mw - dMw/2, 
-            quantiles=config$upper_ci_inv_quantile) - 
-         mw_rate_function(event_table$Mw + dMw/2, 
-            quantiles=config$upper_ci_inv_quantile) )
+    event_rates_upper = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$upper_ci_inv_quantile) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=config$upper_ci_inv_quantile) )
         )
 
-    event_rates_upper_mu_vary = as.numeric(
-        event_conditional_probabilities * 
-        (mw_rate_function(event_table$Mw - dMw/2, 
-            quantiles=config$upper_ci_inv_quantile, account_for_mw_obs_error=TRUE) - 
-         mw_rate_function(event_table$Mw + dMw/2, 
-            quantiles=config$upper_ci_inv_quantile, account_for_mw_obs_error=TRUE) )
+    event_rates_upper_mu_vary = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$upper_ci_inv_quantile, 
+            account_for_mw_obs_error=TRUE) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=config$upper_ci_inv_quantile, 
+            account_for_mw_obs_error=TRUE) )
         )
 
     # Lower credible interval bound. Wrap in as.numeric to avoid having a 1
@@ -704,19 +729,15 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # less obvious that the 'full-source-zone' model should be as well, but we can think of 
     # this as us representing the source as having 'some tendency for rupture-segment-sized events,
     # but also some tendency to behave as a full source-zone.
-    event_rates_lower = as.numeric(
-        event_conditional_probabilities * 
-        (mw_rate_function(event_table$Mw - dMw/2, 
-            quantiles=config$lower_ci_inv_quantile) - 
-         mw_rate_function(event_table$Mw + dMw/2, 
-            quantiles=config$lower_ci_inv_quantile) )
+    event_rates_lower = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$lower_ci_inv_quantile) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=config$lower_ci_inv_quantile) )
         )
-    event_rates_lower_mu_vary = as.numeric(
-        event_conditional_probabilities * 
-        (mw_rate_function(event_table$Mw - dMw/2, 
-            quantiles=config$lower_ci_inv_quantile, account_for_mw_obs_error=TRUE) - 
-         mw_rate_function(event_table$Mw + dMw/2, 
-            quantiles=config$lower_ci_inv_quantile, account_for_mw_obs_error=TRUE) )
+    event_rates_lower_mu_vary = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$lower_ci_inv_quantile, 
+            account_for_mw_obs_error=TRUE) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=config$lower_ci_inv_quantile, 
+            account_for_mw_obs_error=TRUE) )
         )
 
     gc()
@@ -778,9 +799,12 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         }
 
         #
-        # Put rates onto the event table nc file
-        # Uniform slip, deterministic size, fixed mu
-        # Notice there is no 'bias correction' for uniform slip events
+        # Put rates onto the event table nc file for uniform slip,
+        # deterministic size, fixed mu events.
+        # Notice there is no 'bias correction' applied for uniform slip events,
+        # because in practice we do not suggest using them for hazard studies,
+        # but instead use them as a 'reference point' to weight the stochastic
+        # and variable-uniform slip events
         #
         fid = nc_open(event_table_file, readunlim=FALSE, write=TRUE)
         ncvar_put_extra(fid, 'rate_annual', event_rates)
@@ -801,10 +825,12 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
 
         nc_close(fid)
 
+        #
         # Put rates onto the uniform slip table nc file that also has tsunami
         # summary stats. We do not store the variable mu information here (easier
         # implementation, plus it is generally more efficient to read from the
         # non-tsunami file). Also, there is no bias correction for uniform-slip-fixed-size
+        #
         event_table_fileB = paste0('../SOURCE_ZONES/', source_name, 
             '/TSUNAMI_EVENTS/all_uniform_slip_earthquake_events_tsunami_',
             source_name, '.nc')
@@ -845,25 +871,28 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
 
             fid = nc_open(event_table_fileC, readunlim=FALSE, write=TRUE)
 
-            # Index corresponding to uniform slip row
+            # We need to 'smear' the uniform-slip-fixed-size rates over the events.
+            # To do this we need to know the index corresponding to the uniform slip fixed-size row
             event_uniform_event_row = ncvar_get(fid, 'event_uniform_event_row')
             # Number of events corresponding to event row
             nevents = table(event_uniform_event_row)
             names_nevents = as.numeric(names(nevents))
+            # Check that it is making sense!
             stopifnot(all(names_nevents == 1:length(event_rates)))
 
             # Compute an adjustment to the event weights based on the
-            # bias-correction from earlier
-            # Use peak-slip to do this
+            # bias-correction from earlier. Use peak-slip to do this
             event_peak_slip = ncvar_get(fid, 'event_slip_string')
             event_peak_slip = sapply(event_peak_slip, f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])))
             event_bias_adjustment = event_peak_slip * 0
             # Compute the weights
             for(euer in names_nevents){
                 k = which(event_uniform_event_row == euer) 
+                # Weight individual events, based on the 'bias adjustment' functions devised by
+                # comparing DART buoys with family of model events
                 quantiles_of_peak_slip = rank(event_peak_slip[k], ties.method='first')/(length(k)+1)
                 bias_adjuster = bias_adjustment_function(quantiles_of_peak_slip)
-                bias_adjuster = bias_adjuster/sum(bias_adjuster)
+                bias_adjuster = bias_adjuster/sum(bias_adjuster) # Weights must sum to 1
                 event_bias_adjustment[k] = bias_adjuster
             }
 
@@ -880,7 +909,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
 
             #
             # Now to the same, for the file that contains only the earthquakes.
-            # However, this file stores variable mu information, and has bias adjustment 
+            # This file stores variable mu information, and has bias adjustment
             # that varies for the fixed-mu and variable-mu cases
             # 
             event_table_fileD = paste0('../SOURCE_ZONES/', source_name, 
