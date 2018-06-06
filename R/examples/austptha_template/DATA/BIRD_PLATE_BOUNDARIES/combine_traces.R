@@ -26,8 +26,9 @@ subduction_slip_x_area = list(
     outer_rise_puysegur      = 1101709520,
     outer_rise_tonga_kermadec= 42457361492,
     outer_rise_new_hebrides  = 14296631957,
-    outer_rise_timor         = 2433991591,
+    outer_rise_timor         = 920608901,
     outer_rise_solomons      = 17372316500)
+
 
 #
 # Ratio of outer-rise moment rate to subduction-zone moment rate

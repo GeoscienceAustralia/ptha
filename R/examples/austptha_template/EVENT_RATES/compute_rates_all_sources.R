@@ -1493,7 +1493,7 @@ if(FALSE){
     #
     # Moment rate on sources with outer-rise. This was used to correct the originally estimated
     # moment rates on outer-rise sources (which were too low)
-    thrust_sources = c('sunda', 'kermadectonga', 'puysegur', 'newhebrides', 'timor', 'solomon')
+    thrust_sources = c('sunda', 'kermadectonga', 'puysegur', 'newhebrides', 'timortrough', 'solomon')
     for(i in 1:length(thrust_sources)){
         uss = bird2003_env$unit_source_tables[[thrust_sources[i]]]
         slip_x_area = sum(uss$length*uss$width*1e+06*pmax(0, -uss$bird_vel_div/1000))
