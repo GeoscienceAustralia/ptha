@@ -28,7 +28,8 @@ all_source_variable_uniform_slip_tsunami =
 # Apply hazard curve computation / data extraction to chunks of data
 # We read in (nevents x point_chunk_size) max stage values at once, and then
 # compute rate curves for the point_chunk_size gauges before moving to the next
-# chunk
+# chunk. Note these values will be scaled later, so that they apply to the
+# source-zone with the most events
 point_chunk_size_uniform = config$point_chunk_size_uniform #10000
 point_chunk_size_stochastic = config$point_chunk_size_stochastic #1000
 
@@ -104,7 +105,6 @@ source_zone_stage_exceedance_rates<-function(
     # Process gauges in chunks to reduce memory usage
     point_chunks = splitIndices(lgp, ceiling(lgp/point_chunk_size))
 
-
     # Get rate for every event
     fid_rates = nc_open(gsub('_tsunami', '', tsunami_file), readunlim=FALSE)
     event_rate = ncvar_get(fid_rates, 'rate_annual')
@@ -142,7 +142,9 @@ source_zone_stage_exceedance_rates<-function(
             variable_mu_event_rate_upper=variable_mu_event_rate_upper){
 
             if(all(is.na(peak_stage_kth_gauge))){
-               return(list(stage_seq*NA, stage_seq*NA, stage_seq*NA))
+               # Skip dry points
+               return(list(stage_seq*NA, stage_seq*NA, stage_seq*NA, 
+                   stage_seq*NA, stage_seq*NA, stage_seq*NA))
             } 
 
             # Sort the stages in decreasing order 
@@ -537,6 +539,27 @@ source_names = basename(dirname(dirname(all_source_uniform_slip_tsunami)))
 stopifnot(all(source_names == basename(dirname(dirname(all_source_stochastic_slip_tsunami)))))
 stopifnot(all(source_names == basename(dirname(dirname(all_source_variable_uniform_slip_tsunami)))))
 
+#
+# Useful to know the number of events in the netcdf files
+#
+get_number_of_events<-function(nc_file){
+    fid = nc_open(nc_file, readunlim=FALSE)
+    output = fid$dim$event$len
+    nc_close(fid)
+    return(output)
+}
+uniform_slip_nevents = sapply(all_source_uniform_slip_tsunami, get_number_of_events)
+stochastic_slip_nevents = sapply(all_source_stochastic_slip_tsunami, get_number_of_events)
+variable_uniform_slip_nevents = sapply(all_source_variable_uniform_slip_tsunami, get_number_of_events)
+
+# For parallel chunking, we can use larger chunks if there are fewer events.
+uniform_chunk_size = round(point_chunk_size_uniform * 
+    max(uniform_slip_nevents)/uniform_slip_nevents)
+stochastic_chunk_size = round(point_chunk_size_stochastic * 
+    max(stochastic_slip_nevents)/stochastic_slip_nevents)
+variable_uniform_chunk_size = round(point_chunk_size_variable_uniform * 
+    max(variable_uniform_slip_nevents)/variable_uniform_slip_nevents)
+
 for(i in 1:length(source_names)){
 
     # source information
@@ -544,17 +567,20 @@ for(i in 1:length(source_names)){
     uniform_slip_tsunami_file = all_source_uniform_slip_tsunami[i]
     stochastic_slip_tsunami_file = all_source_stochastic_slip_tsunami[i]
     variable_uniform_slip_tsunami_file = all_source_variable_uniform_slip_tsunami[i]
-    
+
 
     # Get uniform slip outputs
     uniform_slip_rates = source_zone_stage_exceedance_rates(
         uniform_slip_tsunami_file, gauge_points,
-        point_chunk_size=point_chunk_size_uniform, stage_seq=stage_seq)
+        point_chunk_size=uniform_chunk_size[i], stage_seq=stage_seq)
+
+    # Remove memory from cluster
+    parLapply(mycluster, as.list(1:MC_CORES), gc)
 
     # Get stochastic slip outputs
     stochastic_slip_rates = source_zone_stage_exceedance_rates(
         stochastic_slip_tsunami_file, gauge_points,
-        point_chunk_size=point_chunk_size_stochastic, stage_seq=stage_seq)
+        point_chunk_size=stochastic_chunk_size[i], stage_seq=stage_seq)
 
     # Remove memory from cluster
     parLapply(mycluster, as.list(1:MC_CORES), gc)
@@ -562,7 +588,7 @@ for(i in 1:length(source_names)){
     # Get variable_uniform slip outputs
     variable_uniform_slip_rates = source_zone_stage_exceedance_rates(
         variable_uniform_slip_tsunami_file, gauge_points,
-        point_chunk_size=point_chunk_size_stochastic, stage_seq=stage_seq)
+        point_chunk_size=variable_uniform_chunk_size[i], stage_seq=stage_seq)
 
     # Remove memory from cluster
     parLapply(mycluster, as.list(1:MC_CORES), gc)
@@ -582,5 +608,4 @@ for(i in 1:length(source_names)){
     rm(uniform_slip_rates, stochastic_slip_rates, variable_uniform_slip_rates)
     gc()
 }
-
-
+stopCluster(mycluster)

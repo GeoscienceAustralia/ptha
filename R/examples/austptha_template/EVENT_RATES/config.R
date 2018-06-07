@@ -174,6 +174,9 @@ sourcezone_log_directory  = 'source_zone_parameter_logs'
 #
 # Small values conserve memory -- large values may be faster (up to a point) but use more
 # memory.
+#
+# Note these values will be scaled by the maximum number of events in any source-zone
+# (e.g. southamerica in the 2018 PTHA)
 point_chunk_size_uniform = 10000
 point_chunk_size_stochastic = 500
 

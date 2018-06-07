@@ -17,5 +17,6 @@ Rscript compute_rates_all_sources.R
 # spawned with mclapply. This will kill them
 for i in $(top -b -n1 | grep $(whoami) | grep S | grep R | awk ' { print $1 }' ); do kill $i; done
 Rscript compute_station_hazard_curves.R
+# The above script does not use mclapply, so we do not need to do the 'kill trick'. 
 Rscript integrated_rate_given_stage.R
 Rscript plot_hazard_curves.R
