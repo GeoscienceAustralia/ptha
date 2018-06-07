@@ -557,7 +557,9 @@ uniform_chunk_size = round(point_chunk_size_uniform *
     max(uniform_slip_nevents)/uniform_slip_nevents)
 stochastic_chunk_size = round(point_chunk_size_stochastic * 
     max(stochastic_slip_nevents)/stochastic_slip_nevents)
-variable_uniform_chunk_size = round(point_chunk_size_variable_uniform * 
+# Note we use 'point_chunk_size_stochastic' here since variable uniform has the
+# same number of events as stochastic
+variable_uniform_chunk_size = round(point_chunk_size_stochastic * 
     max(variable_uniform_slip_nevents)/variable_uniform_slip_nevents)
 
 for(i in 1:length(source_names)){

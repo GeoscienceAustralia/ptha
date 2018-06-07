@@ -239,10 +239,15 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     fid = nc_open(nc_file, readunlim=FALSE)
     gauge_max_stage = ncvar_get(fid, 'max_stage', start=c(1,site), count=c(-1,1))
     event_Mw = ncvar_get(fid, 'event_Mw')
+    nc_close(fid)
+    fid = nc_open(gsub('_tsunami', '', nc_file), readunlim=FALSE)
     # FIXME: Get from non-tsunami file -- cheaper read
-    event_nominal_rate = ncvar_get(fid, 'event_rate_annual')
-    event_nominal_rate_upper = ncvar_get(fid, 'event_rate_annual_upper_ci')
-    event_nominal_rate_lower = ncvar_get(fid, 'event_rate_annual_lower_ci')
+    event_nominal_rate = ncvar_get(fid, 'rate_annual')
+    event_nominal_rate_upper = ncvar_get(fid, 'rate_annual_upper_ci')
+    event_nominal_rate_lower = ncvar_get(fid, 'rate_annual_lower_ci')
+    variable_mu_event_nominal_rate = ncvar_get(fid, 'variable_mu_rate_annual')
+    variable_mu_event_nominal_rate_upper = ncvar_get(fid, 'variable_mu_rate_annual_upper_ci')
+    variable_mu_event_nominal_rate_lower = ncvar_get(fid, 'variable_mu_rate_annual_lower_ci')
     nc_close(fid)
 
     # Deal with finite-precision netcdf limitations
@@ -266,6 +271,12 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
             f<-function(x) sum(event_nominal_rate_upper*(event_Mw >= x)) ))
         Mw_exceedance_rate_lower = pmax(1e-12, sapply(unique_Mws, 
             f<-function(x) sum(event_nominal_rate_lower*(event_Mw >= x)) ))
+        variable_mu_Mw_exceedance_rate = pmax(1e-12, sapply(unique_Mws, 
+            f<-function(x) sum(variable_mu_event_nominal_rate*(event_Mw >= x)) ))
+        variable_mu_Mw_exceedance_rate_upper = pmax(1e-12, sapply(unique_Mws, 
+            f<-function(x) sum(variable_mu_event_nominal_rate_upper*(event_Mw >= x)) ))
+        variable_mu_Mw_exceedance_rate_lower = pmax(1e-12, sapply(unique_Mws, 
+            f<-function(x) sum(variable_mu_event_nominal_rate_lower*(event_Mw >= x)) ))
 
         stopifnot(length(gauge_max_stage) == length(event_Mw))
 
@@ -281,6 +292,13 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
         points(unique_Mws, Mw_exceedance_rate_lower * rate_rescale, t='l', 
             col='blue')
 
+        # Also include variable mu rates, although generally they should be quite similar
+        points(unique_Mws, variable_mu_Mw_exceedance_rate * rate_rescale, t='l', col='red', lty='dashed')
+        points(unique_Mws, variable_mu_Mw_exceedance_rate_upper * rate_rescale, t='l', 
+            col='blue', lty='dashed')
+        points(unique_Mws, variable_mu_Mw_exceedance_rate_lower * rate_rescale, t='l', 
+            col='blue', lty='dashed')
+
         grid()
         abline(h=5*10**(seq(-4, 2)), lty='dotted', col='grey')
         abline(h=10**(seq(-4, 2)), lty='dotted', col='orange')
@@ -289,49 +307,64 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
             ' slip: Mw vs stage (m) AND Mw vs exceedance rates \n @ ', 
             round(site_lon, 3), ', ', round(site_lat, 3), ', ', 
             round(site_elev, 3)))
+
     }else{
         #
         # Plot stage vs exceedance rate, in subsets
         #
-        for(i in 1:split_into_subsets){
+        par(mfrow=c(2,1))
+        # Make one plot with variable mu, and one with fixed mu
+        for(mu_vary in c(FALSE, TRUE)){
+            for(i in 1:split_into_subsets){
 
-            subset = seq(i, length(event_Mw), by=split_into_subsets)
+                subset = seq(i, length(event_Mw), by=split_into_subsets)
 
-            # Subset stages and nominal rates
-            gauge_max_stage_subset = gauge_max_stage[subset]
-            event_nominal_rate_subset = event_nominal_rate[subset] * 
-                split_into_subsets * rate_rescale
-            event_nominal_rate_upper_subset = event_nominal_rate_upper[subset] * 
-                split_into_subsets * rate_rescale
-            event_nominal_rate_lower_subset = event_nominal_rate_lower[subset] * 
-                split_into_subsets * rate_rescale
+                # Subset stages and nominal rates
+                gauge_max_stage_subset = gauge_max_stage[subset]
+                if(mu_vary){
+                    event_nominal_rate_subset = variable_mu_event_nominal_rate[subset] * 
+                        split_into_subsets * rate_rescale
+                    event_nominal_rate_upper_subset = variable_mu_event_nominal_rate_upper[subset] * 
+                        split_into_subsets * rate_rescale
+                    event_nominal_rate_lower_subset = variable_mu_event_nominal_rate_lower[subset] * 
+                        split_into_subsets * rate_rescale
+                }else{
+                    event_nominal_rate_subset = event_nominal_rate[subset] * 
+                        split_into_subsets * rate_rescale
+                    event_nominal_rate_upper_subset = event_nominal_rate_upper[subset] * 
+                        split_into_subsets * rate_rescale
+                    event_nominal_rate_lower_subset = event_nominal_rate_lower[subset] * 
+                        split_into_subsets * rate_rescale
+                }
 
-            # Get stage-vs-exceedance rate, for the subset
-            stage_seq = 10**(seq(-2,1, len=100)) #seq(0.01, max(gauge_max_stage_subset), len=100)
-            stage_nominal_exceed = sapply(stage_seq, 
-                f<-function(x) sum(event_nominal_rate_subset * (gauge_max_stage_subset > x)))
-            stage_nominal_upper_exceed = sapply(stage_seq, 
-                f<-function(x) sum(event_nominal_rate_upper_subset * (gauge_max_stage_subset > x)))
-            stage_nominal_lower_exceed = sapply(stage_seq, 
-                f<-function(x) sum(event_nominal_rate_lower_subset * (gauge_max_stage_subset > x)))
+                # Get stage-vs-exceedance rate, for the subset
+                stage_seq = 10**(seq(-2,1, len=100)) #seq(0.01, max(gauge_max_stage_subset), len=100)
+                stage_nominal_exceed = sapply(stage_seq, 
+                    f<-function(x) sum(event_nominal_rate_subset * (gauge_max_stage_subset > x)))
+                stage_nominal_upper_exceed = sapply(stage_seq, 
+                    f<-function(x) sum(event_nominal_rate_upper_subset * (gauge_max_stage_subset > x)))
+                stage_nominal_lower_exceed = sapply(stage_seq, 
+                    f<-function(x) sum(event_nominal_rate_lower_subset * (gauge_max_stage_subset > x)))
 
-            # Plotting 
-            if(i == 1){           
-                plot(stage_seq, stage_nominal_exceed, t='l', ylim=plot_y_range, 
-                    log='xy', xlab='Stage (m)', ylab='Exceedance per century', 
-                    col=i)
-                points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, 
-                    lty='dotted')
-                points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, 
-                    lty='dotted')
-            }else{
-                points(stage_seq, stage_nominal_exceed, t='l', col = i)
-                points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, 
-                    lty='dotted')
-                points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, 
-                    lty='dotted')
+                # Plotting 
+                if(i == 1){           
+                    ylab_text = paste0('Exceedance per century ', ifelse(mu_vary, 'mu vary', 'mu const'))
+                    plot(stage_seq, stage_nominal_exceed, t='l', ylim=plot_y_range, 
+                        log='xy', xlab='Stage (m)', ylab=ylab_text, 
+                        col=i)
+                    points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, 
+                        lty='dotted')
+                    points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, 
+                        lty='dotted')
+    
+                }else{
+                    points(stage_seq, stage_nominal_exceed, t='l', col = i)
+                    points(stage_seq, stage_nominal_upper_exceed, t='l', col = i, 
+                        lty='dotted')
+                    points(stage_seq, stage_nominal_lower_exceed, t='l', col = i, 
+                        lty='dotted')
+                }
             }
-            
         }
 
     }
@@ -516,7 +549,10 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
 
     pdf(paste0(station_name, '_stage_exceedance_rate.pdf'), width=17, height=10)
 
-    site_index = plot_rates_at_a_station(lon_p, lat_p)
+    ## This plot is currently too crowded to be useful
+    #site_index = plot_rates_at_a_station(lon_p, lat_p)
+
+    site_index = get_station_index(lon_p, lat_p)
 
     for(i in 1:length(rates)){
         par(mfrow=c(2,1))
@@ -878,7 +914,7 @@ make_stage_exceedance_rate_convergence_plot<-function(){
         'Darwin_100m' = c(129.03, -11.88) 
         )
 
-    pdf('stage_convergence_plot.pdf', width=8, height=6)
+    pdf('stage_convergence_plot.pdf', width=8, height=10)
     for(i in 1:length(sites)){
 
         for(source_name in names(rates)){

@@ -118,7 +118,7 @@ create_integrated_rate_netcdf_file<-function(
             # Regular rate
             var_name1 = paste0(vary_mu, slip_type, '_rate_v')
             var_title = paste0(vary_mu, slip_type, '_slip_rate')
-            if(vary_mu=''){
+            if(vary_mu==''){
                 extra_longname = ''
             }else{
                 extra_longname = ' with variable shear modulus'
@@ -133,7 +133,7 @@ create_integrated_rate_netcdf_file<-function(
             # Upper CI
             var_name2 = paste0(vary_mu, slip_type, '_rate_upper_v')
             var_title = paste0(vary_mu, slip_type, '_slip_rate_upper_ci')
-            if(vary_mu=''){
+            if(vary_mu==''){
                 extra_longname = ''
             }else{
                 extra_longname = ' with variable shear modulus'
@@ -148,7 +148,7 @@ create_integrated_rate_netcdf_file<-function(
             # Lower CI
             var_name3 = paste0(vary_mu, slip_type, '_rate_lower_v')
             var_title = paste0(vary_mu, slip_type, '_slip_rate_lower_ci')
-            if(vary_mu=''){
+            if(vary_mu==''){
                 extra_longname = ''
             }else{
                 extra_longname = ' with variable shear modulus'
@@ -162,7 +162,7 @@ create_integrated_rate_netcdf_file<-function(
 
             # Append to the list
             all_nc_var = c(all_nc_var,
-                list(eval(as.name(var_name1)), eval(as.name(uniform_rate_upper_v)), eval(as.name(uniform_rate_lower_v))))
+                list(eval(as.name(var_name1)), eval(as.name(var_name2)), eval(as.name(var_name3))))
         }
     }
 
@@ -350,7 +350,7 @@ create_integrated_rate_netcdf_file<-function(
         uniform_slip_rates$rates_upper_ci)
     ncvar_put(output_fid, uniform_rate_lower_v, 
         uniform_slip_rates$rates_lower_ci)
-    ncvar_put(output_fid, variable_mu_uniform_rate_v, variable_mu_uniform_slip_rates$rates)
+    ncvar_put(output_fid, variable_mu_uniform_rate_v, uniform_slip_rates$variable_mu_rates)
     ncvar_put(output_fid, variable_mu_uniform_rate_upper_v, 
         uniform_slip_rates$variable_mu_rates_upper_ci)
     ncvar_put(output_fid, variable_mu_uniform_rate_lower_v, 
