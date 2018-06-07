@@ -119,6 +119,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             if(!all(weight_with_nonzero_rate == 0)){
                 stop(paste0('weights_with_nonzero_rate should all be zero, but they are not, in ', nme))
             }
+            next
         }
 
         k = which(weight_with_nonzero_rate == 0)
@@ -142,8 +143,6 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         if(length(k) > 0){
             if(!all(weight_with_nonzero_rate[k] == 0)){
                 stop('weight_with_nonzero_rate is > 0 for events beyond the upper limit')
-            }else{
-
             }
         } 
 
@@ -164,7 +163,9 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
     # Check that the quantile adjustment is sensible (conforms with
     # interpolation functions in config)
     for(nme in c('stoc', 'vuni')){
-       
+
+        if(rates_should_be_zero) next      
+ 
         uniform_event_row = ncvar_get(fids[[nme]], 'uniform_event_row')
         event_slip_string = ncvar_get(fids[[nme]], 'event_slip_string')
         peak_slip = sapply(event_slip_string, f<-function(x) max(as.numeric(strsplit(x,'_')[[1]])))

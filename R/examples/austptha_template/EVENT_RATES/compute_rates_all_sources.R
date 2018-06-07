@@ -191,11 +191,12 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     # Log spacing to equally resolve all coupling values in a relative sense
     # However, we assign probabilities consistent with a uniform distribution
     # (the log spacing is to improve numerical aspects of the discretization,
-    # we are not claiming that log(coupling) is uniformly distributed)
+    # we are not claiming that log(coupling) is uniformly distributed!)
     sourcepar$coupling = exp(approx(log(as.numeric(sourcepar$coupling)), 
         n=nbins*config$coupling_subsampling_increase)$y)
     # Discretize the probabilities as a uniform distribution (NOT log-uniform!)
-    bin_size = diff(c(min(sourcepar$coupling), sourcepar$coupling, max(sourcepar$coupling)), lag=2)/2
+    # This choice will ensure the numerical derivatives are constant (i.e. uniform density)
+    bin_size = sourcepar$coupling
     sourcepar$coupling_p = bin_size/sum(bin_size)
 
     # We may have put some weight on 'aseismic' behaviour in the magnitude range of interest
