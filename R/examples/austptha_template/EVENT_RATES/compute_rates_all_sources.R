@@ -1301,8 +1301,8 @@ if(nrow(gcmt_global) > 0){
     points(gcmt_global$Mw[ordr], upper_ci[ordr], t='l', col='red', lty='dashed', lwd=2)
 
     # Add rates derived from files
-    points(global_mw, global_exceedance_rate_mw_variable_mu, t='l', col='blue')
-    points(global_mw, global_exceedance_rate_mw_fixed_mu, t='l', col='purple')
+    points(mw_global, global_exceedance_rate_mw_variable_mu, t='l', col='blue')
+    points(mw_global, global_exceedance_rate_mw_fixed_mu, t='l', col='purple')
 
 }
 grid(col='orange')

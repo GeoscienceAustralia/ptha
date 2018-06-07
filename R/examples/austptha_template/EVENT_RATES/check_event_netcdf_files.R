@@ -2,6 +2,7 @@
 # Quick check that the event netcdf files have consistent rates
 # among uniform/stochastic/variable-uniform slip
 #
+library(rptha)
 
 config = new.env()
 source('config.R', local=config)
@@ -125,8 +126,13 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             }
         } 
 
-        # Mw-min is respected
-        k = which(mw < mw_min_limit)
+        # Check Mw-min is respected
+        # Most events with mw < mw_min should haev weight = 1. However, it is
+        # possible to have events with mw<mw_min that have zero probability of
+        # occurring, if they are near a divergent section of the plate boundary
+        # based on Bird's model. For example, this occurs in a couple of places
+        # in western Aleutians. 
+        k = which(mw < mw_min_limit & (event_rate > 0))
         stopifnot(length(k) > 0)
         if(!all(abs(weight_with_nonzero_rate[k] - 1) < 1.0e-06)){
             stop('weight_with_nonzero_rate is not equal to 1 below the mw_max_lower_limit')
