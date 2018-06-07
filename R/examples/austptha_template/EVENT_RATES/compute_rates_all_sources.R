@@ -1182,14 +1182,18 @@ for(i in 1:length(source_segment_names)){
         f<-function(x) sum(event_rates_file_variable_mu * (event_Mw_file_variable_mu >= x)))
     points(mw, empirical_mean_curve_variable_mu, pch=19, cex=0.2, col='blue')
 
-    # Compute global empirical rate for a plot later.
-    row_weight = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
-    global_exceedance_rate_mw_variable_mu = global_exceedance_rate_mw_variable_mu + 
-        row_weight * sapply(mw_global, f<-function(x){
-            sum(event_rates_file_variable_mu * (event_Mw_file_variable_mu >= x))})
-    global_exceedance_rate_mw_fixed_mu = global_exceedance_rate_mw_fixed_mu + 
-        row_weight * sapply(mw_global, f<-function(x){
-            sum(event_rates_file * (event_Mw_file >= x))})
+    #
+    # Compute global empirical rate IN THE FILES for a plot later.
+    # To avoid double counting, we should not do this for 'segments',
+    # just full sources
+    if(!source_envs[[i]]$is_a_segment){
+        global_exceedance_rate_mw_variable_mu = global_exceedance_rate_mw_variable_mu + 
+            row_weight * sapply(mw_global, f<-function(x){
+                sum(event_rates_file_variable_mu * (event_Mw_file_variable_mu >= x))})
+        global_exceedance_rate_mw_fixed_mu = global_exceedance_rate_mw_fixed_mu + 
+            row_weight * sapply(mw_global, f<-function(x){
+                sum(event_rates_file * (event_Mw_file >= x))})
+    }
 
     # Mean prior curve
     #mean_prior_curve = colMeans(all_rate_curves$all_rate_matrix)
