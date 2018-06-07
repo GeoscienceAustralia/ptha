@@ -1038,6 +1038,8 @@ if(config$MC_CORES > 1){
     # Parallel run
     library(parallel)
     if(length(unseg) > 0){
+        # FIXME: Consider replacing with clusterMap, since the 'mc' functions
+        # have trouble shutting down workers on NCI
         source_envs[unseg] = mclapply(as.list(1:length(source_segment_names))[unseg], parfun, 
             mc.cores=config$MC_CORES, mc.cleanup=9L)
     }
@@ -1069,9 +1071,10 @@ if(config$edge_correct_event_rates){
 seg = which(sourcezone_parameters$segment_name != '')
 if(config$MC_CORES > 1){
     # Parallel run
-    library(parallel)
 
     if(length(seg) > 0){
+        # FIXME: Consider replacing with clusterMap, since the 'mc' functions
+        # have trouble shutting down workers on NCI
         source_envs[seg] = mcmapply(parfun, 
             i = as.list(1:length(source_segment_names))[seg], 
             unsegmented_edge_rate_multiplier=unsegmented_edge_rate_multiplier[seg], 
