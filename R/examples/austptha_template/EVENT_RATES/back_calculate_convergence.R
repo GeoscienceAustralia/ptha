@@ -12,7 +12,7 @@ if(class(config) != 'environment'){
 #' 
 #' It can also be used to examine the effect of inflating the rate of edge
 #' events (i.e. earthquakes with an edge at one of the source-zone edges) FOR
-#' UNIFORM SLIP ONLY
+#' UNIFORM SLIP DETERMINISTIC SIZE EVENTS ONLY
 #' 
 #' Use of an appropriate 'edge-multiplier' can help to better satisfy seismic moment
 #' conservation. This is because with (edge_multiplier = 0), seismic slip tends to
@@ -264,8 +264,12 @@ batch_plot_convergence<-function(){
             if(is.null(size_scale)){
                 size_scale = source_X$output$integrated_slip
             }
+    
+            xrange = range(source_X$output$lon_c) + c(-2,2)
+            yrange = range(source_X$output$lat_c) + c(-2,2)
+
             plot(source_X$output$lon_c, source_X$output$lat_c, 
-                cex=size_scale/normalizer, asp=1, 
+                cex=size_scale/normalizer, asp=1, xlim=xrange, ylim=yrange, 
                 main=paste0(sname, ' ', type)); grid()
             v = cbind(-cos(source_X$uss$strike/180*pi)*size_scale, 
                       sin(source_X$uss$strike/180*pi)*size_scale)*100 + 1.0e-06
