@@ -8,7 +8,7 @@ config = new.env()
 source('config.R', local=config)
 
 check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file, 
-    variable_uniform_slip_tsunami_file){
+    variable_uniform_slip_tsunami_file, rates_should_be_zero=FALSE){
 
     fids = list()
     fids_t = list()
@@ -37,8 +37,17 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         for(nme in c('unif', 'stoc', 'vuni')){
             r1 = ncvar_get(fids[[nme]], var)
             r2 = ncvar_get(fids_t[[nme]], paste0('event_', var))
-            if(!all(abs(r1 - r2) < 1.0e-10)){
-                stop(paste0('rates do not match ', var, ' ', nme ))
+
+            if(rates_should_be_zero){
+                if(!all(r1==0 & r2==0)){
+                    stop(paste0('Rates should be zero, but are not, in ', var, ' ', nme))
+                }
+            }else{
+                # Allow for both 'relative' and 'absolute' errors
+                err = abs(r1 - r2)
+                if(!all( (err < 1.0e-06*r1)|(err < 1e-12))){
+                    stop(paste0('rates do not match ', var, ' ', nme ))
+                }
             }
         }
     }
@@ -54,6 +63,9 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
 
     # Check how much rates have changed
     for(var in c('rate_annual', 'rate_annual_lower_ci', 'rate_annual_upper_ci')){
+        # Skip if rates are all zero
+        if(rates_should_be_zero) next
+
         for(nme in c('unif', 'stoc', 'vuni')){
             r1 = ncvar_get(fids[[nme]], var)
             r2 = ncvar_get(fids[[nme]], paste0('variable_mu_', var))
@@ -75,6 +87,9 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
     # Check that when appropriately summed, the variable-uniform and stochastic rates
     # are the same as the uniform rates
     for(var in c('rate_annual', 'rate_annual_lower_ci', 'rate_annual_upper_ci')){
+        # Skip if all rates are zero
+        if(rates_should_be_zero) next
+
         r_unif = ncvar_get(fids$unif, var)
         for(nme in c('stoc', 'vuni')){
             # Stochastic    
@@ -99,6 +114,12 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         print(paste0('Range weight_with_nonzero_rate: ',
                     min(weight_with_nonzero_rate), ' ', 
                     max(weight_with_nonzero_rate), collapse=" "))
+
+        if(rates_should_be_zero){
+            if(!all(weight_with_nonzero_rate == 0)){
+                stop(paste0('weights_with_nonzero_rate should all be zero, but they are not, in ', nme))
+            }
+        }
 
         k = which(weight_with_nonzero_rate == 0)
         k2 = which(event_rate == 0)
@@ -202,10 +223,21 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
 for(i in 1:length(config$all_source_uniform_slip_tsunami)){
     print(' ')
     print('######################')
-    print(basename(dirname(dirname(config$all_source_uniform_slip_tsunami[i]))))
+    source_name = basename(dirname(dirname(config$all_source_uniform_slip_tsunami[i])))
+    print(source_name)
+
+    # For 'defunct' sources, we just check that all their rates are zero
+    if(source_name %in% c('timor', 'flores', 'macquarienorth')){
+        rates_should_be_zero=TRUE
+        print('   rates should be zero!')
+    }else{
+        rates_should_be_zero=FALSE
+        print('   regular source')
+    }
     print(' ')
     check_source(config$all_source_uniform_slip_tsunami[i], 
         config$all_source_stochastic_slip_tsunami[i], 
-        config$all_source_variable_uniform_slip_tsunami[i])
+        config$all_source_variable_uniform_slip_tsunami[i],
+        rates_should_be_zero=rates_should_be_zero)
 }
 
