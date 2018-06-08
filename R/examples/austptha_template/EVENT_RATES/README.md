@@ -119,3 +119,5 @@ of the uniform, stochastic, and variable uniform models vs DART measurements.
 place fixed-size earthquake events on a source-zone, so as to spatially match
 some idea of moment conservation.
 
+[working_with_rate_curves.R](working_with_rate_curves.R) gives an example of working
+with the rate curves for a particular source-zone.
