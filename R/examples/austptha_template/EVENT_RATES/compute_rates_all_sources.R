@@ -1475,7 +1475,7 @@ if(FALSE){
     #
     # Moment rate from GCMT on sources with outer-rise
     # 
-    thrust_sources = c('sunda', 'kermadectonga', 'puysegur', 'newhebrides', 'timor', 'solomon')
+    thrust_sources = c('sunda', 'kermadectonga', 'puysegur', 'newhebrides', 'timortrough', 'solomon')
     outerrise_sources = c('outerrisesunda', 'outerrise_kermadectonga', 'outerrise_puysegur', 
         'outerrisenewhebrides', 'outer_rise_timor', 'outerrisesolomon')
 
