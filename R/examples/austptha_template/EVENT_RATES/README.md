@@ -121,3 +121,7 @@ some idea of moment conservation.
 
 [working_with_rate_curves.R](working_with_rate_curves.R) gives an example of working
 with the rate curves for a particular source-zone.
+
+[tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R)
+Script to convert the netcdf files containing stage-vs-return-period curves,
+into pointwise values of stages at a range of return periods, in a csv format.
