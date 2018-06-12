@@ -241,7 +241,10 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     event_Mw = ncvar_get(fid, 'event_Mw')
     nc_close(fid)
     fid = nc_open(gsub('_tsunami', '', nc_file), readunlim=FALSE)
-    # FIXME: Get from non-tsunami file -- cheaper read
+    # FIXME: THIS HAS TO BE UPDATED TO READ stochastic_slip and variable_uniform_slip
+    # results. At the moment it is not doing that (because when it was written the
+    # rates were the same)
+    print('WARNING: Using uniform slip rates for all earthquake types -- this code should be updated to use the purpose-made stochastic and variable-uniform slip rates as appropriate')
     event_nominal_rate = ncvar_get(fid, 'rate_annual')
     event_nominal_rate_upper = ncvar_get(fid, 'rate_annual_upper_ci')
     event_nominal_rate_lower = ncvar_get(fid, 'rate_annual_lower_ci')
