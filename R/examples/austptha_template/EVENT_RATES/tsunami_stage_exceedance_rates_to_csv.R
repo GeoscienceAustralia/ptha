@@ -3,8 +3,10 @@
 #
 # Combined, this information defines the return period variables we wil store
 exceedance_rates = c(1/10, 1/25, 1/50, 1/100, 1/250, 1/500, 1/1000, 1/2500, 1/5000, 1/10000)
-shear_modulus_type = c('', 'variable_mu_')
-event_type = c('uniform', 'stochastic', 'variable_uniform')
+#shear_modulus_type = c('', 'variable_mu_')
+shear_modulus_type = 'variable_mu_'
+#event_type = c('uniform', 'stochastic', 'variable_uniform')
+event_type = 'stochastic'
 value_type = c('', '_upper_ci', '_lower_ci')
 
 # We cannot put all earthquake-type variables in the shapefile, due to severe
@@ -61,7 +63,7 @@ for(k in 1:length(shear_modulus_type)){
 # Force to be numeric (netcdf comes out as array)
 for(i in 1:ncol(output)) output[,i] = as.numeric(output[,i])
 # Store gaugeID's to 1 decimal places
-output$gaugeID = format(output$gaugeID, digits=1)
+output$gaugeID = round(output$gaugeID, 1)
 
 # Store hazard info to 3 significant figures
 output_signif = output 
