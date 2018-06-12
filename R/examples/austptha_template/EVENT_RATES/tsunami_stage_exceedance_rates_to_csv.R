@@ -7,6 +7,11 @@ shear_modulus_type = c('', 'variable_mu_')
 event_type = c('uniform', 'stochastic', 'variable_uniform')
 value_type = c('', '_upper_ci', '_lower_ci')
 
+# We cannot put all earthquake-type variables in the shapefile, due to severe
+# name-mangling, caused by the format's limit to short attribute names. So only
+# return a single type, defined here
+model_for_shapefile = 'variable_mu_stochastic_slip_stage'
+
 input_file = commandArgs(trailingOnly=TRUE)[1]
 if(!is.na(input_file)){
     if(!file.exists(input_file)){
@@ -53,22 +58,63 @@ for(k in 1:length(shear_modulus_type)){
         }
     }
 }
-write.csv(output, 
-    paste0('tsunami_stages_at_fixed_return_periods_from_file_', basename(input_file), '.csv'),
+# Force to be numeric (netcdf comes out as array)
+for(i in 1:ncol(output)) output[,i] = as.numeric(output[,i])
+
+
+# Store to 3 significant figures
+output_signif = output 
+output_signif[,5:ncol(output)] = signif(output[,5:ncol(output)], 3)
+write.csv(output_signif, 
+    paste0('tsunami_stages_at_fixed_return_periods.csv'),
     row.names=FALSE)
 
 nc_close(fid)
 
 #
-# Apply Green's law based wave height adjustment
-# Assume 1m nearshore
-#
-output_greens_law = output
-green_adjust = (pmax(0, -output$elev))**0.25
-for(i in 5:ncol(output_greens_law)){
-    output_greens_law[,i] = output_greens_law[,i] * green_adjust
-}
-write.csv(output_greens_law, 
-    paste0('tsunami_stages_greens_law_to_1m_at_fixed_return_periods_from_file_', basename(input_file), '.csv'),
-    row.names=FALSE)
+store_as_shapefile<-function(output, name){
+    
+    # Because of severe name-mangling, we need to reduce the range of columns provided
+    output = output
+    names_output = names(output)
+    priority_vars = c(1:4, grep(model_for_shapefile, names_output))
+    if(length(priority_vars) <= 4){
+        stop(paste0('Cannot find any ', model_for_shapefile, ' variables to put in shapefile'))
+    }
+    output = output[,priority_vars]
 
+    names_output = names(output)
+    names_reduced = gsub(paste0(model_for_shapefile, '_lower_ci'), 'STGl', names_output)
+    names_reduced = gsub(paste0(model_for_shapefile, '_upper_ci'), 'STGu', names_reduced)
+    names_reduced = gsub(model_for_shapefile, 'STG', names_reduced)
+
+    names(output) = names_reduced
+
+    output_sp = SpatialPointsDataFrame(coords=output[,c('lon', 'lat')], 
+        data=output, proj4string=CRS("+init=epsg:4326"))
+
+    writeOGR(output_sp, dsn=name, layer=name, driver='ESRI Shapefile', overwrite=TRUE)
+
+}
+store_as_shapefile(output_signif, 'tsunami_stages_at_fixed_return_periods')
+
+
+#
+# Apply Green's law based wave height adjustment Assume 1m nearshore. This is
+# theoretically invalid, but often used as a 'quick and very very inaccurate'
+# estimator of onshore impacts. 
+#
+adjust_using_greens_law = FALSE
+if(adjust_using_greens_law){
+    output_greens_law = output
+    green_adjust = (pmax(0, -output$elev))**0.25
+    for(i in 5:ncol(output_greens_law)){
+        output_greens_law[,i] = output_greens_law[,i] * green_adjust
+    }
+    output_greens_law_signif = output_greens_law
+    output_greens_law_signif[,5:ncol(output)] = signif(output_greens_law[,5:ncol(output)], 3)
+    write.csv(output_greens_law_signif, 
+        paste0('tsunami_stages_greens_law_to_1m_at_fixed_return_periods.csv'),
+        row.names=FALSE)
+    store_as_shapefile(output_greens_law_signif, 'tsunami_stages_greens_law_to_1m_at_fixed_return_periods')
+}

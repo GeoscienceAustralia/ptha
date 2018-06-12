@@ -124,4 +124,9 @@ with the rate curves for a particular source-zone.
 
 [tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R)
 Script to convert the netcdf files containing stage-vs-return-period curves,
-into pointwise values of stages at a range of return periods, in a csv format.
+into pointwise values of stages at a range of return periods, in a csv and
+shapefile format. The resulting outputs have some rounding, and contain less
+information than the netcdf output. However they are provided because many users
+find these formats easy to work with.
+
+
