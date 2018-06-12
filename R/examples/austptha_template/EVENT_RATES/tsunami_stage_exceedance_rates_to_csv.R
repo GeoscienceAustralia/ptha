@@ -60,9 +60,10 @@ for(k in 1:length(shear_modulus_type)){
 }
 # Force to be numeric (netcdf comes out as array)
 for(i in 1:ncol(output)) output[,i] = as.numeric(output[,i])
+# Store gaugeID's to 1 decimal places
+output$gaugeID = format(output$gaugeID, digits=1)
 
-
-# Store to 3 significant figures
+# Store hazard info to 3 significant figures
 output_signif = output 
 output_signif[,5:ncol(output)] = signif(output[,5:ncol(output)], 3)
 write.csv(output_signif, 
