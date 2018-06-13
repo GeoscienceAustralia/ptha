@@ -1,8 +1,9 @@
 #
 # Single station stage exceedance rate computation
 #
-# This is actually a slow computational method ('quick' means 'quick to code'), but is useful
-# to cross check the other results
+# This is actually a slow computational method ('quick' means 'quick to code'),
+# but is useful to cross check the other results
+#
 
 
 quick_source_deagg<-function(lon, lat){
@@ -11,6 +12,7 @@ quick_source_deagg<-function(lon, lat){
 
     tsunami_files = Sys.glob(
         '../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_*.nc')
+    earthquake_only_files = gsub('_tsunami', '', tsunami_files)
     gauge_file = 'tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc'
 
     library(rptha)
@@ -36,12 +38,14 @@ quick_source_deagg<-function(lon, lat){
     for(i in 1:length(tsunami_files)){
         print(basename(tsunami_files[i]))
         fid = nc_open(tsunami_files[i], readunlim=FALSE)
+        fid_rates = nc_open(earthquake_only_files[i], readunlim=FALSE)
 
-        event_rate = ncvar_get(fid, 'event_rate_annual')
-        event_rate_upper = ncvar_get(fid, 'event_rate_annual_upper_ci')
-        event_rate_lower = ncvar_get(fid, 'event_rate_annual_lower_ci')
+        event_rate = ncvar_get(fid_rates, 'variable_mu_rate_annual')
+        event_rate_upper = ncvar_get(fid_rates, 'variable_mu_rate_annual_upper_ci')
+        event_rate_lower = ncvar_get(fid_rates, 'variable_mu_rate_annual_lower_ci')
+        event_Mw = round(ncvar_get(fid_rates, 'Mw'), 3) # Deal with floating point imperfections in netcdf
+        event_Mw_vary_mu = round(ncvar_get(fid_rates, 'variable_mu_Mw'))
         peak_stage = ncvar_get(fid, 'max_stage', start=c(1, ni), count=c(-1,1))
-        event_Mw = round(ncvar_get(fid, 'event_Mw'), 3) # Deal with floating point imperfections in netcdf
         site = rep(basename(dirname(dirname(tsunami_files[i]))), length=length(event_rate))
         row_index = 1:length(event_rate)
 
@@ -52,9 +56,11 @@ quick_source_deagg<-function(lon, lat){
             peak_stage = peak_stage,
             site = site,
             row_index=row_index,
-            event_Mw = event_Mw)
+            event_Mw = event_Mw,
+            event_Mw_vary_mu = event_Mw_vary_mu)
 
         nc_close(fid)
+        nc_close(fid_rates)
     }
 
     # Back-calculate the stage-vs-rate curves
@@ -71,9 +77,9 @@ quick_source_deagg<-function(lon, lat){
     fid = nc_open('tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc', 
         readunlim=FALSE)
     stages = fid$dim$stage$vals
-    ers = ncvar_get(fid, 'stochastic_slip_rate'            , start=c(1,ni), count=c(-1,1))
-    ers_up = ncvar_get(fid, 'stochastic_slip_rate_upper_ci', start=c(1,ni), count=c(-1,1))
-    ers_lo = ncvar_get(fid, 'stochastic_slip_rate_lower_ci', start=c(1,ni), count=c(-1,1))
+    ers = ncvar_get(fid, 'variable_mu_stochastic_slip_rate'            , start=c(1,ni), count=c(-1,1))
+    ers_up = ncvar_get(fid, 'variable_mu_stochastic_slip_rate_upper_ci', start=c(1,ni), count=c(-1,1))
+    ers_lo = ncvar_get(fid, 'variable_mu_stochastic_slip_rate_lower_ci', start=c(1,ni), count=c(-1,1))
     nc_close(fid)
 
 
@@ -205,8 +211,8 @@ quick_source_deagg<-function(lon, lat){
                     pch=19, xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
                 points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
-                mtext(side=2, 'Magnitude (% of scenarios > stage_threshold)', line=2.3)
-                title(paste0(sz, ': Rate of events of each magnitude \n that are > stage_threshold (', signif(stage_threshold, 2), 
+                mtext(side=2, 'Magnitude, fixed mu, (% of scenarios > stage_threshold)', line=2.3)
+                title(paste0(sz, ': Rate of events of each magnitude (fixed_mu) \n that are > stage_threshold (', signif(stage_threshold, 2), 
                     ')'))
             }
         }

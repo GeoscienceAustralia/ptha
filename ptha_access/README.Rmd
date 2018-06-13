@@ -1,4 +1,4 @@
-# **Codes to access the 2017 Australian PTHA results**
+# **Codes to access the 2018 Australian PTHA results**
 
 **Currently these tools are in development, and the study is not complete.** 
 * **The data and models referred to below are placeholder examples for internal testing purposes only,
@@ -6,7 +6,7 @@ and are not to be used in any real application.**
 * **The interfaces are expected to change.**
 * **The code should be adjusted to download all data from the NCI [including source-zones + hazard points], to ensure consistency**
 
-These codes can be used to access the 2017 Australian PTHA results, developed
+These codes can be used to access the 2018 Australian PTHA results, developed
 by Geoscience Australia.
 
 ## **Installation**
@@ -186,7 +186,16 @@ initial_condition_240 = get_initial_condition_for_event(puysegur, 240, force_fil
 
 ### ***Getting hazard curves at a particular hazard point***
 
-FIXME: To do -- I still need to make the data on NCI to facilitate this
+FIXME: To do -- I still need to make the data on NCI to facilitate this.
+
+The user must be aware that at some locations, some modelled waves will violate
+the assumptions underlying our linear tsunami model, or occur in regions where
+our coarse resolution model and bathymetric data cannot properly resolve the
+flow. This is increasingly likely close to the coast, both because the mean
+depth reduces, and the ratio of the wave height to the water depths increases.
+For modelling purposes we strongly encourage the use of points well offshore in
+deep water (preferably with wave heights of interest not exceeding a few
+percent of the water depth). 
 
 
 ### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
