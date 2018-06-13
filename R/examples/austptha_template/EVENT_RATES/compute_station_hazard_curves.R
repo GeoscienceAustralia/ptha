@@ -175,36 +175,42 @@ source_zone_stage_exceedance_rates<-function(
 
             output = vector(mode='list', length=6)
 
-            # Rates
+            # Rates. Pass "rule=c(1,2)" to approx, so that 
+            # for stages < min(sorted_stages) {= sorted_stages[length(sorted_stages)]},
+            # we return the total event rate, while 
+            # for stages > max(sorted_stages) {= sorted_stages[1]},
+            # we get an NA (this latter case should never happen). The former
+            # case is possible for hazard-points 'on or very near' the source-zone,
+            # for small source-zones, which e.g. always have peak_stage > 2cm, for all
+            # events
             rate_fun = approx(sorted_stages, sorted_cumulative_rate, 
-                xout=stage_seq)
+                xout=stage_seq, rule=c(1,2))
             output[[1]] = rate_fun$y
 
             # Upper estimate of rates
             rate_fun = approx(sorted_stages, sorted_cumulative_rate_upper, 
-                xout=stage_seq)
+                xout=stage_seq, rule=c(1,2))
             output[[2]] = rate_fun$y
 
             # Lower estimate of rates
             rate_fun = approx(sorted_stages, sorted_cumulative_rate_lower, 
-                xout=stage_seq)
+                xout=stage_seq, rule=c(1,2))
             output[[3]] = rate_fun$y
 
             # Rates
             rate_fun = approx(sorted_stages, variable_mu_sorted_cumulative_rate, 
-                xout=stage_seq)
+                xout=stage_seq, rule=c(1,2))
             output[[4]] = rate_fun$y
 
             # Upper estimate of rates
             rate_fun = approx(sorted_stages, variable_mu_sorted_cumulative_rate_upper, 
-                xout=stage_seq)
+                xout=stage_seq, rule=c(1,2))
             output[[5]] = rate_fun$y
 
             # Lower estimate of rates
             rate_fun = approx(sorted_stages, variable_mu_sorted_cumulative_rate_lower, 
-                xout=stage_seq)
+                xout=stage_seq, rule=c(1,2))
             output[[6]] = rate_fun$y
-
 
             return(output)
         }
