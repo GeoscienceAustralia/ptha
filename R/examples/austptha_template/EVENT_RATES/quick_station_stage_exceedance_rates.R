@@ -91,14 +91,15 @@ quick_source_deagg<-function(lon, lat){
     nc_close(fid)
 
     # Reduce the size of some lines that occur in the plot
-    stg_small = stages
-    er_small = approx(stg, er, xout=stages)$y
-    er_up_small = approx(stg, er_up, xout=stages)$y
-    er_lo_small = approx(stg, er_lo, xout=stages)$y
-    stg_conv_1_small = stages
-    stg_conv_2_small = stages
-    er_conv_1_small = approx(stg_conv_1, er_conv_1, xout=stages)$y
-    er_conv_2_small = approx(stg_conv_2, er_conv_2, xout=stages)$y
+    stages_interp = approx(stages, n=5*length(stages))$y
+    stg_small = stages_interp
+    er_small = approx(stg, er, xout=stages_interp)$y
+    er_up_small = approx(stg, er_up, xout=stages_interp)$y
+    er_lo_small = approx(stg, er_lo, xout=stages_interp)$y
+    stg_conv_1_small = stages_interp
+    stg_conv_2_small = stages_interp
+    er_conv_1_small = approx(stg_conv_1, er_conv_1, xout=stages_interp)$y
+    er_conv_2_small = approx(stg_conv_2, er_conv_2, xout=stages_interp)$y
 
     #
     # Plot the data
