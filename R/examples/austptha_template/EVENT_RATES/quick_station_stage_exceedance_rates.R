@@ -90,6 +90,15 @@ quick_source_deagg<-function(lon, lat){
     ers_lo = ncvar_get(fid, 'variable_mu_stochastic_slip_rate_lower_ci', start=c(1,ni), count=c(-1,1))
     nc_close(fid)
 
+    # Reduce the size of some lines that occur in the plot
+    stg_small = stages
+    er_small = approx(stg, er, xout=stages)$y
+    er_up_small = approx(stg, er_up, xout=stages)$y
+    er_lo_small = approx(stg, er_lo, xout=stages)$y
+    stg_conv_1_small = stages
+    stg_conv_2_small = stages
+    er_conv_1_small = approx(stg_conv_1, er_conv_1, xout=stages)$y
+    er_conv_2_small = approx(stg_conv_2, er_conv_2, xout=stages)$y
 
     #
     # Plot the data
@@ -97,17 +106,17 @@ quick_source_deagg<-function(lon, lat){
     plot_stage_vs_rate<-function(){
         xmax = max(stg*(er>0), na.rm=TRUE)
         ylim = c(1e-05, max(max(er), 1))
-        plot(stg, er, t='l', log='xy', 
-            xlim=c(min(0.01, max(xmax-0.005, 1.0e-05)), xmax),
+        plot(stg_small, er_small, t='l', log='xy', 
+            xlim=c(min(0.02, max(xmax-0.005, 1.0e-05)), xmax),
             ylim=ylim,
             xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
         abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
         abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), lty='dotted', col='brown')
-        points(stg, er_up, t='l', col='red')
-        points(stg, er_lo, t='l', col='red')
+        points(stg_small, er_up_small, t='l', col='red')
+        points(stg_small, er_lo_small, t='l', col='red')
         title(paste0('Stage-vs-exceedance-rate @ (lon=', round(hp$lon[ni],3), ', lat=', 
             round(hp$lat[ni], 2), ', elev=', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
-            ') \n (Lines and points should overlap everywhere -- if they do not, avoid use and contact the PTHA maintainer)'))
+            ') \n (Lines and points should overlap)'))
 
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
@@ -121,14 +130,14 @@ quick_source_deagg<-function(lon, lat){
    
         # Add convergence check information 
         
-        plot(stg, er, t='l', log='xy', 
-            xlim=c(min(0.01, max(xmax-0.005, 1.0e-05)), xmax),
+        plot(stg_small, er_small, t='l', log='xy', 
+            xlim=c(min(0.02, max(xmax-0.005, 1.0e-05)), xmax),
             ylim=ylim,
             xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
         abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
         abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), lty='dotted', col='brown')
-        points(stg_conv_1, er_conv_1, t='l', col='orange')
-        points(stg_conv_2, er_conv_2, t='l', col='red')
+        points(stg_conv_1_small, er_conv_1_small, t='l', col='orange')
+        points(stg_conv_2_small, er_conv_2_small, t='l', col='red')
         title(paste0(
             'The convergence_check1 and convergence_check2 curves are made using half the data each. They should agree fairly well \n except for rare events. Where they disagree significantly, the rates should be considered unreliable (i.e. avoid use)'))
 
@@ -235,16 +244,16 @@ quick_source_deagg<-function(lon, lat){
             for(i in 1:min(length(m1), 3)){
                 # Name of source-zone
                 sz = rate_by_source[m1[i], 1]
-                rate_by_Mw = peak_stage_magnitude_summary(stage_threshold, sz) 
+                rate_by_Mw = peak_stage_magnitude_summary(stage_threshold, sz)
                 dotchart(rate_by_Mw$rate_exceeding,
                     labels=paste0(rate_by_Mw$Mw, ' (', round(rate_by_Mw$fraction_events*100, 1), ')'),
                     xlab='Rate > stage_threshold (events/year) with 95% CI', ylab='', 
                     pch=19, xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
                 points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
-                mtext(side=2, 'Magnitude, fixed mu, (% of scenarios > stage_threshold)', line=2.3, cex=0.5)
-                title(paste0(sz, ': Rate of events of each magnitude (fixed_mu) \n that are > stage_threshold (', signif(stage_threshold, 2), 
-                    ')'))
+                mtext(side=2, paste0('Magnitude with fixed mu'), line=2.3, cex=0.7)
+                title(paste0(sz, ': Rate of events of each magnitude (fixed_mu) \n with peak stage > ', 
+                    signif(stage_threshold,2), 'm'))
             }
         }
     }
