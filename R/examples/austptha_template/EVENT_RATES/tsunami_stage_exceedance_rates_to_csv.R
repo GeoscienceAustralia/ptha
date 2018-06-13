@@ -14,14 +14,18 @@ value_type = c('', '_upper_ci', '_lower_ci')
 # return a single type, defined here
 model_for_shapefile = 'variable_mu_stochastic_slip_stage'
 
-input_file = commandArgs(trailingOnly=TRUE)[1]
-if(!is.na(input_file)){
-    if(!file.exists(input_file)){
-        stop(paste0('The following input file does not exist. Check the file name spelling. ', input_file))
-    }
-}else{
-    stop('Must provide input file as command line argument, e.g. \n Rscript "tsunami_stage_exceedance_rate_global.nc" ')
-}
+input_file = 'tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc'
+output_dir = 'g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/'
+
+
+#input_file = commandArgs(trailingOnly=TRUE)[1]
+#if(!is.na(input_file)){
+#    if(!file.exists(input_file)){
+#        stop(paste0('The following input file does not exist. Check the file name spelling. ', input_file))
+#    }
+#}else{
+#    stop('Must provide input file as command line argument, e.g. \n Rscript "tsunami_stage_exceedance_rate_global.nc" ')
+#}
 
 library(rptha)
 
@@ -69,7 +73,7 @@ output$gaugeID = round(output$gaugeID, 1)
 output_signif = output 
 output_signif[,5:ncol(output)] = signif(output[,5:ncol(output)], 3)
 write.csv(output_signif, 
-    paste0('tsunami_stages_at_fixed_return_periods.csv'),
+    paste0(output_dir, 'tsunami_stages_at_fixed_return_periods.csv'),
     row.names=FALSE)
 
 nc_close(fid)
@@ -96,7 +100,8 @@ store_as_shapefile<-function(output, name){
     output_sp = SpatialPointsDataFrame(coords=output[,c('lon', 'lat')], 
         data=output, proj4string=CRS("+init=epsg:4326"))
 
-    writeOGR(output_sp, dsn=name, layer=name, driver='ESRI Shapefile', overwrite=TRUE)
+    writeOGR(output_sp, dsn=paste0(output_dir, name), layer=name, 
+        driver='ESRI Shapefile', overwrite=TRUE)
 
 }
 store_as_shapefile(output_signif, 'tsunami_stages_at_fixed_return_periods')
@@ -117,7 +122,7 @@ if(adjust_using_greens_law){
     output_greens_law_signif = output_greens_law
     output_greens_law_signif[,5:ncol(output)] = signif(output_greens_law[,5:ncol(output)], 3)
     write.csv(output_greens_law_signif, 
-        paste0('tsunami_stages_greens_law_to_1m_at_fixed_return_periods.csv'),
+        paste0(output_dir, 'tsunami_stages_greens_law_to_1m_at_fixed_return_periods.csv'),
         row.names=FALSE)
     store_as_shapefile(output_greens_law_signif, 'tsunami_stages_greens_law_to_1m_at_fixed_return_periods')
 }
