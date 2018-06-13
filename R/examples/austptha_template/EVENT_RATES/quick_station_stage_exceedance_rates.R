@@ -91,6 +91,7 @@ quick_source_deagg<-function(lon, lat){
     nc_close(fid)
 
     # Reduce the size of some lines that occur in the plot
+    # This reduces the file size, important if we distribute many
     stages_interp = approx(stages, n=5*length(stages))$y
     stg_small = stages_interp
     er_small = approx(stg, er, xout=stages_interp)$y
@@ -117,7 +118,7 @@ quick_source_deagg<-function(lon, lat){
         points(stg_small, er_lo_small, t='l', col='red')
         title(paste0('Stage-vs-exceedance-rate @ (lon=', round(hp$lon[ni],3), ', lat=', 
             round(hp$lat[ni], 2), ', elev=', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
-            ') \n (Lines and points should overlap)'))
+            ') \n (Lines and points should overlap -- if they differ, contact the PTHA maintainer!)'))
 
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
