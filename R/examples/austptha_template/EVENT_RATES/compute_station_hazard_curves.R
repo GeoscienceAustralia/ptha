@@ -14,6 +14,11 @@ source('config.R', local=config)
 # INPUTS
 #
 
+# By default run all source zones. But if the following variable is FALSE,
+# then only run those for which the function check_if_file_is_ok (below)
+# returns FALSE
+run_all_source_zones = TRUE
+
 # NetCDF files with uniform slip max_stage for every point, and also event
 # rates
 all_source_uniform_slip_tsunami = config$all_source_uniform_slip_tsunami
@@ -68,6 +73,36 @@ read_lon_lat_elev<-function(nc_file){
     output = data.frame(lon=lon, lat=lat, elev=elev, gaugeID = gaugeID)
 
     return(output)
+}
+
+#
+# For the output files, check that rows that begin with NA also end with NA.
+# An early version of the code had a bug here, which only affected small source-zones.
+# Using this function I could correct the bug only in affected files, which saved
+# a lot of run time
+#
+check_if_file_is_ok<-function(uniform_slip_tsunami_file){
+
+    # Make name for output file
+    source_name = basename(dirname(dirname(uniform_slip_tsunami_file)))
+    sourcename_dot_nc = paste0(source_name, '.nc')
+    nc_file = paste0(
+        dirname(uniform_slip_tsunami_file), '/',
+        'tsunami_stage_exceedance_rates_', sourcename_dot_nc)
+
+    if(!exists(nc_file)) return(FALSE)
+
+    fid = nc_open(nc_file, readunlim=FALSE)
+    rts = ncvar_get(fid, 'variable_mu_stochastic_slip_rate')
+    k1 = which(!is.finite(rts[1,]))
+    k2 = which(!is.finite(rts[100,]))
+    nc_close(fid)
+    if(setequal(k1, k2)){
+        file_ok = TRUE
+    }else{
+        file_ok = FALSE
+    }
+    return(file_ok)
 }
 
 
@@ -575,6 +610,12 @@ for(i in 1:length(source_names)){
     stochastic_slip_tsunami_file = all_source_stochastic_slip_tsunami[i]
     variable_uniform_slip_tsunami_file = all_source_variable_uniform_slip_tsunami[i]
 
+    if(!run_all_source_zones){
+        # Call a function to check if the file is ok. If it is ok, then go to
+        # the next source.
+        is_done = check_if_file_is_ok(uniform_slip_tsunami_file)
+        if(is_done) next
+    }
 
     # Get uniform slip outputs
     uniform_slip_rates = source_zone_stage_exceedance_rates(
