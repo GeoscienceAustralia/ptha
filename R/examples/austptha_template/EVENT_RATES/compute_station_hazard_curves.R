@@ -90,7 +90,7 @@ check_if_file_is_ok<-function(uniform_slip_tsunami_file){
         dirname(uniform_slip_tsunami_file), '/',
         'tsunami_stage_exceedance_rates_', sourcename_dot_nc)
 
-    if(!exists(nc_file)) return(FALSE)
+    if(!file.exists(nc_file)) return(FALSE)
 
     fid = nc_open(nc_file, readunlim=FALSE)
     rts = ncvar_get(fid, 'variable_mu_stochastic_slip_rate')
