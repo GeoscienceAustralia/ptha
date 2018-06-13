@@ -72,6 +72,14 @@ quick_source_deagg<-function(lon, lat){
     er = cumsum(stage_rate_all$event_rate[odr])
     er_up = cumsum(stage_rate_all$event_rate_upper[odr])
     er_lo = cumsum(stage_rate_all$event_rate_lower[odr])
+    
+    # Convergence check
+    s1 = seq(1, length(odr), by=2)
+    s2 = seq(2, length(odr), by=2)
+    stg_conv_1 = stage_rate_all$peak_stage[odr[s1]]
+    stg_conv_2 = stage_rate_all$peak_stage[odr[s2]]
+    er_conv_1 = cumsum(stage_rate_all$event_rate[odr[s1]]) * 2
+    er_conv_2 = cumsum(stage_rate_all$event_rate[odr[s2]]) * 2
 
     # We will compare with the values in the file
     fid = nc_open('tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc', 
@@ -88,24 +96,46 @@ quick_source_deagg<-function(lon, lat){
     #
     plot_stage_vs_rate<-function(){
         xmax = max(stg*(er>0), na.rm=TRUE)
-        plot(stg, er, t='l', log='xy', xlim=c(min(0.01, max(xmax-0.005, 1.0e-05)), xmax),
+        ylim = c(1e-05, max(max(er), 1))
+        plot(stg, er, t='l', log='xy', 
+            xlim=c(min(0.01, max(xmax-0.005, 1.0e-05)), xmax),
+            ylim=ylim,
             xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
         grid(col='brown')
         points(stg, er_up, t='l', col='red')
         points(stg, er_lo, t='l', col='red')
-        title(paste0('Stage-vs-exceedance rate @ (', round(hp$lon[ni],3), ', ', 
+        title(paste0('Stage-vs-exceedance-rate @ (', round(hp$lon[ni],3), ', ', 
             round(hp$lat[ni], 2), ', ', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
-            ') \n (Lines and points should overlap)'))
+            ') \n (Lines and points should overlap everywhere)'))
 
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
         points(stages, ers_lo, pch=19, cex=1.0, col='pink')
 
-        legend('bottomleft', 
+        legend('topright', 
             c('Peak stage exceedance rate (mean over all logic-tree branches)',
               '95% credible interval'),
             col=c('brown', 'pink'),
-            pch=c(19, 19))
+            pch=c(19, 19), lty=c(NA, NA))
+   
+        # Add convergence check information 
+        
+        plot(stg, er, t='l', log='xy', 
+            xlim=c(min(0.01, max(xmax-0.005, 1.0e-05)), xmax),
+            ylim=ylim,
+            xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
+        grid(col='brown')
+        points(stg_conv_1, er_conv_1, t='l', col='orange')
+        points(stg_conv_2, er_conv_2, t='l', col='red')
+        title(paste0('Convergence check of Stage-vs-exceedance-rate @ (', round(hp$lon[ni],3), ', ', 
+            round(hp$lat[ni], 2), ', ', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
+            '). The convergence_check1 and convergence_check2 curves are made using half the data each. They should agree fairly well \n except for rare events. Where they disagree significantly, the rates should be considered unreliable (i.e. avoid use)'))
+
+        legend('topright', 
+            c('Peak stage exceedance rate (mean over all logic-tree branches)',
+              'convergence_check1', 'convergence_check2'),
+            col=c('black', 'orange', 'red'),
+            pch=c(NA, NA, NA), lty=c(1, 1, 1))
     }
     
 
