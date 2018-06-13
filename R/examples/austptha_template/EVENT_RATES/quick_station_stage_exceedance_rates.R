@@ -104,9 +104,9 @@ quick_source_deagg<-function(lon, lat){
         grid(col='brown')
         points(stg, er_up, t='l', col='red')
         points(stg, er_lo, t='l', col='red')
-        title(paste0('Stage-vs-exceedance-rate @ (', round(hp$lon[ni],3), ', ', 
-            round(hp$lat[ni], 2), ', ', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
-            ') \n (Lines and points should overlap everywhere)'))
+        title(paste0('Stage-vs-exceedance-rate @ (lon=', round(hp$lon[ni],3), ', lat=', 
+            round(hp$lat[ni], 2), ', elev=', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
+            ') \n (Lines and points should overlap everywhere -- or there is a database mistake!)'))
 
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
@@ -116,7 +116,7 @@ quick_source_deagg<-function(lon, lat){
             c('Peak stage exceedance rate (mean over all logic-tree branches)',
               '95% credible interval'),
             col=c('brown', 'pink'),
-            pch=c(19, 19), lty=c(NA, NA))
+            pch=c(19, 19), bg='white')
    
         # Add convergence check information 
         
@@ -127,15 +127,14 @@ quick_source_deagg<-function(lon, lat){
         grid(col='brown')
         points(stg_conv_1, er_conv_1, t='l', col='orange')
         points(stg_conv_2, er_conv_2, t='l', col='red')
-        title(paste0('Convergence check of Stage-vs-exceedance-rate @ (', round(hp$lon[ni],3), ', ', 
-            round(hp$lat[ni], 2), ', ', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
-            '). The convergence_check1 and convergence_check2 curves are made using half the data each. They should agree fairly well \n except for rare events. Where they disagree significantly, the rates should be considered unreliable (i.e. avoid use)'))
+        title(paste0(
+            'The convergence_check1 and convergence_check2 curves are made using half the data each. They should agree fairly well \n except for rare events. Where they disagree significantly, the rates should be considered unreliable (i.e. avoid use)'))
 
         legend('topright', 
             c('Peak stage exceedance rate (mean over all logic-tree branches)',
               'convergence_check1', 'convergence_check2'),
             col=c('black', 'orange', 'red'),
-            pch=c(NA, NA, NA), lty=c(1, 1, 1))
+            lty=c(1, 1, 1), bg='white')
     }
     
 
@@ -241,7 +240,7 @@ quick_source_deagg<-function(lon, lat){
                     pch=19, xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
                 points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
-                mtext(side=2, 'Magnitude, fixed mu, (% of scenarios > stage_threshold)', line=2.3)
+                mtext(side=2, 'Magnitude, fixed mu, (% of scenarios > stage_threshold)', line=2.3, cex=0.5)
                 title(paste0(sz, ': Rate of events of each magnitude (fixed_mu) \n that are > stage_threshold (', signif(stage_threshold, 2), 
                     ')'))
             }
