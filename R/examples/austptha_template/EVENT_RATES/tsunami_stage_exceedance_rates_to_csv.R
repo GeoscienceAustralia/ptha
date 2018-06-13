@@ -15,7 +15,7 @@ value_type = c('', '_upper_ci', '_lower_ci')
 model_for_shapefile = 'variable_mu_stochastic_slip_stage'
 
 input_file = 'tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc'
-output_dir = 'g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/'
+output_dir = '/g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/'
 
 
 #input_file = commandArgs(trailingOnly=TRUE)[1]
