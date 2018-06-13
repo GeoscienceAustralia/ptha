@@ -106,7 +106,7 @@ quick_source_deagg<-function(lon, lat){
         points(stg, er_lo, t='l', col='red')
         title(paste0('Stage-vs-exceedance-rate @ (lon=', round(hp$lon[ni],3), ', lat=', 
             round(hp$lat[ni], 2), ', elev=', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
-            ') \n (Lines and points should overlap everywhere -- or there is a database mistake!)'))
+            ') \n (Lines and points should overlap everywhere -- if they do not, avoid use and contact the PTHA maintainer)'))
 
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
