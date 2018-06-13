@@ -101,7 +101,8 @@ quick_source_deagg<-function(lon, lat){
             xlim=c(min(0.01, max(xmax-0.005, 1.0e-05)), xmax),
             ylim=ylim,
             xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
-        grid(col='brown')
+        abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
+        abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), lty='dotted', col='brown')
         points(stg, er_up, t='l', col='red')
         points(stg, er_lo, t='l', col='red')
         title(paste0('Stage-vs-exceedance-rate @ (lon=', round(hp$lon[ni],3), ', lat=', 
@@ -124,7 +125,8 @@ quick_source_deagg<-function(lon, lat){
             xlim=c(min(0.01, max(xmax-0.005, 1.0e-05)), xmax),
             ylim=ylim,
             xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
-        grid(col='brown')
+        abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
+        abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), lty='dotted', col='brown')
         points(stg_conv_1, er_conv_1, t='l', col='orange')
         points(stg_conv_2, er_conv_2, t='l', col='red')
         title(paste0(
