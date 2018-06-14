@@ -5,6 +5,33 @@
 # but is useful to cross check the other results
 #
 
+.preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
+.preamble_text = paste0("This file gives a summary of the Geoscience Australia's 2018 PTHA results at a single station. See the README on: \n",
+                       '    https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access \n',
+                       'for further information on accessing the results. \n',
+                       '\n',
+                       'The plots are: \n',
+                       '\n',
+                       '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate, with 95% credible intervals describing the uncertainty. \n',
+                       '\n',
+                       '    2) A "convergence check" of the above hazard curve. The PTHA hazard result rely on simulating a large number of random \n ',
+                       '       earthquake-tsunami events. For sufficiently rare events (less frequent than some exceedance rate, such as 1/10000 years) there \n',
+                       '       will be few random events, and the exceedance rates become unreliable. To help users judge the reliability of the rates we \n',
+                       '       compare 2 hazard curves, each derived from half of the scenarios. \n',
+                       '\n',
+                       '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
+                       '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
+                       '       to highlight the most likely event magnitudes leading tsunami exceeding the peak-stage threshold'
+	)
+
+.plot_preamble<-function(){
+
+    plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
+    title(.preamble_title, cex=1.5)
+    text(0, 0.5, .preamble_text, pos=4)
+
+}
+
 
 quick_source_deagg<-function(lon, lat){
     #lon = 151.41
@@ -261,6 +288,7 @@ quick_source_deagg<-function(lon, lat){
     }
 
     pdf(paste0('station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
+    .plot_preamble()
     plot_stage_vs_rate()
     plot_deaggregation_summary(0.3)
     plot_deaggregation_summary(1.0)

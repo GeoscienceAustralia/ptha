@@ -189,13 +189,16 @@ initial_condition_240 = get_initial_condition_for_event(puysegur, 240, force_fil
 FIXME: To do -- I still need to make the data on NCI to facilitate this.
 
 The user must be aware that at some locations, some modelled waves will violate
-the assumptions underlying our linear tsunami model, or occur in regions where
-our coarse resolution model and bathymetric data cannot properly resolve the
-flow. This is increasingly likely close to the coast, both because the mean
-depth reduces, and the ratio of the wave height to the water depths increases.
-For modelling purposes we strongly encourage the use of points well offshore in
-deep water (preferably with wave heights of interest not exceeding a few
-percent of the water depth). 
+the assumptions underlying our linear tsunami model. Furthermore, in some
+regions our coarse resolution model (1 arc minute) and elevation data
+(GA250/GEBCO2014) may have insufficient resolution or accuracy to model the
+tsunami well. While we cannot a-priori identify such points, problems are most
+likely to arise close to the coast and in shallower waters. For modelling
+purposes we strongly encourage the use of points well offshore in deep water
+(preferably with wave heights of interest not exceeding a few percent of the
+water depth). To help ensure such points are available, the current PTHA
+includes points along a 1000m depth contour and gridded lon-lat points
+extending well offshore, in addition to the 100m depth contour points.
 
 
 ### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
