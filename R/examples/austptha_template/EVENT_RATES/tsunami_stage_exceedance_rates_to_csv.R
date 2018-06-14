@@ -108,9 +108,11 @@ store_as_shapefile<-function(output, name){
     output_sp = SpatialPointsDataFrame(coords=output[,c('lon', 'lat')], 
         data=output, proj4string=CRS("+init=epsg:4326"))
 
-    writeOGR(output_sp, dsn=paste0(output_dir, name), layer=name, 
+    shp_dsn = paste0(output_dir, name)
+    writeOGR(output_sp, dsn=shp_dsn, layer=name, 
         driver='ESRI Shapefile', overwrite=TRUE)
-
+    # Compress to zipfile
+    zip(paste0(shp_dsn, '.zip'), shp_dsn)
 }
 store_as_shapefile(output_signif, 'tsunami_stages_at_fixed_return_periods')
 

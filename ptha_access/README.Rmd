@@ -24,45 +24,39 @@ a csv file containing the data here: <http://dapds00.nci.org.au/thredds/fileServ
     * `lon`, `lat` giving the location in longitude/latitude (degrees). 
     * `elev` is the bathymetry at the station (negative = below MSL)
     * `gaugeID` is a real station ID
-    * multiple columns with names like `variable_mu_stochastic_slip_stage_XXXX` where XXXX is a number, and 1/XXXX is the exceedance rate. 
+    * multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance rate. 
 
-        These values corresponds to the tsunami peak-stage which has mean exceedance rate = 1/XXXX. For example, the column `variable_mu_stochastic_slip_stage_100` gives the tsunami peak-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
+        These values corresponds to the tsunami peak-stage which has mean exceedance rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami peak-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
    
-    * multiple columns with names like `variable_mu_stochastic_slip_stage_upper_ci_XXXX`. 
+    * multiple columns with names like `STAGE_upper_ci_XXXX`. 
     
         These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 97.5% quantile)
 
-    * multiple columns with names like `variable_mu_stochastic_slip_stage_lower_ci_XXXX`. 
+    * multiple columns with names like `STAGE_lower_ci_XXXX`. 
 
         These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 2.5% quantile)
 
-The unusual variable name (`variable_mu_stochastic_slip_stage_`) is used
-because the scenarios are constructed assuming depth-varying shear modulus on
-subduction zones (`variable_mu`), and also treat earthquake slip as random and
-spatially heterogeneous (`stochastic_slip`). 
-
 Similar data is available in a shapefile, which can be downloaded here:
 <http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods/catalog.xml>
-However, due to the 10 character limit on shapefile attribute names, the attributes are named as:
+However, due to the 10 character limit on shapefile attribute names, the attributes are renamed in some instances:
     * `lon`, `lat` giving the location in longitude/latitude (degrees). 
     * `elev` is the bathymetry at the station (negative = below MSL)
     * `gaugeID` is a real station ID
-    * `S_XXXX' is the same as `variable_mu_stochastic_slip_stage_XXXX` described above
-    * `STG_XXXX' is the same as `variable_mu_stochastic_slip_stage_XXXX` described above
-    * `STGu_XXXX' is the same as `variable_mu_stochastic_slip_stage_upper_ci_XXXX` described above
-    * `STGl_XXXX' is the same as `variable_mu_stochastic_slip_stage_lower_ci_XXXX` described above
+    * `STG_XXXX' is the same as `STAGE_XXXX` described above
+    * `STGu_XXXX' is the same as `STAGE_upper_ci_XXXX` described above
+    * `STGl_XXXX' is the same as `STAGE_lower_ci_XXXX` described above
 
 At most locations you will find there is high uncertainty in the peak tsunami
 size at various exceedance rates. This is mainly caused by the fact that at
 most locations, we are very uncertain of how often large subduction earthquakes
 occur. A more detailed discussion of these topics can be found in the
-Australian Tsunami Hazard Modelling Guidelines, which are available here:
-<https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf>
+Australian Tsunami Hazard Modelling Guidelines, which are available here: 
+<https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf> 
 
 
 ## More detailed exceedance rate information for specific sites
 
-FIXME
+FIXME describe where to obtain q
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
