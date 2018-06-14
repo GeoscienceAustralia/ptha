@@ -3,7 +3,7 @@ suppressPackageStartupMessages(library(rgdal))
 #
 # Should we re-download all map data, even if the data is locally cached?
 #
-REFRESH_MAP = FALSE
+REFRESH_MAP = FALSE 
 
 #
 # All source names
@@ -13,12 +13,12 @@ source_names_all = c(
    'arutrough',
    'banda_detachment',
    'cascadia',
-   'flores',
+   'floreswetar',
    'hjort',
    'izumariana',
    'kermadectonga',
    'kurilsjapan',
-   'macquarienorth',
+   'macquarieislandnorth',
    'makran',
    'manokwari',
    'manus',
@@ -47,7 +47,7 @@ source_names_all = c(
    'southamerica',
    'sunda',
    'tanimbar',
-   'timor',
+   'timortrough',
    'tolo_thrust',
    'trobriand')
 

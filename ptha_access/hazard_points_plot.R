@@ -1,5 +1,6 @@
 suppressPackageStartupMessages(library(rgdal))
 suppressPackageStartupMessages(library(mapview))
+suppressPackageStartupMessages(library(leaflet))
 if(!exists('config_env')){
     config_env = new.env()
     source('R/config.R', local=config_env)

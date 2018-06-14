@@ -34,7 +34,7 @@ download_unit_source_grid_shapefile<-function(source_names_all,
         source_name = source_names_all[i]
         # Directory where we save the shapefile
         shp_dir = paste0(output_base_dir, source_name, '/EQ_SOURCE/unit_source_grid/')
-        dir.create(shp_dir, recursive=TRUE)
+        dir.create(shp_dir, recursive=TRUE, showWarnings=FALSE)
         download.file(all_shp_files[i], destfile = paste0(shp_dir, '/', basename(all_shp_files[i])))
         download.file(all_shx_files[i], destfile = paste0(shp_dir, '/', basename(all_shx_files[i])))
         download.file(all_prj_files[i], destfile = paste0(shp_dir, '/', basename(all_prj_files[i])))
@@ -67,7 +67,7 @@ download_unit_source_statistics_netcdf<-function(source_names_all,
 
         unit_source_file = all_unit_source_files[i]
         uss_dir = paste0(output_base_dir, source_name, '/TSUNAMI_EVENTS/')
-        dir.create(uss_dir, recursive=TRUE)
+        dir.create(uss_dir, recursive=TRUE, showWarnings=FALSE)
         download.file(unit_source_file, destfile = paste0(uss_dir, '/', basename(unit_source_file)))
 
     }

@@ -48,10 +48,10 @@ attributes are renamed in some instances compared with the csv above:
     * `STGl_XXXX' is the same as `STAGE_lower_ci_XXXX` described above
 
 At most locations you will find there is high uncertainty in the peak tsunami
-size at various exceedance rates. This is mainly caused by the fact that at
-most locations, we are very uncertain of how often large subduction earthquakes
-occur. A more detailed discussion of these topics can be found in the
-Australian Tsunami Hazard Modelling Guidelines, which are available here: 
+size for a given exceedance rates. This is mainly due to high uncertainty in
+the frequencies of high-magnitude subduction zone earthquakes. A more detailed
+discussion of these topics can be found in the Australian Tsunami Hazard
+Modelling Guidelines, which are available here:
 <https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf> 
 
 ## More detailed exceedance rate information for specific sites
@@ -148,11 +148,11 @@ source, after obtaining the code from Geoscience Australia's the `PTHA` github
 repository. See instructions at https://github.com/GeoscienceAustralia/ptha/R/README.md
 
 ### **Installing mapview***
-Finally you should install the `mapview` package (to enable some interactive plots shown below)
+Finally you should install the `mapview` package (to enable some interactive
+plots shown below)
 ```{r installme, eval=FALSE}
 install.packages('mapview')
 ```
-
 
 ## **Unit tests**
 Assuming you have installed all the above dependencies, you can run the unit
