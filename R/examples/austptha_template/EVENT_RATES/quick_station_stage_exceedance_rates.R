@@ -6,7 +6,8 @@
 #
 
 .preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
-.preamble_text = paste0("This file gives a summary of the Geoscience Australia's 2018 PTHA results at a single station. See the README on: \n",
+.preamble_text = paste0('\n', 
+                       "This file gives a summary of the Geoscience Australia's 2018 PTHA results at a single station. See the README on: \n",
                        '    https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access \n',
                        'for further information on accessing the results and associated reports. Users should understand this material before using the results.\n',
                        '\n',
