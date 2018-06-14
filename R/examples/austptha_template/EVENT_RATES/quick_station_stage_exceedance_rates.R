@@ -16,14 +16,14 @@
                        '\n',
                        '    2) A "convergence check" of the above hazard curve. The PTHA hazard result rely on simulating a large number of random \n ',
                        '       earthquake-tsunami events. For sufficiently rare events (less frequent than some exceedance rate, such as 1/10000 years) there \n',
-                       '       will be few random events, and the exceedance rates become unreliable. To help users judge the reliability of the rates we \n',
-                       '       compare 2 hazard curves, each derived from half of the scenarios. \n',
+                       '       will be few random events, and the exceedance rates become sensitive to the "random details" of those events (i.e. less reliable).\n',
+                       '       To help users judge the reliability of the rates we compare 2 hazard curves, each derived from half of the scenarios. \n',
                        '\n',
                        '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
                        '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
-                       '       to highlight the most likely event magnitudes that cause tsunami above the peak-stage threshold.',
+                       '       to highlight the most likely event magnitudes that cause tsunami above the peak-stage threshold.\n',
                        '       These plots are useful for determining which source-zones and event magnitudes to focus on for scenario-based hazard studies. \n',
-                       '       Often hazard studies model events from the "most likely" few source-zones.\n',
+                       '       Often hazard studies model events from the "most likely" few source-zones.\n'
 	)
 
 .plot_preamble<-function(){
@@ -170,7 +170,7 @@ quick_source_deagg<-function(lon, lat){
         points(stg_conv_1_small, er_conv_1_small, t='l', col='orange')
         points(stg_conv_2_small, er_conv_2_small, t='l', col='red')
         title(paste0(
-            'The convergence_check1 and convergence_check2 curves are made using half the data each. They should agree fairly well \n except for rare events. Where they disagree significantly, the rates should be considered unreliable (i.e. avoid use)'))
+            'The convergence_check1 and convergence_check2 curves are made using half the model scenarios each. \n They should agree fairly well except for rare events.'))
 
         legend('topright', 
             c('Peak stage exceedance rate (mean over all logic-tree branches)',
@@ -240,7 +240,7 @@ quick_source_deagg<-function(lon, lat){
         }else{
 
             # Make an outer-margin
-            par(oma=c(4,0,0,0))
+            par(oma=c(5,0,0,0))
             par(mfrow=c(2,2))
 
             rate_by_source = aggregate(stage_rate_all$event_rate[k], 
@@ -289,13 +289,13 @@ quick_source_deagg<-function(lon, lat){
                     signif(stage_threshold,2), 'm'))
             }
 
-            mtext(text=paste0('In the plots containing rate vs magnitude, the black dots give the rate of events for each individual magnitude bin. \n',
-                              'The red dots give the 95% credible intervals. The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage\n',
-                              'of events with that magnitude that exceed the stage-threshold. If the latter percentage is reasonably high (e.g. > 20%), then it means \n',
-                              'that "typical" tsunamis with the specified magnitude can exceed the stage-threshold. However, if the percentage is low, it means that \n',
-                              'only "extreme" tsunami with that magnitude are exceeding the stage-threshold. In that case, users should be more careful in using the scenarios. \n',
-                              'With currently available data, we cannot strongly test the model performance for such unusual "extreme tsunamis", which by definition are rarely observed.') 
-                side=1, outer=TRUE)
+            peak_stage_text = paste0('stage=',signif(stage_threshold, 2), 'm')
+            mtext(text=paste0('In the plots containing rate vs magnitude, the black dots give the rate of events for each individual magnitude bin. The red dots give the 95% credible intervals.\n',
+                              'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. If the \n',
+                              'latter percentage is reasonably high (e.g. > 20%), then it means that "fairly typical" modelled tsunamis with the specified magnitude can exceed ', peak_stage_text, '\n', 
+                              'However, if the percentage is low, it means that only "extreme" modelled tsunamis with that magnitude are exceeding ', peak_stage_text, '. We suggest avoiding the latter\n',
+                              "case if possible. In general, we should be more skeptical about the model's representation of unusual or extreme events, as this is more difficult to test.\n"),
+                side=1, outer=TRUE, padj=0.85, adj=0.05, cex=0.9)
 
             # Back to default outer-margins
             par(oma=c(0,0,0,0))
