@@ -7,17 +7,17 @@
 
 .preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
 .preamble_text = paste0('\n', 
-                       "This file gives a summary of the Geoscience Australia's 2018 PTHA results at a single station. See the README on: \n",
+                       "This file gives a summary of the Geoscience Australia's 2018 PTHA results at a single station. See the README on:\n",
                        '    https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access \n',
                        'for further information on accessing the results and associated reports. Users should understand this material before using the results.\n',
                        '\n',
                        'The plots are: \n',
                        '\n',
                        '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate at the specified hazard point location, \n',
-                       '       with 95% credible intervals describing the uncertainty. Note the peak-tsunami-stage is the defined as the maximum water level \n ',
+                       '       with 95% credible intervals describing the uncertainty. Note the peak-tsunami-stage is the defined as the maximum water level\n ',
                        '       attained by the tsunami (above mean-sea-level, ignorning tides)\n',
                        '\n',
-                       '    2) A "convergence check" of the above hazard curve. The PTHA hazard result rely on simulating a large number of random \n ',
+                       '    2) A "convergence check" of the above hazard curve. The PTHA hazard result rely on simulating a large number of random\n',
                        '       earthquake-tsunami scenarios. At sufficiently rare exceedance rates (less frequent than some particular value, e.g. 1/10000 years)\n', 
                        '       there will be few random model scenarios, so exceedance rates become sensitive to the "random details" of those scenarios (i.e. less\n', 
                        '       reliable). To help users judge when this happens we compare 2 hazard curves, each derived from half the scenarios. \n',
@@ -46,7 +46,7 @@
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0, 0.5, .preamble_text, pos=4)
+    text(0, 0.7, .preamble_text, pos=4)
 
 }
 
