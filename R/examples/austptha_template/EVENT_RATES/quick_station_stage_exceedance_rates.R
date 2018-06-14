@@ -26,15 +26,17 @@
                        '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
                        '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
                        '\n',
-                       'These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.\n',
+                       'These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.\n'
+)
+.preamble_text2 = paste0('\n',
                        '\n',
                        'Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
                        'magnitude" reported in Figures 3-4-5. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
                        'depth-dependent shear modulus on subduction zones, based on Bilek and Lay (1999). See the report for further information. \n',
                        'You should consider this if comparing events of a particular magnitude with historical data, in a situation where the shear \n', 
-                       'modulus might differ from 30 GPa (for thrust focal mechanisms) or 60 GPa (for normal focal mechanisms) \n'
-)
-.preamble_text2 = paste0('\n',
+                       'modulus might differ from 30 GPa (for thrust focal mechanisms only). For normal focal mechanisms, the current PTHA always \n',
+                       'uses a shear modulus of 60 GPa \n',
+                       '\n',
                        '\n',
                        'A copy of the script used to make this plot can be found at:\n',
                        '    https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template/EVENT_RATES\n',
