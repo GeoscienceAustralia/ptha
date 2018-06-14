@@ -29,10 +29,13 @@
                        '       Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
                        '       magnitude" reported on this figure. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
                        '       depth-dependent shear modulus on subduction zones, following Bilek and Lay (1999). See the report for further information. \n',
+                       '       You should consider this if comparing events with historical data in a situation where the shear modulus might differ from \n',
+                       '       30GPA (for thrust focal mechanmisms) or 60 GPA (for normal focal mechanisms) \n',
                        '\n',
                        '\n',
                        'A copy of the script used to make this plot can be found at:\n',
-                       'https://github.com/GeoscienceAustralia/ptha/blob/master/R/examples/austptha_template/EVENT_RATES/quick_station_stage_exceedance_rates.R \n',
+                       '  https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template/EVENT_RATES\n',
+                       'in the file named "quick_station_stage_exceedance_rates.R" \n',
                        'Other codes used to develop the PTHA can be found in the same git repository. \n',
                        '\n',
                        '\n',
@@ -46,7 +49,7 @@
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0, 0.2, .preamble_text, pos=4)
+    text(0, 0.05, .preamble_text, pos=4, cex=0.9)
 
 }
 
