@@ -13,6 +13,10 @@ value_type = c('', '_upper_ci', '_lower_ci')
 # name-mangling, caused by the format's limit to short attribute names. So only
 # return a single type, defined here
 model_for_shapefile = 'variable_mu_stochastic_slip_stage'
+# To avoid putting the above name in the csv file (which is so specific it will sound
+# strange to inexperienced users, who are the target of this csv output), we replace
+# column names containing that with the following variable in the csv file
+substitute_name_model_for_csv = 'STAGE'
 
 input_file = 'tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc'
 output_dir = '/g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/'
@@ -72,6 +76,7 @@ output$gaugeID = round(output$gaugeID, 1)
 # Store hazard info to 3 significant figures
 output_signif = output 
 output_signif[,5:ncol(output)] = signif(output[,5:ncol(output)], 3)
+names(output_signif) = gsub(substitute_name_model_for_csv, model_for_shapefile, names(output_signif))
 write.csv(output_signif, 
     paste0(output_dir, 'tsunami_stages_at_fixed_return_periods.csv'),
     row.names=FALSE)

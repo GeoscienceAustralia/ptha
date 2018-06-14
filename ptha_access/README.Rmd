@@ -1,4 +1,4 @@
-# **Codes to access the 2018 Australian PTHA results**
+# **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment results**
 
 **Currently these tools are in development, and the study is not complete.** 
 * **The data and models referred to below are placeholder examples for internal testing purposes only,
@@ -6,23 +6,111 @@ and are not to be used in any real application.**
 * **The interfaces are expected to change.**
 * **The code should be adjusted to download all data from the NCI [including source-zones + hazard points], to ensure consistency**
 
-These codes can be used to access the 2018 Australian PTHA results, developed
-by Geoscience Australia.
+This document explains how to access the 2018 Probabilistic Tsunami Hazard
+Assessement (PTHA) results. 
+
+# Obtaining basic tsunami hazard information.
+
+## Tsunami peak-stage exceedance rates at sites around Australia
+
+The tsunami 'peak-stage' is the maximum water-level that a particular tsunami
+attains in our analysis. Because we ignore tidal variations and assume a
+constant mean-sea-level (MSL=0), this is equivalent to the maximum elevation of
+the tsunami wave above MSL.
+
+If you only wish to look at the locations of offshore hazard points, with basic
+tsunami peak-stage exceedance rate information, then you can simply download
+a csv file containing the data here: <http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv>. This csv file contains columns:
+    * `lon`, `lat` giving the location in longitude/latitude (degrees). 
+    * `elev` is the bathymetry at the station (negative = below MSL)
+    * `gaugeID` is a real station ID
+    * multiple columns with names like `variable_mu_stochastic_slip_stage_XXXX` where XXXX is a number, and 1/XXXX is the exceedance rate. 
+
+        These values corresponds to the tsunami peak-stage which has mean exceedance rate = 1/XXXX. For example, the column `variable_mu_stochastic_slip_stage_100` gives the tsunami peak-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
+   
+    * multiple columns with names like `variable_mu_stochastic_slip_stage_upper_ci_XXXX`. 
+    
+        These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 97.5% quantile)
+
+    * multiple columns with names like `variable_mu_stochastic_slip_stage_lower_ci_XXXX`. 
+
+        These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 2.5% quantile)
+
+The unusual variable name (`variable_mu_stochastic_slip_stage_`) is used
+because the scenarios are constructed assuming depth-varying shear modulus on
+subduction zones (`variable_mu`), and also treat earthquake slip as random and
+spatially heterogeneous (`stochastic_slip`). 
+
+Similar data is available in a shapefile, which can be downloaded here:
+<http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods/catalog.xml>
+However, due to the 10 character limit on shapefile attribute names, the attributes are named as:
+    * `lon`, `lat` giving the location in longitude/latitude (degrees). 
+    * `elev` is the bathymetry at the station (negative = below MSL)
+    * `gaugeID` is a real station ID
+    * `S_XXXX' is the same as `variable_mu_stochastic_slip_stage_XXXX` described above
+    * `STG_XXXX' is the same as `variable_mu_stochastic_slip_stage_XXXX` described above
+    * `STGu_XXXX' is the same as `variable_mu_stochastic_slip_stage_upper_ci_XXXX` described above
+    * `STGl_XXXX' is the same as `variable_mu_stochastic_slip_stage_lower_ci_XXXX` described above
+
+At most locations you will find there is high uncertainty in the peak tsunami
+size at various exceedance rates. This is mainly caused by the fact that at
+most locations, we are very uncertain of how often large subduction earthquakes
+occur. A more detailed discussion of these topics can be found in the
+Australian Tsunami Hazard Modelling Guidelines, which are available here:
+<https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf>
+
+
+## More detailed exceedance rate information for specific sites
+
+FIXME
+
+# Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
+
+
+
 
 ## **Installation**
 
 You need the program R installed, as well as the packages `raster`, `rgdal`,
-and `mapview`. If you have R installed, then the latter can be obtained by
-typing the following in R:
+and `mapview`. 
+
+If you have R installed, then the latter can be obtained by typing the
+following in R:
 ```{r installme, eval=FALSE}
 install.packages(c('raster', 'rgdal', 'mapview'))
 ```
 You only need to do this once (usually just after installing R).
 
+
+### **Getting a recent version of netcdf**
+
+You also need to install the R package `ncdf4`. Unfortunately this needs to be
+built with a reasonably recent version of netcdf-c, due to a bug in netcdf
+versions prior to 4.6.1 (released in early 2018) that prevented correct remote
+reading of long character strings. At the time of writing (mid 2018), most
+users will have to install netcdf from source to access such a recent version.
+Source-code for a recent release of netcdf-c can be obtained from the netcdf
+github page: <https://github.com/Unidata/netcdf-c/releases>. You then need to
+follow their instructions to get it installed.
+
+Supposing you succeed in getting netcdf installed, next you need to install R's
+`ncdf4` package, and specifically tell it to use the newly installed netcdf.
+This can be done by downloading the ncdf4 sources here <https://cran.r-project.org/web/packages/ncdf4/index.html>,
+and then running a command similar to the following, in the directory where you
+have downloaded the `ncdf4` source package:
+
+    R CMD INSTALL ncdf4_1.16.tar.gz --configure-args="--with-nc-config=/home/username/LocalInstalls/netcdf_for_ptha/install/bin/nc-config"
+On ubuntu you might need to prepend `sudo` to the above command, depending on
+where you do the installation.  Note you might need to adjust the numbers in
+the `ncdf4_1.16.tar.gz` term above to match those of the package you download.
+Furthermore, you will need to change the path to nc-config to match the path to
+a version of nc-config > 4.6.1.
+
 Then, copy the `ptha_access` folder to your computer. The location should not
 matter. To run the code, simply open an R session in the `ptha_access`
 directory, and type the required instructions as explained below.
 
+Finally you need to install the 
 
 ### ***Extra dependencies to extract tsunami time-series***
 
