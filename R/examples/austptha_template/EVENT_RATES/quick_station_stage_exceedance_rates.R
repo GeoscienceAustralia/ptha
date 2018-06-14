@@ -23,8 +23,7 @@
                        '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
                        '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
                        '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
-                       '       These plots are useful for determining which scenarios to focus on for scenario-based hazard studies. \n',
-                       '       Often hazard studies simulate scenario from the "most likely" few source-zones. \n',
+                       '       These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.',
                        '\n'
 	)
 
