@@ -36,9 +36,10 @@ a csv file containing the data here: <http://dapds00.nci.org.au/thredds/fileServ
 
         These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 2.5% quantile)
 
-Similar data is available in a shapefile, which can be downloaded here:
-<http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods/catalog.xml>
-However, due to the 10 character limit on shapefile attribute names, the attributes are renamed in some instances:
+Similar data is available in a shapefile, which can be downloaded here (inside a zip file):
+<http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip>
+Because there is a 10 character limit on shapefile attribute names, the
+attributes are renamed in some instances compared with the csv above:
     * `lon`, `lat` giving the location in longitude/latitude (degrees). 
     * `elev` is the bathymetry at the station (negative = below MSL)
     * `gaugeID` is a real station ID
@@ -53,45 +54,59 @@ occur. A more detailed discussion of these topics can be found in the
 Australian Tsunami Hazard Modelling Guidelines, which are available here: 
 <https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf> 
 
-
 ## More detailed exceedance rate information for specific sites
 
-FIXME describe where to obtain q
+FIXME describe where to obtain the pdf files containing the summary information
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
+It is possible to obtain initial conditions and time-series for every event in
+our analysis.  Combined with the exceedance rate modelling, such inputs can be
+used to drive local scale tsunami hazard assessments (i.e. studies which model
+actual tsunami inundation).
 
+However, doing this requires interacting with our files via the NCI server,
+generally using R code. The steps are described below. Unfortunately they may
+be difficult for users who are inexperienced in scientific programming and
+linux (and even more advanced users may have difficulties, e.g. in building
+netcdf from source). Users doing hazard studies in Australia should
+alternatively contact Geoscience Australia directly for assistence in obtaining
+the information they require (gareth.davies@ga.gov.au). 
 
 
 ## **Installation**
 
-You need the program R installed, as well as the packages `raster`, `rgdal`,
-and `mapview`. 
-
-If you have R installed, then the latter can be obtained by typing the
-following in R:
-```{r installme, eval=FALSE}
-install.packages(c('raster', 'rgdal', 'mapview'))
-```
-You only need to do this once (usually just after installing R).
+You need the program R installed (see <https://www.r-project.org/>).
 
 
 ### **Getting a recent version of netcdf**
 
-You also need to install the R package `ncdf4`. Unfortunately this needs to be
-built with a reasonably recent version of netcdf-c, due to a bug in netcdf
-versions prior to 4.6.1 (released in early 2018) that prevented correct remote
-reading of long character strings. At the time of writing (mid 2018), most
-users will have to install netcdf from source to access such a recent version.
-Source-code for a recent release of netcdf-c can be obtained from the netcdf
-github page: <https://github.com/Unidata/netcdf-c/releases>. You then need to
-follow their instructions to get it installed.
+You also need to install the R package `ncdf4` with OPeNDAP support.  To my
+knowledge this may be difficult unless you are running linux (although you can
+do this using a virtual machine). I would suggest non-linux users install
+an ubuntu virtual machine (e.g. using virtual box) and follow the steps below.
 
-Supposing you succeed in getting netcdf installed, next you need to install R's
+A further complication is that to work with the PTHA outputs on the NCI THREDDS
+server you need to build the package with a reasonably recent version of
+netcdf-c.  This is due to a bug in netcdf-c versions prior to 4.6.1 (released
+in early 2018) that prevented the remote reading of long character strings
+with OPeNDAP. We store some earthquake event data as (potentially) long
+character strings, and it is essential to be able to read these remotely.
+
+At the time of writing (mid 2018), most users will have to install netcdf-c
+from source to access a suitable version.  Source-code for a recent release of
+netcdf-c can be obtained from the netcdf github page:
+<https://github.com/Unidata/netcdf-c/releases>. You need to follow their
+instructions to get it installed. In the authors experience this is not always
+easy, but note there is much online troubleshooting information available, and
+you can ask for help on the netcdf mailing list.
+
+Suppose you succeed in getting netcdf installed. Next you need to install R's
 `ncdf4` package, and specifically tell it to use the newly installed netcdf.
-This can be done by downloading the ncdf4 sources here <https://cran.r-project.org/web/packages/ncdf4/index.html>,
-and then running a command similar to the following, in the directory where you
-have downloaded the `ncdf4` source package:
+This can be done by downloading the ncdf4 sources here
+<https://cran.r-project.org/web/packages/ncdf4/index.html>, and then running a
+command similar to the following, in the directory where you have downloaded
+the `ncdf4` source package:
 
     R CMD INSTALL ncdf4_1.16.tar.gz --configure-args="--with-nc-config=/home/username/LocalInstalls/netcdf_for_ptha/install/bin/nc-config"
 On ubuntu you might need to prepend `sudo` to the above command, depending on
@@ -100,29 +115,44 @@ the `ncdf4_1.16.tar.gz` term above to match those of the package you download.
 Furthermore, you will need to change the path to nc-config to match the path to
 a version of nc-config > 4.6.1.
 
-Then, copy the `ptha_access` folder to your computer. The location should not
-matter. To run the code, simply open an R session in the `ptha_access`
-directory, and type the required instructions as explained below.
+To confirm that your `ncdf4` installation is using a suitably recent netcdf-c
+library, try running the following code:
+```{r checkncdf, eval=FALSE}
+library(ncdf4)
+# This is a file from the PTHA, describing earthquake events on the Kermadec-Tonga
+# source-zone. Note I pre-pend [stringlength=4096], which prevents truncation of
+# long character strings. This functionality was broken in older netcdf-c versions
+test_file = paste0('[stringlength=4096]http://dapds00.nci.org.au/thredds/dodsC/fj6/',
+    'PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga/TSUNAMI_EVENTS/',
+    'all_stochastic_slip_earthquake_events_kermadectonga.nc')
+# Open it (this will not read everything)
+fid = nc_open(test_file, readunlim=FALSE)
+# Try to read the event_index_string. This will be artificially truncated if 
+# using an old version of netcdf-c
+event_index_string = ncvar_get(fid, 'event_index_string')
+if(max(nchar(event_index_string)) == 720){
+    print('Success! Your ncdf4 install can read large character strings remotely')
+}else{
+    print('FAIL. Perhaps ncdf4 is linking to an older netcdf-c version?')
+}
+```
+If the above code leads to the `Success! ...` message, then the install is
+working, but otherwise you will have to troubleshoot your netcdf-c install (or
+your internet connection, or check for a change to the NCI THREDDS server,
+etc).
 
-Finally you need to install the 
+### **Installing rptha***
 
-### ***Extra dependencies to extract tsunami time-series***
+Finally, you need to install the `rptha` package. This must be built from
+source, after obtaining the code from Geoscience Australia's the `PTHA` github
+repository. See instructions at https://github.com/GeoscienceAustralia/ptha/R/README.md
 
-If you wish to extract modelled tsunami time-series at gauges, then you also
-need to have the `rptha` package installed. This must be built from source,
-after obtaining the code from Geoscience Australia's the `PTHA` github
-repository: https://github.com/GeoscienceAustralia/ptha
+### **Installing mapview***
+Finally you should install the `mapview` package (to enable some interactive plots shown below)
+```{r installme, eval=FALSE}
+install.packages('mapview')
+```
 
-Before installing `rptha`, note that for the time-series extraction code to
-work, R's `ncdf4` package must be built with OpenDAP support. OpenDAP is what
-allows the code to access subsets of netcdf files on the NCI, without
-downloading everythng (TB in total). ncdf4 seems to be built with OpenDAP by
-default on Linux - but not on Windows - and I'm unsure about Mac. In the
-latter cases, you will have to build netcdf yourself before installing `ncdf4` in R. 
-*Also, beware there is a bug in netcdf 4.1.3 which can cause the code to hang
-if one tries to access the first gauge in a file. This version is the default
-netcdf on Ubuntu 14.04, so in that case, it may be necessary to install a newer
-netcdf and link the ncdf4 package with this during installation.*
 
 ## **Unit tests**
 Assuming you have installed all the above dependencies, you can run the unit
