@@ -25,12 +25,14 @@
                        '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
                        '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
                        '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
-                       '       These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.\n',
-                       '       Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
-                       '       magnitude" reported on this figure. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
-                       '       depth-dependent shear modulus on subduction zones, following Bilek and Lay (1999). See the report for further information. \n',
-                       '       You should consider this if comparing events with historical data in a situation where the shear modulus might differ from \n',
-                       '       30GPA (for thrust focal mechanmisms) or 60 GPA (for normal focal mechanisms) \n'
+                       '\n',
+                       'These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.\n',
+                       '\n',
+                       'Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
+                       'magnitude" reported on this figure. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
+                       'depth-dependent shear modulus on subduction zones, following Bilek and Lay (1999). See the report for further information. \n',
+                       'You should consider this if comparing events of a particular magnitude with historical data, in a situation where the shear \n', 
+                       'modulus might differ from 30GPA (for thrust focal mechanmisms) or 60 GPA (for normal focal mechanisms) \n'
 )
 .preamble_text2 = paste0('\n',
                        '\n',
@@ -49,11 +51,11 @@
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0, 0.05, .preamble_text, pos=4, cex=0.9)
+    text(0.5, 0.95, .preamble_text, pos=1, cex=0.9)
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0, 0.05, .preamble_text2, pos=4, cex=0.9)
+    text(0.5, 0.95, .preamble_text2, pos=1, cex=0.9)
 }
 
 
