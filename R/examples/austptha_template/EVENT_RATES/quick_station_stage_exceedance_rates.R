@@ -13,7 +13,7 @@
                        '\n',
                        'The plots are: \n',
                        '\n',
-                       '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate, with 95% credible intervals describing the uncertainty. \n',
+                       '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate at the specified hazard point location, \nwith 95% credible intervals describing the uncertainty. Note the peak-tsunami-stage is the maximum water level attained by the tsunami (above mean-sea-level, ignorning tides)\n',
                        '\n',
                        '    2) A "convergence check" of the above hazard curve. The PTHA hazard result rely on simulating a large number of random \n ',
                        '       earthquake-tsunami scenarios. At sufficiently rare exceedance rates (less frequent than some particular value, e.g. 1/10000 years)\n', 
@@ -23,8 +23,17 @@
                        '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
                        '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
                        '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
-                       '       These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.',
-                       '\n'
+                       '       These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.\n',
+                       '       Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
+                       '       magnitude" reported on this figure. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
+                       '       depth-dependent shear modulus on subduction zones, following Bilek and Lay (1999). See the report for further information. \n',
+                       '\n',
+                       '\n',
+                       '\n',
+                       'References\n',
+                       '\n',
+                       '    Bilek, S.L. and Lay, T. (1999) Rigidity variations with depth along interplate megathrust faults in subduction zones. Nature, 400, 443-446 \n'
+                        
 	)
 
 .plot_preamble<-function(){
@@ -171,11 +180,11 @@ quick_source_deagg<-function(lon, lat){
         points(stg_conv_1_small, er_conv_1_small, t='l', col='orange')
         points(stg_conv_2_small, er_conv_2_small, t='l', col='red')
         title(paste0(
-            'The convergence_check1 and convergence_check2 curves are made using half the model scenarios each. \n They should agree fairly well except for rare events.'))
+            'The two "convergence check" curves are made using half the model scenarios each. \n They should agree fairly well except for rare events.'))
 
         legend('topright', 
             c('Peak stage exceedance rate (mean over all logic-tree branches)',
-              'convergence_check1', 'convergence_check2'),
+              'convergence check 1', 'convergence check 2'),
             col=c('black', 'orange', 'red'),
             lty=c(1, 1, 1), bg='white')
     }
@@ -285,8 +294,8 @@ quick_source_deagg<-function(lon, lat){
                     pch=19, xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
                 points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
-                mtext(side=2, paste0('Magnitude with constant shear modulus'), line=2.3, cex=0.7)
-                title(paste0(sz, ': Rate of events of each magnitude \n (fixed shear modulus) with peak stage > ', 
+                mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
+                title(paste0(sz, ': Rate of events in each magnitude category \n with peak stage > ', 
                     signif(stage_threshold,2), 'm'))
             }
 
