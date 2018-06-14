@@ -82,7 +82,7 @@ output_signif_tmp = output_signif
 names(output_signif_tmp) = new_names
 write.csv(output_signif_tmp, 
     paste0(output_dir, 'tsunami_stages_at_fixed_return_periods.csv'),
-    row.names=FALSE, col.names=new_names)
+    row.names=FALSE)
 rm(output_signif_tmp)
 nc_close(fid)
 
