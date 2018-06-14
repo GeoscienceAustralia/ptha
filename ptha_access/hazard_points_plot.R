@@ -26,27 +26,36 @@ REFRESH_MAP = config_env$REFRESH_MAP
     # Find names of all the shapefiles
     all_sourcezone_unit_source_grids = Sys.glob('SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
 
-    if(REFRESH_MAP | (length(all_sourcezone_unit_source_grids) == 0)){
+    unit_source_grids_rds_file = 'SOURCE_ZONES/all_unit_source_grids.RDS'
+
+    if( REFRESH_MAP | (length(all_sourcezone_unit_source_grids) == 0) | 
+        (!file.exists(unit_source_grids_rds_file)) ){
         # Download the shapefiles
         get_shapefile_env = new.env()
         source('R/get_supporting_data.R', local=get_shapefile_env)
         get_shapefile_env$download_all_unit_source_grid_shapefiles()
         # Find names of all the shapefiles
         all_sourcezone_unit_source_grids = Sys.glob('SOURCE_ZONES/*/EQ_SOURCE/unit_source_grid/*.shp')
-    }
 
-    # Read each one into a list
-    unit_source_grids = list()
-    for(i in 1:length(all_sourcezone_unit_source_grids)){
-        layer_name = gsub('.shp', '', basename(all_sourcezone_unit_source_grids[i]))
-        unit_source_grids[[layer_name]] = readOGR(all_sourcezone_unit_source_grids[i], 
-            layer=layer_name, verbose=FALSE)
-        #unit_source_grids[[layer_name]] = st_read(all_sourcezone_unit_source_grids[i], 
-        #    layer=layer_name, verbose=FALSE)
-        names(unit_source_grids[[i]])[1:2] = c('downdip_index', 'alongstrike_index')
-        unit_source_grids[[i]]$sourcezone = rep(layer_name, len=length(unit_source_grids[[i]]$downdip_index))
-    }
+        # Read each one into a list
+        unit_source_grids = list()
+        for(i in 1:length(all_sourcezone_unit_source_grids)){
+            layer_name = gsub('.shp', '', basename(all_sourcezone_unit_source_grids[i]))
+            unit_source_grids[[layer_name]] = readOGR(all_sourcezone_unit_source_grids[i], 
+                layer=layer_name, verbose=FALSE)
+            #unit_source_grids[[layer_name]] = st_read(all_sourcezone_unit_source_grids[i], 
+            #    layer=layer_name, verbose=FALSE)
+            names(unit_source_grids[[i]])[1:2] = c('downdip_index', 'alongstrike_index')
+            unit_source_grids[[i]]$sourcezone = rep(layer_name, len=length(unit_source_grids[[i]]$downdip_index))
+        }
 
+        saveRDS(unit_source_grids, unit_source_grids_rds_file)
+
+    }else{
+
+        unit_source_grids = readRDS(unit_source_grids_rds_file)
+    }
+   
     return(unit_source_grids)
 }
 unit_source_grids = .read_all_unit_source_grids()
@@ -60,8 +69,9 @@ unit_source_grids = .read_all_unit_source_grids()
 #'
 .read_hazard_points<-function(refresh=REFRESH_MAP){
 
+    hazard_points_spdf_RDS_file = 'DATA/hazard_points_spdf.RDS'
    
-    if(refresh | !file.exists('DATA/hazard_points_spdf/hazard_points_spdf.shp')){ 
+    if(refresh | !file.exists(hazard_points_spdf_RDS_file)){ 
 
         # Read the data, in either netcdf or csv format. 
         # Currently only the latter has return period information
@@ -79,6 +89,7 @@ unit_source_grids = .read_all_unit_source_grids()
             # Read the hazard points
             tg_filename = config_env$adjust_path_to_gdata_base_location(tg_filename)
             hazard_points = try(get_netcdf_gauge_locations(tg_filename))
+
             if(class(hazard_points) == 'try-error'){
                 stop('hazard point read failed. This may occur with slower internet connections, so you could try again')
             }
@@ -88,10 +99,24 @@ unit_source_grids = .read_all_unit_source_grids()
                 hazard_points[,i] = as.numeric(hazard_points[,i])
             }
 
-        }else{
+        }else if(read_format == 'csv'){
+            #
             # Read a csv version on the thredds server
+            #
             tg_filename = paste0(config_env$.GDATA_HTTP_BASE_LOCATION, 
                 'EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv')
+            tg_filename_local = paste0('DATA/tsunami_stages_at_fixed_return_periods.csv')
+            download.file(tg_filename, dest= tg_filename_local)
+
+            hazard_points = try(read.csv(tg_filename))
+
+            if(class(hazard_points) == 'try-error'){
+                stop('hazard point read failed. This may occur with slower internet connections, so you could try again')
+            }
+
+        }else{
+            # 
+            stop('Unknown read_format for hazard points')
         }
 
         # The data contains an numeric 'gaugeID'. It is a decimal number. The fractional
@@ -128,12 +153,16 @@ unit_source_grids = .read_all_unit_source_grids()
             layer='hazard_points_spdf', driver='ESRI Shapefile',
             overwrite=TRUE)
 
+        # Faster read with RDS format
+        saveRDS(hazard_points_spdf, hazard_points_spdf_RDS_file)
+
     }else{
         #
         # The data should be saved locally
         #
-        hazard_points_spdf = readOGR('DATA/hazard_points_spdf', layer='hazard_points_spdf', 
-            verbose=FALSE)
+        #hazard_points_spdf = readOGR('DATA/hazard_points_spdf', layer='hazard_points_spdf', 
+        #    verbose=FALSE)
+        hazard_points_spdf = readRDS(hazard_points_spdf_RDS_file)
         # Fix abbreviated name
         k = which(names(hazard_points_spdf) == 'pnt_ctg')
         names(hazard_points_spdf)[k] = 'point_category'
