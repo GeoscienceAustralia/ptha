@@ -21,7 +21,9 @@
                        '\n',
                        '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
                        '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
-                       '       to highlight the most likely event magnitudes leading tsunami exceeding the peak-stage threshold'
+                       '       to highlight the most likely event magnitudes that cause tsunami above the peak-stage threshold.',
+                       '       These plots are useful for determining which source-zones and event magnitudes to focus on for scenario-based hazard studies. \n',
+                       '       Often hazard studies model events from the "most likely" few source-zones.\n',
 	)
 
 .plot_preamble<-function(){
@@ -237,6 +239,8 @@ quick_source_deagg<-function(lon, lat){
                 main=paste0('No events exceeding stage_threshold = ', stage_threshold, 'm'))
         }else{
 
+            # Make an outer-margin
+            par(oma=c(4,0,0,0))
             par(mfrow=c(2,2))
 
             rate_by_source = aggregate(stage_rate_all$event_rate[k], 
@@ -284,6 +288,17 @@ quick_source_deagg<-function(lon, lat){
                 title(paste0(sz, ': Rate of events of each magnitude (fixed_mu) \n with peak stage > ', 
                     signif(stage_threshold,2), 'm'))
             }
+
+            mtext(text=paste0('In the plots containing rate vs magnitude, the black dots give the rate of events for each individual magnitude bin. \n',
+                              'The red dots give the 95% credible intervals. The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage\n',
+                              'of events with that magnitude that exceed the stage-threshold. If the latter percentage is reasonably high (e.g. > 20%), then it means \n',
+                              'that "typical" tsunamis with the specified magnitude can exceed the stage-threshold. However, if the percentage is low, it means that \n',
+                              'only "extreme" tsunami with that magnitude are exceeding the stage-threshold. In that case, users should be more careful in using the scenarios. \n',
+                              'With currently available data, we cannot strongly test the model performance for such unusual "extreme tsunamis", which by definition are rarely observed.') 
+                side=1, outer=TRUE)
+
+            # Back to default outer-margins
+            par(oma=c(0,0,0,0))
         }
     }
 
