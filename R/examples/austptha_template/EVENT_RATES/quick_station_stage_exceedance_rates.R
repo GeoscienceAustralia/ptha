@@ -6,7 +6,7 @@
 #
 
 .preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
-.preamble_text = paste0('\n', 
+.preamble_text = paste0( 
                        "This file gives a summary of the Geoscience Australia's 2018 PTHA results at a single station. See the README on:\n",
                        '    https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access \n',
                        'for further information on accessing the results and associated reports. Users should understand this material before using the results.\n',
@@ -29,10 +29,10 @@
                        'These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.\n',
                        '\n',
                        'Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
-                       'magnitude" reported on this figure. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
-                       'depth-dependent shear modulus on subduction zones, following Bilek and Lay (1999). See the report for further information. \n',
+                       'magnitude" reported in Figures 3-4-5. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
+                       'depth-dependent shear modulus on subduction zones, based on Bilek and Lay (1999). See the report for further information. \n',
                        'You should consider this if comparing events of a particular magnitude with historical data, in a situation where the shear \n', 
-                       'modulus might differ from 30GPA (for thrust focal mechanmisms) or 60 GPA (for normal focal mechanisms) \n'
+                       'modulus might differ from 30 GPa (for thrust focal mechanisms) or 60 GPa (for normal focal mechanisms) \n'
 )
 .preamble_text2 = paste0('\n',
                        '\n',
@@ -43,7 +43,6 @@
                        '\n',
                        '\n',
                        'References\n',
-                       '\n',
                        '    Bilek, S.L. and Lay, T. (1999) Rigidity variations with depth along interplate megathrust faults in subduction zones. Nature, 400, 443-446 \n'
 )
 
@@ -51,11 +50,11 @@
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0.5, 0.95, .preamble_text, pos=1, cex=0.9)
+    text(0, 0, .preamble_text, adj=c(0,1), cex=0.95)
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0.5, 0.95, .preamble_text2, pos=1, cex=0.9)
+    text(0, 0, .preamble_text2, adj=c(0,1), cex=0.95)
 }
 
 
