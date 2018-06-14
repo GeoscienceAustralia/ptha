@@ -50,11 +50,11 @@
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0, 0, .preamble_text, adj=c(0,1), cex=0.95)
+    text(0, 1, .preamble_text, adj=c(0,1), cex=0.95)
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0, 0, .preamble_text2, adj=c(0,1), cex=0.95)
+    text(0, 1, .preamble_text2, adj=c(0,1), cex=0.95)
 }
 
 
