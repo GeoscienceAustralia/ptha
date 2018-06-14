@@ -8,7 +8,7 @@
 .preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
 .preamble_text = paste0("This file gives a summary of the Geoscience Australia's 2018 PTHA results at a single station. See the README on: \n",
                        '    https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access \n',
-                       'for further information on accessing the results. \n',
+                       'for further information on accessing the results and associated reports. Users should understand this material before using the results.\n',
                        '\n',
                        'The plots are: \n',
                        '\n',
@@ -21,9 +21,9 @@
                        '\n',
                        '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
                        '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
-                       '       to highlight the most likely event magnitudes that cause tsunami above the peak-stage threshold.\n',
-                       '       These plots are useful for determining which source-zones and event magnitudes to focus on for scenario-based hazard studies. \n',
-                       '       Often hazard studies model events from the "most likely" few source-zones.\n'
+                       '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
+                       '       These plots are useful for determining which scenarios to focus on for scenario-based hazard studies. \n',
+                       '       Often hazard studies simulate scenario from the "most likely" few source-zones. \n'
 	)
 
 .plot_preamble<-function(){
@@ -284,8 +284,8 @@ quick_source_deagg<-function(lon, lat){
                     pch=19, xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
                 points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
-                mtext(side=2, paste0('Magnitude with fixed mu'), line=2.3, cex=0.7)
-                title(paste0(sz, ': Rate of events of each magnitude (fixed_mu) \n with peak stage > ', 
+                mtext(side=2, paste0('Magnitude with constant shear modulus'), line=2.3, cex=0.7)
+                title(paste0(sz, ': Rate of events of each magnitude \n (fixed shear modulus) with peak stage > ', 
                     signif(stage_threshold,2), 'm'))
             }
 
