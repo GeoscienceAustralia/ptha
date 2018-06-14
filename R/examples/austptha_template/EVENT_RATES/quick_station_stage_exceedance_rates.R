@@ -15,15 +15,16 @@
                        '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate, with 95% credible intervals describing the uncertainty. \n',
                        '\n',
                        '    2) A "convergence check" of the above hazard curve. The PTHA hazard result rely on simulating a large number of random \n ',
-                       '       earthquake-tsunami events. For sufficiently rare events (less frequent than some exceedance rate, such as 1/10000 years) there \n',
-                       '       will be few random events, and the exceedance rates become sensitive to the "random details" of those events (i.e. less reliable).\n',
-                       '       To help users judge the reliability of the rates we compare 2 hazard curves, each derived from half of the scenarios. \n',
+                       '       earthquake-tsunami scenarios. At sufficiently rare exceedance rates (less frequent than some particular value, e.g. 1/10000 years) there \n',
+                       '       will be few random model scenarios, and the exceedance rates become sensitive to the "random details" of those scenarios (i.e. less reliable).\n',
+                       '       To help users judge the reliability of the exceedance rates we compare 2 hazard curves, each derived from half of the scenarios. \n',
                        '\n',
                        '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
                        '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
                        '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
                        '       These plots are useful for determining which scenarios to focus on for scenario-based hazard studies. \n',
-                       '       Often hazard studies simulate scenario from the "most likely" few source-zones. \n'
+                       '       Often hazard studies simulate scenario from the "most likely" few source-zones. \n',
+                       '\n'
 	)
 
 .plot_preamble<-function(){
