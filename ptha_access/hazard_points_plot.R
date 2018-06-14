@@ -62,27 +62,36 @@ unit_source_grids = .read_all_unit_source_grids()
 
    
     if(refresh | !file.exists('DATA/hazard_points_spdf/hazard_points_spdf.shp')){ 
-   
-        # To read the data, we need 'get_netcdf_gauge_locations' from the following file 
-        source('R/sum_tsunami_unit_sources.R', local=TRUE)
 
-        # Find a file that contains hazard points. Easiest way is to read them from a tide gauge file
-        unit_source_stats_alaska = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
-            'SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVENTS/unit_source_statistics_alaskaaleutians.nc')
-        fid = nc_open(unit_source_stats_alaska)
-        tg_filename = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(4096,1))[1]
-        nc_close(fid)
-        # Read the hazard points
-        tg_filename = config_env$adjust_path_to_gdata_base_location(tg_filename)
-        hazard_points = try(get_netcdf_gauge_locations(tg_filename))
+        # Read the data, in either netcdf or csv format. 
+        # Currently only the latter has return period information
+        read_format = 'csv'
+        if(read_format == 'netcdf'){
+            # To read the data, we need 'get_netcdf_gauge_locations' from the following file 
+            source('R/sum_tsunami_unit_sources.R', local=TRUE)
 
-        # Make sure all columns are numeric (some read as 'array' from netcdf)
-        for(i in 1:ncol(hazard_points)){
-            hazard_points[,i] = as.numeric(hazard_points[,i])
-        }
+            # Find a file that contains hazard points. Easiest way is to read them from a tide gauge file
+            unit_source_stats_alaska = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
+                'SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVENTS/unit_source_statistics_alaskaaleutians.nc')
+            fid = nc_open(unit_source_stats_alaska)
+            tg_filename = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(4096,1))[1]
+            nc_close(fid)
+            # Read the hazard points
+            tg_filename = config_env$adjust_path_to_gdata_base_location(tg_filename)
+            hazard_points = try(get_netcdf_gauge_locations(tg_filename))
+            if(class(hazard_points) == 'try-error'){
+                stop('hazard point read failed. This may occur with slower internet connections, so you could try again')
+            }
 
-        if(class(hazard_points) == 'try-error'){
-            stop('hazard point read failed. This may occur with slower internet connections, so you could try again')
+            # Make sure all columns are numeric (some read as 'array' from netcdf)
+            for(i in 1:ncol(hazard_points)){
+                hazard_points[,i] = as.numeric(hazard_points[,i])
+            }
+
+        }else{
+            # Read a csv version on the thredds server
+            tg_filename = paste0(config_env$.GDATA_HTTP_BASE_LOCATION, 
+                'EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv')
         }
 
         # The data contains an numeric 'gaugeID'. It is a decimal number. The fractional

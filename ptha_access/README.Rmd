@@ -168,6 +168,8 @@ time-series.
 
 ### ***Viewing the locations of hazard points and source zones***
 
+It is possible to view the hazard points from an interactive map in R.
+
 To view the source-zones and hazard points on an interactive map, start
 R in the same directory that this file resides in, and do:
 ```{r interactive_map, eval=FALSE}
