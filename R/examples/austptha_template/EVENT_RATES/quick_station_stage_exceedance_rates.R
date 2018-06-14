@@ -46,7 +46,7 @@
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
-    text(0, 0.7, .preamble_text, pos=4)
+    text(0, 0.2, .preamble_text, pos=4)
 
 }
 
