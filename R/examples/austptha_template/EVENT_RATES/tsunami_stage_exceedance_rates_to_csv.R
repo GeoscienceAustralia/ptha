@@ -76,10 +76,10 @@ output$gaugeID = round(output$gaugeID, 1)
 # Store hazard info to 3 significant figures
 output_signif = output 
 output_signif[,5:ncol(output)] = signif(output[,5:ncol(output)], 3)
-names(output_signif) = gsub(model_for_shapefile, substitute_name_model_for_csv, names(output_signif))
+new_names  = gsub(model_for_shapefile, substitute_name_model_for_csv, names(output_signif))
 write.csv(output_signif, 
     paste0(output_dir, 'tsunami_stages_at_fixed_return_periods.csv'),
-    row.names=FALSE)
+    row.names=FALSE, col.names=new_names)
 
 nc_close(fid)
 
