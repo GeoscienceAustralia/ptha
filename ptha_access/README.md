@@ -39,13 +39,13 @@ the exceedance rates are typically small numbers (e.g. an exceedance-rate of
 Obviously this kind of information is important for understanding tsunami
 hazards. The simplest way to examine the tsunami peak-stage exceedance-rates in
 the 2018 PTHA is to [download this csv file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
-This csv file contains columns with:
+This csv file contains the following columns:
 
-* `lon`, `lat` giving the station location in longitude/latitude (degrees). 
+* `lon`, `lat` give the hazard point location in longitude/latitude (degrees). 
 
-* `elev` is the bathymetry at the station (negative = below MSL)
+* `elev` is the bathymetry at the hazard point (negative = below MSL)
 
-* `gaugeID` is a real station ID
+* `gaugeID` is a real hazard point ID
 
 * multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These values corresponds to the tsunami peak-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami peak-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
 
@@ -54,16 +54,15 @@ This csv file contains columns with:
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5% quantile)
 
 [Similar data is available in shapefile format here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip). You will need to unzip the file after download.
-
 A shortcoming of the shapefile format is that there is a 10 character limit on
 attribute names. Therefore the attributes are renamed in some instances, as
 compared with the above csv:
 
-* `lon`, `lat` giving the location in longitude/latitude (degrees). 
+* `lon`, `lat` give the location in longitude/latitude (degrees). 
 
-* `elev` is the bathymetry at the station (negative = below MSL)
+* `elev` is the bathymetry at the hazard point (negative = below MSL)
 
-* `gaugeID` is a real station ID
+* `gaugeID` is a real hazard point ID
 
 * `STG_XXXX' is the same as `STAGE_XXXX` described above
 
@@ -71,12 +70,11 @@ compared with the above csv:
 
 * `STGl_XXXX' is the same as `STAGE_lower_ci_XXXX` described above
 
-At most locations you will find there is high uncertainty in the peak tsunami
-size for a given exceedance-rates. This is mainly due to high uncertainty in
-the frequencies of high-magnitude subduction zone earthquakes. A more detailed
-discussion of these topics can be found in the Australian Tsunami Hazard
-Modelling Guidelines, which are available here:
-<https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf> 
+At most hazard points you will find there is high uncertainty in the peak
+tsunami size for a given exceedance-rates. This is mainly due to high
+uncertainty in the frequencies of high-magnitude subduction zone earthquakes. A
+more detailed discussion of these topics can be found in the 
+[Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
 
 ## Obtaining more detailed exceedance-rate information for specific sites
 
