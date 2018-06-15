@@ -111,10 +111,10 @@ refined in future using higher resolution models and data.
 The above points might lead non-specialist to question the point of this PTHA,
 given that for risk management purposes the tsunami inundation is of most
 interest. The key reason for developing an 'offshore' PTHA is that it provides
-essential input input data to support the high-resolution models required
-for tsunami risk management. The tsunami scenarios and associated
-exceedance-rates provided in this PTHA will be used as 'boundary conditions' to
-drive the site-specific high resolution tsunami inundation models. 
+essential input data to support the high-resolution models required for tsunami
+risk management. The tsunami scenarios and associated exceedance-rates provided
+in this PTHA will be used as 'boundary conditions' to drive the site-specific
+high resolution tsunami inundation models. 
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
@@ -133,7 +133,13 @@ Davies at gareth.davies@ga.gov.au).
 
 ## **Installation**
 
-You need the program R installed (see <https://www.r-project.org/>).
+It is strongly suggested that the installation is undertaken on a linux operating 
+system (e.g. Ubuntu). 
+
+
+### **Installing R**
+If you don't already have R installed, the you need to get it by following the
+instructions on the [R website](https://www.r-project.org/).
 
 
 ### **Getting a recent version of netcdf**
@@ -207,13 +213,13 @@ working. Otherwise you will have to troubleshoot your netcdf-c install (or
 your internet connection, or check for a change to the NCI THREDDS server,
 etc).
 
-### **Installing rptha***
+### **Installing rptha**
 
 Finally you need to install the `rptha` package. This must be built from
 source, after obtaining the code from Geoscience Australia's the `PTHA` github
-repository. See instructions at https://github.com/GeoscienceAustralia/ptha/R/README.md
+repository. See instructions at https://github.com/GeoscienceAustralia/ptha/blob/master/R/README.md
 
-### **Installing mapview***
+### **Installing mapview**
 Finally you should install the `mapview` package (to enable some interactive
 plots shown below)
 ```{r installme, eval=FALSE}
