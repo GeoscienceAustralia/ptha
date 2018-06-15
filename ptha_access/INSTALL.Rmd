@@ -48,8 +48,7 @@ one on your machine.
 
 To confirm that your `ncdf4` installation is using a suitably recent netcdf-c
 library, please run the following code:
-
-```r
+```{r checkncdf, eval=FALSE}
 library(ncdf4)
 
 # This is a file from the PTHA, describing earthquake events on the Kermadec-Tonga
@@ -90,16 +89,14 @@ repository. [See instructions here](https://github.com/GeoscienceAustralia/ptha/
 ### **Installing mapview**
 Finally you should install the `mapview` package (to enable some interactive
 plots shown below)
-
-```r
+```{r installme, eval=FALSE}
 install.packages('mapview')
 ```
 
 ## **Unit tests**
 Assuming you have installed all the above dependencies, you can run the unit
 tests with:
-
-```r
+```{r unit_tests, eval=FALSE}
 source('test_all.R')
 ```
 This should print a number of 'PASS' statements, and no 'FAIL' statements.
