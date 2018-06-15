@@ -1,11 +1,18 @@
 Code template for the Australian Probabilistic Tsunami Hazard Assessment 2018
 -----------------------------------------------------------------------------
 
-[DATA](DATA) contains data that has been 'processed' or developed for modelling
+This template contains codes used for the 2018 Australian PTHA. It does not contain
+the actual data or model results, because these files would be very large and unsuitable 
+for a git repository. However, see [this page](https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access)
+for information on accessing the results.
+
+The sub-folders below all contain relevant scripts and README information:
+
+[DATA](DATA) is used for data that has been 'processed' or developed for modelling
   [e.g. sourcezone contours, edited DEMs, etc]. It should not contain RAW data,
   (the latter instead goes in '../../DATA/')
 
-[SOURCE_ZONES](SOURCE_ZONES) contains unit source initial conditions and tsunami runs for
+[SOURCE_ZONES](SOURCE_ZONES) is used for the unit source initial conditions and tsunami runs for
   every source-zone. This is the bulk of our modelling results.
 
 [EVENT_RATES](EVENT_RATES) contains code to compute the rate of earthquakes on each source-zone,
