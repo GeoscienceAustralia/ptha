@@ -1,0 +1,106 @@
+## **Installation**
+
+It is strongly suggested that the installation is undertaken on a linux operating 
+system (e.g. Ubuntu). 
+
+
+### **Installing R**
+If you don't already have R installed, the you need to get it by following the
+instructions on the [R website](https://www.r-project.org/).
+
+
+### **Getting a recent version of netcdf**
+
+You need to install the R package `ncdf4` with OPeNDAP support.  This may be
+difficult unless you are running linux (although you can do this using a
+virtual machine). Non-linux users are encouraged to install an ubuntu virtual
+machine (e.g. using [VirtualBox](https://www.virtualbox.org) or some other
+virtualization software) and follow the steps below.
+
+A further complication is that to work with the PTHA outputs on the NCI THREDDS
+server you need to build the package with a reasonably recent version of
+netcdf-c. This is due to a bug in netcdf-c versions prior to 4.6.1 (released
+in early 2018) that prevented the remote reading of long character strings
+with OPeNDAP. We store some earthquake event data as (potentially) long
+character strings, and it is essential to be able to read these remotely.
+
+At the time of writing (mid 2018), most users will have to install netcdf-c
+from source to access a suitable version.  Source-code for a recent release of
+netcdf-c can be obtained from the [netcdf-c github
+page](https://github.com/Unidata/netcdf-c/releases). You need to follow their
+instructions to get it installed. While building any complex software from
+source can be difficult, there is much online troubleshooting information
+available, and you can ask for help on the netcdf mailing list.
+
+Next you need to install R's `ncdf4` package, and specifically tell it to use
+the newly installed netcdf.  This can be done by 
+[downloading the ncdf4 sources from this site](https://cran.r-project.org/web/packages/ncdf4/index.html), 
+and then running a command similar to the following, in the directory where you
+have downloaded the `ncdf4` source package:
+
+    R CMD INSTALL ncdf4_1.16.tar.gz --configure-args="--with-nc-config=/home/username/PATH_TO_YOUR_NETCDF_INSTALL/bin/nc-config"
+
+On ubuntu you might need to prepend `sudo` to the above command, depending on
+where you do the installation. Also, you may need to adjust the numbers in the
+`ncdf4_1.16.tar.gz` term above to match those of the package you download.
+Furthermore, you definitely need to change the path to nc-config to match the
+one on your machine.
+
+To confirm that your `ncdf4` installation is using a suitably recent netcdf-c
+library, please run the following code:
+```{r checkncdf, eval=FALSE}
+library(ncdf4)
+
+# This is a file from the PTHA, describing earthquake events on the Kermadec-Tonga
+# source-zone. Note I pre-pend [stringlength=4096], which prevents truncation of
+# long character strings. This functionality was broken in older netcdf-c versions
+test_file = paste0('[stringlength=4096]http://dapds00.nci.org.au/thredds/dodsC/fj6/',
+    'PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga/TSUNAMI_EVENTS/',
+    'all_stochastic_slip_earthquake_events_kermadectonga.nc')
+
+# Open it (this will not read everything)
+fid = nc_open(test_file, readunlim=FALSE)
+
+# Try to read the event_index_string. This will be artificially truncated if 
+# using an old version of netcdf-c
+event_index_string = ncvar_get(fid, 'event_index_string')
+
+#
+# Report whether it worked
+#
+
+if(max(nchar(event_index_string)) == 720){
+    print('Success! Your ncdf4 install can read large character strings remotely')
+}else{
+    print('FAIL. Perhaps ncdf4 is linking to an older netcdf-c version?')
+}
+```
+If the above code leads to the `Success! ...` message, then the install is
+working. Otherwise you will have to troubleshoot your netcdf-c install (or
+your internet connection, or check for a change to the NCI THREDDS server,
+etc).
+
+### **Installing rptha**
+
+Finally you need to install the `rptha` package. This must be built from
+source, after obtaining the code from Geoscience Australia's the `PTHA` github
+repository. [See instructions here](https://github.com/GeoscienceAustralia/ptha/blob/master/R/README.md)
+
+### **Installing mapview**
+Finally you should install the `mapview` package (to enable some interactive
+plots shown below)
+```{r installme, eval=FALSE}
+install.packages('mapview')
+```
+
+## **Unit tests**
+Assuming you have installed all the above dependencies, you can run the unit
+tests with:
+```{r unit_tests, eval=FALSE}
+source('test_all.R')
+```
+This should print a number of 'PASS' statements, and no 'FAIL' statements.
+Some of the tests will fail if you haven't installed the dependencies to read
+time-series.
+
+
