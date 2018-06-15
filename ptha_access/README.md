@@ -38,7 +38,7 @@ the exceedance rates are typically small numbers (e.g. an exceedance-rate of
 0.002=1/500 would correspond to one event every 500 years on average).
 Obviously this kind of information is important for understanding tsunami
 hazards. The simplest way to examine the tsunami peak-stage exceedance-rates in
-the 2018 PTHA is to download [this csv file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
+the 2018 PTHA is to [download this csv file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
 This csv file contains columns with:
 
 * `lon`, `lat` giving the station location in longitude/latitude (degrees). 
@@ -53,9 +53,8 @@ This csv file contains columns with:
 
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5% quantile)
 
-Similar data is available in shapefile format. That can be downloaded here (you
-will need to unzip the file after download):
-<http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip>
+[Similar data is available in shapefile format here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip). You will need to unzip the file after download.
+
 A shortcoming of the shapefile format is that there is a 10 character limit on
 attribute names. Therefore the attributes are renamed in some instances, as
 compared with the above csv:
