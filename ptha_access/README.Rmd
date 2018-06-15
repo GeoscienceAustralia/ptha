@@ -127,13 +127,18 @@ not exceeding a few percent of the water depth). Nearshore points should only
 be used as a rough guide to possible tsunami wave heights, and should be
 refined in future using higher resolution models and data. 
 
-The above points might lead non-specialist to question the point of this PTHA,
-given that for risk management purposes the tsunami inundation is of most
+The above statements might lead non-specialist to question the purpose of this
+PTHA, given that for risk management purposes the tsunami inundation is of most
 interest. The key reason for developing an 'offshore' PTHA is that it provides
-essential input data to support the high-resolution models required for tsunami
-risk management. The tsunami scenarios and associated exceedance-rates provided
-in this PTHA will be used as 'boundary conditions' to drive the site-specific
-high resolution tsunami inundation models. 
+essential input data to support the high-resolution inundation models required
+for tsunami risk management. The tsunami scenarios and associated
+exceedance-rates provided in this PTHA will be used as 'boundary conditions' to
+drive the site-specific tsunami inundation models. This helps facilitate
+national consistency in tsunami inundation modelling, while reducing the need
+for nearshore tsunami modellers to develop expertise in subjects such as
+earthquake kinematics and tsunami geneartion, earthquake magnitude-frequency
+relations, and quantification of the associated uncertainties.
+
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
