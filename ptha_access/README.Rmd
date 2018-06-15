@@ -1,22 +1,34 @@
-# **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment results**
+# **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment (PTHA) results**
 
-**Currently the study is incomplete, and results available here may change without warning**
-
-This document explains how to access the 2018 Probabilistic Tsunami Hazard
-Assessement (PTHA) results. 
+# ***NOTE: Currently the study is incomplete, and results available here may change without warning***
 
 # Obtaining basic tsunami hazard information.
+
+We provide access to basic hazard information in easy-to-use csv and shapefile
+formats. This information is useful to get a high-level overview of the PTHA
+results.
+
+We also provide access to earthquake discretization, tsunami initial condition,
+and wave time-series for every event in our analysis. This information is
+useful for constructing tsunami hazard models. To access this information users
+will need to install a range of software which allows working with the PTHA
+data on the NCI THREDDS server. 
 
 ## Tsunami peak-stage exceedance rates at sites around Australia
 
 The tsunami 'peak-stage' is the maximum water-level that a particular tsunami
-attains in our analysis. Because we ignore tidal variations and assume a
-constant mean-sea-level (MSL=0), this is equivalent to the maximum elevation of
-the tsunami wave above MSL.
+attains at a particular location. In the current analysis we ignore tidal
+variations and assume a constant mean-sea-level (MSL=0), so the 'peak-stage' is
+equivalent to the maximum elevation of the tsunami wave above MSL. This gives an
+idea of how 'big' the tsunami is.
 
-If you only wish to look at the locations of offshore hazard points, with basic
-tsunami peak-stage exceedance rate information, then you can simply download
-a csv file containing the data here: <http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv>. This csv file contains columns:
+The peak-stage exceedance rates describe how often tsunami events occur with
+peak-stage exceeding a particular threshold value. Obviously this kind of
+information is important to understanding tsunami hazards. The simplest way to
+examine the tsunami peak-stage exceedance rates in the 2018 PTHA is to download
+the following csv file:
+<http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv>.
+This csv file contains columns:
 
 * `lon`, `lat` giving the location in longitude/latitude (degrees). 
 
@@ -30,10 +42,12 @@ a csv file containing the data here: <http://dapds00.nci.org.au/thredds/fileServ
 
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 2.5% quantile)
 
-Similar data is available in a shapefile, which can be downloaded here (inside a zip file):
+Similar data is available in shapefile format. That can be downloaded here (you
+will need to unzip the file after download):
 <http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip>
-Because there is a 10 character limit on shapefile attribute names, the
-attributes are renamed in some instances compared with the csv above:
+A shortcoming of the shapefile format is that there is a 10 character limit on
+attribute names. Therefore the attributes are renamed in some instances, as
+compared with the above csv:
 
 * `lon`, `lat` giving the location in longitude/latitude (degrees). 
 
@@ -60,38 +74,54 @@ FIXME describe where to obtain the pdf files containing the summary information
 
 ## Interpreting exceedance rate information
 
-The stage exceedance rates will vary in space depending on the sites exposure
-to tsunami from events in our PTHA. There is also a tendency for the tsunami
-size to increase in shallower water, due to energy flux conservation. 
+The stage exceedance rates vary from site to site, depending on exposure to
+earthquake-generated tsunamis. There is a tendency for the tsunami size to
+increase in shallower water, which is a well known property of ocean waves
+related to energy flux conservation. 
 
-The user must be aware that in some regions our coarse resolution model (1 arc
-minute) and elevation data (GA250/GEBCO2014) may have insufficient resolution
-or accuracy to model the tsunami well. Furthermore, at some locations some
-modelled waves will violate the assumptions underlying our linear tsunami
-model. A priori we expect the model performance to be poorer close to the coast
-and in shallower waters. **For modelling purposes we strongly encourage the use
-of points well offshore in deep water** (preferably with wave heights of
-interest not exceeding a few percent of the water depth). To help ensure such
-points are available, the current PTHA includes points along a 1000m depth
-contour and gridded lon-lat points extending well offshore, in addition to the
-100m depth contour points.
+The model results are not expected to be accurate everywhere, but **in general
+results far offshore and in deep water are expected to be higher quality than
+nearshore results**. The reasons are:
 
+* Our tsunami model has a spatial grid size of 1 arc minute (around 1.8 km), 
+and is run on relatively coarse elevation data (a combination of the GA250
+product, and GEBCO 2014). While appropriate for modelling oceanic-scale tsunami
+propagation, it is not expected to accurately model tsunamis near the coast and
+in shallow waters.
+
+* At locations where wave heights become an appreciable fraction of the water depth, 
+the modelled waves will violate the assumptions underlying our linear tsunami
+model. This is most likely to be a problem in shallow waters where the tsunami
+wave height becomes non-negligable compared with the water depth. 
+
+Because of this, **for modelling purposes we strongly encourage the use of
+points well offshore in deep water** (preferably with wave heights of interest
+not exceeding a few percent of the water depth). Nearshore points should only
+be used as a rough guide to possible tsunami wave heights, and should be
+refined in future using higher resolution models and data. 
+
+The above points might lead non-specialist to question the point of this PTHA,
+given that for risk management purposes the tsunami inundation is of most
+interest. The key reason for developing an 'offshore' PTHA is that it provides
+essential input input data to support the high-resolution models required
+for tsunami risk management. The tsunami scenarios and associated exceedance
+rates provided in this PTHA will be used as 'boundary conditions' to drive the
+site-specific high resolution tsunami inundation models. 
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
-It is possible to obtain initial conditions and time-series for every event in
-our analysis.  Combined with the exceedance rate modelling, such inputs can be
-used to drive local scale tsunami hazard assessments (i.e. studies which model
-actual tsunami inundation).
+For every event in our analysis we provide earthquake information, tsunami
+initial conditions, and wave time-series at every hazard point. Combined
+with the exceedance rate modelling, such inputs can be used to drive local
+scale tsunami hazard assessments (i.e. studies which model tsunami inundation).
 
-However, doing this requires interacting with our files via the NCI server,
-generally using R code. The steps are described below. Unfortunately they may
-be difficult for users who are inexperienced in scientific programming and
-linux (and even more advanced users may have difficulties, e.g. in building
-netcdf from source). Users doing hazard studies in Australia should
-alternatively contact Geoscience Australia directly for assistence in obtaining
-the information they require (gareth.davies@ga.gov.au). 
-
+To access these results the user needs to interact with our files via the NCI
+THREDDS server. We provide R script to facilitate this, and the process is
+described below.  Unfortunately the process may be challenging for users with
+limited experience in scientific programming and linux. Users doing tsunami
+hazard studies **in Australia** can alternatively contact Geoscience Australia
+directly if they have difficulty with any of these steps (please email Gareth
+Davies at gareth.davies@ga.gov.au). 
 
 ## **Installation**
 
