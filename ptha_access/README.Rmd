@@ -16,7 +16,7 @@ often hazardous events might occur). To access this information users will need
 to install a range of software which allows working with the PTHA data on the
 NCI THREDDS server. 
 
-## Tsunami peak-stage exceedance-rates at sites around Australia
+## Obtaining tsunami peak-stage exceedance-rates at sites around Australia
 
 The tsunami 'peak-stage' is the maximum water-level that a particular tsunami
 attains at a particular location. In the current analysis we ignore tidal
@@ -27,10 +27,12 @@ idea of how 'big' the tsunami is.
 The peak-stage exceedance-rates describe 'how often' tsunami events occur with
 peak-stage above a particular threshold value. For example, you could ask how often
 peak-stages above 0.5m (or 2.0m) occur, in terms of the average number of events each year
-at a particular site.  Obviously this kind of information is important for
-understanding tsunami hazards. The simplest way to examine the tsunami
-peak-stage exceedance-rates in the 2018 PTHA is to download the following csv
-file:
+at a particular site. At most locations there would be less than one event each year, so
+the exceedance rates are typically small numbers (e.g. an exceedance-rate of
+0.002=1/500 would correspond to one event every 500 years on average).
+Obviously this kind of information is important for understanding tsunami
+hazards. The simplest way to examine the tsunami peak-stage exceedance-rates in
+the 2018 PTHA is to download the following csv file:
 <http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv>.
 This csv file contains columns:
 
@@ -72,7 +74,7 @@ discussion of these topics can be found in the Australian Tsunami Hazard
 Modelling Guidelines, which are available here:
 <https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf> 
 
-## More detailed exceedance-rate information for specific sites
+## Obtaining more detailed exceedance-rate information for specific sites
 
 FIXME describe where to obtain the pdf files containing the summary information
 
