@@ -1,5 +1,5 @@
 #
-# Single station stage exceedance rate computation
+# Single station stage exceedance-rate computation
 #
 # This is actually a slow computational method ('quick' means 'quick to code'),
 # but is useful to cross check the other results
@@ -17,12 +17,12 @@
                        'The plots are: \n',
                        '\n',
                        '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate at the specified hazard point location, \n',
-                       '       with 95% credible intervals describing the uncertainty. Note the peak-tsunami-stage is the defined as the maximum water level\n ',
+                       '       with 95% credible intervals describing the uncertainty. Note the peak-tsunami-stage is the maximum water level\n ',
                        '       attained by the tsunami (above mean-sea-level=0, ignorning tides) at the site.\n',
                        '\n',
                        '    2) A "convergence check" of the above hazard curve. The PTHA hazard result rely on simulating a large number of random\n',
-                       '       earthquake-tsunami scenarios. At sufficiently rare exceedance rates (less frequent than some particular value, e.g. 1/10000 years)\n', 
-                       '       there will be few random model scenarios, so exceedance rates become sensitive to the "random details" of those scenarios (i.e. less\n', 
+                       '       earthquake-tsunami scenarios. At sufficiently rare exceedance-rates (less frequent than some particular value, e.g. 1/10000 years)\n', 
+                       '       there will be few random model scenarios, so exceedance-rates become sensitive to the "random details" of those scenarios (i.e. less\n', 
                        '       reliable). To help users judge when this happens we compare 2 hazard curves, each derived from half the scenarios. \n',
                        '\n',
                        '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
@@ -182,7 +182,7 @@ quick_source_deagg<-function(lon, lat){
         points(stages, ers_lo, pch=19, cex=1.0, col='pink')
 
         legend('topright', 
-            c('Peak stage exceedance rate (mean over all logic-tree branches)',
+            c('Peak-stage exceedance-rate (mean over all logic-tree branches)',
               '95% credible interval'),
             col=c('brown', 'pink'),
             pch=c(19, 19), bg='white')
@@ -201,7 +201,7 @@ quick_source_deagg<-function(lon, lat){
             'The two "convergence check" curves are made using half the model scenarios each. \n They should agree fairly well except for rare events.'))
 
         legend('topright', 
-            c('Peak stage exceedance rate (mean over all logic-tree branches)',
+            c('Peak-stage exceedance-rate (mean over all logic-tree branches)',
               'convergence check 1', 'convergence check 2'),
             col=c('black', 'orange', 'red'),
             lty=c(1, 1, 1), bg='white')
@@ -313,7 +313,7 @@ quick_source_deagg<-function(lon, lat){
                 points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
                 mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
-                title(paste0(sz, ': Rate of events in each magnitude category \n with peak stage > ', 
+                title(paste0(sz, ': Rate of events in each magnitude category \n with peak-stage > ', 
                     signif(stage_threshold,2), 'm'))
             }
 
