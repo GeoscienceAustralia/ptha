@@ -65,6 +65,11 @@ This csv file contains the following columns:
 
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5% quantile)
 
+Note that 'peak stage' values below 2cm (or above 20m) are treated as missing
+data in this file. While such values are unlikely to be of interest, if
+necessary they can be reconstructed from the detailed information we provide
+(later in this document).
+
 [Similar data is available in shapefile format here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip). You will need to unzip the file after download.
 A shortcoming of the shapefile format is that there is a 10 character limit on
 attribute names. Therefore the attributes are renamed in some instances, as
@@ -251,17 +256,15 @@ puysegur$unit_source_statistics[1:2,]
 # The functions we provide to access the data automatically translate filenames
 # to the web-accessible versions. 
 ```
+In addition, the `initial_condition_file` and `tide_gauge_file` variables
+provide a link to the vertical deformation and tsunami model run respectively,
+for each unit source. Note that the file path names sometimes differ slightly
+from the location on the NCI Thredds server (although in a fairly obvious way,
+e.g. sometimes we see /g/data replaced with /g/data1a). The scripts provided
+here will translate the file paths as required for remote access.
 
 Next we consider the event metadata table. `puysegur$events` contains summary
-statistics about the earthquake events. The most important variables from a
-users perspective are the moment magnitude `Mw`, the "variable shear modulus"
-moment magnitude `variable_mu_Mw`, the `event_slip_string` (a character with
-slip values for each unit source separated by an underscore), and the
-`event_index_string`. The latter can be used to determine which unit-sources
-are included in the earthquake (the integers in `event_index_string` correspond
-to `subfault_number`'s in the `unit_source_statistics`, separated by a `-`
-character). 
-
+statistics about the earthquake events. 
 ```{r metadata_infoB}
 # Print the names of all event summary statistics
 names(puysegur$events)
@@ -269,6 +272,39 @@ names(puysegur$events)
 # Get the table dimensions
 dim(puysegur$events)
 ```
+While there are many ways to investigate the event table, a simple approach is
+to just print some rows. In general low row-indices will correspond to low
+magnitudes, and high indices to high magnitudes.
+
+```{r metadata_infoC}
+
+# Print some rows (we choose 3050, 3051, 3052)
+puysegur$events[3050:3052, ]
+```
+
+The most important variables from a users perspective are the moment magnitude
+`Mw`, and the "variable shear modulus" moment magnitude `variable_mu_Mw`.
+You may be surprised to see we store two different earthquake magnitudes for
+each event. The `Mw` column holds the earthquake moment magnitude, derived
+under the assumption that the shear modulus (or rigidity) on the source-zone is
+constant, with a value of 30 GPa on thrust sources and 60 GPa on normal
+sources. These values are quite typical and compare well in our comparisons
+with DART buoys.  However, on subduction zones there is some evidence that the
+shear modulus increases with depth, with particularly low values possible at
+shallow depths (which may partially account for so-called 'tsunami
+earthquakes', which generate large tsunamis compared to their earthquake
+magnitude). To account for this we use a depth varying shear modulus model, and
+re-compute the magnitude for each event. Our events also compare well with the
+DART buoy dataset using this redefined magnitude. However, the literature suggests
+that in order to simulate some historical tsunami-earthquakes, it is necessary
+to account for shear modulus variations, which is enabled in the current study
+using the `variable_mu_Mw`.
+
+Some othe important variables are the `event_slip_string` and the
+`event_index_string`. These variables can be used to determine which
+unit-sources are included in the earthquake, and how much slip they have (note
+they are stored as strings with a separator, to permit efficient storage of
+earthquakes with a range of sizes). 
 
 Another useful event-table variable is the `weight_with_nonzero_rate`. This
 gives the fraction of the exceedance-rate models in the logic tree that suggest
@@ -279,15 +315,6 @@ indicate that "a high fraction of our rate models suggest the event would never
 occur", with zero corresponding to an impossible event (i.e. according to the
 model).
 
-While there are many ways to investigate the event table, a simple approach is
-to just print some rows. In general low row-indices will correspond to low
-magnitudes, and high indices to high magnitudes.
-
-```{r metadata_infoC}
-
-# Print some rows (we choose 3050, 3051, 3052)
-puysegur$events[3050:3052, ]
-```
 
 All of our source-zone event tables contain events with magnitudes ranging from
 7.2 to 9.8. This is done for computational convenience, irrespective of whether
