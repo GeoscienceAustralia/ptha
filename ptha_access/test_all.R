@@ -24,24 +24,23 @@ test_sum_tsunami_unit_sources(gauge_netcdf_file)
 # for Puysegur. Obviously this will have to be updated each time
 # the database changes.
 test_puysegur<-function(){
-    stop('Still need to update this test based on the new data structure')
     source('./get_PTHA_results.R', local=TRUE)
 
     puysegur = get_source_zone_events_data('puysegur')
-    model_240 = get_flow_time_series_at_hazard_point(puysegur, 240, 
+    model_3051 = get_flow_time_series_at_hazard_point(puysegur, 3051, 
         hazard_point_ID = c(1.1, 10.1, 22.1, 55015.4, 55042.4))
 
-    max_55015 = max(model_240$flow[['55015.4']][1,,1])
-    max_55042 = max(model_240$flow[['55042.4']][1,,1])
+    max_55015 = max(model_3051$flow[['55015.4']][1,,1])
+    max_55042 = max(model_3051$flow[['55042.4']][1,,1])
 
     # Values known from previous checks
-    er1 = abs(max_55015 - 0.077164)
-    er2 = abs(max_55042 - 0.052797)
+    er1 = abs(max_55015 - 0.050279)
+    er2 = abs(max_55042 - 0.138759)
 
-    m1 = which.max(model_240$flow[['55015.4']][1,,1])
-    m2 = which.max(model_240$flow[['55042.4']][1,,1])
+    m1 = which.max(model_3051$flow[['55015.4']][1,,1])
+    m2 = which.max(model_3051$flow[['55042.4']][1,,1])
 
-    if((er1 < 1.0e-05) & (er2 < 1.0e-05) & (m1 == 62) & (m2 == 76)){
+    if((er1 < 1.0e-05) & (er2 < 1.0e-05) & (m1 == 59) & (m2 == 54)){
         print('PASS')
     }else{
         print('FAIL: test_puysegur giving different results')
@@ -53,13 +52,13 @@ test_puysegur<-function(){
     test_data = structure(list(lon = structure(c(129.089294433594, 129.18830871582, 
         127.597557067871, 160.256103515625, 161.841110229492), .Dim = 5L), 
         lat = structure(c(-8.40988159179688, -8.29211044311523, -8.10336685180664, 
-        -46.8297233581543, -44.897777557373), .Dim = 5L), elev = structure(c(-775.012756347656, 
-        -716.009460449219, -456.208404541016, -5052.998046875, -4819.00732421875
+        -46.8297233581543, -44.897777557373), .Dim = 5L), elev = structure(c(-775.006286621094, 
+        -716.009460449219, -455.951629638672, -5052.998046875, -4819.00732421875
         ), .Dim = 5L), gaugeID = structure(c(1.1, 10.1, 22.1, 55015.4, 
-        55042.4), .Dim = 5L)), .Names = c("lon", "lat", "elev", "gaugeID"
-        ), row.names = c(NA, -5L), class = "data.frame")
+        55042.4), .Dim = 5L)), class = "data.frame", row.names = c(NA, 
+        -5L))
 
-    m1 = max(abs(model_240$location - test_data))
+    m1 = max(abs(model_3051$location - test_data))
     if(m1 > 1.0e-010){
         print('FAIL -- location information haz changed')
     }else{
@@ -67,21 +66,21 @@ test_puysegur<-function(){
     }
 
     # Check if we unpack to gauge-based list, it still works
-    model_240b = get_flow_time_series_at_hazard_point(puysegur, 240, 
+    model_3051b = get_flow_time_series_at_hazard_point(puysegur, 3051, 
         hazard_point_ID = c(1.1, 10.1, 22.1, 55015.4, 55042.4),
         store_by_gauge=FALSE)
 
 
-    if(length(model_240b$flow) == dim(model_240$flow[[1]])[1]){
+    if(length(model_3051b$flow) == dim(model_3051$flow[[1]])[1]){
         print('PASS')
     }else{
         print('FAIL: store_by_gauge not working as desired')
     }
 
     FAILED=FALSE
-    for(i in 1:length(model_240b$flow)){
-        for(j in 1:length(model_240$flow)){
-            if(! all(model_240b$flow[[i]][j,,] == model_240$flow[[j]][i,,])){
+    for(i in 1:length(model_3051b$flow)){
+        for(j in 1:length(model_3051$flow)){
+            if(! all(model_3051b$flow[[i]][j,,] == model_3051$flow[[j]][i,,])){
                 FAILED=TRUE
             }
         }

@@ -102,11 +102,14 @@ tests with:
 ```r
 source('test_all.R')
 ```
-This should print a number of 'PASS' statements, and no 'FAIL' statements.
+This should print a number of 'PASS' statements, and no 'FAIL' statements. It might 
+take a minute or more depending on your internet connection, because it reads datasets
+from the NCI THREDDS server as part of the test.
+
 Some of the tests will fail if you haven't installed the dependencies to read
 time-series. Beware some failures can occur if your internet connection is not
-performing well (or if there are issues with the NCI THREDDS server), so if the
-tests fail it is worth re-trying a few times to confirm it is not due to a transient
-network issue.
+performing well (or if there are issues with the NCI THREDDS server). Thus, if
+the tests fail it is worth re-trying a few times to confirm it is not due to a
+transient network issue.
 
 

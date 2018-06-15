@@ -35,17 +35,18 @@ and its territories. We also store points at the locations of DART buoys
 (deep-ocean gauges which measure tsunami wave heights), as these are very
 useful for testing the model. In addition we store a 'thin' layer of results
 globally at the 100m contour, which is useful for testing our model and
-comparing with previous studies. **If using the global points, note that we
-ignore some earthquake-source zones that are not relevant for Australia (e.g.
-Carribbean, Mediterrean, Manila trench, eastern New Zealand, western Japan).
-Therefore outside of Australia, you should very carefully consider how to
-use the results, noting they may ignore the most relevant source-zones.**
+comparing with previous studies. **If using points far from Austraila, consider
+that we ignore tsunamigenic source zones that are not considered relevant for
+Australia (e.g.  in the Carribbean, the Mediterrean, the Manila trench,
+Kaikoura in New Zealand, western Japan). Therefore, outside of Australia, you
+should very carefully consider whether the results can be used, noting they may
+ignore the most relevant source-zones.**
 
 The peak-stage exceedance-rates describe 'how often' tsunami events occur with
 peak-stage above a particular threshold value. For example, you could ask how often
 peak-stages above 0.5m (or 2.0m) occur, in terms of the average number of events each year
 at a particular site. At most locations there would be less than one event each year, so
-the exceedance rates are typically small numbers (e.g. an exceedance-rate of
+the exceedance-rates are typically small numbers (e.g. an exceedance-rate of
 0.002=1/500 would correspond to one event every 500 years on average).
 Obviously this kind of information is important for understanding tsunami
 hazards. The simplest way to examine the tsunami peak-stage exceedance-rates in
@@ -199,10 +200,10 @@ The controls on the top left of the map can be expanded as shown in the figure.
 These should allow you to change the background layer, and to turn layers on
 and off.
 
-### ***Getting metadata on the earthquake events on each source-zone***
+### ***Obtaining metadata on the earthquake events on each source-zone***
 
 Earthquake event metadata is accessed on a per-source-zone basis. In a typical
-application you would use the detailed exceedance rate plots discussed above
+application you would use the detailed exceedance-rate plots discussed above
 to identify the main source-zones of interest for a particular site. Below
 we show an example using the `puysegur` source-zone, which is located just south
 of New Zealand, to the north of Macquarie Island.
@@ -404,7 +405,7 @@ we consider the high magnitude events are possible on the source-zone. You will
 notice that events at very large magnitudes always have a
 `weight_with_nonzero_rate` equal to zero.
 
-### ***Getting initial conditions for a single earthquake-tsunami event***
+### ***Obtaining initial conditions for a single earthquake-tsunami event***
 
 Suppose we want to get the initial conditions for the earthquake event on row
 3051 of `puysegur$events`.  (By initial conditions, we mean the initial water
@@ -463,7 +464,7 @@ initial_condition = get_initial_condition_for_event(puysegur, row_index, force_f
 ```
 
 
-### ***Getting hazard curves at a particular hazard point***
+### ***Obtaining hazard curves at a particular hazard point***
 
 FIXME: Integrate with above discussion. Consider showing how to download numeric
 curve values for a particular point.
@@ -528,7 +529,7 @@ dim(model_ts$flow[['55015.4']])
 # Example plot of stage
 plot(model_ts$time, model_ts$flow[['55015.4']][1,,1], t='l', 
     xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
-    ylim=c(-0.1, 0.1))
+    ylim=c(-0.1, 0.15))
 points(model_ts$time, model_ts$flow[['55042.4']][1,,1], t='l', 
     col='red')
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
