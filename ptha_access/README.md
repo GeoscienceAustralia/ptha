@@ -2,8 +2,6 @@
 
 # ***NOTE: Currently the study is incomplete, and results available here may change without warning***
 
-# Obtaining basic tsunami hazard information.
-
 We provide access to basic hazard information in easy-to-use csv and shapefile
 formats. This information is useful to get a high-level overview of the PTHA
 results.
@@ -16,6 +14,9 @@ often hazardous events might occur). To access this information users will need
 to install a range of software which allows working with the PTHA data on the
 NCI THREDDS server. 
 
+# Obtaining basic tsunami hazard information.
+
+
 ## Obtaining tsunami peak-stage exceedance-rates at sites around Australia
 
 The tsunami 'peak-stage' is the maximum water-level that a particular tsunami
@@ -23,6 +24,11 @@ attains at a particular location. In the current analysis we ignore tidal
 variations and assume a constant mean-sea-level (MSL=0), so the 'peak-stage' is
 equivalent to the maximum elevation of the tsunami wave above MSL. This gives an
 idea of how 'big' the tsunami is.
+
+In the 2018 PTHA, this information is stored at a set of points in the ocean.
+These points are termed 'hazard points' because we provide the hazard
+information at these sites. (The wave time-series for every event can also be
+obtained at all hazard points using methods described later in this document).
 
 The peak-stage exceedance-rates describe 'how often' tsunami events occur with
 peak-stage above a particular threshold value. For example, you could ask how often
@@ -34,9 +40,9 @@ Obviously this kind of information is important for understanding tsunami
 hazards. The simplest way to examine the tsunami peak-stage exceedance-rates in
 the 2018 PTHA is to download the following csv file:
 <http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv>.
-This csv file contains columns:
+This csv file contains columns with:
 
-* `lon`, `lat` giving the location in longitude/latitude (degrees). 
+* `lon`, `lat` giving the station location in longitude/latitude (degrees). 
 
 * `elev` is the bathymetry at the station (negative = below MSL)
 
