@@ -165,24 +165,26 @@ and that the unit-tests pass.
 
 ### ***Viewing the locations of hazard points and source zones***
 
-It is possible to view the hazard points from an interactive map in R.
+It is possible to view the hazard points from an interactive map in R. Note however
+that similar information is provided in the csv and shapefiles above, and for
+many users it will be easier to view those files using GIS and/or a spreadsheet
+application.
 
-To view the source-zones and hazard points on an interactive map, start
+To view the source-zones and hazard points on an interactive map in R, start
 R in the same directory that the [hazard_points_plot.R](hazard_points_plot.R)
 file resides in, and do:
 
 ```r
 source('hazard_points_plot.R')
 ```
-
 The should open a map in your web browser, containing all unit sources and
-hazard points. The latter include DART buoy locations, and a set of points on
-the GA250 national bathymetry grid for Australia (because this is a grid, it
-contains some points around neighbouring countries as well). 
+hazard points. 
 
-The first time you run this code it will download a range of datasets to your
-machine. This might take a minute or more, depending on your internet connection.
-Future runs will read the data from your machine, so should be faster. 
+The first time you run this code it will download several datasets to your
+machine for use in the map. These will be placed in the DATA and SOURCE_ZONES
+folders. The download might take a minute or more, depending on your internet
+connection.  Future runs will read the data from your machine, so should be
+faster. 
 
 
 ![hazardpoints1](figure/hazard_point_viewer_screenshot1.png)
