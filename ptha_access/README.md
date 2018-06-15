@@ -82,10 +82,10 @@ FIXME describe where to obtain the pdf files containing the summary information
 
 ## Interpreting exceedance-rate information
 
-The stage exceedance-rates vary from site to site, depending on exposure to
-earthquake-generated tsunamis. There is a tendency for the tsunami size to
-increase in shallower water, which is a well known property of ocean waves
-related to energy flux conservation. 
+The peak-stage exceedance-rates vary from site to site, depending on exposure
+to earthquake-generated tsunamis. For a given exceedance-rate, there is also a
+general tendency for the tsunami size to increase in shallower water. Such
+'shoaling' is a well known property of ocean waves. 
 
 The model results are not expected to be accurate everywhere, but **in general
 results far offshore and in deep water are expected to be higher quality than
@@ -138,56 +138,65 @@ You need the program R installed (see <https://www.r-project.org/>).
 
 ### **Getting a recent version of netcdf**
 
-You also need to install the R package `ncdf4` with OPeNDAP support.  To my
-knowledge this may be difficult unless you are running linux (although you can
-do this using a virtual machine). I would suggest non-linux users install
-an ubuntu virtual machine (e.g. using virtual box) and follow the steps below.
+You need to install the R package `ncdf4` with OPeNDAP support.  This may be
+difficult unless you are running linux (although you can do this using a
+virtual machine). Non-linux users are encouraged to install an ubuntu virtual
+machine (e.g. using [VirtualBox](https://www.virtualbox.org) or some other
+virtualization software) and follow the steps below.
 
 A further complication is that to work with the PTHA outputs on the NCI THREDDS
 server you need to build the package with a reasonably recent version of
-netcdf-c.  This is due to a bug in netcdf-c versions prior to 4.6.1 (released
+netcdf-c. This is due to a bug in netcdf-c versions prior to 4.6.1 (released
 in early 2018) that prevented the remote reading of long character strings
 with OPeNDAP. We store some earthquake event data as (potentially) long
 character strings, and it is essential to be able to read these remotely.
 
 At the time of writing (mid 2018), most users will have to install netcdf-c
 from source to access a suitable version.  Source-code for a recent release of
-netcdf-c can be obtained from the netcdf github page:
-<https://github.com/Unidata/netcdf-c/releases>. You need to follow their
-instructions to get it installed. In the authors experience this is not always
-easy, but note there is much online troubleshooting information available, and
-you can ask for help on the netcdf mailing list.
+netcdf-c can be obtained from the [netcdf-c github
+page](https://github.com/Unidata/netcdf-c/releases). You need to follow their
+instructions to get it installed. While building any complex software from
+source can be difficult, there is much online troubleshooting information
+available, and you can ask for help on the netcdf mailing list.
 
-Suppose you succeed in getting netcdf installed. Next you need to install R's
-`ncdf4` package, and specifically tell it to use the newly installed netcdf.
-This can be done by downloading the ncdf4 sources here
-<https://cran.r-project.org/web/packages/ncdf4/index.html>, and then running a
-command similar to the following, in the directory where you have downloaded
-the `ncdf4` source package:
+Next you need to install R's `ncdf4` package, and specifically tell it to use
+the newly installed netcdf.  This can be done by 
+[downloading the ncdf4 sources from this site](https://cran.r-project.org/web/packages/ncdf4/index.html), 
+and then running a command similar to the following, in the directory where you
+have downloaded the `ncdf4` source package:
 
-    R CMD INSTALL ncdf4_1.16.tar.gz --configure-args="--with-nc-config=/home/username/LocalInstalls/netcdf_for_ptha/install/bin/nc-config"
+    R CMD INSTALL ncdf4_1.16.tar.gz --configure-args="--with-nc-config=/home/username/PATH_TO_YOUR_NETCDF_INSTALL/bin/nc-config"
+
 On ubuntu you might need to prepend `sudo` to the above command, depending on
-where you do the installation.  Note you might need to adjust the numbers in
-the `ncdf4_1.16.tar.gz` term above to match those of the package you download.
-Furthermore, you will need to change the path to nc-config to match the path to
-a version of nc-config > 4.6.1.
+where you do the installation. Also, you may need to adjust the numbers in the
+`ncdf4_1.16.tar.gz` term above to match those of the package you download.
+Furthermore, you definitely need to change the path to nc-config to match the
+one on your machine.
 
 To confirm that your `ncdf4` installation is using a suitably recent netcdf-c
-library, try running the following code:
+library, please run the following code:
 
 ```r
 library(ncdf4)
+
 # This is a file from the PTHA, describing earthquake events on the Kermadec-Tonga
 # source-zone. Note I pre-pend [stringlength=4096], which prevents truncation of
 # long character strings. This functionality was broken in older netcdf-c versions
 test_file = paste0('[stringlength=4096]http://dapds00.nci.org.au/thredds/dodsC/fj6/',
     'PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga/TSUNAMI_EVENTS/',
     'all_stochastic_slip_earthquake_events_kermadectonga.nc')
+
 # Open it (this will not read everything)
 fid = nc_open(test_file, readunlim=FALSE)
+
 # Try to read the event_index_string. This will be artificially truncated if 
 # using an old version of netcdf-c
 event_index_string = ncvar_get(fid, 'event_index_string')
+
+#
+# Report whether it worked
+#
+
 if(max(nchar(event_index_string)) == 720){
     print('Success! Your ncdf4 install can read large character strings remotely')
 }else{
@@ -195,13 +204,13 @@ if(max(nchar(event_index_string)) == 720){
 }
 ```
 If the above code leads to the `Success! ...` message, then the install is
-working, but otherwise you will have to troubleshoot your netcdf-c install (or
+working. Otherwise you will have to troubleshoot your netcdf-c install (or
 your internet connection, or check for a change to the NCI THREDDS server,
 etc).
 
 ### **Installing rptha***
 
-Finally, you need to install the `rptha` package. This must be built from
+Finally you need to install the `rptha` package. This must be built from
 source, after obtaining the code from Geoscience Australia's the `PTHA` github
 repository. See instructions at https://github.com/GeoscienceAustralia/ptha/R/README.md
 
