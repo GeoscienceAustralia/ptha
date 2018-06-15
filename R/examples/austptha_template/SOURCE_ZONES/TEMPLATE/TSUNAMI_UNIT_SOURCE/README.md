@@ -5,9 +5,10 @@ The codes in this folder are made to run tsunami propagation models for every
 unit-source on the source-zone. The unit-sources themselves must already have
 been defined using code in [../EQ_SOURCE/](../EQ_SOURCE/).
 
-**Currently the folder is set-up to run the SWALS model on raijin.nci.org.au. The
-codes would require significant modification to be run on another machine, or using
-another model.**
+**Currently the folder is set-up to run the 
+[SWALS model](https://github.com/GeoscienceAustralia/ptha/tree/master/propagation/SWALS)
+on raijin.nci.org.au. The codes would require significant modification to be
+run on another machine, or using another model.**
 
 To run the models, the process is
 
