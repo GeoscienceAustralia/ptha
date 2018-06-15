@@ -30,7 +30,7 @@ The peak-stage exceedance-rates describe 'how often' tsunami events occur with
 peak-stage above a particular threshold value. For example, you could ask how
 often peak-stages above 0.5m (or 2.0m) occur, in terms of the average number of
 events each year at a particular site. At most locations there would be less
-than one event each year, so the exceedance-rates are typically small numbers
+than one event each year, so the exceedance-rates are typically small numbers.
 For example, an exceedance-rate of 0.002=1/500 would correspond to one event every 500
 years on average. Alternatively, one could say the event has a 500 year Average
 Recurrence Interval (ARI).
