@@ -1,4 +1,4 @@
-Code template for the Australian Probabilistic Tsunami Hazard Assessment 2017
+Code template for the Australian Probabilistic Tsunami Hazard Assessment 2018
 -----------------------------------------------------------------------------
 
 [DATA](DATA) contains data that has been 'processed' or developed for modelling

@@ -15,8 +15,16 @@ how often hazardous tsunamis might occur). To access this information users
 will need to install a range of software which allows working with the PTHA
 data on the NCI THREDDS server. 
 
-# Obtaining basic tsunami hazard information.
+The methodologies used in this study, and associated testing, are discussed in
+the project report [provide link when it is published][]. In addition, the codes
+used to conduct the analysis are available open-source in the 
+[ptha package](https://github.com/GeoscienceAustralia/ptha).
+While that package mostly contains generic functionality for PTHA, there is also
+a folder with 
+[project specific scripts](https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template)
+used for the 2018 Australian PTHA.
 
+# Obtaining basic tsunami hazard information.
 
 ## Obtaining tsunami peak-stage exceedance-rates at sites around Australia
 
@@ -129,7 +137,7 @@ not exceeding a few percent of the water depth). Nearshore points should only
 be used as a rough guide to possible tsunami wave heights, and should be
 refined in future using higher resolution models and data. 
 
-The above statements might lead non-specialist to question the purpose of this
+The above statements might lead non-specialists to question the purpose of this
 PTHA, given that for risk management purposes the tsunami inundation is of most
 interest. The key reason for developing an 'offshore' PTHA is that it provides
 essential input data to support the high-resolution inundation models required
@@ -139,7 +147,11 @@ drive the site-specific tsunami inundation models. This helps facilitate
 national consistency in tsunami inundation modelling, while reducing the need
 for nearshore tsunami modellers to develop expertise in subjects such as
 earthquake kinematics and tsunami generation, earthquake magnitude-frequency
-relations, and quantification of the associated uncertainties. 
+relations, and quantification of the associated uncertainties. Furthermore, we
+have been able to extensively test the performance of our tsunami generation
+methods using global-scale deep ocean tsunami observations for 20 historical
+tsunami events. Most local-scale studies would not have the time or resources
+to undertake such testing as part of their project.
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
