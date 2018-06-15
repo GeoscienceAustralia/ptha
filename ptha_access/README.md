@@ -210,12 +210,39 @@ puysegur = get_source_zone_events_data('puysegur')
 This variable `puysegur` is now an R `list`, which contains two `data.frame`'s
 summarising the source-zone geometry and the earthquake events, and a character
 vector giving the associated tide-gauge files (where tsunami time-series are
-stored): 
-* `puysegur$unit_source_statistics` contains summary statistics about the unit-sources. 
-For each unit source this gives the centroid `lon` and `lat` and `depth`; the unit source
-dimensions `length` and `width`; the rupture source mechanism (`strike`, `dip`, `rake`);
-and indices `downdip_number`, `alongstrike_number`, and `subfault_number` which give
-information of the placement of the unit source on the grid of all unit sources.
+stored)
+
+```r
+names(puysegur)
+```
+
+```
+## [1] "events"                 "unit_source_statistics"
+## [3] "gauge_netcdf_files"
+```
+
+```r
+lapply(puysegur, class) # Get class of each entry in the list 'puysegur'
+```
+
+```
+## $events
+## [1] "data.frame"
+## 
+## $unit_source_statistics
+## [1] "data.frame"
+## 
+## $gauge_netcdf_files
+## [1] "character"
+```
+
+We now describe the unit-source-statistics table.
+`puysegur$unit_source_statistics` contains summary statistics about the
+unit-sources. For each unit source this gives the centroid `lon` and `lat` and
+`depth`; the unit source dimensions `length` and `width`; the rupture source
+mechanism (`strike`, `dip`, `rake`); and indices `downdip_number`,
+`alongstrike_number`, and `subfault_number` which give information of the
+placement of the unit source on the grid of all unit sources.
 
 ```r
 # Get the names of all summary statistics
@@ -272,8 +299,9 @@ puysegur$unit_source_statistics[1:2,]
 # to the web-accessible versions. 
 ```
 
-* `puysegur$events` contains summary statistics about the earthquake events.
-The most important are the moment magnitude `Mw`, the "variable shear modulus"
+Next we consider the event metadata table. `puysegur$events` contains summary
+statistics about the earthquake events. The most important variables from a
+users perspective are the moment magnitude `Mw`, the "variable shear modulus"
 moment magnitude `variable_mu_Mw`, the `event_slip_string` (a character with
 slip values for each unit source separated by an underscore), and the
 `event_index_string`. The latter can be used to determine which unit-sources
@@ -322,6 +350,7 @@ While there are many ways to investigate the event table, a simple approach is
 to just print some rows. In general low row-indices will correspond to low
 magnitudes, and high indices to high magnitudes.
 
+
 ```r
 # Print some rows (we choose 3050, 3051, 3052)
 puysegur$events[3050:3052, ]
@@ -358,6 +387,11 @@ puysegur$events[3050:3052, ]
 ## 3052                0.9770982
 ```
 
+All of our source-zone event tables contain events with magnitudes ranging from
+7.2 to 9.8. This is done for computational convenience, irrespective of whether
+we consider the high magnitude events are possible on the source-zone. You will
+notice that events at very large magnitudes always have a
+`weight_with_nonzero_rate` equal to zero.
 
 ### ***Getting initial conditions for a single earthquake-tsunami event***
 
