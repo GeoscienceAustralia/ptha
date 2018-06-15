@@ -70,10 +70,10 @@ compared with the above csv:
 
 * `STGl_XXXX` is the same as `STAGE_lower_ci_XXXX` described above
 
-At most hazard points you will find there is large uncertainty in the peak
-tsunami size for a given exceedance-rates. This is mainly due to large
-uncertainty in the frequencies of high-magnitude subduction zone earthquakes. A
-more detailed discussion of these topics can be found in the 
+At most hazard points you will find there is large uncertainty in the
+peak-stage for a given exceedance-rate. This is mainly due to large uncertainty
+in the frequencies of high-magnitude subduction zone earthquakes. A more
+detailed discussion of these topics can be found in the 
 [Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
 
 ## Obtaining more detailed exceedance-rate information for specific sites
@@ -126,15 +126,15 @@ with the exceedance-rate modelling, such inputs can be used to drive local
 scale tsunami hazard assessments (i.e. studies which model tsunami inundation).
 
 To access these results the user needs to interact with our files via the NCI
-THREDDS server. We provide R script to facilitate this, and the process is
-described below. Numerous software dependencies are required to run these codes,
+THREDDS server. We provide R scripts to facilitate this, and the process is
+described below. A range of software must be installed to run these codes,
 [as described here](INSTALL.md)
 
-Unfortunately the process may be challenging for users with limited experience
-in scientific programming and linux. Users doing tsunami hazard studies **in
-Australia** can alternatively contact Geoscience Australia directly if they
-have difficulty with any of these steps (please email Gareth Davies at
-gareth.davies@ga.gov.au). 
+Unfortunately the installation and data extraction process may be challenging
+for users with limited experience in scientific programming and linux. Users
+doing tsunami hazard studies **in Australia** can alternatively contact
+Geoscience Australia directly if they have difficulty with any of these steps
+(please email Gareth Davies at gareth.davies@ga.gov.au). 
 
 ## **Usage**
 
@@ -189,6 +189,12 @@ and off.
 
 ### ***Getting metadata on the earthquake events on each source-zone***
 
+Earthquake event metadata is accessed on a per-source-zone basis. In a typical
+application you would use the detailed exceedance rate plots discussed above
+to identify the main source-zones of interest for a particular site. Below
+we show an example using the `puysegur` source-zone, which is located just south
+of New Zealand, to the north of Macquarie Island.
+
 To download metadata from the NCI describing the earthquake events on a
 particular source-zone, start R in the current directory, and do:
 ```{r get_metadata}
@@ -199,7 +205,10 @@ source('get_PTHA_results.R')
 puysegur = get_source_zone_events_data('puysegur')
 ```
 
-This variable `puysegur` is now an R `list`, which contains two `data.frame`'s: 
+This variable `puysegur` is now an R `list`, which contains two `data.frame`'s
+summarising the source-zone geometry and the earthquake events, and a character
+vector giving the associated tide-gauge files (where tsunami time-series are
+stored): 
 * `puysegur$unit_source_statistics` contains summary statistics about the unit-sources. 
 For each unit source this gives the centroid `lon` and `lat` and `depth`; the unit source
 dimensions `length` and `width`; the rupture source mechanism (`strike`, `dip`, `rake`);
