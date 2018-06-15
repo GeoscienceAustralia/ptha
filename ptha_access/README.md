@@ -6,7 +6,7 @@ We provide access to basic tsunami hazard information in easy-to-use csv and
 shapefile formats. This information is useful to get a high-level overview of
 the PTHA results.
 
-We also provide access to details information for every event in our analysis:
+We also provide access to detailed information for every event in our analysis:
 earthquake discretization, tsunami initial condition, and wave time-series at
 a large set of points in the ocean ('hazard points'). This information is
 useful for site-specific tsunami hazard studies (which use it for model
@@ -341,43 +341,44 @@ puysegur$events[3050:3052, ]
 ### ***Getting initial conditions for a single earthquake-tsunami event***
 
 Suppose we want to get the initial conditions for the earthquake event on row
-3050 of `puysegur$events`.  (By initial conditions, we mean the initial water
-surface perturbation -- the velocity is treated as zero). The metadata for event 3050 is:
+3051 of `puysegur$events`.  (By initial conditions, we mean the initial water
+surface perturbation -- the velocity is treated as zero). The metadata for event 3051 is:
 
 ```r
-puysegur$events[3050,]
+row_index = 3051 # Use this variable to refer to event 3051
+puysegur$events[row_index,]
 ```
 
 ```
-##      event_index_string                       event_slip_string  Mw
-## 3050 15-16-17-19-21-22- 0.4106_0.1527_1.235_0.2784_1.775_8.616_ 7.9
-##      target_lon target_lat peak_slip_downdip_ind peak_slip_alongstrike_ind
-## 3050   166.2998  -46.18891                     2                        11
+##      event_index_string              event_slip_string  Mw target_lon
+## 3051    15-17-18-19-20- 2.316_2.438_1.567_3.424_1.612_ 7.9   166.2998
+##      target_lat peak_slip_downdip_ind peak_slip_alongstrike_ind
+## 3051  -46.18891                     1                        10
 ##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
-## 3050                   0.01100962                   0.01639363   puysegur
+## 3051                  0.003014966                  0.007441733   puysegur
 ##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 3050               204 9.758208e-06         6.282499e-07
+## 3051               204 1.841717e-05         1.185729e-06
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 3050         1.709385e-05       7.949118            1.501529e-05
+## 3051         3.226212e-05       7.777764            1.287362e-05
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 3050                      2.97069e-06                     2.633619e-05
+## 3051                     2.546973e-06                      2.25798e-05
 ##      weight_with_nonzero_rate
-## 3050                0.9770982
+## 3051                0.9770982
 ```
 To get its initial condition, do:
 
 ```r
 # Get the initial condition as a geo-referenced raster
-initial_condition_3050 = get_initial_condition_for_event(puysegur, 3050)
+initial_condition = get_initial_condition_for_event(puysegur, row_index)
 
 ## The raster can be save as a geotif for use in other software, with:
 # writeRaster(initial_conditions, 'my_output_filename.tif')
 
 # Make a plot
-plot(initial_condition_3050, main='Initial water surface deformation, event 3050, Puysegur')
+plot(initial_condition, main='Initial water surface deformation for the example event, Puysegur')
 ```
 
-![plot of chunk raster_event3050](figure/raster_event3050-1.png)
+![plot of chunk raster_eventXXX](figure/raster_eventXXX-1.png)
 
 The function `get_initial_condition_for_event` used above will download the
 required data from the web and save it in the folder
@@ -392,7 +393,7 @@ if the NCI analysis has been updated.
 # Get the initial condition as a geo-referenced raster, forcing download of
 # all files from NCI irrespective of whether they exist on the current
 # machine
-initial_condition_3050 = get_initial_condition_for_event(puysegur, 3050, force_file_download=TRUE)
+initial_condition = get_initial_condition_for_event(puysegur, row_index, force_file_download=TRUE)
 ```
 
 
@@ -423,12 +424,12 @@ see the installation section above.*
 ```r
 # Get stage, uh, vh time-series at DART gauges 55015 and 55042
 # To find the ID's, look on the interactive hazard-point map.
-model_3050 = get_flow_time_series_at_hazard_point(puysegur, 
-    event_ID=3050, 
+model_ts = get_flow_time_series_at_hazard_point(puysegur, 
+    event_ID=row_index, 
     hazard_point_ID=c(55015.4, 55042.4))
 # Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame, as
-# well as the 'events' data for 3050
-names(model_3050)
+# well as the 'events' data
+names(model_ts)
 ```
 
 ```
@@ -437,7 +438,7 @@ names(model_3050)
 
 ```r
 # The 'flow' list should have one matrix for each gauge. 
-names(model_3050$flow)
+names(model_ts$flow)
 ```
 
 ```
@@ -449,11 +450,11 @@ names(model_3050$flow)
 # size equal to the number of gauges, by passing the argument 'unpack_to_list=FALSE'
 # The latter option may be more efficient for some computations.
 
-# By default for each gauge, model_3050$flow[["gauge_id"]] is a 3D array. 
+# By default for each gauge, model_ts$flow[["gauge_id"]] is a 3D array. 
 # The first dimension is always length 1, the second dimension has length
 # equal to the number of time-steps, and the third dimension is of length
 # three -- with 1 = Stage, 2 = UH, 3 = VH
-dim(model_3050$flow[['55015.4']])
+dim(model_ts$flow[['55015.4']])
 ```
 
 ```
@@ -462,14 +463,14 @@ dim(model_3050$flow[['55015.4']])
 
 ```r
 # Example plot of stage
-plot(model_3050$time, model_3050$flow[['55015.4']][1,,1], t='l', 
+plot(model_ts$time, model_ts$flow[['55015.4']][1,,1], t='l', 
     xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
     ylim=c(-0.1, 0.1))
-points(model_3050$time, model_3050$flow[['55042.4']][1,,1], t='l', 
+points(model_ts$time, model_ts$flow[['55042.4']][1,,1], t='l', 
     col='red')
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
 
-title('Stage time-series for event 3050 at 2 gauges')
+title('Stage time-series for the event at 2 gauges')
 ```
 
 ![plot of chunk getflow](figure/getflow-1.png)
