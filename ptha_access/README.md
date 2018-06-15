@@ -10,11 +10,13 @@ results.
 
 We also provide access to earthquake discretization, tsunami initial condition,
 and wave time-series for every event in our analysis. This information is
-useful for constructing tsunami hazard models. To access this information users
-will need to install a range of software which allows working with the PTHA
-data on the NCI THREDDS server. 
+useful for site-specific tsunami hazard studies (which need the offshore
+results and hazard information as 'boundary conditions' and to estimate how
+often hazardous events might occur). To access this information users will need
+to install a range of software which allows working with the PTHA data on the
+NCI THREDDS server. 
 
-## Tsunami peak-stage exceedance rates at sites around Australia
+## Tsunami peak-stage exceedance-rates at sites around Australia
 
 The tsunami 'peak-stage' is the maximum water-level that a particular tsunami
 attains at a particular location. In the current analysis we ignore tidal
@@ -22,11 +24,13 @@ variations and assume a constant mean-sea-level (MSL=0), so the 'peak-stage' is
 equivalent to the maximum elevation of the tsunami wave above MSL. This gives an
 idea of how 'big' the tsunami is.
 
-The peak-stage exceedance rates describe how often tsunami events occur with
-peak-stage exceeding a particular threshold value. Obviously this kind of
-information is important to understanding tsunami hazards. The simplest way to
-examine the tsunami peak-stage exceedance rates in the 2018 PTHA is to download
-the following csv file:
+The peak-stage exceedance-rates describe 'how often' tsunami events occur with
+peak-stage above a particular threshold value. For example, you could ask how often
+peak-stages above 0.5m (or 2.0m) occur, in terms of the average number of events each year
+at a particular site.  Obviously this kind of information is important for
+understanding tsunami hazards. The simplest way to examine the tsunami
+peak-stage exceedance-rates in the 2018 PTHA is to download the following csv
+file:
 <http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv>.
 This csv file contains columns:
 
@@ -36,11 +40,11 @@ This csv file contains columns:
 
 * `gaugeID` is a real station ID
 
-* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance rate. These values corresponds to the tsunami peak-stage which has mean exceedance rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami peak-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
+* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These values corresponds to the tsunami peak-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami peak-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
 
-* multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 97.5% quantile)
+* multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 97.5% quantile)
 
-* multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 2.5% quantile)
+* multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5% quantile)
 
 Similar data is available in shapefile format. That can be downloaded here (you
 will need to unzip the file after download):
@@ -62,19 +66,19 @@ compared with the above csv:
 * `STGl_XXXX' is the same as `STAGE_lower_ci_XXXX` described above
 
 At most locations you will find there is high uncertainty in the peak tsunami
-size for a given exceedance rates. This is mainly due to high uncertainty in
+size for a given exceedance-rates. This is mainly due to high uncertainty in
 the frequencies of high-magnitude subduction zone earthquakes. A more detailed
 discussion of these topics can be found in the Australian Tsunami Hazard
 Modelling Guidelines, which are available here:
 <https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf> 
 
-## More detailed exceedance rate information for specific sites
+## More detailed exceedance-rate information for specific sites
 
 FIXME describe where to obtain the pdf files containing the summary information
 
-## Interpreting exceedance rate information
+## Interpreting exceedance-rate information
 
-The stage exceedance rates vary from site to site, depending on exposure to
+The stage exceedance-rates vary from site to site, depending on exposure to
 earthquake-generated tsunamis. There is a tendency for the tsunami size to
 increase in shallower water, which is a well known property of ocean waves
 related to energy flux conservation. 
@@ -104,15 +108,15 @@ The above points might lead non-specialist to question the point of this PTHA,
 given that for risk management purposes the tsunami inundation is of most
 interest. The key reason for developing an 'offshore' PTHA is that it provides
 essential input input data to support the high-resolution models required
-for tsunami risk management. The tsunami scenarios and associated exceedance
-rates provided in this PTHA will be used as 'boundary conditions' to drive the
-site-specific high resolution tsunami inundation models. 
+for tsunami risk management. The tsunami scenarios and associated
+exceedance-rates provided in this PTHA will be used as 'boundary conditions' to
+drive the site-specific high resolution tsunami inundation models. 
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
 For every event in our analysis we provide earthquake information, tsunami
 initial conditions, and wave time-series at every hazard point. Combined
-with the exceedance rate modelling, such inputs can be used to drive local
+with the exceedance-rate modelling, such inputs can be used to drive local
 scale tsunami hazard assessments (i.e. studies which model tsunami inundation).
 
 To access these results the user needs to interact with our files via the NCI
