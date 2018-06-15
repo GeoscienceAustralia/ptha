@@ -279,7 +279,7 @@ slip values for each unit source separated by an underscore), and the
 `event_index_string`. The latter can be used to determine which unit-sources
 are included in the earthquake (the integers in `event_index_string` correspond
 to `subfault_number`'s in the `unit_source_statistics`, separated by a `-`
-character).
+character). 
 
 
 ```r
@@ -308,6 +308,19 @@ dim(puysegur$events)
 ```
 ## [1] 6978   19
 ```
+
+Another useful event-table variable is the `weight_with_nonzero_rate`. This
+gives the fraction of the exceedance-rate models in the logic tree that suggest
+the event could possibly occur, according to the event magnitude. Values close
+to 1.0 indicate "a high fraction of our rate models suggest the event could
+occur, given a long enough time-frame". On the other hand, values close to 0.0
+indicate that "a high fraction of our rate models suggest the event would never
+occur", with zero corresponding to an impossible event (i.e. according to the
+model).
+
+While there are many ways to investigate the event table, a simple approach is
+to just print some rows. In general low row-indices will correspond to low
+magnitudes, and high indices to high magnitudes.
 
 ```r
 # Print some rows (we choose 3050, 3051, 3052)
