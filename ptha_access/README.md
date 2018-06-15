@@ -1,4 +1,4 @@
-# **Codes to access the 2017 Australian PTHA results**
+# **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment results**
 
 **Currently these tools are in development, and the study is not complete.** 
 * **The data and models referred to below are placeholder examples for internal testing purposes only,
@@ -6,42 +6,174 @@ and are not to be used in any real application.**
 * **The interfaces are expected to change.**
 * **The code should be adjusted to download all data from the NCI [including source-zones + hazard points], to ensure consistency**
 
-These codes can be used to access the 2017 Australian PTHA results, developed
-by Geoscience Australia.
+This document explains how to access the 2018 Probabilistic Tsunami Hazard
+Assessement (PTHA) results. 
+
+# Obtaining basic tsunami hazard information.
+
+## Tsunami peak-stage exceedance rates at sites around Australia
+
+The tsunami 'peak-stage' is the maximum water-level that a particular tsunami
+attains in our analysis. Because we ignore tidal variations and assume a
+constant mean-sea-level (MSL=0), this is equivalent to the maximum elevation of
+the tsunami wave above MSL.
+
+If you only wish to look at the locations of offshore hazard points, with basic
+tsunami peak-stage exceedance rate information, then you can simply download
+a csv file containing the data here: <http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv>. This csv file contains columns:
+    * `lon`, `lat` giving the location in longitude/latitude (degrees). 
+    * `elev` is the bathymetry at the station (negative = below MSL)
+    * `gaugeID` is a real station ID
+    * multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance rate. 
+
+        These values corresponds to the tsunami peak-stage which has mean exceedance rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami peak-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
+   
+    * multiple columns with names like `STAGE_upper_ci_XXXX`. 
+    
+        These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 97.5% quantile)
+
+    * multiple columns with names like `STAGE_lower_ci_XXXX`. 
+
+        These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance rate. (i.e. 2.5% quantile)
+
+Similar data is available in a shapefile, which can be downloaded here (inside a zip file):
+<http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip>
+Because there is a 10 character limit on shapefile attribute names, the
+attributes are renamed in some instances compared with the csv above:
+    * `lon`, `lat` giving the location in longitude/latitude (degrees). 
+    * `elev` is the bathymetry at the station (negative = below MSL)
+    * `gaugeID` is a real station ID
+    * `STG_XXXX' is the same as `STAGE_XXXX` described above
+    * `STGu_XXXX' is the same as `STAGE_upper_ci_XXXX` described above
+    * `STGl_XXXX' is the same as `STAGE_lower_ci_XXXX` described above
+
+At most locations you will find there is high uncertainty in the peak tsunami
+size for a given exceedance rates. This is mainly due to high uncertainty in
+the frequencies of high-magnitude subduction zone earthquakes. A more detailed
+discussion of these topics can be found in the Australian Tsunami Hazard
+Modelling Guidelines, which are available here:
+<https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf> 
+
+## More detailed exceedance rate information for specific sites
+
+FIXME describe where to obtain the pdf files containing the summary information
+
+## Interpreting exceedance rate information
+
+The stage exceedance rates will vary in space depending on the sites exposure
+to tsunami from events in our PTHA. There is also a tendency for the tsunami
+size to increase in shallower water, due to energy flux conservation. 
+
+The user must be aware that in some regions our coarse resolution model (1 arc
+minute) and elevation data (GA250/GEBCO2014) may have insufficient resolution
+or accuracy to model the tsunami well. Furthermore, at some locations some
+modelled waves will violate the assumptions underlying our linear tsunami
+model. A priori we expect the model performance to be poorer close to the coast
+and in shallower waters. **For modelling purposes we strongly encourage the use
+of points well offshore in deep water** (preferably with wave heights of
+interest not exceeding a few percent of the water depth). To help ensure such
+points are available, the current PTHA includes points along a 1000m depth
+contour and gridded lon-lat points extending well offshore, in addition to the
+100m depth contour points.
+
+
+# Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
+
+It is possible to obtain initial conditions and time-series for every event in
+our analysis.  Combined with the exceedance rate modelling, such inputs can be
+used to drive local scale tsunami hazard assessments (i.e. studies which model
+actual tsunami inundation).
+
+However, doing this requires interacting with our files via the NCI server,
+generally using R code. The steps are described below. Unfortunately they may
+be difficult for users who are inexperienced in scientific programming and
+linux (and even more advanced users may have difficulties, e.g. in building
+netcdf from source). Users doing hazard studies in Australia should
+alternatively contact Geoscience Australia directly for assistence in obtaining
+the information they require (gareth.davies@ga.gov.au). 
+
 
 ## **Installation**
 
-You need the program R installed, as well as the packages `raster`, `rgdal`,
-and `mapview`. If you have R installed, then the latter can be obtained by
-typing the following in R:
+You need the program R installed (see <https://www.r-project.org/>).
+
+
+### **Getting a recent version of netcdf**
+
+You also need to install the R package `ncdf4` with OPeNDAP support.  To my
+knowledge this may be difficult unless you are running linux (although you can
+do this using a virtual machine). I would suggest non-linux users install
+an ubuntu virtual machine (e.g. using virtual box) and follow the steps below.
+
+A further complication is that to work with the PTHA outputs on the NCI THREDDS
+server you need to build the package with a reasonably recent version of
+netcdf-c.  This is due to a bug in netcdf-c versions prior to 4.6.1 (released
+in early 2018) that prevented the remote reading of long character strings
+with OPeNDAP. We store some earthquake event data as (potentially) long
+character strings, and it is essential to be able to read these remotely.
+
+At the time of writing (mid 2018), most users will have to install netcdf-c
+from source to access a suitable version.  Source-code for a recent release of
+netcdf-c can be obtained from the netcdf github page:
+<https://github.com/Unidata/netcdf-c/releases>. You need to follow their
+instructions to get it installed. In the authors experience this is not always
+easy, but note there is much online troubleshooting information available, and
+you can ask for help on the netcdf mailing list.
+
+Suppose you succeed in getting netcdf installed. Next you need to install R's
+`ncdf4` package, and specifically tell it to use the newly installed netcdf.
+This can be done by downloading the ncdf4 sources here
+<https://cran.r-project.org/web/packages/ncdf4/index.html>, and then running a
+command similar to the following, in the directory where you have downloaded
+the `ncdf4` source package:
+
+    R CMD INSTALL ncdf4_1.16.tar.gz --configure-args="--with-nc-config=/home/username/LocalInstalls/netcdf_for_ptha/install/bin/nc-config"
+On ubuntu you might need to prepend `sudo` to the above command, depending on
+where you do the installation.  Note you might need to adjust the numbers in
+the `ncdf4_1.16.tar.gz` term above to match those of the package you download.
+Furthermore, you will need to change the path to nc-config to match the path to
+a version of nc-config > 4.6.1.
+
+To confirm that your `ncdf4` installation is using a suitably recent netcdf-c
+library, try running the following code:
 
 ```r
-install.packages(c('raster', 'rgdal', 'mapview'))
+library(ncdf4)
+# This is a file from the PTHA, describing earthquake events on the Kermadec-Tonga
+# source-zone. Note I pre-pend [stringlength=4096], which prevents truncation of
+# long character strings. This functionality was broken in older netcdf-c versions
+test_file = paste0('[stringlength=4096]http://dapds00.nci.org.au/thredds/dodsC/fj6/',
+    'PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga/TSUNAMI_EVENTS/',
+    'all_stochastic_slip_earthquake_events_kermadectonga.nc')
+# Open it (this will not read everything)
+fid = nc_open(test_file, readunlim=FALSE)
+# Try to read the event_index_string. This will be artificially truncated if 
+# using an old version of netcdf-c
+event_index_string = ncvar_get(fid, 'event_index_string')
+if(max(nchar(event_index_string)) == 720){
+    print('Success! Your ncdf4 install can read large character strings remotely')
+}else{
+    print('FAIL. Perhaps ncdf4 is linking to an older netcdf-c version?')
+}
 ```
-You only need to do this once (usually just after installing R).
+If the above code leads to the `Success! ...` message, then the install is
+working, but otherwise you will have to troubleshoot your netcdf-c install (or
+your internet connection, or check for a change to the NCI THREDDS server,
+etc).
 
-Then, copy the `ptha_access` folder to your computer. The location should not
-matter. To run the code, simply open an R session in the `ptha_access`
-directory, and type the required instructions as explained below.
+### **Installing rptha***
 
+Finally, you need to install the `rptha` package. This must be built from
+source, after obtaining the code from Geoscience Australia's the `PTHA` github
+repository. See instructions at https://github.com/GeoscienceAustralia/ptha/R/README.md
 
-### ***Extra dependencies to extract tsunami time-series***
+### **Installing mapview***
+Finally you should install the `mapview` package (to enable some interactive
+plots shown below)
 
-If you wish to extract modelled tsunami time-series at gauges, then you also
-need to have the `rptha` package installed. This must be built from source,
-after obtaining the code from Geoscience Australia's the `PTHA` github
-repository: https://github.com/GeoscienceAustralia/ptha
-
-Before installing `rptha`, note that for the time-series extraction code to
-work, R's `ncdf4` package must be built with OpenDAP support. OpenDAP is what
-allows the code to access subsets of netcdf files on the NCI, without
-downloading everythng (TB in total). ncdf4 seems to be built with OpenDAP by
-default on Linux - but not on Windows - and I'm unsure about Mac. In the
-latter cases, you will have to build netcdf yourself before installing `ncdf4` in R. 
-*Also, beware there is a bug in netcdf 4.1.3 which can cause the code to hang
-if one tries to access the first gauge in a file. This version is the default
-netcdf on Ubuntu 14.04, so in that case, it may be necessary to install a newer
-netcdf and link the ncdf4 package with this during installation.*
+```r
+install.packages('mapview')
+```
 
 ## **Unit tests**
 Assuming you have installed all the above dependencies, you can run the unit
@@ -58,17 +190,25 @@ time-series.
 
 ### ***Viewing the locations of hazard points and source zones***
 
+It is possible to view the hazard points from an interactive map in R.
+
 To view the source-zones and hazard points on an interactive map, start
-R in the same directory that this file resides in, and do:
+R in the same directory that the [hazard_points_plot.R](hazard_points_plot.R)
+file resides in, and do:
 
 ```r
 source('hazard_points_plot.R')
 ```
 
-This should open a map in your web browser, containing all unit sources and
+The should open a map in your web browser, containing all unit sources and
 hazard points. The latter include DART buoy locations, and a set of points on
 the GA250 national bathymetry grid for Australia (because this is a grid, it
 contains some points around neighbouring countries as well). 
+
+The first time you run this code it will download a range of datasets to your
+machine. This might take a minute or more, depending on your internet connection.
+Future runs will read the data from your machine, so should be faster. 
+
 
 ![hazardpoints1](figure/hazard_point_viewer_screenshot1.png)
 
@@ -84,14 +224,16 @@ mostly correspond to the locations of DART buoys.
 
 If you zoom in enough (e.g. below we look at Christmas Island), eventually the circles
 containing many points should be replaced by individual hazard points (blue
-circles). They can be queried with a mouse click.
+circles). They can be queried with a mouse click. For each point, we store 
+basic stage-vs-exceedance-rate information, as was discussed above.
 ![hazardpoints2](figure/hazard_point_viewer_screenshot2.png)
 
 The unit sources appear as a polygonal grid. Individual unit sources can also
-be queried. 
+be queried (e.g. to learn the name of the source-zone in our analysis) 
 ![hazardpoints3](figure/hazard_point_viewer_screenshot3c.png)
-The controls on the top left of the map can be expanded. These
-should allow you to change the background layer, and to turn layers on and off.
+The controls on the top left of the map can be expanded as shown in the figure.
+These should allow you to change the background layer, and to turn layers on
+and off.
 
 ### ***Getting metadata on the earthquake events on each source-zone***
 
@@ -111,7 +253,7 @@ This variable `puysegur` is now an R `list`, which contains two `data.frame`'s:
 For each unit source this gives the centroid `lon` and `lat` and `depth`; the unit source
 dimensions `length` and `width`; the rupture source mechanism (`strike`, `dip`, `rake`);
 and indices `downdip_number`, `alongstrike_number`, and `subfault_number` which give
-information of the placement of the unit source on the grid of all unit sources. 
+information of the placement of the unit source on the grid of all unit sources.
 
 ```r
 # Get the names of all summary statistics
@@ -126,6 +268,7 @@ names(puysegur$unit_source_statistics)
 ##  [9] "width"                  "downdip_number"        
 ## [11] "alongstrike_number"     "subfault_number"       
 ## [13] "max_depth"              "initial_condition_file"
+## [15] "tide_gauge_file"
 ```
 
 ```r
@@ -134,7 +277,7 @@ dim(puysegur$unit_source_statistics)
 ```
 
 ```
-## [1] 34 14
+## [1] 34 15
 ```
 
 ```r
@@ -144,32 +287,37 @@ puysegur$unit_source_statistics[1:2,]
 
 ```
 ##      lon_c     lat_c     depth   strike      dip rake slip   length
-## 1 163.7432 -49.97156  5.704857 22.37220 11.47151   90    1 41.32763
-## 2 164.4056 -50.18472 25.704357 21.20403 29.84733   90    1 46.10036
+## 1 163.7154 -49.94804  6.591836 22.36646 14.61936   90    1 44.66806
+## 2 164.3214 -50.12718 26.591336 21.76445 30.80589   90    1 48.54929
 ##      width downdip_number alongstrike_number subfault_number max_depth
-## 1 57.26111              1                  1               1  11.42703
-## 2 57.15794              2                  1               2  40.00000
-##                                                                                          initial_condition_file
-## 1 /short/w85/tsunami/MODELS/AustPTHA/SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur/puysegur_1_1.tif
-## 2 /short/w85/tsunami/MODELS/AustPTHA/SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur/puysegur_2_1.tif
+## 1 52.13089              1                  1               1  13.24538
+## 2 52.50416              2                  1               2  40.00000
+##                                                                                     initial_condition_file
+## 1 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur/puysegur_1_1.tif
+## 2 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur/puysegur_2_1.tif
+##                                                                                                                                                                       tide_gauge_file
+## 1 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20170904165726_puysegur_1_1/RUN_ID100001_20170904_191226.717/Gauges_data_ID100001.nc
+## 2 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20170904165729_puysegur_2_1/RUN_ID100001_20170904_191227.920/Gauges_data_ID100001.nc
 ```
 
 ```r
 # File paths in the above table describe the location of key files *at the time
 # the model was run*. 
-# This may not be the same as the location of the files that the user downloads
+# This is not always identical to the of the files that the user downloads
 # (because in general, we cannot provide download access to our computational
-# drives). 
-# However, the functions we provide to access the data will translate filenames
-# to the web-accessible versions, as required. 
+# drives). However, it will be closely related.
+# The functions we provide to access the data automatically translate filenames
+# to the web-accessible versions. 
 ```
 
 * `puysegur$events` contains summary statistics about the earthquake events.
-The most important are the moment magnitude `Mw`, the earthquake slip `slip`,
-and the `event_index_string`. The latter can be used to determine which
-unit-sources are included in the earthquake (the integers in `event_index_string`
-correspond to `subfault_number`'s in the `unit_source_statistics`, separated by
-a `-` character).
+The most important are the moment magnitude `Mw`, the "variable shear modulus"
+moment magnitude `variable_mu_Mw`, the `event_slip_string` (a character with
+slip values for each unit source separated by an underscore), and the
+`event_index_string`. The latter can be used to determine which unit-sources
+are included in the earthquake (the integers in `event_index_string` correspond
+to `subfault_number`'s in the `unit_source_statistics`, separated by a `-`
+character).
 
 
 ```r
@@ -178,9 +326,16 @@ names(puysegur$events)
 ```
 
 ```
-## [1] "area"               "mean_length"        "mean_width"        
-## [4] "slip"               "Mw"                 "mean_depth"        
-## [7] "max_depth"          "event_index_string" "sourcename"
+##  [1] "event_index_string"               "event_slip_string"               
+##  [3] "Mw"                               "target_lon"                      
+##  [5] "target_lat"                       "peak_slip_downdip_ind"           
+##  [7] "peak_slip_alongstrike_ind"        "physical_corner_wavenumber_x"    
+##  [9] "physical_corner_wavenumber_y"     "sourcename"                      
+## [11] "uniform_event_row"                "rate_annual"                     
+## [13] "rate_annual_lower_ci"             "rate_annual_upper_ci"            
+## [15] "variable_mu_Mw"                   "variable_mu_rate_annual"         
+## [17] "variable_mu_rate_annual_lower_ci" "variable_mu_rate_annual_upper_ci"
+## [19] "weight_with_nonzero_rate"
 ```
 
 ```r
@@ -189,53 +344,87 @@ dim(puysegur$events)
 ```
 
 ```
-## [1] 336   9
+## [1] 6978   19
 ```
 
 ```r
-# Print rows 200 and 201
-puysegur$events[200:201, ]
+# Print some rows (we choose 3050, 3051, 3052)
+puysegur$events[3050:3052, ]
 ```
 
 ```
-##         area mean_length mean_width     slip  Mw mean_depth max_depth
-## 200 7936.154    138.8982   57.13647 2.361939 7.8  25.680022  40.00000
-## 201 7833.379    137.9075   56.80052 2.392928 7.8   5.667626  11.37381
-##     event_index_string sourcename
-## 200           8-10-12-   puysegur
-## 201           9-11-13-   puysegur
+##      event_index_string                       event_slip_string  Mw
+## 3050 15-16-17-19-21-22- 0.4106_0.1527_1.235_0.2784_1.775_8.616_ 7.9
+## 3051    15-17-18-19-20-          2.316_2.438_1.567_3.424_1.612_ 7.9
+## 3052       19-21-23-29-             0.2683_2.484_9.784_0.02503_ 7.9
+##      target_lon target_lat peak_slip_downdip_ind peak_slip_alongstrike_ind
+## 3050   166.2998  -46.18891                     2                        11
+## 3051   166.2998  -46.18891                     1                        10
+## 3052   166.2998  -46.18891                     1                        12
+##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
+## 3050                  0.011009622                  0.016393626   puysegur
+## 3051                  0.003014966                  0.007441733   puysegur
+## 3052                  0.013070033                  0.013860630   puysegur
+##      uniform_event_row  rate_annual rate_annual_lower_ci
+## 3050               204 9.758208e-06         6.282499e-07
+## 3051               204 1.841717e-05         1.185729e-06
+## 3052               204 8.398967e-06         5.407397e-07
+##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
+## 3050         1.709385e-05       7.949118            1.501529e-05
+## 3051         3.226212e-05       7.777764            1.287362e-05
+## 3052         1.471282e-05       7.581915            1.325640e-05
+##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
+## 3050                     2.970690e-06                     2.633619e-05
+## 3051                     2.546973e-06                     2.257980e-05
+## 3052                     2.622704e-06                     2.325118e-05
+##      weight_with_nonzero_rate
+## 3050                0.9770982
+## 3051                0.9770982
+## 3052                0.9770982
 ```
+
+
 
 ### ***Getting initial conditions for a single earthquake-tsunami event***
 
 Suppose we want to get the initial conditions for the earthquake event on row
-240 of `puysegur$events`.  (By initial conditions, we mean the initial water
-surface perturbation -- the velocity is treated as zero). The metadata for event 240 is:
+3050 of `puysegur$events`.  (By initial conditions, we mean the initial water
+surface perturbation -- the velocity is treated as zero). The metadata for event 3050 is:
 
 ```r
-puysegur$events[240,]
+puysegur$events[3050,]
 ```
 
 ```
-##         area mean_length mean_width     slip Mw mean_depth max_depth
-## 240 20867.57    183.2094   113.8963 1.792284  8   15.68675        40
-##      event_index_string sourcename
-## 240 5-6-7-8-9-10-11-12-   puysegur
+##      event_index_string                       event_slip_string  Mw
+## 3050 15-16-17-19-21-22- 0.4106_0.1527_1.235_0.2784_1.775_8.616_ 7.9
+##      target_lon target_lat peak_slip_downdip_ind peak_slip_alongstrike_ind
+## 3050   166.2998  -46.18891                     2                        11
+##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
+## 3050                   0.01100962                   0.01639363   puysegur
+##      uniform_event_row  rate_annual rate_annual_lower_ci
+## 3050               204 9.758208e-06         6.282499e-07
+##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
+## 3050         1.709385e-05       7.949118            1.501529e-05
+##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
+## 3050                      2.97069e-06                     2.633619e-05
+##      weight_with_nonzero_rate
+## 3050                0.9770982
 ```
 To get its initial condition, do:
 
 ```r
 # Get the initial condition as a geo-referenced raster
-initial_condition_240 = get_initial_condition_for_event(puysegur, 240)
+initial_condition_3050 = get_initial_condition_for_event(puysegur, 3050)
 
 ## The raster can be save as a geotif for use in other software, with:
 # writeRaster(initial_conditions, 'my_output_filename.tif')
 
 # Make a plot
-plot(initial_condition_240, main='Initial water surface deformation, event 240, Puysegur')
+plot(initial_condition_3050, main='Initial water surface deformation, event 3050, Puysegur')
 ```
 
-![plot of chunk raster_event240](figure/raster_event240-1.png)
+![plot of chunk raster_event3050](figure/raster_event3050-1.png)
 
 The function `get_initial_condition_for_event` used above will download the
 required data from the web and save it in the folder
@@ -250,26 +439,27 @@ if the NCI analysis has been updated.
 # Get the initial condition as a geo-referenced raster, forcing download of
 # all files from NCI irrespective of whether they exist on the current
 # machine
-initial_condition_240 = get_initial_condition_for_event(puysegur, 240, force_file_download=TRUE)
+initial_condition_3050 = get_initial_condition_for_event(puysegur, 3050, force_file_download=TRUE)
 ```
 
 
 ### ***Getting hazard curves at a particular hazard point***
 
-FIXME: To do -- I still need to make the data on NCI to facilitate this
+FIXME: Integrate with above discussion. Consider showing how to download numeric
+curve values for a particular point.
 
 
 ### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
 
-FIXME: To do -- I still need to make the data on NCI to facilitate this
-
+FIXME: 
 
 ### ***Extracting the tsunami time-series for a particular event at a particular hazard point***
 
 Here we show how to read a flow time-series for a given earthquake event, at a
-given hazard point. To do this, you have to know the hazard point ID, which can
-be found by clicking on the hazard point in the interactive map above (see the
-ID number). 
+given hazard point. To do this, you have to know the hazard point `gaugeID`, which can
+be found by clicking on the hazard point in the interactive map above (please do not
+confuse this with the Feature ID that is shown by default in the interactive map - I 
+would like to remove this field, but do not yet know how/if it can be done!). 
 
 The data is downloaded from the NCI.
 
@@ -280,19 +470,12 @@ see the installation section above.*
 ```r
 # Get stage, uh, vh time-series at DART gauges 55015 and 55042
 # To find the ID's, look on the interactive hazard-point map.
-model_240 = get_flow_time_series_at_hazard_point(puysegur, 
-    event_ID=240, 
+model_3050 = get_flow_time_series_at_hazard_point(puysegur, 
+    event_ID=3050, 
     hazard_point_ID=c(55015.4, 55042.4))
-```
-
-```
-## Warning: changing locked binding for 'antipodal' in 'geosphere' whilst
-## loading 'rptha'
-```
-
-```r
-# Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame
-names(model_240)
+# Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame, as
+# well as the 'events' data for 3050
+names(model_3050)
 ```
 
 ```
@@ -301,7 +484,7 @@ names(model_240)
 
 ```r
 # The 'flow' list should have one matrix for each gauge. 
-names(model_240$flow)
+names(model_3050$flow)
 ```
 
 ```
@@ -313,11 +496,11 @@ names(model_240$flow)
 # size equal to the number of gauges, by passing the argument 'unpack_to_list=FALSE'
 # The latter option may be more efficient for some computations.
 
-# By default for each gauge, model_240$flow[["gauge_id"]] is a 3D array. 
+# By default for each gauge, model_3050$flow[["gauge_id"]] is a 3D array. 
 # The first dimension is always length 1, the second dimension has length
 # equal to the number of time-steps, and the third dimension is of length
 # three -- with 1 = Stage, 2 = UH, 3 = VH
-dim(model_240$flow[['55015.4']])
+dim(model_3050$flow[['55015.4']])
 ```
 
 ```
@@ -326,13 +509,15 @@ dim(model_240$flow[['55015.4']])
 
 ```r
 # Example plot of stage
-plot(model_240$time, model_240$flow[['55015.4']][1,,1], t='l', 
-    xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)')
-points(model_240$time, model_240$flow[['55042.4']][1,,1], t='l', 
+plot(model_3050$time, model_3050$flow[['55015.4']][1,,1], t='l', 
+    xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
+    ylim=c(-0.1, 0.1))
+points(model_3050$time, model_3050$flow[['55042.4']][1,,1], t='l', 
     col='red')
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
 
-title('Some stage gauges for event 240')
+title('Stage time-series for event 3050 at 2 gauges')
 ```
 
 ![plot of chunk getflow](figure/getflow-1.png)
+

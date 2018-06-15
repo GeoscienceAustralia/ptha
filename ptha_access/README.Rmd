@@ -58,6 +58,25 @@ Modelling Guidelines, which are available here:
 
 FIXME describe where to obtain the pdf files containing the summary information
 
+## Interpreting exceedance rate information
+
+The stage exceedance rates will vary in space depending on the sites exposure
+to tsunami from events in our PTHA. There is also a tendency for the tsunami
+size to increase in shallower water, due to energy flux conservation. 
+
+The user must be aware that in some regions our coarse resolution model (1 arc
+minute) and elevation data (GA250/GEBCO2014) may have insufficient resolution
+or accuracy to model the tsunami well. Furthermore, at some locations some
+modelled waves will violate the assumptions underlying our linear tsunami
+model. A priori we expect the model performance to be poorer close to the coast
+and in shallower waters. **For modelling purposes we strongly encourage the use
+of points well offshore in deep water** (preferably with wave heights of
+interest not exceeding a few percent of the water depth). To help ensure such
+points are available, the current PTHA includes points along a 1000m depth
+contour and gridded lon-lat points extending well offshore, in addition to the
+100m depth contour points.
+
+
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
 It is possible to obtain initial conditions and time-series for every event in
@@ -171,15 +190,21 @@ time-series.
 It is possible to view the hazard points from an interactive map in R.
 
 To view the source-zones and hazard points on an interactive map, start
-R in the same directory that this file resides in, and do:
+R in the same directory that the [hazard_points_plot.R](hazard_points_plot.R)
+file resides in, and do:
 ```{r interactive_map, eval=FALSE}
 source('hazard_points_plot.R')
 ```
 
-This should open a map in your web browser, containing all unit sources and
+The should open a map in your web browser, containing all unit sources and
 hazard points. The latter include DART buoy locations, and a set of points on
 the GA250 national bathymetry grid for Australia (because this is a grid, it
 contains some points around neighbouring countries as well). 
+
+The first time you run this code it will download a range of datasets to your
+machine. This might take a minute or more, depending on your internet connection.
+Future runs will read the data from your machine, so should be faster. 
+
 
 ![hazardpoints1](figure/hazard_point_viewer_screenshot1.png)
 
@@ -195,14 +220,16 @@ mostly correspond to the locations of DART buoys.
 
 If you zoom in enough (e.g. below we look at Christmas Island), eventually the circles
 containing many points should be replaced by individual hazard points (blue
-circles). They can be queried with a mouse click.
+circles). They can be queried with a mouse click. For each point, we store 
+basic stage-vs-exceedance-rate information, as was discussed above.
 ![hazardpoints2](figure/hazard_point_viewer_screenshot2.png)
 
 The unit sources appear as a polygonal grid. Individual unit sources can also
-be queried. 
+be queried (e.g. to learn the name of the source-zone in our analysis) 
 ![hazardpoints3](figure/hazard_point_viewer_screenshot3c.png)
-The controls on the top left of the map can be expanded. These
-should allow you to change the background layer, and to turn layers on and off.
+The controls on the top left of the map can be expanded as shown in the figure.
+These should allow you to change the background layer, and to turn layers on
+and off.
 
 ### ***Getting metadata on the earthquake events on each source-zone***
 
@@ -221,7 +248,7 @@ This variable `puysegur` is now an R `list`, which contains two `data.frame`'s:
 For each unit source this gives the centroid `lon` and `lat` and `depth`; the unit source
 dimensions `length` and `width`; the rupture source mechanism (`strike`, `dip`, `rake`);
 and indices `downdip_number`, `alongstrike_number`, and `subfault_number` which give
-information of the placement of the unit source on the grid of all unit sources. 
+information of the placement of the unit source on the grid of all unit sources.
 ```{r metadata_infoA}
 # Get the names of all summary statistics
 names(puysegur$unit_source_statistics)
@@ -234,21 +261,21 @@ puysegur$unit_source_statistics[1:2,]
 
 # File paths in the above table describe the location of key files *at the time
 # the model was run*. 
-# This may not be the same as the location of the files that the user downloads
+# This is not always identical to the of the files that the user downloads
 # (because in general, we cannot provide download access to our computational
-# drives). 
-# However, the functions we provide to access the data will translate filenames
-# to the web-accessible versions, as required. 
+# drives). However, it will be closely related.
+# The functions we provide to access the data automatically translate filenames
+# to the web-accessible versions. 
 ```
 
 * `puysegur$events` contains summary statistics about the earthquake events.
-The most important are the moment magnitude `Mw`, the earthquake slip (either a
-single numeric `slip` for uniform slip events; or for variable slip events, a
-character `event_slip_string` with slip values for each unit source separated
-by an underscore), and the `event_index_string`. The latter can be used to
-determine which unit-sources are included in the earthquake (the integers in
-`event_index_string` correspond to `subfault_number`'s in the
-`unit_source_statistics`, separated by a `-` character).
+The most important are the moment magnitude `Mw`, the "variable shear modulus"
+moment magnitude `variable_mu_Mw`, the `event_slip_string` (a character with
+slip values for each unit source separated by an underscore), and the
+`event_index_string`. The latter can be used to determine which unit-sources
+are included in the earthquake (the integers in `event_index_string` correspond
+to `subfault_number`'s in the `unit_source_statistics`, separated by a `-`
+character).
 
 ```{r metadata_infoB}
 # Print the names of all event summary statistics
@@ -257,28 +284,30 @@ names(puysegur$events)
 # Get the table dimensions
 dim(puysegur$events)
 
-# Print rows 200 and 201
-puysegur$events[200:201, ]
+# Print some rows (we choose 3050, 3051, 3052)
+puysegur$events[3050:3052, ]
 ```
+
+
 
 ### ***Getting initial conditions for a single earthquake-tsunami event***
 
 Suppose we want to get the initial conditions for the earthquake event on row
-240 of `puysegur$events`.  (By initial conditions, we mean the initial water
-surface perturbation -- the velocity is treated as zero). The metadata for event 240 is:
-```{r event240}
-puysegur$events[240,]
+3050 of `puysegur$events`.  (By initial conditions, we mean the initial water
+surface perturbation -- the velocity is treated as zero). The metadata for event 3050 is:
+```{r event3050}
+puysegur$events[3050,]
 ```
 To get its initial condition, do:
-```{r raster_event240, fig.width=6, fig.height=8}
+```{r raster_event3050, fig.width=6, fig.height=8}
 # Get the initial condition as a geo-referenced raster
-initial_condition_240 = get_initial_condition_for_event(puysegur, 240)
+initial_condition_3050 = get_initial_condition_for_event(puysegur, 3050)
 
 ## The raster can be save as a geotif for use in other software, with:
 # writeRaster(initial_conditions, 'my_output_filename.tif')
 
 # Make a plot
-plot(initial_condition_240, main='Initial water surface deformation, event 240, Puysegur')
+plot(initial_condition_3050, main='Initial water surface deformation, event 3050, Puysegur')
 
 ```
 
@@ -290,42 +319,31 @@ download those that it needs. However, you can force the function to download
 the files (and overwrite any existing ones) by adding the argument
 `force_file_download=TRUE` (by default the latter is `FALSE`). This is useful
 if the NCI analysis has been updated.
-```{r event240B, eval=FALSE}
+```{r event3050B, eval=FALSE}
 # Get the initial condition as a geo-referenced raster, forcing download of
 # all files from NCI irrespective of whether they exist on the current
 # machine
-initial_condition_240 = get_initial_condition_for_event(puysegur, 240, force_file_download=TRUE)
+initial_condition_3050 = get_initial_condition_for_event(puysegur, 3050, force_file_download=TRUE)
 ```
 
 
 ### ***Getting hazard curves at a particular hazard point***
 
-FIXME: To do -- I still need to make the data on NCI to facilitate this.
-
-The user must be aware that at some locations, some modelled waves will violate
-the assumptions underlying our linear tsunami model. Furthermore, in some
-regions our coarse resolution model (1 arc minute) and elevation data
-(GA250/GEBCO2014) may have insufficient resolution or accuracy to model the
-tsunami well. While we cannot a-priori identify such points, problems are most
-likely to arise close to the coast and in shallower waters. For modelling
-purposes we strongly encourage the use of points well offshore in deep water
-(preferably with wave heights of interest not exceeding a few percent of the
-water depth). To help ensure such points are available, the current PTHA
-includes points along a 1000m depth contour and gridded lon-lat points
-extending well offshore, in addition to the 100m depth contour points.
+FIXME: Integrate with above discussion. Consider showing how to download numeric
+curve values for a particular point.
 
 
 ### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
 
-FIXME: To do -- I still need to make the data on NCI to facilitate this
-
+FIXME: 
 
 ### ***Extracting the tsunami time-series for a particular event at a particular hazard point***
 
 Here we show how to read a flow time-series for a given earthquake event, at a
-given hazard point. To do this, you have to know the hazard point ID, which can
-be found by clicking on the hazard point in the interactive map above (see the
-ID number). 
+given hazard point. To do this, you have to know the hazard point `gaugeID`, which can
+be found by clicking on the hazard point in the interactive map above (please do not
+confuse this with the Feature ID that is shown by default in the interactive map - I 
+would like to remove this field, but do not yet know how/if it can be done!). 
 
 The data is downloaded from the NCI.
 
@@ -335,29 +353,32 @@ see the installation section above.*
 ```{r getflow, fig.width=5, fig.height=5}
 # Get stage, uh, vh time-series at DART gauges 55015 and 55042
 # To find the ID's, look on the interactive hazard-point map.
-model_240 = get_flow_time_series_at_hazard_point(puysegur, 
-    event_ID=240, 
+model_3050 = get_flow_time_series_at_hazard_point(puysegur, 
+    event_ID=3050, 
     hazard_point_ID=c(55015.4, 55042.4))
-# Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame
-names(model_240)
+# Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame, as
+# well as the 'events' data for 3050
+names(model_3050)
 # The 'flow' list should have one matrix for each gauge. 
-names(model_240$flow)
+names(model_3050$flow)
 # Alternatively the user can keep 'flow' as an array with the first dimension
 # size equal to the number of gauges, by passing the argument 'unpack_to_list=FALSE'
 # The latter option may be more efficient for some computations.
 
-# By default for each gauge, model_240$flow[["gauge_id"]] is a 3D array. 
+# By default for each gauge, model_3050$flow[["gauge_id"]] is a 3D array. 
 # The first dimension is always length 1, the second dimension has length
 # equal to the number of time-steps, and the third dimension is of length
 # three -- with 1 = Stage, 2 = UH, 3 = VH
-dim(model_240$flow[['55015.4']])
+dim(model_3050$flow[['55015.4']])
 
 # Example plot of stage
-plot(model_240$time, model_240$flow[['55015.4']][1,,1], t='l', 
-    xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)')
-points(model_240$time, model_240$flow[['55042.4']][1,,1], t='l', 
+plot(model_3050$time, model_3050$flow[['55015.4']][1,,1], t='l', 
+    xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
+    ylim=c(-0.1, 0.1))
+points(model_3050$time, model_3050$flow[['55042.4']][1,,1], t='l', 
     col='red')
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
 
-title('Some stage gauges for event 240')
+title('Stage time-series for event 3050 at 2 gauges')
 ```
+

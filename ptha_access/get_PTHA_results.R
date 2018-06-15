@@ -27,7 +27,7 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 #' @examples
 #' puysegur_data = get_source_zone_events_data('puysegur')
 #'
-get_source_zone_events_data<-function(source_zone, slip_type='uniform', desired_event_rows = NULL){
+get_source_zone_events_data<-function(source_zone, slip_type='stochastic', desired_event_rows = NULL){
 
     stopifnot(slip_type %in% c('uniform', 'stochastic', 'variable_uniform'))
 
