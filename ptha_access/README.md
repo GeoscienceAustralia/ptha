@@ -375,7 +375,7 @@ initial_condition = get_initial_condition_for_event(puysegur, row_index)
 # writeRaster(initial_conditions, 'my_output_filename.tif')
 
 # Make a plot
-plot(initial_condition, main='Initial water surface deformation for the example event, Puysegur')
+plot(initial_condition, main='Initial water surface deformation \n for the example event, Puysegur')
 ```
 
 ![plot of chunk raster_eventXXX](figure/raster_eventXXX-1.png)
@@ -410,15 +410,12 @@ FIXME:
 ### ***Extracting the tsunami time-series for a particular event at a particular hazard point***
 
 Here we show how to read a flow time-series for a given earthquake event, at a
-given hazard point. To do this, you have to know the hazard point `gaugeID`, which can
-be found by clicking on the hazard point in the interactive map above (please do not
-confuse this with the Feature ID that is shown by default in the interactive map - I 
-would like to remove this field, but do not yet know how/if it can be done!). 
-
-The data is downloaded from the NCI.
-
-*Recall that this requires that ncdf4 and rptha are installed appropriately,
-see the installation section above.*
+given hazard point. To do this, you have to know the hazard point `gaugeID`,
+which can be found by examining the peak-stage vs exceedance-rate datasets (csv
+and shapefile), or by using the interactive hazard point viewer above. (In the
+latter case, please do not confuse this with the Feature ID that is shown by
+default in the interactive map - I would like to remove this field, but do not
+yet know how/if it can be done!). 
 
 
 ```r
