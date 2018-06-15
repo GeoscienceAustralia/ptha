@@ -39,10 +39,10 @@ These points are termed 'hazard points' because we provide the hazard
 information at these sites. (The wave time-series for every event can also be
 obtained at all hazard points using methods described later in this document).
 
-Most of the hazard points are concentrated around Australia
-and its territories. We also store points at the locations of DART buoys
-(deep-ocean gauges which measure tsunami wave heights), as these are very
-useful for testing the model. In addition we store a 'thin' layer of results
+Most of the hazard points are concentrated around Australia and its
+territories. We also store points at the locations of DART buoys (deep-ocean
+gauges which measure tsunami wave heights), as these are very useful for
+testing the model. In addition we store a 'thin' layer of hazard points
 globally at the 100m contour, which is useful for testing our model and
 comparing with previous studies. **If using points far from Austraila, consider
 that we ignore tsunamigenic source zones that are not considered relevant for
@@ -120,8 +120,7 @@ expected to accurately model tsunamis near the coast and in shallow waters.
 
 * At locations where wave heights become an appreciable fraction of the water depth, 
 the modelled waves will violate the assumptions underlying our linear tsunami
-model. This is most likely to be a problem in shallow waters where the tsunami
-wave height becomes non-negligable compared with the water depth. 
+model. This is most likely to be a problem in shallow waters.
 
 Because of this, **for modelling purposes we strongly encourage the use of
 points well offshore in deep water** (preferably with wave heights of interest
@@ -139,23 +138,22 @@ drive the site-specific tsunami inundation models. This helps facilitate
 national consistency in tsunami inundation modelling, while reducing the need
 for nearshore tsunami modellers to develop expertise in subjects such as
 earthquake kinematics and tsunami geneartion, earthquake magnitude-frequency
-relations, and quantification of the associated uncertainties.
-
+relations, and quantification of the associated uncertainties. 
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
 
 For every event in our analysis we provide earthquake information, tsunami
-initial conditions, and wave time-series at every hazard point. Combined
-with the exceedance-rate modelling, such inputs can be used to drive local
-scale tsunami hazard assessments (i.e. studies which model tsunami inundation).
+initial conditions, and wave time-series at every hazard point. Combined with
+the exceedance-rate modelling, such inputs can be used to drive local scale
+tsunami inundation models for hazard and risk assessments.
 
-To access these results the user needs to interact with our files via the NCI
-THREDDS server. We provide R scripts to facilitate this, and the process is
-described below. A range of software must be installed to run these codes,
-[as described here](INSTALL.md)
+To access the detailed information, the user needs to interact with our files
+via the NCI THREDDS server. We provide R scripts to facilitate this, and the
+process is described below. A range of software must be installed to run these
+codes, [as described here](INSTALL.md)
 
 Unfortunately the installation and data extraction process may be challenging
-for users with limited experience in scientific programming and linux. Users
+for users with limited experience in scientific programming and Linux. Users
 doing tsunami hazard studies **in Australia** can alternatively contact
 Geoscience Australia directly if they have difficulty with any of these steps
 (please email Gareth Davies at gareth.davies@ga.gov.au). 

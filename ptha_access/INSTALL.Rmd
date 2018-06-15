@@ -1,7 +1,8 @@
 ## **Installation**
 
-It is strongly suggested that the installation is undertaken on a linux operating 
-system (e.g. Ubuntu). 
+It is strongly suggested that the installation is undertaken on a Linux operating 
+system (e.g. the author is using Ubuntu 16.04, and the install should also work
+on more recent versions). 
 
 
 ### **Installing R**
@@ -12,8 +13,8 @@ instructions on the [R website](https://www.r-project.org/).
 ### **Getting a recent version of netcdf**
 
 You need to install the R package `ncdf4` with OPeNDAP support.  This may be
-difficult unless you are running linux (although you can do this using a
-virtual machine). Non-linux users are encouraged to install an ubuntu virtual
+difficult unless you are running Linux (although you can do this using a
+virtual machine). Non-Linux users are encouraged to install an Ubuntu virtual
 machine (e.g. using [VirtualBox](https://www.virtualbox.org) or some other
 virtualization software) and follow the steps below.
 
@@ -25,7 +26,7 @@ with OPeNDAP. We store some earthquake event data as (potentially) long
 character strings, and it is essential to be able to read these remotely.
 
 At the time of writing (mid 2018), most users will have to install netcdf-c
-from source to access a suitable version.  Source-code for a recent release of
+from source to access a suitable version. Source-code for a recent release of
 netcdf-c can be obtained from the [netcdf-c github
 page](https://github.com/Unidata/netcdf-c/releases). You need to follow their
 instructions to get it installed. While building any complex software from
@@ -40,7 +41,7 @@ have downloaded the `ncdf4` source package:
 
     R CMD INSTALL ncdf4_1.16.tar.gz --configure-args="--with-nc-config=/home/username/PATH_TO_YOUR_NETCDF_INSTALL/bin/nc-config"
 
-On ubuntu you might need to prepend `sudo` to the above command, depending on
+On Ubuntu you might need to prepend `sudo` to the above command, depending on
 where you do the installation. Also, you may need to adjust the numbers in the
 `ncdf4_1.16.tar.gz` term above to match those of the package you download.
 Furthermore, you definitely need to change the path to nc-config to match the
