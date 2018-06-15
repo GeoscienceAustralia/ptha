@@ -64,14 +64,14 @@ compared with the above csv:
 
 * `gaugeID` is a real hazard point ID
 
-* `STG_XXXX' is the same as `STAGE_XXXX` described above
+* `STG_XXXX` is the same as `STAGE_XXXX` described above
 
-* `STGu_XXXX' is the same as `STAGE_upper_ci_XXXX` described above
+* `STGu_XXXX` is the same as `STAGE_upper_ci_XXXX` described above
 
-* `STGl_XXXX' is the same as `STAGE_lower_ci_XXXX` described above
+* `STGl_XXXX` is the same as `STAGE_lower_ci_XXXX` described above
 
-At most hazard points you will find there is high uncertainty in the peak
-tsunami size for a given exceedance-rates. This is mainly due to high
+At most hazard points you will find there is large uncertainty in the peak
+tsunami size for a given exceedance-rates. This is mainly due to large
 uncertainty in the frequencies of high-magnitude subduction zone earthquakes. A
 more detailed discussion of these topics can be found in the 
 [Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
