@@ -433,11 +433,11 @@ we consider the high magnitude events are possible on the source-zone. You will
 notice that events at very large magnitudes always have a
 `weight_with_nonzero_rate` equal to zero.
 
-### ***Obtaining initial conditions for a single earthquake-tsunami event***
+### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
 
-Suppose we want to get the initial conditions for the earthquake event on row
-3051 of `puysegur$events`.  (By initial conditions, we mean the initial water
-surface perturbation -- the velocity is treated as zero). The metadata for event 3051 is:
+Suppose we want to get the tsunami initial conditions (i.e. water surface
+deformation) for the earthquake event on row 3051 of `puysegur$events`. The
+metadata for event 3051 is:
 
 ```r
 row_index = 3051 # Use this variable to refer to event 3051
@@ -460,7 +460,8 @@ puysegur$events[row_index,]
 ##      weight_with_nonzero_rate
 ## 3051                0.9770982
 ```
-To get its initial condition, do:
+To get its initial condition, you pass the earthquake metadata to the function
+`get_initial_condition_for_event`:
 
 ```r
 # Get the initial condition as a geo-referenced raster
@@ -476,13 +477,16 @@ plot(initial_condition, main='Initial water surface deformation \n for the examp
 ![plot of chunk raster_eventXXX](figure/raster_eventXXX-1.png)
 
 The function `get_initial_condition_for_event` used above will download the
-required data from the web and save it in the folder
-`SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur`. Subsequently, the
-function will check whether the required files exist in that folder, and only
-download those that it needs. However, you can force the function to download
-the files (and overwrite any existing ones) by adding the argument
-`force_file_download=TRUE` (by default the latter is `FALSE`). This is useful
-if the NCI analysis has been updated.
+unit-source tsunami deformations included in the event and save them in the
+folder `SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur`. Then it
+will sum them, scaled by the unit-source slip, to produce the initial
+condition. Next time you call the function, it will check whether the required
+files exist in the local folder, and only download those that it needs.
+However, you can force the function to download the files (and overwrite any
+existing ones) by adding the argument `force_file_download=TRUE` (by default
+the latter is `FALSE`). This is useful if the NCI analysis has been updated, or
+if you suspect your files have been corrupted somehow (although we have not
+seen that).
 
 ```r
 # Get the initial condition as a geo-referenced raster, forcing download of
