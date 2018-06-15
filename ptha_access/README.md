@@ -30,6 +30,17 @@ These points are termed 'hazard points' because we provide the hazard
 information at these sites. (The wave time-series for every event can also be
 obtained at all hazard points using methods described later in this document).
 
+In the 2018 PTHA, most of the hazard points are concentrated around Australia
+and its territories. We also store points at the locations of DART buoys
+(deep-ocean gauges which measure tsunami wave heights), as these are very
+useful for testing the model. In addition we store a 'thin' layer of results
+globally at the 100m contour, which is useful for testing our model and
+comparing with previous studies. **If using the global points, note that we
+ignore some earthquake-source zones that are not relevant for Australia (e.g.
+Carribbean, Mediterrean, Manila trench, eastern New Zealand, western Japan).
+Therefore outside of Australia, you should very carefully consider whether to
+use the results.**
+
 The peak-stage exceedance-rates describe 'how often' tsunami events occur with
 peak-stage above a particular threshold value. For example, you could ask how often
 peak-stages above 0.5m (or 2.0m) occur, in terms of the average number of events each year
