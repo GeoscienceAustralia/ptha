@@ -101,6 +101,9 @@ source('test_all.R')
 ```
 This should print a number of 'PASS' statements, and no 'FAIL' statements.
 Some of the tests will fail if you haven't installed the dependencies to read
-time-series.
+time-series. Beware some failures can occur if your internet connection is not
+performing well (or if there are issues with the NCI THREDDS server), so if the
+tests fail it is worth re-trying a few times to confirm it is not due to a transient
+network issue.
 
 

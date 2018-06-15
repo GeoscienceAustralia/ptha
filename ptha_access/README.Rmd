@@ -6,7 +6,7 @@ We provide access to basic tsunami hazard information in easy-to-use csv and
 shapefile formats. This information is useful to get a high-level overview of
 the PTHA results.
 
-We also provide access to details information for every event in our analysis:
+We also provide access to detailed information for every event in our analysis:
 earthquake discretization, tsunami initial condition, and wave time-series at
 a large set of points in the ocean ('hazard points'). This information is
 useful for site-specific tsunami hazard studies (which use it for model
