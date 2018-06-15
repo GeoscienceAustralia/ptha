@@ -138,7 +138,7 @@ exceedance-rates provided in this PTHA will be used as 'boundary conditions' to
 drive the site-specific tsunami inundation models. This helps facilitate
 national consistency in tsunami inundation modelling, while reducing the need
 for nearshore tsunami modellers to develop expertise in subjects such as
-earthquake kinematics and tsunami geneartion, earthquake magnitude-frequency
+earthquake kinematics and tsunami generation, earthquake magnitude-frequency
 relations, and quantification of the associated uncertainties. 
 
 # Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
@@ -313,16 +313,6 @@ puysegur$unit_source_statistics[1:2,]
 ## 1 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20170904165726_puysegur_1_1/RUN_ID100001_20170904_191226.717/Gauges_data_ID100001.nc
 ## 2 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20170904165729_puysegur_2_1/RUN_ID100001_20170904_191227.920/Gauges_data_ID100001.nc
 ```
-
-```r
-# File paths in the above table describe the location of key files *at the time
-# the model was run*. 
-# This is not always identical to the of the files that the user downloads
-# (because in general, we cannot provide download access to our computational
-# drives). However, it will be closely related.
-# The functions we provide to access the data automatically translate filenames
-# to the web-accessible versions. 
-```
 In addition, the `initial_condition_file` and `tide_gauge_file` variables
 provide a link to the vertical deformation and tsunami model run respectively,
 for each unit source. Note that the file path names sometimes differ slightly
@@ -404,25 +394,28 @@ The most important variables from a users perspective are the moment magnitude
 `Mw`, and the "variable shear modulus" moment magnitude `variable_mu_Mw`.
 You may be surprised to see we store two different earthquake magnitudes for
 each event. The `Mw` column holds the earthquake moment magnitude, derived
-under the assumption that the shear modulus (or rigidity) on the source-zone is
-constant, with a value of 30 GPa on thrust sources and 60 GPa on normal
-sources. These values are quite typical and compare well in our comparisons
-with DART buoys.  However, on subduction zones there is some evidence that the
-shear modulus increases with depth, with particularly low values possible at
-shallow depths (which may partially account for so-called 'tsunami
+under the assumption that the shear modulus (or rigidity, i.e. a material
+property of the earth) on the source-zone is constant, with a value of 30 GPa
+on thrust sources and 60 GPa on normal sources. These values are quite typical
+and produce tsunamis that compare well with our DART buoy test set (20
+historical tsunamis). However, on subduction zones there is some evidence that
+the shear modulus increases with depth, with particularly low values possible
+at shallow depths (which may partially account for so-called 'tsunami
 earthquakes', which generate large tsunamis compared to their earthquake
 magnitude). To account for this we use a depth varying shear modulus model, and
-re-compute the magnitude for each event. Our events also compare well with the
-DART buoy dataset using this redefined magnitude. However, the literature suggests
-that in order to simulate some historical tsunami-earthquakes, it is necessary
-to account for shear modulus variations, which is enabled in the current study
-using the `variable_mu_Mw`.
+re-compute the magnitude for each event (stored in `variable_mu_Mw`), without
+changing any other properties of the earthquake. The effect is that shallow earthquakes
+have `variable_mu_Mw` \< `Mw`, while the opposite occurs for deep earthquakes.
+Our tsunami events also compare well with the DART buoy dataset using this
+redefined magnitude (see the PTHA report). 
 
-Some othe important variables are the `event_slip_string` and the
+Some other important variables are the `event_slip_string` and the
 `event_index_string`. These variables can be used to determine which
-unit-sources are included in the earthquake, and how much slip they have (note
+unit-sources are included in the earthquake, and how much slip they have. Note
 they are stored as strings with a separator, to permit efficient storage of
-earthquakes with a range of sizes). 
+earthquakes with a range of sizes. The integer values in `event_index_string` 
+correspond to the `subfault_number` values in the unit-source statistics table
+discussed above.
 
 Another useful event-table variable is the `weight_with_nonzero_rate`. This
 gives the fraction of the exceedance-rate models in the logic tree that suggest
