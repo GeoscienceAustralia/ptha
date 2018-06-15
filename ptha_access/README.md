@@ -38,8 +38,8 @@ globally at the 100m contour, which is useful for testing our model and
 comparing with previous studies. **If using the global points, note that we
 ignore some earthquake-source zones that are not relevant for Australia (e.g.
 Carribbean, Mediterrean, Manila trench, eastern New Zealand, western Japan).
-Therefore outside of Australia, you should very carefully consider whether to
-use the results.**
+Therefore outside of Australia, you should very carefully consider how to
+use the results, noting they may ignore the most relevant source-zones.**
 
 The peak-stage exceedance-rates describe 'how often' tsunami events occur with
 peak-stage above a particular threshold value. For example, you could ask how often
