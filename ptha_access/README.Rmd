@@ -38,8 +38,7 @@ the exceedance rates are typically small numbers (e.g. an exceedance-rate of
 0.002=1/500 would correspond to one event every 500 years on average).
 Obviously this kind of information is important for understanding tsunami
 hazards. The simplest way to examine the tsunami peak-stage exceedance-rates in
-the 2018 PTHA is to download the following csv file:
-<http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv>.
+the 2018 PTHA is to download [this csv file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
 This csv file contains columns with:
 
 * `lon`, `lat` giving the station location in longitude/latitude (degrees). 
