@@ -92,10 +92,12 @@ results far offshore and in deep water are expected to be higher quality than
 nearshore results**. The reasons are:
 
 * Our tsunami model has a spatial grid size of 1 arc minute (around 1.8 km), 
-and is run on relatively coarse elevation data (a combination of the GA250
-product, and GEBCO 2014). While appropriate for modelling oceanic-scale tsunami
-propagation, it is not expected to accurately model tsunamis near the coast and
-in shallow waters.
+and is run on relatively coarse elevation data (a combination of the 
+[Australian Bathymetry and Topography Grid 2009](http://www.ga.gov.au/metadata-gateway/metadata/record/gcat_67703)
+product, and the global [GEBCO
+2014](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) bathymetry grid).
+While appropriate for modelling oceanic-scale tsunami propagation, it is not
+expected to accurately model tsunamis near the coast and in shallow waters.
 
 * At locations where wave heights become an appreciable fraction of the water depth, 
 the modelled waves will violate the assumptions underlying our linear tsunami
