@@ -1,10 +1,6 @@
 # **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment results**
 
-**Currently these tools are in development, and the study is not complete.** 
-* **The data and models referred to below are placeholder examples for internal testing purposes only,
-and are not to be used in any real application.**
-* **The interfaces are expected to change.**
-* **The code should be adjusted to download all data from the NCI [including source-zones + hazard points], to ensure consistency**
+**Currently the study is incomplete, and results available here may change without warning**
 
 This document explains how to access the 2018 Probabilistic Tsunami Hazard
 Assessement (PTHA) results. 
