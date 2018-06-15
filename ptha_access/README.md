@@ -171,13 +171,13 @@ render all hazard points at the same time on the one map. In the above figure,
 we see green circles (containing less than 10 hazard points), yellow circles
 (containing 10-100 hazard points), and red circles (containing more than 100
 hazard points). A number on the circle shows how many hazard points they
-contain. The blue dots are individual hazard points, and in the above figure
-mostly correspond to the locations of DART buoys.
-
+contain. There are also a few individual hazard points (which are far from
+others), and in the above figure they mostly correspond to the locations of DART
+buoys.
 
 If you zoom in enough (e.g. below we look at Christmas Island), eventually the circles
-containing many points should be replaced by individual hazard points (blue
-circles). They can be queried with a mouse click. For each point, we store 
+containing many points should be replaced by individual hazard points
+(circles). They can be queried with a mouse click. For each point, we store
 basic stage-vs-exceedance-rate information, as was discussed above.
 ![hazardpoints2](figure/hazard_point_viewer_screenshot2.png)
 
@@ -337,7 +337,6 @@ puysegur$events[3050:3052, ]
 ```
 
 
-
 ### ***Getting initial conditions for a single earthquake-tsunami event***
 
 Suppose we want to get the initial conditions for the earthquake event on row
@@ -412,10 +411,10 @@ FIXME:
 Here we show how to read a flow time-series for a given earthquake event, at a
 given hazard point. To do this, you have to know the hazard point `gaugeID`,
 which can be found by examining the peak-stage vs exceedance-rate datasets (csv
-and shapefile), or by using the interactive hazard point viewer above. (In the
+and shapefile), or by using the interactive hazard point viewer above. (***In the
 latter case, please do not confuse this with the Feature ID that is shown by
 default in the interactive map - I would like to remove this field, but do not
-yet know how/if it can be done!). 
+yet know how/if it can be done!***). 
 
 
 ```r
@@ -472,3 +471,25 @@ title('Stage time-series for the event at 2 gauges')
 
 ![plot of chunk getflow](figure/getflow-1.png)
 
+To export the flow time-series to a csv, you can do something like this for
+the station of interest:
+
+```r
+# Name the site
+sitename = '55015.4'
+# Note you can get a vector with all names using the comment:
+#    names(model_ts$flow)
+# and this will allow programatically working with the names
+
+# Make a data.frame with the required data
+site_flow = data.frame(
+    time=model_ts$time, 
+    stage = model_ts$flow[[sitename]][1,,1],
+    uh = model_ts$flow[[sitename]][1,,2],
+    vh = model_ts$flow[[sitename]][1,,3])
+
+# Save it to a csv
+output_file = paste0('output_gauge_data_puysegur_event_', row_index, '_station_', 
+    sitename, '.csv')
+write.csv(site_flow, output_file, row.names=FALSE)
+```
