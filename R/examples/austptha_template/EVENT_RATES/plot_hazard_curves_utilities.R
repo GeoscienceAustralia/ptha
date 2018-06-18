@@ -388,8 +388,8 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, slip_type = 'uniform',
         stop('Must provide either stage or exceedance rate')
     }
 
-    if(!(shear_modulus_type %in% c('', 'variable_mu_')){
-        stop(paste0('Shear modulus type must either be "variable_mu_" (with a trailing underscore) ' 
+    if(!(shear_modulus_type %in% c('', 'variable_mu_'))){
+        stop(paste0('Shear modulus type must either be "variable_mu_" (with a trailing underscore) ',
                     'for variable mu, or be an empty string "" for constant'))
     }
 
@@ -642,8 +642,8 @@ plot_source_zone_stage_vs_exceedance_rate<-function(
             ' among all source-zones'))
     }
 
-    if(!(shear_modulus_type %in% c('', 'variable_mu_')){
-        stop(paste0('Shear modulus type must either be "variable_mu_" (with a trailing underscore) ' 
+    if(!(shear_modulus_type %in% c('', 'variable_mu_'))){
+        stop(paste0('Shear modulus type must either be "variable_mu_" (with a trailing underscore) ' ,
                     'for variable mu, or be an empty string "" for constant'))
     }
 
