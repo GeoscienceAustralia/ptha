@@ -4,6 +4,7 @@
 # This is actually a slow computational method ('quick' means 'quick to code'),
 # but is useful to cross check the other results
 #
+library(rptha)
 
 .preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
 .preamble_text = paste0( 
@@ -34,8 +35,8 @@
 .preamble_text2 = paste0('\n',
                        '\n',
                        'An important caveat regarding the interpretation of earthquake magnitude:\n', 
-                       '  Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
-                       '  magnitude" reported in Figures 3-4-5. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
+                       '  Note that if the shear modulus varies with depth, then the earthquake magnitudes may differ from the "constant shear modulus \n',
+                       '  magnitude" reported in Figures 3,5,7. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
                        '  depth-dependent shear modulus on subduction zones, based on Bilek and Lay (1999). See the report for further information. \n',
                        '  You should consider this if comparing events of a particular magnitude with historical data, in a situation where the shear \n', 
                        '  modulus might differ from 30 GPa (for thrust focal mechanisms only). For normal focal mechanisms, the current PTHA always \n',
