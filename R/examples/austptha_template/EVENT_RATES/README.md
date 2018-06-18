@@ -86,7 +86,8 @@ sanity checks on the netcdf files that are updated by
 
 [plot_hazard_curves.R](plot_hazard_curves.R) contains a function to plot the
 wave height exceedance rates for both stochastic slip and uniform slip, at a
-station. There are lots of useful disgnostic plots here that can help to understand the analysis.
+station. It uses [plot_hazard_curves_utilities.R](plot_hazard_curves_utilities.R) 
+which is has lots of useful disgnostic plots that can help to understand the analysis.
 
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
 contains code to 'independently' calculate the stage exceedance rate curves at a point

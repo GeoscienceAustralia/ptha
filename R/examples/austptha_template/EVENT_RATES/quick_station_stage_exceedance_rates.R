@@ -25,8 +25,8 @@
                        '       there will be few random model scenarios, so exceedance-rates become sensitive to the "random details" of those scenarios (i.e. less\n', 
                        '       reliable). To help users judge when this happens we compare 2 hazard curves, each derived from half the scenarios. \n',
                        '\n',
-                       '    3-4-5) Information on which source-zones dominate the hazard (i.e. a hazard-deaggregation plot) for peak-stage thresholds of 0.3m,\n', 
-                       '       1m, and 2m. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
+                       '    3-8) Information on which source-zones dominate the hazard (i.e. hazard-deaggregation plots) for exceedance rates of 1/100, \n', 
+                       '       1/500, 1/2500. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
                        '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
                        '\n',
                        'These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.\n'
@@ -63,6 +63,39 @@
     text(0, 1, .preamble_text2, adj=c(0,1), cex=0.95)
 }
 
+#
+# In one of the figures we use a coarse background raster to show land/water
+# This function reads it (and creates it if it does not exist)
+#
+get_background_raster<-function(){
+
+    bg_raster_file = 'background_raster/land_water_raster.tif'
+
+    if(!file.exists(bg_raster_file)){
+        # Make the background raster
+        input_raster = '../DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif'
+        modelling_rast = raster(input_raster)
+        modelling_rast_lw = (modelling_rast > 0)
+        basic_lw = raster(extent(modelling_rast_lw), nrow=nrow(modelling_rast_lw)/25, 
+            ncol=ncol(modelling_rast_lw)/25)
+        basic_lw = resample(modelling_rast_lw, basic_lw)
+        dir.create('background_raster', showWarnings=FALSE)
+        writeRaster(basic_lw, bg_raster_file, options=c('COMPRESS=DEFLATE'))
+    }
+
+    bg_raster = raster(bg_raster_file)
+   
+    return(bg_raster) 
+}
+background_raster = get_background_raster()
+
+
+#
+# For putting the spatial hazard deaggregation results on the map, these
+# functions are helpful
+#
+plot_hazard_curves_utilities = new.env()
+source('plot_hazard_curves_utilities.R', local=plot_hazard_curves_utilities)
 
 quick_source_deagg<-function(lon, lat){
     #lon = 151.41
@@ -334,9 +367,25 @@ quick_source_deagg<-function(lon, lat){
     pdf(paste0('station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
     .plot_preamble()
     plot_stage_vs_rate()
-    plot_deaggregation_summary(0.3)
+
+    # Plot at a few exceedance rates
+    ex_rates = c(1/100, 1/500, 1/2500)
+    for(sv in 1:length(ex_rates)){
+        site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
+            slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
+        stage_level = signif(site_deagg[[1]]$stage_exceed, 4)
+        plot_deaggregation_summary(stage_level)
+        plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
+            background_raster=background_raster, 
+            main=paste0('Spatial hazard deaggregation, exceedance rate = 1/', 
+                ex_rates[sv], '\n peak stage exceeding ', stage_level))
+    }
+
     plot_deaggregation_summary(1.0)
     plot_deaggregation_summary(2.0)
     dev.off()
 
 }
+
+
+
