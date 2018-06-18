@@ -519,9 +519,11 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, slip_type = 'uniform',
         }
 
         # Logical check
-        stopifnot(all.equal(
-            sum(sources_list[[i]]$contribution), 
-            sum(event_rates * (event_stage >=stage_exceed) )) )
+        if(is.null(subset_to_take)){
+            stopifnot(all.equal(
+                sum(sources_list[[i]]$contribution), 
+                sum(event_rates * (event_stage >=stage_exceed) )) )
+        }
     }
 
     return(sources_list)
