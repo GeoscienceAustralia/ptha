@@ -33,13 +33,13 @@
 )
 .preamble_text2 = paste0('\n',
                        '\n',
-                       'Regarding the interpretation of earthquake magnitude:\n', 
-                       'Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
-                       'magnitude" reported in Figures 3-4-5. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
-                       'depth-dependent shear modulus on subduction zones, based on Bilek and Lay (1999). See the report for further information. \n',
-                       'You should consider this if comparing events of a particular magnitude with historical data, in a situation where the shear \n', 
-                       'modulus might differ from 30 GPa (for thrust focal mechanisms only). For normal focal mechanisms, the current PTHA always \n',
-                       'uses a shear modulus of 60 GPa\n',
+                       'An important caveat regarding the interpretation of earthquake magnitude:\n', 
+                       '  Note that if the true shear modulus varies with depth, then the true magnitudes may differ from the "constant shear modulus \n',
+                       '  magnitude" reported in Figures 3-4-5. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
+                       '  depth-dependent shear modulus on subduction zones, based on Bilek and Lay (1999). See the report for further information. \n',
+                       '  You should consider this if comparing events of a particular magnitude with historical data, in a situation where the shear \n', 
+                       '  modulus might differ from 30 GPa (for thrust focal mechanisms only). For normal focal mechanisms, the current PTHA always \n',
+                       '  uses a shear modulus of 60 GPa\n',
                        '\n',
                        '\n',
                        'A copy of the script used to make this plot can be found at:\n',
@@ -378,7 +378,7 @@ quick_source_deagg<-function(lon, lat){
         par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
             background_raster=background_raster, 
-            main=paste0('Spatial hazard deaggregation, exceedance rate = 1/', 
+            main=paste0('Spatial hazard deaggregation, logic-tree-average exceedance-rate = 1/', 
                 (1/ex_rates[sv]), '\n peak stage exceeding ', stage_level))
     }
 
