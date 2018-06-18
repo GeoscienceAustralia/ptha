@@ -375,14 +375,13 @@ quick_source_deagg<-function(lon, lat){
             slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
         stage_level = signif(site_deagg[[1]]$stage_exceed, 4)
         plot_deaggregation_summary(stage_level)
+        par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
             background_raster=background_raster, 
             main=paste0('Spatial hazard deaggregation, exceedance rate = 1/', 
-                ex_rates[sv], '\n peak stage exceeding ', stage_level))
+                (1/ex_rates[sv]), '\n peak stage exceeding ', stage_level))
     }
 
-    plot_deaggregation_summary(1.0)
-    plot_deaggregation_summary(2.0)
     dev.off()
 
 }

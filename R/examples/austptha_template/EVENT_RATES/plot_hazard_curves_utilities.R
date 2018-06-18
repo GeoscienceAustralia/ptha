@@ -520,7 +520,7 @@ plot_station_deaggregated_hazard<-function(deaggregated_hazard, scale = 1, backg
     if(is.null(background_raster)){
         plot(c(-40, 320), c(-80, 80), col=0, asp=1, xlab='', ylab='')
     }else{
-        image(background_raster, asp=1, col=c('white', 'lightgrey'), xlab='', ylab='')
+        image(background_raster, asp=1, col=c('white', 'lightgrey'), xlab='', ylab='', xaxs='i', yaxs='i')
     }
     title(main=main)
 
