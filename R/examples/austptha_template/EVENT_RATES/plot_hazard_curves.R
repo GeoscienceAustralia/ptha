@@ -388,6 +388,11 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         stop('Must provide either stage or exceedance rate')
     }
 
+    if(!(shear_modulus_type %in% c('', 'variable_mu_')){
+        stop(paste0('Shear modulus type must either be "variable_mu_" (with a trailing underscore) ' 
+                    'for variable mu, or be an empty string "" for constant'))
+    }
+
     site_index = get_station_index(lon_p, lat_p)
     source_names = names(rates)
 
@@ -407,6 +412,7 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
     # If exceedance rate is provided, then use it to compute the stage
     if(!is.null(exceedance_rate)){
         if(!is.null(stage)) stop('Cannot provide both exceedance rate and stage')
+        if(!is.numeric(exceedance_rate)) stop('Provided exceedance_rate must be numeric')
 
         # Sum the exceedance rates over all source-zones for the chosen site
         if(slip_type == 'uniform'){
@@ -468,8 +474,8 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
         event_rates = ncvar_get(fid, paste0(shear_modulus_type, 'rate_annual'))
         nc_close(fid)
 
-        # Find events with stage > value
-        events_exceeding = which(event_stage >= stage_exceed)
+        # Find events with stage > value, which have non-zero rate
+        events_exceeding = which((event_stage >= stage_exceed) & (event_rates > 0))
 
         # Quick exit
         if(length(events_exceeding) == 0) next
