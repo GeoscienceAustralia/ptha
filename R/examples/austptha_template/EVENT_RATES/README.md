@@ -90,12 +90,10 @@ station. It uses [plot_hazard_curves_utilities.R](plot_hazard_curves_utilities.R
 which is has lots of useful disgnostic plots that can help to understand the analysis.
 
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
-contains code to 'independently' calculate the stage exceedance rate curves at a point
-(i.e. not relying on the above codes [compute_station_hazard_curves.R](compute_station_hazard_curves.R)
-or  [integrated_rate_given_stage.R](integrated_rate_given_stage.R) ). This was done
-as a partial check on the correctness of the latter routines (in the
-absence of more exact tests, we can at least confirm that we get the same answer
-using 2 different methods -- that's the idea behind this routine).
+contains code to make diagnostic plots that help to understand the result at a single point.
+The plots are designed both to convey the results, and try to highlight any
+'problematic' issues (e.g. related to convergence of the hazard results / cross-checks of
+results between different files, etc).
 
 [plot_peak_stage_1m_slip.R](plot_peak_stage_1m_slip.R) can be used to plot the peak stage
 at a chosen hazard point resulting from every single unit-source tsunami. It's
