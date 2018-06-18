@@ -381,7 +381,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
 # Hazard deaggregation plot
 #
 get_station_deaggregated_hazard<-function(lon_p, lat_p, slip_type = 'uniform', 
-    exceedance_rate = NULL, stage = NULL, shear_modulus_type=""){
+    exceedance_rate = NULL, stage = NULL, shear_modulus_type="", subset_to_take=NULL){
 
     # Check input args
     if(is.null(exceedance_rate) & is.null(stage)){
@@ -476,6 +476,18 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, slip_type = 'uniform',
 
         # Find events with stage > value, which have non-zero rate
         events_exceeding = which((event_stage >= stage_exceed) & (event_rates > 0))
+
+        # Optionally only take every second one. This is useful for convergence checks
+        if(!is.null(subset_to_take)){
+            stopifnot(subset_to_take %in% c('odds', 'evens'))
+        
+            if(subset_to_take == 'odds'){
+                events_exceeding = events_exceeding[seq(1,length(events_exceeding), by=2)]
+            }else if(subset_to_take == 'evens'){
+                events_exceeding = events_exceeding[seq(2,length(events_exceeding), by=2)]
+            }
+
+        }
 
         # Quick exit
         if(length(events_exceeding) == 0) next

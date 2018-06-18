@@ -6,6 +6,16 @@ uss_files = Sys.glob(
     '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/*/TSUNAMI_EVENTS/unit_source*.nc')
 
 #
+# Remove source-zones that we no longer use (e.g. we have replaced
+# the sources below with others, which have slightly different names)
+#
+source_zones_to_remove = c('timor', 'flores', 'macquarienorth')
+to_remove = sapply(paste0(source_zones_to_remove, '.nc'), f<-function(x) grep(x, uss_files))
+print('Removing source zones that have been replaced')
+uss_files = uss_files[-source_zones_to_remove]
+
+
+#
 # Get lon/lat and filename for all unit sources
 #
 uss_lon_lat_filename = lapply(as.list(uss_files),

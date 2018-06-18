@@ -30,7 +30,7 @@ library(rptha)
                        '       1/500, 1/2500. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
                        '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
                        '\n',
-                       'These plots are useful for determining which sources and scenarios to focus on, when conducting for tsunami hazard studies.\n'
+                       'These plots are useful for determining which sources and scenarios to focus on, when conducting tsunami hazard studies.\n'
 )
 .preamble_text2 = paste0('\n',
                        '\n',
@@ -381,6 +381,7 @@ quick_source_deagg<-function(lon, lat){
             background_raster=background_raster, 
             main=paste0('Spatial hazard deaggregation, logic-tree-average exceedance-rate = 1/', 
                 (1/ex_rates[sv]), '\n peak stage exceeding ', stage_level))
+        rm(site_deagg); gc()
     }
 
     dev.off()
