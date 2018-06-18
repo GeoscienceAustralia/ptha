@@ -188,7 +188,7 @@ plot_interactive_map<-function(refresh_map = REFRESH_MAP){
     suppressPackageStartupMessages(library(mapview))
 
     if(refresh_map | !file.exists('DATA/interactive_map.RDS')){
-        # Mape a new map
+        # Make a new map
         m = mapview(
                 hazard_points_spdf, 
                 clusterOptions = markerClusterOptions(maxClusterRadius=20, 

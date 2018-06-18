@@ -241,10 +241,6 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
     event_Mw = ncvar_get(fid, 'event_Mw')
     nc_close(fid)
     fid = nc_open(gsub('_tsunami', '', nc_file), readunlim=FALSE)
-    # FIXME: THIS HAS TO BE UPDATED TO READ stochastic_slip and variable_uniform_slip
-    # results. At the moment it is not doing that (because when it was written the
-    # rates were the same)
-    print('WARNING: Using uniform slip rates for all earthquake types -- this code should be updated to use the purpose-made stochastic and variable-uniform slip rates as appropriate')
     event_nominal_rate = ncvar_get(fid, 'rate_annual')
     event_nominal_rate_upper = ncvar_get(fid, 'rate_annual_upper_ci')
     event_nominal_rate_lower = ncvar_get(fid, 'rate_annual_lower_ci')
@@ -385,7 +381,7 @@ plot_wave_heights_at_a_station<-function(lon_p, lat_p, source_zone,
 # Hazard deaggregation plot
 #
 get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "", 
-    slip_type = 'uniform', exceedance_rate = NULL, stage = NULL){
+    slip_type = 'uniform', exceedance_rate = NULL, stage = NULL, shear_modulus_type=""){
 
     # Check input args
     if(is.null(exceedance_rate) & is.null(stage)){
@@ -414,11 +410,11 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
 
         # Sum the exceedance rates over all source-zones for the chosen site
         if(slip_type == 'uniform'){
-            varname = 'uniform_slip_rate'
+            varname = paste0(shear_modulus_type, 'uniform_slip_rate')
         }else if(slip_type == 'stochastic'){
-            varname = 'stochastic_slip_rate'
+            varname = paste0(shear_modulus_type, 'stochastic_slip_rate')
         }else if(slip_type == 'variable_uniform'){
-            varname = 'variable_uniform_slip_rate'
+            varname = paste0(shear_modulus_type, 'variable_uniform_slip_rate')
         }
 
         rate_sum = ncvar_get(rates[[1]], varname, 
@@ -460,14 +456,16 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, station_name = "",
 
         # Extract required info from the netcdf files
         fid = nc_open(all_source_tsunami[i], readunlim=FALSE)
-        # FIXME: Cheaper to read from non_tsunami file
         event_index_string = ncvar_get(fid, 'event_index_string')
-        event_rates = ncvar_get(fid, 'event_rate_annual')
         event_stage = ncvar_get(fid, 'max_stage', start=c(1,site_index), 
             count=c(-1, 1))
         if(slip_type %in% c('stochastic', 'variable_uniform')){
             event_slip = ncvar_get(fid, 'event_slip_string')
         }
+        nc_close(fid)
+        # Get the rate from the non_tsunami file
+        fid = nc_open(gsub('_tsunami', '', all_source_tsunami[i]), readunlim=FALSE)
+        event_rates = ncvar_get(fid, paste0(shear_modulus_type, 'rate_annual'))
         nc_close(fid)
 
         # Find events with stage > value
