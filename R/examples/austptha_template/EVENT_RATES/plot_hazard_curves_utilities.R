@@ -478,13 +478,18 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, slip_type = 'uniform',
         events_exceeding = which((event_stage >= stage_exceed) & (event_rates > 0))
 
         # Optionally only take every second one. This is useful for convergence checks
-        if(!is.null(subset_to_take)){
+        if( (length(events_exceeding) > 0) & !is.null(subset_to_take)){
             stopifnot(subset_to_take %in% c('odds', 'evens'))
-        
+             
             if(subset_to_take == 'odds'){
                 events_exceeding = events_exceeding[seq(1,length(events_exceeding), by=2)]
             }else if(subset_to_take == 'evens'){
-                events_exceeding = events_exceeding[seq(2,length(events_exceeding), by=2)]
+                if(length(events_exceeding) == 1){
+                    # Do not return anything
+                    events_exceeding = c()
+                }else{
+                    events_exceeding = events_exceeding[seq(2,length(events_exceeding), by=2)]
+                }
             }
 
         }
