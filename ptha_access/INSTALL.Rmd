@@ -89,7 +89,7 @@ repository. [See instructions here](https://github.com/GeoscienceAustralia/ptha/
 
 ### **Installing mapview**
 Finally you should install the `mapview` package (to enable some interactive
-plots shown below)
+plots shown in the main README)
 ```{r installme, eval=FALSE}
 install.packages('mapview')
 ```
