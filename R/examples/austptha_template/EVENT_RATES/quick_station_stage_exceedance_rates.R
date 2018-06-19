@@ -392,7 +392,7 @@ quick_source_deagg<-function(lon, lat){
     for(sv in 1:length(ex_rates)){
         site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
             slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
-        stage_level = signif(site_deagg[[1]]$stage_exceed, 4)
+        stage_level = signif(site_deagg[[1]]$stage_exceed, 3)
         # Spatial hazard plot
         par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
