@@ -1,56 +1,70 @@
 #
 # Single station stage exceedance-rate computation
 #
-# This is actually a slow computational method ('quick' means 'quick to code'),
-# but is useful to cross check the other results
-#
+
 library(rptha)
 
 .preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
 .preamble_text = paste0( 
-                       "This file gives a summary of the Geoscience Australia's 2018 PTHA results at a single station. See the README on:\n",
-                       '    https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access \n',
-                       'for further information on accessing the results and associated reports. Users should understand this material before using the results.\n',
+                       "This file gives a summary of the Geoscience Australia's 2018 PTHA model results at a single station. See the README on:\n",
+                       '    https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access\n',
+                       'for further information on accessing the results, source code, and associated reports describing the methodology and its limitations.\n',
                        '\n',
-                       'Although we provide results at hazard points globally, particular caution should be applied if using points far from Australia, because\n',
-                       'we ignore earthquake source-zones that are not considered relevant for Australian tsunami hazard. \n',
+                       'This product is provided under a Creative Commons 4.0 International Licence (http://creativecommons.org/licenses/by/4.0/legalcode)\n',
+                       'Geoscience Australia has tried to make the information in this product as accurate as possible. However, it does not guarantee that the\n',
+                       'information is totally accurate or complete. Therefore, you should not solely rely on this information when making a commercial decision.\n',
                        '\n',
+                       'If using points far from Australia, note we ignore earthquake source-zones that are not considered relevant for Australian tsunami hazard.\n'
+)
+
+.preamble_title1 = 'Information on the plots'
+.preamble_text1 = paste0( 
                        'The plots are: \n',
                        '\n',
-                       '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate at the specified hazard point location, \n',
-                       '       with 95% credible intervals describing the uncertainty. Note the peak-tsunami-stage is the maximum water level\n ',
+                       '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate at the specified hazard point location,\n',
+                       '       with 95% credible intervals describing the uncertainty. Note the peak-tsunami-stage is the maximum water level\n',
                        '       attained by the tsunami (above mean-sea-level=0, ignorning tides) at the site.\n',
                        '\n',
                        '    2) A "convergence check" of the above hazard curve. The PTHA hazard results rely on simulating a large number of random\n',
                        '       earthquake-tsunami scenarios. At sufficiently rare exceedance-rates (less frequent than some site specific value, e.g. 1/10000 years)\n', 
                        '       there will be few random model scenarios, so exceedance-rates become sensitive to the "random details" of those scenarios (i.e. less\n', 
-                       '       reliable). To help users judge when this happens we compare 2 hazard curves, each derived from half the scenarios. \n',
+                       '       reliable). To help users judge when this happens we compare 2 hazard curves, each derived from half the scenarios.\n',
                        '\n',
-                       '    3-8) Information on which source-zones dominate the hazard (i.e. hazard-deaggregation plots) for exceedance rates of 1/100, \n', 
-                       '       1/500, 1/2500. In each case, for the top 3 source-zones we show rates separated by magnitude ("constant shear modulus magnitude"),\n',
-                       '       to highlight the model scenarios most likely to cause tsunami above the peak-stage threshold.\n',
-                       '\n',
-                       'These plots are useful for determining which sources and scenarios to focus on, when conducting tsunami hazard studies.\n'
+                       '    3-8) Information on which source-zones dominate the hazard (i.e. hazard-deaggregation plots) for exceedance rates of 1/100,\n', 
+                       '       1/500, 1/2500. In each case, for the top 3 source-zones we show rates separated by magnitude (assuming "constant shear modulus"),\n',
+                       '       to highlight the model scenarios most likely to cause tsunami above the threshold peak-stage.\n',
+                       '       The "spatial hazard deaggregation" plot gives an idea of where earthquakes exceeding the stage threshold might occur. For every\n',
+                       '       unit-source, it shows:\n',
+                       '           SUM( (event-slip-on-the-unit-source / sum-event-slip-on-all-unit-sources) X individual-event-rate )\n',
+                       '       , where the SUM includes events that exceed the peak-stage threshold. Results are normalised to [0-1].\n',
+                       '       Please note that the appearance of the "spatial hazard deaggregation" plot is significantly affected by the choice of colour scheme.\n',
+                       '       Interpretations should always be cross-checked with the "Top 10 source-zones" bar plot. A common mistake is to focus on \n',
+                       '       "small-areas with high values", without considering that "large-areas with lower values" may contribute more to the overall hazard.\n',
+                       '       Furthermore, details of the hazard deaggregation may be affected by convergence issues analogous to those mentioned in point 2 above.\n'
 )
+
+.preamble_title2 = 'Information on the plots'
 .preamble_text2 = paste0('\n',
                        '\n',
+                       '\n',
                        'An important caveat regarding the interpretation of earthquake magnitude:\n', 
-                       '  Note that if the shear modulus varies with depth, then the earthquake magnitudes may differ from the "constant shear modulus \n',
-                       '  magnitude" reported in Figures 3,5,7. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a \n',
-                       '  depth-dependent shear modulus on subduction zones, based on Bilek and Lay (1999). See the report for further information. \n',
-                       '  You should consider this if comparing events of a particular magnitude with historical data, in a situation where the shear \n', 
-                       '  modulus might differ from 30 GPa (for thrust focal mechanisms only). For normal focal mechanisms, the current PTHA always \n',
+                       '  Earthquake magnitudes in these plots are derived assuming a "constant shear modulus" of 30 GPa (thrust sources) or 60 GPa (normal sources).\n',
+                       '  Note that if the shear modulus varies with depth, then the real earthquake magnitudes may differ from the "constant shear modulus\n',
+                       '  magnitude" reported in the Figures. Our event files also report on the "variable_mu_Mw" which is the magnitude assuming a\n',
+                       '  depth-dependent shear modulus on subduction zones, based on Bilek and Lay (1999). See the report for further information.\n',
+                       '  You should consider this if comparing events of a particular magnitude with historical data, in a situation where the shear\n', 
+                       '  modulus might differ from 30 GPa (for thrust focal mechanisms only). For normal focal mechanisms, the current PTHA always\n',
                        '  uses a shear modulus of 60 GPa\n',
                        '\n',
                        '\n',
                        'A copy of the script used to make this plot can be found at:\n',
                        '    https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template/EVENT_RATES\n',
-                       'in the file named "quick_station_stage_exceedance_rates.R" \n',
-                       'Other codes used to develop the PTHA can be found in the same git repository. \n',
+                       'in the file named "quick_station_stage_exceedance_rates.R"\n',
+                       'Other codes used to develop the PTHA can be found in the same git repository.\n',
                        '\n',
                        '\n',
                        'References\n',
-                       '    Bilek, S.L. and Lay, T. (1999) Rigidity variations with depth along interplate megathrust faults in subduction zones. Nature, 400, 443-446 \n'
+                       '    Bilek, S.L. and Lay, T. (1999) Rigidity variations with depth along interplate megathrust faults in subduction zones. Nature, 400, 443-446\n'
 )
 
 .plot_preamble<-function(){
@@ -60,7 +74,11 @@ library(rptha)
     text(0, 1, .preamble_text, adj=c(0,1), cex=0.95)
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
-    title(.preamble_title, cex=1.5)
+    title(.preamble_title1, cex=1.5)
+    text(0, 1, .preamble_text1, adj=c(0,1), cex=0.95)
+
+    plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
+    title(.preamble_title2, cex=1.5)
     text(0, 1, .preamble_text2, adj=c(0,1), cex=0.95)
 }
 
@@ -210,7 +228,7 @@ quick_source_deagg<-function(lon, lat){
         points(stg_small, er_lo_small, t='l', col='red')
         title(paste0('Stage-vs-exceedance-rate @ (lon=', round(hp$lon[ni],3), ', lat=', 
             round(hp$lat[ni], 2), ', elev=', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
-            ') \n (Lines and points should overlap -- if they differ, contact the PTHA maintainer!)'))
+            ') \n (Lines and points should overlap -- if they differ, do not use the results, and contact the PTHA maintainer)'))
 
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
@@ -331,7 +349,7 @@ quick_source_deagg<-function(lon, lat){
                 col=colz[m1], density=100, horiz=TRUE, las=1, 
                 xlab='Rate (events/year)', 
                 main=paste0('Top ', length(m1), 
-                    ' source-zones: Rate of events with \n peak_stage > ', stage_threshold, 'm', 
+                    ' source-zones: Rate of events with \n peak_stage > ', signif(stage_threshold,3), 'm', 
                     ' @ (', round(hp$lon[ni],3), ', ', round(hp$lat[ni],3), ')')
                 )
             par('mar' = oldmar) # Back to old margins
@@ -349,10 +367,10 @@ quick_source_deagg<-function(lon, lat){
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
                 mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
                 title(paste0(sz, ': Rate of events in each magnitude category \n with peak-stage > ', 
-                    signif(stage_threshold,2), 'm'))
+                    signif(stage_threshold,3), 'm'))
             }
 
-            peak_stage_text = paste0('stage=',signif(stage_threshold, 2), 'm')
+            peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
             mtext(text=paste0('In the plots containing rate vs magnitude, the black dots give the rate of events for each individual magnitude bin. The red dots give the 95% credible intervals.\n',
                               'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. If the \n',
                               'latter percentage is reasonably high (e.g. > 20%), then it means that "fairly typical" modelled tsunamis with the specified magnitude can exceed ', peak_stage_text, '\n', 
@@ -375,13 +393,15 @@ quick_source_deagg<-function(lon, lat){
         site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
             slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
         stage_level = signif(site_deagg[[1]]$stage_exceed, 4)
-        plot_deaggregation_summary(stage_level)
+        # Spatial hazard plot
         par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
             background_raster=background_raster, 
             main=paste0('Spatial hazard deaggregation, logic-tree-average exceedance-rate = 1/', 
-                (1/ex_rates[sv]), '\n peak stage exceeding ', stage_level))
+                (1/ex_rates[sv]), '\n Peak-stage exceeding ', stage_level))
         rm(site_deagg); gc()
+        # Bar charts
+        plot_deaggregation_summary(stage_level)
     }
 
     dev.off()
