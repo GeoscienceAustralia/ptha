@@ -117,7 +117,7 @@ background_raster = get_background_raster()
 plot_hazard_curves_utilities = new.env()
 source('plot_hazard_curves_utilities.R', local=plot_hazard_curves_utilities)
 
-quick_source_deagg<-function(lon, lat){
+quick_source_deagg<-function(lon, lat, output_dir=''){
     #lon = 151.41
     #lat = -34.08
 
@@ -384,7 +384,7 @@ quick_source_deagg<-function(lon, lat){
         }
     }
 
-    pdf(paste0('station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
+    pdf(paste0(output_dir, 'station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
     .plot_preamble()
     plot_stage_vs_rate()
 
