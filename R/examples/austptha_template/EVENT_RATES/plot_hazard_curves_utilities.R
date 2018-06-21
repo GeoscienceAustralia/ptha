@@ -1027,7 +1027,7 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
     gaugeID = ncvar_get(fid, 'gaugeID', start=site_index, count=1)
 
     # Quick sanity check
-    if(abs(lon_p - lon) + abs(lat_p - lat) > 0.05){
+    if(abs(lon_p - lon) + abs(lat_p - lat) > 0.2){
         print(c('Site index seems inconsistent with file lon/lat values', lon, lon_p, lat, lat_p, site_index))
         stop('Check the input point coordinates or site-index')
     }
