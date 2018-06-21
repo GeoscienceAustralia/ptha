@@ -38,9 +38,12 @@ library(rptha)
                        '           SUM( (event-slip-on-the-unit-source / sum-of-the-event-slip-on-all-the-unit-sources) X individual-event-rate )\n',
                        '       , where the SUM includes events that exceed the peak-stage threshold. Results are normalised to [0-1].\n',
                        '       Please note that the appearance of the "spatial hazard deaggregation" plot is significantly affected by the choice of colour scheme.\n',
-                       '       Interpretations should always be cross-checked with the "Top 10 source-zones" bar plot. A common mistake is to focus on \n',
+                       '       Interpretations should always be cross-checked with the "Top 10 source-zones" bar plot. A common mistake is to focus on\n',
                        '       "small-areas with high values", without considering that "large-areas with lower values" may contribute more to the overall hazard.\n',
-                       '       Furthermore, details of the hazard deaggregation may be affected by convergence issues analogous to those mentioned in point 2 above.\n'
+                       '       Furthermore, details of the hazard deaggregation may be affected by convergence issues analogous to those mentioned in point 2 above.\n',
+                       '\n',
+                       '    9-10) The peak-stage at the station of interest resulting from 1m of slip on each unit source. This may help to understand and\n',
+                       '       cross-check the hazard deaggregation.\n'
 )
 
 .preamble_title2 = 'Information on the plots'
@@ -384,7 +387,7 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         }
     }
 
-    pdf(paste0(output_dir, 'station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
+    pdf(paste0(output_dir, '/station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
     .plot_preamble()
     plot_stage_vs_rate()
 
