@@ -1037,15 +1037,6 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
     unit_source_lat = as.numeric(ncvar_get(fid, 'lat_c'))
     peak_stage = as.numeric(ncvar_get(fid, 'max_stage', start=c(1, site_index), count=c(-1,1)))
 
-    peak_stage_range = range(peak_stage)
-
-    # Colour scheme
-    ncol = 200
-    mycol = rev(rainbow(255)[1:ncol])
-    # Colour index
-    my_scale = round(sqrt(peak_stage/peak_stage_range[2]) * ncol)
-    my_scale = pmax(1, my_scale)
-    
     # Start the plot 
     if(is.null(background_raster)){
         plot(c(-40, 320), c(-80, 80), col=0, asp=1, xlab='', ylab='')
@@ -1063,6 +1054,14 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
         k = 1:length(unit_source_lon)
     }
 
+    # Colour scheme
+    ncol = 200
+    mycol = rev(rainbow(255)[1:ncol])
+    # Colour index
+    peak_stage_range = range(peak_stage[k])
+    my_scale = round(sqrt(peak_stage/peak_stage_range[2]) * ncol)
+    my_scale = pmax(1, my_scale)
+    
     points(unit_source_lon[k], unit_source_lat[k], col=mycol[my_scale[k]], pch=19, cex=0.1)
     # Add the gauge point 
     points(lon_p, lat_p, col='red', pch=19)
