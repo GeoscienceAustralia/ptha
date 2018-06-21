@@ -1057,7 +1057,7 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
     # Colour scheme
     ncol = 200
     #mycol = rev(rainbow(255)[1:ncol])
-    mycol = colorRampPalette(c('purple', 'blue', 'lightblue', 'green', 'darkgreen', 'yellow', 'orange', 'red'))(ncol)
+    mycol = colorRampPalette(c('purple', 'blue', 'lightblue', 'darkgreen', 'green', 'yellow', 'orange', 'red'))(ncol)
     # Colour index
     peak_stage_range = range(peak_stage[k])
     my_scale = round(sqrt(peak_stage/peak_stage_range[2]) * ncol)
