@@ -1,4 +1,6 @@
+#
 # Plot peak stage caused by each unit source, for a given site
+#
 library(rptha)
 
 # Unit source files
@@ -72,9 +74,7 @@ get_unit_source_wave_heights<-function(lon, lat, verbose=FALSE){
             nc_close(fid)
         }
     }
-
     return(output)
-
 }
 
 plot_unit_source_wave_heights<-function(lon, lat, verbose=FALSE, bar_scale=5, 
