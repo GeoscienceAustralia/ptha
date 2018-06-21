@@ -405,6 +405,19 @@ quick_source_deagg<-function(lon, lat){
         plot_deaggregation_summary(stage_level)
     }
 
+    # Add the peak stage from all unit sources
+    site_index = plot_hazard_curves_utilities$plot_unit_source_wave_heights_at_station(
+        lon, lat,
+        background_raster=background_raster, rake_range = c(89, 91), 
+        main='Peak stage from each thrust (rake=90) unit-source with 1m slip')
+    # Add the peak stage from all unit sources. Use the site index from the
+    # previous plot to speed it up
+    plot_hazard_curves_utilities$plot_unit_source_wave_heights_at_station(
+        lon, lat,
+        site_index=site_index,
+        background_raster=background_raster, rake_range = c(-91, -89), 
+        main='Peak stage from each normal (rake=-90) unit-source with 1m slip')
+
     dev.off()
 
 }

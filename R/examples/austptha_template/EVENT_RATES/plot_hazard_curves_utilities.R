@@ -997,4 +997,88 @@ make_stage_exceedance_rate_convergence_plot<-function(){
     dev.off()
 }
 
+#
+# Plot the peak stage caused by each single unit-source at a given gauge.
+# @param lon, lat The gauge location
+# @param site_index The index of the site in the file. This can be used to speed up lookup 
+# @param main title for the plot
+# @param rake_range only plot events with rake in the provided range
+# @param background_raster an optional raster for the plot background
+# @return invisibly return the site_index so it can be re-used
+#
+plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
+    main="", rake_range = c(-Inf, Inf), background_raster=NULL){
 
+    fid = nc_open('all_unit_source_wave_heights.nc', readunlim=FALSE)
+
+    if(is.null(site_index)){
+        # Find the site index with nearest-neighbour search
+        lons = as.numeric(ncvar_get(fid, 'lon'))
+        lats = as.numeric(ncvar_get(fid, 'lat'))
+        site_index = lonlat_nearest_neighbours(cbind(lon, lat), cbind(lons, lats))
+        rm(lons, lats)
+    }
+
+
+    # Check lon/lat is consistent with file values
+    lon_p = ncvar_get(fid, 'lon', start=site_index, count=1)    
+    lat_p = ncvar_get(fid, 'lat', start=site_index, count=1)    
+    elev_p = ncvar_get(fid, 'elev', start=site_index, count=1)
+    gaugeID = ncvar_get(fid, 'gaugeID', start=site_index, count=1)
+
+    # Quick sanity check
+    if(abs(lon_p - lon) + abs(lat_p - lat) > 0.05){
+        print(c('Site index seems inconsistent with file lon/lat values', lon, lon_p, lat, lat_p, site_index))
+        stop('Check the input point coordinates or site-index')
+    }
+
+    # Get the unit-source lon_lat
+    unit_source_lon = as.numeric(ncvar_get(fid, 'lon_c'))
+    unit_source_lat = as.numeric(ncvar_get(fid, 'lat_c'))
+    peak_stage = as.numeric(ncvar_get(fid, 'max_stage', start=c(1, site_index), count=c(-1,1)))
+
+    peak_stage_range = range(peak_stage)
+
+    # Colour scheme
+    ncol = 200
+    mycol = rev(rainbow(255)[1:ncol])
+    # Colour index
+    my_scale = round(sqrt(peak_stage/peak_stage_range[2]) * ncol)
+    my_scale = pmax(1, my_scale)
+    
+    # Start the plot 
+    if(is.null(background_raster)){
+        plot(c(-40, 320), c(-80, 80), col=0, asp=1, xlab='', ylab='')
+    }else{
+        image(background_raster, asp=1, col=c('white', 'lightgrey'), xlab='', 
+            ylab='', xaxs='i', yaxs='i')
+    }
+    title(main=main)
+
+    # Possibly restrict based on the unit-source rake
+    if(any(is.finite(rake_range))){
+        rake = ncvar_get(fid, 'rake')
+        k = which(rake >= rake_range[1] & rake <= rake_range[2])
+    }else{
+        k = 1:length(unit_source_lon)
+    }
+
+    points(unit_source_lon[k], unit_source_lat[k], col=mycol[my_scale[k]], pch=19, cex=0.5)
+    # Add the gauge point 
+    points(lon_p, lat_p, col='red', pch=19)
+
+    if(!is.null(background_raster)){
+        # Add a 'legend' for the colors
+        nlegend = ncol
+        contribution = floor(sqrt(seq(0,1, len=nlegend))*ncol)
+        contribution = pmax(contribution, 1) 
+        rtemp = raster(extent(background_raster), ncol=nlegend, nrow=1)
+        rtemp = setValues(rtemp, seq(0, peak_stage_range[2],len=nlegend))
+        plot(rtemp, legend.only=TRUE, col=mycol[contribution],
+            horizontal=FALSE, smallplot=c(0.15, 0.17, 0.5, 0.8), 
+            axis.args=list(cex.axis=0.7),
+            legend.args=list(text=''))
+    }
+
+    return(invisible(site_index))
+}
