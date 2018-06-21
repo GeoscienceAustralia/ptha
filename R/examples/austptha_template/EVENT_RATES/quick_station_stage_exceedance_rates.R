@@ -404,7 +404,7 @@ quick_source_deagg<-function(lon, lat){
         # Bar charts
         plot_deaggregation_summary(stage_level)
     }
-
+    par(mfrow=c(1,1))
     # Add the peak stage from all unit sources
     site_index = plot_hazard_curves_utilities$plot_unit_source_wave_heights_at_station(
         lon, lat,

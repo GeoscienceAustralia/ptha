@@ -1063,7 +1063,7 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
         k = 1:length(unit_source_lon)
     }
 
-    points(unit_source_lon[k], unit_source_lat[k], col=mycol[my_scale[k]], pch=19, cex=0.5)
+    points(unit_source_lon[k], unit_source_lat[k], col=mycol[my_scale[k]], pch=19, cex=0.1)
     # Add the gauge point 
     points(lon_p, lat_p, col='red', pch=19)
 
@@ -1080,5 +1080,6 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
             legend.args=list(text=''))
     }
 
+    nc_close(fid)
     return(invisible(site_index))
 }
