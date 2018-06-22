@@ -1028,14 +1028,16 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
 
     # Quick sanity check
     if(abs(lon_p - lon) + abs(lat_p - lat) > 0.2){
-        print(c('Site index seems inconsistent with file lon/lat values', lon, lon_p, lat, lat_p, site_index))
+        print(c('Site index seems inconsistent with file lon/lat values', 
+                lon, lon_p, lat, lat_p, site_index))
         stop('Check the input point coordinates or site-index')
     }
 
     # Get the unit-source lon_lat
     unit_source_lon = as.numeric(ncvar_get(fid, 'lon_c'))
     unit_source_lat = as.numeric(ncvar_get(fid, 'lat_c'))
-    peak_stage = as.numeric(ncvar_get(fid, 'max_stage', start=c(1, site_index), count=c(-1,1)))
+    peak_stage = as.numeric(ncvar_get(fid, 'max_stage', start=c(1, site_index), 
+        count=c(-1,1)))
 
     # Start the plot 
     if(is.null(background_raster)){
@@ -1057,13 +1059,15 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
     # Colour scheme
     ncol = 200
     #mycol = rev(rainbow(255)[1:ncol])
-    mycol = colorRampPalette(c('purple', 'blue', 'lightblue', 'darkgreen', 'green', 'yellow', 'orange', 'red'))(ncol)
+    mycol = colorRampPalette(c('purple', 'blue', 'lightblue', 
+        'darkgreen', 'green', 'yellow', 'orange', 'red'))(ncol)
     # Colour index
     peak_stage_range = range(peak_stage[k])
     my_scale = round(sqrt(peak_stage/peak_stage_range[2]) * ncol)
     my_scale = pmax(1, my_scale)
     
-    points(unit_source_lon[k], unit_source_lat[k], col=mycol[my_scale[k]], pch=19, cex=0.1)
+    points(unit_source_lon[k], unit_source_lat[k], col=mycol[my_scale[k]], 
+        pch=19, cex=0.1)
     # Add the gauge point 
     points(lon_p, lat_p, col='red', pch=19)
 

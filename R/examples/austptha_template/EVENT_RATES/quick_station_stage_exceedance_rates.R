@@ -3,6 +3,7 @@
 #
 
 library(rptha)
+options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1e-04)
 
 .preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
 .preamble_text = paste0( 
@@ -120,9 +121,13 @@ background_raster = get_background_raster()
 plot_hazard_curves_utilities = new.env()
 source('plot_hazard_curves_utilities.R', local=plot_hazard_curves_utilities)
 
+#' Make a single-station summary plot of the tsunami hazard results
+#'
+#' @param lon longitude near the gauge to check
+#' @param lat latitude near the gauge to check
+#' @param output_dir directory for the pdf plot
+#'
 quick_source_deagg<-function(lon, lat, output_dir=''){
-    #lon = 151.41
-    #lat = -34.08
 
     tsunami_files = Sys.glob(
         '../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_*.nc')
@@ -145,12 +150,15 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     # Find index of point nearest to lon/lat
     ni = lonlat_nearest_neighbours(cbind(lon, lat), cbind(hp$lon, hp$lat))
 
-    # Get stage and rates, for each source
-
+    #
+    # Get stage and rates, for each source zone, from the event files.
+    #
     stage_rate = vector(mode='list', length=length(tsunami_files))
     names(stage_rate) = basename(dirname(dirname(tsunami_files)))
     for(i in 1:length(tsunami_files)){
+
         print(basename(tsunami_files[i]))
+
         fid = nc_open(tsunami_files[i], readunlim=FALSE)
         fid_rates = nc_open(earthquake_only_files[i], readunlim=FALSE)
 
@@ -158,10 +166,11 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         event_rate_upper = ncvar_get(fid_rates, 'variable_mu_rate_annual_upper_ci')
         event_rate_lower = ncvar_get(fid_rates, 'variable_mu_rate_annual_lower_ci')
         event_Mw = round(ncvar_get(fid_rates, 'Mw'), 3) # Deal with floating point imperfections in netcdf
-        event_Mw_vary_mu = round(ncvar_get(fid_rates, 'variable_mu_Mw'))
+        #event_Mw_vary_mu = round(ncvar_get(fid_rates, 'variable_mu_Mw'))
         peak_stage = ncvar_get(fid, 'max_stage', start=c(1, ni), count=c(-1,1))
+
         site = rep(basename(dirname(dirname(tsunami_files[i]))), length=length(event_rate))
-        row_index = 1:length(event_rate)
+        #row_index = 1:length(event_rate)
 
         stage_rate[[i]] = data.frame(
             event_rate = event_rate,
@@ -169,16 +178,21 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             event_rate_lower = event_rate_lower,
             peak_stage = peak_stage,
             site = site,
-            row_index=row_index,
-            event_Mw = event_Mw,
-            event_Mw_vary_mu = event_Mw_vary_mu)
+            #row_index=row_index,
+            event_Mw = event_Mw)
+            #event_Mw_vary_mu = event_Mw_vary_mu)
 
         nc_close(fid)
         nc_close(fid_rates)
+        rm(event_rate, event_rate_upper, event_rate_lower, event_Mw, 
+            #event_Mw_vary_mu, row_index,
+            peak_stage, site)
+        gc()
     }
 
     # Back-calculate the stage-vs-rate curves
     stage_rate_all = do.call(rbind, stage_rate)
+    rm(stage_rate); gc()
 
     odr = rev(order(stage_rate_all$peak_stage))
 
@@ -217,45 +231,57 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     er_conv_2_small = approx(stg_conv_2, er_conv_2, xout=stages_interp)$y
 
     #
-    # Plot the data
+    # Plot the stage-vs-rate curves
     #
     plot_stage_vs_rate<-function(){
+
         xmax = max(stg*(er>0), na.rm=TRUE)
         ylim = c(1e-05, max(max(er), 1))
-        plot(stg_small, er_small, t='l', log='xy', 
-            xlim=c(min(0.02, max(xmax-0.005, 1.0e-05)), xmax),
-            ylim=ylim,
+        xlim = c(min(0.02, max(xmax-0.005, 1.0e-05)), xmax)
+
+
+        # The stage-vs-rate info from the event files
+        plot(stg_small, er_small, t='l', log='xy', xlim=xlim, ylim=ylim, 
             xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
-        abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
-        abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), lty='dotted', col='brown')
         points(stg_small, er_up_small, t='l', col='red')
         points(stg_small, er_lo_small, t='l', col='red')
-        title(paste0('Stage-vs-exceedance-rate @ (lon=', round(hp$lon[ni],3), ', lat=', 
-            round(hp$lat[ni], 2), ', elev=', round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),
-            ') \n (Lines and points should overlap -- if they differ, do not use the results, and contact the PTHA maintainer)'))
 
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
         points(stages, ers_lo, pch=19, cex=1.0, col='pink')
+
+        main_title_extra = '\n (Lines and points should overlap -- if they differ, do not use the results, and contact the PTHA maintainer)'
+
+        main_title = paste0('Stage-vs-exceedance-rate @ (lon=', 
+            round(hp$lon[ni],3), ', lat=', round(hp$lat[ni], 2), ', elev=', 
+            round(hp$elev[ni],2), ', ID=', round(hp$gaugeID[ni], 2),') ', 
+            main_title_extra)
+
+        title(main_title)
+
+        abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
+        abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), 
+            lty='dotted', col='brown')
 
         legend('topright', 
             c('Peak-stage exceedance-rate (mean over all logic-tree branches)',
               '95% credible interval'),
             col=c('brown', 'pink'),
             pch=c(19, 19), bg='white')
-   
+  
         # Add convergence check information 
-        
         plot(stg_small, er_small, t='l', log='xy', 
             xlim=c(min(0.02, max(xmax-0.005, 1.0e-05)), xmax),
             ylim=ylim,
             xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
         abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
-        abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), lty='dotted', col='brown')
+        abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), 
+            lty='dotted', col='brown')
         points(stg_conv_1_small, er_conv_1_small, t='l', col='orange')
         points(stg_conv_2_small, er_conv_2_small, t='l', col='red')
         title(paste0(
-            'The two "convergence check" curves are made using half the model scenarios each. \n They should agree fairly well except for rare events.'))
+            'The two "convergence check" curves are made using half the model scenarios each.\n',
+            'They should agree fairly well except for rare events.'))
 
         legend('topright', 
             c('Peak-stage exceedance-rate (mean over all logic-tree branches)',
@@ -266,7 +292,7 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     
 
     #
-    # Function to examine the distribution of earthquake magnitudes
+    # Summarise the distribution of earthquake magnitudes by source-zone
     #
     peak_stage_magnitude_summary<-function(stage_threshold, source_zone){
 
@@ -276,15 +302,21 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         mw_min = min(stage_rate_all$event_Mw[is_site & stage_rate_all$event_rate > 0])
 
         if(is.finite(mw_max) & is.finite(mw_min)){
-            k = which( (stage_rate_all$peak_stage > stage_threshold) & is_site & (stage_rate_all$event_rate>0) &
-                stage_rate_all$event_Mw >= mw_min & stage_rate_all$event_Mw <= mw_max)
+            k = which( (stage_rate_all$peak_stage > stage_threshold) & 
+                        is_site & 
+                        (stage_rate_all$event_rate>0) &
+                        (stage_rate_all$event_Mw >= mw_min) & 
+                        (stage_rate_all$event_Mw <= mw_max) )
         }else{
             k = c()
         }
 
         if(length(k) == 0){
+
             output = NA
+
         }else{
+
             output = aggregate(stage_rate_all$event_rate[k], 
                 by=list(stage_rate_all$event_Mw[k]), 
                 f<-function(x) c(sum(x), length(x)))
@@ -314,7 +346,7 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     }
 
     #
-    # Plot
+    # Plot the distribution of earthquake magnitudes by source-zone
     #
     plot_deaggregation_summary<-function(stage_threshold){
 
@@ -394,9 +426,11 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     # Plot at a few exceedance rates
     ex_rates = c(1/100, 1/500, 1/2500)
     for(sv in 1:length(ex_rates)){
+
         site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
             slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
         stage_level = signif(site_deagg[[1]]$stage_exceed, 3)
+
         # Spatial hazard plot
         par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
@@ -404,15 +438,19 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             main=paste0('Spatial hazard deaggregation, logic-tree-average exceedance-rate = 1/', 
                 (1/ex_rates[sv]), '\n Peak-stage exceeding ', stage_level))
         rm(site_deagg); gc()
+
         # Bar charts
         plot_deaggregation_summary(stage_level)
     }
+
     par(mfrow=c(1,1))
+
     # Add the peak stage from all unit sources
     site_index = plot_hazard_curves_utilities$plot_unit_source_wave_heights_at_station(
         lon, lat,
         background_raster=background_raster, rake_range = c(89, 91), 
         main='Peak stage from each thrust (rake=90) unit-source with 1m slip')
+
     # Add the peak stage from all unit sources. Use the site index from the
     # previous plot to speed it up
     plot_hazard_curves_utilities$plot_unit_source_wave_heights_at_station(
