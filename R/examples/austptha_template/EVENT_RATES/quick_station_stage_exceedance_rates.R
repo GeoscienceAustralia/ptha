@@ -422,6 +422,7 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     pdf(paste0(output_dir, '/station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
     .plot_preamble()
     plot_stage_vs_rate()
+    gc()
 
     # Plot at a few exceedance rates
     ex_rates = c(1/100, 1/500, 1/2500)
@@ -450,7 +451,7 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         lon, lat,
         background_raster=background_raster, rake_range = c(89, 91), 
         main='Peak stage from each thrust (rake=90) unit-source with 1m slip')
-
+    gc()
     # Add the peak stage from all unit sources. Use the site index from the
     # previous plot to speed it up
     plot_hazard_curves_utilities$plot_unit_source_wave_heights_at_station(
@@ -458,6 +459,7 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         site_index=site_index,
         background_raster=background_raster, rake_range = c(-91, -89), 
         main='Peak stage from each normal (rake=-90) unit-source with 1m slip')
+    gc()
 
     dev.off()
 
