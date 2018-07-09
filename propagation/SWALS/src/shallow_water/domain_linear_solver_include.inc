@@ -275,8 +275,8 @@
 
                 ! Depth at i-plus-half
                 h_iph_vec(xL:(xU-1)) = merge( &
-                    HALF_dp * ((domain%U((xL+1):xU, j, STG)  + domain%U(xL:(xU-1), j, STG)) -&
-                               (domain%U((xL+1):xU, j, ELV) - domain%U(xL:(xU-1), j, ELV))), &
+                    HALF_dp * ((domain%U((xL+1):xU, j, STG) + domain%U(xL:(xU-1), j, STG)) -&
+                               (domain%U((xL+1):xU, j, ELV) + domain%U(xL:(xU-1), j, ELV))), &
                     ZERO_dp, &
                     ((domain%U(xL:(xU-1), j, STG) - domain%U(xL:(xU-1),j,ELV) > minimum_allowed_depth).AND.&
                         (domain%U((xL+1):xU, j, STG) - domain%U((xL+1):xU,j,ELV) > minimum_allowed_depth)))  
