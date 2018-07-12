@@ -479,11 +479,15 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
                 local_max_stage = try(ncvar_get(fid1, 'max_stage', start=c(1,target_index), 
                     count=c(fid1$dim$event$len,1)))
-                local_period = try(ncvar_get(fid1, 'period', start=c(1,target_index), 
-                    count=c(fid1$dim$event$len,1)))
+
+                ## I'm commenting out local_period, since the zero-crossing period
+                ## is quite effected by small oscillations in the stage, and not so useful
+                ## for qualitative interpretation
+                #local_period = try(ncvar_get(fid1, 'period', start=c(1,target_index), 
+                #    count=c(fid1$dim$event$len,1)))
                 nc_close(fid1)
-                if((class(local_max_stage) != 'try-error') & 
-                    (class(local_period) != 'try-error')) has_vars[1] = TRUE
+                #if((class(local_max_stage) != 'try-error') & (class(local_period) != 'try-error')) has_vars[1] = TRUE
+                if((class(local_max_stage) != 'try-error')) has_vars[1] = TRUE
             }
 
             # Read Mw and the event rate from the file that doesn't contain the tsunami
@@ -495,18 +499,22 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 fid2 = nc_open(nc_file2, readunlim=FALSE, suppress_dimvals=TRUE)
                 local_Mw = try(ncvar_get(fid2, 'Mw'))
                 local_rate = try(ncvar_get(fid2, 'rate_annual'))
+                local_Mw_variable_mu = try(ncvar_get(fid2, 'variable_mu_Mw'))
                 nc_close(fid2)
                 if((class(local_Mw) != 'try-error') & 
-                   (class(local_rate) != 'try-error')) has_vars[2] = TRUE
+                   (class(local_rate) != 'try-error') &
+                   (class(local_Mw_variable_mu) != 'try-error')
+                    ) has_vars[2] = TRUE
             }
 
             output[[i]] = list(
                 Mw = local_Mw,
                 max_stage = local_max_stage,
-                period = local_period,
+                #period = local_period,
                 local_rate = local_rate,
                 target_index=target_index,
-                slip_type=slip_type
+                slip_type=slip_type,
+                variable_mu_Mw = local_Mw_variable_mu
                 )
 
             # Error handling
