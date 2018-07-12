@@ -500,9 +500,11 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 local_Mw = try(ncvar_get(fid2, 'Mw'))
                 local_rate = try(ncvar_get(fid2, 'rate_annual'))
                 local_Mw_variable_mu = try(ncvar_get(fid2, 'variable_mu_Mw'))
+                local_rate_variable_mu = try(ncvar_get(fid2, 'variable_mu_rate_annual'))
                 nc_close(fid2)
                 if((class(local_Mw) != 'try-error') & 
                    (class(local_rate) != 'try-error') &
+                   (class(local_rate_variable_mu) != 'try-error') &
                    (class(local_Mw_variable_mu) != 'try-error')
                     ) has_vars[2] = TRUE
             }
@@ -514,7 +516,8 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 local_rate = local_rate,
                 target_index=target_index,
                 slip_type=slip_type,
-                variable_mu_Mw = local_Mw_variable_mu
+                variable_mu_Mw = local_Mw_variable_mu,
+                variable_mu_local_rate = local_rate_variable_mu
                 )
 
             # Error handling
