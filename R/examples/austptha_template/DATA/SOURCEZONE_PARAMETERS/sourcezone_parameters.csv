@@ -19,9 +19,9 @@ solomon,,50,50,90,Strasser,3,,,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berr
 solomon,_southeast,,,,Strasser,3,1,20,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
 solomon,_northwest,,,,Strasser,3,21,30,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
 solomon,_newbritain,,,,Strasser,3,31,46,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
-southamerica,,50,50,90,Strasser,3,,,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.5,0,Berryman et al. (2015) coupling and Mw_max_min
+southamerica,,50,50,90,Strasser,3,,,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.2,0,"Berryman et al. (2015) coupling. Set mw_max_min to 9.2 instead of 9.5, because inversions based on tsunami ( Fuji and Satake) + geodetic data suggest that is a more appropriate Mw for 1960 chile – while acknowledging that seismic-wave inversions suggest a higher value"
 southamerica,_patagonia,,,,Strasser,3,1,34,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al. (2015) coupling and Mw_max_min
-southamerica,_central_chile,,,,Strasser,3,35,60,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.5,0,Berryman et al. (2015) coupling and Mw_max_min
+southamerica,_central_chile,,,,Strasser,3,35,60,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.2,0,"Berryman et al. (2015) coupling. Set mw_max_min to 9.2 instead of 9.5, because inversions based on tsunami ( Fuji and Satake) + geodetic data suggest that is a more appropriate Mw for 1960 chile – while acknowledging that seismic-wave inversions suggest a higher value"
 southamerica,_northern_chile,,,,Strasser,3,61,88,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.6,0,Berryman et al. (2015) coupling and Mw_max_min
 southamerica,_peru,,,,Strasser,3,89,137,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,0,Berryman et al. (2015) coupling and Mw_max_min
 southamerica,_ecuador,,,,Strasser,3,138,165,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.8,0,Berryman et al. (2015) coupling and Mw_max_min
