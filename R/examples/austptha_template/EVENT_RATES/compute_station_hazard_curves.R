@@ -429,7 +429,7 @@ create_rate_netcdf_file<-function(
             }
 
             assign(var_name1, ncvar_def(
-                name=var_name1, units='events per year',
+                name=var_title, units='events per year',
                 dim=list(dim_stage_seq, dim_station), 
                 longname = paste0('exceedance rate of peak stage for ', slip_type, ' slip events ', extra_longname),
                 missval=NA,
@@ -450,7 +450,7 @@ create_rate_netcdf_file<-function(
             var_title = paste0(vary_mu, slip_type, '_slip_rate_upper_ci')
 
             assign(var_name2, ncvar_def(
-                name=var_name2, units='events per year',
+                name=var_title, units='events per year',
                 dim=list(dim_stage_seq, dim_station), 
                 longname = paste0('exceedance rate (upper credible interval) of peak stage for ', slip_type, 
                     ' slip events ', extra_longname),
@@ -471,7 +471,7 @@ create_rate_netcdf_file<-function(
             var_title = paste0(vary_mu, slip_type, '_slip_rate_lower_ci')
 
             assign(var_name3, ncvar_def(
-                name=var_name3, units='events per year',
+                name=var_title, units='events per year',
                 dim=list(dim_stage_seq, dim_station), 
                 longname = paste0('exceedance rate (lower credible interval) of peak stage for ', slip_type, 
                     ' slip events ', extra_longname),
@@ -491,7 +491,7 @@ create_rate_netcdf_file<-function(
             var_title = paste0(vary_mu, slip_type, '_slip_rate_median')
 
             assign(var_name4, ncvar_def(
-                name=var_name4, units='events per year',
+                name=var_title, units='events per year',
                 dim=list(dim_stage_seq, dim_station), 
                 longname = paste0('exceedance rate (median) of peak stage for ', slip_type, 
                     ' slip events ', extra_longname),
@@ -504,7 +504,7 @@ create_rate_netcdf_file<-function(
             var_title = paste0(vary_mu, slip_type, '_slip_rate_16pc')
 
             assign(var_name5, ncvar_def(
-                name=var_name5, units='events per year',
+                name=var_title, units='events per year',
                 dim=list(dim_stage_seq, dim_station), 
                 longname = paste0('exceedance rate (16th percentile) of peak stage for ', slip_type, 
                     ' slip events ', extra_longname),
@@ -519,7 +519,7 @@ create_rate_netcdf_file<-function(
             var_title = paste0(vary_mu, slip_type, '_slip_rate_84pc')
 
             assign(var_name6, ncvar_def(
-                name=var_name6, units='events per year',
+                name=var_title, units='events per year',
                 dim=list(dim_stage_seq, dim_station), 
                 longname = paste0('exceedance rate (84th percentile) of peak stage for ', slip_type, 
                     ' slip events ', extra_longname),
@@ -561,69 +561,52 @@ create_rate_netcdf_file<-function(
     ncvar_put(output_fid, gauge_id_v, gauge_points$gaugeID)
 
     # Put uniform slip stage exceedance rates on file
-    ncvar_put(output_fid, uniform_rate_v, uniform_slip_rates$rates)
-    ncvar_put(output_fid, uniform_rate_upper_v, 
-        uniform_slip_rates$rates_upper_ci)
-    ncvar_put(output_fid, uniform_rate_lower_v, 
-        uniform_slip_rates$rates_lower_ci)
+    ncvar_put(output_fid, uniform_rate_v,        uniform_slip_rates$rates)
+    ncvar_put(output_fid, uniform_rate_upper_v,  uniform_slip_rates$rates_upper_ci)
+    ncvar_put(output_fid, uniform_rate_lower_v,  uniform_slip_rates$rates_lower_ci)
     ncvar_put(output_fid, uniform_rate_median_v, uniform_slip_rates$rates_median)
-    ncvar_put(output_fid, uniform_rate_16pc_v, uniform_slip_rates$rates_16pc)
-    ncvar_put(output_fid, uniform_rate_84pc_v, uniform_slip_rates$rates_84pc)
+    ncvar_put(output_fid, uniform_rate_16pc_v,   uniform_slip_rates$rates_16pc)
+    ncvar_put(output_fid, uniform_rate_84pc_v,   uniform_slip_rates$rates_84pc)
 
     # As above with variable shear modulus
-    ncvar_put(output_fid, variable_mu_uniform_rate_v, 
-        uniform_slip_rates$variable_mu_rates)
-    ncvar_put(output_fid, variable_mu_uniform_rate_upper_v, 
-        uniform_slip_rates$variable_mu_rates_upper_ci)
-    ncvar_put(output_fid, variable_mu_uniform_rate_lower_v, 
-        uniform_slip_rates$variable_mu_rates_lower_ci)
+    ncvar_put(output_fid, variable_mu_uniform_rate_v,        uniform_slip_rates$variable_mu_rates)
+    ncvar_put(output_fid, variable_mu_uniform_rate_upper_v,  uniform_slip_rates$variable_mu_rates_upper_ci)
+    ncvar_put(output_fid, variable_mu_uniform_rate_lower_v,  uniform_slip_rates$variable_mu_rates_lower_ci)
     ncvar_put(output_fid, variable_mu_uniform_rate_median_v, uniform_slip_rates$variable_mu_rates_median)
-    ncvar_put(output_fid, variable_mu_uniform_rate_16pc_v, uniform_slip_rates$variable_mu_rates_16pc)
-    ncvar_put(output_fid, variable_mu_uniform_rate_84pc_v, uniform_slip_rates$variable_mu_rates_84pc)
+    ncvar_put(output_fid, variable_mu_uniform_rate_16pc_v,   uniform_slip_rates$variable_mu_rates_16pc)
+    ncvar_put(output_fid, variable_mu_uniform_rate_84pc_v,   uniform_slip_rates$variable_mu_rates_84pc)
 
     # Put stochastic slip stage exceedance rates on file
-    ncvar_put(output_fid, stochastic_rate_v, 
-        stochastic_slip_rates$rates)
-    ncvar_put(output_fid, stochastic_rate_upper_v, 
-        stochastic_slip_rates$rates_upper_ci)
-    ncvar_put(output_fid, stochastic_rate_lower_v, 
-        stochastic_slip_rates$rates_lower_ci)
+    ncvar_put(output_fid, stochastic_rate_v,        stochastic_slip_rates$rates)
+    ncvar_put(output_fid, stochastic_rate_upper_v,  stochastic_slip_rates$rates_upper_ci)
+    ncvar_put(output_fid, stochastic_rate_lower_v,  stochastic_slip_rates$rates_lower_ci)
     ncvar_put(output_fid, stochastic_rate_median_v, stochastic_slip_rates$rates_median)
-    ncvar_put(output_fid, stochastic_rate_16pc_v, stochastic_slip_rates$rates_16pc)
-    ncvar_put(output_fid, stochastic_rate_84pc_v, stochastic_slip_rates$rates_84pc)
+    ncvar_put(output_fid, stochastic_rate_16pc_v,   stochastic_slip_rates$rates_16pc)
+    ncvar_put(output_fid, stochastic_rate_84pc_v,   stochastic_slip_rates$rates_84pc)
 
     # As above with variable shear modulus
-    ncvar_put(output_fid, variable_mu_stochastic_rate_v, 
-        stochastic_slip_rates$variable_mu_rates)
-    ncvar_put(output_fid, variable_mu_stochastic_rate_upper_v, 
-        stochastic_slip_rates$variable_mu_rates_upper_ci)
-    ncvar_put(output_fid, variable_mu_stochastic_rate_lower_v, 
-        stochastic_slip_rates$variable_mu_rates_lower_ci)
+    ncvar_put(output_fid, variable_mu_stochastic_rate_v,        stochastic_slip_rates$variable_mu_rates)
+    ncvar_put(output_fid, variable_mu_stochastic_rate_upper_v,  stochastic_slip_rates$variable_mu_rates_upper_ci)
+    ncvar_put(output_fid, variable_mu_stochastic_rate_lower_v,  stochastic_slip_rates$variable_mu_rates_lower_ci)
     ncvar_put(output_fid, variable_mu_stochastic_rate_median_v, stochastic_slip_rates$variable_mu_rates_median)
-    ncvar_put(output_fid, variable_mu_stochastic_rate_16pc_v, stochastic_slip_rates$variable_mu_rates_16pc)
-    ncvar_put(output_fid, variable_mu_stochastic_rate_84pc_v, stochastic_slip_rates$variable_mu_rates_84pc)
+    ncvar_put(output_fid, variable_mu_stochastic_rate_16pc_v,   stochastic_slip_rates$variable_mu_rates_16pc)
+    ncvar_put(output_fid, variable_mu_stochastic_rate_84pc_v,   stochastic_slip_rates$variable_mu_rates_84pc)
 
     # Put variable_uniform slip stage exceedance rates on file
-    ncvar_put(output_fid, variable_uniform_rate_v, 
-        variable_uniform_slip_rates$rates)
-    ncvar_put(output_fid, variable_uniform_rate_upper_v, 
-        variable_uniform_slip_rates$rates_upper_ci)
-    ncvar_put(output_fid, variable_uniform_rate_lower_v, 
-        variable_uniform_slip_rates$rates_lower_ci)
+    ncvar_put(output_fid, variable_uniform_rate_v,        variable_uniform_slip_rates$rates)
+    ncvar_put(output_fid, variable_uniform_rate_upper_v,  variable_uniform_slip_rates$rates_upper_ci)
+    ncvar_put(output_fid, variable_uniform_rate_lower_v,  variable_uniform_slip_rates$rates_lower_ci)
     ncvar_put(output_fid, variable_uniform_rate_median_v, variable_uniform_slip_rates$rates_median)
-    ncvar_put(output_fid, variable_uniform_rate_16pc_v, variable_uniform_slip_rates$rates_16pc)
-    ncvar_put(output_fid, variable_uniform_rate_84pc_v, variable_uniform_slip_rates$rates_84pc)
+    ncvar_put(output_fid, variable_uniform_rate_16pc_v,   variable_uniform_slip_rates$rates_16pc)
+    ncvar_put(output_fid, variable_uniform_rate_84pc_v,   variable_uniform_slip_rates$rates_84pc)
 
     # As above with variable shear modulus
-    ncvar_put(output_fid, variable_mu_variable_uniform_rate_v, 
-        variable_uniform_slip_rates$variable_mu_rates)
-    ncvar_put(output_fid, variable_mu_variable_uniform_rate_upper_v, 
-        variable_uniform_slip_rates$variable_mu_rates_upper_ci)
-    ncvar_put(output_fid, variable_mu_variable_uniform_rate_lower_v, 
-        variable_uniform_slip_rates$variable_mu_rates_lower_ci)
+    ncvar_put(output_fid, variable_mu_variable_uniform_rate_v,        variable_uniform_slip_rates$variable_mu_rates)
+    ncvar_put(output_fid, variable_mu_variable_uniform_rate_upper_v,  variable_uniform_slip_rates$variable_mu_rates_upper_ci)
+    ncvar_put(output_fid, variable_mu_variable_uniform_rate_lower_v,  variable_uniform_slip_rates$variable_mu_rates_lower_ci)
     ncvar_put(output_fid, variable_mu_variable_uniform_rate_median_v, variable_uniform_slip_rates$variable_mu_rates_median)
-    ncvar_put(output_fid, variable_mu_variable_uniform_rate_16pc_v, variable_uniform_slip_rates$variable_mu_rates_16pc)
-    ncvar_put(output_fid, variable_mu_variable_uniform_rate_84pc_v, variable_uniform_slip_rates$variable_mu_rates_84pc)
+    ncvar_put(output_fid, variable_mu_variable_uniform_rate_16pc_v,   variable_uniform_slip_rates$variable_mu_rates_16pc)
+    ncvar_put(output_fid, variable_mu_variable_uniform_rate_84pc_v,   variable_uniform_slip_rates$variable_mu_rates_84pc)
 
     nc_close(output_fid)
 

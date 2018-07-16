@@ -104,6 +104,29 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         }
     }
 
+    # Sanity check on the ordering quantiles
+    # Hang on! This might not hold, because the quantiles refer to the cumulative
+    # distribution function -- but the 'event specific' values refer to the derivative
+    # of this. The derivatives might not have a strict ordering (although there
+    # is certainly a tendency for that.
+    #for(variable_mu in c('', 'variable_mu_')){
+    #    for(nme in c('unif', 'stoc', 'vuni')){
+    #        # Read the lowest quantile, and compare with the second lowest. Then
+    #        # compare second lowest to third lowest. etc.
+    #        var1 = paste0(variable_mu, 'rate_annual_lower_ci')
+    #        oldvar_vals = ncvar_get(fids[[nme]], var1)
+    #        other_vars = paste0(variable_mu, # Note the following variables are ordered
+    #            c('rate_annual_16pc', 'rate_annual_median', 'rate_annual_84pc', 'rate_annual_upper_ci'))
+    #        for(newvar in other_vars){
+    #            newvar_vals = ncvar_get(fids[[nme]], newvar)
+    #            if(!all(newvar_vals >= oldvar_vals)){
+    #                stop(paste0('ordering problem in quantiles near ', newvar, ' ', nme))
+    #            }
+    #            oldvar_vals = newvar_vals
+    #        }
+    #    }
+    #}
+
     # Check weight with nonzero rate is sensible
     for(nme in c('unif', 'stoc', 'vuni')){
 
