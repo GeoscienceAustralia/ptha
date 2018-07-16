@@ -39,19 +39,24 @@ another machine.
 
 ## Details
 
-The main script is [compute_station_hazard_curves.R](compute_station_hazard_curves.R)
+The main scripts are [compute_station_hazard_curves.R](compute_station_hazard_curves.R)
+and [compute_rates_all_sources.R](compute_rates_all_sources.R)
 
-It is used to compute 'hazard curves' for every station in the model. These are
-written out to a netcdf file [one for each source-zone]
+[compute_rates_all_sources.R](compute_rates_all_sources.R) is used to compute
+rates for all tsunami events on all source-zones, using information on 
+plate tectonic motions and historical earthquakes. 
+
+[compute_station_hazard_curves.R](compute_station_hazard_curves.R) combines the
+above information with the tsunami propagation results to compute 'hazard
+curves' for every station in the model. These are written out to a netcdf file
+[one for each source-zone].
 
 Supplementary codes which are used in the above process are:
 
-[compute_rates_all_sources.R](compute_rates_all_sources.R), used to compute
-rates for all tsunami events
-
 [append_variable_mu_variables_to_event_netcdf.R](append_variable_mu_variables_to_event_netcdf.R), used
-to insert new columns into the netcdf files to store some results under the assumption of
-variable shear modulus (for thrust events only).
+to insert new columns into the netcdf files to store some results under the
+assumption of variable shear modulus (this is only different to the
+constant-shear-modulus case for thrust events).
 
 [make_spatially_variable_source_zone_convergence_rates.R](make_spatially_variable_source_zone_convergence_rates.R),
 used to map Bird (2003) plate-boundary convergence rates onto the top-edge of
