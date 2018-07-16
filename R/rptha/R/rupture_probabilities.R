@@ -307,7 +307,7 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' Mw_count_duration[1]" and "length(Mw_obs_data$Mw) = Mw_count_duration[2]".
 #' The likelihood is evaluated by numerically differentiating each modelled GR
 #' curve (normalised to a density for values above Mw_count_duration[1]). The
-#' numerical differentiation uses a central difference over eps=1.0e-04
+#' numerical differentiation uses a central difference over eps=1.0e-02
 #' magnitude units, which should be fairly accurate although not perfectly
 #' exact. \cr
 #' If Mw_obs_data$t is not null (NOT RECOMMENDED DUE TO BIAS, see below), then
@@ -930,7 +930,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
     # We assume finite support in the mw error, with a max absolute value
     max_obs_mw_error = 0.5
     # and do numerical integration with a given 'dy' increment.
-    integration_dy = 0.01
+    integration_dy = 0.005
 
     #
     # Adjust the weights of logic-tree branches based on the data
@@ -1090,13 +1090,14 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
             #   = -(1/GR(data_thresh))*[ derivative_of_GR_with_respect_to_Mw]
             # (Because the CDF is ( 1  -(1/GR(data_thresh))*GR(Mw) )
             #
+            eps = 2*integration_dy
             if(is.null(cdf_mw_observation_error)){
                 #
                 # Ignoring observation errors in Mw data
                 #
                 gr_mwmin = Mfd(data_thresh, a = a_par, b=b_par, 
                     Mw_min=mw_min_par, Mw_max=mw_max_par)
-                eps = 1e-04 # For numerical differentiation
+                #eps = 1e-04 # For numerical differentiation
                 density_above_data_thresh = -1/(gr_mwmin*2*eps) * (
                     Mfd(Mw_obs_data$Mw+eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
                     Mfd(Mw_obs_data$Mw-eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
@@ -1114,7 +1115,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
                     true_value_range_with_nontrivial_cdf_value=int_range,
                     integration_dy = integration_dy)
 
-                eps = 1e-04 # For numerical differentiation
+                #eps = 1e-04 # For numerical differentiation
                 # Compute the density in a few steps:
                 # density = -1/(gr_mwmin*2*eps) ( rate_plus_eps - rate_minus_eps)
                 rate_plus_eps = sapply(Mw_obs_data$Mw + eps, f<-function(x){
