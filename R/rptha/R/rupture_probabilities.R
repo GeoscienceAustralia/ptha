@@ -307,9 +307,10 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' Mw_count_duration[1]" and "length(Mw_obs_data$Mw) = Mw_count_duration[2]".
 #' The likelihood is evaluated by numerically differentiating each modelled GR
 #' curve (normalised to a density for values above Mw_count_duration[1]). The
-#' numerical differentiation uses a central difference over eps=1.0e-02
-#' magnitude units, which should be fairly accurate although not perfectly
-#' exact. \cr
+#' numerical differentiation uses a central difference which should be
+#' acceptably accurate although not perfectly exact. The central difference has numerical
+#' increment equal to 1.0e-04 if mw_observation_error_cdf=NULL, and otherwise the latter 
+#' is equal to computational_increment. \cr
 #' If Mw_obs_data$t is not null (NOT RECOMMENDED DUE TO BIAS, see below), then
 #' we assume event occurrence times are a realisation of a Poisson process
 #' (treating the time before the first event and the time after the last event
@@ -605,7 +606,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             all_par_prob_with_Mw_error = compute_updated_logic_tree_weights(
                 Mw_seq, all_par_combo, all_par_prob_prior, Mw_count_duration,
                 Mw_obs_data, mw_max_posterior_equals_mw_max_prior,
-                cdf_mw_observation_error=mw_observation_error_cdf)
+                cdf_mw_observation_error=mw_observation_error_cdf,
+                integration_dy=computational_increment/2)
         }
 
     }else{
@@ -924,13 +926,14 @@ Mw_exceedance_rate_characteristic_gutenberg_richter<-function(
 # 
 compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo, 
     all_par_prob_prior, Mw_count_duration, Mw_obs_data, 
-    mw_max_posterior_equals_mw_max_prior, cdf_mw_observation_error=NULL){
+    mw_max_posterior_equals_mw_max_prior, cdf_mw_observation_error=NULL,
+    max_obs_mw_error=0.5, integration_dy=0.01){
 
     # These numbers are repeatedly used when we treat magnitude errors. 
     # We assume finite support in the mw error, with a max absolute value
-    max_obs_mw_error = 0.5
+    max_obs_mw_error = max_obs_mw_error
     # and do numerical integration with a given 'dy' increment.
-    integration_dy = 0.005
+    integration_dy = integration_dy
 
     #
     # Adjust the weights of logic-tree branches based on the data
@@ -1090,14 +1093,13 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
             #   = -(1/GR(data_thresh))*[ derivative_of_GR_with_respect_to_Mw]
             # (Because the CDF is ( 1  -(1/GR(data_thresh))*GR(Mw) )
             #
-            eps = 2*integration_dy
             if(is.null(cdf_mw_observation_error)){
                 #
                 # Ignoring observation errors in Mw data
                 #
                 gr_mwmin = Mfd(data_thresh, a = a_par, b=b_par, 
                     Mw_min=mw_min_par, Mw_max=mw_max_par)
-                #eps = 1e-04 # For numerical differentiation
+                eps = 1e-04 # For numerical differentiation
                 density_above_data_thresh = -1/(gr_mwmin*2*eps) * (
                     Mfd(Mw_obs_data$Mw+eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) - 
                     Mfd(Mw_obs_data$Mw-eps, a = a_par, b=b_par, Mw_min=mw_min_par, Mw_max=mw_max_par) )
@@ -1115,7 +1117,7 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
                     true_value_range_with_nontrivial_cdf_value=int_range,
                     integration_dy = integration_dy)
 
-                #eps = 1e-04 # For numerical differentiation
+                eps = integration_dy # For numerical differentiation
                 # Compute the density in a few steps:
                 # density = -1/(gr_mwmin*2*eps) ( rate_plus_eps - rate_minus_eps)
                 rate_plus_eps = sapply(Mw_obs_data$Mw + eps, f<-function(x){
@@ -1383,11 +1385,11 @@ exceedance_rate_of_observed<-function(exceedance_true, cdf_obs_error, data_value
 #' 
 #' # By construction in this example, there is a 50% chance of being <= the
 #' # conditional value
-#' stopifnot(all(ecdf_conditional(unique_conditional_vars, unique_conditional_vars) == 0.5))
+#' stopifnot(all(abs(ecdf_conditional(unique_conditional_vars, unique_conditional_vars) - 0.5) < 1.0e-12))
 #' 
 #' # By construction, 40% of values should be beneath conditional_var-0.1
 #' m1 = ecdf_conditional(7.6, 7.7)
-#' stopifnot(m1 == 0.4)
+#' stopifnot(abs(m1 - 0.4) < 1.0e-12)
 #' # BUT, if we evaluate the function at conditional values that are not in
 #' # unique_conditional_vars, then the relation will only hold approximately, due
 #' # to the interpolation involved
@@ -1467,6 +1469,7 @@ make_conditional_ecdf<-function(x, conditional_var){
     for(i in 1:num_conditional_var){
         k = which(conditional_var == conditional_var_values_binned[i])
         x_ecdfs[[i]] = ecdf(x[k]) 
+        #x_ecdfs[[i]] = approxfun(sort(x[k]), seq(0,1, len=length(k)), yleft=0, yright=1)
     }
     names(x_ecdfs) = as.character(conditional_var_values_binned)
     

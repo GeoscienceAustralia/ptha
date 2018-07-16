@@ -46,11 +46,11 @@ ecdf_conditional = make_conditional_ecdf(x, conditional_vars)
 
 # By construction in this example, there is a 50\% chance of being <= the
 # conditional value
-stopifnot(all(ecdf_conditional(unique_conditional_vars, unique_conditional_vars) == 0.5))
+stopifnot(all(abs(ecdf_conditional(unique_conditional_vars, unique_conditional_vars) - 0.5) < 1.0e-12))
 
 # By construction, 40\% of values should be beneath conditional_var-0.1
 m1 = ecdf_conditional(7.6, 7.7)
-stopifnot(m1 == 0.4)
+stopifnot(abs(m1 - 0.4) < 1.0e-12)
 # BUT, if we evaluate the function at conditional values that are not in
 # unique_conditional_vars, then the relation will only hold approximately, due
 # to the interpolation involved

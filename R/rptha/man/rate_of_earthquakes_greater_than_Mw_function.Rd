@@ -95,9 +95,10 @@ use of temporal data]. The data must have "min(Mw_obs_data$Mw) >=
 Mw_count_duration[1]" and "length(Mw_obs_data$Mw) = Mw_count_duration[2]".
 The likelihood is evaluated by numerically differentiating each modelled GR
 curve (normalised to a density for values above Mw_count_duration[1]). The
-numerical differentiation uses a central difference over eps=1.0e-04
-magnitude units, which should be fairly accurate although not perfectly
-exact. \cr
+numerical differentiation uses a central difference which should be
+acceptably accurate although not perfectly exact. The central difference has numerical
+increment equal to 1.0e-04 if mw_observation_error_cdf=NULL, and otherwise the latter 
+is equal to computational_increment. \cr
 If Mw_obs_data$t is not null (NOT RECOMMENDED DUE TO BIAS, see below), then
 we assume event occurrence times are a realisation of a Poisson process
 (treating the time before the first event and the time after the last event
