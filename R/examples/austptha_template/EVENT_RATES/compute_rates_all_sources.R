@@ -696,6 +696,11 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
     event_weight_with_nonzero_rate = (event_conditional_probabilities > 0) * 
         fraction_in_segment *
         mw_rate_function(event_table$Mw-dMw/2, epistemic_nonzero_weight=TRUE)
+    # As above with variable mu
+    event_weight_with_nonzero_rate_mu_vary = (event_conditional_probabilities > 0) * 
+        fraction_in_segment *
+        mw_rate_function(event_table$Mw-dMw/2, epistemic_nonzero_weight=TRUE, account_for_mw_obs_error=TRUE)
+
 
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
@@ -742,6 +747,43 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
             account_for_mw_obs_error=TRUE) - 
          mw_rate_function(event_table$Mw + dMw/2, quantiles=config$lower_ci_inv_quantile, 
             account_for_mw_obs_error=TRUE) )
+        )
+
+
+    #
+    # Median
+    #
+    event_rates_median = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=0.5) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=0.5) )
+        )
+    event_rates_median_mu_vary = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=0.5, account_for_mw_obs_error=TRUE) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=0.5, account_for_mw_obs_error=TRUE) )
+        )
+
+    #
+    # 16pc quantile
+    #
+    event_rates_16pc = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=0.16) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=0.16) )
+        )
+    event_rates_16pc_mu_vary = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=0.16, account_for_mw_obs_error=TRUE) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=0.16, account_for_mw_obs_error=TRUE) )
+        )
+
+    #
+    # 84 pc quantile
+    #
+    event_rates_84pc = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=0.84) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=0.84) )
+        )
+    event_rates_84pc_mu_vary = as.numeric(event_conditional_probabilities * 
+        (mw_rate_function(event_table$Mw - dMw/2, quantiles=0.84, account_for_mw_obs_error=TRUE) - 
+         mw_rate_function(event_table$Mw + dMw/2, quantiles=0.84, account_for_mw_obs_error=TRUE) )
         )
 
     gc()
@@ -815,6 +857,10 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         # Summation of credible intervals OK for co-monotonic epistemic uncertainties
         ncvar_put_extra(fid, 'rate_annual_upper_ci', event_rates_upper)
         ncvar_put_extra(fid, 'rate_annual_lower_ci', event_rates_lower)
+        ncvar_put_extra(fid, 'weight_with_nonzero_rate', event_weight_with_nonzero_rate)
+        ncvar_put_extra(fid, 'rate_annual_median', event_rates_median)
+        ncvar_put_extra(fid, 'rate_annual_16pc', event_rates_16pc)
+        ncvar_put_extra(fid, 'rate_annual_84pc', event_rates_84pc)
 
         #
         # As above with variable shear modulus
@@ -823,9 +869,10 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
         # Summation of credible intervals OK for co-monotonic epistemic uncertainties
         ncvar_put_extra(fid, 'variable_mu_rate_annual_upper_ci', event_rates_upper_mu_vary)
         ncvar_put_extra(fid, 'variable_mu_rate_annual_lower_ci', event_rates_lower_mu_vary)
-
-        # Compute the weight_with_nonzero_rate variable and add to file
-        ncvar_put_extra(fid, 'weight_with_nonzero_rate', event_weight_with_nonzero_rate)
+        ncvar_put_extra(fid, 'variable_mu_weight_with_nonzero_rate', event_weight_with_nonzero_rate_mu_vary)
+        ncvar_put_extra(fid, 'variable_mu_rate_annual_median', event_rates_median_mu_vary)
+        ncvar_put_extra(fid, 'variable_mu_rate_annual_16pc', event_rates_16pc_mu_vary)
+        ncvar_put_extra(fid, 'variable_mu_rate_annual_84pc', event_rates_84pc_mu_vary)
 
         nc_close(fid)
 
@@ -967,10 +1014,11 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 event_rates_upper[event_uniform_event_row] * event_bias_adjustment)
             ncvar_put_extra(fid, 'rate_annual_lower_ci', 
                 event_rates_lower[event_uniform_event_row] * event_bias_adjustment)
-
-            # Compute the weight_with_nonzero_rate variable and add to file
             ncvar_put_extra(fid, 'weight_with_nonzero_rate', 
                 event_weight_with_nonzero_rate[event_uniform_event_row])
+            ncvar_put_extra(fid, 'rate_annual_median', event_rates_median[event_uniform_event_row] * event_bias_adjustment)
+            ncvar_put_extra(fid, 'rate_annual_16pc', event_rates_16pc[event_uniform_event_row] * event_bias_adjustment)
+            ncvar_put_extra(fid, 'rate_annual_84pc', event_rates_84pc[event_uniform_event_row] * event_bias_adjustment)
 
 
             #
@@ -984,6 +1032,12 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 event_rates_upper_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
             ncvar_put_extra(fid, 'variable_mu_rate_annual_lower_ci', 
                 event_rates_lower_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
+            ncvar_put_extra(fid, 'variable_mu_rate_annual_median', 
+                event_rates_median_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
+            ncvar_put_extra(fid, 'variable_mu_rate_annual_16pc', 
+                event_rates_16pc_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
+            ncvar_put_extra(fid, 'variable_mu_rate_annual_84pc', 
+                event_rates_84pc_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
 
             nc_close(fid)
 
