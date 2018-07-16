@@ -33,7 +33,8 @@ append_variable_mu_variables_to_earthquake_event_files<-function(netcdf_file){
     vars_to_add = paste0('variable_mu_', c('Mw', 'rate_annual', 
         'rate_annual_lower_ci', 'rate_annual_upper_ci', 'rate_annual_median', 
         'rate_annual_16pc', 'rate_annual_84pc', 'weight_with_nonzero_rate'))
-    vars_to_add = c(vars_to_add, 'weight_with_nonzero_rate')
+    vars_to_add = c(vars_to_add, 'weight_with_nonzero_rate', 
+        'rate_annual_16pc', 'rate_annual_84pc', 'rate_annual_median')
     # Add the variables
     table_rows_dim = fid$dim$table_rows
     for(varname in vars_to_add){
