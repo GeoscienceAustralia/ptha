@@ -51,6 +51,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             }
         }
     }
+    rm(r1, r2)
 
     # Check that index strings match
     for(nme in c('unif', 'stoc', 'vuni')){
@@ -83,6 +84,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
                 round(c(min(ratios), median(ratios), max(ratios)),4)), collapse=" "))
         }
     }
+    rm(r1, r2, ratios)
 
     # Check that when appropriately summed, the variable-uniform and stochastic rates
     # are the same as the uniform rates
@@ -103,12 +105,13 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             }
         }
     }
+    rm(r_unif, unif_event_row, r1, rate_by_row)
 
     # Sanity check on the ordering quantiles
-    # Hang on! This might not hold, because the quantiles refer to the cumulative
-    # distribution function -- but the 'event specific' values refer to the derivative
-    # of this. The derivatives might not have a strict ordering (although there
-    # is certainly a tendency for that.
+    # Note the quantiles refer to the cumulative distribution function -- while
+    # the 'event specific' values refer to the derivative of this. The
+    # derivatives need not have a strict ordering (although there is certainly
+    # a tendency for that.
     for(variable_mu in c('', 'variable_mu_')){
         for(nme in c('unif', 'stoc', 'vuni')){
             # Read the lowest quantile, and compare with the second lowest. Then
@@ -119,8 +122,11 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
                 c('rate_annual_16pc', 'rate_annual_median', 'rate_annual_84pc', 'rate_annual_upper_ci'))
             for(newvar in other_vars){
                 newvar_vals = ncvar_get(fids[[nme]], newvar)
-                n1 = cumsum(newvar_vals)
-                n2 = cumsum(oldvar_vals)
+                # Since the values should be ordered by Mw, and the quantiles
+                # are initially defined in terms of exceedance rates, a
+                # cumulative sum of the rates should retain ordering.
+                n1 = cumsum(rev(newvar_vals))
+                n2 = cumsum(rev(oldvar_vals))
                 if(!all(n1 >= n2)){
                     stop(paste0('ordering problem in quantiles near ', newvar, ' ', nme))
                 }
