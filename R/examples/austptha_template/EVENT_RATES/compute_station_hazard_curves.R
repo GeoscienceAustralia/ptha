@@ -526,7 +526,10 @@ create_rate_netcdf_file<-function(
                 missval=NA,
                 prec='float'))
 
-            all_nc_var = c(all_nc_var, list(var_name1, var_name2, var_name3, var_name4, var_name5, var_name6))
+            all_nc_var = c(all_nc_var, list(
+                eval(as.name(var_name1)), eval(as.name(var_name2)), eval(as.name(var_name3)), 
+                eval(as.name(var_name4)), eval(as.name(var_name5)), eval(as.name(var_name6))
+                ))
         }
     }
     

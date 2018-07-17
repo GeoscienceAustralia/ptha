@@ -542,7 +542,7 @@ fit_truncGR_multiple_catalogues<-function(catalogue_lists, start_par,
 
         nll = 0
         for(i in 1:ncat){
-
+            # rate of events above the completeness magnitude mw_mins[i]
             local_rate = rate * 
                 (1-ptruncGR(mw_mins[i], b=b, mw_min=min_mw_min, mw_max=mw_max))
 
