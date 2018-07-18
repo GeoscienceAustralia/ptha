@@ -1032,6 +1032,8 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 event_rates_upper_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
             ncvar_put_extra(fid, 'variable_mu_rate_annual_lower_ci', 
                 event_rates_lower_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
+            ncvar_put_extra(fid, 'variable_mu_weight_with_nonzero_rate', 
+                event_weight_with_nonzero_rate_mu_vary[event_uniform_event_row])
             ncvar_put_extra(fid, 'variable_mu_rate_annual_median', 
                 event_rates_median_mu_vary[event_uniform_event_row] * event_bias_adjustment_variable_mu)
             ncvar_put_extra(fid, 'variable_mu_rate_annual_16pc', 
