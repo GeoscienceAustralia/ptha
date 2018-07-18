@@ -120,7 +120,12 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
     for(i in 1:length(event_rasters_base)){
         local_raster_name = event_rasters_base[i]
         if(force_file_download | (!file.exists(local_raster_name))){
-            download.file(event_rasters_online[i], local_raster_name)
+            if(file.exists(event_rasters_online[i])){
+                # This can happen if running code from NCI
+                file.copy(event_rasters_online[i], local_raster_name)
+            }else{
+                download.file(event_rasters_online[i], local_raster_name)
+            }
         }
     }
 
