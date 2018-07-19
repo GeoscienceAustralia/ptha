@@ -99,12 +99,12 @@ store_as_shapefile<-function(output, name){
     output = output[,priority_vars]
 
     names_output = names(output)
-    names_reduced = gsub(paste0(model_for_shapefile, '_lower_ci'), 'STGl', names_output)
-    names_reduced = gsub(paste0(model_for_shapefile, '_upper_ci'), 'STGu', names_reduced)
+    names_reduced = gsub(paste0(model_for_shapefile, '_lower_ci'), 'STl', names_output)
+    names_reduced = gsub(paste0(model_for_shapefile, '_upper_ci'), 'STu', names_reduced)
     names_reduced = gsub(paste0(model_for_shapefile, '_median'), 'ST50', names_reduced)
     names_reduced = gsub(paste0(model_for_shapefile, '_16pc'), 'ST16', names_reduced)
     names_reduced = gsub(paste0(model_for_shapefile, '_84pc'), 'ST84', names_reduced)
-    names_reduced = gsub(model_for_shapefile, 'STG', names_reduced)
+    names_reduced = gsub(model_for_shapefile, 'ST', names_reduced)
 
     names(output) = names_reduced
 
