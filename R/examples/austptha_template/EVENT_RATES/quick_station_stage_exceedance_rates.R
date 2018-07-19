@@ -290,9 +290,9 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         legend('topright', 
             c('Peak-stage exceedance-rate (Median from logic-tree)',
                'Mean', '68% credible interval', '95% credible interval'),
-            col=c('black', 'brown', 'orange', 'pink'),
+            col=c('black', 'brown', 'orange', 'red'),
             pch=c(19, 4, 19, 19), bg='white', 
-            cex=c(1, 1, 0.5, 0.5))
+            pt.cex=c(1, 1, 0.5, 0.5))
   
         # Add convergence check information 
         plot(stg_small, er_small, t='l', log='xy', 
@@ -419,7 +419,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
             barplot(rate_by_source_mean$x[m1], 
                 names.arg=as.character(rate_by_source_mean[m1,1]),
                 col=colz[m1], density=100, horiz=TRUE, las=1, 
-                xlab='Logic-tree mean rate (events/year)', 
+                xlab='Logic-tree Mean rate (events/year)', 
                 main=paste0('Top ', length(m1), 
                     ' sources: Mean rate of events with \n peak_stage > ', signif(stage_threshold,3), 'm', 
                     ' @ (', round(hp$lon[ni],3), ', ', round(hp$lat[ni],3), ')')
@@ -434,12 +434,12 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
                 dotchart(rate_by_Mw$rate_exceeding,
                     labels=paste0(rate_by_Mw$Mw, ' (', round(rate_by_Mw$fraction_events*100, 1), ')'),
                     xlab='Rate > stage_threshold (events/year) with 95% CI', ylab='', 
-                    pch=4, col='black', xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
+                    pch=4, col='black', xlim=c(0, max(rate_by_Mw$rate_exceeding_84pc)))
                 # Overwrite the black (needed to make labels black)
                 points(rate_by_Mw$rate_exceeding, 1:nrow(rate_by_Mw), col='brown', pch=4) 
                 # Other summaries
-                points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
-                points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
+                #points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
+                #points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_median, 1:nrow(rate_by_Mw), col='black', pch=19)
                 points(rate_by_Mw$rate_exceeding_16pc, 1:nrow(rate_by_Mw), col='orange')
                 points(rate_by_Mw$rate_exceeding_84pc, 1:nrow(rate_by_Mw), col='orange')
@@ -449,7 +449,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
             }
 
             peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
-            mtext(text=paste0(' In the rate vs magnitude plots, black dots give the median rate of events by magnitude. Brown crosses give the mean rate. Orange/red dots give the 68/95% credible intervals.\n',
+            mtext(text=paste0(' In the rate vs magnitude plots, black dots give the median rate of events by magnitude. Brown crosses give the mean rate. Orange dots give the 16/84 percentiles. \n',
                               'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. If the \n',
                               'latter percentage is reasonably high (e.g. > 20%), then it means that "fairly typical" modelled tsunamis with the specified magnitude can exceed ', peak_stage_text, '\n', 
                               'However, if the percentage is low, it means that only "extreme" modelled tsunamis with that magnitude are exceeding ', peak_stage_text, '. We suggest avoiding the latter\n',
