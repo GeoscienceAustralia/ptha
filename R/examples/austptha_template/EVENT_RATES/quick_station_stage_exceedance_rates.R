@@ -31,7 +31,7 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
                        '       there will be few random model scenarios, so exceedance-rates become sensitive to the "random details" of those scenarios (i.e. less\n', 
                        '       reliable). To help users judge when this happens we compare 2 hazard curves, each derived from half the scenarios.\n',
                        '\n',
-                       '    3-8) Information on which source-zones dominate the hazard (i.e. hazard-deaggregation plots) for exceedance rates of 1/100,\n', 
+                       '    3-8) Information on which source-zones dominate the hazard (i.e. hazard-deaggregation plots) for mean exceedance rates of 1/100,\n', 
                        '       1/500, 1/2500. In each case, for the top 3 source-zones we show rates separated by magnitude (assuming "constant shear modulus"),\n',
                        '       to highlight the model scenarios most likely to cause tsunami above the threshold peak-stage.\n',
                        '       The "spatial hazard deaggregation" plot gives an idea of where earthquakes exceeding the stage threshold might occur. For every\n',
