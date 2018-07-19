@@ -127,7 +127,7 @@ source('plot_hazard_curves_utilities.R', local=plot_hazard_curves_utilities)
 #' @param lat latitude near the gauge to check
 #' @param output_dir directory for the pdf plot
 #'
-quick_source_deagg<-function(lon, lat, output_dir=''){
+quick_source_deagg<-function(lon, lat, output_dir='.'){
 
     tsunami_files = Sys.glob(
         '../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_*.nc')
@@ -257,16 +257,16 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
 
         # The stage-vs-rate info from the event files
         plot(stg_small, er_small, t='l', log='xy', xlim=xlim, ylim=ylim, 
-            xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
+            xlab='Stage (m)', ylab= 'Exceedance rate (events/year)', col='brown')
         points(stg_small, er_up_small, t='l', col='red')
         points(stg_small, er_lo_small, t='l', col='red')
 
-        points(stages, ers, pch=19, cex=1.0, col='brown')
-        points(stages, ers_up, pch=19, cex=1.0, col='pink')
-        points(stages, ers_lo, pch=19, cex=1.0, col='pink')
-        points(stages, ers_median, t='o', col='black')
-        points(stages, ers_16pc, t='o', col='orange')
-        points(stages, ers_84pc, t='o', col='orange')
+        points(stages, ers, pch=4, cex=1.0, col='brown')
+        points(stages, ers_up, pch=19, cex=0.5, col='red')
+        points(stages, ers_lo, pch=19, cex=0.5, col='red')
+        points(stages, ers_median, pch=19, t='o', col='black')
+        points(stages, ers_16pc, pch=19, t='o', col='orange', cex=0.5)
+        points(stages, ers_84pc, pch=19, t='o', col='orange', cex=0.5)
 
         # Note that the lines/points for median/16/84 pc will automatically overlap.
         # However, consistency in the files is required for 95% & mean overlap, so this
@@ -282,14 +282,17 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         title(main_title)
 
         abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
+        #abline(h=2*10**(seq(-5, 0)), lty='dotted', col='brown')
+        #abline(h=1/100, 1/500, 1/2500, col='yellow')
         abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), 
             lty='dotted', col='brown')
 
         legend('topright', 
-            c('Peak-stage exceedance-rate (median over all logic-tree branches)',
-               'mean', '68% credible interval', '95% credible interval'),
+            c('Peak-stage exceedance-rate (Median from logic-tree)',
+               'Mean', '68% credible interval', '95% credible interval'),
             col=c('black', 'brown', 'orange', 'pink'),
-            pch=c(19, 19, 19, 19), bg='white')
+            pch=c(19, 4, 19, 19), bg='white', 
+            cex=c(1, 1, 0.5, 0.5))
   
         # Add convergence check information 
         plot(stg_small, er_small, t='l', log='xy', 
@@ -416,9 +419,9 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             barplot(rate_by_source_mean$x[m1], 
                 names.arg=as.character(rate_by_source_mean[m1,1]),
                 col=colz[m1], density=100, horiz=TRUE, las=1, 
-                xlab='Rate (events/year)', 
+                xlab='Logic-tree mean rate (events/year)', 
                 main=paste0('Top ', length(m1), 
-                    ' source-zones: Rate of events with \n peak_stage > ', signif(stage_threshold,3), 'm', 
+                    ' sources: Mean rate of events with \n peak_stage > ', signif(stage_threshold,3), 'm', 
                     ' @ (', round(hp$lon[ni],3), ', ', round(hp$lat[ni],3), ')')
                 )
             par('mar' = oldmar) # Back to old margins
@@ -431,19 +434,22 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
                 dotchart(rate_by_Mw$rate_exceeding,
                     labels=paste0(rate_by_Mw$Mw, ' (', round(rate_by_Mw$fraction_events*100, 1), ')'),
                     xlab='Rate > stage_threshold (events/year) with 95% CI', ylab='', 
-                    pch=4, col='brown', xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
+                    pch=4, col='black', xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
+                # Overwrite the black (needed to make labels black)
+                points(rate_by_Mw$rate_exceeding, 1:nrow(rate_by_Mw), col='brown', pch=4) 
+                # Other summaries
                 points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_median, 1:nrow(rate_by_Mw), col='black', pch=19)
-                points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='orange')
-                points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='orange')
+                points(rate_by_Mw$rate_exceeding_16pc, 1:nrow(rate_by_Mw), col='orange')
+                points(rate_by_Mw$rate_exceeding_84pc, 1:nrow(rate_by_Mw), col='orange')
                 mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
-                title(paste0(sz, ': Rate of events in each magnitude category \n with peak-stage > ', 
+                title(paste0(sz, ': Rate of events in each \n magnitude category with peak-stage > ', 
                     signif(stage_threshold,3), 'm'))
             }
 
             peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
-            mtext(text=paste0('In the plots containing rate vs magnitude, the black dots give the median rate of events for each individual magnitude bin. The orange (red) dots give the 68% (95%) credible intervals.\n',
+            mtext(text=paste0(' In the rate vs magnitude plots, black dots give the median rate of events by magnitude. Brown crosses give the mean rate. Orange/red dots give the 68/95% credible intervals.\n',
                               'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. If the \n',
                               'latter percentage is reasonably high (e.g. > 20%), then it means that "fairly typical" modelled tsunamis with the specified magnitude can exceed ', peak_stage_text, '\n', 
                               'However, if the percentage is low, it means that only "extreme" modelled tsunamis with that magnitude are exceeding ', peak_stage_text, '. We suggest avoiding the latter\n',
@@ -463,19 +469,23 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     plot_stage_vs_rate()
     gc()
 
-    # Plot at a few exceedance rates, mean curve
+    # Plot at a few exceedance rates, median curve
     ex_rates = c(1/100, 1/500, 1/2500)
+    stages_ex_rates = approx(ers_median, stages, xout=ex_rates, ties='min')$y
     for(sv in 1:length(ex_rates)){
 
+        #site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
+        #    slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
         site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
-            slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
+            slip_type='stochastic', stage=stages_ex_rates[sv], shear_modulus_type='variable_mu_')
+
         stage_level = signif(site_deagg[[1]]$stage_exceed, 3)
 
         # Spatial hazard plot
         par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
             background_raster=background_raster, 
-            main=paste0('Spatial hazard deaggregation, logic-tree-average exceedance-rate = 1/', 
+            main=paste0('Spatial hazard deaggregation, logic-tree-median exceedance-rate = 1/', 
                 (1/ex_rates[sv]), '\n Peak-stage exceeding ', stage_level))
         rm(site_deagg); gc()
 
