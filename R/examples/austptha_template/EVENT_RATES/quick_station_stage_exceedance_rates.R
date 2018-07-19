@@ -36,7 +36,7 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
                        '       to highlight the model scenarios most likely to cause tsunami above the threshold peak-stage.\n',
                        '       The "spatial hazard deaggregation" plot gives an idea of where earthquakes exceeding the stage threshold might occur. For every\n',
                        '       unit-source, it shows:\n',
-                       '           SUM( (event-slip-on-the-unit-source / sum-of-the-event-slip-on-all-the-unit-sources) X individual-event-rate )\n',
+                       '           SUM( (event-slip-on-the-unit-source / sum-of-the-event-slip-on-all-the-unit-sources) X individual-mean-event-rate )\n',
                        '       , where the SUM includes events that exceed the peak-stage threshold. Results are normalised to [0-1].\n',
                        '       Please note that the appearance of the "spatial hazard deaggregation" plot is significantly affected by the choice of colour scheme.\n',
                        '       Interpretations should always be cross-checked with the "Top 10 source-zones" bar plot. A common mistake is to focus on\n',
@@ -448,11 +448,11 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
             }
 
             peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
-            mtext(text=paste0(" The rate vs magnitude plots give an indication of which magnitudes are most likely to generate tsunamis exceeding ", peak_stage_text, ". They are derived by partitioning each sources\n", 
-                              " magnitude-exceedance rate curves (mean, median, 16%, 84%) into individual scenario rates, and then summing by magnitude for events that exceed ", peak_stage_text, ".\n",
-                              ' Black dots give the median; brown crosses give the mean; orange dots give the 16/84 percentiles. \n',
-                              ' The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. High values\n',
-                              ' suggest that typical modelled tsunamis with that magnitude can exceed ', peak_stage_text, ', while low values indicate that extreme events dominate.\n'),
+            mtext(text=paste0(" The rate vs magnitude plots give an indication of which magnitudes are most likely to generate tsunamis exceeding ", peak_stage_text, ". They are derived by partitioning each\n", 
+                              "source's magnitude-exceedance rate curves (mean, median, 16%, 84%) into individual scenario rates, and then summing by magnitude for events that exceed ", peak_stage_text, ".\n",
+                              'Black dots give the median; brown crosses give the mean; orange dots give the 16/84 percentiles.\n',
+                              'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. High values\n',
+                              'suggest that typical modelled tsunamis with that magnitude can exceed ', peak_stage_text, ', while low values indicate that extreme events dominate.\n'),
                 side=1, outer=TRUE, padj=0.85, adj=0.05, cex=0.9)
 
             # Back to default outer-margins
@@ -470,14 +470,14 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
 
     # Plot at a few exceedance rates, median curve
     ex_rates = c(1/100, 1/500, 1/2500)
-    stages_ex_rates_median = approx(ers_median, stages, xout=ex_rates, ties='min')$y
-    mean_rates_for_stages   = approx(stages, ers, xout=stages_ex_rates_median)$y
+    stages_ex_rates_mean = approx(ers, stages, xout=ex_rates, ties='min')$y
+    median_rates_for_stages   = approx(stages, ers_median, xout=stages_ex_rates_mean)$y
     for(sv in 1:length(ex_rates)){
 
         #site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
         #    slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
         site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
-            slip_type='stochastic', stage=stages_ex_rates_median[sv], shear_modulus_type='variable_mu_')
+            slip_type='stochastic', stage=stages_ex_rates_mean[sv], shear_modulus_type='variable_mu_')
 
         stage_level = signif(site_deagg[[1]]$stage_exceed, 3)
 
@@ -486,8 +486,8 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
             background_raster=background_raster, 
             main=paste0('Spatial hazard deaggregation, peak-stage exceeding ', stage_level,  'm',
-                ' \n Logic-tree-median-exceedance-rate = 1/', (1/ex_rates[sv]), 
-                '; mean-exceedance-rate = 1/', round(1/mean_rates_for_stages[sv])))
+                ' \n Logic-tree-mean-exceedance-rate = 1/', (1/ex_rates[sv]), 
+                '; median-exceedance-rate = 1/', round(1/median_rates_for_stages[sv])))
         rm(site_deagg); gc()
 
         # Bar charts
