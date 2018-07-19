@@ -23,7 +23,7 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
                        'The plots are: \n',
                        '\n',
                        '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate at the specified hazard point location,\n',
-                       '       with 95% credible intervals describing the uncertainty. Note the peak-tsunami-stage is the maximum water level\n',
+                       '       with logic-tree mean and quantiles illustrating the uncertainty. Note the peak-tsunami-stage is the maximum water level\n',
                        '       attained by the tsunami (above mean-sea-level=0, ignorning tides) at the site.\n',
                        '\n',
                        '    2) A "convergence check" of the above hazard curve. The PTHA hazard results rely on simulating a large number of random\n',
@@ -448,8 +448,8 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
             }
 
             peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
-            mtext(text=paste0(" The rate vs magnitude plots give an indication of which magnitudes are most likely to generate tsunamis exceeding ", peak_stage_text, ". They are derived by partitioning\n", 
-                              " each source-zone's magnitude-exceedance rate curves (mean, median, 16%, 84%) into individual scenario rates, and then summing by magnitude for events that exceed ", peak_stage_text, ".\n",
+            mtext(text=paste0(" The rate vs magnitude plots give an indication of which magnitudes are most likely to generate tsunamis exceeding ", peak_stage_text, ". They are derived by partitioning each sources\n", 
+                              " magnitude-exceedance rate curves (mean, median, 16%, 84%) into individual scenario rates, and then summing by magnitude for events that exceed ", peak_stage_text, ".\n",
                               ' Black dots give the median; brown crosses give the mean; orange dots give the 16/84 percentiles. \n',
                               ' The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. High values\n',
                               ' suggest that typical modelled tsunamis with that magnitude can exceed ', peak_stage_text, ', while low values indicate that extreme events dominate.\n'),
@@ -471,7 +471,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
     # Plot at a few exceedance rates, median curve
     ex_rates = c(1/100, 1/500, 1/2500)
     stages_ex_rates_median = approx(ers_median, stages, xout=ex_rates, ties='min')$y
-    mean_rates_for_stages   = approx(stages, ers_mean, xout=stages_ex_rates_median)$y
+    mean_rates_for_stages   = approx(stages, ers, xout=stages_ex_rates_median)$y
     for(sv in 1:length(ex_rates)){
 
         #site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
