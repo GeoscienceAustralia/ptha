@@ -581,25 +581,13 @@ yet know how/if it can be done!***).
 model_ts = get_flow_time_series_at_hazard_point(puysegur, 
     event_ID=row_index, 
     hazard_point_ID=c(55015.4, 55042.4))
-```
-
-```
-## Error in Rsx_nc4_get_vara_double: NetCDF: DAP failure
-## Var: gaugeID  Ndims: 1   Start: 0 Count: 20185
-```
-
-```
-## Error in ncvar_get_inner(ncid2use, varid2use, nc$var[[li]]$missval, addOffset, : C function R_nc4_get_vara_double returned error
-```
-
-```r
 # Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame, as
 # well as the 'events' data
 names(model_ts)
 ```
 
 ```
-## Error in eval(expr, envir, enclos): object 'model_ts' not found
+## [1] "time"      "flow"      "locations" "events"
 ```
 
 ```r
@@ -608,7 +596,7 @@ names(model_ts$flow)
 ```
 
 ```
-## Error in eval(expr, envir, enclos): object 'model_ts' not found
+## [1] "55015.4" "55042.4"
 ```
 
 ```r
@@ -624,7 +612,7 @@ dim(model_ts$flow[['55015.4']])
 ```
 
 ```
-## Error in eval(expr, envir, enclos): object 'model_ts' not found
+## [1]    1 4321    3
 ```
 
 ```r
@@ -632,36 +620,14 @@ dim(model_ts$flow[['55015.4']])
 plot(model_ts$time, model_ts$flow[['55015.4']][1,,1], t='l', 
     xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
     ylim=c(-0.1, 0.15))
-```
-
-```
-## Error in plot(model_ts$time, model_ts$flow[["55015.4"]][1, , 1], t = "l", : object 'model_ts' not found
-```
-
-```r
 points(model_ts$time, model_ts$flow[['55042.4']][1,,1], t='l', 
     col='red')
-```
-
-```
-## Error in points(model_ts$time, model_ts$flow[["55042.4"]][1, , 1], t = "l", : object 'model_ts' not found
-```
-
-```r
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
-```
 
-```
-## Error in strwidth(legend, units = "user", cex = cex, font = text.font): plot.new has not been called yet
-```
-
-```r
 title('Stage time-series for the event at 2 gauges')
 ```
 
-```
-## Error in title("Stage time-series for the event at 2 gauges"): plot.new has not been called yet
-```
+![plot of chunk getflow](figure/getflow-1.png)
 
 To export the flow time-series to a csv, you can do something like this for
 the station of interest:
@@ -679,19 +645,9 @@ site_flow = data.frame(
     stage = model_ts$flow[[sitename]][1,,1],
     uh = model_ts$flow[[sitename]][1,,2],
     vh = model_ts$flow[[sitename]][1,,3])
-```
 
-```
-## Error in data.frame(time = model_ts$time, stage = model_ts$flow[[sitename]][1, : object 'model_ts' not found
-```
-
-```r
 # Save it to a csv
 output_file = paste0('output_gauge_data_puysegur_event_', row_index, '_station_', 
     sitename, '.csv')
 write.csv(site_flow, output_file, row.names=FALSE)
-```
-
-```
-## Error in is.data.frame(x): object 'site_flow' not found
 ```
