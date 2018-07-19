@@ -471,13 +471,14 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
 
     # Plot at a few exceedance rates, median curve
     ex_rates = c(1/100, 1/500, 1/2500)
-    stages_ex_rates = approx(ers_median, stages, xout=ex_rates, ties='min')$y
+    stages_ex_rates_median = approx(ers_median, stages, xout=ex_rates, ties='min')$y
+    mean_rates_for_stages   = approx(stages, ers_mean, xout=stages_ex_rates_median)$y
     for(sv in 1:length(ex_rates)){
 
         #site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
         #    slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
         site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
-            slip_type='stochastic', stage=stages_ex_rates[sv], shear_modulus_type='variable_mu_')
+            slip_type='stochastic', stage=stages_ex_rates_median[sv], shear_modulus_type='variable_mu_')
 
         stage_level = signif(site_deagg[[1]]$stage_exceed, 3)
 
@@ -485,8 +486,9 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
             background_raster=background_raster, 
-            main=paste0('Spatial hazard deaggregation, logic-tree-median exceedance-rate = 1/', 
-                (1/ex_rates[sv]), '\n Peak-stage exceeding ', stage_level))
+            main=paste0('Spatial hazard deaggregation, Peak-stage exceeding ', stage_level, 
+                ' \n logic-tree-median-exceedance-rate = 1/', (1/ex_rates[sv]), 
+                '; mean-exceedance-rate = 1/', round(1/mean_rates_for_stages[sv])))
         rm(site_deagg); gc()
 
         # Bar charts
