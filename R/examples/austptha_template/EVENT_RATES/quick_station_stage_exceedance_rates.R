@@ -446,11 +446,11 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
                 mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
                 title(paste0(sz, ': Rates with peak-stage > ', signif(stage_threshold,3), 'm \n Split by magnitude category'))
             }
+            legend('bottomright', c('Mean', 'Median', '16/84%'), col=c('black', 'brown', 'orange'), pch=c(19, 4, 1))
 
             peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
             mtext(text=paste0(" The rate vs magnitude plots give an indication of which magnitudes are most likely to generate tsunamis exceeding ", peak_stage_text, ". They are derived by partitioning each\n", 
                               "source's magnitude-exceedance rate curves (mean, median, 16%, 84%) into individual scenario rates, and then summing by magnitude for events that exceed ", peak_stage_text, ".\n",
-                              'Black dots give the median; brown crosses give the mean; orange dots give the 16/84 percentiles.\n',
                               'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. High values\n',
                               'suggest that typical modelled tsunamis with that magnitude can exceed ', peak_stage_text, ', while low values indicate that extreme events dominate.\n'),
                 side=1, outer=TRUE, padj=0.85, adj=0.05, cex=0.9)
