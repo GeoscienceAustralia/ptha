@@ -76,8 +76,14 @@ This csv file contains the following columns:
 
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5% quantile)
 
+* multiple columns with names like `STAGE_median_XXXX`. These are similar to the above, but describe the 'epistemic median' stage with the specified exceedance-rate (i.e. 50% quantile)
+
+* multiple columns with names like `STAGE_16pc_XXXX`. These are similar to the above, but describe the 16% quantile.
+
+* multiple columns with names like `STAGE_84pc_XXXX`. These are similar to the above, but describe the 84% quantile.
+
 Note that 'peak stage' values below 2cm (or above 20m) are treated as missing
-data in this file. While such values are unlikely to be of interest, if
+data in this file (NA). While such values are unlikely to be of interest, if
 necessary they can be reconstructed from the detailed information we provide
 (later in this document).
 
@@ -92,11 +98,17 @@ compared with the above csv:
 
 * `gaugeID` is a real hazard point ID
 
-* `STG_XXXX` is the same as `STAGE_XXXX` described above
+* `ST_XXXX` is the same as `STAGE_XXXX` described above
 
-* `STGu_XXXX` is the same as `STAGE_upper_ci_XXXX` described above
+* `STu_XXXX` is the same as `STAGE_upper_ci_XXXX` described above
 
-* `STGl_XXXX` is the same as `STAGE_lower_ci_XXXX` described above
+* `STl_XXXX` is the same as `STAGE_lower_ci_XXXX` described above
+
+* `ST50_XXXX` is the same as `STAGE_median_XXXX` described above
+
+* `ST16_XXXX` is the same as `STAGE_16pc_XXXX` described above
+
+* `ST84_XXXX` is the same as `STAGE_84pc_XXXX` described above
 
 At most hazard points you will find there is large uncertainty in the
 peak-stage for a given exceedance-rate. This is mainly due to large uncertainty

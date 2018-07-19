@@ -76,8 +76,14 @@ This csv file contains the following columns:
 
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5% quantile)
 
+* multiple columns with names like `STAGE_median_XXXX`. These are similar to the above, but describe the 'epistemic median' stage with the specified exceedance-rate (i.e. 50% quantile)
+
+* multiple columns with names like `STAGE_16pc_XXXX`. These are similar to the above, but describe the 16% quantile.
+
+* multiple columns with names like `STAGE_84pc_XXXX`. These are similar to the above, but describe the 84% quantile.
+
 Note that 'peak stage' values below 2cm (or above 20m) are treated as missing
-data in this file. While such values are unlikely to be of interest, if
+data in this file (NA). While such values are unlikely to be of interest, if
 necessary they can be reconstructed from the detailed information we provide
 (later in this document).
 
@@ -92,11 +98,17 @@ compared with the above csv:
 
 * `gaugeID` is a real hazard point ID
 
-* `STG_XXXX` is the same as `STAGE_XXXX` described above
+* `ST_XXXX` is the same as `STAGE_XXXX` described above
 
-* `STGu_XXXX` is the same as `STAGE_upper_ci_XXXX` described above
+* `STu_XXXX` is the same as `STAGE_upper_ci_XXXX` described above
 
-* `STGl_XXXX` is the same as `STAGE_lower_ci_XXXX` described above
+* `STl_XXXX` is the same as `STAGE_lower_ci_XXXX` described above
+
+* `ST50_XXXX` is the same as `STAGE_median_XXXX` described above
+
+* `ST16_XXXX` is the same as `STAGE_16pc_XXXX` described above
+
+* `ST84_XXXX` is the same as `STAGE_84pc_XXXX` described above
 
 At most hazard points you will find there is large uncertainty in the
 peak-stage for a given exceedance-rate. This is mainly due to large uncertainty
@@ -341,16 +353,32 @@ names(puysegur$events)
 ```
 
 ```
-##  [1] "event_index_string"               "event_slip_string"               
-##  [3] "Mw"                               "target_lon"                      
-##  [5] "target_lat"                       "peak_slip_downdip_ind"           
-##  [7] "peak_slip_alongstrike_ind"        "physical_corner_wavenumber_x"    
-##  [9] "physical_corner_wavenumber_y"     "sourcename"                      
-## [11] "uniform_event_row"                "rate_annual"                     
-## [13] "rate_annual_lower_ci"             "rate_annual_upper_ci"            
-## [15] "variable_mu_Mw"                   "variable_mu_rate_annual"         
-## [17] "variable_mu_rate_annual_lower_ci" "variable_mu_rate_annual_upper_ci"
-## [19] "weight_with_nonzero_rate"
+##  [1] "event_index_string"                  
+##  [2] "event_slip_string"                   
+##  [3] "Mw"                                  
+##  [4] "target_lon"                          
+##  [5] "target_lat"                          
+##  [6] "peak_slip_downdip_ind"               
+##  [7] "peak_slip_alongstrike_ind"           
+##  [8] "physical_corner_wavenumber_x"        
+##  [9] "physical_corner_wavenumber_y"        
+## [10] "sourcename"                          
+## [11] "uniform_event_row"                   
+## [12] "rate_annual"                         
+## [13] "rate_annual_lower_ci"                
+## [14] "rate_annual_upper_ci"                
+## [15] "variable_mu_Mw"                      
+## [16] "variable_mu_rate_annual"             
+## [17] "variable_mu_rate_annual_lower_ci"    
+## [18] "variable_mu_rate_annual_upper_ci"    
+## [19] "weight_with_nonzero_rate"            
+## [20] "variable_mu_rate_annual_median"      
+## [21] "variable_mu_rate_annual_16pc"        
+## [22] "variable_mu_rate_annual_84pc"        
+## [23] "variable_mu_weight_with_nonzero_rate"
+## [24] "rate_annual_16pc"                    
+## [25] "rate_annual_84pc"                    
+## [26] "rate_annual_median"
 ```
 
 ```r
@@ -359,7 +387,7 @@ dim(puysegur$events)
 ```
 
 ```
-## [1] 6978   19
+## [1] 6978   26
 ```
 While there are many ways to investigate the event table, a simple approach is
 to just print some rows. In general low row-indices will correspond to low
@@ -389,17 +417,29 @@ puysegur$events[3050:3052, ]
 ## 3051               204 1.841717e-05         1.185729e-06
 ## 3052               204 8.398967e-06         5.407397e-07
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 3050         1.709385e-05       7.949118            1.501529e-05
-## 3051         3.226212e-05       7.777764            1.287362e-05
-## 3052         1.471282e-05       7.581915            1.325640e-05
+## 3050         1.709385e-05       7.949118            1.592906e-05
+## 3051         3.226212e-05       7.777764            1.365706e-05
+## 3052         1.471282e-05       7.581915            1.406314e-05
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 3050                     2.970690e-06                     2.633619e-05
-## 3051                     2.546973e-06                     2.257980e-05
-## 3052                     2.622704e-06                     2.325118e-05
-##      weight_with_nonzero_rate
-## 3050                0.9770982
-## 3051                0.9770982
-## 3052                0.9770982
+## 3050                     2.476256e-06                     2.855592e-05
+## 3051                     2.123062e-06                     2.448292e-05
+## 3052                     2.186189e-06                     2.521089e-05
+##      weight_with_nonzero_rate variable_mu_rate_annual_median
+## 3050                0.9770982                   1.433809e-05
+## 3051                0.9770982                   1.229302e-05
+## 3052                0.9770982                   1.265853e-05
+##      variable_mu_rate_annual_16pc variable_mu_rate_annual_84pc
+## 3050                 1.423263e-05                 1.995937e-05
+## 3051                 1.220260e-05                 1.711252e-05
+## 3052                 1.256542e-05                 1.762134e-05
+##      variable_mu_weight_with_nonzero_rate rate_annual_16pc
+## 3050                                   -1     8.617445e-06
+## 3051                                   -1     1.626415e-05
+## 3052                                   -1     7.417103e-06
+##      rate_annual_84pc rate_annual_median
+## 3050     1.240796e-05       8.851405e-06
+## 3051     2.341818e-05       1.670572e-05
+## 3052     1.067963e-05       7.618474e-06
 ```
 
 The most important variables from a users perspective are the moment magnitude
@@ -466,11 +506,17 @@ puysegur$events[row_index,]
 ##      uniform_event_row  rate_annual rate_annual_lower_ci
 ## 3051               204 1.841717e-05         1.185729e-06
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 3051         3.226212e-05       7.777764            1.287362e-05
+## 3051         3.226212e-05       7.777764            1.365706e-05
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 3051                     2.546973e-06                      2.25798e-05
-##      weight_with_nonzero_rate
-## 3051                0.9770982
+## 3051                     2.123062e-06                     2.448292e-05
+##      weight_with_nonzero_rate variable_mu_rate_annual_median
+## 3051                0.9770982                   1.229302e-05
+##      variable_mu_rate_annual_16pc variable_mu_rate_annual_84pc
+## 3051                  1.22026e-05                 1.711252e-05
+##      variable_mu_weight_with_nonzero_rate rate_annual_16pc
+## 3051                                   -1     1.626415e-05
+##      rate_annual_84pc rate_annual_median
+## 3051     2.341818e-05       1.670572e-05
 ```
 To get its initial condition, you pass the earthquake metadata to the function
 `get_initial_condition_for_event`:
@@ -535,13 +581,25 @@ yet know how/if it can be done!***).
 model_ts = get_flow_time_series_at_hazard_point(puysegur, 
     event_ID=row_index, 
     hazard_point_ID=c(55015.4, 55042.4))
+```
+
+```
+## Error in Rsx_nc4_get_vara_double: NetCDF: DAP failure
+## Var: gaugeID  Ndims: 1   Start: 0 Count: 20185
+```
+
+```
+## Error in ncvar_get_inner(ncid2use, varid2use, nc$var[[li]]$missval, addOffset, : C function R_nc4_get_vara_double returned error
+```
+
+```r
 # Should have a 'time' vector, and 'flow' list, and a 'locations' data.frame, as
 # well as the 'events' data
 names(model_ts)
 ```
 
 ```
-## [1] "time"      "flow"      "locations" "events"
+## Error in eval(expr, envir, enclos): object 'model_ts' not found
 ```
 
 ```r
@@ -550,7 +608,7 @@ names(model_ts$flow)
 ```
 
 ```
-## [1] "55015.4" "55042.4"
+## Error in eval(expr, envir, enclos): object 'model_ts' not found
 ```
 
 ```r
@@ -566,7 +624,7 @@ dim(model_ts$flow[['55015.4']])
 ```
 
 ```
-## [1]    1 4321    3
+## Error in eval(expr, envir, enclos): object 'model_ts' not found
 ```
 
 ```r
@@ -574,14 +632,36 @@ dim(model_ts$flow[['55015.4']])
 plot(model_ts$time, model_ts$flow[['55015.4']][1,,1], t='l', 
     xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
     ylim=c(-0.1, 0.15))
+```
+
+```
+## Error in plot(model_ts$time, model_ts$flow[["55015.4"]][1, , 1], t = "l", : object 'model_ts' not found
+```
+
+```r
 points(model_ts$time, model_ts$flow[['55042.4']][1,,1], t='l', 
     col='red')
-legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
+```
 
+```
+## Error in points(model_ts$time, model_ts$flow[["55042.4"]][1, , 1], t = "l", : object 'model_ts' not found
+```
+
+```r
+legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
+```
+
+```
+## Error in strwidth(legend, units = "user", cex = cex, font = text.font): plot.new has not been called yet
+```
+
+```r
 title('Stage time-series for the event at 2 gauges')
 ```
 
-![plot of chunk getflow](figure/getflow-1.png)
+```
+## Error in title("Stage time-series for the event at 2 gauges"): plot.new has not been called yet
+```
 
 To export the flow time-series to a csv, you can do something like this for
 the station of interest:
@@ -599,9 +679,19 @@ site_flow = data.frame(
     stage = model_ts$flow[[sitename]][1,,1],
     uh = model_ts$flow[[sitename]][1,,2],
     vh = model_ts$flow[[sitename]][1,,3])
+```
 
+```
+## Error in data.frame(time = model_ts$time, stage = model_ts$flow[[sitename]][1, : object 'model_ts' not found
+```
+
+```r
 # Save it to a csv
 output_file = paste0('output_gauge_data_puysegur_event_', row_index, '_station_', 
     sitename, '.csv')
 write.csv(site_flow, output_file, row.names=FALSE)
+```
+
+```
+## Error in is.data.frame(x): object 'site_flow' not found
 ```
