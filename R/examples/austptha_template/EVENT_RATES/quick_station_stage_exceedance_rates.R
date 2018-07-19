@@ -433,7 +433,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
                 rate_by_Mw = peak_stage_magnitude_summary(stage_threshold, sz)
                 dotchart(rate_by_Mw$rate_exceeding,
                     labels=paste0(rate_by_Mw$Mw, ' (', round(rate_by_Mw$fraction_events*100, 1), ')'),
-                    xlab='Rate > stage_threshold (events/year) with 95% CI', ylab='', 
+                    xlab='Rate > stage_threshold (events/year) ', ylab='', 
                     pch=4, col='black', xlim=c(0, max(rate_by_Mw$rate_exceeding_84pc)))
                 # Overwrite the black (needed to make labels black)
                 points(rate_by_Mw$rate_exceeding, 1:nrow(rate_by_Mw), col='brown', pch=4) 
@@ -444,16 +444,15 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
                 points(rate_by_Mw$rate_exceeding_16pc, 1:nrow(rate_by_Mw), col='orange')
                 points(rate_by_Mw$rate_exceeding_84pc, 1:nrow(rate_by_Mw), col='orange')
                 mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
-                title(paste0(sz, ': Rate of events in each \n magnitude category with peak-stage > ', 
-                    signif(stage_threshold,3), 'm'))
+                title(paste0(sz, ': Rates with peak-stage > ', signif(stage_threshold,3), 'm \n Split by magnitude category'))
             }
 
             peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
-            mtext(text=paste0(' In the rate vs magnitude plots, black dots give the median rate of events by magnitude. Brown crosses give the mean rate. Orange dots give the 16/84 percentiles. \n',
-                              'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. If the \n',
-                              'latter percentage is reasonably high (e.g. > 20%), then it means that "fairly typical" modelled tsunamis with the specified magnitude can exceed ', peak_stage_text, '\n', 
-                              'However, if the percentage is low, it means that only "extreme" modelled tsunamis with that magnitude are exceeding ', peak_stage_text, '. We suggest avoiding the latter\n',
-                              "case if possible. In general, we should be more skeptical about the model's representation of unusual or extreme events, as this is more difficult to test.\n"),
+            mtext(text=paste0(" The rate vs magnitude plots give an indication of which magnitudes are most likely to generate tsunamis exceeding ", peak_stage_text, ". They are derived by partitioning\n", 
+                              " each source-zone's magnitude-exceedance rate curves (mean, median, 16%, 84%) into individual scenario rates, and then summing by magnitude for events that exceed ", peak_stage_text, ".\n",
+                              ' Black dots give the median; brown crosses give the mean; orange dots give the 16/84 percentiles. \n',
+                              ' The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. High values\n',
+                              ' suggest that typical modelled tsunamis with that magnitude can exceed ', peak_stage_text, ', while low values indicate that extreme events dominate.\n'),
                 side=1, outer=TRUE, padj=0.85, adj=0.05, cex=0.9)
 
             # Back to default outer-margins
@@ -486,8 +485,8 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
             background_raster=background_raster, 
-            main=paste0('Spatial hazard deaggregation, Peak-stage exceeding ', stage_level, 
-                ' \n logic-tree-median-exceedance-rate = 1/', (1/ex_rates[sv]), 
+            main=paste0('Spatial hazard deaggregation, peak-stage exceeding ', stage_level,  'm',
+                ' \n Logic-tree-median-exceedance-rate = 1/', (1/ex_rates[sv]), 
                 '; mean-exceedance-rate = 1/', round(1/mean_rates_for_stages[sv])))
         rm(site_deagg); gc()
 
