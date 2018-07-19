@@ -165,6 +165,10 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         event_rate = ncvar_get(fid_rates, 'variable_mu_rate_annual')
         event_rate_upper = ncvar_get(fid_rates, 'variable_mu_rate_annual_upper_ci')
         event_rate_lower = ncvar_get(fid_rates, 'variable_mu_rate_annual_lower_ci')
+        event_rate_median = ncvar_get(fid_rates, 'variable_mu_rate_annual_median')
+        event_rate_16pc = ncvar_get(fid_rates, 'variable_mu_rate_annual_16pc')
+        event_rate_84pc = ncvar_get(fid_rates, 'variable_mu_rate_annual_84pc')
+
         event_Mw = round(ncvar_get(fid_rates, 'Mw'), 3) # Deal with floating point imperfections in netcdf
         #event_Mw_vary_mu = round(ncvar_get(fid_rates, 'variable_mu_Mw'))
         peak_stage = ncvar_get(fid, 'max_stage', start=c(1, ni), count=c(-1,1))
@@ -176,6 +180,9 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             event_rate = event_rate,
             event_rate_upper = event_rate_upper,
             event_rate_lower = event_rate_lower,
+            event_rate_median = event_rate_median,
+            event_rate_16pc = event_rate_16pc,
+            event_rate_84pc = event_rate_84pc,
             peak_stage = peak_stage,
             site = site,
             #row_index=row_index,
@@ -185,7 +192,8 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         nc_close(fid)
         nc_close(fid_rates)
         rm(event_rate, event_rate_upper, event_rate_lower, event_Mw, 
-            #event_Mw_vary_mu, row_index,
+            event_rate_median, event_rate_16pc, event_rate_84pc,
+            event_Mw_vary_mu, row_index,
             peak_stage, site)
         gc()
     }
@@ -216,7 +224,14 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     ers = ncvar_get(fid, 'variable_mu_stochastic_slip_rate'            , start=c(1,ni), count=c(-1,1))
     ers_up = ncvar_get(fid, 'variable_mu_stochastic_slip_rate_upper_ci', start=c(1,ni), count=c(-1,1))
     ers_lo = ncvar_get(fid, 'variable_mu_stochastic_slip_rate_lower_ci', start=c(1,ni), count=c(-1,1))
+    ers_median = ncvar_get(fid, 'variable_mu_stochastic_slip_rate_median', start=c(1,ni), count=c(-1,1))
+    ers_16pc = ncvar_get(fid, 'variable_mu_stochastic_slip_rate_16pc', start=c(1,ni), count=c(-1,1))
+    ers_84pc = ncvar_get(fid, 'variable_mu_stochastic_slip_rate_84pc', start=c(1,ni), count=c(-1,1))
     nc_close(fid)
+
+    # Get stages at various exceedance rates FOR THE MEDIAN CURVE
+    #ex_rates = c(1/100, 1/500, 1/2500)
+    #stages_at_exceedance_rates_median_curve = approx(ers_median, stages, xout=ex_rates, ties='min')$y
 
     # Reduce the size of some lines that occur in the plot
     # This reduces the file size, important if we distribute many
@@ -233,7 +248,7 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     #
     # Plot the stage-vs-rate curves
     #
-    plot_stage_vs_rate<-function(){
+    plot_stage_vs_rate<-function(exceedance_rates_median_curve=NULL){
 
         xmax = max(stg*(er>0), na.rm=TRUE)
         ylim = c(1e-05, max(max(er), 1))
@@ -249,8 +264,15 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
         points(stages, ers, pch=19, cex=1.0, col='brown')
         points(stages, ers_up, pch=19, cex=1.0, col='pink')
         points(stages, ers_lo, pch=19, cex=1.0, col='pink')
+        points(stages, ers_median, t='o', col='black')
+        points(stages, ers_16pc, t='o', col='orange')
+        points(stages, ers_84pc, t='o', col='orange')
 
-        main_title_extra = '\n (Lines and points should overlap -- if they differ, do not use the results, and contact the PTHA maintainer)'
+        # Note that the lines/points for median/16/84 pc will automatically overlap.
+        # However, consistency in the files is required for 95% & mean overlap, so this
+        # check is still useful.
+        main_title_extra = '\n (Lines and points should overlap for all curves)'
+        #main_title_extra = ''
 
         main_title = paste0('Stage-vs-exceedance-rate @ (lon=', 
             round(hp$lon[ni],3), ', lat=', round(hp$lat[ni], 2), ', elev=', 
@@ -264,16 +286,16 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             lty='dotted', col='brown')
 
         legend('topright', 
-            c('Peak-stage exceedance-rate (mean over all logic-tree branches)',
-              '95% credible interval'),
-            col=c('brown', 'pink'),
-            pch=c(19, 19), bg='white')
+            c('Peak-stage exceedance-rate (median over all logic-tree branches)',
+               'mean', '68% credible interval', '95% credible interval'),
+            col=c('black', 'brown', 'orange', 'pink'),
+            pch=c(19, 19, 19, 19), bg='white')
   
         # Add convergence check information 
         plot(stg_small, er_small, t='l', log='xy', 
             xlim=c(min(0.02, max(xmax-0.005, 1.0e-05)), xmax),
             ylim=ylim,
-            xlab='Stage (m)', ylab= 'Exceedance rate (events/year)')
+            xlab='Stage (m)', ylab= ' Mean exceedance rate (events/year)')
         abline(h=10**(seq(-5, 0)), lty='dotted', col='brown')
         abline(v=c(0.01, 0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), 
             lty='dotted', col='brown')
@@ -326,11 +348,25 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             output_lower = aggregate(stage_rate_all$event_rate_lower[k], 
                 by=list(stage_rate_all$event_Mw[k]), 
                 f<-function(x) c(sum(x)))
+            output_median = aggregate(stage_rate_all$event_rate_median[k], 
+                by=list(stage_rate_all$event_Mw[k]), 
+                f<-function(x) c(sum(x)))
+            output_16pc = aggregate(stage_rate_all$event_rate_16pc[k], 
+                by=list(stage_rate_all$event_Mw[k]), 
+                f<-function(x) c(sum(x)))
+            output_84pc = aggregate(stage_rate_all$event_rate_84pc[k], 
+                by=list(stage_rate_all$event_Mw[k]), 
+                f<-function(x) c(sum(x)))
 
 
-            output = data.frame(Mw=output[,1], rate_exceeding=output$x[,1], 
-                n=output$x[,2], rate_exceeding_lower=output_lower$x, 
-                rate_exceeding_upper=output_upper$x)
+            output = data.frame(Mw=output[,1], 
+                rate_exceeding=output$x[,1], 
+                n=output$x[,2], 
+                rate_exceeding_lower=output_lower$x, 
+                rate_exceeding_upper=output_upper$x, 
+                rate_exceeding_median=output_median$x,
+                rate_exceeding_16pc=output_16pc$x,
+                rate_exceeding_84pc=output_84pc$x)
         
             # Compute overall numbers of Mw events
             fracs = rep(NA, length(output[,1]))
@@ -351,6 +387,7 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
     plot_deaggregation_summary<-function(stage_threshold){
 
         k = which( (stage_rate_all$peak_stage > stage_threshold) & (stage_rate_all$event_rate > 0))
+
         if(length(k) == 0){
             plot(c(0, 1), c(0, 1), 
                 main=paste0('No events exceeding stage_threshold = ', stage_threshold, 'm'))
@@ -360,28 +397,24 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             par(oma=c(5,0,0,0))
             par(mfrow=c(2,2))
 
-            rate_by_source = aggregate(stage_rate_all$event_rate[k], 
+            rate_by_source_mean = aggregate(stage_rate_all$event_rate[k], 
                 by=list(source_zone=as.character(stage_rate_all$site[k])), sum)
 
             # Sort from highest to lowest
-            m1 = order(rate_by_source$x, decreasing=TRUE)
+            m1 = order(rate_by_source_mean$x, decreasing=TRUE)
             if(length(m1) > 10){
                 # Plot at most 10 source-zones
-                rate_by_source = rate_by_source[m1[1:10],]
-                m1 = order(rate_by_source$x, decreasing=TRUE)
+                rate_by_source_mean = rate_by_source_mean[m1[1:10],]
+                m1 = order(rate_by_source_mean$x, decreasing=TRUE)
             }
 
             # Color the top 3 source-zones differently
-            colz = c('grey', 'red')[ 1 + (( (1:length(m1)) %in% m1[1:3]) & (rate_by_source$x > 0))]
+            colz = c('grey', 'red')[ 1 + (( (1:length(m1)) %in% m1[1:3]) & (rate_by_source_mean$x > 0))]
 
-            #dotchart(rate_by_source$x, labels=rate_by_source[,1], 
-            #    main=paste0('All source-zones: Rate of events with \n stage exceeding ', stage_threshold),
-            #    xlab='Rate (events/year)', 
-            #    color=colz)
             oldmar = par('mar')
             par('mar' = oldmar + c(0, 8, 0, 0)) # new margins to allow source-zone names to fit on plot
-            barplot(rate_by_source$x[m1], 
-                names.arg=as.character(rate_by_source[m1,1]),
+            barplot(rate_by_source_mean$x[m1], 
+                names.arg=as.character(rate_by_source_mean[m1,1]),
                 col=colz[m1], density=100, horiz=TRUE, las=1, 
                 xlab='Rate (events/year)', 
                 main=paste0('Top ', length(m1), 
@@ -393,21 +426,24 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             # Also plot rate-vs-Mw for the 3 largest contributors 
             for(i in 1:min(length(m1), 3)){
                 # Name of source-zone
-                sz = rate_by_source[m1[i], 1]
+                sz = rate_by_source_mean[m1[i], 1]
                 rate_by_Mw = peak_stage_magnitude_summary(stage_threshold, sz)
                 dotchart(rate_by_Mw$rate_exceeding,
                     labels=paste0(rate_by_Mw$Mw, ' (', round(rate_by_Mw$fraction_events*100, 1), ')'),
                     xlab='Rate > stage_threshold (events/year) with 95% CI', ylab='', 
-                    pch=19, xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
+                    pch=4, col='brown', xlim=c(0, max(rate_by_Mw$rate_exceeding_upper)))
                 points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
+                points(rate_by_Mw$rate_exceeding_median, 1:nrow(rate_by_Mw), col='black', pch=19)
+                points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='orange')
+                points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='orange')
                 mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
                 title(paste0(sz, ': Rate of events in each magnitude category \n with peak-stage > ', 
                     signif(stage_threshold,3), 'm'))
             }
 
             peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
-            mtext(text=paste0('In the plots containing rate vs magnitude, the black dots give the rate of events for each individual magnitude bin. The red dots give the 95% credible intervals.\n',
+            mtext(text=paste0('In the plots containing rate vs magnitude, the black dots give the median rate of events for each individual magnitude bin. The orange (red) dots give the 68% (95%) credible intervals.\n',
                               'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. If the \n',
                               'latter percentage is reasonably high (e.g. > 20%), then it means that "fairly typical" modelled tsunamis with the specified magnitude can exceed ', peak_stage_text, '\n', 
                               'However, if the percentage is low, it means that only "extreme" modelled tsunamis with that magnitude are exceeding ', peak_stage_text, '. We suggest avoiding the latter\n',
@@ -417,14 +453,17 @@ quick_source_deagg<-function(lon, lat, output_dir=''){
             # Back to default outer-margins
             par(oma=c(0,0,0,0))
         }
+
+
     }
 
     pdf(paste0(output_dir, '/station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
     .plot_preamble()
+
     plot_stage_vs_rate()
     gc()
 
-    # Plot at a few exceedance rates
+    # Plot at a few exceedance rates, mean curve
     ex_rates = c(1/100, 1/500, 1/2500)
     for(sv in 1:length(ex_rates)){
 
