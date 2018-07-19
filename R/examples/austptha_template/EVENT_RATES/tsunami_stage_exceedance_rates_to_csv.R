@@ -7,7 +7,7 @@ exceedance_rates = c(1/10, 1/25, 1/50, 1/100, 1/250, 1/500, 1/1000, 1/2500, 1/50
 shear_modulus_type = 'variable_mu_'
 #event_type = c('uniform', 'stochastic', 'variable_uniform')
 event_type = 'stochastic'
-value_type = c('', '_upper_ci', '_lower_ci')
+value_type = c('', '_upper_ci', '_lower_ci', '_median', '_16pc', '_84pc')
 
 # We cannot put all earthquake-type variables in the shapefile, due to severe
 # name-mangling, caused by the format's limit to short attribute names. So only
@@ -101,6 +101,9 @@ store_as_shapefile<-function(output, name){
     names_output = names(output)
     names_reduced = gsub(paste0(model_for_shapefile, '_lower_ci'), 'STGl', names_output)
     names_reduced = gsub(paste0(model_for_shapefile, '_upper_ci'), 'STGu', names_reduced)
+    names_reduced = gsub(paste0(model_for_shapefile, '_median'), 'ST50', names_reduced)
+    names_reduced = gsub(paste0(model_for_shapefile, '_16pc'), 'ST16', names_reduced)
+    names_reduced = gsub(paste0(model_for_shapefile, '_84pc'), 'ST84', names_reduced)
     names_reduced = gsub(model_for_shapefile, 'STG', names_reduced)
 
     names(output) = names_reduced
