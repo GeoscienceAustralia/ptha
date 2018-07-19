@@ -193,7 +193,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         nc_close(fid_rates)
         rm(event_rate, event_rate_upper, event_rate_lower, event_Mw, 
             event_rate_median, event_rate_16pc, event_rate_84pc,
-            event_Mw_vary_mu, row_index,
+            #event_Mw_vary_mu, row_index,
             peak_stage, site)
         gc()
     }
