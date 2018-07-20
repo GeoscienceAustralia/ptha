@@ -157,7 +157,9 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
 
         k = which(weight_with_nonzero_rate == 0)
         k2 = which(event_rate == 0)
-        if(!all(k == k2)){
+        # Note that since we clip events with overly high peak slip, we can
+        # have events in k2 that are not in k
+        if(!all(k %in% k2)){
             stop('conflict between weight_with_nonzero_rate and rate_annual')
         }
  
@@ -204,6 +206,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         peak_slip = sapply(event_slip_string, f<-function(x) max(as.numeric(strsplit(x,'_')[[1]])))
         event_rate = ncvar_get(fids[[nme]], 'rate_annual')
         event_rate_mu_vary = ncvar_get(fids[[nme]], 'variable_mu_rate_annual')
+        event_Mw = ncvar_get(fids[[nme]], 'event_Mw')
 
         unique_uniform_event_row = unique(uniform_event_row)
 
@@ -223,6 +226,10 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             # variable shear modulus
             bias_adjuster_fixed_mu<-function(x) 1 + x*0
             bias_adjuster_vary_mu<-function(x) 1 + x*0
+
+            # For now, just skip this, so that we don't need to find the peak
+            # slip limit (which requires looking at shear modulus)
+            next
         }
 
         # Do the test
@@ -233,11 +240,29 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             expected_ratios_fixed_mu = bias_adjuster_fixed_mu(quantiles)
             expected_ratios_vary_mu = bias_adjuster_vary_mu(quantiles)
 
+            # FIXME: Generalise this to treat normal fault cases / different mu / avoid hardcoded 7.5
+            # Currently we are skipping that case (see use of 'next' above)
+            allowed_peak_slip = 7.5 * slip_from_Mw(event_Mw[k], mu=3e+10, relation='Strasser')
+            expected_ratios_fixed_mu = expected_ratios_fixed_mu * (peak_slip[k] <= allowed_peak_slip)
+            expected_ratios_vary_mu = expected_ratios_vary_mu * (peak_slip[k] <= allowed_peak_slip)
+
             overall_rate_fixed_mu = sum(event_rate[k])
             overall_rate_vary_mu = sum(event_rate_mu_vary[k])
 
-            err1 = max(abs(overall_rate_fixed_mu * expected_ratios_fixed_mu/sum(expected_ratios_fixed_mu) - event_rate[k]))
-            err2 = max(abs(overall_rate_vary_mu * expected_ratios_vary_mu/sum(expected_ratios_vary_mu) - event_rate_mu_vary[k]))
+            s_fixed = sum(expected_ratios_fixed_mu)
+            s_vary  = sum(expected_ratios_vary_mu)
+
+            if(s_fixed > 0){
+                err1 = max(abs(overall_rate_fixed_mu * expected_ratios_fixed_mu/s_fixed  - event_rate[k]))
+            }else{
+                err1 = 0
+            }
+
+            if(s_vary > 0){
+                err2 = max(abs(overall_rate_vary_mu * expected_ratios_vary_mu/s_vary - event_rate_mu_vary[k]))
+            }else{
+                err2 = 0
+            }
 
             if(!(err1 <= 1.0e-06*overall_rate_fixed_mu)){
                 stop(paste0('issue with bias adjustment fixed mu ', uuer))
