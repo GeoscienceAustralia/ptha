@@ -209,6 +209,12 @@ MC_CORES = 16
 # Currently we do this replacement for normal-fault events (inside compute_rates_all_sources.R)
 #
 ###########################################################################
+
+# Exclude events with {peak_slip > peak_slip_limit_factor*mean-scaling-relation-slip}
+# Note we use the 'reference Mw' (i.e. constant shear modulus) for doing this
+peak_slip_limit_factor = 7.5 # Inf
+
+
 peak_slip_bias_adjustment_table = read.csv('peak_slip_quantile_adjustment_factors.csv')
 peak_slip_bias_adjustment_stochastic = approxfun(
     peak_slip_bias_adjustment_table$peak_slip_quantile,

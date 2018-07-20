@@ -945,15 +945,34 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             event_peak_slip = ncvar_get(fid, 'event_slip_string')
             event_peak_slip = sapply(event_peak_slip, f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])))
             event_bias_adjustment = event_peak_slip * 0
+
+            # Apply a peak slip limitation 
+            reference_shear_modulus = sourcezone_parameters_row$shear_modulus * 1e+10
+            allowed_peak_slip = config$peak_slip_limit_factor * slip_from_Mw(
+                event_table$Mw[event_uniform_event_row], # Magnitude at reference shear modulus
+                mu=reference_shear_modulus,
+                relation=sourcezone_parameters_row$scaling_relation)
+
             # Compute the weights
             for(euer in names_nevents){
+
                 k = which(event_uniform_event_row == euer) 
                 # Weight individual events, based on the 'bias adjustment' functions devised by
                 # comparing DART buoys with family of model events
                 quantiles_of_peak_slip = rank(event_peak_slip[k], ties.method='first')/(length(k)+1)
+
                 bias_adjuster = bias_adjustment_function(quantiles_of_peak_slip)
-                bias_adjuster = bias_adjuster/sum(bias_adjuster) # Weights must sum to 1
+                # Zero rate on events with 'overly high' peak slip
+                bias_adjuster = bias_adjuster * (allowed_peak_slip[k] >= event_peak_slip[k])
+                # Normalise so it sums to 1
+                sba = sum(bias_adjuster)
+                if(sba > 0){
+                    bias_adjuster = bias_adjuster/sba
+                }else{
+                    bias_adjuster = 0*bias_adjuster
+                }
                 event_bias_adjustment[k] = bias_adjuster
+
             }
 
             ncvar_put_extra(fid, 'event_rate_annual', 
@@ -992,17 +1011,47 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             event_peak_slip = sapply(event_peak_slip, f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])))
             event_bias_adjustment = event_peak_slip * 0
             event_bias_adjustment_variable_mu = event_peak_slip * 0
+
+            # Apply a peak slip limitation 
+            reference_shear_modulus = sourcezone_parameters_row$shear_modulus * 1e+10
+            allowed_peak_slip = config$peak_slip_limit_factor * slip_from_Mw(
+                event_table$Mw[event_uniform_event_row], # Magnitude at reference shear modulus
+                mu=reference_shear_modulus,
+                relation=sourcezone_parameters_row$scaling_relation)
+
             # Compute the weights
             for(euer in names_nevents){
                 k = which(event_uniform_event_row == euer) 
                 quantiles_of_peak_slip = rank(event_peak_slip[k], ties.method='first')/(length(k)+1)
+
+                #
                 # Fixed mu case
+                #
                 bias_adjuster = bias_adjustment_function(quantiles_of_peak_slip)
-                bias_adjuster = bias_adjuster/sum(bias_adjuster)
+                # Zero rate on events with 'overly high' peak slip
+                bias_adjuster = bias_adjuster * (allowed_peak_slip[k] >= event_peak_slip[k])
+                # Normalise so it sums to 1
+                sba = sum(bias_adjuster)
+                if(sba > 0){
+                    bias_adjuster = bias_adjuster/sba
+                }else{
+                    bias_adjuster = 0*bias_adjuster
+                }
                 event_bias_adjustment[k] = bias_adjuster
+
+                #
                 # Variable mu case
+                #
                 bias_adjuster = bias_adjustment_function_variable_mu(quantiles_of_peak_slip)
-                bias_adjuster = bias_adjuster/sum(bias_adjuster)
+                # Zero rate on events with overly high peak slip
+                bias_adjuster = bias_adjuster * (allowed_peak_slip[k] >= event_peak_slip[k])
+                # Normalise so it sums to 1
+                sba = sum(bias_adjuster)
+                if(sba > 0){
+                    bias_adjuster = bias_adjuster/sba
+                }else{
+                    bias_adjuster = 0*bias_adjuster
+                }
                 event_bias_adjustment_variable_mu[k] = bias_adjuster
 
             }
