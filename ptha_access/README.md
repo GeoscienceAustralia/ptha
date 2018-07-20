@@ -471,18 +471,18 @@ discussed above.
 
 Another useful event-table variable is the `weight_with_nonzero_rate`. This
 gives the fraction of the exceedance-rate models in the logic tree that suggest
-the event could possibly occur, according to the event magnitude. Values close
-to 1.0 indicate "a high fraction of our rate models suggest the event could
-occur, given a long enough time-frame". On the other hand, values close to 0.0
-indicate that "a high fraction of our rate models suggest the event would never
-occur", with zero corresponding to an impossible event (i.e. according to the
-model).
+events with the given `Mw` could possibly occur. Values close to 1.0 indicate
+"a high fraction of our rate models suggest events with this `Mw` could occur,
+given a long enough time-frame". On the other hand, values close to 0.0
+indicate that "a high fraction of our rate models suggest events with this `Mw`
+would never occur", with zero corresponding to an impossible event (i.e.
+according to the model).
 
 
-All of our source-zone event tables contain events with magnitudes ranging from
-7.2 to 9.8. This is done for computational convenience, irrespective of whether
-we consider the high magnitude events are possible on the source-zone. You will
-notice that events at very large magnitudes always have a
+All of our source-zone event tables contain events with `Mw` values ranging
+from 7.2 to 9.8. This is done for computational convenience, irrespective of
+whether we consider the high magnitude events are possible on the source-zone.
+You will notice that events at very large `Mw` always have a
 `weight_with_nonzero_rate` equal to zero.
 
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
