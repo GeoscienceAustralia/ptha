@@ -16,6 +16,7 @@
 #
 #
 #
+library(rptha)
 
 #' Extract statistics from the "corresponding family of model scenarios"
 #'
