@@ -302,3 +302,48 @@ slip_from_Mw<-function(Mw,
         return(slip)
 }
 
+## #' Scaling relations for maximum slip
+## #'
+## #' @param Mw Numeric vector of magnitudes
+## #' @param relation Scaling relation type. 'AllenHayes' gives the subduction relation of
+## #' Allen and Hayes (2017); 
+## #' @param detailed Logical. If TRUE, provide upper/lower prediction intervals. Otherwise 
+## #' just return the scaling relation value (ignoring prediction errors)
+## #' @param CI_sd Logical. If detailed = TRUE, the output includes a positive
+## #' and negative confidence interval, evaluated at +-CI_sd
+## #' standard deviations away from the mean (in log space where the regression is
+## #' computed)
+## #' @return a vector of maximum slip values, or a list containing median and upper/lower
+## #  prediction ranges for the values
+## #'
+## #' @examples
+## #' # This gives the scaling relation median
+## #' peak_slip_9 = maximum_slip_from_Mw(9.1, relation='AllenHayes')
+## #' # This also includes prediction intervals
+## #' peak_slip_9_full = maximum_slip_from_Mw(9.1, relation='AllenHayes', detailed=TRUE, CI_sd=2)
+## #'
+## maximum_slip_from_Mw<-function(Mw, relation='AllenHayes', detailed=FALSE, CI_sd=2){
+## 
+##     stopifnot(length(CI_sd) == 1)
+## 
+##     if(relation == 'AllenHayes'){
+## 
+##         values = 10**(-4.94 + 0.71*Mw)
+##         if(detailed){
+##             plus_CI = 10**(-4.94 + 0.71*Mw + 0.179 * CI_sd)
+##             minus_CI = 10**(-4.94 + 0.71*Mw - 0.179 * CI_sd)
+##         }
+## 
+##     }else{
+##         stop(paste0('Unknown value of "relation" ', relation))
+##     }
+## 
+##     if(!detailed){
+##         output = values 
+##     }else{
+##         output = list(values=values, plus_CI=plus_CI, minus_CI=minus_CI, relation=relation)
+##     }
+## 
+##     return(output)
+## 
+## }

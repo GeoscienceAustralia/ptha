@@ -28,6 +28,7 @@
 #' 
 #' @param gauge_stats object like 'stochastic_slip_stats' or 'uniform_slip_stats', etc, as created
 #' by the script gauge_summary_statistics.R {in e.g. SOURCE_ZONES/TEMPLATE/TSUNAMI_EVENTS/plots/ }
+#' for sources where we did DART buoy comparisons
 #' @param unit_source_statistics the unit source statistics
 #'
 family_stats<-function(gauge_stats, unit_source_statistics){
@@ -41,7 +42,7 @@ family_stats<-function(gauge_stats, unit_source_statistics){
     # Use the 'median GF over all dart buoys' as our GOF value
     gf_median = apply(gf_mat, 1, median)
 
-    # Get the peak wave height (median over all darts). This is a crude indicator 
+    # Get the stage range (median over all darts). This is a crude indicator 
     # of the tsunami size
     stage_range_mat = lapply(gauge_stats, 
         f<-function(x) lapply(x, f<-function(x) diff(x$model_range)))
@@ -177,12 +178,20 @@ family_stats<-function(gauge_stats, unit_source_statistics){
 # Main script here
 #
 #
-variable_mu = FALSE
+
+variable_mu = FALSE # Manually change from TRUE/FALSE to treat each case
+
+# Read the Rdata 
 if(variable_mu){
     all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*varyMu.Rdata')
 }else{
     all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*[0-9].Rdata')
 }
+
+# Remove some 'other comparison events' that we did, which do not form part of a systematic sample.
+# This does not have a significant affect on the results, but by removing them we have a 
+# 'clean' definition of how events were selected for the comparison (i.e. all
+# Mw >= 7.7 thrust that were in our source-zones and had DART data, 2006-2016).  
 print(paste0(' Remove the normal fault Mw 7.7 from Kermadec, and the 7.65, so that \n',
     ' we consistently examine thrust-like events that are above Mw 7.7 by GCMT. '))
 all_Rdata = all_Rdata[-c(3,8)]
@@ -244,7 +253,7 @@ event_statistics_plot<-function(stat, rank_transform=FALSE){
     }
 }
 
-# Do a 'event_statistics_plot' type plot, for all events
+# Do an 'event_statistics_plot' type plot, for all events
 pdf_events_statistics_plot<-function(stats, type=''){
     file_name = paste0('Rank_statistic_plots_', type, '.pdf')
     pdf(file_name, width=12, height=10)
@@ -272,7 +281,9 @@ events_scaling_plot<-function(stats, title_extra=""){
     all_mw   = unlist(lapply(stats, f<-function(x) x$Mw))
     good_mw   = unlist(lapply(stats, f<-function(x) x$Mw[order(x$gf)[1:ng]]))
 
+    # Workhorse function to make a single panel plot
     all_vs_good<-function(var){
+
         all_var = unlist(lapply(stats, f<-function(x) x[[var]]))
         good_var = unlist(lapply(stats, f<-function(x) x[[var]][order(x$gf)[1:ng]]))
 
@@ -321,11 +332,14 @@ events_scaling_plot(variable_uniform_stat, title_extra=' variable_uniform slip')
 events_scaling_plot(uniform_stat, title_extra=' fixed_uniform slip')
 dev.off()
 
-#
-# Get the rank of the statistic for the n-'best' events in terms of the other
-# events in the corresponding family of model scenarios which have peak-slip-location
-# near the location of the top-nbest events
-#
+#' Get the rank of some statistics for the n-'best' events in terms of the other
+#' events in the corresponding family of model scenarios which have peak-slip-location
+#' near the location of the top-nbest events. 
+#'
+#' @param stats a variable like 'stochastic_stat' or 'variable_uniform_stat' or 'uniform_stat'
+#' defined above -- i.e. containing the summary statistical info for the appropriate model type.
+#' @param nbest use this many 'best' events for the comparison
+#'
 best_event_quantiles<-function(stats, nbest=3){
 
     # Store a list (one entry per variable), each containing
@@ -346,7 +360,9 @@ best_event_quantiles<-function(stats, nbest=3){
 
         # Find the range of alongstrike indices that 'good' events have
         # We do this because for a good GOF, it is generally required to
-        # be 'near' a particular location
+        # be 'near' a particular location. Thus by only comparing events that
+        # are 'near' the good alongstrike locations, we eliminate a significant
+        # confounding aspect of the comparison.
         
         gof_value = stats[[j]][['gf']]
         good_gof_values = which(rank(gof_value, ties='first') <= nbest) # Beware ties treatment
@@ -354,6 +370,7 @@ best_event_quantiles<-function(stats, nbest=3){
         good_alongstrike_locations_range = c(
             floor(min(good_alongstrike_locations_range-1)),
             ceiling(max(good_alongstrike_locations_range+1)))
+
         # Events in a 'good' alongstrike location
         good_alongstrike_inds = which(
             (stats[[j]]['peak_slip_alongstrike'] >= good_alongstrike_locations_range[1]) &
@@ -398,8 +415,12 @@ quantile_adjuster<-function(stochastic_best_event_quantiles, var, colind = 'mean
     # Sort the quantiles for best, 2nd best, 3rd best, ...
     sorted_var = apply(stochastic_best_event_quantiles[[var]], 2, sort)
 
-    # Get mean of sorted rows. This gives a sense of the quantile-match between
-    # the 'good' events and 'all events'
+    # Reduce the data for 'good' events to a single column, for comparison with
+    # the null distribution (i.e. uniform)
+    # One way to "reduce-to-a-single-column" is to pick a particular column (of course we'd want to
+    # do this for a few different columns to check robustness). Another approach is to take the
+    # mean of the sorted columns (which is a bit like collapsing all the single columns into 1).
+    # We do both by changing the value of 'colind'.
     if(colind == 'mean'){
         mean_of_sorted = apply(sorted_var, 1, mean)
     }else{
@@ -408,8 +429,14 @@ quantile_adjuster<-function(stochastic_best_event_quantiles, var, colind = 'mean
     #stopifnot(all(diff(mean_of_sorted) > 0))
 
     # For an unbiased model, mean_of_sorted should be reasonably close to the
-    # following
+    # following (quantiles from an empirical uniform distribution)
     ideal = seq(1,length(mean_of_sorted))/(length(mean_of_sorted)+1) 
+
+    #
+    # Key idea: The curve 'ideal'-vs-'mean_of_sorted' shows how the quantiles of 'good'
+    # events compare with the quantiles of 'all' events (which is by definition
+    # empirical uniform). We can use that curve for bias adjustment.
+    #
 
     # We can fit a cubic that follows this curve. Note that the cubic
     # f(x) = a*x + b*x^2 + (1-a-b)*x^3
@@ -464,9 +491,11 @@ quantile_adjuster<-function(stochastic_best_event_quantiles, var, colind = 'mean
     # then the new rates are bias_adjustment_factor(E_q)/sum(bias_adjustment_factor(E_q))
     # 
     bias_adjustment_factor<-function(x){
+        # Numerical derivative to get the density
         (approx(cubic_vals, xl, xout=x)$y - approx(cubic_vals, xl, xout=x-1.0e-06)$y)/1.0e-06
     }
     bias_adjustment_factor_bilinear<-function(x){
+        # Numerical derivative to get the density
         (approx(bilin_vals, xl, xout=x)$y - approx(bilin_vals, xl, xout=x-1.0e-06)$y)/1.0e-06
     }
 
