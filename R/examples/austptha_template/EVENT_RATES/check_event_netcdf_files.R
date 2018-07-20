@@ -206,7 +206,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         peak_slip = sapply(event_slip_string, f<-function(x) max(as.numeric(strsplit(x,'_')[[1]])))
         event_rate = ncvar_get(fids[[nme]], 'rate_annual')
         event_rate_mu_vary = ncvar_get(fids[[nme]], 'variable_mu_rate_annual')
-        event_Mw = ncvar_get(fids[[nme]], 'event_Mw')
+        event_Mw = round(as.numeric(ncvar_get(fids[[nme]], 'Mw')), 1)
 
         unique_uniform_event_row = unique(uniform_event_row)
 
