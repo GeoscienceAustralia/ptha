@@ -106,18 +106,18 @@ for(i in 1:length(all_Rdata)){
     print('         This needs to be updated if we want to test normal faults')
     k = which(uniform_store[[i]]$peak_slip < (peak_slip_limit_factor * slip_from_Mw(uniform_store[[i]]$reference_Mw)))
     print(length(k))
-    uniform_store[[i]]$data = uniform_store[[i]]$data[k,, drop=FALSE]
-    uniform_store[[i]]$model = uniform_store[[i]]$model[k,, drop=FALSE]
+    uniform_store[[i]]$data = uniform_store[[i]]$data[k,,drop=FALSE]
+    uniform_store[[i]]$model = uniform_store[[i]]$model[k,,drop=FALSE]
 
     k = which(stochastic_store[[i]]$peak_slip < (peak_slip_limit_factor * slip_from_Mw(stochastic_store[[i]]$reference_Mw)))
     print(length(k))
-    stochastic_store[[i]]$data = stochastic_store[[i]]$data[k,, drop=FALSE]
-    stochastic_store[[i]]$model = stochastic_store[[i]]$model[k,, drop=FALSE]
+    stochastic_store[[i]]$data = stochastic_store[[i]]$data[k,,drop=FALSE]
+    stochastic_store[[i]]$model = stochastic_store[[i]]$model[k,,drop=FALSE]
 
     k = which(variable_uniform_store[[i]]$peak_slip < (peak_slip_limit_factor * slip_from_Mw(variable_uniform_store[[i]]$reference_Mw)))
     print(length(k))
-    variable_uniform_store[[i]]$data = variable_uniform_store[[i]]$data[k,, drop=FALSE]
-    variable_uniform_store[[i]]$model = variable_uniform_store[[i]]$model[k,, drop=FALSE]
+    variable_uniform_store[[i]]$data = variable_uniform_store[[i]]$data[k,,drop=FALSE]
+    variable_uniform_store[[i]]$model = variable_uniform_store[[i]]$model[k,,drop=FALSE]
 }
 
 

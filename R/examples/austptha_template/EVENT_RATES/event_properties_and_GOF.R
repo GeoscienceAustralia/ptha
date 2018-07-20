@@ -31,7 +31,7 @@
 #' for sources where we did DART buoy comparisons
 #' @param unit_source_statistics the unit source statistics
 #'
-family_stats<-function(gauge_stats, unit_source_statistics){
+family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_factor=Inf){
 
     # Get time goodness-of-fit statistic for each model scenario
     gf_mat = lapply(gauge_stats, 
@@ -117,6 +117,9 @@ family_stats<-function(gauge_stats, unit_source_statistics){
         Mw = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$Mw))
     }
 
+    # Useful to have the reference Mw in any case
+    reference_Mw = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$Mw))
+
     # The following variables need different treatments for the 'heterogeneous slip' case
     # vs both uniform slip cases
     if('physical_corner_wavenumber_x' %in% names(gauge_stats[[1]][[1]]$events_with_Mw)){
@@ -170,6 +173,12 @@ family_stats<-function(gauge_stats, unit_source_statistics){
         peak_slip_downdip = peak_slip_downdip, 
         peak_slip_alongstrike = peak_slip_alongstrike)
 
+   
+    if(peak_slip_limit_factor < Inf){
+        k = which(peak_slip_sum < (peak_slip_limit_factor * slip_from_Mw(reference_Mw)))
+        output = output[k,]
+    }
+
     return(output)
 }
 
@@ -180,6 +189,9 @@ family_stats<-function(gauge_stats, unit_source_statistics){
 #
 
 variable_mu = FALSE # Manually change from TRUE/FALSE to treat each case
+# Do not consider events with {peak_slip > peak_slip_limit_factor*mean-scaling-relation-slip}
+# Note we use the 'reference Mw' (i.e. constant shear modulus) for doing this
+peak_slip_limit_factor = 7.5 # Inf
 
 # Read the Rdata 
 if(variable_mu){
@@ -212,11 +224,11 @@ for(i in 1:length(all_Rdata)){
 
     # Main computation here
     stochastic_stat[[i]] = family_stats(event_env$stochastic_slip_stats, 
-        event_env$unit_source_statistics)
+        event_env$unit_source_statistics, peak_slip_limit_factor)
     uniform_stat[[i]] = family_stats(event_env$uniform_slip_stats, 
-        event_env$unit_source_statistics)
+        event_env$unit_source_statistics, peak_slip_limit_factor)
     variable_uniform_stat[[i]] = family_stats(event_env$variable_uniform_slip_stats, 
-        event_env$unit_source_statistics)
+        event_env$unit_source_statistics, peak_slip_limit_factor)
 }
 event_env = new.env() # Clear the memory
 # Put informative names on the lists
