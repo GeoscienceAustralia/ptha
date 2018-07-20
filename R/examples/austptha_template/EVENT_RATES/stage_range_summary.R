@@ -8,8 +8,13 @@
 # 
 #
 #
+library(rptha)
 
 variable_mu = TRUE
+# Do not consider events with {peak_slip > peak_slip_limit_factor*mean-scaling-relation-slip}
+# Note we use the 'reference Mw' (i.e. constant shear modulus) for doing this
+peak_slip_limit_factor = 7.5 # Inf
+
 
 #
 # Get a vector with the Rdata files produced by running
@@ -39,17 +44,23 @@ for(i in 1:length(all_Rdata)){
     uniform_store[[i]] = list(
         data= matrix(NA, ncol=ngauges, nrow=length(event_env$uniform_slip_stats[[1]])),
         model=matrix(NA, ncol=ngauges, nrow=length(event_env$uniform_slip_stats[[1]])),
-        nunique_models = rep(NA, ngauges)
+        nunique_models = rep(NA, ngauges),
+        reference_Mw = unlist(lapply(event_env$uniform_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw)),
+        peak_slip = unlist(lapply(event_env$uniform_slip_stats[[1]], f<-function(x) x$peak_slip))
         )
     stochastic_store[[i]] = list(
         data= matrix(NA, ncol=ngauges, nrow=length(event_env$stochastic_slip_stats[[1]])),
         model=matrix(NA, ncol=ngauges, nrow=length(event_env$stochastic_slip_stats[[1]])),
-        nunique_models = rep(NA, ngauges)
+        nunique_models = rep(NA, ngauges),
+        reference_Mw = unlist(lapply(event_env$stochastic_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw)),
+        peak_slip = unlist(lapply(event_env$stochastic_slip_stats[[1]], f<-function(x) x$peak_slip))
         )
     variable_uniform_store[[i]] = list(
         data= matrix(NA, ncol=ngauges, nrow=length(event_env$variable_uniform_slip_stats[[1]])),
         model=matrix(NA, ncol=ngauges, nrow=length(event_env$variable_uniform_slip_stats[[1]])),
-        nunique_models = rep(NA, ngauges)
+        nunique_models = rep(NA, ngauges),
+        reference_Mw = unlist(lapply(event_env$variable_uniform_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw)),
+        peak_slip = unlist(lapply(event_env$variable_uniform_slip_stats[[1]], f<-function(x) x$peak_slip))
         )
 
     # Loop over DART buoys and get the stage-range
@@ -87,18 +98,28 @@ for(i in 1:length(all_Rdata)){
         
     }
 
+    #
+    # Remove events where peak slip is too high, if required
+    # This is not adapted yet for events with mu != 30
+    #
+    print('Warning: Removing events with high slip assuming "reference mu" 30GPa')
+    print('         This needs to be updated if we want to test normal faults')
+    k = which(uniform_store[[i]]$peak_slip < (peak_slip_limit_factor * slip_from_Mw(uniform_store[[i]]$reference_Mw)))
+    print(length(k))
+    uniform_store[[i]]$data = uniform_store[[i]]$data[k,, drop=FALSE]
+    uniform_store[[i]]$model = uniform_store[[i]]$model[k,, drop=FALSE]
+
+    k = which(stochastic_store[[i]]$peak_slip < (peak_slip_limit_factor * slip_from_Mw(stochastic_store[[i]]$reference_Mw)))
+    print(length(k))
+    stochastic_store[[i]]$data = stochastic_store[[i]]$data[k,, drop=FALSE]
+    stochastic_store[[i]]$model = stochastic_store[[i]]$model[k,, drop=FALSE]
+
+    k = which(variable_uniform_store[[i]]$peak_slip < (peak_slip_limit_factor * slip_from_Mw(variable_uniform_store[[i]]$reference_Mw)))
+    print(length(k))
+    variable_uniform_store[[i]]$data = variable_uniform_store[[i]]$data[k,, drop=FALSE]
+    variable_uniform_store[[i]]$model = variable_uniform_store[[i]]$model[k,, drop=FALSE]
 }
 
-#
-# Compute the fraction of model events that had stage-range exceeding the data.
-# If multiple gauges exist, take the median value over all gauges.
-# (note: No longer using these variables directly)
-meds_uniform          = unlist(lapply(uniform_store         , f<-function(x) median(colMeans(x$model > x$data))))
-meds_stochastic       = unlist(lapply(stochastic_store      , f<-function(x) median(colMeans(x$model > x$data))))
-meds_variable_uniform = unlist(lapply(variable_uniform_store, f<-function(x) median(colMeans(x$model > x$data))))
-meds2_uniform          = (lapply(uniform_store         , f<-function(x) (colMeans(x$model > x$data))))
-meds2_stochastic       = (lapply(stochastic_store      , f<-function(x) (colMeans(x$model > x$data))))
-meds2_variable_uniform = (lapply(variable_uniform_store, f<-function(x) (colMeans(x$model > x$data))))
 
 if(variable_mu){
     save.image('model_data_envelope_summary_statistics_varyMu.Rdata')
