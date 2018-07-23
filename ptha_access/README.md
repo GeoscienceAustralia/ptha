@@ -413,33 +413,33 @@ puysegur$events[3050:3052, ]
 ## 3051                  0.003014966                  0.007441733   puysegur
 ## 3052                  0.013070033                  0.013860630   puysegur
 ##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 3050               204 9.758208e-06         6.282499e-07
-## 3051               204 1.841717e-05         1.185729e-06
-## 3052               204 8.398967e-06         5.407397e-07
+## 3050               204 1.013087e-05         6.522423e-07
+## 3051               204 1.816173e-05         1.169283e-06
+## 3052               204 8.749145e-06         5.632847e-07
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 3050         1.709385e-05       7.949118            1.592906e-05
-## 3051         3.226212e-05       7.777764            1.365706e-05
-## 3052         1.471282e-05       7.581915            1.406314e-05
+## 3050         1.774666e-05       7.949118            1.632350e-05
+## 3051         3.181465e-05       7.777764            1.344520e-05
+## 3052         1.532624e-05       7.581915            1.455052e-05
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 3050                     2.476256e-06                     2.855592e-05
-## 3051                     2.123062e-06                     2.448292e-05
-## 3052                     2.186189e-06                     2.521089e-05
+## 3050                     2.537574e-06                     2.926302e-05
+## 3051                     2.090128e-06                     2.410313e-05
+## 3052                     2.261955e-06                     2.608462e-05
 ##      weight_with_nonzero_rate variable_mu_rate_annual_median
-## 3050                0.9770982                   1.433809e-05
-## 3051                0.9770982                   1.229302e-05
-## 3052                0.9770982                   1.265853e-05
+## 3050                0.9770982                   1.469313e-05
+## 3051                0.9770982                   1.210232e-05
+## 3052                0.9770982                   1.309724e-05
 ##      variable_mu_rate_annual_16pc variable_mu_rate_annual_84pc
-## 3050                 1.423263e-05                 1.995937e-05
-## 3051                 1.220260e-05                 1.711252e-05
-## 3052                 1.256542e-05                 1.762134e-05
+## 3050                 1.458506e-05                 2.045360e-05
+## 3051                 1.201330e-05                 1.684706e-05
+## 3052                 1.300090e-05                 1.823203e-05
 ##      variable_mu_weight_with_nonzero_rate rate_annual_16pc
-## 3050                                   -1     8.617445e-06
-## 3051                                   -1     1.626415e-05
-## 3052                                   -1     7.417103e-06
+## 3050                            0.9793422     8.946538e-06
+## 3051                            0.9793422     1.603857e-05
+## 3052                            0.9793422     7.726343e-06
 ##      rate_annual_84pc rate_annual_median
-## 3050     1.240796e-05       8.851405e-06
-## 3051     2.341818e-05       1.670572e-05
-## 3052     1.067963e-05       7.618474e-06
+## 3050     1.288181e-05       9.189434e-06
+## 3051     2.309338e-05       1.647401e-05
+## 3052     1.112489e-05       7.936111e-06
 ```
 
 The most important variables from a users perspective are the moment magnitude
@@ -504,19 +504,19 @@ puysegur$events[row_index,]
 ##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
 ## 3051                  0.003014966                  0.007441733   puysegur
 ##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 3051               204 1.841717e-05         1.185729e-06
+## 3051               204 1.816173e-05         1.169283e-06
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 3051         3.226212e-05       7.777764            1.365706e-05
+## 3051         3.181465e-05       7.777764             1.34452e-05
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 3051                     2.123062e-06                     2.448292e-05
+## 3051                     2.090128e-06                     2.410313e-05
 ##      weight_with_nonzero_rate variable_mu_rate_annual_median
-## 3051                0.9770982                   1.229302e-05
+## 3051                0.9770982                   1.210232e-05
 ##      variable_mu_rate_annual_16pc variable_mu_rate_annual_84pc
-## 3051                  1.22026e-05                 1.711252e-05
+## 3051                  1.20133e-05                 1.684706e-05
 ##      variable_mu_weight_with_nonzero_rate rate_annual_16pc
-## 3051                                   -1     1.626415e-05
+## 3051                            0.9793422     1.603857e-05
 ##      rate_annual_84pc rate_annual_median
-## 3051     2.341818e-05       1.670572e-05
+## 3051     2.309338e-05       1.647401e-05
 ```
 To get its initial condition, you pass the earthquake metadata to the function
 `get_initial_condition_for_event`:
