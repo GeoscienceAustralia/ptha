@@ -105,7 +105,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             }
         }
     }
-    rm(r_unif, unif_event_row, r1, rate_by_row)
+    if(!rates_should_be_zero) rm(r_unif, unif_event_row, r1, rate_by_row)
 
     # Sanity check on the ordering quantiles
     # Note the quantiles refer to the cumulative distribution function -- while
