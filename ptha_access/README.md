@@ -478,6 +478,19 @@ indicate that "a high fraction of our rate models suggest events with this `Mw`
 would never occur", with zero corresponding to an impossible event (i.e.
 according to the model).
 
+There are also a number of variables with names including `_rate_annual`.
+**Beware: These do not give the exceedance rates for the events!**. Instead
+they represent a (fairly nominal) event-specific portion of the source-zone's
+total rate of events with the give magnitude. This is useful as part of other
+calculations. For instance, by adjusting these rates we can make events more or
+less likely on some parts of the source-zone (e.g to reflect spatial variations
+in tectonic convergence rates). Most end-users should not use these
+`_rate_annual` variables directly - with one exception: **If an event has a
+rate of zero, then according to the PTHA it will not occur**. This can happen
+either because the magnitude is higher than is expected to occurr on the
+source-zone, or because the maximum slip is very high. Please see the report if
+you think you might need to use these variables. 
+
 
 All of our source-zone event tables contain events with `Mw` values ranging
 from 7.2 to 9.8. This is done for computational convenience, irrespective of
