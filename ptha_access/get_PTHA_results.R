@@ -96,6 +96,10 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
     event_data = szed$events[event_ID,]
     event_slip = event_data$slip
 
+    if(any(event_data$rate_annual == 0)){
+        print('Warning: You requested the initial condition for an event that has an annual rate of zero (i.e. it is treated as impossible for the purposes of the PTHA!')
+    }
+
     event_raster_indices = scan(
         text=gsub("-", " ", event_data$event_index_string), quiet=TRUE)
 
@@ -208,6 +212,12 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
 
     event_times = get_netcdf_gauge_output_times(szed$gauge_netcdf_files[1])
     gauge_locations = get_netcdf_gauge_locations(szed$gauge_netcdf_files[1], indices_of_subset)
+
+    
+    if(any(szed$events$rate_annual[event_ID] == 0)){
+        print('Warning: You requested the initial condition for an event that has an annual rate of zero (i.e. it is treated as impossible for the purposes of the PTHA!')
+    }
+
 
     flow_var_batch = make_tsunami_event_from_unit_sources(
         szed$events[event_ID,], 
