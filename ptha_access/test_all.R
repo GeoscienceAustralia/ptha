@@ -95,3 +95,29 @@ test_puysegur<-function(){
 # Run the puysegur regression test
 t1 = system.time(test_puysegur())
 
+
+# Test that we can read a scenario with many unit sources -- i.e. one that
+# would fail if the netcdf install is not sufficiently up to date.
+
+test_large_event_read<-function(){
+
+    source('./get_PTHA_results.R', local=TRUE)
+
+    expected_event_index_string = "324-325-329-330-333-334-338-344-345-348-349-350-351-352-354-355-358-359-361-362-363-365-366-367-369-370-372-373-376-377-381-384-385-386-387-388-389-390-391-392-393-394-395-396-397-398-399-400-401-402-403-404-405-406-407-408-409-410-411-412-413-414-415-416-417-418-419-420-421-422-423-424-425-426-427-428-430-431-434-435-436-438-439-440-443-454-461-462-"
+
+    expected_event_slip_string = "2.428_0.4631_6.739_1.026_6.742_8.005_7.856_2.007_2.8_7.307_1.599_19.78_15.27_4.94_21.14_29.31_25.13_18.47_10.37_19.73_20.71_26.1_4.098_3.605_35.83_6.34_6.517_34.34_3.984_30.11_41.04_0.7955_57.45_32.88_25.11_35.7_77.66_84.67_64.68_56.23_87.42_117_91.92_68.23_114.9_161.2_142.1_109.2_162.3_196.5_198.3_153.7_186_196.9_206.4_182.5_169.6_163_187.9_181.4_127.7_133.5_155.5_144_85.38_102.2_105.1_73.65_30.45_56.9_59.6_36.4_8.488_38.66_80.98_16.74_46.75_70.94_51.39_50.19_24.28_20.31_24.2_14.35_7.434_1.672_2.327_2.264_"
+
+    x = get_source_zone_events_data('southamerica', slip_type='stochastic', desired_event_rows=150000)
+
+    test_result = (x$events$event_slip_string == expected_event_slip_string &
+        x$events$event_index_string == expected_event_index_string)
+
+    if(test_result){
+        print('PASS')
+    }else{
+        print('FAIL -- incorrect read of a long string of event metadata. This suggests your netcdf install is not sufficiently up to date (there was a bug in the remote reading of long character strings in netcdf-c, whcih was fixed in the bleeding edge source in late 2017)')
+    }
+
+}
+
+test_large_event_read()
