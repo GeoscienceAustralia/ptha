@@ -87,6 +87,12 @@ of plate convergence.
 sanity checks on the netcdf files that are updated by
 [compute_rates_all_sources.R](compute_rates_all_sources.R). 
 
+[event_properties_and_GOF.R](event_properties_and_GOF.R) shows some investigation of relationships
+between rupture geometry and goodness-of-fit. This is used to create 'bias
+adjustments' for heterogeneous and variable-uniform slip events, by comparing the statistical
+properties of 'modelled events which are similar to
+deep-ocean-tsunami-observations' to 'all modelled events'. 
+
 ## Plotting routines
 
 [plot_hazard_curves.R](plot_hazard_curves.R) contains a function to plot the
@@ -110,9 +116,6 @@ purpose is to highlight the significance of edge-correction of event rates.
 
 [variable_mu_checks.R](variable_mu_checks.R) makes some plots to compare Mw-frequency curves
 with fixed and variable mu.
-
-[event_properties_and_GOF.R](event_properties_and_GOF.R) shows some investigation of relationships
-between rupture geometry and goodness-of-fit. 
 
 ## Other routines
 
