@@ -110,14 +110,14 @@ results between different files, etc).
 at a chosen hazard point resulting from every single unit-source tsunami. It's
 useful as a sanity check on the tsunami model results.
 
-[convergence_rates_plots_comparison_methods.R](convergence_rates_plots_comparison_methods.R) can
-be used to graphically compare back-calculated convergence given different assumptions. The main
-purpose is to highlight the significance of edge-correction of event rates.
-
-[variable_mu_checks.R](variable_mu_checks.R) makes some plots to compare Mw-frequency curves
-with fixed and variable mu.
-
 ## Other routines
+
+[tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R)
+Script to convert the netcdf files containing stage-vs-return-period curves,
+into pointwise values of stages at a range of return periods, in a csv and
+shapefile format. The resulting outputs have some rounding, and contain less
+information than the netcdf output. However they are provided because many users
+find these formats easy to work with.
 
 [stage_range_summary.R](stage_range_summary.R) contains basic checks on the performance
 of the uniform, stochastic, and variable uniform models vs DART measurements. 
@@ -129,11 +129,14 @@ some idea of moment conservation.
 [working_with_rate_curves.R](working_with_rate_curves.R) gives an example of working
 with the rate curves for a particular source-zone.
 
-[tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R)
-Script to convert the netcdf files containing stage-vs-return-period curves,
-into pointwise values of stages at a range of return periods, in a csv and
-shapefile format. The resulting outputs have some rounding, and contain less
-information than the netcdf output. However they are provided because many users
-find these formats easy to work with.
+[variable_mu_checks.R](variable_mu_checks.R) makes some plots to compare Mw-frequency curves
+with fixed and variable mu. NOTE: This code assumes that the netcdf files have
+NOT already had bias adjustments applied (i.e. if you run them on the final
+output files, you'll get strange results!). The were used to help explore
+various bias adjustment methods during preliminary stages of the analysis.
 
+[convergence_rates_plots_comparison_methods.R](convergence_rates_plots_comparison_methods.R) is
+now outdated, but was used to highlight the significance of edge-correction of
+event rates. FIXME: It needs to be updated to include the peak slip limitation
+that was not accounted for in earlier runs.
 
