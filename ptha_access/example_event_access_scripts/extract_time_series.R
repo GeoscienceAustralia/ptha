@@ -118,7 +118,7 @@ for(ir in 1:length(all_desired_rates)){
         f<-function(x){
             which((abs(x$max_stage - desired_stage) < 
                 max(relative_tolerance*desired_stage, absolute_tolerance))&
-                (x$local_rate > 0))
+                (x$scenario_rate_is_positive))
         }
     )
     names(sourcezone_event_inds_near_desired_stage) = source_zones_of_interest

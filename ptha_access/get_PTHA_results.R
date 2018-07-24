@@ -528,11 +528,11 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 Mw = local_Mw,
                 max_stage = local_max_stage,
                 #period = local_period,
-                local_rate = local_rate,
+                scenario_rate_is_positive = (local_rate>0),
                 target_index=target_index,
                 slip_type=slip_type,
                 variable_mu_Mw = local_Mw_variable_mu,
-                variable_mu_local_rate = local_rate_variable_mu
+                variable_mu_scenario_rate_is_positive = (local_rate_variable_mu>0)
                 )
 
             # Error handling
