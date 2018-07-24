@@ -343,6 +343,12 @@ indicate that "a high fraction of our rate models suggest events with this `Mw`
 would never occur", with zero corresponding to an impossible event (i.e.
 according to the model).
 
+All of our source-zone event tables contain events with `Mw` values ranging
+from 7.2 to 9.8. This is done for computational convenience, irrespective of
+whether we consider the high magnitude events are possible on the source-zone.
+You will notice that events at very large `Mw` always have a
+`weight_with_nonzero_rate` equal to zero.
+
 There are also a number of variables with names including `_rate_annual`.
 **Beware: These do not give the exceedance rates for the events!**. Instead
 they represent a (fairly nominal) event-specific portion of the source-zone's
@@ -356,12 +362,6 @@ either because the magnitude is higher than is expected to occurr on the
 source-zone, or because the maximum slip is very high. Please see the report if
 you think you might need to use these variables. 
 
-
-All of our source-zone event tables contain events with `Mw` values ranging
-from 7.2 to 9.8. This is done for computational convenience, irrespective of
-whether we consider the high magnitude events are possible on the source-zone.
-You will notice that events at very large `Mw` always have a
-`weight_with_nonzero_rate` equal to zero.
 
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
 
