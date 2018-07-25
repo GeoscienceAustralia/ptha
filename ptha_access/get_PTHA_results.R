@@ -341,8 +341,11 @@ get_stage_exceedance_rate_curve_at_hazard_point<-function(
         vars = c(vars, 'uniform_slip_rate', 'variable_uniform_slip_rate')
     }
     if(!only_mean_rate_curve){
-        vars = c(vars, paste0(vars,'_upper_ci'), paste0(vars, '_lower_ci'))
+        vars = c(vars, paste0(vars,'_upper_ci'), paste0(vars, '_lower_ci'), 
+            paste0(vars, '_median'), paste0(vars, '_16pc'), paste0(vars, '_84pc'))
     }
+    # Add in the variable_mu
+    vars = c(vars, paste0('variable_mu_', vars))
 
     # Read the file
     for(i in 1:length(vars)){
@@ -367,18 +370,32 @@ get_stage_exceedance_rate_curve_at_hazard_point<-function(
             round(output$elev, 1), ' m; ID = ', round(output$gaugeID,3)) 
         options(scipen=5)
         plot(output$stage, output$stochastic_slip_rate, log='xy',
-            xlim=c(0.02, 20), ylim=c(1.0e-04, 1), t='o', 
+            xlim=c(0.02, 20), ylim=c(1.0e-04, 1), t='o', col='red', pch=19, cex=0.3,
             xlab='Maximum tsunami waterlevel above MSL', 
             ylab = 'Exceedance Rate (events/year)',
             main = title)
-        points(output$stage, output$stochastic_slip_rate_upper, 
-            t='l', col='red')
-        points(output$stage, output$stochastic_slip_rate_lower, 
-            t='l', col='red')
+        points(output$stage, output$stochastic_slip_rate_upper, t='l', col='red')
+        points(output$stage, output$stochastic_slip_rate_lower, t='l', col='red')
+        points(output$stage, output$stochastic_slip_rate_median,t='l', col='red')
+        points(output$stage, output$stochastic_slip_rate_16pc,  t='l', col='red')
+        points(output$stage, output$stochastic_slip_rate_84pc,  t='l', col='red')
+
+        points(output$stage, output$variable_mu_stochastic_slip_rate,       t='o', col='purple', cex=0.3, pch=19)
+        points(output$stage, output$variable_mu_stochastic_slip_rate_upper, t='l', col='purple')
+        points(output$stage, output$variable_mu_stochastic_slip_rate_lower, t='l', col='purple')
+        points(output$stage, output$variable_mu_stochastic_slip_rate_median,t='l', col='purple')
+        points(output$stage, output$variable_mu_stochastic_slip_rate_16pc,  t='l', col='purple')
+        points(output$stage, output$variable_mu_stochastic_slip_rate_84pc,  t='l', col='purple')
+
         abline(v=c(0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), col='orange', lty='dotted')
         abline(h=10**(seq(-6,0)), col='orange', lty='dotted')
-        legend('topright', c('Mean estimated rate', '95% Credible Interval'), col=c('black', 'red'), 
-            lty=c('solid', 'solid'), pch=c(1, NA), bg='white')
+        legend('topright', 
+            c('Mean estimated rate', '2.5, 16, 50, 84, 97.5 % Percentiles', 
+              'Mean estimated rate (variable mu)', '2.5, 16, 50, 84, 97.5 % Percentiles (variable mu)'
+            ), 
+            col=c('red', 'red', 'purple', 'purple'), 
+            lty=c('solid', 'solid', 'solid', 'solid'), pch=c(19, NA, 19, NA), 
+            pt.cex=c(0.3, NA, 0.3, NA), bg='white')
     }
     return(output)
 }
