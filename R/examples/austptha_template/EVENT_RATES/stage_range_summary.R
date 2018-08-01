@@ -46,21 +46,24 @@ for(i in 1:length(all_Rdata)){
         model=matrix(NA, ncol=ngauges, nrow=length(event_env$uniform_slip_stats[[1]])),
         nunique_models = rep(NA, ngauges),
         reference_Mw = unlist(lapply(event_env$uniform_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw)),
-        peak_slip = unlist(lapply(event_env$uniform_slip_stats[[1]], f<-function(x) x$peak_slip))
+        peak_slip = unlist(lapply(event_env$uniform_slip_stats[[1]], f<-function(x) x$peak_slip)),
+        gauge_names = basename(names(event_env$uniform_slip_stats))
         )
     stochastic_store[[i]] = list(
         data= matrix(NA, ncol=ngauges, nrow=length(event_env$stochastic_slip_stats[[1]])),
         model=matrix(NA, ncol=ngauges, nrow=length(event_env$stochastic_slip_stats[[1]])),
         nunique_models = rep(NA, ngauges),
         reference_Mw = unlist(lapply(event_env$stochastic_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw)),
-        peak_slip = unlist(lapply(event_env$stochastic_slip_stats[[1]], f<-function(x) x$peak_slip))
+        peak_slip = unlist(lapply(event_env$stochastic_slip_stats[[1]], f<-function(x) x$peak_slip)),
+        gauge_names = basename(names(event_env$stochastic_slip_stats))
         )
     variable_uniform_store[[i]] = list(
         data= matrix(NA, ncol=ngauges, nrow=length(event_env$variable_uniform_slip_stats[[1]])),
         model=matrix(NA, ncol=ngauges, nrow=length(event_env$variable_uniform_slip_stats[[1]])),
         nunique_models = rep(NA, ngauges),
         reference_Mw = unlist(lapply(event_env$variable_uniform_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw)),
-        peak_slip = unlist(lapply(event_env$variable_uniform_slip_stats[[1]], f<-function(x) x$peak_slip))
+        peak_slip = unlist(lapply(event_env$variable_uniform_slip_stats[[1]], f<-function(x) x$peak_slip)),
+        gauge_names = basename(names(event_env$variable_uniform_slip_stats))
         )
 
     # Loop over DART buoys and get the stage-range
