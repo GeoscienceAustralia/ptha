@@ -118,7 +118,9 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
         # Simple legend [do not show event numbers, since it takes too much space]
         plot(c(0,1), c(0,1), axes=FALSE, col=0)
         legend('center', 
-            c('Data', 'Stoch. slip', 'Unif. slip ', 'VarU. slip'), 
+            #c('Data', 'Stoch. slip', 'Unif. slip ', 'VarU. slip'), 
+            # New names for the report
+            c('Data', 'HS', 'FAUS', 'VAUS'), 
             bty='n',
             lty=c('solid', 'solid', 'longdash', 'solid'),
             col=c('black', 'red', 'blue', 'green'), 
@@ -129,9 +131,10 @@ multi_gauge_time_series_plot<-function(ui, si, vui, png_name_stub, output_dir = 
         # Legend including event numbers
         plot(c(0,1), c(0,1), axes=FALSE, col=0)
         legend('center', 
-            c('Data', paste0('Stoch. slip (', si[1], ')'), 
-                paste0('Unif. slip (', ui[1], ')'), 
-                paste0('VarU. slip (', vui[1], ')')), 
+            # New names for the report
+            c('Data', paste0('HS (', si[1], ')'), 
+                paste0('FAUS (', ui[1], ')'), 
+                paste0('VAUS (', vui[1], ')')), 
             bty='n',
             lty=c('solid', 'solid', 'longdash', 'solid'),
             col=c('black', 'red', 'blue', 'green'), 
