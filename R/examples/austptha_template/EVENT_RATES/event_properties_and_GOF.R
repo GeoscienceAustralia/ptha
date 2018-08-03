@@ -52,7 +52,8 @@ family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_fact
     stage_range_mat = matrix(unlist(stage_range_mat), ncol=length(stage_range_mat))
     stage_range_median = apply(stage_range_mat, 1, median)
 
-    # Get the peak slip for each model scenario
+    # Get the peak slip for each model scenario. The earthquake metadata is
+    # stored repeatedly for each DART, so just pull it out of the first one
     if('event_slip_string' %in% names(gauge_stats[[1]][[1]]$events_with_Mw)){
         peak_slip_sum = unlist(lapply(gauge_stats[[1]], 
             f<-function(x) max(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]]))))
