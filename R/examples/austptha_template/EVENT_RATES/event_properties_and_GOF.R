@@ -505,11 +505,11 @@ quantile_adjuster<-function(stochastic_best_event_quantiles, var, colind = 'mean
     # then the new rates are bias_adjustment_factor(E_q)/sum(bias_adjustment_factor(E_q))
     # 
     bias_adjustment_factor<-function(x){
-        # Numerical derivative to get the density
+        # Numerical derivative to get the density. NOTE: Derivative of x(y), not y(x)
         (approx(cubic_vals, xl, xout=x)$y - approx(cubic_vals, xl, xout=x-1.0e-06)$y)/1.0e-06
     }
     bias_adjustment_factor_bilinear<-function(x){
-        # Numerical derivative to get the density
+        # Numerical derivative to get the density. NOTE: Derivative of x(y), not y(x)
         (approx(bilin_vals, xl, xout=x)$y - approx(bilin_vals, xl, xout=x-1.0e-06)$y)/1.0e-06
     }
 
