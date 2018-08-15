@@ -56,7 +56,11 @@ Supplementary codes which are used in the above process are:
 [append_variable_mu_variables_to_event_netcdf.R](append_variable_mu_variables_to_event_netcdf.R), used
 to insert new columns into the netcdf files to store some results under the
 assumption of variable shear modulus (this is only different to the
-constant-shear-modulus case for thrust events).
+constant-shear-modulus case for thrust events). In principle it would
+be nicer to add these variables when the files are originally created. But
+in reality, this functionality was 'bolted on' to the PTHA code after 
+we were already dealing with the constant shear modulus case, which shows up
+in some of the design
 
 [make_spatially_variable_source_zone_convergence_rates.R](make_spatially_variable_source_zone_convergence_rates.R),
 used to map Bird (2003) plate-boundary convergence rates onto the top-edge of
