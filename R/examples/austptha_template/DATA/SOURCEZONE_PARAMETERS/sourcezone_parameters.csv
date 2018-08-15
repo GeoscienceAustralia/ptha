@@ -2,34 +2,53 @@ sourcename,segment_name,approx_unit_source_length,approx_unit_source_width,rake,
 izumariana,,50,50,90,Strasser,3,,,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.25,0,"Berryman et al (2015) suggest coupling values: [Izubonin, 0.1, 0.2, 0.7;   Marianas, 0.1, 0.2, 0.7]; and mw_max_min=7.25"
 izumariana,_izubonin,,,,Strasser,3,1,27,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.25,0,
 izumariana,_marianas,,,,Strasser,3,28,70,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,7.25,0,
-kermadectonga,,50,50,90,Strasser,3,,,0.5,1,,,0.21,0.31,0.72,,,,0.7,0.95,1.2,,,,8.1,0,"Berryman et al. (2015) suggest coupling values of 0.2, 0.31, 0.72; and mw_max_min = 8.1"
-kermadectonga,_tonga,,,,Strasser,3,1,23,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al
-kermadectonga,_kermadec,,,,Strasser,3,24,56,0.5,1,,,0.2,0.3,0.75,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al
-kermadectonga,_hikurangi,,,,Strasser,3,57,69,0.5,1,,,0.4,0.54,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al
+kermadectonga,,50,50,90,Strasser,3,,,0,1,,,0.21,0.31,0.72,,,,0.7,0.95,1.2,,,,8.1,0,"Berryman et al. (2015) suggest coupling values of 0.2, 0.31, 0.72; and mw_max_min = 8.1"
+kermadectonga,_tonga,,,,Strasser,3,1,23,0,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al
+kermadectonga,_kermadec,,,,Strasser,3,24,56,0,1,,,0.2,0.3,0.75,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al
+kermadectonga,_hikurangi,,,,Strasser,3,57,69,0,1,,,0.4,0.54,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al
+kermadectonga2,,50,50,90,Strasser,3,,,0.5,1,,,0.21,0.31,0.72,,,,0.7,0.95,1.2,,,,8.1,0,As above but using SLAB2.0 geometries
+kermadectonga2,_tonga,,,,Strasser,3,1,24,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8,0,As above but using SLAB2.0 geometries
+kermadectonga2,_kermadec,,,,Strasser,3,25,58,0.5,1,,,0.2,0.3,0.75,,,,0.7,0.95,1.2,,,,8.1,0,As above but using SLAB2.0 geometries
+kermadectonga2,_hikurangi,,,,Strasser,3,59,72,0.5,1,,,0.4,0.54,0.7,,,,0.7,0.95,1.2,,,,8,0,As above but using SLAB2.0 geometries
 kurilsjapan,,50,50,90,Strasser,3,,,0.5,1,,,0.67,0.77,0.9,,,,0.7,0.95,1.2,,,,9.1,0,"Berryman et al (2015) suggest coupling values: 0.67, 0.77, 0.9, and Mw_max_min of 9.0 (Tohoku 2011). We increase Mw_max_min to be closer to the GCMT Mw_max_min"
 kurilsjapan,_kurils,,,,Strasser,3,1,45,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,0,
 kurilsjapan,_japan,,,,Strasser,3,46,61,0.5,1,,,0.6,0.7,0.9,,,,0.7,0.95,1.2,,,,9.1,0,
-newhebrides,,50,50,90,Strasser,3,,,0.5,1,,,0.27,0.37,0.73,,,,0.7,0.95,1.2,,,,8.3,0,Berryman et al. (2015) coupling and mw_max_min values
-newhebrides,_matthewhunter,,,,Strasser,3,1,5,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al. (2015) coupling and Mw_max_min
-newhebrides,_south,,,,Strasser,3,6,16,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,0,Berryman et al. (2015) coupling and Mw_max_min
-newhebrides,_central,,,,Strasser,3,17,26,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.3,0,Berryman et al. (2015) coupling. 
-newhebrides,_north,,,,Strasser,3,27,34,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,0,"Berryman et al. (2015) coupling and Mw_max_min. We use Mw 8.0 for Mw_max_min, because GCMT has an event there with Mw 7.94 (which is larger than the Berryman suggested value)"
-puysegur,,50,50,90,Strasser,3,,,1,0,35,1,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,0,"Berryman et al. (2015) coupling and Mw_max_min. Hayes and Furlong (2010) suggest the true subduction direction is quite obligue from our source boundary, and so we force the tectonic_slip in line with the value they suggest."
-solomon,,50,50,90,Strasser,3,,,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
-solomon,_southeast,,,,Strasser,3,1,20,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
-solomon,_northwest,,,,Strasser,3,21,30,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
-solomon,_newbritain,,,,Strasser,3,31,46,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,,50,50,90,Strasser,3,,,0,1,,,0.27,0.37,0.73,,,,0.7,0.95,1.2,,,,8.3,0,Berryman et al. (2015) coupling and mw_max_min values
+newhebrides,_matthewhunter,,,,Strasser,3,1,5,0,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,_south,,,,Strasser,3,6,16,0,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,0,Berryman et al. (2015) coupling and Mw_max_min
+newhebrides,_central,,,,Strasser,3,17,26,0,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.3,0,Berryman et al. (2015) coupling. 
+newhebrides,_north,,,,Strasser,3,27,34,0,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,0,"Berryman et al. (2015) coupling and Mw_max_min. We use Mw 8.0 for Mw_max_min, because GCMT has an event there with Mw 7.94 (which is larger than the Berryman suggested value)"
+newhebrides2,,50,50,90,Strasser,3,,,0.5,1,,,0.27,0.37,0.73,,,,0.7,0.95,1.2,,,,8.3,0,As above but using SLAB2.0 geometries
+newhebrides2,_matthewhunter,,,,Strasser,3,1,9,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,0,As above but using SLAB2.0 geometries
+newhebrides2,_south,,,,Strasser,3,10,20,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,7.6,0,As above but using SLAB2.0 geometries
+newhebrides2,_central,,,,Strasser,3,21,29,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.3,0,As above but using SLAB2.0 geometries
+newhebrides2,_north,,,,Strasser,3,30,38,0.5,1,,,0.15,0.25,0.7,,,,0.7,0.95,1.2,,,,8,0,As above but using SLAB2.0 geometries
+puysegur,,50,50,90,Strasser,3,,,0,0,35,1,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,0,"Berryman et al. (2015) coupling and Mw_max_min. Hayes and Furlong (2010) suggest the true subduction direction is quite obligue from our source boundary, and so we force the tectonic_slip in line with the value they suggest."
+puysegur2,,50,35,90,Strasser,3,,,1,0,35,1,0.5,0.7,0.8,,,,0.7,0.95,1.2,,,,7.8,0,"As above but using SLAB2.0 geometries. This made it narrow – only one unit-source wide. Because puysegur is of particular significance for Aust, I reduced the unit-source width here, so we get 2 rows of unit-sources."
+solomon,,50,50,90,Strasser,3,,,0,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
+solomon,_southeast,,,,Strasser,3,1,20,0,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
+solomon,_northwest,,,,Strasser,3,21,30,0,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
+solomon,_newbritain,,,,Strasser,3,31,46,0,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
+solomon2,,50,50,90,Strasser,3,,,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,As above but using SLAB2.0 geometries
+solomon2,_southeast,,,,Strasser,3,1,19,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,As above but using SLAB2.0 geometries
+solomon2,_northwest,,,,Strasser,3,20,29,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,As above but using SLAB2.0 geometries
+solomon2,_newbritain,,,,Strasser,3,30,42,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,8.1,0,As above but using SLAB2.0 geometries
 southamerica,,50,50,90,Strasser,3,,,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.2,0,"Berryman et al. (2015) coupling. Set mw_max_min to 9.2 instead of 9.5, because inversions based on tsunami ( Fuji and Satake) + geodetic data suggest that is a more appropriate Mw for 1960 chile – while acknowledging that seismic-wave inversions suggest a higher value"
 southamerica,_patagonia,,,,Strasser,3,1,34,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al. (2015) coupling and Mw_max_min
 southamerica,_central_chile,,,,Strasser,3,35,60,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9.2,0,"Berryman et al. (2015) coupling. Set mw_max_min to 9.2 instead of 9.5, because inversions based on tsunami ( Fuji and Satake) + geodetic data suggest that is a more appropriate Mw for 1960 chile – while acknowledging that seismic-wave inversions suggest a higher value"
 southamerica,_northern_chile,,,,Strasser,3,61,88,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.6,0,Berryman et al. (2015) coupling and Mw_max_min
 southamerica,_peru,,,,Strasser,3,89,137,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,0,Berryman et al. (2015) coupling and Mw_max_min
 southamerica,_ecuador,,,,Strasser,3,138,165,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,8.8,0,Berryman et al. (2015) coupling and Mw_max_min
-sunda,,50,50,90,Strasser,3,,,0.5,1,,,0.44,0.54,0.79,,,,0.7,0.95,1.2,,,,9,0,"Berryman et al. (2015) coupling and Mw_max_min. As well as this ‘sunda as one segment’ branch, we have segmented branches which cover the source below"
-sunda,_java,,,,Strasser,3,1,39,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8.3,0,Berryman et al. (2015) coupling and Mw_max_min [note the Mw 8.3 was however a normal fault]
-sunda,_sumatra,,,,Strasser,3,40,68,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,0,Berryman et al. (2015) coupling and Mw_max_min
-sunda,_andaman,,,,Strasser,3,69,97,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,0,Berryman et al. (2015) coupling and Mw_max_min
-sunda,_arakan,,,,Strasser,3,98,123,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,0,Coupling based on Andaman. Mw-max-min based on CMT [although it was a normal fault] – noting Cummins (2007) suggested much higher values
+sunda,,50,50,90,Strasser,3,,,0,1,,,0.44,0.54,0.79,,,,0.7,0.95,1.2,,,,9,0,"Berryman et al. (2015) coupling and Mw_max_min. As well as this ‘sunda as one segment’ branch, we have segmented branches which cover the source below"
+sunda,_java,,,,Strasser,3,1,39,0,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8.3,0,Berryman et al. (2015) coupling and Mw_max_min [note the Mw 8.3 was however a normal fault]
+sunda,_sumatra,,,,Strasser,3,40,68,0,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,0,Berryman et al. (2015) coupling and Mw_max_min
+sunda,_andaman,,,,Strasser,3,69,97,0,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,0,Berryman et al. (2015) coupling and Mw_max_min
+sunda,_arakan,,,,Strasser,3,98,123,0,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,0,Coupling based on Andaman. Mw-max-min based on CMT [although it was a normal fault] – noting Cummins (2007) suggested much higher values
+sunda2,,50,50,90,Strasser,3,,,0.5,1,,,0.44,0.54,0.79,,,,0.7,0.95,1.2,,,,9,0,As above but using SLAB2.0 geometries
+sunda2,_java,,,,Strasser,3,1,39,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8.3,0,As above but using SLAB2.0 geometries
+sunda2,_sumatra,,,,Strasser,3,40,67,0.5,1,,,0.7,0.8,0.9,,,,0.7,0.95,1.2,,,,9,0,As above but using SLAB2.0 geometries
+sunda2,_andaman,,,,Strasser,3,68,96,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,9,0,As above but using SLAB2.0 geometries
+sunda2,_arakan,,,,Strasser,3,97,120,0.5,1,,,0.6,0.7,0.8,,,,0.7,0.95,1.2,,,,7.5,0,As above but using SLAB2.0 geometries
 alaskaaleutians,,50,50,90,Strasser,3,,,0.5,1,,,0.42,0.55,0.77,,,,0.7,0.95,1.2,,,,9.2,0,Berryman et al. (2015) coupling and Mw_max_min
 alaskaaleutians,_eastern,,,,Strasser,3,1,29,0.5,1,,,0.6,0.8,1,,,,0.7,0.95,1.2,,,,9.2,0,"Use Berryman et al (2015) to estimate coupling (although they have more sub-sources than I have, so combination of values has some subjectivity). Note Mw_max_min in Berryman et al seems low, accepting that 1964 event was Mw 9.2, so here I use the latter"
 alaskaaleutians,_western,,,,Strasser,3,30,67,0.5,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.7,0,"Berryman et al (2015), except their Mw-max is 9.2, which is not referenced and might be a mistaken reference to the 1964 event? We use 8.7 based on 1965 event in GEM catalogue"
@@ -41,7 +60,8 @@ ryuku,,50,50,90,Strasser,3,,,0.5,1,,,0.34,0.44,0.8,,,,0.7,0.95,1.2,,,,8.5,0,Berr
 ryuku,_nankai,,,,Strasser,3,1,13,0.5,1,,,0.8,0.9,1,,,,0.7,0.95,1.2,,,,8.5,0,Berryman et al. (2015) coupling and Mw_max_min
 ryuku,_ryuku,,,,Strasser,3,14,40,0.5,1,,,0.1,0.2,0.7,,,,0.7,0.95,1.2,,,,8,0,Berryman et al. (2015) coupling and Mw_max_min
 hjort,,50,45,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,0,Berryman et al. (2015) coupling and Mw_max_min. Slightly reduce the width to avoid having only 1 layer of unit-sources
-makran,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
+makran,,50,50,90,Strasser,3,,,0,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,0,Berryman et al. (2015) coupling and Mw_max_min
+makran2,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.1,0,As above but using SLAB2.0 geometries
 macquarieislandnorth,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,0,"Considering only thrust events, the largest event was about Mw 7.0 (1977-07). There were larger strike-slip events"
 macquarienorth,,50,50,90,Strasser,3,,,0,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,0,"REPLACED WITH macquarieislandnorth TO UPDATE THE GEOMETRY. HENCE row_weight=0. Considering only thrust events, the largest event was about Mw 7.0 (1977-07). There were larger strike-slip events"
 outerrisesunda,,50,50,-90,AllenHayes-outer-rise,6,,,1,1,,,0.3,0.5,0.7,,,,0.9,1.15,1.4,,,,8.3,0,Largest Mw is the 1977 Mw 8.3 event. B-values based on Schorlemmer et al (2005) indicating that b on normal faults is ~ 0.2 greater than thrust faults
@@ -61,7 +81,8 @@ outer_rise_timor,,50,50,-90,AllenHayes-outer-rise,6,,,1,1,,,0.3,0.5,0.7,,,,0.9,1
 sangihe,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,0,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
 sangihe_backthrust,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.3,0,Mw_max_min from Berryman et al Halmahera. Slip rates from JG traces. 
 manokwari,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.7,0,Convergent rate mixture of Bird (~ 22mm/year) and Jono’s estimate (~15mm/year). Mw_max from GCMT and ISC-GEM
-newguinea,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.2,0,Mw_max from Berryman et al. 
+newguinea,,50,50,90,Strasser,3,,,0,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.2,0,Mw_max from Berryman et al. 
+newguinea2,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,8.2,0,As above but using SLAB2.0 geometries
 mussau,,50,50,90,Strasser,3,,,1,1,,,0.3,0.5,0.7,,,,0.7,0.95,1.2,,,,7.25,0,Convergence from Jono
 moresby_trough,,50,50,90,Strasser,3,,,1,1,,,0.01,0.1,0.7,,,,0.7,0.95,1.2,,,,7.25,0,Convergence averaged from Jono’s inputs. Possible very low coupling to reflect it might not be active (be careful of the numerical issues if using these coupling priors)
 trobriand,,50,50,90,Strasser,3,,,1,1,,,0.01,0.1,0.7,,,,0.7,0.95,1.2,,,,7.25,0,Default values. Possible very low coupling to reflect it might not be active (be careful of the numerical issues if using these coupling priors)
