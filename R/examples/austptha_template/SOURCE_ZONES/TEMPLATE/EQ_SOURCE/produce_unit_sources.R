@@ -140,7 +140,9 @@ for(sourcename_index in 1:length(names(discretized_sources))){
         }
 
         # Convert negative elevation to depth, and ensure a minimum depth of 10m
-        # for Kajiura filter 
+        # for Kajiura filter. NOTE: When sources are on-land it may be better to increase
+        # this 10m limit to avoid running out of memory (because it affects the spacing of points
+        # in the kajiura filter). The only time I saw this was the 'makran2' source in PTHA18
         surface_point_ocean_depths = pmax(-surface_point_ocean_depths, 10)
         rm(tmp_tsp); gc()
 

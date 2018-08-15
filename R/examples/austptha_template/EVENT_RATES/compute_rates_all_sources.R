@@ -75,7 +75,11 @@ bird2003_env = event_conditional_probability_bird2003_factory(
 
 
 #' Function to evaluate the rates for a given source-zone. This function returns
-#' it's environment, so we have easy access to key variables
+#' it's environment, so we have easy access to key variables. 
+#'
+#' This version uses a low-memory-demand "mock" if the
+#' sourcezone_parameters_row$row_weight == 0. This saves time/memory when source-zones
+#' have been replaced with others using the 'row_weight=0' approach.
 #'
 #' @param sourcezone_parameters_row row from sourcezone_parameters table
 #' @param unsegmented_edge_rate_multiplier Factor by which we increase the
@@ -87,6 +91,36 @@ bird2003_env = event_conditional_probability_bird2003_factory(
 #'
 source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edge_rate_multiplier=NULL){
 
+    sourcezone_parameters_row = sourcezone_parameters_row
+    unsegmented_edge_rate_multiplier = unsegmented_edge_rate_multiplier
+
+    
+    if(as.numeric(sourcezone_parameters_row$row_weight) == 0){
+        # Shortcut for the case where the rate will always be zero!
+        out_env = source_rate_environment_fun_row_weight_zero(sourcezone_parameters_row, unsegmented_edge_rate_multiplier)
+    }else{
+        # Regular case
+        out_env = source_rate_environment_fun_standard(sourcezone_parameters_row, unsegmented_edge_rate_multiplier)
+    }
+
+    return(out_env)
+
+}
+
+#' Function to evaluate the rates for a given source-zone. This function returns
+#' it's environment, so we have easy access to key variables.
+#'
+#' This is the main workhorse function. 
+#'
+#' @param sourcezone_parameters_row row from sourcezone_parameters table
+#' @param unsegmented_edge_rate_multiplier Factor by which we increase the
+#'   conditional probability of ruptures on the edge of the source-zone. Used to
+#'   make the spatial distribution of moment release on the source better
+#'   approximate the desired value. If NULL, it is computed, or ignored (see
+#'   also config$edge_correct_event_rates)
+#' @return the function environment
+#'
+source_rate_environment_fun_standard<-function(sourcezone_parameters_row, unsegmented_edge_rate_multiplier=NULL){
     #
     # PART 1
     # Read parameters, basic datasets, etc
@@ -793,6 +827,83 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
 }
 
 
+
+#' Compute source-zone variables efficiently when row_weight=0
+#'
+#' To allow dropping/replacing source-zones cleanly, we allow row_weight=0. This means
+#' that all events on the source-zone will have a rate=0, i.e. it will not contribute
+#' to the final hazard. 
+#'
+#' In that instance the call to source_rate_environment_fun is overly expensive
+#' and demanding of memory. However, to run the code without too many changes, we really
+#' need some variables to exist even when row_weight=0.
+#'
+#' This function makes those variables, efficiently, in the 'row_weight=0' case
+#'
+source_rate_environment_fun_row_weight_zero<-function(
+    sourcezone_parameters_row, 
+    unsegmented_edge_rate_multiplier=NULL){
+
+    #
+    # PART 1
+    # Read parameters, basic datasets, etc
+    #
+
+    # Store key parameters for easy write-out later
+    sourcepar = list()
+
+    sourcepar$sourcezone_parameters_row = sourcezone_parameters_row
+    source_name = sourcezone_parameters_row$sourcename
+    sourcepar$name = source_name
+
+    # We might be on a specific segment 
+    segment_name = sourcezone_parameters_row$segment_name
+    source_segment_name = paste0(source_name, segment_name)
+
+    # If the input segment_name is blank, then we are on a 'full-zource-zone'. For some
+    # operations we need to be careful if this is not the case
+    is_a_segment = (sourcezone_parameters_row$segment_name != '')
+
+    # Rake
+    target_rake = bird2003_env$unit_source_tables[[source_name]]$rake[1]
+
+    #
+    # Get the event table. 
+    #
+    event_table_file = paste0('../SOURCE_ZONES/', source_name, 
+        '/TSUNAMI_EVENTS/all_uniform_slip_earthquake_events_', 
+        source_name, '.nc')
+    event_table = read_table_from_netcdf(event_table_file)
+
+    # Vector of zeros, reused as empty data elsewhere
+    empty_data = rep(0, length(event_table$Mw))
+
+    #
+    # 'ZERO' version of the variables that are needed later on,
+    # in order to 'cleanly' write zeros to the netcdf files.
+    #
+    event_rates = empty_data
+    event_rates_upper = empty_data
+    event_rates_lower = empty_data
+    event_weight_with_nonzero_rate = empty_data
+    event_rates_median = empty_data
+    event_rates_16pc = empty_data
+    event_rates_84pc = empty_data
+
+    event_rates_mu_vary = empty_data
+    event_rates_upper_mu_vary = empty_data
+    event_rates_lower_mu_vary = empty_data
+    event_weight_with_nonzero_rate_mu_vary = empty_data 
+    event_rates_median_mu_vary = empty_data
+    event_rates_16pc_mu_vary = empty_data
+    event_rates_84pc_mu_vary = empty_data
+
+    # The above variables should allow the code to execute cleanly in all cases!
+
+    return(environment())
+}
+
+
 #' Put the event rates onto a netcdf file
 #'
 #' @param source_env result of source_rate_environment_fun
@@ -1228,6 +1339,8 @@ if(config$write_to_netcdf){
     #
     for(i in 1:length(source_segment_names)){
         rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
+        # Skip if the row weight is zero
+        if(rate_scale == 0) next
         write_rates_to_event_table(source_envs[[i]], scale_rate = rate_scale, add_rate=TRUE)
     }
 }
@@ -1243,6 +1356,10 @@ mw_global = seq(xlim[1]-dMw/2, xlim[2]+dMw/2, by=0.1)
 global_exceedance_rate_mw_variable_mu = mw_global*0
 global_exceedance_rate_mw_fixed_mu = mw_global*0
 for(i in 1:length(source_segment_names)){
+    
+    # Skip ones with a row weight of zero
+    rate_scale = as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight)
+    if(rate_scale == 0) next
      
     # Get all the information
     all_rate_curves = source_envs[[i]]$mw_rate_function(NA, 
@@ -1375,6 +1492,10 @@ rate_vals = mw*0
 rate_vals_variable_mu = mw*0
 gcmt_global = data.frame()
 for(i in 1:length(source_segment_names)){
+
+    # Skip sources with row_weight=0
+    if( as.numeric(source_envs[[i]]$sourcezone_parameters_row$row_weight) == 0) next
+
     # Sum the rate value 
     rate_vals = rate_vals + (
         source_envs[[i]]$mw_rate_function(mw) * 
