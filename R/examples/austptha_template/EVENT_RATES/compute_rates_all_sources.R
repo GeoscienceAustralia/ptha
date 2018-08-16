@@ -1074,14 +1074,19 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             # Compute the weights
             for(euer in names_nevents){
 
-                k = which(event_uniform_event_row == euer) 
-                # Weight individual events, based on the 'bias adjustment' functions devised by
-                # comparing DART buoys with family of model events
-                quantiles_of_peak_slip = rank(event_peak_slip[k], ties.method='first')/(length(k)+1)
+                k = which(event_uniform_event_row == euer)
 
-                bias_adjuster = bias_adjustment_function(quantiles_of_peak_slip)
-                # Zero rate on events with 'overly high' peak slip
-                bias_adjuster = bias_adjuster * (allowed_peak_slip[k] >= event_peak_slip[k])
+                bias_adjuster = rep(0, length(k))
+                # We must zero rate for events with peak_slip <= allowed value
+                acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
+                if(length(acceptable_k) > 0){
+                    # Weight individual events, based on the 'bias adjustment' functions devised by
+                    # comparing DART buoys with family of model events
+                    k2 = k[acceptable_k]
+                    quantiles_of_peak_slip = rank(event_peak_slip[k2], ties.method='first')/(length(k2)+1)
+                    bias_adjuster[acceptable_k] = bias_adjustment_function(quantiles_of_peak_slip)
+                }
+
                 # Normalise so it sums to 1
                 sba = sum(bias_adjuster)
                 if(sba > 0){
@@ -1140,14 +1145,18 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             # Compute the weights
             for(euer in names_nevents){
                 k = which(event_uniform_event_row == euer) 
-                quantiles_of_peak_slip = rank(event_peak_slip[k], ties.method='first')/(length(k)+1)
 
                 #
                 # Fixed mu case
                 #
-                bias_adjuster = bias_adjustment_function(quantiles_of_peak_slip)
-                # Zero rate on events with 'overly high' peak slip
-                bias_adjuster = bias_adjuster * (allowed_peak_slip[k] >= event_peak_slip[k])
+                bias_adjuster = rep(0, length(k))
+                acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
+                if(length(acceptable_k) > 0){
+                    k2 = k[acceptable_k]
+                    quantiles_of_peak_slip = rank(event_peak_slip[k2], ties.method='first')/(length(k2)+1)
+                    bias_adjuster[acceptable_k] = bias_adjustment_function(quantiles_of_peak_slip)
+                }
+
                 # Normalise so it sums to 1
                 sba = sum(bias_adjuster)
                 if(sba > 0){
@@ -1160,9 +1169,13 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 #
                 # Variable mu case
                 #
-                bias_adjuster = bias_adjustment_function_variable_mu(quantiles_of_peak_slip)
-                # Zero rate on events with overly high peak slip
-                bias_adjuster = bias_adjuster * (allowed_peak_slip[k] >= event_peak_slip[k])
+                bias_adjuster = rep(0, length(k))
+                acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
+                if(length(acceptable_k) > 0){
+                    k2 = k[acceptable_k]
+                    quantiles_of_peak_slip = rank(event_peak_slip[k2], ties.method='first')/(length(k2)+1)
+                    bias_adjuster[acceptable_k] = bias_adjustment_function_variable_mu(quantiles_of_peak_slip)
+                }
                 # Normalise so it sums to 1
                 sba = sum(bias_adjuster)
                 if(sba > 0){
