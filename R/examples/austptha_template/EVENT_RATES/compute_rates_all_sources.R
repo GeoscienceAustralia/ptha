@@ -75,14 +75,14 @@ bird2003_env = event_conditional_probability_bird2003_factory(
 
 
 #' Function to evaluate the rates for a given source-zone. This function returns
-#' it's environment, so we have easy access to key variables. 
+#' an environment, so we have easy access to key variables. 
 #'
-#' This version uses a low-memory-demand "mock" if the
+#' This is a 'wrapper' function which uses a low-memory-demand "mock" if the
 #' sourcezone_parameters_row$row_weight == 0. This saves time/memory when source-zones
 #' have been replaced with others using the 'row_weight=0' approach.
 #'
-#' @param sourcezone_parameters_row row from sourcezone_parameters table
-#' @param unsegmented_edge_rate_multiplier Factor by which we increase the
+#' @param sourcezone_parameters_row data.frame a single row from sourcezone_parameters table
+#' @param unsegmented_edge_rate_multiplier a constant, by which we increase the
 #'   conditional probability of ruptures on the edge of the source-zone. Used to
 #'   make the spatial distribution of moment release on the source better
 #'   approximate the desired value. If NULL, it is computed, or ignored (see
@@ -110,10 +110,10 @@ source_rate_environment_fun<-function(sourcezone_parameters_row, unsegmented_edg
 #' Function to evaluate the rates for a given source-zone. This function returns
 #' it's environment, so we have easy access to key variables.
 #'
-#' This is the main workhorse function. 
+#' This is the main workhorse function, used when (row_weight != 0)
 #'
-#' @param sourcezone_parameters_row row from sourcezone_parameters table
-#' @param unsegmented_edge_rate_multiplier Factor by which we increase the
+#' @param sourcezone_parameters_row data.frame a single row from sourcezone_parameters table
+#' @param unsegmented_edge_rate_multiplier constant by which we increase the
 #'   conditional probability of ruptures on the edge of the source-zone. Used to
 #'   make the spatial distribution of moment release on the source better
 #'   approximate the desired value. If NULL, it is computed, or ignored (see
@@ -230,6 +230,9 @@ source_rate_environment_fun_standard<-function(sourcezone_parameters_row, unsegm
         n=nbins*config$coupling_subsampling_increase)$y)
     # Discretize the probabilities as a uniform distribution (NOT log-uniform!)
     # This choice will ensure the numerical derivatives are constant (i.e. uniform density)
+    # On the other hand, the discretization will lead to a small numerical difference between
+    # the mean coupling, and the mean of a uniform distribution -- although this 'converges away' in
+    # the limit of nbins-->Inf
     bin_size = sourcepar$coupling
     sourcepar$coupling_p = bin_size/sum(bin_size)
 
@@ -335,7 +338,7 @@ source_rate_environment_fun_standard<-function(sourcezone_parameters_row, unsegm
         #
         #
         # FIXME: The logic below only works for pure thrust (rake = 90), or pure
-        # normal (rake = -90)
+        # normal (rake = -90). This is OK for PTHA18 but might need to be generalised in future
         stopifnot(all(bird2003_env$unit_source_tables[[source_name]]$rake %in% c(-90, 90)))
 
         if(bird2003_env$unit_source_tables[[source_name]]$rake[1] == -90){
@@ -1545,131 +1548,14 @@ abline(h=c(1,1/10, 1/100, 1/1000, 1/10000, 1/100000, 1/1000000), col='orange',
 
 dev.off()
 
-## #
-## # Write to netcdf with a sourcezone specific approach
-## #
-## sourcenames = sourcezone_parameters$sourcename
-## unique_sourcenames = unique(sourcenames)
-## for(i in 1:length(unique_sourcenames)){
-##     # When ruptures include segmentation, we need to integrate multiple source_envs
-##     k = which(sourcenames == unique_sourcenames[[i]])
-## 
-##     # Extract key data for all segments
-##     segment_altb = list() # all logic tree branches
-##     segment_event_cond_prob = list()
-##     segment_event_Mw = list()
-##     segment_row_weight = list()
-##     for(j in 1:length(k)){
-##         kj = k[j]
-##         segment_altb[[j]] = source_envs[[kj]]$mw_rate_function(NA, 
-##             return_all_logic_tree_branches=TRUE)
-##         segment_event_cond_prob[[j]] = source_envs[[kj]]$event_conditional_probabilities
-##         segment_event_Mw[[j]] = source_envs[[kj]]$event_table$Mw
-##         segment_row_weight[[j]] = source_envs[[kj]]$sourcezone_parameters_row$row_weight
-## 
-##         # Mw values should be consistent
-##         stopifnot( all(segment_event_Mw[[j]] == segment_event_Mw[[1]]) )
-##         stopifnot( length(segment_event_cond_prob[[j]]) == length(segment_event_cond_prob[[1]]) )
-##     }
-## 
-##     mw_events = sort(unique(segment_event_Mw[[1]]))
-##     mw_bin_lower = mw_events - config$dMw/2
-##     mw_bin_upper = mw_events + config$dMw/2
-## 
-##     source_event_rates_mean = segment_event_cond_prob[[1]]*0
-##     source_event_rates_upper_CI = segment_event_cond_prob[[1]]*0
-##     source_event_rates_lower_CI = segment_event_cond_prob[[1]]*0
-## 
-##     # Loop over Mw bins defining event magnitudes
-##     for(m in 1:length(mw_events)){
-##         # Indices of events with Mw == mw_events[j] (identical for all segments, as checked above)
-##         evnts = which(segment_event_Mw[[1]] == mw_events[m])
-## 
-##         # Loop over every segment and get rate-vs-probability curve for the m'th mw_bin
-##         rate_vs_prob_sorted = list()
-##         for(j in 1:length(segment_altb)){
-##             # For every logic tree branch, get the rate of events in [
-##             # mw_bin_lower[m], mw_bin_upper[m] ]
-##             logic_tree_rate_in_bin = apply(segment_altb[[j]]$all_rate_matrix, 1, 
-##                 f<-function(x){
-##                      diff(approx(segment_altb[[j]]$Mw_seq, x, xout=c(mw_bin_upper[m], mw_bin_lower[m]))$y)
-##                      }
-##             )
-## 
-##             # Probability of each logic tree branch (assuming the segment is 'true')
-##             logic_tree_prob = segment_altb[[j]]$all_par_prob
-## 
-##             rate_order = order(logic_tree_rate_in_bin)
-##             # Make a rate-vs-prob curve
-##             r1 = logic_tree_rate_in_bin[rate_order]
-##             p1 = logic_tree_prob[rate_order]
-##             p1_cumsum = cumsum(p1)
-##             rate_vs_prob_sorted[[j]] = list(r1=r1, p1=p1, p1_cumsum=p1_cumsum)
-##         }
-## 
-##         for(e in evnts){
-##             # Conditional probability of the event on this segment (given
-##             # that an event of the same Mw occurred)
-##
-##             # Idea: Compute a bound on the upper and lower probability quantiles for the summed rates,
-##             # given we don't know the dependence structure
-##             robust_quantile<-function(alphas, in_segment = c(2,3), e = 54, alpha=0.95, type='upper'){
-##                
-##                 la = length(in_segment) #end-start+1
-##
-##                 # Compute the last alpha value from the provided alpha values,
-##                 # to ensure sum( 1 - all_alphas) = (1 - alpha)
-##
-##                 stopifnot(length(alphas) == (la-1))
-##
-##                 scaler = 1
-##
-##                 all_alphas = c(alphas, 0)
-##                 if(type=='upper'){
-##                     all_alphas[la] = 1 - ( (1-alpha) - sum( 1-alphas[1:(la-1)]))
-##                 }else if(type == 'lower'){
-##                     all_alphas[la] = alpha - sum(alphas[1:(la-1)])
-##                 }else{
-##                     stop('Incorrect value of "type"')
-##                 }
-##                
-##                 if(any(all_alphas > 1 | all_alphas < 0)) return(Inf)
-##
-##                 ks = rep(NA, la)
-##                 indiv_rates = rep(NA, la)
-##                 for(i in 1:la){
-##                     si = in_segment[i]
-##                     p1_cs = rate_vs_prob_sorted[[si]]$p1_cumsum
-##                     ks[i] = sum(p1_cs < all_alphas[i])
-##                     if(ks[i] > 0){
-##                         secp = segment_event_cond_prob[[si]][e]
-##                         indiv_rates[i] = rate_vs_prob_sorted[[si]]$r1[ks[i]] * secp
-##                     }else{
-##                         indiv_rates[i] = 0
-##                     }
-##                 } 
-##
-##                 return(sum(indiv_rates))
-##
-##             }
-##             ##
-##             ## Bound on 0.95 quantile
-##             # optimize(robust_quantile, lower=0.95, upper=1, alpha=0.95, in_segment=c(2,3), type='upper', maximum=FALSE)
-##             ## Bound on 0.025 quantile
-##             # optimize(robust_quantile, lower=0., upper=0.025, alpha=0.025, in_segment=c(2,3), type='lower', maximum=TRUE)
-##         } 
-##     }
-## }
+
+
 
 
 #
-# Insert a test here, to confirm that rates are written to all files?
+# Save the image and plot the implied convergence rates
 #
 
-
-#
-#
-#
 save.image('compute_rates_all_sources_session.RData')
 
 if(config$edge_correct_event_rates){
@@ -1736,7 +1622,8 @@ if(FALSE){
 
     #
     # Moment rate on sources with outer-rise. This was used to correct the originally estimated
-    # moment rates on outer-rise sources (which were too low)
+    # moment rates on outer-rise sources {which used the '0.45%' result in
+    # Sleep (2012), and were clearly too low}
     thrust_sources = c('sunda', 'kermadectonga', 'puysegur', 'newhebrides', 'timortrough', 'solomon')
     for(i in 1:length(thrust_sources)){
         uss = bird2003_env$unit_source_tables[[thrust_sources[i]]]

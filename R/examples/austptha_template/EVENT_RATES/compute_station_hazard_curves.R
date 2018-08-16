@@ -105,7 +105,6 @@ check_if_file_is_ok<-function(uniform_slip_tsunami_file){
     return(file_ok)
 }
 
-
 #'
 #' Get stage exceedance rates based on a file with tsunami peak-stages and rates
 #' for each event
@@ -122,6 +121,54 @@ check_if_file_is_ok<-function(uniform_slip_tsunami_file){
 #'   stage_seq, for each gauge.
 #'
 source_zone_stage_exceedance_rates<-function(
+    tsunami_file, 
+    gauge_points, 
+    point_chunk_size, 
+    stage_seq){
+
+    # Check to see if all the rates are zero. If they are, then make a quick exit
+    fid_rates = nc_open(gsub('_tsunami', '', tsunami_file), readunlim=FALSE)
+    event_rate = ncvar_get(fid_rates, 'rate_annual')
+    variable_mu_event_rate = ncvar_get(fid_rates, 'variable_mu_rate_annual')
+    nc_close(fid_rates)
+
+    if(all(event_rate == 0) & all(variable_mu_event_rate == 0)){
+        # Quick exit without using too much memory
+        source_zone_stage_exceedance_rates_for_zero_rate_sources(
+            tsunami_file, 
+            gauge_points,
+            point_chunk_size,
+            stage_seq)
+    }else{
+        # Standard case
+        output = source_zone_stage_exceedance_rates_standard(
+            tsunami_file, 
+            gauge_points,
+            point_chunk_size,
+            stage_seq)
+    }
+
+    return(output)
+}
+
+#'
+#' Get stage exceedance rates based on a file with tsunami peak-stages and rates
+#' for each event
+#'
+#' This is the main workhorse function
+#' 
+#' @param tsunami_file netcdf filename with tsunami max_stage / rates, for
+#'     every gauge and event
+#' @param gauge_points data.frame with gauge coordinates and elevation
+#' @param point_chunk_size Number of gauges for which we read max_stage
+#'     simultaneously
+#' @param stage_seq stages at which we return the integrated exceedance rate
+#' @return A list with 3 arrays, each having dim=c(length(stage_seq),
+#'   length(gauge_points[,1])). The 3 arrays give the rate values(1), and
+#'   upper(2) and lower(3) credible intervals for the rates, for each stage in
+#'   stage_seq, for each gauge.
+#'
+source_zone_stage_exceedance_rates_standard<-function(
     tsunami_file, 
     gauge_points, 
     point_chunk_size, 
@@ -370,6 +417,35 @@ source_zone_stage_exceedance_rates<-function(
         variable_mu_rates_median = variable_mu_output_rates_median,
         variable_mu_rates_16pc = variable_mu_output_rates_16pc,
         variable_mu_rates_84pc = variable_mu_output_rates_84pc)
+
+    return(output)
+}
+
+#' This is a 'quick-exit' version of the function above
+#'
+#'
+source_zone_stage_exceedance_rates_for_zero_rate_sources<-function(
+    tsunami_file, 
+    gauge_points, 
+    point_chunk_size, 
+    stage_seq){
+
+    lgp = length(gauge_points[,1])
+    zero_rate_matrix = matrix( 0, nrow=stage_seq_len, ncol=lgp )
+
+    output = list(
+        rates = zero_rate_matrix, 
+        rates_upper_ci = zero_rate_matrix, 
+        rates_lower_ci = zero_rate_matrix,
+        rates_median = zero_rate_matrix,
+        rates_16pc = zero_rate_matrix,
+        rates_84pc = zero_rate_matrix,
+        variable_mu_rates = zero_rate_matrix, 
+        variable_mu_rates_upper_ci = zero_rate_matrix, 
+        variable_mu_rates_lower_ci = zero_rate_matrix,
+        variable_mu_rates_median = zero_rate_matrix,
+        variable_mu_rates_16pc = zero_rate_matrix,
+        variable_mu_rates_84pc = zero_rate_matrix)
 
     return(output)
 }
