@@ -235,7 +235,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
             bias_adjuster_vary_mu<-function(x) 1 + x*0
 
             # For now, just skip this, so that we don't need to find the peak
-            # slip limit (which requires looking at shear modulus)
+            # slip limit (which requires looking at shear modulus and scaling relation)
             next
         }
 
@@ -244,8 +244,7 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
 
             k = which(uniform_event_row == uuer)
     
-            # FIXME: Generalise this to treat normal faults / non-Strasser
-            # scaling relations.
+            # FIXME: Generalise this to treat normal faults / non-Strasser scaling relations.
             # Currently we are skipping that case (see use of 'next' above)
             allowed_peak_slip = peak_slip_limit_factor * slip_from_Mw(event_Mw[k], mu=3e+10, relation='Strasser')
 
