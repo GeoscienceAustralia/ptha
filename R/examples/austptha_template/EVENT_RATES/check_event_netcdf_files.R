@@ -286,7 +286,6 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
                 stop(paste0('issue with bias adjustment variable mu ', uuer))
             }
         }
-        
     }
 
     for(i in 1:length(fids)) nc_close(fids[[i]])
