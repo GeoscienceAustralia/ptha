@@ -1144,6 +1144,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             for(euer in names_nevents){
                 k = which(event_uniform_event_row == euer) 
                 bias_adjuster = rep(0, length(k))
+                # Same peak_slip criterion for both fixed-and-variable shear-modulus
                 acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
 
                 #
@@ -1167,8 +1168,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 #
                 bias_adjuster = bias_adjuster * 0
                 if(length(acceptable_k) > 0){
-                    k2 = k[acceptable_k]
-                    quantiles_of_peak_slip = rank(event_peak_slip[k2], ties.method='first')/(length(k2)+1)
+                    # quantiles_of_peak_slip already defined above
                     bias_adjuster[acceptable_k] = bias_adjustment_function_variable_mu(quantiles_of_peak_slip)
                 }
                 # Normalise so it sums to 1
