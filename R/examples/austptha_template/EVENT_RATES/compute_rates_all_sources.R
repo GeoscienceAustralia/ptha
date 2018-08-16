@@ -870,6 +870,10 @@ source_rate_environment_fun_row_weight_zero<-function(
     # Rake
     target_rake = bird2003_env$unit_source_tables[[source_name]]$rake[1]
 
+    # Edge multiplier
+    best_edge_mult = list()
+    best_edge_mult$minimum = 0
+
     #
     # Get the event table. 
     #
@@ -1257,10 +1261,23 @@ if(config$MC_CORES > 1){
     # Parallel run
     library(parallel)
     if(length(unseg) > 0){
-        # FIXME: Consider replacing with clusterMap, since the 'mc' functions
-        # have trouble shutting down workers on NCI
-        source_envs[unseg] = mclapply(as.list(1:length(source_segment_names))[unseg], parfun, 
+
+        # For better load balancing, split up sources with row_weight>0 and row_weight=0
+        unseg_row_weight_zero = which(sourcezone_parameters$segment_name == '' & sourcezone_parameters$row_weight==0)
+        unseg_row_weight_nonzero = which(sourcezone_parameters$segment_name == '' & sourcezone_parameters$row_weight!=0)
+
+        # FIXME: Consider replacing the following mclapply with clusterMap,
+        # since the 'mc' functions have trouble shutting down workers on NCI
+
+        # The following does the 'heavy computation'
+        source_envs[unseg_row_weight_nonzero] = mclapply(
+            as.list(1:length(source_segment_names))[unseg_row_weight_nonzero], parfun, 
             mc.cores=config$MC_CORES, mc.cleanup=9L)
+        # The following does a quick, shortcut computation
+        source_envs[unseg_row_weight_zero] = mclapply(
+            as.list(1:length(source_segment_names))[unseg_row_weight_zero], parfun, 
+            mc.cores=config$MC_CORES, mc.cleanup=9L)
+
     }
 }else{
     # Serial run
@@ -1292,11 +1309,26 @@ if(config$MC_CORES > 1){
     # Parallel run
 
     if(length(seg) > 0){
-        # FIXME: Consider replacing with clusterMap, since the 'mc' functions
-        # have trouble shutting down workers on NCI
-        source_envs[seg] = mcmapply(parfun, 
-            i = as.list(1:length(source_segment_names))[seg], 
-            unsegmented_edge_rate_multiplier=unsegmented_edge_rate_multiplier[seg], 
+
+
+        # Split the heavy/light computations for better load balance
+        seg_zero_row_weight = which(sourcezone_parameters$segment_name != '' & sourcezone_parameters$row_weight == 0)
+        seg_nonzero_row_weight = which(sourcezone_parameters$segment_name != '' & sourcezone_parameters$row_weight != 0)
+
+        # FIXME: Consider replacing the mcmapply calls below with clusterMap,
+        # since the 'mc' functions have trouble shutting down workers on NCI
+
+        # Heavy computations grouped together for load balance
+        source_envs[seg_nonzero_row_weight] = mcmapply(parfun, 
+            i = as.list(1:length(source_segment_names))[seg_nonzero_row_weight], 
+            unsegmented_edge_rate_multiplier=unsegmented_edge_rate_multiplier[seg_nonzero_row_weight], 
+            SIMPLIFY=FALSE,
+            mc.cores=config$MC_CORES, mc.cleanup=9L)
+
+        # Quick-exit computations
+        source_envs[seg_zero_row_weight] = mcmapply(parfun, 
+            i = as.list(1:length(source_segment_names))[seg_zero_row_weight], 
+            unsegmented_edge_rate_multiplier=unsegmented_edge_rate_multiplier[seg_zero_row_weight], 
             SIMPLIFY=FALSE,
             mc.cores=config$MC_CORES, mc.cleanup=9L)
     }
