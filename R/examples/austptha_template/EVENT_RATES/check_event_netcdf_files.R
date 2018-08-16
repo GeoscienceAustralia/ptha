@@ -243,15 +243,22 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
         for(uuer in unique_uniform_event_row){
 
             k = which(uniform_event_row == uuer)
-            quantiles = rank(peak_slip[k], ties='first')/(length(k)+1)
-
-            expected_ratios_fixed_mu = bias_adjuster_fixed_mu(quantiles)
-            expected_ratios_vary_mu = bias_adjuster_vary_mu(quantiles)
-
+    
+            # FIXME: Generalise this to treat normal faults / non-Strasser
+            # scaling relations.
             # Currently we are skipping that case (see use of 'next' above)
             allowed_peak_slip = peak_slip_limit_factor * slip_from_Mw(event_Mw[k], mu=3e+10, relation='Strasser')
-            expected_ratios_fixed_mu = expected_ratios_fixed_mu * (peak_slip[k] <= allowed_peak_slip)
-            expected_ratios_vary_mu = expected_ratios_vary_mu * (peak_slip[k] <= allowed_peak_slip)
+
+            allowed_k = which(peak_slip[k] <= allowed_peak_slip)
+            expected_ratios_fixed_mu = rep(0, length(k))
+            expected_ratios_vary_mu = rep(0, length(k))
+            if(length(allowed_k) > 0){
+                k2 = k[allowed_k]
+                quantiles = rank(peak_slip[k2], ties='first')/(length(k2)+1)
+
+                expected_ratios_fixed_mu[allowed_k] = bias_adjuster_fixed_mu(quantiles)
+                expected_ratios_vary_mu[allowed_k] = bias_adjuster_vary_mu(quantiles)
+            }
 
             overall_rate_fixed_mu = sum(event_rate[k])
             overall_rate_vary_mu = sum(event_rate_mu_vary[k])
