@@ -1091,8 +1091,6 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 sba = sum(bias_adjuster)
                 if(sba > 0){
                     bias_adjuster = bias_adjuster/sba
-                }else{
-                    bias_adjuster = 0*bias_adjuster
                 }
                 event_bias_adjustment[k] = bias_adjuster
 
@@ -1161,15 +1159,13 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 sba = sum(bias_adjuster)
                 if(sba > 0){
                     bias_adjuster = bias_adjuster/sba
-                }else{
-                    bias_adjuster = 0*bias_adjuster
                 }
                 event_bias_adjustment[k] = bias_adjuster
 
                 #
                 # Variable mu case
                 #
-                bias_adjuster = rep(0, length(k))
+                bias_adjuster = bias_adjuster * 0
                 acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
                 if(length(acceptable_k) > 0){
                     k2 = k[acceptable_k]
@@ -1180,8 +1176,6 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 sba = sum(bias_adjuster)
                 if(sba > 0){
                     bias_adjuster = bias_adjuster/sba
-                }else{
-                    bias_adjuster = 0*bias_adjuster
                 }
                 event_bias_adjustment_variable_mu[k] = bias_adjuster
 
