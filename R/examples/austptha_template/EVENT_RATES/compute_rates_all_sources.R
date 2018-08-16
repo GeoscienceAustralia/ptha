@@ -1143,12 +1143,12 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
             # Compute the weights
             for(euer in names_nevents){
                 k = which(event_uniform_event_row == euer) 
+                bias_adjuster = rep(0, length(k))
+                acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
 
                 #
                 # Fixed mu case
                 #
-                bias_adjuster = rep(0, length(k))
-                acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
                 if(length(acceptable_k) > 0){
                     k2 = k[acceptable_k]
                     quantiles_of_peak_slip = rank(event_peak_slip[k2], ties.method='first')/(length(k2)+1)
@@ -1166,7 +1166,6 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 # Variable mu case
                 #
                 bias_adjuster = bias_adjuster * 0
-                acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
                 if(length(acceptable_k) > 0){
                     k2 = k[acceptable_k]
                     quantiles_of_peak_slip = rank(event_peak_slip[k2], ties.method='first')/(length(k2)+1)
