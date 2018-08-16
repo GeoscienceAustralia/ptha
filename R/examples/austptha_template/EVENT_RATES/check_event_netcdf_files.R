@@ -7,6 +7,9 @@ library(rptha)
 config = new.env()
 source('config.R', local=config)
 
+# Get the uniquely defined peak_slip_limit_factor
+source('peak_slip_limit_factor.R', local=TRUE)
+
 check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file, 
     variable_uniform_slip_tsunami_file, rates_should_be_zero=FALSE){
 
@@ -124,7 +127,11 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
                 newvar_vals = ncvar_get(fids[[nme]], newvar)
                 # Since the values should be ordered by Mw, and the quantiles
                 # are initially defined in terms of exceedance rates, a
-                # cumulative sum of the rates should retain ordering.
+                # cumulative sum of the rates should retain ordering. Note that
+                # it is not ALWAYS true that the individual rates retain ordering, 
+                # since they are related to the 'derivative of the quantiles', which
+                # is not necessarily ordered in the same way as the quantiles themselves
+                # (although that is often true)
                 n1 = cumsum(rev(newvar_vals))
                 n2 = cumsum(rev(oldvar_vals))
                 if(!all(n1 >= n2)){
@@ -234,15 +241,15 @@ check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file,
 
         # Do the test
         for(uuer in unique_uniform_event_row){
+
             k = which(uniform_event_row == uuer)
             quantiles = rank(peak_slip[k], ties='first')/(length(k)+1)
 
             expected_ratios_fixed_mu = bias_adjuster_fixed_mu(quantiles)
             expected_ratios_vary_mu = bias_adjuster_vary_mu(quantiles)
 
-            # FIXME: Generalise this to treat normal fault cases / different mu / avoid hardcoded 7.5
             # Currently we are skipping that case (see use of 'next' above)
-            allowed_peak_slip = 7.5 * slip_from_Mw(event_Mw[k], mu=3e+10, relation='Strasser')
+            allowed_peak_slip = peak_slip_limit_factor * slip_from_Mw(event_Mw[k], mu=3e+10, relation='Strasser')
             expected_ratios_fixed_mu = expected_ratios_fixed_mu * (peak_slip[k] <= allowed_peak_slip)
             expected_ratios_vary_mu = expected_ratios_vary_mu * (peak_slip[k] <= allowed_peak_slip)
 

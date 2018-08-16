@@ -212,7 +212,8 @@ MC_CORES = 16
 
 # Exclude events with {peak_slip > peak_slip_limit_factor*mean-scaling-relation-slip}
 # Note we use the 'reference Mw' (i.e. constant shear modulus) for doing this
-peak_slip_limit_factor = 7.5 # Inf
+#peak_slip_limit_factor = 7.5 # Inf
+source('peak_slip_limit_factor.R', local=TRUE)
 
 
 peak_slip_bias_adjustment_table = read.csv('peak_slip_quantile_adjustment_factors.csv')

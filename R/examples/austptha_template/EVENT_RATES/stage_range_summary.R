@@ -11,9 +11,10 @@
 library(rptha)
 
 variable_mu = TRUE
+
 # Do not consider events with {peak_slip > peak_slip_limit_factor*mean-scaling-relation-slip}
 # Note we use the 'reference Mw' (i.e. constant shear modulus) for doing this
-peak_slip_limit_factor = 7.5 # Inf
+source('peak_slip_limit_factor.R', local=TRUE)
 
 
 #
@@ -105,7 +106,7 @@ for(i in 1:length(all_Rdata)){
     # Remove events where peak slip is too high, if required
     # This is not adapted yet for events with mu != 30
     #
-    print('Warning: Removing events with high slip assuming "reference mu" 30GPa')
+    print('Warning: Removing events with high slip assuming "reference mu" 30GPa and Strasser scaling relation')
     print('         This needs to be updated if we want to test normal faults')
     k = which(uniform_store[[i]]$peak_slip < (peak_slip_limit_factor * slip_from_Mw(uniform_store[[i]]$reference_Mw)))
     print(length(k))

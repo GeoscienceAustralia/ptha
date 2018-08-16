@@ -18,6 +18,9 @@
 #
 library(rptha)
 
+# Get the peak_slip_limit_factor
+source('peak_slip_limit_factor.R', local=TRUE)
+
 #' Extract statistics from the "corresponding family of model scenarios"
 #'
 #' This computes some summary statistics from objects made in
@@ -177,6 +180,9 @@ family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_fact
 
    
     if(peak_slip_limit_factor < Inf){
+        # FIXME: Currently this is not treating scaling relation variability or shear modulus variability
+        # This would have to happen if we were to treat normal faults, or source-zones which use other
+        # scaling relations
         k = which(peak_slip_sum < (peak_slip_limit_factor * slip_from_Mw(reference_Mw)))
         output = output[k,]
     }
@@ -191,9 +197,6 @@ family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_fact
 #
 
 variable_mu = FALSE # Manually change from TRUE/FALSE to treat each case
-# Do not consider events with {peak_slip > peak_slip_limit_factor*mean-scaling-relation-slip}
-# Note we use the 'reference Mw' (i.e. constant shear modulus) for doing this
-peak_slip_limit_factor = 7.5 # Inf
 
 # Read the Rdata 
 if(variable_mu){
