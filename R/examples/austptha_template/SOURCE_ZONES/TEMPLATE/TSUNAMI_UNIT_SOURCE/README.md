@@ -73,6 +73,9 @@ R* using:
     # are correctly ordered
     check_model_gauge_integrity()
 ```
+If there is a problem it should print out an error message. Otherwise it will
+be silent (and return NULL, which is what R does for functions that don't return
+anything).
 
 Note that this process can be run over multiple source-zones at once, by using
 the alternative script [../../checkruns.R](../../checkruns.R).

@@ -1,6 +1,6 @@
 # **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment (PTHA) results**
 
-# ***NOTE: Currently the study is incomplete, and results available here may change without warning***
+# ***NOTE: Currently the study is still in-progress, and results available here will be changed without warning.***
 
 We provide access to basic tsunami hazard information in easy-to-use csv and
 shapefile formats. This information is useful to get a high-level overview of
