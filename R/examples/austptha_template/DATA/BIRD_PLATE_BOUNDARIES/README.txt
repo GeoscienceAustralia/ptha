@@ -19,6 +19,7 @@ reformat_edited_Bird_convergence.R
     produce output in a format that is consistent with a post-processed version of Jonathan Griffin's source-zone traces. It
     also adds info where missing (for Arakan + Seram-south). See the script for further information & justifications.
 
+
 combine_traces.R
 -----------------
     This merges the intermediate datasets made above.   
@@ -26,6 +27,7 @@ combine_traces.R
     Note not all intermediate datasets are included in the repository (to
     reduce file size). However, sourcezone_traces_table_merged_uncorrected.csv is the
     'final' output of that script
+
 
 fix_outer_rise_rates.R
 -----------------------
