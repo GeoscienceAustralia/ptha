@@ -18,8 +18,15 @@
 #
 library(rptha)
 
+# INPUT PARAMETER
+variable_mu = FALSE # Manually change from TRUE/FALSE to treat each case
+# END INPUT
+
+# Get the *.Rdata files that compare models and data
+source('config_DART_test_files.R', local=TRUE)
+
 # Get the peak_slip_limit_factor
-source('peak_slip_limit_factor.R', local=TRUE)
+source('config_peak_slip_limit_factor.R', local=TRUE)
 
 #' Extract statistics from the "corresponding family of model scenarios"
 #'
@@ -195,23 +202,6 @@ family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_fact
 # Main script here
 #
 #
-
-variable_mu = FALSE # Manually change from TRUE/FALSE to treat each case
-
-# Read the Rdata 
-if(variable_mu){
-    all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*varyMu.Rdata')
-}else{
-    all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*[0-9].Rdata')
-}
-
-# Remove some 'other comparison events' that we did, which do not form part of a systematic sample.
-# This does not have a significant affect on the results, but by removing them we have a 
-# 'clean' definition of how events were selected for the comparison (i.e. all
-# Mw >= 7.7 thrust that were in our source-zones and had DART data, 2006-2016).  
-print(paste0(' Remove the normal fault Mw 7.7 from Kermadec, and the 7.65, so that \n',
-    ' we consistently examine thrust-like events that are above Mw 7.7 by GCMT. '))
-all_Rdata = all_Rdata[-c(3,8)]
 
 # Store the statistics in a list (one entry per historical event)
 uniform_stat = vector(mode='list', length=length(all_Rdata))

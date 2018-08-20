@@ -11,22 +11,14 @@
 library(rptha)
 
 variable_mu = TRUE
+source('config_DART_test_files.R', local=TRUE)
 
 # Do not consider events with {peak_slip > peak_slip_limit_factor*mean-scaling-relation-slip}
 # Note we use the 'reference Mw' (i.e. constant shear modulus) for doing this
-source('peak_slip_limit_factor.R', local=TRUE)
+source('config_peak_slip_limit_factor.R', local=TRUE)
 
 
-#
-# Get a vector with the Rdata files produced by running
-# ../SOURCE_ZONES/sourcezone/TSUNAMI_EVENTS/plots/gauge_summary_statistics.R
-# for each of the historical comparison events
-#
-if(variable_mu){
-    all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*varyMu.Rdata')
-}else{
-    all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*[0-9].Rdata')
-}
+
 
 uniform_store = list()
 stochastic_store = list()
@@ -313,24 +305,17 @@ for(i in 1:length(stoc_fit)){
 }
 dev.off()
 
-# Record events to remove {GCMT Mw < 7.7}. Nice because the sample becomes 'the
-# whole population of events > Mw 7.7 at DART 2007-2015' bar some aftershocks. 
-# Otherwise, we include a few Mw GCMT 7.6's, which were opportunistically included
-# because they were near Australia. Qualitative message is the same either way.
-nk = c(3, 8)
-stopifnot(grepl('kermadectonga_tonga_2009_03_19', all_Rdata[nk[1]]))
-stopifnot(grepl('outerrise_kermadectonga_2011_07_06', all_Rdata[nk[2]]))
 # Just looking at these small samples, we see for unif and vary_unif, much
 # of the distribution is above 50% (corresponding to model underestimation)
 # ks.test seems too weak to distinguish this -- recall it is well known to
 # not have much tail influence. But the Anderson-Darling test
 # (which involves tail weighting) does better. 
 library(ADGofTest)
-unif_ad = ad.test(unif_fit[-nk], punif)
+unif_ad = ad.test(unif_fit, punif)
 unif_ad
-vary_unif_ad = ad.test(vary_unif_fit[-nk], punif)
+vary_unif_ad = ad.test(vary_unif_fit, punif)
 vary_unif_ad
-stoc_ad = ad.test(stoc_fit[-nk], punif)
+stoc_ad = ad.test(stoc_fit, punif)
 stoc_ad
 
 # Plot the distribution of stoc_fit/unif_fit/vary_unif_fit should be very close
@@ -342,15 +327,15 @@ if(variable_mu){
     pdf('Null_hypothesis_test.pdf', width=10, height=3)
 }
 par(mfrow=c(1,3))
-hist(unif_fit[-nk], col='blue', 
+hist(unif_fit, col='blue', 
     main='F(S) over all events, uniform slip fixed size', 
     xlab='F(s)', xlim=c(0,1), ylim=c(0, 6))
 text(0.3, 5, paste0('p = ', signif(unif_ad$p.value, 3)), cex=2.0) 
-hist(vary_unif_fit[-nk], col='green', 
+hist(vary_unif_fit, col='green', 
     main='F(S) over all events, uniform slip stoch. size', 
     xlab='F(s)', xlim=c(0,1), ylim=c(0,6))
 text(0.3, 5, paste0('p = ', signif(vary_unif_ad$p.value, 3)), cex=2.0) 
-hist(stoc_fit[-nk], col='red', 
+hist(stoc_fit, col='red', 
     main='F(S) over all events, heterogeneous slip', 
     xlab='F(s)', xlim=c(0,1), ylim=c(0,6))
 text(0.2, 5, paste0('p = ', signif(stoc_ad$p.value, 3)), cex=2.0)
@@ -369,15 +354,15 @@ dev.off()
 run_random_test<-function(i){
     null_stoc_fit = unlist(lapply(stochastic_store, 
         f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
-    p_store_stoc = ad.test(null_stoc_fit[-nk], punif)$p.value
+    p_store_stoc = ad.test(null_stoc_fit, punif)$p.value
 
     null_unif_fit = unlist(lapply(uniform_store, 
         f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
-    p_store_unif = ad.test(null_unif_fit[-nk], punif)$p.value
+    p_store_unif = ad.test(null_unif_fit, punif)$p.value
 
     null_vary_unif_fit = unlist(lapply(variable_uniform_store, 
         f<-function(x) score_gauge(x, fake_data_by_perturbing_random_model=TRUE)))
-    p_store_vary_unif = ad.test(null_vary_unif_fit[-nk], punif)$p.value
+    p_store_vary_unif = ad.test(null_vary_unif_fit, punif)$p.value
 
     return(list(p_store_stoc=p_store_stoc, p_store_unif=p_store_unif, 
         p_store_vary_unif=p_store_vary_unif))
@@ -397,101 +382,3 @@ mean(p_store_stoc < 0.05) # We want a 5% chance of being below 0.05 by chance #a
 mean(p_store_unif < 0.05) # We want a 5% chance of being below 0.05 by chance #ad.test(p_store_unif, punif)
 mean(p_store_vary_unif < 0.05) # We want a 5% chance of being below 0.05 by chance #ad.test(p_store_vary_unif, punif)
 
-#
-# Make some plots. They use hard-coded Mw values and will break with
-# file-changes, so wrap inside if(FALSE)
-#
-if(FALSE){
-
-    #
-    # How does the coverage statistic vary with Mw?
-    #
-    png('coverage_statistic_vs_mw.png', width=8, height=7, units='in', res=200)
-    mws = c(8.1, 8, 7.7, 8.3, 9.1, 7.9, 7.8, 7.6, 7.8, 8.1, 7.8, 8.8, 8.0, 7.8, 8.2, 8.3, 7.8, 7.9, 8.5, 7.8)
-
-    par(mfrow=c(2,2))
-    plot(mws, stoc_fit, col='red', pch=19, ylim=c(0,1), main='Coverage statistic vs Mw \n for each model type')
-    points(mws, vary_unif_fit, col='green', pch=19)
-    points(mws, unif_fit, col='blue', pch=19)
-    grid(); abline(h=0.5)
-
-    plot(mws, stoc_fit - vary_unif_fit, main='Stochastic - variable uniform'); abline(h=0); grid()
-    plot(mws, stoc_fit - unif_fit, main='Stochastic - uniform'); abline(h=0); grid()
-    plot(mws, vary_unif_fit - unif_fit, main='Variable uniform - uniform'); abline(h=0); grid()
-
-    dev.off()
-
-    #
-    # Quick look at 'high magnitude' events
-    #
-    k = which(mws >= 8.3)
-    stoc_fit[k]
-    vary_unif_fit[k]
-    unif_fit[k]
-
-    #
-    # Question: Is the sd of log(stage-range) increasing with magnitude? 
-    #
-    # We might want this quantity to be 'fairly stable' with Mw, otherwise, if
-    # it were increasing with Mw, it might suggest artefacts associated with
-    # resolving more and more variability with Mw
-    #
-    sd_log_stagerange_stochastic = lapply(stochastic_store, f<-function(x) apply(log10(x$model), 2, sd)) 
-    names(sd_log_stagerange_stochastic) = mws
-    sd_log_stagerange_variable_uniform = lapply(variable_uniform_store, f<-function(x) apply(log10(x$model), 2, sd)) 
-    names(sd_log_stagerange_variable_uniform) = mws
-    sd_log_stagerange_uniform = lapply(uniform_store, f<-function(x) apply(log10(x$model), 2, sd)) 
-    names(sd_log_stagerange_uniform) = mws
-    # Doesn't seem to be a difference in the variance of variable_uniform or stochastic 
-    summary(unlist(lapply(sd_log_stagerange_stochastic, median)))
-    summary(unlist(lapply(sd_log_stagerange_variable_uniform, median)))
-    summary(unlist(lapply(sd_log_stagerange_uniform, median)))
-
-    # This figure illustrates the above points
-    png('mean_sd_log_stage_range_vs_Mw.png', width=15, height=6, units='in', res=200)
-    par(mfrow=c(1,2))
-    plot(range(mws), c(0.05, 0.55), col=0, xlab='Mw', ylab='sd(log10(stage-range))',
-        main='Mw vs sd(log10(stage-range)) at each DART \n Note similar variation of stochastic and variable-uniform')
-    for(i in 1:length(sd_log_stagerange_stochastic)){
-        x = sd_log_stagerange_stochastic[[i]]
-        points(mws[i] + 0*x, x, col='red', cex=0.5)
-        x = sd_log_stagerange_variable_uniform[[i]]
-        points(mws[i] + 0*x, x, col='green', cex=0.5)
-        x = sd_log_stagerange_uniform[[i]]
-        points(mws[i] + 0*x, x, col='blue', cex=0.5)
-    }
-
-    #
-    # Above, we find that the 'spread' of model results is similar for stochastic and variable uniform
-    # However the differences in coverage imply the means clearly differ
-    # Do they differ systematically with Mws? We might expect at low Mw, both approaches are similar 
-    # due to resolution issues, while at higher Mw, stochastic starts to resolve peaks better (and they
-    # might matter more as well, given the implicit smoothing of Okada/Kajiura at smaller spatial scales) 
-    #
-    if(variable_mu == TRUE) stop('The plot below will fail because variable mu cases might not have the same number of events')
-
-    median_stochastic_vs_variable_uniform = mws*NA
-    for(i in 1:length(mws)) median_stochastic_vs_variable_uniform[i] = median(stochastic_store[[i]]$model/variable_uniform_store[[i]]$model)
-    plot(mws, median_stochastic_vs_variable_uniform, xlab='Mw', ylab='Median(stochastic/variable_uniform)', 
-        main='Median(stochastic/variable_uniform) vs Mw. \n The increase with Mw seems consistent with resolution effects \n A factor 1.3 = 10^0.12, corresponds to a shift of about 0.5_x_the_logSD')
-    abline(h=1.3, col='red'); grid()
-    
-    dev.off()
-
-    #
-    # Summary: 
-    #          Stochastic has similar log10 variability to variable-uniform (log10 sd ~ 0.24), but has a higher median (about 1.3-1.4x, ignoring low Mw where resolution is low)
-    #
-    #          Fixed-size-uniform-slip has lower log10 variability than the other models, at least once we have enough resolution
-    #
-    #          The variability of log10-stage does not show increasing patterns with Mw in any models -- if anything it decreases, 
-    #          presumably because geometric effects (like occurring under land) become less significant
-    #
-    #          Overall, these results DO NOT suggest strong artefacts associated with increases in Mw, such as strongly increasing variability or mean in the stochastic model.
-    #          There is some increase in 'median(stochastic / variable-uniform)' with Mw, but it seems consistent with 'resolving stochastic slip', 
-    #          and not so great as to be of strong concern (i.e. difference corresponds to a fraction of a log-standard-deviation)
-
-    #
-    # NEXT: 
-    #        How do the statistical properties of 'good' solutions compare with the statistical properties of 'all' solutions?
-}

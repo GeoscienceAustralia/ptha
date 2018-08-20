@@ -8,7 +8,7 @@ config = new.env()
 source('config.R', local=config)
 
 # Get the uniquely defined peak_slip_limit_factor
-source('peak_slip_limit_factor.R', local=TRUE)
+source('config_peak_slip_limit_factor.R', local=TRUE)
 
 check_source<-function(uniform_slip_tsunami_file, stochastic_slip_tsunami_file, 
     variable_uniform_slip_tsunami_file, rates_should_be_zero=FALSE){
