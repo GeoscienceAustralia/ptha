@@ -1662,17 +1662,31 @@ if(FALSE){
     # Moment rate on sources with outer-rise. This was used to correct the originally estimated
     # moment rates on outer-rise sources {which used the '0.45%' result in
     # Sleep (2012), and were clearly too low}
-    thrust_sources = c('sunda', 'kermadectonga', 'puysegur', 'newhebrides', 'timortrough', 'solomon')
+    thrust_sources = c('sunda2', 'kermadectonga2', 'puysegur2', 'newhebrides2', 'timortrough', 'solomon2')
     for(i in 1:length(thrust_sources)){
         uss = bird2003_env$unit_source_tables[[thrust_sources[i]]]
-        slip_x_area = sum(uss$length*uss$width*1e+06*pmax(0, -uss$bird_vel_div/1000))
+        div_vec = pmax(0, -uss$bird_vel_div)
+        rl_vec = uss$bird_vel_rl
+        deg2rad = pi/180
+        allowed_rake_deviation_radians = config$rake_deviation * deg2rad
+        # Restrict angle to +- rake_deviation of pure thrust (or pure normal)
+        rl_vec = sign(rl_vec) * pmin(abs(rl_vec), div_vec * tan(allowed_rake_deviation_radians))
+        convergent_slip = sqrt(rl_vec**2 + div_vec**2)
+        slip_x_area = sum(uss$length*uss$width*1e+06*convergent_slip/1000)
         print(c(thrust_sources[i], slip_x_area))
     }
     outerrise_sources = c('outerrisesunda', 'outerrise_kermadectonga', 'outerrise_puysegur', 
         'outerrisenewhebrides', 'outer_rise_timor', 'outerrisesolomon')
     for(i in 1:length(outerrise_sources)){
         uss = bird2003_env$unit_source_tables[[outerrise_sources[i]]]
-        slip_x_area = sum(uss$length*uss$width*1e+06*pmax(0, uss$bird_vel_div/1000))
+        div_vec = pmax(0, uss$bird_vel_div)
+        rl_vec = uss$bird_vel_rl
+        deg2rad = pi/180
+        allowed_rake_deviation_radians = config$rake_deviation * deg2rad
+        # Restrict angle to +- rake_deviation of pure thrust (or pure normal)
+        rl_vec = sign(rl_vec) * pmin(abs(rl_vec), div_vec * tan(allowed_rake_deviation_radians))
+        convergent_slip = sqrt(rl_vec**2 + div_vec**2)
+        slip_x_area = sum(uss$length*uss$width*1e+06*convergent_slip/1000)
         print(c(outerrise_sources[i], slip_x_area))
     }
 
