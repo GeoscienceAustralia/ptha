@@ -1,5 +1,9 @@
 #
 # Store the DART files we use for testing
+# Note that events are skipped if they are: 
+#   A) Not thrust (Samoa 2009 doublet is treated as thrust); 
+#   B) Mw < 7.7 in GCMT;
+#   C) On a source-zone that was updated to use SLAB2
 #
 
 if(!exists('variable_mu')){
@@ -8,11 +12,10 @@ if(!exists('variable_mu')){
 
 #
 # Get a vector with the Rdata files produced by running
-# ../SOURCE_ZONES/sourcezone/TSUNAMI_EVENTS/plots/gauge_summary_statistics.R
-# for each of the historical comparison events
+# ../SOURCE_ZONES/sourcezoneXXX/TSUNAMI_EVENTS/plots/gauge_summary_statistics.R
+# for each of the historical comparison events, where 'sourcezoneXXX' is the source-zone name
 #
 if(variable_mu){
-    #all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*varyMu.Rdata')
 
     #
     # Safest to hard-code the paths we need to use.
@@ -54,8 +57,6 @@ if(variable_mu){
         ) 
 
 }else{
-
-    #all_Rdata = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/plots/*[0-9].Rdata')
 
     #
     # Safest to hard-code the paths we need to use.
