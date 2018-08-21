@@ -134,7 +134,7 @@ source_zone_stage_exceedance_rates<-function(
 
     if(all(event_rate == 0) & all(variable_mu_event_rate == 0)){
         # Quick exit without using too much memory
-        source_zone_stage_exceedance_rates_for_zero_rate_sources(
+        output = source_zone_stage_exceedance_rates_for_zero_rate_sources(
             tsunami_file, 
             gauge_points,
             point_chunk_size,
