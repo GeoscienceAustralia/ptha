@@ -69,9 +69,9 @@ strike_deviation = 50 # Degrees
 # evidence. Also, sometimes the Berryman estimates are weakly justified. 
 use_uniform_coupling_prior = TRUE
 # Agnostic approach, but account for possible under-estimation in convergence rate,
-# and bottom out at 0.1 irrespective of the data (e.g. insurance
+# and bottom out at 0.2 irrespective of the data (e.g. insurance
 # against possible 'dormancy' or non-stationarity)
-uniform_coupling_prior = c(0.1, 1.3)
+uniform_coupling_prior = c(0.2, 1.2)
 
 # Should we use GCMT to update logic tree weights
 update_logic_tree_weights_with_data = TRUE
