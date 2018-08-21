@@ -298,7 +298,7 @@ for(i in 1:length(config$all_source_uniform_slip_tsunami)){
     print(source_name)
 
     # For 'defunct' sources, we just check that all their rates are zero
-    if(source_name %in% c('timor', 'flores', 'macquarienorth')){
+    if(source_name %in% c('timor', 'flores', 'macquarienorth', 'kermadectonga', 'newhebrides', 'makran', 'puysegur', 'sunda', 'newguinea', 'solomon')){
         rates_should_be_zero=TRUE
         print('   rates should be zero!')
     }else{
