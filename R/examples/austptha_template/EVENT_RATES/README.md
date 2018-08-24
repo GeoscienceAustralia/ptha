@@ -38,9 +38,9 @@ another machine.
 
 Once that is done, you should also do the following:
 
-    * Run [create_nc_file_peak_stage_unit_sources.R](create_nc_file_peak_stage_unit_sources.R) to make fast-access information for plotting. 
-    * To make easy-access output files you need to run [tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R). 
-    * To make a shapefile for 'general-plot' purposes, run [clean_shapefiles_for_plotting.R](clean_shapefiles_for_plotting.R).
+1. Run [create_nc_file_peak_stage_unit_sources.R](create_nc_file_peak_stage_unit_sources.R) to make fast-access information for plotting. 
+2. To make easy-access output files you need to run [tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R). 
+3. To make a shapefile for 'general-plot' purposes, run [clean_shapefiles_for_plotting.R](clean_shapefiles_for_plotting.R).
 
 You can also use [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R) to make deaggregation plots on-demand.
 
