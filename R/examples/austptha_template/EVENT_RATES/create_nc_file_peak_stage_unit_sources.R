@@ -5,9 +5,10 @@
 #
 library(rptha)
 
+output_dir = '/g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES'
 
 # All unit source files
-all_uss_files = Sys.glob('/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/*/TSUNAMI_EVENTS/unit_source_statistics*.nc')
+all_uss_files = Sys.glob('../SOURCE_ZONES/*/TSUNAMI_EVENTS/unit_source_statistics*.nc')
 all_uss = sapply(all_uss_files, read_table_from_netcdf, simplify=FALSE)
 # Put in a single data.frame
 uss = do.call(rbind, all_uss)
@@ -143,7 +144,7 @@ all_nc_vars[['max_stage']] = ncvar_def('max_stage', 'm', dim=list(unit_source_di
         longname='maximum stage from the unit-source', prec='float')
 
 # Make the file
-fid = nc_create('all_unit_source_wave_heights.nc', all_nc_vars)
+fid = nc_create(paste0(output_dir, '/all_unit_source_wave_heights.nc'), all_nc_vars)
 
 # Add the unit-source variables
 for(i in 1:length(names(uss))){
