@@ -6,9 +6,7 @@ key geometric parameters for each sourcezone, that must be configured correctly
 for everything to work. 
 
 Beware that depending on how the scripts are configured (in scripts that refer
-to this file), not all of these parameters may be used. For example, in the
-Australian PTHA I have used a uniform prior coupling, and ranges for the
-b-value based on the source type.
+to this file), not all of these parameters may be used. 
 
 The parameters are:
 
@@ -217,9 +215,7 @@ numerically discretize the coupling coefficients with a logarithmic spacing, so
 that in a relative sense we can resolve both small and low couplings. Obviously
 one cannot take the log of zero, so zero coupling is not allowed. This should
 NOT be interpreted to mean that log(coupling) is uniformly distributed. Rather,
-it is a numerical improvement to the discretization. We still use a uniform
-distribution to interpolate the prior density among the provided coupling
-values - but then we numerically discretize that density with a log spacing.
+it is a numerical improvement to the discretization. 
 
 cmin_p,cpref_p,cmax_p
 ---------------------
@@ -227,8 +223,7 @@ cmin_p,cpref_p,cmax_p
 **NOT USED.** Three values which define the weights of coupling-coefficients
 for the source-zone or segment that are used in the logic tree. 
 
-*BEWARE CURRENTLY THESE VALUES ARE IGNORED, AND EACH COUPLING COEFFICIENT IS
-ASSIGNED THE SAME WEIGHT*.
+*BEWARE CURRENTLY THESE VALUES ARE IGNORED*.
 
 
 bmin, bpref, bmax

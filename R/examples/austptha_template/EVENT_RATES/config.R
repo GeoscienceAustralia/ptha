@@ -63,15 +63,9 @@ rake_deviation = 50 # Degrees
 strike_deviation = 50 # Degrees
 
 # Should we use a uniform prior for coupling?  (i.e. same at every
-# source-zone). This might be desirable because the Berryman estimates are
-# sometimes based on geodetic information, although recent evidence e.g. in
-# Aleutians shows sites which are currently uncoupled but have clear paleotsunami
-# evidence. Also, sometimes the Berryman estimates are weakly justified. 
-use_uniform_coupling_prior = TRUE
-# Agnostic approach, but account for possible under-estimation in convergence rate,
-# and bottom out at 0.2 irrespective of the data (e.g. insurance
-# against possible 'dormancy' or non-stationarity)
-uniform_coupling_prior = c(0.2, 1.2)
+# source-zone). Or the input spreadsheet values? Or 50% weight on each? 
+coupling_prior_type = 'spreadsheet_and_uniform_50_50' # 'uniform' # 'spreadsheet'
+uniform_coupling_prior = c(0.1, 1.3)
 
 # Should we use GCMT to update logic tree weights
 update_logic_tree_weights_with_data = TRUE

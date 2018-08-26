@@ -215,26 +215,63 @@ source_rate_environment_fun_standard<-function(sourcezone_parameters_row, unsegm
     #
     # Coupling
     #
-    if(config$use_uniform_coupling_prior){
+    if(config$coupling_prior_type == 'uniform'){
+
         sourcepar$coupling  = config$uniform_coupling_prior 
-    }else{
+
+        if(any(sourcepar$coupling == 0)) stop('Cannot treat coupling of zero, instead set prob_Mmax_below_Mmin > 0')
+
+        # Log spacing to equally resolve all coupling values in a relative sense
+        # However, we assign probabilities consistent with a uniform distribution
+        # (the log spacing is to improve numerical aspects of the discretization,
+        # we are not claiming that log(coupling) is uniformly distributed!)
+        sourcepar$coupling = exp(approx(log(as.numeric(sourcepar$coupling)), 
+            n=nbins*config$coupling_subsampling_increase)$y)
+        # Discretize the probabilities as a uniform distribution (NOT log-uniform!)
+        # This choice will ensure the numerical derivatives are constant (i.e. uniform density)
+        # On the other hand, the discretization will lead to a small numerical difference between
+        # the mean coupling, and the mean of a uniform distribution -- although this 'converges away' in
+        # the limit of nbins-->Inf
+        bin_size = sourcepar$coupling
+        sourcepar$coupling_p = bin_size/sum(bin_size)
+
+    }else if(config$coupling_prior_type == 'spreadsheet'){
+        # Just use the spreadsheet values
         sourcepar$coupling = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')]
+        sourcepar$coupling_p = rep(1, length(sourcepar$coupling))
+        sourcepar$coupling_p = sourcepar$coupling_p / sum(sourcepar$coupling_p)
+
+    }else if(config$coupling_prior_type == 'spreadsheet_and_uniform_50_50'){
+        # 50% on spreadsheet values, 50% on uniform prior
+
+        pr1 = config$uniform_coupling_prior
+        pr2 = sourcezone_parameters_row[1, c('cmin', 'cpref', 'cmax')] 
+    
+        # Empirical CDF for the uniform coupling prior
+        uniform_ecdf     = approxfun(pr1, seq(0, 1, len=length(pr1)), rule=2)
+        spreadsheet_ecdf = approxfun(pr2, seq(0, 1, len=length(pr2)), rule=2)
+
+        final_ecdf<-function(x) 0.5*(uniform_ecdf(x) + spreadsheet_ecdf(x))
+    
+        # Closer together when the values are small 
+        range_c = range(c(pr1, pr2)) 
+        coupling_vals = exp(approx(log(range_c), n=nbins*config$coupling_subsampling_increase)$y)
+
+        ll = length(coupling_vals)
+        # Use numerical derivative to get the density
+        coupling_forward = 0.5*(coupling_vals + c(coupling_vals[-1], 2*coupling_vals[ll] - coupling_vals[ll-1]))
+        coupling_backward = 0.5*(coupling_vals + c(2*coupling_vals[1] - coupling_vals[2], coupling_vals[1:(ll-1)]))
+        coupling_p = final_ecdf(coupling_forward) - final_ecdf(coupling_backward)
+
+        coupling_p = coupling_p / sum(coupling_p)
+    
+        sourcepar$coupling = coupling_vals
+        sourcepar$coupling_p = coupling_p
+
+    }else{
+        stop('unrecognized coupling prior type')
     }
 
-    if(any(sourcepar$coupling == 0)) stop('Cannot treat coupling of zero, instead set prob_Mmax_below_Mmin > 0')
-    # Log spacing to equally resolve all coupling values in a relative sense
-    # However, we assign probabilities consistent with a uniform distribution
-    # (the log spacing is to improve numerical aspects of the discretization,
-    # we are not claiming that log(coupling) is uniformly distributed!)
-    sourcepar$coupling = exp(approx(log(as.numeric(sourcepar$coupling)), 
-        n=nbins*config$coupling_subsampling_increase)$y)
-    # Discretize the probabilities as a uniform distribution (NOT log-uniform!)
-    # This choice will ensure the numerical derivatives are constant (i.e. uniform density)
-    # On the other hand, the discretization will lead to a small numerical difference between
-    # the mean coupling, and the mean of a uniform distribution -- although this 'converges away' in
-    # the limit of nbins-->Inf
-    bin_size = sourcepar$coupling
-    sourcepar$coupling_p = bin_size/sum(bin_size)
 
     # We may have put some weight on 'aseismic' behaviour in the magnitude range of interest
     sourcepar$prob_Mmax_below_Mmin = as.numeric(sourcezone_parameters_row$prob_Mmax_below_Mmin)
