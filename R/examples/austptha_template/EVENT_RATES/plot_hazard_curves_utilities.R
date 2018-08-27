@@ -459,6 +459,8 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, slip_type = 'uniform',
         sources_list[[i]]$stage_exceed = stage_exceed
         sources_list[[i]]$station_location = c(lon[site_index], 
             lat[site_index], elev[site_index])
+        # Use this to flag sources that do nothing
+        sources_list[[i]]$is_inactive_source = FALSE
 
         # Extract required info from the netcdf files
         fid = nc_open(all_source_tsunami[i], readunlim=FALSE)
@@ -473,6 +475,9 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, slip_type = 'uniform',
         fid = nc_open(gsub('_tsunami', '', all_source_tsunami[i]), readunlim=FALSE)
         event_rates = ncvar_get(fid, paste0(shear_modulus_type, 'rate_annual'))
         nc_close(fid)
+
+        # Flag for sources that have row_weight=0
+        if(sum(event_rates) == 0) sources_list[[i]]$is_inactive_source = TRUE
 
         # Find events with stage > value, which have non-zero rate
         events_exceeding = which((event_stage >= stage_exceed) & (event_rates > 0))
@@ -561,6 +566,9 @@ plot_station_deaggregated_hazard<-function(deaggregated_hazard, scale = 1, backg
     for(i in contrib_range_order){
 
         xx = deaggregated_hazard[[i]]
+
+        # Skip sources where every single rate is 0
+        if(xx$is_inactive_source) next
 
         # For colour, use a square-root transform to make it easier
         # to see the 'subtle' end of the results
@@ -1038,6 +1046,12 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
     unit_source_lat = as.numeric(ncvar_get(fid, 'lat_c'))
     peak_stage = as.numeric(ncvar_get(fid, 'max_stage', start=c(1, site_index), 
         count=c(-1,1)))
+    sourcename = ncvar_get(fid, 'sourcename')
+   
+    # Drop 'NULL' sources which have been replaced with others 
+    sources_to_drop = c('puysegur', 'flores', 'timor', 'macquarienorth', 
+        'sunda', 'kermadectonga', 'solomon', 'makran', 'newguinea', 'newhebrides')
+    null_sources = (sourcename %in% sources_to_drop)
 
     # Start the plot 
     if(is.null(background_raster)){
@@ -1051,9 +1065,10 @@ plot_unit_source_wave_heights_at_station<-function(lon, lat, site_index=NULL,
     # Possibly restrict based on the unit-source rake
     if(any(is.finite(rake_range))){
         rake = ncvar_get(fid, 'rake')
-        k = which(rake >= rake_range[1] & rake <= rake_range[2])
+        k = which(rake >= rake_range[1] & rake <= rake_range[2] & (!null_sources))
     }else{
-        k = 1:length(unit_source_lon)
+        #k = 1:length(unit_source_lon)
+        k = which((!null_sources))
     }
 
     # Colour scheme
