@@ -127,7 +127,7 @@ check_if_file_is_ok<-function(uniform_slip_tsunami_file){
     stopifnot( 
         (length(subset_to_run) == 1) & 
         (subset_to_run > 0) & 
-        (subset_to_run < length(subsets)) )
+        (subset_to_run <= length(subsets)) )
     word_range = subsets[[subset_to_run]]
 
     # Get the source-name
