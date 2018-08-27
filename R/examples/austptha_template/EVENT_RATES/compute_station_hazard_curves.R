@@ -83,26 +83,65 @@ read_lon_lat_elev<-function(nc_file){
 #
 check_if_file_is_ok<-function(uniform_slip_tsunami_file){
 
-    # Make name for output file
+    ###   #
+    ###   # VERSION WHICH CHECKS FOR UN-WRITTEN RATES
+    ###   #
+
+    ###   # Make name for output file
+    ###   source_name = basename(dirname(dirname(uniform_slip_tsunami_file)))
+    ###   sourcename_dot_nc = paste0(source_name, '.nc')
+    ###   nc_file = paste0(
+    ###       dirname(uniform_slip_tsunami_file), '/',
+    ###       'tsunami_stage_exceedance_rates_', sourcename_dot_nc)
+
+    ###   if(!file.exists(nc_file)) return(FALSE)
+
+    ###   fid = nc_open(nc_file, readunlim=FALSE)
+    ###   rts = ncvar_get(fid, 'variable_mu_stochastic_slip_rate')
+    ###   k1 = which(!is.finite(rts[1,]))
+    ###   k2 = which(!is.finite(rts[100,]))
+    ###   nc_close(fid)
+    ###   if(setequal(k1, k2)){
+    ###       file_ok = TRUE
+    ###   }else{
+    ###       file_ok = FALSE
+    ###   }
+    ###   return(file_ok)
+
+    #
+    # In this version, the user passes an integer corresponding to two words in 'subsets' below
+    # e.g. 2 --> c('k', 'manokwari0')
+    # Then if the source-name is alphabetically 'between' these words it is ran, otherwise it is not.
+    #
+
+    # These subset ranges were chosen to make the job time < 12 hours in each case.
+    subsets = list(
+        c('a', 'k'),
+        c('k', 'manokwari0'),
+        c('manokwari0', 'p'),
+        c('p', 'south'), 
+        c('south', 'sun'), # Only southamerica
+        c('sun', 'z') )
+
+    subset_to_run = as.numeric(commandArgs(trailingOnly=TRUE))
+    stopifnot( 
+        (length(subset_to_run) == 1) & 
+        (subset_to_run > 0) & 
+        (subset_to_run < length(subsets)) )
+    word_range = subsets[[subset_to_run]]
+
+    # Get the source-name
     source_name = basename(dirname(dirname(uniform_slip_tsunami_file)))
-    sourcename_dot_nc = paste0(source_name, '.nc')
-    nc_file = paste0(
-        dirname(uniform_slip_tsunami_file), '/',
-        'tsunami_stage_exceedance_rates_', sourcename_dot_nc)
+    source_name = tolower(source_name)
 
-    if(!file.exists(nc_file)) return(FALSE)
-
-    fid = nc_open(nc_file, readunlim=FALSE)
-    rts = ncvar_get(fid, 'variable_mu_stochastic_slip_rate')
-    k1 = which(!is.finite(rts[1,]))
-    k2 = which(!is.finite(rts[100,]))
-    nc_close(fid)
-    if(setequal(k1, k2)){
-        file_ok = TRUE
+    if(word_range[1] < source_name & word_range[2] > source_name){
+        # Run these ones
+        skip_source = FALSE 
     }else{
-        file_ok = FALSE
+        skip_source = TRUE
     }
-    return(file_ok)
+    return(skip_source)
+ 
 }
 
 #'
