@@ -151,3 +151,5 @@ now outdated, but was used to highlight the significance of edge-correction of
 event rates. FIXME: It needs to be updated to include the peak slip limitation
 that was not accounted for in earlier runs.
 
+[earthquake_rate_comparisons.R](earthquake_rate_comparisons.R) is used to compute the modelled
+scenario rates in various regions.

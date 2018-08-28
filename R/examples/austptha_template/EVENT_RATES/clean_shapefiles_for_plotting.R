@@ -27,6 +27,7 @@ keep = which(c(!is.na(over(peak_stg, clip_pol))) & peak_stg$elev < elevation_thr
 output = peak_stg[keep, c('lon', 'lat', 'elev', 'ST_1000')]
 
 writeOGR(output, dsn='tsunami_stages_1_in_1000_Australia', 
-    layer='tsunami_stages_1_in_1000_Australia', driver='ESRI Shapefile')
+    layer='tsunami_stages_1_in_1000_Australia', driver='ESRI Shapefile',
+    overwrite=TRUE)
 
 system('zip -r tsunami_stages_1_in_1000_Australia.zip tsunami_stages_1_in_1000_Australia')
