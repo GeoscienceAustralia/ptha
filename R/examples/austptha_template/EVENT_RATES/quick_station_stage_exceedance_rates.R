@@ -440,19 +440,24 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
                 # Other summaries
                 #points(rate_by_Mw$rate_exceeding_upper, 1:nrow(rate_by_Mw), col='red')
                 #points(rate_by_Mw$rate_exceeding_lower, 1:nrow(rate_by_Mw), col='red')
-                points(rate_by_Mw$rate_exceeding_median, 1:nrow(rate_by_Mw), col='black', pch=19)
+                #points(rate_by_Mw$rate_exceeding_median, 1:nrow(rate_by_Mw), col='black', pch=19)
                 points(rate_by_Mw$rate_exceeding_16pc, 1:nrow(rate_by_Mw), col='orange')
                 points(rate_by_Mw$rate_exceeding_84pc, 1:nrow(rate_by_Mw), col='orange')
                 mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
                 title(paste0(sz, ': Rates with peak-stage > ', signif(stage_threshold,3), 'm \n Split by magnitude category'))
             }
-            legend('bottomright', c('Median', 'Mean', '16/84%'), col=c('black', 'brown', 'orange'), pch=c(19, 4, 1))
+            ## Because the 'mean', 'median', etc refer to the "Exceedance Rate" curve, but the scenario weights
+            ## are related to the derivative of this, it is possible that the scenario weights are not ordered
+            ## as one would naturally expect (e.g. sometimes it is not true that scenarios 16% < mean < 84%). 
+            ## I expect this will be confusing, so it is better not to show the median.
+            #legend('bottomright', c('Median', 'Mean', '16/84%'), col=c('black', 'brown', 'orange'), pch=c(19, 4, 1))
+            legend('bottomright', c('Mean', '16/84%'), col=c('brown', 'orange'), pch=c(4, 1))
 
             peak_stage_text = paste0('stage=',signif(stage_threshold, 3), 'm')
             mtext(text=paste0(" The rate vs magnitude plots give an indication of which magnitudes are most likely to generate tsunamis exceeding ", peak_stage_text, ". They are derived by partitioning each\n", 
-                              "source's magnitude-exceedance rate curves (mean, median, 16%, 84%) into individual scenario rates, and then summing by magnitude for events that exceed ", peak_stage_text, ".\n",
+                              "source's magnitude-exceedance rate curves (mean, 16%, 84%) into individual scenario rates, and then summing by magnitude for events that exceed ", peak_stage_text, ".\n",
                               'The number in parenthesis on the vertical axis (beside the magnitude) gives the percentage of scenarios with that magnitude that exceed ', peak_stage_text, '. High values\n',
-                              'suggest that typical modelled tsunamis with that magnitude can exceed ', peak_stage_text, ', while low values indicate that extreme events dominate.\n'),
+                              'suggest that typical modelled tsunamis with that magnitude can exceed ', peak_stage_text, ', while low values indicate that unusual events dominate. \n'),
                 side=1, outer=TRUE, padj=0.85, adj=0.05, cex=0.9)
 
             # Back to default outer-margins
