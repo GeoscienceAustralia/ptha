@@ -267,3 +267,22 @@ result_sumatra = get_rates(nc_file, segment_range, num_downdip, reference_magnit
 #> 1/result_sumatra
 #[1] 444.9253 291.4750 212.7968 206.3841 159.5986 117.9906
 
+
+#
+# Nankai
+#
+segment_range = c(1,18) # Offshore of japan
+num_downdip = 3
+reference_magnitude = 8.5
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/ryuku/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_ryuku.nc'
+result_ryuku = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+#> 1/result_ryuku
+#[1] 10426.4186  1733.4146   588.0913   565.4841   364.8754   224.9400
+
+segment_range = c(1,18) # Offshore of japan
+num_downdip = 3
+reference_magnitude = 8.
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/ryuku/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_ryuku.nc'
+result_ryuku = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+#> 1/result_ryuku
+#[1] 513.04429 248.65497 145.06553 141.94314 101.71527  73.64809
