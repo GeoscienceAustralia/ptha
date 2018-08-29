@@ -784,21 +784,31 @@ source_rate_environment_fun_standard<-function(sourcezone_parameters_row, unsegm
     #
     # Quantiles below here
     #
+    # Note that on source-zones with optional segmentation, we will have to change
+    # these quantiles later. 
+    #
+    # The idea is that "for the segments", the uncertainties
+    # should be co-monotinic (i.e. if 16th percentile is true on segmentA, then
+    # 16th percentile is also true on segmentB, etc). So the 16th percentile exceedance
+    # rate for 'all segments combined' can be obtained by adding their 16th percentiles. 
+    #
+    # However, we will want to compute quantiles resulting from the "weighted sum of
+    # the unsegmented treatment, and the segmented treatment". For example, suppose
+    # we give 50% weight to the segmented option (all segments, co-monotonic), and 
+    # 50% weight to the unsegmented option. In this case, the 16th percentile for the
+    # combination might not be based on combining the 16th percentile for each option
+    # separately. Instead, we might take the 32-percentile from the segmented sources,
+    # and no weight from the unsegmented source (this would be correct if the 32-percentile
+    # in the segmented case was smaller than the smallest unsegmented percentile). Or we might
+    # take 20% from the segmented models, and 12% from unsegmented. The actual
+    # number will depend on the details of the source and segments. 
+    # 
+    #
 
 
 
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
-    # NOTE: Later we sum over [row-weights x event_rates_upper] on segmented
-    # (or optionally segmented) source-zones. This is valid if we assume
-    # that ALL representations of the source behave like separate, real sources, with
-    # the given fraction of the moment rate, AND furthermore that epistemic uncertainties
-    # in all the sources are co-monotonic [which sounds a sensible assumption, because it
-    # prevents us 'averaging away' the risk of rare events].
-    # It is clearly reasonable for separate segments to be like separate, real sources. It is
-    # less obvious that the 'full-source-zone' model should be as well, but we can think of 
-    # this as us representing the source as having 'some tendency for rupture-segment-sized events,
-    # but also some tendency to behave as a full source-zone.
     event_rates_upper = as.numeric(event_conditional_probabilities * 
         (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$upper_ci_inv_quantile) - 
          mw_rate_function(event_table$Mw + dMw/2, quantiles=config$upper_ci_inv_quantile) )
@@ -813,16 +823,6 @@ source_rate_environment_fun_standard<-function(sourcezone_parameters_row, unsegm
 
     # Lower credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
-    # NOTE: Later we sum over [row-weights x event_rates_upper] on segmented
-    # (or optionally segmented) source-zones. This is valid if we assume
-    # that ALL representations of the source behave like separate, real sources, with
-    # the given fraction of the moment rate, AND furthermore that epistemic uncertainties
-    # in all the sources are co-monotonic [which sounds a sensible assumption, because it
-    # prevents us 'averaging away' the risk of rare events]
-    # It is clearly reasonable for separate segments to be like separate, real sources. It is
-    # less obvious that the 'full-source-zone' model should be as well, but we can think of 
-    # this as us representing the source as having 'some tendency for rupture-segment-sized events,
-    # but also some tendency to behave as a full source-zone.
     event_rates_lower = as.numeric(event_conditional_probabilities * 
         (mw_rate_function(event_table$Mw - dMw/2, quantiles=config$lower_ci_inv_quantile) - 
          mw_rate_function(event_table$Mw + dMw/2, quantiles=config$lower_ci_inv_quantile) )
@@ -872,6 +872,23 @@ source_rate_environment_fun_standard<-function(sourcezone_parameters_row, unsegm
         )
 
     gc()
+
+
+
+    #
+    # Later, we will have to update the percentiles to get consistent treatment on partly
+    # segmented source-zones. These variables will let us do that cleanly.
+    #
+    final_event_rates_median = event_rates_median
+    final_event_rates_16pc = event_rates_16pc
+    final_event_rates_84pc = event_rates_84pc
+    final_event_rates_upper = event_rates_upper
+    final_event_rates_lower = event_rates_lower
+    final_event_rates_median_mu_vary = event_rates_median_mu_vary
+    final_event_rates_16pc_mu_vary = event_rates_16pc_mu_vary
+    final_event_rates_84pc_mu_vary = event_rates_84pc_mu_vary
+    final_event_rates_upper_mu_vary = event_rates_upper_mu_vary
+    final_event_rates_lower_mu_vary = event_rates_lower_mu_vary
 
     return(environment())
 
@@ -938,25 +955,308 @@ source_rate_environment_fun_row_weight_zero<-function(
     # in order to 'cleanly' write zeros to the netcdf files.
     #
     event_rates = empty_data
-    event_rates_upper = empty_data
-    event_rates_lower = empty_data
     event_weight_with_nonzero_rate = empty_data
     event_rates_median = empty_data
     event_rates_16pc = empty_data
     event_rates_84pc = empty_data
+    event_rates_upper = empty_data
+    event_rates_lower = empty_data
 
     event_rates_mu_vary = empty_data
-    event_rates_upper_mu_vary = empty_data
-    event_rates_lower_mu_vary = empty_data
     event_weight_with_nonzero_rate_mu_vary = empty_data 
     event_rates_median_mu_vary = empty_data
     event_rates_16pc_mu_vary = empty_data
     event_rates_84pc_mu_vary = empty_data
+    event_rates_upper_mu_vary = empty_data
+    event_rates_lower_mu_vary = empty_data
 
     # The above variables should allow the code to execute cleanly in all cases!
 
     return(environment())
 }
+
+
+#' Suppose a source-zone has some weight on an unsegmented model, and the remaining
+#' weight on a collection of segments.
+#' How should we compute percentiles (or credible-intervals) of the Mw-frequency
+#' curve (i.e. to characterise uncertainty)?
+#'
+#' The approach taken herein is:
+#'    A) Firstly take ALL the segmented sources. Their combined Mw-frequency curve
+#'       is developed, with percentiles based on assuming uncertainties are co-monotonic. e.g. Suppose we
+#'       are interested in a percentile of the exceedance rate of Mw 9 events (e.g. 16th percentile).
+#'       On the combined-segments, this is computed assuming the segments are 'co-monotonic'
+#'       (i.e. as the sum of the 16th percentile of the exceedance rates on each segment)
+#'    B) Once (A) is completed, we have 2 models for the source-zone, one segmented and one unsegmented.
+#'       These will have been assigned row_weights which sum to 1.0 (e.g. 0.5 and 0.5 is common).
+#'       How to compute the 16th percentile (or any other) of the Mw 9.0 exceedance rate for this combination?
+#'       The solution is purely mathmatical -- there is a 50% chance of segmented or unsegmented being true, and
+#'       so the 16th percentile should be taken from the 16th percentile of the combined distribution.
+#'       In practice, this might mean we evaluate the segmented models at their 32th percentile and ignore
+#'       the unsegmented model (this would be correct if the 32th segmented percentile was lower than the 0th 
+#'       unsegmented percentile). Or maybe 22th segmented and 10th segmented. It depends on the inputs.
+#'        
+#' This function does the above calculations, and creates new variables in the environment which
+#' can map the uncertainties onto individual scenarios, which go into the netcdf files.
+#' 
+#' @param all_sources a list of environments corresponding to all segmented and unsegmented sources on 
+#' a single source-zone. Each is an output of compute_rates_all_sources. The first one should be the 
+#' unsegmented source, followed by segments.
+#' @param percentile_discretization small real number. The function works by numerically discretizing the mw-rate-function
+#' at a range of logic-tree percentiles (i.e. inverse quantiles), with spacing = dp which is close to percentile_discretization,
+#' while ensuring that 1/dp is an integer. The discretization sequence goes from dp/2 to 1-dp/2.
+#'
+update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-function(all_sources,
+    percentile_discretization = 0.0025){
+
+    # No need to update unsegmented sources
+    if(length(all_sources) == 1){ 
+        # Double check the input makes sense
+        if(all_sources[[1]]$is_a_segment){
+            stop('If a source is segmented, then there should be multiple environments in all_sources')
+        }
+        # Quick exit without doing anything
+        return(invisible(0))
+    }
+  
+    # 
+    # Below here, we are definitely on a partially segmented source-zone 
+    #
+    
+    is_a_segment = unlist(lapply(all_sources, f<-function(x) x$is_a_segment))
+    if(sum(!is_a_segment) != 1) stop('There should be only one unsegmented source in all_sources')
+    if(is_a_segment[1]) stop('The first segment in all_sources should be unsegmented')
+
+    # Weight on segmented and unsegmented models.
+    unsegmented_weight = all_sources[[1]]$sourcepar$sourcezone_parameters_row$row_weight
+    segmented_weight = all_sources[[2]]$sourcepar$sourcezone_parameters_row$row_weight
+    stopifnot(abs(unsegmented_weight + segmented_weight - 1) < 1.0e-10)
+
+    #
+    # Step 1: for each magnitude bin, we need to determine how to compute the
+    # percentiles of interest on the 'unsegmented + sum-of-segments' Mw-rate curve.
+    # We do this by numerically evaluating the Mw-rate curves, including
+    # uncertainties, on the unsegmented and 'sum-of-segments' separately. Then
+    # we determine the appropriate 'segmented' and 'unsegmented' percentiles that
+    # lead to the desired 'overall percentile'. 
+    #
+   
+    # Make a sequence of mw values where we will want to evaluate the
+    # mw-exceedance rate curve and deal with the percentile estimation issue 
+    lower_mw = min(all_sources[[1]]$event_table$Mw) #- dMw/2 
+    upper_mw = max(all_sources[[1]]$event_table$Mw) #+ dMw/2
+    mw_seq = round(seq(lower_mw, upper_mw, by=dMw), 3)
+
+    # Interpolate credible intervals at the following percentiles for the unsegmented
+    # sources, and the segments as a whole 
+    # Useful to numerically figure out how to evaluate the percentiles
+    dp = 1/round(1/percentile_discretization) # Ensures 1/dp is an integer
+    percentiles_to_store = seq(dp/2, 1-dp/2, by=dp)
+
+    # Make a matrix with the mw_seq vs exceedance-rates for every percentile_to_store
+    unsegmented_mw_rate_curves = matrix(NA, nrow=length(mw_seq), ncol=length(percentiles_to_store))
+    unsegmented_mw_rate_curves_mu_vary = unsegmented_mw_rate_curves
+    for(i in 1:length(percentiles_to_store)){
+        unsegmented_mw_rate_curves[,i] = all_sources[[1]]$mw_rate_function(mw_seq, quantiles=percentiles_to_store[i])
+        unsegmented_mw_rate_curves_mu_vary[,i] = all_sources[[1]]$mw_rate_function(mw_seq, quantiles=percentiles_to_store[i], 
+            account_for_mw_obs_error=TRUE)
+    }
+    gc()
+    # As above for the 'sum of segments'. Because of our co-monotonic
+    # assumption, this can be done with simple summation
+    segmented_mw_rate_curves = all_sources[[2]]$mw_rate_function(mw_seq, quantiles=percentiles_to_store)
+    segmented_mw_rate_curves_mu_vary = all_sources[[2]]$mw_rate_function(mw_seq, quantiles=percentiles_to_store,
+        account_for_mw_obs_error=TRUE)
+    gc()
+    if(length(all_sources) > 2){
+        # Simple summation
+        for(i in 3:length(all_sources)){
+            segmented_mw_rate_curves = segmented_mw_rate_curves + 
+                all_sources[[i]]$mw_rate_function(mw_seq, quantiles=percentiles_to_store)
+            segmented_mw_rate_curves_mu_vary = segmented_mw_rate_curves_mu_vary + 
+                all_sources[[i]]$mw_rate_function(mw_seq, quantiles=percentiles_to_store,
+                    account_for_mw_obs_error=TRUE)
+            gc()
+        }
+    }
+
+    # For each percentile of interest, we need to compute the percentile at which we evaluate the
+    # unsegmented rate model, and the segmented rate model, so that we ultimately get the desired 
+    # percentile of the combined model
+    desired_inv_quantiles = c(config$lower_ci_inv_quantile, 0.16, 0.5, 0.84, config$upper_ci_inv_quantile)
+    names_desired_inv_quantiles = c('lower', '16pc', 'median', '84pc', 'upper')
+    # Store the results here
+    all_pc_values = list()
+    for(i in 1:length(desired_inv_quantiles)){
+        all_pc_values[[i]] = list()
+        all_pc_values[[i]]$seg = rep(0, length(mw_seq))
+        all_pc_values[[i]]$unseg = rep(0, length(mw_seq))
+    }
+    names(all_pc_values) = names_desired_inv_quantiles
+    all_pc_values_mu_vary = all_pc_values
+   
+    for(i in 1:length(mw_seq)){
+
+        #
+        # Get percentiles of the rate curve for magnitude=mw_seq[i]
+        # Constant shear modulus
+        rate_unseg = unsegmented_mw_rate_curves[i,]
+        rate_seg = segmented_mw_rate_curves[i,]
+        # Get the 'uncertainty percentile' in the combined unsegmented-segmented curve associated
+        # with each rate value in unique_rates. 
+        unique_rates = unique(sort(c(rate_unseg, rate_seg)))
+        pc_value = rep(0, length(unique_rates))
+        pc_value_unseg = rep(0, length(unique_rates))
+        pc_value_seg   = rep(0, length(unique_rates))
+        for(j in 1:length(unique_rates)){
+            # Equation for the 'percentile of the combination'
+            pc_value_unseg[j] = max( percentiles_to_store * (rate_unseg <= unique_rates[j]) )
+            pc_value_seg[j]   = max( percentiles_to_store * (rate_seg   <= unique_rates[j]) )
+            pc_value[j] = pc_value_unseg[j]*unsegmented_weight + pc_value_seg[j]*segmented_weight
+        }
+
+        #
+        # As above, variable shear modulus
+        #
+        rate_unseg_mu_vary = unsegmented_mw_rate_curves_mu_vary[i,]
+        rate_seg_mu_vary = segmented_mw_rate_curves_mu_vary[i,]
+        unique_rates = unique(sort(c(rate_unseg_mu_vary, rate_seg_mu_vary)))
+        pc_value_mu_vary = rep(0, length(unique_rates))
+        pc_value_unseg_mu_vary = rep(0, length(unique_rates))
+        pc_value_seg_mu_vary   = rep(0, length(unique_rates))
+        for(j in 1:length(unique_rates)){
+            # Equation for the 'percentile of the combination'
+            pc_value_unseg_mu_vary[j] = max( percentiles_to_store * (rate_unseg_mu_vary <= unique_rates[j]) )
+            pc_value_seg_mu_vary[j]   = max( percentiles_to_store * (rate_seg_mu_vary   <= unique_rates[j]) )
+            pc_value_mu_vary[j] = pc_value_unseg_mu_vary[j]*unsegmented_weight + pc_value_seg_mu_vary[j]*segmented_weight
+        }
+
+
+        # Handy function to pick out the segmented/unsegmented percentile values
+        # associated with the actual value we want for their combination
+        #
+        # Note this refers to temporary variables in the current environment,
+        # hence why it lives here. 
+        #
+        # Note eps is used to deal with floating point imperfections
+        get_seg_unseg_pc<-function(desired_inv_quantile, pc_value, pc_value_seg, pc_value_unseg, eps=1e-08){
+    
+            thresh_index = sum(pc_value <= desired_inv_quantile + eps)
+            
+            seg_unseg_output = rep(NA, 2)
+
+            if(thresh_index == 0){
+                #
+                # Tricky case. This indicates that even the smallest rate value provided
+                # by the segmented or unsegmented model led to a percentile larger than desired.
+                # This can happen e.g. if we have 100% weight on 'zero rate' on one or more of the 
+                # segments
+                #
+                contribs = c(pc_value_seg[1]*segmented_weight, pc_value_unseg[1]*unsegmented_weight)
+                range_pc = range(contribs)
+                min_pc = range_pc[1]
+                max_pc = range_pc[2]
+
+                if( max_pc >= desired_inv_quantile + eps ){
+                    # We can meet the requirement with only one source
+                    # Drop the one with smaller quantile (i.e. which has 'less'
+                    # of its smallest value below desired). This will
+                    # 'reduce-the-overestimation' of the quantile
+                    if(contribs[1] > contribs[2]){
+                        seg_unseg_output[1] = min(pc_value_seg[1], desired_inv_quantile/segmented_weight)
+                        seg_unseg_output[2] = NA
+                    }else{
+                        seg_unseg_output[2] = min(pc_value_unseg[1], desired_inv_quantile/unsegmented_weight)
+                        seg_unseg_output[1] = NA
+                    }
+
+                }else{
+                    # We cannot only drop 1, so keep both. This means the
+                    # quantile will be higher than desired, but there is no
+                    # 'clearly better' alternative 
+                    if(contribs[1] > contribs[2]){
+                        # Drop the unsegmented
+                        seg_unseg_output[1] = pc_value_seg[1]
+                        seg_unseg_output[2] = (desired_inv_quantile - contribs[1])/unsegmented_weight
+                    }else{
+                        # Drop the segmented
+                        seg_unseg_output[2] = pc_value_unseg[1]
+                        seg_unseg_output[1] = (desired_inv_quantile - contribs[2])/segmented_weight
+
+                    }
+                }
+
+            }else{
+                # Typical case
+                seg_unseg_output[1] = pc_value_seg[thresh_index]
+                seg_unseg_output[2] = pc_value_unseg[thresh_index]
+            }
+
+            return(seg_unseg_output) 
+        }
+
+        # Store the results at the desired percentiles
+        eps = 1.0e-8 # Deal with floating point imperfections
+        for(j in 1:length(desired_inv_quantiles)){
+            tmp = get_seg_unseg_pc(desired_inv_quantiles[j], pc_value, pc_value_seg, pc_value_unseg, eps)
+            all_pc_values[[j]]$seg[i] = tmp[1]
+            all_pc_values[[j]]$unseg[i] = tmp[2]
+            tmp = get_seg_unseg_pc(desired_inv_quantiles[j], pc_value, pc_value_seg, pc_value_unseg, eps)
+            all_pc_values_mu_vary[[j]]$seg[i] = tmp[1]
+            all_pc_values_mu_vary[[j]]$unseg[i] = tmp[2]
+        }
+
+    }
+
+    # Now update the final_event_rates_XX variables
+    for(i in 1:length(all_sources)){
+
+        # Get the 'local' percentile values that will 
+        # correspond to the desired percentiles of the segmented-unsegmented sum
+        if(all_sources[[i]]$is_a_segment){
+            my_pc_values = lapply(all_pc_values, f<-function(x) x$seg)
+            my_pc_values_mu_vary = lapply(all_pc_values_mu_vary, f<-function(x) x$seg)
+        }else{
+            my_pc_values = lapply(all_pc_values, f<-function(x) x$unseg)
+            my_pc_values_mu_vary = lapply(all_pc_values_mu_vary, f<-function(x) x$unseg)
+        }
+
+        for(j in 1:length(mw_seq) ){
+    
+            # Operate magnitude by magnitude
+            k = which( all_sources[[i]]$event_table$Mw > (mw_seq[j]-dMw/2) & 
+                       all_sources[[i]]$event_table$Mw < (mw_seq[j]+dMw/2) )
+            stopifnot( all( all_sources[[i]]$event_table$Mw[k] == all_sources[[i]]$event_table$Mw[k[1]]) )
+            mw_value = all_sources[[i]]$event_table$Mw[k[1]]
+   
+            # Median
+            q1 = my_pc_values$median[j]
+            if(!is.na(q1)){
+                # Constant mu
+                all_sources[[i]]$final_event_rates_median[k] = as.numeric(
+                    all_sources[[i]]$event_conditional_probabilities[k] * (
+                        all_sources[[i]]$mw_rate_function(mw_value - dMw/2, quantiles=q1) - 
+                        all_sources[[i]]$mw_rate_function(mw_value + dMw/2, quantiles=q1) ) ) 
+            }else{
+                all_sources[[i]]$final_event_rates_median[k] = 0
+            }
+
+            # Variable mu
+            q1 = my_pc_values_mu_vary$median[j]
+            if(!is.na(q1)){
+                all_sources[[i]]$final_event_rates_median_mu_vary[k] = as.numeric(
+                    all_sources[[i]]$event_conditional_probabilities[k] * (
+                        all_sources[[i]]$mw_rate_function(mw_value - dMw/2, quantiles=q1, account_for_mw_obs_error=TRUE) - 
+                        all_sources[[i]]$mw_rate_function(mw_value + dMw/2, quantiles=q1, account_for_mw_obs_error=TRUE) ) ) 
+            }else{
+                all_sources[[i]]$final_event_rates_median_mu_vary[k] = 0
+            }
+        }
+    }
+    
+}
+
+
 
 
 #' Put the event rates onto a netcdf file

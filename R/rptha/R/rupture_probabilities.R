@@ -363,9 +363,9 @@ get_event_probabilities_conditional_on_Mw<-function(
 #' logic tree. The latter option can be used to scrutinize the results from each
 #' branch of the logic tree. \cr
 #' If the optional argument \code{quantiles} = a vector of probabilities is
-#' passed, then the function evaluates the rate function at each given quantile
+#' passed, then the function evaluates the rate function at each given inverse_quantile
 #' of the logic tree (e.g. quantiles = c(0.1, 0.5, 0.9) would return the lower
-#' 10\%, median, and upper 90\% rates from the logic tree at each Mw) \cr
+#' 10\%, median, and upper 90\% credible interval rates from the logic tree at each Mw) \cr
 #' If the optional argument \code{return_random_curve=TRUE} is passed, then the
 #' function will randomly pick a parameter combination from the logic tree (with
 #' probability equal to the probability of each branch), and evaluate the
@@ -641,9 +641,9 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     upper_rate = apply(all_rate_matrix, 2, max)
     lower_rate = apply(all_rate_matrix, 2, min)
 
-    # Function to compute quantiles (describing epistemic uncertainty)
+    # Function to compute quantiles at percentiles (describing epistemic uncertainty)
     # of the logic tree curves at different exceedance rates
-    quantile_rate_fun<-function(rates, p, with_mw_error=FALSE){
+    inverse_quantile_rate_fun<-function(rates, p, with_mw_error=FALSE){
         sorted_rates = sort(rates, index.return=TRUE)
         if(with_mw_error){
             sorted_prob = all_par_prob_with_Mw_error[sorted_rates$ix]
@@ -659,10 +659,10 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
     # Compute the 50th percentile
     median_rate = apply(all_rate_matrix, 2, 
-        f<-function(rates) quantile_rate_fun(rates, p=0.5)
+        f<-function(rates) inverse_quantile_rate_fun(rates, p=0.5)
         )
     median_rate_with_Mw_error = apply(all_rate_matrix, 2, 
-        f<-function(rates) quantile_rate_fun(rates, p=0.5, with_mw_error=TRUE)
+        f<-function(rates) inverse_quantile_rate_fun(rates, p=0.5, with_mw_error=TRUE)
         )
 
 
@@ -692,8 +692,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
     # and all_par. This option is useful for doing non-standard manipulations
     # of the results, and debugging.
     # @param quantiles numeric vector of probabilities or NULL. If not NULL,
-    # then return quantiles of the exceedance rate for Mw (based on the
-    # logic tree branches and probabilities)
+    # then return the exceedance rate for Mw at the given inverse-quantile or
+    # probability (based on the logic tree branches and probabilities)
     # @param return_random_curve TRUE/FALSE. If TRUE, randomly pick a parameter
     # combination from the logic tree (with probability equal to the probability
     # of each branch), and evaluate the exceedance rate of Mw for that
@@ -822,7 +822,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             for(i in 1:length(quantiles)){
                 # For each quantile, evaluate the rate curve with interpolation
                 quantile_rate = apply(all_rate_matrix, 2, 
-                    f<-function(rate) quantile_rate_fun(rate, p=quantiles[i], 
+                    f<-function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i], 
                         account_for_mw_obs_error))
                 if(length(Mw) == 1){
                     output[i] = 
