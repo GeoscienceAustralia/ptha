@@ -27,6 +27,9 @@ if(config$edge_correct_event_rates){
 
 sourcezone_parameter_file = config$sourcezone_parameter_file 
 sourcezone_parameters = read.csv(sourcezone_parameter_file, stringsAsFactors=FALSE)
+# Quick check on the input file
+source('check_sourcezone_parameters.R', local=TRUE)
+check_sourcezone_parameter_row_weights()
 
 # Get the source-name. Segmented cases have an extra 'segment name' that
 # distinguishes them
@@ -66,6 +69,8 @@ nbins = config$logic_tree_parameter_subsampling_factor # 9
 
 # Currently the code only treats pure normal or pure thrust events
 stopifnot(all(sourcezone_parameters$rake[!is.na(sourcezone_parameters$rake)] %in% c(-90, 90)))
+
+
 
 # Get environment we can use to provide spatially variable convergence
 # information
@@ -776,6 +781,12 @@ source_rate_environment_fun_standard<-function(sourcezone_parameters_row, unsegm
         mw_rate_function(event_table$Mw-dMw/2, epistemic_nonzero_weight=TRUE, account_for_mw_obs_error=TRUE)
 
 
+    #
+    # Quantiles below here
+    #
+
+
+
     # Upper credible interval bound. Wrap in as.numeric to avoid having a 1
     # column matrix as output
     # NOTE: Later we sum over [row-weights x event_rates_upper] on segmented
@@ -1260,6 +1271,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
 }
 
 
+
 # Do computations
 source_envs = vector(mode='list', length=length(source_segment_names))
 names(source_envs) = source_segment_names
@@ -1403,6 +1415,9 @@ if(config$write_to_netcdf){
 
     # Zero rates in netcdf files by setting scale_rate to zero
     for(i in 1:length(source_segment_names)){
+        # No need to repeat this for segments
+        if(source_envs[[i]]$is_a_segment) next
+
         write_rates_to_event_table(source_envs[[i]], scale_rate = 0.0, add_rate=FALSE)
     }
     #
