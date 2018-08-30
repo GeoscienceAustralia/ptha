@@ -155,6 +155,8 @@ test_that("test_rupture_creation_and_probabilities", {
     expect_that( all(rate_gt9_quantiles == rate_gt_multiple_mw_and_quantiles[2,]), is_true())
     expect_that( all(rate_gt91_quantiles == rate_gt_multiple_mw_and_quantiles[3,]), is_true())
 
+    # More test of chunking
+
     # Back-calculate slip on each fault
     event_rate = event_conditional_probabilities * 
         (rate_function(earthquake_event_table$Mw-dMw/2) - 
