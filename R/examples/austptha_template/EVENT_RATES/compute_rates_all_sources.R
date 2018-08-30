@@ -1067,14 +1067,10 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
     percentiles_to_store = seq(dp/2, 1-dp/2, len=round(1/dp))
 
     # Make a matrix with the mw_seq vs exceedance-rates for every percentile_to_store
-    unsegmented_mw_rate_curves = matrix(NA, nrow=length(mw_seq), ncol=length(percentiles_to_store))
-    unsegmented_mw_rate_curves_mu_vary = unsegmented_mw_rate_curves
-    for(i in 1:length(percentiles_to_store)){
-        unsegmented_mw_rate_curves[,i] = all_sources[[1]]$mw_rate_function(mw_seq, 
-            quantiles=percentiles_to_store[i])
-        unsegmented_mw_rate_curves_mu_vary[,i] = all_sources[[1]]$mw_rate_function(mw_seq, 
-            quantiles=percentiles_to_store[i], account_for_mw_obs_error=TRUE)
-    }
+    unsegmented_mw_rate_curves = all_sources[[1]]$mw_rate_function(mw_seq, 
+        quantiles=percentiles_to_store)
+    unsegmented_mw_rate_curves_mu_vary = all_sources[[1]]$mw_rate_function(mw_seq, 
+        quantiles=percentiles_to_store, account_for_mw_obs_error=TRUE)
     gc()
 
     # As above, for each segment individually
