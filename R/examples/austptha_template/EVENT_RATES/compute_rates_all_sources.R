@@ -29,7 +29,7 @@ sourcezone_parameter_file = config$sourcezone_parameter_file
 sourcezone_parameters = read.csv(sourcezone_parameter_file, stringsAsFactors=FALSE)
 # Quick check on the input file
 source('check_sourcezone_parameters.R', local=TRUE)
-check_sourcezone_parameter_row_weights()
+check_sourcezone_parameter_row_weights(sourcezone_parameters)
 
 # Get the source-name. Segmented cases have an extra 'segment name' that
 # distinguishes them
