@@ -156,6 +156,11 @@ test_that("test_rupture_creation_and_probabilities", {
     expect_that( all(rate_gt91_quantiles == rate_gt_multiple_mw_and_quantiles[3,]), is_true())
 
     # More test of chunking
+    # Get more quantiles than the chunk size
+    rate_gt_multiple_mw_and_many_quantiles = rate_function(c(9.0, 9.0, 9.1), quantiles=seq(0.01, 0.99, by=0.005))
+    inds = seq(20, 180, by=20)-1
+    mytest = all(rate_gt_multiple_mw_and_many_quantiles[,inds] == rate_gt_multiple_mw_and_quantiles)
+    expect_that(mytest, is_true())
 
     # Back-calculate slip on each fault
     event_rate = event_conditional_probabilities * 
