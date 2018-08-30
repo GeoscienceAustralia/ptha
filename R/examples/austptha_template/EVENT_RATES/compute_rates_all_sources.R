@@ -1807,25 +1807,14 @@ for(i in 1:length(source_envs)){
 # not just evaluate the percentiles at the unsegmented/segemented individually. 
 #
 unique_source_names = unique(sourcezone_parameters$sourcename)
-#if(config$MC_CORES > 1){
-#    # Parallel run
-#
-#    # List with indices for each unique source-zone
-#    all_inds = sapply(unique_source_names, f<-function(x) which(sourcezone_parameters$sourcename == x), 
-#        simplify=FALSE)
-#    # Function to update the source environments FIXME: doesn't work. I guess R copies the environment?
-#    local_f<-function(inds){
-#        update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation(source_envs[inds])
-#    }
-#    # Run in parallel. No output, but should update the environments
-#    tmp = mclapply(all_inds, local_f, mc.cores=config$MC_CORES, mc.cleanup=9L)
-#}else{
-    # Serial run
-    for(i in 1:length(unique_source_names)){
-        inds = which(sourcezone_parameters$sourcename == unique_source_names[i])
-        update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation(source_envs[inds])
-    }
-#}
+# Currently only do this in serial. If it is a problem, we could restructure
+# update_scenario_rate_per.... so that it does not directly modify the environment
+# (because it is hard to get that to work in parallel). Instead it could return
+# the required data to the main process, which would then update the environments itself
+for(i in 1:length(unique_source_names)){
+    inds = which(sourcezone_parameters$sourcename == unique_source_names[i])
+    update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation(source_envs[inds])
+}
 
 #
 # OUTPUT RATES TO NETCDF FILES BELOW HERE

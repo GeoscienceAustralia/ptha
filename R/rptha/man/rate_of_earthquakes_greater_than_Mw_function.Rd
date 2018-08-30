@@ -157,9 +157,9 @@ is tabulated, and a matrix with the tabulated values for every branch of the
 logic tree. The latter option can be used to scrutinize the results from each
 branch of the logic tree. \cr
 If the optional argument \code{quantiles} = a vector of probabilities is
-passed, then the function evaluates the rate function at each given quantile
+passed, then the function evaluates the rate function at each given inverse_quantile
 of the logic tree (e.g. quantiles = c(0.1, 0.5, 0.9) would return the lower
-10\%, median, and upper 90\% rates from the logic tree at each Mw) \cr
+10\%, median, and upper 90\% credible interval rates from the logic tree at each Mw) \cr
 If the optional argument \code{return_random_curve=TRUE} is passed, then the
 function will randomly pick a parameter combination from the logic tree (with
 probability equal to the probability of each branch), and evaluate the

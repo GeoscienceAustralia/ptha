@@ -147,6 +147,13 @@ test_that("test_rupture_creation_and_probabilities", {
     # The mean of these values should be close to the raw value of rate_function, which
     # is based on the weighted mean of the logic-tree rates
     expect_that( abs(mean(rate_gt9_quantiles) - rate_function(9.0)) < 1e-04, is_true())
+   
+    # Check we can do multiple mw and quantiles at once, and it still works
+    rate_gt_multiple_mw_and_quantiles = rate_function(c(9.0, 9.0, 9.1), quantiles=seq(0.1, 0.9, by=0.1))
+    rate_gt91_quantiles = rate_function(9.1, quantiles=seq(0.1, 0.9, by=0.1))
+    expect_that( all(rate_gt9_quantiles == rate_gt_multiple_mw_and_quantiles[1,]), is_true())
+    expect_that( all(rate_gt9_quantiles == rate_gt_multiple_mw_and_quantiles[2,]), is_true())
+    expect_that( all(rate_gt91_quantiles == rate_gt_multiple_mw_and_quantiles[3,]), is_true())
 
     # Back-calculate slip on each fault
     event_rate = event_conditional_probabilities * 

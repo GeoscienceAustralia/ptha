@@ -836,7 +836,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 #quantile_rate = apply(all_rate_matrix, 2, 
                 #    f<-function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i], 
                 #        account_for_mw_obs_error))
-       
+                # 
                 # This approach uses chunking so is more efficient 
                 chunk_size = 50
                 i_resid = i%%chunk_size
