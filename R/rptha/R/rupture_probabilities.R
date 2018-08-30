@@ -836,8 +836,6 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             }
         }
 
-
-
         return(output)
     }
 
