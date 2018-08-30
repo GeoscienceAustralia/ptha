@@ -651,8 +651,13 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             sorted_prob = all_par_prob[sorted_rates$ix]
         }
         cumulative_sorted_prob = cumsum(sorted_prob)
-        # The median occurs when the cumulative probability >= 0.5
-        ind = min(which(cumulative_sorted_prob >= p))
+
+        if(length(p) == 1){
+            # The median occurs when the cumulative probability >= 0.5
+            ind = min(which(cumulative_sorted_prob >= p))
+        }else{
+            ind = sapply(p, f<-function(x) min(which(cumulative_sorted_prob >= x)))
+        }
         return(sorted_rates$x[ind])
     }
 
@@ -819,20 +824,42 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 output = matrix(NA, ncol=length(quantiles), nrow=length(Mw))
                 colnames(output) = quantiles
             }
-            for(i in 1:length(quantiles)){
+
+            len_q = length(quantiles)
+            for(i in 1:len_q){
                 # For each quantile, evaluate the rate curve with interpolation
-                quantile_rate = apply(all_rate_matrix, 2, 
-                    f<-function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i], 
-                        account_for_mw_obs_error))
+    
+                #
+                # If length(quantiles) is large, this is very inefficient 
+                # Although it is memory conservative
+                #
+                #quantile_rate = apply(all_rate_matrix, 2, 
+                #    f<-function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i], 
+                #        account_for_mw_obs_error))
+       
+                # This approach uses chunking so is more efficient 
+                chunk_size = 50
+                i_resid = i%%chunk_size
+                if(i_resid == 1){
+                    # Only update quantile_rate every so often
+                    il = min(len_q, i+chunk_size-1)
+                    quantile_rate = apply(all_rate_matrix, 2,
+                        f<-function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i:il], 
+                            account_for_mw_obs_error))
+                    # Ensure it is a matrix
+                    dim(quantile_rate) = c(il-i+1, ncol(all_rate_matrix))
+                }
+
                 if(length(Mw) == 1){
                     output[i] = 
-                        approx(Mw_seq, quantile_rate, xout=Mw, rule=2)$y * 
+                        approx(Mw_seq, quantile_rate[i_resid,], xout=Mw, rule=2)$y * 
                         (Mw <= max_Mw_max)
                 }else{
                     output[,i] = 
-                        approx(Mw_seq, quantile_rate, xout=Mw, rule=2)$y * 
+                        approx(Mw_seq, quantile_rate[i_resid,], xout=Mw, rule=2)$y * 
                         (Mw <= max_Mw_max)
                 }
+
             }
         }
 
