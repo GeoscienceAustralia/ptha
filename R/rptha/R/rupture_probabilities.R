@@ -840,6 +840,8 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 # This approach uses chunking so is more efficient 
                 chunk_size = 50
                 i_resid = i%%chunk_size
+                if(i_resid == 0) i_resid = chunk_size
+
                 if(i_resid == 1){
                     # Only update quantile_rate every so often
                     il = min(len_q, i+chunk_size-1)
