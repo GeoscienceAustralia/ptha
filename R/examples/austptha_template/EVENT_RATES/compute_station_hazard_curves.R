@@ -14,10 +14,14 @@ source('config.R', local=config)
 # INPUTS
 #
 
-# By default run all source zones. But if the following variable is FALSE,
-# then only run those for which the function check_if_file_is_ok (below)
-# returns FALSE
-run_all_source_zones = TRUE
+# By default run all source zones, unless command line arguments are passed. 
+# In that case, the argument is an integer corresponding to a subset of the 
+# runs to execute. See the function 'check_if_file_is_ok' (below) for details
+if(length(commandArgs(trailingOnly=TRUE)) > 0){
+    run_all_source_zones = FALSE 
+}else{
+    run_all_source_zones = TRUE
+}
 
 # NetCDF files with uniform slip max_stage for every point, and also event
 # rates
