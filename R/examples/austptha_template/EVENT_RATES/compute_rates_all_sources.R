@@ -1249,23 +1249,76 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
                 }
 
                 # Check there is no increase in the rate! This can happen (although rarely in practice).
-                # To solve it we slightly distort the exceedance rate at the quantile.
+                # It's a problem, because then we would add a 'negative scenario rate' for this segment,
+                # and there is no guarentee that will be cancelled by the other sources.
+                # To solve it we slightly distort the exceedance rate at the quantile. Considering approximations
+                # in those calculations it should not be a big deal.
                 # If we get isolated warnings like this there should be no problem, but many warnings suggest trouble.
                 if(k > 1){
+
+                    #
+                    # Constant shear modulus case
+                    #
                     if(ex_rates[[i]][[nm]][k] > ex_rates[[i]][[nm]][k-1]){
-                        message = paste0('Warning: Adjusting percentile ', nm, ' at Mw=', mw_seq[k], 
-                            ' on ', all_sources[[i]]$source_segment_name, ' with constant mu \n ', 
-                        ' Changing from ', ex_rates[[i]][[nm]][k], ' to ', ex_rates[[i]][[nm]][k-1])
-                        print(message)
-                        ex_rates[[i]][[nm]][k] = ex_rates[[i]][[nm]][k-1]
+            
+                        # Try increasing the previous rate
+                        test_rate = ex_rates[[i]][[nm]][k]
+                        if(k > 2){
+                            limit = ex_rates[[i]][[nm]][k-2] 
+                        }else{
+                            limit = Inf
+                        }
+
+                        if(test_rate <= limit){
+                            # We can increase the previous rate. This is preferable if it's possible,
+                            # because otherwise if the previous rate is zero we
+                            # will force zeros for all following k
+                            message = paste0('Warning: Adjusting percentile ', nm, ' at Mw=', mw_seq[k-1], 
+                                ' on ', all_sources[[i]]$source_segment_name, ' with constant mu \n ', 
+                            ' Changing from ', ex_rates[[i]][[nm]][k-1], ' to ', test_rate)
+                            print(message)
+                            ex_rates[[i]][[nm]][k-1] = test_rate
+                        }else{
+                            message = paste0('Warning: Adjusting percentile ', nm, ' at Mw=', mw_seq[k], 
+                                ' on ', all_sources[[i]]$source_segment_name, ' with constant mu \n ', 
+                            ' Changing from ', ex_rates[[i]][[nm]][k], ' to ', ex_rates[[i]][[nm]][k-1])
+                            print(message)
+                            ex_rates[[i]][[nm]][k] = ex_rates[[i]][[nm]][k-1]
+                        }
                     } 
+
+                    #
+                    # Same as above
+                    # Variable shear modulus case
+                    #
                     if(ex_rates_mu_vary[[i]][[nm]][k] > ex_rates_mu_vary[[i]][[nm]][k-1]){
-                        message = paste0('Warning: Adjusting percentile ', nm, ' at Mw=', mw_seq[k], 
-                            ' on ', all_sources[[i]]$source_segment_name, ' with variable mu \n', 
-                        ' Changing from ', ex_rates_mu_vary[[i]][[nm]][k], ' to ', ex_rates_mu_vary[[i]][[nm]][k-1])
-                        print(message)
-                        ex_rates_mu_vary[[i]][[nm]][k] = ex_rates_mu_vary[[i]][[nm]][k-1]
-                    }
+            
+                        # Try increasing the previous rate
+                        test_rate = ex_rates_mu_vary[[i]][[nm]][k]
+                        if(k > 2){
+                            limit = ex_rates_mu_vary[[i]][[nm]][k-2] 
+                        }else{
+                            limit = Inf
+                        }
+
+                        if(test_rate <= limit){
+                            # We can increase the previous rate. This is preferable if it's possible,
+                            # because otherwise if the previous rate is zero we
+                            # will force zeros for all following k
+                            message = paste0('Warning: Adjusting percentile ', nm, ' at Mw=', mw_seq[k-1], 
+                                ' on ', all_sources[[i]]$source_segment_name, ' with variable mu \n ', 
+                            ' Changing from ', ex_rates_mu_vary[[i]][[nm]][k-1], ' to ', test_rate)
+                            print(message)
+                            ex_rates_mu_vary[[i]][[nm]][k-1] = test_rate
+                        }else{
+                            message = paste0('Warning: Adjusting percentile ', nm, ' at Mw=', mw_seq[k], 
+                                ' on ', all_sources[[i]]$source_segment_name, ' with variable mu \n ', 
+                            ' Changing from ', ex_rates_mu_vary[[i]][[nm]][k], ' to ', ex_rates_mu_vary[[i]][[nm]][k-1])
+                            print(message)
+                            ex_rates_mu_vary[[i]][[nm]][k] = ex_rates_mu_vary[[i]][[nm]][k-1]
+                        }
+                    } 
+
                 }
             }
         }
