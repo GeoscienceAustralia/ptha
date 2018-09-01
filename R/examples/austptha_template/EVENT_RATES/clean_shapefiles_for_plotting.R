@@ -31,3 +31,9 @@ writeOGR(output, dsn='tsunami_stages_1_in_1000_Australia',
     overwrite=TRUE)
 
 system('zip -r tsunami_stages_1_in_1000_Australia.zip tsunami_stages_1_in_1000_Australia')
+
+# Copy the zip file to gdata
+file.copy(from='tsunami_stages_1_in_1000_Australia.zip', 
+    to=paste0(dirname(peak_stage), '/tsunami_stages_1_in_1000_Australia.zip'),
+    overwrite=TRUE)
+
