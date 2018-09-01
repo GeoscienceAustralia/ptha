@@ -1125,9 +1125,11 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
         pc_value_unseg = rep(0, length(unique_rates))
         pc_value_seg   = rep(0, length(unique_rates))
         for(j in 1:length(unique_rates)){
-            # Equation for the 'percentile of the combination'
+            # Percentile of the unseg curve associated with unique_rates[j]
             pc_value_unseg[j] = max( percentiles_to_store * (rate_unseg <= unique_rates[j]) )
+            # Percentile of the seg curve associated with unique_rates[j]
             pc_value_seg[j]   = max( percentiles_to_store * (rate_seg   <= unique_rates[j]) )
+            # Equation for the 'percentile of the combined distribution'
             pc_value[j] = pc_value_unseg[j]*unsegmented_weight + pc_value_seg[j]*segmented_weight
         }
 
@@ -1141,9 +1143,11 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
         pc_value_unseg_mu_vary = rep(0, length(unique_rates))
         pc_value_seg_mu_vary   = rep(0, length(unique_rates))
         for(j in 1:length(unique_rates)){
-            # Equation for the 'percentile of the combination'
+            # Percentile of the unseg curve associated with unique_rates[j]
             pc_value_unseg_mu_vary[j] = max( percentiles_to_store * (rate_unseg_mu_vary <= unique_rates[j]) )
+            # Percentile of the seg curve associated with unique_rates[j]
             pc_value_seg_mu_vary[j]   = max( percentiles_to_store * (rate_seg_mu_vary   <= unique_rates[j]) )
+            # Equation for the 'percentile of the combined distribution'
             pc_value_mu_vary[j] = pc_value_unseg_mu_vary[j]*unsegmented_weight + pc_value_seg_mu_vary[j]*segmented_weight
         }
 
@@ -1155,8 +1159,8 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
         get_seg_unseg_pc<-function(desired_inv_quantile, pc_value, pc_value_seg, pc_value_unseg, eps=1e-08){
     
             thresh_index = sum(pc_value <= desired_inv_quantile + eps)
-           
-            # Later NA will be mapped to 'set rates to zero' 
+          
+            # Later NA will be interpreted as 'set rates to zero' 
             seg_unseg_output = rep(NA, 2)
 
             # Note if thresh_index = 1, then the rate is 0 (by construction
@@ -1186,20 +1190,24 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
         }
 
     }
+    # At this stage we know the percentiles at which we should evaluate the
+    # segmented and unsegmented distributions, in order to get the 'combined'
+    # distribution at the desired percentiles (=desired_inv_quantiles)
 
 
     # STEP 1.5
     #
-    # Compute the exceedance rate curves for each individual source
+    # Compute the exceedance rate curves for each individual segment (as well as the unsegmented case)
     #
-    # We also check that the 'individual segment' rate curves never increase
+    # We also check that the 'individual segment' rate curves never increase.
     # (which would locally lead to a negative rate increment). This can happen
-    # (although rare) because above, we did the analysis based on the 'sum of
-    # segments'.
+    # (although rare) because the percentile at which we evaluate the exceedance rate varies with mw. 
+    # Furthermore, above we did the analysis based on the 'sum of segments', which does not
+    # guarentee monotonicity for an individual segment (although non-monotonicity is rare).
     # We definitely do not want to create negative scenario rate increments anywhere!
     # Better to slightly distort the quantile. 
     #
-    ex_rates = vector(mode='list', length=length(all_sources))
+    ex_rates = vector(mode='list', length=length(all_sources)) # Store exceedance rates at varying mw/percentiles
     ex_rates_mu_vary = vector(mode='list', length=length(all_sources))
     for(j in 1:length(desired_inv_quantiles)){
 
@@ -1207,6 +1215,7 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
 
         for(i in 1:length(all_sources)){
 
+            # Get the percentile that matches desired_inv_quantiles[j]
             if(i == 1){
                 # Unsegmented
                 pc_indices = match(all_pc_values[[nm]]$unseg, percentiles_to_store)
@@ -1249,10 +1258,14 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
                 }
 
                 # Check there is no increase in the rate! This can happen (although rarely in practice).
-                # It's a problem, because then we would add a 'negative scenario rate' for this segment,
-                # and there is no guarentee that will be cancelled by the other sources.
+                # If the rate curve was always evaluated at the same percentile, then this would never happen.
+                # However, for this problem, the percentile changes with mw at the individual segment level
+                # (such that the percentile is fixed for the combined source exceedance rate curve).
+                # An increate in the rate for a single segment would be a
+                # problem, because then we would add a 'negative scenario rate' for the segment,
+                # and there is no guarentee that will be cancelled by the other sources in every case.
                 # To solve it we slightly distort the exceedance rate at the quantile. Considering approximations
-                # in those calculations it should not be a big deal.
+                # in these calculations it should not be a big deal.
                 # If we get isolated warnings like this there should be no problem, but many warnings suggest trouble.
                 if(k > 1){
 

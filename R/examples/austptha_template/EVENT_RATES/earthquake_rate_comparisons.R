@@ -134,7 +134,10 @@ num_downdip = 4
 reference_magnitude = 9.0
 result_alaska = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
 #> 1/result_alaska
+## OLD
 #[1] 3361.1557 1828.9279  997.5940  902.3920  591.5062  412.7696
+## UPDATED UNCERTAINTY 
+# [1] 5610.2163 2186.9478  952.9092  902.3920  598.3122  404.5945
 
 #
 # Butler et al. (2016). Their region might be slightly smaller, corresponding
@@ -146,8 +149,11 @@ nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVEN
 num_downdip = 4
 reference_magnitude = 9.0
 result_alaska = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD - PURE CO-MONOTONIC
 # [1] 4697.4216 2579.7323 1431.4851 1298.0932  854.8162  600.1659
-
+## UPDATED UNCERTAINTY
+#> 1/result_alaska
+#[1] 7150.3669 3018.6602 1376.7008 1298.0932  864.4423  585.8649
 
 #
 # Butler et al.'s other segment range (2016)
@@ -159,8 +165,12 @@ nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVEN
 num_downdip = 4
 reference_magnitude = 9.0
 result_aleutians = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+# OLD
 #> 1/result_aleutians
 # [1] 3127.0208 1339.5510  552.2048  506.4327  325.9272  211.4370
+# UPDATED UNCERTAINTY
+##> 1/result_aleutians
+#[1] 11132.6691  1370.2635   521.9373   506.4327   325.5969   211.1142
 
 #
 # Tohoku area
@@ -171,9 +181,12 @@ num_downdip = 4
 reference_magnitude = 9.0
 nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_kurilsjapan.nc'
 result_tohoku = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD
 #> 1/result_tohoku
 #[1] 1519.8782  815.8598  580.7485  568.2235  440.8242  321.7312
-
+## Updated uncertainty
+#> 1/result_tohoku
+#[1] 1529.5092  808.1374  579.2576  568.2235  440.2708  324.6005
 
 #
 # Kamchatka area 
@@ -183,8 +196,12 @@ num_downdip = 4
 reference_magnitude = 9.0
 nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_kurilsjapan.nc'
 result_kamchatka = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD
 #> 1/result_kamchatka
 # [1] 2100.0142 1031.7235  721.9265  714.9773  553.1098  407.5389
+## UPDATED UNCERTAINTY
+#> 1/result_kamchatka
+#[1] 2152.7718 1014.5349  723.5509  714.9773  554.9259  408.2894
 
 #
 # Chile -- matching 1960 earthquake
@@ -198,8 +215,12 @@ num_downdip = 4
 reference_magnitude = 9.0
 nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_southamerica.nc'
 result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD
 #> 1/result_chile
 #[1] 1874.7230  877.3737  508.8150  531.3701  400.6907  318.1025
+## UPDATED UNCERTAINTY
+#> 1/result_chile
+#[1] 5042.1768  935.8553  491.6242  531.3701  404.3675  313.7825
 
 #Chile segment.
 segment_range = c(35, 60) # Berryman et al "Central-Chile"
@@ -207,9 +228,12 @@ num_downdip = 4
 reference_magnitude = 9.0
 nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_southamerica.nc'
 result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
-#
+## OLD
 #> 1/result_chile
 #[1] 1305.2658  603.3613  343.5816  359.7956  270.7318  213.5603
+## NEW 
+#> 1/result_chile
+#[1] 3719.9814  636.8577  332.0806  359.7956  273.3023  211.2476
 
 #
 # Chile 2 -- chile segment -- Burbidge's estimate.
@@ -219,8 +243,12 @@ num_downdip = 4
 reference_magnitude = 8.5
 nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_southamerica.nc'
 result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD
 #> 1/result_chile
 #[1] 304.66854 175.54760 111.20742 113.29753  86.38450  68.43064
+## NEW
+#> 1/result_chile
+#[1] 343.72378 172.62166 109.29248 113.29753  87.41685  66.92885
 
 #
 # Chile 3 -- chile segment -- Burbidge's estimate.
@@ -230,9 +258,12 @@ num_downdip = 4
 reference_magnitude = 8.0
 nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_southamerica.nc'
 result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
-#
+# OLD
 #> 1/result_chile
 #[1] 88.02668 58.13668 40.28379 40.06789 31.06519 24.54790
+## NEW
+#> 1/result_chile
+#[1] 94.96237 57.57016 40.70787 40.06789 31.34495 23.61779
 
 #
 # Sumatra-Andaman region
@@ -242,16 +273,12 @@ num_downdip = 4
 reference_magnitude = 9.0
 nc_file = '../SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_sunda2.nc'
 result_sumatra = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD
 #> 1/result_sumatra
 # [1] 2600.6321 1287.9932  783.3073  721.9693  503.7026  334.9699
-
-segment_range = c(69, 98) # Similar to 2004 rupture
-num_downdip = 4
-reference_magnitude = 9.0
-nc_file = '../SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_sunda2.nc'
-result_sumatra = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## NEW
 #> 1/result_sumatra
-# [1] 2600.6321 1287.9932  783.3073  721.9693  503.7026  334.9699
+#[1] 2789.7856 1364.0114  759.9245  721.9693  489.4998  328.9376
 
 # Further south, around where Patton et al.'s (2015) turbidites are
 segment_range = c(48, 78)
@@ -259,14 +286,22 @@ num_downdip = 4
 reference_magnitude = 9.0
 nc_file = '../SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_sunda2.nc'
 result_sumatra = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD
 #> 1/result_sumatra
 #[1] 1590.7428  795.8818  515.9605  487.3140  357.0044  239.1381
+## NEW
+#> 1/result_sumatra
+#[1] 1641.0544  815.5540  512.5507  487.3140  348.4100  236.9521
+
 reference_magnitude = 8.7
 nc_file = '../SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_sunda2.nc'
 result_sumatra = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD
 #> 1/result_sumatra
 #[1] 444.9253 291.4750 212.7968 206.3841 159.5986 117.9906
-
+## NEW
+#> 1/result_sumatra
+#[1] 452.5209 291.0936 212.1064 206.3841 158.5278 118.7261
 
 #
 # Nankai
@@ -276,8 +311,13 @@ num_downdip = 3
 reference_magnitude = 8.5
 nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/ryuku/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_ryuku.nc'
 result_ryuku = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## OLD
 #> 1/result_ryuku
 #[1] 10426.4186  1733.4146   588.0913   565.4841   364.8754   224.9400
+## NEW
+#> 1/result_ryuku
+#[1] 11106.0448  1615.3392   579.0211   565.4841   360.9482   222.8397
+
 
 segment_range = c(1,18) # Offshore of japan
 num_downdip = 3
@@ -286,3 +326,6 @@ nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/ryuku/TSUNAMI_EVENTS/all_sto
 result_ryuku = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
 #> 1/result_ryuku
 #[1] 513.04429 248.65497 145.06553 141.94314 101.71527  73.64809
+#> 1/result_ryuku  
+#[1] 505.0818 256.9993 148.1888 141.9431 102.4295  73.7656
+
