@@ -64,7 +64,7 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
                        '  Mw-exceedance-rate curve at the logic-tree (mean, 16%, 84%), and distributing among scenarios. This ensures a tight relation between \n',
                        '  Mw-exceedance-rate curves and the scenario rates. However, this procedure does NOT ensure any particular ordering on the (mean, 16%, 84%) rates\n',
                        '  at the scenario level. Although the Mw-exceedance-rate curves are ordered, their derivatives (used to derive scenario rates) might not be. \n',
-                       '  Irrespective the "rate-by-magnitude" plots give a "heuristic indication" of the magnitudes most likely to lead to the stage-exceedance.'
+                       '  Irrespective the "rate-by-magnitude" plots give a "heuristic indication" of the magnitudes most likely to lead to the stage-exceedance.',
                        '\n',
                        'A copy of the script used to make this plot can be found at:\n',
                        '    https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template/EVENT_RATES\n',
