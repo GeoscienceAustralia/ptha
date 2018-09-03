@@ -49,8 +49,6 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
 
 .preamble_title2 = 'Information on the plots'
 .preamble_text2 = paste0('\n',
-                       '\n',
-                       '\n',
                        'An important caveat regarding the interpretation of earthquake magnitude:\n', 
                        '  Earthquake magnitudes in these plots are derived from the event slip and area, assuming a "constant shear modulus" of 30 GPa (for thrust\n',
                        '  fault sources) or 60 GPa (for normal fault sources). However, in reality the shear modulus may vary with depth (e.g. Bilek and Lay, 1999).\n',
@@ -61,12 +59,17 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
                        '  might differ significantly from 30 GPa (for thrust fault source-zones only). On normal fault source-zones the current study does not account\n',
                        '  for variation of the shear modulus with depth.\n',
                        '\n',
+                       'An important caveat regarding the rate-by-magnitude plots:\n',
+                       '  For the plots which show "rate-by-magnitude" for the top 3 source-zones, the rates (mean, 16%, 84%) are derived by differentiating the \n',
+                       '  Mw-exceedance-rate curve at the logic-tree (mean, 16%, 84%), and distributing among scenarios. This ensures a tight relation between \n',
+                       '  Mw-exceedance-rate curves and the scenario rates. However, this procedure does NOT ensure any particular ordering on the (mean, 16%, 84%) rates\n',
+                       '  at the scenario level. Although the Mw-exceedance-rate curves are ordered, their derivatives (used to derive scenario rates) might not be. \n',
+                       '  Irrespective the "rate-by-magnitude" plots give a "heuristic indication" of the magnitudes most likely to lead to the stage-exceedance.'
                        '\n',
                        'A copy of the script used to make this plot can be found at:\n',
                        '    https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template/EVENT_RATES\n',
                        'in the file named "quick_station_stage_exceedance_rates.R"\n',
                        'Other codes used to develop the PTHA can be found in the same git repository.\n',
-                       '\n',
                        '\n',
                        'References\n',
                        '    Bilek, S.L. and Lay, T. (1999) Rigidity variations with depth along interplate megathrust faults in subduction zones. Nature, 400, 443-446\n'
