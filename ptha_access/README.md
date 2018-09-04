@@ -596,11 +596,12 @@ sum(puysegur$events$rate_annual_upper * (puysegur$events$Mw > 7.85))
 ## [1] 0.02427671
 ```
 Notice that these are ordered as expected, i.e. 2.5% <= 16% <= median <= 84% <=
-97.5%.  However, please note that at the individual scenario level there is not
-guarentee on the order.  For example, the 16pc value might be greater than the
-median in some cases.  This is because the individual scenario values are
-related to the *derivatives* of the various Mw-exceedance-rate curves, which
-might not be ordered in the same way as the curves themselves. 
+97.5%.  However, please note that at the individual scenario level this
+ordering may not hold. For example, the `rate_annual_16pc` value is sometimes
+larger than the `rate_annual_median` value. This is because the latter
+variables are related to the *derivatives* of the Mw-exceedance-rate
+percentile curves. The derivatives might not be ordered in the same way as the 
+exceedance-rate curves themselves.
 
 
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
