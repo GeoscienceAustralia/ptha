@@ -26,17 +26,17 @@ used for the 2018 Australian PTHA.
 
 # Obtaining basic tsunami hazard information.
 
-## Obtaining tsunami peak-stage exceedance-rates at sites around Australia
+## Obtaining tsunami max-stage exceedance-rates at sites around Australia
 
-The tsunami 'peak-stage' is the maximum water-level that a particular tsunami
+The tsunami 'max-stage' is the maximum water-level that a particular tsunami
 attains at a particular location. This gives an idea of how 'big' the tsunami
 is. In the current analysis we ignore tidal variations and assume a constant
-mean-sea-level (MSL=0), so the 'peak-stage' is equivalent to the maximum
+mean-sea-level (MSL=0), so the 'max-stage' is equivalent to the maximum
 elevation of the tsunami wave above MSL. 
 
-The peak-stage exceedance-rates describe 'how often' tsunami events occur with
-peak-stage above a particular threshold value. For example, you could ask how
-often peak-stages above 0.5m (or 2.0m) occur, in terms of the average number of
+The max-stage exceedance-rates describe 'how often' tsunami events occur with
+max-stage above a particular threshold value. For example, you could ask how
+often max-stages above 0.5m (or 2.0m) occur, in terms of the average number of
 events each year at a particular site. At most locations there would be less
 than one event each year, so the exceedance-rates are typically small numbers.
 For example, an exceedance-rate of 0.002=1/500 would correspond to one event every 500
@@ -60,7 +60,7 @@ Kaikoura in New Zealand, western Japan). Therefore, outside of Australia, you
 should very carefully consider whether the results can be used, noting they may
 ignore the most relevant source-zones.**
 
-The simplest way to examine the tsunami peak-stage exceedance-rates in
+The simplest way to examine the tsunami max-stage exceedance-rates in
 the 2018 PTHA is to [download this csv file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
 This csv file contains the following columns:
 
@@ -70,7 +70,7 @@ This csv file contains the following columns:
 
 * `gaugeID` is a real hazard point ID
 
-* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These values corresponds to the tsunami peak-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami peak-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
+* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These values corresponds to the tsunami max-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami max-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
 
 * multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 97.5% quantile)
 
@@ -82,7 +82,7 @@ This csv file contains the following columns:
 
 * multiple columns with names like `STAGE_84pc_XXXX`. These are similar to the above, but describe the 84% quantile.
 
-Note that 'peak stage' values below 2cm (or above 20m) are treated as missing
+Note that 'max stage' values below 2cm (or above 20m) are treated as missing
 data in this file (NA). While such values are unlikely to be of interest, if
 necessary they can be reconstructed from the detailed information we provide
 (later in this document).
@@ -111,7 +111,7 @@ compared with the above csv:
 * `ST84_XXXX` is the same as `STAGE_84pc_XXXX` described above
 
 At most hazard points you will find there is large uncertainty in the
-peak-stage for a given exceedance-rate. This is mainly due to large uncertainty
+max-stage for a given exceedance-rate. This is mainly due to large uncertainty
 in the frequencies of high-magnitude subduction zone earthquakes. A more
 detailed discussion of these topics can be found in the 
 [Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
@@ -122,7 +122,7 @@ FIXME describe where to obtain the pdf files containing the summary information
 
 ## Interpreting exceedance-rate information
 
-The peak-stage exceedance-rates vary from site to site, depending on exposure
+The max-stage exceedance-rates vary from site to site, depending on exposure
 to earthquake-generated tsunamis. For a given exceedance-rate, there is also a
 general tendency for the tsunami size to increase in shallower water. Such
 'shoaling' is a well known property of ocean waves. 
@@ -458,7 +458,7 @@ FIXME:
 
 Here we show how to read a flow time-series for a given earthquake event, at a
 given hazard point. To do this, you have to know the hazard point `gaugeID`,
-which can be found by examining the peak-stage vs exceedance-rate datasets (csv
+which can be found by examining the max-stage vs exceedance-rate datasets (csv
 and shapefile), or by using the interactive hazard point viewer above. (***In the
 latter case, please do not confuse this with the Feature ID that is shown by
 default in the interactive map - I would like to remove this field, but do not
