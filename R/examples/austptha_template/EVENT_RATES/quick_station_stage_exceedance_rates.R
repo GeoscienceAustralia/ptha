@@ -22,8 +22,8 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
 .preamble_text1 = paste0( 
                        'The plots are: \n',
                        '\n',
-                       '    1) A hazard curve, containing the peak-tsunami-stage vs the exceedance-rate at the specified hazard point location,\n',
-                       '       with logic-tree mean and quantiles illustrating the uncertainty. Note the peak-tsunami-stage is the maximum water level\n',
+                       '    1) A hazard curve, containing the max-tsunami-stage vs the exceedance-rate at the specified hazard point location,\n',
+                       '       with logic-tree mean and quantiles illustrating the uncertainty. Note the max-tsunami-stage is the maximum water level\n',
                        '       attained by the tsunami (above mean-sea-level=0, ignorning tides) at the site.\n',
                        '\n',
                        '    2) A "convergence check" of the above hazard curve. The PTHA hazard results rely on simulating a large number of random\n',
@@ -33,17 +33,17 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
                        '\n',
                        '    3-8) Information on which source-zones dominate the hazard (i.e. hazard-deaggregation plots) for mean exceedance rates of 1/100,\n', 
                        '       1/500, 1/2500. In each case, for the top 3 source-zones we show rates separated by magnitude (assuming "constant shear modulus"),\n',
-                       '       to highlight the model scenarios most likely to cause tsunami above the threshold peak-stage.\n',
+                       '       to highlight the model scenarios most likely to cause tsunami above the threshold max-stage.\n',
                        '       The "spatial hazard deaggregation" plot gives an idea of where earthquakes exceeding the stage threshold might occur. For every\n',
                        '       unit-source, it shows:\n',
                        '           SUM( (event-slip-on-the-unit-source / sum-of-the-event-slip-on-all-the-unit-sources) X individual-mean-event-rate )\n',
-                       '       , where the SUM includes events that exceed the peak-stage threshold. Results are normalised to [0-1].\n',
+                       '       , where the SUM includes events that exceed the max-stage threshold. Results are normalised to [0-1].\n',
                        '       Please note that the appearance of the "spatial hazard deaggregation" plot is significantly affected by the choice of colour scheme.\n',
                        '       Interpretations should always be cross-checked with the "Top 10 source-zones" bar plot. A common mistake is to focus on\n',
                        '       "small-areas with high values", without considering that "large-areas with lower values" may contribute more to the overall hazard.\n',
                        '       Furthermore, details of the hazard deaggregation may be affected by convergence issues analogous to those mentioned in point 2 above.\n',
                        '\n',
-                       '    9-10) The peak-stage at the station of interest resulting from 1m of slip on each unit source. This may help to understand and\n',
+                       '    9-10) The max-stage at the station of interest resulting from 1m of slip on each unit source. This may help to understand and\n',
                        '       cross-check the hazard deaggregation.\n'
 )
 
@@ -291,7 +291,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
             lty='dotted', col='brown')
 
         legend('topright', 
-            c('Peak-stage exceedance-rate (Median from logic-tree)',
+            c('Maximum-stage exceedance-rate (Median from logic-tree)',
                'Mean', '68% credible interval', '95% credible interval'),
             col=c('black', 'brown', 'orange', 'red'),
             pch=c(19, 4, 19, 19), bg='white', 
@@ -312,7 +312,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
             'They should agree fairly well except for rare events.'))
 
         legend('topright', 
-            c('Peak-stage exceedance-rate (mean over all logic-tree branches)',
+            c('Maximum-stage exceedance-rate (mean over all logic-tree branches)',
               'convergence check 1', 'convergence check 2'),
             col=c('black', 'orange', 'red'),
             lty=c(1, 1, 1), bg='white')
@@ -424,7 +424,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
                 col=colz[m1], density=100, horiz=TRUE, las=1, 
                 xlab='Logic-tree Mean rate (events/year)', 
                 main=paste0('Top ', length(m1), 
-                    ' sources: Mean rate of events with \n peak_stage > ', signif(stage_threshold,3), 'm', 
+                    ' sources: Mean rate of events with \n max_stage > ', signif(stage_threshold,3), 'm', 
                     ' @ (', round(hp$lon[ni],3), ', ', round(hp$lat[ni],3), ')')
                 )
             par('mar' = oldmar) # Back to old margins
@@ -447,7 +447,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
                 points(rate_by_Mw$rate_exceeding_16pc, 1:nrow(rate_by_Mw), col='orange')
                 points(rate_by_Mw$rate_exceeding_84pc, 1:nrow(rate_by_Mw), col='orange')
                 mtext(side=2, paste0('Magnitude (assumes constant shear modulus)'), line=2.3, cex=0.7)
-                title(paste0(sz, ': Rates with peak-stage > ', signif(stage_threshold,3), 'm \n Split by magnitude category'))
+                title(paste0(sz, ': Rates with max-stage > ', signif(stage_threshold,3), 'm \n Split by magnitude category'))
             }
             ## Because the 'mean', 'median', etc refer to the "Exceedance Rate" curve, but the scenario weights
             ## are related to the derivative of this, it is possible that the scenario weights are not ordered
@@ -493,7 +493,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         par(mfrow=c(1,1))
         plot_hazard_curves_utilities$plot_station_deaggregated_hazard(site_deagg, scale=0.01,
             background_raster=background_raster, 
-            main=paste0('Spatial hazard deaggregation, peak-stage exceeding ', stage_level,  'm',
+            main=paste0('Spatial hazard deaggregation, max-stage exceeding ', stage_level,  'm',
                 ' \n Logic-tree-mean-exceedance-rate = 1/', (1/ex_rates[sv]), 
                 '; median-exceedance-rate = 1/', round(1/median_rates_for_stages[sv])))
         rm(site_deagg); gc()
@@ -508,7 +508,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
     site_index = plot_hazard_curves_utilities$plot_unit_source_wave_heights_at_station(
         lon, lat,
         background_raster=background_raster, rake_range = c(89, 91), 
-        main='Peak stage from each thrust (rake=90) unit-source with 1m slip')
+        main='Maximum-stage (m) from each thrust (rake=90) unit-source with 1m slip')
     gc()
     # Add the peak stage from all unit sources. Use the site index from the
     # previous plot to speed it up
@@ -516,7 +516,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         lon, lat,
         site_index=site_index,
         background_raster=background_raster, rake_range = c(-91, -89), 
-        main='Peak stage from each normal (rake=-90) unit-source with 1m slip')
+        main='Maximum-stage (m) from each normal (rake=-90) unit-source with 1m slip')
     gc()
 
     dev.off()
