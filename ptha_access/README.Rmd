@@ -28,11 +28,11 @@ used for the 2018 Australian PTHA.
 
 ## Obtaining tsunami maximum-stage exceedance-rates at sites around Australia
 
-The tsunami 'maximum-stage' is the maximum water-level that a particular tsunami
-attains at a particular location. This gives an idea of how 'big' the tsunami
-is. In the current analysis we ignore tidal variations and assume a constant
-mean-sea-level (MSL=0), so the 'maximum-stage' is equivalent to the maximum
-elevation of the tsunami wave above MSL. 
+The tsunami 'maximum-stage' is the maximum water-level that a particular
+tsunami attains at a particular location. This gives an idea of how 'big' the
+tsunami is. In the current analysis we ignore tidal variations and assume a
+constant mean-sea-level (MSL=0), so the 'maximum-stage' is equivalent to the
+maximum elevation of the tsunami wave above MSL. 
 
 The maximum-stage exceedance-rates describe 'how often' tsunami events occur with
 maximum-stage above a particular threshold value. For example, you could ask how
@@ -59,6 +59,12 @@ Australia (e.g.  in the Carribbean, the Mediterrean, the Manila trench,
 Kaikoura in New Zealand, western Japan). Therefore, outside of Australia, you
 should very carefully consider whether the results can be used, noting they may
 ignore the most relevant source-zones.**
+
+It should be noted that the tsunami maximum-stage provides only a rough
+characterisation of its capacity to cause coastal inundation. Ultimately
+tsunami inundation will be affected by the full details of the tsunami wave
+train, and how it interacts with the coastal landscape. But all else being
+equal, a larger maximum-stage will generally lead to larger inundation.
 
 The simplest way to examine the tsunami maximum-stage exceedance-rates in
 the 2018 PTHA is to [download this csv file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
