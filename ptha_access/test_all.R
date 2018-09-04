@@ -10,7 +10,7 @@ source('R/config.R', local=TRUE)
 
 # Find a file that contains hazard points. Easiest way is to read them from a tide gauge file
 unit_source_stats_puysegur = paste0(.GDATA_OPENDAP_BASE_LOCATION, 
-    'SOURCE_ZONES/puysegur/TSUNAMI_EVENTS/unit_source_statistics_puysegur.nc')
+    'SOURCE_ZONES/puysegur2/TSUNAMI_EVENTS/unit_source_statistics_puysegur2.nc')
 fid = nc_open(unit_source_stats_puysegur)
 gauge_netcdf_file = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(4096,1))[1]
 nc_close(fid)
@@ -23,10 +23,10 @@ test_sum_tsunami_unit_sources(gauge_netcdf_file)
 # Make a regression test to check that we get the same results
 # for Puysegur. Obviously this will have to be updated each time
 # the database changes.
-test_puysegur<-function(){
+test_puysegur2<-function(){
     source('./get_PTHA_results.R', local=TRUE)
 
-    puysegur = get_source_zone_events_data('puysegur')
+    puysegur = get_source_zone_events_data('puysegur2')
     model_3051 = get_flow_time_series_at_hazard_point(puysegur, 3051, 
         hazard_point_ID = c(1.1, 10.1, 22.1, 55015.4, 55042.4))
 
@@ -34,13 +34,13 @@ test_puysegur<-function(){
     max_55042 = max(model_3051$flow[['55042.4']][1,,1])
 
     # Values known from previous checks
-    er1 = abs(max_55015 - 0.050279)
-    er2 = abs(max_55042 - 0.138759)
+    er1 = abs(max_55015 - 0.1771731) #0.050279)
+    er2 = abs(max_55042 - 0.3976239) #0.138759)
 
     m1 = which.max(model_3051$flow[['55015.4']][1,,1])
     m2 = which.max(model_3051$flow[['55042.4']][1,,1])
 
-    if((er1 < 1.0e-05) & (er2 < 1.0e-05) & (m1 == 59) & (m2 == 54)){
+    if((er1 < 1.0e-05) & (er2 < 1.0e-05) & (m1 == 59) & (m2 == 61)){
         print('PASS')
     }else{
         print('FAIL: test_puysegur giving different results')
