@@ -55,7 +55,7 @@ testing the model. In addition we store a 'thin' layer of hazard points
 globally at the 100m contour, which is useful for testing our model and
 comparing with previous studies. **If using points far from Austraila, consider
 that we ignore tsunamigenic source zones that are not considered relevant for
-Australia (e.g.  in the Carribbean, the Mediterrean, the Manila trench,
+Australia (e.g. in the Carribbean, the Mediterrean, the Manila trench,
 Kaikoura in New Zealand, western Japan). Therefore, outside of Australia, you
 should very carefully consider whether the results can be used, noting they may
 ignore the most relevant source-zones.**
@@ -191,8 +191,25 @@ Geoscience Australia directly if they have difficulty with any of these steps
 
 ## **Usage**
 
-Make sure you have successfully installed the software [as described here](INSTALL.md), 
-and that the unit-tests pass.
+Make sure you have successfully installed the software [as described here](INSTALL.md).
+Please confirm that everything installed correctly by running the following script.
+
+```r
+# This should print 'PASS' a few times. If not, something is wrong with your
+# install (or perhaps your internet connection is slow -- give it a few tries).
+source('test_all.R')
+```
+
+```
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+```
 
 ### ***Viewing the locations of hazard points and source zones***
 
