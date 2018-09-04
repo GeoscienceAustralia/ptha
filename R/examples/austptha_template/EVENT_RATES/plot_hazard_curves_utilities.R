@@ -75,15 +75,15 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
         'variable_uniform_upper_ci') 
     # Titles corresponding to plots of the above variables 
     rate_var_titles = c(
-        'Uniform slip tsunami peak stage exceedance rates', 
-        'Stochastic slip tsunami peak stage exceedance rates', 
-        'Variable_uniform slip tsunami peak stage exceedance rates', 
-        'Uniform slip tsunami peak stage exceedance rates, lower CI', 
-        'Stochastic slip tsunami peak stage exceedance rates, lower CI', 
-        'Variable_uniform slip tsunami peak stage exceedance rates, lower CI', 
-        'Uniform slip tsunami peak stage exceedance rates, upper CI', 
-        'Stochastic slip tsunami peak stage exceedance rates, upper CI',
-        'Variable_uniform slip tsunami peak stage exceedance rates, upper CI')
+        'Uniform slip tsunami max-stage exceedance rates', 
+        'Stochastic slip tsunami max-stage exceedance rates', 
+        'Variable_uniform slip tsunami max-stage exceedance rates', 
+        'Uniform slip tsunami max-stage exceedance rates, lower CI', 
+        'Stochastic slip tsunami max-stage exceedance rates, lower CI', 
+        'Variable_uniform slip tsunami max-stage exceedance rates, lower CI', 
+        'Uniform slip tsunami max-stage exceedance rates, upper CI', 
+        'Stochastic slip tsunami max-stage exceedance rates, upper CI',
+        'Variable_uniform slip tsunami max-stage exceedance rates, upper CI')
 
     # Read into the data structure
     site_rates = vector(mode='list', length=length(rate_var_nc_names))
@@ -122,7 +122,7 @@ plot_rates_at_a_station<-function(lon_p, lat_p, greens_law_adjust=FALSE, verbose
             main=paste0(titlep, ' @(',
                 round(lon[site], 2), ',', round(lat[site], 2), ',', 
                 round(elev[site], 2), ')', greens_adjust_title),
-            xlab='Peak stage (m)', ylab = 'Exceedance Rate (events/year)' )
+            xlab='Max-stage (m)', ylab = 'Exceedance Rate (events/year)' )
 
         site_rates_uniform_sum = site_rates_uniform[[1]]*0
 
@@ -638,7 +638,7 @@ plot_station_exceedance_rate_pdf<-function(lon_p, lat_p, station_name = ""){
             points(lon, lat, col=rgb(0.5, 0.5, 0.5, alpha=0.5), pch='.')
             points(lon_p, lat_p, col='red', pch=19, cex=2)
             title(paste0('Deaggregated hazard: ', slip_type, ' slip, AEP = ', 
-                signif(exceedance_rate,4), ',\n Peak stage = ', 
+                signif(exceedance_rate,4), ',\n Max-stage = ', 
                 signif(site_deagg[[1]]$stage_exceed,4)))
             rm(site_deagg); gc()
         }
