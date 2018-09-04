@@ -93,7 +93,7 @@ test_puysegur2<-function(){
  
 }
 # Run the puysegur regression test
-t1 = system.time(test_puysegur())
+t1 = system.time(test_puysegur2())
 
 
 # Test that we can read a scenario with many unit sources -- i.e. one that
