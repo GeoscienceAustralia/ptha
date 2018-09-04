@@ -209,7 +209,9 @@ The first time you run this code it will download several datasets to your
 machine for use in the map. These will be placed in the DATA and SOURCE_ZONES
 folders. The download might take a minute or more, depending on your internet
 connection. Future runs will read the data from your machine, so should be
-faster. 
+faster. If you want to download fresh data (e.g. if you think there has been an
+update, or your files seem corrupted), then just manually delete the DATA
+and SOURCE_ZONES folders.
 
 
 ![hazardpoints1](figure/hazard_point_viewer_screenshot1.png)
