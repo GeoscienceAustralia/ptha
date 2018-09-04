@@ -27,7 +27,23 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 #' @examples
 #' puysegur_data = get_source_zone_events_data('puysegur')
 #'
-get_source_zone_events_data<-function(source_zone, slip_type='stochastic', desired_event_rows = NULL){
+get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', desired_event_rows = NULL){
+
+    err = FALSE
+    if(is.null(source_zone)){
+        err = TRUE
+    }else{
+        if(sum(config_env$source_names_all == source_zone) == 0) err=TRUE
+    }
+
+    if(err){
+        print('You did not pass a valid source_zone to get_source_zone_events_data. The allowed source_zone values are:')
+        print(paste0('   ', config_env$source_names_all))
+        print('Please pass one of the above source_zone names to this function to get its metadata')
+        # Fail gracefully
+        output = list(events = NA, unit_source_statistics=NA, gauge_netcdf_files=NA)
+        return(invisible(output))
+    }
 
     stopifnot(slip_type %in% c('uniform', 'stochastic', 'variable_uniform'))
 

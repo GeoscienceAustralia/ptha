@@ -208,7 +208,7 @@ hazard points.
 The first time you run this code it will download several datasets to your
 machine for use in the map. These will be placed in the DATA and SOURCE_ZONES
 folders. The download might take a minute or more, depending on your internet
-connection.  Future runs will read the data from your machine, so should be
+connection. Future runs will read the data from your machine, so should be
 faster. 
 
 
@@ -252,8 +252,46 @@ particular source-zone, start R in the current directory, and do:
 # Import the functions
 source('get_PTHA_results.R')
 
+# Find the possible names of the source-zones
+get_source_zone_events_data()
+```
+
+```
+## [1] "You did not pass a valid source_zone to get_source_zone_events_data. The allowed source_zone values are:"
+##  [1] "   alaskaaleutians"         "   arutrough"              
+##  [3] "   banda_detachment"        "   cascadia"               
+##  [5] "   floreswetar"             "   hjort"                  
+##  [7] "   izumariana"              "   kermadectonga2"         
+##  [9] "   kurilsjapan"             "   macquarieislandnorth"   
+## [11] "   makran2"                 "   manokwari"              
+## [13] "   manus"                   "   mexico"                 
+## [15] "   moresby_trough"          "   mussau"                 
+## [17] "   newguinea2"              "   newhebrides2"           
+## [19] "   north_sulawesi"          "   outer_rise_timor"       
+## [21] "   outerrise_kermadectonga" "   outerrise_puysegur"     
+## [23] "   outerrisenewhebrides"    "   outerrisesolomon"       
+## [25] "   outerrisesunda"          "   philippine"             
+## [27] "   puysegur2"               "   ryuku"                  
+## [29] "   sandwich"                "   sangihe"                
+## [31] "   sangihe_backthrust"      "   se_sulawesi"            
+## [33] "   seram_thrust"            "   seramsouth"             
+## [35] "   solomon2"                "   southamerica"           
+## [37] "   sunda2"                  "   tanimbar"               
+## [39] "   timortrough"             "   tolo_thrust"            
+## [41] "   trobriand"              
+## [1] "Please pass one of the above source_zone names to this function to get its metadata"
+```
+
+Above we called the function that is typically used to get source-zone event data. If not
+arguments are passed, then by default it prints the valid source_zone names and exits.
+
+Suppose we are interested in the Puysegur source-zone. From the above list and/or the 
+interactive viewer, we could infer that it was named `puysegur2`. We can then get the
+event metadata as follows:
+
+```r
 # Example: get metadata for the puysegur source_zone
-puysegur = get_source_zone_events_data('puysegur')
+puysegur = get_source_zone_events_data('puysegur2')
 ```
 
 This variable `puysegur` is now an R `list`, which contains two `data.frame`'s
@@ -315,7 +353,7 @@ dim(puysegur$unit_source_statistics)
 ```
 
 ```
-## [1] 34 15
+## [1] 28 15
 ```
 
 ```r
@@ -325,17 +363,17 @@ puysegur$unit_source_statistics[1:2,]
 
 ```
 ##      lon_c     lat_c     depth   strike      dip rake slip   length
-## 1 163.7154 -49.94804  6.591836 22.36646 14.61936   90    1 44.66806
-## 2 164.3214 -50.12718 26.591336 21.76445 30.80589   90    1 48.54929
+## 1 163.6647 -49.88909  6.364741 20.39946 18.67347   90    1 45.92458
+## 2 164.1119 -49.96848 26.364741 14.18287 43.24057   90    1 45.54654
 ##      width downdip_number alongstrike_number subfault_number max_depth
-## 1 52.13089              1                  1               1  13.24538
-## 2 52.50416              2                  1               2  40.00000
-##                                                                                     initial_condition_file
-## 1 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur/puysegur_1_1.tif
-## 2 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur/puysegur_2_1.tif
-##                                                                                                                                                                       tide_gauge_file
-## 1 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20170904165726_puysegur_1_1/RUN_ID100001_20170904_191226.717/Gauges_data_ID100001.nc
-## 2 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20170904165729_puysegur_2_1/RUN_ID100001_20170904_191227.920/Gauges_data_ID100001.nc
+## 1 39.80127              1                  1               1  12.83707
+## 2 39.98489              2                  1               2  40.00000
+##                                                                                        initial_condition_file
+## 1 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/EQ_SOURCE/Unit_source_data/puysegur2/puysegur2_1_1.tif
+## 2 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/EQ_SOURCE/Unit_source_data/puysegur2/puysegur2_2_1.tif
+##                                                                                                                                                                         tide_gauge_file
+## 1 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20180815145902_puysegur2_1_1/RUN_ID100001_20180816_044751.819/Gauges_data_ID100001.nc
+## 2 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20180815145906_puysegur2_2_1/RUN_ID100001_20180816_050648.956/Gauges_data_ID100001.nc
 ```
 In addition, the `initial_condition_file` and `tide_gauge_file` variables
 provide a link to the vertical deformation and tsunami model run respectively,
@@ -371,11 +409,11 @@ names(puysegur$events)
 ## [16] "variable_mu_rate_annual"             
 ## [17] "variable_mu_rate_annual_lower_ci"    
 ## [18] "variable_mu_rate_annual_upper_ci"    
-## [19] "weight_with_nonzero_rate"            
-## [20] "variable_mu_rate_annual_median"      
-## [21] "variable_mu_rate_annual_16pc"        
-## [22] "variable_mu_rate_annual_84pc"        
-## [23] "variable_mu_weight_with_nonzero_rate"
+## [19] "variable_mu_rate_annual_median"      
+## [20] "variable_mu_rate_annual_16pc"        
+## [21] "variable_mu_rate_annual_84pc"        
+## [22] "variable_mu_weight_with_nonzero_rate"
+## [23] "weight_with_nonzero_rate"            
 ## [24] "rate_annual_16pc"                    
 ## [25] "rate_annual_84pc"                    
 ## [26] "rate_annual_median"
@@ -387,7 +425,7 @@ dim(puysegur$events)
 ```
 
 ```
-## [1] 6978   26
+## [1] 5881   26
 ```
 While there are many ways to investigate the event table, a simple approach is
 to just print some rows. In general low row-indices will correspond to low
@@ -395,51 +433,51 @@ magnitudes, and high indices to high magnitudes.
 
 
 ```r
-# Print some rows (we choose 3050, 3051, 3052)
-puysegur$events[3050:3052, ]
+# Print some rows (we choose 2050, 2051, 2052)
+puysegur$events[2050:2052, ]
 ```
 
 ```
-##      event_index_string                       event_slip_string  Mw
-## 3050 15-16-17-19-21-22- 0.4106_0.1527_1.235_0.2784_1.775_8.616_ 7.9
-## 3051    15-17-18-19-20-          2.316_2.438_1.567_3.424_1.612_ 7.9
-## 3052       19-21-23-29-             0.2683_2.484_9.784_0.02503_ 7.9
-##      target_lon target_lat peak_slip_downdip_ind peak_slip_alongstrike_ind
-## 3050   166.2998  -46.18891                     2                        11
-## 3051   166.2998  -46.18891                     1                        10
-## 3052   166.2998  -46.18891                     1                        12
+##      event_index_string        event_slip_string  Mw target_lon target_lat
+## 2050       21-23-25-27- 5.838_8.941_2.336_1.508_ 7.9   166.7325  -45.56029
+## 2051          22-23-24-        4.554_5.927_8.27_ 7.9   166.7325  -45.56029
+## 2052       19-20-21-22-   1.42_3.54_2.334_7.838_ 7.9   166.7325  -45.56029
+##      peak_slip_downdip_ind peak_slip_alongstrike_ind
+## 2050                     1                        12
+## 2051                     2                        12
+## 2052                     2                        11
 ##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
-## 3050                  0.011009622                  0.016393626   puysegur
-## 3051                  0.003014966                  0.007441733   puysegur
-## 3052                  0.013070033                  0.013860630   puysegur
+## 2050                  0.003639969                  0.004682143  puysegur2
+## 2051                  0.009215376                  0.011996502  puysegur2
+## 2052                  0.006078464                  0.010341691  puysegur2
 ##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 3050               204 1.013087e-05         6.522423e-07
-## 3051               204 1.816173e-05         1.169283e-06
-## 3052               204 8.749145e-06         5.632847e-07
+## 2050               131 2.699053e-05         1.247440e-06
+## 2051               131 2.825624e-05         1.305938e-06
+## 2052               131 3.113489e-05         1.438982e-06
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 3050         1.774666e-05       7.949118            1.632350e-05
-## 3051         3.181465e-05       7.777764            1.344520e-05
-## 3052         1.532624e-05       7.581915            1.455052e-05
+## 2050         4.415802e-05       7.612915            3.805892e-05
+## 2051         4.622879e-05       7.977218            3.680982e-05
+## 2052         5.093842e-05       7.980054            3.509007e-05
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 3050                     2.537574e-06                     2.926302e-05
-## 3051                     2.090128e-06                     2.410313e-05
-## 3052                     2.261955e-06                     2.608462e-05
-##      weight_with_nonzero_rate variable_mu_rate_annual_median
-## 3050                0.9770982                   1.469313e-05
-## 3051                0.9770982                   1.210232e-05
-## 3052                0.9770982                   1.309724e-05
-##      variable_mu_rate_annual_16pc variable_mu_rate_annual_84pc
-## 3050                 1.458506e-05                 2.045360e-05
-## 3051                 1.201330e-05                 1.684706e-05
-## 3052                 1.300090e-05                 1.823203e-05
-##      variable_mu_weight_with_nonzero_rate rate_annual_16pc
-## 3050                            0.9793422     8.946538e-06
-## 3051                            0.9793422     1.603857e-05
-## 3052                            0.9793422     7.726343e-06
-##      rate_annual_84pc rate_annual_median
-## 3050     1.288181e-05       9.189434e-06
-## 3051     2.309338e-05       1.647401e-05
-## 3052     1.112489e-05       7.936111e-06
+## 2050                     1.977616e-06                     6.544703e-05
+## 2051                     1.912711e-06                     6.329906e-05
+## 2052                     1.823349e-06                     6.034173e-05
+##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
+## 2050                   3.310225e-05                 4.604935e-05
+## 2051                   3.201583e-05                 4.453801e-05
+## 2052                   3.052005e-05                 4.245719e-05
+##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
+## 2050                 4.295668e-05                            0.9956551
+## 2051                 4.154684e-05                            0.9956551
+## 2052                 3.960577e-05                            0.9956551
+##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
+## 2050                0.9952935     3.260319e-05     3.074646e-05
+## 2051                0.9952935     3.413211e-05     3.218830e-05
+## 2052                0.9952935     3.760937e-05     3.546753e-05
+##      rate_annual_median
+## 2050       2.427181e-05
+## 2051       2.541002e-05
+## 2052       2.799871e-05
 ```
 
 The most important variables from a users perspective are the moment magnitude
@@ -501,35 +539,35 @@ you think you might need to use these variables.
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
 
 Suppose we want to get the tsunami initial conditions (i.e. water surface
-deformation) for the earthquake event on row 3051 of `puysegur$events`. The
-metadata for event 3051 is:
+deformation) for the earthquake event on row 2050 of `puysegur$events`. The
+metadata for event 2050 is:
 
 ```r
-row_index = 3051 # Use this variable to refer to event 3051
+row_index = 2050 # Use this variable to refer to event 2050
 puysegur$events[row_index,]
 ```
 
 ```
-##      event_index_string              event_slip_string  Mw target_lon
-## 3051    15-17-18-19-20- 2.316_2.438_1.567_3.424_1.612_ 7.9   166.2998
-##      target_lat peak_slip_downdip_ind peak_slip_alongstrike_ind
-## 3051  -46.18891                     1                        10
+##      event_index_string        event_slip_string  Mw target_lon target_lat
+## 2050       21-23-25-27- 5.838_8.941_2.336_1.508_ 7.9   166.7325  -45.56029
+##      peak_slip_downdip_ind peak_slip_alongstrike_ind
+## 2050                     1                        12
 ##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
-## 3051                  0.003014966                  0.007441733   puysegur
+## 2050                  0.003639969                  0.004682143  puysegur2
 ##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 3051               204 1.816173e-05         1.169283e-06
+## 2050               131 2.699053e-05          1.24744e-06
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 3051         3.181465e-05       7.777764             1.34452e-05
+## 2050         4.415802e-05       7.612915            3.805892e-05
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 3051                     2.090128e-06                     2.410313e-05
-##      weight_with_nonzero_rate variable_mu_rate_annual_median
-## 3051                0.9770982                   1.210232e-05
-##      variable_mu_rate_annual_16pc variable_mu_rate_annual_84pc
-## 3051                  1.20133e-05                 1.684706e-05
-##      variable_mu_weight_with_nonzero_rate rate_annual_16pc
-## 3051                            0.9793422     1.603857e-05
-##      rate_annual_84pc rate_annual_median
-## 3051     2.309338e-05       1.647401e-05
+## 2050                     1.977616e-06                     6.544703e-05
+##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
+## 2050                   3.310225e-05                 4.604935e-05
+##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
+## 2050                 4.295668e-05                            0.9956551
+##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
+## 2050                0.9952935     3.260319e-05     3.074646e-05
+##      rate_annual_median
+## 2050       2.427181e-05
 ```
 To get its initial condition, you pass the earthquake metadata to the function
 `get_initial_condition_for_event`:
@@ -632,7 +670,7 @@ dim(model_ts$flow[['55015.4']])
 # Example plot of stage
 plot(model_ts$time, model_ts$flow[['55015.4']][1,,1], t='l', 
     xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
-    ylim=c(-0.1, 0.15))
+    ylim=c(-0.2, 0.35))
 points(model_ts$time, model_ts$flow[['55042.4']][1,,1], t='l', 
     col='red')
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))

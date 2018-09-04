@@ -207,7 +207,7 @@ hazard points.
 The first time you run this code it will download several datasets to your
 machine for use in the map. These will be placed in the DATA and SOURCE_ZONES
 folders. The download might take a minute or more, depending on your internet
-connection.  Future runs will read the data from your machine, so should be
+connection. Future runs will read the data from your machine, so should be
 faster. 
 
 
@@ -250,8 +250,19 @@ particular source-zone, start R in the current directory, and do:
 # Import the functions
 source('get_PTHA_results.R')
 
+# Find the possible names of the source-zones
+get_source_zone_events_data()
+```
+
+Above we called the function that is typically used to get source-zone event data. If not
+arguments are passed, then by default it prints the valid source_zone names and exits.
+
+Suppose we are interested in the Puysegur source-zone. From the above list and/or the 
+interactive viewer, we could infer that it was named `puysegur2`. We can then get the
+event metadata as follows:
+```{r get_metadata2}
 # Example: get metadata for the puysegur source_zone
-puysegur = get_source_zone_events_data('puysegur')
+puysegur = get_source_zone_events_data('puysegur2')
 ```
 
 This variable `puysegur` is now an R `list`, which contains two `data.frame`'s
@@ -303,8 +314,8 @@ magnitudes, and high indices to high magnitudes.
 
 ```{r metadata_infoC}
 
-# Print some rows (we choose 3050, 3051, 3052)
-puysegur$events[3050:3052, ]
+# Print some rows (we choose 2050, 2051, 2052)
+puysegur$events[2050:2052, ]
 ```
 
 The most important variables from a users perspective are the moment magnitude
@@ -366,10 +377,10 @@ you think you might need to use these variables.
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
 
 Suppose we want to get the tsunami initial conditions (i.e. water surface
-deformation) for the earthquake event on row 3051 of `puysegur$events`. The
-metadata for event 3051 is:
+deformation) for the earthquake event on row 2050 of `puysegur$events`. The
+metadata for event 2050 is:
 ```{r eventXXX}
-row_index = 3051 # Use this variable to refer to event 3051
+row_index = 2050 # Use this variable to refer to event 2050
 puysegur$events[row_index,]
 ```
 To get its initial condition, you pass the earthquake metadata to the function
@@ -449,7 +460,7 @@ dim(model_ts$flow[['55015.4']])
 # Example plot of stage
 plot(model_ts$time, model_ts$flow[['55015.4']][1,,1], t='l', 
     xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
-    ylim=c(-0.1, 0.15))
+    ylim=c(-0.2, 0.35))
 points(model_ts$time, model_ts$flow[['55042.4']][1,,1], t='l', 
     col='red')
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
