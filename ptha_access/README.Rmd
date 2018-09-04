@@ -369,15 +369,35 @@ You will notice that events at very large `Mw` always have a
 There are also a number of variables with names including `_rate_annual`.
 **Beware: These do not give the exceedance rates for the events!**. Instead
 they represent a (fairly nominal) event-specific portion of the source-zone's
-total rate of events with the give magnitude. This is useful as part of other
-calculations. For instance, by adjusting these rates we can make events more or
-less likely on some parts of the source-zone (e.g to reflect spatial variations
-in tectonic convergence rates). Most end-users should not use these
-`_rate_annual` variables directly - with one exception: **If an event has a
-rate of zero, then according to the PTHA it will not occur**. This can happen
-either because the magnitude is higher than is expected to occurr on the
-source-zone, or because the maximum slip is very high. Please see the report if
-you think you might need to use these variables. 
+magnitude-vs-exceedance-rate curve, evaluated at the logic-tree mean and
+various quantiles. This is useful as part of other calculations. For instance,
+by adjusting these rates we can make events more or less likely on some parts
+of the source-zone (e.g to reflect spatial variations in tectonic convergence
+rates). The key ideas is that if you sum all of the scenario rates above a
+given magnitude, then the result will correspond to the
+magnitude-vs-exceedance-rate curve for the source-zone. For example, to get the
+rate of events above magnitude 7.85 on this source-zone, with various
+logic-tree percentiles describing the uncertainty, you could do the following
+calculations:
+```{r meaningOfScenarioRates}
+# Rate of events with Mw > 7.85 -- logic-tree mean
+sum(puysegur$events$rate_annual * (puysegur$events$Mw > 7.85))
+# Rate of events with Mw > 7.85 -- logic-tree 2.5 percentile
+sum(puysegur$events$rate_annual_lower_ci * (puysegur$events$Mw > 7.85))
+# Rate of events with Mw > 7.85 -- logic-tree 16 percentile
+sum(puysegur$events$rate_annual_16pc_ci * (puysegur$events$Mw > 7.85))
+# Rate of events with Mw > 7.85 -- logic-tree median
+sum(puysegur$events$rate_annual_median * (puysegur$events$Mw > 7.85))
+# Rate of events with Mw > 7.85 -- logic-tree 84 percentile
+sum(puysegur$events$rate_annual_84pc * (puysegur$events$Mw > 7.85))
+# Rate of events with Mw > 7.85 -- logic-tree 97.5 percentile
+sum(puysegur$events$rate_annual_upper * (puysegur$events$Mw > 7.85))
+```
+Notice that these are ordered as expected, but at the individual scenario level
+there is not guarentee that e.g. the 16pc value is less than the median, or
+similar. This is because the individual scenario values are related to the
+derivatives of the various Mw-exceedance-rate curves, which might not be
+ordered in the same way as the curves themselves. 
 
 
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
