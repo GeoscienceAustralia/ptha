@@ -227,7 +227,8 @@ buoys.
 If you zoom in enough (e.g. below we look at Christmas Island), eventually the circles
 containing many points should be replaced by individual hazard points
 (circles). They can be queried with a mouse click. For each point, we store
-basic stage-vs-exceedance-rate information, as was discussed above.
+basic stage-vs-exceedance-rate information, as was discussed above. Note stage values
+below 2cm or above 20m are reported as NA.
 ![hazardpoints2](figure/hazard_point_viewer_screenshot2.png)
 
 The unit sources appear as a polygonal grid. Individual unit sources can also
@@ -282,8 +283,11 @@ get_source_zone_events_data()
 ## [1] "Please pass one of the above source_zone names to this function to get its metadata"
 ```
 
-Above we called the function that is typically used to get source-zone event data. If not
-arguments are passed, then by default it prints the valid source_zone names and exits.
+Above we called the function that is typically used to get source-zone event
+data. If no arguments are passed, then by default it prints the valid
+source_zone names and exits. You can use this print-out to learn what the
+source-zone names are. They can also be found by clicking on source-zones in
+the interactive hazard map (discussed above).
 
 Suppose we are interested in the Puysegur source-zone. From the above list and/or the 
 interactive viewer, we could infer that it was named `puysegur2`. We can then get the
