@@ -385,7 +385,7 @@ sum(puysegur$events$rate_annual * (puysegur$events$Mw > 7.85))
 # Rate of events with Mw > 7.85 -- logic-tree 2.5 percentile
 sum(puysegur$events$rate_annual_lower_ci * (puysegur$events$Mw > 7.85))
 # Rate of events with Mw > 7.85 -- logic-tree 16 percentile
-sum(puysegur$events$rate_annual_16pc_ci * (puysegur$events$Mw > 7.85))
+sum(puysegur$events$rate_annual_16pc * (puysegur$events$Mw > 7.85))
 # Rate of events with Mw > 7.85 -- logic-tree median
 sum(puysegur$events$rate_annual_median * (puysegur$events$Mw > 7.85))
 # Rate of events with Mw > 7.85 -- logic-tree 84 percentile

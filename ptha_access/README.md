@@ -562,11 +562,11 @@ sum(puysegur$events$rate_annual_lower_ci * (puysegur$events$Mw > 7.85))
 
 ```r
 # Rate of events with Mw > 7.85 -- logic-tree 16 percentile
-sum(puysegur$events$rate_annual_16pc_ci * (puysegur$events$Mw > 7.85))
+sum(puysegur$events$rate_annual_16pc * (puysegur$events$Mw > 7.85))
 ```
 
 ```
-## [1] 0
+## [1] 0.005176857
 ```
 
 ```r
