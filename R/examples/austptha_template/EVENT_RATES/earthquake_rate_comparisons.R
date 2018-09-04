@@ -23,20 +23,28 @@ library(rptha)
 #' length rupture' without giving magnitude specifically.
 #' @return vector of rates with uncertainties --> c(r_2.5pc, r_16pc, r_50pc, r_mean, r_84pc, r_97.5pc)
 get_rates<-function(nc_file, segment_range, num_downdip, reference_magnitude,
-    threshold_fraction_in_segment = NULL, rate_of_full_length_rupture=FALSE){
+    threshold_fraction_in_segment = NULL, rate_of_full_length_rupture=FALSE,
+    variable_mu=TRUE){
 
     fid = nc_open(nc_file)
 
-    event_Mws = ncvar_get(fid, 'variable_mu_Mw')
-
-    event_rate = ncvar_get(fid, 'variable_mu_rate_annual')
-
-    event_rate_lower = ncvar_get(fid, 'variable_mu_rate_annual_lower_ci')
-    event_rate_upper = ncvar_get(fid, 'variable_mu_rate_annual_upper_ci')
-
-    event_rate_16pc = ncvar_get(fid, 'variable_mu_rate_annual_16pc')
-    event_rate_84pc = ncvar_get(fid, 'variable_mu_rate_annual_84pc')
-    event_rate_median = ncvar_get(fid, 'variable_mu_rate_annual_median')
+    if(variable_mu){
+        event_Mws = ncvar_get(fid, 'variable_mu_Mw')
+        event_rate = ncvar_get(fid, 'variable_mu_rate_annual')
+        event_rate_lower = ncvar_get(fid, 'variable_mu_rate_annual_lower_ci')
+        event_rate_upper = ncvar_get(fid, 'variable_mu_rate_annual_upper_ci')
+        event_rate_16pc = ncvar_get(fid, 'variable_mu_rate_annual_16pc')
+        event_rate_84pc = ncvar_get(fid, 'variable_mu_rate_annual_84pc')
+        event_rate_median = ncvar_get(fid, 'variable_mu_rate_annual_median')
+    }else{
+        event_Mws = ncvar_get(fid, 'Mw')
+        event_rate = ncvar_get(fid, 'rate_annual')
+        event_rate_lower = ncvar_get(fid, 'rate_annual_lower_ci')
+        event_rate_upper = ncvar_get(fid, 'rate_annual_upper_ci')
+        event_rate_16pc = ncvar_get(fid, 'rate_annual_16pc')
+        event_rate_84pc = ncvar_get(fid, 'rate_annual_84pc')
+        event_rate_median = ncvar_get(fid, 'rate_annual_median')
+    }
 
     event_index_string = ncvar_get(fid, 'event_index_string')
     event_slip_string = ncvar_get(fid, 'event_slip_string')
@@ -328,4 +336,70 @@ result_ryuku = get_rates(nc_file, segment_range, num_downdip, reference_magnitud
 #[1] 513.04429 248.65497 145.06553 141.94314 101.71527  73.64809
 #> 1/result_ryuku  
 #[1] 505.0818 256.9993 148.1888 141.9431 102.4295  73.7656
+
+
+
+#
+# Other sources
+#
+
+# Puysegur
+segment_range = c(1,99999) 
+num_downdip = 2
+reference_magnitude = 8.21
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_puysegur2.nc'
+result_puysegur = get_rates(nc_file, segment_range, num_downdip, reference_magnitude, variable_mu=FALSE)
+1/result_puysegur
+#> 1/result_puysegur
+#[1]      Inf      Inf      Inf 806.6327 313.6492 169.6206
+
+# MacquarieIslandNorth
+segment_range = c(1,99999) 
+num_downdip = 1
+reference_magnitude = 7.41
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/macquarieislandnorth/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_macquarieislandnorth.nc'
+result_macquarieislandnorth = get_rates(nc_file, segment_range, num_downdip, reference_magnitude, variable_mu=FALSE)
+1/result_macquarieislandnorth
+#> 1/result_macquarieislandnorth
+#[1]       Inf       Inf       Inf 1463.4655 1317.8120  142.8242
+
+# Hjort
+segment_range = c(1,99999) 
+num_downdip = 2
+reference_magnitude = 8.01
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/hjort/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_hjort.nc'
+result_hjort = get_rates(nc_file, segment_range, num_downdip, reference_magnitude, variable_mu=FALSE)
+1/result_hjort
+#> 1/result_hjort
+#[1]       Inf       Inf 1104.6913  979.3730  505.4462  277.6616
+
+# Sandwich
+segment_range = c(1,99999) 
+num_downdip = 2
+reference_magnitude = 8.41
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/sandwich/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_sandwich.nc'
+result_sandwich = get_rates(nc_file, segment_range, num_downdip, reference_magnitude, variable_mu=FALSE)
+1/result_sandwich
+#> 1/result_sandwich
+#[1]       Inf       Inf 1363.0555 1083.1424  626.5726  253.4840
+
+# Sunda
+segment_range = c(1,99999) 
+num_downdip = 4
+reference_magnitude = 9.31
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_sunda2.nc'
+result_sunda2 = get_rates(nc_file, segment_range, num_downdip, reference_magnitude, variable_mu=FALSE)
+1/result_sunda2
+#> 1/result_sunda2
+#[1]       Inf       Inf 1089.6877  852.7254  419.1797  223.9444
+
+# South America
+segment_range = c(1,99999) 
+num_downdip = 4
+reference_magnitude = 9.51
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_southamerica.nc'
+result_southamerica = get_rates(nc_file, segment_range, num_downdip, reference_magnitude, variable_mu=FALSE)
+1/result_southamerica
+#> 1/result_southamerica
+#[1]       Inf       Inf 3111.7094 1269.4252  956.9932  214.6056
 
