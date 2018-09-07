@@ -6,7 +6,7 @@ We provide access to basic tsunami hazard information in easy-to-use csv and
 shapefile formats. This information is useful to get a high-level overview of
 the PTHA results.
 
-We also provide access to detailed information for every tsunami event in our
+We also provide access to detailed information for every tsunami scenario in our
 analysis, including: the earthquake discretization, the tsunami initial
 condition, and the resulting wave time-series at a large set of points in the
 ocean ('hazard points'). This information is useful for site-specific tsunami
@@ -34,7 +34,7 @@ tsunami is. In the current analysis we ignore tidal variations and assume a
 constant mean-sea-level (MSL=0), so the 'maximum-stage' is equivalent to the
 maximum elevation of the tsunami wave above MSL. 
 
-The maximum-stage exceedance-rates describe 'how often' tsunami events occur with
+The maximum-stage exceedance-rates describe 'how often' tsunamis occur with
 maximum-stage above a particular threshold value. For example, you could ask how
 often maximum-stages above 0.5m (or 2.0m) occur, in terms of the average number of
 events each year at a particular site. At most locations there would be less
@@ -45,7 +45,7 @@ Recurrence Interval (ARI).
 
 In the 2018 PTHA, this information is stored at a set of points in the ocean.
 These points are termed 'hazard points' because we provide the hazard
-information at these sites. (The wave time-series for every event can also be
+information at these sites. (The wave time-series for every scenario can also be
 obtained at all hazard points using methods described later in this document).
 
 Most of the hazard points are concentrated around Australia and its
@@ -171,9 +171,9 @@ methods using global-scale deep ocean tsunami observations for 20 historical
 tsunami events. Most local-scale studies would not have the time or resources
 to undertake such testing as part of their project.
 
-# Obtaining detailed information on earthquake events, tsunami initial conditions, and wave time-series
+# Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and wave time-series
 
-For every event in our analysis we provide earthquake information, tsunami
+For every scenario in our analysis we provide earthquake information, tsunami
 initial conditions, and wave time-series at every hazard point. Combined with
 the exceedance-rate modelling, such inputs can be used to drive local scale
 tsunami inundation models for hazard and risk assessments.
@@ -253,15 +253,15 @@ The controls on the top left of the map can be expanded as shown in the figure.
 These should allow you to change the background layer, and to turn layers on
 and off.
 
-### ***Obtaining metadata on the earthquake events on each source-zone***
+### ***Obtaining metadata on the earthquake scenarios on each source-zone***
 
-Earthquake event metadata is accessed on a per-source-zone basis. In a typical
+Earthquake scenario metadata is accessed on a per-source-zone basis. In a typical
 application you would use the detailed exceedance-rate plots discussed above
 to identify the main source-zones of interest for a particular site. Below
 we show an example using the `puysegur` source-zone, which is located just south
 of New Zealand, to the north of Macquarie Island.
 
-To download metadata from the NCI describing the earthquake events on a
+To download metadata from the NCI describing the earthquake scenarios on a
 particular source-zone, start R in the current directory, and do:
 ```{r get_metadata}
 # Import the functions
@@ -280,14 +280,14 @@ also be found by clicking on source-zones in the interactive hazard map
 
 Suppose we are interested in the Puysegur source-zone. From the above list and/or the 
 interactive viewer, we could infer that it was named `puysegur2`. We can then get the
-event metadata as follows:
+scenario metadata as follows:
 ```{r get_metadata2}
 # Example: get metadata for the puysegur source_zone
 puysegur = get_source_zone_events_data('puysegur2')
 ```
 
 This variable `puysegur` is now an R `list`, which contains two `data.frame`'s
-summarising the source-zone geometry and the earthquake events, and a character
+summarising the source-zone geometry and the earthquake secnarios, and a character
 vector giving the associated tide-gauge files (where tsunami time-series are
 stored)
 ```{r metadata_infoA0}
@@ -322,16 +322,16 @@ from the location on the NCI Thredds server (although in a fairly obvious way,
 e.g. sometimes we see /g/data replaced with /g/data1a). The scripts provided
 here will translate the file paths as required for remote access.
 
-Next we consider the event metadata table. `puysegur$events` contains summary
-statistics about the earthquake events. 
+Next we consider the scenario metadata table. `puysegur$events` contains summary
+statistics about the earthquake scenarios. 
 ```{r metadata_infoB}
-# Print the names of all event summary statistics
+# Print the names of all scenario summary statistics
 names(puysegur$events)
 
 # Get the table dimensions
 dim(puysegur$events)
 ```
-While there are many ways to investigate the event table, a simple approach is
+While there are many ways to investigate the `events` table, a simple approach is
 to just print some rows. In general low row-indices will correspond to low
 magnitudes, and high indices to high magnitudes.
 
@@ -344,7 +344,7 @@ puysegur$events[2050:2052, ]
 The most important variables from a users perspective are the moment magnitude
 `Mw`, and the "variable shear modulus" moment magnitude `variable_mu_Mw`.
 You may be surprised to see we store two different earthquake magnitudes for
-each event. The `Mw` column holds the earthquake moment magnitude, derived
+each scenario. The `Mw` column holds the earthquake moment magnitude, derived
 under the assumption that the shear modulus (or rigidity, i.e. a material
 property of the earth) on the source-zone is constant, with a value of 30 GPa
 on thrust sources and 60 GPa on normal sources. These values are quite typical
@@ -354,10 +354,10 @@ the shear modulus increases with depth, with particularly low values possible
 at shallow depths (which may partially account for so-called 'tsunami
 earthquakes', which generate large tsunamis compared to their earthquake
 magnitude). To account for this we use a depth varying shear modulus model, and
-re-compute the magnitude for each event (stored in `variable_mu_Mw`), without
+re-compute the magnitude for each scenario (stored in `variable_mu_Mw`), without
 changing any other properties of the earthquake. The effect is that shallow earthquakes
 have `variable_mu_Mw` \< `Mw`, while the opposite occurs for deep earthquakes.
-Our tsunami events also compare well with the DART buoy dataset using this
+Our tsunami scenarios also compare well with the DART buoy dataset using this
 redefined magnitude (see the PTHA report). 
 
 Some other important variables are the `event_slip_string` and the
@@ -368,25 +368,25 @@ earthquakes with a range of sizes. The integer values in `event_index_string`
 correspond to the `subfault_number` values in the unit-source statistics table
 discussed above.
 
-Another useful event-table variable is the `weight_with_nonzero_rate`. This
-gives the fraction of the exceedance-rate models in the logic tree that suggest
-events with the given `Mw` could possibly occur. Values close to 1.0 indicate
-"a high fraction of our rate models suggest events with this `Mw` could occur,
-given a long enough time-frame". On the other hand, values close to 0.0
-indicate that "a high fraction of our rate models suggest events with this `Mw`
-would never occur", with zero corresponding to an impossible event (i.e.
-according to the model).
+Another useful variable is the `weight_with_nonzero_rate`. This gives the
+fraction of the exceedance-rate models in the logic tree that suggest scenarios
+with the given `Mw` could possibly occur. Values close to 1.0 indicate "a high
+fraction of our rate models suggest scenarios with this `Mw` could occur, given a
+long enough time-frame". On the other hand, values close to 0.0 indicate that
+"a high fraction of our rate models suggest scenarios with this `Mw` would never
+occur", with zero corresponding to an impossible scenario (i.e.  according to the
+model).
 
-All of our source-zone event tables contain events with `Mw` values ranging
-from 7.2 to 9.8. This is done for computational convenience, irrespective of
-whether we consider the high magnitude events are possible on the source-zone.
-You will notice that events at very large `Mw` always have a
-`weight_with_nonzero_rate` equal to zero.
+All of our source-zone `events` tables contain scenarios with `Mw` values
+ranging from 7.2 to 9.8. This is done for computational convenience,
+irrespective of whether we consider the high magnitude scenarios are possible
+on the source-zone.  You will notice that scenarios at very large `Mw` always
+have a `weight_with_nonzero_rate` equal to zero.
 
-#### ***Understanding the event rates***
+#### ***Understanding the scenario rates***
 
 There are also a number of variables with names including `_rate_annual`.
-**Beware: These do not give the exceedance rates for the events!**. Instead
+**Beware: These do not give the exceedance rates for the scenarios!**. Instead
 they represent a (fairly nominal) scenario-specific portion of the source-zone's
 magnitude-vs-exceedance-rate curve, evaluated at the logic-tree mean and
 various quantiles. 
@@ -405,7 +405,7 @@ modulus.
 To understand the sceanrio rates, the key idea is that **if you sum all of the
 scenario rates above a given magnitude, then the result will correspond to the
 magnitude-vs-exceedance-rate curve for the source-zone**. For example, to get
-the rate of events above magnitude 7.85 on this source-zone, with various
+the rate of scenarios above magnitude 7.85 on this source-zone, with various
 logic-tree percentiles describing the uncertainty, you could do the following
 calculations:
 ```{r meaningOfScenarioRates}
@@ -439,7 +439,7 @@ sum(puysegur$events$rate_annual_84pc * (puysegur$events$Mw > 7.85))
 sum(puysegur$events$rate_annual_upper * (puysegur$events$Mw > 7.85))
 ```
 Notice that these are ordered as expected, i.e. 2.5% <= 16% <= median <= 84% <=
-97.5%.  However, please note that at the individual scenario level this
+97.5%. However, please note that at the individual scenario level this
 ordering may not hold. For example, the `rate_annual_16pc` value is sometimes
 larger than the `rate_annual_median` value. This is because the latter
 variables are related to the *derivatives* of the Mw-exceedance-rate
@@ -450,11 +450,19 @@ If you do similar calculations using the `variable_mu` versions of these
 variables, you will find the results are not identical, although they are
 usually quite similar. This is because shear modulus variability changes the
 relationship between earthquake magnitude and average slip, which in turn
-effects the relationship between the rate of earthquakes and the implied
+affects the relationship between the rate of earthquakes and the implied
 tectonic-plate motion rates. See the PTHA18 report for a full explanation of
 these issues.
 
-### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
+In the previous calculations we used 7.85 as the magnitude threshold. It is a
+good idea to avoid using values that correspond to the scenario magnitude, i.e.
+`7.2, 7.3, ... 9.8`.  The reason is that the earthquake magnitudes are stored
+as floating point values, so there will be some minor round-off in the
+magnitudes we read from file. This could influence the results of `>` or `>=`
+type operations. To avoid that, it is better to use intermdiate magnitudes like
+`7.15, 7.25, ... 9.85`.
+
+### ***Obtaining tsunami initial conditions for a single earthquake-tsunami scenario***
 
 Suppose we want to get the tsunami initial conditions (i.e. water surface
 deformation) for the earthquake event on row 2050 of `puysegur$events`. The
