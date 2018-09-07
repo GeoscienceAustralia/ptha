@@ -5,6 +5,15 @@
 library(rptha)
 options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1e-04)
 
+
+# Read the creative commons licence icon
+cc_by_icon_file = 'by.png'
+if(file.exists(cc_by_icon_file)){
+    cc_by_icon = brick(cc_by_icon_file)
+}else{
+    cc_by_icon = NA
+}
+
 .preamble_title = paste0('2018 Australian Probabilistic Tsunami Hazard Assessment single station summary')
 .preamble_text = paste0( 
                        "This file gives a summary of the Geoscience Australia's 2018 PTHA model results at a single station. See the README on:\n",
@@ -15,7 +24,10 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
                        'Geoscience Australia has tried to make the information in this product as accurate as possible. However, it does not guarantee that the\n',
                        'information is totally accurate or complete. Therefore, you should not solely rely on this information when making a commercial decision.\n',
                        '\n',
-                       'If using points far from Australia, note we ignore earthquake source-zones that are not considered relevant for Australian tsunami hazard.\n'
+                       'If using points far from Australia, note we ignore earthquake source-zones that are not considered relevant for Australian tsunami hazard.\n',
+                       '\n',
+                       '\uA9 Commonwealth of Australia (Geoscience Australia)'
+                       
 )
 
 .preamble_title1 = 'Information on the plots'
@@ -80,6 +92,23 @@ options(scipen=5) # Suppress scientific notation (e.g. 0.0001 rather than like 1
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title, cex=1.5)
     text(0, 1, .preamble_text, adj=c(0,1), cex=0.95)
+    
+    # Add the cc-by icon, if it exists
+    if(class(cc_by_icon) == 'RasterBrick'){
+        #
+        # Fix the extent and x/y location of the cc-by icon
+        #
+
+        # For some reason, I had to 'hack' the h_on_l variable to prevent the
+        # image from being distorted. This is where the factor of 2 arises
+        h_on_l = dim(cc_by_icon)[1]/dim(cc_by_icon)[2]*2
+        l = 0.2
+        extent(cc_by_icon) = c(0.0, 0.0+l, 0.4, 0.4 + l*h_on_l)
+        # Plot it
+        par(new=TRUE)
+        plotRGB(cc_by_icon, add=TRUE)
+        par(new=FALSE)
+    }
 
     plot(c(0,1), c(0,1), col='white', frame.plot=FALSE, axes=FALSE, xlab="", ylab="")
     title(.preamble_title1, cex=1.5)
