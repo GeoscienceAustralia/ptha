@@ -557,17 +557,22 @@ You will notice that events at very large `Mw` always have a
 
 There are also a number of variables with names including `_rate_annual`.
 **Beware: These do not give the exceedance rates for the events!**. Instead
-they represent a (fairly nominal) event-specific portion of the source-zone's
+they represent a (fairly nominal) scenario-specific portion of the source-zone's
 magnitude-vs-exceedance-rate curve, evaluated at the logic-tree mean and
 various quantiles. This is useful as part of other calculations. For instance,
-by adjusting these rates we can make events more or less likely on some parts
+by adjusting these rates we can make scenarios more or less likely on some parts
 of the source-zone (e.g to reflect spatial variations in tectonic convergence
-rates). The key ideas is that if you sum all of the scenario rates above a
-given magnitude, then the result will correspond to the
-magnitude-vs-exceedance-rate curve for the source-zone. For example, to get the
-rate of events above magnitude 7.85 on this source-zone, with various
-logic-tree percentiles describing the uncertainty, you could do the following
-calculations:
+rates). Furthermore, we can re-weight the scenarios based on their slip, which is 
+used in the PTHA18 to adjust for model biases. This is done differently for models
+for constant and variable shear modulus, which is why some of the rate variables
+begin with `variable_mu_` (they are the variable shear modulus versions -- while 
+the other ones assume constant shear modulus). 
+
+ The key idea is that **if you sum all of the scenario rates above a given
+magnitude, then the result will correspond to the magnitude-vs-exceedance-rate
+curve for the source-zone**. For example, to get the rate of events above
+magnitude 7.85 on this source-zone, with various logic-tree percentiles
+describing the uncertainty, you could do the following calculations:
 
 ```r
 # Rate of events with Mw > 7.85 -- logic-tree mean
@@ -577,6 +582,8 @@ sum(puysegur$events$rate_annual * (puysegur$events$Mw > 7.85))
 ```
 ## [1] 0.01089304
 ```
+You can do a similar calculation to recover the percentile curves. We store 
+the 2.5% percentile (`_lower`)
 
 ```r
 # Rate of events with Mw > 7.85 -- logic-tree 2.5 percentile
@@ -586,6 +593,7 @@ sum(puysegur$events$rate_annual_lower_ci * (puysegur$events$Mw > 7.85))
 ```
 ## [1] 0.0001980731
 ```
+... and the 16th percentile (`_16pc`)
 
 ```r
 # Rate of events with Mw > 7.85 -- logic-tree 16 percentile
@@ -595,6 +603,7 @@ sum(puysegur$events$rate_annual_16pc * (puysegur$events$Mw > 7.85))
 ```
 ## [1] 0.005176857
 ```
+... and the median (`_median`)
 
 ```r
 # Rate of events with Mw > 7.85 -- logic-tree median
@@ -604,6 +613,7 @@ sum(puysegur$events$rate_annual_median * (puysegur$events$Mw > 7.85))
 ```
 ## [1] 0.01059198
 ```
+... and the 84th percentile (`_84pc`)
 
 ```r
 # Rate of events with Mw > 7.85 -- logic-tree 84 percentile
@@ -613,6 +623,7 @@ sum(puysegur$events$rate_annual_84pc * (puysegur$events$Mw > 7.85))
 ```
 ## [1] 0.01599209
 ```
+... and the 97.5 percentile (`_upper`)
 
 ```r
 # Rate of events with Mw > 7.85 -- logic-tree 97.5 percentile
