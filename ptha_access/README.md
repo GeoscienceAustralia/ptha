@@ -192,7 +192,9 @@ Geoscience Australia directly if they have difficulty with any of these steps
 ## **Usage**
 
 Make sure you have successfully installed the software [as described here](INSTALL.md).
-Please confirm that everything installed correctly by running the following script.
+Please confirm that everything installed correctly by running the [test_all.R](test_all.R) script.
+You need to start R in the directory that contains that script and this README
+file (i.e. the directory name will end in `/ptha/ptha_access/`)
 
 ```r
 # This should print 'PASS' a few times. If not, something is wrong with your
@@ -308,11 +310,12 @@ get_source_zone_events_data()
 ## [1] "Please pass one of the above source_zone names to this function to get its metadata"
 ```
 
-Above we called the function that is typically used to get source-zone event
-data. If no arguments are passed, then by default it prints the valid
-source_zone names and exits. You can use this print-out to learn what the
-source-zone names are. They can also be found by clicking on source-zones in
-the interactive hazard map (discussed above).
+Above we called the function `get_source_zone_events_data` that is typically
+used to get metadata on all scenarios on a particular source-zone. However, if
+no arguments are passed, then by default it prints the valid `source_zone` names
+and exits. That can help you learn what the source-zone names are. They can
+also be found by clicking on source-zones in the interactive hazard map
+(discussed above).
 
 Suppose we are interested in the Puysegur source-zone. From the above list and/or the 
 interactive viewer, we could infer that it was named `puysegur2`. We can then get the
@@ -375,6 +378,7 @@ names(puysegur$unit_source_statistics)
 ## [13] "max_depth"              "initial_condition_file"
 ## [15] "tide_gauge_file"
 ```
+Here we determine the dimensions of the table, and look at a few rows
 
 ```r
 # Get the table dimensions
