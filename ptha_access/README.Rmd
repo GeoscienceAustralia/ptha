@@ -383,24 +383,31 @@ whether we consider the high magnitude events are possible on the source-zone.
 You will notice that events at very large `Mw` always have a
 `weight_with_nonzero_rate` equal to zero.
 
+#### ***Understanding the event rates***
+
 There are also a number of variables with names including `_rate_annual`.
 **Beware: These do not give the exceedance rates for the events!**. Instead
 they represent a (fairly nominal) scenario-specific portion of the source-zone's
 magnitude-vs-exceedance-rate curve, evaluated at the logic-tree mean and
-various quantiles. This is useful as part of other calculations. For instance,
-by adjusting these rates we can make scenarios more or less likely on some parts
-of the source-zone (e.g to reflect spatial variations in tectonic convergence
-rates). Furthermore, we can re-weight the scenarios based on their slip, which is 
-used in the PTHA18 to adjust for model biases. This is done differently for models
-for constant and variable shear modulus, which is why some of the rate variables
-begin with `variable_mu_` (they are the variable shear modulus versions -- while 
-the other ones assume constant shear modulus). 
+various quantiles. 
 
- The key idea is that **if you sum all of the scenario rates above a given
-magnitude, then the result will correspond to the magnitude-vs-exceedance-rate
-curve for the source-zone**. For example, to get the rate of events above
-magnitude 7.85 on this source-zone, with various logic-tree percentiles
-describing the uncertainty, you could do the following calculations:
+Assigning rates to scenarios like this turns out to be very useful to
+facilitate other calculations. For instance, by adjusting these rates we can
+make scenarios more or less likely on some parts of the source-zone (e.g to
+reflect spatial variations in tectonic convergence rates).  Furthermore, we can
+re-weight the scenarios based on their slip, which is used in the PTHA18 to
+adjust for model biases. This is done differently for models for constant and
+variable shear modulus. Notice that some of the rate variables begin with
+`variable_mu_` (they are the variable shear modulus versions, where the shear
+modulus varies with depth) -- while the other ones assume constant shear
+modulus. 
+
+To understand the sceanrio rates, the key idea is that **if you sum all of the
+scenario rates above a given magnitude, then the result will correspond to the
+magnitude-vs-exceedance-rate curve for the source-zone**. For example, to get
+the rate of events above magnitude 7.85 on this source-zone, with various
+logic-tree percentiles describing the uncertainty, you could do the following
+calculations:
 ```{r meaningOfScenarioRates}
 # Rate of events with Mw > 7.85 -- logic-tree mean
 sum(puysegur$events$rate_annual * (puysegur$events$Mw > 7.85))
@@ -439,6 +446,13 @@ variables are related to the *derivatives* of the Mw-exceedance-rate
 percentile curves. The derivatives might not be ordered in the same way as the 
 exceedance-rate curves themselves.
 
+If you do similar calculations using the `variable_mu` versions of these
+variables, you will find the results are not identical, although they are
+usually quite similar. This is because shear modulus variability changes the
+relationship between earthquake magnitude and average slip, which in turn
+effects the relationship between the rate of earthquakes and the implied
+tectonic-plate motion rates. See the PTHA18 report for a full explanation of
+these issues.
 
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami event***
 
