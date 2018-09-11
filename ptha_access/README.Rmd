@@ -465,10 +465,10 @@ type operations. To avoid that, it is better to use intermdiate magnitudes like
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami scenario***
 
 Suppose we want to get the tsunami initial conditions (i.e. water surface
-deformation) for the earthquake event on row 2050 of `puysegur$events`. The
-metadata for event 2050 is:
+deformation) for the earthquake event on row 1567 of `puysegur$events`. The
+metadata for event 1567 is:
 ```{r eventXXX}
-row_index = 2050 # Use this variable to refer to event 2050
+row_index = 1567 # Use this variable to refer to event 1567
 puysegur$events[row_index,]
 ```
 To get its initial condition, you pass the earthquake metadata to the function

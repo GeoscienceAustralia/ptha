@@ -667,35 +667,35 @@ type operations. To avoid that, it is better to use intermdiate magnitudes like
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami scenario***
 
 Suppose we want to get the tsunami initial conditions (i.e. water surface
-deformation) for the earthquake event on row 2050 of `puysegur$events`. The
-metadata for event 2050 is:
+deformation) for the earthquake event on row 1567 of `puysegur$events`. The
+metadata for event 1567 is:
 
 ```r
-row_index = 2050 # Use this variable to refer to event 2050
+row_index = 1567 # Use this variable to refer to event 1567
 puysegur$events[row_index,]
 ```
 
 ```
-##      event_index_string        event_slip_string  Mw target_lon target_lat
-## 2050       21-23-25-27- 5.838_8.941_2.336_1.508_ 7.9   166.7325  -45.56029
+##      event_index_string   event_slip_string  Mw target_lon target_lat
+## 1567          16-17-18- 2.435_0.7238_2.776_ 7.7   165.7626  -46.62072
 ##      peak_slip_downdip_ind peak_slip_alongstrike_ind
-## 2050                     1                        12
+## 1567                     2                         9
 ##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
-## 2050                  0.003639969                  0.004682143  puysegur2
-##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 2050               131 2.699053e-05          1.24744e-06
+## 1567                  0.006060465                   0.01252411  puysegur2
+##      uniform_event_row rate_annual rate_annual_lower_ci
+## 1567               103 4.46485e-05         2.926813e-05
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 2050         4.415802e-05       7.612915            3.805892e-05
+## 1567         6.766586e-05       7.803452            3.295566e-05
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 2050                     1.977616e-06                     6.544703e-05
+## 1567                     2.144147e-05                     5.125079e-05
 ##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
-## 2050                   3.310225e-05                 4.604935e-05
+## 1567                   3.203037e-05                 2.561428e-05
 ##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
-## 2050                 4.295668e-05                            0.9956551
+## 1567                 4.088959e-05                                    1
 ##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
-## 2050                0.9952935     3.260319e-05     3.074646e-05
+## 1567                        1     3.533395e-05     5.491671e-05
 ##      rate_annual_median
-## 2050       2.427181e-05
+## 1567       4.323276e-05
 ```
 To get its initial condition, you pass the earthquake metadata to the function
 `get_initial_condition_for_event`:

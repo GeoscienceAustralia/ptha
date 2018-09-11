@@ -1352,7 +1352,6 @@ update_scenario_rate_percentiles_on_source_zones_with_partial_segmentation<-func
             k = which( (all_sources[[i]]$event_table$Mw > mw_seq[j]  ) & 
                        (all_sources[[i]]$event_table$Mw < mw_seq[j+1]) )
             stopifnot( all( all_sources[[i]]$event_table$Mw[k] == all_sources[[i]]$event_table$Mw[k[1]]) )
-            LOCAL_mw_value = all_sources[[i]]$event_table$Mw[k[1]]
  
             # Median, constant mu
             delta_rate = -diff(ex_rates[[i]][['median']][j:(j+1)])  
