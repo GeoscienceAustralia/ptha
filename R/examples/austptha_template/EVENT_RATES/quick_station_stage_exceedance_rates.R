@@ -207,6 +207,8 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
 
         site = rep(basename(dirname(dirname(tsunami_files[i]))), length=length(event_rate))
         #row_index = 1:length(event_rate)
+        nc_close(fid)
+        nc_close(fid_rates)
 
         stage_rate[[i]] = data.frame(
             event_rate = event_rate,
@@ -221,8 +223,6 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
             event_Mw = event_Mw)
             #event_Mw_vary_mu = event_Mw_vary_mu)
 
-        nc_close(fid)
-        nc_close(fid_rates)
         rm(event_rate, event_rate_upper, event_rate_lower, event_Mw, 
             event_rate_median, event_rate_16pc, event_rate_84pc,
             #event_Mw_vary_mu, row_index,
@@ -550,6 +550,8 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
 
     dev.off()
 
+    # If all is good return zero. We can use this to catch errors above
+    return(0)
 }
 
 
