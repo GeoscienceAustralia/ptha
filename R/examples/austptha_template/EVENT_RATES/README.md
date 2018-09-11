@@ -58,14 +58,14 @@ above information with the tsunami propagation results to compute 'hazard
 curves' for every station in the model. These are written out to a netcdf file
 [one for each source-zone]. *If you have many and/or large source-zones, this
 code may take a long time to run (e.g. around 36 hours for the final PTHA18
-runs). To work around this, you can optionally run the code on a subset of
-source-zones only, by passing an integer commandline argument ranging from 1 to
-6 (details are currently hard-coded for the PTHA18 source-zones).  This means
-the 'batches' can be run consecutively on separate machines, which may speed up
-the overall run progress. The general idea is that for each source-zone we call
-a function* `check_if_file_is_ok` *to see whether that source-zone should be
-run.  This can be manipulated to only run a subset of source-zones. See the
-source code for further information.*
+runs, on a 16-core node of raijin). To work around this, you can optionally run
+the code on a subset of source-zones only, by passing an integer commandline
+argument ranging from 1 to 6 (details are currently hard-coded for the PTHA18
+source-zones).  This means the 'batches' can be run consecutively on separate
+nodes, which may speed up the overall run progress. The general idea is that
+for each source-zone we call a function* `check_if_file_is_ok` *to see whether
+that source-zone should be run.  This can be manipulated to only run a subset
+of source-zones. See the source code for further information.*
 
 Supplementary codes which are used in the above process are:
 
