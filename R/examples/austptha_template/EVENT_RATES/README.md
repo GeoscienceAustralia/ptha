@@ -115,20 +115,13 @@ deep-ocean-tsunami-observations' to 'all modelled events'.
 
 ## Plotting routines
 
-[plot_hazard_curves.R](plot_hazard_curves.R) contains a function to plot the
-wave height exceedance rates for both stochastic slip and uniform slip, at a
-station. It uses [plot_hazard_curves_utilities.R](plot_hazard_curves_utilities.R) 
-which is has lots of useful disgnostic plots that can help to understand the analysis.
-
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
 contains code to make diagnostic plots that help to understand the result at a single point.
 The plots are designed both to convey the results, and try to highlight any
 'problematic' issues (e.g. related to convergence of the hazard results / cross-checks of
-results between different files, etc).
-
-[plot_peak_stage_1m_slip.R](plot_peak_stage_1m_slip.R) can be used to plot the peak stage
-at a chosen hazard point resulting from every single unit-source tsunami. It's
-useful as a sanity check on the tsunami model results.
+results between different files, etc). It uses
+[plot_hazard_curves_utilities.R](plot_hazard_curves_utilities.R) which is has
+lots of useful disgnostic plots that can help to understand the analysis. 
 
 ## Other routines
 
@@ -162,3 +155,13 @@ that was not accounted for in earlier runs.
 
 [earthquake_rate_comparisons.R](earthquake_rate_comparisons.R) is used to compute the modelled
 scenario rates in various regions.
+
+*(DEFUNCT)* [plot_peak_stage_1m_slip.R](plot_peak_stage_1m_slip.R) is an old
+plotting code, which is superceeded by
+[quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
+which makes plots of similar information.
+
+*(DEFUNCT)* [plot_hazard_curves.R](plot_hazard_curves.R) is an old plotting
+routine, which is superceeded by
+[quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R) 
+
