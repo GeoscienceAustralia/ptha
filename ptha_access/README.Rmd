@@ -548,7 +548,7 @@ dim(model_ts$flow[['55015.4']])
 # Example plot of stage
 plot(model_ts$time, model_ts$flow[['55015.4']][1,,1], t='l', 
     xlim=c(0,10000), xlab='Seconds after earthquake', ylab='Stage (m)',
-    ylim=c(-0.2, 0.35))
+    ylim=c(-0.1, 0.15))
 points(model_ts$time, model_ts$flow[['55042.4']][1,,1], t='l', 
     col='red')
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
