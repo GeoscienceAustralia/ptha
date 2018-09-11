@@ -6,7 +6,7 @@ scenarios from the PTHA database.
 ## Extracting time-series at some target points, with prescribed maximum-stage values or exceedance-rates
 
 To run the code, you first need to open the file [extract_time_series.R](extract_time_series.R), and edit
-the path of the script which it sources (i.e. [../get_PTHA_results.R](get_PTHA_results.R). 
+the path of the script which it sources (i.e. [get_PTHA_results.R](../get_PTHA_results.R)). 
 
 You should ensure it points to the location of that script on your machine.
 
