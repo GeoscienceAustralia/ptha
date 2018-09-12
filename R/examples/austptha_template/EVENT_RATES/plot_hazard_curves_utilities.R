@@ -530,6 +530,9 @@ get_station_deaggregated_hazard<-function(lon_p, lat_p, slip_type = 'uniform',
                 sum(sources_list[[i]]$contribution), 
                 sum(event_rates * (event_stage >=stage_exceed) )) )
         }
+
+        # Clean up
+        #rm(event_index_string, event_slip, event_stage, event_rates, events_exceeding)
     }
 
     return(sources_list)
