@@ -16,7 +16,7 @@ source('config.R', local=config)
 
 # By default run all source zones, unless command line arguments are passed. 
 # In that case, the argument is an integer corresponding to a subset of the 
-# runs to execute. See the function 'check_if_file_is_ok' (below) for details
+# runs to execute. See the function 'skip_this_source_zone' (below) for details
 if(length(commandArgs(trailingOnly=TRUE)) > 0){
     run_all_source_zones = FALSE 
 }else{
@@ -80,12 +80,14 @@ read_lon_lat_elev<-function(nc_file){
 }
 
 #
-# For the output files, check that rows that begin with NA also end with NA.
-# An early version of the code had a bug here, which only affected small source-zones.
-# Using this function I could correct the bug only in affected files, which saved
-# a lot of run time
+# This function can be used to skip particular source-zones. 
 #
-check_if_file_is_ok<-function(uniform_slip_tsunami_file){
+# Currently it is set-up to allow running of approximately 1/6th of the
+# computational work in a single session (this only happens if an integer
+# commandline argument was passed when this script was run). Previously, I used
+# to to correct a few individual files (see commented out code)
+#
+skip_this_source_zone<-function(uniform_slip_tsunami_file){
 
     ###   #
     ###   # VERSION WHICH CHECKS FOR UN-WRITTEN RATES
@@ -778,9 +780,9 @@ for(i in 1:length(source_names)){
     variable_uniform_slip_tsunami_file = all_source_variable_uniform_slip_tsunami[i]
 
     if(!run_all_source_zones){
-        # Call a function to check if the file is ok. If it is ok, then go to
-        # the next source.
-        is_done = check_if_file_is_ok(uniform_slip_tsunami_file)
+        # Call a function to check if the source-zone is already done (or
+        # being done on another process, etc)
+        is_done = skip_this_source_zone(uniform_slip_tsunami_file)
         if(is_done) next
     }
 

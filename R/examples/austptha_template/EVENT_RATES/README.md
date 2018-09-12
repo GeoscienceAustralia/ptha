@@ -63,7 +63,7 @@ the code on a subset of source-zones only, by passing an integer commandline
 argument ranging from 1 to 6 (details are currently hard-coded for the PTHA18
 source-zones).  This means the 'batches' can be run consecutively on separate
 nodes, which may speed up the overall run progress. The general idea is that
-for each source-zone we call a function* `check_if_file_is_ok` *to see whether
+for each source-zone we call a function* `skip_this_source_zone` *to see whether
 that source-zone should be run.  This can be manipulated to only run a subset
 of source-zones. See the source code for further information.*
 
