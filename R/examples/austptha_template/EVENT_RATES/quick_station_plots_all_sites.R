@@ -23,8 +23,8 @@ stopifnot(all(round(command_arguments) == command_arguments))
 
 # Set up the parallel cluster
 library(parallel)
-MC_CORES=8 # Memory limited
-cl = makeForkCluster(MC_CORES)
+MC_CORES=16 # Memory limited
+cl = makeCluster(MC_CORES)
 
 # Read the code that is used to make the plots
 parLapply(cl, as.list(1:MC_CORES), f<-function(x){
@@ -55,7 +55,7 @@ run_chunk_of_sites<-function(lower_longitude, upper_longitude){
 
     # Do the plots at all "sites"
     parLapply(cl, sites, f<-function(x){
-        result = try(quick_source_deagg(x[1], x[2], output_dir=output_dir))
+        result = try(quick_source_deagg(round(x[1],4), round(x[2],4), output_dir=output_dir))
         if(class(result) == 'try-error'){
             # It is possible that a pdf device is still open, which might mess up
             # future plotting

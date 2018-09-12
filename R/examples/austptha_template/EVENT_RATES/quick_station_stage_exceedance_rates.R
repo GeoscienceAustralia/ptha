@@ -515,7 +515,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         #    slip_type='stochastic', exceedance_rate=ex_rates[sv], shear_modulus_type='variable_mu_')
         site_deagg = plot_hazard_curves_utilities$get_station_deaggregated_hazard(lon, lat, 
             slip_type='stochastic', stage=stages_ex_rates_mean[sv], shear_modulus_type='variable_mu_')
-
+        gc()
         stage_level = signif(site_deagg[[1]]$stage_exceed, 3)
 
         # Spatial hazard plot
