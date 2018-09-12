@@ -5,13 +5,16 @@
 #
 #     Rscript quick_station_plots_all_sites.R 0 100 2 16
 #
-# The first two command-line arguments should tell us which percentiles to run.
-# They range from 0-100, and are integers. For instance, to run the 'middle 20%'
-# of hazard points (in terms of their sorted longitude), do:
+# The first two command-line arguments should tell us which percentiles to run,
+# while the third and fourth control the parallel distribution of work
+#
+# The first two commandline arguments range from 0-100, and are integers. For
+# instance, to run the 'middle 20%' of hazard points (in terms of their sorted
+# longitude), do:
 #     Rscript quick_station_plots_all_sites.R 40 60 2 16
 #
-# The second two command line arguments are like 'this_image()' and 'num_images()'
-# in fortran (or like the 'mpi rank + 1' and the 'mpi comm size' in MPI). In
+# The third and fourth command line arguments are like 'this_image()' and 'num_images()'
+# in Fortran2008 (or in MPI, this would be 'mpi rank + 1' and 'mpi comm size'). In
 # practice the final commandline argument is equal to the number of CPUs on the
 # machine, and the second-last varies from 1 up to this number. We manually run
 # a separate R job for each case (in the job start-up script) It would be

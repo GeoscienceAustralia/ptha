@@ -3,8 +3,8 @@
 # 1) The 'real' analysis
 # 2) The 'real' analysis without edge adjustment
 # 3) Giving the same rate to all events with the same Mw
-# We should also show the Bird convergence rates.
-# This will illustrate how our adjustments are a 'good thing'
+# We also show the Bird convergence rates.
+# Note that this plot does not treat 'combined segmented and unsegmented' sources.
 # 
 # How to do this?
 # 1) Load compute_rates_all_sources environment
@@ -17,30 +17,21 @@
 # 2) The above event_conditional_probabilities involves edge correction,
 #     but it is easy to compute the one without edge correction
 #
-#    event_conditional_probabilities = get_event_probabilities_conditional_on_Mw(
-#        event_table, 
-#        conditional_probability_model = conditional_probability_model)    
-#
 # 3) The computation of event rates where 'equal Mw --> equal rate' is straightforward.
 #
-#
-# For each of the above cases, I should be able to 'fairly easily' re-compute the integrated
-# fault slip, and make a plot. 
-#
-# Hmm, what about segmentation? This complicates the above reasoning.
-#
-# Alternative: We know edge correction is 'just' applied to corresponding uniform
-# slip events touching edges of the full sourcezone. We can easily detect these in the files,
-# and do a crude back-adjustment (e.g. give them the same rate as their neighbouring events).
-# This may be an easier way to make the plot?
+# Alternative: We know edge correction is 'just' applied to corresponding
+# uniform slip events touching edges of the full sourcezone. We can easily
+# detect these in the files, and do a crude back-adjustment (e.g. give them the
+# same rate as their neighbouring events). This may be an easier way to make
+# the plot?
 
 load('compute_rates_all_sources_session.RData')
 
 ## Choose the source zone
-src = 'sunda'
-plot_xlim_default = c(100, 125) #NULL
-plot_ylim_default = c(-15, -5)  #NULL
-plot_arrow_scale_default = 60
+src = 'kurilsjapan' #'floreswetar'
+plot_xlim_default = c(138, 170) #NULL
+plot_ylim_default = c(30, 59)  #NULL
+plot_arrow_scale_default = 75
 
 # Unit source statistics
 uss = bird2003_env$unit_source_tables[[src]]
@@ -96,7 +87,10 @@ for(mm in unique_Mw){
 # Here is the 'data based' convergence rate, in m/year
 bird_convergence_div = uss$bird_vel_div * 1/1000
 bird_convergence_rl = uss$bird_vel_rl   * 1/1000
-data_convergence = sqrt(bird_convergence_div**2 + bird_convergence_rl**2)
+# Angle of at most 50 degrees
+conv_rl = pmin(abs(bird_convergence_rl), abs(bird_convergence_div)*tan(50/180*pi))
+#data_convergence = sqrt(bird_convergence_div**2 + bird_convergence_rl**2)
+data_convergence = sqrt(bird_convergence_div**2 + conv_rl**2)
 
 # Make some 'model based' convergence rate
 conv_slip_final = uss[,1] * 0
@@ -117,7 +111,8 @@ panel_plot<-function(uss, point_size_scale, arrow_size_scale, extra_arrow_size=p
     plot_xlim = plot_xlim_default, plot_ylim = plot_ylim_default){
 
       plot(uss$lon_c, uss$lat_c, xlim=plot_xlim, ylim=plot_ylim,
-          cex=point_size_scale, asp=1); grid()
+          cex=point_size_scale, xlab='Lon', ylab='Lat', 
+          asp=1/cos(mean(plot_ylim)/180*pi)); grid()
       v = cbind(-cos(uss$strike/180*pi)*arrow_size_scale,
                  sin(uss$strike/180*pi)*arrow_size_scale)*extra_arrow_size + 1.0e-06
       arrows(uss$lon_c, uss$lat_c,
@@ -125,15 +120,36 @@ panel_plot<-function(uss, point_size_scale, arrow_size_scale, extra_arrow_size=p
           length=0, col='red')
 }
 
-pdf(paste0('convergence_plot_comparison_methods_', src, '.pdf'), width=12, height=9)
-par(mfrow=c(2,2))
-panel_plot(uss, point_size_scale=1, arrow_size_scale=data_convergence)
-title('Input convergence ')
-panel_plot(uss, point_size_scale=1, arrow_size_scale=conv_slip_final)
-title('Modelled convergence (coupled fraction) \n Spatially variable rate + edge rate inflation ')
-panel_plot(uss, point_size_scale=1, arrow_size_scale=conv_slip_no_edge_inflation)
-title('Modelled convergence (coupled fraction) \n Spatially variable rate')
-panel_plot(uss, point_size_scale=1, arrow_size_scale=conv_slip_uniformly_spread)
-title('Modelled convergence (coupled fraction) \n event_rate = f(Mw)')
+#
+# For Flores, Mw-max is often not high, which means that the $\xi$ term (fraction of slip
+# due to earthquakes below Mw_min) is not very very clsoe to 1.
+#
+
+pp = source_envs[[src]]$mw_rate_function(NA, return_all_logic_tree_branches=TRUE)
+coupled_fraction = weighted.mean(pp$all_par$slip_rate/max(pp$all_par$slip_rate)*1.3, pp$all_par_prob)
+coupled_initial = weighted.mean(pp$all_par$slip_rate/max(pp$all_par$slip_rate)*1.3, pp$all_par_prob_prior)
+
+png(paste0('convergence_plot_comparison_methods_', src, '.png'), width=8, height=8, units='in', res=300)
+  par(mfrow=c(2,2))
+  par(mar=c(4,4,3,1))
+  panel_plot(uss, point_size_scale=1, arrow_size_scale=data_convergence)
+  title('Input convergence rates (fully coupled)')
+  panel_plot(uss, point_size_scale=1, arrow_size_scale=conv_slip_final)
+  title('Modelled long-term coupled slip rate \n PTHA18 with "edge effect" adjustment')
+  panel_plot(uss, point_size_scale=1, arrow_size_scale=conv_slip_no_edge_inflation)
+  title('Modelled long-term coupled slip rate \n No "edge effect" adjustment')
+  panel_plot(uss, point_size_scale=1, arrow_size_scale=conv_slip_uniformly_spread)
+  title('Modelled long-term coupled slip rate \n Constant conditional probability')
 dev.off()
 
+
+# Illustration that \xi is not super-close to 1.
+#
+#library(rptha)
+#s1 = seq(0, 10, by=0.01) # Magnitudes
+#moment_s1 = M0_2_Mw(s1, inverse=TRUE)
+#rate_s1 = 10**(-0.95*s1) # GR type model
+#k1 = which(s1 > 7.15 & s1 < 8.5) # Mw-min to Mw-max
+#k0 = which(s1 < 8.5) # Up to Mw-max
+#sum(s1[k1] * moment_s1[k1]*rate_s1[k1])/sum(s1[k0]*moment_s1[k0]*rate_s1[k0])
+#
