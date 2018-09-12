@@ -1,4 +1,5 @@
 library(rptha)
+# ncdf4, raster, sp, lonlat_nearest_neighbours
 config_env = new.env()
 source('config.R', local=config_env)
 
