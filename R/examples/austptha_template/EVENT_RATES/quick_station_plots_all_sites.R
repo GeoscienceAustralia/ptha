@@ -34,8 +34,8 @@ parLapply(cl, as.list(1:MC_CORES), f<-function(x){
 # This function runs a chunk of sites in parallel
 run_chunk_of_sites<-function(lower_longitude, upper_longitude){
 
-    lower_longitude = round(lower_longitude, 2)
-    upper_longitude = round(upper_longitude, 2)
+    lower_longitude = floor(lower_longitude*100)/100   #round(lower_longitude, 2)
+    upper_longitude = ceiling(upper_longitude*100)/100 #round(upper_longitude, 2)
 
     # Make an output directory
     output_dir = paste0('site_results/station_summary_plots_longitudes_', 
@@ -45,12 +45,13 @@ run_chunk_of_sites<-function(lower_longitude, upper_longitude){
 
     site_indices = which(
         (all_hazard_point_lonlat[,1] >= lower_longitude) &
-        (all_hazard_point_lonlat[,1] <  upper_longitude) )
+        (all_hazard_point_lonlat[,1] <=  upper_longitude) )
 
     # Get the coordinates we work with, in a list
     sites = lapply(as.list(site_indices), f<-function(x) all_hazard_point_lonlat[x,])
 
-    clusterExport(cl, c('output_dir'))
+    # All the nodes need to know about the output directory
+    clusterExport(cl, c('output_dir'), envir=environment())
 
     # Do the plots at all "sites"
     parLapply(cl, sites, f<-function(x){
