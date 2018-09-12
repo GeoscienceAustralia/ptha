@@ -20,5 +20,14 @@ Rscript compute_station_hazard_curves.R
 # The above script does not use mclapply, so we do not need to do the 'kill trick'. 
 Rscript integrated_rate_given_stage.R
 
-## Instead of this script, use quick_station_stage_exceedance_rates.R
-#Rscript plot_hazard_curves.R
+#
+# Then do the following (BEWARE -- variables in these scripts such as paths
+# might need manual editing)
+#
+
+## This only depends on the unit-source tsunami files, so it does not need to be re-run unless
+## those are updated
+# Rscript create_nc_file_peak_stage_unit_sources.R
+
+# Rscript tsunami_stage_exceedance_rates_to_csv.R
+# Rscript clean_shapefiles_for_plotting.R

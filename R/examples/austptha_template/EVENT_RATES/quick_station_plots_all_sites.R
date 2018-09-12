@@ -2,16 +2,21 @@
 # Make the quick_station_stage_exceedance_rates plots for all hazard points
 #
 # Call this script with 4 command line arguments, e.g.
+#
 #     Rscript quick_station_plots_all_sites.R 0 100 2 16
+#
 # The first two command-line arguments should tell us which percentiles to run.
-# They range from 0-100, and are integers.
+# They range from 0-100, and are integers. For instance, to run the 'middle 20%'
+# of hazard points (in terms of their sorted longitude), do:
+#     Rscript quick_station_plots_all_sites.R 40 60 2 16
 #
 # The second two command line arguments are like 'this_image()' and 'num_images()'
-# in fortran. In practice the final commandline argument is equal to the number of
-# CPUs on the machine, and the second-last varies from 1 up to this number. We manually
-# run a separate R job for each case (in the job start-up script)
-# It would be better to do this using R's paralle routines, but they are causing me
-# memory problems, hence this approach
+# in fortran (or like the 'mpi rank + 1' and the 'mpi comm size' in MPI). In
+# practice the final commandline argument is equal to the number of CPUs on the
+# machine, and the second-last varies from 1 up to this number. We manually run
+# a separate R job for each case (in the job start-up script) It would be
+# better to do this using R's paralle routines, but they are causing me memory
+# problems, hence this approach
 
 # Parse the commandline arguments
 command_arguments = as.numeric(commandArgs(trailingOnly=TRUE))
