@@ -21,8 +21,7 @@ For more information on these parameters, see
 
 You also need to edit [config.R](config.R) in this folder, to set parameters
 used in the event rate computation. See the comments in that script for more details.
-*It is essential that users understand what these parameters do, otherwise your computation
-might be completely different to what you wanted!*
+It is essential that anyone using this code understands that these variables do. 
 
 One input to the [config.R](config.R) script consists of a csv file describing
 functions used bias-correct event weights (with the same magnitude and general
