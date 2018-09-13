@@ -26,4 +26,5 @@ export upper_percentile=10
 for i in $(seq 1 $MC_CORES); do
     Rscript quick_station_plots_all_sites.R $lower_percentile $upper_percentile $i $MC_CORES > /dev/null &
 done
-
+# This is required to prevent the job completing right away (and killing the spawned processes)!
+wait
