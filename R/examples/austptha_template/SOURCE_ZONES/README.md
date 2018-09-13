@@ -54,3 +54,7 @@ filesystem, and replace the local files with symbolic links. To reduce the risk
 of accidental deletions, the script renames the existing nc files (by appending
 BACKUP to their name). These files can be manually deleted later if required.
 
+### dart_check_codes
+
+Contains scripts we used for processing dart data and comparing with results at
+particular source-zones.
