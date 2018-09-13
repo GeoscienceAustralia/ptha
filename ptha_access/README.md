@@ -203,12 +203,14 @@ source('test_all.R')
 ```
 
 ```
-## Error in Rsx_nc4_get_vara_double: NetCDF: DAP failure
-## Var: lon  Ndims: 1   Start: 0 Count: 20185
-```
-
-```
-## Error in ncvar_get_inner(ncid2use, varid2use, nc$var[[li]]$missval, addOffset, : C function R_nc4_get_vara_double returned error
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
 ```
 
 ### ***Viewing the locations of hazard points and source zones***
@@ -646,7 +648,8 @@ Notice that these are ordered as expected, i.e. 2.5% <= 16% <= median <= 84% <=
 from these files. Here we illustrate that (assuming constant shear modulus):
 
 ```r
-# Sequence of magnitude values
+# Sequence of magnitude values 7.15, 7.25, ...
+# This is the "lower bin boundary" of our scenarios with Mw = 7.2, 7.3, ...
 mws = seq(7.15, 9.85, by=1/10)
 
 # Mean exceedance rate curve
@@ -717,14 +720,6 @@ modulus variability changes the relationship between earthquake magnitude and
 average slip, which in turn affects the relationship between the rate of
 earthquakes and the implied tectonic-plate motion rates. See the PTHA18 report
 for a full explanation of these issues. 
-
-In the previous calculations we used 7.85 as the magnitude threshold. It is a
-good idea to avoid using values that correspond to the scenario magnitude, i.e.
-`7.2, 7.3, ... 9.8`.  The reason is that the earthquake magnitudes are stored
-as floating point values, so there will be some minor round-off in the
-magnitudes we read from file. This could influence the results of `>` or `>=`
-type operations. To avoid that, it is better to use intermdiate magnitudes like
-`7.15, 7.25, ... 9.85`.
 
 ### ***Obtaining tsunami initial conditions for a single earthquake-tsunami scenario***
 
