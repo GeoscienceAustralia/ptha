@@ -441,44 +441,49 @@ sum(puysegur$events$rate_annual_upper * (puysegur$events$Mw > 7.85))
 ```
 Notice that these are ordered as expected, i.e. 2.5% <= 16% <= median <= 84% <=
 97.5%. Thus we can recover the source-zones magnitude-exceedance rate curve
-from these files. Here we illustrate that for the variable-shear-modulus case:
+from these files. Here we illustrate that (assuming constant shear modulus):
 ```{r mwExceedanceExample, fig.width=7, fig.height=5}
 # Sequence of magnitude values
-mws = seq(7.15, 9.85, by=0.1)
-# Mean exceedance rate curve (assuming variable shear modulus)
+mws = seq(7.45, 9.85, by=1/10)
+
+# Mean exceedance rate curve
 mean_rates = sapply(mws, f<-function(x){
-    sum(puysegur$events$variable_mu_rate_annual * (puysegur$events$variable_mu_Mw > x))
+    sum(puysegur$events$rate_annual * (puysegur$events$Mw > x))
     })
-# 2.5% exceedance rate curve (assuming variable shear modulus)
+
+# 2.5% exceedance rate curve
 lower_ci_rates = sapply(mws, f<-function(x){
-    sum(puysegur$events$variable_mu_rate_annual_lower_ci * (puysegur$events$variable_mu_Mw > x))
+    sum(puysegur$events$rate_annual_lower_ci * (puysegur$events$Mw > x))
     })
-# 97.5% exceedance rate curve (assuming variable shear modulus)
+
+# 97.5% exceedance rate curve
 upper_ci_rates = sapply(mws, f<-function(x){
-    sum(puysegur$events$variable_mu_rate_annual_upper_ci * (puysegur$events$variable_mu_Mw > x))
+    sum(puysegur$events$rate_annual_upper_ci * (puysegur$events$Mw > x))
     })
 # ... should also add the 68% and median -- but for brevity we skip that here.
 
-# Make a plot
-plot(mws, mean_rates, t='l', log='y', lwd=2, 
-    xlim=c(7., 9), ylim=c(1.0e-06,1), 
-    main='Mw-exceedance-rate curve (variable shear-modulus)', 
+# Make a plot. 
+# To avoid truncation of the lines due to plotting zero values on a
+# log-axis-plot, we convert zero rates to 1e-100. 
+plot(mws, pmax(mean_rates, 1e-100), t='o', log='y', lwd=2, 
+    xlim=c(7.5, 9), ylim=c(1.0e-06,1), 
+    main='Mw-exceedance-rate curve (constant shear-modulus)', 
     xlab="Mw", ylab="Exceedance rate (events/year)")
-points(mws, upper_ci_rates, t='l', col='red')
-points(mws, lower_ci_rates, t='l', col='red')
+points(mws, pmax(upper_ci_rates, 1e-100), t='l', col='red')
+points(mws, pmax(lower_ci_rates, 1e-100), t='l', col='red')
 grid(col='orange')
 legend('topright', c('Mean', '95% CI'), col=c('black', 'red'), lwd=c(2,1))
 
 ```
 
-It is important to understand that at the individual scenario level, there is
-no such ordering constraint. For example, the `rate_annual_16pc` value is
+It is important to understand that there is no ordering constraint on the
+individual scenario rates. For example, the `rate_annual_16pc` value is
 sometimes larger than the `rate_annual_median` value. This is because the
 latter variables are related to the *derivatives* of the Mw-exceedance-rate
 percentile curves - and the derivatives might not be ordered in the same way as
-the exceedance-rate curves themselves. In other words, the ordering constraint
-applies to the cumulative sum of the individual scenario rates, but not the rates
-themselves.
+the exceedance-rate curves themselves. In other words, **the ordering constraint
+applies to the cumulative sum of the individual scenario rates** - and not 
+directly to the individual scenario rates.
 
 This highlights that the individual scenario rates are not particularly meaningful
 unless integrated over many scenarios.
