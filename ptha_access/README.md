@@ -555,11 +555,13 @@ irrespective of whether we consider the high magnitude scenarios are possible
 on the source-zone.  You will notice that scenarios at very large `Mw` always
 have a `weight_with_nonzero_rate` equal to zero.
 
-#### ***Understanding the scenario rates***
+### ***Understanding the scenario rates***
 
-There are also a number of variables with names including `_rate_annual`.
-**Beware: These do not give the exceedance rates for the scenarios!**. Instead
-they represent a (fairly nominal) scenario-specific portion of the source-zone's
+The scenario metadata also includes a number of variables with names including
+`rate_annual`.  For example, `rate_annual_median`,
+`variable_mu_rate_annual_16pc`, etc.  **Beware: These do not give the
+exceedance rates for the scenarios!**. Instead they represent a (fairly
+nominal) scenario-specific portion of the source-zone's
 magnitude-vs-exceedance-rate curve, evaluated at the logic-tree mean and
 various quantiles. 
 
@@ -647,7 +649,7 @@ from these files. Here we illustrate that (assuming constant shear modulus):
 
 ```r
 # Sequence of magnitude values
-mws = seq(7.45, 9.85, by=1/10)
+mws = seq(7.15, 9.85, by=1/10)
 
 # Mean exceedance rate curve
 mean_rates = sapply(mws, f<-function(x){
@@ -663,31 +665,50 @@ lower_ci_rates = sapply(mws, f<-function(x){
 upper_ci_rates = sapply(mws, f<-function(x){
     sum(puysegur$events$rate_annual_upper_ci * (puysegur$events$Mw > x))
     })
-# ... should also add the 68% and median -- but for brevity we skip that here.
 
-# Make a plot. 
-# To avoid truncation of the lines due to plotting zero values on a
-# log-axis-plot, we convert zero rates to 1e-100. 
-plot(mws, pmax(mean_rates, 1e-100), t='o', log='y', lwd=2, 
-    xlim=c(7.5, 9), ylim=c(1.0e-06,1), 
+# 16% exceedance rate curve
+pc16_ci_rates = sapply(mws, f<-function(x){
+    sum(puysegur$events$rate_annual_16pc * (puysegur$events$Mw > x))
+    })
+
+# 84% exceedance rate curve
+pc84_ci_rates = sapply(mws, f<-function(x){
+    sum(puysegur$events$rate_annual_84pc * (puysegur$events$Mw > x))
+    })
+
+# median exceedance rate curve
+median_ci_rates = sapply(mws, f<-function(x){
+    sum(puysegur$events$rate_annual_median * (puysegur$events$Mw > x))
+    })
+
+# Make a plot. To avoid truncation of the lines (due to the log-y-scale),
+# replace zero values with 1e-8 (i.e. below the lower y-limit)
+plot(mws, pmax(mean_rates, 1e-8), t='l', log='y', lwd=2, 
+    xlim=c(7.15, 9), ylim=c(1.0e-05,1), 
     main='Mw-exceedance-rate curve (constant shear-modulus)', 
     xlab="Mw", ylab="Exceedance rate (events/year)")
-points(mws, pmax(upper_ci_rates, 1e-100), t='l', col='red')
-points(mws, pmax(lower_ci_rates, 1e-100), t='l', col='red')
+# Add percentile curves
+points(mws, pmax(upper_ci_rates, 1e-8), t='l', col='red')
+points(mws, pmax(lower_ci_rates, 1e-8), t='l', col='red')
+points(mws, pmax(pc16_ci_rates, 1e-8), t='l', col='orange')
+points(mws, pmax(pc84_ci_rates, 1e-8), t='l', col='orange')
+points(mws, pmax(median_ci_rates, 1e-8), t='l', col='purple')
+
 grid(col='orange')
-legend('topright', c('Mean', '95% CI'), col=c('black', 'red'), lwd=c(2,1))
+legend('topright', c('Mean', 'Median', '95% CI', '68% CI'), 
+    col=c('black', 'purple', 'red', 'orange'), lwd=c(2, 1, 1, 1), bg='white')
 ```
 
 ![plot of chunk mwExceedanceExample](figure/mwExceedanceExample-1.png)
 
 It is important to understand that there is no ordering constraint on the
-individual scenario rates. For example, the `rate_annual_16pc` value is
-sometimes larger than the `rate_annual_median` value. This is because the
-latter variables are related to the *derivatives* of the Mw-exceedance-rate
-percentile curves - and the derivatives might not be ordered in the same way as
-the exceedance-rate curves themselves. In other words, **the ordering constraint
-applies to the cumulative sum of the individual scenario rates** - and not 
-directly to the individual scenario rates.
+individual scenario rates. For instance, the `rate_annual_16pc` value is
+sometimes larger than the `rate_annual_median` value for an individual
+scenario. This is because the latter variables are related to the *derivatives*
+of the Mw-exceedance-rate percentile curves - and the derivatives might not be
+ordered in the same way as the exceedance-rate curves themselves. In other
+words, **the percentiles refer to the cumulative sum of the individual scenario
+rates** - and not directly to the individual scenario rates.
 
 This highlights that the individual scenario rates are not particularly meaningful
 unless integrated over many scenarios.
