@@ -1,16 +1,12 @@
 # Codes for the scenario rate computation in PTHA18
 
-This folder contains files to integrate over the tsunami events and nominal
-rates which were derived in sub-folders of ../SOURCE_ZONES/. 
-
-The latter codes, which relate to making tsunami events on source zones, must
-have been run before trying to run codes here.
-
+This folder contains scripts to do the source-zone rate computations in PTHA18,
+distribute the rates over scenarios, compute the hazard curves, etc. 
 
 ## Running 
 
-To run this code, you must have created the unit-sources, run the tsunami models,
-and created the earthquake events. See sub-folders in
+To run the scenario rate calculations, you must have created the unit-sources,
+run the tsunami models, and created the earthquake events. See sub-folders in
 [../SOURCE_ZONES/TEMPLATE/](../SOURCE_ZONES/TEMPLATE) for more information.
 
 You also need to decide on 'final' parameter values for the source-zone, and how
@@ -21,8 +17,7 @@ For more information on these parameters, see
 
 You also need to edit [config.R](config.R) in this folder, to set parameters
 used in the event rate computation. See the comments in that script for more
-details.  It is essential that anyone using this code understands that these
-variables do. 
+details.
 
 One input to the [config.R](config.R) script consists of a csv file describing
 functions used bias-correct event weights (with the same magnitude and general
@@ -40,18 +35,19 @@ another machine. Alternatively, you could look at the sequence of commands in
 the script and then run them some other way (e.g. this can allow the rate curve
 calculations to be split over multiple nodes).
 
-Once that is done, you should also do the following (*but you might need to
-edit output paths in these scripts first*):
+Once that is done, you should also do the following to update various derived
+results (*NOTE: you might need to edit output paths in these scripts first, they
+are not tightly integrated with the previous computations*):
 
-1. Run [create_nc_file_peak_stage_unit_sources.R](create_nc_file_peak_stage_unit_sources.R) to make fast-access information for plotting. 
+1. Run [create_nc_file_peak_stage_unit_sources.R](create_nc_file_peak_stage_unit_sources.R) to make fast-access information for plotting. Note this is unaffected by the scenario rates, so it only needs to be run when the tsunami-unit-sources are updated.
 2. To make easy-access output files you need to run [tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R). 
 3. To make a shapefile for 'general-plot' purposes, run [clean_shapefiles_for_plotting.R](clean_shapefiles_for_plotting.R).
 
 You can also use
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
-to make deaggregation plots on-demand. To assist with batch-production of such
+to make 'standard station deaggregation plots' on-demand. To assist with batch-production of such
 plots, see [quick_station_plots_all_sites.R](quick_station_plots_all_sites.R)
-which can run a group of hazard points based on their longitude.
+which runs a group of hazard points based on their longitude.
 
 ## Details
 
@@ -60,7 +56,7 @@ and [compute_rates_all_sources.R](compute_rates_all_sources.R)
 
 [compute_rates_all_sources.R](compute_rates_all_sources.R) is used to compute
 rates for all tsunami events on all source-zones, using information on 
-plate tectonic motions and historical earthquakes.
+plate tectonic motions and historical earthquakes. 
 
 [compute_station_hazard_curves.R](compute_station_hazard_curves.R) combines the
 above information with the tsunami propagation results to compute 'hazard
