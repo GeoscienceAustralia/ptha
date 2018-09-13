@@ -89,7 +89,7 @@ etc).
 
 Finally you need to install the `rptha` package. This must be built from
 source, after obtaining the code from Geoscience Australia's the `PTHA` github
-repository. [See instructions here](https://github.com/GeoscienceAustralia/ptha/blob/master/R/README.md)
+repository. [See instructions here](https://github.com/GeoscienceAustralia/ptha/blob/master/R/README.md).
 
 ### **Installing mapview**
 Finally you should install the `mapview` package (to enable some interactive
