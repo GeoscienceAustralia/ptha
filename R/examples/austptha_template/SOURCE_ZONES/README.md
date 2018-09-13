@@ -5,7 +5,8 @@ To make files for a new source-zone, you need to copy the TEMPLATE folder to a
 new folder with the name **source_name** (e.g. for the Sunda Arc, the folder is
 called 'sunda').
 
-Then the code is ready to run. It assumes that ../DATA/SOURCE_CONTOURS has a
+Then the code is ready to run. See the README in the [./TEMPLATE](./TEMPLATE) 
+folder for instructions. It assumes that ../DATA/SOURCE_CONTOURS has a
 file named **source_name**.shp, and also ../DATA/SOURCE_DOWNDIP_LINES has one
 called **source_name**_downdip.shp. (For example, for the 'sunda' case, they
 would be 'sunda.shp' and 'sunda_downdip.shp' respectively)
@@ -14,7 +15,7 @@ would be 'sunda.shp' and 'sunda_downdip.shp' respectively)
 
 ### run_16.sh
 
-The current directory has a [run_16.sh](run_16.sh) script which can run tsunami
+The current directory has a [run_16.sh](run_16.sh) script which can run 16 tsunami
 propagation models (after they have been set-up by modifying the TEMPLATE
 folder and following the instructions in the TSUNAMI_UNIT_SOURCE sub-folder).
 
