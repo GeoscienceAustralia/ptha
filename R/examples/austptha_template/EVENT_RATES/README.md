@@ -20,8 +20,9 @@ For more information on these parameters, see
 [../DATA/SOURCEZONE_PARAMETERS/sourcezone_parameters/README.md](../DATA/SOURCEZONE_PARAMETERS/README.md).
 
 You also need to edit [config.R](config.R) in this folder, to set parameters
-used in the event rate computation. See the comments in that script for more details.
-It is essential that anyone using this code understands that these variables do. 
+used in the event rate computation. See the comments in that script for more
+details.  It is essential that anyone using this code understands that these
+variables do. 
 
 One input to the [config.R](config.R) script consists of a csv file describing
 functions used bias-correct event weights (with the same magnitude and general
@@ -35,15 +36,22 @@ NCI) with:
     qsub run_compute_rates_and_station_hazard_curves.PBS
 
 With slight modifications, one could also just 'source' the above script on
-another machine. 
+another machine. Alternatively, you could look at the sequence of commands in
+the script and then run them some other way (e.g. this can allow the rate curve
+calculations to be split over multiple nodes).
 
-Once that is done, you should also do the following (*but you might need to edit output paths in these scripts first*):
+Once that is done, you should also do the following (*but you might need to
+edit output paths in these scripts first*):
 
 1. Run [create_nc_file_peak_stage_unit_sources.R](create_nc_file_peak_stage_unit_sources.R) to make fast-access information for plotting. 
 2. To make easy-access output files you need to run [tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R). 
 3. To make a shapefile for 'general-plot' purposes, run [clean_shapefiles_for_plotting.R](clean_shapefiles_for_plotting.R).
 
-You can also use [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R) to make deaggregation plots on-demand. To assist with batch-production of such plots, see [quick_station_plots_all_sites.R](quick_station_plots_all_sites.R) which can run a group of hazard points based on their longitude.
+You can also use
+[quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
+to make deaggregation plots on-demand. To assist with batch-production of such
+plots, see [quick_station_plots_all_sites.R](quick_station_plots_all_sites.R)
+which can run a group of hazard points based on their longitude.
 
 ## Details
 
@@ -66,7 +74,7 @@ source-zones - see the function `skip_this_source_zone` for details). This means
 multiple subsets can be submitted at once on separate nodes, which may speed up
 the overall run progress.*
 
-Supplementary codes which are used in the above process are:
+## Supplementary codes which are used in the above process are:
 
 [config.R](config.R) controls key run variables.
 
@@ -100,8 +108,8 @@ calculate and plot the slip rate on each unit source implied by the model. This
 can be compared with the plate-tectonic models which were used to determine the
 event rates. In combination with a numerical optimization routine, it may also
 be used to determine how much the conditional probability of source-zone-edge
-earthquake events should be increased in order to best match the spatial distribution
-of plate convergence.
+earthquake events should be increased in order to best match the spatial
+distribution of plate convergence.
 
 [check_event_netcdf_files.R](check_event_netcdf_files.R) performs various
 sanity checks on the netcdf files that are updated by
@@ -114,15 +122,18 @@ variable-uniform slip events, by comparing the statistical properties of
 'modelled events which are similar to deep-ocean-tsunami-observations' to 'all
 modelled events'. It creates files which are referenced in [config.R](config.R).
 
-## Plotting routines
+## Plotting routines are
 
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
-contains code to make diagnostic plots that help to understand the result at a single point.
-The plots are designed both to convey the results, and try to highlight any
-'problematic' issues (e.g. related to convergence of the hazard results / cross-checks of
-results between different files, etc). It uses
+contains code to make diagnostic plots that help to understand the result at a
+single point.  The plots are designed both to convey the results, and try to
+highlight any 'problematic' issues (e.g. related to convergence of the hazard
+results / cross-checks of results between different files, etc). It uses
 [plot_hazard_curves_utilities.R](plot_hazard_curves_utilities.R) which is has
-lots of useful disgnostic plots that can help to understand the analysis. 
+lots of useful disgnostic plots that can help to understand the analysis. To
+run many points in one go, see the code
+[quick_station_plots_all_sites.R](quick_station_plots_all_sites.R), which can
+run a set of points with nearby longitudes.
 
 
 ## Other routines
@@ -138,21 +149,23 @@ find these formats easy to work with.
 performance of the uniform, stochastic, and variable uniform models vs DART
 measurements (including hypothesis testing relating to the median-coverage-statistic)
 
-[earthquake_rate_comparisons.R](earthquake_rate_comparisons.R) is used to compute the modelled
-scenario rates in various regions.
+[earthquake_rate_comparisons.R](earthquake_rate_comparisons.R) is used to
+compute the modelled scenario rates in various regions (e.g. for comparison
+with regional estimates in the literature)
 
 ## Exploratory routines (not directly used elsewhere)
 
 [slip_simulator.R](slip_simulator.R) is a simple (and experimental) code to
-place fixed-size earthquake events on a source-zone, so as to spatially match
+greedily place fixed-size earthquake events on a source-zone, so as to spatially match
 some idea of moment conservation. This is not used directly in the above analysis,
 but it independently shows that edge-effects should be accounted for.
 
-[variable_mu_checks.R](variable_mu_checks.R) makes some plots to compare Mw-frequency curves
-with fixed and variable mu. NOTE: This code assumes that the netcdf files have
-NOT already had bias adjustments applied (i.e. if you run them on the final
-output files, you'll get strange results!). The were used to help explore
-various bias adjustment methods during preliminary stages of the analysis.
+[variable_mu_checks.R](variable_mu_checks.R) makes some plots to compare
+Mw-frequency curves with fixed and variable mu. NOTE: This code assumes that
+the netcdf files have NOT already had bias adjustments applied (i.e. if you run
+them on the final output files, you'll get strange results!). The were used to
+help explore various bias adjustment methods during preliminary stages of the
+analysis.
 
 [convergence_rates_plots_comparison_methods.R](convergence_rates_plots_comparison_methods.R) 
 shows long-term convergence rates implied different conditional probability approaches.
