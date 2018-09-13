@@ -71,7 +71,8 @@ This must be finalised before creating the unit-sources using scripts in
 rake
 ----
 
-The desired rake (in degrees) of events on the source. Currently only pure thrust (=90) and pure normal (= -90) are supported.
+The desired rake (in degrees) of events on the source. Currently only pure
+thrust (=90) and pure normal (= -90) are supported.
 
 Note that there should only be one rake for each source-zone.
 
@@ -209,8 +210,7 @@ the three provided values.
 
 This must be finalised before computing the event rates in [../../EVENT_RATES/](../../EVENT_RATES).
 
-Do not make any of these values equal to zero. If you want zero coupling, then
-assign a nonzero value to prob_Mmax_below_Mmin. The reason for this is that we
+Do not make any of these values equal to zero. The reason for this is that we
 numerically discretize the coupling coefficients with a logarithmic spacing, so
 that in a relative sense we can resolve both small and low couplings. Obviously
 one cannot take the log of zero, so zero coupling is not allowed. This should
@@ -260,8 +260,10 @@ This must be finalised before computing the event rates in [../../EVENT_RATES/](
 prob_Mmax_below_Mmin
 ----------------------
 
-The prior probability that the source zone does NOT have any seismicity above our Mw-min.
-This can be used to treat source-zones that might be inactive. 
+The prior probability that the source zone does NOT have any seismicity above
+our Mw-min. *Note this was an experimental feature which I have not been
+using.* Do not assume that non-zero values are a good idea - the approach needs
+further investigation and perhaps refinement.
 
 notes
 ------
