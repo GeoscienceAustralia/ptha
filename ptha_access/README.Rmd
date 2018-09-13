@@ -394,15 +394,16 @@ various quantiles.
 Assigning rates to scenarios like this turns out to be very useful to
 facilitate other calculations. For instance, by adjusting these rates we can
 make scenarios more or less likely on some parts of the source-zone (e.g to
-reflect spatial variations in tectonic convergence rates).  Furthermore, we can
+reflect spatial variations in tectonic convergence rates). Furthermore, we can
 re-weight the scenarios based on their slip, which is used in the PTHA18 to
 adjust for model biases. This is done differently for models for constant and
-variable shear modulus. Notice that some of the rate variables begin with
-`variable_mu_` (they are the variable shear modulus versions, where the shear
-modulus varies with depth) -- while the other ones assume constant shear
-modulus. 
+variable shear modulus. 
 
-To understand the sceanrio rates, the key idea is that **if you sum all of the
+Notice that some of the rate variables begin with `variable_mu_`. These are the
+variable shear modulus versions. The other rate variables assume constant shear
+modulus (30GPa for thrust scenarios, 60GPa for normal scenarios).
+
+To understand the scenario rates, the key idea is that **if you sum all of the
 scenario rates above a given magnitude, then the result will correspond to the
 magnitude-vs-exceedance-rate curve for the source-zone**. For example, to get
 the rate of scenarios above magnitude 7.85 on this source-zone, with various
@@ -439,12 +440,48 @@ sum(puysegur$events$rate_annual_84pc * (puysegur$events$Mw > 7.85))
 sum(puysegur$events$rate_annual_upper * (puysegur$events$Mw > 7.85))
 ```
 Notice that these are ordered as expected, i.e. 2.5% <= 16% <= median <= 84% <=
-97.5%. However, please note that at the individual scenario level this
-ordering may not hold. For example, the `rate_annual_16pc` value is sometimes
-larger than the `rate_annual_median` value. This is because the latter
-variables are related to the *derivatives* of the Mw-exceedance-rate
-percentile curves. The derivatives might not be ordered in the same way as the 
-exceedance-rate curves themselves.
+97.5%. Thus we can recover the source-zones magnitude-exceedance rate curve
+from these files. Here we illustrate that for the variable-shear-modulus case:
+```{r mwExceedanceExample, fig.width=7, fig.height=5}
+# Sequence of magnitude values
+mws = seq(7.15, 9.85, by=0.1)
+# Mean exceedance rate curve (assuming variable shear modulus)
+mean_rates = sapply(mws, f<-function(x){
+    sum(puysegur$events$variable_mu_rate_annual * (puysegur$events$variable_mu_Mw > x))
+    })
+# 2.5% exceedance rate curve (assuming variable shear modulus)
+lower_ci_rates = sapply(mws, f<-function(x){
+    sum(puysegur$events$variable_mu_rate_annual_lower_ci * (puysegur$events$variable_mu_Mw > x))
+    })
+# 97.5% exceedance rate curve (assuming variable shear modulus)
+upper_ci_rates = sapply(mws, f<-function(x){
+    sum(puysegur$events$variable_mu_rate_annual_upper_ci * (puysegur$events$variable_mu_Mw > x))
+    })
+# ... should also add the 68% and median -- but for brevity we skip that here.
+
+# Make a plot
+plot(mws, mean_rates, t='l', log='y', lwd=2, 
+    xlim=c(7., 9), ylim=c(1.0e-06,1), 
+    main='Mw-exceedance-rate curve (variable shear-modulus)', 
+    xlab="Mw", ylab="Exceedance rate (events/year)")
+points(mws, upper_ci_rates, t='l', col='red')
+points(mws, lower_ci_rates, t='l', col='red')
+grid(col='orange')
+legend('topright', c('Mean', '95% CI'), col=c('black', 'red'), lwd=c(2,1))
+
+```
+
+It is important to understand that at the individual scenario level, there is
+no such ordering constraint. For example, the `rate_annual_16pc` value is
+sometimes larger than the `rate_annual_median` value. This is because the
+latter variables are related to the *derivatives* of the Mw-exceedance-rate
+percentile curves - and the derivatives might not be ordered in the same way as
+the exceedance-rate curves themselves. In other words, the ordering constraint
+applies to the cumulative sum of the individual scenario rates, but not the rates
+themselves.
+
+This highlights that the individual scenario rates are not particularly meaningful
+unless integrated over many scenarios.
 
 If you do similar calculations using the `variable_mu` versions of these
 variables, you will find the results are not identical, although they are
