@@ -129,7 +129,9 @@ results / cross-checks of results between different files, etc). It uses
 lots of useful disgnostic plots that can help to understand the analysis. To
 run many points in one go, see the code
 [quick_station_plots_all_sites.R](quick_station_plots_all_sites.R), which can
-run a set of points with nearby longitudes.
+run all points (or just a set of points with nearby longitudes). To do the
+latter on a a shared-memory parallel machine, see
+[run_quick_station_plots_on_subsets_of_sites.PBS](run_quick_station_plots_on_subsets_of_sites.PBS).
 
 
 ## Other routines
