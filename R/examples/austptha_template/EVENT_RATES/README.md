@@ -1,4 +1,4 @@
-# Codes for the event rate computation in PTHA18
+# Codes for the scenario rate computation in PTHA18
 
 This folder contains files to integrate over the tsunami events and nominal
 rates which were derived in sub-folders of ../SOURCE_ZONES/. 
