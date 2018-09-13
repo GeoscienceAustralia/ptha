@@ -2,14 +2,14 @@ This folder contains the main modelling runs for each source-zone.
 -------------------------------------------------------------------
 
 To make files for a new source-zone, you need to copy the TEMPLATE folder to a
-new folder with the name **source_name** (e.g. for the Sunda Arc, the folder is
-called 'sunda').
+new folder with the name **source_name** (e.g. for the Sunda Arc, the folder might
+be called 'sunda').
 
 Then the code is ready to run. See the README in the [./TEMPLATE](./TEMPLATE) 
 folder for instructions. It assumes that ../DATA/SOURCE_CONTOURS has a
 file named **source_name**.shp, and also ../DATA/SOURCE_DOWNDIP_LINES has one
 called **source_name**_downdip.shp. (For example, for the 'sunda' case, they
-would be 'sunda.shp' and 'sunda_downdip.shp' respectively)
+would be 'sunda.shp' and 'sunda_downdip.shp' respectively). 
 
 ## Extras
 
