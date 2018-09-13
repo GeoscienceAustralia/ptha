@@ -510,12 +510,11 @@ This highlights that the individual scenario rates are not particularly meaningf
 unless integrated over many scenarios.
 
 If you do similar calculations using the `variable_mu` versions of these
-variables, you will find the results are not identical, although they are
-usually quite similar. This is because shear modulus variability changes the
-relationship between earthquake magnitude and average slip, which in turn
-affects the relationship between the rate of earthquakes and the implied
-tectonic-plate motion rates. See the PTHA18 report for a full explanation of
-these issues.
+variables, you will find the results are not identical. This is because shear
+modulus variability changes the relationship between earthquake magnitude and
+average slip, which in turn affects the relationship between the rate of
+earthquakes and the implied tectonic-plate motion rates. See the PTHA18 report
+for a full explanation of these issues. 
 
 In the previous calculations we used 7.85 as the magnitude threshold. It is a
 good idea to avoid using values that correspond to the scenario magnitude, i.e.

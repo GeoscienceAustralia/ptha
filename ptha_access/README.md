@@ -203,14 +203,12 @@ source('test_all.R')
 ```
 
 ```
-## [1] "PASS"
-## [1] "PASS"
-## [1] "PASS"
-## [1] "PASS"
-## [1] "PASS"
-## [1] "PASS"
-## [1] "PASS"
-## [1] "PASS"
+## Error in Rsx_nc4_get_vara_double: NetCDF: DAP failure
+## Var: lon  Ndims: 1   Start: 0 Count: 20185
+```
+
+```
+## Error in ncvar_get_inner(ncid2use, varid2use, nc$var[[li]]$missval, addOffset, : C function R_nc4_get_vara_double returned error
 ```
 
 ### ***Viewing the locations of hazard points and source zones***
@@ -714,12 +712,11 @@ This highlights that the individual scenario rates are not particularly meaningf
 unless integrated over many scenarios.
 
 If you do similar calculations using the `variable_mu` versions of these
-variables, you will find the results are not identical, although they are
-usually quite similar. This is because shear modulus variability changes the
-relationship between earthquake magnitude and average slip, which in turn
-affects the relationship between the rate of earthquakes and the implied
-tectonic-plate motion rates. See the PTHA18 report for a full explanation of
-these issues.
+variables, you will find the results are not identical. This is because shear
+modulus variability changes the relationship between earthquake magnitude and
+average slip, which in turn affects the relationship between the rate of
+earthquakes and the implied tectonic-plate motion rates. See the PTHA18 report
+for a full explanation of these issues. 
 
 In the previous calculations we used 7.85 as the magnitude threshold. It is a
 good idea to avoid using values that correspond to the scenario magnitude, i.e.
