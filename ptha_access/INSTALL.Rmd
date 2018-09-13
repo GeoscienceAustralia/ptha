@@ -1,29 +1,30 @@
 ## **Installation**
 
 It is strongly suggested that the installation is undertaken on a Linux operating 
-system (e.g. the author is using Ubuntu 16.04, and the install should also work
-on more recent versions). 
-
+system. The author is using Ubuntu 16.04, and the install should also work
+on more recent versions. If you are running Windows or Mac, it will probably be
+easiest to use a virtual machine (e.g. via
+[VirtualBox](https://www.virtualbox.org) or similar).
 
 ### **Installing R**
 If you don't already have R installed, the you need to get it by following the
-instructions on the [R website](https://www.r-project.org/).
-
+instructions on the [R website](https://www.r-project.org/). Use the most recent
+version.
 
 ### **Getting a recent version of netcdf**
 
-You need to install the R package `ncdf4` with OPeNDAP support.  This may be
+You need to install the R package `ncdf4` with OPeNDAP support. This may be
 difficult unless you are running Linux (although you can do this using a
 virtual machine). Non-Linux users are encouraged to install an Ubuntu virtual
 machine (e.g. using [VirtualBox](https://www.virtualbox.org) or some other
 virtualization software) and follow the steps below.
 
 A further complication is that to work with the PTHA outputs on the NCI THREDDS
-server you need to build the package with a reasonably recent version of
-netcdf-c. This is due to a bug in netcdf-c versions prior to 4.6.1 (released
-in early 2018) that prevented the remote reading of long character strings
-with OPeNDAP. We store some earthquake event data as (potentially) long
-character strings, and it is essential to be able to read these remotely.
+server you need to build the package with a recent version of netcdf-c. This is
+due to a bug in netcdf-c versions prior to 4.6.1 (released in early 2018) that
+prevented the remote reading of long character strings with OPeNDAP. We store
+some earthquake event data as (potentially) long character strings, and it is
+essential to be able to read these remotely.
 
 At the time of writing (mid 2018), most users will have to install netcdf-c
 from source to access a suitable version. Source-code for a recent release of
@@ -56,8 +57,8 @@ library(ncdf4)
 # source-zone. Note I pre-pend [stringlength=4096], which prevents truncation of
 # long character strings. This functionality was broken in older netcdf-c versions
 test_file = paste0('[stringlength=4096]http://dapds00.nci.org.au/thredds/dodsC/fj6/',
-    'PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga/TSUNAMI_EVENTS/',
-    'all_stochastic_slip_earthquake_events_kermadectonga.nc')
+    'PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/TSUNAMI_EVENTS/',
+    'all_stochastic_slip_earthquake_events_kermadectonga2.nc')
 
 # Open it (this will not read everything)
 fid = nc_open(test_file, readunlim=FALSE)
@@ -67,14 +68,17 @@ fid = nc_open(test_file, readunlim=FALSE)
 event_index_string = ncvar_get(fid, 'event_index_string')
 
 #
-# Report whether it worked
+# Report whether it worked.
 #
 
-if(max(nchar(event_index_string)) == 720){
+if(max(nchar(event_index_string)) == 756){
     print('Success! Your ncdf4 install can read large character strings remotely')
 }else{
     print('FAIL. Perhaps ncdf4 is linking to an older netcdf-c version?')
 }
+
+# Shut down the connection 
+nc_close(fid)
 ```
 If the above code leads to the `Success! ...` message, then the install is
 working. Otherwise you will have to troubleshoot your netcdf-c install (or

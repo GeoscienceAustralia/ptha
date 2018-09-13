@@ -181,13 +181,13 @@ tsunami inundation models for hazard and risk assessments.
 To access the detailed information, the user needs to interact with our files
 via the NCI THREDDS server. We provide R scripts to facilitate this, and the
 process is described below. A range of software must be installed to run these
-codes, [as described here](INSTALL.md)
+codes, [as described here](INSTALL.md).
 
 Unfortunately the installation and data extraction process may be challenging
 for users with limited experience in scientific programming and Linux. Users
 doing tsunami hazard studies **in Australia** can alternatively contact
 Geoscience Australia directly if they have difficulty with any of these steps
-(please email Gareth Davies at gareth.davies@ga.gov.au). 
+(please email Gareth Davies at gareth.davies@ga.gov.au).
 
 ## **Usage**
 
@@ -201,6 +201,8 @@ file (i.e. the directory name will end in `/ptha/ptha_access/`)
 source('test_all.R')
 
 ```
+**If the above script fails even after repeated trials, you need to troubleshoot
+your installation before proceeding**. [See here](INSTALL.md).
 
 ### ***Viewing the locations of hazard points and source zones***
 
