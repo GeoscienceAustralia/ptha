@@ -133,6 +133,7 @@ For each hazard point we provide a standard pdf plot which shows:
 2. A convergence check on the above
 3. The hazard deaggregation information for a range of return periods
 4. Information on the maximum-stage for each unit-source tsunami.
+An example can be downloaded [here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/example_plot.pdf).
 
 Because there are thousands of hazard points these plots are provided in a set
 of zip folders, each containing around 200 site in a particular longitude
