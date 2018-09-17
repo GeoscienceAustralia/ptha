@@ -108,7 +108,7 @@ under the heading *Obtaining site-specific hazard information (including source 
 
 However, suppose you actually want the numerical value. They can be obtained like so (for
 heterogeneous slip with both constant and variable shear modulus):
-```{r numericalRP, fig.width=8, fig.height=5}
+```{r numericalRP, fig.width=9, fig.height=5}
 # Import the functions
 source('get_PTHA_results.R')
 # This example point is near DART 55012
