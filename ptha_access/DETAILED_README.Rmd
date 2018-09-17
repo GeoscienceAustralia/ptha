@@ -419,7 +419,7 @@ under the heading *Obtaining site-specific hazard information (including source 
 
 However, suppose you actually want the numerical value. They can be obtained like so (for
 heterogeneous slip with both constant and variable shear modulus):
-```{r numericalRP}
+```{r numericalRP, fig.width=8, fig.height=5}
 # This example point is near DART 55012
 hazard_point = c(158.45, -15.66)
 # Get the exceedance-rate info
