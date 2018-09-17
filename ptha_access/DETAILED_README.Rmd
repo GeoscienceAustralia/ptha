@@ -1,4 +1,6 @@
-# Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and wave time-series
+# **Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and wave time-series**
+
+# ***NOTE: Currently the study is still in-progress, and results available here will be changed without warning.***
 
 For every scenario in our analysis we provide earthquake information, tsunami
 initial conditions, and wave time-series at every hazard point. Combined with

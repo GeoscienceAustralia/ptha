@@ -4,16 +4,15 @@
 
 We provide access to basic tsunami hazard information in easy-to-use csv and
 shapefile formats. This information is useful to get a high-level overview of
-the PTHA results.
+the PTHA results. 
 
 We also provide access to detailed information for every tsunami scenario in our
 analysis, including: the earthquake discretization, the tsunami initial
 condition, and the resulting wave time-series at a large set of points in the
 ocean ('hazard points'). This information is useful for site-specific tsunami
 hazard studies (which use it for model 'boundary conditions' and to estimate
-how often hazardous tsunamis might occur). To access this information users
-will need to install a range of software which allows working with the PTHA
-data on the NCI THREDDS server. 
+how often hazardous tsunamis might occur). Working with this information is
+more complex, and is explained in our [detailed README](DETAILED_README.md).
 
 The methodologies used in this study, and associated testing, are discussed in
 [the project report](PROVIDE LINK WHEN IT IS PUBLISHED). In addition, the codes
