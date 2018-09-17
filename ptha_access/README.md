@@ -23,6 +23,11 @@ a folder with
 [project specific scripts](https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template)
 used for the 2018 Australian PTHA.
 
+Geoscience Australia has tried to make the information in this product as
+accurate as possible. However, it does not guarantee that the information is
+totally accurate or complete. Therefore, you should not solely rely on this
+information when making a commercial decision.
+
 # Obtaining basic tsunami hazard information.
 
 ## Obtaining tsunami maximum-stage exceedance-rates at sites around Australia

@@ -7,9 +7,6 @@ initial conditions, and wave time-series at every hazard point. Combined with
 the exceedance-rate modelling, such inputs can be used to drive local scale
 tsunami inundation models for hazard and risk assessments.
 
-Before working with the outputs, make sure you've [read the project
-report](PROVIDE LINK WHEN AVAILABLE) to understand how they were made.
-
 To access the detailed information, the user needs to interact with our files
 via the NCI THREDDS server. We provide R scripts to facilitate this, and the
 process is described below. A range of software must be installed to run these
@@ -20,6 +17,18 @@ for users with limited experience in scientific programming and Linux. Users
 doing tsunami hazard studies **in Australia** can alternatively contact
 Geoscience Australia directly if they have difficulty with any of these steps
 (please email Gareth Davies at gareth.davies@ga.gov.au).
+
+Before working with the outputs, make sure you've [read the project
+report](PROVIDE LINK WHEN AVAILABLE) to understand what they are, how they were
+made, and how they have been tested. Users are strongly encouraged to
+independently test the results at their site of interest as part of any
+application. 
+
+Geoscience Australia has tried to make the information in this product as
+accurate as possible. However, it does not guarantee that the information is
+totally accurate or complete. Therefore, you should not solely rely on this
+information when making a commercial decision.
+
 
 ## **Usage**
 
