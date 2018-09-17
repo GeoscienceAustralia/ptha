@@ -78,15 +78,15 @@ This csv file contains the following columns:
 
 * multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These values corresponds to the tsunami maximum-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami maximum-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
 
-* multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 97.5% quantile)
+* multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 97.5 percentile)
 
-* multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5% quantile)
+* multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5 percentile)
 
-* multiple columns with names like `STAGE_median_XXXX`. These are similar to the above, but describe the 'epistemic median' stage with the specified exceedance-rate (i.e. 50% quantile)
+* multiple columns with names like `STAGE_median_XXXX`. These are similar to the above, but describe the 'epistemic median' stage with the specified exceedance-rate (i.e. 50th percentile)
 
-* multiple columns with names like `STAGE_16pc_XXXX`. These are similar to the above, but describe the 16% quantile.
+* multiple columns with names like `STAGE_16pc_XXXX`. These are similar to the above, but describe the 16th percentile.
 
-* multiple columns with names like `STAGE_84pc_XXXX`. These are similar to the above, but describe the 84% quantile.
+* multiple columns with names like `STAGE_84pc_XXXX`. These are similar to the above, but describe the 84th percentile.
 
 Note that 'max stage' values below 2cm (or above 20m) are treated as missing
 data in this file (NA). While such values are unlikely to be of interest, if
@@ -122,7 +122,7 @@ in the frequencies of high-magnitude subduction zone earthquakes. A more
 detailed discussion of these topics can be found in the 
 [Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
 
-## Obtaining more detailed exceedance-rate information for specific sites
+## Obtaining site-specific hazard information (including source deaggregation)
 
 For each hazard point we provide a standard pdf plot which shows:
 1. The maximum-stage vs exceedance-rate
@@ -144,11 +144,10 @@ For example if I were searching for a hazard point at (lon,lat)= (151.408,
 *station_summary_plots_151.38_152.zip* (because the *LOWER* and *UPPER* longitudes
 bracket the value 151.408, which is the one I want).
 
-Please read the [PTHA18 report](PROVIDE LINK WHEN AVAILABLE) for further
-information on interpreting these figures. They are quite easy to misinterpret
-without this kind of background information.
-
 ## Interpreting exceedance-rate information
+
+Please read the [PTHA18 report](PROVIDE LINK WHEN AVAILABLE) for further
+information on interpreting the exceedance rate information. 
 
 The maximum-stage exceedance-rates vary from site to site, depending on exposure
 to earthquake-generated tsunamis. For a given exceedance-rate, there is also a
@@ -173,9 +172,11 @@ model. This is most likely to be a problem in shallow waters.
 
 Because of this, **for modelling purposes we strongly encourage the use of
 points well offshore in deep water** (preferably with wave heights of interest
-not exceeding a few percent of the water depth). Nearshore points should only
-be used as a rough guide to possible tsunami wave heights, and should be
-refined in future using higher resolution models and data. 
+not exceeding a few percent of the water depth). For tsunami propagation modelling,
+we encourage users to simulate the from source using the initial conditions we provide,
+which circumvents these issues. Nearshore points should only be used as a rough
+guide to possible tsunami wave heights, and should be refined in future using
+higher resolution models and data. 
 
 The above discussion might lead non-specialists to wonder why we develop the
 PTHA at offshore points - considering tsunami inundation is of most interest
@@ -415,7 +416,7 @@ The scenario metadata also includes a number of variables with names including
 exceedance rates for the scenarios!**. Instead they represent a (fairly
 nominal) scenario-specific portion of the source-zone's
 magnitude-vs-exceedance-rate curve, evaluated at the logic-tree mean and
-various quantiles. 
+various percentiles. 
 
 Assigning rates to scenarios like this turns out to be very useful to
 facilitate other calculations. For instance, by adjusting these rates we can
