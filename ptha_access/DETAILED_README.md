@@ -208,7 +208,7 @@ approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)
 ## [1] 0.00549242
 ```
 
-### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
+### ***Finding earthquake scenarios within a particular wave-height range at a particular hazard point***
 
 FIXME: Discuss how to do this, and warn about the potential for bias.
 
@@ -676,7 +676,7 @@ choose this scenario because it produces a tsunami that is broadly similar to a
 real earthquake-tsunami that occurred in 2009-07-15 (based on observations at the
 nearby DART buoys).
 
-The metadata for event 1567 is:
+The metadata for scenario 1567 is:
 
 ```r
 row_index = 1567 # Use this variable to refer to event 1567
@@ -716,13 +716,13 @@ initial_condition = get_initial_condition_for_event(puysegur, row_index)
 # writeRaster(initial_conditions, 'my_output_filename.tif')
 
 # Make a plot
-plot(initial_condition, main='Initial water surface deformation \n for the example event, Puysegur')
+plot(initial_condition, main='Initial water surface deformation \n for the example scenario, Puysegur')
 ```
 
 ![plot of chunk raster_eventXXX](figure/raster_eventXXX-1.png)
 
 The function `get_initial_condition_for_event` used above will download the
-unit-source tsunami deformations included in the event and save them in the
+unit-source tsunami deformations included in the scenario and save them in the
 folder `SOURCE_ZONES/puysegur/EQ_SOURCE/Unit_source_data/puysegur`. Then it
 will sum them, scaled by the unit-source slip, to produce the initial
 condition. Next time you call the function, it will check whether the required
@@ -740,9 +740,9 @@ seen that).
 initial_condition = get_initial_condition_for_event(puysegur, row_index, force_file_download=TRUE)
 ```
 
-### ***Extracting the tsunami time-series for a particular event at a particular hazard point***
+### ***Extracting the tsunami time-series for a particular scenario at a particular hazard point***
 
-Here we show how to read a flow time-series for a given earthquake event, at a
+Here we show how to read a flow time-series for a given earthquake scenario, at a
 given hazard point. To do this, you have to know the hazard point `gaugeID`,
 which can be found by examining the maximum-stage vs exceedance-rate datasets (csv
 and shapefile), or by using the interactive hazard point viewer above. (***In the
@@ -800,7 +800,7 @@ points(model_ts$time, model_ts$flow[['55042.4']][1,,1], t='l',
     col='red')
 legend('topright', c('55015.4', '55042.4'), col=c('black', 'red'), lty=c(1,1))
 
-title('Stage time-series for the event at 2 gauges')
+title('Stage time-series for the scenario at 2 gauges')
 ```
 
 ![plot of chunk getflow](figure/getflow-1.png)
