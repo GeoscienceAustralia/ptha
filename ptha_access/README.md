@@ -124,7 +124,29 @@ detailed discussion of these topics can be found in the
 
 ## Obtaining more detailed exceedance-rate information for specific sites
 
-FIXME describe where to obtain the pdf files containing the summary information
+For each hazard point we provide a standard pdf plot which shows:
+1. The maximum-stage vs exceedance-rate
+2. A convergence check on the above
+3. The hazard deaggregation information for a range of return periods
+4. Information on the maximum-stage for each unit-source tsunami.
+
+Because there are thousands of hazard points these plots are provided in a set
+of zip folders, each containing around 200 site in a particular longitude
+range. The zip folders can be downloaded
+[here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml).
+Follow the link to the http download to get the file. The zip folder names are
+of the form *station_summary_plots_longitudes_LOWER_UPPER.zip* where *LOWER* is
+the lower longitude limit, and *UPPER* is the upper longitude limit. 
+
+For example if I were searching for a hazard point at (lon,lat)= (151.408,
+-34.08), then by inspection of the *LOWER* and *UPPER* longitudes in files at
+the above link, it should be contained in the file
+*station_summary_plots_151.38_152.zip* (because the *LOWER* and *UPPER* longitudes
+bracket the value 151.408, which is the one I want).
+
+Please read the [PTHA18 report](PROVIDE LINK WHEN AVAILABLE) for further
+information on interpreting these figures. They are quite easy to misinterpret
+without this kind of background information.
 
 ## Interpreting exceedance-rate information
 
@@ -181,13 +203,13 @@ tsunami inundation models for hazard and risk assessments.
 To access the detailed information, the user needs to interact with our files
 via the NCI THREDDS server. We provide R scripts to facilitate this, and the
 process is described below. A range of software must be installed to run these
-codes, [as described here](INSTALL.md)
+codes, [as described here](INSTALL.md).
 
 Unfortunately the installation and data extraction process may be challenging
 for users with limited experience in scientific programming and Linux. Users
 doing tsunami hazard studies **in Australia** can alternatively contact
 Geoscience Australia directly if they have difficulty with any of these steps
-(please email Gareth Davies at gareth.davies@ga.gov.au). 
+(please email Gareth Davies at gareth.davies@ga.gov.au).
 
 ## **Usage**
 
@@ -212,6 +234,8 @@ source('test_all.R')
 ## [1] "PASS"
 ## [1] "PASS"
 ```
+**If the above script fails even after repeated trials, you need to troubleshoot
+your installation before proceeding**. [See here](INSTALL.md).
 
 ### ***Viewing the locations of hazard points and source zones***
 
@@ -802,7 +826,7 @@ curve values for a particular point.
 
 ### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
 
-FIXME: 
+FIXME: Discuss how to do this, and warn about the potential for bias.
 
 ### ***Extracting the tsunami time-series for a particular event at a particular hazard point***
 
