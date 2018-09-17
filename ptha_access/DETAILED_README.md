@@ -173,13 +173,28 @@ You can print each of those values individually to get a closer look (just type
 `er_info` and press enter after executing the above code). We do not do this
 here because it would take up a lot of space.
 
-The stage values at which we store exceedance rate are in the variable `stage`,
-which contains 100 stage values varying from 2 cm to 20 m. For each of these
-stage values, the exceedance-rate for heterogeneous slip scenarios are in
-variables where the name includes `stochastic_slip`. The name also includes
-information to show whether it refers to a percentile, or the mean, and whether
-variable or constant shear modulus was used, using the same convention as was
-discussed for the earthquake scenarios. 
+The key variables are:
+* `stage` - vector of stage values at which we store exceedance rates. They
+  vary logarithmically from 2 cm to 20 m. 
+* `stochastic_slip_rate` - exceedance rates (epistemic mean) for heterogeneous slip models with constant shear modulus
+* `stochastic_slip_rate_upper_ci` - exceedance rates (epistemic 97.5 percentile) for heterogeneous slip models with constant shear modulus
+* `stochastic_slip_rate_lower_ci` - exceedance rates (epistemic 2.5 percentile) for heterogeneous slip models with constant shear modulus          
+* `stochastic_slip_rate_median` - exceedance rates (epistemic 50th percentile) for heterogeneous slip models with constant shear modulus 
+* `stochastic_slip_rate_16pc` - exceedance rates (epistemic 16th percentile) for heterogeneous slip models with constant shear modulus               
+* `stochastic_slip_rate_84pc` - exceedance rates (epistemic 84th percentile) for heterogeneous slip models with constant shear modulus               
+* `variable_mu_stochastic_slip_rate` - exceedance rates (epistemic mean) for heterogeneous slip models with variable shear modulus  
+* `variable_mu_stochastic_slip_rate_upper_ci` - exceedance rates (epistemic 97.5 percentile) for heterogeneous slip models with variable shear modulus 
+* `variable_mu_stochastic_slip_rate_lower_ci` - exceedance rates (epistemic 2.5 percentile) for heterogeneous slip models with variable shear modulus 
+* `variable_mu_stochastic_slip_rate_median` - exceedance rates (epistemic 50th percentile) for heterogeneous slip models with variable shear modulus   
+* `variable_mu_stochastic_slip_rate_16pc` - exceedance rates (epistemic 16th percentile) for heterogeneous slip models with variable shear modulus     
+* `variable_mu_stochastic_slip_rate_84pc`  - exceedance rates (epistemic 84th percentile) for heterogeneous slip models with variable shear modulus    
+* `lon` - hazard point longitude 
+* `lat` - hazard point latitude
+* `elev` - hazard point ocean elevation (m above MSL)                             
+* `gaugeID` - a numerical ID for the hazard point                                 
+* `target_index` - an index for the hazard point                             
+* `source_name` - if the function is used to get results for a specific source-zone, then this gives its name. In the current case it just says `"sum_over_all_source_zones"`                             
+* `stage_exceedance_rate_curves_file` - path to the file where the information was read
 
 For example, to get the median exceedance-rate at a stage of 0.4 m, assuming
 heterogeneous-slip scenarios with variable shear modulus, we could do:
