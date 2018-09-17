@@ -141,7 +141,7 @@ For each hazard point we provide a standard pdf plot which shows:
 An example plot can be downloaded
 [here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/example_plot.pdf).
 Because there are thousands of hazard points, the plots at other sites are provided in a set
-of zip folders. Each zip folder containing around 200 site in a particular longitude
+of zip folders. Each zip folder containing around 200 sites in a particular longitude
 range. The zip folders can be accessed 
 [here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml).
 Follow the link to the http download to get the file. The zip folder names are

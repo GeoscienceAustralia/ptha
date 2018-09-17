@@ -112,6 +112,91 @@ The controls on the top left of the map can be expanded as shown in the figure.
 These should allow you to change the background layer, and to turn layers on
 and off.
 
+### ***Obtaining hazard curves at a particular hazard point***
+
+To get maximum-stage exceedance-rate information at a particular hazard point, consider
+that you can directly download plots of the information as described in [README.md](README.md)
+under the heading *Obtaining site-specific hazard information (including source deaggregation)*.
+
+However, suppose you actually want the numerical value. They can be obtained like so (for
+heterogeneous slip with both constant and variable shear modulus):
+
+```r
+# Import the functions
+source('get_PTHA_results.R')
+# This example point is near DART 55012
+hazard_point = c(158.45, -15.66)
+# Get the exceedance-rate info
+er_info = get_stage_exceedance_rate_curve_at_hazard_point(
+    target_point=hazard_point, 
+    make_plot=TRUE)
+```
+
+```
+## Warning in xy.coords(x, y, xlabel, ylabel, log): 17 y values <= 0 omitted
+## from logarithmic plot
+```
+
+![plot of chunk numericalRP](figure/numericalRP-1.png)
+
+The object `er_info` is a list with the exceedance-rate information at a range
+of stage values, for a range of percentiles and shear-modulus types.
+
+```r
+# Look at the variables in er_info
+names(er_info)
+```
+
+```
+##  [1] "stage"                                    
+##  [2] "stochastic_slip_rate"                     
+##  [3] "stochastic_slip_rate_upper_ci"            
+##  [4] "stochastic_slip_rate_lower_ci"            
+##  [5] "stochastic_slip_rate_median"              
+##  [6] "stochastic_slip_rate_16pc"                
+##  [7] "stochastic_slip_rate_84pc"                
+##  [8] "variable_mu_stochastic_slip_rate"         
+##  [9] "variable_mu_stochastic_slip_rate_upper_ci"
+## [10] "variable_mu_stochastic_slip_rate_lower_ci"
+## [11] "variable_mu_stochastic_slip_rate_median"  
+## [12] "variable_mu_stochastic_slip_rate_16pc"    
+## [13] "variable_mu_stochastic_slip_rate_84pc"    
+## [14] "lon"                                      
+## [15] "lat"                                      
+## [16] "elev"                                     
+## [17] "gaugeID"                                  
+## [18] "target_index"                             
+## [19] "source_name"                              
+## [20] "stage_exceedance_rate_curves_file"
+```
+You can print each of those values individually to get a closer look (just type
+`er_info` and press enter after executing the above code). We do not do this
+here because it would take up a lot of space.
+
+The stage values at which we store exceedance rate are in the variable `stage`,
+which contains 100 stage values varying from 2 cm to 20 m. For each of these
+stage values, the exceedance-rate for heterogeneous slip scenarios are in
+variables where the name includes `stochastic_slip`. The name also includes
+information to show whether it refers to a percentile, or the mean, and whether
+variable or constant shear modulus was used, using the same convention as was
+discussed for the earthquake scenarios. 
+
+For example, to get the median exceedance-rate at a stage of 0.4 m, assuming
+heterogeneous-slip scenarios with variable shear modulus, we could do:
+
+```r
+# Use linear interpolation of the stage and rate 
+approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)$y
+```
+
+```
+## [1] 0.00549242
+```
+
+### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
+
+FIXME: Discuss how to do this, and warn about the potential for bias.
+
 ### ***Obtaining metadata on the earthquake scenarios on each source-zone***
 
 Earthquake scenario metadata is accessed on a per-source-zone basis. In a typical
@@ -639,90 +724,6 @@ seen that).
 # machine
 initial_condition = get_initial_condition_for_event(puysegur, row_index, force_file_download=TRUE)
 ```
-
-
-### ***Obtaining hazard curves at a particular hazard point***
-
-To get maximum-stage exceedance-rate information at a particular hazard point, consider
-that you can directly download plots of the information as described in [README.md](README.md)
-under the heading *Obtaining site-specific hazard information (including source deaggregation)*.
-
-However, suppose you actually want the numerical value. They can be obtained like so (for
-heterogeneous slip with both constant and variable shear modulus):
-
-```r
-# This example point is near DART 55012
-hazard_point = c(158.45, -15.66)
-# Get the exceedance-rate info
-er_info = get_stage_exceedance_rate_curve_at_hazard_point(
-    target_point=hazard_point, 
-    make_plot=TRUE)
-```
-
-```
-## Warning in xy.coords(x, y, xlabel, ylabel, log): 17 y values <= 0 omitted
-## from logarithmic plot
-```
-
-![plot of chunk numericalRP](figure/numericalRP-1.png)
-
-The object `er_info` is a list with the exceedance-rate information at a range
-of stage values, for a range of percentiles and shear-modulus types.
-
-```r
-# Look at the variables in er_info
-names(er_info)
-```
-
-```
-##  [1] "stage"                                    
-##  [2] "stochastic_slip_rate"                     
-##  [3] "stochastic_slip_rate_upper_ci"            
-##  [4] "stochastic_slip_rate_lower_ci"            
-##  [5] "stochastic_slip_rate_median"              
-##  [6] "stochastic_slip_rate_16pc"                
-##  [7] "stochastic_slip_rate_84pc"                
-##  [8] "variable_mu_stochastic_slip_rate"         
-##  [9] "variable_mu_stochastic_slip_rate_upper_ci"
-## [10] "variable_mu_stochastic_slip_rate_lower_ci"
-## [11] "variable_mu_stochastic_slip_rate_median"  
-## [12] "variable_mu_stochastic_slip_rate_16pc"    
-## [13] "variable_mu_stochastic_slip_rate_84pc"    
-## [14] "lon"                                      
-## [15] "lat"                                      
-## [16] "elev"                                     
-## [17] "gaugeID"                                  
-## [18] "target_index"                             
-## [19] "source_name"                              
-## [20] "stage_exceedance_rate_curves_file"
-```
-You can print each of those values individually to get a closer look (just type
-`er_info` and press enter after executing the above code). We do not do this
-here because it would take up a lot of space.
-
-The stage values at which we store exceedance rate are in the variable `stage`,
-which contains 100 stage values varying from 2 cm to 20 m. For each of these
-stage values, the exceedance-rate for heterogeneous slip scenarios are in
-variables where the name includes `stochastic_slip`. The name also includes
-information to show whether it refers to a percentile, or the mean, and whether
-variable or constant shear modulus was used, using the same convention as was
-discussed for the earthquake scenarios. 
-
-For example, to get the median exceedance-rate at a stage of 0.4 m, assuming
-heterogeneous-slip scenarios with variable shear modulus, we could do:
-
-```r
-# Use linear interpolation of the stage and rate 
-approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)$y
-```
-
-```
-## [1] 0.00549242
-```
-
-### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
-
-FIXME: Discuss how to do this, and warn about the potential for bias.
 
 ### ***Extracting the tsunami time-series for a particular event at a particular hazard point***
 
