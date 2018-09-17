@@ -179,7 +179,7 @@ expected to accurately model tsunamis near the coast and in shallow waters.
 
 * At locations where wave heights become an appreciable fraction of the water depth, 
 the modelled waves will violate the assumptions underlying our linear tsunami
-model. This is most likely to be a problem in shallow waters.
+model. This is most likely to be a problem in shallow waters, and for larger tsunamis.
 
 Because of this, **for modelling purposes we strongly encourage the use of
 points well offshore in deep water** (preferably with wave heights of interest
