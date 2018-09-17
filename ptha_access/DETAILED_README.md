@@ -24,10 +24,14 @@ made, and how they have been tested. Users are strongly encouraged to
 independently test the results at their site of interest as part of any
 application. 
 
-Geoscience Australia has tried to make the information in this product as
-accurate as possible. However, it does not guarantee that the information is
-totally accurate or complete. Therefore, you should not solely rely on this
-information when making a commercial decision.
+The study results are provided under a [Creative Commons 4.0 International
+Licence](http://creativecommons.org/licenses/by/4.0/legalcode), while the
+source-code is provided under a [BSD3 licence](../LICENCE). Geoscience
+Australia has tried to make the information in this product as accurate as
+possible. However, it does not guarantee that the information is totally
+accurate or complete. Therefore, you should not solely rely on this information
+when making a commercial decision.
+
 
 
 ## **Usage**
