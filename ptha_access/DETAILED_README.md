@@ -330,34 +330,34 @@ puysegur$events[2050:2052, ]
 ## 2050                  0.003639969                  0.004682143  puysegur2
 ## 2051                  0.009215376                  0.011996502  puysegur2
 ## 2052                  0.006078464                  0.010341691  puysegur2
-##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 2050               131 2.699053e-05         1.247440e-06
-## 2051               131 2.825624e-05         1.305938e-06
-## 2052               131 3.113489e-05         1.438982e-06
+##      uniform_event_row   rate_annual rate_annual_lower_ci
+## 2050               131 0.00002699053       0.000001247440
+## 2051               131 0.00002825624       0.000001305938
+## 2052               131 0.00003113489       0.000001438982
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 2050         4.415802e-05       7.612915            3.805892e-05
-## 2051         4.622879e-05       7.977218            3.680982e-05
-## 2052         5.093842e-05       7.980054            3.509007e-05
+## 2050        0.00004415802       7.612915           0.00003805892
+## 2051        0.00004622879       7.977218           0.00003680982
+## 2052        0.00005093842       7.980054           0.00003509007
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 2050                     1.977616e-06                     6.544703e-05
-## 2051                     1.912711e-06                     6.329906e-05
-## 2052                     1.823349e-06                     6.034173e-05
+## 2050                   0.000001977616                    0.00006544703
+## 2051                   0.000001912711                    0.00006329906
+## 2052                   0.000001823349                    0.00006034173
 ##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
-## 2050                   3.310225e-05                 4.604935e-05
-## 2051                   3.201583e-05                 4.453801e-05
-## 2052                   3.052005e-05                 4.245719e-05
+## 2050                  0.00003310225                0.00004604935
+## 2051                  0.00003201583                0.00004453801
+## 2052                  0.00003052005                0.00004245719
 ##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
-## 2050                 4.295668e-05                            0.9956551
-## 2051                 4.154684e-05                            0.9956551
-## 2052                 3.960577e-05                            0.9956551
+## 2050                0.00004295668                            0.9956551
+## 2051                0.00004154684                            0.9956551
+## 2052                0.00003960577                            0.9956551
 ##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
-## 2050                0.9952935     3.260319e-05     3.074646e-05
-## 2051                0.9952935     3.413211e-05     3.218830e-05
-## 2052                0.9952935     3.760937e-05     3.546753e-05
+## 2050                0.9952935    0.00003260319    0.00003074646
+## 2051                0.9952935    0.00003413211    0.00003218830
+## 2052                0.9952935    0.00003760937    0.00003546753
 ##      rate_annual_median
-## 2050       2.427181e-05
-## 2051       2.541002e-05
-## 2052       2.799871e-05
+## 2050      0.00002427181
+## 2051      0.00002541002
+## 2052      0.00002799871
 ```
 
 The most important variables from a users perspective are the moment magnitude
@@ -590,20 +590,20 @@ puysegur$events[row_index,]
 ## 1567                     2                         9
 ##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
 ## 1567                  0.006060465                   0.01252411  puysegur2
-##      uniform_event_row rate_annual rate_annual_lower_ci
-## 1567               103 4.46485e-05         2.926813e-05
+##      uniform_event_row  rate_annual rate_annual_lower_ci
+## 1567               103 0.0000446485        0.00002926813
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 1567         6.766586e-05       7.803452            3.295566e-05
+## 1567        0.00006766586       7.803452           0.00003295566
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 1567                     2.144147e-05                     5.125079e-05
+## 1567                    0.00002144147                    0.00005125079
 ##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
-## 1567                   3.203037e-05                 2.561428e-05
+## 1567                  0.00003203037                0.00002561428
 ##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
-## 1567                 4.088959e-05                                    1
+## 1567                0.00004088959                                    1
 ##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
-## 1567                        1     3.533395e-05     5.491671e-05
+## 1567                        1    0.00003533395    0.00005491671
 ##      rate_annual_median
-## 1567       4.323276e-05
+## 1567      0.00004323276
 ```
 To get its initial condition, you pass the earthquake metadata to the function
 `get_initial_condition_for_event`:
@@ -643,9 +643,82 @@ initial_condition = get_initial_condition_for_event(puysegur, row_index, force_f
 
 ### ***Obtaining hazard curves at a particular hazard point***
 
-FIXME: Integrate with above discussion. Consider showing how to download numeric
-curve values for a particular point.
+To get maximum-stage exceedance-rate information at a particular hazard point, consider
+that you can directly download plots of the information as described in [README.md](README.md)
+under the heading *Obtaining site-specific hazard information (including source deaggregation)*.
 
+However, suppose you actually want the numerical value. They can be obtained like so (for
+heterogeneous slip with both constant and variable shear modulus):
+
+```r
+# This example point is near DART 55012
+hazard_point = c(158.45, -15.66)
+# Get the exceedance-rate info
+er_info = get_stage_exceedance_rate_curve_at_hazard_point(
+    target_point=hazard_point, 
+    make_plot=TRUE)
+```
+
+```
+## Warning in xy.coords(x, y, xlabel, ylabel, log): 17 y values <= 0 omitted
+## from logarithmic plot
+```
+
+![plot of chunk numericalRP](figure/numericalRP-1.png)
+
+The object `er_info` is a list with the exceedance-rate information at a range
+of stage values, for a range of percentiles and shear-modulus types.
+
+```r
+# Look at the variables in er_info
+names(er_info)
+```
+
+```
+##  [1] "stage"                                    
+##  [2] "stochastic_slip_rate"                     
+##  [3] "stochastic_slip_rate_upper_ci"            
+##  [4] "stochastic_slip_rate_lower_ci"            
+##  [5] "stochastic_slip_rate_median"              
+##  [6] "stochastic_slip_rate_16pc"                
+##  [7] "stochastic_slip_rate_84pc"                
+##  [8] "variable_mu_stochastic_slip_rate"         
+##  [9] "variable_mu_stochastic_slip_rate_upper_ci"
+## [10] "variable_mu_stochastic_slip_rate_lower_ci"
+## [11] "variable_mu_stochastic_slip_rate_median"  
+## [12] "variable_mu_stochastic_slip_rate_16pc"    
+## [13] "variable_mu_stochastic_slip_rate_84pc"    
+## [14] "lon"                                      
+## [15] "lat"                                      
+## [16] "elev"                                     
+## [17] "gaugeID"                                  
+## [18] "target_index"                             
+## [19] "source_name"                              
+## [20] "stage_exceedance_rate_curves_file"
+```
+You can print each of those values individually to get a closer look (just type
+`er_info` and press enter after executing the above code). We do not do this
+here because it would take up a lot of space.
+
+The stage values at which we store exceedance rate are in the variable `stage`,
+which contains 100 stage values varying from 2 cm to 20 m. For each of these
+stage values, the exceedance-rate for heterogeneous slip scenarios are in
+variables where the name includes `stochastic_slip`. The name also includes
+information to show whether it refers to a percentile, or the mean, and whether
+variable or constant shear modulus was used, using the same convention as was
+discussed for the earthquake scenarios. 
+
+For example, to get the median exceedance-rate at a stage of 0.4 m, assuming
+heterogeneous-slip scenarios with variable shear modulus, we could do:
+
+```r
+# Use linear interpolation of the stage and rate 
+approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)$y
+```
+
+```
+## [1] 0.00549242
+```
 
 ### ***Finding earthquake events within a particular wave-height range at a particular hazard point***
 

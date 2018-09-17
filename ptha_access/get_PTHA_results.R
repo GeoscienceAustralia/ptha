@@ -381,7 +381,7 @@ get_stage_exceedance_rate_curve_at_hazard_point<-function(
     nc_close(fid)
     
     if(make_plot){
-        title = paste0('Tsunami wave height exceedance rates (stochastic slip, ', source_name, ')\n',
+        title = paste0('Tsunami max-stage exceedance rates (stochastic slip, ', source_name, ')\n',
             'site = (', round(output$lon,3), ',', round(output$lat, 3), '); depth = ', 
             round(output$elev, 1), ' m; ID = ', round(output$gaugeID,3)) 
         options(scipen=5)
@@ -539,7 +539,7 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
             }
 
             # Read Mw and the event rate from the file that doesn't contain the tsunami
-            # wave heights, because the read access is faster
+            # max-stage, because the read access is faster
             if(!has_vars[2]){
                 nc_file2 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
                     nm, '/TSUNAMI_EVENTS/', file_base, 
