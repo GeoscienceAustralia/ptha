@@ -133,11 +133,12 @@ For each hazard point we provide a standard pdf plot which shows:
 2. A convergence check on the above
 3. The hazard deaggregation information for a range of return periods
 4. Information on the maximum-stage for each unit-source tsunami.
-An example can be downloaded [here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/example_plot.pdf).
 
-Because there are thousands of hazard points these plots are provided in a set
-of zip folders, each containing around 200 site in a particular longitude
-range. The zip folders can be downloaded
+An example plot can be downloaded
+[here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/example_plot.pdf).
+Because there are thousands of hazard points, the plots at other sites are provided in a set
+of zip folders. Each zip folder containing around 200 site in a particular longitude
+range. The zip folders can be accessed 
 [here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml).
 Follow the link to the http download to get the file. The zip folder names are
 of the form *station_summary_plots_longitudes_LOWER_UPPER.zip* where *LOWER* is
@@ -145,9 +146,10 @@ the lower longitude limit, and *UPPER* is the upper longitude limit.
 
 For example if I were searching for a hazard point at (lon,lat)= (151.408,
 -34.08), then by inspection of the *LOWER* and *UPPER* longitudes in files
-[here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml), it should be contained in the file
-*station_summary_plots_151.38_152.zip* (because the *LOWER* and *UPPER* longitudes
-bracket the value 151.408, which is the one I want).
+[here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml),
+it should be contained in the file *station_summary_plots_151.38_152.zip*
+(because the *LOWER* and *UPPER* longitudes bracket the value 151.408, which is
+the one I want).
 
 ## Interpreting exceedance-rate information
 
