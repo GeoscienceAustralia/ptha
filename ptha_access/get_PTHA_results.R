@@ -113,7 +113,7 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
     event_slip = event_data$slip
 
     if(any(event_data$rate_annual == 0)){
-        print('Warning: You requested the initial condition for an event that has an annual rate of zero (i.e. it is treated as impossible for the purposes of the PTHA!')
+        print('Warning: You requested the initial condition for an event that has an annual rate of zero (i.e. it is treated as impossible for the purposes of the PTHA)!')
     }
 
     event_raster_indices = scan(
