@@ -231,7 +231,7 @@ get_flow_time_series_at_hazard_point<-function(source_zone_events_data, event_ID
 
     
     if(any(szed$events$rate_annual[event_ID] == 0)){
-        print('Warning: You requested the initial condition for an event that has an annual rate of zero (i.e. it is treated as impossible for the purposes of the PTHA!')
+        print('Warning: You requested the initial condition for an event that has an annual rate of zero (i.e. it is treated as impossible for the purposes of the PTHA!)')
     }
 
 
