@@ -301,7 +301,8 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         points(stages, ers_median, pch=19, t='o', col='black')
         points(stages, ers_16pc, pch=19, t='o', col='orange', cex=0.5)
         points(stages, ers_84pc, pch=19, t='o', col='orange', cex=0.5)
-        add_log_axis_ticks(side=2)
+        add_log_axis_ticks(side=2, lwd.ticks=0.5)
+        add_log_axis_ticks(side=1, lwd.ticks=0.5)
 
         # Note that the lines/points for median/16/84 pc will automatically overlap.
         # However, consistency in the files is required for 95% & mean overlap, so this
@@ -342,7 +343,8 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         title(paste0(
             'The two "convergence check" curves are made using half the model scenarios each.\n',
             'They should agree fairly well except for rare events.'))
-        add_log_axis_ticks(side=2)
+        add_log_axis_ticks(side=2, lwd.ticks=0.5)
+        add_log_axis_ticks(side=1, lwd.ticks=0.5)
 
         legend('topright', 
             c('Maximum-stage exceedance-rate (mean over all logic-tree branches)',

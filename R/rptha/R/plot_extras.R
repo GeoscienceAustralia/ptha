@@ -11,7 +11,8 @@
 #' @export
 #' @examples
 #' plot(10**runif(1000), log='y')
-#' add_log_axis_ticks(side=2)
+#' # Add the axis ticks -- note we can use optional arguments to 'axis'
+#' add_log_axis_ticks(side=2, lwd.ticks=0.5)
 #'
 add_log_axis_ticks<-function(side, lower=1e-30, upper=1e+30, ...){
 
