@@ -283,7 +283,9 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
     plot_stage_vs_rate<-function(exceedance_rates_median_curve=NULL){
 
         xmax = max(stg*(er>0), na.rm=TRUE)
-        ylim = c(1e-05, max(max(er), 1))
+        #ylim = c(1e-05, max(max(er), 1))
+        ## Change suggested by Mark Leonard's Review
+        ylim = c(1e-04, 1)
         xlim = c(min(0.02, max(xmax-0.005, 1.0e-05)), xmax)
 
 
@@ -299,6 +301,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         points(stages, ers_median, pch=19, t='o', col='black')
         points(stages, ers_16pc, pch=19, t='o', col='orange', cex=0.5)
         points(stages, ers_84pc, pch=19, t='o', col='orange', cex=0.5)
+        add_log_axis_ticks(side=2)
 
         # Note that the lines/points for median/16/84 pc will automatically overlap.
         # However, consistency in the files is required for 95% & mean overlap, so this
@@ -339,6 +342,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         title(paste0(
             'The two "convergence check" curves are made using half the model scenarios each.\n',
             'They should agree fairly well except for rare events.'))
+        add_log_axis_ticks(side=2)
 
         legend('topright', 
             c('Maximum-stage exceedance-rate (mean over all logic-tree branches)',
