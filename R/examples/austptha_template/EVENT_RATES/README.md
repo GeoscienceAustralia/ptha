@@ -117,6 +117,8 @@ This was used to create 'bias adjustments' for heterogeneous and
 variable-uniform slip events, by comparing the statistical properties of
 'modelled events which are similar to deep-ocean-tsunami-observations' to 'all
 modelled events'. It creates files which are referenced in [config.R](config.R).
+Note you have to manually edit the script to specify whethere variable shear modulus is used.
+
 
 ## Plotting routines are
 
@@ -133,6 +135,10 @@ run all points (or just a set of points with nearby longitudes). To do the
 latter on a a shared-memory parallel machine, see
 [run_quick_station_plots_on_subsets_of_sites.PBS](run_quick_station_plots_on_subsets_of_sites.PBS).
 
+[event_dart_coverage_vs_distance.R](event_dart_coverage_vs_distance.R) can make
+a plot showing the observed stage-ranges as a percentile of the corresponding
+family of model scenarios. Before this is run, you must haev run
+[event_properties_and_GOF.R](event_properties_and_GOF.R).
 
 ## Other routines
 
