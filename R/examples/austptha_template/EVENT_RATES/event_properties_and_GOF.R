@@ -62,6 +62,7 @@ family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_fact
     stage_range_mat = matrix(unlist(stage_range_mat), ncol=length(stage_range_mat))
     stage_range_median = apply(stage_range_mat, 1, median)
 
+
     # Get the peak slip for each model scenario. The earthquake metadata is
     # stored repeatedly for each DART, so just pull it out of the first one
     if('event_slip_string' %in% names(gauge_stats[[1]][[1]]$events_with_Mw)){
@@ -541,7 +542,7 @@ if(variable_mu){
 stochastic_quantile_adjust = list()
 variable_uniform_quantile_adjust = list()
 uniform_quantile_adjust = list()
-for(var in c('mean_slip', 'area', 'area_including_zeros', 'peak_slip', 'mean_slip_including_zeros')){
+for(var in c('mean_slip', 'area', 'area_including_zeros', 'peak_slip', 'mean_slip_including_zeros', 'stage_range_median')){
     par(mfrow=c(3,4))
     stochastic_quantile_adjust[[var]] = quantile_adjuster(stochastic_best_event_quantiles, var, title_start='stoc ')
     for(i in 1:3) quantile_adjuster(stochastic_best_event_quantiles, var, colind=i, title_start='stoc ')
