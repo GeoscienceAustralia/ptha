@@ -70,6 +70,10 @@ family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_fact
         # Mean slip 
         mean_slip_sum = unlist(lapply(gauge_stats[[1]], 
             f<-function(x) mean(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]]))))
+
+        # Sum slip
+        sum_slip_sum = unlist(lapply(gauge_stats[[1]], 
+            f<-function(x) sum(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]]))))
     }else{
         peak_slip_sum = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$slip))
         mean_slip_sum = unlist(lapply(gauge_stats[[1]], f<-function(x) x$events_with_Mw$slip))
@@ -106,6 +110,13 @@ family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_fact
             return(width)
             }))
 
+    # Previously we just got the 'mean slip in nonzero slip cells.
+    # Interesting to also get zero cells
+    if('event_slip_string' %in% names(gauge_stats[[1]][[1]]$events_with_Mw)){
+        mean_slip_including_zeros = sum_slip_sum/(length*width)
+    }else{
+        mean_slip_including_zeros = mean_slip_sum
+    }
 
     area_including_zeros  = unlist(lapply(gauge_stats[[1]], f<-function(x){
             inds = as.numeric(strsplit(x$events_with_Mw$event_index_string, '-')[[1]])
@@ -175,6 +186,7 @@ family_stats<-function(gauge_stats, unit_source_statistics, peak_slip_limit_fact
         stage_range_median = stage_range_median,
         peak_slip = peak_slip_sum, 
         mean_slip = mean_slip_sum, 
+        mean_slip_including_zeros = mean_slip_including_zeros, 
         area = area,
         length=length, 
         width=width, 
@@ -315,13 +327,15 @@ events_scaling_plot<-function(stats, title_extra=""){
         return(invisible(environment()))
     }
 
-    par(mfrow=c(2,3))
+    par(mfrow=c(3,3))
     area = all_vs_good('area')
     peak_slip = all_vs_good('peak_slip')
     mean_slip = all_vs_good('mean_slip')
     length = all_vs_good('length')
     width = all_vs_good('width')
     stage_range_median = all_vs_good('stage_range_median')
+    area_including_zeros = all_vs_good('area_including_zeros')
+    mean_slip_including_zeros = all_vs_good('mean_slip_including_zeros')
 
     return(invisible(environment()))
 }
@@ -340,14 +354,16 @@ events_scaling_plot(uniform_stat, title_extra=' fixed_uniform slip')
 dev.off()
 
 #' Get the rank of some statistics for the n-'best' events in terms of the other
-#' events in the corresponding family of model scenarios which have peak-slip-location
-#' near the location of the top-nbest events. 
+#' events in the corresponding family of model scenarios. Potentially limit
+#'  to those which have peak-slip-location near the location of the top-nbest events. 
 #'
 #' @param stats a variable like 'stochastic_stat' or 'variable_uniform_stat' or 'uniform_stat'
 #' defined above -- i.e. containing the summary statistical info for the appropriate model type.
 #' @param nbest use this many 'best' events for the comparison
+#' @param peak_slip_nearness integer -- only take scenarios within this many unit-sources of
+#' the 'nbest' scenarios peak slip location.
 #'
-best_event_quantiles<-function(stats, nbest=3){
+best_event_quantiles<-function(stats, nbest=3, peak_slip_nearness=999999){
 
     # Store a list (one entry per variable), each containing
     # an array with one row for each event, and one column for
@@ -370,19 +386,23 @@ best_event_quantiles<-function(stats, nbest=3){
         # be 'near' a particular location. Thus by only comparing events that
         # are 'near' the good alongstrike locations, we eliminate a significant
         # confounding aspect of the comparison.
+        #
+        # On reflection, this might not be necessary. We are only computing
+        # 'where the quantile of some property falls', and this should not be
+        # systematically affected by including the full corresponding family of
+        # model scenarios. Indeed for PTHA18 has hardly any effect.
         
         gof_value = stats[[j]][['gf']]
         good_gof_values = which(rank(gof_value, ties='first') <= nbest) # Beware ties treatment
         good_alongstrike_locations_range = stats[[j]][['peak_slip_alongstrike']][good_gof_values]
         good_alongstrike_locations_range = c(
-            floor(min(good_alongstrike_locations_range-1)),
-            ceiling(max(good_alongstrike_locations_range+1)))
+            floor(min(good_alongstrike_locations_range-peak_slip_nearness)),
+            ceiling(max(good_alongstrike_locations_range+peak_slip_nearness)))
 
         # Events in a 'good' alongstrike location
         good_alongstrike_inds = which(
             (stats[[j]]['peak_slip_alongstrike'] >= good_alongstrike_locations_range[1]) &
             (stats[[j]]['peak_slip_alongstrike'] <= good_alongstrike_locations_range[2]) )
-        #print(c('event', j, '; good locations ', good_alongstrike_locations_range,'; nevents ', length(good_alongstrike_inds)))
 
         for(i in 1:nvar){ # Every variable
             for(k in 1:nbest){ # 1st best, 2nd best, ... nbest best.
@@ -521,7 +541,7 @@ if(variable_mu){
 stochastic_quantile_adjust = list()
 variable_uniform_quantile_adjust = list()
 uniform_quantile_adjust = list()
-for(var in c('mean_slip', 'area', 'area_including_zeros', 'peak_slip')){
+for(var in c('mean_slip', 'area', 'area_including_zeros', 'peak_slip', 'mean_slip_including_zeros')){
     par(mfrow=c(3,4))
     stochastic_quantile_adjust[[var]] = quantile_adjuster(stochastic_best_event_quantiles, var, title_start='stoc ')
     for(i in 1:3) quantile_adjuster(stochastic_best_event_quantiles, var, colind=i, title_start='stoc ')
