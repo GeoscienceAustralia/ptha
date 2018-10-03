@@ -130,6 +130,12 @@ get_results<-function(i, model_type_stat = stochastic_stat){
 
     stage_range_model_mat = model_type_stat[[i]]$stage_range_mat
 
+    # The above results do not discard events that exceed the peak-slip-limit-factor.
+    # Let's do that
+    keep = model_type_stat[[i]]$keep
+    stage_range_data_mat = stage_range_data_mat[keep,,drop=FALSE]
+    stage_range_model_mat = stage_range_model_mat[keep,,drop=FALSE]
+
     # Useful for plotting
     percentile_values = apply(stage_range_model_mat < stage_range_data_mat, 2, mean)
     travel_time = apply(site_time, 2, median)
