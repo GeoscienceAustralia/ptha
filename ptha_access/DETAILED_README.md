@@ -60,6 +60,21 @@ source('test_all.R')
 **If the above script fails even after repeated trials, you need to troubleshoot
 your installation before proceeding**. [See here](INSTALL.md).
 
+If your internet is not working perfectly, or the NCI server is down, you will see an
+message like this:
+
+```r
+#    Error in Rsx_nc4_get_vara_double: NetCDF: DAP failure
+#    Var: gaugeID  Ndims: 1   Start: 0 Count: 20185
+#    Error in ncvar_get_inner(ncid2use, varid2use, nc$var[[li]]$missval, addOffset,  : 
+#      C function R_nc4_get_vara_double returned error
+```
+In this case, just try again -- after a few attempts it usually works. If not,
+then check if your internet is working. Also check whether the NCI THREDDS
+server is running (occasionally it goes down for maintainence or technical
+problems).
+
+
 ### ***Viewing the locations of hazard points and source zones***
 
 It is possible to view the hazard points from an interactive map in R. Note however
@@ -205,7 +220,7 @@ approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)
 ```
 
 ```
-## [1] 0.00549242
+## [1] 0.005430505
 ```
 
 ### ***Finding earthquake scenarios within a particular wave-height range at a particular hazard point***
@@ -431,33 +446,33 @@ puysegur$events[2050:2052, ]
 ## 2051                  0.009215376                  0.011996502  puysegur2
 ## 2052                  0.006078464                  0.010341691  puysegur2
 ##      uniform_event_row   rate_annual rate_annual_lower_ci
-## 2050               131 0.00002699053       0.000001247440
-## 2051               131 0.00002825624       0.000001305938
-## 2052               131 0.00003113489       0.000001438982
+## 2050               131 0.00002739742       0.000001266245
+## 2051               131 0.00002817468       0.000001302168
+## 2052               131 0.00002995223       0.000001384323
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 2050        0.00004415802       7.612915           0.00003805892
-## 2051        0.00004622879       7.977218           0.00003680982
-## 2052        0.00005093842       7.980054           0.00003509007
+## 2050        0.00004482371       7.612915           0.00003637125
+## 2051        0.00004609535       7.977218           0.00003508704
+## 2052        0.00004900353       7.980054           0.00003349598
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 2050                   0.000001977616                    0.00006544703
-## 2051                   0.000001912711                    0.00006329906
-## 2052                   0.000001823349                    0.00006034173
+## 2050                   0.000001889921                    0.00006254488
+## 2051                   0.000001823191                    0.00006033652
+## 2052                   0.000001740517                    0.00005760049
 ##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
-## 2050                  0.00003310225                0.00004604935
-## 2051                  0.00003201583                0.00004453801
-## 2052                  0.00003052005                0.00004245719
+## 2050                  0.00003163438                0.00004400736
+## 2051                  0.00003051742                0.00004245353
+## 2052                  0.00002913357                0.00004052843
 ##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
-## 2050                0.00004295668                            0.9956551
-## 2051                0.00004154684                            0.9956551
-## 2052                0.00003960577                            0.9956551
+## 2050                0.00004105183                            0.9956551
+## 2051                0.00003960236                            0.9956551
+## 2052                0.00003780654                            0.9956551
 ##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
-## 2050                0.9952935    0.00003260319    0.00003074646
-## 2051                0.9952935    0.00003413211    0.00003218830
-## 2052                0.9952935    0.00003760937    0.00003546753
+## 2050                0.9952935    0.00003309469    0.00003120997
+## 2051                0.9952935    0.00003403359    0.00003209539
+## 2052                0.9952935    0.00003618078    0.00003412030
 ##      rate_annual_median
-## 2050      0.00002427181
-## 2051      0.00002541002
-## 2052      0.00002799871
+## 2050      0.00002463771
+## 2051      0.00002533668
+## 2052      0.00002693518
 ```
 
 The most important variables from a users perspective are the moment magnitude
@@ -691,19 +706,19 @@ puysegur$events[row_index,]
 ##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
 ## 1567                  0.006060465                   0.01252411  puysegur2
 ##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 1567               103 0.0000446485        0.00002926813
+## 1567               103 0.0000445935        0.00002923208
 ##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 1567        0.00006766586       7.803452           0.00003295566
+## 1567        0.00006758251       7.803452           0.00003468984
 ##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 1567                    0.00002144147                    0.00005125079
+## 1567                    0.00002256976                     0.0000539477
 ##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
-## 1567                  0.00003203037                0.00002561428
+## 1567                  0.00003371586                0.00002696215
 ##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
-## 1567                0.00004088959                                    1
+## 1567                0.00004304128                                    1
 ##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
-## 1567                        1    0.00003533395    0.00005491671
+## 1567                        1    0.00003529042    0.00005484906
 ##      rate_annual_median
-## 1567      0.00004323276
+## 1567      0.00004317951
 ```
 To get its initial condition, you pass the earthquake metadata to the function
 `get_initial_condition_for_event`:
