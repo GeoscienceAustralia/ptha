@@ -69,7 +69,7 @@ fid = nc_open(test_file, readunlim=FALSE)
 event_index_string = ncvar_get(fid, 'event_index_string')
 
 #
-# Report whether it worked
+# Report whether it worked.
 #
 
 if(max(nchar(event_index_string)) == 756){
@@ -86,11 +86,25 @@ working. Otherwise you will have to troubleshoot your netcdf-c install (or
 your internet connection, or check for a change to the NCI THREDDS server,
 etc).
 
+If your internet is not working perfectly, or the NCI server is down, you will see an
+message like this:
+
+```r
+#    Error in Rsx_nc4_get_vara_double: NetCDF: DAP failure
+#    Var: gaugeID  Ndims: 1   Start: 0 Count: 20185
+#    Error in ncvar_get_inner(ncid2use, varid2use, nc$var[[li]]$missval, addOffset,  :  
+#      C function R_nc4_get_vara_double returned error
+```
+In this case, just try again -- after a few attempts it usually works. If not,
+then check if your internet is working. Also check whether the NCI THREDDS
+server is running (occasionally it goes down for maintainence or technical
+problems).
+
 ### **Installing rptha**
 
 Finally you need to install the `rptha` package. This must be built from
 source, after obtaining the code from Geoscience Australia's the `PTHA` github
-repository. [See instructions here](https://github.com/GeoscienceAustralia/ptha/blob/master/R/README.md)
+repository. [See instructions here](https://github.com/GeoscienceAustralia/ptha/blob/master/R/README.md).
 
 ### **Installing mapview**
 Finally you should install the `mapview` package (to enable some interactive
