@@ -1,10 +1,26 @@
 #
 # Plot time-series of the 'optimal' events vs DART buoys
 #
-PLOT_DURATION_HOURS = as.numeric(commandArgs(trailingOnly=TRUE)[1])
-if(is.na(PLOT_DURATION_HOURS)) stop('Must pass numeric number of hours for x axis')
-
+# User provides 2 input arguments: 
+#   - The number of hours for the time-series plot x-axis
+#   - The peak-slip-limit factor (Inf if not provided).
+#     Max-slip/(scaling-relation-typical-slip) must be less than this
+#
 library(rptha)
+
+#
+# Parse command-line arguments
+#
+user_input_arguments = commandArgs(trailingOnly=TRUE)
+PLOT_DURATION_HOURS = as.numeric(user_input_arguments[1])
+if(is.na(PLOT_DURATION_HOURS)) stop('Must pass numeric number of hours for x axis')
+if( length(user_input_arguments) > 1){
+    PEAK_SLIP_LIMIT_FACTOR = as.numeric(user_input_arguments[2]) 
+}else{
+    # By default, no peak slip limit factor
+    PEAK_SLIP_LIMIT_FACTOR = Inf
+}
+
 
 #'
 #' R image files from gauge_summary_statistics.R
@@ -332,6 +348,37 @@ for(RdataFile in all_Rdata){
                 0.2*do.call(cbind, similar_u_spec)
             vu_score = 0.8*do.call(cbind, similar_vu_time) + 
                 0.2*do.call(cbind, similar_vu_spec)
+        }
+
+        #
+        # Get the maximum slip and reference magnitude, so we can do peak-slip
+        # limiting
+        #
+        # For events that should not be used, just inflate the value of 'stoc_score'
+        #
+        # Stochastic
+        maximum_slip_stoc = unlist(lapply(stochastic_slip_stats[[1]], 
+            f<-function(x) max(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]])) ))
+        reference_Mw_stoc = unlist(lapply(stochastic_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw))
+        k = which(maximum_slip_stoc > PEAK_SLIP_LIMIT_FACTOR*slip_from_Mw(reference_Mw_stoc))
+        if(length(k) > 0){
+            stoc_score[k,] = stoc_score[k,] + 1e+100
+        }
+        # Variable-uniform
+        maximum_slip_vu = unlist(lapply(variable_uniform_slip_stats[[1]], 
+            f<-function(x) max(as.numeric(strsplit(x$events_with_Mw$event_slip_string, '_')[[1]])) ))
+        reference_Mw_vu = unlist(lapply(variable_uniform_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw))
+        k = which(maximum_slip_vu > PEAK_SLIP_LIMIT_FACTOR*slip_from_Mw(reference_Mw_vu))
+        if(length(k) > 0){
+            vu_score[k,] = vu_score[k,] + 1e+100
+        }
+        # Uniform - In practice this is not needed, but anyhow...
+        maximum_slip_unif = unlist(lapply(uniform_slip_stats[[1]], 
+            f<-function(x) x$events_with_Mw$slip ))
+        reference_Mw_unif = unlist(lapply(uniform_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw))
+        k = which(maximum_slip_unif > PEAK_SLIP_LIMIT_FACTOR*slip_from_Mw(reference_Mw_unif))
+        if(length(k) > 0){
+            unif_score[k,] = unif_score[k,] + 1e+100
         }
 
         # Find the median GoF statistic over all gauges
