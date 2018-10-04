@@ -362,7 +362,7 @@ for(RdataFile in all_Rdata){
         reference_Mw_stoc = unlist(lapply(stochastic_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw))
         k = which(maximum_slip_stoc > PEAK_SLIP_LIMIT_FACTOR*slip_from_Mw(reference_Mw_stoc))
         if(length(k) > 0){
-            stoc_score[k,] = stoc_score[k,] + 1e+100
+            stoc_score[k,] = NA
         }
         # Variable-uniform
         maximum_slip_vu = unlist(lapply(variable_uniform_slip_stats[[1]], 
@@ -370,7 +370,7 @@ for(RdataFile in all_Rdata){
         reference_Mw_vu = unlist(lapply(variable_uniform_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw))
         k = which(maximum_slip_vu > PEAK_SLIP_LIMIT_FACTOR*slip_from_Mw(reference_Mw_vu))
         if(length(k) > 0){
-            vu_score[k,] = vu_score[k,] + 1e+100
+            vu_score[k,] = NA
         }
         # Uniform - In practice this is not needed, but anyhow...
         maximum_slip_unif = unlist(lapply(uniform_slip_stats[[1]], 
@@ -378,13 +378,13 @@ for(RdataFile in all_Rdata){
         reference_Mw_unif = unlist(lapply(uniform_slip_stats[[1]], f<-function(x) x$events_with_Mw$Mw))
         k = which(maximum_slip_unif > PEAK_SLIP_LIMIT_FACTOR*slip_from_Mw(reference_Mw_unif))
         if(length(k) > 0){
-            unif_score[k,] = unif_score[k,] + 1e+100
+            unif_score[k,] = NA
         }
 
         # Find the median GoF statistic over all gauges
-        stoc_score_median = apply(stoc_score, 1, median)
-        unif_score_median = apply(unif_score, 1, median)
-        vu_score_median = apply(vu_score, 1, median)
+        stoc_score_median = apply(stoc_score, 1, median, na.rm=TRUE)
+        unif_score_median = apply(unif_score, 1, median, na.rm=TRUE)
+        vu_score_median = apply(vu_score, 1, median, na.rm=TRUE)
 
         # Find the 'best' modelled events, using the minimum(median of the
         # goodness-of-fit metric at all gauges) as the definition of 'best'
