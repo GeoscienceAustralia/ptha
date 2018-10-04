@@ -515,7 +515,7 @@ for(RdataFile in all_Rdata){
     # Remove nearly all objects, except the ones controlling the outer loop
     rm(list=setdiff( ls(all=TRUE),
             c('RdataFile', 'all_Rdata', 'multi_gauge_time_series_plot', 'ngdc_comparison_plot',
-                'model_lonlat', 'PLOT_DURATION_HOURS')
+                'model_lonlat', 'PLOT_DURATION_HOURS', 'PEAK_SLIP_LIMIT_FACTOR')
         ))
 
 }
