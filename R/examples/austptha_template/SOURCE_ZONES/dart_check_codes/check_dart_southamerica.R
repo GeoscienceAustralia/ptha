@@ -17,13 +17,21 @@ gauge_ids = c(
     32401.4,
     32402.4,
     32412.4,
-    51426.4)
+    32413.4,
+    51407.4,
+    51426.4,
+    52406.4
+    )
 
 gauge_data = c( 
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2014_04_01_Mw8.2/southamerica_2014_04_01_Mw8.2_32401.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2014_04_01_Mw8.2/southamerica_2014_04_01_Mw8.2_32402.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2014_04_01_Mw8.2/southamerica_2014_04_01_Mw8.2_32412.csv',
-    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2014_04_01_Mw8.2/southamerica_2014_04_01_Mw8.2_51426.csv')
+    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2014_04_01_Mw8.2/southamerica_2014_04_01_Mw8.2_32413.csv',
+    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2014_04_01_Mw8.2/southamerica_2014_04_01_Mw8.2_51407.csv',
+    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2014_04_01_Mw8.2/southamerica_2014_04_01_Mw8.2_51426.csv',
+    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2014_04_01_Mw8.2/southamerica_2014_04_01_Mw8.2_52406.csv'
+    )
 
 plot_durations = list()
 gauge_ylims = list()
@@ -106,6 +114,7 @@ gauge_ids = c(
 21413.4,
 32412.4,
 43412.4,
+46403.4,
 46404.4,
 46407.4,
 46409.4,
@@ -123,6 +132,7 @@ gauge_data = c(
 '../../../../../DATA/TIDES/DART/dart_extract/chile_2010_02_27_Mw8.8/chile_2010_02_27_Mw8.8_21413.csv',
 '../../../../../DATA/TIDES/DART/dart_extract/chile_2010_02_27_Mw8.8/chile_2010_02_27_Mw8.8_32412.csv',
 '../../../../../DATA/TIDES/DART/dart_extract/chile_2010_02_27_Mw8.8/chile_2010_02_27_Mw8.8_43412.csv',
+'../../../../../DATA/TIDES/DART/dart_extract/chile_2010_02_27_Mw8.8/chile_2010_02_27_Mw8.8_46403.csv',
 '../../../../../DATA/TIDES/DART/dart_extract/chile_2010_02_27_Mw8.8/chile_2010_02_27_Mw8.8_46404.csv',
 '../../../../../DATA/TIDES/DART/dart_extract/chile_2010_02_27_Mw8.8/chile_2010_02_27_Mw8.8_46407.csv',
 '../../../../../DATA/TIDES/DART/dart_extract/chile_2010_02_27_Mw8.8/chile_2010_02_27_Mw8.8_46409.csv',
@@ -181,13 +191,16 @@ event_hypocentre = c(288.33, -31.57)
 event_start = strptime('2015-09-16 22:54:32', format='%Y-%m-%d %H:%M:%S', tz='Etc/GMT')
 
 gauge_ids = c(
-    21413.4,
+    #21413.4, ## < 2cm range -- remove -- because there are other 'very small' ones that we avoid as well.
     21414.4,
     21415.4,
     32402.4,
+    32411.4,
     32412.4,
     43412.4,
+    46403.4,
     46408.4,
+    46409.4,
     46413.4,
     51407.4,
     51425.4,
@@ -200,13 +213,16 @@ gauge_ids = c(
     )
 
 gauge_data = c( 
-    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_21413.csv',
+    #'../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_21413.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_21414.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_21415.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_32402.csv',
+    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_32411.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_32412.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_43412.csv',
+    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_46403.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_46408.csv',
+    '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_46409.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_46413.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_51407.csv',
     '../../../../../DATA/TIDES/DART/dart_extract/southamerica_2015_09_16_Mw8.3/southamerica_2015_09_16_Mw8.3_51425.csv',

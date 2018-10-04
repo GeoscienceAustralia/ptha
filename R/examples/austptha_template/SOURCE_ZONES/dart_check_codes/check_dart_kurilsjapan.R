@@ -20,7 +20,8 @@ gauge_ids = c(
     46410.4,
     46411.4,
     46412.4,
-    46413.4)
+    46413.4,
+    51407.4)
 
 gauge_data = paste0('../../../../../DATA/TIDES/DART/dart_extract/kuril_2006_11_15_Mw8.3/kuril_2006_11_15_Mw8.3_', 
     floor(gauge_ids), '.csv')

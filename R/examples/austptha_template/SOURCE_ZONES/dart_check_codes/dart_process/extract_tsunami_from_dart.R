@@ -433,6 +433,20 @@ extract_and_detide_dart('kuril_2006_11_15_Mw8.3',
     start_limit=start_limit,
     ylim=c(-1,1)*0.07, t='l')
 
+# Might be something in this one, but a few spikes...
+start_limit = 13467.7472222 - 2/24
+interpolate_over = list()
+interpolate_over$start = c(13467.6887, 13467.7409241, 13467.7510853)
+interpolate_over$end = c(13467.6969, 13467.7438878,  13467.7574360)
+extract_and_detide_dart('kuril_2006_11_15_Mw8.3',
+    '51407',
+    '2006-11-13', '2006-11-18',
+    topdf=TRUE, loess_span=0.025,
+    hours_before_after=c(2.5,2.5),
+    interpolate_over = interpolate_over,
+    start_limit=start_limit,
+    ylim=c(-1,1)*0.05, t='l')
+
 ##############################################################################
 # South America 2016/04 Mw 7.83
 # maybe {32411, 32413, 43413} 
@@ -802,6 +816,20 @@ extract_and_detide_dart('chile_2010_02_27_Mw8.8',
     interpolate_over=interpolate_over,
     start_limit=start_limit,
     ylim=c(-1,1)*0.2, t='l')
+
+# 46403
+start_limit = 14667.8020833 + 4.5/24
+interpolate_over = list()
+interpolate_over$start = 14668.0227431 - 2/(60*24)
+interpolate_over$end = 14668.0227431 + 2/(60*24)
+extract_and_detide_dart('chile_2010_02_27_Mw8.8', 
+    '46403', 
+    '2010-02-25', '2010-03-02', 
+    topdf=TRUE, loess_span=0.03, 
+    hours_before_after=c(5,10),
+    interpolate_over=interpolate_over,
+    start_limit=start_limit,
+    ylim=c(-1,1)*0.1, t='l')
 
 # 46404
 start_limit = 14667.314704
@@ -1247,18 +1275,18 @@ extract_and_detide_dart('tohoku_2011_03_11_Mw9.1',
     start_limit = start_limit,
     ylim=c(-1,1)*0.2, t='l')
 
-start_limit = 15044.6 + 1/24
+start_limit = 15044.6 + 1.42/24
 interpolate_over = list()
-interpolate_over$start = c(15044.6217319, 15044.6485608, 15044.6661027)
-interpolate_over$end = c(15044.6315348,  15044.6640390, 15044.668166)
-xx = extract_and_detide_dart('tohoku_2011_03_11_Mw9.1', 
+interpolate_over$start = c(15044.5847222-0.002, 15044.6217319, 15044.6625-0.001, 15044.6791667 - 0.0005, 15044.6845806 - 0.0005, 15044.7018715 - 0.0005, 15044.7226792 - 0.001, 15044.6661027, 15044.921378 - 0.001)
+interpolate_over$end   = c(15044.5847222+0.000, 15044.6315348, 15044.6625+0.001, 15044.6791667 + 0.0005, 15044.6845806 + 0.0005, 15044.7018715 + 0.0005, 15044.7226792 + 0.001, 15044.6681660, 15044.921378 + 0.001)
+extract_and_detide_dart('tohoku_2011_03_11_Mw9.1', 
     '46412', 
     '2011-03-09', '2011-03-16', 
     topdf=TRUE, loess_span=0.03, 
-    hours_before_after=c(12,35),
+    hours_before_after=c(1,12),
     interpolate_over=interpolate_over,
     start_limit = start_limit,
-    ylim=c(-1,1)*0.2, t='l')
+    ylim=c(-1,1)*0.15, t='l')
 
 # 
 start_limit = 15044.32 + 5.25/24
@@ -1389,6 +1417,89 @@ extract_and_detide_dart('southamerica_2014_04_01_Mw8.2',
     start_limit = start_limit,
     ylim=c(-1,1)*0.02, t='l')
 
+# Hard to do this one confidently?
+start_limit = 16162.48 + 5.5/24
+extract_and_detide_dart('southamerica_2014_04_01_Mw8.2', 
+    '21414', 
+    '2014-03-28', '2014-04-04', 
+    topdf=TRUE, loess_span=0.03, 
+    hours_before_after=c(5,1),
+    #interpolate_over=interpolate_over,
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.01, t='l')
+
+
+# Hard to do this one confidently?
+start_limit = 16162.48 + 8/24
+extract_and_detide_dart('southamerica_2014_04_01_Mw8.2', 
+    '21418', 
+    '2014-03-28', '2014-04-04', 
+    topdf=TRUE, loess_span=0.03, 
+    hours_before_after=c(3,2),
+    #interpolate_over=interpolate_over,
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.01, t='l')
+
+# Hard to do this one confidently?
+start_limit = 16162.75 + 1/24
+x = extract_and_detide_dart('southamerica_2014_04_01_Mw8.2', 
+    '52402', 
+    '2014-03-28', '2014-04-04', 
+    topdf=FALSE, loess_span=0.02, 
+    hours_before_after=c(6,0.5),
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.01, t='l')
+
+# Hard to be confident?
+start_limit = 16162.04 + 3.5/24
+interpolate_over=NULL
+extract_and_detide_dart('southamerica_2014_04_01_Mw8.2', 
+    '32411', 
+    '2014-03-28', '2014-04-04', 
+    topdf=TRUE, loess_span=0.015, 
+    hours_before_after=c(7,1),
+    interpolate_over=interpolate_over,
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.01, t='l')
+
+## This one is clear
+interpolate_over = list()
+# Get rid of seismic waves and spikes
+interpolate_over$start = c(16161.9951389, 16162.2246528 -0.001)
+interpolate_over$end   = c(16162.0026042, 16162.2246528 +0.001)
+start_limit = 16162.0 + 3/24
+extract_and_detide_dart('southamerica_2014_04_01_Mw8.2', 
+    '32413', 
+    '2014-03-28', '2014-04-04', 
+    topdf=TRUE, loess_span=0.015, 
+    hours_before_after=c(2,7),
+    interpolate_over=interpolate_over,
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.03, t='l')
+
+# Clear
+start_limit = 16162.65625 + 2.24/24
+extract_and_detide_dart('southamerica_2014_04_01_Mw8.2', 
+    '52406', 
+    '2014-03-28', '2014-04-04', 
+    topdf=TRUE, loess_span=0.025, 
+    hours_before_after=c(4,10),
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.02, t='l')
+
+# Clear
+start_limit = 16162.65625 + 2.24/24 - 5/24
+interpolate_over=list()
+interpolate_over$start = 16162.5579861
+interpolate_over$end   = 16162.5583333 
+extract_and_detide_dart('southamerica_2014_04_01_Mw8.2', 
+    '51407', 
+    '2014-03-28', '2014-04-04', 
+    topdf=TRUE, loess_span=0.025, 
+    hours_before_after=c(4,10),
+    start_limit = start_limit,
+    interpolate_over = interpolate_over,
+    ylim=c(-1,1)*0.02, t='l')
 
 ##############################################################################
 # south america 2015
@@ -1578,6 +1689,35 @@ extract_and_detide_dart('southamerica_2015_09_16_Mw8.3',
 #    hours_before_after=c(6,9),
 #    ylim=c(-1,1)*0.05, t='l')
 
+start_limit = 16695.1041667 + 2/24
+interpolate_over = NULL
+extract_and_detide_dart('southamerica_2015_09_16_Mw8.3', 
+    '32411', 
+    '2015-09-14', '2015-09-19', 
+    topdf=TRUE, loess_span=0.03, 
+    hours_before_after=c(3,18),
+    interpolate_over=interpolate_over,
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.05, t='l')
+
+start_limit = 16695.52 + 3./24
+extract_and_detide_dart('southamerica_2015_09_16_Mw8.3', 
+    '46403', 
+    '2015-09-14', '2015-09-19', 
+    topdf=TRUE, loess_span=0.03, 
+    hours_before_after=c(2,9),
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.05, t='l')
+
+
+start_limit = 16695.52 + 3./24
+extract_and_detide_dart('southamerica_2015_09_16_Mw8.3', 
+    '46409', 
+    '2015-09-14', '2015-09-19', 
+    topdf=TRUE, loess_span=0.03, 
+    hours_before_after=c(2,9),
+    start_limit = start_limit,
+    ylim=c(-1,1)*0.05, t='l')
 
 ###############################################################
 # northNewHebrides_2013_02_06
