@@ -469,10 +469,12 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
                 # Name of source-zone
                 sz = rate_by_source_mean[m1[i], 1]
                 rate_by_Mw = peak_stage_magnitude_summary(stage_threshold, sz)
+                local_xlim = c(0, max(rate_by_Mw$rate_exceeding_84pc, rate_by_Mw$rate_exceeding, 
+                    rate_by_Mw$rate_exceeding_16pc))
                 dotchart(rate_by_Mw$rate_exceeding,
                     labels=paste0(rate_by_Mw$Mw, ' (', round(rate_by_Mw$fraction_events*100, 1), ')'),
                     xlab='Rate > stage_threshold (events/year) ', ylab='', 
-                    pch=4, col='black', xlim=c(0, max(rate_by_Mw$rate_exceeding_84pc)))
+                    pch=4, col='black', xlim=local_xlim)
                 # Overwrite the black (needed to make labels black)
                 points(rate_by_Mw$rate_exceeding, 1:nrow(rate_by_Mw), col='brown', pch=4) 
                 # Other summaries
