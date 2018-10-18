@@ -14,7 +14,7 @@ library(rptha)
 user_input_arguments = commandArgs(trailingOnly=TRUE)
 PLOT_DURATION_HOURS = as.numeric(user_input_arguments[1])
 if(is.na(PLOT_DURATION_HOURS)) stop('Must pass numeric number of hours for x axis')
-if( length(user_input_arguments) > 1){
+if(length(user_input_arguments) > 1){
     PEAK_SLIP_LIMIT_FACTOR = as.numeric(user_input_arguments[2]) 
 }else{
     # By default, no peak slip limit factor
