@@ -617,7 +617,7 @@ module domain_mod
             sin((domain%y(ny) + HALF_dp * domain%dx(2))*deg2rad)
 
 #ifndef SPHERICAL
-        stop('Cannot define preprocessing flag CORIOLIS without also defining SPHERICAL')
+        stop 'Cannot define preprocessing flag CORIOLIS without also defining SPHERICAL'
 #endif    
 #endif
 

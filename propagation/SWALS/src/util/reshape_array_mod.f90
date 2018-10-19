@@ -121,9 +121,9 @@ module reshape_array_mod
 
         output_shape = shape(output_rank2)
        
-        if(product(output_shape) /= size(rank1_array)) then
-            stop('Non-conforming dimensions in repack_rank1_array_rank2') 
-        end if
+        !if(product(output_shape) /= size(rank1_array)) then
+        !    stop('Non-conforming dimensions in repack_rank1_array_rank2') 
+        !end if
 
         counter = 1
         do j = 1, output_shape(2)
@@ -143,9 +143,9 @@ module reshape_array_mod
 
         output_shape = shape(output_rank3)
        
-        if(product(output_shape) /= size(rank1_array)) then
-            stop('Non-conforming dimensions in repack_rank1_array_rank3') 
-        end if
+        !if(product(output_shape) /= size(rank1_array)) then
+        !    stop('Non-conforming dimensions in repack_rank1_array_rank3') 
+        !end if
 
         counter = 1
         do k = 1, output_shape(3)
@@ -166,9 +166,9 @@ module reshape_array_mod
 
         output_shape = shape(output_rank4)
        
-        if(product(output_shape) /= size(rank1_array)) then
-            stop('Non-conforming dimensions in repack_rank1_array_rank4') 
-        end if
+        !if(product(output_shape) /= size(rank1_array)) then
+        !    stop('Non-conforming dimensions in repack_rank1_array_rank4') 
+        !end if
 
         counter = 1
        

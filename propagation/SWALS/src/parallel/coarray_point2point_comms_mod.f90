@@ -382,7 +382,7 @@ module coarray_point2point_comms_mod
 
         if(allocated(send_size) .OR. allocated(sendto_image_index)) then
             if(size(send_size) /= size(sendto_image_index)) then
-                stop('BUG: send_size should have equal length to sendto_image_index')
+                stop 'BUG: send_size should have equal length to sendto_image_index'
             end if
         end if
 

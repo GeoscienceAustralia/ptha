@@ -112,11 +112,11 @@ contains
         ! If not found, error
         if(tname_index == 0) then
             print*, tname
-            stop('No timer with this name')
+            stop 'No timer with this name'
         end if
 
         if(timer%start(tname_index) == 0.0_C_DOUBLE) then
-            stop('Timer not started')
+            stop 'Timer not started'
         end if
        
         timer%total(tname_index) = timer%total(tname_index) + (current_time - timer%start(tname_index))
