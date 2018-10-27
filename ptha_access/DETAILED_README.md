@@ -1,7 +1,6 @@
 # **Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and wave time-series**
 
-# ***NOTE: This is a beta release. Results may be updated if any issues are identified. Please report
-any problems via the github issues page, or send an email to the maintainer or to hazards@ga.gov.au***
+# ***NOTE: This is a beta release. Results may be updated if any issues are identified. Please report any problems via the github issues page, or send an email to the maintainer or to hazards@ga.gov.au***
 
 For every scenario in our analysis we provide earthquake information, tsunami
 initial conditions, and wave time-series at every hazard point. Combined with
