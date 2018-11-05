@@ -15,8 +15,7 @@ how often hazardous tsunamis might occur). Working with this information is
 more complex, and is explained in our [detailed README](DETAILED_README.md).
 
 The methodologies used in this study, and associated testing, are discussed in
-[the project
-report](https://ecat.ga.gov.au/geonetwork/srv/eng/catalog.search?node=srv#/metadata/fd1533d2-b176-45b1-9d40-5936aaef7d6f).
+[the project report](https://ecat.ga.gov.au/geonetwork/srv/eng/catalog.search?node=srv#/metadata/fd1533d2-b176-45b1-9d40-5936aaef7d6f).
 In addition, the codes used to conduct the analysis are available open-source
 in the [ptha package](https://github.com/GeoscienceAustralia/ptha).  While that
 package mostly contains generic functionality for PTHA, there is also a folder
@@ -158,8 +157,7 @@ the one I want).
 
 ## Interpreting exceedance-rate information
 
-Please read the [PTHA18 report](PROVIDE LINK WHEN AVAILABLE) for further
-information on interpreting the exceedance rate information. 
+Please read the [PTHA18 report](https://ecat.ga.gov.au/geonetwork/srv/eng/catalog.search?node=srv#/metadata/fd1533d2-b176-45b1-9d40-5936aaef7d6f) for further information on interpreting the exceedance rate information. 
 
 The maximum-stage exceedance-rates vary from site to site, depending on exposure
 to earthquake-generated tsunamis. For a given exceedance-rate, there is also a
