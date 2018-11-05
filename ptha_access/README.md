@@ -15,12 +15,13 @@ how often hazardous tsunamis might occur). Working with this information is
 more complex, and is explained in our [detailed README](DETAILED_README.md).
 
 The methodologies used in this study, and associated testing, are discussed in
-[the project report](PROVIDE LINK WHEN IT IS PUBLISHED). In addition, the codes
-used to conduct the analysis are available open-source in the 
-[ptha package](https://github.com/GeoscienceAustralia/ptha).
-While that package mostly contains generic functionality for PTHA, there is also
-a folder with 
-[project specific scripts](https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template)
+[the project
+report](https://ecat.ga.gov.au/geonetwork/srv/eng/catalog.search?node=srv#/metadata/fd1533d2-b176-45b1-9d40-5936aaef7d6f).
+In addition, the codes used to conduct the analysis are available open-source
+in the [ptha package](https://github.com/GeoscienceAustralia/ptha).  While that
+package mostly contains generic functionality for PTHA, there is also a folder
+with [project specific
+scripts](https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template)
 used for the 2018 Australian PTHA.
 
 The study results are provided under a [Creative Commons 4.0 International
