@@ -4,8 +4,9 @@
 \alias{sffm_simulate}
 \title{Synthetic finite fault model generator}
 \usage{
-sffm_simulate(reg_par, tg_mat, sffm_pars = .sffm_default_model_parameters,
-  sub_sample_size = c(1, 1))
+sffm_simulate(reg_par, tg_mat,
+  sffm_pars = .sffm_default_model_parameters, sub_sample_size = c(1,
+  1))
 }
 \arguments{
 \item{reg_par}{vector passed to sffm_pars$spectral_amplitude_fun. First

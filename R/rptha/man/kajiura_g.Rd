@@ -4,7 +4,8 @@
 \alias{kajiura_g}
 \title{Compute Kajiura's filter function}
 \usage{
-kajiura_g(r, nt = 1000, verbose = FALSE, recursive_stop_factor = 1e-05)
+kajiura_g(r, nt = 1000, verbose = FALSE,
+  recursive_stop_factor = 1e-05)
 }
 \arguments{
 \item{r}{numeric. Value of r in the equation}

@@ -5,8 +5,8 @@
 \title{Compute ground surface displacements in linear elastic half-space from known
 subfault ruptures, using Okada's (1985) solution for rectangular subfaults.}
 \usage{
-okada_tsunami(elon, elat, edep, strk, dip, lnth, wdt, disl1, disl2, rlon, rlat,
-  dstmx = 9e+20, dstmx_min = 20, verbose = FALSE)
+okada_tsunami(elon, elat, edep, strk, dip, lnth, wdt, disl1, disl2, rlon,
+  rlat, dstmx = 9e+20, dstmx_min = 20, verbose = FALSE)
 }
 \arguments{
 \item{elon}{-- numeric vector with x rupture centroid location (m)}

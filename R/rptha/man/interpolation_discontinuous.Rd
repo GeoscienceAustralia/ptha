@@ -4,8 +4,9 @@
 \alias{interpolation_discontinuous}
 \title{Discontinuous interpolation function}
 \usage{
-interpolation_discontinuous(xy, vals, newPts, category_function = function(xy)
-  {     xy[, 1] * 0 + 1 }, interpolator = triangular_interpolation, ...)
+interpolation_discontinuous(xy, vals, newPts,
+  category_function = function(xy) {     xy[, 1] * 0 + 1 },
+  interpolator = triangular_interpolation, ...)
 }
 \arguments{
 \item{xy}{Matrix with x-y locations with known values, from which we wish interpolate}

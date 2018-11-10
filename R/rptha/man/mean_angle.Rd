@@ -4,7 +4,8 @@
 \alias{mean_angle}
 \title{Compute the mean of a set of angles.}
 \usage{
-mean_angle(angles, degrees = TRUE, method = "complex-mean", weights = 1)
+mean_angle(angles, degrees = TRUE, method = "complex-mean",
+  weights = 1)
 }
 \arguments{
 \item{angles}{numeric vector. Contains angles to compute mean for}

@@ -9,8 +9,9 @@ sffm_make_events_on_discretized_source(discretized_source_statistics,
   vary_peak_slip_location = TRUE,
   vary_peak_slip_alongstrike_downdip_extent = NULL,
   zero_low_slip_cells_fraction = 0, sourcename = "",
-  sffm_sub_sample_size = c(1, 1), mu = 3e+10, return_slip_raster = TRUE,
-  uniform_slip = FALSE, expand_length_if_width_limited = "random",
+  sffm_sub_sample_size = c(1, 1), mu = 3e+10,
+  return_slip_raster = TRUE, uniform_slip = FALSE,
+  expand_length_if_width_limited = "random",
   use_deterministic_LWkc = FALSE, clip_random_parameters_at_2sd = TRUE,
   relation = "Strasser", peak_slip_location_near_centre = FALSE)
 }

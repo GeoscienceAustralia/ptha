@@ -4,10 +4,10 @@
 \alias{unit_source_interior_points_cartesian}
 \title{Fill a unit source with "sub-unit-source" points (for tsunami source integration)}
 \usage{
-unit_source_interior_points_cartesian(discretized_source, unit_source_index,
-  origin = NULL, r = 6378137, approx_dx = NULL, approx_dy = NULL,
-  scale_dxdy = 1, depths_in_km = TRUE, plot_source = FALSE,
-  edge_taper_width = 0)
+unit_source_interior_points_cartesian(discretized_source,
+  unit_source_index, origin = NULL, r = 6378137, approx_dx = NULL,
+  approx_dy = NULL, scale_dxdy = 1, depths_in_km = TRUE,
+  plot_source = FALSE, edge_taper_width = 0)
 }
 \arguments{
 \item{discretized_source}{list containing unit sources information (e.g. output of

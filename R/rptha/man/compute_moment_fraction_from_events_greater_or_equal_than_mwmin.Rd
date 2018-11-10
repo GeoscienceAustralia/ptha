@@ -5,8 +5,8 @@
 \title{Compute the fraction of seismic moment associated with earthquakes having a
 magnitude above some threshold}
 \usage{
-compute_moment_fraction_from_events_greater_or_equal_than_mwmin(Mws, rate_Mws,
-  moment_Mws, mwmin)
+compute_moment_fraction_from_events_greater_or_equal_than_mwmin(Mws,
+  rate_Mws, moment_Mws, mwmin)
 }
 \arguments{
 \item{Mws}{numeric vector with evenly spaced Mw values, increasing, densely

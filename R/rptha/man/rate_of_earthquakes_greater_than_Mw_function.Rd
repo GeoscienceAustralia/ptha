@@ -10,9 +10,10 @@ rate_of_earthquakes_greater_than_Mw_function(slip_rate, slip_rate_prob, b,
   computational_increment = 0.01,
   Mw_frequency_distribution = "truncated_gutenberg_richter",
   Mw_frequency_distribution_prob = 1,
-  update_logic_tree_weights_with_data = FALSE, Mw_count_duration = c(NA, NA,
-  NA), Mw_obs_data = list(Mw = NULL, t = NULL), Mw_2_M0 = function(x)
-  M0_2_Mw(x, inverse = TRUE), account_for_moment_below_mwmin = FALSE,
+  update_logic_tree_weights_with_data = FALSE,
+  Mw_count_duration = c(NA, NA, NA), Mw_obs_data = list(Mw = NULL, t =
+  NULL), Mw_2_M0 = function(x) M0_2_Mw(x, inverse = TRUE),
+  account_for_moment_below_mwmin = FALSE,
   mw_max_posterior_equals_mw_max_prior = FALSE,
   mw_observation_error_cdf = NULL)
 }

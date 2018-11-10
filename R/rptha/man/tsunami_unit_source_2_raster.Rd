@@ -5,7 +5,8 @@
 \title{Convert the tsunami unit source to a z-displacement raster}
 \usage{
 tsunami_unit_source_2_raster(tsunami_unit_source, filename = NULL,
-  saveonly = FALSE, tsunami_surface_points_lonlat = NULL, res = c(NA, NA))
+  saveonly = FALSE, tsunami_surface_points_lonlat = NULL, res = c(NA,
+  NA))
 }
 \arguments{
 \item{tsunami_unit_source}{output of make_tsunami_unit_source or similar.}

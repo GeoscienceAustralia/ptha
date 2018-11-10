@@ -4,8 +4,8 @@
 \alias{interpolate_3D_path}
 \title{Interpolate along a 3D path}
 \usage{
-interpolate_3D_path(threeD_path, n = 100, depth_in_km = TRUE, ndense = (n
-  * 10))
+interpolate_3D_path(threeD_path, n = 100, depth_in_km = TRUE,
+  ndense = (n * 10))
 }
 \arguments{
 \item{threeD_path}{matrix of lon,lat,depth defining the threeD path}

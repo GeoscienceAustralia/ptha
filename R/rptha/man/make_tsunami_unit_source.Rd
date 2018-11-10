@@ -9,7 +9,8 @@ make_tsunami_unit_source(i, j, discrete_source, rake,
   scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth = FALSE,
   surface_point_ocean_depths = NULL, kajiura_grid_spacing = NULL,
   kajiura_volume_change_error_threshold = 0.1,
-  kajiura_where_deformation_exceeds_threshold = 0, minimal_output = FALSE,
+  kajiura_where_deformation_exceeds_threshold = 0,
+  minimal_output = FALSE,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
   verbose = FALSE, edge_taper_width = 0, ...)
 }

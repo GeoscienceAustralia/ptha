@@ -4,7 +4,8 @@
 \alias{distance_down_depth}
 \title{Compute distances between 2 points defined by (lon,lat,depth)}
 \usage{
-distance_down_depth(p1, p2, depth_in_km = TRUE, n = 1000, r = 6378137)
+distance_down_depth(p1, p2, depth_in_km = TRUE, n = 1000,
+  r = 6378137)
 }
 \arguments{
 \item{p1}{= (lon1, lat1, depth1) and}
