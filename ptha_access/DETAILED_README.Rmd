@@ -18,7 +18,7 @@ doing tsunami hazard studies **in Australia** can alternatively contact
 Geoscience Australia directly if they have difficulty with any of these steps
 (please email Gareth Davies at gareth.davies@ga.gov.au).
 
-Before working with the outputs, make sure you've [read the project report](https://ecat.ga.gov.au/geonetwork/srv/eng/catalog.search?node=srv#/metadata/fd1533d2-b176-45b1-9d40-5936aaef7d6f) to understand what they are, how they were
+Before working with the outputs, make sure you've [read the project report](http://dx.doi.org/10.11636/Record.2018.041) to understand what they are, how they were
 made, and how they have been tested. Users are strongly encouraged to
 independently test the results at their site of interest as part of any
 application. 
