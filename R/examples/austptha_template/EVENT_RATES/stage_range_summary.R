@@ -255,7 +255,7 @@ score_gauge<-function(dta, fake_data_by_perturbing_random_model=FALSE, return_en
     data_summary = multi_gauge_summary_fun(data_ranks)
 
     # This gives an empirical quantile of 'data statistic' relative to 'model statistic'
-    output = (sum(model_summary < data_summary) + 0.5)/(length(model_summary)+1)
+    output = (sum(model_summary <= data_summary) + 0.5)/(length(model_summary)+1)
 
     if(return_environment){
         return(environment())
