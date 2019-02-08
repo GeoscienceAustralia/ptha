@@ -112,6 +112,12 @@ result_cascadia = get_rates(nc_file, segment_range, num_downdip, reference_magni
 #[1] 2198703.2007   63235.0438    2525.4876    2067.9503    1073.6297
 #[6]     654.4533
 
+## FEB 2019: Changes due to slight update in DART buoy database
+#> 1/result_cascadia
+#[1] 2270892.6717   64162.1494    2520.7523    2065.4403    1072.4393
+#[6]     653.8993
+#> 
+
 segment_range = c(1, 22) # Include everything!
 nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/cascadia/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_cascadia.nc'
 num_downdip = 3
@@ -119,6 +125,10 @@ reference_magnitude = 8.7
 result_cascadia = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
 #> 1/result_cascadia
 #[1] 4140.9155 1692.8766  612.5835  615.8084  404.0595  278.8918
+
+## FEB 19: Changes due to a slight update in DART buoy database
+#> 1/result_cascadia
+#[1] 4136.2323 1692.4921  612.6475  615.8288  404.1301  278.9043
 
 # Estimate the rate of 'full length rupture'
 segment_range = c(1, 22) # Include everything!
@@ -129,6 +139,9 @@ result_cascadia = get_rates(nc_file, segment_range, num_downdip, reference_magni
 #> 1/result_cascadia
 #[1] 22351.3007  8117.4802  2402.7101  2124.9761  1265.9653   770.8266
 
+## FEB 19: Changes due to a slight update in DART buoy database
+#> 1/result_cascadia
+#[1] 21928.3998  7967.7773  2362.7728  2093.8130  1248.7589   762.0496
 
 #
 # Alaska
@@ -147,6 +160,11 @@ result_alaska = get_rates(nc_file, segment_range, num_downdip, reference_magnitu
 ## UPDATED UNCERTAINTY 
 # [1] 5610.2163 2186.9478  952.9092  902.3920  598.3122  404.5945
 
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_alaska
+#[1] 5589.7132 2177.1635  948.4001  897.8805  595.3442  402.5348
+
+
 #
 # Butler et al. (2016). Their region might be slightly smaller, corresponding
 # to 1964 event? Here we choose an extent to match Johnson's inversion. A
@@ -162,6 +180,10 @@ result_alaska = get_rates(nc_file, segment_range, num_downdip, reference_magnitu
 ## UPDATED UNCERTAINTY
 #> 1/result_alaska
 #[1] 7150.3669 3018.6602 1376.7008 1298.0932  864.4423  585.8649
+
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_alaska
+#[1] 7122.1873 3004.7097 1370.0647 1291.4113  860.0613  582.8185
 
 #
 # Butler et al.'s other segment range (2016)
@@ -180,6 +202,10 @@ result_aleutians = get_rates(nc_file, segment_range, num_downdip, reference_magn
 ##> 1/result_aleutians
 #[1] 11132.6691  1370.2635   521.9373   506.4327   325.5969   211.1142
 
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_aleutians
+#[1] 11138.0629  1368.8235   521.8820   506.2095   325.4432   210.9602
+
 #
 # Tohoku area
 #
@@ -196,6 +222,10 @@ result_tohoku = get_rates(nc_file, segment_range, num_downdip, reference_magnitu
 #> 1/result_tohoku
 #[1] 1529.5092  808.1374  579.2576  568.2235  440.2708  324.6005
 
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_tohoku 
+#[1] 1527.9449  807.5727  579.2400  568.0930  440.3188  324.5028
+
 #
 # Kamchatka area 
 #
@@ -210,6 +240,10 @@ result_kamchatka = get_rates(nc_file, segment_range, num_downdip, reference_magn
 ## UPDATED UNCERTAINTY
 #> 1/result_kamchatka
 #[1] 2152.7718 1014.5349  723.5509  714.9773  554.9259  408.2894
+
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_kamchatka
+#[1] 2158.5046 1015.2719  723.5968  715.1777  554.9504  408.2154
 
 #
 # Chile -- matching 1960 earthquake
@@ -230,6 +264,41 @@ result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitud
 #> 1/result_chile
 #[1] 5042.1768  935.8553  491.6242  531.3701  404.3675  313.7825
 
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_chile
+#[1] 5041.9271  935.1467  491.4557  531.1857  404.3144  313.7345
+
+# Mw 8.6 for comparison
+segment_range = c(35, 53) # Extent of the 1960 event from Fuji/Satake
+num_downdip = 4
+reference_magnitude = 8.6 
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_southamerica.nc'
+result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## FEB 19 -- I hadn't done this before, but useful to compare with Moernaut(2018)
+#> 1/result_chile
+#[1] 673.0325 317.9187 195.5989 205.5513 158.1185 121.7040
+
+
+# Mw 8.5 for comparison
+segment_range = c(35, 53) # Extent of the 1960 event from Fuji/Satake
+num_downdip = 4
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_southamerica.nc'
+reference_magnitude = 8.5 
+result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## FEB 19 -- I hadn't done this before
+#> 1/result_chile
+#[1] 499.94044 251.36457 158.86282 164.73081 126.94140  97.26509
+
+# Mw 8 for comparison
+segment_range = c(35, 53) # Extent of the 1960 event from Fuji/Satake
+num_downdip = 4
+nc_file = '/g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_southamerica.nc'
+reference_magnitude = 8. 
+result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitude)
+## FEB 19 -- I hadn't done this before
+#> 1/result_chile
+#[1] 134.81465  81.73129  57.75847  56.81554  44.39463  33.44978
+
 #Chile segment.
 segment_range = c(35, 60) # Berryman et al "Central-Chile"
 num_downdip = 4
@@ -242,6 +311,9 @@ result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitud
 ## NEW 
 #> 1/result_chile
 #[1] 3719.9814  636.8577  332.0806  359.7956  273.3023  211.2476
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_chile
+#[1] 3721.6234  636.5482  332.0340  359.7627  273.3329  211.2830
 
 #
 # Chile 2 -- chile segment -- Burbidge's estimate.
@@ -257,6 +329,9 @@ result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitud
 ## NEW
 #> 1/result_chile
 #[1] 343.72378 172.62166 109.29248 113.29753  87.41685  66.92885
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_chile
+#[1] 343.64037 172.54545 109.25664 113.26251  87.39715  66.91215
 
 #
 # Chile 3 -- chile segment -- Burbidge's estimate.
@@ -272,6 +347,9 @@ result_chile = get_rates(nc_file, segment_range, num_downdip, reference_magnitud
 ## NEW
 #> 1/result_chile
 #[1] 94.96237 57.57016 40.70787 40.06789 31.34495 23.61779
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_chile
+#[1] 94.99095 57.58090 40.71469 40.07568 31.35175 23.62181
 
 #
 # Sumatra-Andaman region
@@ -287,6 +365,10 @@ result_sumatra = get_rates(nc_file, segment_range, num_downdip, reference_magnit
 ## NEW
 #> 1/result_sumatra
 #[1] 2789.7856 1364.0114  759.9245  721.9693  489.4998  328.9376
+## FEB 19: Changes due to minor DART buoy database update in 2018
+#> 1/result_sumatra
+#[1] 2791.3487 1362.2781  759.9161  721.8354  489.4660  328.9580
+
 
 # Further south, around where Patton et al.'s (2015) turbidites are
 segment_range = c(48, 78)
@@ -310,6 +392,7 @@ result_sumatra = get_rates(nc_file, segment_range, num_downdip, reference_magnit
 ## NEW
 #> 1/result_sumatra
 #[1] 452.5209 291.0936 212.1064 206.3841 158.5278 118.7261
+
 
 #
 # Nankai
