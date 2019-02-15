@@ -1648,14 +1648,15 @@ find_unit_source_index_containing_point<-function(point_xy,
 #'
 #' @param depth vector of depths in km. See below for interpretation
 #' @param type curve type. 
-#' @return Shear modulus (Pa) at each provided depth value. Options are 'default'
+#' @return Shear modulus (Pa) at each provided depth value. Options are 'default' and 'prem'
 #' 
 #' @details type='default' is a fit by eye to a running median of Bilek and
 #' Lay's (1999) variable rigidity data, with a lower limit of 10GPa for depths
 #' less than 7.5km (reflecting values used to model tsunamis in a few shallow
 #' earthquakes, Geist and Bilek, 2001), and an upper limit of 67 GPa for depths
 #' above 35km (reflecting values from PREM, Dziewonski and Anderson 1981). Note
-#' that 'depth' for this type is interpreted as 'depth below solid earth'. \cr 
+#' that 'depth' for this type is interpreted as 'depth below solid earth', because
+#' rptha typically works with such depths.\cr 
 #' type='prem' gives the PREM values from table 4 (second part) of Dziewonski and Anderson 1981.
 #' Note that 'depth' here is 'depth below MSL'.
 #'
