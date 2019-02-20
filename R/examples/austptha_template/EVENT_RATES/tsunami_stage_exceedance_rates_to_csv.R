@@ -54,15 +54,15 @@ for(k in 1:length(shear_modulus_type)){
             myvar_output_names = paste0(shear_modulus_type[k], event_type[l], 
                 '_slip_stage', value_type[j], '_', (1/exceedance_rates))
             print(myvar_output_names)
-            local_rate = matrix(NA, nrow=ncol(all_rates), ncol=length(myvar_output_names))
-            for(m in 1:nrow(local_rate)){
+            local_stage = matrix(NA, nrow=ncol(all_rates), ncol=length(myvar_output_names))
+            for(m in 1:nrow(local_stage)){
                 rr = all_rates[,m]
                 if(all(is.na(rr))) next
                 if(all(rr == 0)) next
-                local_rate[m,] = approx(rr, stages, xout=exceedance_rates, ties='min')$y
+                local_stage[m,] = approx(rr, stages, xout=exceedance_rates, ties='min')$y
             }   
  
-            temp_df = as.data.frame(local_rate)
+            temp_df = as.data.frame(local_stage)
             names(temp_df) = myvar_output_names
             output = cbind(output, temp_df)
         }
