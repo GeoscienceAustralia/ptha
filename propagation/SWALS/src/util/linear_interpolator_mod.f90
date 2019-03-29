@@ -77,10 +77,10 @@ module linear_interpolator_mod
             end if
         end do
 
-    END SUBROUTINE
+    end subroutine
 
-    SUBROUTINE finalise_linear_interpolator(linear_interpolator)
-        CLASS(linear_interpolator_type), INTENT(INOUT):: linear_interpolator
+    subroutine finalise_linear_interpolator(linear_interpolator)
+        class(linear_interpolator_type), intent(inout):: linear_interpolator
 
         if(allocated(linear_interpolator%xs_local)) then        
             deallocate(linear_interpolator%xs_local, linear_interpolator%ys_local)
@@ -89,13 +89,13 @@ module linear_interpolator_mod
         linear_interpolator%xs => NULL()
         linear_interpolator%ys => NULL()
 
-    END SUBROUTINE
+    end subroutine
 
-    SUBROUTINE eval_linear_interpolator(linear_interpolator, output_x, output_y)
-        CLASS(linear_interpolator_type), INTENT(IN):: linear_interpolator
-        REAL(dp), INTENT(IN):: output_x(:)
-        REAL(dp), INTENT(OUT):: output_y(:)
-        INTEGER(ip):: i, n
+    subroutine eval_linear_interpolator(linear_interpolator, output_x, output_y)
+        class(linear_interpolator_type), intent(in):: linear_interpolator
+        real(dp), intent(in):: output_x(:)
+        real(dp), intent(out):: output_y(:)
+        integer(ip):: n
 
         n = size(output_x)
         if(n /= size(output_y)) then
@@ -106,7 +106,7 @@ module linear_interpolator_mod
         call linear_interpolation(linear_interpolator%n, linear_interpolator%xs, &
             linear_interpolator%ys, n, output_x, output_y)
 
-    END SUBROUTINE
+    end subroutine
 
     !
     ! Suppose x is a SORTED vector of length n with x(i) <= x(i+1).
@@ -129,6 +129,7 @@ module linear_interpolator_mod
             else
                 lower = 1
                 upper = n
+                ! Deliberate integer division
                 i = (lower + upper)/2 !floor(0.5_dp*(lower + upper))
                 do while ((x(i) > y).or.(x(i+1) < y))
                    if(x(i) > y) then
@@ -136,6 +137,7 @@ module linear_interpolator_mod
                    else
                        lower = i
                    end if
+                   ! Deliberate integer division
                    i = (lower + upper)/2 !floor(0.5_dp*(lower + upper))
                 end do
 

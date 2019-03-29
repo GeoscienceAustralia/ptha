@@ -4,26 +4,40 @@
 # See src_standard_compiler_var for examples of these
 #
 
+SRC_GIT_VERSION := $(shell git --git-dir=$(SRC)/../.git describe --abbrev=50 --always --tags)
+
 # Make a library
-OBJECTS :=global_mod.o stop_mod.o reshape_array_mod.o which_mod.o linear_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o point_gauge_mod.o timer_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o coarray_utilities_mod.o domain_mod.o boundary_mod.o read_raster_c.o read_raster_mod.o
+OBJECTS :=global_mod.o logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o linear_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_intrinsic_alternatives_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o coarray_utilities_mod.o domain_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
 
 # Make the library
 libSWE.a: $(OBJECTS)
-	ar rcs $@ $^
+	$(AR) $@ $^
 
 # This is the 'generic build rule' for my modules -- it is applied unless the
 # module file matches one of the 'specific' build rules below
 %_mod.o: $(SRC)/*/%_mod.f90
 	$(FORTRAN) -c $^
 
+# qsort can segfault on large problems if compiled with -Ofast (unless we
+# unlimit the stack size). Here we pass -O3 to the compiler [by default, if multiple
+# optimizations options are passed it uses the last one]
+qsort_mod.o : $(SRC)/util/qsort_mod.f90
+	$(FORTRAN) -O3 -c $^
+
 # Note this one relies on GDAL
 read_raster_c.o: $(SRC)/raster/read_raster_c.c
 	$(CC) -c $(SRC)/raster/read_raster_c.c $(GDAL_CFLAGS)
+
+## See if we can dodge some segfaults by not doing Ofast with nesting
+#nested_grid_comms_mod.o: $(SRC)/shallow_water/nested_grid_comms_mod.f90
+#	$(FORTRAN) -O3 -c $^
 
 # Note this one relies on NETCDF, unless compiled with -DNONETCDF,
 # in which case NETCDF_FINCLUDE should be set to 'nothing' like:
 #     NETCDF_FINCLUDE=
 #
 point_gauge_mod.o: $(SRC)/shallow_water/point_gauge_mod.f90 
-	$(FORTRAN) -g -c $^ $(NETCDF_FINCLUDE)
+	$(FORTRAN) -DSRC_GIT_VERSION=\"$(SRC_GIT_VERSION)\" -g -c $^ $(NETCDF_FINCLUDE)
+netcdf_util_mod.o: $(SRC)/util/netcdf_util_mod.f90 
+	$(FORTRAN) -DSRC_GIT_VERSION=\"$(SRC_GIT_VERSION)\" -g -c $^ $(NETCDF_FINCLUDE)
 

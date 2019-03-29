@@ -32,6 +32,38 @@ module file_io_mod
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    subroutine mkdir_p(output_folder, mkdir_status)
+        ! Make a directory, recursively (i.e. like "mkdir -p output_folder")
+        ! We try to work-around possible failures in parallel.
+        ! It would be good to have a less hacky implementation however
+        character(*), intent(in) :: output_folder
+        integer(ip), optional, intent(out) :: mkdir_status
+
+        character(len=charlen) :: mkdir_command, output_folder_name
+        integer(ip) :: local_status, i
+
+        output_folder_name = output_folder 
+
+        mkdir_command = 'mkdir -p ' // trim(output_folder_name)
+
+        ! When running in parallel, this can fail, but succeed if we try again
+        ! See https://stackoverflow.com/questions/10627045/random-failure-of-mpi-fortran-code
+        ! Therefore, we try up to 100 times in a loop
+        do i = 1, 100
+            !call system(trim(mkdir_command), status=local_status)
+            !local_status = system(trim(mkdir_command))
+            call execute_command_line(trim(mkdir_command), exitstat=local_status)
+            if(local_status == 0) exit
+        end do
+
+        if(present(mkdir_status)) then
+            mkdir_status = local_status
+        end if
+
+    end subroutine    
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     subroutine read_character_file(input_file_unit_no, output_lines, format_string)
         ! Read the entire contents of input_file_unit_no into the allocatable
         ! character array 'output_lines'. Use format_string in the read

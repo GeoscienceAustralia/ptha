@@ -5,7 +5,7 @@
 #
 
 CC=gcc -O3
-GDAL_LIBS=-lgdal
+GDAL_LIBS=`gdal-config --libs`
 GDAL_CFLAGS=`gdal-config --cflags`
 
 # The netcdf fortran include/lib paths might be in either nc-config, or nf-config.
@@ -22,5 +22,7 @@ endif
 
 # end netcdf bit
 
-FORTRAN=gfortran -O3 -fopenmp -std=f2008 -fall-intrinsics -cpp -DTIMER
+FORTRAN=gfortran -O3 -fopenmp -fall-intrinsics -cpp -DTIMER
 
+# Use this to make libSWE.a
+AR=ar rcs

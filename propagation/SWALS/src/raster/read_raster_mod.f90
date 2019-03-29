@@ -1,11 +1,13 @@
 module read_raster_mod 
-    ! Fortran 2008 code to call C and read from a gdal raster
+    ! Fortran 2008 code to call C and read from a gdal raster, and also interpolate
+    ! from a set of rasters (multi_raster)
     !
     ! Both a type-based interface and a basic procedural interface are provided.
     !
     ! The type-based interface is a bit more flexible in that you can open
     ! the file once, then read many times, and then close it, and also make various
-    ! enquiries about the file. See 'gdal_raster_dataset_type'.
+    ! enquiries about the file. It also more carefully treats missing data. See
+    ! 'gdal_raster_dataset_type'.
     !
     ! The procedural interface involves opening/closing the input file each
     ! time a subroutine is called. This is not necessarily a problem, but could
@@ -19,32 +21,58 @@ module read_raster_mod
     private
 
     ! object based interface
-    public:: gdal_raster_dataset_type
+    public:: gdal_raster_dataset_type, multi_raster_type
     ! procedural interface
     public:: read_gdal_raster, get_raster_dimensions
     ! tests
     public:: test_read_raster1
 
     ! Flag to use bilinear interpolation (1) or not (0) by default
-    integer(C_INT), parameter :: use_bilinear_default = 1
+    integer(C_INT), parameter :: use_bilinear_default = 1_C_INT
 
+    !
     ! Type to hold c pointers and related info for the raster
+    !
     type :: gdal_raster_dataset_type
+
         type(c_ptr) :: hDataset
         character(charlen):: inputFile
         logical:: isOpen = .FALSE.
         integer(C_INT) :: xydim(2)
-        real(C_DOUBLE):: lowerleft(2), upperright(2), adfGeoTransform(6), dx(2)
+        real(C_DOUBLE) :: lowerleft(2), upperright(2), adfGeoTransform(6), dx(2)
+        real(C_DOUBLE) :: nodata_value
     
         contains
         procedure:: initialise => initialise_gdal_raster_dataset
         procedure:: get_xy => get_xy_values
         procedure:: finalise => close_gdal_raster
+
+    end type
+
+    !
+    ! Type to hold multiple rasters, and interpolate from multiple rasters
+    ! **with preference order defined by the order of the input file names**.
+    !
+    ! Often in applications we have multiple raster datasets, and have an order in which
+    ! we would like to use them. That's what this type is for
+    !
+    type :: multi_raster_type
+
+        character(len=charlen), allocatable :: raster_files(:)
+        type(gdal_raster_dataset_type), allocatable :: raster_datasets(:)
+
+        contains
+        procedure:: initialise => initialise_multi_raster
+        procedure:: get_xy => get_xy_values_multi_raster
+        procedure:: finalise => close_multi_raster
+
     end type
 
     interface
 
+    !
     ! Here we interface many C routines
+    !
 
     ! Object based raster access
     subroutine open_gdal_raster_Cfun(inputFile, hDataset) bind(C, name='open_gdal_raster')
@@ -63,12 +91,12 @@ module read_raster_mod
 
     ! Object based raster access
     subroutine get_gdal_raster_dimensions_Cfun(hDataset, xydim, lowerleft, upperright, &
-        adfGeoTransform, dx) bind(C, name='get_gdal_raster_dimensions')
+        adfGeoTransform, dx, nodata_value) bind(C, name='get_gdal_raster_dimensions')
         use iso_c_binding
         implicit none
         type(C_PTR), intent(in) :: hDataset
-        integer(C_INT), intent(out):: xydim(2)
-        real(C_DOUBLE), intent(out):: lowerleft(2), upperright(2), adfGeoTransform(6), dx(2)
+        integer(C_INT), intent(inout):: xydim(2)
+        real(C_DOUBLE), intent(inout):: lowerleft(2), upperright(2), adfGeoTransform(6), dx(2), nodata_value
     end subroutine
 
     ! Object based raster access
@@ -151,7 +179,8 @@ module read_raster_mod
             gdal_raster_dataset%hDataset,&
             gdal_raster_dataset%xydim, &
             gdal_raster_dataset%lowerleft, gdal_raster_dataset%upperright, &
-            gdal_raster_dataset%adfGeoTransform, gdal_raster_dataset%dx) 
+            gdal_raster_dataset%adfGeoTransform, gdal_raster_dataset%dx, &
+            gdal_raster_dataset%nodata_value) 
 
     end subroutine
 
@@ -187,19 +216,19 @@ module read_raster_mod
         if(present(verbose)) then
             verbose_c = verbose
         else
-            verbose_c = 0
+            verbose_c = 0_C_INT
         end if
 
         if(present(bilinear)) then
             bilinear_c = bilinear
         else
-            bilinear_c = 1 
+            bilinear_c = use_bilinear_default
         end if
 
         if(present(band)) then
             band_c = band
         else
-            band_c = 1
+            band_c = 1_C_INT
         end if
 
 
@@ -334,12 +363,124 @@ module read_raster_mod
 
     end subroutine
 
+    !
+    ! Read a number of rasters into a single object
+    !
+    subroutine initialise_multi_raster(multi_raster, raster_files)
+        class(multi_raster_type), intent(inout) :: multi_raster
+        character(len=charlen) :: raster_files(:)
+
+        integer(ip) :: n, i
+
+        if(allocated(multi_raster%raster_datasets)) then
+            print*, 'multi_raster already allocated'
+            stop
+        end if
+
+        n = size(raster_files)
+        allocate(multi_raster%raster_files(n))
+        multi_raster%raster_files = raster_files
+
+        allocate(multi_raster%raster_datasets(n))
+
+        do i = 1, n
+            call multi_raster%raster_datasets(i)%initialise(raster_files(i))
+        end do
+
+    end subroutine
+
+    !
+    ! Close/cleanup a multi raster object
+    !
+    subroutine close_multi_raster(multi_raster)
+        class(multi_raster_type), intent(inout) :: multi_raster
+        
+        integer(ip) :: i, n
+
+        do i = 1, size(multi_raster%raster_datasets)
+            call multi_raster%raster_datasets(i)%finalise()
+        end do
+
+        deallocate(multi_raster%raster_datasets)
+        deallocate(multi_raster%raster_files)
+
+    end subroutine
+
+    !
+    ! Interpolation from multi_raster
+    !
+    subroutine get_xy_values_multi_raster(multi_raster, x, y, z, N, verbose, bilinear, band)
+        class(multi_raster_type), intent(in) :: multi_raster
+        integer(ip), intent(in) :: N
+        real(dp), intent(in) :: x(N), y(N)
+        real(dp), intent(inout):: z(N)
+        integer(ip), optional, intent(in) :: verbose
+        integer(ip), optional, intent(in) :: bilinear
+        integer(ip), optional, intent(in) :: band
+
+        real(dp) :: empty_value, ll(2), ur(2), border_buffer(2), bx, by
+        integer(ip) :: i, j, verbose_l, bilinear_l, band_l
+
+        if(present(verbose)) then
+            verbose_l = verbose
+        else
+            verbose_l = 0
+        end if
+
+        if(present(bilinear)) then
+            bilinear_l = bilinear
+        else
+            bilinear_l = use_bilinear_default
+        end if
+
+        if(present(band)) then
+            band_l = band
+        else
+            band_l = 1
+        end if
+
+        ! Flag for unset 'z'
+        empty_value = -huge(1.0_dp)
+        z = empty_value
+
+        ! Read rasters until no values are missing
+        do j = 1, size(multi_raster%raster_datasets)
+
+            ll = real(multi_raster%raster_datasets(j)%lowerleft, dp)
+            ur = real(multi_raster%raster_datasets(j)%upperright, dp)
+
+            ! If bilinear is used, we need to stay away from the edges
+            !border_buffer = real(abs(multi_raster%raster_datasets(j)%dx), dp) * bilinear_l
+            !bx = border_buffer(1) * 0.50001_dp ! Just in the region that bilinear is valid
+            !by = border_buffer(2) * 0.50001_dp
+            ! Now, bilinear can deal with edge cells
+            bx = 0.0_dp
+            by = 0.0_dp
+
+            do i = 1, N
+
+                ! If z is populated with a value, we are done
+                if(z(i) /= empty_value) cycle
+
+                ! Read values inside the raster extent
+                if(x(i) >= (ll(1)+bx) .and. x(i) <= (ur(1)-bx) .and. y(i) >= (ll(2)+by) .and. y(i) <= (ur(2)-by)) then
+                    call multi_raster%raster_datasets(j)%get_xy(x(i), y(i), z(i), 1, verbose_l, bilinear_l, band_l)
+                end if
+
+                ! Set 'nodata' values back to empty values
+                if(z(i) == real(multi_raster%raster_datasets(j)%nodata_value, dp)) z(i) = empty_value
+
+            end do
+
+        end do
+
+    end subroutine
 
     subroutine test_read_raster1()
         ! Test code for read_raster_mod
         implicit none
 
-        character(len=charlen) :: inputFile
+        character(len=charlen) :: inputFile, inputFiles(2)
         integer(ip), parameter:: N = 10, verbose = 0
         integer(ip) :: i
         integer, parameter:: cdp = C_DOUBLE, csp = C_FLOAT
@@ -349,6 +490,7 @@ module read_raster_mod
         integer(ip):: xydim(2)
         real(dp):: lowerleft(2), upperright(2)
         type(gdal_raster_dataset_type):: test_file
+        type(multi_raster_type) :: test_multi_raster
 
         real(dp), allocatable:: x_dp(:), y_dp(:), z_dp(:)
 
@@ -431,7 +573,7 @@ module read_raster_mod
             print*, abs(z_dp - real_z_bl)
         end if
 
-        call close_gdal_raster(test_file)
+        call test_file%finalise()
 
         if( (test_file%isOpen .eqv. .FALSE.) .AND. &
             (c_associated(test_file%hDataset) .eqv. .FALSE.)) then
@@ -519,6 +661,80 @@ module read_raster_mod
             do i = 1, N
                 print*, real_zf_bl(i), zf(i) 
             end do
+        end if
+
+
+        !
+        ! Test reading a raster with NaN values
+        !
+        
+        inputFile = 'data/test_rast_nans.tif'
+        call test_file%initialise(inputFile)
+        !print*, test_file%nodata_value
+        if( abs(test_file%nodata_value + 1.7e+308_C_DOUBLE) < 1.0e-06*(1.7e+308_C_DOUBLE)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL' 
+        end if
+
+        ! Point right in a nodata cell. Check it is identified as nodata
+        x_dp(1) = 508000.0_dp
+        y_dp(1) = 1614000.0_dp
+        call test_file%get_xy(x_dp(1:1), y_dp(1:1), z_dp(1:1), size(z_dp(1:1)), verbose=0, bilinear=1, band=1)
+        if(z_dp(1) == real(test_file%nodata_value, dp)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+        ! Point not exactly in a nodata cell. Check that it is still
+        ! correctly set to 'nodata', rather than interpolated.
+        x_dp(1) = 500901.0_dp
+        y_dp(1) = 1617111.0_dp
+        call test_file%get_xy(x_dp(1:1), y_dp(1:1), z_dp(1:1), size(z_dp(1:1)), verbose=0, bilinear=1, band=1)
+        if(z_dp(1) == real(test_file%nodata_value, dp)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+        call test_file%finalise()
+
+        !
+        ! Test of multi-raster. Make the first raster contain NaN values, which
+        ! 'pass through' to the second raster
+        !
+        inputFiles(1) = 'data/test_rast_nans.tif'
+        inputFiles(2) = 'data/test_rast.tif'
+
+        ! Test values
+        x_dp = real(x, dp)
+        y_dp = real(y, dp)
+        z_dp = real(x, dp)*0
+        ! ... with one point in an nan region
+        x_dp(1) = 500901.0_dp
+        y_dp(1) = 1617111.0_dp
+        real_z_bl(1) = 3722691.0_dp
+    
+        call test_multi_raster%initialise(inputFiles)
+        call test_multi_raster%get_xy(x_dp, y_dp, z_dp, size(z_dp), verbose=0, bilinear=1)
+
+        if(all(abs(z_dp - real_z_bl) < (1.0e-6_dp*real_z_bl))) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+            print*, z_dp
+            print*, real_z_bl
+            print*, abs(z_dp - real_z_bl)
+        end if
+
+        call test_multi_raster%finalise()
+
+        if(allocated(test_multi_raster%raster_files) .or. &
+            allocated(test_multi_raster%raster_datasets)) then
+            print*, 'FAIL'
+        else
+            print*, 'PASS' 
         end if
 
     end subroutine

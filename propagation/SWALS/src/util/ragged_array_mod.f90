@@ -5,7 +5,7 @@ module ragged_array_mod
     ! array)
     ! 
 
-    use global_mod, only: ip, dp
+    use global_mod, only: ip, dp, force_double
     implicit none
 
     public
@@ -36,6 +36,21 @@ module ragged_array_mod
     
     type ragged_array_3d_dp_type
         type(ragged_array_2d_dp_type), allocatable:: i3(:)
+    end type
+
+    !
+    ! real case that is always double precision
+    !
+    type allocatable_array_force_double_type
+        real(force_double), allocatable:: i1(:)
+    end type
+
+    type ragged_array_2d_force_double_type
+        type(allocatable_array_force_double_type), allocatable:: i2(:)
+    end type
+    
+    type ragged_array_3d_force_double_type
+        type(ragged_array_2d_force_double_type), allocatable:: i3(:)
     end type
 
 end module

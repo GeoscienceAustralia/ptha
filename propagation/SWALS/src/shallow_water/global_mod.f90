@@ -1,25 +1,31 @@
 module global_mod
 
-!use iso_fortran_env, only: REAL32, INT16, INT32
 use iso_c_binding, only: C_FLOAT, C_INT, C_DOUBLE, C_LONG
+use iso_fortran_env, only: REAL128, REAL32 !, INT32, INT64
 
 implicit none
 
 ! Default character length, real / integer precision
-integer(8), parameter:: charlen = 1024, ip = C_INT !dp = C_FLOAT, ip = C_INT
+integer(C_INT), parameter:: charlen = 1024, ip = C_INT !dp = C_FLOAT, ip = C_INT
 
 ! If -DREALFLOAT is passed to the compiler, then reals are single precision, otherwise
 ! we use double
 #ifdef REALFLOAT
-integer(8), parameter:: dp = C_FLOAT
+integer(ip), parameter:: dp = C_FLOAT
 #else
-integer(8), parameter:: dp = C_DOUBLE
+integer(ip), parameter:: dp = C_DOUBLE
 #endif
-integer(8), parameter:: output_precision = C_FLOAT
+integer(ip), parameter:: output_precision = C_FLOAT
+! In some parts of the code we need to be sure to use double precision, even if
+! 'dp' is single precision. For example, this is needed to get reasonable mass
+! conservation tracking in some models (e.g. where integrating the volume 
+! involves subtracing the stage from the elevation, where these differ by several
+! km). The following constant is used for that purpose
+integer(ip), parameter:: force_double = C_DOUBLE
 
 ! Physical constants
 real(dp), parameter:: gravity = 9.8_dp ! m/s**2
-real(dp), parameter:: advection_beta = 1.0_dp  ! Used to rescale advective terms
+real(dp), parameter:: advection_beta = 1.0_dp  ! Used to rescale advective terms, e.g. to account for different assumed vertical profiles of horizontal velocity when integrating the shallow water equations
 real(dp), parameter:: radius_earth = 6371000.0_dp ! 6378137.0_dp ! 6371000.0_dp ! Radius of the earth
 
 ! Wetting and drying
@@ -33,12 +39,19 @@ real(dp), parameter:: maximum_timestep = 1.0e+20_dp
 character(len=charlen), parameter:: default_timestepping_method = 'euler'
 
 ! Spatial extrapolation
-real(dp), parameter:: extrapolation_theta = 1.0_dp ! 0 for first order, 1 for second order
+real(dp), parameter:: extrapolation_theta = 1.0_dp ! 0 for first order, 1 for second order, up to 2 for less cautious 2nd order. Note 1.9 may be better, at least for rk2
+
+! Turn on/of sending of boundary flux data and flux correction (for nesting)
+logical, parameter :: send_boundary_flux_data = .true.
 
 ! Output folder
 character(len=charlen), parameter:: default_output_folder = 'OUTPUTS'
 
 ! pi
 real(dp), parameter:: pi = acos(-1.0_dp)
+
+integer(ip), parameter :: real_bytes = storage_size(1.0_dp)
+integer(ip), parameter :: integer_bytes = storage_size(1_ip)
+integer(ip), parameter :: force_double_bytes = storage_size(1.0_force_double)
 
 end module global_mod

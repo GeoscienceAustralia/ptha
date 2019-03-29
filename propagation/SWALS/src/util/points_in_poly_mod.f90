@@ -103,10 +103,10 @@ module points_in_poly_mod
         ! doesn't seem to matter whether last point == first point or not
         real(dp), dimension(5) :: vertx = [0._dp, 0.0_dp, 1.0_dp, 1.0_dp, 0._dp]
         real(dp), dimension(5) :: verty = [0._dp, 1.0_dp, 1.0_dp, 0.0_dp, 0._dp]
-        !REAL(dp), DIMENSION(4) :: vertx = [0._dp, 0.0_dp, 1.0_dp, 1.0_dp]
-        !REAL(dp), DIMENSION(4) :: verty = [0._dp, 1.0_dp, 1.0_dp, 0.0_dp]
+        !real(dp), dimension(4) :: vertx = [0._dp, 0.0_dp, 1.0_dp, 1.0_dp]
+        !real(dp), dimension(4) :: verty = [0._dp, 1.0_dp, 1.0_dp, 0.0_dp]
 
-        integer(ip):: i, j
+        integer(ip):: i
         logical:: is_inside_result
 
         type test_point_type

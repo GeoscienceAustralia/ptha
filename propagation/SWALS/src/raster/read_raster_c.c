@@ -35,12 +35,18 @@ void close_gdal_raster(GDALDatasetH *hDataset){
 
 // Get basic metadata of raster
 void get_gdal_raster_dimensions(GDALDatasetH *hDataset, 
-    int xydim[], double lowerleft[], double upperright[], double adfGeoTransform[], double dx[]){
+    int xydim[], double lowerleft[], double upperright[], double adfGeoTransform[], double dx[],
+    double* nodata_value){
 
+    GDALRasterBandH hBand = GDALGetRasterBand( *hDataset, 1);
     double xleft, ytop;
+    int* pbSuccess;
 
     xydim[0] = GDALGetRasterXSize(*hDataset);
     xydim[1] = GDALGetRasterYSize(*hDataset);
+
+    *nodata_value = GDALGetRasterNoDataValue(hBand, pbSuccess);
+    //printf("%e", *nodata_value);
 
     if( GDALGetGeoTransform( *hDataset, adfGeoTransform ) == CE_None )
     {
@@ -64,10 +70,14 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
     double x[], double y[], double z[], int N, int verbose, int bilinear, int band){
 
     GDALRasterBandH hBand = GDALGetRasterBand( *hDataset, band);
-    float *pafScanline;
+    
+    double *pafScanline;
     int   nXSize = GDALGetRasterBandXSize( hBand );
     int   nYSize = GDALGetRasterBandYSize( hBand );
-    pafScanline = (float *) CPLMalloc(sizeof(float));
+    pafScanline = (double *) CPLMalloc(sizeof(double));
+
+    int* pbSuccess;
+    double nodata_value;
 
     double xleft, ytop, dx, dy;
     xleft = adfGeoTransform[0];
@@ -80,10 +90,15 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
     double z00, z01, z10, z11;
     double z_interp_x0, z_interp_x1;
     double x_local, y_local;
+    CPLErr Err; 
 
     // Try to avoid too much cache use
     GDALSetCacheMax(1048576);
 
+    // Beware of hitting nodata
+    nodata_value = GDALGetRasterNoDataValue(hBand, pbSuccess);
+
+    //printf("Bilinear interpolation C %d \n", bilinear); 
     // j is the index of x,y,z
     for ( j = 0; j < N; j++){
 
@@ -95,8 +110,8 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
         yindex = (y_local - ytop)/dy ;
 
         // Read a line at xindex, yindex
-        GDALRasterIO(hBand, GF_Read, xindex, yindex, 1, 1, 
-                      pafScanline, 1, 1, GDT_Float32, 
+        Err = GDALRasterIO(hBand, GF_Read, xindex, yindex, 1, 1, 
+                      pafScanline, 1, 1, GDT_Float64, 
                       0, 0);
 
         if(bilinear == 1){
@@ -152,32 +167,46 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
                 yweight = 1.0;
             }
 
+            //if(xweight > 1.0) xweight = 1.0 ;
+            //if(xweight < 0.0) xweight = 0.0 ;
+            //if(yweight > 1.0) yweight = 1.0 ;
+            //if(yweight < 0.0) yweight = 0.0 ;
+
             if( (xweight > 1.0 + 1.0e-10) | (xweight < 0.0 - 1.0e-10) | (yweight > 1.0 + 1.0e-10) | (yweight < 0.0 - 1.0e-10)){
-                printf("Bilinear interpolation C error. xw: %e, yw: %e\n", xweight, yweight);
+                printf("Bilinear interpolation C error. xw: %e, yw: %e, x_local: %e, y_local: %e, xleft: %e, ytop: %e \n", 
+                    xweight, yweight, x_local, y_local, xleft, ytop);
+                fflush(stdout);
             }
 
             // Read the line at xindex + 1, yindex
-            GDALRasterIO(hBand, GF_Read, xindex+xoff, yindex, 1, 1, 
-                          pafScanline, 1, 1, GDT_Float32, 
+            Err = GDALRasterIO(hBand, GF_Read, xindex+xoff, yindex, 1, 1, 
+                          pafScanline, 1, 1, GDT_Float64, 
                           0, 0);
             z10 = *(pafScanline);
 
             // Read the line at xindex, yindex + 1
-            GDALRasterIO(hBand, GF_Read, xindex, yindex+yoff, 1, 1, 
-                          pafScanline, 1, 1, GDT_Float32, 
+            Err = GDALRasterIO(hBand, GF_Read, xindex, yindex+yoff, 1, 1, 
+                          pafScanline, 1, 1, GDT_Float64, 
                           0, 0);
             z01 = *(pafScanline);
             
-            // Read the line at xindex, yindex + 1
-            GDALRasterIO(hBand, GF_Read, xindex+xoff, yindex+yoff, 1, 1, 
-                          pafScanline, 1, 1, GDT_Float32, 
+            // Read the line at xindex + 1, yindex + 1
+            Err = GDALRasterIO(hBand, GF_Read, xindex+xoff, yindex+yoff, 1, 1, 
+                          pafScanline, 1, 1, GDT_Float64, 
                           0, 0);
             z11 = *(pafScanline);
 
-            z_interp_x0 = z00 * (1.0-xweight) + z10 * xweight;
-            z_interp_x1 = z01 * (1.0-xweight) + z11 * xweight;
+            // Treat nodata cleanly
+            if(z00 == nodata_value | z01 == nodata_value | z10 == nodata_value | z11 == nodata_value){
+                // If this is not 'nodata' we might get something useful
+                z[j] = z00 ;
 
-            z[j] = z_interp_x0 * (1.0 - yweight) + z_interp_x1 * yweight;
+            }else{
+                z_interp_x0 = z00 * (1.0-xweight) + z10 * xweight;
+                z_interp_x1 = z01 * (1.0-xweight) + z11 * xweight;
+
+                z[j] = z_interp_x0 * (1.0 - yweight) + z_interp_x1 * yweight;
+            }
 
             //printf("xleft: %e, ytop: %e, dx: %e, dy: %e, x: %e, y: %e, xR: %e, yR: %e, xw: %e, y: %e, xI: %d, yI: %d\n", xleft, ytop, dx, dy, x[j], y[j], xindex*dx + xleft, yindex*dy + ytop, xweight, yweight, xindex, yindex);
         }else{
@@ -352,7 +381,7 @@ void read_gdal_raster(char inputFile[], double x[], double y[], double z[], int 
     // We loop over the entire raster and print non-na values + indices
     // Note we are reading entire blocks (efficient)
 
-    float *pafScanline;
+    double *pafScanline;
     int   nXSize = GDALGetRasterBandXSize( hBand );
     int   nYSize = GDALGetRasterBandYSize( hBand );
     
@@ -363,13 +392,14 @@ void read_gdal_raster(char inputFile[], double x[], double y[], double z[], int 
 
     //pafScanline = (float *) CPLMalloc(sizeof(float)*nXSize);
     //pafScanline = (float *) malloc(sizeof(float)*nXSize);
-    pafScanline = (float *) CPLMalloc(sizeof(float));
+    pafScanline = (double *) CPLMalloc(sizeof(double));
 
     int j, i, xindex, yindex, xoff, yoff;
     double xweight, yweight;
     double z00, z01, z10, z11;
     double z_interp_x0, z_interp_x1;
     double x_local, y_local;
+    CPLErr Err; 
     // j = 0 corresponds to North
     // i = 0 corresponds to West
     //for ( j = 0; j < nYSize; j++){
@@ -391,8 +421,8 @@ void read_gdal_raster(char inputFile[], double x[], double y[], double z[], int 
         yindex = (y_local - ytop)/dy ;
 
         // Read a line at xindex, yindex
-        GDALRasterIO(hBand, GF_Read, xindex, yindex, 1, 1, 
-                      pafScanline, 1, 1, GDT_Float32, 
+        Err = GDALRasterIO(hBand, GF_Read, xindex, yindex, 1, 1, 
+                      pafScanline, 1, 1, GDT_Float64, 
                       0, 0);
 
         if(bilinear == 1){
@@ -453,20 +483,20 @@ void read_gdal_raster(char inputFile[], double x[], double y[], double z[], int 
             }
 
             // Read the line at xindex + 1, yindex
-            GDALRasterIO(hBand, GF_Read, xindex+xoff, yindex, 1, 1, 
-                          pafScanline, 1, 1, GDT_Float32, 
+            Err = GDALRasterIO(hBand, GF_Read, xindex+xoff, yindex, 1, 1, 
+                          pafScanline, 1, 1, GDT_Float64, 
                           0, 0);
             z10 = *(pafScanline);
 
             // Read the line at xindex, yindex + 1
-            GDALRasterIO(hBand, GF_Read, xindex, yindex+yoff, 1, 1, 
-                          pafScanline, 1, 1, GDT_Float32, 
+            Err = GDALRasterIO(hBand, GF_Read, xindex, yindex+yoff, 1, 1, 
+                          pafScanline, 1, 1, GDT_Float64, 
                           0, 0);
             z01 = *(pafScanline);
             
             // Read the line at xindex, yindex + 1
-            GDALRasterIO(hBand, GF_Read, xindex+xoff, yindex+yoff, 1, 1, 
-                          pafScanline, 1, 1, GDT_Float32, 
+            Err = GDALRasterIO(hBand, GF_Read, xindex+xoff, yindex+yoff, 1, 1, 
+                          pafScanline, 1, 1, GDT_Float64, 
                           0, 0);
             z11 = *(pafScanline);
 
