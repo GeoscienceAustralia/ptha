@@ -9,8 +9,8 @@
 ! different approaches -- I found them similar in performance, in limited tests).
 #define POINT2POINT
 
-! Compile with -DTIMERLOCAL to add timing to the code 
-#ifdef TIMERLOCAL
+! Compile with -DTIMER_PARTITIONED_COMMS to add timing to the code 
+#ifdef TIMER_PARTITIONED_COMMS
 #   define TIMER_START(tname) call timer%timer_start(tname)
 #   define TIMER_STOP(tname)  call timer%timer_end(tname)
 #else
@@ -35,7 +35,7 @@ module coarray_utilities_mod
     use reshape_array_mod, only: flatten_array
 #endif
 
-#ifdef TIMERLOCAL
+#ifdef TIMER_PARTITIONED_COMMS
     use timer_mod
 #endif
 
@@ -47,7 +47,7 @@ module coarray_utilities_mod
     ! for variables it must send/recv
     integer, parameter :: ocaIP = int32
 
-#ifdef TIMERLOCAL
+#ifdef TIMER_PARTITIONED_COMMS
     type(timer_type) :: timer
 #endif
 
@@ -780,7 +780,7 @@ module coarray_utilities_mod
         call deallocate_p2p_comms
 #endif
 
-#ifdef TIMERLOCAL
+#ifdef TIMER_PARTITIONED_COMMS
         if(this_image() == 1) then
             call timer%print()
         end if

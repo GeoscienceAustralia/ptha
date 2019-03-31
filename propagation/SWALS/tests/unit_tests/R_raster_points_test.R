@@ -1,12 +1,4 @@
 library(raster)
-rast = raster('data/PointData_elevation_c_INITIAL.tif')
-
-x = 500000 + runif(10)*1000
-y = 1610000 + runif(10)*1000
-
-zL = extract(rast, cbind(x,y))
-zB = extract(rast, cbind(x,y), method='bilinear')
-
 
 ## Make a new test raster
 
@@ -31,6 +23,10 @@ test_rast = raster(zs, xmn, xmx, ymn, ymx, crs=CRS("+init=epsg:3123"))
 
 writeRaster(test_rast, 'data/test_rast.tif', format='GTiff', overwrite=TRUE)
 
+#
+# Report on various interpolation methods from this data
+#
+
 x1 = xmn + runif(10)*(xmx - xmn)
 y1 = ymn + runif(10)*(ymx - ymn)
 
@@ -45,3 +41,14 @@ print(z1)
 z1 = extract(test_rast, cbind(x1, y1), method='bilinear')
 print(z1)
 
+#
+# Try a raster with nan values
+#
+test_rast_nans = test_rast
+test_rast_nans[10, 10] = NaN
+test_rast_nans[20, ] = NaN
+test_rast_nans[,40:49] = NaN
+
+z1 = extract(test_rast_nans, matrix(c(508000, 1614000), ncol=2))
+
+writeRaster(test_rast_nans, 'data/test_rast_nans.tif', format='GTiff', overwrite=TRUE)

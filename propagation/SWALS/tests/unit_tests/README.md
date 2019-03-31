@@ -16,8 +16,8 @@ You might want to adjust the preprocessing flags to check that the
 tests still pass with different compilation options.
 
 
-Running on NCI
---------------
+Running on NCI (sometime in 2016)
+---------------------------------
 
 On the NCI, more effort is required for installation. The key steps are:
 

@@ -4,40 +4,50 @@
 # See src_standard_compiler_var for examples of these
 #
 
-SRC_GIT_VERSION := $(shell git --git-dir=$(SRC)/../.git describe --abbrev=50 --always --tags)
+SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../.git describe --abbrev=50 --always --tags)
 
+#
 # Make a library
-OBJECTS :=global_mod.o logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o linear_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_intrinsic_alternatives_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o coarray_utilities_mod.o domain_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
+# 
+ifeq ($(SWALS_CUDA_CC_ACTIVE),)
+    # If we don't have nvcc, then gracefully do nothing with the GPU code
+    SWALS_DEVICE_OBJECTS :=
+else
+    # These objects require cuda-c to do useful things
+    SWALS_DEVICE_OBJECTS :=gpu_interface_cu.o gpu_interface_mod.o test_gpu_interface_mod.o
+endif
+# REGULAR OBJECTS
+SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o linear_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_intrinsic_alternatives_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o coarray_utilities_mod.o domain_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
+
 
 # Make the library
-libSWE.a: $(OBJECTS)
-	$(AR) $@ $^
+$(SWALS_LIBRARY): $(SWALS_OBJECTS)
+	$(SWALS_AR) $@ $^
 
-# This is the 'generic build rule' for my modules -- it is applied unless the
+# This is the 'generic build rule' for fortran modules -- it is applied unless the
 # module file matches one of the 'specific' build rules below
-%_mod.o: $(SRC)/*/%_mod.f90
-	$(FORTRAN) -c $^
+%_mod.o: $(SWALS_SRC)/*/%_mod.f90
+	$(SWALS_FORTRAN) -c $^
 
 # qsort can segfault on large problems if compiled with -Ofast (unless we
 # unlimit the stack size). Here we pass -O3 to the compiler [by default, if multiple
 # optimizations options are passed it uses the last one]
-qsort_mod.o : $(SRC)/util/qsort_mod.f90
-	$(FORTRAN) -O3 -c $^
+qsort_mod.o : $(SWALS_SRC)/util/qsort_mod.f90
+	$(SWALS_FORTRAN) -O3 -c $^
 
-# Note this one relies on GDAL
-read_raster_c.o: $(SRC)/raster/read_raster_c.c
-	$(CC) -c $(SRC)/raster/read_raster_c.c $(GDAL_CFLAGS)
+# read_raster_c relies on GDAL and the C compiler
+read_raster_c.o: $(SWALS_SRC)/raster/read_raster_c.c
+	$(SWALS_CC) -c $(SWALS_SRC)/raster/read_raster_c.c $(SWALS_GDAL_CFLAGS)
 
-## See if we can dodge some segfaults by not doing Ofast with nesting
-#nested_grid_comms_mod.o: $(SRC)/shallow_water/nested_grid_comms_mod.f90
-#	$(FORTRAN) -O3 -c $^
-
-# Note this one relies on NETCDF, unless compiled with -DNONETCDF,
+#
+# These rely on NETCDF, unless compiled with -DNONETCDF,
 # in which case NETCDF_FINCLUDE should be set to 'nothing' like:
 #     NETCDF_FINCLUDE=
 #
-point_gauge_mod.o: $(SRC)/shallow_water/point_gauge_mod.f90 
-	$(FORTRAN) -DSRC_GIT_VERSION=\"$(SRC_GIT_VERSION)\" -g -c $^ $(NETCDF_FINCLUDE)
-netcdf_util_mod.o: $(SRC)/util/netcdf_util_mod.f90 
-	$(FORTRAN) -DSRC_GIT_VERSION=\"$(SRC_GIT_VERSION)\" -g -c $^ $(NETCDF_FINCLUDE)
+point_gauge_mod.o: $(SWALS_SRC)/shallow_water/point_gauge_mod.f90 
+	$(SWALS_FORTRAN) -DSRC_GIT_VERSION=\"$(SWALS_SRC_GIT_VERSION)\" -g -c $^ $(SWALS_NETCDF_FINCLUDE)
+netcdf_util_mod.o: $(SWALS_SRC)/util/netcdf_util_mod.f90 
+	$(SWALS_FORTRAN) -DSRC_GIT_VERSION=\"$(SWALS_SRC_GIT_VERSION)\" -g -c $^ $(SWALS_NETCDF_FINCLUDE)
 
+gpu_interface_cu.o: $(SWALS_SRC)/device/gpu_interface_cu.cu
+	$(SWALS_CUDA_CC) -c $^ $(SWALS_CUDA_CC_INCLUDE)

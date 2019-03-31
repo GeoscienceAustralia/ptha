@@ -1,0 +1,32 @@
+# SOURCE CODE DIRECTORY relative to the current directory
+SWALS_SRC=../../src
+
+#
+# Pre-define makefile variables. These can override defaults in $(SRC)/src_standard_compiler_var
+#
+# Preprocessor variables. 
+SWALS_PREPROCESSOR_FLAGS := -DTIMER -DREALFLOAT
+# Other flags for for fortran compiler $(FC)
+SWALS_FC_FLAGS := -Ofast -fopenmp -g -fbounds-check -cpp
+
+#
+# Get the other compiler variables. See this file to understand the pre-defined variables above
+# 
+include $(SWALS_SRC)/src_standard_compiler_var
+
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := unit_tests
+# Clean up
+clean: $(mymodel)
+	rm *.o *.mod
+# Link everything
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@ $(SWALS_LIBRARY) $(SWALS_FC_LIBS)
+# Compile the driver script
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
+# Build main source
+include $(SWALS_SRC)/src_make_commands

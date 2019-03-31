@@ -1,6 +1,6 @@
 module global_mod
 
-use iso_c_binding, only: C_FLOAT, C_INT, C_DOUBLE, C_LONG
+use iso_c_binding, only: C_FLOAT, C_INT, C_DOUBLE, C_LONG, C_SIZEOF
 use iso_fortran_env, only: REAL128, REAL32 !, INT32, INT64
 
 implicit none
@@ -50,8 +50,8 @@ character(len=charlen), parameter:: default_output_folder = 'OUTPUTS'
 ! pi
 real(dp), parameter:: pi = acos(-1.0_dp)
 
-integer(ip), parameter :: real_bytes = storage_size(1.0_dp)
-integer(ip), parameter :: integer_bytes = storage_size(1_ip)
-integer(ip), parameter :: force_double_bytes = storage_size(1.0_force_double)
+integer(ip), parameter :: real_bytes = c_sizeof(1.0_dp) 
+integer(ip), parameter :: integer_bytes = c_sizeof(1_ip) 
+integer(ip), parameter :: force_double_bytes = c_sizeof(1.0_force_double) 
 
 end module global_mod
