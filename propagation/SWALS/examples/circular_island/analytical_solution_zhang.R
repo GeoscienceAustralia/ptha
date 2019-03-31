@@ -18,8 +18,8 @@ compute_zhang_solution<-function(){
 
 
     # Numerical parameters
-    max_m = 200 # Zhang and Zhu suggest this was enough for the most difficult problem they tried
-    max_n = 50
+    max_m = 300 # Zhang and Zhu suggest this was enough for the most difficult problem they tried
+    max_n = 90
 
     #
     island_slope = h0/(b-a)
@@ -119,10 +119,9 @@ compute_zhang_solution<-function(){
         }
     }
     max_wave = apply(hmat, 1, max)
-    # Currently my plots are 180 degrees off Zhang's, for some reason.
-    plot(180 - thetas/pi*180, max_wave, 
-        main='Analytical solution: reproduce peak wave in Figure 2B of Zhang and Zhu 1994')
-    grid()
+    #plot(180 - thetas/pi*180, max_wave, 
+    #    main='Analytical solution: reproduce peak wave in Figure 2B of Zhang and Zhu 1994')
+    #grid()
 
 
 
