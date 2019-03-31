@@ -1,24 +1,29 @@
 # SOURCE CODE DIRECTORY relative to the current directory
-SRC=../../src
-include $(SRC)/src_standard_compiler_var
+SWALS_SRC := ../../src
 
-FORTRAN=caf -Ofast -fopenmp -fbounds-check -std=f2008ts -fall-intrinsics -cpp -DNONETCDF -DCOARRAY -DTIMERLOCAL #-DREALFLOAT
+# Add coarrays to compilation
+SWALS_PREPROCESSOR_FLAGS := -DCOARRAY -DTIMER_PARTITIONED_COMMS
 
-# Don't try to link with netcdf yet
-NETCDF_FINCLUDE=
-NETCDF_FLIBS=
+# Use caf to compile
+SWALS_FC := caf
 
+include $(SWALS_SRC)/src_standard_compiler_var
+
+
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := parallel_unit_tests
 # Clean up
-clean: parallel_unit_tests
+clean: $(mymodel)
 	rm *.o *.mod
-
 # Link everything
-parallel_unit_tests: libSWE.a parallel_unit_tests.o
-	$(FORTRAN) parallel_unit_tests.o -o $@ libSWE.a $(GDAL_LIBS) $(NETCDF_FLIBS)
-
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@ $(SWALS_LIBRARY) $(SWALS_FC_LIBS)
 # Compile the driver script
-parallel_unit_tests.o: parallel_unit_tests.f90
-	$(FORTRAN) -c $^ 
-
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
 # Build main source
-include $(SRC)/src_make_commands
+include $(SWALS_SRC)/src_make_commands
+
