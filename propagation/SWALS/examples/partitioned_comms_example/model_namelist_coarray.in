@@ -1,21 +1,21 @@
 &MODELCONFIG
     ! Comment
-    input_elevation_raster = '../generic_example/GEBCO_2014_2D.nc'
-    input_stage_raster = '../java_offshore_tsunami_spherical_linear/Java_data/event_1730.tif'
-    global_ll = -179.0 -72.0
-    global_ur = 179.0 65.0
-    global_nx = 5400 2052 !21600 8220 ! 10800 4110 !
-    approximate_writeout_frequency = 120.0
-    output_basedir='OUTPUTS/run12c'
-    final_time = 36000.0 !129600.0
+    input_elevation_raster = '../generic_example/merged_gebco_ga250_dem.tif'
+    input_stage_raster = '../generic_example/model_scenario_114_similar_to_tohoku_tsunami.tif' !'puysegur_Mw78_stochastic_example.tif'
+    global_ll = -40.0 -72.0
+    global_ur = 320.0 65.0
+    global_nx = 5400 2052 !21600 8224 ! 10800 4110 !
+    approximate_writeout_frequency = 1200.0
+    output_basedir='OUTPUTS/tohoku'
+    final_time = 43200.0
     timestepping_method = 'linear' !'rk2' !'euler' !'linear'
     cfl = 0.7
-    hazard_points_file = ''
-    skip_header_hazard_points_file=0
+    hazard_points_file = '../generic_example/merged_hazard_points.csv'
+    skip_header_hazard_points_file=1
     record_max_U = TRUE
-    output_grid_timeseries = FALSE 
+    output_grid_timeseries = TRUE
     adaptive_computational_extents=FALSE
     negative_elevation_raster = FALSE
-    nx_ca = 1
-    ny_ca = 12
+    nx_ca = 6
+    ny_ca = 2
 /

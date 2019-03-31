@@ -1,32 +1,26 @@
-# SOURCE CODE DIRECTORY relative to the current directory
-SRC=../../src
-include $(SRC)/src_standard_compiler_var
+# Source code location
+SWALS_SRC := ../../src
 
-FCCOMP=caf
-#FCCOMP=gfortran
-#FCCOMP=/home/gareth/Code_Experiments/opencoarrays/opencoarrays/install_prerequisites/gcc-5.3.0-installation/bin/gfortran
+# Need spherical coordinates
+SWALS_PREPROCESSOR_FLAGS := -DTIMER -DCOARRAY -DSPHERICAL
+SWALS_FC := caf
 
-# Remove netcdf (Since I don't have it compiled with opencoarrays)
-#NETCDF_FINCLUDE=
-#NETCDF_FLIBS=
-NETCDF_FINCLUDE=`/home/gareth/Code_Experiments/alternate_compiler_lib/gcc_6.1/netcdf/install/bin/nf-config --fflags`
-NETCDF_FLIBS=`/home/gareth/Code_Experiments/alternate_compiler_lib/gcc_6.1/netcdf/install/bin/nf-config --flibs`
-GDAL_CFLAGS=`/home/gareth/Code_Experiments/alternate_compiler_lib/gcc_6.1/gdal/install/bin/gdal-config --cflags`
-GDAL_LIBS=`/home/gareth/Code_Experiments/alternate_compiler_lib/gcc_6.1/gdal/install/bin/gdal-config --libs`
+include $(SWALS_SRC)/src_standard_compiler_var
 
-FORTRAN=$(FCCOMP) -Ofast -std=f2008ts -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DNOOPENMP -DTIMER -DCOARRAY -DREALFLOAT
-
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := coarray_example
 # Clean up
-clean: coarray_example
+clean: $(mymodel)
 	rm *.o *.mod
-
 # Link everything
-coarray_example: libSWE.a coarray_example.o
-	$(FORTRAN) coarray_example.o -o $@ libSWE.a $(GDAL_LIBS) -lgdal $(NETCDF_FLIBS) -lnetcdf 
-
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@ $(SWALS_LIBRARY) $(SWALS_FC_LIBS)
 # Compile the driver script
-coarray_example.o: coarray_example.f90
-	$(FORTRAN) -c $^ 
-
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
 # Build main source
-include $(SRC)/src_make_commands
+include $(SWALS_SRC)/src_make_commands
+
