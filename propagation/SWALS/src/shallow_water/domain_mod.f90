@@ -1033,8 +1033,9 @@ module domain_mod
             a(1:vsize) = U_upper(imn:imx) - U_local(imn:imx)
             b(1:vsize) = U_local(imn:imx) - U_lower(imn:imx)
 
-            select case (limiter_type)
-            case("MC")
+            !select case (limiter_type)
+            !case("MC")
+            if(limiter_type == 'MC') then
 
                 th(1:vsize) = theta(imn:imx)
                 d = merge(min(abs(a), abs(b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
@@ -1047,7 +1048,7 @@ module domain_mod
                 ! expensive)
                 b = merge(min(c, d), max(c, d), d > ZERO_dp)
 
-            case("Superbee_variant")
+            else if(limiter_type == "Superbee_variant") then
 
                 ! Use coefficient of 1.8 instead of 2.0 in LeVeque's book
                 ! Divide by 1.6 which is the default 'max theta' in the rk2 algorithms
@@ -1062,11 +1063,12 @@ module domain_mod
                     b = d
                 end where
 
-            case default
+            else
 
                 b = -HUGE(1.0_dp)
 
-            end select
+            !end select
+            end if
 
 
             edge_value(imn:imx) = U_local(imn:imx) + HALF_dp * extrapolation_sign(imn:imx) * b(1:vsize)

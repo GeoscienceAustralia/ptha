@@ -7,7 +7,7 @@
 basedir = getwd()
 test_files = c(Sys.glob('../../examples/*/run_model.sh'), Sys.glob('../../examples/*/*/run_model.sh'))
 
-test_results = lapply(test_files, f<-function(test_file){
+test_example<-function(test_file){
 
     t0 = Sys.time()
 
@@ -27,7 +27,9 @@ test_results = lapply(test_files, f<-function(test_file){
     print(paste0('Time taken (build, run, plot) : ', format(time_taken)))
 
     return(list(result=run_results, elapsed_time=time_taken))
-})
+}
+
+test_results = lapply(test_files, test_example)
 
 test_results_filename = paste0('test_results_', format(Sys.time(), '%Y_%m_%d_%H_%M_%S'), '.RDS')
 saveRDS(test_results, test_results_filename)
