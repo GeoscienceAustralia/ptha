@@ -1,34 +1,34 @@
-MODULE local_routines 
+module local_routines 
     ! 
     ! Subroutines & data used to setup the model scenario (comparable to
     ! project.py in ANUGA)
     !
-    USE global_mod, only: dp, ip, charlen, wall_elevation
-    USE domain_mod, only: domain_type, STG, UH, VH, ELV
-    USE read_raster_mod, only: gdal_raster_dataset_type
-    USE which_mod, only: which
-    USE file_io_mod, only: read_csv_into_array
-    IMPLICIT NONE
+    use global_mod, only: dp, ip, charlen, wall_elevation
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
+    use read_raster_mod, only: gdal_raster_dataset_type
+    use which_mod, only: which
+    use file_io_mod, only: read_csv_into_array
+    implicit none
 
-    CONTAINS 
+    contains 
 
-    SUBROUTINE set_initial_conditions_generic_model(domain, input_elevation_raster, &
+    subroutine set_initial_conditions_generic_model(domain, input_elevation_raster, &
         input_stage_raster, hazard_points_file, skip_header,&
         adaptive_computational_extents, negative_elevation_raster)
 
-        CLASS(domain_type), TARGET, INTENT(INOUT):: domain
-        CHARACTER(len=charlen), INTENT(IN):: input_elevation_raster, &
+        class(domain_type), target, intent(inout):: domain
+        character(len=charlen), intent(in):: input_elevation_raster, &
             input_stage_raster, hazard_points_file
-        INTEGER(ip), INTENT(IN):: skip_header
-        LOGICAL, INTENT(IN):: adaptive_computational_extents, negative_elevation_raster
+        integer(ip), intent(in):: skip_header
+        logical, intent(in):: adaptive_computational_extents, negative_elevation_raster
 
-        INTEGER(ip):: i, j
-        REAL(dp), ALLOCATABLE:: x(:), y(:), xy_coords(:,:)
-        INTEGER(ip):: stage_raster_dim(2), xl, xU, yl, yU
-        REAL(dp) :: stage_raster_ll(2), stage_raster_ur(2)
-        TYPE(gdal_raster_dataset_type):: elevation_data, stage_data
+        integer(ip):: i, j, extra_buffer
+        real(dp), allocatable:: x(:), y(:), xy_coords(:,:)
+        integer(ip):: stage_raster_dim(2), xl, xu, yl, yu
+        real(dp) :: stage_raster_ll(2), stage_raster_ur(2)
+        type(gdal_raster_dataset_type):: elevation_data, stage_data
 
-        CHARACTER(charlen):: attribute_names(8), attribute_values(8)
+        character(charlen):: attribute_names(8), attribute_values(8)
         
         ! Attributes to be stored in the netcdf files as attributes
         attribute_names(1) = 'input_elevation_raster'
@@ -65,13 +65,13 @@ SOURCEDIR
 
 
         ! Make space for x/y coordinates, at which we will look-up the rasters
-        ALLOCATE(x(domain%nx(1)), y(domain%nx(1)))
+        allocate(x(domain%nx(1)), y(domain%nx(1)))
 
         x = domain%x
 
         print*, "Setting elevation ..."
 
-        CALL elevation_data%initialise(input_elevation_raster)
+        call elevation_data%initialise(input_elevation_raster)
 
         print*, '    bounding box of input elevation: ' 
         print*, '    ', elevation_data%lowerleft
@@ -84,28 +84,43 @@ SOURCEDIR
             x((domain%nx(1) - 1):domain%nx(1)) = x((domain%nx(1) - 1):domain%nx(1)) - 360.0_dp
         end if
 
-        DO j = 1, domain%nx(2)
+        do j = 1, domain%nx(2)
             y = domain%y(j)
-            CALL elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), &
+            call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), &
                 bilinear=1_ip)
             if(negative_elevation_raster) domain%U(:,j,ELV) = -domain%U(:,j,ELV)
-        END DO
-        CALL elevation_data%finalise()
-    
+        end do
+        call elevation_data%finalise()
+  
+        !print*, 'HACKING ELEVATION' 
+        !domain%U(:,:,ELV) = min(domain%U(:,:,ELV), -200.0_dp) 
+        !! Smooth -- y first
+        !do j = 1, domain%nx(2)
+        !    domain%U(2:(domain%nx(1)-1),j,ELV) = (1.0_dp/3.0_dp) * ( &
+        !        domain%U(2:(domain%nx(1)-1),j,ELV) + &
+        !        domain%U(3:domain%nx(1), j, ELV) + domain%U(1:(domain%nx(1)-2), j, ELV))
+        !end do
+        !! Smooth -- x second
+        !do i = 1, domain%nx(1)
+        !    domain%U(i, 2:(domain%nx(2) - 1), ELV) = (1.0_dp/3.0_dp)*( &
+        !        domain%U(i, 2:(domain%nx(2)-1),ELV) + &
+        !        domain%U(i, 3:domain%nx(2), ELV) + domain%U(i, 1:(domain%nx(2)-2), ELV))
+        !end do
 
         print*, "Setting stage ..."
 
         ! Set stage -- zero outside of initial condition file range
         domain%U(:,:,[STG,UH,VH]) = 0.0_dp
        
-        CALL stage_data%initialise(input_stage_raster)
+        call stage_data%initialise(input_stage_raster)
 
         ! Get the x indices which are inside the stage raster 
         ! We permit this to only cover a small part of the domain
-        xl = COUNT(domain%x < stage_data%lowerleft(1)) + 1
-        xU = COUNT(domain%x < stage_data%upperright(1))
-        yl = COUNT(domain%y < stage_data%lowerleft(2)) + 1
-        yU = COUNT(domain%y < stage_data%upperright(2))
+        extra_buffer = 0
+        xl = count(domain%x < stage_data%lowerleft(1)) + 1  - extra_buffer
+        xU = count(domain%x < stage_data%upperright(1)) + extra_buffer
+        yl = count(domain%y < stage_data%lowerleft(2)) + 1 - extra_buffer
+        yU = count(domain%y < stage_data%upperright(2)) + extra_buffer
 
         print*, '    bounding box of input stage: ' 
         print*, '    ', stage_data%lowerleft
@@ -114,14 +129,14 @@ SOURCEDIR
         print*, '    yl: ', yl, ' yU: ', yU
 
         if(xl > 0 .AND. xU > 0) then
-            DO j = 1, domain%nx(2)
+            do j = 1, domain%nx(2)
                 if((domain%y(j) > stage_data%lowerleft(2)) .AND. &
                     (domain%y(j) < stage_data%upperright(2))) then
                     y(xl:xU) = domain%y(j)
-                    CALL stage_data%get_xy(x(xl:xU), y(xl:xU), &
+                    call stage_data%get_xy(x(xl:xU), y(xl:xU), &
                         domain%U(xl:xU, j, STG), (xU-xl+1))
                 end if
-            END DO
+            end do
         end if
         CALL stage_data%finalise() 
 
@@ -130,8 +145,6 @@ SOURCEDIR
 
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
-
-
 
         ! Setup gauges
         if(hazard_points_file /= '') then
@@ -168,38 +181,39 @@ SOURCEDIR
             domain%yU = yU
         end if
 
-        DEALLOCATE(x,y)
+        deallocate(x,y)
         if(allocated(xy_coords)) then
-            DEALLOCATE(xy_coords)
+            deallocate(xy_coords)
         end if
         
         print*, 'Initial conditions set'
         print*, ''
         
-    END SUBROUTINE
-END MODULE 
+    end subroutine
+end module 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-PROGRAM generic_model
-    USE global_mod, only: ip, dp, minimum_allowed_depth
-    USE domain_mod, only: domain_type
-    USE boundary_mod, only: flather_boundary, periodic_EW_reflective_NS
-    USE local_routines
-    IMPLICIT NONE
+program generic_model
 
-    INTEGER(ip):: j
-    REAL(dp):: last_write_time, rain_rate
-    TYPE(domain_type):: domain
+    use global_mod, only: ip, dp, minimum_allowed_depth
+    use domain_mod, only: domain_type
+    use boundary_mod, only: flather_boundary, periodic_EW_reflective_NS
+    use local_routines
+    implicit none
 
-    CHARACTER(charlen) :: timestepping_method, input_parameter_file, namelist_output_filename
+    integer(ip):: j
+    real(dp):: last_write_time, rain_rate
+    type(domain_type):: domain
 
-    REAL(dp) :: approximate_writeout_frequency, final_time 
-    REAL(dp):: timestep, global_ur(2), global_ll(2), global_lw(2), cfl, dx(2)
-    INTEGER(ip):: global_nx(2), skip_header_hazard_points_file, file_unit_temp
-    CHARACTER(len=charlen):: input_elevation_raster, input_stage_raster, &
+    character(charlen) :: timestepping_method, input_parameter_file, namelist_output_filename
+
+    real(dp) :: approximate_writeout_frequency, final_time 
+    real(dp):: timestep, global_ur(2), global_ll(2), global_lw(2), cfl, dx(2)
+    integer(ip):: global_nx(2), skip_header_hazard_points_file, file_unit_temp
+    character(len=charlen):: input_elevation_raster, input_stage_raster, &
         hazard_points_file, output_basedir
-    LOGICAL:: record_max_U, output_grid_timeseries, adaptive_computational_extents, &
+    logical:: record_max_U, output_grid_timeseries, adaptive_computational_extents, &
         negative_elevation_raster
 
     ! Key input data
@@ -281,18 +295,18 @@ PROGRAM generic_model
     domain%output_basedir = output_basedir
     
     ! Allocate domain -- must have set timestepping method BEFORE this
-    CALL domain%allocate_quantities(global_lw, global_nx, global_ll)
+    call domain%allocate_quantities(global_lw, global_nx, global_ll)
 
     ! Append the input namelist to the metadata
-    namelist_output_filename = TRIM(domain%output_folder_name) // '/modelconfig.in'
+    namelist_output_filename = trim(domain%output_folder_name) // '/modelconfig.in'
     open(newunit=file_unit_temp, file=namelist_output_filename) 
     write(file_unit_temp, MODELCONFIG)
     close(file_unit_temp)
-    CALL domain%log_outputs()
+    call domain%log_outputs()
     write(domain%logfile_unit, MODELCONFIG)
 
     ! Call local routine to set initial conditions
-    CALL set_initial_conditions_generic_model(domain, input_elevation_raster,&
+    call set_initial_conditions_generic_model(domain, input_elevation_raster,&
         input_stage_raster, hazard_points_file, skip_header_hazard_points_file,&
         adaptive_computational_extents, negative_elevation_raster)
 
@@ -303,28 +317,26 @@ PROGRAM generic_model
     last_write_time = -approximate_writeout_frequency
 
     ! Evolve the code
-    DO WHILE (.TRUE.)
+    do while (.true.)
 
-        IF(domain%time - last_write_time >= approximate_writeout_frequency) THEN
+        if(domain%time - last_write_time >= approximate_writeout_frequency) then
 
             last_write_time = last_write_time + approximate_writeout_frequency
 
-            CALL domain%print()
-            CALL domain%write_to_output_files(time_only = (output_grid_timeseries .EQV. .FALSE.))
-            CALL domain%write_gauge_time_series()
+            call domain%print()
+            call domain%write_to_output_files(time_only = (output_grid_timeseries .EQV. .FALSE.))
+            call domain%write_gauge_time_series()
             write(domain%logfile_unit, *) 'Mass balance: ', domain%mass_balance_interior()
 
-        END IF
+        end if
 
-        IF (domain%time > final_time) THEN
-            EXIT 
-        END IF
+        if (domain%time > final_time) exit 
 
         !! Example with fixed timestep
         if(domain%timestepping_method == 'linear') then
-            CALL domain%evolve_one_step(timestep=timestep)
+            call domain%evolve_one_step(timestep=timestep)
         else
-            CALL domain%evolve_one_step()
+            call domain%evolve_one_step()
         end if
 
         !! Evolve the active domain?
@@ -336,7 +348,7 @@ PROGRAM generic_model
         ! Treatment of spherical models with periodic EW conditions
         ! The BC region is within 4 cells of the boundaries (considering
         ! cells that copy-out, as well as cells that copy-in)
-        if((domain%xl <= 4).OR.(domain%xU >= domain%nx(1) - 3)) then
+        if((domain%xl <= 4).or.(domain%xU >= domain%nx(1) - 3)) then
             domain%xl = 1_ip
             domain%xU = domain%nx(1)
         end if
@@ -344,11 +356,11 @@ PROGRAM generic_model
     END DO
 
     write(domain%logfile_unit, *) ''
-    CALL domain%write_max_quantities()
+    call domain%write_max_quantities()
 
     ! Print timing info
-    CALL domain%timer%print(output_file_unit=domain%logfile_unit)
+    call domain%timer%print(output_file_unit=domain%logfile_unit)
 
-    CALL domain%finalise()
+    call domain%finalise()
 
-END PROGRAM
+end program
