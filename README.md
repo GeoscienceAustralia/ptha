@@ -2,7 +2,7 @@
 Codes for probabilistic tsunami hazard assessment. 
 
 The main codes and README information reside in the folder [R](R). This
-includes the R package [rptha](R/rptha).
+includes the R package [rptha](R/rptha). 
 
 The folder [propagation](propagation) contains a linear shallow water equations solver.
 
