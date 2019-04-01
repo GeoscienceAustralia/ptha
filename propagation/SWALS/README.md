@@ -19,23 +19,25 @@ specify the model domain(s), initial and boundary conditions, and IO.
 This makes model setup quite flexible.  
 
 # Test suites 
-SWALS includes a validation test suite with a variety of (mostly tsunami-type)
-problems. In addition to illustrating the kinds of problems that can be solved,
-the validation test suite serves to illustrate approaches to writing the driver
-programs, compiling the code, and working with outputs. 
+SWALS includes a [validation test suite](./tests/validation_tests) with a
+variety of (mostly tsunami-type) problems. In addition to illustrating the
+kinds of problems that can be solved, the validation test suite serves to
+illustrate approaches to writing the driver programs, compiling the code, and
+working with outputs. 
 
-The code also has a unit-test suite, and a separate parallel unit-test suite.
-These test suites are useful to confirm that the installation is working - and
-reduce the risk of updates breaking the code.
+The code also has a [unit-test suite](./tests/unit_tests), and a separate
+[parallel unit-test suite](./tests/parallel_tests). These test suites are
+useful to confirm that the installation is working.
 
 # Two-way nesting
 Two-way nesting is supported using a "multidomain" class which contains one or
 more single-grid "domains". 
 
-Where domains with different resolution overlap, the finer one is assumed to be
-the "priority domain" which represents the real flow. Domains with the same
-resolution should not overlap (because the code would not know which one should
-be the priority domain), but their boundaries can touch. 
+When multidomains contain domains with different resolution that overlap, the
+finer-resolution one is assumed to be the "priority domain" which represents the real
+flow. Domains with the same resolution should not overlap (because the code
+would not know which one should be the priority domain), but their boundaries
+can touch. 
 
 The code automatically generates the domain halos and data structures required
 to populate halos using information from the corresponding priority domain. The
@@ -101,7 +103,7 @@ negligible (i.e. completely reflecting floating point limitations) - so these
 might vary among parallel runs, which is fine so long as they remain negligibly
 small. As another example, SWALS treats a cell as wet or dry depending on
 whether its flow depth exceeds a threshold (1.0e-05 m). This wet/dry status
-could be sensitive to round-off in extremely shallow cells, and sometimes this
+can be sensitive to round-off in extremely shallow cells, and sometimes this
 shows up as differences in reported runup maxima over time.
 
 
@@ -167,19 +169,20 @@ can be installed from inside R with the following command:
 Compiling and testing
 ---------------------
 
-The standard build scripts are based on src/src_standard_compiler_var and
-src/src_make_commands. These scripts are 'included' in application specific
-makefiles.  
+The standard build scripts are based on
+[src_standard_compiler_var](./src/src_standard_compiler_var) and
+[src_make_commands](./src/src_make_commands). These scripts are 'included' in
+application specific makefiles.  
 
-Variables in src_standard_compiler_var can be overridden by defining them
-before the include. This is required e.g. to use a different compiler or
-non-standard library locations. 
+Variables in [src_standard_compiler_var](./src/src_standard_compiler_var) can
+be overridden by defining them before the include. This is required e.g. to use
+a different compiler or non-standard library locations. 
 
 See the validation test suite for examples.
 
 # Step 1: Run the unit-tests
 
-The unit test suite is in [test/unit_tests](test/unit_tests). These are most
+The unit test suite is in [./tests/unit_tests](./tests/unit_tests). These are most
 useful for ensuring that your install is working, and to help us avoid
 accidentally breaking features as the code evolves. When trying to install
 SWALS, the first thing to do is try to compile and successfully run the unit
@@ -199,7 +202,7 @@ You can count PASS or FAIL statments like this:
 
 # Step 2: Run the parallel unit-tests
 
-The parallel unit-test suite is in [test/parallel_tests](test/parallel_tests). Note
+The parallel unit-test suite is in [./tests/parallel_tests](./tests/parallel_tests). Note
 this only tests the coarray parallel operations, not OpenMP. To run the tests, open
 a terminal in that directory and do:
 
@@ -219,20 +222,21 @@ obvious error messages.
 
 # Step 3: Run the validation tests
 
-Open a terminal in the tests/validation_tests folder, and run:
+Open a terminal in the [./tests/validation_tests](./tests/validation_tests)
+folder, and run:
 
     Rscript run_validations.R
 
 This will run over a dozen tests in examples/, and report one or more PASS
 statements for each. There should be no FAIL statements if your install is
-working. If you are missing some prerequisites (e.g. for coarrays), then there
-will be some failures. 
+working. If you are missing some prerequisites (e.g. for coarrays, or R
+packages), then there will be some failures. 
 
 The code also generates various figures in the relevant directories in
 examples/, and these should be visually inspected to better understand the test
 results. 
 
-The validation test PASS/FAIL statements give a relatively crude indicator of
+Note the validation test PASS/FAIL statements give a relatively crude indicator of
 model performance. They generally only check a few aspects of the results, and
 the PASS/FAIL criteria depend on arbitrary thresholds. Such tests are useful to
 catch changes in the model behaviour, and catastrophic errors. However they are
@@ -245,19 +249,19 @@ not a replacement for eyeballing the figures and thinking about the results.
 
 The validation tests provide useful templates for developing other models. They illustrate driver programs, compilation, and model post-processing. Particularly useful examples include:
 
-* ./examples/nthmp/BP09/ which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
-* ./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/ which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
-* ./examples/periodic_multidomain/ which illustrates a global multidomain with periodic east-west boundaries
+* [./examples/nthmp/BP09/](./examples/nthmp/BP09) which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
+* [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Taurange_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
+* [./examples/periodic_multidomain/](./examples/periodic_multidomain) which illustrates a global multidomain with periodic east-west boundaries
 
 The above models can be run with OpenMP and/or coarrays, and illustrate use of the multidomain class. Another useful example is:
 
-* ./examples/generic_model/ which can run basic single-grid spherical coordinate models, e.g. for oceanic-scale tsunami modelling. This supports OpenMP but not coarrays.
+* [./examples/generic_model/](./examples/generic_model) which can run basic single-grid spherical coordinate models, e.g. for oceanic-scale tsunami modelling. This supports OpenMP but not coarrays.
 
 # Advanced compilation
 
-The script src/src_standard_compiler_var is included in build scripts to define compiler variables (e.g. see the example models above). The user can override most variables in this file by pre-defining them before it is included. This is required, e.g. to use compilers other than gfortran.
+The script [./src/src_standard_compiler_var](./src/src_standard_compiler_var) is included in build scripts to define compiler variables (e.g. see the example models above). The user can override most variables in this file by pre-defining them before it is included. This is required, e.g. to use compilers other than gfortran.
 
-A number of preprocessor variables can be defined to control features of the code. These are controlled by defining the variable SWALS_PREPROCESSOR_VAR in the makefile. See makefiles in the example projects for illustrations of their use. The most important cases include
+A number of preprocessor variables can be defined to control features of the code. These are controlled by defining the variable `SWALS_PREPROCESSOR_VAR` in the makefile. See makefiles in the example projects for illustrations of their use. The most important cases include
 
     -DSPHERICAL (assume spherical coordinates. Otherwise cartesian coordinates are used)
     -DTIMER (time sections of the code and report on how long they take)
