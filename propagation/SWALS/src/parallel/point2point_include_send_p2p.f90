@@ -8,8 +8,7 @@
         logical :: put_in_recv_buffer_local
 
         if(.not. have_allocated_p2p_comms) then
-            print*, 'Need to call allocate_p2p_comms before trying to send'
-            error stop
+            error stop 'Need to call allocate_p2p_comms before trying to send'
         end if 
 
         ! If there is nothing to send, exit
@@ -24,6 +23,8 @@
         ei = si + size(send_array) - 1
         ! The following routine is generic, for send_array having rank 1 to 4.
         call flatten_array(send_array, send_buffer(si:ei))
+        ! Intrinsic alternative (but would this make a copy?
+        !send_buffer(si:ei) = pack(send_array, .true.)
 
         !
         ! Communicate to the recv buffer on another image

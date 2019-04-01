@@ -1,0 +1,27 @@
+
+# SOURCE CODE DIRECTORY relative to the current directory
+SWALS_SRC := ../../src
+
+## For distributed memory parallel
+# SWALS_FC = caf
+# SWALS_PREPROCESSOR_FLAGS = -DCOARRAY
+
+include $(SWALS_SRC)/src_standard_compiler_var
+
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := paraboloid_bowl
+# Clean up
+clean: $(mymodel)
+	rm *.o *.mod
+# Link everything
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@ $(SWALS_LIBRARY) $(SWALS_FC_LIBS)
+# Compile the driver script
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
+# Build main source
+include $(SWALS_SRC)/src_make_commands
+

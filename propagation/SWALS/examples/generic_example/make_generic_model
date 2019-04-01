@@ -1,31 +1,27 @@
 # SOURCE CODE DIRECTORY relative to the current directory
-SRC=../../src
-include $(SRC)/src_standard_compiler_var
-
-#FCCOMP=caf
-FCCOMP=gfortran
-#FCCOMP=/home/gareth/Code_Experiments/opencoarrays/opencoarrays/install_prerequisites/gcc-5.3.0-installation/bin/gfortran
+SWALS_SRC := ../../src
 
 # Trick for getting git version into code
 GIT_VERSION := $(shell git describe --abbrev=50 --always --tags --dirty)
 SOURCE_DIR := $(shell pwd)
+SWALS_PREPROCESSOR_FLAGS := -DSPHERICAL -DREALFLOAT -DTIMER -DGITVERSION=\"$(GIT_VERSION)\" -DSOURCEDIR=\"$(SOURCE_DIR)\"
 
-#FORTRAN=$(FCCOMP) -fopenmp -Ofast -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DTIMER -DSPHERICAL -DREALFLOAT #-DNONETCDF
-#FORTRAN=$(FCCOMP) -Ofast -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DREALFLOAT -DNOOPENMP -DTIMER
-FORTRAN=$(FCCOMP) -Ofast -fopenmp -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DREALFLOAT -DTIMER -DGITVERSION=\"$(GIT_VERSION)\" -DSOURCEDIR=\"$(SOURCE_DIR)\"
-#FORTRAN=$(FCCOMP) -Ofast -fopenmp -std=f2008 -fall-intrinsics -march=native -mtune=native -cpp -DSPHERICAL -DREALFLOAT -DTIMER
+include $(SWALS_SRC)/src_standard_compiler_var
 
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := generic_model
 # Clean up
-clean: generic_model
+clean: $(mymodel)
 	rm *.o *.mod
-
 # Link everything
-generic_model: libSWE.a generic_model.o
-	$(FORTRAN) -o $@ generic_model.o libSWE.a $(GDAL_LIBS) $(NETCDF_FLIBS)
-
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@ $(SWALS_LIBRARY) $(SWALS_FC_LIBS)
 # Compile the driver script
-generic_model.o: generic_model.f90
-	$(FORTRAN) -c $^ 
-
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
 # Build main source
-include $(SRC)/src_make_commands
+include $(SWALS_SRC)/src_make_commands
+

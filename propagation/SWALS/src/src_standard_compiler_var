@@ -4,23 +4,82 @@
 # can be overwritten by redefining them.
 #
 
-CC=gcc -O3
-GDAL_LIBS=-lgdal
-GDAL_CFLAGS=`gdal-config --cflags`
+SWALS_PREPROCESSOR_FLAGS ?=
 
-# The netcdf fortran include/lib paths might be in either nc-config, or nf-config.
-# Here we test for that
-NC_TEST := $(nc-config --fflags)
+#
+# C compiler and gdal libraries
+#
+SWALS_CC ?= gcc -O3
+SWALS_GDAL_LIBS ?= `gdal-config --libs`
+SWALS_GDAL_CFLAGS ?= `gdal-config --cflags`
 
-NETCDF_FINCLUDE := `nc-config --fflags`
-NETCDF_FLIBS := `nc-config --flibs`
+#
+# NVCC and associated flags
+# 
 
-ifeq ($(NC_TEST),)
-NETCDF_FINCLUDE := `nf-config --fflags`
-NETCDF_FLIBS := `nf-config --flibs`
+## First check that we have nvcc. If not avoid using it
+##CUDA_C_TEST := `command -v nvcc`
+# Never use CUDA
+SWALS_CUDA_C_TEST :=
+ifeq ($(SWALS_CUDA_C_TEST),)
+    # Not using cuda
+    SWALS_CUDA_CC_ACTIVE :=
+    SWALS_CUDA_CC :=
+    SWALS_CUDA_CC_INCLUDE :=
+    SWALS_CUDA_CC_LIBS :=
+else
+    # Append GPU specific preprocesser var
+    SWALS_PREPROCESSOR_FLAGS := $(SWALS_PREPROCESSOR_FLAGS) -DUSE_GPU
+    SWALS_CUDA_CC_ACTIVE := true
+
+    SWALS_CUDA_CC ?= nvcc -c -O3 --default-stream per-thread
+    # Make sure preprocessor flags go to cuda compiler
+    SWALS_CUDA_CC := $(SWALS_CUDA_CC) $(SWALS_PREPROCESSOR_FLAGS)
+    SWALS_CUDA_CC_INCLUDE ?= -I/usr/include/ -I.
+    SWALS_CUDA_CC_LIBS ?= -L/usr/lib/cuda/lib64 -L/usr/lib/cuda/nvvm -lcuda -lcudart 
 endif
 
-# end netcdf bit
+#
+# NETCDF
+# 
 
-FORTRAN=gfortran -O3 -fopenmp -std=f2008 -fall-intrinsics -cpp -DTIMER
+ifeq ($(findstring DNONETCDF, $(SWALS_PREPROCESSOR_FLAGS)), DNONETCDF)
+    # Not using netcdf if -DNONETCDF is a preprocessor flag
+    SWALS_NETCDF_FINCLUDE := 
+    SWALS_NETCDF_FLIBS := 
+else
+    # The netcdf fortran include/lib paths might be in either nc-config, or nf-config.
+    # Here we test for that and adapt accordingly
+    SWALS_NC_TEST := $(nc-config --fflags)
+    SWALS_NETCDF_FINCLUDE ?= `nc-config --fflags`
+    SWALS_NETCDF_FLIBS ?= `nc-config --flibs`
+    ifeq ($(SWALS_NC_TEST),)
+        SWALS_NETCDF_FINCLUDE ?= `nf-config --fflags`
+        SWALS_NETCDF_FLIBS ?= `nf-config --flibs`
+    endif
+
+endif
+
+#
+# Fortran compiler
+#
+SWALS_FC ?= gfortran
+# If -DNOOPENMP was passed to the preprocessor, we should not link with openmp.
+ifeq ($(findstring DNOOPENMP, $(SWALS_PREPROCESSOR_FLAGS)),)
+    SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp -march=native -mtune=native -fopenmp
+else
+    SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp -march=native -mtune=native
+endif
+SWALS_FC_INCLUDE ?=
+SWALS_FC_INCLUDE := $(SWALS_FC_INCLUDE) $(SWALS_CUDA_CC_INCLUDE) $(SWALS_NETCDF_FINCLUDE)
+# Fortran linking commands
+SWALS_FC_LIBS ?=
+# Add in other libraries required above
+SWALS_FC_LIBS := $(SWALS_FC_LIBS) $(SWALS_NETCDF_FLIBS) $(SWALS_GDAL_LIBS) $(SWALS_CUDA_CC_LIBS)
+# This is the full compiler call
+SWALS_FORTRAN := $(SWALS_FC) $(SWALS_FC_FLAGS) $(SWALS_PREPROCESSOR_FLAGS) $(SWALS_FC_INCLUDE)
+
+# Use this to make the $(SWALS_LIBRARY)
+SWALS_LIBRARY ?= libSWE.a
+SWALS_AR ?= ar rcs
 

@@ -3,8 +3,8 @@ module spherical_mod
     !
     ! Useful routines for computation on sphere
     !
-    use global_mod, only: dp, ip, radius_earth
-    use iso_c_binding, only: C_DOUBLE
+    use global_mod, only: dp, ip, radius_earth, force_double
+    !use iso_c_binding, only: C_DOUBLE
     implicit none
 
     real(dp), parameter, private:: PI = atan(1.0_dp)*4.0_dp
@@ -32,7 +32,7 @@ module spherical_mod
         logical, optional, intent(in):: flat
         real(dp) :: area_sp
         logical:: flat_flag
-        real(C_DOUBLE):: sin1, sin2
+        real(force_double):: sin1, sin2
 
         if(present(flat)) then
             flat_flag = flat
@@ -48,8 +48,8 @@ module spherical_mod
             ! Here with single precision, we make an effort to avoid
             ! cancellation in the diff(sin) term. Otherwise in the unit-tests,
             ! we would need different error tol's for single and double dp
-            sin1 = sin(real(lat1, C_DOUBLE)*real(DEG2RAD, C_DOUBLE))
-            sin2 = sin((real(lat1, C_DOUBLE) + real(dlat, C_DOUBLE)) * real(DEG2RAD, C_DOUBLE))
+            sin1 = sin(real(lat1, force_double)*real(DEG2RAD, force_double))
+            sin2 = sin((real(lat1, force_double) + real(dlat, force_double)) * real(DEG2RAD, force_double))
             area_sp = radius_earth * radius_earth * &
                 abs( sin1 - sin2 ) * &
                 mod(abs(dlon), 360.0_dp)*DEG2RAD

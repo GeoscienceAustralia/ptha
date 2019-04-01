@@ -1,10 +1,16 @@
 !
 ! Various coarray based parallel communication routines
 !
+
+! If POINT2POINT is defined, then we use the coarray_point2point_comms_mod
+! to do communication. Otherwise we use local coarrays. POINT2POINT is
+! currently required if more than one domain is being modelled (i.e.
+! multidomain). I don't see a reason not to use it (except maybe for testing
+! different approaches -- I found them similar in performance, in limited tests).
 #define POINT2POINT
 
-! Compile with -DTIMERLOCAL to add timing to the code 
-#ifdef TIMERLOCAL
+! Compile with -DTIMER_PARTITIONED_COMMS to add timing to the code 
+#ifdef TIMER_PARTITIONED_COMMS
 #   define TIMER_START(tname) call timer%timer_start(tname)
 #   define TIMER_STOP(tname)  call timer%timer_end(tname)
 #else
@@ -14,6 +20,8 @@
 
 module coarray_utilities_mod
     use global_mod, only: dp, ip, charlen
+    use iso_fortran_env, only: int32
+    use logging_mod, only: log_output_unit
 #ifdef COARRAY
     ! Need this if events are to be used. But as of 4/11/2016 it does not
     ! seem opencoarrays supports events inside a derived type
@@ -27,7 +35,7 @@ module coarray_utilities_mod
     use reshape_array_mod, only: flatten_array
 #endif
 
-#ifdef TIMERLOCAL
+#ifdef TIMER_PARTITIONED_COMMS
     use timer_mod
 #endif
 
@@ -35,8 +43,11 @@ module coarray_utilities_mod
 
     private
     public:: partitioned_domain_NESW_comms_type, test_coarray_utilities_mod
+    ! Opencoarrays can't send any integer kind -- use this as an integer kind
+    ! for variables it must send/recv
+    integer, parameter :: ocaIP = int32
 
-#ifdef TIMERLOCAL
+#ifdef TIMER_PARTITIONED_COMMS
     type(timer_type) :: timer
 #endif
 
@@ -84,15 +95,15 @@ module coarray_utilities_mod
 #endif
 
         ! 2D co-subscripts of this_image() that are associated with the buffers
-        integer(4):: ti_xy(2)
+        integer(ocaIP):: ti_xy(2)
         ! The domain is split into co_size = [nx, ny] sub-domains
-        integer(4):: co_size_xy(2)
+        integer(ocaIP):: co_size_xy(2)
 
         ! Dimensions of the parent grid that we are communicating from/to
         ! This is typically domain%U. It INCLUDES halo's
-        integer(4):: array_shape(3) ! [nx, ny, nvar]
+        integer(ocaIP):: array_shape(3) ! [nx, ny, nvar]
         ! x/y dimensions of grid on this_image(), EXCLUDING halo
-        integer(4) :: interior_nx(2) 
+        integer(ocaIP) :: interior_nx(2) 
 
         ! Co-subscripts for N,E,S,W neighbours. 
         !     neighbour_im_xy(1,1:2) -- North
@@ -102,14 +113,14 @@ module coarray_utilities_mod
         ! Note that the function image_index(coarray, co-subscripts) requires
         ! 'co-subscripts' to be of rank 1 -- and this seems strict -- so e.g. we cannot
         ! pass neighbour_im_xy(1,1:2) directly to the function, we have to flatten it.
-        integer(4):: neighbour_im_xy(4,2)
+        integer(ocaIP):: neighbour_im_xy(4,2)
         !
         ! image indices of N,E,S,W neighbours (index 1 = North, then head
         ! clockwise to index 4 = West). Zero means we are on a boundary
-        integer(4):: neighbour_images(4) = [0,0,0,0]
+        integer(ocaIP):: neighbour_images(4) = [0,0,0,0]
         !
         ! Hold non-zero indices of neighbour_images
-        integer(4), allocatable:: neighbour_images_keep(:)
+        integer(ocaIP), allocatable:: neighbour_images_keep(:)
         !
         ! Hold the number of halo cells on the N,E,S,W boundary that are
         ! communicated from other domains
@@ -141,17 +152,17 @@ module coarray_utilities_mod
 
         do j = 1, num_images()
             if(this_image() == j) then
-                print*, 'Image: ', this_image()
-                print*, '  ti_xy: ', comms%ti_xy
-                print*, '  neighbour_im_xy: '
+                write(log_output_unit,*) 'Image: ', this_image()
+                write(log_output_unit,*) '  ti_xy: ', comms%ti_xy
+                write(log_output_unit,*) '  neighbour_im_xy: '
                 do i = 1, 4
                     tmp = comms%neighbour_im_xy(i,1:2)
-                    print*, '   (coindex:)', tmp
+                    write(log_output_unit,*) '   (coindex:)', tmp
                 end do
-                print*, '  neighbour_images_full: ', comms%neighbour_images
-                print*, '  neighbour_images: ', &
+                write(log_output_unit,*) '  neighbour_images_full: ', comms%neighbour_images
+                write(log_output_unit,*) '  neighbour_images: ', &
                     comms%neighbour_images(comms%neighbour_images_keep)
-                print*, '  halo_pad: ', comms%halo_pad
+                write(log_output_unit,*) '  halo_pad: ', comms%halo_pad
             end if
             sync all
         end do
@@ -171,12 +182,11 @@ module coarray_utilities_mod
     !
     subroutine corank_from_image(dims, image_ind, corank)
         integer(ip), intent(in) :: dims(2), image_ind
-        integer(4), intent(out) :: corank(2)
+        integer(ocaIP), intent(out) :: corank(2)
 
         ! Deliberate integer division here
         corank(2) = (image_ind - 1)/dims(1) + 1
         corank(1) = image_ind - (corank(2) - 1)*dims(1)
-
 
     end subroutine 
 
@@ -189,8 +199,8 @@ module coarray_utilities_mod
     !
     subroutine image_from_corank(dims, corank, image_ind)
         integer(ip), intent(in) :: dims(2)
-        integer(4), intent(in) :: corank(2)
-        integer(4), intent(out) :: image_ind
+        integer(ocaIP), intent(in) :: corank(2)
+        integer(ocaIP), intent(out) :: image_ind
 
         if( (any(corank > dims)).OR.(any(corank < 1))) then
             image_ind = 0
@@ -233,7 +243,7 @@ module coarray_utilities_mod
         integer(ip), intent(out):: local_nx(2)
         logical, intent(in), optional :: ew_periodic, ns_periodic
         
-        integer(4) :: offset(2), i, counter, tmp(2), nvar, halo_width, ti
+        integer(ocaIP) :: offset(2), i, counter, tmp(2), nvar, halo_width, ti
         integer(ip) :: interior_nx(2)
         real(dp):: dx(2)
         real(dp), allocatable :: dummy_array(:)
@@ -273,7 +283,7 @@ module coarray_utilities_mod
         halo_width = 2
     
         if(product(co_size_xy) /= num_images()) then
-            print*, 'Error: Need to split domain into number of coarray images'
+            write(log_output_unit,*) 'Error: Need to split domain into number of coarray images'
             sync all
             error stop
         end if
@@ -313,17 +323,17 @@ module coarray_utilities_mod
 
                 
         else
-            print*, 'Error: domain shape does not evenly divide into coarray partition'
+            write(log_output_unit,*) 'Error: domain shape does not evenly divide into coarray partition'
             error stop
         end if
 
         !!! Get coarray images of neighbours
         !comms%ti_xy = this_image(dummy_buffer) !
         !ti = this_image()
-        !!!print*, 'before: ', ti, comms%ti_xy , '     ', co_size_xy
+        !!!write(log_output_unit,*) 'before: ', ti, comms%ti_xy , '     ', co_size_xy
         !! Alternative
         call corank_from_image(co_size_xy, this_image(), comms%ti_xy)
-        !print*, '    after: ', ti, comms%ti_xy
+        !write(log_output_unit,*) '    after: ', ti, comms%ti_xy
         
         ! Lower-left of this sub-domain, if there is no halo
         ! This is corrected to account for the halo below
@@ -368,16 +378,16 @@ module coarray_utilities_mod
 
             comms%neighbour_im_xy(i,1:2) = comms%ti_xy + offset 
 
-            !if(this_image() == 1) print*, i, comms%ti_xy, offset, ew_periodic_, ns_periodic_, &
+            !if(this_image() == 1) write(log_output_unit,*) i, comms%ti_xy, offset, ew_periodic_, ns_periodic_, &
             !    comms%neighbour_im_xy(i,1:2), co_size_xy
 
             ! This 'copy' is required to avoid the rank being 2 in the second argument of 'image_index',
             ! which causes an error
             tmp = comms%neighbour_im_xy(i,1:2)
             !comms%neighbour_images(i) = image_index(dummy_buffer, tmp)
-            !print*, 'before: ', this_image(), comms%neighbour_images(i), '    ', co_size_xy
+            !write(log_output_unit,*) 'before: ', this_image(), comms%neighbour_images(i), '    ', co_size_xy
             call image_from_corank(co_size_xy, tmp, comms%neighbour_images(i))
-            !print*, 'after: ', this_image(), comms%neighbour_images(i)
+            !write(log_output_unit,*) 'after: ', this_image(), comms%neighbour_images(i)
         end do
     
         ! Array with the indices of neighbour images we want to keep
@@ -642,6 +652,8 @@ module coarray_utilities_mod
 
         ! If COARRAY is not defined, then do nothing!
 #ifdef COARRAY
+        if(num_images() == 1) return       
+        if(all(comms%neighbour_images == 0)) return
 
         TIMER_START('to_buffer')
         ! Step 1
@@ -651,9 +663,9 @@ module coarray_utilities_mod
         TIMER_STOP('to_buffer')
         ! Need to have finshed the communication before we can procced to copy
         ! buffers into U
-        !print*, 'Pre sync', this_image(), ', ', comms%neighbour_images(comms%neighbour_images_keep)
+        !write(log_output_unit,*) 'Pre sync', this_image(), ', ', comms%neighbour_images(comms%neighbour_images_keep)
         if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
-        !print*, 'Post sync'
+        !write(log_output_unit,*) 'Post sync'
         !sync all
 
         TIMER_START('from_buffer')
@@ -683,12 +695,12 @@ module coarray_utilities_mod
         real(dp):: local_ll(2), local_dx(2), local_lw(2)
         real(dp):: global_ll(2), global_dx(2), global_lw(2)
         integer(ip):: local_nx(2), global_nx(2)
-        integer(4):: coarray_size(2) 
+        integer(ocaIP):: coarray_size(2) 
         integer(ip):: i, j, ti, ni, ncomms
         real(dp):: error_tol
 
 #ifndef COARRAY
-        print*, '    (skipped as code was not compiled with -DCOARRAY)'
+        write(log_output_unit,*) '    (skipped as code was not compiled with -DCOARRAY)'
 #else
 
         ! Choose coarray layout. Might not be the most time efficient, but good to test more
@@ -753,22 +765,22 @@ module coarray_utilities_mod
             ! Might need to increase this to e.g. 2.0e-05 when using single precision with high core counts
 
             if(all(abs(U) <= error_tol)) then
-                !print*, 'PASS image', this_image(), maxval(abs(U)), local_ll + comms%halo_pad([4,3])*local_dx, &
+                !write(log_output_unit,*) 'PASS image', this_image(), maxval(abs(U)), local_ll + comms%halo_pad([4,3])*local_dx, &
                 !    local_ll + local_lw - comms%halo_pad([2,1])*local_dx, ncomms
             else
-                print*, 'FAIL image', this_image(), maxval(abs(U)), local_ll + comms%halo_pad([4,3])*local_dx, &
+                write(log_output_unit,*) 'FAIL image', this_image(), maxval(abs(U)), local_ll + comms%halo_pad([4,3])*local_dx, &
                     local_ll + local_lw - comms%halo_pad([2,1])*local_dx, ncomms
                 error stop
             end if
         end do
 
-        print*, 'PASS'
+        write(log_output_unit,*) 'PASS'
 
 #ifdef POINT2POINT
         call deallocate_p2p_comms
 #endif
 
-#ifdef TIMERLOCAL
+#ifdef TIMER_PARTITIONED_COMMS
         if(this_image() == 1) then
             call timer%print()
         end if

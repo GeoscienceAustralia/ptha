@@ -1,25 +1,22 @@
-# SOURCE CODE DIRECTORY relative to the current directory
-SRC=../../../src
-include $(SRC)/src_standard_compiler_var
+# Source code location
+SWALS_SRC := ../../../src
 
+include $(SWALS_SRC)/src_standard_compiler_var
 
-#FCCOMP=caf
-FCCOMP=gfortran
-#FCCOMP=/home/gareth/Code_Experiments/opencoarrays/opencoarrays/install_prerequisites/gcc-5.3.0-installation/bin/gfortran
-
-FORTRAN=$(FCCOMP) -fopenmp -Ofast -fall-intrinsics -march=native -mtune=native -cpp -DTIMER #-DNONETCDF
-
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := BP2_testcases
 # Clean up
-clean: BP2_testcases
+clean: $(mymodel)
 	rm *.o *.mod
-
 # Link everything
-BP2_testcases: libSWE.a BP2_testcases.o
-	$(FORTRAN) BP2_testcases.o -o $@ libSWE.a $(GDAL_LIBS) $(NETCDF_FLIBS) 
-
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@ $(SWALS_LIBRARY) $(SWALS_FC_LIBS)
 # Compile the driver script
-BP2_testcases.o: BP2_testcases.f90
-	$(FORTRAN) -c $^ 
-
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
 # Build main source
-include $(SRC)/src_make_commands
+include $(SWALS_SRC)/src_make_commands
+

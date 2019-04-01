@@ -2,7 +2,7 @@ module timer_mod
     !
     ! Module to time parts of code
     !
-    use global_mod, only: dp, charlen, ip
+    use global_mod, only: dp, ip
 #ifdef COARRAY
     ! Assumes that mpi is available with coarrays, which should
     ! be the case e.g. for opencoarrays
@@ -17,13 +17,15 @@ module timer_mod
     implicit none
 
     integer, parameter, private:: max_timers = 100
+    integer, parameter, private:: charlen_timer_names=128
+    real(dp), parameter :: unstarted = -HUGE(1.0_dp)
 
     private
     public:: timer_type
 
     type:: timer_type
-        character(len=charlen) :: names(max_timers)
-        real(C_DOUBLE):: start(max_timers) = 0.0_dp
+        character(len=charlen_timer_names) :: names(max_timers)
+        real(C_DOUBLE):: start(max_timers) = unstarted
         real(C_DOUBLE):: total(max_timers) = 0.0_dp
         integer:: ntimers = 0
         integer:: last_index = 1
@@ -68,7 +70,7 @@ contains
         class(timer_type), intent(inout):: timer
         character(len=*), intent(in):: tname
 
-        integer:: tname_index, i
+        integer:: tname_index
 
         call find_index(timer, tname, tname_index)
 
@@ -95,8 +97,8 @@ contains
         class(timer_type), intent(inout):: timer
         character(len=*), intent(in):: tname
 
-        integer tname_index, i
-        real(C_DOUBLE) current_time
+        integer:: tname_index
+        real(C_DOUBLE):: current_time
 
         ! Get the current time 
 #ifdef COARRAY
@@ -115,12 +117,12 @@ contains
             stop 'No timer with this name'
         end if
 
-        if(timer%start(tname_index) == 0.0_C_DOUBLE) then
+        if(timer%start(tname_index) == unstarted) then
             stop 'Timer not started'
         end if
        
         timer%total(tname_index) = timer%total(tname_index) + (current_time - timer%start(tname_index))
-        timer%start(tname_index) = 0.0_C_DOUBLE
+        timer%start(tname_index) = unstarted
 
     end subroutine
 

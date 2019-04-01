@@ -8,8 +8,7 @@
         integer(ip) :: i, buffer_label_int, si, ei
 
         if(.not. have_allocated_p2p_comms) then
-            print*, 'Need to call allocate_p2p_comms before trying to receive'
-            error stop
+            error stop 'Need to call allocate_p2p_comms before trying to receive'
         end if 
 
         ! If there is nothing to receive, exit
@@ -28,17 +27,17 @@
 
         ! Ensure there was a match
         if(buffer_label_int < 1) then
-            print*, 'unrecognized buffer_label :', buffer_label
-            error stop
+            !print*, 'unrecognized buffer_label :', buffer_label
+            error stop 'unrecognized buffer_label '
         end if
        
         ! Check the array sizes agree 
         if(size(recv_array) /= recv_size(buffer_label_int)) then
-            print*, 'size(recv_array) = ', size(recv_array), &
-                ' does not match buffer size (', &
-                recv_size(buffer_label_int), ') for ', &
-                ' comms ', buffer_label, ' on image ', this_image_local
-            error stop
+            !print*, 'size(recv_array) = ', size(recv_array), &
+            !    ' does not match buffer size (', &
+            !    recv_size(buffer_label_int), ') for ', &
+            !    ' comms ', buffer_label, ' on image ', this_image_local
+            error stop 'size of recv_array does not match size of send_array'
         end if
 
         !Start/end indices

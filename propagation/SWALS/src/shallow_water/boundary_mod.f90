@@ -1,5 +1,5 @@
 
-MODULE boundary_mod
+module boundary_mod
     !
     ! Here we define subroutines that update the exterior boundaries
     ! of the domain.
@@ -12,14 +12,14 @@ MODULE boundary_mod
     ! can create the boundary_subroutine in its own module, and put the
     ! required data in the same module.
     !
-    USE global_mod, only: dp, ip, charlen, gravity, minimum_allowed_depth, wall_elevation
-    USE domain_mod, only: domain_type, STG, UH, VH, ELV
+    use global_mod, only: dp, ip, charlen, gravity, minimum_allowed_depth, wall_elevation
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
 
-    IMPLICIT NONE
+    implicit none
 
-    REAL(dp), PARAMETER, PRIVATE :: HALF_dp = 0.5_dp, ZERO_dp = 0.0_dp, ONE_dp=1.0_dp
+    real(dp), parameter, private :: HALF_dp = 0.5_dp, ZERO_dp = 0.0_dp, ONE_dp=1.0_dp
 
-    CONTAINS
+    contains
 
     !
     ! Simple transmissive boundary condition.
@@ -38,14 +38,16 @@ MODULE boundary_mod
     !
     ! Considering the above, use with caution.
     !
-    SUBROUTINE transmissive_boundary(domain)
-        TYPE(domain_type), INTENT(INOUT):: domain
-        INTEGER(ip):: i, j, k
+    subroutine transmissive_boundary(domain)
+
+        type(domain_type), intent(inout):: domain
+
+        integer(ip):: i, j, k
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
-        DO k = 1, 4
-            DO j = 1, domain%nx(2)
+        do k = 1, 4
+            do j = 1, domain%nx(2)
                 ! Make transmissive boundary conditions
                 ! For stability it seems important that the elevation is equal to
                 ! the neighbour elevation [likely because this makes the current
@@ -55,29 +57,29 @@ MODULE boundary_mod
                 if(domain%boundary_exterior(4)) domain%U(1,j,k) = domain%U(2,j,k) !- domain%U(3,j,k)
                 ! East boundary
                 if(domain%boundary_exterior(2)) domain%U(domain%nx(1),j,k) = domain%U(domain%nx(1)-1,j,k) !- domain%U(domain%nx(1)-2,j,k)
-            END DO
-        END DO
+            end do
+        end do
         !$OMP END DO
 
         !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
-        DO k = 1, 4
-            DO i = 1, domain%nx(1)
+        do k = 1, 4
+            do i = 1, domain%nx(1)
                 ! South boundary
                 if(domain%boundary_exterior(3)) domain%U(i,1,k) =  domain%U(i,2,k) !- domain%U(i, 3, k)
                 ! North boundary
                 if(domain%boundary_exterior(1)) domain%U(i,domain%nx(2),k) = domain%U(i,domain%nx(2)-1,k) !- domain%U(i, domain%nx(2) - 2, k)
-            END DO
-        END DO
+            end do
+        end do
         !$OMP END DO
         !$OMP END PARALLEL
 
-    END SUBROUTINE
+    end subroutine
 
     !
     ! Apply the boundary function domain%boundary_function at the boundaries.
-    ! The latter function must take as input (domain, time, x, y) and 
+    ! The latter function must take as input (domain, time, i, j) and 
     ! return a vector of length 4 giving the [stage,uh,vh,elev] values at
-    ! boundary location x,y at time t.
+    ! boundary location domain%x(i),domain%y(j) at time t.
     !
     ! If a nonlinear solver is used, then the normal velocity is set equal
     ! to the normal velocity inside the domain, and the transverse velocity
@@ -86,18 +88,20 @@ MODULE boundary_mod
     ! If the linear solver is used, ony stage and elevation are set, since
     ! with the staggered grid, that is enough to compute the interior UH/VH
     !
-    SUBROUTINE boundary_stage_transmissive_normal_momentum(domain)
-        TYPE(domain_type), INTENT(INOUT):: domain
-        INTEGER(ip):: i, j, k
-        REAL(dp):: bc_values(4)
+    subroutine boundary_stage_transmissive_normal_momentum(domain)
+
+        type(domain_type), intent(inout):: domain
+
+        integer(ip):: i, j, k
+        real(dp):: bc_values(4)
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         !$OMP DO SCHEDULE(STATIC)
-        DO j = 1, domain%nx(2)
+        do j = 1, domain%nx(2)
             ! West boundary
             if(domain%boundary_exterior(4)) then
                 i = 1
-                bc_values = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
+                bc_values = domain%boundary_function(domain, domain%time, i, j)
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
@@ -110,7 +114,7 @@ MODULE boundary_mod
             ! East boundary
             if(domain%boundary_exterior(2)) then
                 i = domain%nx(1)
-                bc_values = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
+                bc_values = domain%boundary_function(domain, domain%time, i, j)
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
@@ -120,15 +124,15 @@ MODULE boundary_mod
                 end if
             end if
 
-        END DO
+        end do
         !$OMP END DO
 
         !$OMP DO SCHEDULE(STATIC)
-        DO i = 1, domain%nx(1)
+        do i = 1, domain%nx(1)
             ! South boundary
             if(domain%boundary_exterior(3)) then
                 j = 1
-                bc_values = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
+                bc_values = domain%boundary_function(domain, domain%time, i, j)
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
@@ -141,7 +145,7 @@ MODULE boundary_mod
             ! North boundary
             if(domain%boundary_exterior(1)) then
                 j = domain%nx(2)
-                bc_values = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
+                bc_values = domain%boundary_function(domain, domain%time, i, j)
                 domain%U(i,j,STG) = bc_values(1)
                 domain%U(i,j,ELV) = bc_values(4)
                 !domain%U(i,j,2:3) = ZERO_dp
@@ -150,11 +154,189 @@ MODULE boundary_mod
                     domain%U(i,j,UH) = ZERO_dp
                 end if
             end if
-        END DO
+        end do
         !$OMP END DO
         !$OMP END PARALLEL
 
-    END SUBROUTINE
+    end subroutine
+    !
+    ! Apply the boundary function domain%boundary_function at the boundaries.
+    ! The latter function must take as input (domain, time, i, j) and 
+    ! return a vector of length 4 giving the [stage,uh,vh,elev] values at
+    ! boundary location domain%x(i),domain%y(j) at time t.
+    !
+    ! If a nonlinear solver is used, then the velocity is set equal
+    ! to the velocity inside the domain
+    !
+    ! If the linear solver is used, ony stage and elevation are set, since
+    ! with the staggered grid, that is enough to compute the interior UH/VH
+    !
+    subroutine boundary_stage_transmissive_momentum(domain)
+
+        type(domain_type), intent(inout):: domain
+
+        integer(ip):: i, j, k
+        real(dp):: bc_values(4)
+
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+        !$OMP DO SCHEDULE(STATIC)
+        do j = 1, domain%nx(2)
+            ! West boundary
+            if(domain%boundary_exterior(4)) then
+                i = 1
+                bc_values = domain%boundary_function(domain, domain%time, i, j)
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
+                !domain%U(i,j,2:3) = ZERO_dp
+                if(domain%timestepping_method /= 'linear') then
+                    domain%U(i,j,UH) = domain%U(i+1,j,UH) !2.0_dp * domain%U(i+1,j,2) - domain%U(i+2,j,2)
+                    domain%U(i,j,VH) = domain%U(i+1,j,VH)
+                end if
+            end if
+
+            ! East boundary
+            if(domain%boundary_exterior(2)) then
+                i = domain%nx(1)
+                bc_values = domain%boundary_function(domain, domain%time, i, j)
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
+                !domain%U(i,j,2:3) = ZERO_dp
+                if(domain%timestepping_method /= 'linear') then
+                    domain%U(i,j,UH) = domain%U(i-1,j,UH) !2.0_dp * domain%U(i-1,j,2) - domain%U(i-2, j, 2)
+                    domain%U(i,j,VH) = domain%U(i-1,j,VH)
+                end if
+            end if
+
+        end do
+        !$OMP END DO
+
+        !$OMP DO SCHEDULE(STATIC)
+        do i = 1, domain%nx(1)
+            ! South boundary
+            if(domain%boundary_exterior(3)) then
+                j = 1
+                bc_values = domain%boundary_function(domain, domain%time, i, j)
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
+                !domain%U(i,j,2:3) = ZERO_dp
+                if(domain%timestepping_method /= 'linear') then
+                    domain%U(i,j,VH) = domain%U(i,j+1,VH) !2.0_dp * domain%U(i,j+1,3) - domain%U(i,j+2,3)
+                    domain%U(i,j,UH) = domain%U(i,j+1,UH)
+                end if
+            end if
+
+            ! North boundary
+            if(domain%boundary_exterior(1)) then
+                j = domain%nx(2)
+                bc_values = domain%boundary_function(domain, domain%time, i, j)
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
+                !domain%U(i,j,2:3) = ZERO_dp
+                if(domain%timestepping_method /= 'linear') then
+                    domain%U(i,j,VH) = domain%U(i,j-1,VH) !2.0_dp * domain%U(i,j-1,3) - domain%U(i,j-2,3)
+                    domain%U(i,j,UH) = domain%U(i,j-1,UH)
+                end if
+            end if
+        end do
+        !$OMP END DO
+        !$OMP END PARALLEL
+
+    end subroutine
+
+
+    !
+    !
+    !subroutine boundary_stage_transmissive_momentum_sponge(domain)
+
+    !    type(domain_type), intent(inout):: domain
+
+    !    integer(ip):: i, j, k
+    !    real(dp):: bc_values(4)
+
+    !    !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+    !    !$OMP DO SCHEDULE(STATIC)
+    !    do j = 1, domain%nx(2)
+    !        ! West boundary
+    !        if(domain%boundary_exterior(4)) then
+    !            i = 1
+    !            bc_values = domain%boundary_function(domain, domain%time, i, j)
+    !            domain%U(i,j,STG) = bc_values(STG)
+    !            domain%U(i,j,ELV) = bc_values(ELV)
+    !            !domain%U(i,j,2:3) = ZERO_dp
+    !            if(domain%timestepping_method /= 'linear') then
+    !                domain%U(i,j,UH) = domain%U(i+1,j,UH) !2.0_dp * domain%U(i+1,j,2) - domain%U(i+2,j,2)
+    !                domain%U(i,j,VH) = domain%U(i+1,j,VH)
+    !            end if
+    !            ! Sponge type thing
+    !            i = 2
+    !            if(domain%U(i,j,STG) > bc_values(ELV) .and. bc_values(STG) > domain%U(i,j,ELV)) then
+    !                domain%U(i,j,STG) = 0.5_dp * (domain%U(i,j,STG) + bc_values(STG))
+    !            end if
+    !        end if
+
+    !        ! East boundary
+    !        if(domain%boundary_exterior(2)) then
+    !            i = domain%nx(1)
+    !            bc_values = domain%boundary_function(domain, domain%time, i, j)
+    !            domain%U(i,j,STG) = bc_values(STG)
+    !            domain%U(i,j,ELV) = bc_values(ELV)
+    !            !domain%U(i,j,2:3) = ZERO_dp
+    !            if(domain%timestepping_method /= 'linear') then
+    !                domain%U(i,j,UH) = domain%U(i-1,j,UH) !2.0_dp * domain%U(i-1,j,2) - domain%U(i-2, j, 2)
+    !                domain%U(i,j,VH) = domain%U(i-1,j,VH)
+    !            end if
+    !            ! Sponge type thing
+    !            i = domain%nx(1) - 1
+    !            if(domain%U(i,j,STG) > bc_values(ELV) .and. bc_values(STG) > domain%U(i,j,ELV)) then
+    !                domain%U(i,j,STG) = 0.5_dp * (domain%U(i,j,STG) + bc_values(STG))
+    !            end if
+    !        end if
+    !    end do
+    !    !$OMP END DO
+
+    !    !$OMP DO SCHEDULE(STATIC)
+    !    do i = 1, domain%nx(1)
+    !        ! South boundary
+    !        if(domain%boundary_exterior(3)) then
+    !            j = 1
+    !            bc_values = domain%boundary_function(domain, domain%time, i, j)
+    !            domain%U(i,j,STG) = bc_values(STG)
+    !            domain%U(i,j,ELV) = bc_values(ELV)
+    !            !domain%U(i,j,2:3) = ZERO_dp
+    !            if(domain%timestepping_method /= 'linear') then
+    !                domain%U(i,j,VH) = domain%U(i,j+1,VH) !2.0_dp * domain%U(i,j+1,3) - domain%U(i,j+2,3)
+    !                domain%U(i,j,UH) = domain%U(i,j+1,UH)
+    !            end if
+
+    !            ! Sponge type thing
+    !            j = 2
+    !            if(domain%U(i,j,STG) > bc_values(ELV) .and. bc_values(STG) > domain%U(i,j,ELV)) then
+    !                domain%U(i,j,STG) = 0.5_dp * (domain%U(i,j,STG) + bc_values(STG))
+    !            end if
+    !        end if
+
+    !        ! North boundary
+    !        if(domain%boundary_exterior(1)) then
+    !            j = domain%nx(2)
+    !            bc_values = domain%boundary_function(domain, domain%time, i, j)
+    !            domain%U(i,j,STG) = bc_values(STG)
+    !            domain%U(i,j,ELV) = bc_values(ELV)
+    !            !domain%U(i,j,2:3) = ZERO_dp
+    !            if(domain%timestepping_method /= 'linear') then
+    !                domain%U(i,j,VH) = domain%U(i,j-1,VH) !2.0_dp * domain%U(i,j-1,3) - domain%U(i,j-2,3)
+    !                domain%U(i,j,UH) = domain%U(i,j-1,UH)
+    !            end if
+    !            ! Sponge type thing
+    !            j = domain%nx(2) - 1
+    !            if(domain%U(i,j,STG) > bc_values(ELV) .and. bc_values(STG) > domain%U(i,j,ELV)) then
+    !                domain%U(i,j,STG) = 0.5_dp * (domain%U(i,j,STG) + bc_values(STG))
+    !            end if
+    !        end if
+    !    end do
+    !    !$OMP END DO
+    !    !$OMP END PARALLEL
+
+    !end subroutine
    
     !
     ! Flather type boundary condition.
@@ -166,17 +348,19 @@ MODULE boundary_mod
     ! in the nonlinear regime. 
     ! This seems consistent with the theory outlined by Blayo and Debreu (2005)
     ! 
-    SUBROUTINE flather_boundary(domain)
-        TYPE(domain_type), INTENT(INOUT):: domain
-        INTEGER(ip):: i, j, k
-        REAL(dp) :: sqrt_g_on_di, w1, w2, w3, depth_inside, depth_inside_inv
-        REAL(dp) :: stage_outside, u_outside, v_outside, depth_outside
-        REAL(dp) :: boundary_temp(4)
+    subroutine flather_boundary(domain)
+
+        type(domain_type), intent(inout):: domain
+
+        integer(ip):: i, j, k
+        real(dp) :: sqrt_g_on_di, w1, w2, w3, depth_inside, depth_inside_inv
+        real(dp) :: stage_outside, u_outside, v_outside, depth_outside
+        real(dp) :: boundary_temp(4)
 
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         !$OMP DO SCHEDULE(STATIC)
-        DO j = 1, domain%nx(2)
+        do j = 1, domain%nx(2)
 
             ! West edge
             if(domain%boundary_exterior(4)) then
@@ -192,7 +376,7 @@ MODULE boundary_mod
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
                 else
                     ! use the boundary function
-                    boundary_temp = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
+                    boundary_temp = domain%boundary_function(domain, domain%time, i, j)
                     stage_outside = boundary_temp(1)
                     depth_outside = boundary_temp(1) - boundary_temp(4)
                     if(depth_outside  <= minimum_allowed_depth) then
@@ -241,7 +425,7 @@ MODULE boundary_mod
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
                 else
                     ! use the boundary function
-                    boundary_temp = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
+                    boundary_temp = domain%boundary_function(domain, domain%time, i, j)
                     stage_outside = boundary_temp(1)
                     depth_outside = boundary_temp(1) - boundary_temp(4)
                     if(depth_outside  <= minimum_allowed_depth) then
@@ -275,11 +459,11 @@ MODULE boundary_mod
                     domain%U(i,j,VH) = ZERO_dp
                 endif
             end if
-        END DO
+        end do
         !$OMP END DO
         
         !$OMP DO SCHEDULE(STATIC)
-        DO i = 1, domain%nx(1)
+        do i = 1, domain%nx(1)
             ! South edge
             if(domain%boundary_exterior(3)) then
                 j = 1
@@ -294,7 +478,7 @@ MODULE boundary_mod
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
                 else
                     ! use the boundary function
-                    boundary_temp = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
+                    boundary_temp = domain%boundary_function(domain, domain%time, i, j)
                     stage_outside = boundary_temp(1)
                     depth_outside = boundary_temp(1) - boundary_temp(4)
                     if(depth_outside  <= minimum_allowed_depth) then
@@ -343,7 +527,7 @@ MODULE boundary_mod
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
                 else
                     ! use the boundary function
-                    boundary_temp = domain%boundary_function(domain, domain%time, domain%x(i), domain%y(j))
+                    boundary_temp = domain%boundary_function(domain, domain%time, i, j)
                     stage_outside = boundary_temp(1)
                     depth_outside = boundary_temp(1) - boundary_temp(4)
                     if(depth_outside  <= minimum_allowed_depth) then
@@ -378,26 +562,28 @@ MODULE boundary_mod
                 endif
             endif
 
-        END DO
+        end do
         !$OMP END DO
 
         !$OMP END PARALLEL
-    END SUBROUTINE
+    end subroutine
 
     !
     ! Impose Periodic EW boundaries, and reflective NS boundaries
     ! This can be useful in global scale tsunami models with poles
     ! cut off (although it would be better to use transmissive at north 
     !
-    SUBROUTINE periodic_EW_reflective_NS(domain)
-        TYPE(domain_type), INTENT(INOUT) :: domain
-        INTEGER(ip):: j
+    subroutine periodic_EW_reflective_NS(domain)
+
+        type(domain_type), intent(inout) :: domain
+
+        integer(ip):: j
 
         ! Set east boundary from west boundary, and vice-versa
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         !$OMP DO SCHEDULE(STATIC)
-        DO j = 1, domain%nx(2)
+        do j = 1, domain%nx(2)
             if(domain%boundary_exterior(4)) then
                 domain%U(1, j, :) = domain%U(domain%nx(1)-3, j, :)
                 domain%U(2, j, :) = domain%U(domain%nx(1)-2, j, :)
@@ -421,8 +607,8 @@ MODULE boundary_mod
                 end if
             endif
 
-        END DO    
+        end do    
         !$OMP END DO
         !$OMP END PARALLEL
-    END SUBROUTINE
-END MODULE
+    end subroutine
+end module

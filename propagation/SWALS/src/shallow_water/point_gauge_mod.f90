@@ -6,6 +6,7 @@ module point_gauge_mod
     use file_io_mod, only: read_csv_into_array
     use stop_mod, only: generic_stop
     use which_mod, only: which 
+    use logging_mod, only: log_output_unit
 
     ! point_gauge output can be either:
     !   A) netcdf, or 
@@ -15,6 +16,7 @@ module point_gauge_mod
     ! compiler having been used to compile netcdf vs the program)
 #ifndef NONETCDF
     use netcdf
+    use netcdf_util, only: check
 #endif
 
     implicit none
@@ -41,11 +43,11 @@ module point_gauge_mod
 
 #ifdef NONETCDF
         !! Variables for writing binary/ascii output
-        character(charlen):: static_output_file, time_series_output_file, gauge_metadata_file
+        character(len=charlen):: static_output_file, time_series_output_file, gauge_metadata_file
         integer(ip):: static_output_unit, time_series_output_unit, gauge_metadata_unit
 #else
         !! Variables for writing out to netcdf
-        character(charlen):: netcdf_gauge_output_file
+        character(len=charlen):: netcdf_gauge_output_file
         integer :: netcdf_gauge_output_file_ID 
         integer(ip) :: netcdf_time_var_ID
         integer(ip), allocatable:: time_series_ncdf_iVar_ID(:)
@@ -111,12 +113,18 @@ module point_gauge_mod
             
             ! At the moment the space dimension must be 2 
             if (point_gauges%space_dim /= size(xy_coordinates(:,1))) then
-                print*, 'gauge xy dimension is not equal ', &
+                write(log_output_unit,*) 'gauge xy dimension is not equal ', &
                     point_gauges%space_dim
             end if
 
+            ! Make space for all gauges. Depending on optional arguments passed, this
+            ! may be updated again below
+            all_gauges = .TRUE.
+            n_gauges = size(xy_coordinates(1,:))
+
             if(present(bounding_box)) then
                 ! It is possible that not all the gauges will be in the bounding box
+                ! Identify those which are inside
                 all_gauges = .FALSE.
 
                 allocate(points_inside(size(xy_coordinates(1,:))))
@@ -136,11 +144,6 @@ module point_gauge_mod
                 else
                     call which(points_inside, indices_inside)
                 end if
-
-            else
-                ! Make space for all gauges
-                all_gauges = .TRUE.
-                n_gauges = size(xy_coordinates(1,:))
 
             end if
 
@@ -202,7 +205,7 @@ module point_gauge_mod
         if(point_gauges%n_gauges == 0) return
 
         if(size(var_inds) /= size(time_series_values(1,:))) then
-            print*, 'Dimension mismatch between time_series_values and var_inds'
+            write(log_output_unit,*) 'Dimension mismatch between time_series_values and var_inds'
             call generic_stop()
         end if
 
@@ -290,7 +293,7 @@ module point_gauge_mod
         character(charlen), optional, intent(in):: attribute_names(:), attribute_values(:)
     
 
-        integer(ip):: n_gauges, i, j, varind, xind, yind
+        integer(ip):: n_gauges, i
 
         n_gauges = point_gauges%n_gauges
 
@@ -307,7 +310,7 @@ module point_gauge_mod
             ! Check it is inside the domain
             if((any(point_gauges%site_index(:,i) < 1_ip).or. &
                 any(point_gauges%site_index(:,i) > domain_nx))) then
-                print*, 'Gauge coordinate ', point_gauges%xy(:,i), &
+                write(log_output_unit,*) 'Gauge coordinate ', point_gauges%xy(:,i), &
                     ' is outside the domain'
                 call generic_stop()
             end if
@@ -369,18 +372,6 @@ module point_gauge_mod
     !
 #ifndef NONETCDF
     !
-    ! Convenience subroutine for netcdf error handling
-    !
-    subroutine check(error_status)
-        integer, intent(in) :: error_status
-     
-        if(error_status /= nf90_noerr) then
-          print *, trim(nf90_strerror(error_status))
-          call generic_stop()
-        end if
-    end subroutine
-
-    !
     ! Create the gauge netcdf file and populate with key header information
     !
     ! @param point_gauges point_gauge_type
@@ -406,8 +397,7 @@ module point_gauge_mod
         ! Up to 32 characters for site names (shorter than usual)
         ! Could set this based on input string name lengths 
         integer:: iLenStringName = 32
-        integer(ip):: i, j, k
-        character(charlen):: err_mess
+        integer(ip):: i, j
 
         point_gauges%netcdf_gauge_output_file = netcdf_gauge_output_file
 
@@ -557,6 +547,12 @@ module point_gauge_mod
             end do
         end if
 
+#ifdef SRC_GIT_VERSION
+        ! Add the git revision number to the file
+        call check(nf90_put_att(iNcid, nf90_global, 'git_revision_number',& ! Continuation to reduce chance of > 132 char
+SRC_GIT_VERSION ))
+#endif
+
         ! Finish definitions so writing can begin
         call check(nf90_enddef(iNcid))
                 
@@ -603,14 +599,14 @@ module point_gauge_mod
     end subroutine
 
     !
-    ! Convenienve routine for testing
+    ! Convenience routine for testing
     !
     subroutine assert_test(test)
         logical, intent(in):: test
         if(test) then
-            print*, 'PASS'
+            write(log_output_unit,*) 'PASS'
         else
-            print*, 'FAIL'
+            write(log_output_unit,*) 'FAIL'
         end if
     end subroutine
 
@@ -619,7 +615,7 @@ module point_gauge_mod
         type(point_gauge_type):: point_gauges
         real(dp):: domain_ll(2), domain_dx(2)
         integer(ip):: domain_nx(2), time_series_var_indices(3), static_var_indices(1)
-        integer(dp):: domain_nvar
+        integer(ip):: domain_nvar
         real(dp):: xy_coords(2,6)
         real(dp), allocatable:: domain_U(:,:,:)
         real(dp):: gauge_ids(6)

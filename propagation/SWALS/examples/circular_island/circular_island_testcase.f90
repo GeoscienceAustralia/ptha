@@ -7,35 +7,37 @@
 
 
 ! Module used to define initial and boundary conditions
-MODULE local_routines 
+module local_routines 
 
-    USE global_mod, only: dp, ip, charlen, wall_elevation, pi, gravity
-    USE domain_mod, only: domain_type, STG, UH, VH, ELV
-    USE read_raster_mod, only: read_gdal_raster
-    USE which_mod, only: which
-    USE file_io_mod, only: count_file_lines
-    USE linear_interpolator_mod, only: linear_interpolator_type
-    IMPLICIT NONE
+    use global_mod, only: dp, ip, charlen, wall_elevation, pi, gravity
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
+    use read_raster_mod, only: read_gdal_raster
+    use which_mod, only: which
+    use file_io_mod, only: count_file_lines
+    use linear_interpolator_mod, only: linear_interpolator_type
+    implicit none
 
     ! Hold some data used by the boundary condition. We can set this from
     ! inside the main program.
-    TYPE :: boundary_information_type
-        REAL(dp) :: offshore_elev
-        REAL(dp) :: boundary_wave_period
-    END TYPE
+    type :: boundary_information_type
+        real(dp) :: offshore_elev
+        real(dp) :: boundary_wave_period
+    end type
 
     ! The main program will modify this type to set up the boundary condition
-    TYPE(boundary_information_type), PUBLIC :: boundary_information
+    type(boundary_information_type), public :: boundary_information
 
-    CONTAINS 
+    contains 
 
     !
     ! Make a function to evaluate the boundary at the domain. We will use
     ! this in conjunction with a flather type radiation condition
-    FUNCTION boundary_function(domain, t, x, y) result(stage_uh_vh_elev)
-        TYPE(domain_type), INTENT(IN):: domain
-        REAL(dp), INTENT(IN):: t, x, y
-        REAL(dp):: stage_uh_vh_elev(4), wavelength, waveperiod, theta
+    pure function boundary_function(domain, t, i, j) result(stage_uh_vh_elev)
+
+        type(domain_type), intent(in):: domain
+        real(dp), intent(in):: t
+        integer(ip), intent(in) :: i, j
+        real(dp):: stage_uh_vh_elev(4), wavelength, waveperiod, theta
 
 
         ! Specify a wave, corresponding to the far-field condition
@@ -43,110 +45,112 @@ MODULE local_routines
         wavelength = (sqrt(-gravity*boundary_information%offshore_elev)*waveperiod)
 
         ! Make the wave come from the east
-        theta = max((t/waveperiod  + (x-domain%x(domain%nx(1)))/wavelength), 0.0_dp)
+        theta = max((t/waveperiod  + (domain%x(i)-domain%x(domain%nx(1)))/wavelength), 0.0_dp)
         stage_uh_vh_elev(STG) = 1.0_dp * sin(2*pi* theta)
         stage_uh_vh_elev(UH) = -wavelength/waveperiod * stage_uh_vh_elev(STG)
         stage_uh_vh_elev(VH) = 0.0_dp
         stage_uh_vh_elev(ELV) = boundary_information%offshore_elev
 
-    END FUNCTION
+    end function
 
     ! Initial conditions + locations of gauges
-    SUBROUTINE set_initial_conditions_circular_island(domain, offshore_depth, island_radius, slope_radius)
-        CLASS(domain_type), TARGET, INTENT(INOUT):: domain
-        REAL(dp), INTENT(IN) :: offshore_depth, island_radius, slope_radius
+    subroutine set_initial_conditions_circular_island(domain, offshore_depth, island_radius, slope_radius)
+
+        class(domain_type), target, intent(inout):: domain
+        real(dp), intent(in) :: offshore_depth, island_radius, slope_radius
 
         ! Local variables
-        REAL(dp) :: x, y, elev, slope, radius, theta
-        REAL(dp), ALLOCATABLE :: gauges(:,:)
-        INTEGER(ip) :: i, j
+        real(dp) :: x, y, elev, slope, radius, theta
+        real(dp), allocatable :: gauges(:,:)
+        integer(ip) :: i, j
 
         ! Stage, UH, VH
         domain%U(:,:,[STG, UH, VH]) = 0.0_dp
 
         ! Set elevation
         slope = offshore_depth/(slope_radius - island_radius)
-        DO j = 1, domain%nx(2)
-            DO i = 1, domain%nx(1)
+        do j = 1, domain%nx(2)
+            do i = 1, domain%nx(1)
                 x = domain%x(i)
                 y = domain%y(j)
                 radius = sqrt(x*x + y*y)
                 elev = -offshore_depth + max(slope_radius - radius, 0.0_dp) *  slope
                 domain%U(i,j,ELV) = elev
-            END DO
-        END DO
+            end do
+        end do
         ! No negative depth!
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
 
         ! Set the tide gauges 
-        ALLOCATE(gauges(2, 150)) 
+        allocate(gauges(2, 150)) 
 
         ! Gauges around the island (slightly increase the radius to avoid points on dry cells)
-        DO i = 1, 50
+        do i = 1, 50
             theta = 2*pi/50.0_dp * (i-1)
             gauges(1:2,i) = (island_radius + domain%dx(1)) *  [cos(theta), sin(theta)]
-        END DO
+        end do
 
         ! Gauges a bit further offshore
-        DO i = 1, 50
+        do i = 1, 50
             theta = 2*pi/50.0_dp * (i-1)
             gauges(1:2, i+50) = (island_radius + (slope_radius - island_radius)/2.0_dp) *  [cos(theta), sin(theta)]
-        END DO
+        end do
 
         ! Gauges yet further offshore 
-        DO i = 1, 50
+        do i = 1, 50
             theta = 2*pi/50.0_dp * (i-1)
             gauges(1:2, i+100) = (slope_radius) *  [cos(theta), sin(theta)]
-        END DO
+        end do
 
         call domain%setup_point_gauges(gauges)
 
-    END SUBROUTINE
+    end subroutine
 
-END MODULE 
+end module 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-PROGRAM circular_island
-    USE global_mod, only: ip, dp, minimum_allowed_depth
-    USE domain_mod, only: domain_type
-    USE boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary
-    USE linear_interpolator_mod, only: linear_interpolator_type
-    USE local_routines
-    IMPLICIT NONE
+program circular_island
 
-    INTEGER(ip):: j
-    REAL(dp):: last_write_time, rain_rate
-    TYPE(domain_type):: domain
+    use global_mod, only: ip, dp, minimum_allowed_depth
+    use domain_mod, only: domain_type
+    use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary
+    use linear_interpolator_mod, only: linear_interpolator_type
+    use local_routines
+    implicit none
+
+    integer(ip):: j
+    real(dp):: last_write_time, rain_rate
+    type(domain_type):: domain
 
     ! Approx timestep between outputs
-    REAL(dp), PARAMETER :: approximate_writeout_frequency = 50.0_dp
-    REAL(dp), PARAMETER :: final_time = 200000.0_dp
+    real(dp), parameter :: approximate_writeout_frequency = 50.0_dp
+    real(dp), parameter :: final_time = 200000.0_dp
 
     ! Domain info
-    CHARACTER(charlen) :: timestepping_method = 'linear' 
+    character(charlen) :: timestepping_method = 'linear' !'rk2' !
     
     !! length/width
-    REAL(dp), DIMENSION(2) :: global_lw, global_ll
-    INTEGER(ip), DIMENSION(2) :: global_nx 
+    real(dp), dimension(2) :: global_lw, global_ll
+    integer(ip), dimension(2) :: global_nx 
 
     ! Local variables 
-    REAL(dp) :: timestep
-    REAL(dp) :: offshore_depth, island_radius, slope_radius, dx
-    REAL(dp) :: boundary_wave_period
-    CHARACTER(charlen):: test_case, bc_file
-    REAL(dp):: tank_bases(4), tank_slopes(4) 
-    INTEGER(ip) :: full_write_step
+    real(dp) :: timestep
+    real(dp) :: offshore_depth, island_radius, slope_radius, dx
+    real(dp) :: boundary_wave_period
+    character(charlen):: test_case, bc_file
+    real(dp):: tank_bases(4), tank_slopes(4) 
+    integer(ip) :: full_write_step
 
     ! Write the stage raster time-series less often than we write at gauges, to avoid
     ! overly large files. 
-    INTEGER(ip), PARAMETER :: frequency_full_write_steps = 60
-    LOGICAL, PARAMETER :: never_write_grid_time_slices = .true.
+    integer(ip), parameter :: frequency_full_write_steps = 60
+    logical, parameter :: never_write_grid_time_slices = .false.
 
     ! Zero the max stage record after this much time has elapsed. The
     ! idea is to allow the transients to pass, then reset the max stage,
     ! so it ultimately only records the 'stationary' part of the run
-    REAL(dp), PARAMETER :: reset_max_stage_at_time = 120000.0_dp
+    real(dp), parameter :: reset_max_stage_at_time = 120000.0_dp
 
     ! Resolution
     dx = 2000.00_dp
@@ -170,10 +174,10 @@ PROGRAM circular_island
     domain%timestepping_method = timestepping_method
 
     ! Allocate domain -- must have set timestepping method BEFORE this
-    CALL domain%allocate_quantities(global_lw, global_nx, global_ll)
+    call domain%allocate_quantities(global_lw, global_nx, global_ll)
 
     ! Call local routine to set initial conditions
-    CALL set_initial_conditions_circular_island(domain, offshore_depth, island_radius, slope_radius)
+    call set_initial_conditions_circular_island(domain, offshore_depth, island_radius, slope_radius)
 
     ! Get the boundary data and make an interpolation function f(t) for gauge 4
     domain%boundary_function => boundary_function
@@ -194,48 +198,50 @@ PROGRAM circular_island
 
     full_write_step = 0
     ! Evolve the code
-    DO WHILE (.TRUE.)
+    do while (.true.)
 
-        IF(domain%time - last_write_time >= approximate_writeout_frequency) THEN
+        if(domain%time - last_write_time >= approximate_writeout_frequency) then
 
             ! Reset the peak stage record once during the simulation, so the final
             ! result reflects the 'stationary' model solution
-            if((domain%time >= reset_max_stage_at_time) .AND. &
+            if((domain%time >= reset_max_stage_at_time) .and. &
                (last_write_time <= reset_max_stage_at_time)) then
-                domain%max_U(:,:,1) = -HUGE(1.0_dp)
+                domain%max_U(:,:,1) = -huge(1.0_dp)
             end if
 
             last_write_time = last_write_time + approximate_writeout_frequency
 
             ! This avoids any artefacts in the numerical update of the model
             ! which should be overwritten by the boundary condition
-            CALL domain%update_boundary()
+            call domain%update_boundary()
 
-            CALL domain%print()
+            call domain%print()
 
             full_write_step = full_write_step + 1
             if(mod(full_write_step, frequency_full_write_steps) == 0) then 
-                CALL domain%write_to_output_files(time_only=never_write_grid_time_slices)
+                call domain%write_to_output_files(time_only=never_write_grid_time_slices)
             end if
 
-            CALL domain%write_gauge_time_series()
+            call domain%write_gauge_time_series()
             print*, 'Mass balance: ', domain%mass_balance_interior()
 
-        END IF
+        end if
 
-        IF (domain%time > final_time) THEN
-            EXIT 
-        END IF
+        if (domain%time > final_time) exit 
 
-        CALL domain%evolve_one_step(timestep = timestep)
+        if (domain%timestepping_method == 'linear') then
+            call domain%evolve_one_step(timestep = timestep)
+        else
+            call domain%evolve_one_step()
+        end if
 
-    END DO
+    end do
 
-    CALL domain%write_max_quantities()
+    call domain%write_max_quantities()
 
     ! Print timing info
-    CALL domain%timer%print()
+    call domain%timer%print()
 
-    CALL domain%finalise()
+    call domain%finalise()
 
-END PROGRAM
+end program

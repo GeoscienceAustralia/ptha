@@ -18,6 +18,7 @@ module reshape_array_mod
 
     ! Subroutine to copy a rank-n array into a rank1 array
     ! This can be faster than using the intrinsic 'reshape' function
+    ! HOWEVER, the intrinsic 'pack' function might be better?
     interface flatten_array
         module procedure flatten_array_rank4, flatten_array_rank3, &
             flatten_array_rank2, flatten_array_rank1
@@ -35,7 +36,7 @@ module reshape_array_mod
     !
     ! Useful routines to repack rank-n arrays to rank1
     ! 
-    subroutine flatten_array_rank4(rank4_array, output_rank1)
+    pure subroutine flatten_array_rank4(rank4_array, output_rank1)
         real(dp), intent(in) :: rank4_array(:,:,:,:)
         real(dp), intent(inout) :: output_rank1(:)
 
@@ -56,7 +57,7 @@ module reshape_array_mod
 
     end subroutine
 
-    subroutine flatten_array_rank3(rank3_array, output_rank1)
+    pure subroutine flatten_array_rank3(rank3_array, output_rank1)
         real(dp), intent(in) :: rank3_array(:,:,:)
         real(dp), intent(inout) :: output_rank1(:)
 
@@ -75,7 +76,7 @@ module reshape_array_mod
 
     end subroutine
 
-    subroutine flatten_array_rank2(rank2_array, output_rank1)
+    pure subroutine flatten_array_rank2(rank2_array, output_rank1)
         real(dp), intent(in) :: rank2_array(:,:)
         real(dp), intent(inout) :: output_rank1(:)
 
@@ -92,7 +93,7 @@ module reshape_array_mod
 
     end subroutine
 
-    subroutine flatten_array_rank1(rank1_array, output_rank1)
+    pure subroutine flatten_array_rank1(rank1_array, output_rank1)
         real(dp), intent(in) :: rank1_array(:)
         real(dp), intent(inout) :: output_rank1(:)
 
@@ -105,7 +106,7 @@ module reshape_array_mod
     ! Routines to repack rank-1 arrays into rank-n
     !
 
-    subroutine repack_rank1_array_rank1(rank1_array, output_rank1)
+    pure subroutine repack_rank1_array_rank1(rank1_array, output_rank1)
         real(dp), intent(in) :: rank1_array(:)
         real(dp), intent(inout) :: output_rank1(:)
 
@@ -113,7 +114,7 @@ module reshape_array_mod
 
     end subroutine
 
-    subroutine repack_rank1_array_rank2(rank1_array, output_rank2)
+    pure subroutine repack_rank1_array_rank2(rank1_array, output_rank2)
         real(dp), intent(in) :: rank1_array(:)
         real(dp), intent(inout) :: output_rank2(:,:)
 
@@ -135,7 +136,7 @@ module reshape_array_mod
         
     end subroutine
 
-    subroutine repack_rank1_array_rank3(rank1_array, output_rank3)
+    pure subroutine repack_rank1_array_rank3(rank1_array, output_rank3)
         real(dp), intent(in) :: rank1_array(:)
         real(dp), intent(inout) :: output_rank3(:,:,:)
 
@@ -158,7 +159,7 @@ module reshape_array_mod
         end do
     end subroutine
 
-    subroutine repack_rank1_array_rank4(rank1_array, output_rank4)
+    pure subroutine repack_rank1_array_rank4(rank1_array, output_rank4)
         real(dp), intent(in) :: rank1_array(:)
         real(dp), intent(inout) :: output_rank4(:,:,:,:)
 
@@ -192,12 +193,14 @@ module reshape_array_mod
         real(dp) :: r1(10), r2(10,9), r3(10,9,8), r4(10, 9, 8, 7)        
         real(dp) :: a1(10), a2(90),   a3(720),    a4(5040)        
         integer(ip) :: i
+        integer(ip):: newshp1(1)
+        integer(ip), parameter:: newshp2(2) = [10,9], newshp3(3) = [10, 9, 8], newshp4(4) = [10, 9, 8, 7]
 
         ! Create some data
-        a1 = (/ (i, i=1, size(a1)) /)
-        a2 = (/ (i, i=1, size(a2)) /)
-        a3 = (/ (i, i=1, size(a3)) /)
-        a4 = (/ (i, i=1, size(a4)) /)
+        a1 = (/ (i*1.0_dp, i=1, size(a1)) /)
+        a2 = (/ (i*1.0_dp, i=1, size(a2)) /)
+        a3 = (/ (i*1.0_dp, i=1, size(a3)) /)
+        a4 = (/ (i*1.0_dp, i=1, size(a4)) /)
 
         ! Do the repack
         call repack_rank1_array(a1, r1)
@@ -213,21 +216,24 @@ module reshape_array_mod
             call generic_stop()
         end if
 
-        if(all(r2 == reshape(a2, [10, 9]))) then
+        !newshp2 = [10, 9]
+        if(all(r2 == reshape(a2, newshp2) )) then
             print*, 'PASS'
         else
             print*, 'FAIL r2'
             call generic_stop()
         end if
 
-        if(all(r3 == reshape(a3, [10, 9, 8]))) then
+        !newshp3 = [10, 9, 8]
+        if(all(r3 == reshape(a3, newshp3) )) then
             print*, 'PASS'
         else
             print*, 'FAIL r3'
             call generic_stop()
         end if
 
-        if(all(r4 == reshape(a4, [10, 9, 8, 7]))) then
+        !newshp4 = [10, 9, 8, 7]
+        if(all(r4 == reshape(a4, newshp4) )) then
             print*, 'PASS'
         else
             print*, 'FAIL r4'
@@ -248,21 +254,24 @@ module reshape_array_mod
             call generic_stop
         end if
 
-        if(all(reshape(r2, [size(a2)]) == a2)) then
+        newshp1 = [size(a2)]
+        if(all(reshape(r2, newshp1) == a2)) then
             print*, 'PASS'
         else
             print*, 'FAIL a2'
             call generic_stop
         end if
 
-        if(all(reshape(r3, [size(a3)]) == a3)) then
+        newshp1 = [size(a3)]
+        if(all(reshape(r3, newshp1) == a3)) then
             print*, 'PASS'
         else
             print*, 'FAIL a3'
             call generic_stop
         end if
 
-        if(all(reshape(r4, [size(a4)]) == a4)) then
+        newshp1 = [size(a4)]
+        if(all(reshape(r4, newshp1) == a4)) then
             print*, 'PASS'
         else
             print*, 'FAIL a4'
