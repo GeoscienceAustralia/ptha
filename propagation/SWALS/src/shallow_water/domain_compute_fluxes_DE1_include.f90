@@ -42,7 +42,7 @@ subroutine compute_fluxes_DE1(domain, max_dt_out)
     ! the shallow water equations with Coriolis forces"
     logical, parameter :: upwind_transverse_momentum = .false.
     logical, parameter :: upwind_normal_momentum = .false.
-    logical, parameter :: reduced_momentum_diffusion = .true. !.false.
+    logical, parameter :: reduced_momentum_diffusion = .true.
     
     ! Bottom edge values on 'positive' and 'negative' side (i.e. viewed from j and j-1 respectively)
     ! theta_wd controls the limiting
@@ -428,6 +428,11 @@ subroutine compute_fluxes_DE1(domain, max_dt_out)
                     merge(v_neg, v_pos, domain%flux_EW(i,j,STG) > 0.0_dp) * domain%flux_EW(i,j,STG)
 
             end if
+
+            !if(i == 200 .and. j == 10) then
+            !   print*, stage_pos_star, stage_neg_star, vel_beta_neg, vel_beta_pos
+            !end if
+
 
             ! Here we put in the gravity/pressure terms. Can try a flux conservative treatment,
             ! or a good old fashioned { g x depth x grad(stage) } term
