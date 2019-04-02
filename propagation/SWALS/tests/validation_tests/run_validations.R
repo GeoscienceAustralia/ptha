@@ -26,7 +26,7 @@ test_example<-function(test_file){
     time_taken = t1 - t0
     print(paste0('Time taken (build, run, plot) : ', format(time_taken)))
 
-    return(list(result=run_results, elapsed_time=time_taken))
+    return(list(result=run_results, elapsed_time=time_taken, file=test_file))
 }
 
 test_results = lapply(test_files, test_example)
