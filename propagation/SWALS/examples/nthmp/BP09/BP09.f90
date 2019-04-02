@@ -177,8 +177,8 @@ program run_BP09
     allocate(md%domains(nd))
 
 #ifdef COARRAY
-    write(log_output_unit,*) 'Using load balancing, assuming 6 images and test-case setup'
-    md%load_balance_file = 'load_balance_partition.txt'
+    !write(log_output_unit,*) 'Using load balancing, assuming 6 images and test-case setup'
+    !md%load_balance_file = 'load_balance_partition.txt'
 #endif
     !
     ! Setup basic metadata
