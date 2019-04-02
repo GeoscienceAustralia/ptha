@@ -5,120 +5,6 @@ SWALS includes a number of "Shallow WAter Like Solvers". These solve the linear
 and nonlinear shallow water equations (the latter with Manning friction) using
 either Cartesian or Spherical Coordinates. 
 
-The shallow water equations are widely used to model large scale hydrodynamic
-processes (such as tsunamis, floods), for which the horizontal length-scales of
-interest are large compared with the flow depth. 
-
-Features
---------
-
-# User provides the driver program
-SWALS requires the user to provide a high-level Fortran driver program to
-specify the model domain(s), initial and boundary conditions, and IO. 
-
-This makes model setup quite flexible.  
-
-# Test suites 
-SWALS includes a [validation test suite](./tests/validation_tests) with a
-variety of (mostly tsunami-type) problems. In addition to illustrating the
-kinds of problems that can be solved, the validation test suite serves to
-illustrate approaches to writing the driver programs, compiling the code, and
-working with outputs. 
-
-The code also has a [unit-test suite](./tests/unit_tests), and a separate
-[parallel unit-test suite](./tests/parallel_tests). These test suites are
-useful to confirm that the installation is working.
-
-# Two-way nesting
-Two-way nesting is supported using a "multidomain" class which contains one or
-more single-grid "domains". 
-
-When multidomains contain domains with different resolution that overlap, the
-finer-resolution one is assumed to be the "priority domain" which represents the real
-flow. Domains with the same resolution should not overlap (because the code
-would not know which one should be the priority domain), but their boundaries
-can touch. 
-
-The code automatically generates the domain halos and data structures required
-to populate halos using information from the corresponding priority domain. The
-nested domains can use different solvers (e.g. linear or various non-linear
-algorithms), and they can take different time-steps.
-
-No adaptive-mesh refinement is used (see GEOCLAW and Basilisk for well-known
-models which do that). However, if some domains are known to be inactive for
-part of the simulation, they can be "switched off" (i.e. no evolution of the
-flow) before a specified time. 
-
-Flux-correction is used to ensure mass conservation between nested grids, and
-mass tracking routines are provided to confirm that the total mass in the
-multidomain is consistent with fluxes through the multidomain boundaries.
-
-# Multiple types of solvers
-The domains contained within a multidomain can use different solvers, and take
-different timesteps. In general the domain solver algorithm should be chosen
-depending on the problem.
-
-The linear solver is well suited to modelling oceanic-scale
-earthquake-generated tsunamis, in regions where the wave amplitude is small
-compared with the depth. However the linear equations are inappropriate for
-inundation or nearshore tsunami modelling, where non-linearity matters.
-
-Conversely, the nonlinear solvers mostly employ 2nd-order shock-capturing
-finite-volume methods, along the lines of those implemented in the
-unstructured-mesh ANUGA code (although SWALS uses structured grids). These
-methods are quite robust, but inefficient for modelling deep ocean tsunamis at
-global-type spatial scales when a linear solver would suffice (and would be
-much faster -- say by "several factors of 10"). 
-
-# Parallel support with OpenMP (shared memory) and/or Fortran coarrays (distributed or shared memory)
-SWALS can be run either on a single core, or in parallel using OpenMP and/or
-Fortran coarrays. 
-
-We have observed good strong-scaling both with on-node (6-16 cores) and
-distributed memory parallelism over a nodes (up to 16 nodes = 256 cores on
-Raijin). There is nothing preventing larger runs. However the capacity of any
-model to efficiently use many cores is heavily dependent on the problem size,
-load balancing, and the relative use of OpenMP threads and coarrays -- factors
-within the users control. Thus the model scaling will vary in a case-by-case
-manner.
-
-The use of more coarray images leads to relatively more 'halos cells' in the
-domain, and with enough coarray images this becomes inefficient. The OpenMP
-parallelization does not require halos, but involves more on-node
-synchronization which is intrinsically less efficient. The optimal balance
-between OpenMP threads and coarray images involves balancing these two sources
-of inefficiency. In the authors experience, it is often better to just use 2-4
-OpenMP threads per coarray image (rather than 1 coarray image per node). But
-this will be problem and hardware dependent. 
-
-The test-suite includes a few comparisons of models using OpenMP and mixed
-OpenMP-coarrays. Because floating point operations are not associative, some
-numerical differences can arise using different parallel approaches, and
-ultimately this may lead to differences in the results depending on the
-parallel approach. However we do not expect substantial differences - results
-should be "the same" or "similar in all practical respects". Quantities most
-likely to show differences are those that are sensitive to round-off type
-changes in variables. For example mass conservation errors will ideally be
-negligible (i.e. completely reflecting floating point limitations) - so these
-might vary among parallel runs, which is fine so long as they remain negligibly
-small. As another example, SWALS treats a cell as wet or dry depending on
-whether its flow depth exceeds a threshold (1.0e-05 m). This wet/dry status
-can be sensitive to round-off in extremely shallow cells, and sometimes this
-shows up as differences in reported runup maxima over time.
-
-
-# Double or single precision
-SWALS can run using either double precision (recommended) or single precision
-reals. For many problems single precision is not sufficient - but this can be
-checked on a case-by-case basis by comparing with the double-precision results.
-In general, problems using nesting and/or the nonlinear solvers over large
-depths tend to require double-precision.
-
-# Gauge and Grid output
-SWALS can output stage and depth-integrated velocities over time, as grids
-and/or gauges, in netcdf format. It can also output the peak stage for an
-entire run.
-
 Installation prerequisites
 --------------------------
 
@@ -134,19 +20,19 @@ support for coarrays. However this requires different preprocessor options to
 run efficiently, see below. It also requires adjustments to the build script.
 
 ## C compiler
-The code also makes limited use of the C-language to interface with the GDAL
-library (thus providing flexible raster-based input), so a C compiler is
-required (typically gcc, or use Intel's icc with Intel-Fortran).
+The code also makes limited use of C to interface with the GDAL library (thus
+providing flexible raster-based input), so a C compiler is required (typically
+gcc, or use Intel's icc with Intel-Fortran).
 
 ## Make
-We also require the "make" program for compilation.
+The "make" program is used for compilation.
 
 ## NetCDF and GDAL
 "NetCDF" and "GDAL" must also be installed. The command-line programs
 "gdal-config" and "nc-config" or "nf-config" should be available, because the
 makefiles use them to identify the associated libraries. The netcdf install
-should include fortran support, and this requires building netcdf with the same
-fortran compiler as you use to build SWALS.
+should include Fortran support, and this requires building netcdf with the same
+Fortran compiler as you use to build SWALS.
 
 ## ncview (optional)
 The program 'ncview' is useful for quickly viewing animations of the netcdf
@@ -193,7 +79,7 @@ tests. To do this, open a terminal in that directory and do
 
 This should take a minute, and write a lot of "PASS" statements to outfile.log. There
 should not be any "FAIL" statements or other warning messages. Open up outfile.log to check.
-You can count PASS or FAIL statments like this:
+You can count PASS or FAIL statements like this:
 
     # Count the passes
     grep "PASS" outfile.log | wc -w
@@ -247,7 +133,7 @@ not a replacement for eyeballing the figures and thinking about the results.
 
 # Examples to consider
 
-The validation tests provide useful templates for developing other models. They illustrate driver programs, compilation, and model post-processing. Particularly useful examples include:
+The validation tests provide templates for developing other models. They illustrate driver programs, compilation, and model post-processing. Some of the more practical examples include:
 
 * [./examples/nthmp/BP09/](./examples/nthmp/BP09) which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
 * [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Taurange_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
