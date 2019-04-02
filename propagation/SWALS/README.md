@@ -147,7 +147,7 @@ The above models can be run with OpenMP and/or coarrays, and illustrate use of t
 
 The script [./src/src_standard_compiler_var](./src/src_standard_compiler_var) is included in build scripts to define compiler variables (e.g. see the example models above). The user can override most variables in this file by pre-defining them before it is included. This is required, e.g. to use compilers other than gfortran.
 
-A number of preprocessor variables can be defined to control features of the code. These are controlled by defining the variable `SWALS_PREPROCESSOR_VAR` in the makefile. See makefiles in the example projects for illustrations of their use. The most important cases include
+A number of preprocessor variables can be defined to control features of the code. These are controlled by defining the variable `SWALS_PREPROCESSOR_FLAGS` in the makefile. See makefiles in the example projects for illustrations of their use. The most important cases include
 
     -DSPHERICAL (assume spherical coordinates. Otherwise cartesian coordinates are used)
     -DTIMER (time sections of the code and report on how long they take)
