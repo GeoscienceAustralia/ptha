@@ -19,7 +19,7 @@ module domain_mod
                           cfl, maximum_timestep, gravity, &
                           advection_beta, &
                           minimum_allowed_depth, &
-                          default_timestepping_method, extrapolation_theta,&
+                          default_timestepping_method, &
                           wall_elevation, &
                           default_output_folder, &
                           send_boundary_flux_data,&
@@ -125,7 +125,8 @@ module domain_mod
         real(dp):: lower_left(2)
 
         ! Parameter controlling extrapolation for finite volume methods
-        real(dp) :: theta = extrapolation_theta
+        ! Defaults depend on timestepping_method
+        real(dp) :: theta = -HUGE(1.0_dp) !
         ! CFL number
         real(dp):: cfl = cfl
 
@@ -649,21 +650,23 @@ module domain_mod
 
 
         ! Set good defaults for different timestepping methods
-        select case(domain%timestepping_method)
-        case('rk2')
-            domain%theta = 1.6_dp
-        case('rk2n')
-            domain%theta = 1.6_dp
-        case('midpoint')
-            domain%theta = 1.6_dp
-        case('euler')
-            domain%theta = 1.0_dp
-        case('linear')
-            ! Nothing required
-        case default
-            print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
-            call generic_stop()
-        end select
+        if(domain%theta == -HUGE(1.0_dp)) then
+            select case(domain%timestepping_method)
+            case('rk2')
+                domain%theta = 1.6_dp
+            case('rk2n')
+                domain%theta = 1.6_dp
+            case('midpoint')
+                domain%theta = 1.6_dp
+            case('euler')
+                domain%theta = 0.9_dp
+            case('linear')
+                ! Nothing required
+            case default
+                print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
+                call generic_stop()
+            end select
+        end if
 
         if(use_partitioned_comms) then
             ! Note that this only supports a single grid, and has largely been replaced by the "multidomain"
@@ -1012,7 +1015,7 @@ module domain_mod
         real(dp), intent(out) :: edge_value(n)
 
         integer(ip) :: i, imn, imx, vsize
-        character(len=charlen), parameter :: limiter_type = 'MC' !'Superbee_variant' !'MC'
+        character(len=charlen), parameter :: limiter_type = 'MC' !'Superbee_variant' ! 'MC'
 
         ! Local 'small' vectors used to pack data and enhance vectorization
         integer, parameter :: v = vectorization_size
@@ -1033,8 +1036,6 @@ module domain_mod
             a(1:vsize) = U_upper(imn:imx) - U_local(imn:imx)
             b(1:vsize) = U_local(imn:imx) - U_lower(imn:imx)
 
-            !select case (limiter_type)
-            !case("MC")
             if(limiter_type == 'MC') then
 
                 th(1:vsize) = theta(imn:imx)
@@ -1050,9 +1051,8 @@ module domain_mod
 
             else if(limiter_type == "Superbee_variant") then
 
-                ! Use coefficient of 1.8 instead of 2.0 in LeVeque's book
                 ! Divide by 1.6 which is the default 'max theta' in the rk2 algorithms
-                th(1:vsize) = theta(imn:imx) * 1.8_dp/1.6_dp
+                th(1:vsize) = theta(imn:imx) * 2.0_dp/1.6_dp
                 !d = minmod(a, th*b)
                 d = merge(min(abs(a), abs(th*b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
                 !e = minmod(th*a, b)
@@ -1067,7 +1067,6 @@ module domain_mod
 
                 b = -HUGE(1.0_dp)
 
-            !end select
             end if
 
 
@@ -1268,25 +1267,27 @@ module domain_mod
         ! Rather than call 'extrapolate_edge_...', we can make use of the
         ! symmetry to get the result quickly.
  
-        theta_wd_pos_L = theta_wd_neg_L
+        !theta_wd_pos_L = theta_wd_neg_L
 
-        !call extrapolate_edge_second_order(domain%U(2:(nx-1), j, STG), &
-        !    domain%U(1:(nx-2), j, STG), domain%U(3:nx, j, STG), theta_wd_pos_L(2:(nx-1)), neg_ones, stage_pos_L(2:(nx-1)))
+        !call extrapolate_edge_second_order_vectorized(domain%U(2:(nx-1), j, STG), &
+        !    domain%U(1:(nx-2), j, STG), domain%U(3:nx, j, STG), theta_wd_pos_L(2:(nx-1)), neg_ones, stage_pos_L(2:(nx-1)), nx-2)
         stage_pos_L(2:(nx-1)) = 2.0_dp * domain%U(2:(nx-1),j,STG) - stage_neg_L(3:nx)
         stage_pos_L(nx) = domain%U(nx, j, STG)
 
-        !call extrapolate_edge_second_order(domain%depth(2:(nx-1), j), &
-        !    domain%depth(1:(nx-2), j), domain%depth(3:nx, j), theta_wd_pos_L(2:(nx-1)), neg_ones, depth_pos_L(2:(nx-1)))
+        !call extrapolate_edge_second_order_vectorized(domain%depth(2:(nx-1), j), &
+        !    domain%depth(1:(nx-2), j), domain%depth(3:nx, j), theta_wd_pos_L(2:(nx-1)), neg_ones, depth_pos_L(2:(nx-1)), nx-2)
         depth_pos_L(2:(nx-1)) = 2.0_dp * domain%depth(2:(nx-1),j) - depth_neg_L(3:nx)
         depth_pos_L(nx) = domain%depth(nx, j)
        
-        !call extrapolate_edge_second_order(domain%velocity(2:(nx-1), j, UH), &
-        !    domain%velocity(1:(nx-2), j, UH), domain%velocity(3:nx, j, UH), theta_wd_pos_L(2:(nx-1)), neg_ones, u_pos_L(2:(nx-1)))
+        !call extrapolate_edge_second_order_vectorized(domain%velocity(2:(nx-1), j, UH), &
+        !    domain%velocity(1:(nx-2), j, UH), domain%velocity(3:nx, j, UH), theta_wd_pos_L(2:(nx-1)), &
+        !    neg_ones, u_pos_L(2:(nx-1)), nx-2)
         u_pos_L(2:(nx-1)) = 2.0_dp * domain%velocity(2:(nx-1),j, UH) - u_neg_L(3:nx)
         u_pos_L(nx) = domain%velocity(nx, j, UH)
          
-        !call extrapolate_edge_second_order(domain%velocity(2:(nx-1), j, VH), &
-        !    domain%velocity(1:(nx-2), j, VH), domain%velocity(3:nx, j, VH), theta_wd_pos_L(2:(nx-1)), neg_ones, v_pos_L(2:(nx-1)))
+        !call extrapolate_edge_second_order_vectorized(domain%velocity(2:(nx-1), j, VH), &
+        !    domain%velocity(1:(nx-2), j, VH), domain%velocity(3:nx, j, VH), theta_wd_pos_L(2:(nx-1)), neg_ones, &
+        !    v_pos_L(2:(nx-1)), nx-2)
         v_pos_L(2:(nx-1)) = 2.0_dp * domain%velocity(2:(nx-1),j, VH) - v_neg_L(3:nx)
         v_pos_L(nx) = domain%velocity(nx, j, VH)
         
@@ -1890,7 +1891,7 @@ module domain_mod
                 ts,&
                 flux_NS=domain%flux_NS, flux_NS_lower_index=1_ip, &
                 flux_EW=domain%flux_EW, flux_EW_lower_index=1_ip, &
-                var_indices=[1_ip, 3_ip],&
+                var_indices=[STG, VH],&
                 flux_already_multiplied_by_dx=.TRUE.)
         end if
 
@@ -1944,7 +1945,7 @@ module domain_mod
             dt=(dt_first_step*HALF_dp),&
             flux_NS=domain%flux_NS, flux_NS_lower_index=1_ip, &
             flux_EW=domain%flux_EW, flux_EW_lower_index=1_ip, &
-            var_indices=[1_ip, 3_ip],&
+            var_indices=[STG, VH],&
             flux_already_multiplied_by_dx=.TRUE.)
 
 
@@ -1959,7 +1960,7 @@ module domain_mod
             dt=(dt_first_step*HALF_dp),&
             flux_NS=domain%flux_NS, flux_NS_lower_index=1_ip, &
             flux_EW=domain%flux_EW, flux_EW_lower_index=1_ip, &
-            var_indices=[1_ip, 3_ip],&
+            var_indices=[STG, VH],&
             flux_already_multiplied_by_dx=.TRUE.)
 
 
@@ -2169,7 +2170,7 @@ module domain_mod
             dt_first_step,&
             flux_NS=domain%flux_NS, flux_NS_lower_index=1_ip, &
             flux_EW=domain%flux_EW, flux_EW_lower_index=1_ip, &
-            var_indices=[1_ip, 3_ip],&
+            var_indices=[STG, VH],&
             flux_already_multiplied_by_dx=.TRUE.)
 
 
@@ -2968,14 +2969,24 @@ TIMER_STOP('nesting_boundary_flux_integral_tstep')
     ! one it receives from
     !
     ! @param domain instance of domain type
-    ! 
-    subroutine nesting_flux_correction_coarse_recvs(domain)
+    ! @param fraction_of multiply the correction by this number before applying. This
+    !        is useful if we want to take multiple partial correction steps, rather than
+    !        one big one.
+    subroutine nesting_flux_correction_coarse_recvs(domain, fraction_of)
         class(domain_type), intent(inout) :: domain
+        real(dp), optional, intent(in) :: fraction_of
 
         integer(ip) :: i, k, n0, n1, m0, m1, dm, dn, dir
         integer(ip) :: my_index, my_image
         integer(ip) :: nbr_index, nbr_image
         integer(ip) :: var1, varN
+        real(dp) :: fraction_of_local
+
+        if(present(fraction_of)) then
+            fraction_of_local = fraction_of
+        else
+            fraction_of_local = 1.0_dp
+        end if
 
         if(send_boundary_flux_data .and. allocated(domain%nesting%recv_comms)) then
 
@@ -3054,7 +3065,7 @@ TIMER_START('nesting_flux_correction')
                                 domain%nesting%priority_domain_image(n0:n1, m0) == nbr_image &
                             ) * &
                             real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(n1-n0+1), k)/&
-                            domain%area_cell_y(m0+dm), dp)
+                            domain%area_cell_y(m0+dm), dp) * fraction_of_local
                     end do
                     ! Ensure it didn't create a negative depth. Better to have a mass conservation error
                     ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
@@ -3084,7 +3095,7 @@ TIMER_START('nesting_flux_correction')
                                 domain%nesting%priority_domain_image(n0:n1, m0) == nbr_image &
                             ) * &
                             real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(n1-n0+1), k)/&
-                            domain%area_cell_y(m0+dm), dp)
+                            domain%area_cell_y(m0+dm), dp) * fraction_of_local
                     end do
 
                     ! Ensure it didn't create a negative depth. Better to have a mass conservation error
@@ -3114,7 +3125,7 @@ TIMER_START('nesting_flux_correction')
                                 domain%nesting%priority_domain_image(n0, m0:m1) == nbr_image &
                             ) * &
                             real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(m1-m0+1), k)/&
-                            domain%area_cell_y(m0:m1), dp)
+                            domain%area_cell_y(m0:m1), dp) * fraction_of_local
                     end do
 
                     ! Ensure it didn't create a negative depth. Better to have a mass conservation error
@@ -3144,7 +3155,7 @@ TIMER_START('nesting_flux_correction')
                                 domain%nesting%priority_domain_image(n0, m0:m1) == nbr_image &
                             ) * &
                             real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(m1-m0+1), k)/&
-                            domain%area_cell_y(m0:m1), dp)
+                            domain%area_cell_y(m0:m1), dp) * fraction_of_local
                     end do
 
                     ! Ensure it didn't create a negative depth. Better to have a mass conservation error

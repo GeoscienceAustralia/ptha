@@ -113,7 +113,7 @@ program run_paraboloid_basin
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
-    md%domains(1)%timestepping_method = 'midpoint'
+    md%domains(1)%timestepping_method = 'rk2' !'midpoint'
 
     ! Linear domain should have CFL ~ 0.7
     do j = 1, size(md%domains)

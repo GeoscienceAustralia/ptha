@@ -30,7 +30,7 @@
 module multidomain_mod
 
     use global_mod, only: dp, ip, charlen, default_timestepping_method, &
-        extrapolation_theta, wall_elevation, minimum_allowed_depth, force_double, &
+        wall_elevation, minimum_allowed_depth, force_double, &
         default_output_folder, send_boundary_flux_data, &
         real_bytes, force_double_bytes, integer_bytes, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV 
@@ -70,11 +70,25 @@ module multidomain_mod
     logical, parameter :: sync_before_recv = .true., sync_after_recv=.true.
 #endif
 
+
+    ! Key parameter affecting flux correction approach
+    logical, parameter :: lagged_flux_correction_default = (.false. .and. send_boundary_flux_data)
+    ! The default can be overridden by setting md%lagged_flux_correction explicitly
+    ! - If md%lagged_flux_correction = .true., then apply flux correction computed from global timestep "i" during
+    !   global timestep "i+1", split up into one partial correction per domain timestep. This leads to "local"
+    !   mass conservation errors, but they do not accumulate. It requires half as much communication.
+    ! - If md%lagged_flux_correction = .false., then apply the flux correction computed from global timestep "i" straight
+    !   afterwould, and re-communicate the updated values. This has very good mass conservation.
+
+    ! Parameter affecting default halo approach.
+    !
     ! Set this to an integer > 0 so that "parts of another domain that I receive from"
-    ! do not directly neighbour "parts of my domain that I send to that domain". This
-    ! might help with stability (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS nesting)
-    ! However it can also CAUSE instability
-    integer(ip), parameter :: extra_halo_buffer_default = 0_ip !2_ip
+    ! do not directly neighbour "parts of my domain that I send to that domain". 
+    integer(ip), parameter :: extra_halo_buffer_default = 0_ip !
+    ! This can be overridden in the multidomain setup stage as e.g. " call md%setup(extra_halo_buffer=1_ip) "
+    ! This might help with stability (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS nesting)
+    ! It is ignored if we only communicate with domains that have the same domain%dx, as the benefit is really for coarse-to-fine
+    ! communication
 
     ! (co)array to store the interior bounding-box of ALL domains (i.e. not 
     ! including their nesting layer), and their dx(1:2) values, and some 
@@ -150,7 +164,13 @@ module multidomain_mod
         ! If load_balancing_file is provided, we can use this
         integer(ip), allocatable :: load_balance_partition(:,:)
 
+        ! Control additional halo width. This can enable separation of send/recv halos,
+        ! which can reduce nesting artefacts in some cases
         integer(ip) :: extra_halo_buffer = extra_halo_buffer_default
+
+        ! Control the flux correction approach. 
+        ! See comment at "lagged_flux_correction_default"
+        logical :: lagged_flux_correction = lagged_flux_correction_default
 
         contains
 
@@ -835,6 +855,11 @@ module multidomain_mod
 
         integer(ip) :: j, i, nt
         real(dp) :: dt_local, max_dt_store
+        logical :: lagged_flux_correction_local
+
+        ! If send_boundary_flux_data is .false., then we should never do lagged_flux_correction
+        ! (because no flux corrections are sent in any case!)
+        lagged_flux_correction_local = (md%lagged_flux_correction .and. send_boundary_flux_data)
 
         ! Evolve every domain, sending the data to communicate straight after
         ! the evolve
@@ -851,12 +876,17 @@ module multidomain_mod
             nt = md%domains(j)%timestepping_refinement_factor
             dt_local = dt/(1.0_dp * nt)
 
+            ! Step once
             call md%domains(j)%evolve_one_step(dt_local)
+            if(lagged_flux_correction_local) call md%domains(j)%nesting_flux_correction(1.0_dp/nt)
             ! Report max_dt as the peak dt during the first timestep
             ! In practice max_dt may cycle between time-steps
             max_dt_store = md%domains(j)%max_dt
+
+            ! Do the remaining sub-steps
             do i = 2, nt ! Loop never runs if nt < 2
                 call md%domains(j)%evolve_one_step(dt_local)
+                if(lagged_flux_correction_local) call md%domains(j)%nesting_flux_correction(1.0_dp/nt)
             end do
             md%domains(j)%max_dt = max_dt_store
 
@@ -881,11 +911,14 @@ module multidomain_mod
         ! also sync after to ensure it is not overwritten before it is used
         call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
 
-        if(send_boundary_flux_data) then
+        if(send_boundary_flux_data .and. (.not. lagged_flux_correction_local)) then
             ! Do flux correction, and send the 'possibly corrected' data. 
-
-            ! FIXME: Note that in many cases, this 'second send' might not be of practical importance.
-            !        Indeed, even flux correction itself might often not practically matter
+            !
+            ! Note that in many cases, this 'second send' might not be of practical importance.
+            !    Indeed, even flux correction itself might often not practically matter, often.
+            !    A good, cheap compromise might be to use md%lagged_flux_correction = .true., which
+            !    should stop the mass errors from accumulating too much
+            !
             ! FIXME: We might be able to reduce the amount of data sent (e.g. by only sending from domains
             !       that have had some correction applied, or by not sending boundary fluxes)
             do j = 1, size(md%domains)
@@ -1862,7 +1895,8 @@ module multidomain_mod
         write(log_output_unit, *) 'Global stage range (over all domains and images): '
         write(log_output_unit, *) '        ', global_max_stage
         write(log_output_unit, *) '        ', global_min_stage
-        write(log_output_unit, *) 'Global speed range (over all domains and images): '
+        write(log_output_unit, *) 'Global speed range (over all domains and images) -- ', &
+            'note linear domains can have very high velocities, even when stable: '
         write(log_output_unit, *) '        ', global_max_speed
         write(log_output_unit, *) '        ', global_min_speed
         write(log_output_unit,*) '-----------'
@@ -1911,12 +1945,15 @@ module multidomain_mod
         ! Note: This loop can go in OMP, but apparently they do not support 
         ! type bound procedures, so we avoid calling like that. 
         ! {Fixed in openmp 5 standard?}
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md)
-        !$OMP DO SCHEDULE(STATIC)
+
+        !!!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md)
+        !!!$OMP DO SCHEDULE(DYNAMIC)
         do j = 1, size(md%domains)
 #ifdef TIMER
             call md%domains(j)%timer%timer_start('receive_halos')
 #endif
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, j)
+            !$OMP DO SCHEDULE(DYNAMIC)
             do i = 1, size(md%domains(j)%nesting%recv_comms)
 
                 !! Avoid use of type-bound-procedure in openmp region
@@ -1968,12 +2005,16 @@ module multidomain_mod
                 end if
 
             end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+
 #ifdef TIMER            
             call md%domains(j)%timer%timer_end('receive_halos')
 #endif
         end do
-        !$OMP END DO
-        !$OMP END PARALLEL
+        !!$OMP END DO
+        !!$OMP END PARALLEL
+
         TIMER_STOP('receive_multidomain_halos')
 
 #ifdef COARRAY
@@ -2089,8 +2130,13 @@ module multidomain_mod
             nx = size(md%domains(j)%nesting%priority_domain_index, 1)
             ny = size(md%domains(j)%nesting%priority_domain_index, 2)
 
-            ! Separate this much from halos -- must be a multiple of md%domains(j)%max_parent_dx_ratio
-            sep = md%extra_halo_buffer*md%domains(j)%max_parent_dx_ratio 
+            if(md%domains(j)%max_parent_dx_ratio > 1_ip) then
+                ! Separate this much from halos -- must be a multiple of md%domains(j)%max_parent_dx_ratio
+                sep = md%extra_halo_buffer*md%domains(j)%max_parent_dx_ratio 
+            else
+                ! No extra separation if we only receive data from domains of the same or finer size
+                cycle
+            end if
 
             ! Search the recv comms
             do i = 1, size(md%domains(j)%nesting%recv_comms)
@@ -2323,7 +2369,7 @@ module multidomain_mod
             use_wetdry_limiting_nesting=use_wetdry_limiting,&
             periodic_xs = md%periodic_xs, &
             periodic_ys = md%periodic_ys, &
-            extra_halo_buffer = extra_halo_buffer_local)
+            extra_halo_buffer = md%extra_halo_buffer)
 
         ! Storage space for mass conservation
         allocate(md%volume_initial(size(md%domains)), md%volume(size(md%domains)))

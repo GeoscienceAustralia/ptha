@@ -430,7 +430,8 @@ subroutine compute_fluxes_DE1(domain, max_dt_out)
             end if
 
             !if(i == 200 .and. j == 10) then
-            !   print*, stage_pos_star, stage_neg_star, vel_beta_neg, vel_beta_pos
+            !    print*, 'STG: ', domain%U(i-1:i+1, j, STG), stage_pos_star
+            !    print*, 'VEL: ', domain%velocity(i-1:i+1, j, UH), vel_beta_pos
             !end if
 
 

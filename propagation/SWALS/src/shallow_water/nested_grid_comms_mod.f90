@@ -677,6 +677,7 @@ module nested_grid_comms_mod
         integer(ip) :: ip1, jp1, im1, jm1, i1, j1, im2, jm2
         integer(ip) :: my_domain_staggered_grid, neighbour_domain_staggered_grid
         real(dp) :: gradient_scale, depth_min, depth_max, del
+        real(dp) :: gradient_scale_x, gradient_scale_y, depth_min_x, depth_max_x, depth_min_y, depth_max_y
         logical :: equal_cell_ratios
         ! parameters controlling how gradients are limited when doing coarse-to-fine interpolation
         real(dp), parameter :: depth_limit_upper_threshold = 0.25_dp 
@@ -979,6 +980,8 @@ module nested_grid_comms_mod
                     jjm1 = max(jmn, j-1)
                     jjp1 = min(jmx, j+1)
                     gradient_scale = 1.0_dp 
+                    gradient_scale_x = 1.0_dp 
+                    gradient_scale_y = 1.0_dp 
 
                     if(two_way_nesting_comms%use_wetdry_limiting) then
                         ! Reduce "gradient_scale" if the depth is rapidly varying
@@ -1004,6 +1007,39 @@ module nested_grid_comms_mod
                         end if
                         ! negative depth should not occur, but this extrapolates gracefully in any case. 
                         if(depth_max < 0.0_dp .or. depth_min < 0.0_dp) gradient_scale = 0.0_dp
+
+                        !
+                        ! As above, but only in x-direction
+                        !
+
+                        depth_max_x = maxval(U(iim1:iip1, j, STG) - U(iim1:iip1, j, ELV))
+                        depth_min_x = minval(U(iim1:iip1, j, STG) - U(iim1:iip1, j, ELV))
+                        if (depth_min_x < depth_limit_upper_threshold*depth_max_x) then
+                            gradient_scale_x = &
+                                max(depth_min_x/depth_max_x - depth_limit_lower_threshold, 0.0_dp) / &
+                                (depth_limit_upper_threshold - depth_limit_lower_threshold)
+                                
+                        end if
+                        ! negative depth should not occur, but this extrapolates gracefully in any case. 
+                        if(depth_max_x < 0.0_dp .or. depth_min_x < 0.0_dp) gradient_scale_x = 0.0_dp
+
+
+                        !
+                        ! As above, but only in y-direction
+                        !
+
+                        depth_max_y = maxval(U(i, jjm1:jjp1, STG) - U(i, jjm1:jjp1, ELV))
+                        depth_min_y = minval(U(i, jjm1:jjp1, STG) - U(i, jjm1:jjp1, ELV))
+                        if (depth_min_y < depth_limit_upper_threshold*depth_max_y) then
+                            gradient_scale_y = &
+                                max(depth_min_y/depth_max_y - depth_limit_lower_threshold, 0.0_dp) / &
+                                (depth_limit_upper_threshold - depth_limit_lower_threshold)
+                                
+                        end if
+                        ! negative depth should not occur, but this extrapolates gracefully in any case. 
+                        if(depth_max_y < 0.0_dp .or. depth_min_y < 0.0_dp) gradient_scale_y = 0.0_dp
+
+
                     end if
 
                     ! Put k in the inner loop, so we don't have to keep recomputing 'gradient_scale'
@@ -1149,10 +1185,10 @@ module nested_grid_comms_mod
                         ! The definition of gradients above could cause issues at
                         ! wet-dry fronts, or shocks.
                         ! SUPPRESS GRADIENTS IF REQUIRED
-                        dU_di_p = dU_di_p * gradient_scale
-                        dU_dj_p = dU_dj_p * gradient_scale
-                        dU_di_m = dU_di_m * gradient_scale
-                        dU_dj_m = dU_dj_m * gradient_scale
+                        dU_di_p = dU_di_p * gradient_scale_x
+                        dU_dj_p = dU_dj_p * gradient_scale_y
+                        dU_di_m = dU_di_m * gradient_scale_x
+                        dU_dj_m = dU_dj_m * gradient_scale_y
 
                         !!if(my_domain_staggered_grid == 0 .and. neighbour_domain_staggered_grid == 1) then
                         !!    ! Sending from non-staggered to staggered

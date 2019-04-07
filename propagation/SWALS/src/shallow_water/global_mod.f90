@@ -38,9 +38,6 @@ real(dp), parameter:: cfl = 0.9_dp
 real(dp), parameter:: maximum_timestep = 1.0e+20_dp
 character(len=charlen), parameter:: default_timestepping_method = 'euler'
 
-! Spatial extrapolation
-real(dp), parameter:: extrapolation_theta = 1.0_dp ! 0 for first order, 1 for second order, up to 2 for less cautious 2nd order. Note 1.9 may be better, at least for rk2
-
 ! Turn on/of sending of boundary flux data and flux correction (for nesting)
 logical, parameter :: send_boundary_flux_data = .true.
 

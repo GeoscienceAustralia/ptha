@@ -176,10 +176,8 @@ program run_BP09
 
     allocate(md%domains(nd))
 
-#ifdef COARRAY
-    !write(log_output_unit,*) 'Using load balancing, assuming 6 images and test-case setup'
     !md%load_balance_file = 'load_balance_partition.txt'
-#endif
+
     !
     ! Setup basic metadata
     !
@@ -200,7 +198,7 @@ program run_BP09
         upper_right = [140.5_dp, 43.5_dp], &
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 1_ip)
-    md%domains(2)%timestepping_method = 'midpoint'
+    md%domains(2)%timestepping_method = 'rk2'
 
     ! Okushiri Island focus
     call md%domains(3)%match_geometry_to_parent(&
@@ -209,7 +207,7 @@ program run_BP09
         upper_right = [139.6_dp, 42.26_dp], &
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 2_ip)
-    md%domains(3)%timestepping_method = 'midpoint'
+    md%domains(3)%timestepping_method = 'rk2'
 
     ! The monai domain 
     ! (Peak stage seems to be affected by the westward extent
@@ -221,7 +219,7 @@ program run_BP09
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 6_ip,&
         rounding_method='nearest')
-    md%domains(4)%timestepping_method = 'midpoint'  
+    md%domains(4)%timestepping_method = 'rk2'  
     
     ! A more detailed Monai domain 
     call md%domains(5)%match_geometry_to_parent(&
@@ -232,7 +230,7 @@ program run_BP09
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 6_ip,&
         rounding_method='nearest')
-    md%domains(5)%timestepping_method = 'midpoint'  
+    md%domains(5)%timestepping_method = 'rk2'  
 
     ! The Aonae domain
     call md%domains(6)%match_geometry_to_parent(&
@@ -242,7 +240,7 @@ program run_BP09
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 2_ip,&
         rounding_method = 'nearest')
-    md%domains(6)%timestepping_method = 'midpoint'  
+    md%domains(6)%timestepping_method = 'rk2'  
 
     if(very_high_res_monai) then
         ! An even more detailed Monai domain

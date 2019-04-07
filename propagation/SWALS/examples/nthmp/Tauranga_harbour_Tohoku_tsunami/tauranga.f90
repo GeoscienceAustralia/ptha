@@ -361,17 +361,6 @@ program run_Tauranga
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
         ' nx: ', md%domains(2)%nx
 
-    !! Linear boundary-condition type domain
-    !! Idea is that this behaves better with a semi-transmissive boundary
-    !! condition, so we try it hear. But it doesn't work, induces instability
-    !md%domains(3)%lower_left = global_ll + [0.0_dp, md%domains(1)%lw(2)]
-    !md%domains(3)%lw = [global_lw(1), boundary_domain_thickness * md%domains(1)%dx(2)]
-    !md%domains(3)%nx = [global_nx(1), boundary_domain_thickness]
-    !md%domains(3)%dx = md%domains(1)%dx
-    !md%domains(3)%timestepping_refinement_factor = 1_ip
-    !md%domains(3)%dx_refinement_factor = 1.0_dp
-    !md%domains(3)%timestepping_method = 'linear'
-
     ! Set the CFL limit for each model. This will override the default limit, and 
     ! affect later calls to domain%linear_timestep_max() -- which we use to help guide
     ! timestepping (even though that is manually controlled by the user)
