@@ -69,12 +69,7 @@ program dam_break
     character(len=charlen):: analytical_solution_file
 
 
-    !domain%theta = 1.0_dp
-    domain%timestepping_method = 'rk2' !'euler' !'rk2n'
-
-
-    !domain%cfl = 0.25_dp
-    !domain%compute_fluxes_inner_method='EEC'
+    domain%timestepping_method = 'rk2' 
 
     ! Allocate domain
     CALL domain%allocate_quantities(global_lw, global_nx, global_ll)

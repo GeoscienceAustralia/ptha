@@ -2,7 +2,8 @@ module timer_mod
     !
     ! Module to time parts of code
     !
-    use global_mod, only: dp, ip
+    ! Notice we do not use dp/ip precision variables -- instead use C_INT, C_DOUBLE
+
 #ifdef COARRAY
     ! Assumes that mpi is available with coarrays, which should
     ! be the case e.g. for opencoarrays
@@ -12,13 +13,13 @@ module timer_mod
     use omp_lib
 #endif
     use iso_fortran_env, only: output_unit
-    use iso_c_binding, only: C_DOUBLE
+    use iso_c_binding, only: C_DOUBLE, C_INT
 
     implicit none
 
     integer, parameter, private:: max_timers = 100
     integer, parameter, private:: charlen_timer_names=128
-    real(dp), parameter :: unstarted = -HUGE(1.0_dp)
+    real(C_DOUBLE), parameter :: unstarted = -HUGE(1.0_C_DOUBLE)
 
     private
     public:: timer_type
@@ -26,7 +27,7 @@ module timer_mod
     type:: timer_type
         character(len=charlen_timer_names) :: names(max_timers)
         real(C_DOUBLE):: start(max_timers) = unstarted
-        real(C_DOUBLE):: total(max_timers) = 0.0_dp
+        real(C_DOUBLE):: total(max_timers) = 0.0_C_DOUBLE
         integer:: ntimers = 0
         integer:: last_index = 1
 
@@ -133,10 +134,10 @@ contains
     !
     subroutine timer_print(timer, output_file_unit)
         class(timer_type), intent(in):: timer
-        integer(ip), optional:: output_file_unit
+        integer(C_INT), optional:: output_file_unit
 
         integer:: i, out_unit
-        real(dp):: timer_sum
+        real(C_DOUBLE):: timer_sum
 
         if(present(output_file_unit)) then
             out_unit = output_file_unit
@@ -153,7 +154,7 @@ contains
         if(timer%ntimers > 0) then
             do i = 1, timer%ntimers
                 write(out_unit, *) '    ', TRIM(timer%names(i)), ': ', timer%total(i), &
-                    ' : ', timer%total(i)/timer_sum*100.0_dp, TRIM('%')
+                    ' : ', timer%total(i)/timer_sum*100.0_C_DOUBLE, TRIM('%')
             end do
         end if
         write(out_unit, *) '---------------'

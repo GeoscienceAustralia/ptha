@@ -30,7 +30,7 @@
 module multidomain_mod
 
     use global_mod, only: dp, ip, charlen, default_timestepping_method, &
-        wall_elevation, minimum_allowed_depth, force_double, &
+        wall_elevation, minimum_allowed_depth, force_double, force_long_double, &
         default_output_folder, send_boundary_flux_data, &
         real_bytes, force_double_bytes, integer_bytes, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV 
@@ -73,6 +73,7 @@ module multidomain_mod
 
     ! Key parameter affecting flux correction approach
     logical, parameter :: lagged_flux_correction_default = (.false. .and. send_boundary_flux_data)
+    !logical, parameter :: lagged_flux_correction_default = (.true. .and. send_boundary_flux_data)
     ! The default can be overridden by setting md%lagged_flux_correction explicitly
     ! - If md%lagged_flux_correction = .true., then apply flux correction computed from global timestep "i" during
     !   global timestep "i+1", split up into one partial correction per domain timestep. This leads to "local"
@@ -86,9 +87,14 @@ module multidomain_mod
     ! do not directly neighbour "parts of my domain that I send to that domain". 
     integer(ip), parameter :: extra_halo_buffer_default = 0_ip !
     ! This can be overridden in the multidomain setup stage as e.g. " call md%setup(extra_halo_buffer=1_ip) "
-    ! This might help with stability (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS nesting)
+    ! This could help with stability with the "old" evolve_multidomain_one_step approach.
+    ! Other references suggest such an approach can help with stability (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS
+    ! nesting)
     ! It is ignored if we only communicate with domains that have the same domain%dx, as the benefit is really for coarse-to-fine
     ! communication
+
+    ! This is another "padding" factor for the halos. 
+    integer(ip), parameter :: extra_cells_in_halo_default = 1_ip
 
     ! (co)array to store the interior bounding-box of ALL domains (i.e. not 
     ! including their nesting layer), and their dx(1:2) values, and some 
@@ -167,10 +173,17 @@ module multidomain_mod
         ! Control additional halo width. This can enable separation of send/recv halos,
         ! which can reduce nesting artefacts in some cases
         integer(ip) :: extra_halo_buffer = extra_halo_buffer_default
+        integer(ip) :: extra_cells_in_halo = extra_cells_in_halo_default
 
         ! Control the flux correction approach. 
         ! See comment at "lagged_flux_correction_default"
         logical :: lagged_flux_correction = lagged_flux_correction_default
+
+        ! Store all_dx in the multidomain
+        real(dp), allocatable :: all_dx_md(:,:,:)
+
+        ! Store 'all_is_staggered_grid' in the multidomain
+        integer(ip), allocatable :: all_is_staggered_grid_md(:,:)
 
         contains
 
@@ -235,12 +248,12 @@ module multidomain_mod
         ! Assess 'x'
         if(x < periodic_xs(1)) then
             ! Be careful about precision loss
-            if(adjust_coordinates) x = real(periodic_xs(2) - periodic_xs(1), force_double) + real(x, force_double)
+            if(adjust_coordinates) x = real(periodic_xs(2) - periodic_xs(1), force_long_double) + real(x, force_long_double)
             periodic_point = .true.
         end if
         if(x > periodic_xs(2)) then
             ! Be careful about precision loss
-            if(adjust_coordinates) x = real(periodic_xs(1) - periodic_xs(2), force_double) + real(x, force_double)
+            if(adjust_coordinates) x = real(periodic_xs(1) - periodic_xs(2), force_long_double) + real(x, force_long_double)
             periodic_point = .true.
         end if
         if(adjust_coordinates .and. (x < periodic_xs(1) .or. x > periodic_xs(2))) then
@@ -251,12 +264,12 @@ module multidomain_mod
         ! Assess 'y'
         if(y < periodic_ys(1)) then
             ! Be careful about precision loss
-            if(adjust_coordinates) y = real(periodic_ys(2) - periodic_ys(1), force_double) + real(y, force_double)
+            if(adjust_coordinates) y = real(periodic_ys(2) - periodic_ys(1), force_long_double) + real(y, force_long_double)
             periodic_point = .true.
         end if
         if(y > periodic_ys(2)) then
             ! Be careful about precision loss
-            if(adjust_coordinates) y = real(periodic_ys(1) - periodic_ys(2), force_double) + real(y, force_double)
+            if(adjust_coordinates) y = real(periodic_ys(1) - periodic_ys(2), force_long_double) + real(y, force_long_double)
             periodic_point = .true.
         end if
         if(adjust_coordinates .and. (y < periodic_ys(1) .or. y > periodic_ys(2))) then
@@ -278,11 +291,12 @@ module multidomain_mod
     ! @param verbose logical
     !
     subroutine compute_multidomain_nesting_layer_width(domains, verbose,&
-        periodic_xs, periodic_ys, extra_halo_buffer)
+        periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo)
         type(domain_type), intent(inout) :: domains(:)
         logical, optional, intent(in) :: verbose
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
         integer(ip), intent(in) :: extra_halo_buffer
+        integer(ip), intent(in) :: extra_cells_in_halo
 
         integer(ip):: i, j, ii, nd_local, nest_layer_width, boundary_flag, n1
 
@@ -399,7 +413,7 @@ module multidomain_mod
             ! Now we know the dx of all parent domains, we can compute  
             ! the required nest_layer_width for domains(j)
             nest_layer_width = get_domain_nesting_layer_thickness(&
-                domains(j), max_parent_dx_ratio, extra_halo_buffer)
+                domains(j), max_parent_dx_ratio, extra_halo_buffer, extra_cells_in_halo)
             domains(j)%nest_layer_width = nest_layer_width
             !domains(j)%exterior_cells_width = nest_layer_width
             if(verbose1) write(log_output_unit,*) 'Nesting layer width: ', domains(j)%nest_layer_width
@@ -859,7 +873,7 @@ module multidomain_mod
 
         ! If send_boundary_flux_data is .false., then we should never do lagged_flux_correction
         ! (because no flux corrections are sent in any case!)
-        lagged_flux_correction_local = (md%lagged_flux_correction .and. send_boundary_flux_data)
+        !lagged_flux_correction_local = (md%lagged_flux_correction .and. send_boundary_flux_data)
 
         ! Evolve every domain, sending the data to communicate straight after
         ! the evolve
@@ -878,7 +892,7 @@ module multidomain_mod
 
             ! Step once
             call md%domains(j)%evolve_one_step(dt_local)
-            if(lagged_flux_correction_local) call md%domains(j)%nesting_flux_correction(1.0_dp/nt)
+
             ! Report max_dt as the peak dt during the first timestep
             ! In practice max_dt may cycle between time-steps
             max_dt_store = md%domains(j)%max_dt
@@ -886,7 +900,6 @@ module multidomain_mod
             ! Do the remaining sub-steps
             do i = 2, nt ! Loop never runs if nt < 2
                 call md%domains(j)%evolve_one_step(dt_local)
-                if(lagged_flux_correction_local) call md%domains(j)%nesting_flux_correction(1.0_dp/nt)
             end do
             md%domains(j)%max_dt = max_dt_store
 
@@ -911,38 +924,128 @@ module multidomain_mod
         ! also sync after to ensure it is not overwritten before it is used
         call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
 
-        if(send_boundary_flux_data .and. (.not. lagged_flux_correction_local)) then
-            ! Do flux correction, and send the 'possibly corrected' data. 
-            !
-            ! Note that in many cases, this 'second send' might not be of practical importance.
-            !    Indeed, even flux correction itself might often not practically matter, often.
-            !    A good, cheap compromise might be to use md%lagged_flux_correction = .true., which
-            !    should stop the mass errors from accumulating too much
-            !
-            ! FIXME: We might be able to reduce the amount of data sent (e.g. by only sending from domains
-            !       that have had some correction applied, or by not sending boundary fluxes)
+        if(send_boundary_flux_data) then
+            ! Do flux correction
             do j = 1, size(md%domains)
-                call md%domains(j)%nesting_flux_correction()
-                call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately)
+                call md%domains(j)%nesting_flux_correction_everywhere(md%all_dx_md, &
+                    md%all_is_staggered_grid_md, fraction_of = 1.0_dp)
             end do
-
-            if(.not. send_halos_immediately) then
-                ! Do all the coarray communication in one hit
-                ! This lets us 'collapse' multiple sends to a single image,
-                ! and is more efficient in a bunch of cases.
-                TIMER_START('comms2')
-                call communicate_p2p
-                TIMER_STOP('comms2')
-            end if
-
-            ! Get the (possibly corrected) halo data.
-            ! We need to sync before to ensure the information is sent, and
-            ! also sync after to ensure it is not overwritten before it is used
-            call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
-
         end if
 
     end subroutine
+
+    !! DELETE THIS AT SOME POINT
+    !!
+    !! THIS OLD VERSION OF evolve_multidomain_one_step REQUIRES MULTIPLE COMMUNICATIONS,
+    !! AND DOES NOT HAVE SUCH GOOD REPRODUCIBILITY OF OMP/COARRAY VERSIONS, COMPARED WITH
+    !! THE NEW VERSION.
+    !! FOR STABILITY IT REQUIRES EXTRA_HALO_BUFFER=1 ON COMPLICATED NESTING PROBLEMS.
+    !! IT MAY ALSO REQUIRE THE WET/DRY "iterative correction" TREATMENT IN domain_mod.f90 (compute_depth_and_velocity).
+    !! THUS THE NEW VERSION SEEMS MUCH BETTER -- BUT KEEP THIS FOR NOW IN CASE WE DISCOVER ANY ISSUES.
+    !! 
+    !!
+    !! Timestep all grids (by the global time-step).
+    !! 
+    !! This method only includes communication at each global time-step. While that's
+    !! good in terms of reducing comms, it does mean comms buffers might need
+    !! to be very large. To reduce the comms buffer size, we could have more
+    !! communication in sub-steps of the global timestep 
+    !!
+    !subroutine evolve_multidomain_one_step(md, dt)
+    !    class(multidomain_type), intent(inout) :: md
+    !    real(dp), intent(in) :: dt
+
+    !    integer(ip) :: j, i, nt
+    !    real(dp) :: dt_local, max_dt_store
+    !    logical :: lagged_flux_correction_local
+
+    !    ! If send_boundary_flux_data is .false., then we should never do lagged_flux_correction
+    !    ! (because no flux corrections are sent in any case!)
+    !    lagged_flux_correction_local = (md%lagged_flux_correction .and. send_boundary_flux_data)
+
+    !    ! Evolve every domain, sending the data to communicate straight after
+    !    ! the evolve
+    !    do j = 1, size(md%domains)
+
+    !        TIMER_START('domain_evolve')
+
+    !        ! Re-set the nesting boundary flux integrals
+    !        ! These will be used to determine how much flux-correction to apply
+    !        ! following these evolve steps
+    !        call md%domains(j)%nesting_boundary_flux_integral_multiply(c=0.0_dp)
+
+    !        ! Evolve each domain one or more steps, for a total time of dt
+    !        nt = md%domains(j)%timestepping_refinement_factor
+    !        dt_local = dt/(1.0_dp * nt)
+
+    !        ! Step once
+    !        call md%domains(j)%evolve_one_step(dt_local)
+    !        if(lagged_flux_correction_local) call md%domains(j)%nesting_flux_correction(1.0_dp/nt)
+    !        ! Report max_dt as the peak dt during the first timestep
+    !        ! In practice max_dt may cycle between time-steps
+    !        max_dt_store = md%domains(j)%max_dt
+
+    !        ! Do the remaining sub-steps
+    !        do i = 2, nt ! Loop never runs if nt < 2
+    !            call md%domains(j)%evolve_one_step(dt_local)
+    !            if(lagged_flux_correction_local) call md%domains(j)%nesting_flux_correction(1.0_dp/nt)
+    !        end do
+    !        md%domains(j)%max_dt = max_dt_store
+
+    !        TIMER_STOP('domain_evolve')
+
+    !        ! Send the halos only for domain j
+    !        call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately)
+
+    !    end do
+
+    !    if(.not. send_halos_immediately) then
+    !        ! Do all the coarray communication in one hit
+    !        ! This lets us 'collapse' multiple sends to a single image,
+    !        ! and is more efficient in a bunch of cases.
+    !        TIMER_START('comms1')
+    !        call communicate_p2p
+    !        TIMER_STOP('comms1')
+    !    end if
+
+    !    ! Get the halo information from neighbours
+    !    ! For coarray comms, we need to sync before to ensure the information is sent, and
+    !    ! also sync after to ensure it is not overwritten before it is used
+    !    call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
+
+    !    if(send_boundary_flux_data .and. (.not. lagged_flux_correction_local)) then
+    !        ! Do flux correction, and send the 'possibly corrected' data. 
+    !        !
+    !        ! Note that in many cases, this 'second send' might not be of practical importance.
+    !        !    Indeed, even flux correction itself might often not practically matter, often.
+    !        !    A good, cheap compromise might be to use md%lagged_flux_correction = .true., which
+    !        !    should stop the mass errors from accumulating too much
+    !        !
+    !        ! FIXME: We might be able to reduce the amount of data sent (e.g. by only sending from domains
+    !        !       that have had some correction applied, or by not sending boundary fluxes)
+    !        do j = 1, size(md%domains)
+    !            call md%domains(j)%nesting_flux_correction()
+    !            call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately)
+    !        end do
+
+    !        if(.not. send_halos_immediately) then
+    !            ! Do all the coarray communication in one hit
+    !            ! This lets us 'collapse' multiple sends to a single image,
+    !            ! and is more efficient in a bunch of cases.
+    !            TIMER_START('comms2')
+    !            call communicate_p2p
+    !            TIMER_STOP('comms2')
+    !        end if
+
+    !        ! Get the (possibly corrected) halo data.
+    !        ! We need to sync before to ensure the information is sent, and
+    !        ! also sync after to ensure it is not overwritten before it is used
+    !        call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
+
+    !    end if
+
+    !end subroutine
+   
    
 
     !
@@ -1221,17 +1324,19 @@ module multidomain_mod
     !  nesting region represents 'full' coarse cells
     !
     function get_domain_nesting_layer_thickness(domain, &
-        max_parent_dx_ratio, extra_halo_buffer) result(thickness)
+        max_parent_dx_ratio, extra_halo_buffer, extra_cells_in_halo) result(thickness)
 
         type(domain_type), intent(in) :: domain
         real(dp), intent(in) :: max_parent_dx_ratio
-        integer(ip), intent(in) :: extra_halo_buffer
+        integer(ip), intent(in) :: extra_halo_buffer, extra_cells_in_halo
         integer(ip) :: thickness
 
         integer(ip) :: required_cells_ts_method
 
         ! This is useful for checking the effect of 'extra' padding (e.g. for nesting-debug)
-        integer(ip), parameter :: extra_cells = 0_ip 
+        !! e.g. if we underestimate cells required e.g. due to use of gradients in nesting,
+        !! increasing this can catch it.
+        !integer(ip), parameter :: extra_cells = extra_cells_in_halo_default
 
         ! Find the minimum nesting layer thickness required by the
         ! time-stepping algorithm, assuming we only take one evolve_one_step
@@ -1259,8 +1364,8 @@ module multidomain_mod
         end select
 
         ! Now multiply by the number of evolve_one_step calls actually taken
-        thickness = (required_cells_ts_method + extra_cells) * &
-            domain%timestepping_refinement_factor 
+        thickness = (required_cells_ts_method ) * &
+            domain%timestepping_refinement_factor + extra_cells_in_halo
 
         if(nint(max_parent_dx_ratio) > 1) then
             ! Now round up to be a multiple of the parent cell-sizes
@@ -1334,7 +1439,7 @@ module multidomain_mod
 
         do k = kstart, kend 
    
-            vol_k = 0.0_force_double
+            vol_k = 0.0_force_long_double
 
             n_ext = md%domains(k)%exterior_cells_width
             ny = md%domains(k)%nx(2)
@@ -1342,12 +1447,12 @@ module multidomain_mod
             ! Integrate over the area with this domain = priority domain, which is not in periodic regions.
             ! Be careful about precision ( see calls to real(...., force_double) )
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, n_ext, nx, ny, ti, k) REDUCTION(+:vol_k)
-            vol_k = 0.0_force_double
+            vol_k = 0.0_force_long_double
             !$OMP DO SCHEDULE(STATIC)
             do j = (n_ext+1), ny - n_ext
                 local_sum = sum(&
-                        real(md%domains(k)%U( (n_ext+1):(nx-n_ext) ,j ,STG), force_double) - &
-                        real(md%domains(k)%U( (n_ext+1):(nx-n_ext) ,j ,ELV), force_double ), &
+                        real(md%domains(k)%U( (n_ext+1):(nx-n_ext) ,j ,STG), force_long_double) - &
+                        real(md%domains(k)%U( (n_ext+1):(nx-n_ext) ,j ,ELV), force_long_double ), &
                     mask=(&
                         (md%domains(k)%nesting%priority_domain_index( (n_ext+1):(nx-n_ext) ,j) == k) .and. &
                         (md%domains(k)%nesting%priority_domain_image( (n_ext+1):(nx-n_ext) ,j) == ti) .and. &
@@ -1356,7 +1461,7 @@ module multidomain_mod
                         (md%domains(k)%x( (n_ext+1):(nx-n_ext)) < md%periodic_xs(2))))
                 ! Avoid periodic regions 
                 if(md%domains(k)%y(j) < md%periodic_ys(1) .or. md%domains(k)%y(j) > md%periodic_ys(2)) local_sum = 0.0_dp
-                vol_k = vol_k + real(md%domains(k)%area_cell_y(j) * local_sum, force_double)
+                vol_k = vol_k + real(md%domains(k)%area_cell_y(j) * local_sum, force_long_double)
             end do 
             !$OMP END DO
             !$OMP END PARALLEL
@@ -1383,7 +1488,7 @@ module multidomain_mod
         if(present(separate_halos)) then
             separate_halos_local = separate_halos
         else
-            separate_halos_local = .true.
+            separate_halos_local = .false.
         end if
 
         call md%send_halos()
@@ -1724,11 +1829,13 @@ module multidomain_mod
 
             ! Now we need to set variables, like
             ! md%domains(1)%lw = global_lw
-            md%domains(next_d)%lw = ((upper_right_nx - lower_left_nx + 1)*real(md%domain_metadata(i)%lw, force_double))/ & 
+            md%domains(next_d)%lw = ((upper_right_nx - lower_left_nx + 1)*&
+                real(md%domain_metadata(i)%lw, force_long_double))/ & 
                 md%domain_metadata(i)%nx
             ! md%domains(1)%lower_left =global_ll
-            md%domains(next_d)%lower_left = real(md%domain_metadata(i)%lower_left, force_double) + &
-                real( ((lower_left_nx - 1)*real(md%domain_metadata(i)%lw, force_double))/md%domain_metadata(i)%nx, force_double)
+            md%domains(next_d)%lower_left = real(md%domain_metadata(i)%lower_left, force_long_double) + &
+                real( ((lower_left_nx - 1)*real(md%domain_metadata(i)%lw, force_long_double))&
+                /md%domain_metadata(i)%nx, force_long_double)
             ! md%domains(1)%nx = global_nx
             md%domains(next_d)%nx = upper_right_nx - lower_left_nx + 1
             ! md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
@@ -1874,6 +1981,8 @@ module multidomain_mod
             write(log_output_unit, *) 'Speed: '
             write(log_output_unit, *) '        ', maxspeed
             write(log_output_unit, *) '        ', minspeed
+            write(log_output_unit, *) 'Negative_depth_clip_counter: '
+            write(log_output_unit, *) '        ', md%domains(k)%negative_depth_fix_counter
 
         end do
 
@@ -2369,7 +2478,10 @@ module multidomain_mod
             use_wetdry_limiting_nesting=use_wetdry_limiting,&
             periodic_xs = md%periodic_xs, &
             periodic_ys = md%periodic_ys, &
-            extra_halo_buffer = md%extra_halo_buffer)
+            extra_halo_buffer = md%extra_halo_buffer, &
+            extra_cells_in_halo = md%extra_cells_in_halo, &
+            all_dx_md = md%all_dx_md, &
+            all_is_staggered_grid_md = md%all_is_staggered_grid_md)
 
         ! Storage space for mass conservation
         allocate(md%volume_initial(size(md%domains)), md%volume(size(md%domains)))
@@ -2419,17 +2531,23 @@ module multidomain_mod
     ! side of the domain.
     ! @param periodic_ys Analogous to periodic_xs
     ! @param extra_halo_buffer integer controlling the 'extra' width of halos beyond that strictly required for the solver.
+    ! @param extra_cells_in_halo another integer controlling the 'extra' width of halos.
+    ! @param all_dx_md stores the dx values for all domains in multidomain (i.e. copy of all_dx)
+    ! @param all_is_staggered_grid_md stores the all_is_staggered_grid variable in the multidomain.
     ! Increased buffer size can be used to separate neighbouring send halo regions, which can be important for numerical stability,
     ! although this also requires the use of nesting receive weights (controlled by other parts of the code)
     !
     subroutine setup_multidomain_domains(domains, verbose, use_wetdry_limiting_nesting,&
-        periodic_xs, periodic_ys, extra_halo_buffer)
+        periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo, &
+        all_dx_md, all_is_staggered_grid_md)
 
         type(domain_type), intent(inout) :: domains(:)
         logical, optional, intent(in) :: verbose
         logical, optional, intent(in) :: use_wetdry_limiting_nesting
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
-        integer(ip), intent(in) :: extra_halo_buffer
+        integer(ip), intent(in) :: extra_halo_buffer, extra_cells_in_halo
+        real(dp), allocatable, intent(inout) :: all_dx_md(:,:,:)
+        integer(ip), allocatable, intent(inout) :: all_is_staggered_grid_md(:,:)
 
         integer(ip):: i, j, k, jj, ii, nd_local, nest_layer_width, tmp2(2), nbox_max, counter, nd_global
 
@@ -2481,8 +2599,9 @@ module multidomain_mod
         ! regions, but they are computed later
         ! FIXME: This will need editing if we are to do 'multi-time-level-communication'.
         !        Or, we might be able to back-calculate the required thickness
-        call compute_multidomain_nesting_layer_width(domains=domains, verbose=verbose1,&
-            periodic_xs=periodic_xs, periodic_ys=periodic_ys, extra_halo_buffer=extra_halo_buffer)
+        call compute_multidomain_nesting_layer_width(domains=domains, verbose=verbose1, &
+            periodic_xs=periodic_xs, periodic_ys=periodic_ys, extra_halo_buffer=extra_halo_buffer, &
+            extra_cells_in_halo=extra_cells_in_halo)
 
         !
         ! Extend domain bounding boxes to include nesting layers
@@ -3039,9 +3158,26 @@ module multidomain_mod
         ! in the domains until after the following are deallocated (?)
         if(allocated(all_recv_metadata)) deallocate(all_recv_metadata)
         if(allocated(all_send_metadata)) deallocate(all_send_metadata)
-        if(allocated(all_dx)) deallocate(all_dx)
         if(allocated(all_timestepping_refinement_factor)) deallocate(all_timestepping_refinement_factor)
-        if(allocated(all_is_staggered_grid)) deallocate(all_is_staggered_grid)
+
+        ! Store the 'all_is_staggered_grid' variable -- in practice it will go inside the multidomain
+        ! Cannot just have it in the multidomain from the start, because it might be a coarray
+        if(allocated(all_is_staggered_grid)) then
+            if(allocated(all_is_staggered_grid_md)) deallocate(all_is_staggered_grid_md)
+            allocate(all_is_staggered_grid_md(size(all_is_staggered_grid, 1), size(all_is_staggered_grid,2)))
+            all_is_staggered_grid_md = all_is_staggered_grid
+            deallocate(all_is_staggered_grid)
+        end if
+
+        ! Store all dx in a variable all_dx_md, which in practice will be inside the multidomain
+        ! Cannot just have it in the multidomain from the start, because it might be a coarray
+        if(allocated(all_dx)) then
+            if(allocated(all_dx_md)) deallocate(all_dx_md)  
+            allocate( all_dx_md(2, size(all_dx, 2), size(all_dx,3)) )
+            all_dx_md = all_dx
+            deallocate(all_dx)
+        end if
+
         ! Currently we use all_bbox in a test, but should get rid of that too
         !!if(allocated(all_bbox)) deallocate(all_bbox)
 
@@ -3120,6 +3256,10 @@ module multidomain_mod
 
         ! 4 domains in this model
         allocate(md%domains(4))
+
+        ! This is required to match the reference results below (because they were developed when
+        ! it was the default approach). 
+        md%extra_cells_in_halo = 0_ip
 
         !
         ! Parent domain

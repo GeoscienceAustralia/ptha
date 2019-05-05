@@ -361,13 +361,6 @@ program run_Tauranga
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
         ' nx: ', md%domains(2)%nx
 
-    ! Set the CFL limit for each model. This will override the default limit, and 
-    ! affect later calls to domain%linear_timestep_max() -- which we use to help guide
-    ! timestepping (even though that is manually controlled by the user)
-    do j = 1, size(md%domains)
-        md%domains(j)%cfl = merge(0.7, 0.99, md%domains(j)%timestepping_method == 'linear')
-    end do
-
     ! Allocate domains and prepare comms
     call md%setup()
 
@@ -409,7 +402,7 @@ program run_Tauranga
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         write(log_output_unit, *) 'domain: ', j, 'ts: ', &
-            md%domains(j)%linear_timestep_max()*merge(1.0_dp, 0.5_dp, md%domains(j)%timestepping_method == 'linear')
+            md%domains(j)%linear_timestep_max()
     end do
 
     ! Trick to get the code to write out just after the first timestep

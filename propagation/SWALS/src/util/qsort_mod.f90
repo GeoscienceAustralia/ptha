@@ -439,6 +439,8 @@ module qsort_mod
         call sort(rns, size(rns))
 
         ! This 'match' should be equivalent to getting the sorted indices
+        !! FIXME: rare failures? Perhaps for some particular random values?
+        !! Is it because of repeated values?
         call match(rns, rns2, matches)
         if(all(matches == rns_inds)) then
             print*, "PASS"
@@ -454,6 +456,8 @@ module qsort_mod
         call sort(rns_d, size(rns))
 
         ! This 'match' should be equivalent to getting the sorted indices
+        !! FIXME: rare failures? Perhaps for some particular random values?
+        !! Is it because of repeated values?
         call match(rns_d, rns2_d, matches)
         if(all(matches == rns_inds)) then
             print*, "PASS"

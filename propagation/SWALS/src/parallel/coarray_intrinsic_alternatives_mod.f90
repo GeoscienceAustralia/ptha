@@ -43,7 +43,7 @@ module coarray_intrinsic_alternatives
         integer(int32), intent(inout) :: var    
         integer(int32), intent(in) :: source_image
 
-        integer(int32) :: ierr, var_size
+        integer :: ierr
 
         call MPI_Bcast(var, 1, MPI_INTEGER4, source_image-1, MPI_COMM_WORLD, ierr)
 
@@ -53,7 +53,7 @@ module coarray_intrinsic_alternatives
         integer(int32), intent(inout) :: var(:)
         integer(int32), intent(in) :: source_image
 
-        integer(int32) :: ierr, var_size
+        integer :: ierr, var_size
 
         var_size = size(var)
         call MPI_Bcast(var, var_size, MPI_INTEGER4, source_image-1, MPI_COMM_WORLD, ierr)
@@ -64,7 +64,7 @@ module coarray_intrinsic_alternatives
         integer(int32), intent(inout) :: var(:,:)
         integer(int32), intent(in) :: source_image
 
-        integer(int32) :: ierr, var_size
+        integer :: ierr, var_size
 
         var_size = size(var)
         call MPI_Bcast(var, var_size, MPI_INTEGER4, source_image-1, MPI_COMM_WORLD, ierr)
@@ -78,7 +78,7 @@ module coarray_intrinsic_alternatives
     subroutine co_sum_int32(var)
         integer(int32), intent(inout) :: var
 
-        integer(int32) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_INTEGER4, MPI_SUM, MPI_COMM_WORLD, ierr)
     end subroutine
@@ -86,7 +86,7 @@ module coarray_intrinsic_alternatives
     subroutine co_sum_real32(var)
         real(real32), intent(inout) :: var
 
-        integer(int32) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_REAL4, MPI_SUM, MPI_COMM_WORLD, ierr)
     end subroutine
@@ -94,7 +94,7 @@ module coarray_intrinsic_alternatives
     subroutine co_sum_real64(var)
         real(real64), intent(inout) :: var
 
-        integer(int32) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_REAL8, MPI_SUM, MPI_COMM_WORLD, ierr)
     end subroutine
@@ -106,7 +106,7 @@ module coarray_intrinsic_alternatives
     subroutine co_max_int32(var)
         integer(int32), intent(inout) :: var
 
-        integer(int32) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_INTEGER4, MPI_MAX, MPI_COMM_WORLD, ierr)
     end subroutine
@@ -114,7 +114,7 @@ module coarray_intrinsic_alternatives
     subroutine co_max_real32(var)
         real(real32), intent(inout) :: var
 
-        integer(real32) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_REAL, MPI_MAX, MPI_COMM_WORLD, ierr)
     end subroutine
@@ -122,7 +122,7 @@ module coarray_intrinsic_alternatives
     subroutine co_max_real64(var)
         real(real64), intent(inout) :: var
 
-        integer(real64) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, ierr)
     end subroutine
@@ -134,7 +134,7 @@ module coarray_intrinsic_alternatives
     subroutine co_min_int32(var)
         integer(int32), intent(inout) :: var
 
-        integer(int32) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_INTEGER4, MPI_MIN, MPI_COMM_WORLD, ierr)
     end subroutine
@@ -142,7 +142,7 @@ module coarray_intrinsic_alternatives
     subroutine co_min_real32(var)
         real(real32), intent(inout) :: var
 
-        integer(real32) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_REAL, MPI_MIN, MPI_COMM_WORLD, ierr)
     end subroutine
@@ -150,7 +150,7 @@ module coarray_intrinsic_alternatives
     subroutine co_min_real64(var)
         real(real64), intent(inout) :: var
 
-        integer(real64) :: ierr
+        integer :: ierr
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, ierr)
     end subroutine

@@ -1042,12 +1042,16 @@ module nested_grid_comms_mod
 
                     end if
 
+                    !! Test for round-off related effects.
+                    !gradient_scale_x = 0.0_dp
+                    !gradient_scale_y = 0.0_dp
+
                     ! Put k in the inner loop, so we don't have to keep recomputing 'gradient_scale'
                     do k = kL, kU
                         !
                         ! There would seem to be logical issues with using points if we might get them from other domains.
                         if(i > iim1 .and. i < iip1) then
-                        !if(i > iL .and. i < jL) then
+                        !if(i > iL .and. i < iU) then
                             ! Define positive and negative derivatives in x direction
                             dU_di_p = U(i+1, j, k) - U(i,j,k)
                             dU_di_m = U(i, j, k) - U(i-1,j,k)

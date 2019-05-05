@@ -115,11 +115,6 @@ program run_paraboloid_basin
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%timestepping_method = 'rk2' !'midpoint'
 
-    ! Linear domain should have CFL ~ 0.7
-    do j = 1, size(md%domains)
-        md%domains(j)%cfl = merge(0.7_dp, 0.99_dp, md%domains(j)%timestepping_method == 'linear')
-    end do
-
     ! Allocate domains and prepare comms
     call md%setup()
 
@@ -138,7 +133,7 @@ program run_paraboloid_basin
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         write(log_output_unit,*) 'domain: ', j, 'ts: ', &
-            md%domains(j)%linear_timestep_max()*merge(1.0_dp, 0.5_dp, md%domains(j)%timestepping_method == 'linear')
+            md%domains(j)%linear_timestep_max()
     end do
 
     call program_timer%timer_end('setup')

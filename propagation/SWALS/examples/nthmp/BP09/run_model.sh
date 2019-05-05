@@ -1,13 +1,18 @@
 #
 # NON-COARRAY
 #
+
+source ../../../src/test_run_commands
+echo 'Will run openmp version with: ' $OMP_RUN_COMMAND
+echo 'Will run coarray version with: ' $CAF_RUN_COMMAND
+
 # Clean existing binary
 rm ./BP09
 rm -r ./OUTPUTS
 # Build the code
 make -B -f make_BP09 > build_outfile.log
 # Run the code
-./BP09 > outfile.log
+eval "$OMP_RUN_COMMAND ./BP09 > outfile_omp.log"
 # Plot and report tests
 echo '# Testing openmp version '
 Rscript plot_results.R lowresolution_omp
@@ -19,11 +24,11 @@ cp ./OUTPUTS/RUN*/multidomain_log.log ./multidomain_log_lowresolution_openmp.log
 #
 # Clean existing binary
 rm ./BP09
-rm -r ./OUTPUTS 
+#rm -r ./OUTPUTS 
 # Build the code
 make -B -f make_BP09_coarray > build_outfile.log
 # Run the code
-OMP_NUM_THREADS=2 cafrun -np 6 ./BP09 > outfile.log
+eval "$CAF_RUN_COMMAND ./BP09 > outfile_ca.log"
 # Plot and report tests
 echo '# Testing coarray version '
 Rscript plot_results.R lowresolution_coarray

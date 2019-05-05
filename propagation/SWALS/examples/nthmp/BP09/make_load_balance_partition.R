@@ -66,7 +66,10 @@ previous_sum_times = colSums(md_times)
 new_sum_times = total_time
 
 print(paste0('Previous time range: ', diff(range(previous_sum_times))))
+print(paste0('  Previous ', rev(c('min', 'max')), ' times : ', rev(range(previous_sum_times))))
 print(paste0('New time range: ', diff(range(new_sum_times))))
+print(paste0('  New ', rev(c('min', 'max')), ' times : ', rev(range(new_sum_times))))
+print(paste0('Theoretical time reduction: ', max(previous_sum_times) - max(new_sum_times)))
 
 write.table(image_i_domains, paste0(most_recent_run_dir, '/load_balance_partition.txt'), 
             sep=" ", row.names=FALSE, col.names=FALSE)

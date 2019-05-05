@@ -23,7 +23,7 @@ module domain_mod
                           wall_elevation, &
                           default_output_folder, &
                           send_boundary_flux_data,&
-                          force_double
+                          force_double, long_long_ip
     use timer_mod, only: timer_type
     use point_gauge_mod, only: point_gauge_type
     use coarray_utilities_mod, only: partitioned_domain_nesw_comms_type
@@ -78,7 +78,8 @@ module domain_mod
     character(len=charlen), parameter:: domain_myid_char_format = '(I0.20)'
 
     ! Throw an error if we get a negative depth with magnitude larger than this
-    real(dp), parameter :: roundoff_tol_wet_dry = 1.0e-02_dp
+    ! (seems not to be required with the new multidomain communication approach)
+    !real(dp), parameter :: roundoff_tol_wet_dry = 1.0e-02_dp !1.0e-04_dp
 
     ! Use this in explicitly vectorized domain routines
     ! A number of methods have been coded once with loops, and once with an
@@ -128,7 +129,7 @@ module domain_mod
         ! Defaults depend on timestepping_method
         real(dp) :: theta = -HUGE(1.0_dp) !
         ! CFL number
-        real(dp):: cfl = cfl
+        real(dp):: cfl = -HUGE(1.0_dp)
 
         ! This information is useful in the context of nesting, where interior
         ! domains have cell sizes that are an integer divisor of the
@@ -165,7 +166,7 @@ module domain_mod
         character(len=charlen):: metadata_ascii_filename
 
         ! Subroutine called inside domain%compute_fluxes
-        character(len=20) :: compute_fluxes_inner_method = 'DE1'
+        character(len=20) :: compute_fluxes_inner_method = 'DE1_low_fr_diffusion' ! 'DE1'
 
         ! The domain 'interior' is surrounded by 'exterior' cells which are
         ! updated by boundary conditions, or copied from other domains. When
@@ -257,6 +258,9 @@ module domain_mod
         character(len=charlen):: output_basedir = default_output_folder
         character(len=charlen):: output_folder_name = ''
         integer(ip):: logfile_unit = output_unit
+
+
+        integer(long_long_ip) :: negative_depth_fix_counter = 0
 
         ! Type to manage netcdf grid outputs
         type(nc_grid_output_type) :: nc_grid_output
@@ -374,7 +378,8 @@ module domain_mod
         ! Nesting
         procedure:: nesting_boundary_flux_integral_multiply => nesting_boundary_flux_integral_multiply
         procedure:: nesting_boundary_flux_integral_tstep => nesting_boundary_flux_integral_tstep
-        procedure:: nesting_flux_correction => nesting_flux_correction_coarse_recvs
+        !procedure:: nesting_flux_correction => nesting_flux_correction_coarse_recvs !! DEFUNCT
+        procedure:: nesting_flux_correction_everywhere => nesting_flux_correction_everywhere
         ! If the current grid communicates to a coarser grid, this routine can make
         ! elevation constant within each coarse-grid cell in the send-region
         procedure:: use_constant_wetdry_send_elevation => use_constant_wetdry_send_elevation
@@ -661,11 +666,31 @@ module domain_mod
             case('euler')
                 domain%theta = 0.9_dp
             case('linear')
-                ! Nothing required
+                ! Nothing
             case default
                 print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
                 call generic_stop()
             end select
+        end if
+
+        ! As above for CFL 
+        if(domain%cfl == -HUGE(1.0_dp)) then
+            select case(domain%timestepping_method)
+            case('rk2')
+                domain%cfl = 0.99_dp
+            case('rk2n')
+                domain%cfl = 0.9_dp
+            case('midpoint')
+                domain%cfl = 0.99_dp
+            case('euler')
+                domain%cfl = 0.9_dp
+            case('linear')
+                domain%cfl = 0.7_dp
+            case default
+                print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
+                call generic_stop()
+            end select
+
         end if
 
         if(use_partitioned_comms) then
@@ -1314,7 +1339,7 @@ module domain_mod
         ! Must be updated before the main loop when done in parallel
 
         masscon_error = 0_ip
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain) REDUCTION(MAX:masscon_error)
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain) REDUCTION(+:masscon_error)
         masscon_error = 0_ip
         !$OMP DO SCHEDULE(STATIC)
         do j = 1, domain%nx(2)
@@ -1331,14 +1356,14 @@ module domain_mod
                     ! Nearly dry or dry case
                     if(domain%depth(i,j) < ZERO_dp) then
                         ! Clip 'round-off' type errors. FIXME: Keep track of this
-                        if(domain%depth(i,j) > -roundoff_tol_wet_dry) then
+                        !if(domain%depth(i,j) > -roundoff_tol_wet_dry) then
                             !write(domain%logfile_unit, *) '  clip: ', domain%depth(i,j)
                             domain%depth(i,j) = ZERO_dp
                             domain%U(i,j, STG) = domain%U(i,j,ELV)
-                        else
-                            ! Make the code throw an error
-                            masscon_error = 1_ip
-                        endif
+                        !else
+                        !   ! Make the code throw an error
+                            masscon_error = masscon_error + 1_ip
+                        !endif
                     end if
                     domain%velocity(i,j,UH) = ZERO_dp
                     domain%velocity(i,j,VH) = ZERO_dp
@@ -1351,152 +1376,207 @@ module domain_mod
         !$OMP END DO
         !$OMP END PARALLEL
 
-        !
-        ! Below here the code attempts to "fix" the mass balance, and throws error if it cannot
-        ! 
-        if(masscon_error > 0_ip) then
+        domain%negative_depth_fix_counter = domain%negative_depth_fix_counter + masscon_error
 
-            unrecoverable_error = .false.
+        !!
+        !! Below here the code attempts to "fix" the mass balance, and throws error if it cannot
+        !! 
+        !if(masscon_error > 0_ip) then
 
-            !
-            ! Try to correct the mass conservation errors. Should occur rarely
-            ! Can check by uncommenting this print statement
-            !print*, '.'
-            !
-            do j = 1, domain%nx(2)
-                do i = 1, domain%nx(1)
+        !    unrecoverable_error = .false.
 
-                    if(domain%depth(i,j) < ZERO_dp) then
+        !    !
+        !    ! Try to correct the mass conservation errors. Should occur rarely
+        !    ! Can check by uncommenting this print statement
+        !    !print*, '.'
+        !    !
+        !    do j = 1, domain%nx(2)
+        !        do i = 1, domain%nx(1)
 
+        !            if(domain%depth(i,j) < ZERO_dp) then
 
-                        ! Volume deficit in cell
-                        vol_me = domain%depth(i,j) * domain%area_cell_y(j)
-                        ! Volume deficit in cell, IF we accept that we can "clip" depths < roundoff_tol_wet_dry
-                        vol_me_limit = (domain%depth(i,j) + roundoff_tol_wet_dry) * domain%area_cell_y(j)
+        !                ! Count how often this happens (should be rare)
+        !                domain%negative_depth_fix_counter = domain%negative_depth_fix_counter + 1
+        !                
+        !                ! Volume deficit in cell
+        !                vol_me = domain%depth(i,j) * domain%area_cell_y(j)
+        !                ! Volume deficit in cell, IF we accept that we can "clip" depths < roundoff_tol_wet_dry
+        !                vol_me_limit = (domain%depth(i,j) + roundoff_tol_wet_dry) * domain%area_cell_y(j)
 
-                        ! Get left/right/top/bottom depths, to try to find somewhere we can steal the mass from
-                        ! Index notation
-                        !Left
-                        if(i > 1) then
-                            d_nbr(I_LEFT) = domain%depth(i-1,j)
-                            area_nbr(I_LEFT) = domain%area_cell_y(j)
-                        else
-                            d_nbr(I_LEFT) = ZERO_dp
-                            area_nbr(I_LEFT) = ZERO_dp
-                        end if
+        !                ! Get left/right/top/bottom depths, to try to find somewhere we can steal the mass from
+        !                ! Index notation
+        !                !Left
+        !                if(i > 1) then
+        !                    d_nbr(I_LEFT) = domain%depth(i-1,j)
+        !                    area_nbr(I_LEFT) = domain%area_cell_y(j)
+        !                else
+        !                    d_nbr(I_LEFT) = ZERO_dp
+        !                    area_nbr(I_LEFT) = ZERO_dp
+        !                end if
 
-                        ! Right
-                        if(i < domain%nx(1)) then
-                            d_nbr(I_RIGHT) = domain%depth(i+1,j)
-                            area_nbr(I_RIGHT) = domain%area_cell_y(j)
-                        else
-                            d_nbr(I_RIGHT) = ZERO_dp
-                            area_nbr(I_RIGHT) = ZERO_dp
-                        end if
+        !                ! Right
+        !                if(i < domain%nx(1)) then
+        !                    d_nbr(I_RIGHT) = domain%depth(i+1,j)
+        !                    area_nbr(I_RIGHT) = domain%area_cell_y(j)
+        !                else
+        !                    d_nbr(I_RIGHT) = ZERO_dp
+        !                    area_nbr(I_RIGHT) = ZERO_dp
+        !                end if
 
-                        ! Bottom
-                        if(j > 1) then
-                            d_nbr(I_BOTTOM) = domain%depth(i,j-1)
-                            area_nbr(I_BOTTOM) = domain%area_cell_y(j-1)
-                        else
-                            d_nbr(I_BOTTOM) = ZERO_dp
-                            area_nbr(I_BOTTOM) = ZERO_dp
-                        end if
+        !                ! Bottom
+        !                if(j > 1) then
+        !                    d_nbr(I_BOTTOM) = domain%depth(i,j-1)
+        !                    area_nbr(I_BOTTOM) = domain%area_cell_y(j-1)
+        !                else
+        !                    d_nbr(I_BOTTOM) = ZERO_dp
+        !                    area_nbr(I_BOTTOM) = ZERO_dp
+        !                end if
     
-                        ! Top
-                        if(j < domain%nx(2)) then
-                            d_nbr(I_TOP) = domain%depth(i,j+1)
-                            area_nbr(I_TOP) = domain%area_cell_y(j+1)
-                        else
-                            d_nbr(I_TOP) = ZERO_dp
-                            area_nbr(I_TOP) = ZERO_dp
-                        end if
+        !                ! Top
+        !                if(j < domain%nx(2)) then
+        !                    d_nbr(I_TOP) = domain%depth(i,j+1)
+        !                    area_nbr(I_TOP) = domain%area_cell_y(j+1)
+        !                else
+        !                    d_nbr(I_TOP) = ZERO_dp
+        !                    area_nbr(I_TOP) = ZERO_dp
+        !                end if
 
-                        ! Volume of water available in neighbours
-                        vol_nbr = d_nbr * area_nbr
-                        vol_avail = sum(vol_nbr, mask = vol_nbr>ZERO_dp)
+        !                ! Volume of water available in neighbours
+        !                vol_nbr = d_nbr * area_nbr
+        !                vol_avail = sum(vol_nbr, mask = vol_nbr>ZERO_dp)
 
-                        !print*, 'DEPTH_LIMITING: ', domain%myid, i, j, domain%depth(i,j), vol_me, vol_me_limit
-                        !print*, '                ', vol_avail, -vol_me/vol_avail, domain%time
+        !                !print*, 'DEPTH_LIMITING: ', domain%myid, i, j, domain%depth(i,j), vol_me, vol_me_limit
+        !                !print*, '                ', vol_avail, -vol_me/vol_avail, domain%time
 
 
-                        if( vol_avail < (-vol_me_limit) ) then
-                            unrecoverable_error = .true.
-                            write(log_output_unit,*) 'Unrecoverable mass error!'
-                            write(log_output_unit,*) i, j, domain%depth(i,j), vol_me
-                            write(log_output_unit,*) d_nbr
-                            write(log_output_unit,*) vol_nbr
-                        else
-                            if(vol_avail > vol_me_limit) then
-                                ! Take this fraction from each cell with positive volume
-                                take_fraction = min(-vol_me / vol_avail, 1.0_dp)
-                                !take_fraction = -vol_me / vol_avail
-                            else
-                                take_fraction = -vol_me_limit / vol_avail
-                            end if
+        !                if( vol_avail < (-vol_me_limit) ) then
+        !                    unrecoverable_error = .true.
+        !                    write(log_output_unit,*) 'Unrecoverable mass error!'
+        !                    write(log_output_unit,*) i, j, domain%depth(i,j), vol_me
+        !                    write(log_output_unit,*) d_nbr
+        !                    write(log_output_unit,*) vol_nbr
+        !                else
+        !                    if(vol_avail > vol_me_limit) then
+        !                        ! Take this fraction from each cell with positive volume
+        !                        take_fraction = min(-vol_me / vol_avail, 1.0_dp)
+        !                        !take_fraction = -vol_me / vol_avail
+        !                    else
+        !                        take_fraction = -vol_me_limit / vol_avail
+        !                    end if
 
-                            ! Depth corrected in i,j cell
-                            domain%depth(i,j) = ZERO_dp
-                            domain%U(i,j, STG) = domain%U(i,j,ELV)
+        !                    ! Depth corrected in i,j cell
+        !                    domain%depth(i,j) = ZERO_dp
+        !                    domain%U(i,j, STG) = domain%U(i,j,ELV)
 
-                            do i1 = 1, 4
-                                if(vol_nbr(i1) > ZERO_dp) then
-                                    ! Take the mass
-                                    d_nbr(i1) = d_nbr(i1) * take_fraction
-                                    select case(i1)
-                                    case(I_TOP)
-                                        domain%depth(i,j+1) = d_nbr(i1)
-                                        domain%U(i,j+1, STG) = domain%U(i,j+1, ELV) + d_nbr(i1)
-                                    case(I_RIGHT)
-                                        domain%depth(i+1,j) = d_nbr(i1)
-                                        domain%U(i+1,j, STG) = domain%U(i+1,j, ELV) + d_nbr(i1)
-                                    case(I_BOTTOM)
-                                        domain%depth(i,j-1) = d_nbr(i1)
-                                        domain%U(i,j-1, STG) = domain%U(i,j-1, ELV) + d_nbr(i1)
-                                    case(I_LEFT)
-                                        domain%depth(i-1,j) = d_nbr(i1)
-                                        domain%U(i-1,j, STG) = domain%U(i-1,j, ELV) + d_nbr(i1)
-                                    end select
-                                end if
-                            end do
-                        end if
-                    end if
-                end do
-            end do
+        !                    do i1 = 1, 4
+        !                        if(vol_nbr(i1) > ZERO_dp) then
+        !                            ! Take the mass
+        !                            d_nbr(i1) = d_nbr(i1) * take_fraction
+        !                            select case(i1)
+        !                            case(I_TOP)
+        !                                domain%depth(i,j+1) = d_nbr(i1)
+        !                                domain%U(i,j+1, STG) = domain%U(i,j+1, ELV) + d_nbr(i1)
+        !                            case(I_RIGHT)
+        !                                domain%depth(i+1,j) = d_nbr(i1)
+        !                                domain%U(i+1,j, STG) = domain%U(i+1,j, ELV) + d_nbr(i1)
+        !                            case(I_BOTTOM)
+        !                                domain%depth(i,j-1) = d_nbr(i1)
+        !                                domain%U(i,j-1, STG) = domain%U(i,j-1, ELV) + d_nbr(i1)
+        !                            case(I_LEFT)
+        !                                domain%depth(i-1,j) = d_nbr(i1)
+        !                                domain%U(i-1,j, STG) = domain%U(i-1,j, ELV) + d_nbr(i1)
+        !                            end select
+        !                        end if
+        !                    end do
+        !                end if
+        !            end if
+        !        end do
+        !    end do
 
-            ! If the error cannot be fixed, write a bunch of stuff
-            if(unrecoverable_error) then
-                masscon_error_neg_depth = minval(domain%depth)
-                write(domain%logfile_unit, *) 'stage < bed --> mass conservation error'
-                write(domain%logfile_unit, *) masscon_error_neg_depth, domain%nsteps_advanced
-                do j = 1, domain%nx(2)
-                    do i = 1, domain%nx(1)
-                        if(domain%depth(i,j) == masscon_error_neg_depth) then
-                            write(domain%logfile_unit,*) 'ij= ', i, j, '; x = ', domain%x(i), '; y= ', domain%y(j) , &
-                                domain%U(i,j,STG), domain%U(i,j,ELV), '; myid = ', domain%myid
-                            if(allocated(domain%nesting%priority_domain_index)) then
-                                write(domain%logfile_unit,*) 'priority index and image: ', &
-                                    domain%nesting%priority_domain_index(i,j), &
-                                    domain%nesting%priority_domain_image(i,j)
-                           end if
-                        end if
-                    end do 
-                end do
-                call domain%finalise() 
-                ! Need to stop here
-                call generic_stop()
-            end if
+        !    ! If the error cannot be fixed, write a bunch of stuff
+        !    if(unrecoverable_error) then
+        !        masscon_error_neg_depth = minval(domain%depth)
+        !        write(domain%logfile_unit, *) 'stage < bed --> mass conservation error'
+        !        write(domain%logfile_unit, *) masscon_error_neg_depth, domain%nsteps_advanced
+        !        do j = 1, domain%nx(2)
+        !            do i = 1, domain%nx(1)
+        !                if(domain%depth(i,j) == masscon_error_neg_depth) then
+        !                    write(domain%logfile_unit,*) 'ij= ', i, j, '; x = ', domain%x(i), '; y= ', domain%y(j) , &
+        !                        domain%U(i,j,STG), domain%U(i,j,ELV), '; myid = ', domain%myid
+        !                    if(allocated(domain%nesting%priority_domain_index)) then
+        !                        write(domain%logfile_unit,*) 'priority index and image: ', &
+        !                            domain%nesting%priority_domain_index(i,j), &
+        !                            domain%nesting%priority_domain_image(i,j)
+        !                   end if
+        !                end if
+        !            end do 
+        !        end do
+        !        call domain%finalise() 
+        !        ! Need to stop here
+        !        call generic_stop()
+        !    end if
        
 
-        end if
+        !end if
 
 
     end subroutine
 
-! Core flux computation
-#include "domain_compute_fluxes_DE1_include.f90"        
+! Experimental energy-conservative flux computation.
 #include "domain_compute_fluxes_EEC_include.f90"        
 
+    
+    ! Regular DE1 flux
+    subroutine compute_fluxes_DE1(domain, max_dt_out)
+
+        class(domain_type), intent(inout):: domain
+        real(dp), optional, intent(inout) :: max_dt_out
+        ! Providing this at compile time leads to substantial optimization. 
+        logical, parameter :: reduced_momentum_diffusion = .false.
+        logical, parameter :: upwind_transverse_momentum = .false.
+
+#include "domain_compute_fluxes_DE1_include.f90"        
+
+    end subroutine
+
+    ! Low-diffusion DE1 flux
+    subroutine compute_fluxes_DE1_low_fr_diffusion(domain, max_dt_out)
+
+        class(domain_type), intent(inout):: domain
+        real(dp), optional, intent(inout) :: max_dt_out
+        ! Providing this at compile time leads to substantial optimization. 
+        logical, parameter :: reduced_momentum_diffusion = .true.
+        logical, parameter :: upwind_transverse_momentum = .false.
+
+#include "domain_compute_fluxes_DE1_include.f90"        
+
+    end subroutine
+
+    ! Regular DE1 flux with upwind transverse momentum flux
+    subroutine compute_fluxes_DE1_upwind_transverse(domain, max_dt_out)
+
+        class(domain_type), intent(inout):: domain
+        real(dp), optional, intent(inout) :: max_dt_out
+        ! Providing this at compile time leads to substantial optimization. 
+        logical, parameter :: reduced_momentum_diffusion = .false.
+        logical, parameter :: upwind_transverse_momentum = .true.
+
+#include "domain_compute_fluxes_DE1_include.f90"        
+
+    end subroutine
+
+    ! Low-diffusion DE1 flux with upwind transverse momentum flux
+    subroutine compute_fluxes_DE1_low_fr_diffusion_upwind_transverse(domain, max_dt_out)
+
+        class(domain_type), intent(inout):: domain
+        real(dp), optional, intent(inout) :: max_dt_out
+        ! Providing this at compile time leads to substantial optimization. 
+        logical, parameter :: reduced_momentum_diffusion = .true.
+        logical, parameter :: upwind_transverse_momentum = .true.
+
+#include "domain_compute_fluxes_DE1_include.f90"        
+
+    end subroutine
     !
     ! Compute the fluxes, and other things, in preparation for an update of U 
     !
@@ -1522,9 +1602,20 @@ module domain_mod
         ! Flux computation -- optionally use a few different methods
         !
         select case(domain%compute_fluxes_inner_method)
+        case('DE1_low_fr_diffusion')
+            ! Something like ANUGA (sort of..) but with diffusion scaled for low-froude numbers
+            call compute_fluxes_DE1_low_fr_diffusion(domain, max_dt_out_local)
         case('DE1')
             ! Something like ANUGA (sort of..)
             call compute_fluxes_DE1(domain, max_dt_out_local)
+        case('DE1_low_fr_diffusion_upwind_transverse')
+            ! Something like ANUGA (sort of..) but with diffusion scaled for low-froude numbers
+            ! Also using an upwind treatment of the transverse flux term
+            call compute_fluxes_DE1_low_fr_diffusion_upwind_transverse(domain, max_dt_out_local)
+        case('DE1_upwind_transverse')
+            ! Something like ANUGA (sort of..)
+            ! Also using an upwind treatment of the transverse flux term
+            call compute_fluxes_DE1_upwind_transverse(domain, max_dt_out_local)
         case('EEC')
             ! Experimental energy conservative method, no wetting/drying
             call compute_fluxes_EEC(domain, max_dt_out_local)
@@ -2273,7 +2364,7 @@ module domain_mod
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
-        do k = 1, 3
+        do k = STG, VH
             do j = 1, domain%nx(2)
                 domain%backup_U(:, j, k) = domain%U(:, j, k)
             end do
@@ -2965,22 +3056,245 @@ TIMER_STOP('nesting_boundary_flux_integral_tstep')
 
     end subroutine
 
-    ! Apply flux correction in recv regions, if the domain is coarser than the
-    ! one it receives from
+!    !! DEFUNCT 
+!    !! THIS ROUTINE WAS REQUIRED FOR THE "OLD" evolve_multidomain_one_step, 
+!    !! BUT THE REVISED APPROACH SEEMS BETTER. 
+!    !! DELETE THIS AFTER SOME TIME
+!    !!
+!    ! Apply flux correction in recv regions, if the domain is coarser than the
+!    ! one it receives from
+!    !
+!    ! @param domain instance of domain type
+!    ! @param fraction_of multiply the correction by this number before applying. This
+!    !        is useful if we want to take multiple partial correction steps, rather than
+!    !        one big one.
+!    subroutine nesting_flux_correction_coarse_recvs(domain, fraction_of)
+!        class(domain_type), intent(inout) :: domain
+!        real(dp), optional, intent(in) :: fraction_of
+!
+!        integer(ip) :: i, k, n0, n1, m0, m1, dm, dn, dir
+!        integer(ip) :: my_index, my_image
+!        integer(ip) :: nbr_index, nbr_image
+!        integer(ip) :: var1, varN
+!        real(dp) :: fraction_of_local
+!
+!        if(present(fraction_of)) then
+!            fraction_of_local = fraction_of
+!        else
+!            fraction_of_local = 1.0_dp
+!        end if
+!
+!        if(send_boundary_flux_data .and. allocated(domain%nesting%recv_comms)) then
+!
+!TIMER_START('nesting_flux_correction')
+!
+!            do i = 1, size(domain%nesting%recv_comms)
+!
+!                ! Only apply correction if current domain is coarse. (Since if the
+!                ! current domain is 'finer', its flux is viewed as 'correct', while the
+!                ! parent domain may require flux correction).
+!                if(domain%nesting%recv_comms(i)%my_domain_is_finer) cycle
+!
+!                my_index = domain%nesting%recv_comms(i)%my_domain_index
+!                my_image = domain%nesting%recv_comms(i)%my_domain_image_index
+!                nbr_index = domain%nesting%recv_comms(i)%neighbour_domain_index
+!                nbr_image = domain%nesting%recv_comms(i)%neighbour_domain_image_index
+!
+!                ! Suppose we are nesting domains of the same size next to each other
+!                ! In that case, it is also not obvious which ones flux should be viewed as correct
+!                if(domain%nesting%recv_comms(i)%equal_cell_ratios) then
+!                    ! Just make a 'random' decision as to which one corrects, based on the 
+!                    ! domain_index and image_index.
+!                    if(my_index > nbr_index) then
+!                        cycle
+!                    else
+!                        if(my_index == nbr_index .and. my_image > nbr_image) cycle
+!                        ! Strictly this won't work if they have the same domain_index and image_index. 
+!                        ! (in that case both will do the correction)
+!                        ! But that would be unusual. Normally when we have domains with the same grid size
+!                        ! communicating with each other, it is because of domain decomposition
+!                    end if
+!                    ! NOTE: In the case that both neighbouring domains have the same timestepping
+!                    ! method and grid size, in principle it would seem that no correction should be applied
+!                    ! to either domain (or that the corrections will anyway be zero). However, I am 
+!                    ! getting noticably better mass conservation if I only correct one, than if I correct both, or correct neither. 
+!                    ! (It is not obviously affecting the flow variables, so is plausibly "in the range of cumulative round-off").
+!                    ! Interestingly the "mass conservation error if we correct both" is very nearly equal to the negative of
+!                    ! "the mass conservation error if we correct neither" (hence why if we just correct one, the result is better).
+!                    ! This might make sense if there is significant round-off type error that leads to non-zero corrections. If we
+!                    ! correct both, or correct neither, then such errors would be amplified. But if we only correct one, they won't. 
+!                    ! Still this could be worth investigating later.
+!                    ! 
+!                end if
+!
+!                ! For linear receive domain, only correct mass fluxes. Otherwise,
+!                ! we should be able to correct mass and depth-integrated-velocity fluxes
+!                if(domain%timestepping_method == 'linear') then
+!                    ! update STG only
+!                    var1 = STG
+!                    varN = STG
+!                else
+!                    ! update STG, UH, VH
+!                    var1 = STG
+!                    varN = VH 
+!                end if
+!
+!                !
+!                ! North boundary
+!                !
+!                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
+!                n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
+!                m0 = domain%nesting%recv_comms(i)%recv_inds(2,2)
+!                dm = 1
+!                dir = 1
+!
+!                if(m0 < domain%nx(2)) then
+!                    do k = var1, varN
+!                        ! If the current domain is the priority domain @ m0+1, and
+!                        !  the recv-from domain is the priority domain @ m0, then correct
+!                        !  the [stage, uh, vh] just to the north
+!                        domain%U(n0:n1, m0+dm, k) = domain%U(n0:n1, m0+dm, k) - &
+!                            merge(ONE_dp, ZERO_dp, &
+!                                domain%nesting%priority_domain_index(n0:n1, m0+dm) == my_index .and. &
+!                                domain%nesting%priority_domain_image(n0:n1, m0+dm) == my_image .and. &
+!                                domain%nesting%priority_domain_index(n0:n1, m0) == nbr_index .and. &
+!                                domain%nesting%priority_domain_image(n0:n1, m0) == nbr_image &
+!                            ) * &
+!                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(n1-n0+1), k)/&
+!                            domain%area_cell_y(m0+dm), dp) * fraction_of_local
+!                    end do
+!                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
+!                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
+!                    domain%U(n0:n1, m0+dm, STG) = max(domain%U(n0:n1, m0+dm, ELV), domain%U(n0:n1, m0+dm, STG))
+!                end if
+!
+!                !
+!                ! South boundary
+!                !
+!                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
+!                n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
+!                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
+!                dm = -1
+!                dir = 2
+!
+!                if(m0 > 1) then
+!
+!                    do k = var1, varN 
+!                        ! If the current domain is the priority domain @ m0-1, and
+!                        !  the recv-from domain is the priority domain @ m0, then correct
+!                        !  the [stage, uh, vh] just to the south
+!                        domain%U(n0:n1, m0+dm, k) = domain%U(n0:n1, m0+dm, k) + &
+!                            merge(ONE_dp, ZERO_dp, &
+!                                domain%nesting%priority_domain_index(n0:n1, m0+dm) == my_index .and. &
+!                                domain%nesting%priority_domain_image(n0:n1, m0+dm) == my_image .and. &
+!                                domain%nesting%priority_domain_index(n0:n1, m0) == nbr_index .and. &
+!                                domain%nesting%priority_domain_image(n0:n1, m0) == nbr_image &
+!                            ) * &
+!                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(n1-n0+1), k)/&
+!                            domain%area_cell_y(m0+dm), dp) * fraction_of_local
+!                    end do
+!
+!                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
+!                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
+!                    domain%U(n0:n1, m0+dm, STG) = max(domain%U(n0:n1, m0+dm, ELV), domain%U(n0:n1, m0+dm, STG))
+!
+!                end if
+!
+!                !
+!                ! East boundary
+!                !
+!                n0 = domain%nesting%recv_comms(i)%recv_inds(2,1)
+!                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
+!                m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
+!                dn = 1
+!                dir = 3
+!
+!                if(n0 < domain%nx(1)) then
+!
+!                    do k = var1, varN
+!
+!                        domain%U(n0+dn, m0:m1, k) = domain%U(n0+dn, m0:m1, k) - &
+!                            merge(ONE_dp, ZERO_dp, &
+!                                domain%nesting%priority_domain_index(n0+dn, m0:m1) == my_index .and. &
+!                                domain%nesting%priority_domain_image(n0+dn, m0:m1) == my_image .and. &
+!                                domain%nesting%priority_domain_index(n0, m0:m1) == nbr_index .and. &
+!                                domain%nesting%priority_domain_image(n0, m0:m1) == nbr_image &
+!                            ) * &
+!                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(m1-m0+1), k)/&
+!                            domain%area_cell_y(m0:m1), dp) * fraction_of_local
+!                    end do
+!
+!                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
+!                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
+!                    domain%U(n0+dn, m0:m1, STG) = max(domain%U(n0+dn, m0:m1, ELV), domain%U(n0+dn, m0:m1, STG))
+!
+!                end if
+!
+!                !
+!                ! West boundary
+!                !
+!                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
+!                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
+!                m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
+!                dn = -1
+!                dir = 4
+!
+!                if(n0 > 1) then
+!
+!                    do k = var1, varN
+!
+!                        domain%U(n0+dn, m0:m1, k) = domain%U(n0+dn, m0:m1, k) + &
+!                            merge(ONE_dp, ZERO_dp, &
+!                                domain%nesting%priority_domain_index(n0+dn, m0:m1) == my_index .and. &
+!                                domain%nesting%priority_domain_image(n0+dn, m0:m1) == my_image .and. &
+!                                domain%nesting%priority_domain_index(n0, m0:m1) == nbr_index .and. &
+!                                domain%nesting%priority_domain_image(n0, m0:m1) == nbr_image &
+!                            ) * &
+!                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(m1-m0+1), k)/&
+!                            domain%area_cell_y(m0:m1), dp) * fraction_of_local
+!                    end do
+!
+!                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
+!                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
+!                    domain%U(n0+dn, m0:m1, STG) = max(domain%U(n0+dn, m0:m1, ELV), domain%U(n0+dn, m0:m1, STG))
+!
+!                end if
+!    
+!
+!            end do 
+!
+!TIMER_STOP('nesting_flux_correction')
+!
+!        end if
+!
+!    end subroutine
+
+    ! Apply nesting flux correction all throughout the domain, even at non-priority-domain sites.
     !
-    ! @param domain instance of domain type
-    ! @param fraction_of multiply the correction by this number before applying. This
-    !        is useful if we want to take multiple partial correction steps, rather than
-    !        one big one.
-    subroutine nesting_flux_correction_coarse_recvs(domain, fraction_of)
+    ! The general idea is that after we have received from other domains, we can apply flux correction
+    ! "just like the other domains would do". This means we avoid having to do multiple nesting communications
+    ! to make everything consistent.
+    !
+    ! @param all_dx_md rank 3 array with dx(1:2) for all domains in the multidomain
+    ! @param all_is_staggered_grid_md rank 2 array with integer recording whether grid is staggered, for all domains in multidomain
+    ! @param fraction_of real in [0.0,1.0], apply some fraction of the flux correction. By default apply completely (i.e. 1.0)
+    !
+    subroutine nesting_flux_correction_everywhere(domain, all_dx_md, all_is_staggered_grid_md, fraction_of)
         class(domain_type), intent(inout) :: domain
+        real(dp), intent(in) :: all_dx_md(:,:,:)
+        integer(ip), intent(in) :: all_is_staggered_grid_md(:,:)
         real(dp), optional, intent(in) :: fraction_of
 
-        integer(ip) :: i, k, n0, n1, m0, m1, dm, dn, dir
-        integer(ip) :: my_index, my_image
-        integer(ip) :: nbr_index, nbr_image
-        integer(ip) :: var1, varN
-        real(dp) :: fraction_of_local
+        integer(ip) :: i, j, k, n0, n1, m0, m1, dm, dn, dir, ni, mi
+        integer(ip) :: dx_ratio, p0, p1, ii, jj, ic, jc, jL, iL, i1, j1, ind
+        integer(ip) :: my_index, my_image, nbr_index, nbr_image
+        integer(ip) :: out_index, out_image, sg, ic_last, jc_last
+        integer(ip) :: var1, varN, dm_outside, dn_outside, inv_cell_ratios_ip(2), nip, nim, njp, njm
+        real(dp) :: fraction_of_local, du_di_p, du_di_m, du_dj_p, du_dj_m, dmin, dmax
+        real(dp) :: gradient_scale_x, gradient_scale_y, d_i_jp, d_i_jm, d_ip_j, d_im_j, d_i_j
+        real(dp) :: du_di, du_dj, area_scale
+        integer, parameter :: NORTH = 1, SOUTH = 2, EAST = 3, WEST = 4
+        logical :: equal_sizes
 
         if(present(fraction_of)) then
             fraction_of_local = fraction_of
@@ -2992,85 +3306,148 @@ TIMER_STOP('nesting_boundary_flux_integral_tstep')
 
 TIMER_START('nesting_flux_correction')
 
-            do i = 1, size(domain%nesting%recv_comms)
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, all_dx_md, all_is_staggered_grid_md, fraction_of_local)
 
-                ! Only apply correction if current domain is coarse. (Since if the
-                ! current domain is 'finer', its flux is viewed as 'correct', while the
-                ! parent domain may require flux correction).
-                if(domain%nesting%recv_comms(i)%my_domain_is_finer) cycle
+            ! NOTES on possible modifications that are not yet implemented.
+            !
+            ! If the domain to be corrected is 'coarser' than my_doman and the nbr_domain, then we should aggregate the flux_errors
+            ! before doing the correction (if the aim is to exactly reproduce what would happen on the coarse domain) 
+            !
+            ! If the domain to be corrected is 'finer' than my_domain, then we are doing a correction between '2 other domains', and
+            ! the one to be corrected is 'coarser or equal' than the neighbour domain. In this case, if the domain to be corrected
+            ! is coarser than its neighbour, then it seems we do not have sufficient information to do the correction exactly as it
+            ! would be done where that domain is priority, assuming we only get aggregated fluxes, and receive central-cell values?
+            ! In principle the central-cell values should be corrected and received.  Perhaps this could be dealt with by only
+            ! sending the 'central' flux correction in that case? HOWEVER -- the above doesn't matter for "reproducibility
+            ! irrespective of parallel".
+            !
+            ! Points above are worth considering if the numerical quality is not good - but not necessarily a problem.
+
+
+            !!! DEBUG PRINT
+            !do j = 1, domain%nx(2)
+            !    do i = 1, domain%nx(1)
+            !        if( (abs(domain%x(i) - 139.2958_dp) < domain%dx(1)/2.0_dp) .and. &
+            !            (abs(domain%y(j) - 42.17019_dp) < domain%dx(2)/2.0_dp) ) then
+            !            print*, 'a ', domain%nesting%recv_comms(1)%my_domain_index, &
+            !                    domain%nesting%recv_comms(1)%my_domain_image_index, &
+            !                    domain%x(i), &
+            !                    domain%y(j), &
+            !                    domain%U(i, j, 1), &
+            !                    domain%nesting%priority_domain_index(i,j), &
+            !                    domain%nesting%priority_domain_image(i,j)
+            !        end if
+            !    end do
+            !end do
+
+            !
+            ! NORTH BOUNDARIES. 
+            !
+            ! By doing each box direction separately (i.e. all north, then all south, ...), we can ensure that multiple openmp
+            ! threads do not try to update the same domain%U cells at once.
+            !
+            !$OMP DO SCHEDULE(DYNAMIC)
+            do i = 1, size(domain%nesting%recv_comms)
 
                 my_index = domain%nesting%recv_comms(i)%my_domain_index
                 my_image = domain%nesting%recv_comms(i)%my_domain_image_index
+                ! Note that nbr_index and nbr_image correspond to the priority domain, because
+                ! we always receive from the priority domain
                 nbr_index = domain%nesting%recv_comms(i)%neighbour_domain_index
                 nbr_image = domain%nesting%recv_comms(i)%neighbour_domain_image_index
-
-                ! Suppose we are nesting domains of the same size next to each other
-                ! In that case, it is also not obvious which ones flux should be viewed as correct
-                if(domain%nesting%recv_comms(i)%equal_cell_ratios) then
-                    ! Just make a 'random' decision as to which one corrects, based on the 
-                    ! domain_index and image_index.
-                    if(my_index > nbr_index) then
-                        cycle
-                    else
-                        if(my_index == nbr_index .and. my_image > nbr_image) cycle
-                        ! Strictly this won't work if they have the same domain_index and image_index. 
-                        ! (in that case both will do the correction)
-                        ! But that would be unusual. Normally when we have domains with the same grid size
-                        ! communicating with each other, it is because of domain decomposition
-                    end if
-                    ! NOTE: In the case that both neighbouring domains have the same timestepping
-                    ! method and grid size, in principle it would seem that no correction should be applied
-                    ! to either domain (or that the corrections will anyway be zero). However, I am 
-                    ! getting noticably better mass conservation if I only correct one, than if I correct both, or correct neither. 
-                    ! (It is not obviously affecting the flow variables, so is plausibly "in the range of cumulative round-off").
-                    ! Interestingly the "mass conservation error if we correct both" is very nearly equal to the negative of
-                    ! "the mass conservation error if we correct neither" (hence why if we just correct one, the result is better).
-                    ! This might make sense if there is significant round-off type error that leads to non-zero corrections. If we
-                    ! correct both, or correct neither, then such errors would be amplified. But if we only correct one, they won't. 
-                    ! Still this could be worth investigating later.
-                    ! 
-                end if
-
-                ! For linear receive domain, only correct mass fluxes. Otherwise,
-                ! we should be able to correct mass and depth-integrated-velocity fluxes
-                if(domain%timestepping_method == 'linear') then
-                    ! update STG only
-                    var1 = STG
-                    varN = STG
-                else
-                    ! update STG, UH, VH
-                    var1 = STG
-                    varN = VH 
-                end if
 
                 !
                 ! North boundary
                 !
                 n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
                 n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
-                m0 = domain%nesting%recv_comms(i)%recv_inds(2,2)
-                dm = 1
-                dir = 1
+                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
+                m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
+                dm_outside = 1
+                dir = NORTH
 
-                if(m0 < domain%nx(2)) then
-                    do k = var1, varN
-                        ! If the current domain is the priority domain @ m0+1, and
-                        !  the recv-from domain is the priority domain @ m0, then correct
-                        !  the [stage, uh, vh] just to the north
-                        domain%U(n0:n1, m0+dm, k) = domain%U(n0:n1, m0+dm, k) - &
-                            merge(ONE_dp, ZERO_dp, &
-                                domain%nesting%priority_domain_index(n0:n1, m0+dm) == my_index .and. &
-                                domain%nesting%priority_domain_image(n0:n1, m0+dm) == my_image .and. &
-                                domain%nesting%priority_domain_index(n0:n1, m0) == nbr_index .and. &
-                                domain%nesting%priority_domain_image(n0:n1, m0) == nbr_image &
-                            ) * &
-                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(n1-n0+1), k)/&
-                            domain%area_cell_y(m0+dm), dp) * fraction_of_local
+                if(m1 < domain%nx(2) ) then
+                    do ni = n0, n1
+                        ! Look at the priority domain just to the north
+                        out_index = domain%nesting%priority_domain_index(ni, m1+dm_outside)
+                        out_image = domain%nesting%priority_domain_image(ni, m1+dm_outside)
+
+                        if(out_index == nbr_index .and. out_image == nbr_image) then
+                            ! Do nothing if the send/recv areas are from the same domain
+                        else
+                            ! Compute offset 'dm' such that 'm1 + dm' is outside or inside the recv box, as appropriate.
+                            ! Also compute other quantities required to do the update
+                            ! Note either 'dm = dm_outside' or 'dm = 0'. 
+                            call compute_offset_inside_or_out(dm, dm_outside, out_index, out_image, nbr_index, nbr_image, &
+                                my_index, my_image, is_ew = .false., dx_ratio=dx_ratio, equal_sizes=equal_sizes, &
+                                var1 = var1, varN = varN)
+
+                            ! If the area to be 'flux-corrected' has a resolution higher than
+                            ! the current domain, then the flux-correction would anyway not have been
+                            ! applied to the central cell. So no changes should occur in that case (dx_ratio = 0)
+                            if(dx_ratio > 0) then
+
+                                ! Indices to help us 'spread' the correction of >= 1 cell
+                                if(dm > 0) then
+                                    p0 = m1 + dm
+                                    p1 = m1 + dm + dx_ratio - 1
+                                    sg = 1
+                                else
+                                    p0 = m1 + dm - dx_ratio + 1
+                                    p1 = m1 + dm
+                                    ! If we update 'inside', must flip the sign of the flux correction
+                                    sg = -1
+                                end if
+
+                                if( .not. (out_index == my_index .and. out_image == my_image)) then
+                                    !! If we are correcting a boundary which does not touch the current domain,
+                                    !! then there will be a matching north/south edge from 2 different recv_boxes.
+                                    !! The corrections will be:
+                                    !!     A)   my_domain_flux - nbr_domain_flux
+                                    !!    and
+                                    !!     B)   my_domain_flux - out_domain_flux
+                                    !!
+                                    !! We want to correct with:
+                                    !!        (nbr_domain_flux - out_domain_flux) = B - A
+                                    !! In this case we need to flip the sign of flux_correction 'A' to get the desired
+                                    !! correction. The box associated with 'A' occurs when (dm /= 0).
+                                    if(dm /= 0) sg = -1 * sg
+                                end if
+
+                                if((my_index /= domain%nesting%priority_domain_index(ni, p0)) .or. &
+                                   (my_image /= domain%nesting%priority_domain_image(ni, p0)) ) then
+                                   sg = -sg
+                                end if
+
+                                area_scale = sum(domain%area_cell_y(p0:p1))
+                                do k = var1, varN
+                                    domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) - &
+                                        sg * &
+                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
+                                            area_scale, dp) * fraction_of_local
+                                end do
+
+                            end if
+                        end if
                     end do
-                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
-                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
-                    domain%U(n0:n1, m0+dm, STG) = max(domain%U(n0:n1, m0+dm, ELV), domain%U(n0:n1, m0+dm, STG))
+
+                    !print*, 'N', my_index, nbr_index, out_index, m0, m1, n0, n1, equal_sizes, &
+                    !    dx_ratio, domain%y(m1) + domain%dx(2)/2
                 end if
+
+            end do
+            !$OMP END DO
+
+            !
+            ! SOUTH BOUNDARIES.
+            !
+            !$OMP DO SCHEDULE(DYNAMIC)
+            do i = 1, size(domain%nesting%recv_comms)
+
+                my_index = domain%nesting%recv_comms(i)%my_domain_index
+                my_image = domain%nesting%recv_comms(i)%my_domain_image_index
+                nbr_index = domain%nesting%recv_comms(i)%neighbour_domain_index
+                nbr_image = domain%nesting%recv_comms(i)%neighbour_domain_image_index
 
                 !
                 ! South boundary
@@ -3078,98 +3455,613 @@ TIMER_START('nesting_flux_correction')
                 n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
                 n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
                 m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
-                dm = -1
-                dir = 2
+                m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
+                dm_outside = -1
+                dir = SOUTH
 
                 if(m0 > 1) then
+                    do ni = n0, n1
+                        ! Look at the priority domain just to the south
+                        out_index = domain%nesting%priority_domain_index(ni, m0+dm_outside)
+                        out_image = domain%nesting%priority_domain_image(ni, m0+dm_outside)
 
-                    do k = var1, varN 
-                        ! If the current domain is the priority domain @ m0-1, and
-                        !  the recv-from domain is the priority domain @ m0, then correct
-                        !  the [stage, uh, vh] just to the south
-                        domain%U(n0:n1, m0+dm, k) = domain%U(n0:n1, m0+dm, k) + &
-                            merge(ONE_dp, ZERO_dp, &
-                                domain%nesting%priority_domain_index(n0:n1, m0+dm) == my_index .and. &
-                                domain%nesting%priority_domain_image(n0:n1, m0+dm) == my_image .and. &
-                                domain%nesting%priority_domain_index(n0:n1, m0) == nbr_index .and. &
-                                domain%nesting%priority_domain_image(n0:n1, m0) == nbr_image &
-                            ) * &
-                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(n1-n0+1), k)/&
-                            domain%area_cell_y(m0+dm), dp) * fraction_of_local
+                        if(out_index == nbr_index .and. out_image == nbr_image) then
+                            ! Do nothing if the send/recv areas are from the same domain,
+                        else
+                            !
+                            ! For comments, see the NORTH case above
+                            !
+
+                            call compute_offset_inside_or_out(dm, dm_outside, out_index, out_image, nbr_index, nbr_image, &
+                                my_index, my_image, is_ew = .false., dx_ratio=dx_ratio, equal_sizes=equal_sizes, &
+                                var1=var1, varN=varN)
+
+                            if(dx_ratio > 0) then
+   
+                                if(dm < 0) then
+                                    p0 = m0 + dm - dx_ratio + 1
+                                    p1 = m0 + dm
+                                    sg = 1
+                                else
+                                    p0 = m0 + dm
+                                    p1 = m0 + dm + dx_ratio - 1
+                                    sg = -1
+                                end if
+
+                                if( .not. (out_index == my_index .and. out_image == my_image)) then
+                                    if(dm /= 0) sg = -1 * sg
+                                end if
+
+                                if((my_index /= domain%nesting%priority_domain_index(ni, p0)) .or. &
+                                   (my_image /= domain%nesting%priority_domain_image(ni, p0)) ) then
+                                   sg = -sg
+                                end if
+
+                                area_scale = sum(domain%area_cell_y(p0:p1))
+                                do k = var1, varN
+                                    domain%U(ni, p0:p1, k) = domain%U(ni, p0:p1, k) + &
+                                        sg * &
+                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(ni - n0 + 1, k)/&
+                                            area_scale, dp) * fraction_of_local
+                                end do
+                            end if
+                        end if
                     end do
 
-                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
-                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
-                    domain%U(n0:n1, m0+dm, STG) = max(domain%U(n0:n1, m0+dm, ELV), domain%U(n0:n1, m0+dm, STG))
-
+                    !print*, 'S', my_index, nbr_index, out_index, m0, m1, n0, n1, equal_sizes, &
+                    !    dx_ratio, domain%y(m0) - domain%dx(2)/2
                 end if
+            end do
+            !$OMP END DO
+
+            !
+            ! EAST BOUNDARIES.
+            !
+            !$OMP DO SCHEDULE(DYNAMIC)
+            do i = 1, size(domain%nesting%recv_comms)
+                my_index = domain%nesting%recv_comms(i)%my_domain_index
+                my_image = domain%nesting%recv_comms(i)%my_domain_image_index
+                nbr_index = domain%nesting%recv_comms(i)%neighbour_domain_index
+                nbr_image = domain%nesting%recv_comms(i)%neighbour_domain_image_index
 
                 !
                 ! East boundary
                 !
-                n0 = domain%nesting%recv_comms(i)%recv_inds(2,1)
+                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
+                n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
                 m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
                 m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
-                dn = 1
-                dir = 3
+                dn_outside = 1
+                dir = EAST
 
-                if(n0 < domain%nx(1)) then
+                if(n1 < domain%nx(1)) then
+                    do mi = m0, m1
+                        ! Look at the priority domain just to the east
+                        out_index = domain%nesting%priority_domain_index(n1 + dn_outside, mi)
+                        out_image = domain%nesting%priority_domain_image(n1 + dn_outside, mi)
 
-                    do k = var1, varN
+                        if(out_index == nbr_index .and. out_image == nbr_image) then
+                            ! Do nothing if the send/recv areas are from the same domain
+                        else
+                            ! Compute offset 'dn' such that 'n1 + dn' is outside or inside the recv box, as appropriate
+                            ! Also compute other quantities required to do the update
+                            ! Note either 'dn = dn_outside' or 'dn = 0'.
+                            call compute_offset_inside_or_out(dn, dn_outside, out_index, out_image, nbr_index, nbr_image, &
+                                my_index, my_image, is_ew = .true., dx_ratio=dx_ratio, equal_sizes=equal_sizes, &
+                                var1=var1, varN=varN)
 
-                        domain%U(n0+dn, m0:m1, k) = domain%U(n0+dn, m0:m1, k) - &
-                            merge(ONE_dp, ZERO_dp, &
-                                domain%nesting%priority_domain_index(n0+dn, m0:m1) == my_index .and. &
-                                domain%nesting%priority_domain_image(n0+dn, m0:m1) == my_image .and. &
-                                domain%nesting%priority_domain_index(n0, m0:m1) == nbr_index .and. &
-                                domain%nesting%priority_domain_image(n0, m0:m1) == nbr_image &
-                            ) * &
-                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(m1-m0+1), k)/&
-                            domain%area_cell_y(m0:m1), dp) * fraction_of_local
+                            ! If the area to be 'flux-corrected' has a finer resolution than
+                            ! the current domain, then the flux-correction would anyway not have been
+                            ! applied to the central cell. So no changes should occur in that case (dx_ratio = 0)
+                            if(dx_ratio > 0) then
+                                ! Indices to help us 'spread' the correction of >= 1 cell
+                                if(dn > 0) then
+                                    p0 = n1 + dn
+                                    p1 = n1 + dn + dx_ratio - 1
+                                    sg = 1
+                                else
+                                    p0 = n1 + dn - dx_ratio + 1
+                                    p1 = n1 + dn
+                                    ! If we update 'inside', must flip the sign of the flux correction
+                                    sg = -1
+                                end if
+
+                                if( .not. (out_index == my_index .and. out_image == my_image)) then
+                                    !! If we are correcting a boundary which does not touch the current domain,
+                                    !! then there will be a matching east/west edge from 2 different recv_boxes.
+                                    !! The corrections will be:
+                                    !!     A)   my_domain_flux - nbr_domain_flux
+                                    !!    and
+                                    !!     B)   my_domain_flux - out_domain_flux
+                                    !!
+                                    !! We want to correct with:
+                                    !!        (nbr_domain_flux - out_domain_flux) = B - A
+                                    !! In this case we need to flip the sign of flux_correction 'A' to get the desired
+                                    !! correction. The box associated with 'A' occurs when (dn /= 0).
+                                    if(dn /= 0) sg = -1 * sg
+                                end if
+
+                                !! Why?
+                                if((my_index /= domain%nesting%priority_domain_index(p0, mi)) .or. &
+                                   (my_image /= domain%nesting%priority_domain_image(p0, mi)) ) then
+                                   sg = -sg
+                                end if
+
+                                area_scale = (domain%area_cell_y(mi)*dx_ratio)
+                                do k = var1, varN
+                                    domain%U(p0:p1, mi, k) = domain%U(p0:p1, mi, k) - &
+                                        sg * &
+                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
+                                             area_scale, dp) * fraction_of_local
+                                end do
+                            end if
+                        end if
                     end do
 
-                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
-                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
-                    domain%U(n0+dn, m0:m1, STG) = max(domain%U(n0+dn, m0:m1, ELV), domain%U(n0+dn, m0:m1, STG))
-
+                    !print*, 'E', my_image, my_index, nbr_index, nbr_image, out_index, out_image, m0, m1, n0, n1, equal_sizes, sg
                 end if
+            end do
+            !$OMP END DO
 
+            !
+            ! WEST BOUNDARIES.
+            !
+            !$OMP DO SCHEDULE(DYNAMIC)
+            do i = 1, size(domain%nesting%recv_comms)
+                my_index = domain%nesting%recv_comms(i)%my_domain_index
+                my_image = domain%nesting%recv_comms(i)%my_domain_image_index
+                nbr_index = domain%nesting%recv_comms(i)%neighbour_domain_index
+                nbr_image = domain%nesting%recv_comms(i)%neighbour_domain_image_index
+                !
                 !
                 ! West boundary
                 !
                 n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
+                n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
                 m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
                 m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
-                dn = -1
-                dir = 4
+                dn_outside = -1
+                dir = WEST
 
                 if(n0 > 1) then
+                    do mi = m0, m1
+                        ! Look at the priority domain just to the west
+                        out_index = domain%nesting%priority_domain_index(n0 + dn_outside, mi)
+                        out_image = domain%nesting%priority_domain_image(n0 + dn_outside, mi)
 
-                    do k = var1, varN
+                        if(out_index == nbr_index .and. out_image == nbr_image) then
+                            ! Do nothing if the send/recv areas are from the same domain
+                        else
+                            !
+                            ! For comments, see 'EAST' case above.
+                            !
+                            call compute_offset_inside_or_out(dn, dn_outside, out_index, out_image, nbr_index, nbr_image, &
+                                my_index, my_image, is_ew=.true., dx_ratio=dx_ratio, equal_sizes=equal_sizes, &
+                                var1=var1, varN=varN)
 
-                        domain%U(n0+dn, m0:m1, k) = domain%U(n0+dn, m0:m1, k) + &
-                            merge(ONE_dp, ZERO_dp, &
-                                domain%nesting%priority_domain_index(n0+dn, m0:m1) == my_index .and. &
-                                domain%nesting%priority_domain_image(n0+dn, m0:m1) == my_image .and. &
-                                domain%nesting%priority_domain_index(n0, m0:m1) == nbr_index .and. &
-                                domain%nesting%priority_domain_image(n0, m0:m1) == nbr_image &
-                            ) * &
-                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(m1-m0+1), k)/&
-                            domain%area_cell_y(m0:m1), dp) * fraction_of_local
+                            if(dx_ratio > 0) then
+
+                                if(dn < 0) then
+                                    p0 = n0 + dn - dx_ratio + 1
+                                    p1 = n0 + dn
+                                    sg = 1
+                                else
+                                    p0 = n0 + dn
+                                    p1 = n0 + dn + dx_ratio - 1
+                                    sg = -1
+                                end if
+
+                                if( .not. (out_index == my_index .and. out_image == my_image)) then
+                                    if(dn /= 0) sg = -1 * sg
+                                end if
+
+                                if((my_index /= domain%nesting%priority_domain_index(p0, mi)) .or. &
+                                   (my_image /= domain%nesting%priority_domain_image(p0, mi)) ) then
+                                   sg = -sg
+                                end if
+
+                                area_scale = (domain%area_cell_y(mi)*dx_ratio)
+                                do k = var1, varN
+                                    domain%U(p0:p1, mi, k) = domain%U(p0:p1, mi, k) + &
+                                        sg * &
+                                        real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(mi - m0 + 1, k)/&
+                                            area_scale, dp) * fraction_of_local
+                                end do
+                            end if
+                        end if
                     end do
 
-                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
-                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
-                    domain%U(n0+dn, m0:m1, STG) = max(domain%U(n0+dn, m0:m1, ELV), domain%U(n0+dn, m0:m1, STG))
-
+                    !print*, 'W', my_image, my_index, nbr_index, nbr_image, out_index, out_image, m0, m1, n0, n1, equal_sizes, sg
                 end if
-    
+            end do
+            !$OMP END DO
 
-            end do 
+            !if(domain%timestepping_method /= 'linear') then
+            !    !! FIXME: Do we need this wet/dry protection?
+            !    !$OMP DO SCHEDULE(STATIC)
+            !    do j = 1, domain%nx(2)
+            !        domain%U(:,j,STG) = max(domain%U(:,j,STG), domain%U(:,j,ELV))
+            !    end do
+            !    !$OMP END DO
+            !end if
+
+            !
+            ! Later we do some interpolation inside some recv boxes
+            ! This may require the use of cell values outside the receive box, which hypothetically
+            ! might also be being updated.
+            ! To avoid any issues, we copy such data here, using 'recv_box_flux_error' as a scratch space.
+            !
+            !$OMP DO SCHEDULE(DYNAMIC)
+            do i = 1, size(domain%nesting%recv_comms)
+
+                ! If my domain is not finer, we do not need to do anything
+                if(.not. domain%nesting%recv_comms(i)%my_domain_is_finer) cycle
+
+                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
+                n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
+                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
+                m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
+
+                inv_cell_ratios_ip = nint(1.0_dp/domain%nesting%recv_comms(i)%cell_ratios)
+
+                !
+                ! Copy values of U north of the box
+                ! 
+                ind = min(m1 + 1 + inv_cell_ratios_ip(2)/2, domain%nx(2))
+                domain%nesting%recv_comms(i)%recv_box_flux_error(NORTH)%x(1:(n1-n0+1),1:4) = domain%U(n0:n1, ind, 1:4)
+                
+                !
+                ! Copy values of U south of the box
+                ! 
+                ind = max(m0 - 1 - inv_cell_ratios_ip(2)/2, 1)
+                domain%nesting%recv_comms(i)%recv_box_flux_error(SOUTH)%x(1:(n1-n0+1),1:4) = domain%U(n0:n1, ind, 1:4)
+
+                !
+                ! Copy values of U east of the box
+                ! 
+                ind = min(n1 + 1 + inv_cell_ratios_ip(1)/2, domain%nx(1))
+                domain%nesting%recv_comms(i)%recv_box_flux_error(EAST)%x(1:(m1-m0+1),1:4) = domain%U(ind, m0:m1, 1:4)
+
+                !
+                ! Copy values of U west of the box
+                !
+                ind = max(n0 - 1 - inv_cell_ratios_ip(1)/2, 1)
+                domain%nesting%recv_comms(i)%recv_box_flux_error(WEST)%x(1:(m1-m0+1),1:4) = domain%U(ind, m0:m1, 1:4)
+
+            end do
+            !$OMP END DO
+
+
+            !!
+            !! At this point we should do the interpolation, in a manner that ensures openmp/coarray
+            !! give the same results.
+            !!
+
+            !$OMP DO SCHEDULE(DYNAMIC)
+            do i = 1, size(domain%nesting%recv_comms)
+
+                ! If my domain is not finer, we do not need to do anything
+                if(.not. domain%nesting%recv_comms(i)%my_domain_is_finer) cycle
+
+
+                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
+                n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
+                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
+                m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
+
+                inv_cell_ratios_ip = nint(1.0_dp/domain%nesting%recv_comms(i)%cell_ratios)
+
+                ! Interpolation
+                ! Loop over 'coarse parent grid' cells by taking steps of inv_cell_ratios_ip
+                do jL = m0, (m1 - inv_cell_ratios_ip(2) + 1), inv_cell_ratios_ip(2)
+                    do iL = n0, (n1 - inv_cell_ratios_ip(1) + 1), inv_cell_ratios_ip(1)
+
+                        ! Get the 'central cell col index'. Deliberate integer divisions
+                        jc = jL + inv_cell_ratios_ip(2)/2
+                        ! Get the 'central cell row index'. Deliberate integer divisions
+                        ic = iL + inv_cell_ratios_ip(1)/2
+
+                        ! Positive/negative derivative indices, with out-of-bounds protection
+                        nip = min(ic + inv_cell_ratios_ip(1), domain%nx(1))
+                        nim = max(ic - inv_cell_ratios_ip(1), 1)
+                        njp = min(jc + inv_cell_ratios_ip(2), domain%nx(2))
+                        njm = max(jc - inv_cell_ratios_ip(2), 1)
+
+                        !if(ic == nip .or. ic == nim .or. jc == njp .or. jc == njm) then
+                        !    print*, 'BUG'
+                        !    my_index = domain%nesting%recv_comms(i)%my_domain_index
+                        !    my_image = domain%nesting%recv_comms(i)%my_domain_image_index
+                        !    print*, my_index, my_image
+                        !    print*, n0, n1, m0, m1, inv_cell_ratios_ip
+                        !    print*, ic, jc, nip, nim, njp, njm
+                        !    stop
+                        !end if
+
+                        !
+                        ! Below, compute depth change on the 'coarse grid' we receive from,
+                        ! and suppress gradients where depths are changing rapidly
+                        !
+
+                        d_i_j = domain%U(ic, jc, STG) - domain%U(ic, jc, ELV)
+                        ! depth at i+, j
+                        if(nip < n1) then
+                            d_ip_j = domain%U(nip, jc, STG) - domain%U(nip, jc, ELV)
+                        else
+                            ! Use the copied version to ensure we don't access cells with in-process updates
+                            d_ip_j = domain%nesting%recv_comms(i)%recv_box_flux_error(EAST)%x(jc - m0 + 1, STG) - &
+                                     domain%nesting%recv_comms(i)%recv_box_flux_error(EAST)%x(jc - m0 + 1, ELV)
+                        end if
+
+                        ! depth at i-, j
+                        if(nim > n0) then
+                            d_im_j = domain%U(nim, jc, STG) - domain%U(nim, jc, ELV)
+                        else
+                            ! Use the copied version to ensure we don't access cells with in-process updates
+                            d_im_j = domain%nesting%recv_comms(i)%recv_box_flux_error(WEST)%x(jc - m0 + 1, STG) - &
+                                     domain%nesting%recv_comms(i)%recv_box_flux_error(WEST)%x(jc - m0 + 1, ELV)
+                        end if
+
+                        ! Limit on x-gradient
+                        dmax = max(d_i_j, max(d_ip_j, d_im_j))
+                        dmin = min(d_i_j, min(d_ip_j, d_im_j))
+                        if( dmax <= minimum_allowed_depth * 100.0_dp) then
+                            gradient_scale_x = 0.0_dp
+                        else
+                            ! Smooth transition from 1.0 to 0.0 as dmin/dmax drops from 0.25 to 0.1
+                            gradient_scale_x = &
+                                max(0.0_dp, (dmin/dmax - 0.1_dp))/(0.25_dp - 0.1_dp)
+                            gradient_scale_x = min(1.0_dp, gradient_scale_x)
+                        end if
+
+                        ! depth at i, j+
+                        if(njp < m1) then
+                            d_i_jp = domain%U(ic, njp, STG) - domain%U(ic, njp, ELV)
+                        else
+                            ! Use the copied version to ensure we don't access cells with in-process updates
+                            d_i_jp = domain%nesting%recv_comms(i)%recv_box_flux_error(NORTH)%x(ic - n0 + 1, STG) - &
+                                     domain%nesting%recv_comms(i)%recv_box_flux_error(NORTH)%x(ic - n0 + 1, ELV)
+                        end if
+
+                        ! depth at i, j-
+                        if(njm > m0) then
+                            d_i_jm = domain%U(ic, njm, STG) - domain%U(ic, njm, ELV)
+                        else
+                            ! Use the copied version to ensure we don't access cells with in-process updates
+                            d_i_jm = domain%nesting%recv_comms(i)%recv_box_flux_error(SOUTH)%x(ic - n0 + 1, STG) - &
+                                     domain%nesting%recv_comms(i)%recv_box_flux_error(SOUTH)%x(ic - n0 + 1, ELV)
+                        end if
+
+                        ! Limit on y-gradient
+                        dmax = max(d_i_j, max(d_i_jp, d_i_jm))
+                        dmin = min(d_i_j, min(d_i_jp, d_i_jm))
+                        if( dmax <= minimum_allowed_depth * 100.0_dp) then
+                            gradient_scale_y = 0.0_dp
+                        else
+                            ! Smooth transition from 1.0 to 0.0 as dmin/dmax drops from 0.25 to 0.1
+                            gradient_scale_y = &
+                                max(0.0_dp, (dmin/dmax - 0.1_dp))/(0.25_dp - 0.1_dp)
+                            gradient_scale_y = min(1.0_dp, gradient_scale_y)
+                        end if
+
+                        !
+                        ! Interpolation
+                        !
+                        do k = STG, ELV
+
+                            ! Firstly compute interpolation gradients.
+                            ! The gradients should only use U values at the center of the coarser cells we receive from
+                            ! (i.e. U(ic, jc, ...) and index offsets by inv_cell_ratio_ip). 
+                            ! Those values should not be changed by the operations below.
+
+                            ! Gradient to the west
+                            if(nim > n0) then
+                                du_di_m = (domain%U(ic, jc, k) - domain%U(nim, jc, k))/max((ic - nim), 1)
+                            else
+                                ! Use the copied version to ensure we don't access cells with in-process updates
+                                du_di_m = (domain%U(ic, jc, k) - &
+                                     domain%nesting%recv_comms(i)%recv_box_flux_error(WEST)%x(jc - m0 + 1, k)) / &
+                                     max((ic - nim), 1)
+                            end if
+
+                            ! Gradient to the east
+                            if(nip < n1) then
+                                du_di_p = (domain%U(nip, jc, k) - domain%U(ic, jc, k))/max((nip - ic), 1)
+                            else
+                                ! Use the copied version to ensure we don't access cells with in-process updates
+                                du_di_p = (domain%nesting%recv_comms(i)%recv_box_flux_error(EAST)%x(jc - m0 + 1, k) - &
+                                    domain%U(ic, jc, k))/max((nip - ic), 1)
+                            end if
+
+                            ! Gradient to the south
+                            if(njm > m0) then
+                                du_dj_m = (domain%U(ic, jc, k) - domain%U(ic, njm, k))/max((jc - njm), 1)
+                            else
+                                ! Use the copied version to ensure we don't access cells with in-process updates
+                                du_dj_m = (domain%U(ic, jc, k) - &
+                                    domain%nesting%recv_comms(i)%recv_box_flux_error(SOUTH)%x(ic - n0 + 1, k)) / &
+                                    max((jc - njm), 1)
+                            end if
+
+                            ! Gradient to the north
+                            if(njp < m1) then
+                                du_dj_p = (domain%U(ic, njp, k) - domain%U(ic, jc, k))/max((njp - jc), 1)
+                            else
+                                ! Use the copied version to ensure we don't access cells with in-process updates
+                                du_dj_p = (domain%nesting%recv_comms(i)%recv_box_flux_error(NORTH)%x(ic - n0 + 1, k) - &
+                                    domain%U(ic, jc, k))/max((njp - jc), 1)
+                            end if
+
+                            !! Loop over the 'fine grid' cells (ii,jj) inside each coarse grid cell (ic,jc)
+                            do j1 = 1, inv_cell_ratios_ip(2)
+
+                                jj = jL - 1 + j1
+
+                                do i1 = 1, inv_cell_ratios_ip(1)
+
+                                    ii = iL - 1 + i1
+
+                                    ! x gradient
+                                    if(ii < ic) then
+                                        du_di = du_di_m
+                                    else
+                                        du_di = du_di_p
+                                    end if
+
+                                    ! y gradient
+                                    if(jj < jc) then
+                                        du_dj = du_dj_m
+                                    else
+                                        du_dj = du_dj_p
+                                    end if
+
+                                    domain%U(ii,jj,k) = domain%U(ic, jc, k) + &
+                                        (ii-ic) * du_di * gradient_scale_x  + &
+                                        (jj-jc) * du_dj * gradient_scale_y
+
+                                end do
+                            end do
+                        end do
+
+                    end do
+                end do
+                
+            end do
+            !$OMP END DO
+
+            !$OMP END PARALLEL
+
+            !!! DEBUG PRINT
+            !do j = 1, domain%nx(2)
+            !    do i = 1, domain%nx(1)
+            !        if( (abs(domain%x(i) - 139.2958_dp) < domain%dx(1)/2.0_dp) .and. &
+            !            (abs(domain%y(j) - 42.17019_dp) < domain%dx(2)/2.0_dp) ) then
+            !            print*, 'c ', domain%nesting%recv_comms(1)%my_domain_index, &
+            !                    domain%nesting%recv_comms(1)%my_domain_image_index, &
+            !                    domain%x(i), &
+            !                    domain%y(j), &
+            !                    domain%U(i, j, 1), &
+            !                    domain%nesting%priority_domain_index(i,j), &
+            !                    domain%nesting%priority_domain_image(i,j)
+            !        end if
+            !    end do
+            !end do
 
 TIMER_STOP('nesting_flux_correction')
 
         end if
+
+        contains
+            
+            ! The flux correction should either be applied inside or outside of the recv box boundary, depending
+            ! on whether the priority domain in the recv box is coarser (inside) or finer (outside) than the priority
+            ! domain just outside. 
+            !
+            ! This can be represented by changing the 'index perturbation' to 0 (inside) or +1 (outside, north/east boundary)
+            ! or -1 (outside, west/south boundary)
+            !
+            ! Supposing the index-offset for "outside" is dm_outside, this routine makes 'dm' have either the
+            ! value of 'dm_outside' (for outside) or 0 (for inside), by checking the resolutions
+            !
+            ! @param dm resultant perturbation
+            ! @param dm_outside +1 if north/east boundary, -1 if west/south boundary
+            ! @param out_index, out_image the index/image of the priority domain just outside the boundary
+            ! @param nbr_index, nbr_image the index/image of the priority domain inside the boundary (i.e. the one we receive from)
+            ! @param is_ew logical, .true. if comparing EW directions, .false. if comparing NS directions
+            ! @param dx_ratio integer ratio of 'my cell size' with the 'to-be-corrected cell size' in either the EW or NS directions
+            ! (depending on value of is_ew)
+            ! @param equal_sizes report whether the nbr/out cells are of equal size. Note this is not the same as dx=1,
+            ! because that refers to the 'my/out' cells, not 'nbr/out' cells.
+            ! @param var1 index of first variable to update (normally STG=1)
+            ! @param varN index of last variable to update (normally VH=3, except for staggered grid, where it is STG=1)
+            subroutine compute_offset_inside_or_out(dm, dm_outside, out_index, out_image, nbr_index, nbr_image, &
+                    my_index, my_image, is_ew, dx_ratio, equal_sizes, var1, varN)
+
+                integer(ip), intent(out) :: dm
+                integer(ip), intent(in) :: dm_outside, out_index, out_image, nbr_index, nbr_image, my_index, my_image
+                logical, intent(in) :: is_ew
+                integer(ip), intent(out) :: dx_ratio
+                logical, intent(out) :: equal_sizes
+                integer(ip), intent(out) :: var1, varN
+
+                integer(ip) :: i1, cor_index, cor_image
+                real(dp) :: area_out, area_nbr
+
+                ! If is_ew, then compare dx in the x direction. Otherwise compare dx in the y direction
+                if(is_ew) then
+                    i1 = 1
+                else
+                    i1 = 2
+                end if
+
+                equal_sizes = .false.
+
+                area_out = all_dx_md(1, out_index, out_image) * all_dx_md(2, out_index, out_image)
+                area_nbr = all_dx_md(1, nbr_index, nbr_image) * all_dx_md(2, nbr_index, nbr_image)
+
+                ! Figure out if the priority domain in the recv box is finer/coarser/same
+                ! than the priority domain out of the recv box
+                if(area_out > 1.25_dp*area_nbr) then
+                    ! outside priority domain is coarser. Note the '1.25' factor is a kludge -- the dx
+                    ! values should always differ by at least a factor of 2, unless they are identical. 
+                    ! The 1.25 factor simply provides protection against round-off
+                    dm = dm_outside
+                else if (area_out < 0.8_dp*area_nbr) then
+                    ! outside priority domain is finer. The '0.8' factor is a kludge to protect
+                    ! against round-off. See above.
+                    dm = 0
+                else
+                    ! Both 'nbr' and 'out' have the same cell size. 
+                    equal_sizes = .true.
+                    ! Need a rule to decide which one to correct
+                    ! Select dm based on the order of the index, with tie-breaking by image
+                    if(out_index > nbr_index) then
+                        dm = dm_outside
+                    else
+                        if(out_index < nbr_index) then
+                            dm = 0
+                        else if(out_index == nbr_index) then
+                            ! "Corner" case, decide based on the image 
+                            if(out_image > nbr_image) then
+                                dm = dm_outside
+                            else
+                                dm = 0
+                            end if
+                        end if
+                    end if
+                end if
+
+                ! Get indices for 'the domain to be corrected'  = cor_index, cor_image
+                if(dm == dm_outside) then
+                    cor_image = out_image
+                    cor_index = out_index
+                else
+                    cor_image = nbr_image
+                    cor_index = nbr_index
+                end if
+                
+                ! Get dx ratio of 'domain to be corrected' vs 'my domain', with round-off protection as above
+                if(all_dx_md(i1, cor_index, cor_image) > 0.8_dp * all_dx_md(i1, my_index, my_image)) then
+                    ! Note the factor 0.8 is a kludge to protect against round-off. The cell-size ratio should either
+                    ! be an integer, or 1/integer
+                    dx_ratio = nint(all_dx_md(i1, cor_index, cor_image)/all_dx_md(i1, my_index, my_image))
+                else
+                    dx_ratio = 0
+                end if
+
+                !! Turn off correction when nbr/out image have the same size.
+                !if(equal_sizes) dx_ratio = 0
+
+                !! Define variables to adjust
+                var1 = STG ! Always adjust stage, for mass conservation.
+                if(all_is_staggered_grid_md(cor_index, cor_image) == 1) then
+                    ! When correcting linear domains (i.e. on the staggerd grid), we do not correct momentum fluxes.
+                    varN = STG
+                else
+                    ! When correcting properly nonlinear domains (i.e. without staggered grid), we correct momentum fluxes.
+                    varN = VH
+                end if
+
+            end subroutine 
 
     end subroutine
 

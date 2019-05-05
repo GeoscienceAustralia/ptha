@@ -1,0 +1,12 @@
+#
+# Code to define commands to execute test programs
+#
+# This gives a central place to define e.g. number of openmp threads, or method
+# to invoke mpi. Makes it easier to test efficiently on different machines.
+#
+
+# This is setup for a machine with 6 cores, 12 threads.
+
+export OMP_RUN_COMMAND='OMP_NUM_THREADS=12 OMP_PROC_BIND=true '
+
+export CAF_RUN_COMMAND='OMP_NUM_THREADS=2 OMP_PROC_BIND=true mpiexec -n 6 --map-by core '

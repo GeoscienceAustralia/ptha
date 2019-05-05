@@ -1,15 +1,18 @@
 module global_mod
 
-use iso_c_binding, only: C_FLOAT, C_INT, C_DOUBLE, C_LONG, C_SIZEOF
+use iso_c_binding, only: C_FLOAT, C_INT, C_DOUBLE, C_LONG, C_SIZEOF, C_LONG_DOUBLE, C_LONG_LONG
 use iso_fortran_env, only: REAL128, REAL32 !, INT32, INT64
 
 implicit none
 
-! Default character length, real / integer precision
-integer(C_INT), parameter:: charlen = 1024, ip = C_INT !dp = C_FLOAT, ip = C_INT
+! Default character length, and integer precision
+integer(C_INT), parameter:: charlen = 1024, ip = C_INT
 
-! If -DREALFLOAT is passed to the compiler, then reals are single precision, otherwise
-! we use double
+! Occasionally we want very long integers
+integer(C_INT), parameter :: long_long_ip = C_LONG_LONG 
+
+! If -DREALFLOAT is passed to the compiler, then most reals are single precision, otherwise
+! we use double.
 #ifdef REALFLOAT
 integer(ip), parameter:: dp = C_FLOAT
 #else
@@ -20,8 +23,9 @@ integer(ip), parameter:: output_precision = C_FLOAT
 ! 'dp' is single precision. For example, this is needed to get reasonable mass
 ! conservation tracking in some models (e.g. where integrating the volume 
 ! involves subtracing the stage from the elevation, where these differ by several
-! km). The following constant is used for that purpose
+! km). The following constants are used for that purpose
 integer(ip), parameter:: force_double = C_DOUBLE
+integer(ip), parameter:: force_long_double = C_LONG_DOUBLE
 
 ! Physical constants
 real(dp), parameter:: gravity = 9.8_dp ! m/s**2

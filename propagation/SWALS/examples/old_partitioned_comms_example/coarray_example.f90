@@ -267,7 +267,6 @@ program coarray_example
     end if
 
     domain%timestepping_method = timestepping_method
-    domain%cfl = cfl
     domain%record_max_U = record_max_U
     domain%output_basedir = output_basedir
 
@@ -281,6 +280,7 @@ program coarray_example
     sync all
     call allocate_p2p_comms
 #endif
+    domain%cfl = cfl
 
     call domain%log_outputs()
     write(domain%logfile_unit, MODELCONFIG)

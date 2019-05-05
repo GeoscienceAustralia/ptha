@@ -82,7 +82,6 @@ program radial_dam_break
     !domain%theta = 1.0_dp
     domain%timestepping_method = 'rk2' !'euler' !'rk2n'
 
-    !domain%cfl = 0.25_dp
     !domain%compute_fluxes_inner_method='EEC'
 
     ! Allocate domain

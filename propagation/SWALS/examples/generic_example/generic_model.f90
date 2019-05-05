@@ -290,12 +290,13 @@ program generic_model
     end if
 
     domain%timestepping_method = timestepping_method
-    domain%cfl = cfl
     domain%record_max_U = record_max_U
     domain%output_basedir = output_basedir
     
     ! Allocate domain -- must have set timestepping method BEFORE this
     call domain%allocate_quantities(global_lw, global_nx, global_ll)
+
+    domain%cfl = cfl
 
     ! Append the input namelist to the metadata
     namelist_output_filename = trim(domain%output_folder_name) // '/modelconfig.in'

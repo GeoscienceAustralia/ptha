@@ -13,6 +13,13 @@ module local_routines
         character(len=charlen):: input_elevation(6), input_stage(1)
         real(dp), allocatable:: x(:), y(:)
         type(multi_raster_type):: elevation_data, stage_data
+        real(dp), allocatable :: random_uniform(:)
+        ! Use this to check the effect of very small perturbations of the initial condition
+        ! Eventually  a tiny perturbation will lead to differences in the results. This seems comparable
+        ! to the differences that eventually emerge in openmp/coarray versions, which seem
+        ! to begin with differences of this order in elevation/stage, I suppose due to round-off
+        ! scale differences in x/y etc that emerge from grid partitioning.
+        real(dp), parameter :: random_perturbation_scale = 0.0e-10_dp
 
         ! Stage
         domain%U(:,:,STG) = 0.0e-0_dp
@@ -32,6 +39,8 @@ module local_routines
         ! Make space for x/y coordinates, at which we will look-up the rasters
         allocate(x(domain%nx(1)), y(domain%nx(1)))
         x = domain%x
+
+        allocate(random_uniform(domain%nx(1)))
         
         ! Set stage and elevation row-by-row.
         ! This saves memory compared to doing it all at once.
@@ -50,21 +59,27 @@ module local_routines
             !! Test only
             !domain%U(:,j,STG) = 1.0e+02_dp*(x + y) + 1.0e-03_dp
             !domain%U(:,j,ELV) = 1.0e+02_dp*(x + y)
-
-
+            call random_number(random_uniform)
+            domain%U(:,j,STG) = domain%U(:,j,STG) + random_perturbation_scale * (random_uniform-0.5_dp)
+            call random_number(random_uniform)
+            domain%U(:,j,ELV) = domain%U(:,j,ELV) + random_perturbation_scale * (random_uniform-0.5_dp)
+        
         end do
         call elevation_data%finalise()
         call stage_data%finalise()
 
-        call domain%smooth_elevation()
+        !call domain%smooth_elevation()
 
-        deallocate(x,y)
+        deallocate(x,y, random_uniform)
 
         !print*, 'CONSTANT ELEVATION FOR TESTING'
         !domain%U(:,:, ELV) = -20.0_dp 
 
         if(domain%timestepping_method /= 'linear') then
             domain%manning_squared = 0.02_dp * 0.02_dp !0.0_dp !0.025_dp * 0.025_dp
+        else
+            ! Clip depths in linear solver, to avoid 'stage below the bed'
+            where(domain%U(:,:,ELV) < 0.0_dp .and. domain%U(:,:,ELV) > -5.0_dp) domain%U(:,:,ELV) = -5.0_dp
         end if
 
         ! Ensure stage >= elevation
@@ -104,6 +119,8 @@ program run_BP09
 
     ! Increase mesh_refine to decrease the cell size (i.e. for convergence testing)
     real(dp), parameter :: mesh_refine = 0.4_dp ! Good for more efficient testing
+    !real(dp), parameter :: mesh_refine = 1.0_dp ! Standard
+
     ! Optionally put a "very high res" domain around monai. Slows things down and the code requires care
     ! If this is true, then also use "mesh_refine = 1.0_dp"
     logical, parameter:: very_high_res_monai = .false.
@@ -120,9 +137,9 @@ program run_BP09
     real(dp), parameter :: very_high_res_static_before_time = 235.0_dp
 
     ! Approx timestep between outputs
-    real(dp) :: approximate_writeout_frequency = 7.50_dp
-    !real(dp) :: final_time = 300.0_dp * 1.0_dp
+    real(dp) :: approximate_writeout_frequency = 7.50_dp !0.6_dp * (1.0_dp/0.4_dp ) * 1.0_dp/3.0_dp!7.50_dp
     real(dp) :: final_time = 3600.0_dp * 1.0_dp
+    !real(dp) :: final_time = 300.0_dp * 1.0_dp
 
     ! Length/width
     real(dp), parameter, dimension(2):: global_lw = [3.9_dp, 4.6_dp]
@@ -190,6 +207,7 @@ program run_BP09
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%timestepping_method = 'linear'
+    md%domains(1)%linear_solver_is_truely_linear = .true.
 
     ! Higher res around region of interest
     call md%domains(2)%match_geometry_to_parent(&
@@ -203,7 +221,7 @@ program run_BP09
     ! Okushiri Island focus
     call md%domains(3)%match_geometry_to_parent(&
         parent_domain=md%domains(2), &
-        lower_left  = [139.34_dp, 41.95_dp], &
+        lower_left  = [139.3_dp, 41.95_dp], &
         upper_right = [139.6_dp, 42.26_dp], &
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 2_ip)
@@ -263,14 +281,8 @@ program run_BP09
     end if
 
 
-
-    ! Linear domain should have CFL ~ 0.7
-    do j = 1, size(md%domains)
-        md%domains(j)%cfl = merge(0.7_dp, 0.99_dp, md%domains(j)%timestepping_method == 'linear')
-    end do
-
     ! Allocate domains and prepare comms
-    call md%setup()
+    call md%setup(extra_halo_buffer=0_ip)
 
     call md%memory_summary()
 
@@ -294,7 +306,7 @@ program run_BP09
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         write(log_output_unit,*) 'domain: ', j, 'ts: ', &
-            md%domains(j)%linear_timestep_max()*merge(1.0_dp, 0.5_dp, md%domains(j)%timestepping_method == 'linear')
+            md%domains(j)%linear_timestep_max()
     end do
 
     call program_timer%timer_end('setup')

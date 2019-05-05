@@ -434,11 +434,6 @@ program BP06
         ' nx: ', md%domains(2)%nx
 
      
-    ! Set the CFL limit for each model. 
-    do j = 1, size(md%domains)
-        md%domains(j)%cfl = merge(0.7, 0.99, md%domains(j)%timestepping_method == 'linear')
-    end do
-
     ! Allocate domains and prepare comms
     call md%setup()
 
@@ -461,7 +456,7 @@ program BP06
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         print*, 'domain: ', j, 'ts: ', &
-            md%domains(j)%linear_timestep_max()*merge(1.0, 0.5, md%domains(j)%timestepping_method == 'linear')
+            md%domains(j)%linear_timestep_max()
     end do
 
     ! Trick to get the code to write out just after the first timestep

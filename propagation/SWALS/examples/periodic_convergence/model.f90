@@ -116,11 +116,6 @@ program run_model
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%timestepping_method = 'rk2' ! Do not use linear!
 
-    ! Linear domain should have CFL ~ 0.7
-    do j = 1, size(md%domains)
-        md%domains(j)%cfl = 0.99_dp
-    end do
-
     ! Allocate domains and prepare comms
     call md%setup()
     call md%memory_summary()

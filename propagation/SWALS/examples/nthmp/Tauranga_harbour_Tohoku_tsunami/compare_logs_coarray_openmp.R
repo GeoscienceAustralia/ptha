@@ -67,3 +67,36 @@ points(times_coarray, max_speed_coarray, t='l', col='black', lty='dotted')
 legend('topleft', c('Openmp', 'Coarray'), lty=c('dashed', 'dotted'), col=2:1, cex=2)
 dev.off()
 
+
+# Compare coarray and openmp at a particular time-slice
+
+source('../../../plot.R')
+library(fields)
+
+md_omp = Sys.glob('OUTPUTS/RUN*')[1]
+md_ca = Sys.glob('OUTPUTS/RUN*')[2]
+
+if(md_omp == md_ca){
+    print('FAIL: Cannot find separate openmp/coarray directories')
+}
+
+# Plot difference between coarray/openmp at a particular time
+time_ind =  200
+desired_var = 'vh' # 'stage' does not show any differences, perhaps because the range is high (due to topography)?
+domain_inds = 1:2
+err_stats = rep(NA, length(domain_inds))
+png(paste0('Compare_omp_coarray_time_index_', time_ind, '.png'), width=5, height=9, res=300, units='in')
+par(mfrow = c(2,1))
+for(domain_ind in domain_inds){
+    xOMP = merge_domains_nc_grids(multidomain_dir=md_omp, domain_index=domain_ind, desired_var=desired_var, desired_time_index=time_ind)
+    xCA  = merge_domains_nc_grids(multidomain_dir=md_ca,  domain_index=domain_ind, desired_var=desired_var, desired_time_index=time_ind)
+    image.plot(xOMP$xs, xOMP$ys, xOMP[[desired_var]] - xCA[[desired_var]], asp=1)
+    err_stats[domain_ind] = max(abs(xOMP[[desired_var]] - xCA[[desired_var]]), na.rm=TRUE)
+}
+dev.off()
+
+if(all(err_stats < 1.0e-8)){
+    print('PASS')
+}else{
+    print('FAIL')
+}

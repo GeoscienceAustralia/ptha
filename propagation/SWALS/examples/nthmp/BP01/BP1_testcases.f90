@@ -136,7 +136,6 @@ program bp1
 
     ! Linear requires a fixed timestep 
     if (timestepping_method == 'linear') then
-        domain%cfl = 0.9_dp
         timestep = domain%linear_timestep_max() 
     end if
 

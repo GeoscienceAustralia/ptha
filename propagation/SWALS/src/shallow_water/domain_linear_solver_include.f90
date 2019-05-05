@@ -32,6 +32,7 @@
         real(dp):: inv_cell_area_dt, inv_cell_area_dt_vh_g, inv_cell_area_dt_g
         ! d(stage)/dy; depth_{i, j+1/2}, depth_{j, i+1/2, j}
         real(dp):: dw_j(domain%nx(1)), h_jph_vec(domain%nx(1)), h_iph_vec(domain%nx(1))
+        real(dp) :: h_iph_wet(domain%nx(1)), h_jph_wet(domain%nx(1))
        
         integer(ip):: j, i, xl, xu, yl, yu, n_ext, my_omp_id, n_omp_threads, loop_work_count
         integer(ip) :: yl_special, yU_special
@@ -349,6 +350,11 @@
                     ZERO_dp, &
                     (( domain%U(xL:(xU-1),j,ELV) < -minimum_allowed_depth + domain%msl_linear).AND.&
                      ( domain%U((xL+1):xU,j,ELV) < -minimum_allowed_depth + domain%msl_linear)))  
+
+                ! These variables can be used to zero UH/VH when stage < bed. However, this would introduce a nonlinearity into the
+                ! equations, which seems undesirable for a 'truely-linear' approach.
+                h_jph_wet(xL:xU    ) = ONE_dp
+                h_iph_wet(xL:(xU-1)) = ONE_dp
             else
                 !
                 ! In the g * d * dStage/dx type term, let d vary. This means
@@ -371,8 +377,13 @@
                     ((domain%U(    xL:(xU-1), j, STG) - domain%U(    xL:(xU-1),j,ELV) > minimum_allowed_depth).AND.&
                      (domain%U((xL+1):xU    , j, STG) - domain%U((xL+1):xU    ,j,ELV) > minimum_allowed_depth)))  
 
+                ! Zero UH/VH when depths are < minimum_allowed_depth. This introduces an additional nonlinearity into the equations,
+                ! but seems reasonable in the 'not-truely-linear case'
+                h_jph_wet(xL:xU    ) = merge(ONE_dp, ZERO_dp, h_jph_vec(xL:xU)     > ZERO_dp)
+                h_iph_wet(xL:(xU-1)) = merge(ONE_dp, ZERO_dp, h_iph_vec(xL:(xU-1)) > ZERO_dp)
 
             end if
+
 
 #ifdef CORIOLIS
             ! 'Old' VH at (i+1/2, j+1/2) -- requires averaging values at 'i,j+1/2' and 'i+1, j+1/2'
@@ -413,13 +424,13 @@
 #ifndef CORIOLIS
                 ! This update has no coriolis [other that that, it still 'works' in spherical coords]
                 ! duh/dt = - g * h0/(R cos (lat)) [ d stage / dlon ]
-                domain%U(i, j, UH) = domain%U(i, j, UH) - &
+                domain%U(i, j, UH) = domain%U(i, j, UH) * h_iph_wet(i) - &
                     inv_cell_area_dt_g * h_iph_vec(i) *&
                     (domain%U(i+1, j, STG) - domain%U(i, j, STG)) * &
                     domain%distance_left_edge(i+1)
 
                 ! dvh/dt = - g * h0/(R) [ d stage / dlat ]
-                domain%U(i, j, VH) = domain%U(i, j, VH) - &
+                domain%U(i, j, VH) = domain%U(i, j, VH) * h_jph_wet(i) - &
                     inv_cell_area_dt_vh_g * h_jph_vec(i) *&
                     dw_j(i) * domain%distance_bottom_edge(j+1)
 #else        
@@ -428,14 +439,14 @@
                 !
 
                 ! duh/dt = - g * h0/(R cos (lat)) [ d stage / dlon ] + f*vh
-                domain%U(i, j, UH) = domain%U(i, j, UH) - &
+                domain%U(i, j, UH) = domain%U(i, j, UH) * h_iph_wet(i) - &
                     inv_cell_area_dt_g * h_iph_vec(i) *&
                     (domain%U(i+1, j, STG) - domain%U(i, j, STG)) * &
                     domain%distance_left_edge(i+1) &
                     + dt_half_coriolis(i) * (vh_iph_jmh(i) + vh_iph_jph(i))
 
                 ! dvh/dt = - g * h0/(R) [ d stage / dlat ] - f*uh
-                domain%U(i, j, VH) = domain%U(i, j, VH) - &
+                domain%U(i, j, VH) = domain%U(i, j, VH) * h_jph_wet(i) - &
                     inv_cell_area_dt_vh_g * h_jph_vec(i) *&
                     dw_j(i) * domain%distance_bottom_edge(j+1) &
                     - dt_half_coriolis_jph(i) * (uh_i_j(i) + uh_i_jp1(i))

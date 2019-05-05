@@ -9,10 +9,17 @@
 ! @param max_dt_out optional real scalar, if provided is set to the max_dt
 !     allowed based on CFL limit.
 !
-subroutine compute_fluxes_DE1(domain, max_dt_out)
+!subroutine compute_fluxes_DE1(domain, max_dt_out)
 
-    type(domain_type), intent(inout) :: domain
-    real(dp), intent(inout) :: max_dt_out
+    !type(domain_type), intent(inout) :: domain
+    !real(dp), intent(inout) :: max_dt_out
+
+    ! Option to use upwind flux for transverse momentum component, as in 
+    ! e.g. "Chertock et al. (2017) Well-balanced schemes for
+    ! the shallow water equations with Coriolis forces"
+    !logical, parameter :: upwind_transverse_momentum = .false.
+    logical, parameter :: upwind_normal_momentum = .false.
+    !logical, parameter :: reduced_momentum_diffusion = .true.
 
     ! wavespeeds
     real(dp):: s_max, s_min, gs_pos, gs_neg, sminsmax
@@ -37,12 +44,6 @@ subroutine compute_fluxes_DE1(domain, max_dt_out)
     integer(ip):: n_ext, loop_work_count, j_low, j_high, my_omp_id, n_omp_threads
     ! Option to use experimental non-conservative pressure gradient term (with .false.)
     logical, parameter :: flux_conservative_pressure = .true.
-    ! Option to use upwind flux for transverse momentum component, as in 
-    ! e.g. "Chertock et al. (2017) Well-balanced schemes for
-    ! the shallow water equations with Coriolis forces"
-    logical, parameter :: upwind_transverse_momentum = .false.
-    logical, parameter :: upwind_normal_momentum = .false.
-    logical, parameter :: reduced_momentum_diffusion = .true.
     
     ! Bottom edge values on 'positive' and 'negative' side (i.e. viewed from j and j-1 respectively)
     ! theta_wd controls the limiting
@@ -539,4 +540,4 @@ subroutine compute_fluxes_DE1(domain, max_dt_out)
     max_dt = ONE_dp/max_dt_inv
     max_dt_out = max_dt
 
-end subroutine
+!end subroutine

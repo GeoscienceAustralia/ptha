@@ -35,7 +35,8 @@ module netcdf_util
         ! Time varying variables
         integer :: var_stage_id, var_uh_id, var_vh_id, var_elev_id
         ! Static variables
-        integer :: var_max_stage_id, var_elev0_id, var_is_priority_domain_id, var_manningsq_id
+        integer :: var_max_stage_id, var_elev0_id, var_is_priority_domain_id, &
+            var_manningsq_id, var_priority_ind, var_priority_img
 
         integer :: num_output_steps = 0
 
@@ -116,7 +117,7 @@ module netcdf_util
         character(charlen), optional, intent(in):: attribute_names(:)
         character(charlen), optional, intent(in):: attribute_values(:)
 
-        integer:: iNcid, output_prec, i, output_int1, spatial_stride, spatial_start(2)
+        integer:: iNcid, output_prec, i, output_byte, output_int4, spatial_stride, spatial_start(2)
         integer:: nx, ny, first_index_relative_to_full_domain(2), output_prec_force_double
         real(dp) :: dx_local(2)
 
@@ -176,7 +177,8 @@ module netcdf_util
 
         output_prec_force_double = NF90_REAL8
 
-        output_int1 = NF90_BYTE
+        output_byte = NF90_BYTE
+        output_int4 = NF90_INT4
 
         !
         ! Create output file
@@ -226,9 +228,18 @@ module netcdf_util
         if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_elev_id, 1, 1, 3), __LINE__)
 
         ! priority_domain -- Use 1 if the current domain is the priority domain, and zero otherwise
-        call check(nf90_def_var(iNcid, "is_priority_domain", output_int1, &
+        call check(nf90_def_var(iNcid, "is_priority_domain", output_byte, &
             [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
             nc_grid_output%var_is_priority_domain_id), __LINE__ )
+        
+        ! priority_domain index
+        call check(nf90_def_var(iNcid, "priority_domain_index", output_int4, &
+            [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
+            nc_grid_output%var_priority_ind), __LINE__ )
+        ! priority domain image
+        call check(nf90_def_var(iNcid, "priority_domain_image", output_int4, &
+            [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
+            nc_grid_output%var_priority_img), __LINE__ )
 
         ! Peak stage
         if(record_max_U) then
@@ -393,6 +404,29 @@ SRC_GIT_VERSION ))
                 start = [1, (i - spatial_start(2))/spatial_stride(2) + 1]), &
                 __LINE__)
         end do 
+
+        ! Priority domain index
+        do i = spatial_start(2), nxy(2), spatial_stride(2)
+
+            call check(nf90_put_var(&
+                iNcid, &
+                nc_grid_output%var_priority_ind, &
+                priority_domain_index(spatial_start(1):nxy(1):spatial_stride(1),i), &
+                start = [1, (i - spatial_start(2))/spatial_stride(2) + 1]), &
+                __LINE__)
+        end do 
+
+        ! Priority domain image
+        do i = spatial_start(2), nxy(2), spatial_stride(2)
+
+            call check(nf90_put_var(&
+                iNcid, &
+                nc_grid_output%var_priority_img, &
+                priority_domain_image(spatial_start(1):nxy(1):spatial_stride(1),i), &
+                start = [1, (i - spatial_start(2))/spatial_stride(2) + 1]), &
+                __LINE__)
+        end do 
+
 #endif
     end subroutine
     !

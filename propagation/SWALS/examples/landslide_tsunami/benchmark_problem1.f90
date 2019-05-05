@@ -144,7 +144,6 @@ program benchmark_problem1
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_method = 'rk2' ! Can set this to 'linear', but the difference with the analytical solution becomes obvious
-    md%domains(1)%cfl = 0.99_dp
 
     !print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
     !    ' nx: ', md%domains(1)%nx
@@ -157,7 +156,6 @@ program benchmark_problem1
     md%domains(2)%timestepping_refinement_factor = 1_ip
     md%domains(2)%dx_refinement_factor = res_d1/res_d2
     md%domains(2)%timestepping_method = 'rk2'
-    md%domains(2)%cfl = 0.99_dp
     
     ! Allocate domains and prepare comms
     call md%setup()
@@ -179,7 +177,7 @@ program benchmark_problem1
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         print*, 'domain: ', j, 'ts: ', &
-            md%domains(j)%linear_timestep_max()*merge(1.0, 0.5, md%domains(j)%timestepping_method == 'linear')
+            md%domains(j)%linear_timestep_max()
     end do
 
     ! Trick to get the code to write out just after the first timestep
