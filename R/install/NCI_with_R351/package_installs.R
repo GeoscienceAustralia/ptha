@@ -90,7 +90,7 @@ install.packages('testthat')
 
 #
 # I had problems getting roxygen2 and devtools to build. However, they are
-# not required to build the package, if you already have a ptha_XXXX.tar.gz
+# not required to build the package, if you already have a rptha_XXXX.tar.gz
 # file that has been created on another machine. That is a practical compromise
 #
 
