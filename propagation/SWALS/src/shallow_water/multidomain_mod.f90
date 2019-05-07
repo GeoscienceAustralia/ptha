@@ -2776,6 +2776,9 @@ module multidomain_mod
         do j = 1, nd_local
 
             ! Unique local ID, packed into a long interger, to make overflow unlikely
+            ! FIXME: Perhaps set this earlier? It would be better to have 'j' instead
+            ! reflecting the 'big domain' index (in the case of partitioning), to make
+            ! post-processing more obvious.
             domains(j)%myid = ti * large_64_int + j 
             if(verbose1) write(log_output_unit,*) ' Domain ID: ', domains(j)%myid
 
