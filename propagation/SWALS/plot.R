@@ -743,3 +743,79 @@ merge_multidomain_gauges<-function(md){
     return(merged_gauges)
 }
 
+#
+# Make a load balance partition file, using a 'greedy' approach to distribute
+# domains to images. The calculations assume that multidomain_dir did not
+# use load balancing.
+#
+# @param multidomain_dir directory containing the multidomain outputs
+# @param verbose if FALSE, suppress printing
+# @return the function environment invisibly (so you have to use assignment to capture it)
+#
+make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
+
+    if(is.na(multidomain_dir)){
+        multidomain_dir = rev(sort(Sys.glob('./OUTPUTS/RUN*')))[1]
+    }
+
+    print(paste0('Generating load_balance_partition.txt file in ', multidomain_dir))
+    print('To be valid, this assumes that job used coarrays without any load balancing.')
+    print(' Future jobs which use this file should have the same number of images and threads')
+
+    md_files = Sys.glob(paste0(multidomain_dir, '/multi*.log'))
+
+    md_runtime<-function(md_file){
+        md_lines = readLines(md_file)
+
+        domain_timer_starts = grep('Timer     ', md_lines)
+        total_wallclock_lines = grep('Total WALLCLOCK', md_lines)
+
+        #
+        nd = length(domain_timer_starts)
+        total_wallclock = sapply(md_lines[total_wallclock_lines[1:nd]], 
+            f<-function(x) as.numeric(strsplit(x, ':', fixed=TRUE)[[1]][2]))
+     
+        return(as.numeric(total_wallclock))
+    }
+    md_times = sapply(md_files, md_runtime)
+
+    # 
+    image_i_domains = matrix(NA, nrow=nrow(md_times), ncol=ncol(md_times))
+
+    mean_domain_times = apply(md_times, 1, mean)
+
+    counter = 0
+    for(i in rev(order(mean_domain_times))){
+        counter = counter+1
+        if(counter == 1){
+            # Assign the largest domain in the same order
+            image_i_domains[i,] = 1:ncol(image_i_domains)
+            total_time = md_times[i, image_i_domains[i,]]
+        }else{
+            # Assign domains to images based on their "total time" so far
+            rank_next_domains = rank(md_times[i,], ties='random')
+            rank_total_times = rank(-total_time, ties='random')
+            image_i_domains[i,] = match(rank_total_times, rank_next_domains)
+            total_time = total_time + md_times[i, image_i_domains[i,]]
+        }
+
+        if(length(unique(image_i_domains[i,])) != length(image_i_domains[i,])){
+            stop('Some domains are missing / double ups')
+        }
+    }
+
+    previous_sum_times = colSums(md_times)
+    new_sum_times = total_time
+
+    print(paste0('Previous time range: ', diff(range(previous_sum_times))))
+    print(paste0('  Previous ', rev(c('min', 'max')), ' times : ', rev(range(previous_sum_times))))
+    print(paste0('New time range: ', diff(range(new_sum_times))))
+    print(paste0('  New ', rev(c('min', 'max')), ' times : ', rev(range(new_sum_times))))
+    print(paste0('Theoretical time reduction: ', max(previous_sum_times) - max(new_sum_times)))
+
+    write.table(image_i_domains, paste0(multidomain_dir, '/load_balance_partition.txt'), 
+                sep=" ", row.names=FALSE, col.names=FALSE)
+
+    return(invisible(environment()))
+}
+
