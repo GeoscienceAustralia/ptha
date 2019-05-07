@@ -552,8 +552,10 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
 
     # Check that times are compatible in all files
     if(length(ts) > 1){
+        # We will accept "numerically negligable" differences in times
+        dts = c(0, diff(ts[[1]]))
         for(i in 2:length(ts)){
-            if(!all(ts[[i]] == ts[[1]])){
+            if(!all(abs(ts[[i]] - ts[[1]]) <= dts/1000)){
                 print(paste0('Times in file ', i, ': ', nc_grid_files[i],
                             ' are incompatible with times in file 1: ', nc_grid_files[1]))
                 print(cbind(ts[[i]], ts[[1]]))

@@ -96,6 +96,17 @@ module multidomain_mod
     ! This is another "padding" factor for the halos. 
     integer(ip), parameter :: extra_cells_in_halo_default = 1_ip
 
+    ! Local timestepping of domains
+    ! This affects the distributed-memory version of the model, where we partition the 
+    ! larger domains in parallel. Doing that allows "in principle" for some domains to take
+    ! shorter timesteps than others (if the depth/speed vary significantly). We can exploit
+    ! this to reduce model run-times (generally load-balancing will be required)
+#ifdef LOCAL_TIMESTEP_PARTITIONED_DOMAINS
+    logical, parameter :: local_timestep_partitioned_domains = .true.
+#else
+    logical, parameter :: local_timestep_partitioned_domains = .false.
+#endif
+
     ! (co)array to store the interior bounding-box of ALL domains (i.e. not 
     ! including their nesting layer), and their dx(1:2) values, and some 
     ! metadata describing inter-domain communication needs. 
@@ -888,6 +899,19 @@ module multidomain_mod
 
             ! Evolve each domain one or more steps, for a total time of dt
             nt = md%domains(j)%timestepping_refinement_factor
+
+            if(local_timestep_partitioned_domains .and. md%domains(j)%timestepping_method /= 'linear') then
+                ! For nonlinear domains, allow fewer timesteps, if it won't cause blowup. 
+                !
+                ! This is most important in distributed-memory applications where the partitioned
+                ! domain could support substantially different time-steps in different parts of the
+                ! "big domain". In combination with load balancing, we can get large speedups.
+                !
+                ! NOTE: This will lead to different timestepping with different numbers of cores,
+                ! so the results should depend on the number of cores.
+                nt = max(1, min(nt, ceiling(dt/(0.9_dp * md%domains(j)%max_dt)) ))
+            end if
+
             dt_local = dt/(1.0_dp * nt)
 
             ! Step once

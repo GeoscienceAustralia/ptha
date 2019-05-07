@@ -7,13 +7,13 @@ k = grep('Global stage range', multidomain_log_openmp)
 max_stage_openmp = as.numeric(multidomain_log_openmp[k+1])
 min_stage_openmp = as.numeric(multidomain_log_openmp[k+2])
 max_speed_openmp = as.numeric(multidomain_log_openmp[k+4])
-times_openmp = as.numeric(multidomain_log_openmp[k-15])
+times_openmp = as.numeric(multidomain_log_openmp[k-17])
 
 k = grep('Global stage range', multidomain_log_coarray)
 max_stage_coarray = as.numeric(multidomain_log_coarray[k+1])
 min_stage_coarray = as.numeric(multidomain_log_coarray[k+2])
 max_speed_coarray = as.numeric(multidomain_log_coarray[k+4])
-times_coarray = as.numeric(multidomain_log_coarray[k-15])
+times_coarray = as.numeric(multidomain_log_coarray[k-17])
 
 if(all( abs(times_coarray - times_openmp) < 1.0e-06)){
     print('PASS')
