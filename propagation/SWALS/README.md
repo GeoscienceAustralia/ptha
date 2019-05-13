@@ -156,6 +156,7 @@ A number of preprocessor variables can be defined to control features of the cod
     -DNOCORIOLIS (do not include Coriolis terms in spherical coordinates. By default, Coriolis terms are used when -DSPHERICAL is defined. They can ONLY be used in conjunction with spherical coordinates. But even in this case, sometimes it is useful to turn them off, hence this variable)
     -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS (this uses MPI instead of coarrays for communication in the main evolve loop. It improved performance using Intel-Fortran 2019, which does not have great coarray performance)
     -DCOARRAY_PROVIDE_CO_ROUTINES (provide implementations of coarray collectives using MPI. This is required for Intel-Fortran 2019, which does not support Fortran coarray collectives such as co_min, co_max, co_sum, etc)
+    -DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS Allow nonlinear domains inside a multidomain to take larger timesteps than suggested by timestepping_refinement_factor, if this would be stable. This can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file, which can be generated from a preliminary model run (see make_load_balance_partition in plot.R)
 
 Other options that are less often useful include:
 

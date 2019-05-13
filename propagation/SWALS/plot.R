@@ -513,7 +513,7 @@ nearest_point_in_multidomain<-function(x, y, md){
 # @param proj4string projection info for the raster if return_raster=TRUE
 #
 # ## Example 1 -- provide vector of file names
-# all_nc = Sys.glob('RUN_ID000000000*00001_*/Grid*.nc')
+# all_nc = Sys.glob('RUN_ID000000000*00001_0*/Grid*.nc')
 # p1 = merge_domains_nc_grids(nc_grid_files = all_nc)
 # 
 # ## Example 2 -- nicer -- provide multidomain directory, and domain index
@@ -539,7 +539,7 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
         # if we have enough domains. For instance, if we have 10001 domains,
         # then domains '1' and '10001' would both match together, which
         # would be wrong. Some way off however!
-        nc_grid_files = Sys.glob(paste0(multidomain_dir, '/RUN_ID0*000', domain_index, '_*/Grid*.nc'))
+        nc_grid_files = Sys.glob(paste0(multidomain_dir, '/RUN_ID0*000', domain_index, '_*/Grid*000', domain_index, '.nc'))
     }
     
     # Open all the files 
@@ -754,7 +754,7 @@ merge_multidomain_gauges<-function(md){
 # @param verbose if FALSE, suppress printing
 # @return the function environment invisibly (so you have to use assignment to capture it)
 #
-make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
+make_load_balance_partition_DEFUNCT<-function(multidomain_dir=NA, verbose=TRUE){
 
     if(is.na(multidomain_dir)){
         multidomain_dir = rev(sort(Sys.glob('./OUTPUTS/RUN*')))[1]
@@ -817,6 +817,125 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
 
     write.table(image_i_domains, paste0(multidomain_dir, '/load_balance_partition.txt'), 
                 sep=" ", row.names=FALSE, col.names=FALSE)
+
+    return(invisible(environment()))
+}
+
+
+# Partition a set into 'k' groups with roughly equal sum
+# This uses the naive algorithm.
+partition_into_k<-function(vals, k){
+
+    sums = rep(0, k)
+    inds = vector(mode='list', length=k)
+
+    sorted_vals = sort(vals, index.return=TRUE, decreasing=TRUE)
+    for(i in 1:length(vals)){
+        vi = sorted_vals$x[i]
+        add_to = which.min(sums)
+        inds[[add_to]] = c(inds[[add_to]], sorted_vals$ix[i])
+        sums[add_to] = sums[add_to] + vi
+    }
+    return(list(inds, sums))
+}
+
+#
+# Make a load balance partition file, using a 'greedy' approach to distribute
+# domains to images. Unlike the old approach, there is no restruction that an equal
+# number of domains ends up on each image (so long as their run-time is closer).
+# This can improve the speed.
+#
+# @param multidomain_dir directory containing the multidomain outputs
+# @param verbose if FALSE, suppress printing
+# @return the function environment invisibly (so you have to use assignment to capture it)
+#
+make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
+
+    if(is.na(multidomain_dir)){
+        multidomain_dir = rev(sort(Sys.glob('./OUTPUTS/RUN*')))[1]
+    }
+
+    print(paste0('Generating load_balance_partition.txt file in ', multidomain_dir))
+    print(' Future jobs which use this file should have the same number of images and threads')
+
+    md_files = Sys.glob(paste0(multidomain_dir, '/multi*.log'))
+
+    # Get the runtime from the log file. 
+    # This depends on the timer information having been printed
+    md_runtime<-function(md_file){
+        md_lines = readLines(md_file)
+
+        domain_timer_starts = grep('Timer of md%domains(', md_lines, fixed=TRUE)
+        total_wallclock_lines = grep('Total WALLCLOCK', md_lines)
+
+        # Get the wallclock time as numeric
+        nd = length(domain_timer_starts)
+        total_wallclock = sapply(md_lines[total_wallclock_lines[1:nd]], 
+            f<-function(x) as.numeric(strsplit(x, ':', fixed=TRUE)[[1]][2]))
+
+        # Get the domain index and local index
+        domain_index_and_local_index = sapply(md_lines[domain_timer_starts + 2], 
+            f<-function(x) as.numeric(read.table(text=x)),
+            simplify=FALSE)
+        names(domain_index_and_local_index) = rep("", length(domain_index_and_local_index))
+        domain_index_and_local_index = matrix(unlist(domain_index_and_local_index), ncol=2, byrow=TRUE)
+    
+        output = list(total_wallclock = as.numeric(total_wallclock), 
+                      domain_index_and_local_index = domain_index_and_local_index) 
+        #return(as.numeric(total_wallclock))
+        return(output)
+    }
+    md_timer_data = sapply(md_files, md_runtime, simplify=FALSE)
+
+    md_times = lapply(md_timer_data, f<-function(x) x$total_wallclock)
+    md_domain_indices = lapply(md_timer_data, f<-function(x) x$domain_index_and_local_index[,1])
+    md_local_indices = lapply(md_timer_data, f<-function(x) x$domain_index_and_local_index[,2])
+
+    num_images = length(md_times)
+
+    md_times_vec = unlist(md_times)
+    md_domain_indices_vec = unlist(md_domain_indices)
+    md_local_indices_vec = unlist(md_local_indices)
+
+    # Make a partition of md_times_vec into num_images groups, with roughly equal sums
+    splitter = partition_into_k(md_times_vec, num_images)
+    dsplit = diff(range(splitter[[2]]))
+    print(paste0('Range of partition total times: ', signif(dsplit), 4, 's '))
+    print(paste0('             (as a percentage): ', signif(dsplit/mean(splitter[[2]])*100, 4),'%'))
+    old_range = diff(range(unlist(lapply(md_times, sum))))
+    print(paste0('Previous time range           : ', signif(old_range, 4)))
+    print(paste0('       (potential improvement): ', signif(old_range - dsplit, 4), 's'))
+
+    # 
+    unique_domains = sort(unique(md_domain_indices_vec))
+    if(! all(unique_domains == seq(1, max(unique_domains)))){
+        stop('unique_domains is not a sequence of the form from 1, 2, ... max')
+    }
+    # Make the data for the load balance file
+    load_balance_data = vector(mode='list', length=max(unique_domains))
+    for(i in unique_domains){
+        # Find local indices on this domain
+        k = which(md_domain_indices_vec == i)
+        local_inds = md_local_indices_vec[k]
+        # Find which image gets this local index
+        for(j in 1:max(local_inds)){
+            n = which(local_inds == j)
+            kn = k[n]
+            # kn will only be in one entry of splitter[[1]] (the list of
+            # indices on each images). Find it 
+            target_domain = which(unlist(lapply(splitter[[1]], f<-function(x) kn%in%x)))
+            load_balance_data[[i]] = c(load_balance_data[[i]], target_domain)
+        }
+    }
+
+    output_file = paste0(multidomain_dir, '/load_balance_partition.txt')
+    for(i in 1:length(load_balance_data)){
+        if(i == 1){
+            cat(load_balance_data[[i]], '\n', file=output_file)
+        }else{
+            cat(load_balance_data[[i]], '\n', file=output_file, append=TRUE)
+        }
+    }
 
     return(invisible(environment()))
 }

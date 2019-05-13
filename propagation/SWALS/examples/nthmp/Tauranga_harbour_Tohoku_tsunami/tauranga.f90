@@ -330,6 +330,7 @@ program run_Tauranga
     ! nd domains in this model
     nd = 2
     allocate(md%domains(nd))
+    !md%load_balance_file = 'load_balance_partition.txt'
 
     !
     ! Setup basic metadata
@@ -344,6 +345,7 @@ program run_Tauranga
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_method = 'rk2' !'midpoint' !'rk2'
+    !md%domains(1)%theta = 4.0_dp
 
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
@@ -357,6 +359,7 @@ program run_Tauranga
         timestepping_refinement_factor=nest_ratio,&
         rounding_method='nearest')
     md%domains(2)%timestepping_method = 'rk2' !'midpoint' !'rk2'
+    !md%domains(2)%theta = 4.0_dp
 
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
         ' nx: ', md%domains(2)%nx
@@ -431,28 +434,11 @@ program run_Tauranga
 
         call md%evolve_one_step(global_dt)
 
-        !global_dt = md%domains(1)%max_dt * 0.9_dp
-
         if (md%domains(1)%time > final_time) exit
     end do
 
     call program_timer%timer_end('evolve')
-
-    ! Print out timing info for each
-    do i = 1, nd
-        !lg = md%domains(i)%logfile_unit
-        write(log_output_unit, *) ''
-        write(log_output_unit, *) 'Timer ', i
-        write(log_output_unit, *) ''
-        call md%domains(i)%timer%print(output_file_unit=log_output_unit)
-        call md%domains(i)%write_max_quantities()
-        call md%domains(i)%finalise()
-    end do
-    
-    write(log_output_unit, *) ''
-    write(log_output_unit, *) 'Multidomain timer'
-    write(log_output_unit, *) ''
-    call md%timer%print(log_output_unit)
+    call md%finalise_and_print_timers
 
     write(log_output_unit,*) ''
     write(log_output_unit, *) 'Program timer'

@@ -4,6 +4,7 @@ module file_io_mod
     !
 
     use global_mod, only: dp, ip, charlen
+    use ragged_array_mod
     implicit none
 
 
@@ -134,5 +135,55 @@ module file_io_mod
         close(file_unit_no)
 
     end subroutine
+
+    ! Basic routine to read a ragged array from a file
+    subroutine read_ragged_array_2d_ip(ragged_array_2d_ip, filename)
+        type(ragged_array_2d_ip_type), intent(inout) :: ragged_array_2d_ip
+        character(len=charlen), intent(in) :: filename
+
+        integer :: fid, nd, i, nc, j
+        ! Assume the lines will never be longer than this
+        integer, parameter :: sb = 1024
+        integer(ip) :: buffer(sb)
+        integer(ip), parameter :: empty = -HUGE(1_ip)
+        character(len=8192) :: string_buf
+
+    
+        open(newunit=fid, file=filename, action='read')
+
+        nd = count_file_lines(fid)
+        !print*, 'nd: ', nd
+        !print*, 'allocating ... '
+        !if(allocated(ragged_array_2d_ip%i2)) deallocate(ragged_array_2d_ip%i2)
+        allocate(ragged_array_2d_ip%i2(nd))
+      
+        !print*, 'reading ...' 
+        do i = 1, nd
+
+            read(fid, '(A)') string_buf
+            string_buf = trim(string_buf)
+            !print*, 'string_buf: ', string_buf
+
+            ! "Clear" the buffer
+            buffer = empty
+            ! This will populate the first few entries of buffer with values
+            read(string_buf, *, end=101) (buffer(j), j=1, sb)
+            101 continue
+
+            ! Ensure we did not exceed the buffer space
+            if(buffer(sb) /= empty) stop 'buffer too small, increase size sb'
+
+            ! Put the values into the ragged array
+            nc = count(buffer > empty)
+            !print*, 'i: ', i, 'nc: ', nc
+            if(allocated(ragged_array_2d_ip%i2(i)%i1)) deallocate(ragged_array_2d_ip%i2(i)%i1)
+            allocate(ragged_array_2d_ip%i2(i)%i1(nc))
+            ragged_array_2d_ip%i2(i)%i1 = buffer(1:nc)
+        end do
+
+        close(fid)
+
+    end subroutine
+
 
 end module

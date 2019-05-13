@@ -272,17 +272,7 @@ program nesting_reflection
     end do
 
     call program_timer%timer_end('evolve')
-
-    ! Print out timing info for each
-    do i = 1, nd
-        lg = log_output_unit
-        write(lg, *) ''
-        write(lg, *) 'Timer ', i
-        write(lg, *) ''
-        call md%domains(i)%timer%print(output_file_unit=lg)
-        call md%domains(i)%write_max_quantities()
-        call md%domains(i)%finalise()
-    end do
+    call md%finalise_and_print_timers
 
     print*, ''
     call program_timer%print(output_file_unit=log_output_unit)

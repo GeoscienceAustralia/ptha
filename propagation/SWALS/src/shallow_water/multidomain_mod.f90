@@ -44,7 +44,7 @@ module multidomain_mod
         linked_p2p_images, communicate_p2p, size_of_send_recv_buffers !, send_buffer, recv_buffer
     use iso_fortran_env, only: int64
     use logging_mod, only: log_output_unit, send_log_output_to_file
-    use file_io_mod, only: mkdir_p
+    use file_io_mod, only: mkdir_p, read_ragged_array_2d_ip
     use timer_mod, only: timer_type
 #ifdef COARRAY_PROVIDE_CO_ROUTINES
     use coarray_intrinsic_alternatives, only: co_broadcast, co_max, co_sum, co_min
@@ -71,16 +71,6 @@ module multidomain_mod
 #endif
 
 
-    ! Key parameter affecting flux correction approach
-    logical, parameter :: lagged_flux_correction_default = (.false. .and. send_boundary_flux_data)
-    !logical, parameter :: lagged_flux_correction_default = (.true. .and. send_boundary_flux_data)
-    ! The default can be overridden by setting md%lagged_flux_correction explicitly
-    ! - If md%lagged_flux_correction = .true., then apply flux correction computed from global timestep "i" during
-    !   global timestep "i+1", split up into one partial correction per domain timestep. This leads to "local"
-    !   mass conservation errors, but they do not accumulate. It requires half as much communication.
-    ! - If md%lagged_flux_correction = .false., then apply the flux correction computed from global timestep "i" straight
-    !   afterwould, and re-communicate the updated values. This has very good mass conservation.
-
     ! Parameter affecting default halo approach.
     !
     ! Set this to an integer > 0 so that "parts of another domain that I receive from"
@@ -89,11 +79,12 @@ module multidomain_mod
     ! This can be overridden in the multidomain setup stage as e.g. " call md%setup(extra_halo_buffer=1_ip) "
     ! This could help with stability with the "old" evolve_multidomain_one_step approach.
     ! Other references suggest such an approach can help with stability (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS
-    ! nesting)
+    ! nesting). But it seems not required with the 'revised' nesting technique in SWALS
     ! It is ignored if we only communicate with domains that have the same domain%dx, as the benefit is really for coarse-to-fine
     ! communication
 
-    ! This is another "padding" factor for the halos. 
+    ! This is another "padding" factor for the halos. By adding an extra-pad, we can ensure that e.g. gradient calculations are
+    ! valid, when otherwise they might involve 'out-of-date' cells.
     integer(ip), parameter :: extra_cells_in_halo_default = 1_ip
 
     ! Local timestepping of domains
@@ -157,10 +148,6 @@ module multidomain_mod
         ! If we split domains in parallel (COARRAYS), then
         ! this will hold the 'initial, unallocated' domains
         type(domain_type), allocatable :: domain_metadata(:)
-        ! In the parallel case, this can be used to suggest to 
-        ! the code which images should work on which of the initially
-        ! provided domains
-        integer(ip), allocatable :: domain_image_index_range(:,:)
 
         ! Domain volume tracking
         real(force_double), allocatable :: volume_initial(:), volume(:)
@@ -179,16 +166,12 @@ module multidomain_mod
         ! File with information on load balancing
         character(len=charlen) :: load_balance_file = ''
         ! If load_balancing_file is provided, we can use this
-        integer(ip), allocatable :: load_balance_partition(:,:)
+        type(ragged_array_2d_ip_type) :: load_balance_part
 
         ! Control additional halo width. This can enable separation of send/recv halos,
         ! which can reduce nesting artefacts in some cases
         integer(ip) :: extra_halo_buffer = extra_halo_buffer_default
         integer(ip) :: extra_cells_in_halo = extra_cells_in_halo_default
-
-        ! Control the flux correction approach. 
-        ! See comment at "lagged_flux_correction_default"
-        logical :: lagged_flux_correction = lagged_flux_correction_default
 
         ! Store all_dx in the multidomain
         real(dp), allocatable :: all_dx_md(:,:,:)
@@ -219,6 +202,7 @@ module multidomain_mod
         procedure :: memory_summary => memory_summary
         ! Convenience
         procedure :: print => print_multidomain
+        procedure :: finalise_and_print_timers => finalise_and_print_timers
 
     end type
 
@@ -879,12 +863,13 @@ module multidomain_mod
         real(dp), intent(in) :: dt
 
         integer(ip) :: j, i, nt
-        real(dp) :: dt_local, max_dt_store
-        logical :: lagged_flux_correction_local
+        real(dp) :: dt_local, max_dt_store, tend
 
-        ! If send_boundary_flux_data is .false., then we should never do lagged_flux_correction
-        ! (because no flux corrections are sent in any case!)
-        !lagged_flux_correction_local = (md%lagged_flux_correction .and. send_boundary_flux_data)
+        ! All the domains will evolve to this time 
+        tend = md%domains(1)%time + dt
+        ! However they may take different numbers of steps to get 
+        ! there, leading to tiny numerical differences in the time.
+        ! To avoid any issues, we explicitly set them to the same number
 
         ! Evolve every domain, sending the data to communicate straight after
         ! the evolve
@@ -932,6 +917,8 @@ module multidomain_mod
             ! Send the halos only for domain j
             call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately)
 
+            ! Ensure numerically identical time for all domains
+            md%domains(j)%time = tend
         end do
 
         if(.not. send_halos_immediately) then
@@ -942,7 +929,7 @@ module multidomain_mod
             call communicate_p2p
             TIMER_STOP('comms1')
         end if
-
+        
         ! Get the halo information from neighbours
         ! For coarray comms, we need to sync before to ensure the information is sent, and
         ! also sync after to ensure it is not overwritten before it is used
@@ -1669,7 +1656,7 @@ module multidomain_mod
     subroutine partition_domains(md)
         class(multidomain_type), intent(inout) :: md
 
-        integer(ip) :: nd, next_d, i, j, ni, ti, ii
+        integer(ip) :: nd, next_d, i, j, ni, ti, ii, i0, i1
         integer(ip) :: local_ti, local_ni, local_co_size_xy(2), local_co_index(2)
         integer(ip) :: domain_nx(2), nx(2), lower_left_nx(2), upper_right_nx(2) 
         integer(ip) :: domain_dx_refinement_factor(2), dx_refine_X_co_size_xy(2)
@@ -1677,220 +1664,226 @@ module multidomain_mod
         integer(ip) :: best_co_size_xy(2), fileID, extra_halo_padding(2)
         real(dp) :: nboundary, best_nboundary
 
-#ifdef COARRAY
+#ifndef COARRAY
+        ti = 1
+        ni = 1
+#else
+        ! Coarray case, we split the images
         ti = this_image()
         ni = num_images()
+#endif
 
-        !write(log_output_unit, *) 'DEBUG. partitioned_domains ti: ', ti, ' ni:', ni
+        ! Name domains as " image_index * 1e+10 + original_domain_index "
+        ! The naming will be implemented below -- for now, check that the naming will not overflow.
+        if(ni * large_64_int + size(md%domains) > HUGE(md%domains(1)%myid)) then
+            write(log_output_unit, *) 'The number of images and local domains is too high for the naming convention'
+            call generic_stop()
+        end if
 
-        if(ni == 1) return
-        
         ! Clear md%domains
         call move_alloc(md%domains, md%domain_metadata)
 
-        !
-        ! Assign domains to images, or check provided values
-        !
-        if(allocated(md%domain_image_index_range)) then
-            ! Images have already been assigned to each domain
+        ! Read load balancing info if provided
+        if(md%load_balance_file /= '') then
 
-            ! Currently load-balance input file is not supported for this case. In principle it could be
-            if(md%load_balance_file /= '') then
-                write(log_output_unit, *) 'Currently you cannot prescribe image index ranges AND give a load_balance_file'
-                call generic_stop()
-            end if
+            call read_ragged_array_2d_ip(md%load_balance_part, md%load_balance_file)
 
-            ! Ensure the input data it has the right shape
-            if( (size(md%domain_image_index_range, 1) /= size(md%domain_metadata)) .or. &
-                (size(md%domain_image_index_range, 2) /= 2)) then
-                write(log_output_unit,*) 'Wrong shape for domain_image_index_range. Shape is ', &
-                    shape(md%domain_image_index_range), ', but should be num_domains x 2'
-                call generic_stop()
-            end if
+            if(size(md%load_balance_part%i2) /= size(md%domains)) &
+                stop 'Rows in load_balance_file not equal to number of domains '
 
-            ! Ensure the range is reasonable
-            if(any(md%domain_image_index_range < 1) .or. &
-               any(md%domain_image_index_range > ni) .or. &
-               any(md%domain_image_index_range(:,1) > md%domain_image_index_range(:,2))) then
-                write(log_output_unit,*) 'md%domain_image_index_range not in [1, ... num_images] or badly sorted. Values are:'
-                write(log_output_unit,*) md%domain_image_index_range
-                call generic_stop()
-            end if
+            ! No values < 1
+            do i = 1, size(md%load_balance_part%i2)
+                if( minval(md%load_balance_part%i2(i)%i1) < 1 ) then
+                    stop 'load_balance_file contains numbers < 1'
+                end if
+            end do
+
+            ! If there are values > ni, convert to the range 1-ni, with a warning
+            do i = 1, size(md%load_balance_part%i2)
+                if( maxval(md%load_balance_part%i2(i)%i1) > ni ) then
+                    write(log_output_unit, *) &
+                        ' WARNING: load_balance_file contains values > num_images: converting to smaller values.'
+                    md%load_balance_part%i2(i)%i1 = mod((md%load_balance_part%i2(i)%i1 - 1), ni) + 1_ip
+                end if
+            end do
+
+            ! Final check
+            do i = 1, size(md%load_balance_part%i2)
+                if( minval(md%load_balance_part%i2(i)%i1) < 1 .or.  &
+                    maxval(md%load_balance_part%i2(i)%i1) > ni) then
+                    stop 'hit uncorrectable error in md%load_balance_part'
+                end if
+            end do
+            !! DEBUG -- print out the file
+            !if(this_image() == 1) then
+            !    do i = 1, size(md%domain_metadata)
+            !        print*, 'Row ', i, ':', md%load_balance_partition(i,:)
+            !    end do
+            !end if
 
         else
-            ! By default, all images run a piece of all domains
-            allocate(md%domain_image_index_range(size(md%domain_metadata), 2))
-            md%domain_image_index_range(:,1) = 1
-            md%domain_image_index_range(:,2) = ni
+
+            ! By default, spread all images over all domains
+            allocate(md%load_balance_part%i2(size(md%domain_metadata)))
+            do i = 1, size(md%domain_metadata)
+                allocate(md%load_balance_part%i2(i)%i1(ni))
+                do j = 1, ni
+                    md%load_balance_part%i2(i)%i1(j) = j
+                end do
+            end do
 
         end if
 
         ! Count how many domains we need on the current image
-        nd = count( (md%domain_image_index_range(:,1) <= ti) .and. &
-                    (md%domain_image_index_range(:,2) >= ti) )
+        nd = 0
+        do i = 1, size(md%load_balance_part%i2)
+            nd = nd + count( md%load_balance_part%i2(i)%i1 == ti )
+        end do
         ! Make space for nd domains
         allocate(md%domains(nd))
-
-        ! Read load balancing info if provided
-        if(md%load_balance_file /= '') then
-            ! Currently file format is just a 'flat' matrix, which must
-            ! have the right dimensions. FIXME: Add error checks
-            allocate(md%load_balance_partition(size(md%domain_metadata), ni))
-            open(newunit=fileID, file=md%load_balance_file, action='read')
-            do i = 1, size(md%domain_metadata)
-                read(fileID, *) md%load_balance_partition(i,:)
-            end do
-            close(fileID)
-        end if
 
 
         ! Split the originally provided domains 
         next_d = 0
         do i = 1, size(md%domain_metadata)
+            ! Number of pieces that we split the i'th domain into
+            local_ni = size(md%load_balance_part%i2(i)%i1)
 
-            ! If ti is not in the image subset, move on
-            if( (md%domain_image_index_range(i,1) > ti) .or. &
-                (md%domain_image_index_range(i,2) < ti)) cycle
+            ! Loop over each piece
+            do j = 1, local_ni
 
-            ! Index in md%domains where we put this domain
-            next_d = next_d + 1
+                ! If this piece is not assigned to the current image, do nothing
+                if(ti /= md%load_balance_part%i2(i)%i1(j)) cycle 
 
-            ! Key info about the domain that will be split
-            domain_nx = md%domain_metadata(i)%nx
-            domain_dx_refinement_factor = int(nint(md%domain_metadata(i)%dx_refinement_factor), ip)
-            parent_domain_dx_refinement_factor = int(nint(md%domain_metadata(i)%dx_refinement_factor_of_parent_domain), ip)
+                ! Index of the 'piece' of the i'th domain we are working on
+                local_ti = j
 
-            write(log_output_unit, *) 'domain(', i, '), dx_refinement_factor = ', domain_dx_refinement_factor, &
-                ' parent_domain_dx_refinement_factor = ', parent_domain_dx_refinement_factor
+                ! Index in md%domains where we put this domain
+                next_d = next_d + 1
 
-            ! Get a 'local' version of this_image, num_images on the i'th domain
-            local_ni = md%domain_image_index_range(i,2) - md%domain_image_index_range(i,1) + 1
-            local_ti = ti - md%domain_image_index_range(i,1) + 1
-            if(allocated(md%load_balance_partition)) then
-                ! Update based on the file
-                local_ti = md%load_balance_partition(i, local_ti)
-            end if
+                ! Key info about the domain that will be split
+                domain_nx = md%domain_metadata(i)%nx
+                domain_dx_refinement_factor = int(nint(md%domain_metadata(i)%dx_refinement_factor), ip)
+                parent_domain_dx_refinement_factor = int(nint(md%domain_metadata(i)%dx_refinement_factor_of_parent_domain), ip)
 
-            ! At this point, load balancing could be done based on re-mapping local_ti to
-            ! a different value, so that when combined the multidomain pieces all had similar work.
+                !write(log_output_unit, *) 'domain(', i, '), dx_refinement_factor = ', domain_dx_refinement_factor, &
+                !    ' parent_domain_dx_refinement_factor = ', parent_domain_dx_refinement_factor
 
-            !! Mix up the communication pattern by shifting local_ti. I have seen a case where
-            !! this seemed to lead to more even progress of domain_evolve, and so less time in sync
-            !! Load balancing is a better way to address this.
-            !local_ti = modulo(ti - md%domain_image_index_range(i,1) + 1, local_ni) + 1
 
-            ! Split domain into (nx , ny) tiles. We need to choose nx,ny.
-            ! Approach: Loop over all possible combinations of
-            ! local_co_size_xy(1:2) that have product = local_ni.
-            ! Find the 'best' one (i.e. smallest total boundary to minimise comms)
-            best_nboundary = HUGE(1.0_dp)
-            best_co_size_xy = -1
-            do ii = local_ni, 1, -1
+                ! Split domain into (nx , ny) tiles where " nx*ny == local_ni "
+                ! Approach: Loop over all possible combinations of
+                ! local_co_size_xy(1:2) that have product = local_ni.
+                ! Find the 'best' one (i.e. smallest total boundary to minimise comms)
+                best_nboundary = HUGE(1.0_dp)
+                best_co_size_xy = -1
+                do ii = local_ni, 1, -1
 
-                local_co_size_xy(1) = ii
-                local_co_size_xy(2) = local_ni/local_co_size_xy(1) ! Deliberate integer division
+                    local_co_size_xy(1) = ii
+                    local_co_size_xy(2) = local_ni/local_co_size_xy(1) ! Deliberate integer division
 
-                if(product(local_co_size_xy) /= local_ni) cycle
+                    if(product(local_co_size_xy) /= local_ni) cycle
 
-                ! Approximate total number of 'boundary cells' in all tiles
-                nboundary = 2 * local_ni * sum(domain_nx/(1.0_dp*local_co_size_xy)) 
-                if(nboundary < best_nboundary) then
-                    ! We have a new 'best' local_co_size_xy
-                    best_co_size_xy = local_co_size_xy 
-                    best_nboundary = nboundary
+                    ! Approximate total number of 'boundary cells' in all tiles
+                    nboundary = 2 * local_ni * sum(domain_nx/(1.0_dp*local_co_size_xy)) 
+                    if(nboundary < best_nboundary) then
+                        ! We have a new 'best' local_co_size_xy
+                        best_co_size_xy = local_co_size_xy 
+                        best_nboundary = nboundary
+                    end if
+                end do
+                local_co_size_xy = best_co_size_xy
+                ! Check we got some sensible result
+                if(any(local_co_size_xy < 0)) then
+                    write(log_output_unit,*) 'Error in splitting up images into 2d', local_co_size_xy, local_ni
+                    call generic_stop
                 end if
+
+                ! Get the 'co-index' equivalent for the current image
+                local_co_index(1) = mod(local_ti, local_co_size_xy(1))
+                if(local_co_index(1) == 0) local_co_index(1) = local_co_size_xy(1)
+                local_co_index(2) = (local_ti-local_co_index(1))/local_co_size_xy(1) + 1 ! Deliberate integer division
+
+                !write(log_output_unit,*) 'ti :', ti, ' local_ti :', local_ti, ' local_ni: ', local_ni, &
+                !    ' local_co_size_xy: ', local_co_size_xy, ' local_co_index:', local_co_index    
+
+
+                ! Check that the domain is large enough to be split
+                !dx_refine_ratio = domain_dx_refinement_factor ! Assuming the domain's parent is the global domain
+                dx_refine_ratio = ((domain_dx_refinement_factor/parent_domain_dx_refinement_factor))
+                if(.not. all(dx_refine_ratio * parent_domain_dx_refinement_factor == domain_dx_refinement_factor)) then
+                    write(log_output_unit,*) 'dx_refine_ratio should be an exact integer upon creation'
+                    call generic_stop()
+                end if
+                dx_refine_X_co_size_xy = dx_refine_ratio * local_co_size_xy
+                if(.not. all( (domain_nx/(dx_refine_X_co_size_xy)) > 1)) then
+                    write(log_output_unit, *) 'Cannot split domain ', i, ' with nx=', domain_nx, &
+                        ' into local_co_size_xy=', local_co_size_xy, ' when domain_dx_refinement_factor=', &
+                        domain_dx_refinement_factor, ' and dx_refine_ratio = ', dx_refine_ratio
+                    write(log_output_unit,*) 'Consider enlarging the domain, or specifying the decomposition more thoroughly'
+                    call generic_stop()
+                end if
+
+                ! Find the boundaries of the tile
+                ! Compute the lower-left/upper-right cells in the domain that will be assigned to this image
+                ! The splitted domains must all have edges that align perfectly with the parent domains
+                ! We exploit integer division here to ensure that
+                lower_left_nx  = (((local_co_index - 1) * domain_nx)/(dx_refine_X_co_size_xy)) * &
+                    dx_refine_ratio + 1 ! Deliberate integer division
+                upper_right_nx = (((local_co_index    ) * domain_nx)/(dx_refine_X_co_size_xy)) * &
+                    dx_refine_ratio ! Deliberate integer division
+
+                ! Now we need to set variables, like
+                ! md%domains(1)%lw = global_lw
+                md%domains(next_d)%lw = ((upper_right_nx - lower_left_nx + 1)*&
+                    real(md%domain_metadata(i)%lw, force_long_double))/ & 
+                    md%domain_metadata(i)%nx
+                ! md%domains(1)%lower_left =global_ll
+                md%domains(next_d)%lower_left = real(md%domain_metadata(i)%lower_left, force_long_double) + &
+                    real( ((lower_left_nx - 1)*real(md%domain_metadata(i)%lw, force_long_double))&
+                    /md%domain_metadata(i)%nx, force_long_double)
+                ! md%domains(1)%nx = global_nx
+                md%domains(next_d)%nx = upper_right_nx - lower_left_nx + 1
+                ! md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
+                md%domains(next_d)%dx = md%domain_metadata(i)%dx
+                ! md%domains(1)%timestepping_method = 'linear'
+                md%domains(next_d)%timestepping_method = md%domain_metadata(i)%timestepping_method
+                md%domains(next_d)%linear_solver_is_truely_linear = md%domain_metadata(i)%linear_solver_is_truely_linear
+                ! md%domains(1)%timestepping_refinement_factor = 1_ip
+                md%domains(next_d)%timestepping_refinement_factor = md%domain_metadata(i)%timestepping_refinement_factor
+                ! md%domains(1)%dx_refinement_factor = 1.0_dp
+                md%domains(next_d)%dx_refinement_factor = md%domain_metadata(i)%dx_refinement_factor
+                md%domains(next_d)%dx_refinement_factor_of_parent_domain = &
+                    md%domain_metadata(i)%dx_refinement_factor_of_parent_domain
+
+                ! Copy over the netcdf down-sampling information
+                md%domains(next_d)%nc_grid_output%spatial_stride = md%domain_metadata(i)%nc_grid_output%spatial_stride
+                ! Let the nc_grid_output know it is part of a larger domain with the given lower-left
+                md%domains(next_d)%nc_grid_output%spatial_ll_full_domain = md%domain_metadata(i)%lower_left
+
+                ! Time before which we do trivial evolves
+                md%domains(next_d)%static_before_time = md%domain_metadata(i)%static_before_time
+
+                ! CFL and theta
+                md%domains(next_d)%cfl = md%domain_metadata(i)%cfl
+                md%domains(next_d)%theta = md%domain_metadata(i)%theta
+
+                ! NAME THE DOMAIN, using the "original" domain index, rather than the one
+                ! after partitioning
+                md%domains(next_d)%myid = ti * large_64_int + i 
+                md%domains(next_d)%local_index = local_ti
+
+                write(log_output_unit,*) 'i: ', i, &
+                    ' local_ti: ', local_ti, ' local_ni: ', local_ni, ' ti: ', ti, ' ni: ', ni, &
+                    ' lower_left_nx: ', lower_left_nx, &
+                    ' upper_right_nx: ', upper_right_nx, ' lower-left: ', md%domains(next_d)%lower_left, &
+                    ' dx: ', md%domains(next_d)%dx, ' lw: ', md%domains(next_d)%lw
             end do
-            local_co_size_xy = best_co_size_xy
-            ! Check we got some sensible result
-            if(any(local_co_size_xy < 0)) then
-                write(log_output_unit,*) 'Error in splitting up images into 2d', local_co_size_xy, local_ni
-                call generic_stop
-            end if
-
-            ! Get the 'co-index' equivalent for the current image
-            local_co_index(1) = mod(local_ti, local_co_size_xy(1))
-            if(local_co_index(1) == 0) local_co_index(1) = local_co_size_xy(1)
-            local_co_index(2) = (local_ti-local_co_index(1))/local_co_size_xy(1) + 1 ! Deliberate integer division
-
-            write(log_output_unit,*) 'ti :', ti, ' local_ti :', local_ti, ' local_ni: ', local_ni, &
-                ' local_co_size_xy: ', local_co_size_xy, ' local_co_index:', local_co_index    
-
-
-            ! Check that the domain is large enough to be split
-            !dx_refine_ratio = domain_dx_refinement_factor ! Assuming the domain's parent is the global domain
-            dx_refine_ratio = ((domain_dx_refinement_factor/parent_domain_dx_refinement_factor))
-            if(.not. all(dx_refine_ratio * parent_domain_dx_refinement_factor == domain_dx_refinement_factor)) then
-                write(log_output_unit,*) 'dx_refine_ratio should be an exact integer upon creation'
-                call generic_stop()
-            end if
-            dx_refine_X_co_size_xy = dx_refine_ratio * local_co_size_xy
-            if(.not. all( (domain_nx/(dx_refine_X_co_size_xy)) > 1)) then
-                write(log_output_unit, *) 'Cannot split domain ', i, ' with nx=', domain_nx, &
-                    ' into local_co_size_xy=', local_co_size_xy, ' when domain_dx_refinement_factor=', &
-                    domain_dx_refinement_factor, ' and dx_refine_ratio = ', dx_refine_ratio
-                write(log_output_unit,*) 'Consider enlarging the domain, or specifying the decomposition more thoroughly'
-                call generic_stop()
-            end if
-
-            ! Find the boundaries of the tile
-            ! Compute the lower-left/upper-right cells in the domain that will be assigned to this image
-            ! The splitted domains must all have edges that align perfectly with the parent domains
-            ! We exploit integer division here to ensure that
-            lower_left_nx  = (((local_co_index - 1) * domain_nx)/(dx_refine_X_co_size_xy)) * &
-                dx_refine_ratio + 1 ! Deliberate integer division
-            upper_right_nx = (((local_co_index    ) * domain_nx)/(dx_refine_X_co_size_xy)) * &
-                dx_refine_ratio ! Deliberate integer division
-
-            !
-            ! Account for extra_halo buffer
-            !extra_halo_padding = extra_halo_buffer_default * dx_refine_ratio * 1
-            !lower_left_nx  = (((local_co_index - 1) * (domain_nx + extra_halo_padding*2))/(dx_refine_X_co_size_xy)) * &
-            !    dx_refine_ratio + 1 - extra_halo_padding! Deliberate integer division
-            !lower_left_nx = max(lower_left_nx, 1_ip)
-            !upper_right_nx = (((local_co_index    ) * (domain_nx + extra_halo_padding*2))/(dx_refine_X_co_size_xy)) * &
-            !    dx_refine_ratio - extra_halo_padding! Deliberate integer division
-            !upper_right_nx = min(upper_right_nx, domain_nx)
-
-            ! Now we need to set variables, like
-            ! md%domains(1)%lw = global_lw
-            md%domains(next_d)%lw = ((upper_right_nx - lower_left_nx + 1)*&
-                real(md%domain_metadata(i)%lw, force_long_double))/ & 
-                md%domain_metadata(i)%nx
-            ! md%domains(1)%lower_left =global_ll
-            md%domains(next_d)%lower_left = real(md%domain_metadata(i)%lower_left, force_long_double) + &
-                real( ((lower_left_nx - 1)*real(md%domain_metadata(i)%lw, force_long_double))&
-                /md%domain_metadata(i)%nx, force_long_double)
-            ! md%domains(1)%nx = global_nx
-            md%domains(next_d)%nx = upper_right_nx - lower_left_nx + 1
-            ! md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
-            md%domains(next_d)%dx = md%domain_metadata(i)%dx
-            ! md%domains(1)%timestepping_method = 'linear'
-            md%domains(next_d)%timestepping_method = md%domain_metadata(i)%timestepping_method
-            ! md%domains(1)%timestepping_refinement_factor = 1_ip
-            md%domains(next_d)%timestepping_refinement_factor = md%domain_metadata(i)%timestepping_refinement_factor
-            ! md%domains(1)%dx_refinement_factor = 1.0_dp
-            md%domains(next_d)%dx_refinement_factor = md%domain_metadata(i)%dx_refinement_factor
-            md%domains(next_d)%dx_refinement_factor_of_parent_domain = md%domain_metadata(i)%dx_refinement_factor_of_parent_domain
-
-            ! Copy over the netcdf down-sampling information
-            md%domains(next_d)%nc_grid_output%spatial_stride = md%domain_metadata(i)%nc_grid_output%spatial_stride
-            ! Let the nc_grid_output know it is part of a larger domain with the given lower-left
-            md%domains(next_d)%nc_grid_output%spatial_ll_full_domain = md%domain_metadata(i)%lower_left
-
-            ! Time before which we do trivial evolves
-            md%domains(next_d)%static_before_time = md%domain_metadata(i)%static_before_time
-
-            write(log_output_unit,*) 'i: ', i, ' ti: ', local_ti, ' ni: ', local_ni, ' lower_left_nx: ', lower_left_nx, &
-                ' upper_right_nx: ', upper_right_nx, ' lower-left: ', md%domains(next_d)%lower_left, &
-                ' dx: ', md%domains(next_d)%dx, ' lw: ', md%domains(next_d)%lw
-
-            sync all
-            !call generic_stop()
         end do 
-
-        !call generic_stop()
-        flush(log_output_unit)
+#ifdef COARRAY
+        sync all
 #endif
+        flush(log_output_unit)
+
     end subroutine
 
 
@@ -2485,10 +2478,8 @@ module multidomain_mod
             call send_log_output_to_file(log_filename)
         end if
 
-#ifdef COARRAY
-        ! Split up domains among images
+        ! Split up domains among images, and create all md%domains(i)%myid
         call md%partition_domains()
-#endif
 
         ! Make sure all domains use the new output_basedir 
         do i = 1, size(md%domains)
@@ -2764,22 +2755,11 @@ module multidomain_mod
         call co_max(nbox_max)
 #endif
 
-        ! We name domains as " image_index * 1e+10 + domain_index "
-        ! Check that the naming will not overflow.
-        if(ni * large_64_int + nd_local > HUGE(domains(1)%myid)) then
-            write(log_output_unit, *) 'The number of images and local domains is too high for the naming convention'
-            call generic_stop()
-        end if
         !
         ! Allocate arrays in each domain
         !
         do j = 1, nd_local
 
-            ! Unique local ID, packed into a long interger, to make overflow unlikely
-            ! FIXME: Perhaps set this earlier? It would be better to have 'j' instead
-            ! reflecting the 'big domain' index (in the case of partitioning), to make
-            ! post-processing more obvious.
-            domains(j)%myid = ti * large_64_int + j 
             if(verbose1) write(log_output_unit,*) ' Domain ID: ', domains(j)%myid
 
             domains(j)%boundary_exterior = (.NOT. domains(j)%is_nesting_boundary)
@@ -3244,6 +3224,33 @@ module multidomain_mod
         do j = 1, nd
             call md%domains(j)%use_constant_wetdry_send_elevation(elevation_threshold)
         end do
+
+    end subroutine
+
+    ! Print all domain timers, as well as the multidomain timer itself, finalise the domains,
+    ! and write max quantities. This is a typical step at the end of a program
+    ! 
+    subroutine finalise_and_print_timers(md)
+        class(multidomain_type), intent(inout) :: md
+
+        integer(ip) :: i
+
+        ! Print out timing info for each
+        do i = 1, size(md%domains)
+            write(log_output_unit,*) ''
+            write(log_output_unit,*) 'Timer of md%domains(', i, ')'
+            write(log_output_unit, *) trim(md%domains(i)%output_folder_name)
+            write(log_output_unit, *) mod(md%domains(i)%myid, large_64_int), md%domains(i)%local_index
+            write(log_output_unit,*) ''
+            call md%domains(i)%timer%print(log_output_unit)
+            call md%domains(i)%write_max_quantities()
+            call md%domains(i)%finalise()
+        end do
+
+        write(log_output_unit, *) ''
+        write(log_output_unit, *) 'Multidomain timer'
+        write(log_output_unit, *) ''
+        call md%timer%print(log_output_unit)
 
     end subroutine
 

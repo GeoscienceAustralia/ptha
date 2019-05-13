@@ -149,6 +149,7 @@ module domain_mod
         
         ! Domain ID, which is useful if multiple domains are running
         integer(int64):: myid = 1
+        integer(int64):: local_index = 1 ! Useful when we partition a domain in parallel
         !character(len=charlen) :: myid_char = '000001'
 
         ! Flag to denote boundaries at which nesting occurs: order is N, E, S, W.
@@ -2557,7 +2558,7 @@ module domain_mod
     subroutine create_output_files(domain)
         class(domain_type), intent(inout):: domain
 
-        character(len=charlen):: mkdir_command, cp_command, t1, t2, t3, &
+        character(len=charlen):: mkdir_command, cp_command, t1, t2, t3, t4, &
                                  output_folder_name
         integer(ip):: i, metadata_unit, natt
         character(len=charlen), allocatable :: attribute_names(:), attribute_values(:)
@@ -2566,9 +2567,10 @@ module domain_mod
         call date_and_time(t1, t2, t3)
         ! Get domain id as a character
         write(t3, domain_myid_char_format) domain%myid
+        write(t4, '(I0.5)') domain%local_index
 
         output_folder_name = trim(domain%output_basedir) // '/RUN_ID' // trim(t3) // &
-            '_' // trim(t1) // '_' // trim(t2)
+            '_' // trim(t4) // '_' // trim(t1) // '_' // trim(t2)
         call mkdir_p(output_folder_name)
         !mkdir_command = 'mkdir -p ' // trim(output_folder_name)
         !call execute_command_line(trim(mkdir_command))

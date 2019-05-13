@@ -178,21 +178,7 @@ program run_paraboloid_basin
     end do
 
     call program_timer%timer_end('evolve')
-
-    ! Print out timing info for each
-    do i = 1, nd
-        write(log_output_unit,*) ''
-        write(log_output_unit,*) 'Timer ', i
-        write(log_output_unit,*) ''
-        call md%domains(i)%timer%print(log_output_unit)
-        call md%domains(i)%write_max_quantities()
-        call md%domains(i)%finalise()
-    end do
-
-    write(log_output_unit, *) ''
-    write(log_output_unit, *) 'Multidomain timer'
-    write(log_output_unit, *) ''
-    call md%timer%print(log_output_unit)
+    call md%finalise_and_print_timers
 
     write(log_output_unit,*) ''
     write(log_output_unit, *) 'Program timer'

@@ -266,17 +266,7 @@ program monai
     end do
 
     call program_timer%timer_end('evolve')
-
-    ! Print out timing info for each
-    do i = 1, nd
-        !lg = md%domains(i)%logfile_unit
-        write(log_output_unit, *) ''
-        write(log_output_unit, *) 'Timer ', i
-        write(log_output_unit, *) ''
-        call md%domains(i)%timer%print(output_file_unit=log_output_unit)
-        call md%domains(i)%write_max_quantities()
-        call md%domains(i)%finalise()
-    end do
+    call md%finalise_and_print_timers
 
     print*, ''
     call program_timer%print(output_file_unit=log_output_unit)

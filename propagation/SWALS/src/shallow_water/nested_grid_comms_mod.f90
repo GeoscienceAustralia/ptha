@@ -1112,14 +1112,14 @@ module nested_grid_comms_mod
                                 ! There is only one relevent EW gradient -- the 'minus' one
                                 dU_di_p = dU_di_m 
 
-                                if(neighbour_domain_staggered_grid /= 1) then
-                                    ! Add slight smoothing
-                                    uc = (1.0_dp - smooth_scale_coarse2fine * gradient_scale) * uc + &
-                                        smooth_scale_coarse2fine * gradient_scale * (0.25_dp * &
-                                        (U(i,jp1,k) + 0*U(im1, jp1, k) + 0*U(ip1, jp1, k) + &
-                                         U(i,jm1,k) + 0*U(im1, jm1, k) + 0*U(ip1, jm1, k) + &
-                                         U(ip1,j,k) + U(im1, j, k)))
-                                end if
+                                !if(neighbour_domain_staggered_grid /= 1) then
+                                !    ! Add slight smoothing
+                                !    uc = (1.0_dp - smooth_scale_coarse2fine * gradient_scale) * uc + &
+                                !        smooth_scale_coarse2fine * gradient_scale * (0.25_dp * &
+                                !        (U(i,jp1,k) + 0*U(im1, jp1, k) + 0*U(ip1, jp1, k) + &
+                                !         U(i,jm1,k) + 0*U(im1, jm1, k) + 0*U(ip1, jm1, k) + &
+                                !         U(ip1,j,k) + U(im1, j, k)))
+                                !end if
 
                                 ! NS gradients are also not quite right. Might not matter?
                                 !if(im1 >= iL) then
@@ -1150,14 +1150,14 @@ module nested_grid_comms_mod
                                 ! There is only one relevant gradient NS
                                 dU_dj_p = dU_dj_m
 
-                                if(neighbour_domain_staggered_grid /= 1) then
-                                    ! Add slight smoothing
-                                    uc = (1.0_dp - smooth_scale_coarse2fine * gradient_scale) * uc + &
-                                        smooth_scale_coarse2fine * gradient_scale * (0.25_dp * &
-                                        (U(i,jp1,k) + 0*U(im1, jp1, k) + 0*U(ip1, jp1, k) + &
-                                         U(i,jm1,k) + 0*U(im1, jm1, k) + 0*U(ip1, jm1, k) + &
-                                         U(ip1,j,k) + U(im1, j, k)))
-                                end if
+                                !if(neighbour_domain_staggered_grid /= 1) then
+                                !    ! Add slight smoothing
+                                !    uc = (1.0_dp - smooth_scale_coarse2fine * gradient_scale) * uc + &
+                                !        smooth_scale_coarse2fine * gradient_scale * (0.25_dp * &
+                                !        (U(i,jp1,k) + 0*U(im1, jp1, k) + 0*U(ip1, jp1, k) + &
+                                !         U(i,jm1,k) + 0*U(im1, jm1, k) + 0*U(ip1, jm1, k) + &
+                                !         U(ip1,j,k) + U(im1, j, k)))
+                                !end if
 
                                 ! The EW gradients are not quite right. Might not matter?
                                 ! Improve the approximation without using an edge jm1
@@ -1174,14 +1174,14 @@ module nested_grid_comms_mod
                                 !
                                 ! Stage and elevation
                                 !
-                                if(neighbour_domain_staggered_grid /= 1) then
-                                    ! Add slight smoothing.
-                                    uc = (1.0_dp - smooth_scale_coarse2fine * gradient_scale) * uc + &
-                                        smooth_scale_coarse2fine * gradient_scale * 0.25_dp * &
-                                        (U(i,jp1,k) + 0*U(im1, jp1, k) + 0*U(ip1, jp1, k) + &
-                                         U(i,jm1,k) + 0*U(im1, jm1, k) + 0*U(ip1, jm1, k) + &
-                                         U(ip1,j,k) + U(im1,   j, k))
-                                end if
+                                !if(neighbour_domain_staggered_grid /= 1) then
+                                !    ! Add slight smoothing.
+                                !    uc = (1.0_dp - smooth_scale_coarse2fine * gradient_scale) * uc + &
+                                !        smooth_scale_coarse2fine * gradient_scale * 0.25_dp * &
+                                !        (U(i,jp1,k) + 0*U(im1, jp1, k) + 0*U(ip1, jp1, k) + &
+                                !         U(i,jm1,k) + 0*U(im1, jm1, k) + 0*U(ip1, jm1, k) + &
+                                !         U(ip1,j,k) + U(im1,   j, k))
+                                !end if
 
                             end if
                         end if

@@ -123,13 +123,8 @@ program run_BP09
 
     ! Optionally put a "very high res" domain around monai. Slows things down and the code requires care
     ! If this is true, then also use "mesh_refine = 1.0_dp"
+    !logical, parameter:: very_high_res_monai = .true. 
     logical, parameter:: very_high_res_monai = .false.
-
-    !! For higher-quality representation of runup around the island, use
-    !real(dp), parameter :: mesh_refine = 1.0_dp !1.0_dp_
-    !! For better representation of the peak runup right near monai, use 
-    !logical, parameter:: very_high_res_monai = .true.
-
 
     ! If using very high res domain, then reduce the entire model timestep when it becomes active
     real(dp), parameter :: very_high_res_timestep_reduction = 10.0_dp
@@ -140,6 +135,8 @@ program run_BP09
     real(dp) :: approximate_writeout_frequency = 7.50_dp !0.6_dp * (1.0_dp/0.4_dp ) * 1.0_dp/3.0_dp!7.50_dp
     real(dp) :: final_time = 3600.0_dp * 1.0_dp
     !real(dp) :: final_time = 300.0_dp * 1.0_dp
+    !real(dp) :: approximate_writeout_frequency = 0.2_dp
+    !real(dp) :: final_time = 10.0_dp
 
     ! Length/width
     real(dp), parameter, dimension(2):: global_lw = [3.9_dp, 4.6_dp]
@@ -170,7 +167,7 @@ program run_BP09
     ! nd domains in this model
     if(very_high_res_monai) then
         ! In this case we put a 30cm x 30cm cell domain around the monai inundation peak.
-        ! It leads to a peak of 30.8m (vs 31.7 obs, although the latter varies depending on which
+        ! It leads to a peak of > 30.0m (vs 31.7 obs, although the latter varies depending on which
         ! dataset is used).
         !
         ! The model needs various modifications to do this stably, and it takes more than twice as long.
@@ -182,7 +179,7 @@ program run_BP09
     else
         ! This case has a domain res ~ 1.5x1.5m around the monai inundation peak. 
         !
-        ! It leads to a peak of 28.8m (vs 31.7 obs, although the latter varies depending on which
+        ! It leads to a peak of >28.0m (vs 31.7 obs, although the latter varies depending on which
         ! dataset is used). So the very_high_res_monai case does better.
         !
         ! Keep in mind the poor quality bathymetry, the steep slopes (making SWE 
@@ -193,7 +190,13 @@ program run_BP09
 
     allocate(md%domains(nd))
 
+    call get_command_argument(1, md%load_balance_file)
     !md%load_balance_file = 'load_balance_partition.txt'
+    !md%load_balance_file = 'load_balance_test2.txt'
+    !md%load_balance_file = 'load_balance_partition_6.txt'
+    !md%load_balance_file = 'load_balance_6_localTS.txt'
+    !md%load_balance_file = 'load_balance_omp2.txt'
+    !md%load_balance_file = 'load_balance_split4_6im_balanced.txt'
 
     !
     ! Setup basic metadata
@@ -282,7 +285,7 @@ program run_BP09
 
 
     ! Allocate domains and prepare comms
-    call md%setup(extra_halo_buffer=0_ip)
+    call md%setup()
 
     call md%memory_summary()
 
@@ -359,21 +362,7 @@ program run_BP09
     end do
 
     call program_timer%timer_end('evolve')
-
-    ! Print out timing info for each
-    do i = 1, nd
-        write(log_output_unit,*) ''
-        write(log_output_unit,*) 'Timer ', i
-        write(log_output_unit,*) ''
-        call md%domains(i)%timer%print(log_output_unit)
-        call md%domains(i)%write_max_quantities()
-        call md%domains(i)%finalise()
-    end do
-
-    write(log_output_unit, *) ''
-    write(log_output_unit, *) 'Multidomain timer'
-    write(log_output_unit, *) ''
-    call md%timer%print(log_output_unit)
+    call md%finalise_and_print_timers
 
     write(log_output_unit,*) ''
     write(log_output_unit, *) 'Program timer'
