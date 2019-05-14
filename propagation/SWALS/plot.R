@@ -900,7 +900,7 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
     # Make a partition of md_times_vec into num_images groups, with roughly equal sums
     splitter = partition_into_k(md_times_vec, num_images)
     dsplit = diff(range(splitter[[2]]))
-    print(paste0('Range of partition total times: ', signif(dsplit), 4, 's '))
+    print(paste0('Range of partition total times: ', signif(dsplit, 4), 's '))
     print(paste0('             (as a percentage): ', signif(dsplit/mean(splitter[[2]])*100, 4),'%'))
     old_range = diff(range(unlist(lapply(md_times, sum))))
     print(paste0('Previous time range           : ', signif(old_range, 4)))
