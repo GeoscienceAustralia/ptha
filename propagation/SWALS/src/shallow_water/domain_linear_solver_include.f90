@@ -37,10 +37,13 @@
         integer(ip):: j, i, xl, xu, yl, yu, n_ext, my_omp_id, n_omp_threads, loop_work_count
         integer(ip) :: yl_special, yU_special
 
-#ifdef CORIOLIS
+#if defined(CORIOLIS) || defined(LINEAR_PLUS_NONLINEAR_FRICTION)
         ! Vector to hold the (coriolis force x time-step x 0.5), which arises
         ! in an inner loop. Use a vector so we can zero it for dry cells
         real(dp):: dt_half_coriolis(domain%nx(1)), dt_half_coriolis_jph(domain%nx(1))
+
+        ! Vector to hold the semi_implicit_friction_multiplier
+        real(dp):: friction_multiplier_UH(domain%nx(1)), friction_multiplier_VH(domain%nx(1))
 
         ! For the coriolis term in the UH update, we store an interpolated version of
         ! the 'pre-update' VH at 'i+1/2', 'j-1/2'. We also need the same at 'i+1/2', 'j+1/2'
@@ -236,7 +239,7 @@
         !
         ! Now loop indices are determined
         !
-#ifdef CORIOLIS
+#if defined(CORIOLIS) || defined(LINEAR_PLUS_NONLINEAR_FRICTION)
         ! Tricks to implement coriolis without increasing memory usage much
         !
         ! For coriolis, we need values of 'VH' at coorinates corresponding to UH,
@@ -259,8 +262,8 @@
         uh_i_j(xL:(xU-1)) = ZERO_dp
         uh_i_jp1(xL:(xU-1)) = ZERO_dp
         uh_i_jp1_max_loop_index(xL:(xU-1)) = ZERO_dp
-        dt_half_coriolis(xL:(xU-1)) = ZERO_dp
-        dt_half_coriolis_jph(xL:(xU-1)) = ZERO_dp
+        !dt_half_coriolis(xL:(xU-1)) = ZERO_dp
+        !dt_half_coriolis_jph(xL:(xU-1)) = ZERO_dp
 
         !
         ! Before starting the loop, get the value of VH at 
@@ -385,7 +388,7 @@
             end if
 
 
-#ifdef CORIOLIS
+#if defined(CORIOLIS) || defined(LINEAR_PLUS_NONLINEAR_FRICTION)
             ! 'Old' VH at (i+1/2, j+1/2) -- requires averaging values at 'i,j+1/2' and 'i+1, j+1/2'
             vh_iph_jph(xL:(xU-1)) = HALF_dp * &
                 (domain%U(xL    :(xU-1), j, VH) + &
@@ -406,7 +409,9 @@
                                uh_i_jp1(xL:(xU-1)), &
                 uh_i_jp1_max_loop_index(xL:(xU-1)), &
                 j /= yu_special)
+#endif
 
+#if defined(CORIOLIS)
             ! Avoid recomputing coriolis coefficient in loop. Note we set the
             ! coriolis force to zero over dry cells, as is obviously desirable.
             dt_half_coriolis(xL:(xU-1)) = dt * domain%coriolis(j) * HALF_dp * &
@@ -414,12 +419,39 @@
             dt_half_coriolis_jph(xL:(xU-1)) = dt * &
                 domain%coriolis_bottom_edge(j+1) * HALF_dp * &
                 merge(ONE_dp, ZERO_dp, h_jph_vec(xL:(xU-1)) > ZERO_dp)
+#endif
+
+#if defined(LINEAR_PLUS_NONLINEAR_FRICTION)
+            ! Compute a multiplier that applies a semi-implicit treatment of manning friction.
+            !
+            ! This is equivalent to adding a term "g * depth * friction_slope" to the equations.
+            !   where friction_slope = {manning_sq * depth**(-4./3.) * speed * velocity_component}
+            !
+            ! The term is broken up into a fast, semi-implicit discretization. 
+            ! For UH, we break it up as (terms in { })
+            !    g * depth * friction_slope = {g * manning_sq * depth^(-7/3)} * { sqrt(uh^2 + vh^2) } * {uh}
+            ! while for VH, the final term is vh
+            !    g * depth * friction_slope = {g * manning_sq * depth^(-7/3)} * { sqrt(uh^2 + vh^2) } * {vh}
+            ! The discretization is semi-implicit as follows:
+            !    - The component 'g n^2 depth^(-7/3)' is a constant in time, because the effective depth
+            !       never changes in this "linear" framework. 
+            !    - The term sqrt(uh^2+vh^2) {= speed*depth} is treated explicitly.
+            !    - The remaining 'uh' or 'vh' term is treated implicitly. 
+            !
+            ! Thus, appending the term g * depth * friction slope to the equations can be reduced to
+            ! a multiplication of the form { 1/(1 + explicit_part_of_friction_terms) }
+            !
+            friction_multiplier_UH(xL:(xU-1)) = 1.0_dp / ( 1.0_dp + &
+                dt * domain%friction_work(xL:(xU-1), j, UH) * &
+                sqrt(domain%U(xL:(xU-1),j,UH)**2 + (0.5_dp * ( vh_iph_jmh(xL:(xU-1)) + vh_iph_jph(xL:(xU-1)) ) )**2 ) )
+
+            friction_multiplier_VH(xL:(xU-1)) = 1.0_dp / (1.0_dp + &
+                dt * domain%friction_work(xL:(xU-1), j, VH) * &
+                sqrt(domain%U(xL:(xU-1),j,VH)**2 + (0.5_dp * ( uh_i_j(xL:(xU-1)) + uh_i_jp1(xL:(xU-1)) ) )**2 ) )
 
 #endif
 
 
-
-            !do concurrent (i = 1:(nx-1))
             do i = xL , (xU-1)
 #ifndef CORIOLIS
                 ! This update has no coriolis [other that that, it still 'works' in spherical coords]
@@ -433,6 +465,7 @@
                 domain%U(i, j, VH) = domain%U(i, j, VH) * h_jph_wet(i) - &
                     inv_cell_area_dt_vh_g * h_jph_vec(i) *&
                     dw_j(i) * domain%distance_bottom_edge(j+1)
+
 #else        
                 !
                 ! This update has coriolis. 
@@ -452,6 +485,13 @@
                     - dt_half_coriolis_jph(i) * (uh_i_j(i) + uh_i_jp1(i))
 
 #endif
+
+#ifdef LINEAR_PLUS_NONLINEAR_FRICTION
+                ! Add the friction terms, if desired
+                domain%U(i,j,UH) = friction_multiplier_UH(i) * domain%U(i,j,UH)
+                domain%U(i,j,VH) = friction_multiplier_VH(i) * domain%U(i,j,VH)
+#endif
+
             end do
 
 #ifdef CORIOLIS

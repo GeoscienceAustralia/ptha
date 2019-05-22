@@ -1,6 +1,6 @@
 module local_routines 
     use global_mod, only: dp, ip, wall_elevation
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
     
     real(dp), parameter:: bed_slope = 0.01_dp
@@ -22,21 +22,41 @@ module local_routines
             do j = 1, domain%nx(2)
                 x = (i-0.5_dp)*domain%dx(1) - cx
                 y = (j-0.5_dp)*domain%dx(2) - cy 
-                domain%u(i,j,4) = y*slope
+                domain%U(i,j,ELV) = y*slope
             end do
         end do
-        ! Wall boundaries along the sides and top
-        domain%U(1,:,4) = wall_elevation 
-        domain%U(domain%nx(1),:,4) = wall_elevation 
-        domain%U(:,domain%nx(2),4) = wall_elevation 
-        domain%U(:,1,4) = wall_elevation 
 
-        ! Stage
-        domain%U(:,:,1) = domain%U(:,:,4)
+        domain%U(:,:,STG) = domain%U(:,:,ELV)
+        if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+            ! linear_with_nonlinear_friction is fragile for this problem (however we want
+            ! to test the friction correctness). So we "help" it by giving initial conditions
+            ! close to the steady-state solution. Otherwise shocks develop and the solver
+            ! performs very badly. We do not set it exactly
+            domain%U(:,:,STG) = domain%U(:,:,STG) + 0.485_dp
+            domain%U(:,:,VH) = -0.9999_dp
+        end if
+
+        ! Wall boundaries along the sides and top
+        domain%U(1,:,ELV) = wall_elevation 
+        domain%U(domain%nx(1),:,ELV) = wall_elevation 
+        domain%U(:,domain%nx(2),ELV) = wall_elevation 
+        domain%U(:,1,ELV) = wall_elevation 
 
         ! Ensure stage >= elevation
-        domain%U(:,:,1 ) = max(domain%U(:,:,1), domain%U(:,:,4))
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
 
+        if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+            ! More nursing of the leapfrog solver.
+            ! Ensure the initial condition respects that wall boundaries have no discharge
+            do j = 1, domain%nx(2)
+                do i = 1, domain%nx(1)
+                    if( (domain%U(i,j  ,STG) < domain%U(i,j  ,ELV) + 1.0e-03_dp) .or. &
+                        (domain%U(i,j+1,STG) < domain%U(i,j+1,ELV) + 1.0e-03_dp) ) then
+                        domain%U(i,j,VH) = 0.0_dp
+                    end if
+                end do
+            end do
+        end if
 
         domain%manning_squared = 0.03_dp**2
 
@@ -49,7 +69,7 @@ end module
 
 program uniform_slope
     use global_mod, only: ip, dp, charlen
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: read_csv_into_array
     use local_routines
     implicit none
@@ -60,7 +80,7 @@ program uniform_slope
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 60.0_dp
-    real(dp), parameter :: final_time = 600.0_dp
+    real(dp) :: final_time
 
     ! length/width
     real(dp), parameter, dimension(2):: global_lw = [50._dp, 1000._dp] 
@@ -70,14 +90,30 @@ program uniform_slope
     integer(ip), parameter, dimension(2):: global_nx = [50, 1000] ! [400, 400] 
 
     ! Discharge of 1 cubic meter / second per metre width
-    real(dp) :: discharge_per_unit_width = 1.0_dp
-    real(dp) :: Qin, model_vd, model_d, model_v, theoretical_d, theoretical_v, theoretical_vol, model_vol
-
+    real(dp), parameter :: discharge_per_unit_width = 1.0_dp
+    real(dp) :: Qin, model_vd, model_d, model_v, theoretical_d, &
+        theoretical_v, theoretical_vol, model_vol, initial_vol, ts, error_thresh_vd
+    integer(ip) :: nspread
 
     ! This gives the inflow discharge per cell, where it is applied
     Qin = discharge_per_unit_width * (global_lw(1)/global_nx(1))
 
-    domain%timestepping_method = 'rk2'
+    call get_command_argument(1, domain%timestepping_method)
+
+    !domain%timestepping_method = 'rk2'
+    !domain%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
+
+    if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+        ! This is not a good numerical method for this problem. But to facilitate testing,
+        ! we "nurse it" when setting the initial conditions.
+        domain%linear_solver_is_truely_linear = .false. ! Would not make sense to use purely-linear on this problem
+        final_time = 600.0_dp
+        error_thresh_vd = 1.0e-04_dp
+    else
+        ! The finite volume methods are good for this problem, no issues with dry states, etc.
+        final_time = 600.0_dp
+        error_thresh_vd = 1.0e-05_dp
+    end if
 
     ! Prevent dry domain from causing enormous initial step
     domain%maximum_timestep = 5.0_dp
@@ -88,8 +124,17 @@ program uniform_slope
     ! call local routine to set initial conditions
     call set_initial_conditions_uniform_slope(domain)
 
+    initial_vol = sum(domain%U(:,:,STG) - domain%U(:,:,ELV))*product(domain%dx)
+
     ! Trick to get the code to write out just after the first timestep
     last_write_time = -approximate_writeout_frequency
+
+    if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+        ! The leapfrog solve needs a specified timestep
+        ! Because this problem is "hard" for that solver, it turns out we need a fairly
+        ! small timestep
+        ts = 0.02_dp 
+    end if
 
     ! Evolve the code
     do while (.true.)
@@ -107,11 +152,20 @@ program uniform_slope
 
         end if
 
-        call domain%evolve_one_step()
+        ! Evolve 
+        if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+            call domain%evolve_one_step(timestep=ts)
+            ! Add discharge inflow
+            domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) = &
+                domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) + Qin*ts / product(domain%dx)
+        else
+            call domain%evolve_one_step()
+            ! Add discharge inflow
+            domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) = &
+                domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) + Qin*domain%evolve_step_dt / product(domain%dx)
+        end if
 
-        ! Add discharge inflow
-        domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, 1) = &
-            domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, 1) + Qin*domain%evolve_step_dt / product(domain%dx)
+
 
     end do
 
@@ -119,9 +173,9 @@ program uniform_slope
 
     call domain%timer%print()
 
+    theoretical_vol = Qin * domain%time * domain%lw(1) * (global_nx(1) - 2) * 1.0_dp / global_nx(1) + initial_vol
+    model_vol = sum(domain%U(:,:,STG) - domain%U(:,:,ELV)) * product(domain%dx)
 
-    theoretical_vol = Qin * domain%time * domain%lw(1) * (global_nx(1) - 2) * 1.0_dp / global_nx(1)
-    model_vol = sum(domain%U(:,:,1) - domain%U(:,:,4)) * domain%dx(1) * domain%dx(2)
     ! Analytical solution
     ! vd = discharge_per_unit_width
     ! bed_slope = manning_squared * v * abs(v) / d^(4/3)
@@ -130,11 +184,15 @@ program uniform_slope
 
     i = domain%nx(1)/2
     j = domain%nx(2)/2    
-    model_vd = -1.0_dp * domain%U(i,j,3)    
-    model_d = domain%U(i,j,1) - domain%U(i,j,4)
+    model_vd = -1.0_dp * domain%U(i,j,VH)    
+    model_d = domain%U(i,j,STG) - domain%U(i,j,ELV)
     model_v = model_vd/model_d
 
     theoretical_d = (domain%manning_squared(i,j) * discharge_per_unit_width**2 / bed_slope)**(3.0_dp/10.0_dp)
+
+    print*, 'Initial vol: ', initial_vol
+    print*, ''
+    print*, ''
 
     print*, '## Testing ##'
     print*, ' '
@@ -149,7 +207,7 @@ program uniform_slope
     print*, ' '
     print*, '   Theoretical vd: ', discharge_per_unit_width
     print*, '   Model vd (near centre): ', model_vd
-    if( abs(discharge_per_unit_width - model_vd) < 1.0e-05_dp*discharge_per_unit_width) then
+    if( abs(discharge_per_unit_width - model_vd) < error_thresh_vd*discharge_per_unit_width) then
         print*, 'PASS'
     else
         print*, 'FAIL: Flux error ', discharge_per_unit_width, model_vd

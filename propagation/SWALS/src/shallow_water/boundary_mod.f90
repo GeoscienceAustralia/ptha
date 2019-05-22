@@ -105,7 +105,7 @@ module boundary_mod
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
-                if(domain%timestepping_method /= 'linear') then
+                if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,UH) = domain%U(i+1,j,UH) !2.0_dp * domain%U(i+1,j,2) - domain%U(i+2,j,2)
                     domain%U(i,j,VH) = ZERO_dp
                 end if
@@ -118,7 +118,7 @@ module boundary_mod
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
-                if(domain%timestepping_method /= 'linear') then
+                if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,UH) = domain%U(i-1,j,UH) !2.0_dp * domain%U(i-1,j,2) - domain%U(i-2, j, 2)
                     domain%U(i,j,VH) = ZERO_dp
                 end if
@@ -136,7 +136,7 @@ module boundary_mod
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
-                if(domain%timestepping_method /= 'linear') then
+                if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,VH) = domain%U(i,j+1,VH) !2.0_dp * domain%U(i,j+1,3) - domain%U(i,j+2,3)
                     domain%U(i,j,UH) = ZERO_dp
                 end if
@@ -149,7 +149,7 @@ module boundary_mod
                 domain%U(i,j,STG) = bc_values(1)
                 domain%U(i,j,ELV) = bc_values(4)
                 !domain%U(i,j,2:3) = ZERO_dp
-                if(domain%timestepping_method /= 'linear') then
+                if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,VH) = domain%U(i,j-1,VH) !2.0_dp * domain%U(i,j-1,3) - domain%U(i,j-2,3)
                     domain%U(i,j,UH) = ZERO_dp
                 end if
@@ -188,7 +188,7 @@ module boundary_mod
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
-                if(domain%timestepping_method /= 'linear') then
+                if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,UH) = domain%U(i+1,j,UH) !2.0_dp * domain%U(i+1,j,2) - domain%U(i+2,j,2)
                     domain%U(i,j,VH) = domain%U(i+1,j,VH)
                 end if
@@ -201,7 +201,7 @@ module boundary_mod
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
-                if(domain%timestepping_method /= 'linear') then
+                if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,UH) = domain%U(i-1,j,UH) !2.0_dp * domain%U(i-1,j,2) - domain%U(i-2, j, 2)
                     domain%U(i,j,VH) = domain%U(i-1,j,VH)
                 end if
@@ -219,7 +219,7 @@ module boundary_mod
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
-                if(domain%timestepping_method /= 'linear') then
+                if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,VH) = domain%U(i,j+1,VH) !2.0_dp * domain%U(i,j+1,3) - domain%U(i,j+2,3)
                     domain%U(i,j,UH) = domain%U(i,j+1,UH)
                 end if
@@ -232,7 +232,7 @@ module boundary_mod
                 domain%U(i,j,STG) = bc_values(STG)
                 domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
-                if(domain%timestepping_method /= 'linear') then
+                if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,VH) = domain%U(i,j-1,VH) !2.0_dp * domain%U(i,j-1,3) - domain%U(i,j-2,3)
                     domain%U(i,j,UH) = domain%U(i,j-1,UH)
                 end if

@@ -203,6 +203,8 @@ module domain_mod
         ! Otherwise the depth varies (which actually makes the equations nonlinear)
         ! "Truely linear" seems more stable.
         logical :: linear_solver_is_truely_linear = .true.
+        ! Use this to distinguish between 'linear solver' and 'staggered but potentially nonlinear'
+        logical :: is_staggered_grid 
 
         !
         ! Boundary conditions. (FIXME: Consider making a 'boundary_data_type' which
@@ -260,7 +262,7 @@ module domain_mod
         character(len=charlen):: output_folder_name = ''
         integer(ip):: logfile_unit = output_unit
 
-
+        ! Count the number of time-steps we clip depths.
         integer(long_long_ip) :: negative_depth_fix_counter = 0
 
         ! Type to manage netcdf grid outputs
@@ -282,12 +284,11 @@ module domain_mod
         ! Spatial coordinates, dx/dy distances (useful for spherical coordinates)
         real(dp), allocatable :: x(:), y(:), distance_bottom_edge(:), distance_left_edge(:)
         real(dp), allocatable :: area_cell_y(:)
-#ifdef SPHERICAL
+
+        ! These variables are only used with spherical coordinates
         real(dp), allocatable :: coslat(:), coslat_bottom_edge(:), tanlat_on_radius_earth(:)
-#endif
-#ifdef CORIOLIS
+        ! These variables are only used with coriolis
         real(dp), allocatable :: coriolis(:), coriolis_bottom_edge(:)
-#endif
 
         ! Type to manage storing of tide gauges
         type(point_gauge_type) :: point_gauges
@@ -306,7 +307,8 @@ module domain_mod
         real(dp), allocatable :: max_U(:,:,:) ! Needed if max_U is to be output, but can reduce precision
         !
         ! Multi-dimensional arrays below are only required for nonlinear. Would be possible
-        ! to further reduce memory usage, but not completely trivial
+        ! to further reduce memory usage, but not completely trivial. Not all of these are required
+        ! for linear type timestepping
         real(dp), allocatable :: flux_NS(:,:,:) ! Could avoid
         real(dp), allocatable :: flux_EW(:,:,:) ! Could avoid
         real(dp), allocatable :: depth(:,:) ! Could avoid
@@ -315,6 +317,10 @@ module domain_mod
         real(dp), allocatable :: explicit_source_VH_j_minus_1(:,:) ! Separate from explicit_source for OPENMP parallel logic
         real(dp), allocatable :: manning_squared(:,:) ! Needed for variable manning
         real(dp), allocatable :: backup_U(:,:,:) ! Needed
+
+        ! Only used for leapfrog_linear_plus_nonlinear_friction
+        real(dp), allocatable :: friction_work(:,:,:)
+        logical :: friction_work_is_setup = .false.
 
 
         CONTAINS
@@ -338,6 +344,9 @@ module domain_mod
         !procedure:: update_U => update_U_vectorized !! Slower on an NCI test
         procedure:: backup_quantities => backup_quantities
 
+        ! Setup
+        procedure:: precompute_friction_work => precompute_friction_work
+        
         ! Timestepping
         ! (consider making only 'evolve_one_step' type bound -- since the user should not
         !  really call others)
@@ -346,6 +355,7 @@ module domain_mod
         procedure:: one_rk2n_step => one_rk2n_step 
         procedure:: one_midpoint_step => one_midpoint_step
         procedure:: one_linear_leapfrog_step => one_linear_leapfrog_step
+        procedure:: one_leapfrog_linear_plus_nonlinear_friction_step => one_leapfrog_linear_plus_nonlinear_friction_step
         procedure:: evolve_one_step => evolve_one_step
         procedure:: update_max_quantities => update_max_quantities
 
@@ -479,7 +489,7 @@ module domain_mod
         write(domain%logfile_unit, *) '        ', maxstage
         write(domain%logfile_unit, *) '        ', minstage
 
-        if(domain%timestepping_method /= 'linear') then
+        if((.not. domain%is_staggered_grid)) then
 
             ! Typically depth/velocity are not up-to-date with domain%U, so fix
             ! that here.
@@ -502,7 +512,7 @@ module domain_mod
             energy_potential = ZERO_dp
             energy_kinetic = ZERO_dp
 
-            if(domain%timestepping_method == 'linear') then
+            if(domain%is_staggered_grid .and. domain%linear_solver_is_truely_linear) then
                 !
                 ! Linear leap-frog scheme doesn't store velocity
                 ! Get total, potential and kinetic energy in domain interior
@@ -542,7 +552,7 @@ module domain_mod
                         end if
                     end do
                 end do
-            else
+            else if(.not. domain%is_staggered_grid) then
                 !
                 ! Compute energy statistics using non-staggered grid
                 !
@@ -563,14 +573,20 @@ module domain_mod
 
             end if
 
-            ! Rescale energy statistics appropriately 
-            energy_potential = energy_potential * gravity * HALF_dp
-            energy_kinetic = energy_kinetic * HALF_dp
-            energy_total = energy_potential + energy_kinetic
+            ! In the case we use a "not-truely-linear" variant of the linear solver, the energy
+            ! calculations do not really make sense
+            if(domain%is_staggered_grid .and. (.not. domain%linear_solver_is_truely_linear)) then
+                ! Do nothing
+            else
+                ! Rescale energy statistics appropriately 
+                energy_potential = energy_potential * gravity * HALF_dp
+                energy_kinetic = energy_kinetic * HALF_dp
+                energy_total = energy_potential + energy_kinetic
 
-            write(domain%logfile_unit, *) 'Energy Total / rho: ', energy_total
-            write(domain%logfile_unit, *) 'Energy Potential / rho: ', energy_potential
-            write(domain%logfile_unit, *) 'Energy Kinetic / rho: ', energy_kinetic
+                write(domain%logfile_unit, *) 'Energy Total / rho: ', energy_total
+                write(domain%logfile_unit, *) 'Energy Potential / rho: ', energy_potential
+                write(domain%logfile_unit, *) 'Energy Kinetic / rho: ', energy_kinetic
+            end if
 
         end if
 
@@ -656,43 +672,34 @@ module domain_mod
 
 
         ! Set good defaults for different timestepping methods
-        if(domain%theta == -HUGE(1.0_dp)) then
-            select case(domain%timestepping_method)
-            case('rk2')
-                domain%theta = 1.6_dp
-            case('rk2n')
-                domain%theta = 1.6_dp
-            case('midpoint')
-                domain%theta = 1.6_dp
-            case('euler')
-                domain%theta = 0.9_dp
-            case('linear')
-                ! Nothing
-            case default
-                print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
-                call generic_stop()
-            end select
-        end if
+        select case(domain%timestepping_method)
+        case('rk2')
+            if(domain%theta == -HUGE(1.0_dp)) domain%theta = 1.6_dp
+            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.99_dp
+            domain%is_staggered_grid = .false.
+        case('rk2n')
+            if(domain%theta == -HUGE(1.0_dp)) domain%theta = 1.6_dp
+            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.9_dp
+            domain%is_staggered_grid = .false.
+        case('midpoint')
+            if(domain%theta == -HUGE(1.0_dp)) domain%theta = 1.6_dp
+            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.99_dp
+            domain%is_staggered_grid = .false.
+        case('euler')
+            if(domain%theta == -HUGE(1.0_dp)) domain%theta = 0.9_dp
+            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.9_dp
+            domain%is_staggered_grid = .false.
+        case('linear')
+            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.7_dp
+            domain%is_staggered_grid = .true.
+        case('leapfrog_linear_plus_nonlinear_friction')
+            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.7_dp
+            domain%is_staggered_grid = .true.
+        case default
+            print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
+            call generic_stop()
+        end select
 
-        ! As above for CFL 
-        if(domain%cfl == -HUGE(1.0_dp)) then
-            select case(domain%timestepping_method)
-            case('rk2')
-                domain%cfl = 0.99_dp
-            case('rk2n')
-                domain%cfl = 0.9_dp
-            case('midpoint')
-                domain%cfl = 0.99_dp
-            case('euler')
-                domain%cfl = 0.9_dp
-            case('linear')
-                domain%cfl = 0.7_dp
-            case default
-                print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
-                call generic_stop()
-            end select
-
-        end if
 
         if(use_partitioned_comms) then
             ! Note that this only supports a single grid, and has largely been replaced by the "multidomain"
@@ -840,8 +847,8 @@ module domain_mod
         end if
 
         ! Many other variables are required for non-linear FV, but not for
-        ! linear leap-frog
-        if(domain%timestepping_method /= 'linear') then 
+        ! linear leap-frog. Note non-linear FV is never on staggered grid.
+        if((.not. domain%is_staggered_grid)) then 
 
             allocate(domain%depth(nx, ny))
             allocate(domain%velocity(nx, ny, UH:VH))
@@ -918,6 +925,32 @@ module domain_mod
 
         endif
 
+        ! The linear_plus_nonlinear_friction needs a manning term, and a work array
+        ! which can hold the "constant" part of the friction terms for efficiency
+        if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+
+            ! Manning
+            allocate(domain%manning_squared(nx, ny))
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, ny
+                domain%manning_squared(:,j) = ZERO_dp
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+            ! A work array that will hold the expensive "constant" part of the friction terms
+            allocate(domain%friction_work(nx, ny, UH:VH))
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, ny
+                domain%friction_work(:,j, UH:VH) = ZERO_dp
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+        end if
+
         if(create_output) then
             CALL domain%create_output_files()
         end if
@@ -937,6 +970,84 @@ module domain_mod
             write(domain%logfile_unit, *) ''
         end if
 
+
+    end subroutine
+
+    ! Precompute the friction-work for the solver "leapfrog_linear_plus_nonlinear_friction"
+    !
+    ! This assumes stage/UH/VH/elev have been set
+    !
+    ! The friction work term is of the form
+    !     g * n^2 / constant_depth^(7/3)
+    ! The key point is that when multiplied by ||UH|| * uh, it will be equal to the
+    ! standard friction form: g*constant_depth*friction_slope
+    !
+    ! The pre-computation removes an expensive power-law call from the inner loop
+    !
+    subroutine precompute_friction_work(domain)
+        class(domain_type), intent(inout) :: domain
+
+        integer(ip) :: i, j, jp1, ip1
+        real(dp) :: depth_iph, depth_jph, nsq_iph, nsq_jph
+
+        if(domain%timestepping_method /= 'leapfrog_linear_plus_nonlinear_friction') &
+            stop 'precompute_friction_work can only be called with timestepping_method=leapfrog_linear_plus_nonlinear_friction'
+
+        if(.not. allocated(domain%friction_work)) &
+            stop 'friction_work is not allocated: ensure elevation is set before running this routine'
+
+        if(domain%linear_solver_is_truely_linear) then
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, domain%nx(2)
+                do i = 1, domain%nx(1)
+
+                    ! UH component
+                    ip1 = min(i+1, domain%nx(1))
+                    depth_iph = 0.5_dp * (domain%msl_linear - domain%U(i,j,ELV) + domain%msl_linear - domain%U(ip1,j, ELV))
+                    depth_iph = max(depth_iph, minimum_allowed_depth)
+                    nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
+                    domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
+
+                    ! VH component
+                    jp1 = min(j+1, domain%nx(2))
+                    depth_jph = 0.5_dp * (domain%msl_linear - domain%U(i,j,ELV) + domain%msl_linear - domain%U(i,jp1, ELV))
+                    depth_jph = max(depth_jph, minimum_allowed_depth)
+                    nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
+                    domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
+
+                end do
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+            ! For a truely-linear solver, this is only required once
+            domain%friction_work_is_setup = .true.
+        else
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, domain%nx(2)
+                do i = 1, domain%nx(1)
+
+                    ! UH component
+                    ip1 = min(i+1, domain%nx(1))
+                    depth_iph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(ip1,j,STG) - domain%U(ip1,j, ELV))
+                    depth_iph = max(depth_iph, minimum_allowed_depth)
+                    nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
+                    domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
+
+                    ! VH component
+                    jp1 = min(j+1, domain%nx(2))
+                    depth_jph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(i,jp1,STG) - domain%U(i,jp1, ELV))
+                    depth_jph = max(depth_jph, minimum_allowed_depth)
+                    nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
+                    domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
+
+                end do
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+        end if
 
     end subroutine
 
@@ -2301,6 +2412,7 @@ module domain_mod
 
     end subroutine
 
+    ! Truely-linear leap-frog solver
     subroutine one_truely_linear_leapfrog_step(domain, dt)
         class(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
@@ -2315,6 +2427,7 @@ module domain_mod
 
     end subroutine
 
+    ! Not-truely-linear leap-frog solver
     subroutine one_not_truely_linear_leapfrog_step(domain, dt)
         class(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
@@ -2326,6 +2439,57 @@ module domain_mod
         ! The linear solver code has become complex [in order to reduce memory footprint, and
         ! include coriolis, while still having openmp work]. So it is moved here. 
 #include "domain_linear_solver_include.f90"
+
+    end subroutine
+
+    ! Linear combined with nonlinear friction. This might be useful to allow some dissipation
+    ! in very large scale tsunami models.
+    subroutine one_leapfrog_linear_plus_nonlinear_friction_step(domain, dt)
+        class(domain_type), intent(inout):: domain
+        real(dp), intent(in):: dt
+
+        ! Compute some expensive parts of the friction term
+        ! If domain%linear_solver_is_truely_linear, this will only happen
+        ! once (on the first timestep). Otherwise it should happen every timestep
+        if(.not. domain%friction_work_is_setup) call domain%precompute_friction_work
+
+        if(domain%linear_solver_is_truely_linear) then
+            call one_leapfrog_truely_linear_plus_nonlinear_friction_step(domain, dt)
+        else
+            call one_leapfrog_not_truely_linear_plus_nonlinear_friction_step(domain, dt)
+        end if
+
+    end subroutine
+
+    ! Truely-linear leap-frog solver PLUS NONLINEAR FRICTION
+    subroutine one_leapfrog_truely_linear_plus_nonlinear_friction_step(domain, dt)
+        class(domain_type), intent(inout):: domain
+        real(dp), intent(in):: dt
+        ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
+        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
+        logical, parameter:: truely_linear = .true.
+        ! The linear solver code has become complex [in order to reduce memory footprint, and
+        ! include coriolis, while still having openmp work]. So it is moved here. 
+
+#define LINEAR_PLUS_NONLINEAR_FRICTION
+#include "domain_linear_solver_include.f90"
+#undef LINEAR_PLUS_NONLINEAR_FRICTION
+
+    end subroutine
+
+    ! Not-truely-linear leap-frog solver PLUS NONLINEAR FRICTION
+    subroutine one_leapfrog_not_truely_linear_plus_nonlinear_friction_step(domain, dt)
+        class(domain_type), intent(inout):: domain
+        real(dp), intent(in):: dt
+        ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
+        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
+        logical, parameter:: truely_linear = .false.
+        ! The linear solver code has become complex [in order to reduce memory footprint, and
+        ! include coriolis, while still having openmp work]. So it is moved here. 
+
+#define LINEAR_PLUS_NONLINEAR_FRICTION
+#include "domain_linear_solver_include.f90"
+#undef LINEAR_PLUS_NONLINEAR_FRICTION
 
     end subroutine
     
@@ -2447,6 +2611,15 @@ module domain_mod
                 write(domain%logfile_unit,*) 'ERROR: timestep must be provided for linear evolve_one_step'
                 call generic_stop()
             end if
+        case ('leapfrog_linear_plus_nonlinear_friction')
+            if(present(timestep)) then
+                call domain%one_leapfrog_linear_plus_nonlinear_friction_step(timestep)
+            else
+                write(domain%logfile_unit,*) 'ERROR: timestep must be provided for ', &
+                    'leapfrog_linear_plus_nonlinear_friction evolve_one_step'
+                call generic_stop()
+            end if
+
         case default
             write(domain%logfile_unit,*) 'ERROR: domain%timestepping_method not recognized'
             call generic_stop()

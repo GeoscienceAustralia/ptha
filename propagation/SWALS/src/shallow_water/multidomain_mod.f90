@@ -804,7 +804,9 @@ module multidomain_mod
             all_dx(1:2, i, ti) = domains(i)%dx
             all_timestepping_refinement_factor(i,ti) = domains(i)%timestepping_refinement_factor
             ! 1 if our scheme uses a staggered grid, 0 otherwise. Currently only the linear solver does
-            all_is_staggered_grid(i,ti) = merge(1_ip, 0_ip, domains(i)%timestepping_method == 'linear')
+            all_is_staggered_grid(i,ti) = merge(1_ip, 0_ip, &
+                (domains(i)%timestepping_method == 'linear') .or. &
+                (domains(i)%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction'))
         end do
 
 #ifdef COARRAY
@@ -885,8 +887,10 @@ module multidomain_mod
             ! Evolve each domain one or more steps, for a total time of dt
             nt = md%domains(j)%timestepping_refinement_factor
 
-            if(local_timestep_partitioned_domains .and. md%domains(j)%timestepping_method /= 'linear') then
+            if(local_timestep_partitioned_domains .and. (.not. md%domains(j)%is_staggered_grid)) then
                 ! For nonlinear domains, allow fewer timesteps, if it won't cause blowup. 
+                ! Do not do this for staggered-grid domains, because the leap-frog numerical method needs
+                ! a constant time-step
                 !
                 ! This is most important in distributed-memory applications where the partitioned
                 ! domain could support substantially different time-steps in different parts of the
@@ -1369,6 +1373,8 @@ module multidomain_mod
                 required_cells_ts_method = 4
             case('linear')
                 required_cells_ts_method = 2
+            case('leapfrog_linear_plus_nonlinear_friction')
+                required_cells_ts_method = 2
             case default
                 write(log_output_unit,*) 'timestepping_method not recognized'
                 error stop
@@ -1832,6 +1838,8 @@ module multidomain_mod
                 upper_right_nx = (((local_co_index    ) * domain_nx)/(dx_refine_X_co_size_xy)) * &
                     dx_refine_ratio ! Deliberate integer division
 
+                ! Copy the derived type, and then "fix up" anything that should be changed.
+                md%domains(next_d) = md%domain_metadata(i)
                 ! Now we need to set variables, like
                 ! md%domains(1)%lw = global_lw
                 md%domains(next_d)%lw = ((upper_right_nx - lower_left_nx + 1)*&
@@ -1845,27 +1853,11 @@ module multidomain_mod
                 md%domains(next_d)%nx = upper_right_nx - lower_left_nx + 1
                 ! md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
                 md%domains(next_d)%dx = md%domain_metadata(i)%dx
-                ! md%domains(1)%timestepping_method = 'linear'
-                md%domains(next_d)%timestepping_method = md%domain_metadata(i)%timestepping_method
-                md%domains(next_d)%linear_solver_is_truely_linear = md%domain_metadata(i)%linear_solver_is_truely_linear
-                ! md%domains(1)%timestepping_refinement_factor = 1_ip
-                md%domains(next_d)%timestepping_refinement_factor = md%domain_metadata(i)%timestepping_refinement_factor
-                ! md%domains(1)%dx_refinement_factor = 1.0_dp
-                md%domains(next_d)%dx_refinement_factor = md%domain_metadata(i)%dx_refinement_factor
-                md%domains(next_d)%dx_refinement_factor_of_parent_domain = &
-                    md%domain_metadata(i)%dx_refinement_factor_of_parent_domain
 
-                ! Copy over the netcdf down-sampling information
-                md%domains(next_d)%nc_grid_output%spatial_stride = md%domain_metadata(i)%nc_grid_output%spatial_stride
-                ! Let the nc_grid_output know it is part of a larger domain with the given lower-left
+                !! ! Copy over the netcdf down-sampling information
+                !! md%domains(next_d)%nc_grid_output%spatial_stride = md%domain_metadata(i)%nc_grid_output%spatial_stride
+                ! ! Let the nc_grid_output know it is part of a larger domain with the given lower-left
                 md%domains(next_d)%nc_grid_output%spatial_ll_full_domain = md%domain_metadata(i)%lower_left
-
-                ! Time before which we do trivial evolves
-                md%domains(next_d)%static_before_time = md%domain_metadata(i)%static_before_time
-
-                ! CFL and theta
-                md%domains(next_d)%cfl = md%domain_metadata(i)%cfl
-                md%domains(next_d)%theta = md%domain_metadata(i)%theta
 
                 ! NAME THE DOMAIN, using the "original" domain index, rather than the one
                 ! after partitioning
@@ -2086,11 +2078,11 @@ module multidomain_mod
                 !call md%domains(j)%nesting%recv_comms(i)%process_received_data(md%domains(j)%U)
                 call process_received_data(md%domains(j)%nesting%recv_comms(i), md%domains(j)%U)
 
-                ! If a linear domain is receiving, need to avoid getting non-zero UH/VH at wet/dry
+                ! If a staggered-grid domain is receiving, need to avoid getting non-zero UH/VH at wet/dry
                 ! boundaries
                 if(md%domains(j)%nesting%recv_comms(i)%recv_active .and. &
                    md%domains(j)%nesting%recv_comms(i)%use_wetdry_limiting .and. &
-                   md%domains(j)%timestepping_method == 'linear') then
+                   md%domains(j)%is_staggered_grid) then
 
                     ! Indices of the region that received data
                     iL = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,1)
@@ -2352,7 +2344,9 @@ module multidomain_mod
 
             ! For wetting and drying reasons, we may wish to not apply this to domains
             ! solving the linear equations
-            if(md%domains(j)%timestepping_method == 'linear' .and. ignore_linear_local) cycle
+            if( (md%domains(j)%timestepping_method == 'linear' .or.&
+                 md%domains(j)%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') &
+                 .and. ignore_linear_local) cycle
 
             ! Loop over recv_metadata boxes
             do i = 1, size(md%domains(j)%nesting%recv_metadata, 2)

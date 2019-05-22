@@ -14,13 +14,14 @@ module local_routines
 
     subroutine set_initial_conditions_generic_model(domain, input_elevation_raster, &
         input_stage_raster, hazard_points_file, skip_header,&
-        adaptive_computational_extents, negative_elevation_raster)
+        adaptive_computational_extents, negative_elevation_raster, manning_n)
 
         class(domain_type), target, intent(inout):: domain
         character(len=charlen), intent(in):: input_elevation_raster, &
             input_stage_raster, hazard_points_file
         integer(ip), intent(in):: skip_header
         logical, intent(in):: adaptive_computational_extents, negative_elevation_raster
+        real(dp), intent(in) :: manning_n
 
         integer(ip):: i, j, extra_buffer
         real(dp), allocatable:: x(:), y(:), xy_coords(:,:)
@@ -185,6 +186,11 @@ SOURCEDIR
         if(allocated(xy_coords)) then
             deallocate(xy_coords)
         end if
+
+        if(domain%timestepping_method /= 'linear') then
+            print*, 'Setting manning friction'
+            domain%manning_squared = manning_n * manning_n
+        end if
         
         print*, 'Initial conditions set'
         print*, ''
@@ -208,21 +214,26 @@ program generic_model
 
     character(charlen) :: timestepping_method, input_parameter_file, namelist_output_filename
 
-    real(dp) :: approximate_writeout_frequency, final_time 
+    real(dp) :: approximate_writeout_frequency, final_time, manning_n
     real(dp):: timestep, global_ur(2), global_ll(2), global_lw(2), cfl, dx(2)
     integer(ip):: global_nx(2), skip_header_hazard_points_file, file_unit_temp
     character(len=charlen):: input_elevation_raster, input_stage_raster, &
         hazard_points_file, output_basedir
     logical:: record_max_U, output_grid_timeseries, adaptive_computational_extents, &
-        negative_elevation_raster
+        negative_elevation_raster, linear_solver_is_truely_linear
 
     ! Key input data
     namelist /MODELCONFIG/ &
         input_elevation_raster, input_stage_raster, global_ll, &
         global_ur, global_nx, approximate_writeout_frequency, output_basedir, &
-        final_time, timestepping_method,&
+        final_time, timestepping_method, manning_n, &
         cfl, hazard_points_file, skip_header_hazard_points_file, record_max_U,&
-        output_grid_timeseries, adaptive_computational_extents, negative_elevation_raster
+        output_grid_timeseries, adaptive_computational_extents, negative_elevation_raster, &
+        linear_solver_is_truely_linear
+
+    ! Predefine some variables that might not be in the input file
+    manning_n = 0.0_dp
+    linear_solver_is_truely_linear = .true.
 
     ! Read the input file -- the name of this file should be the first
     ! commandline argument
@@ -252,6 +263,7 @@ program generic_model
     print*, 'output_basedir: ', TRIM(output_basedir)
     print*, 'final_time: ', final_time
     print*, 'timestepping_method: ', TRIM(timestepping_method)
+    print*, 'manning n: ', manning_n
     print*, 'cfl: ', cfl
     print*, 'hazard_points_file: ', TRIM(hazard_points_file)
     print*, 'skip_header_hazard_points_file: ', skip_header_hazard_points_file
@@ -292,6 +304,7 @@ program generic_model
     domain%timestepping_method = timestepping_method
     domain%record_max_U = record_max_U
     domain%output_basedir = output_basedir
+    domain%linear_solver_is_truely_linear = linear_solver_is_truely_linear
     
     ! Allocate domain -- must have set timestepping method BEFORE this
     call domain%allocate_quantities(global_lw, global_nx, global_ll)
@@ -309,7 +322,7 @@ program generic_model
     ! Call local routine to set initial conditions
     call set_initial_conditions_generic_model(domain, input_elevation_raster,&
         input_stage_raster, hazard_points_file, skip_header_hazard_points_file,&
-        adaptive_computational_extents, negative_elevation_raster)
+        adaptive_computational_extents, negative_elevation_raster, manning_n)
 
     timestep = domain%linear_timestep_max()
     write(domain%logfile_unit, *) 'ts: ', timestep
@@ -334,7 +347,8 @@ program generic_model
         if (domain%time > final_time) exit 
 
         !! Example with fixed timestep
-        if(domain%timestepping_method == 'linear') then
+        if(domain%timestepping_method == 'linear' .or. &
+           domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
             call domain%evolve_one_step(timestep=timestep)
         else
             call domain%evolve_one_step()
