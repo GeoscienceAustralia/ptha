@@ -1,6 +1,5 @@
 # Clean existing binary
 rm ./generic_model
-rm -r ./OUTPUTS
 # Build the code
 make -B -f make_generic_model > build_outfile.log
 

@@ -3,14 +3,14 @@
 rm ./parallel_unit_tests
 #source setup_coarray.sh
 make -B -f make_test
-export OMP_NUM_THREADS=1
-time cafrun -np 1 ./parallel_unit_tests
-time cafrun -np 2 ./parallel_unit_tests
-time cafrun -np 3 ./parallel_unit_tests
-time cafrun -np 4 ./parallel_unit_tests
-time cafrun -np 6 ./parallel_unit_tests
-time cafrun -np 8 ./parallel_unit_tests
-time cafrun -np 12 ./parallel_unit_tests
-time cafrun -np 16 --oversubscribe ./parallel_unit_tests
-#time cafrun -np 32 ./parallel_unit_tests
-#time cafrun -np 64 ./parallel_unit_tests
+#export OMP_NUM_THREADS=1
+time OMP_NUM_THREADS=1 mpiexec -n 1 ./parallel_unit_tests
+time OMP_NUM_THREADS=1 mpiexec -n 2 ./parallel_unit_tests
+time OMP_NUM_THREADS=1 mpiexec -n 3 ./parallel_unit_tests
+time OMP_NUM_THREADS=1 mpiexec -n 4 ./parallel_unit_tests
+time OMP_NUM_THREADS=1 mpiexec -n 6 ./parallel_unit_tests
+time OMP_NUM_THREADS=1 mpiexec -n 8 ./parallel_unit_tests
+time OMP_NUM_THREADS=1 mpiexec -n 12 ./parallel_unit_tests
+time OMP_NUM_THREADS=1 mpiexec -n 16 --oversubscribe ./parallel_unit_tests
+#time mpiexec -n 32 ./parallel_unit_tests
+#time mpiexec -n 64 ./parallel_unit_tests
