@@ -345,7 +345,8 @@ program run_Tauranga
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_method = 'rk2' !'midpoint' !'rk2'
-    md%domains(1)%theta = 4.0_dp
+    !md%domains(1)%theta = 4.0_dp
+
     !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
     !md%domains(1)%linear_solver_is_truely_linear = .false.
 
