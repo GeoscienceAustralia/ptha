@@ -149,22 +149,26 @@ get_gauges_netcdf_format<-function(output_folder){
 
     static_var = list()
     for(i in 1:length(static_names)){
-        tmp = try(ncvar_get(gauge_fid, static_names[i]), silent=TRUE)
-        if(class(tmp) == 'try-error'){
-            static_var[[static_names[i]]] = NA
+        if(static_names[i] %in% names(gauge_fid$var)){
+            tmp = try(ncvar_get(gauge_fid, static_names[i]), silent=TRUE)
+            if(class(tmp) == 'try-error') tmp = NA
         }else{
-            static_var[[static_names[i]]] = tmp
+            tmp = NA
         }
+        static_var[[static_names[i]]] = tmp
     }
 
     time_series_var = list()
     for(i in 1:length(time_series_names)){
-        tmp = try(ncvar_get(gauge_fid, time_series_names[i]), silent=TRUE)
-        if(class(tmp) == 'try-error'){
-            time_series_var[[time_series_names[i]]] = NA
+        if(time_series_names[i] %in% names(gauge_fid$var)){
+            tmp = try(ncvar_get(gauge_fid, time_series_names[i]), silent=TRUE)
+            if(class(tmp) == 'try-error'){
+                tmp = NA
+            }
         }else{
-            time_series_var[[time_series_names[i]]] = tmp
+            tmp = NA
         }
+        time_series_var[[time_series_names[i]]] = tmp
     }
 
     outputs = list(lon=lon, lat=lat, time=time, gaugeID=gaugeID, 
