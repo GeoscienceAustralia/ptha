@@ -211,6 +211,8 @@ program run_BP09
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%timestepping_method = 'linear'
     md%domains(1)%linear_solver_is_truely_linear = .true.
+    !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
+    !md%domains(1)%linear_solver_is_truely_linear = .false.
 
     ! Higher res around region of interest
     call md%domains(2)%match_geometry_to_parent(&
