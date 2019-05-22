@@ -1,4 +1,16 @@
-# Avoid startup messages when calling library
+#
+# Scripts to work with SWALS output files. 
+#
+# It is not essential to use R to run SWALS. However, some kind of scripting
+# language is useful to work with the outputs, especially if using a
+# multidomain and distributed-memory parallel jobs. 
+#
+# In general any single domain will contain "halo regions" (i.e. where the flow
+# state is received from other domains), and other regions where it is the
+# "priority domain". Therefore, some care is required to combine results from
+# multiple domains while only using "priority domain" cells.
+#
+
 
 #' Get name of folder most recently written to OUTPUTS (according to timestamp in name)
 get_recent_output_folder<-function(){
