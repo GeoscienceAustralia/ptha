@@ -2,7 +2,7 @@
 
 # ***NOTE: This is a beta release. Results may be updated if any issues are identified. Please report any problems via the github issues page, or send an email to the maintainer or to hazards@ga.gov.au***
 
-For every scenario in our analysis we provide earthquake information, tsunami
+For every PTHA18 scenario we provide earthquake information, tsunami
 initial conditions, and wave time-series at every hazard point. Combined with
 the exceedance-rate modelling, such inputs can be used to drive local scale
 tsunami inundation models for hazard and risk assessments.
@@ -18,27 +18,27 @@ doing tsunami hazard studies **in Australia** can alternatively contact
 Geoscience Australia directly if they have difficulty with any of these steps
 (please email Gareth Davies at gareth.davies@ga.gov.au).
 
-Before working with the outputs, make sure you've [read the project report](http://dx.doi.org/10.11636/Record.2018.041) to understand what they are, how they were
-made, and how they have been tested. Users are strongly encouraged to
-independently test the results at their site of interest as part of any
-application. 
+Before working with the outputs, make sure you've [read the project
+report](http://dx.doi.org/10.11636/Record.2018.041) to understand what they
+are, how they were made, and how they have been tested. Users are strongly
+encouraged to independently test the results at their site of interest as part
+of any application. Geoscience Australia has tried to make the information in
+this product as accurate as possible. However, it does not guarantee that the
+information is totally accurate or complete. Therefore, you should not solely
+rely on this information when making a commercial decision.
 
 The study results are provided under a [Creative Commons 4.0 International
 Licence](http://creativecommons.org/licenses/by/4.0/legalcode), while the
-source-code is provided under a [BSD3 license](../LICENSE). Geoscience
-Australia has tried to make the information in this product as accurate as
-possible. However, it does not guarantee that the information is totally
-accurate or complete. Therefore, you should not solely rely on this information
-when making a commercial decision.
-
+source-code is provided under a [BSD3 license](../LICENSE). 
 
 
 ## **Usage**
 
-Make sure you have successfully installed the software [as described here](INSTALL.md).
-Please confirm that everything installed correctly by running the [test_all.R](test_all.R) script.
-You need to start R in the directory that contains that script and this README
-file (i.e. the directory name will end in `/ptha/ptha_access/`)
+Make sure you have successfully installed the software [as described
+here](INSTALL.md).  Please confirm that everything installed correctly by
+running the [test_all.R](test_all.R) script.  You need to start R in the
+directory that contains that script and this README file (i.e. the directory
+name will end in `/ptha/ptha_access/`).
 ```{r run_tests}
 # This should print 'PASS' a few times. If not, something is wrong with your
 # install (or perhaps your internet connection is slow -- give it a few tries).
@@ -58,60 +58,9 @@ message like this:
 ```
 In this case, just try again -- after a few attempts it usually works. If not,
 then check if your internet is working. Also check whether the NCI THREDDS
-server is running (occasionally it goes down for maintainence or technical
+server is running (occasionally it goes down for maintenance or technical
 problems).
 
-
-### ***Viewing the locations of hazard points and source zones***
-
-It is possible to view the hazard points from an interactive map in R. Note however
-that similar information is provided in the csv and shapefiles above, and for
-many users it will be easier to view those files using GIS and/or a spreadsheet
-application.
-
-To view the source-zones and hazard points on an interactive map in R, start
-R in the same directory that the [hazard_points_plot.R](hazard_points_plot.R)
-file resides in, and do:
-```{r interactive_map, eval=FALSE}
-source('hazard_points_plot.R')
-```
-The should open a map in your web browser, containing all unit sources and
-hazard points. 
-
-The first time you run this code it will download several datasets to your
-machine for use in the map. These will be placed in the DATA and SOURCE_ZONES
-folders. The download might take a minute or more, depending on your internet
-connection. Future runs will read the data from your machine, so should be
-faster. If you want to download fresh data (e.g. if you think there has been an
-update, or your files seem corrupted), then just manually delete the DATA
-and SOURCE_ZONES folders.
-
-
-![hazardpoints1](figure/hazard_point_viewer_screenshot1.png)
-
-Initially, most of the hazard points will be aggregated into coloured circles
-containing clusters of hazard points. This is done because it is too slow to
-render all hazard points at the same time on the one map. In the above figure,
-we see green circles (containing less than 10 hazard points), yellow circles
-(containing 10-100 hazard points), and red circles (containing more than 100
-hazard points). A number on the circle shows how many hazard points they
-contain. There are also a few individual hazard points (which are far from
-others), and in the above figure they mostly correspond to the locations of DART
-buoys.
-
-If you zoom in enough (e.g. below we look at Christmas Island), eventually the circles
-containing many points should be replaced by individual hazard points
-(circles). They can be queried with a mouse click. For each point, we store
-basic stage-vs-exceedance-rate information, as was discussed above. Note stage values
-below 2cm or above 20m are reported as NA.
-![hazardpoints2](figure/hazard_point_viewer_screenshot2.png)
-
-The unit sources appear as a polygonal grid. Individual unit sources can also
-be queried (e.g. to learn the name of the source-zone in our analysis) 
-![hazardpoints3](figure/hazard_point_viewer_screenshot3c.png)
-The controls on the top left of the map can be expanded as shown in the figure.
-These should allow you to change the background layer, and to turn layers on
-and off.
 
 ### ***Obtaining hazard curves at a particular hazard point***
 
@@ -550,4 +499,55 @@ output_file = paste0('output_gauge_data_puysegur_event_', row_index, '_station_'
 write.csv(site_flow, output_file, row.names=FALSE)
 
 ```
+
+### ***Viewing the locations of hazard points and source zones***
+
+It is possible to view the hazard points from an interactive map in R. Note however
+that similar information is provided in the csv and shapefiles above, and **for
+most users it will be easier to view those files using GIS and/or a spreadsheet
+application**.
+
+To view the source-zones and hazard points on an interactive map in R, start
+R in the same directory that the [hazard_points_plot.R](hazard_points_plot.R)
+file resides in, and do:
+```{r interactive_map, eval=FALSE}
+source('hazard_points_plot.R')
+```
+The should open a map in your web browser, containing all unit sources and
+hazard points. 
+
+The first time you run this code it will download several datasets to your
+machine for use in the map. These will be placed in the DATA and SOURCE_ZONES
+folders. The download might take a minute or more, depending on your internet
+connection. Future runs will read the data from your machine, so should be
+faster. If you want to download fresh data (e.g. if you think there has been an
+update, or your files seem corrupted), then just manually delete the DATA
+and SOURCE_ZONES folders.
+
+
+![hazardpoints1](figure/hazard_point_viewer_screenshot1.png)
+
+Initially, most of the hazard points will be aggregated into coloured circles
+containing clusters of hazard points. This is done because it is too slow to
+render all hazard points at the same time on the one map. In the above figure,
+we see green circles (containing less than 10 hazard points), yellow circles
+(containing 10-100 hazard points), and red circles (containing more than 100
+hazard points). A number on the circle shows how many hazard points they
+contain. There are also a few individual hazard points (which are far from
+others), and in the above figure they mostly correspond to the locations of DART
+buoys.
+
+If you zoom in enough (e.g. below we look at Christmas Island), eventually the circles
+containing many points should be replaced by individual hazard points
+(circles). They can be queried with a mouse click. For each point, we store
+basic stage-vs-exceedance-rate information, as was discussed above. Note stage values
+below 2cm or above 20m are reported as NA.
+![hazardpoints2](figure/hazard_point_viewer_screenshot2.png)
+
+The unit sources appear as a polygonal grid. Individual unit sources can also
+be queried (e.g. to learn the name of the source-zone in our analysis) 
+![hazardpoints3](figure/hazard_point_viewer_screenshot3c.png)
+The controls on the top left of the map can be expanded as shown in the figure.
+These should allow you to change the background layer, and to turn layers on
+and off.
 
