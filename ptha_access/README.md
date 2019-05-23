@@ -5,14 +5,10 @@
 This guide explains how to access basic tsunami hazard information in easy-to-use csv and
 shapefile formats. 
 
-For access to detailed PTHA18 information, you should instead consult the [detailed README](DETAILED_README.md). This covers access to:
-
+For access to detailed PTHA18 information, you should instead consult the [detailed README](DETAILED_README.md), which explains access to:
 * scenario earthquakes
-
 * scenario tsunami initial conditions
-
 * scenario wave time-series at 'hazard points'
-
 * additional average-return-interval calculations
 
 The methodologies used in this study, and associated testing, are discussed in
