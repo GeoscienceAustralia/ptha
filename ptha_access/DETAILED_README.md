@@ -170,10 +170,6 @@ approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)
 ## [1] 0.005430505
 ```
 
-### ***Finding earthquake scenarios within a particular wave-height range at a particular hazard point***
-
-FIXME: Discuss how to do this, and warn about the potential for bias.
-
 ### ***Obtaining metadata on the earthquake scenarios on each source-zone***
 
 Earthquake scenario metadata is accessed on a per-source-zone basis. In a typical
@@ -789,6 +785,10 @@ output_file = paste0('output_gauge_data_puysegur_event_', row_index, '_station_'
     sitename, '.csv')
 write.csv(site_flow, output_file, row.names=FALSE)
 ```
+
+### ***Finding earthquake scenarios within a particular wave-height range at a particular hazard point***
+
+FIXME: Discuss how to do this, and warn about the potential for bias.
 
 ### ***Viewing the locations of hazard points and source zones***
 
