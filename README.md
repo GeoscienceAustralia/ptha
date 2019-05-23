@@ -14,7 +14,7 @@ analysis is several TB in size).
 *Please use the most up-to-date source code in preference to the "releases".
 In this repository, "releases" are only used to snapshot the code at some point
 in time (e.g. to help reproduce old results of the developer). The master
-branch is reccommended for general use, and should pass the full test suite.*
+branch is recommended for general use, and should pass the full test suite.*
 
 
 ## License
