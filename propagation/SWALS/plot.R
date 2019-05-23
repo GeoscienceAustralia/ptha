@@ -915,13 +915,18 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
 
     # Make a partition of md_times_vec into num_images groups, with roughly equal sums
     splitter = partition_into_k(md_times_vec, num_images)
-    dsplit = diff(range(splitter[[2]]))
-    print(paste0('Range of partition total times: ', signif(dsplit, 4), 's '))
+    range_new = range(splitter[[2]])
+    dsplit = diff(range_new)
+    print(paste0('Range of partition total times: ', signif(range_new[1], 4), '-to-', signif(range_new[2], 4),  's '))
+    print(paste0('                  (difference): ', signif(dsplit, 4), 's '))
     print(paste0('             (as a percentage): ', signif(dsplit/mean(splitter[[2]])*100, 4),'%'))
-    old_range = diff(range(unlist(lapply(md_times, sum))))
-    print(paste0('Previous time range           : ', signif(old_range, 4)))
-    print(paste0('       (potential improvement): ', signif(old_range - dsplit, 4), 's'))
-
+    range_old = range(unlist(lapply(md_times, sum)))
+    old_range = diff(range_old)
+    print(paste0('Previous time range: ', signif(range_old[1], 4), '-to-', signif(range_old[2], 4),  's '))
+    print(paste0('      (difference) : ', signif(old_range, 4)))
+    print(paste0('Potential run-time reduction (difference in max times):', signif(range_old[2] - range_new[2], 4), 's'))
+    print(paste0('      Potential run-time reduction (% of old max time):', 
+                 signif((range_old[2] - range_new[2])/range_old[2] * 100, 4), '%'))
     # 
     unique_domains = sort(unique(md_domain_indices_vec))
     if(! all(unique_domains == seq(1, max(unique_domains)))){
