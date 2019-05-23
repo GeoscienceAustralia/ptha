@@ -1,27 +1,27 @@
-# **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment (PTHA) results**
+# **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment (PTHA18) results**
 
 # ***NOTE: This is a beta release. Results may be updated if any issues are identified. Please report any problems via the github issues page, or send an email to the maintainer or to hazards@ga.gov.au***
 
-We provide access to basic tsunami hazard information in easy-to-use csv and
-shapefile formats. This information is useful to get a high-level overview of
-the PTHA results. 
+This guide explains how to access basic tsunami hazard information in easy-to-use csv and
+shapefile formats. 
 
-We also provide access to detailed information for every tsunami scenario in our
-analysis, including: the earthquake discretization, the tsunami initial
-condition, and the resulting wave time-series at a large set of points in the
-ocean ('hazard points'). This information is useful for site-specific tsunami
-hazard studies (which use it for model 'boundary conditions' and to estimate
-how often hazardous tsunamis might occur). Working with this information is
-more complex, and is explained in our [detailed README](DETAILED_README.md).
+For access to detailed PTHA18 information, you should instead consult the [detailed README](DETAILED_README.md). This covers access to:
+
+* scenario earthquakes
+
+* scenario tsunami initial conditions
+
+* scenario wave time-series at 'hazard points'
+
+* additional average-return-interval calculations
 
 The methodologies used in this study, and associated testing, are discussed in
 [the project report](http://dx.doi.org/10.11636/Record.2018.041).
-In addition, the codes used to conduct the analysis are available open-source
-in the [ptha package](https://github.com/GeoscienceAustralia/ptha).  While that
-package mostly contains generic functionality for PTHA, there is also a folder
-with [project specific
+Code used to conduct the analysis is available open-source
+in the [ptha package](https://github.com/GeoscienceAustralia/ptha). This includes
+generic software for PTHA, and also a folder with [project specific
 scripts](https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template)
-used for the 2018 Australian PTHA.
+used for the PTHA18.
 
 The study results are provided under a [Creative Commons 4.0 International
 Licence](http://creativecommons.org/licenses/by/4.0/legalcode), while the
@@ -38,53 +38,54 @@ when making a commercial decision.
 
 The tsunami 'maximum-stage' is the maximum water-level that a particular
 tsunami attains at a particular location. This gives an idea of how 'big' the
-tsunami is. In the current analysis we ignore tidal variations and assume a
-constant mean-sea-level (MSL=0), so the 'maximum-stage' is equivalent to the
-maximum elevation of the tsunami wave above MSL. 
+tsunami is. In the PTHA18 we ignore tidal variations and assume a constant
+mean-sea-level (MSL=0), so the 'maximum-stage' is equivalent to the maximum
+elevation of the tsunami wave above MSL. 
 
 The maximum-stage exceedance-rates describe 'how often' tsunamis occur with
 maximum-stage above a particular threshold value. For example, you could ask how
 often maximum-stages above 0.5m (or 2.0m) occur, in terms of the average number of
 events each year at a particular site. At most locations there would be less
-than one event each year, so the exceedance-rates are typically small numbers.
-For example, an exceedance-rate of 0.002=1/500 would correspond to one event every 500
-years on average. Alternatively, one could say the event has a 500 year Average
-Recurrence Interval (ARI).
+than one event each year. Thus exceedance-rates are often small numbers.
+For example, an exceedance-rate of 0.002=1/500 would correspond to one event
+every 500 years on average. Alternatively, one could say the event has a 500
+year Average Recurrence Interval (ARI).
 
-In the 2018 PTHA, this information is stored at a set of points in the ocean.
-These points are termed 'hazard points' because we provide the hazard
-information at these sites. (The wave time-series for every scenario can also be
-obtained at all hazard points using methods described later in this document).
+In PTHA18 this information is stored at a set of points in the ocean.  These
+are termed 'hazard points' because they record site-specific hazard
+information. The wave time-series for every scenario can also be obtained at
+all hazard points ([see here](DETAILED_README.md)).
 
-Most of the hazard points are concentrated around Australia and its
-territories. We also store points at the locations of DART buoys (deep-ocean
-gauges which measure tsunami wave heights), as these are very useful for
-testing the model. In addition we store a 'thin' layer of hazard points
-globally at the 100m contour, which is useful for testing our model and
-comparing with previous studies. **If using points far from Austraila, consider
-that we ignore tsunamigenic source zones that are not considered relevant for
-Australia (e.g. in the Carribbean, the Mediterrean, the Manila trench,
-Kaikoura in New Zealand, western Japan). Therefore, outside of Australia, you
-should very carefully consider whether the results can be used, noting they may
-ignore the most relevant source-zones.**
+Most hazard points are concentrated around Australia and its
+territories. We also store DART buoy locations (deep-ocean
+gauges which measure tsunami wave heights), which are useful for
+model testing. Further, we store a 'thin' layer of hazard points
+globally at the 100m contour, which is useful for model testing and inter-comparison.
+**If using points far from Austraila, beware that we ignore tsunamigenic
+source zones which are not considered relevant for Australia (e.g. in the
+Carribbean, the Mediterrean, the Manila trench, Kaikoura in New Zealand,
+western Japan). Outside of Australia, you should very carefully consider
+how the results can be used, noting they may ignore the most relevant
+source-zones.**
 
-It should be noted that the tsunami maximum-stage provides only a rough
-characterisation of its capacity to cause coastal inundation. Ultimately
-tsunami inundation will be affected by the full details of the tsunami wave
-train, and how it interacts with the coastal landscape. But all else being
-equal, a larger maximum-stage will generally lead to larger inundation.
+The tsunami maximum-stage provides at best a rough characterisation of the
+tsunami's capacity to produce coastal inundation. The tsunami inundation will
+be affected by the full details of the tsunami wave train, and how it interacts
+with the coastal landscape. However, all else being equal, a larger
+maximum-stage will generally lead to larger inundation.
 
-The simplest way to examine the tsunami maximum-stage exceedance-rates in
-the 2018 PTHA is to [download this csv file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
-This csv file contains the following columns:
+The simplest way to examine the PTHA18 tsunami maximum-stage exceedance-rates
+is to [download this csv
+file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
+It contains the following columns:
 
 * `lon`, `lat` give the hazard point location in longitude/latitude (degrees). 
 
 * `elev` is the bathymetry at the hazard point (negative = below MSL)
 
-* `gaugeID` is a real hazard point ID
+* `gaugeID` is a hazard point ID (real number).
 
-* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These values corresponds to the tsunami maximum-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami maximum-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
+* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These corresponds to the tsunami maximum-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami maximum-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
 
 * multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 97.5 percentile)
 
@@ -96,15 +97,14 @@ This csv file contains the following columns:
 
 * multiple columns with names like `STAGE_84pc_XXXX`. These are similar to the above, but describe the 84th percentile.
 
-Note that 'max stage' values below 2cm (or above 20m) are treated as missing
-data in this file (NA). While such values are unlikely to be of interest, if
-necessary they can be reconstructed from the detailed information we provide
-(later in this document).
+Note 'max stage' values below 2cm (or above 20m) are treated as missing data
+(NA). Such values are unlikely to be of interest, but if necessary they can be
+reconstructed from the [detailed information](DETAILED_README.md).
 
-[Similar data is available in shapefile format here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip). You will need to unzip the file after download.
-A shortcoming of the shapefile format is that there is a 10 character limit on
-attribute names. Therefore the attributes are renamed in some instances, as
-compared with the above csv:
+[Similar data is available in shapefile format here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip). You must unzip the file after download.
+A weakness of shapefiles is that attribute names must contain at most 10 characters. 
+Therefore the attributes are renamed in some instances, as compared with the
+above csv:
 
 * `lon`, `lat` give the location in longitude/latitude (degrees). 
 
@@ -124,15 +124,15 @@ compared with the above csv:
 
 * `ST84_XXXX` is the same as `STAGE_84pc_XXXX` described above
 
-At most hazard points you will find there is large uncertainty in the
-maximum-stage for a given exceedance-rate. This is mainly due to large uncertainty
-in the frequencies of high-magnitude subduction zone earthquakes. A more
-detailed discussion of these topics can be found in the 
+At most hazard points there is large uncertainty in the maximum-stage for a
+given exceedance-rate. This is largely due to uncertainty in the frequencies of
+high-magnitude subduction zone earthquakes. A more detailed discussion of these
+topics can be found in the 
 [Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
 
 ## Obtaining site-specific hazard information (including source deaggregation)
 
-For each hazard point we provide a standard pdf plot which shows:
+For each hazard point, the PTHA18 includes a standard pdf plot which shows:
 1. The maximum-stage vs exceedance-rate
 2. A convergence check on the above
 3. The hazard deaggregation information for a range of return periods
