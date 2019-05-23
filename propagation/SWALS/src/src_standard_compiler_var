@@ -66,9 +66,9 @@ endif
 SWALS_FC ?= gfortran
 # If -DNOOPENMP was passed to the preprocessor, we should not link with openmp.
 ifeq ($(findstring DNOOPENMP, $(SWALS_PREPROCESSOR_FLAGS)),)
-    SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp -march=native -mtune=native -fopenmp
+    SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp -fopenmp
 else
-    SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp -march=native -mtune=native
+    SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp
 endif
 SWALS_FC_INCLUDE ?=
 SWALS_FC_INCLUDE := $(SWALS_FC_INCLUDE) $(SWALS_CUDA_CC_INCLUDE) $(SWALS_NETCDF_FINCLUDE)
