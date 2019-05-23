@@ -74,23 +74,14 @@ The simplest way to examine the PTHA18 tsunami maximum-stage exceedance-rates
 is to [download this csv
 file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
 It contains the following columns:
-
 * `lon`, `lat` give the hazard point location in longitude/latitude (degrees). 
-
 * `elev` is the bathymetry at the hazard point (negative = below MSL)
-
 * `gaugeID` is a hazard point ID (real number).
-
 * multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These corresponds to the tsunami maximum-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami maximum-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
-
 * multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 97.5 percentile)
-
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5 percentile)
-
 * multiple columns with names like `STAGE_median_XXXX`. These are similar to the above, but describe the 'epistemic median' stage with the specified exceedance-rate (i.e. 50th percentile)
-
 * multiple columns with names like `STAGE_16pc_XXXX`. These are similar to the above, but describe the 16th percentile.
-
 * multiple columns with names like `STAGE_84pc_XXXX`. These are similar to the above, but describe the 84th percentile.
 
 Note 'max stage' values below 2cm (or above 20m) are treated as missing data
@@ -101,23 +92,14 @@ reconstructed from the [detailed information](DETAILED_README.md).
 A weakness of shapefiles is that attribute names must contain at most 10 characters. 
 Therefore the attributes are renamed in some instances, as compared with the
 above csv:
-
 * `lon`, `lat` give the location in longitude/latitude (degrees). 
-
 * `elev` is the bathymetry at the hazard point (negative = below MSL)
-
 * `gaugeID` is a real hazard point ID
-
 * `ST_XXXX` is the same as `STAGE_XXXX` described above
-
 * `STu_XXXX` is the same as `STAGE_upper_ci_XXXX` described above
-
 * `STl_XXXX` is the same as `STAGE_lower_ci_XXXX` described above
-
 * `ST50_XXXX` is the same as `STAGE_median_XXXX` described above
-
 * `ST16_XXXX` is the same as `STAGE_16pc_XXXX` described above
-
 * `ST84_XXXX` is the same as `STAGE_84pc_XXXX` described above
 
 At most hazard points there is large uncertainty in the maximum-stage for a
