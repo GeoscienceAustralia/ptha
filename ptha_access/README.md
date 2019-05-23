@@ -89,7 +89,7 @@ Note 'max stage' values below 2cm (or above 20m) are treated as missing data
 reconstructed from the [detailed information](DETAILED_README.md).
 
 [Similar data is available in shapefile format here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip). You must unzip the file after download.
-A weakness of shapefiles is that attribute names must contain at most 10 characters. 
+Shapefiles have a weakness; attribute names must not exceed 10 characters. 
 Therefore the attributes are renamed in some instances, as compared with the
 above csv:
 * `lon`, `lat` give the location in longitude/latitude (degrees). 
@@ -135,7 +135,8 @@ the one I want).
 
 ## Interpreting exceedance-rate information
 
-Please read the [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) for further information on interpreting the exceedance rate information. 
+Please read the [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) for
+further information on interpreting the exceedance-rate information. 
 
 The maximum-stage exceedance-rates vary from site to site, depending on exposure
 to earthquake-generated tsunamis. For a given exceedance-rate, there is also a
@@ -145,43 +146,36 @@ general tendency for the tsunami size to increase in shallower water. Such
 The model results are not expected to be accurate everywhere, but **in general
 results far offshore and in deep water are expected to be higher quality than
 nearshore results**. The reasons are:
-
-* Our tsunami model has a spatial grid size of 1 arc minute (around 1.8 km), 
+* The PTHA18 tsunami model has a spatial grid size of 1 arc minute (around 1.8 km),
 and is run on relatively coarse elevation data (a combination of the 
 [Australian Bathymetry and Topography Grid 2009](http://www.ga.gov.au/metadata-gateway/metadata/record/gcat_67703)
 product, and the global [GEBCO
 2014](https://www.gebco.net/data_and_products/gridded_bathymetry_data/) bathymetry grid).
 While appropriate for modelling oceanic-scale tsunami propagation, it is not
 expected to accurately model tsunamis near the coast and in shallow waters.
-
-* At locations where wave heights become an appreciable fraction of the water depth, 
-the modelled waves will violate the assumptions underlying our linear tsunami
-model. This is most likely to be a problem in shallow waters, and for larger tsunamis.
+* In shallower waters, where wave heights become an appreciable fraction of the water depth, 
+the assumptions underlying our linear tsunami model are violated. This is most
+likely to be a problem in shallow waters, and for larger tsunamis.
 
 Because of this, **for modelling purposes we strongly encourage the use of
-points well offshore in deep water** (preferably with wave heights of interest
-not exceeding a few percent of the water depth). For tsunami propagation modelling,
-we encourage users to simulate the from source using the initial conditions we provide,
-which circumvents these issues. Nearshore points should only be used as a rough
-guide to possible tsunami wave heights, and should be refined in future using
-higher resolution models and data. 
+points well offshore in deep water**. If you can, use sites where wave heights of interest
+do not exceeding a few percent of the water depth. For tsunami propagation modelling,
+it may be preferable to simulate the tsunami from source (using initial
+conditions [provided here](DETAILED_README.md)), which circumvents these
+issues. Nearshore points should **only** be used as a rough guide to possible
+tsunami wave heights, **NOT FOR FORCING INUNDATION MODELS**, and should be
+refined in future using higher resolution models and data. 
 
-The above discussion might lead non-specialists to wonder why we develop the
-PTHA at offshore points - considering tsunami inundation is of most interest
-for risk management. The key motivation is to provide a nationally consistent
-source of tsunami scenarios and exceedance-rates for local-scale tsunami hazard
-studies. At any particular coastal site, the tsunami inundation hazard will
-reflect both the frequency with which significant "offshore" tsunamis occur, as
-well as how these tsunamis interact with the local coastal topography. The PTHA
-enables a nationally consistent view of the "offshore" parts of the problem. On
-the other hand, site-by-site assessments are generally required to determine
-the interactions of tsunamis with the coastal topography (mainly because it
-involves computationally intensive modelling with detailed input data). 
-
-In this way, the PTHA facilitates national consistency in site-specific tsunami
-inundation hazard studies. This is analogous to how national scale
-extreme-rainfall information provides a consistent basis for flood hazard
-assessments. 
+The PTHA18 can help enable national consistency in site-specific tsunami
+inundation hazard studies. At any particular coastal site, the tsunami
+inundation hazard will reflect both the frequency with which significant
+"offshore" tsunamis occur, as well as how these tsunamis interact with the
+local coastal topography. The PTHA18 was created to provide a nationally
+consistent view of the "offshore" part of the problem. To determine the onshore
+hazard at a particular site, the offshore results can be used for force
+high-resolution inundation models (which also require detailed site-specific
+elevation data). This is analogous to how national scale extreme-rainfall
+information provides a consistent basis for flood hazard assessments. 
 
 # Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and wave time-series
 
