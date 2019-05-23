@@ -144,10 +144,10 @@ used to get metadata on all scenarios on a particular source-zone. However, if
 no arguments are passed, then by default it prints the valid `source_zone` names
 and exits. That can help you learn what the source-zone names are. They can
 also be found by clicking on source-zones in the interactive hazard map
-(discussed above).
+(discussed below).
 
 Suppose we are interested in the Puysegur source-zone. From the above list and/or the 
-interactive viewer, we could infer that it was named `puysegur2`. We can then get the
+interactive map, we could infer that it was named `puysegur2`. We can then get the
 scenario metadata as follows:
 ```{r get_metadata2}
 # Example: get metadata for the puysegur source_zone
@@ -436,7 +436,7 @@ initial_condition = get_initial_condition_for_event(puysegur, row_index, force_f
 Here we show how to read a flow time-series for a given earthquake scenario, at a
 given hazard point. To do this, you have to know the hazard point `gaugeID`,
 which can be found by examining the maximum-stage vs exceedance-rate datasets (csv
-and shapefile), or by using the interactive hazard point viewer above. (***In the
+and shapefile), or by using the interactive hazard point viewer discussed below. (***In the
 latter case, please do not confuse this with the Feature ID that is shown by
 default in the interactive map - I would like to remove this field, but do not
 yet know how/if it can be done!***). 
