@@ -70,6 +70,14 @@ ifeq ($(findstring DNOOPENMP, $(SWALS_PREPROCESSOR_FLAGS)),)
 else
     SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp
 endif
+
+# Make it easier to append flags for hardware-specific optimization, such as
+# -march=native -mtune=native. Better not to have these by default, because
+# they can be sub-optimal in some situations (e.g. when compiling on one
+# machine and running on another)
+SWALS_FC_ARCH_FLAGS ?= 
+SWALS_FC_FLAGS := $(SWALS_FC_FLAGS) $(SWALS_FC_ARCH_FLAGS)
+
 SWALS_FC_INCLUDE ?=
 SWALS_FC_INCLUDE := $(SWALS_FC_INCLUDE) $(SWALS_CUDA_CC_INCLUDE) $(SWALS_NETCDF_FINCLUDE)
 # Fortran linking commands
