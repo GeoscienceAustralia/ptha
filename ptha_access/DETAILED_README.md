@@ -788,7 +788,12 @@ write.csv(site_flow, output_file, row.names=FALSE)
 
 ### ***Finding earthquake scenarios within a particular wave-height range at a particular hazard point***
 
-FIXME: Discuss how to do this, and warn about the potential for bias.
+FIXME: Discuss how to do this, and mention that because the magnitudes are
+sorted, the smaller magnitude events will tend to be *high-extremes* for their
+magnitude, the middle magnitudes will be *typical* for their magnitude, and the
+higher magnitudes will be *low-extremes*. This implies potential for bias in
+event selection (e.g. if you only picked the first event, which will always
+have a low magnitude because the outputs are sorted by magnitude.).
 
 ### ***Viewing the locations of hazard points and source zones***
 
