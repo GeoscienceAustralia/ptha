@@ -2088,6 +2088,8 @@ module domain_mod
         domain%boundary_flux_evolve_integral_exterior = domain%boundary_flux_evolve_integral_exterior + &
             ts * sum(domain%boundary_flux_store_exterior, mask=domain%boundary_exterior)
 
+        TIMER_STOP('update')
+
         if(nesting_bf) then 
             ! Update the nesting boundary flux
             call domain%nesting_boundary_flux_integral_tstep(&
@@ -2097,8 +2099,6 @@ module domain_mod
                 var_indices=[STG, VH],&
                 flux_already_multiplied_by_dx=.TRUE.)
         end if
-
-        TIMER_STOP('update')
 
         ! Coarray communication, if required
         TIMER_START('partitioned_comms')

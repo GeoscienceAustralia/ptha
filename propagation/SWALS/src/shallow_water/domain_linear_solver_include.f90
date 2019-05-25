@@ -115,11 +115,13 @@
 
         domain%time = domain%time + dt * HALF_dp
         call domain%update_boundary()
+        TIMER_STOP('LF_update')
 
         TIMER_START('partitioned_comms')
         call domain%partitioned_comms%communicate(domain%U)
         TIMER_STOP('partitioned_comms')
 
+        TIMER_START('LF_update')
         !! Boundary flux integration
         ! note : U(i, j, UH) = UH_{i+1/2, j}
         !      : U(i, j, VH) = VH_{i, j+1/2}
@@ -262,8 +264,8 @@
         uh_i_j(xL:(xU-1)) = ZERO_dp
         uh_i_jp1(xL:(xU-1)) = ZERO_dp
         uh_i_jp1_max_loop_index(xL:(xU-1)) = ZERO_dp
-        !dt_half_coriolis(xL:(xU-1)) = ZERO_dp
-        !dt_half_coriolis_jph(xL:(xU-1)) = ZERO_dp
+        dt_half_coriolis(xL:(xU-1)) = ZERO_dp
+        dt_half_coriolis_jph(xL:(xU-1)) = ZERO_dp
 
         !
         ! Before starting the loop, get the value of VH at 
@@ -494,7 +496,7 @@
 
             end do
 
-#ifdef CORIOLIS
+#if defined(CORIOLIS) || defined(LINEAR_PLUS_NONLINEAR_FRICTION)
             ! On the next j iteration, the value of 'old' value of VH at i+1/2,
             ! j-1/2 can be derived using the current value of VH at i+1, j+1/2
             vh_iph_jmh(xL:(xU-1)) = vh_iph_jph(xL:(xU-1))

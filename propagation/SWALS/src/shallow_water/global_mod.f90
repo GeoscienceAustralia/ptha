@@ -51,8 +51,8 @@ character(len=charlen), parameter:: default_output_folder = 'OUTPUTS'
 ! pi
 real(dp), parameter:: pi = acos(-1.0_dp)
 
-integer(ip), parameter :: real_bytes = c_sizeof(1.0_dp) 
-integer(ip), parameter :: integer_bytes = c_sizeof(1_ip) 
-integer(ip), parameter :: force_double_bytes = c_sizeof(1.0_force_double) 
+integer(ip), parameter :: real_bytes = (storage_size(1.0_dp)/8_ip) !c_sizeof(1.0_dp) 
+integer(ip), parameter :: integer_bytes = (storage_size(1_ip)/8_ip) !c_sizeof(1_ip) 
+integer(ip), parameter :: force_double_bytes = (storage_size(1.0_force_double)/8_ip) !c_sizeof(1.0_force_double) 
 
 end module global_mod

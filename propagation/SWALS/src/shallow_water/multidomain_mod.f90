@@ -918,7 +918,7 @@ module multidomain_mod
 
             TIMER_STOP('domain_evolve')
 
-            ! Send the halos only for domain j
+            ! Send the halos only for domain j. Timing code inside
             call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately)
 
             ! Ensure numerically identical time for all domains
@@ -3722,7 +3722,7 @@ __FILE__
                 ! dx + 2*y*dy (and we use 'spacing' to get an idea of dx, dy). There can also be error due to the
                 ! size of trueval. 
                 err_tol = 1.0e-10_dp + &
-                    20.0_dp*(spacing(abs(x) + abs(y*y)) + (spacing(xchange) + 2.0_dp * ychange * spacing(ychange))) !10.0_dp*spacing(trueval + xchange + ychange) 
+                    40.0_dp*(spacing(abs(x) + abs(y*y)) + (spacing(xchange) + 2.0_dp * ychange * spacing(ychange))) !10.0_dp*spacing(trueval + xchange + ychange) 
 
     
                 ! Track for debugging
