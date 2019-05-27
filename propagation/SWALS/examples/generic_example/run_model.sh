@@ -1,10 +1,14 @@
+#
+# CASES WITH CORIOLIS
+#
+
 # Clean existing binary
 rm ./generic_model
+rm -r ./OUTPUTS
 # Build the code
 make -B -f make_generic_model > build_outfile.log
 
 # Run linear
-rm -r ./OUTPUTS
 ./generic_model test_model_japan_linear.in > outfile.log
 Rscript plot.R linear
 
@@ -22,3 +26,30 @@ Rscript plot.R almost_linear
 rm -r ./OUTPUTS
 ./generic_model test_model_japan_almost_linear_with_nonlinear_friction.in > outfile.log
 Rscript plot.R almost_linear_with_nonlinear_friction
+
+#
+# CASES WITHOUT CORIOLIS
+#
+
+rm ./generic_model
+# Build the code
+make -B -f make_generic_model_nocoriolis > build_outfile.log
+
+# Run linear
+./generic_model test_model_japan_linear.in > outfile.log
+Rscript plot.R linear_no_coriolis
+
+# Run linear_with_nonlinear_friction
+rm -r ./OUTPUTS
+./generic_model test_model_japan_linear_with_nonlinear_friction.in > outfile.log
+Rscript plot.R linear_with_nonlinear_friction_no_coriolis
+
+# Run almost_linear
+rm -r ./OUTPUTS
+./generic_model test_model_japan_almost_linear.in > outfile.log
+Rscript plot.R almost_linear_no_coriolis
+
+# Run almost_linear_with_nonlinear_friction
+rm -r ./OUTPUTS
+./generic_model test_model_japan_almost_linear_with_nonlinear_friction.in > outfile.log
+Rscript plot.R almost_linear_with_nonlinear_friction_nocoriolis
