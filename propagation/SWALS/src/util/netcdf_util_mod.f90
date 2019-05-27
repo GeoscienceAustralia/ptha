@@ -43,6 +43,12 @@ module netcdf_util
         ! Flag for whether we store max stage, etc
         logical :: record_max_U
 
+        ! Options to store stage/uh/vh/elev over time.
+        ! .true. or .false. for STG, UH, VH, ELV
+        logical :: time_var_store_flag(4) = [.true. , .true., .true., .true.]
+        ! For example, if we didn't want to store ELV every time-step, we
+        ! would do "nc_grid_output%time_var_store_flag(ELV) = .false."
+
         ! Allow only storing every n'th point in x/y space.
         ! For instance, on a 1-arc-minute model, a value of 4 would
         ! store the results at 4 arc-minutes
@@ -201,31 +207,37 @@ module netcdf_util
             (/ nc_grid_output%dim_time_id /), nc_grid_output%var_time_id), __LINE__ )
 
         ! Stage
-        call check( nf90_def_var(iNcid, "stage", output_prec, &
-            [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
-            nc_grid_output%var_stage_id), __LINE__ )
-        ! Compress
-        if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_stage_id, 1, 1, 3), __LINE__)
+        if(nc_grid_output%time_var_store_flag(STG)) then
+            call check( nf90_def_var(iNcid, "stage", output_prec, &
+                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
+                nc_grid_output%var_stage_id), __LINE__ )
+            ! Compress
+            if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_stage_id, 1, 1, 3), __LINE__)
+        end if
         ! UH
-        call check( nf90_def_var(iNcid, "uh", output_prec, &
-            [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
-            nc_grid_output%var_uh_id), __LINE__ )
-        ! Compress
-        if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_uh_id, 1, 1, 3), __LINE__)
-
+        if(nc_grid_output%time_var_store_flag(UH)) then
+            call check( nf90_def_var(iNcid, "uh", output_prec, &
+                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
+                nc_grid_output%var_uh_id), __LINE__ )
+            ! Compress
+            if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_uh_id, 1, 1, 3), __LINE__)
+        end if
         ! VH
-        call check( nf90_def_var(iNcid, "vh", output_prec, &
-            [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
-            nc_grid_output%var_vh_id), __LINE__ )
-        ! Compress
-        if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_vh_id, 1, 1, 3), __LINE__)
-
+        if(nc_grid_output%time_var_store_flag(VH)) then
+            call check( nf90_def_var(iNcid, "vh", output_prec, &
+                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
+                nc_grid_output%var_vh_id), __LINE__ )
+            ! Compress
+            if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_vh_id, 1, 1, 3), __LINE__)
+        end if
         ! Elev
-        call check( nf90_def_var(iNcid, "elev", output_prec, &
-            [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
-            nc_grid_output%var_elev_id), __LINE__ )
-        ! Compress
-        if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_elev_id, 1, 1, 3), __LINE__)
+        if(nc_grid_output%time_var_store_flag(ELV)) then
+            call check( nf90_def_var(iNcid, "elev", output_prec, &
+                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
+                nc_grid_output%var_elev_id), __LINE__ )
+            ! Compress
+            if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_elev_id, 1, 1, 3), __LINE__)
+        end if
 
         ! priority_domain -- Use 1 if the current domain is the priority domain, and zero otherwise
         call check(nf90_def_var(iNcid, "is_priority_domain", output_byte, &
@@ -328,45 +340,46 @@ SRC_GIT_VERSION ))
             start=[nc_grid_output%num_output_steps]), __LINE__ )
 
         ! Save the stage
-        call check(nf90_put_var(&
-            iNcid, &
-            nc_grid_output%var_stage_id, &
-            U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),STG), &
-            start=[1,1,nc_grid_output%num_output_steps]),&
-            __LINE__)
+        if(nc_grid_output%time_var_store_flag(STG)) then
+            call check(nf90_put_var(&
+                iNcid, &
+                nc_grid_output%var_stage_id, &
+                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),STG), &
+                start=[1,1,nc_grid_output%num_output_steps]),&
+                __LINE__)
+        end if
 
         ! Save uh
-        call check(nf90_put_var(&
-            iNcid, &
-            nc_grid_output%var_uh_id, &
-            U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),UH), &
-            start=[1,1,nc_grid_output%num_output_steps]), &
-            __LINE__)
+        if(nc_grid_output%time_var_store_flag(UH)) then
+            call check(nf90_put_var(&
+                iNcid, &
+                nc_grid_output%var_uh_id, &
+                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),UH), &
+                start=[1,1,nc_grid_output%num_output_steps]), &
+                __LINE__)
+        end if
+
         ! Save vh
-        call check(nf90_put_var(&
-            iNcid, &
-            nc_grid_output%var_vh_id, &
-            U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),VH), &
-            start=[1,1,nc_grid_output%num_output_steps]), &
-            __LINE__)
+        if(nc_grid_output%time_var_store_flag(VH)) then
+            call check(nf90_put_var(&
+                iNcid, &
+                nc_grid_output%var_vh_id, &
+                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),VH), &
+                start=[1,1,nc_grid_output%num_output_steps]), &
+                __LINE__)
+        end if
 
         ! Save elev
-        call check(nf90_put_var(&
-            iNcid, &
-            nc_grid_output%var_elev_id, &
-            U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),ELV), &
-            start=[1,1,nc_grid_output%num_output_steps]), &
-            __LINE__)
+        if(nc_grid_output%time_var_store_flag(ELV)) then
+            call check(nf90_put_var(&
+                iNcid, &
+                nc_grid_output%var_elev_id, &
+                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),ELV), &
+                start=[1,1,nc_grid_output%num_output_steps]), &
+                __LINE__)
+        end if
 
-        ! It is convenient to flush the file, but we don't want to do it too often.
-        ! Use a timing based approach to avoid that
-        ! FIXME: Consider replacing with a wall-time type approach
-        !call cpu_time(current_cpu_time)
-        !if(current_cpu_time - nc_grid_output%flush_threshold > nc_grid_output%last_write_time) then
-            ! Sync file (flush)
-            call check(nf90_sync(iNcid))
-        !    nc_grid_output%last_write_time = current_cpu_time
-        !end if
+        call check(nf90_sync(iNcid))
 
 #endif
 
@@ -374,7 +387,8 @@ SRC_GIT_VERSION ))
 
     !
     ! Store a 1 byte integer, denoting the cells in the current domain that are 
-    ! priority_domain cells.
+    ! priority_domain cells. Also store regular integer grids with the priority domain index
+    ! and image.
     !
     subroutine store_priority_domain_cells(nc_grid_output, priority_domain_index, &
         priority_domain_image, my_index, my_image)
