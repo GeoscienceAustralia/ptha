@@ -249,7 +249,7 @@ module point_gauge_mod
         ! Save the time
         call check(nf90_put_var(point_gauges%netcdf_gauge_output_file_ID, &
             point_gauges%netcdf_time_var_ID, domain_time, &
-            start=[point_gauges%netcdf_num_output_steps]))
+            start=[point_gauges%netcdf_num_output_steps]), __LINE__)
 
         ! Save all the time-series variables
         do i = 1, size(point_gauges%time_series_var)
@@ -258,7 +258,7 @@ module point_gauge_mod
                 point_gauges%time_series_ncdf_iVar_ID(i), &
                 point_gauges%time_series_values(:,i), &
                 start=[1, point_gauges%netcdf_num_output_steps],&
-                count=[point_gauges%n_gauges, 1]))
+                count=[point_gauges%n_gauges, 1]), __LINE__)
         end do
 
         ! FIXME: Flushing the file is a crude way to ensure all data is written. If we can close the file
@@ -409,64 +409,64 @@ module point_gauge_mod
         !! Using netcdf interface
 
         !! Create output file
-        call check (nf90_create(netcdf_gauge_output_file, NF90_CLOBBER, iNcid))
+        call check (nf90_create(netcdf_gauge_output_file, NF90_CLOBBER, iNcid), __LINE__)
     
         point_gauges%netcdf_gauge_output_file_ID = iNcid
 
         ! Define the dimensions. Try to follow CF standards for Orthogonal
         ! multidimensional array representation of time series
-        call check(nf90_def_dim(iNcid, "station", point_gauges%n_gauges, iDimStation_ID))
-        call check(nf90_def_dim(iNcid, "time", NF90_UNLIMITED, iDimTime_ID))
-        call check(nf90_def_dim(iNcid, "NoCharStationName", iLenStringName, iDimLenStringName_ID))
+        call check(nf90_def_dim(iNcid, "station", point_gauges%n_gauges, iDimStation_ID), __LINE__)
+        call check(nf90_def_dim(iNcid, "time", NF90_UNLIMITED, iDimTime_ID), __LINE__)
+        call check(nf90_def_dim(iNcid, "NoCharStationName", iLenStringName, iDimLenStringName_ID), __LINE__)
 
         ! Define the variables
 
         ! Longitude
-        call check( nf90_def_var(iNcid, "lon", NF90_REAL4, (/ iDimStation_ID /), iVarLON_ID) )
+        call check( nf90_def_var(iNcid, "lon", NF90_REAL4, (/ iDimStation_ID /), iVarLON_ID) , __LINE__)
 #ifdef SPHERICAL
         call check(nf90_put_att(iNcid, iVarLON_ID, "standard_name", &
-            "longitude"))
+            "longitude"), __LINE__)
         call check(nf90_put_att(iNcid, iVarLON_ID, "long_name", &
-            "station_longitude"))
-        call check(nf90_put_att(iNcid, iVarLON_ID, "units", "degrees_east"))
+            "station_longitude"), __LINE__)
+        call check(nf90_put_att(iNcid, iVarLON_ID, "units", "degrees_east"), __LINE__)
 #else
         call check(nf90_put_att(iNcid, iVarLON_ID, "standard_name", &
-            "projection_x_coordinate"))
+            "projection_x_coordinate"), __LINE__)
         call check(nf90_put_att(iNcid, iVarLON_ID, "long_name", &
-            "station_x_coordinate"))
-        call check(nf90_put_att(iNcid, iVarLON_ID, "units", "m"))
+            "station_x_coordinate"), __LINE__)
+        call check(nf90_put_att(iNcid, iVarLON_ID, "units", "m"), __LINE__)
 #endif
 
         ! Latitude
-        call check( nf90_def_var(iNcid, "lat", NF90_REAL4, (/ iDimStation_ID /), iVarLAT_ID) )
+        call check( nf90_def_var(iNcid, "lat", NF90_REAL4, (/ iDimStation_ID /), iVarLAT_ID) , __LINE__)
 #ifdef SPHERICAL
         call check(nf90_put_att(iNcid, iVarLAT_ID, "standard_name", &
-            "latitude"))
+            "latitude"), __LINE__)
         call check(nf90_put_att(iNcid, iVarLAT_ID, "long_name", &
-            "station_latitude"))
-        call check(nf90_put_att(iNcid, iVarLAT_ID, "units", "degrees_north"))
+            "station_latitude"), __LINE__)
+        call check(nf90_put_att(iNcid, iVarLAT_ID, "units", "degrees_north"), __LINE__)
 #else
         call check(nf90_put_att(iNcid, iVarLAT_ID, "standard_name", &
-            "projection_y_coordinate"))
+            "projection_y_coordinate"), __LINE__)
         call check(nf90_put_att(iNcid, iVarLAT_ID, "long_name", &
-            "station_y_coordinate"))
-        call check(nf90_put_att(iNcid, iVarLAT_ID, "units", "m"))
+            "station_y_coordinate"), __LINE__)
+        call check(nf90_put_att(iNcid, iVarLAT_ID, "units", "m"), __LINE__)
 #endif
 
         ! Time
-        call check( nf90_def_var(iNcid, 'time', NF90_REAL4, (/ iDimTime_ID /), iVarTIME_ID) )
+        call check( nf90_def_var(iNcid, 'time', NF90_REAL4, (/ iDimTime_ID /), iVarTIME_ID) , __LINE__)
         point_gauges%netcdf_time_var_ID = iVarTIME_ID        
         call check(nf90_put_att(iNcid, iVarTIME_ID, "standard_name", &
-            "time"))
+            "time"), __LINE__)
         call check(nf90_put_att(iNcid, iVarTIME_ID, "long_name", &
-            "time_from_start_of_simulation"))
-        call check(nf90_put_att(iNcid, iVarTIME_ID, "units", "s"))
+            "time_from_start_of_simulation"), __LINE__)
+        call check(nf90_put_att(iNcid, iVarTIME_ID, "units", "s"), __LINE__)
 
         ! GaugeID
-        call check( nf90_def_var(iNcid, 'gaugeID', NF90_REAL4, (/iDimStation_ID/), iVarGAUGEID_ID))
+        call check( nf90_def_var(iNcid, 'gaugeID', NF90_REAL4, (/iDimStation_ID/), iVarGAUGEID_ID), __LINE__)
         call check(nf90_put_att(iNcid, iVarGAUGEID_ID, "long_name", &
-            "real_ID_for_each_station"))
-        call check(nf90_put_att(iNcid, iVarGAUGEID_ID, "units", "-"))
+            "real_ID_for_each_station"), __LINE__)
+        call check(nf90_put_att(iNcid, iVarGAUGEID_ID, "units", "-"), __LINE__)
 
         ! Define variables we store statically (i.e. once at the start)
         do i = 1, size(point_gauges%static_var)
@@ -474,34 +474,34 @@ module point_gauge_mod
 
             ! Initial stage 
             if(j == STG) then
-                call check( nf90_def_var(iNcid, "stage0", NF90_REAL4, [iDimStation_ID], iVar_STG_static_ID))
+                call check( nf90_def_var(iNcid, "stage0", NF90_REAL4, [iDimStation_ID], iVar_STG_static_ID), __LINE__)
                 call check(nf90_put_att(iNcid, iVar_STG_static_ID, "long_name", &
-                    "water_surface_height_above_mean_sea_level_at_initial_condition"))
-                call check(nf90_put_att(iNcid, iVar_STG_static_ID, "units", "m"))
+                    "water_surface_height_above_mean_sea_level_at_initial_condition"), __LINE__)
+                call check(nf90_put_att(iNcid, iVar_STG_static_ID, "units", "m"), __LINE__)
             end if
 
             ! Initial UH
             if(j == UH) then
-                call check( nf90_def_var(iNcid, "uh0", NF90_REAL4, [iDimStation_ID], iVar_UH_static_ID))
+                call check( nf90_def_var(iNcid, "uh0", NF90_REAL4, [iDimStation_ID], iVar_UH_static_ID), __LINE__)
                 call check(nf90_put_att(iNcid, iVar_UH_static_ID, "long_name", &
-                    "x_velocity_multiplied_by_depth_at_initial_condition"))
-                call check(nf90_put_att(iNcid, iVar_UH_static_ID, "units", "m^2/s"))
+                    "x_velocity_multiplied_by_depth_at_initial_condition"), __LINE__)
+                call check(nf90_put_att(iNcid, iVar_UH_static_ID, "units", "m^2/s"), __LINE__)
             end if
 
             ! Initial VH
             if(j == VH) then
-                call check( nf90_def_var(iNcid, "vh0", NF90_REAL4, [iDimStation_ID], iVar_VH_static_ID))
+                call check( nf90_def_var(iNcid, "vh0", NF90_REAL4, [iDimStation_ID], iVar_VH_static_ID), __LINE__)
                 call check(nf90_put_att(iNcid, iVar_VH_static_ID, "long_name", &
-                    "y_velocity_multiplied_by_depth_at_initial_condition"))
-                call check(nf90_put_att(iNcid, iVar_VH_static_ID, "units", "m^2/s"))
+                    "y_velocity_multiplied_by_depth_at_initial_condition"), __LINE__)
+                call check(nf90_put_att(iNcid, iVar_VH_static_ID, "units", "m^2/s"), __LINE__)
             end if
 
             ! Initial elevation. Typically this is the only important one
             if(j == ELV) then
-                call check( nf90_def_var(iNcid, "elevation0", NF90_REAL4, [iDimStation_ID], iVar_ELV_static_ID))
+                call check( nf90_def_var(iNcid, "elevation0", NF90_REAL4, [iDimStation_ID], iVar_ELV_static_ID), __LINE__)
                 call check(nf90_put_att(iNcid, iVar_ELV_static_ID, "long_name", &
-                    "ground_level_altitude_above_mean_sea_level_at_initial_condition"))
-                call check(nf90_put_att(iNcid, iVar_ELV_static_ID, "units", "m"))
+                    "ground_level_altitude_above_mean_sea_level_at_initial_condition"), __LINE__)
+                call check(nf90_put_att(iNcid, iVar_ELV_static_ID, "units", "m"), __LINE__)
             end if
         end do
 
@@ -513,73 +513,77 @@ module point_gauge_mod
         do i = 1, size(point_gauges%time_series_var)
             j = point_gauges%time_series_var(i)
             if (j == STG) then
-                call check( nf90_def_var(iNcid, "stage", NF90_REAL4, [iDimStation_ID, iDimTime_ID], iVar_STG_time_ID))
+                call check( nf90_def_var(iNcid, "stage", NF90_REAL4, [iDimStation_ID, iDimTime_ID], &
+                                         iVar_STG_time_ID), __LINE__)
                 call check(nf90_put_att(iNcid, iVar_STG_time_ID, "long_name", &
-                    "water_surface_height_above_mean_sea_level"))
-                call check(nf90_put_att(iNcid, iVar_STG_time_ID, "units", "m"))
+                    "water_surface_height_above_mean_sea_level"), __LINE__)
+                call check(nf90_put_att(iNcid, iVar_STG_time_ID, "units", "m"), __LINE__)
                 point_gauges%time_series_ncdf_iVar_ID(i) = iVar_STG_time_ID
             end if
             if (j == UH) then
-                call check( nf90_def_var(iNcid, "uh", NF90_REAL4, [iDimStation_ID, iDimTime_ID], iVar_UH_time_ID))
+                call check( nf90_def_var(iNcid, "uh", NF90_REAL4, [iDimStation_ID, iDimTime_ID], iVar_UH_time_ID), &
+                    __LINE__)
                 call check(nf90_put_att(iNcid, iVar_UH_time_ID, "long_name", &
-                    "x_velocity_multiplied_by_depth"))
-                call check(nf90_put_att(iNcid, iVar_UH_time_ID, "units", "m^2/s"))
+                    "x_velocity_multiplied_by_depth"), __LINE__)
+                call check(nf90_put_att(iNcid, iVar_UH_time_ID, "units", "m^2/s"), __LINE__)
                 point_gauges%time_series_ncdf_iVar_ID(i) = iVar_UH_time_ID
             end if
             if (j == VH) then
-                call check( nf90_def_var(iNcid, "vh", NF90_REAL4, [iDimStation_ID, iDimTime_ID], iVar_VH_time_ID))
+                call check( nf90_def_var(iNcid, "vh", NF90_REAL4, [iDimStation_ID, iDimTime_ID], iVar_VH_time_ID), &
+                    __LINE__)
                 call check(nf90_put_att(iNcid, iVar_VH_time_ID, "long_name", &
-                    "y_velocity_multiplied_by_depth"))
-                call check(nf90_put_att(iNcid, iVar_VH_time_ID, "units", "m^2/s"))
+                    "y_velocity_multiplied_by_depth"), __LINE__)
+                call check(nf90_put_att(iNcid, iVar_VH_time_ID, "units", "m^2/s"), __LINE__)
                 point_gauges%time_series_ncdf_iVar_ID(i) = iVar_VH_time_ID
             end if
             if (j == ELV) then
-                call check( nf90_def_var(iNcid, "elevation", NF90_REAL4, [iDimStation_ID, iDimTime_ID], iVar_ELV_time_ID))
+                call check( nf90_def_var(iNcid, "elevation", NF90_REAL4, [iDimStation_ID, iDimTime_ID], iVar_ELV_time_ID),&
+                    __LINE__)
                 call check(nf90_put_att(iNcid, iVar_ELV_time_ID, "long_name", &
-                    "ground_level_altitude_above_mean_sea_level"))
-                call check(nf90_put_att(iNcid, iVar_ELV_time_ID, "units", "m"))
+                    "ground_level_altitude_above_mean_sea_level"), __LINE__)
+                call check(nf90_put_att(iNcid, iVar_ELV_time_ID, "units", "m"), __LINE__)
                 point_gauges%time_series_ncdf_iVar_ID(i) = iVar_ELV_time_ID
             end if
         end do
 
         ! This is the standard netcdf attribute for time-series
-        call check(nf90_put_att(iNcid, nf90_global, "featureType", "timeSeries"))
+        call check(nf90_put_att(iNcid, nf90_global, "featureType", "timeSeries"), __LINE__)
    
         ! Here we add other attributes that might be useful (e.g. the name of the input stage and elevation) 
         if((present(attribute_names)).and.(present(attribute_values))) then
             do i = 1, size(attribute_names)
-                call check(nf90_put_att(iNcid, nf90_global, attribute_names(i), attribute_values(i)))
+                call check(nf90_put_att(iNcid, nf90_global, attribute_names(i), attribute_values(i)), __LINE__)
             end do
         end if
 
 #ifdef SRC_GIT_VERSION
         ! Add the git revision number to the file
         call check(nf90_put_att(iNcid, nf90_global, 'git_revision_number',& ! Continuation to reduce chance of > 132 char
-SRC_GIT_VERSION ))
+SRC_GIT_VERSION ), __LINE__)
 #endif
 
         ! Finish definitions so writing can begin
-        call check(nf90_enddef(iNcid))
+        call check(nf90_enddef(iNcid, __LINE__))
                 
         ! Write lon/lat/gauge_ids
-        call check(nf90_put_var(iNcid, iVarLON_ID , point_gauges%xy(1,:))) 
-        call check(nf90_put_var(iNcid, iVarLAT_ID , point_gauges%xy(2,:))) 
-        call check(nf90_put_var(iNcid, iVarGAUGEID_ID, point_gauges%gauge_ids(:)))
+        call check(nf90_put_var(iNcid, iVarLON_ID , point_gauges%xy(1,:)), __LINE__) 
+        call check(nf90_put_var(iNcid, iVarLAT_ID , point_gauges%xy(2,:)), __LINE__) 
+        call check(nf90_put_var(iNcid, iVarGAUGEID_ID, point_gauges%gauge_ids(:)), __LINE__)
 
         ! Write static variables
         do i = 1, size(point_gauges%static_var)
             j = point_gauges%static_var(i)
             if(j == STG) then
-                call check(nf90_put_var(iNcid, iVar_STG_static_ID , point_gauges%static_values(:,i) )) 
+                call check(nf90_put_var(iNcid, iVar_STG_static_ID , point_gauges%static_values(:,i) ), __LINE__) 
             end if
             if(j == UH) then
-                call check(nf90_put_var(iNcid, iVar_UH_static_ID , point_gauges%static_values(:,i) )) 
+                call check(nf90_put_var(iNcid, iVar_UH_static_ID , point_gauges%static_values(:,i) ), __LINE__) 
             end if
             if(j == VH) then
-                call check(nf90_put_var(iNcid, iVar_VH_static_ID , point_gauges%static_values(:,i) ))
+                call check(nf90_put_var(iNcid, iVar_VH_static_ID , point_gauges%static_values(:,i) ), __LINE__)
             end if
             if(j == ELV) then
-                call check(nf90_put_var(iNcid, iVar_ELV_static_ID , point_gauges%static_values(:,i) )) 
+                call check(nf90_put_var(iNcid, iVar_ELV_static_ID , point_gauges%static_values(:,i) ), __LINE__) 
             end if
         end do
 
@@ -595,7 +599,7 @@ SRC_GIT_VERSION ))
         if (point_gauges%n_gauges > 0) then
 #ifndef NONETCDF      
             ! Close the netcdf file 
-            call check(nf90_close(point_gauges%netcdf_gauge_output_file_ID))
+            call check(nf90_close(point_gauges%netcdf_gauge_output_file_ID), __LINE__)
 #else
             close(point_gauges%time_series_output_unit)
 #endif
