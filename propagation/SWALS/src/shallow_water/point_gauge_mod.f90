@@ -115,6 +115,7 @@ module point_gauge_mod
             if (point_gauges%space_dim /= size(xy_coordinates(:,1))) then
                 write(log_output_unit,*) 'gauge xy dimension is not equal ', &
                     point_gauges%space_dim
+                flush(log_output_unit)
             end if
 
             ! Make space for all gauges. Depending on optional arguments passed, this
@@ -291,11 +292,12 @@ module point_gauge_mod
         integer(ip), intent(in):: domain_nx(:)
         real(dp), intent(in):: domain_U(:,:,:)
         character(charlen), optional, intent(in):: attribute_names(:), attribute_values(:)
-    
 
         integer(ip):: n_gauges, i
 
         n_gauges = point_gauges%n_gauges
+        write(log_output_unit, *) ' Number of gauges on this domain: ', n_gauges
+        flush(log_output_unit)
 
         if(n_gauges == 0) return
    
@@ -312,6 +314,7 @@ module point_gauge_mod
                 any(point_gauges%site_index(:,i) > domain_nx))) then
                 write(log_output_unit,*) 'Gauge coordinate ', point_gauges%xy(:,i), &
                     ' is outside the domain'
+                flush(log_output_unit)
                 call generic_stop()
             end if
 
@@ -398,6 +401,8 @@ module point_gauge_mod
         ! Could set this based on input string name lengths 
         integer:: iLenStringName = 32
         integer(ip):: i, j
+
+        if(point_gauges%n_gauges == 0) return
 
         point_gauges%netcdf_gauge_output_file = netcdf_gauge_output_file
 

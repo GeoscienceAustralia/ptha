@@ -3051,6 +3051,7 @@ module domain_mod
         if(present(gauge_ids)) then
             if(size(gauge_ids) /= size(xy_coords(1,:))) then
                 write(domain%logfile_unit,*) 'Number of gauge ids does not equal number of coordinates' 
+                flush(domain%logfile_unit)
                 call generic_stop
             end if
             allocate(gauge_ids_local(size(gauge_ids)))
