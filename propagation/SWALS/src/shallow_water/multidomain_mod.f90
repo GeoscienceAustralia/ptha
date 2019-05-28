@@ -1683,6 +1683,7 @@ module multidomain_mod
         ! The naming will be implemented below -- for now, check that the naming will not overflow.
         if(ni * large_64_int + size(md%domains) > HUGE(md%domains(1)%myid)) then
             write(log_output_unit, *) 'The number of images and local domains is too high for the naming convention'
+            flush(log_output_unit)
             call generic_stop()
         end if
 
@@ -1709,6 +1710,7 @@ module multidomain_mod
                 if( maxval(md%load_balance_part%i2(i)%i1) > ni ) then
                     write(log_output_unit, *) &
                         ' WARNING: load_balance_file contains values > num_images: converting to smaller values.'
+                    flush(log_output_unit)
                     md%load_balance_part%i2(i)%i1 = mod((md%load_balance_part%i2(i)%i1 - 1), ni) + 1_ip
                 end if
             end do
@@ -1801,6 +1803,7 @@ module multidomain_mod
                 ! Check we got some sensible result
                 if(any(local_co_size_xy < 0)) then
                     write(log_output_unit,*) 'Error in splitting up images into 2d', local_co_size_xy, local_ni
+                    flush(log_output_unit)
                     call generic_stop
                 end if
 
@@ -1818,6 +1821,7 @@ module multidomain_mod
                 dx_refine_ratio = ((domain_dx_refinement_factor/parent_domain_dx_refinement_factor))
                 if(.not. all(dx_refine_ratio * parent_domain_dx_refinement_factor == domain_dx_refinement_factor)) then
                     write(log_output_unit,*) 'dx_refine_ratio should be an exact integer upon creation'
+                    flush(log_output_unit)
                     call generic_stop()
                 end if
                 dx_refine_X_co_size_xy = dx_refine_ratio * local_co_size_xy
@@ -1826,6 +1830,7 @@ module multidomain_mod
                         ' into local_co_size_xy=', local_co_size_xy, ' when domain_dx_refinement_factor=', &
                         domain_dx_refinement_factor, ' and dx_refine_ratio = ', dx_refine_ratio
                     write(log_output_unit,*) 'Consider enlarging the domain, or specifying the decomposition more thoroughly'
+                    flush(log_output_unit)
                     call generic_stop()
                 end if
 
@@ -2425,9 +2430,8 @@ module multidomain_mod
         logical:: verbose1, use_wetdry_limiting, capture_log_local, allocate_comms_local
         integer(ip) :: i, extra_halo_buffer_local
         character(len=charlen) :: log_filename
-#ifdef TIMER
-        call md%timer%timer_start('setup')
-#endif
+
+        TIMER_START('setup')
 
         if(present(verbose)) then
             verbose1 = verbose
@@ -2499,9 +2503,8 @@ module multidomain_mod
         md%volume = 0.0_dp
 
         if(allocate_comms_local) call allocate_p2p_comms
-#ifdef TIMER
-        call md%timer%timer_end('setup')
-#endif
+
+        TIMER_STOP('setup')
     end subroutine
 
     ! Main routine for setting up the multidomain 

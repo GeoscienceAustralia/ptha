@@ -290,7 +290,7 @@ SRC_GIT_VERSION ))
 #endif
 
         ! Finish definitions so writing can begin
-        call check(nf90_enddef(iNcid), __LINE__)
+        call check(nf90_enddef(iNcid))
 
         !
         ! Write a few things

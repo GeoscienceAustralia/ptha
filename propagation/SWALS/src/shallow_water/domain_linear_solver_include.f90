@@ -77,7 +77,7 @@
         
 
 
-        TIMER_START('LF_update')
+        !TIMER_START('LF_update')
 
         nx = domain%nx(1)
         ny = domain%nx(2)
@@ -115,13 +115,13 @@
 
         domain%time = domain%time + dt * HALF_dp
         call domain%update_boundary()
-        TIMER_STOP('LF_update')
+        !TIMER_STOP('LF_update')
 
-        TIMER_START('partitioned_comms')
+        !TIMER_START('partitioned_comms')
         call domain%partitioned_comms%communicate(domain%U)
-        TIMER_STOP('partitioned_comms')
+        !TIMER_STOP('partitioned_comms')
 
-        TIMER_START('LF_update')
+        !TIMER_START('LF_update')
         !! Boundary flux integration
         ! note : U(i, j, UH) = UH_{i+1/2, j}
         !      : U(i, j, VH) = VH_{i, j+1/2}
@@ -509,6 +509,6 @@
         !$OMP END PARALLEL
         domain%time = domain%time + HALF_dp*dt
 
-        TIMER_STOP('LF_update')
+        !TIMER_STOP('LF_update')
   
 !    end subroutine

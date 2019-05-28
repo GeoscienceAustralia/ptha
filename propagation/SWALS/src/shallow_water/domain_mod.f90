@@ -454,7 +454,7 @@ module domain_mod
         real(dp):: depth, depth_iplus, depth_jplus
         logical, parameter:: report_energy_statistics=.TRUE.
 
-        TIMER_START('printing_stats')
+TIMER_START('printing_stats')
 
         dry_depth_threshold = minimum_allowed_depth
 
@@ -595,7 +595,7 @@ module domain_mod
         ! Mass conservation check
         write(domain%logfile_unit, *) 'Mass Balance (domain interior): ', domain%mass_balance_interior()
 
-        TIMER_STOP('printing_stats')
+TIMER_STOP('printing_stats')
     end subroutine
 
     ! 
@@ -2066,11 +2066,11 @@ module domain_mod
         end if
             
 
-        TIMER_START('flux')
+        !TIMER_START('flux')
         call domain%compute_fluxes(ts)
-        TIMER_STOP('flux')
+        !TIMER_STOP('flux')
 
-        TIMER_START('update')
+        !TIMER_START('update')
 
         ! Store the internally computed max timestep
         domain%max_dt = ts
@@ -2088,7 +2088,7 @@ module domain_mod
         domain%boundary_flux_evolve_integral_exterior = domain%boundary_flux_evolve_integral_exterior + &
             ts * sum(domain%boundary_flux_store_exterior, mask=domain%boundary_exterior)
 
-        TIMER_STOP('update')
+        !TIMER_STOP('update')
 
         if(nesting_bf) then 
             ! Update the nesting boundary flux
@@ -2101,9 +2101,9 @@ module domain_mod
         end if
 
         ! Coarray communication, if required
-        TIMER_START('partitioned_comms')
+        !TIMER_START('partitioned_comms')
         call domain%partitioned_comms%communicate(domain%U)
-        TIMER_STOP('partitioned_comms')
+        !TIMER_STOP('partitioned_comms')
 
     end subroutine
 
@@ -2167,7 +2167,7 @@ module domain_mod
             flux_already_multiplied_by_dx=.TRUE.)
 
 
-        TIMER_START('average')
+        !TIMER_START('average')
 
         ! Take average (but allow for openmp)
         !
@@ -2193,7 +2193,7 @@ module domain_mod
         ! first step -- so force that here
         domain%max_dt = max_dt_store
 
-        TIMER_STOP('average')
+        !TIMER_STOP('average')
 
     end subroutine
     
@@ -2271,7 +2271,7 @@ module domain_mod
         call domain%one_euler_step(reduced_dt, &
             update_nesting_boundary_flux_integral=.FALSE.)
         
-        TIMER_START('final_update')
+        !TIMER_START('final_update')
 
         ! Final update
         ! domain%U = domain%U + domain%backup_U
@@ -2298,7 +2298,7 @@ module domain_mod
         ! what is required for stability, even though at later sub-steps the max_dt might reduce)
         domain%max_dt = max_dt_store
 
-        TIMER_STOP('final_update')
+        !TIMER_STOP('final_update')
 
     end subroutine
 
@@ -2321,13 +2321,13 @@ module domain_mod
         backup_time = domain%time
         call domain%backup_quantities()
         
-        TIMER_START('flux')
+        !TIMER_START('flux')
         call domain%compute_fluxes(dt_first_step)
-        TIMER_STOP('flux')
+        !TIMER_STOP('flux')
 
         domain%max_dt = dt_first_step
 
-        TIMER_START('update')
+        !TIMER_START('update')
         ! First euler sub-step
         if(present(timestep)) then
 
@@ -2337,16 +2337,16 @@ module domain_mod
             ! First euler sub-step
             call domain%update_U(dt_first_step*HALF_dp)
         end if
-        TIMER_STOP('update')
+        !TIMER_STOP('update')
 
-        TIMER_START('partitioned_comms')
+        !TIMER_START('partitioned_comms')
         call domain%partitioned_comms%communicate(domain%U)
-        TIMER_STOP('partitioned_comms')
+        !TIMER_STOP('partitioned_comms')
 
         ! Compute fluxes 
-        TIMER_START('flux')
+        !TIMER_START('flux')
         call domain%compute_fluxes()
-        TIMER_STOP('flux')
+        !TIMER_STOP('flux')
 
         ! Set U back to backup_U
         !
@@ -2364,9 +2364,9 @@ module domain_mod
         domain%time = backup_time
 
         ! Update U
-        TIMER_START('update')
+        !TIMER_START('update')
         call domain%update_U(dt_first_step)
-        TIMER_STOP('update')
+        !TIMER_STOP('update')
 
         ! Update the nesting boundary flux
         call domain%nesting_boundary_flux_integral_tstep(&
@@ -2377,9 +2377,9 @@ module domain_mod
             flux_already_multiplied_by_dx=.TRUE.)
 
 
-        TIMER_START('partitioned_comms')
+        !TIMER_START('partitioned_comms')
         call domain%partitioned_comms%communicate(domain%U)
-        TIMER_STOP('partitioned_comms')
+        !TIMER_STOP('partitioned_comms')
 
         domain%boundary_flux_evolve_integral = sum(domain%boundary_flux_store)*&
             dt_first_step
@@ -2499,13 +2499,13 @@ module domain_mod
     subroutine update_boundary(domain)
         class(domain_type), intent(inout):: domain 
 
-        TIMER_START('boundary_update')
+        !TIMER_START('boundary_update')
 
         if(associated(domain%boundary_subroutine)) then
             CALL domain%boundary_subroutine(domain)
         end if
 
-        TIMER_STOP('boundary_update')
+        !TIMER_STOP('boundary_update')
 
     end subroutine
 
@@ -2525,7 +2525,7 @@ module domain_mod
         class(domain_type), intent(inout):: domain
         integer(ip):: j, k
 
-        TIMER_START('backup')
+        !TIMER_START('backup')
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
@@ -2537,7 +2537,7 @@ module domain_mod
         !$OMP END DO 
         !$OMP END PARALLEL
 
-        TIMER_STOP('backup')
+        !TIMER_STOP('backup')
 
     end subroutine
 
@@ -2558,6 +2558,8 @@ module domain_mod
         real(dp):: time0
         character(len=charlen) :: timestepping_method
         real(dp):: static_before_time
+
+call domain%timer%timer_start('evolve_one_step')
 
 
         timestepping_method = domain%timestepping_method
@@ -2645,6 +2647,7 @@ module domain_mod
 
         domain%nsteps_advanced = domain%nsteps_advanced + 1
 
+call domain%timer%timer_end('evolve_one_step')
     end subroutine
 
     !
@@ -2662,7 +2665,7 @@ module domain_mod
         ! Volume on the interior. At the moment the interior is all
         ! but the outer cells of the domain, but that could change.
 
-        !TIMER_START('volume_interior')
+        !!TIMER_START('volume_interior')
         n_ext = domain%exterior_cells_width
         domain_volume = ZERO_dp
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, n_ext) REDUCTION(+:domain_volume)
@@ -2677,7 +2680,7 @@ module domain_mod
         end do
         !$OMP END DO
         !$OMP END PARALLEL
-        !TIMER_STOP('volume_interior')
+        !!TIMER_STOP('volume_interior')
 
     end function
 
@@ -2865,13 +2868,13 @@ module domain_mod
         integer(ip):: i, j
         logical:: to
 
+TIMER_START('fileIO')
         if(present(time_only)) then
             to = time_only
         else
             to = .FALSE.
         end if
 
-        TIMER_START('fileIO')
        
         if(to .eqv. .FALSE.) then 
 #ifdef NONETCDF
@@ -2892,7 +2895,7 @@ module domain_mod
         ! Time too, as ascii
         write(domain%output_time_unit_number, *) domain%time
 
-        TIMER_STOP('fileIO')
+TIMER_STOP('fileIO')
 
     end subroutine write_to_output_files
 
@@ -2923,7 +2926,7 @@ module domain_mod
         integer(ip):: j, k, i
 
         if(domain%record_max_U) then
-            TIMER_START('update_max_quantities')
+            !TIMER_START('update_max_quantities')
 
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
 
@@ -2944,7 +2947,7 @@ module domain_mod
             !$OMP END DO
             !$OMP END PARALLEL
             
-            TIMER_STOP('update_max_quantities')
+            !TIMER_STOP('update_max_quantities')
         end if
 
     end subroutine update_max_quantities
@@ -3094,11 +3097,11 @@ module domain_mod
     subroutine write_gauge_time_series(domain)
 
         class(domain_type), intent(inout):: domain
-
+TIMER_START('write_gauge_time_series')
         if(allocated(domain%point_gauges%time_series_values)) then
             call domain%point_gauges%write_current_time_series(domain%U, domain%time)
         end if
-
+TIMER_STOP('write_gauge_time_series')
     end subroutine
 
     !
@@ -3136,26 +3139,37 @@ module domain_mod
     ! This routine multiplies all boundary_flux_integrals in send/recv regions
     ! by a constant 'c'
     !
-    pure subroutine nesting_boundary_flux_integral_multiply(domain, c)
+    subroutine nesting_boundary_flux_integral_multiply(domain, c)
     
         class(domain_type), intent(inout) :: domain
         real(dp), intent(in) :: c
 
         integer(ip) :: i
+    
+TIMER_START('nesting_boundary_flux_integral_multiply')
+
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
 
         if(allocated(domain%nesting%send_comms)) then
+            !$OMP DO SCHEDULE(DYNAMIC)
             do i = 1, size(domain%nesting%send_comms)
                 call domain%nesting%send_comms(i)%boundary_flux_integral_multiply(c)
             end do 
+            !$OMP END DO
         end if
 
 
         if(allocated(domain%nesting%recv_comms)) then
+            !$OMP DO SCHEDULE (DYNAMIC)
             do i = 1, size(domain%nesting%recv_comms)
                 call domain%nesting%recv_comms(i)%boundary_flux_integral_multiply(c)
             end do 
+            !$OMP END DO
         end if
 
+        !$OMP END PARALLEL
+
+TIMER_STOP('nesting_boundary_flux_integral_multiply')
     end subroutine
     
     ! If doing nesting, we may want to track boundary flux integrals through
@@ -3205,7 +3219,7 @@ module domain_mod
 
         integer(ip) :: i
 
-TIMER_START('nesting_boundary_flux_integral_tstep')
+!TIMER_START('nesting_boundary_flux_integral_tstep')
         ! Apply to both the send and recv comms. This means that after
         ! communication, we can compare fluxes that were computed with
         ! different numerical methods, and potentially apply flux correction.
@@ -3228,7 +3242,7 @@ TIMER_START('nesting_boundary_flux_integral_tstep')
                     var_indices, flux_already_multiplied_by_dx)
             end do
         end if
-TIMER_STOP('nesting_boundary_flux_integral_tstep')
+!TIMER_STOP('nesting_boundary_flux_integral_tstep')
 
     end subroutine
 
@@ -3262,7 +3276,7 @@ TIMER_STOP('nesting_boundary_flux_integral_tstep')
 !
 !        if(send_boundary_flux_data .and. allocated(domain%nesting%recv_comms)) then
 !
-!TIMER_START('nesting_flux_correction')
+!!TIMER_START('nesting_flux_correction')
 !
 !            do i = 1, size(domain%nesting%recv_comms)
 !
@@ -3439,7 +3453,7 @@ TIMER_STOP('nesting_boundary_flux_integral_tstep')
 !
 !            end do 
 !
-!TIMER_STOP('nesting_flux_correction')
+!!TIMER_STOP('nesting_flux_correction')
 !
 !        end if
 !
