@@ -3148,7 +3148,7 @@ TIMER_STOP('write_gauge_time_series')
     
 TIMER_START('nesting_boundary_flux_integral_multiply')
 
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, c)
 
         if(allocated(domain%nesting%send_comms)) then
             !$OMP DO SCHEDULE(DYNAMIC)
