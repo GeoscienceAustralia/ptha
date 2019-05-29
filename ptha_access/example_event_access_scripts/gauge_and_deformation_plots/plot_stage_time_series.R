@@ -75,7 +75,7 @@ for(i in 1:nrow(kt2_events$events)){
 
 
     # If the event is possible then add the raster
-    my_raster = Sys.glob(paste0(output_dir, '/stochastic_*', desired_rows[i], '.png'))
+    my_raster = Sys.glob(paste0(out_dir, '/stochastic_*', desired_rows[i], '.png'))
     if(length(my_raster) == 1){
         rast = brick(my_raster)
         ext0 = extent(rast)
