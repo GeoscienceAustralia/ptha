@@ -782,20 +782,33 @@ make_load_balance_partition_DEFUNCT<-function(multidomain_dir=NA, verbose=TRUE){
 
     md_files = Sys.glob(paste0(multidomain_dir, '/multi*.log'))
 
+    # Get the runtime from the log file. 
+    # This depends on the timer information having been printed
     md_runtime<-function(md_file){
         md_lines = readLines(md_file)
 
-        domain_timer_starts = grep('Timer     ', md_lines)
+        domain_timer_starts = grep('Timer of md%domains(', md_lines, fixed=TRUE)
         total_wallclock_lines = grep('Total WALLCLOCK', md_lines)
 
-        #
+        # Get the wallclock time as numeric
         nd = length(domain_timer_starts)
         total_wallclock = sapply(md_lines[total_wallclock_lines[1:nd]], 
             f<-function(x) as.numeric(strsplit(x, ':', fixed=TRUE)[[1]][2]))
-     
-        return(as.numeric(total_wallclock))
+
+        # Get the domain index and local index
+        domain_index_and_local_index = sapply(md_lines[domain_timer_starts + 2], 
+            f<-function(x) as.numeric(read.table(text=x)),
+            simplify=FALSE)
+        names(domain_index_and_local_index) = rep("", length(domain_index_and_local_index))
+        domain_index_and_local_index = matrix(unlist(domain_index_and_local_index), ncol=2, byrow=TRUE)
+    
+        output = list(total_wallclock = as.numeric(total_wallclock), 
+                      domain_index_and_local_index = domain_index_and_local_index) 
+        #return(as.numeric(total_wallclock))
+        return(output)
     }
-    md_times = sapply(md_files, md_runtime)
+
+    md_times = sapply(md_files, f<-function(x) md_runtime(x)$total_wallclock)
 
     # 
     image_i_domains = matrix(NA, nrow=nrow(md_times), ncol=ncol(md_times))
@@ -855,6 +868,85 @@ partition_into_k<-function(vals, k){
     return(list(inds, sums))
 }
 
+# Partition a set into 'k' groups with roughly equal sum.
+#
+# Furthermore we assume the 'vals' are each associated with
+# some vals_group, and the partitioning tries to make the sums
+# rougly equal also within the vals_groups. 
+#
+# To make it concrete: suppose our 'vals' give model run-times for a
+# partitioned domain.  The 'vals_groups' might be chosen to give the
+# "domain_index" of each, in which case all of the 'k' groups would have
+# approximately equal values of 'vals' WITHIN each domain_index. 
+#
+#
+# A practical situation where we might want to do this is for a model
+# where some domains are only evolved for a fraction of the whole runtime,
+# and we want to achieve good load-balancing for the entire model run.
+#
+# This uses the naive algorithm.
+# FIXME: Needs fixing. We should have the test below working, and also,
+# make_load_balance_partition should give the same result as the DEFUNCT load balance method
+# when a different group is used for each domain_index.
+#
+## Example -- 6 domains, each split into 32, each taking "time" ranging from 1:32
+#    vals = c()
+#    for(i in 1:6) vals = c(vals, sample(1:32, size=32, replace=FALSE))
+#    vals[45] = vals[45] + 1 # Break it. This should lead to one group that has one more element than the others.
+#    group_inds = rep(1:6, each=32)
+#    test = partition_into_k_with_grouping(vals, k=32, vals_groups=group_inds)
+#    max_val = max(test[[2]])
+#    # There should be one value with max_val, and all others being max_val - 1
+#    if(sum(test[[2]] == (max_val-1)) == 31){
+#        print('PASS')
+#    }else{
+#        print('FAIL')
+#    }
+partition_into_k_with_grouping<-function(vals, k, vals_groups){
+
+    sums = rep(0, k)
+    inds = vector(mode='list', length=k)
+    sorted_vals = sort(vals, index.return=TRUE, decreasing=TRUE)
+
+    unique_vals_groups = unique(vals_groups)
+    tmp = vector(mode='list', length = length(unique_vals_groups))
+    counter = 0
+    for(ug in unique_vals_groups){
+        # Get the ones in this group
+        p = which(vals_groups[sorted_vals$ix] == ug)
+
+        # Group indices
+        inds_p = sorted_vals$ix[p]
+        # Group values
+        vals_p = sorted_vals$x[p]
+        # Split group values into k
+        local_split = partition_into_k(vals_p, k)
+        local_split[[1]] = lapply(local_split[[1]], f<-function(x) inds_p[x])
+        counter = counter+1
+        tmp[[counter]] = local_split
+    }
+
+    # Now loop over each group, ordered according to which has the largest value
+    between_group_order = rank(unlist(lapply(tmp, f<-function(x) max(x[[2]]))), ties='first')
+    # Flip
+    between_group_order = max(between_group_order) + 1 - between_group_order
+
+    for(g in between_group_order){
+        # Within the groups, they are already ordered into k groups, longest-time first
+        within_group_inds = tmp[[g]][[1]]
+        within_group_vals = tmp[[g]][[2]]
+        assign_to_order = rank(sums, ties='first') # Smallest to largest
+        for(i in 1:length(assign_to_order)){
+            partition_ind = assign_to_order[i]
+            inds[[partition_ind]] = c(inds[[partition_ind]], within_group_inds[[i]])
+            sums[partition_ind] = sums[partition_ind] + within_group_vals[i]
+        }
+    }
+    
+    return(list(inds, sums))
+}
+
+
 #
 # Make a load balance partition file, using a 'greedy' approach to distribute
 # domains to images. Unlike the old approach, there is no restruction that an equal
@@ -863,9 +955,13 @@ partition_into_k<-function(vals, k){
 #
 # @param multidomain_dir directory containing the multidomain outputs
 # @param verbose if FALSE, suppress printing
+# @param domain_index_groups either an empty list, or a list with 2 or more vectors, each defining a group of domain indices.
+# In the latter case, the partition tries to be approximately equal WITHIN each group first, and then to combine the results
+# in a good way. This will generally be less efficient than not using groups, unless you have some other information
+# that tells you that the partition should be done in this way.
 # @return the function environment invisibly (so you have to use assignment to capture it)
 #
-make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
+make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_index_groups = list()){
 
     if(is.na(multidomain_dir)){
         multidomain_dir = rev(sort(Sys.glob('./OUTPUTS/RUN*')))[1]
@@ -913,8 +1009,27 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
     md_domain_indices_vec = unlist(md_domain_indices)
     md_local_indices_vec = unlist(md_local_indices)
 
-    # Make a partition of md_times_vec into num_images groups, with roughly equal sums
-    splitter = partition_into_k(md_times_vec, num_images)
+    if(length(domain_index_groups) == 0){
+        # Make a partition of md_times_vec into num_images groups, with roughly equal sums
+        splitter = partition_into_k(md_times_vec, num_images)
+    }else{
+        # Make a partition of md_times_vec into num_images groups, with roughly equal sums.
+        # Further, ensure the sums are also rougly equal for images within the
+        # same domain_index_group. 
+        stopifnot(is.list(domain_index_groups))
+        # Ensure there are no repeated domain indices
+        tmp = unlist(domain_index_groups)
+        stopifnot(length(tmp) == length(unique(tmp)))
+
+        groups = md_domain_indices_vec * NA
+        for(j in 1:length(domain_index_groups)){
+            k = which(md_domain_indices_vec %in% domain_index_groups[[j]])
+            groups[k] = j
+        }
+
+        splitter = partition_into_k_with_grouping(md_times_vec, num_images, groups)
+    }
+
     range_new = range(splitter[[2]])
     dsplit = diff(range_new)
     print(paste0('Range of partition total times: ', signif(range_new[1], 4), '-to-', signif(range_new[2], 4),  's '))
@@ -959,5 +1074,27 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE){
     }
 
     return(invisible(environment()))
+}
+
+
+# Extract the domain_index from its folder name
+#
+# Domain folders from multidomains have names like here:
+#    RUN_ID00000000590000000002_00070_20190529_094228.898
+# Where the ID00... has first 10 digits being the image index (59 here),
+# and the next 10 digits being the domain_index (2 here).
+#
+#
+#stopifnot(domain_index_from_folder('RUN_ID00000000590000000002_00070_20190529_094228.898') == 2)
+# 
+domain_index_from_folder<-function(folder_name){
+    
+    ID_term = gsub("ID", "", as.character(strsplit(folder_name, '_')[[1]][2]))
+
+    nch = nchar(ID_term)
+
+    index_ID = substring(ID_term, nch-9, nch)
+
+    return(as.numeric(index_ID))
 }
 
