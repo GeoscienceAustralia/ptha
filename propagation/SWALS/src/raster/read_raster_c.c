@@ -8,6 +8,11 @@
 
 void open_gdal_raster(char inputFile[], GDALDatasetH *hDataset){
 
+    // Give 30MB cache (note this is for GDAL as a whole, not just this dataset.)
+    int cache_size_bytes = 1024*1024*30;
+    // Try to avoid too much cache use
+    GDALSetCacheMax(cache_size_bytes);
+
     GDALAllRegister();
 
     *hDataset = GDALOpen( inputFile , GA_ReadOnly); 
@@ -91,9 +96,6 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
     double z_interp_x0, z_interp_x1;
     double x_local, y_local;
     CPLErr Err; 
-
-    // Try to avoid too much cache use
-    GDALSetCacheMax(1048576);
 
     // Beware of hitting nodata
     nodata_value = GDALGetRasterNoDataValue(hBand, pbSuccess);
