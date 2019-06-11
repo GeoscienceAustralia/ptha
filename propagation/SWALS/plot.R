@@ -505,9 +505,15 @@ nearest_point_in_multidomain<-function(x, y, md){
 
     md_nearest_distances = unlist(lapply(md_nearest, f<-function(x) x$dist))
 
-    closest_domain = which.min(md_nearest_distances)
-
-    out = md_nearest[[closest_domain]]
+    if(all(is.na(md_nearest_distances))){
+        # The point is not in any domain. This can happen e.g. when we ask for
+        # points at model boundaries
+        closest_domain = -Inf
+        out = list(xind=NA, yind=NA, dist=NA)
+    }else{
+        closest_domain = which.min(md_nearest_distances)
+        out = md_nearest[[closest_domain]]
+    }
     out$closest_domain=closest_domain
     return(out)
 }
@@ -662,17 +668,42 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
 
 #' Merge gauges from a multidomain, discarding those that are not in priority domains
 #'
-#' @param md list with the multidomain info
-#'
-merge_multidomain_gauges<-function(md){
+#' @param md list with the multidomain info.
+#' @param multidomain_dir the directory containing all the multdomain outputs. 
+#' If this is provided then md should be NA, and the code will read the necessary information
+merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
    
     # For all gauges, figure out if they are in the priority domain
     clean_gauges = list()
     counter = 0
+
+    if(!is.na(multidomain_dir)){
+        # We should read the multidomain information
+        if(!( (length(md) == 1))){
+            stop('Cannot provide both multidomain_dir and md')
+        }
+        if(!is.na(md)){
+            stop('Cannot provide both multidomain_dir and a non-NA value of md')
+        }
+
+        # Redefine md
+        md_domains = Sys.glob(paste0(multidomain_dir, '/RUN_ID*'))
+        if(length(md_domains) == 0) stop(paste0('Could not find any domains in multidomain_dir ', multidomain_dir))
+
+        # Read the multidomain info
+        md = lapply(md_domains, 
+                    f<-function(x) get_all_recent_results(x, read_grids=FALSE, always_read_priority_domain=TRUE) )
+    }else{
+        if(class(md) != 'list'){
+            stop('Must provide named arguments with either "multidomain_dir" giving the multidomain directory, or a list "md" containing the output from get_all_recent_results for each domain in the multidomain')
+        }
+    }
+
     for(j in 1:length(md)){
 
         # Some domains might have no gauges -- skip them
-        if(class(md[[j]]$gauges) == 'try-error') next
+        if( (length(md[[j]]$gauges) == 0) ) next
+        if( (class(md[[j]]$gauges) == 'try-error') ) next
 
         # If gauges exist, they may or may not be in this priority domain
         lons = md[[j]]$gauges$lon
@@ -757,6 +788,13 @@ merge_multidomain_gauges<-function(md){
         }
     }
 
+    # Bit of cleaning up. For missing variables, replace possibly multiple NAs with a single NA
+    for(i in 1:length(merged_gauges$static_var)){
+        if(all(is.na(merged_gauges$static_var[[i]]))) merged_gauges$static_var[[i]] = NA
+    }
+    for(i in 1:length(merged_gauges$time_var)){
+        if(all(is.na(merged_gauges$time_var[[i]]))) merged_gauges$time_var[[i]] = NA
+    }
 
     return(merged_gauges)
 }
