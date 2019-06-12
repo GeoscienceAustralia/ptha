@@ -159,12 +159,14 @@ likely to be a problem in shallow waters, and for larger tsunamis.
 
 Because of this, **for modelling purposes we strongly encourage the use of
 points well offshore in deep water**. If you can, use sites where wave heights of interest
-do not exceeding a few percent of the water depth. For tsunami propagation modelling,
+do not exceed a few percent of the water depth. For tsunami propagation modelling,
 it may be preferable to simulate the tsunami from source (using initial
 conditions [provided here](DETAILED_README.md)), which circumvents these
-issues. Nearshore points should **only** be used as a rough guide to possible
-tsunami wave heights, **NOT FOR FORCING INUNDATION MODELS**, and should be
-refined in future using higher resolution models and data. 
+issues (incidently, this also facilitates the use of alternative hydrodynamic
+models and bathymetric data when simulating these large scales). Nearshore
+points should **only** be used as a rough guide to possible tsunami wave
+heights, **NOT FOR FORCING INUNDATION MODELS**, and should be refined in future
+using higher resolution models and data. 
 
 The PTHA18 can help enable national consistency in site-specific tsunami
 inundation hazard studies. At any particular coastal site, the tsunami
