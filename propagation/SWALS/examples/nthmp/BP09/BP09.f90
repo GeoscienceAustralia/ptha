@@ -132,11 +132,11 @@ program run_BP09
     real(dp), parameter :: very_high_res_static_before_time = 235.0_dp
 
     ! Approx timestep between outputs
-    real(dp) :: approximate_writeout_frequency = 7.50_dp !0.6_dp * (1.0_dp/0.4_dp ) * 1.0_dp/3.0_dp!7.50_dp
-    real(dp) :: final_time = 3600.0_dp * 1.0_dp
-    !real(dp) :: final_time = 300.0_dp * 1.0_dp
-    !real(dp) :: approximate_writeout_frequency = 0.2_dp
-    !real(dp) :: final_time = 10.0_dp
+    real(dp), parameter :: approximate_writeout_frequency = 7.50_dp !0.6_dp * (1.0_dp/0.4_dp ) * 1.0_dp/3.0_dp!7.50_dp
+    real(dp), parameter :: final_time = 3600.0_dp * 1.0_dp
+    !real(dp), parameter :: final_time = 300.0_dp * 1.0_dp
+    !real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
+    !real(dp), parameter :: final_time = 10.0_dp
 
     ! Length/width
     real(dp), parameter, dimension(2):: global_lw = [3.9_dp, 4.6_dp]
@@ -150,12 +150,8 @@ program run_BP09
     ! The global (i.e. outer-domain) time-step in the multidomain 
     real(dp) ::  global_dt = 0.60_dp * (1.0_dp/mesh_refine) * (1.0_dp / 3.0_dp)
 
-
     ! Useful misc variables
-    integer(ip):: j, i, i0, j0, centoff, nd
-    real(dp):: last_write_time, gx(4), gy(4), stage_err
-    real(C_DOUBLE) :: vol, vol0, bfi, dvol
-    character(len=charlen) :: md_file, ti_char
+    integer(ip):: j, nd
 
     call program_timer%timer_start('setup')
 
@@ -326,23 +322,15 @@ program run_BP09
     ! Evolve the code
     !
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
     do while (.true.)
-        
-        ! IO 
-        if(md%domains(1)%time - last_write_time >= approximate_writeout_frequency) then
-            !call program_timer%timer_start('IO')
-
-            call md%print()
-
-            do j = 1, size(md%domains)
-                call md%domains(j)%write_to_output_files()
-            end do
-            last_write_time = last_write_time + approximate_writeout_frequency
-            flush(log_output_unit)
-
-        end if
+       
+        ! Print and write outputs each time-interval of "approximate_writeout_frequency"
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency=approximate_writeout_frequency, &
+            write_grids_less_often = 1_ip, &
+            write_gauges_less_often = 1_ip, &
+            print_less_often = 1_ip,&
+            timing_tol = 1.0e-06_dp)
 
         if(very_high_res_monai) then
             ! Take a different time step once the high res domain comes on line
@@ -355,7 +343,8 @@ program run_BP09
                 call md%evolve_one_step(global_dt/very_high_res_timestep_reduction)
             end if
         else
-                call md%evolve_one_step(global_dt)
+            ! Regular case
+            call md%evolve_one_step(global_dt)
         end if
 
         ! Finish looping at some point

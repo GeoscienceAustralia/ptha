@@ -364,8 +364,7 @@ program BP06
     implicit none
 
     ! Useful misc variables
-    integer(ip):: j, i, i0, j0, centoff, nd, lg, forcing_case
-    real(dp):: last_write_time, gx(4), gy(4)
+    integer(ip):: j, i, nd, forcing_case
 
     ! Type holding all domains 
     type(multidomain_type) :: md
@@ -374,11 +373,11 @@ program BP06
 
     real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
     
-    real(dp) ::  global_dt = 0.020_dp / mesh_refine
+    real(dp), parameter ::  global_dt = 0.020_dp / mesh_refine
 
     ! Approx timestep between outputs
-    real(dp) :: approximate_writeout_frequency = 0.2_dp
-    real(dp) :: final_time = 40._dp
+    real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
+    real(dp), parameter :: final_time = 40._dp
 
     ! Use this to read command line arguments
     character(len=20) :: tempchar
@@ -393,6 +392,9 @@ program BP06
     integer(ip) :: nest_ratio = 3_ip
     real(dp) :: high_res_ll(2) = island_centre - [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
     real(dp) :: high_res_ur(2) = island_centre + [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
+
+    integer(ip), parameter :: write_grids_and_print_every_nth_step = ceiling(approximate_writeout_frequency/global_dt)
+
 
     ! Forcing-case = 1, 2, 3
     ! Passed as first command line argument
@@ -459,31 +461,19 @@ program BP06
             md%domains(j)%linear_timestep_max()
     end do
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
-
     print*, 'End setup'
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
 
     ! Evolve the code
     do while (.true.)
-        
-        ! IO 
-        if(md%domains(1)%time - last_write_time >= approximate_writeout_frequency) then
-            call program_timer%timer_start('IO')
-            call md%print()
-            do j = 1, nd
-                call md%domains(j)%write_to_output_files()
-            end do
-            last_write_time = last_write_time + approximate_writeout_frequency
-            call program_timer%timer_end('IO')
-        end if
 
+        ! Write gauges every time-step, but print and write grids less often
         call program_timer%timer_start('IO')
-        do j = 1, nd
-            call md%domains(j)%write_gauge_time_series()
-        end do
+        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=0.0_dp,&
+            write_grids_less_often=write_grids_and_print_every_nth_step, &
+            print_less_often = write_grids_and_print_every_nth_step,&
+            write_gauges_less_often= 1_ip)
         call program_timer%timer_end('IO')
 
         call md%evolve_one_step(global_dt)

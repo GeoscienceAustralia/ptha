@@ -217,21 +217,8 @@ program run_model
     do while (.true.)
         
         ! IO 
-        if(md%domains(1)%time - last_write_time >= approximate_writeout_frequency) then
-
-            call md%print()
-
-            do j = 1, size(md%domains)
-                call md%domains(j)%write_to_output_files()
-            end do
-            last_write_time = last_write_time + approximate_writeout_frequency
-            flush(log_output_unit)
-
-#ifdef COARRAY
-            ! This sync can be useful for debugging but is not a good idea in general
-            !sync all
-#endif
-        end if
+        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency,&
+            timing_tol = 1.0e-06_dp)
 
         call md%evolve_one_step(global_dt)
 

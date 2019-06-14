@@ -4,14 +4,15 @@ module read_raster_mod
     !
     ! Both a type-based interface and a basic procedural interface are provided.
     !
-    ! The type-based interface is a bit more flexible in that you can open
+    ! The type-based interface is more flexible and should be preferred. You can open
     ! the file once, then read many times, and then close it, and also make various
-    ! enquiries about the file. It also more carefully treats missing data. See
-    ! 'gdal_raster_dataset_type'.
+    ! enquiries about the file. It also more carefully treats missing data. Further, it can
+    ! work with multiple files at once. See 'gdal_raster_dataset_type' and 'multi_raster_type'
     !
-    ! The procedural interface involves opening/closing the input file each
-    ! time a subroutine is called. This is not necessarily a problem, but could
-    ! cause issues. See 'read_gdal_raster' and 'get_raster_dimensions'.
+    ! The procedural interface was developed first, but is not recommended anymore.  
+    ! It involves opening/closing the input file each time a subroutine is called. 
+    ! While not necessarily a problem, this could cause issues. See 'read_gdal_raster' 
+    ! and 'get_raster_dimensions'.
     !
     use global_mod, only: charlen, ip, dp
     use iso_c_binding
@@ -241,6 +242,7 @@ module read_raster_mod
     end subroutine
 
     !! Non-object-based interface
+    !! Avoid this
     subroutine get_raster_dimensions(inputFile, xydim, lowerleft, upperright)
         character(len=charlen), intent(in) :: inputFile
         integer(ip), intent(out):: xydim(2)

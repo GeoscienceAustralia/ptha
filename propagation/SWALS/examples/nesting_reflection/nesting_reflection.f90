@@ -255,16 +255,9 @@ program nesting_reflection
     do while (.true.)
         
         ! IO 
-        if(md%domains(1)%time - last_write_time >= approximate_writeout_frequency) then
-            call program_timer%timer_start('IO')
-            call md%print()
-            do j = 1, nd
-                call md%domains(j)%write_to_output_files()
-                call md%domains(j)%write_gauge_time_series()
-            end do
-            last_write_time = last_write_time + approximate_writeout_frequency
-            call program_timer%timer_end('IO')
-        end if
+        call program_timer%timer_start('IO')
+        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency)
+        call program_timer%timer_end('IO')
 
         call md%evolve_one_step(global_dt)
 

@@ -44,7 +44,7 @@ module multidomain_mod
         linked_p2p_images, communicate_p2p, size_of_send_recv_buffers !, send_buffer, recv_buffer
     use iso_fortran_env, only: int64
     use logging_mod, only: log_output_unit, send_log_output_to_file
-    use file_io_mod, only: mkdir_p, read_ragged_array_2d_ip
+    use file_io_mod, only: mkdir_p, read_ragged_array_2d_ip, read_csv_into_array
     use timer_mod, only: timer_type
 #ifdef COARRAY_PROVIDE_CO_ROUTINES
     use coarray_intrinsic_alternatives, only: co_broadcast, co_max, co_sum, co_min
@@ -179,6 +179,12 @@ module multidomain_mod
         ! Store 'all_is_staggered_grid' in the multidomain
         integer(ip), allocatable :: all_is_staggered_grid_md(:,:)
 
+
+        ! Convenience variables controlling writeout
+        integer(ip) :: writeout_counter = 0
+        real(dp) :: last_write_time = -HUGE(1.0_dp)
+        
+
         contains
 
         ! Main initialisation routine
@@ -203,6 +209,9 @@ module multidomain_mod
         ! Convenience
         procedure :: print => print_multidomain
         procedure :: finalise_and_print_timers => finalise_and_print_timers
+        procedure :: set_point_gauges_from_csv => set_point_gauges_from_csv
+        ! IO
+        procedure :: write_outputs_and_print_statistics => write_outputs_and_print_statistics
 
     end type
 
@@ -452,7 +461,7 @@ module multidomain_mod
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
         integer(ip), intent(in) :: max_parent_dx_ratio
 
-        integer(ip) :: dims(2), i, j, ii, i1, i2, j1, j2, i1n, j1n, mpdx, ind1, im1
+        integer(ip) :: dims(2), i, j, ii, i1, i2, j1, j2
         integer(ip), allocatable :: nest_ind(:), nest_image(:), match_ind(:)
         integer(ip), allocatable :: run_indices(:), run_values(:), &
             run_lengths(:), ends(:), starts(:)
@@ -462,106 +471,44 @@ module multidomain_mod
         logical, allocatable :: in_active(:), in_periodic_x(:), in_periodic_y(:)
         character(len=charlen), allocatable :: box_i_string(:), cbox_i_string(:)
 
-        integer(ip), allocatable :: buffer_priority_domain_index(:,:)
-        integer(ip), allocatable :: buffer_priority_domain_image(:,:)
-
-        i1n = size(priority_domain_image, 1)
-        j1n = size(priority_domain_image, 2)
-        allocate(buffer_priority_domain_index(i1n, j1n))
-        allocate(buffer_priority_domain_image(i1n, j1n))
-
         ! ID cells that are in the periodic boundary regions. This is necessary because
         ! we must avoid the 'boxes' crossing the periodic boundary
         allocate(in_periodic_x(size(xs)), in_periodic_y(size(ys)))
         in_periodic_x = (xs < periodic_xs(1) .or. xs > periodic_xs(2))
         in_periodic_y = (ys < periodic_ys(1) .or. ys > periodic_ys(2))
 
-        !
-        ! Make a 'buffered' priority domain index/image, to move nesting regions
-        ! away from the priority domain. This prevents send and recv regions
-        ! sharing boundaries. We only move recv regions for 'fine' domains.
-        ! For coarse domains, for mass conservation purposes it's important
-        ! to keep its recv regions right on its boundary
-        !
-        buffer_priority_domain_index = priority_domain_index
-        buffer_priority_domain_image = priority_domain_image
-
-        !! Define buffer size
-        !mpdx = max_parent_dx_ratio * halo_separation_factor 
-        !! Update the buffer_priority_domain variables
-        !do j = 1, size(priority_domain_index,2)
-        !    do i = 1, size(priority_domain_index,1)
-        !        ! Buffer by (1 * max_parent_dx_ratio)   
-        !        !
-        !        ! If any cell within "max_parent_dx_ratio" cells is in {my_index, my_image}
-        !        ! then we do not want to have a send region here
-        !        do j1 = -mpdx, mpdx
-        !            do i1 = -mpdx, mpdx
-        !                ! Avoid out-of-bounds errors
-        !                if( ((i1 + i) < 1) .or. ((j1 + j) < 1) .or. & 
-        !                    ((i1 + i) > size(priority_domain_index, 1)) .or. &
-        !                    ((j1 + j) > size(priority_domain_index, 2)) ) cycle 
-
-        !                ! Avoid changes in periodic regions
-        !                if(in_periodic_x(i) .or. in_periodic_y(j)) cycle
-
-        !                ind1 = priority_domain_index(i, j)
-        !                im1  = priority_domain_image(i, j)
-
-        !                ! If the associated domain cell is finer or equal to the domain of interest, do not expand
-        !                ! Use a factor 1.1 to avoid round-off, considering the areas should be integer
-        !                ! multiples of each other
-        !                if(product(all_dx(1:2, ind1, im1)) <= 1.1_dp*product(all_dx(1:2, myindex, myimage))) cycle
-
-        !                !! Only expand if at least one of the domains is staggered
-        !                !if(.not.(all_is_staggered_grid(ind1, im1) == 1 .or. &
-        !                !         all_is_staggered_grid(myindex, myimage) == 1)) cycle
-
-        !                ! "Grow" the region with {my_index, my_image} to prevent receiving there
-        !                if( (priority_domain_index(i1 + i, j1 + j) == myindex) .and. &
-        !                    (priority_domain_image(i1 + i, j1 + j) == myimage) ) then
-        !                    buffer_priority_domain_index(i,j) = priority_domain_index(i1+i, j1+j)
-        !                    buffer_priority_domain_image(i,j) = priority_domain_image(i1+i, j1+j)
-        !                end if
-        !            end do
-        !        end do 
-        !    end do
-        !end do 
-
         ! box_metadata = main output
         if(allocated(box_metadata)) deallocate(box_metadata)
 
-        dims = shape(buffer_priority_domain_index)
+        dims = shape(priority_domain_index)
 
         ! Work arrays
         allocate(in_active(dims(1)), nest_ind(dims(1)), nest_image(dims(1)), &
             run_indices(dims(1)))
 
         run_indices = (/ (i, i=1, dims(1)) /)
-
-    
     
         ! Loop over domain y-coordinate
         do j = 1, dims(2)
 
             ! For each x coordinate, find whether we are in the active part of
-            ! the domain. This let's us exclude inactive 'NULL' areas, which are
-            ! internal parts of the domain covered by finer domains, which are not
-            ! even required for communication
+            ! the domain. This lets us exclude inactive 'NULL' areas, which are
+            ! internal parts of the domain covered by finer domains, and are not
+            ! ever required for communication
             do i = 1, dims(1)
-                ! FIXME: This would have to be changed to allow a range of
+                ! NOTE: This would have to be changed to allow a range of
                 ! halo_width's, if we do 'multi-time-level-comms'
-                call is_in_active_region(buffer_priority_domain_index, &
-                    buffer_priority_domain_image, myindex, myimage, &
+                call is_in_active_region(priority_domain_index, &
+                    priority_domain_image, myindex, myimage, &
                     halo_width, i, j, in_active(i))
             end do
 
             ! Record the domain-index and image of each point in the active
             ! region -- non-active points are set to zero
-            nest_ind = merge(buffer_priority_domain_index(:,j), &
-                0 * buffer_priority_domain_index(:,j), in_active)
-            nest_image = merge(buffer_priority_domain_image(:,j), &
-                0 * buffer_priority_domain_image(:,j), in_active)
+            nest_ind = merge(priority_domain_index(:,j), &
+                0 * priority_domain_index(:,j), in_active)
+            nest_image = merge(priority_domain_image(:,j), &
+                0 * priority_domain_image(:,j), in_active)
             ! Find 'start' and 'end' indices corresponding to x values with a
             ! contiguous priority domain/image, AND never crossing periodic_xs or periodic_ys. 
             ! Note that 'rle_ip' is similar
@@ -704,8 +651,8 @@ module multidomain_mod
             i2 = box_metadata(4,j)
             j1 = box_metadata(5,j)
             j2 = box_metadata(6,j)
-            if( any( buffer_priority_domain_index(i1:i2,j1:j2) /= box_metadata(1,j)) .or. &
-                any( buffer_priority_domain_image(i1:i2,j1:j2) /= box_metadata(2,j)) .or. &
+            if( any( priority_domain_index(i1:i2,j1:j2) /= box_metadata(1,j)) .or. &
+                any( priority_domain_image(i1:i2,j1:j2) /= box_metadata(2,j)) .or. &
                 any( in_periodic_x(i1:i2) .neqv. in_periodic_x(i1) ).or. &
                 any( in_periodic_y(j1:j2) .neqv. in_periodic_y(j1) ) ) then
                 write(log_output_unit,*) 'image :', myimage, ' index: ', myindex
@@ -714,9 +661,6 @@ module multidomain_mod
                 stop 'Error in creating box_metadata for priority domain information'
             end if
         end do
-
-        deallocate(buffer_priority_domain_index)
-        deallocate(buffer_priority_domain_image)
 
         contains
             ! Subroutine used in 'rle_ip' call to detect changes in
@@ -3251,6 +3195,169 @@ module multidomain_mod
 
     end subroutine
 
+
+    ! Convenience routine to set the point gauges in all domains from a 3 column csv file
+    ! containing x, y, gaugeID
+    !
+    ! @param md
+    ! @param point_gauges_csv_file csv file with 3 columns: lon, lat, gaugeID
+    ! @param skip_header number of header lines to skip in the file (default 0)
+    ! @param time_var array with indices of variables to store at every timestep. Default [STG, UH, VH]
+    ! @param static_var array with indices of variables to store only once. Default [ELV]
+    subroutine set_point_gauges_from_csv(md, point_gauges_csv_file, skip_header, time_var, static_var)
+        class(multidomain_type), intent(inout) :: md
+        character(len=*), intent(in) :: point_gauges_csv_file
+        integer(ip), intent(in), optional :: skip_header
+        integer(ip), intent(in), optional :: time_var(:)
+        integer(ip), intent(in), optional :: static_var(:)
+
+        character(len=charlen) :: point_gauges_csv_file_local
+        real(dp), allocatable :: point_gauges(:,:)
+        integer(ip) :: skip_header_local, j
+        integer(ip), allocatable :: time_var_local(:)
+        integer(ip), allocatable :: static_var_local(:)
+
+        ! Defaults
+        if(present(skip_header)) then
+            skip_header_local = skip_header
+        else
+            skip_header_local = 0_ip
+        end if
+
+        if(present(time_var)) then
+            allocate(time_var_local(size(time_var)))
+            time_var_local = time_var
+        else
+            time_var_local = [STG, UH, VH]
+        end if
+
+        if(present(static_var)) then
+            allocate(static_var_local(size(static_var)))
+            static_var_local = static_var
+        else
+            static_var_local = [ELV]
+        end if
+
+        ! Ensure the number of characters in filename is correct
+        point_gauges_csv_file_local = point_gauges_csv_file
+
+        ! Flush the log file to help with debugging (e.g. due to incorrect file type)
+        write(log_output_unit,*) '    Setting up gauges'
+        flush(log_output_unit)
+        call read_csv_into_array(point_gauges, point_gauges_csv_file_local, skip_header=skip_header_local)
+        write(log_output_unit,*) '    ... have read file, point_gauges dimensions are', shape(point_gauges)
+        flush(log_output_unit)
+
+        if(size(point_gauges, dim=1) /= 3) then
+            write(log_output_unit, *) 'ERROR: First dimensions of point_gauges should have size=3.'
+            write(log_output_unit, *) '       Either change the point_gauges_csv_file to have 3 columns (x,y,gaugeID)'
+            write(log_output_unit, *) '       or manually set hazard points for each domain with domain%setup_point_gauges'
+            flush(log_output_unit)
+            call generic_stop
+        end if
+
+        do j = 1, size(md%domains)
+            call md%domains(j)%setup_point_gauges(point_gauges(1:2,:), &
+                time_series_var=time_var_local, static_var=static_var_local, &
+                gauge_ids = point_gauges(3,:))
+        end do
+
+        write(log_output_unit,*) '    Gauges are setup'
+        flush(log_output_unit)
+
+        deallocate(point_gauges, time_var_local, static_var_local)
+
+
+    end subroutine 
+
+
+    ! Convenience IO function. Write all domain outputs and print md statistics, if a given time has passed since
+    ! the last writeout
+    !
+    ! @param md multidomain
+    ! @param approximate_writeout_frequency real (default 0.0) - write to files once this much time has elapsed since the last write
+    ! @param write_grids_less_often optional integer (default 1) -- only write grids every 'nth' time we would otherwise writeout
+    ! @param write_gauges_less_often optional integer (default 1) -- only write gauges every 'nth' time we would otherwise writeout
+    ! @param print_less_often optional integer (default 1) -- only print every 'nth' time we would otherwise writeout
+    ! @param timing_tol real (default 0) if the time since the last write out is > "approximate_writeout_frequency - timing_tol" 
+    ! , then do the write. This is an attempt to avoid round-off causing a shift in the write-out times
+    subroutine write_outputs_and_print_statistics(md, &
+        approximate_writeout_frequency, &
+        write_grids_less_often, &
+        write_gauges_less_often, &
+        print_less_often,&
+        timing_tol)
+
+        class(multidomain_type), intent(inout) :: md
+        real(dp), optional, intent(in) :: approximate_writeout_frequency, timing_tol
+        integer(ip), optional, intent(in) :: write_grids_less_often, write_gauges_less_often, print_less_often
+
+        real(dp) :: approx_writeout_freq, model_time, timing_tol_local
+        integer(ip) :: write_grids_n, write_gauges_n, print_n, j
+
+        if(present(approximate_writeout_frequency)) then
+            approx_writeout_freq = approximate_writeout_frequency
+        else
+            approx_writeout_freq = 0.0_dp
+        end if
+
+        if(present(write_grids_less_often)) then
+            write_grids_n = write_grids_less_often
+        else
+            write_grids_n = 1_ip
+        end if
+
+        if(present(write_gauges_less_often)) then
+            write_gauges_n = write_gauges_less_often
+        else
+            write_gauges_n = 1_ip
+        end if
+
+        if(present(print_less_often)) then
+            print_n = print_less_often
+        else
+            print_n = 1_ip
+        end if
+
+        if(present(timing_tol)) then
+            timing_tol_local = timing_tol
+        else
+            timing_tol_local = 0.0_dp
+        end if
+
+        ! All the domain times should be the same
+        model_time = md%domains(1)%time
+
+        ! Here we ensure the first step writes out, noting HUGE(1.0_dp) was the default value
+        if(md%last_write_time == -HUGE(1.0_dp)) then
+            md%last_write_time = model_time - approx_writeout_freq
+        end if
+
+        if(model_time - approx_writeout_freq >= md%last_write_time - timing_tol_local) then
+
+            ! Printing
+            if(mod(md%writeout_counter, print_n) == 0) call md%print
+
+            ! Grids
+            if(mod(md%writeout_counter, write_grids_n) == 0) then
+                do j = 1, size(md%domains)
+                    call md%domains(j)%write_to_output_files()
+                end do
+            end if
+
+            ! Gauges
+            if(mod(md%writeout_counter, write_gauges_n) == 0) then
+                do j = 1, size(md%domains)
+                    call md%domains(j)%write_gauge_time_series()
+                end do
+            end if
+
+            ! Update variables controlling the write frequency
+            md%writeout_counter = md%writeout_counter + 1_ip
+            md%last_write_time = md%last_write_time + approx_writeout_freq
+        end if
+
+    end subroutine
 
     !
     ! Test codes

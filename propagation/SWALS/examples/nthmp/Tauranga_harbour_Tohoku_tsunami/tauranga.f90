@@ -262,17 +262,17 @@ module local_routines
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-07_dp)
 
-        ! Gauges
-        gauge_xy(1:3, 1) = [2.724e+04_dp, 1.846e+04_dp, 1.0_dp]
-        gauge_xy(1:3, 2) = [3.085e+04_dp, 1.512e+04_dp, 2.0_dp]
-        gauge_xy(1:3, 3) = [3.200e+04_dp, 1.347e+04_dp, 3.0_dp]
-        gauge_xy(1:3, 4) = [3.005e+04_dp, 1.610e+04_dp, 4.0_dp]
-        ! ADCP location -- reported
-        gauge_xy(1:3, 5) = [2.9250e+04_dp, 1.4660e+04_dp, 5.0_dp]
-        ! ADCP location -- this is nearby, and the velocities seem to agree 
-        ! better (this place has the highest velocities in the entrance)
-        gauge_xy(1:3, 6) = [2.9325e+04_dp, 1.4525e+04_dp, 6.0_dp]
-        call domain%setup_point_gauges(xy_coords = gauge_xy(1:2,:), gauge_ids=gauge_xy(3,:))
+        !! Gauges -- instead we set them from the csv file
+        !gauge_xy(1:3, 1) = [2.724e+04_dp, 1.846e+04_dp, 1.0_dp]
+        !gauge_xy(1:3, 2) = [3.085e+04_dp, 1.512e+04_dp, 2.0_dp]
+        !gauge_xy(1:3, 3) = [3.200e+04_dp, 1.347e+04_dp, 3.0_dp]
+        !gauge_xy(1:3, 4) = [3.005e+04_dp, 1.610e+04_dp, 4.0_dp]
+        !! ADCP location -- reported
+        !gauge_xy(1:3, 5) = [2.9250e+04_dp, 1.4660e+04_dp, 5.0_dp]
+        !! ADCP location -- this is nearby, and the velocities seem to agree 
+        !! better (this place has the highest velocities in the entrance)
+        !gauge_xy(1:3, 6) = [2.9325e+04_dp, 1.4525e+04_dp, 6.0_dp]
+        !call domain%setup_point_gauges(xy_coords = gauge_xy(1:2,:), gauge_ids=gauge_xy(3,:))
 
     end subroutine
 
@@ -293,8 +293,7 @@ program run_Tauranga
     implicit none
 
     ! Useful misc variables
-    integer(ip):: j, i, i0, j0, centoff, nd, lg
-    real(dp):: last_write_time, gx(4), gy(4)
+    integer(ip):: j, nd
 
     ! Type holding all domains 
     type(multidomain_type) :: md
@@ -309,7 +308,6 @@ program run_Tauranga
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 30.0_dp
     integer(ip), parameter :: only_write_grids_every_nth_output_step = 20_ip ! Write grids less often than gauges
-    integer(ip) :: counter
 
     character(len=charlen) ::  bc_file = './boundary/ABeacon_stage_timeseries.csv'
     real(dp) :: bc_elev
@@ -321,8 +319,6 @@ program run_Tauranga
     ! grid size (number of x/y cells)
     integer(ip), dimension(2):: global_nx = nint([4100_ip, 1860_ip] * mesh_refine) !nint([4100_ip, 2240_ip] * mesh_refine) !
     integer(ip), parameter :: nest_ratio = 3_ip
-    ! To minimise input boundary condition reflections, try using a thin linear domain. 
-    ! It doesn't work! Induces instability! 
     integer(ip), parameter :: boundary_domain_thickness = 0_ip
 
     call program_timer%timer_start('setup')
@@ -346,7 +342,6 @@ program run_Tauranga
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_method = 'rk2' !'midpoint' !'rk2'
     !md%domains(1)%theta = 4.0_dp
-
     !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
     !md%domains(1)%linear_solver_is_truely_linear = .false.
 
@@ -378,6 +373,12 @@ program run_Tauranga
         md%domains(j)%linear_solver_is_truely_linear = .false.
     end do
     call md%make_initial_conditions_consistent 
+    ! NOTE: For stability in 'null' regions, we set them to 'high land' that
+    ! should be inactive. 
+    call md%set_null_regions_to_dry()
+
+    ! Setup hazard points
+    call md%set_point_gauges_from_csv("point_gauge_locations.csv", skip_header=1_ip)
 
     ! Build boundary conditions
     bc_elev = minval(md%domains(1)%U(:,:,4)) 
@@ -402,39 +403,30 @@ program run_Tauranga
     end select
     md%domains(1)%boundary_function => boundary_function
    
-    ! NOTE: For stability in 'null' regions, we set them to 'high land' that
-    ! should be inactive. 
-    call md%set_null_regions_to_dry()
-
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         write(log_output_unit, *) 'domain: ', j, 'ts: ', &
             md%domains(j)%linear_timestep_max()
     end do
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
-
     print*, 'End setup'
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
 
     ! Evolve the code
-    counter = 0_ip
     do while (.true.)
-        
-        ! IO 
-        if(md%domains(1)%time - last_write_time >= approximate_writeout_frequency) then
-            call program_timer%timer_start('IO')
-            call md%print()
-            do j = 1, nd
-                if(mod(counter, only_write_grids_every_nth_output_step) == 0) call md%domains(j)%write_to_output_files()
-                call md%domains(j)%write_gauge_time_series()
-            end do
-            counter = counter + 1_ip
-            last_write_time = last_write_time + approximate_writeout_frequency
-            call program_timer%timer_end('IO')
-        end if
+       
+        ! Write gauges and print after 'approximate_writeout_frequency' time has passed 
+        ! Don't write gauges every time
+        call program_timer%timer_start('IO')
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency=approximate_writeout_frequency, &
+            write_grids_less_often = only_write_grids_every_nth_output_step, &
+            write_gauges_less_often = 1_ip, &
+            print_less_often = 1_ip, &
+            timing_tol = 1.0e-06_dp)
+        call program_timer%timer_end('IO')
+
 
         call md%evolve_one_step(global_dt)
 

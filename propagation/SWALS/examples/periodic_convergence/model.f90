@@ -75,8 +75,7 @@ program run_model
     integer(ip), dimension(2):: global_nx
 
     ! Useful misc variables
-    integer(ip):: j, i, i0, j0, centoff, nd
-    real(dp):: last_write_time, gx(4), gy(4), stage_err
+    integer(ip):: j, i, nd
     character(len=charlen) :: md_file, ti_char, stage_file, model_name
 
     call get_command_argument(1, mesh_refine_input)
@@ -143,28 +142,9 @@ program run_model
     !
     ! Evolve the code
     !
-
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = 0.0_dp
     do while (.true.)
-        
-        ! IO 
-        if(abs(md%domains(1)%time - last_write_time) <= my_dt*0.5_dp) then
-            !call program_timer%timer_start('IO')
 
-            call md%print()
-
-            do j = 1, size(md%domains)
-                call md%domains(j)%write_to_output_files()
-            end do
-            last_write_time = last_write_time + approximate_writeout_frequency
-            flush(log_output_unit)
-
-#ifdef COARRAY
-            ! This sync can be useful for debugging but is not a good idea in general
-            !sync all
-#endif
-        end if
+        call md%write_outputs_and_print_statistics(approximate_writeout_frequency = 4.0e-04_dp, timing_tol=my_dt/3.0_dp)
 
         call md%evolve_one_step(my_dt)
 

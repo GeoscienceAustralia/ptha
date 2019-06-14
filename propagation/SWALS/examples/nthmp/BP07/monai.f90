@@ -146,8 +146,7 @@ program monai
     implicit none
 
     ! Useful misc variables
-    integer(ip):: j, i, i0, j0, centoff, nd, lg
-    real(dp):: last_write_time, gx(4), gy(4)
+    integer(ip):: j, i, nd
 
     ! Type holding all domains 
     type(multidomain_type) :: md
@@ -156,11 +155,11 @@ program monai
 
     real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
     
-    real(dp) ::  global_dt = 8.0E-03_dp / mesh_refine
+    real(dp), parameter ::  global_dt = 8.0E-03_dp / mesh_refine
 
     ! Approx timestep between outputs
-    real(dp) :: approximate_writeout_frequency = 0.05_dp
-    real(dp) :: final_time = 35.0_dp
+    real(dp), parameter :: approximate_writeout_frequency = 0.05_dp
+    real(dp), parameter :: final_time = 35.0_dp
 
     character(len=charlen) ::  bc_file = '../test_repository/BP07-DmitryN-Monai_valley_beach/Benchmark_2_input.txt'
     real(dp) :: bc_elev
@@ -238,9 +237,6 @@ program monai
             md%domains(j)%linear_timestep_max()
     end do
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
-
     print*, 'End setup'
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
@@ -248,17 +244,14 @@ program monai
     ! Evolve the code
     do while (.true.)
         
-        ! IO 
-        if(md%domains(1)%time - last_write_time >= approximate_writeout_frequency) then
-            call program_timer%timer_start('IO')
-            call md%print()
-            do j = 1, nd
-                call md%domains(j)%write_to_output_files()
-                call md%domains(j)%write_gauge_time_series()
-            end do
-            last_write_time = last_write_time + approximate_writeout_frequency
-            call program_timer%timer_end('IO')
-        end if
+        ! Print and write outputs each time-interval of "approximate_writeout_frequency"
+        call program_timer%timer_start('IO')
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency=approximate_writeout_frequency, &
+            write_grids_less_often = 1_ip, &
+            write_gauges_less_often = 1_ip, &
+            print_less_often = 1_ip)
+        call program_timer%timer_end('IO')
 
         call md%evolve_one_step(global_dt)
 

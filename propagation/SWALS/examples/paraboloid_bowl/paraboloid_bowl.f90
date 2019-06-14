@@ -148,29 +148,13 @@ program run_paraboloid_basin
     ! Evolve the code
     !
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
     do while (.true.)
         
         ! IO 
-        if(md%domains(1)%time - last_write_time >= approximate_writeout_frequency) then
-            call program_timer%timer_start('IO')
-
-            call md%print()
-            !call md%domains(1)%print()
-
-            do j = 1, size(md%domains)
-                call md%domains(j)%write_to_output_files()
-            end do
-            last_write_time = last_write_time + approximate_writeout_frequency
-            flush(log_output_unit)
-
-            call program_timer%timer_end('IO')
-#ifdef COARRAY
-            ! This sync can be useful for debugging but is not a good idea in general
-            !sync all
-#endif
-        end if
+        call program_timer%timer_start('IO')
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency = approximate_writeout_frequency)
+        call program_timer%timer_end('IO')
 
         call md%evolve_one_step(global_dt)
 

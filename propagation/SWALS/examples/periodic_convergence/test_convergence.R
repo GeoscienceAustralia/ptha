@@ -66,9 +66,9 @@ tmp = get_order_accuracy('ud', time=0.05)
 tmp = get_order_accuracy('vd', time=0.05)
 
 # Clearly 2nd order accuracy
-tmp = get_order_accuracy('stage', time=0.055)
-tmp = get_order_accuracy('ud', time=0.055)
-tmp = get_order_accuracy('vd', time=0.055)
+tmp = get_order_accuracy('stage', time=0.056)
+tmp = get_order_accuracy('ud', time=0.056)
+tmp = get_order_accuracy('vd', time=0.056)
 
 
 ## > # Second order accuracy with rk2
