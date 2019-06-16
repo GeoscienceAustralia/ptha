@@ -61,7 +61,7 @@
         u_neg_L(domain%nx(1)), u_pos_L(domain%nx(1)), &
         v_neg_L(domain%nx(1)), v_pos_L(domain%nx(1))
 
-    real(dp) :: bed_j_minus_1(domain%nx(1))
+    real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1)), explicit_source_im1_work(domain%nx(1))
 
     half_cfl = HALF_dp * domain%cfl
     ny = domain%nx(2)
@@ -79,7 +79,8 @@
     ! some efficiency can be gained by moving through a contiguous chunk
     !
     !
-    !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, half_cfl, nx, ny, loop_work_count) REDUCTION(MAX:max_dt_inv)
+    !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, half_cfl, nx, ny, loop_work_count, max_dt) REDUCTION(MAX:max_dt_inv)
+    max_dt_inv_work = ONE_dp/max_dt
 #ifdef NOOPENMP
     ! Serial loop from 2:(ny)
     j_low = 2 
@@ -117,6 +118,7 @@
         ! to zero beforehand
         domain%explicit_source(:,j,:) = ZERO_dp
         domain%explicit_source_VH_j_minus_1(:,j) = ZERO_dp
+        explicit_source_im1_work = ZERO_dp
 
         ! Assume distance_left_edge is constant but distance_bottom_edge
         ! might change with y (spherical coordinates). For cartesian coordinates
@@ -149,6 +151,7 @@
 
         ! NOTE: much of the loop below can be vectorized, but care will be needed
         ! for the max_dt_inv term
+        !$OMP SIMD
         do i = 2, nx
             !
             ! North-South flux computation
@@ -325,14 +328,19 @@
             ! Timestep
             max_speed = max(s_max, -s_min)
             if (max_speed > EPS) then
-                max_dt_inv = max(max_dt_inv, max_speed * dx_cfl_inv(2))
+                !max_dt_inv = max(max_dt_inv, max_speed * dx_cfl_inv(2))
+                max_dt_inv_work(i) =  max(max_dt_inv_work(i), max_speed * dx_cfl_inv(2))
             end if
+
+        !end do
 
     !
     !
     ! EW Flux computation
     !
     !
+        !!!$OMP SIMD
+        !do i = 2, nx
             ! left edge variables 
             stage_neg = stage_neg_L(i)
             stage_pos = stage_pos_L(i)
@@ -456,9 +464,12 @@
                 ! half_g_hh
                 !precision_factor =  domain%distance_left_edge(i) * half_gravity * depth_neg_c * depth_neg_c
 
-                domain%explicit_source(i-1, j, UH) = domain%explicit_source(i-1, j ,UH) + &
+                !domain%explicit_source(i-1, j, UH) = domain%explicit_source(i-1, j ,UH) + &
+                !    bed_slope_pressure_e * domain%distance_left_edge(i) - half_g_hh_edge
+                !    !bed_slope_pressure_e * domain%distance_left_edge(i) - (half_g_hh_edge - precision_factor)
+                explicit_source_im1_work(i-1) =  &
                     bed_slope_pressure_e * domain%distance_left_edge(i) - half_g_hh_edge
-                    !bed_slope_pressure_e * domain%distance_left_edge(i) - (half_g_hh_edge - precision_factor)
+                !    !bed_slope_pressure_e * domain%distance_left_edge(i) - (half_g_hh_edge - precision_factor)
 
                 !! Pressure gradient term at i,j -- west_side
                 bed_slope_pressure_w = half_gravity * (&
@@ -480,7 +491,9 @@
                 dxb = (0.5_dp * (domain%distance_bottom_edge(j+1) + domain%distance_bottom_edge(j)))
                 !stg_b = stage_neg
                 stg_b = (s_max*s_max*stage_neg + s_min*s_min*stage_pos)/max(s_max*s_max+s_min*s_min, 1.0e-6_dp)
-                domain%explicit_source(i-1,j,UH) = domain%explicit_source(i-1,j,UH) - &
+                !domain%explicit_source(i-1,j,UH) = domain%explicit_source(i-1,j,UH) - &
+                !    domain%area_cell_y(j) * gravity * depth_neg_c * stg_b / dxb 
+                explicit_source_im1_work(i-1) = - &
                     domain%area_cell_y(j) * gravity * depth_neg_c * stg_b / dxb 
                 !stg_a = stage_pos
                 stg_a = stg_b !(s_max*stage_pos - s_min*stage_neg)/max(s_max-s_min, 1.0e-06_dp)
@@ -527,13 +540,17 @@
                 common_multiple * domain%U(i,j,UH)
 #endif
 
-            ! Timestep
+            !! Timestep
             max_speed = max(s_max, -s_min)
             if (max_speed > EPS) then
-                max_dt_inv = max(max_dt_inv, max_speed * dx_cfl_inv(1))
+                max_dt_inv_work(i) = max(max_dt_inv_work(i), max_speed * dx_cfl_inv(1))
             end if
 
         end do
+        ! Reduction
+        max_dt_inv = maxval(max_dt_inv_work)
+        ! Apply the explicit source update that could not be done in the SIMD loop
+        domain%explicit_source(:,j,UH) = domain%explicit_source(:,j,UH) + explicit_source_im1_work
     end do
     !$OMP END PARALLEL
     

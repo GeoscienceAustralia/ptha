@@ -1404,7 +1404,7 @@ TIMER_STOP('printing_stats')
         ! Rather than call 'extrapolate_edge_...', we can make use of the
         ! symmetry to get the result quickly.
  
-        !theta_wd_pos_L = theta_wd_neg_L
+        theta_wd_pos_L = theta_wd_neg_L
 
         !call extrapolate_edge_second_order_vectorized(domain%U(2:(nx-1), j, STG), &
         !    domain%U(1:(nx-2), j, STG), domain%U(3:nx, j, STG), theta_wd_pos_L(2:(nx-1)), neg_ones, stage_pos_L(2:(nx-1)), nx-2)
