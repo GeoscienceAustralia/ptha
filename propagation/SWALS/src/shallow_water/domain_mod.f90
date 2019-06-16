@@ -1467,16 +1467,13 @@ TIMER_STOP('printing_stats')
                 else
                     ! Nearly dry or dry case
                     if(domain%depth(i,j) < ZERO_dp) then
-                        ! Clip 'round-off' type errors. FIXME: Keep track of this
-                        !if(domain%depth(i,j) > -roundoff_tol_wet_dry) then
-                            !write(domain%logfile_unit, *) '  clip: ', domain%depth(i,j)
-                            domain%depth(i,j) = ZERO_dp
-                            domain%U(i,j, STG) = domain%U(i,j,ELV)
-                        !else
-                        !   ! Make the code throw an error
-                            masscon_error = masscon_error + 1_ip
-                        !endif
+                        ! Clip 'round-off' type errors.
+                        domain%depth(i,j) = ZERO_dp
+                        domain%U(i,j, STG) = domain%U(i,j,ELV)
+                        ! Record that clipping occurred
+                        masscon_error = masscon_error + 1_ip
                     end if
+                    ! Zero velocities when the depth <= minimum-allowed_depth
                     domain%velocity(i,j,UH) = ZERO_dp
                     domain%velocity(i,j,VH) = ZERO_dp
                     domain%U(i,j,UH) = ZERO_dp
