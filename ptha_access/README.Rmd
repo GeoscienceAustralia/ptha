@@ -12,7 +12,8 @@ For access to detailed PTHA18 information, you should instead consult the [detai
 * additional average-return-interval calculations
 
 The methodologies used in this study, and associated testing, are discussed in
-[the project report](http://dx.doi.org/10.11636/Record.2018.041) and [this GJI publication](https://doi.org/10.1093/gji/ggz260).
+[the project report](http://dx.doi.org/10.11636/Record.2018.041) and [this GJI publication](https://doi.org/10.1093/gji/ggz260)
+and [this talk](https://www.youtube.com/watch?v=brRy6YjwnlA&list=PL0jP_ahe-BFk3499UEvm-YdlOiE9HFbCg&index=4&t=0s).
 Code used to conduct the analysis is available open-source
 in the [ptha package](https://github.com/GeoscienceAustralia/ptha). This includes
 generic software for PTHA, and also a folder with [project specific
