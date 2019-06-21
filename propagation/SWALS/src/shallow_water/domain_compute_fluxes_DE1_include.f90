@@ -38,7 +38,7 @@
     real(dp):: half_cfl, max_dt_inv, dxb, common_multiple, fr2
     character(len=charlen):: timer_name
     real(dp), parameter :: diffusion_scale = ONE_dp
-    real(dp), parameter :: EPS = 1.0e-06_dp 
+    real(dp), parameter :: EPS = 1.0e-12_dp 
     real(dp), parameter :: EPS_gs = sqrt(gravity * minimum_allowed_depth)  ! EPS relevant to sqrt(gH)
     real(dp), parameter:: half_gravity = HALF_dp * gravity
     integer(ip):: n_ext, loop_work_count, j_low, j_high, my_omp_id, n_omp_threads
@@ -102,9 +102,9 @@
     my_omp_id = omp_get_thread_num()
     n_omp_threads = omp_get_num_threads()
     ! j_low = lower loop index of the thread my_omp_id
-    j_low = nint(loop_work_count * my_omp_id * 1.0_dp / n_omp_threads) + 2
+    j_low = nint(loop_work_count * my_omp_id * ONE_dp / n_omp_threads) + 2
     ! j_high = upper loop index of the thread my_omp_id
-    j_high = nint(loop_work_count * (my_omp_id + 1) * 1.0_dp / n_omp_threads) + 2 - 1
+    j_high = nint(loop_work_count * (my_omp_id + 1) * ONE_dp / n_omp_threads) + 2 - 1
 #endif
 
     ! Use this in the loop to reduce computation when the previous j value was j-1.
@@ -140,14 +140,6 @@
         ! By setting jlast, we allow the above subroutine call to reuse
         ! limited gradient values from the previous loop iterate
         jlast = j 
-
-        ! Get left edge values
-        call get_left_edge_values(domain, j, nx, &
-            theta_wd_neg_L, theta_wd_pos_L, &
-            stage_neg_L, stage_pos_L, &
-            depth_neg_L, depth_pos_L, &
-            u_neg_L, u_pos_L, &
-            v_neg_L, v_pos_L)
 
         ! NOTE: much of the loop below can be vectorized, but care will be needed
         ! for the max_dt_inv term
@@ -230,10 +222,10 @@
 
             if(reduced_momentum_diffusion) then
                 ! Use this to scale diffusion for uh/vh terms. Too much diffusion can cause artefacts
-                fr2 = advection_beta * sqrt(max(0.001_dp, min(1.0_dp, &
-                    1.0_dp*(v_neg**2 + v_pos**2 + u_neg**2 + u_pos**2)/(gs_neg**2 + gs_pos**2 + 1.0e-10_dp))))
+                fr2 = advection_beta * sqrt(max(0.001_dp, min(ONE_dp, &
+                    (v_neg**2 + v_pos**2 + u_neg**2 + u_pos**2)/(gs_neg**2 + gs_pos**2 + 1.0e-10_dp))))
             else
-                fr2 = 1.0_dp
+                fr2 = ONE_dp
             end if
 
             ! Advection flux terms 
@@ -246,22 +238,20 @@
                 domain%flux_NS(i, j, UH) = &
                     (s_max * ud_neg * vel_beta_neg - &
                      s_min * ud_pos * vel_beta_pos + &
-                    fr2 * sminsmax* (ud_pos - ud_neg)) * inv_denom
+                    fr2 * sminsmax * (ud_pos - ud_neg)) * inv_denom
             else
-                !domain%flux_NS(i,j,UH) = merge(ud_neg*vel_beta_neg, ud_pos*vel_beta_pos, &
-                !    vel_beta_neg+vel_beta_pos > ZERO_dp)
                 domain%flux_NS(i,j,UH) = advection_beta * &
-                    merge(u_neg, u_pos, domain%flux_NS(i,j,STG) > 0.0_dp) * domain%flux_NS(i,j,STG)
+                    merge(u_neg, u_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
             end if
 
             if(.not. upwind_normal_momentum) then
                 domain%flux_NS(i, j, VH) = &
-                    (s_max * (vd_neg * vel_beta_neg) - & 
-                     s_min * (vd_pos * vel_beta_pos) + &
-                     fr2*sminsmax * (vd_pos - vd_neg))*inv_denom !- &
+                    (s_max * vd_neg * vel_beta_neg - & 
+                     s_min * vd_pos * vel_beta_pos + &
+                     fr2 * sminsmax * (vd_pos - vd_neg))*inv_denom 
             else
                 domain%flux_NS(i, j, VH) = advection_beta * &
-                    merge(v_neg, v_pos, domain%flux_NS(i,j,STG) > 0.0_dp) * domain%flux_NS(i,j,STG)
+                    merge(v_neg, v_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
             end if
 
             ! Here we put in the gravity/pressure terms. Can try a flux conservative treatment,
@@ -278,14 +268,6 @@
                     (depth_neg_star - depth_neg)*(depth_neg_star + depth_neg) - &
                     (depth_neg + depth_neg_c)*(z_neg - bed_j_minus_1(i)))
 
-                ! To reduce floating point round-off, subtract this factor from half_g_hh_edge 
-                ! prior to accumulating in explicit_source type terms. So long as we use the same factor
-                ! in the north and south, this will not affect the result. But it can save us some decimal places!
-                !! NOTE: This doesn't really offer improvements -- but it might if we combine it inside the half_g_hh_edge
-                !! calculation. Consider for later
-                !precision_factor =  0.5*(domain%distance_bottom_edge(j) + domain%distance_bottom_edge(j-1)) * &
-                !    half_gravity * depth_neg_c * depth_neg_c
-             
                 !! NOTE regarding OPENMP!!
                 !! We cannot naively do:
                 ! domain%explicit_source(i, j - 1 ,VH) = domain%explicit_source(i, j-1, VH) + bed_slope_pressure_n + ...
@@ -295,19 +277,15 @@
                 domain%explicit_source_VH_j_minus_1(i,j) = &
                     bed_slope_pressure_n * domain%distance_bottom_edge(j) - &
                     half_g_hh_edge 
-                    !(half_g_hh_edge - precision_factor) ! Add to explicit_source later
 
                 !! 'bed slope' part of pressure gradient term at i,j, south-side
                 bed_slope_pressure_s = half_gravity * ( & 
                     (depth_pos_star - depth_pos) * (depth_pos_star + depth_pos) - &
                     (depth_pos + depth_pos_c)*(z_pos - domain%U(i, j, ELV)) ) 
                 
-                !precision_factor =  0.5*(domain%distance_bottom_edge(j+1) + domain%distance_bottom_edge(j)) * &
-                !    half_gravity * depth_pos_c * depth_pos_c
                 domain%explicit_source(i, j, VH) = domain%explicit_source(i, j, VH) - &
                     bed_slope_pressure_s * domain%distance_bottom_edge(j) + &
                     half_g_hh_edge 
-                    !(half_g_hh_edge - precision_factor)
             else
                 ! Non-conservative treatment
                 ! area * g * depth * (stage_top - stage_bottom)/dy
@@ -318,7 +296,6 @@
                 stg_b = (s_max * s_max * stage_neg + s_min * s_min * stage_pos)/max(s_max*s_max + s_min*s_min, 1.0e-06_dp)
                 domain%explicit_source_VH_j_minus_1(i,j) = &
                     -domain%area_cell_y(j-1) * gravity * depth_neg_c * stg_b / domain%distance_left_edge(i)
-                !stg_a = stage_pos 
                 stg_a = stg_b
                 domain%explicit_source(i,j,VH) = domain%explicit_source(i,j,VH) + &
                     domain%area_cell_y(j) * gravity * depth_pos_c * stg_a / domain%distance_left_edge(i)
@@ -328,19 +305,27 @@
             ! Timestep
             max_speed = max(s_max, -s_min)
             if (max_speed > EPS) then
-                !max_dt_inv = max(max_dt_inv, max_speed * dx_cfl_inv(2))
                 max_dt_inv_work(i) =  max(max_dt_inv_work(i), max_speed * dx_cfl_inv(2))
             end if
 
-        !end do
+        end do
 
     !
     !
     ! EW Flux computation
     !
     !
-        !!!$OMP SIMD
-        !do i = 2, nx
+        ! Get left edge values
+        call get_left_edge_values(domain, j, nx, &
+            theta_wd_neg_L, theta_wd_pos_L, &
+            stage_neg_L, stage_pos_L, &
+            depth_neg_L, depth_pos_L, &
+            u_neg_L, u_pos_L, &
+            v_neg_L, v_pos_L)
+
+        !$OMP SIMD
+        do i = 2, nx
+
             ! left edge variables 
             stage_neg = stage_neg_L(i)
             stage_pos = stage_pos_L(i)
@@ -405,10 +390,10 @@
 
             if(reduced_momentum_diffusion) then
                 ! Use this to scale diffusion for uh/vh terms. Too much diffusion can cause artefacts
-                fr2 = advection_beta * sqrt(max(0.001_dp, min(1.0_dp, &
-                    1.0_dp*(v_neg**2 + v_pos**2 + u_neg**2 + u_pos**2)/(gs_neg**2 + gs_pos**2 + 1.0e-10_dp))))
+                fr2 = advection_beta * sqrt(max(0.001_dp, min(ONE_dp, &
+                    (v_neg**2 + v_pos**2 + u_neg**2 + u_pos**2)/(gs_neg**2 + gs_pos**2 + 1.0e-10_dp))))
             else
-                fr2 = 1.0_dp
+                fr2 = ONE_dp
             end if
 
             domain%flux_EW(i,j,STG) = &
@@ -418,12 +403,12 @@
 
             if(.not. upwind_normal_momentum) then
                 domain%flux_EW(i,j,UH) = &
-                    (s_max * (ud_neg * vel_beta_neg ) - &
-                     s_min * (ud_pos * vel_beta_pos ) + &
+                    (s_max * ud_neg * vel_beta_neg  - &
+                     s_min * ud_pos * vel_beta_pos + &
                      fr2 * sminsmax * (ud_pos - ud_neg) )*inv_denom
             else
                 domain%flux_EW(i,j,UH) = advection_beta * &
-                    merge(u_neg, u_pos, domain%flux_EW(i,j,STG) > 0.0_dp) * domain%flux_EW(i,j,STG)
+                    merge(u_neg, u_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
             end if
             if(.not. upwind_transverse_momentum) then
                 domain%flux_EW(i,j,VH) = &
@@ -431,18 +416,10 @@
                      s_min * vd_pos * vel_beta_pos + &
                     fr2 * sminsmax * (vd_pos - vd_neg)) * inv_denom
             else
-                !domain%flux_EW(i,j,VH) = merge(vd_neg*vel_beta_neg, vd_pos*vel_beta_pos, &
-                !    vel_beta_neg+vel_beta_pos > ZERO_dp)
                 domain%flux_EW(i,j,VH) = advection_beta * &
-                    merge(v_neg, v_pos, domain%flux_EW(i,j,STG) > 0.0_dp) * domain%flux_EW(i,j,STG)
+                    merge(v_neg, v_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
 
             end if
-
-            !if(i == 200 .and. j == 10) then
-            !    print*, 'STG: ', domain%U(i-1:i+1, j, STG), stage_pos_star
-            !    print*, 'VEL: ', domain%velocity(i-1:i+1, j, UH), vel_beta_pos
-            !end if
-
 
             ! Here we put in the gravity/pressure terms. Can try a flux conservative treatment,
             ! or a good old fashioned { g x depth x grad(stage) } term
@@ -458,31 +435,18 @@
                     (depth_neg_star - depth_neg)*(depth_neg_star + depth_neg) - &
                     (depth_neg + depth_neg_c)*(z_neg - domain%U(i-1 , j, ELV)))
 
-                ! Add this into explicit_source to reduce floating point round-off errors.  
-                ! Mathematically its effect will cancel. 
-                ! NOTE: This doesn't really offer improvements, but it might if we integrate it inside
-                ! half_g_hh
-                !precision_factor =  domain%distance_left_edge(i) * half_gravity * depth_neg_c * depth_neg_c
-
-                !domain%explicit_source(i-1, j, UH) = domain%explicit_source(i-1, j ,UH) + &
-                !    bed_slope_pressure_e * domain%distance_left_edge(i) - half_g_hh_edge
-                !    !bed_slope_pressure_e * domain%distance_left_edge(i) - (half_g_hh_edge - precision_factor)
+                ! To make this section OMP SIMD, we cannot update domain%explicit_source(i-1,j)
+                ! Thus we introduce a term to store its value, which is added outside the SIMD loop
                 explicit_source_im1_work(i-1) =  &
                     bed_slope_pressure_e * domain%distance_left_edge(i) - half_g_hh_edge
-                !    !bed_slope_pressure_e * domain%distance_left_edge(i) - (half_g_hh_edge - precision_factor)
 
                 !! Pressure gradient term at i,j -- west_side
                 bed_slope_pressure_w = half_gravity * (&
                     (depth_pos_star - depth_pos) * (depth_pos_star + depth_pos) - &
                     (depth_pos + depth_pos_c)*(z_pos - domain%U(i, j, ELV)) )
 
-                ! Add this into explicit_source to reduce floating point round-off errors.  
-                ! Mathematically its effect will cancel
-                !precision_factor =  domain%distance_left_edge(i) * half_gravity * depth_pos_c * depth_pos_c
-
                 domain%explicit_source(i, j, UH) = domain%explicit_source(i, j, UH) - &
                     bed_slope_pressure_w * domain%distance_left_edge(i) + half_g_hh_edge
-                    !bed_slope_pressure_w * domain%distance_left_edge(i) + (half_g_hh_edge - precision_factor)
             else
                 ! Non conservative treatment
                 ! area * g * depth * (stage_right - stage_left) / dx

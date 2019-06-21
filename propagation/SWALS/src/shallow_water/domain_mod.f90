@@ -59,10 +59,8 @@ module domain_mod
     ! Make everything private, except domain_type, which has its own methods,
     ! and the domain_metadata_type, which is sometimes more convenient to
     ! work with than the domain [since it is 'lightweight']
-    ! (currently due to gfortran 4.x compiler issues in inheritance, we avoid using
-    !  domain_metadata_type)
     private
-    public:: domain_type !, domain_metadata_type
+    public:: domain_type, test_domain_mod
 
     ! Indices for arrays: Stage, depth-integrated-x-velocity,
     ! depth-integrated-v-velocity, elevation. So e.g. stage
@@ -1834,16 +1832,20 @@ TIMER_STOP('printing_stats')
 
             !$OMP SIMD
             do i = 1, domain%nx(1)
-        
                 !! Fluxes
                 do kk = 1, 3
                     domain%U(i,j,kk) = domain%U(i,j,kk) - inv_cell_area_dt * ( & 
                         (domain%flux_NS(i, j+1, kk) - domain%flux_NS(i, j, kk)) + &
                         (domain%flux_EW(i+1, j, kk) - domain%flux_EW(i, j, kk) ))
                 end do
+            end do
+
+            !$OMP SIMD
+            do i = 1, domain%nx(1)
 
                 ! Velocity clipping
                 depth = domain%depth(i,j)
+
                 if (domain%U(i,j,STG) <= (domain%U(i,j,ELV) + minimum_allowed_depth)) then
                     domain%U(i,j,UH) = ZERO_dp 
                     domain%U(i,j,VH) = ZERO_dp 
@@ -2556,7 +2558,7 @@ TIMER_STOP('printing_stats')
         character(len=charlen) :: timestepping_method
         real(dp):: static_before_time
 
-call domain%timer%timer_start('evolve_one_step')
+TIMER_START('evolve_one_step')
 
 
         timestepping_method = domain%timestepping_method
@@ -2644,7 +2646,7 @@ call domain%timer%timer_start('evolve_one_step')
 
         domain%nsteps_advanced = domain%nsteps_advanced + 1
 
-call domain%timer%timer_end('evolve_one_step')
+TIMER_STOP('evolve_one_step')
     end subroutine
 
     !
@@ -4457,29 +4459,112 @@ TIMER_STOP('nesting_flux_correction')
                     domain%U(i, 1:(domain%nx(2)-2),ELV) + &
                     domain%U(i, 3:(domain%nx(2)-0),ELV) )
             end do
-        !case('9pt_average')
-        !    ! Simple 9-point smoothing
-        !    ! This is exactly equivalent to above!
-        !    allocate(elev_block(domain%nx(1), 3))
-
-        !    ! This will store the "old" elevation values required to do the smooth
-        !    ! This particular block can be used for j=2
-        !    elev_block(:,1:3) = domain%U(:,1:3,ELV)
-
-        !    do j = 2, domain%nx(2) - 1
-        !        do i = 2, domain%nx(1) - 1
-        !            domain%U(i, j, ELV) = 1.0_dp/9.0_dp*sum(elev_block((i-1):(i+1), 1:3))
-        !        end do
-        !        ! Update elev_block for next 'j = j+1'
-        !        elev_block(:,1) = elev_block(:,2)
-        !        elev_block(:,2) = elev_block(:,3)
-        !        elev_block(:,3) = domain%U(:,j+2,ELV)
-        !    end do
-
-        !    deallocate(elev_block)
         case default
             stop 'Smoothing method not recognized'
         end select
+
+    end subroutine
+
+    !
+    ! Limited testing of the domain routines 
+    !
+    subroutine test_domain_mod
+        type(domain_type) :: domain
+    
+        integer(ip), parameter :: N = 10
+        real(dp) :: U(N), U_lower(N), U_upper(N)
+        real(dp) :: theta(N), extrapolation_sign(N)
+        real(dp) :: desired_answer(N), answer(N)
+        integer(ip) :: i
+
+        theta = 1.0_dp
+        U = (/(i*1.0_dp - 5.5_dp, i = 1, N)/)
+        U_lower = U - 1.0_dp
+        U_upper = U + 1.0_dp
+
+        ! Basic extrapolation tests, positive side
+        extrapolation_sign=1.0_dp
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = 0.5_dp * (U + U_upper)
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        ! As above, negative side
+        extrapolation_sign = -1.0_dp
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = 0.5_dp * (U + U_lower)
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        ! As above, negative side, reduced theta
+        theta = 0.5_dp
+        extrapolation_sign = -1.0_dp
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = 0.5_dp * U + 0.5_dp*0.5_dp * (U + U_lower)
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        ! As above, negative side, zero theta
+        theta = 0.0_dp
+        extrapolation_sign = 1.0_dp
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = 1.0_dp * U + 0.0_dp*0.5_dp * (U + U_lower)
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        ! Local min.
+        theta = 4.0_dp
+        extrapolation_sign = 1.0_dp
+        U_lower = U + 2.0_dp
+        U_upper = U + 3.0_dp
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = U 
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        ! Local max.
+        theta = 4.0_dp
+        U_lower = U - 2.0_dp
+        U_upper = U - 3.0_dp
+        extrapolation_sign = -1.0_dp
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = U 
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        ! Limited gradients
+        ! 
+        ! Central gradient = 2, lower-gradient=1, upper-gradient=3
+        U_lower = U - 1.0_dp
+        U_upper = U + 3.0_dp
+        extrapolation_sign = 1.0_dp
+        theta = 1.0_dp ! Limited-gradient = 1
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = U + 0.5_dp * 1.0_dp
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        theta = 1.5_dp ! Limited-gradient = 1.5
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = U + 0.5_dp * 1.5_dp
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        
+        extrapolation_sign = -1.0_dp ! As above, negative side
+        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        desired_answer = U - 0.5_dp * 1.5_dp
+        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+
+        contains
+
+            subroutine assert_equal_within_tol(desired_answer, answer, line)
+                real(dp) :: desired_answer(N), answer(N)
+                integer :: line
+
+                real(dp) :: tol
+
+                tol = spacing(1.0_dp) * 100
+
+                if(all(abs(desired_answer - answer) < tol)) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', line, desired_answer - answer
+                end if
+
+            end subroutine
 
     end subroutine
 
