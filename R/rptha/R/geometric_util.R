@@ -680,6 +680,7 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,
         # Store x,y points on each segment
         newxlist = list()
         newylist = list()
+        newilist = list()
         for(i in 1:length(SL_seglength)){
             seg_coords = SL@lines[[j]]@Lines[[i]]@coords
             seg_lnth = c(0,cumsum(SL_seglength[[i]]))
@@ -700,17 +701,19 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,
 
             newxlist[[i]] = new_x
             newylist[[i]] = new_y
-        
-            all_points_local = cbind(unlist(newxlist), unlist(newylist))
-            if(distinguish_disjoint_line_segments){
-                all_points_local = cbind(all_points_local, 
-                    rep(j + (i-1)/length(SL_seglength), length(all_points_local[,1])))
-            }else{
-                all_points_local = cbind(all_points_local, 
-                    rep(j, length(all_points_local[,1])))
-            }
-        
+            # A line-segment indicator
+            newilist[[i]] = rep((i-1)/length(SL_seglength), length(new_x))
         }
+        
+        all_points_local = cbind(unlist(newxlist), unlist(newylist))
+        if(distinguish_disjoint_line_segments){
+            tmp = unlist(newilist)
+            all_points_local = cbind(all_points_local, j+tmp)
+        }else{
+            all_points_local = cbind(all_points_local, 
+                rep(j, length(all_points_local[,1])))
+        }
+        
         
         all_points = rbind(all_points,all_points_local)
     }
