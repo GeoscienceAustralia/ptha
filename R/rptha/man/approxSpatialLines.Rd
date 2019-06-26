@@ -5,7 +5,7 @@
 \title{Return a set of points with chosen spacing along a SpatialLines object}
 \usage{
 approxSpatialLines(SL, spacing = NULL, n = NULL, longlat = FALSE,
-  verbose = FALSE)
+  verbose = FALSE, distinguish_disjoint_line_segments = FALSE)
 }
 \arguments{
 \item{SL}{a SpatialLines object, along which we desire evenly spaced points.}
@@ -18,6 +18,12 @@ the user may provide 'n' below.}
 \item{longlat}{logical. Is data longlat?}
 
 \item{verbose}{logical. Print progress information}
+
+\item{distinguish_disjoint_line_segments}{logical. If FALSE, then the output
+contains an integer for each point, with the corresponding line-index in the SL.
+If TRUE, then the latter is replaced with a real-number, defined as
+"line-index + (segment_index-1)/(num_segments)", which can be used to
+distinguish between disjoint parts of the same line.}
 }
 \value{
 SpatialPointsDataFrame along SL, with data identifying the
