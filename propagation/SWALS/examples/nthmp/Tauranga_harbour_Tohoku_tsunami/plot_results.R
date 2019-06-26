@@ -92,3 +92,4 @@ title('Currents at ADCP (Improves with higher resolution). \n Underestimates rep
 legend('topleft', c('Data', 'Model @ reported coord', 'Model near reported coord'),
     lty=c('solid','solid','dotted'), col=c('black', 'red', 'blue'))
 dev.off()
+

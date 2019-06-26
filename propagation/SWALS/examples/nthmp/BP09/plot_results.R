@@ -201,7 +201,7 @@ multidomain_log = readLines(rev(Sys.glob('OUTPUTS/RUN*/multidomain*.log'))[1])
 k = grep('unexplained ', multidomain_log)
 final_mass_err = multidomain_log[k[length(k)]]
 final_mass_err_val = as.numeric(strsplit(final_mass_err, ':')[[1]][2])
-if(final_mass_err_val < 5){
+if(abs(final_mass_err_val) < 5){
     print(c('PASS', final_mass_err_val))
 }else{
     print(c('FAIL', final_mass_err_val))

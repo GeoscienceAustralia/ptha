@@ -476,9 +476,10 @@ program BP06
             write_gauges_less_often= 1_ip)
         call program_timer%timer_end('IO')
 
+        if (md%domains(1)%time > final_time) exit
+
         call md%evolve_one_step(global_dt)
 
-        if (md%domains(1)%time > final_time) exit
     end do
 
     call program_timer%timer_end('evolve')

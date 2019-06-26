@@ -123,9 +123,8 @@ program run_model
     integer(ip), parameter :: nest_ratio = 5_ip
 
     ! Useful misc variables
-    integer(ip):: j, i, i0, j0, centoff, nd
-    real(dp):: last_write_time, gx(4), gy(4), stage_err
-    character(len=charlen) :: md_file, ti_char, stage_file, model_name
+    integer(ip):: j, i, nd
+    character(len=charlen) :: stage_file, model_name
 
     ! Assume the stage file was passed to the command line
     call get_command_argument(1, stage_file)
@@ -147,7 +146,7 @@ program run_model
     
     
     ! nd domains in this model
-    nd = 1 
+    nd = 1  ! 2
     allocate(md%domains(nd))
 
     !
@@ -211,18 +210,17 @@ program run_model
     !
     ! Evolve the code
     !
-
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
     do while (.true.)
         
         ! IO 
-        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency,&
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency=approximate_writeout_frequency,&
             timing_tol = 1.0e-06_dp)
+
+        if (md%domains(1)%time > final_time) exit
 
         call md%evolve_one_step(global_dt)
 
-        if (md%domains(1)%time > final_time) exit
     end do
 
     call program_timer%timer_end('evolve')

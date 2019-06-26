@@ -5,13 +5,15 @@ module local_routines
 
     contains 
 
-    subroutine set_initial_conditions_dam(domain)            
+    subroutine set_initial_conditions_dam(domain, h_upstream, h_downstream)
         class(domain_type), target, intent(inout):: domain
+        real(dp), intent(in) :: h_upstream, h_downstream
+
         integer(ip):: i,j
         real(dp):: x, y, cx, cy, initial_stage_1, initial_stage_2, radius
 
-        initial_stage_1 = 0.1_dp 
-        initial_stage_2 = 1.0_dp
+        initial_stage_1 = h_downstream !0.0001_dp 
+        initial_stage_2 = h_upstream !1.0_dp
 
         ! Stage
         domain%U(:,:,1) = initial_stage_1 
@@ -66,16 +68,22 @@ program dam_break
 
     ! analytical solution
     real(dp), allocatable :: analytical_solution(:,:)
-    character(len=charlen):: analytical_solution_file
-
+    character(len=charlen):: analytical_solution_file, input_char
+    real(dp) :: h_upstream, h_downstream
 
     domain%timestepping_method = 'rk2' 
+
+    ! Get the upstream/downstream initial depth from the command line
+    call get_command_argument(1, input_char)
+    read(input_char, *) h_upstream
+    call get_command_argument(2, input_char)
+    read(input_char, *) h_downstream
 
     ! Allocate domain
     CALL domain%allocate_quantities(global_lw, global_nx, global_ll)
 
     ! Call local routine to set initial conditions
-    CALL set_initial_conditions_dam(domain)
+    CALL set_initial_conditions_dam(domain, h_upstream, h_downstream)
 
     domain%boundary_subroutine => transmissive_boundary
 

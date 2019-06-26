@@ -1,6 +1,6 @@
 source('../../plot.R')
 
-ts_methods = c('rk2', 'linear')
+ts_methods = c('rk2', 'midpoint', 'linear')
 
 for(ts_method in ts_methods){
 
@@ -16,34 +16,48 @@ for(ts_method in ts_methods){
     wave_speed = sqrt(9.8 * 100)
     domain_length = 100000
     time_to_cycle = domain_length/wave_speed
-    tind = which.min(abs(x[[2]]$time - time_to_cycle))
-    yind = round(dim(x[[2]]$stage)[2]/2)
+    nd = length(x)
+    tind = which.min(abs(x[[nd]]$time - time_to_cycle))
+    yind = round(dim(x[[nd]]$stage)[2]/2)
     # Given the write-out time won't be exactly "time_to_cycle", in theory
     # we can correct for the time-offset using a space offset
-    x_offset = (x[[2]]$time[tind] - time_to_cycle)*wave_speed
+    x_offset = (x[[nd]]$time[tind] - time_to_cycle)*wave_speed
+
 
     # Plot the solutions
-    pdf(paste0('cycle_solution_', ts_method, '.pdf'), width=7, height=5)
+    pdf(paste0('cycle_solution_', ts_method, '.pdf'), width=7, height=4)
 
-    plot(x[[2]]$xs, x[[2]]$stage[,yind,tind], t='o', 
-         main='Waveform at start (red) and after ~ 1 traverse of full domain (black). \n Plot shows inner domain only (3x refinement)',
+    plot_ylim = range(c(range(x[[nd]]$stage[,yind,1]), range(x[[nd]]$stage[,yind,tind])))
+
+    plot(x[[nd]]$xs, x[[nd]]$stage[,yind,tind], t='o', 
+         main='Waveform at start (red) and after ~ 1 traverse of full domain (black). \n Plot shows inner domain only',
+         xlab='x', ylim=plot_ylim,
+         ylab='stage (m)')
+    points(x[[nd]]$xs + x_offset, x[[nd]]$stage[,yind,1], t='l', col='red')
+
+
+    amp_loss_fraction = diff(range(x[[nd]]$stage[,yind,tind]))/diff(range(x[[nd]]$stage[,yind,1]))
+
+    plot(x[[nd]]$xs, x[[nd]]$stage[,yind,tind], t='o', ylim=plot_ylim,
+         main=paste0('Waveform range at end as percent of start (black) = ', signif(amp_loss_fraction, 4)),
          xlab='x', 
          ylab='stage (m)')
-    points(x[[2]]$xs + x_offset, x[[2]]$stage[,yind,1], t='l', col='red')
-
+    points(x[[nd]]$xs + x_offset, x[[nd]]$stage[,yind,1], t='l', col='red')
 
     # Check the error
-    s1 = x[[2]]$stage[,yind,tind]
-    s0 = x[[2]]$stage[,yind, 1]
+    s1 = x[[nd]]$stage[,yind,tind]
+    s0 = x[[nd]]$stage[,yind, 1]
 
-    k = which(abs(x[[2]]$xs) < 10000)
+    k = which(abs(x[[nd]]$xs) < 10000)
 
     # Interpolate the initial waveform, but with a time-offset
-    initial_s_shifted = approx(x[[2]]$xs + x_offset, s0, xout=x[[2]]$xs[k])
+    initial_s_shifted = approx(x[[nd]]$xs + x_offset, s0, xout=x[[nd]]$xs[k])
 
     err = sum( (s1[k]-initial_s_shifted$y)^2)/sum(s1[k]^2 + initial_s_shifted$y^2)
 
-    plot(x[[2]]$xs[k], s1[k] - initial_s_shifted$y, main='Error in the central part of the domain')
+    plot(x[[nd]]$xs[k], s1[k] - initial_s_shifted$y, main='Error in the central part of the domain')
+
+
 
     dev.off()
     

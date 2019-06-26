@@ -165,7 +165,7 @@ module domain_mod
         character(len=charlen):: metadata_ascii_filename
 
         ! Subroutine called inside domain%compute_fluxes
-        character(len=20) :: compute_fluxes_inner_method = 'DE1_low_fr_diffusion' ! 'DE1'
+        character(len=charlen) :: compute_fluxes_inner_method = 'DE1_low_fr_diffusion' ! 'DE1'
 
         ! The domain 'interior' is surrounded by 'exterior' cells which are
         ! updated by boundary conditions, or copied from other domains. When
@@ -1150,7 +1150,7 @@ TIMER_STOP('printing_stats')
         real(dp), intent(out) :: edge_value(n)
 
         integer(ip) :: i, imn, imx, vsize
-        character(len=charlen), parameter :: limiter_type = 'MC' !'Superbee_variant' ! 'MC'
+        character(len=charlen), parameter :: limiter_type = 'MC' !'Minmod2' !'Superbee_variant' ! 'MC'
 
         ! Local 'small' vectors used to pack data and enhance vectorization
         integer, parameter :: v = vectorization_size
@@ -1198,12 +1198,31 @@ TIMER_STOP('printing_stats')
                     b = d
                 end where
 
+            else if(limiter_type == "Minmod2") then
+                
+                th(1:vsize) = theta(imn:imx)
+                !d = ZERO_dp
+                e = HALF_dp * (a + b)
+                a = a * th
+                b = b * th
+                where(b > ZERO_dp .and. a > ZERO_dp)
+                    ! Positive slopes
+                    where(b < a) a = b
+                    d = min(e, a)
+                elsewhere(b < ZERO_dp .and. a < ZERO_dp)
+                    ! Negative slopes
+                    where(b > a) a = b
+                    d = max(e, a)
+                elsewhere
+                    d = ZERO_dp
+                end where
+                b = d
+
             else
 
                 b = -HUGE(1.0_dp)
 
             end if
-
 
             edge_value(imn:imx) = U_local(imn:imx) + HALF_dp * extrapolation_sign(imn:imx) * b(1:vsize)
         end do

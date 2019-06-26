@@ -427,10 +427,12 @@ program run_Tauranga
             timing_tol = 1.0e-06_dp)
         call program_timer%timer_end('IO')
 
+        ! Finish at some point
+        if (md%domains(1)%time > final_time) exit
 
+        ! Main evolve
         call md%evolve_one_step(global_dt)
 
-        if (md%domains(1)%time > final_time) exit
     end do
 
     call program_timer%timer_end('evolve')

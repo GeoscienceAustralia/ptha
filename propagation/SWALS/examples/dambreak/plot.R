@@ -3,8 +3,8 @@
 #
 
 # Dam-break problem parameters
-H1 = 1
-H0 = 0.1
+H1 = as.numeric(commandArgs(trailingOnly=TRUE)[1]) #1
+H0 = as.numeric(commandArgs(trailingOnly=TRUE)[2]) #0.0001
 g = 9.8
 
 near_t = 15 # Plot near this time
@@ -28,9 +28,10 @@ energy_numerical = (x$xs[2] - x$xs[1])*sum(u_model^2 * d_model + d_model^2*g) * 
 
 energy_numerical_0 = (x$xs[2] - x$xs[1])*sum(g*(x$stage[,yind,1]-x$elev[,yind,1])^2) * 0.5
 
-png('dam_break_numerical_vs_analytical.png', width=10, height=8, units='in', res=300)
+output_file = paste0('dam_break_numerical_vs_analytical_H0_', H0, '_H1_', H1, '.png')
+png(output_file, width=10, height=8, units='in', res=300)
 par(mfrow=c(2,1))
-plot(x$xs, x$stage[,yind,tind], t='o', ylim=c(0, 1), 
+plot(x$xs, x$stage[,yind,tind], t='o', ylim=c(0, max(sol$h)), 
      main=paste0('Stage, time=', x$time[tind], '\n Energy Numerical: ', 
                  round(energy_numerical, 2), '/', round(energy_numerical_0, 2), 
                  ', analytical: ', round(energy_analytical, 2), '/', round(sol0$energy, 2)), 
@@ -39,7 +40,7 @@ points(-sol$x, sol$h, t='l', col='red')
 legend('topleft', c('Model', 'Analytical'), lty=c(1,1), col=c('black', 'red'))
 
 plot(x$xs, u_model, 
-     t='o', ylim=c(-3, 0), main='Velocity', cex=0.3, xlab='x (m)', ylab=' Velocity (m/s)')
+     t='o', ylim=c(min(-sol$u), 0), main='Velocity', cex=0.3, xlab='x (m)', ylab=' Velocity (m/s)')
 points(-sol$x, -sol$u, t='l', col='red')
 dev.off()
 

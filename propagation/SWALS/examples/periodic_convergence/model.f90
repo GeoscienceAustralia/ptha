@@ -146,9 +146,10 @@ program run_model
 
         call md%write_outputs_and_print_statistics(approximate_writeout_frequency = 4.0e-04_dp, timing_tol=my_dt/3.0_dp)
 
+        if (md%domains(1)%time > final_time) exit
+
         call md%evolve_one_step(my_dt)
 
-        if (md%domains(1)%time > final_time) exit
     end do
 
     call program_timer%timer_end('evolve')

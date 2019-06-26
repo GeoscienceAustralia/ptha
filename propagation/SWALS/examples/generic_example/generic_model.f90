@@ -309,6 +309,9 @@ program generic_model
     domain%output_basedir = output_basedir
     domain%linear_solver_is_truely_linear = linear_solver_is_truely_linear
     domain%nc_grid_output%spatial_stride = grid_output_spatial_stride
+
+    !! Optionally suppress limiting with rk2
+    !!domain%theta = 4.0_dp
     
     ! Allocate domain -- must have set timestepping method BEFORE this
     call domain%allocate_quantities(global_lw, global_nx, global_ll)

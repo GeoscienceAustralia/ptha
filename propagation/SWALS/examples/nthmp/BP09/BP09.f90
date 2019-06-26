@@ -134,7 +134,7 @@ program run_BP09
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 7.50_dp !0.6_dp * (1.0_dp/0.4_dp ) * 1.0_dp/3.0_dp!7.50_dp
     real(dp), parameter :: final_time = 3600.0_dp * 1.0_dp
-    !real(dp), parameter :: final_time = 300.0_dp * 1.0_dp
+    !real(dp), parameter :: final_time = 30.0_dp * 1.0_dp
     !real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
     !real(dp), parameter :: final_time = 10.0_dp
 
@@ -332,6 +332,9 @@ program run_BP09
             print_less_often = 1_ip,&
             timing_tol = 1.0e-06_dp)
 
+        ! Finish looping at some point
+        if (md%domains(1)%time > final_time) exit
+
         if(very_high_res_monai) then
             ! Take a different time step once the high res domain comes on line
             ! This will introduce a (formal) first-order error into the linear leap-frog scheme,
@@ -346,9 +349,6 @@ program run_BP09
             ! Regular case
             call md%evolve_one_step(global_dt)
         end if
-
-        ! Finish looping at some point
-        if (md%domains(1)%time > final_time) exit
 
     end do
 

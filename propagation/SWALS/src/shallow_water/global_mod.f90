@@ -38,7 +38,7 @@ real(dp), parameter:: minimum_allowed_depth = 1.0e-05_dp
 real(dp), parameter:: wall_elevation = 1.0e+6_dp
 
 ! Timestepping
-real(dp), parameter:: cfl = 0.9_dp
+real(dp), parameter:: cfl = 0.9_dp ! FIXME: Is this still used? Defaults now set in domain%allocate_quantities
 real(dp), parameter:: maximum_timestep = 1.0e+20_dp
 character(len=charlen), parameter:: default_timestepping_method = 'euler'
 

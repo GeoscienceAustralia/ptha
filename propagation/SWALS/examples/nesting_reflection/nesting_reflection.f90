@@ -74,7 +74,7 @@ end module
 
 program nesting_reflection 
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp, minimum_allowed_depth, charlen
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary
@@ -94,14 +94,11 @@ program nesting_reflection
 
     real(dp), parameter :: mesh_refine = 1.0_dp ! Increase/decrease resolution by this amount
     
-    real(dp) ::  global_dt = 0.8_dp*3.9_dp / mesh_refine
+    real(dp) ::  global_dt = 3.985_dp / mesh_refine
 
     ! Approx timestep between outputs
     real(dp) :: approximate_writeout_frequency = 5.00_dp
     real(dp) :: final_time = 3600.0_dp
-
-    ! Run the '2 domain' version
-    integer(ip) :: n_domains = 2_ip
 
     integer(ip), parameter :: inner_mesh_refine = 3_ip
 
@@ -114,6 +111,20 @@ program nesting_reflection
     real(dp), parameter :: res_d2 = 250.0_dp/mesh_refine * 1.0_dp/inner_mesh_refine
 
     real(dp) :: lower_left(2), upper_right(2)
+
+    ! Standard test version
+    ! Run the '2 domain' version
+    integer(ip), parameter :: n_domains = 2_ip
+    ! Allow overshoots to prevent excess dissipation
+    real(dp), parameter :: nonlinear_theta = 4.0_dp
+    character(len=charlen) :: compute_fluxes_inner_method = "DE1_low_fr_diffusion"
+
+    !! Alternate version -- shows the dissipation of the regular 'DE1' type approach.
+    !! Similar behaviour is seen in 1D "Basilisk", which employs a very similar algorithm.
+    !! Note the dissipation also occurs with >1 domain (but n_domains=1 for simplicity here)
+    !integer(ip), parameter :: n_domains = 1_ip
+    !real(dp), parameter :: nonlinear_theta = 1.3_dp
+    !character(len=charlen), parameter :: compute_fluxes_inner_method = 'DE1' !'DE1_low_fr_diffusion'
 
     character(len=charlen) :: ts_method
 
@@ -170,10 +181,10 @@ program nesting_reflection
         md%domains(4)%timestepping_method = ts_method
 
         ! Allow overshoots to prevent excess dissipation
-        md%domains(1)%theta = 4.0_dp
-        md%domains(2)%theta = 4.0_dp
-        md%domains(3)%theta = 4.0_dp
-        md%domains(4)%theta = 4.0_dp
+        md%domains(1)%theta = nonlinear_theta
+        md%domains(2)%theta = nonlinear_theta
+        md%domains(3)%theta = nonlinear_theta
+        md%domains(4)%theta = nonlinear_theta
 
     else if(n_domains == 2) then
         ! Version with 2 domains. 
@@ -201,8 +212,8 @@ program nesting_reflection
         md%domains(2)%timestepping_method = ts_method
 
         ! Allow overshoots to prevent excess dissipation
-        md%domains(1)%theta = 4.0_dp
-        md%domains(2)%theta = 4.0_dp
+        md%domains(1)%theta = nonlinear_theta
+        md%domains(2)%theta = nonlinear_theta
 
     else if(n_domains == 1) then
         ! Single domain
@@ -218,9 +229,14 @@ program nesting_reflection
         md%domains(1)%timestepping_method = ts_method 
 
         ! Allow overshoots to prevent excess dissipation
-        md%domains(1)%theta = 4.0_dp
+        md%domains(1)%theta = nonlinear_theta
 
     end if
+
+    ! Experiment with non-default compute fluxes approaches
+    do j = 1, size(md%domains)
+        md%domains(j)%compute_fluxes_inner_method = compute_fluxes_inner_method
+    end do
 
     ! Allocate domains and prepare comms
     call md%setup()
@@ -259,9 +275,9 @@ program nesting_reflection
         call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency)
         call program_timer%timer_end('IO')
 
+        if (md%domains(1)%time > final_time) exit
         call md%evolve_one_step(global_dt)
 
-        if (md%domains(1)%time > final_time) exit
     end do
 
     call program_timer%timer_end('evolve')

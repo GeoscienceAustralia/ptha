@@ -196,9 +196,9 @@ program benchmark_problem1
         call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency)
         call program_timer%timer_end('IO')
 
+        if (md%domains(1)%time > final_time) exit
         call md%evolve_one_step(global_dt)
 
-        if (md%domains(1)%time > final_time) exit
     end do
 
     call program_timer%timer_end('evolve')
