@@ -653,12 +653,17 @@ mean_angle<-function(angles, degrees=TRUE, method='complex-mean', weights=1){
 #' @param n numeric. The number of points in output (if spacing = NULL)
 #' @param longlat logical. Is data longlat?
 #' @param verbose logical. Print progress information
+#' @param distinguish_disjoint_line_segments logical. If FALSE, then the output
+#' contains an integer for each point, with the corresponding line-index in the SL.
+#' If TRUE, then the latter is replaced with a real-number, defined as
+#' "line-index + (segment_index-1)/(num_segments)", which can be used to
+#' distinguish between disjoint parts of the same line.
 #' @return SpatialPointsDataFrame along SL, with data identifying the
 #' corresponding line index in SL
 #' @import sp
 #' @export
 approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE, 
-    verbose=FALSE){
+    verbose=FALSE, distinguish_disjoint_line_segments = FALSE){
 
     if(is.null(n)) stopifnot(!is.null(spacing))
     if(is.null(spacing)) stopifnot(!is.null(n))
@@ -697,8 +702,13 @@ approxSpatialLines<-function(SL, spacing=NULL, n=NULL, longlat=FALSE,
             newylist[[i]] = new_y
         
             all_points_local = cbind(unlist(newxlist), unlist(newylist))
-            all_points_local = cbind(all_points_local, 
-                rep(j, length(all_points_local[,1])))
+            if(distinguish_disjoint_line_segments){
+                all_points_local = cbind(all_points_local, 
+                    rep(j + (i-1)/length(SL_seglength), length(all_points_local[,1])))
+            }else{
+                all_points_local = cbind(all_points_local, 
+                    rep(j, length(all_points_local[,1])))
+            }
         
         }
         
