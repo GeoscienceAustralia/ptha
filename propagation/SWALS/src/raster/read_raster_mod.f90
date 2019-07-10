@@ -15,6 +15,7 @@ module read_raster_mod
     ! and 'get_raster_dimensions'.
     !
     use global_mod, only: charlen, ip, dp
+    use logging_mod, only: log_output_unit
     use iso_c_binding
 
     implicit none
@@ -47,6 +48,7 @@ module read_raster_mod
         procedure:: initialise => initialise_gdal_raster_dataset
         procedure:: get_xy => get_xy_values
         procedure:: finalise => close_gdal_raster
+        procedure:: print => print_summary_gdal_raster_dataset
 
     end type
 
@@ -411,7 +413,18 @@ module read_raster_mod
     !
     ! Interpolation from multi_raster
     !
-    subroutine get_xy_values_multi_raster(multi_raster, x, y, z, N, verbose, bilinear, band)
+    ! @param multi_raster a multi_raster object
+    ! @param x real array if size N, with x coordinates where we want z values
+    ! @param y real array if size N, with y coordinates where we want z values
+    ! @param z real array if size N -- on output will contain the z values
+    ! @param N -- as above
+    ! @param verbose -- integer 1 (true) or 0 (false)
+    ! @param bilinear -- integer 1 (true) or 0 (false)
+    ! @param band -- integer giving the raster band
+    ! @param na_below_limit -- treat 'z' values below this limit as NA. This can be useful if nodata values are not preserved exactly
+    ! (e.g. due to changes in precision), I have found this tricky to control in some cases.
+    !
+    subroutine get_xy_values_multi_raster(multi_raster, x, y, z, N, verbose, bilinear, band, na_below_limit)
         class(multi_raster_type), intent(in) :: multi_raster
         integer(ip), intent(in) :: N
         real(dp), intent(in) :: x(N), y(N)
@@ -419,8 +432,9 @@ module read_raster_mod
         integer(ip), optional, intent(in) :: verbose
         integer(ip), optional, intent(in) :: bilinear
         integer(ip), optional, intent(in) :: band
+        real(dp), optional, intent(in) :: na_below_limit
 
-        real(dp) :: empty_value, ll(2), ur(2), border_buffer(2), bx, by
+        real(dp) :: empty_value, ll(2), ur(2), border_buffer(2), bx, by, lower_limit_l
         integer(ip) :: i, j, verbose_l, bilinear_l, band_l
 
         if(present(verbose)) then
@@ -439,6 +453,12 @@ module read_raster_mod
             band_l = band
         else
             band_l = 1
+        end if
+
+        if(present(na_below_limit)) then
+            lower_limit_l = na_below_limit
+        else
+            lower_limit_l = -HUGE(1.0_dp)
         end if
 
         ! Flag for unset 'z'
@@ -471,12 +491,26 @@ module read_raster_mod
 
                 ! Set 'nodata' values back to empty values
                 if(z(i) == real(multi_raster%raster_datasets(j)%nodata_value, dp)) z(i) = empty_value
+                if(z(i) < lower_limit_l) z(i) = empty_value
 
             end do
 
         end do
 
     end subroutine
+
+    subroutine print_summary_gdal_raster_dataset(raster_data)
+        class(gdal_raster_dataset_type) :: raster_data
+
+        write(log_output_unit, *) 'inputFile   : ', trim(raster_data%inputFile)
+        write(log_output_unit, *) '  isOpen     : ', raster_data%isOpen
+        write(log_output_unit, *) '  xydim      : ', raster_data%xydim
+        write(log_output_unit, *) '  lowerleft  : ', raster_data%lowerleft
+        write(log_output_unit, *) '  upperright : ', raster_data%upperright
+        write(log_output_unit, *) '  dx         : ', raster_data%dx
+        write(log_output_unit, *) '  nodata     : ', raster_data%nodata_value
+
+    end subroutine 
 
     subroutine test_read_raster1()
         ! Test code for read_raster_mod

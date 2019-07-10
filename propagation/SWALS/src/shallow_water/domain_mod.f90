@@ -185,6 +185,8 @@ module domain_mod
         real(dp):: time = ZERO_dp
         ! dt computed from CFL condition (e.g. during flux computation)
         real(dp):: max_dt = ZERO_dp
+        ! Record dt the last time we ran update_U
+        real(dp) :: dt_last_update = ZERO_dp
         ! the time-step evolved by domain%evolve_one_step.
         real(dp):: evolve_step_dt = ZERO_dp
         ! the maximum allowed timestep [used to prevent high timesteps on dry domains]
@@ -218,7 +220,7 @@ module domain_mod
         !    the domain_type as well as time, x, y, see the interface below
         character(len=charlen):: boundary_type = ''
         procedure(boundary_fun), pointer, nopass:: boundary_function => NULL()
-        procedure(boundary_subroutine), pointer, nopass:: boundary_subroutine => default_boundary_subroutine
+        procedure(boundary_subroutine), pointer, nopass:: boundary_subroutine => NULL() 
         !
         ! Flag whether the boundary is exterior (TRUE) or interior (FALSE). 
         ! Order is North (1), East (2), South (3), West (4) 
@@ -226,7 +228,7 @@ module domain_mod
         ! with by communication. 
         ! The numerical boundary conditions (e.g. reflective, etc) are applied
         ! to the exterior boundaries
-        logical :: boundary_exterior(4) = [.TRUE., .TRUE., .TRUE., .TRUE.]
+        logical :: boundary_exterior(4) = .TRUE. 
 
         ! 
         ! Mass conservation tracking  -- store as double, even if dp is single prec.
@@ -1840,6 +1842,8 @@ TIMER_STOP('printing_stats')
         real(dp):: inv_cell_area_dt, depth, implicit_factor, dt_gravity, fs
         integer(ip):: j, i, kk
 
+        domain%dt_last_update = dt
+
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt)
         dt_gravity = dt * gravity
@@ -2525,14 +2529,6 @@ TIMER_STOP('printing_stats')
 
         !TIMER_STOP('boundary_update')
 
-    end subroutine
-
-    !
-    ! Stub routine to allow the user to not provide a boundary condition
-    !
-    subroutine default_boundary_subroutine(domain)
-        type(domain_type), intent(inout):: domain
-        ! Do nothing (default case)
     end subroutine
 
     !

@@ -128,7 +128,7 @@ module which_mod
 
         contains
 
-            pure function equality_function_default(i1, i2) result(is_equal)
+            function equality_function_default(i1, i2) result(is_equal)
                 integer(ip), intent(in) :: i1, i2
                 logical :: is_equal
 
@@ -282,6 +282,7 @@ module which_mod
 
         logical :: test_data(5)
         integer(ip), allocatable :: data_indices(:), values(:), lengths(:)
+        ! Deliberately include an array with length=0 for testing
         integer(ip) :: test_data_rle(10), test_data_rle0(0), test_data_rle1(1), i
 
         integer(ip), allocatable :: ar1(:,:), ar2(:,:)

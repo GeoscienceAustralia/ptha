@@ -30,7 +30,6 @@ module file_io_mod
 
         rewind(input_file_unit_no) ! Start of file
     end function
-
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     subroutine mkdir_p(output_folder, mkdir_status)
@@ -41,9 +40,11 @@ module file_io_mod
         integer(ip), optional, intent(out) :: mkdir_status
 
         character(len=charlen) :: mkdir_command, output_folder_name
-        integer(ip) :: local_status, i
-
-        output_folder_name = output_folder 
+        integer :: local_status, i
+#ifdef PGI_COMPILER
+        integer :: system
+#endif
+        output_folder_name = output_folder
 
         mkdir_command = 'mkdir -p ' // trim(output_folder_name)
 
@@ -52,16 +53,20 @@ module file_io_mod
         ! Therefore, we try up to 100 times in a loop
         do i = 1, 100
             !call system(trim(mkdir_command), status=local_status)
-            !local_status = system(trim(mkdir_command))
+#ifdef PGI_COMPILER
+            local_status = system(trim(mkdir_command))
+#else
             call execute_command_line(trim(mkdir_command), exitstat=local_status)
+#endif
             if(local_status == 0) exit
         end do
+
 
         if(present(mkdir_status)) then
             mkdir_status = local_status
         end if
 
-    end subroutine    
+    end subroutine
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

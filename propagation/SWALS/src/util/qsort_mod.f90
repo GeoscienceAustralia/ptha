@@ -36,10 +36,10 @@ module qsort_mod
         ! Call qsort from C
         subroutine qsort(array,elem_count,elem_size,compare) bind(C,name="qsort")
           import
-          type(c_ptr),value       :: array
-          integer(c_size_t),value :: elem_count
-          integer(c_size_t),value :: elem_size
-          type(c_funptr),value    :: compare !int(*compare)(const void *, const void *)
+          type(c_ptr), value       :: array
+          integer(c_size_t), value :: elem_count
+          integer(c_size_t), value :: elem_size
+          type(c_funptr), value    :: compare !int(*compare)(const void *, const void *)
         end subroutine qsort !standard C library qsort
 
     end interface

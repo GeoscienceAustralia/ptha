@@ -56,6 +56,8 @@
 
 #endif
 
+        domain%dt_last_update = dt
+
         !
         ! idea: U(i, j, UH) = UH_{i+1/2, j}
         !     : U(i, j, VH) = VH_{i, j+1/2}
