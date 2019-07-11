@@ -697,6 +697,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
         if(class(md) != 'list'){
             stop('Must provide named arguments with either "multidomain_dir" giving the multidomain directory, or a list "md" containing the output from get_all_recent_results for each domain in the multidomain')
         }
+        multidomain_dir = dirname(md[[1]]$output_folder)
     }
 
     for(j in 1:length(md)){
@@ -795,6 +796,8 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
     for(i in 1:length(merged_gauges$time_var)){
         if(all(is.na(merged_gauges$time_var[[i]]))) merged_gauges$time_var[[i]] = NA
     }
+
+    merged_gauges$multidomain_dir = multidomain_dir
 
     return(merged_gauges)
 }
