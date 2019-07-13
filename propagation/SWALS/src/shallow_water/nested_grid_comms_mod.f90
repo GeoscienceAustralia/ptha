@@ -675,7 +675,7 @@ module nested_grid_comms_mod
         real(dp) :: dU_di_p, dU_di_m, dU_dj_p, dU_dj_m, dep, uc, inv_stride
         integer(ip) :: imn, imx, jmn, jmx, iim1, iip1, jjm1, jjp1, dir_ip(4), stride(4), central_i, central_j
         integer(ip) :: ip1, jp1, im1, jm1, i1, j1, im2, jm2
-        integer(ip) :: my_domain_staggered_grid, neighbour_domain_staggered_grid
+        integer(ip) :: my_domain_staggered_grid, neighbour_domain_staggered_grid, jouter, jinner
         real(dp) :: gradient_scale, depth_min, depth_max, del
         real(dp) :: gradient_scale_x, gradient_scale_y, depth_min_x, depth_max_x, depth_min_y, depth_max_y
         logical :: equal_cell_ratios
@@ -774,7 +774,13 @@ module nested_grid_comms_mod
                 !
                 ! Send the volume-integrated U values
                 !
-                do j = jL, jU
+                !do j = jL, jU
+                !! Note -- here we aim to achieve the same as "do j = jL, jU", but the loop is split
+                !! so that a single openmp threat only ever updates an entry of two_way_nesting_comms%send_buffer.
+                !! This helps avoid openmp non-reproducibility due to ordering of additions
+                do jouter = jL, jU, inv_cell_ratios_ip(2)
+                do jinner = 0, inv_cell_ratios_ip(2)-1
+                    j = jouter + jinner
                
                     ! NOTE: Put this inside the loop, so we can collapse the j/k loops with OMP
                     kCounter = (k - kL) + 1
@@ -961,7 +967,9 @@ module nested_grid_comms_mod
                             end if
                         end do !i
                     end if
-                end do !j
+                !end do !j
+                end do !jouter
+                end do !jinner
             end do !k
             !$OMP END DO
         else

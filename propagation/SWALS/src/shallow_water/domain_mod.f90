@@ -335,8 +335,6 @@ module domain_mod
         ! (consider making these not type bound -- since the user should not
         !  really call them)
         procedure:: compute_depth_and_velocity => compute_depth_and_velocity
-        procedure:: get_bottom_edge_values => get_bottom_edge_values
-        procedure:: get_left_edge_values => get_left_edge_values
         procedure:: compute_fluxes => compute_fluxes
         !procedure:: compute_fluxes => compute_fluxes_vectorized !! Slower than un-vectorized version on GD home machine
         procedure:: update_U => update_U  ! Slower or faster, depending on wet/dry areas
@@ -481,7 +479,7 @@ TIMER_START('printing_stats')
         write(domain%logfile_unit, *) '        ', domain%time
         write(domain%logfile_unit, *) 'nsteps_advanced:'
         write(domain%logfile_unit, *) '        ', domain%nsteps_advanced
-        write(domain%logfile_unit, *) 'dt: '
+        write(domain%logfile_unit, *) 'max_allowed_dt: '
         write(domain%logfile_unit, *) '        ', domain%max_dt
         write(domain%logfile_unit, *) 'evolve_step_dt: '
         write(domain%logfile_unit, *) '        ', domain%evolve_step_dt
@@ -1091,65 +1089,18 @@ TIMER_STOP('printing_stats')
     end subroutine
 
     !
-    ! Extrapolation to cell edges on a regular mesh
+    ! Get the "gradient times dx" around U_local
+    ! @param U_local -- variable at the cell of interest, say x
+    ! @param U_lower -- variable at (x - dx)
+    ! @param U_upper -- variable at (x + dx)
+    ! @param theta -- limiter parameter
+    ! @param gradient_dx -- hold output
+    ! @param n -- length of each vector
     !
-    ! edge = U_local + limited_gradient * (edge-to-centroid-distance) * extrapolation_sign
-    !
-    ! @param U_local value of quantity at cell centre (e.g. index i,j)
-    ! @param U_lower value of quantity at 'lower' neighbouring cell centre (e.g. index i-1,j)
-    ! @param U_upper value of quantity at 'upper' neighbour cell centre (e.g. index i+1, j)
-    ! @param theta Parameter controlling the way that 'limited_gradient' is defined
-    ! @param extrapolation_sign real (+1 or -1) indicating whether to extrapolate forward (+1) or backward(-1)
-    ! @param edge_value output goes here
-    elemental subroutine extrapolate_edge_second_order(U_local, U_lower, U_upper, theta, &
-        extrapolation_sign, edge_value)
-        real(dp), intent(in):: U_local, U_lower, U_upper, theta 
-        real(dp), intent(in):: extrapolation_sign
-
-        real(dp), intent(out) :: edge_value
-        character(len=charlen), parameter :: gradient_type = 'standard' !'standard'
-        real(dp):: c, d, a, b
-
-        ! The following repeated 'if' statements seem to be optimized away when
-        ! gradient_type is a parameter.
-        
-        if(gradient_type == 'standard') then 
-            a = U_upper - U_local
-            b = U_local - U_lower
-            call minmod_sub(a, b, d) 
-            d = d * theta !* 1e+06 ! Limit on the local gradient
-            c = merge(ZERO_dp, HALF_dp * (U_upper - U_lower), d == ZERO_dp) 
-
-            ! NOTE: IF d /= 0, then clearly d, c have the same sign
-            ! We exploit this to avoid a further minmod call (which seems
-            ! expensive)
-
-            edge_value = U_local + HALF_dp * extrapolation_sign * &
-                merge(min(c, d), max(c, d), d > ZERO_dp)
-        end if
-
-        if(gradient_type == 'nolimit') then
-            ! Don't limit!
-            edge_value = U_local + extrapolation_sign * QUARTER_dp * (U_upper - U_lower)
-        end if
-
-        if(gradient_type == 'debug') then
-            edge_value = U_local 
-        end if
-
-    end subroutine
-
-    !
-    ! This is an 'explicitly vectorized' version of extrapolate_edge_second_order
-    !
-    ! Initial testing suggested this is faster than the original version
-    !
-    pure subroutine extrapolate_edge_second_order_vectorized(U_local, U_lower, U_upper, theta, &
-        extrapolation_sign, edge_value, n)
+    pure subroutine limited_gradient_dx_vectorized(U_local, U_lower, U_upper, theta, gradient_dx, n)
         integer(ip), intent(in):: n
         real(dp), intent(in):: U_local(n), U_lower(n), U_upper(n), theta(n) 
-        real(dp), intent(in):: extrapolation_sign(n)
-        real(dp), intent(out) :: edge_value(n)
+        real(dp), intent(out) :: gradient_dx(n)
 
         integer(ip) :: i, imn, imx, vsize
         character(len=charlen), parameter :: limiter_type = 'MC' !'Minmod2' !'Superbee_variant' ! 'MC'
@@ -1226,227 +1177,101 @@ TIMER_STOP('printing_stats')
 
             end if
 
-            edge_value(imn:imx) = U_local(imn:imx) + HALF_dp * extrapolation_sign(imn:imx) * b(1:vsize)
+            gradient_dx(imn:imx) = b(1:vsize)
         end do
             
 
     end subroutine
 
     !
-    ! Get bottom edge values for the j'th North-South row. Because this
-    ! is for a finite volume method, values at edges are discontinuous. The edge has a
-    ! 'positive' and 'negative' value, viewed from cell j and j-1 respectively
-    ! 
-    ! @param domain the domain
-    ! @param j get the j'th row
-    ! @param nx, ny domain number of cells along x and y directions
-    ! @param theta_wd_neg_B 'theta' parameter controlling extrapolation as viewed from cell on negative side of edge
-    ! @param theta_wd_pos_B 'theta' parameter controlling extrapolation as viewed from cell on positive side of edge
-    ! @param stage_neg_B stage edge value as viewed from cell on negative side of edge
-    ! @param stage_pos_B stage edge value as viewed from cell on positive side of edge
-    ! @param depth_neg_B depth edge value as viewed from cell on negative side of edge
-    ! @param depth_pos_B depth edge value as viewed from cell on positive side of edge
-    ! @param u_neg_B x-velocity edge value as viewed from cell on negative side of edge
-    ! @param u_pos_B x-velocity edge value as viewed from cell on positive side of edge
-    ! @param v_neg_B y-velocity edge value as viewed from cell on negative side of edge
-    ! @param v_pos_B y-velocity edge value as viewed from cell on positive side of edge
-    ! @param reuse_gradients If TRUE, we assume that the input stage_pos_B
-    !    can be used to quickly compute the gradient needed to derive the new stage_neg_B. This will be true
-    !    if the input value was created by a similar function call, with j being (j-1)
-    pure subroutine get_bottom_edge_values(domain, j, nx, ny, &
-        theta_wd_neg_B, theta_wd_pos_B, &
-        stage_neg_B, stage_pos_B, &
-        depth_neg_B, depth_pos_B, &
-        u_neg_B, u_pos_B, &
-        v_neg_B, v_pos_B, &
-        reuse_gradients)
+    ! Get the NS gradients for stage, depth, u-vel, v-vel, at row j
+    !
+    pure subroutine get_NS_limited_gradient_dx(domain, j, nx, ny, &
+            theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS)
 
-        class(domain_type), intent(in):: domain
-        integer(ip), intent(in) :: j, ny, nx
-        real(dp), intent(inout):: theta_wd_neg_B(nx), theta_wd_pos_B(nx)
-        real(dp), intent(inout):: depth_neg_B(nx), depth_pos_B(nx)
-        real(dp), intent(inout):: stage_neg_B(nx), stage_pos_B(nx)
-        real(dp), intent(inout):: u_neg_B(nx), u_pos_B(nx)
-        real(dp), intent(inout):: v_neg_B(nx), v_pos_B(nx)
-        logical, intent(in) :: reuse_gradients
+        class(domain_type), intent(in) :: domain
+        integer(ip), intent(in) :: j, nx, ny
+        real(dp), intent(inout) :: theta_wd_NS(nx), dstage_NS(nx), ddepth_NS(nx), du_NS(nx), dv_NS(nx)
 
-        real(dp) :: ones(nx), neg_ones(nx)
+        integer(ip) :: i
 
-        ! Vectors to use in elemental function
-        ones = ONE_dp
-        neg_ones = -ONE_dp
-        
-        ! Bottom edge, negative side
-        if(j > 2) then
-            if(reuse_gradients) then
-                ! Quick, cheap computation, assuming the input stage_pos_B value was previously
-                ! computed with j = j-1
-                stage_neg_B = 2.0_dp * domain%U(:,j-1,STG) - stage_pos_B
-                depth_neg_B = 2.0_dp * domain%depth(:,j-1) - depth_pos_B
-                u_neg_B = 2.0_dp * domain%velocity(:,j-1,UH) - u_pos_B
-                v_neg_B = 2.0_dp * domain%velocity(:,j-1,VH) - v_pos_B
-            else
-                ! Extrapolate using points j-2, j-1, j
-                ! Limiter in ANUGA-DE1-type style -- see discussion where limiter_coef1 etc are defined
-                !     
-                theta_wd_neg_B = limiter_coef4*( &
-                    (min(domain%depth(:,j-1), domain%depth(:,j-2), domain%depth(:,j)) &
-                        - minimum_allowed_depth) / &
-                    (max(domain%depth(:,j-1), domain%depth(:,j-2), domain%depth(:,j)) &
-                        + limiter_coef3*minimum_allowed_depth) &
-                    - limiter_coef1)
+        if(j > 1 .and. j < ny) then
+            ! Typical case
 
-                theta_wd_neg_B = max(domain%theta * min(ONE_dp, theta_wd_neg_B), ZERO_dp)
-
-                call extrapolate_edge_second_order_vectorized(domain%U(:, j-1,STG), &
-                    domain%U(:, j-2,STG), domain%U(:, j, STG), theta_wd_neg_B, ones, stage_neg_B, nx)
-                call extrapolate_edge_second_order_vectorized(domain%depth(:, j-1), &
-                    domain%depth(:, j-2), domain%depth(:, j), theta_wd_neg_B, ones, depth_neg_B, nx)
-                call extrapolate_edge_second_order_vectorized(domain%velocity(:, j-1, UH), &
-                    domain%velocity(:, j-2, UH), domain%velocity(:, j, UH), theta_wd_neg_B, ones, u_neg_B, nx)
-                call extrapolate_edge_second_order_vectorized(domain%velocity(:, j-1, VH), &
-                    domain%velocity(:, j-2, VH), domain%velocity(:, j, VH), theta_wd_neg_B, ones, v_neg_B, nx)
-            end if
-        else
-            ! j == 2, cannot extrapolate so just use the lower neighbour value (first order accurate)
-            theta_wd_neg_B = ZERO_dp
-            stage_neg_B = domain%U(:, j-1, STG)
-            depth_neg_B = domain%depth(:, j-1)
-            u_neg_B = domain%velocity(:,j-1, UH)
-            v_neg_B = domain%velocity(:,j-1, VH)
-        end if
-
-        ! Bottom edge, positive side
-        if (j < ny) then
-            ! Extrapolate using points j-1, j, j+1
-            theta_wd_pos_B = limiter_coef4*( &
-                (min(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1)) &
-                    - minimum_allowed_depth) / &
+            ! limiter coefficient
+            theta_wd_NS = limiter_coef4*( &
+                (min(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1)) - minimum_allowed_depth) / &
                 (max(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1)) &
                     + limiter_coef3*minimum_allowed_depth) &
                 - limiter_coef1)
-            theta_wd_pos_B = max(domain%theta*min(ONE_dp, theta_wd_pos_B), ZERO_dp)
-            
+            theta_wd_NS = max(domain%theta*min(ONE_dp, theta_wd_NS), ZERO_dp)
 
-            call extrapolate_edge_second_order_vectorized(domain%U(:, j,STG), &
-                domain%U(:, j-1,STG), domain%U(:, j+1, STG), theta_wd_pos_B, neg_ones, stage_pos_B, nx)
-            call extrapolate_edge_second_order_vectorized(domain%depth(:, j), &
-                domain%depth(:, j-1), domain%depth(:, j+1), theta_wd_pos_B, neg_ones, depth_pos_B, nx)
-            call extrapolate_edge_second_order_vectorized(domain%velocity(:, j, UH), &
-                domain%velocity(:, j-1,UH), domain%velocity(:, j+1, UH), theta_wd_pos_B, neg_ones, u_pos_B,nx)
-            call extrapolate_edge_second_order_vectorized(domain%velocity(:, j, VH), &
-                domain%velocity(:, j-1, VH), domain%velocity(:, j+1, VH), theta_wd_pos_B, neg_ones, v_pos_B,nx)
+            ! stage 
+            call limited_gradient_dx_vectorized(domain%U(:,j,STG), domain%U(:,j-1,STG), domain%U(:,j+1,STG), &
+                theta_wd_NS, dstage_NS, nx)
+            ! depth 
+            call limited_gradient_dx_vectorized(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1), &
+                theta_wd_NS, ddepth_NS, nx)
+            ! u velocity
+            call limited_gradient_dx_vectorized(domain%velocity(:,j,UH), domain%velocity(:,j-1, UH), &
+                domain%velocity(:,j+1, UH), theta_wd_NS, du_NS, nx)
+            ! v velocity
+            call limited_gradient_dx_vectorized(domain%velocity(:,j,VH), domain%velocity(:,j-1, VH), &
+                domain%velocity(:,j+1, VH), theta_wd_NS, dv_NS, nx)
+
         else
-            ! j == ny, cannot extrapolate, so use the j value (first order accurate)
-            theta_wd_pos_B = ZERO_dp
-            stage_pos_B = domain%U(:, j, STG)
-            depth_pos_B = domain%depth(:, j)
-            u_pos_B = domain%velocity(:, j, UH)
-            v_pos_B = domain%velocity(:, j, VH)
+            ! Border case -- all gradients = zero
+            theta_wd_NS = ZERO_dp
+            dstage_NS = ZERO_dp
+            ddepth_NS = ZERO_dp
+            du_NS = ZERO_dp
+            dv_NS = ZERO_dp
         end if
-
-
 
     end subroutine
 
     !
-    ! Get left edge values for the j'th North-South row. Because this
-    ! is for a finite volume method, values at edges are discontinuous. 
-    ! The edge has a 'positive' and 'negative' value, viewed from 
-    ! cell i and i-1 respectively
+    ! Get the EW gradients for stage, depth, u-vel, v-vel, at row j
     !
-    ! @param domain the domain
-    ! @param j get the j'th row
-    ! @param nx domain number of cells along x direction
-    ! @param theta_wd_neg_L 'theta' parameter controlling extrapolation as viewed from cell on negative side of edge
-    ! @param theta_wd_pos_L 'theta' parameter controlling extrapolation as viewed from cell on positive side of edge
-    ! @param stage_neg_L stage edge value as viewed from cell on negative side of edge
-    ! @param stage_pos_L stage edge value as viewed from cell on positive side of edge
-    ! @param depth_neg_L depth edge value as viewed from cell on negative side of edge
-    ! @param depth_pos_L depth edge value as viewed from cell on positive side of edge
-    ! @param u_neg_L x-velocity edge value as viewed from cell on negative side of edge
-    ! @param u_pos_L x-velocity edge value as viewed from cell on positive side of edge
-    ! @param v_neg_L y-velocity edge value as viewed from cell on negative side of edge
-    ! @param v_pos_L y-velocity edge value as viewed from cell on positive side of edge
-    !
-    pure subroutine get_left_edge_values(domain, j, nx, &
-        theta_wd_neg_L, theta_wd_pos_L, &
-        stage_neg_L, stage_pos_L, &
-        depth_neg_L, depth_pos_L, &
-        u_neg_L, u_pos_L, &
-        v_neg_L, v_pos_L)
+    pure subroutine get_EW_limited_gradient_dx(domain, j, nx, ny, &
+            theta_wd_EW, dstage_EW, ddepth_EW, du_EW, dv_EW)
 
-        class(domain_type), intent(in):: domain
-        integer(ip), intent(in) :: j, nx
-        real(dp), intent(out):: theta_wd_neg_L(nx), theta_wd_pos_L(nx)
-        real(dp), intent(out):: depth_neg_L(nx), depth_pos_L(nx)
-        real(dp), intent(out):: stage_neg_L(nx), stage_pos_L(nx)
-        real(dp), intent(out):: u_neg_L(nx), u_pos_L(nx)
-        real(dp), intent(out):: v_neg_L(nx), v_pos_L(nx)
+        class(domain_type), intent(in) :: domain
+        integer(ip), intent(in) :: j, nx, ny
+        real(dp), intent(inout) :: theta_wd_EW(nx), dstage_EW(nx), ddepth_EW(nx), du_EW(nx), dv_EW(nx)
 
-        real(dp) :: ones(nx-2), neg_ones(nx-2)
-
-        ones = 1.0_dp
-        neg_ones = -1.0_dp
-
-        ! Note: In practice the value in index (1) is not subsequently used for any variables
-
-        ! View from negative side of edge
-        theta_wd_neg_L(1) = ZERO_dp
-        theta_wd_neg_L(2:(nx-1)) = limiter_coef4 * ( &
-            (min(domain%depth(2:(nx-1), j), domain%depth(1:(nx-2), j), domain%depth(3:nx, j)) &
-                - minimum_allowed_depth) / &
-            (max(domain%depth(2:(nx-1), j), domain%depth(1:(nx-2), j), domain%depth(3:nx, j)) &
-                + limiter_coef3 * minimum_allowed_depth) &
+        ! limiter coefficient
+        theta_wd_EW(2:(nx-1)) = limiter_coef4*( &
+            (min(domain%depth(2:(nx-1),j), domain%depth(1:(nx-2),j), domain%depth(3:nx,j)) - minimum_allowed_depth) / &
+            (max(domain%depth(2:(nx-1),j), domain%depth(1:(nx-2),j), domain%depth(3:nx,j)) + &
+                limiter_coef3*minimum_allowed_depth) &
             - limiter_coef1)
-        theta_wd_neg_L(nx) = ZERO_dp
-        theta_wd_neg_L = max(domain%theta*min(ONE_dp, theta_wd_neg_L), ZERO_dp)
+        theta_wd_EW = max(domain%theta*min(ONE_dp, theta_wd_EW), ZERO_dp)
 
-        call extrapolate_edge_second_order_vectorized(domain%U(2:(nx-1), j, STG), &
-            domain%U(1:(nx-2), j, STG), domain%U(3:nx, j, STG), theta_wd_neg_L(2:(nx-1)), ones, stage_neg_L(3:nx),nx-2)
-        stage_neg_L(2) = domain%U(1, j, STG)
+        ! stage 
+        call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,STG), domain%U(1:(nx-2),j,STG), domain%U(3:nx,j,STG), &
+            theta_wd_EW(2:(nx-1)), dstage_EW(2:(nx-1)), nx)
+        dstage_EW(1) = ZERO_dp
+        dstage_EW(nx) = ZERO_dp
 
-        call extrapolate_edge_second_order_vectorized(domain%depth(2:(nx-1), j), &
-            domain%depth(1:(nx-2), j), domain%depth(3:nx, j), theta_wd_neg_L(2:(nx-1)), ones, depth_neg_L(3:nx),nx-2)
-        depth_neg_L(2) = domain%depth(1, j)
+        ! depth 
+        call limited_gradient_dx_vectorized(domain%depth(2:(nx-1),j), domain%depth(1:(nx-2),j), domain%depth(3:nx,j), &
+            theta_wd_EW(2:(nx-1)), ddepth_EW(2:(nx-1)), nx)
+        ddepth_EW(1) = ZERO_dp
+        ddepth_EW(nx) = ZERO_dp
 
-        call extrapolate_edge_second_order_vectorized(domain%velocity(2:(nx-1), j, UH), &
-            domain%velocity(1:(nx-2), j, UH), domain%velocity(3:nx, j, UH), theta_wd_neg_L(2:(nx-1)), ones, u_neg_L(3:nx),nx-2)
-        u_neg_L(2) = domain%velocity(1, j, UH)
+        ! u velocity
+        call limited_gradient_dx_vectorized(domain%velocity(2:(nx-1),j,UH), domain%velocity(1:(nx-2),j,UH), &
+            domain%velocity(3:nx,j, UH), theta_wd_EW(2:(nx-1)), du_EW(2:(nx-1)), nx)
+        du_EW(1) = ZERO_dp
+        du_EW(nx) = ZERO_dp
 
-        call extrapolate_edge_second_order_vectorized(domain%velocity(2:(nx-1), j, VH), &
-            domain%velocity(1:(nx-2), j, VH), domain%velocity(3:nx, j, VH), theta_wd_neg_L(2:(nx-1)), ones, v_neg_L(3:nx),nx-2)
-        v_neg_L(2) = domain%velocity(1, j, VH)
+        ! u velocity
+        call limited_gradient_dx_vectorized(domain%velocity(2:(nx-1),j,VH), domain%velocity(1:(nx-2),j,VH), &
+            domain%velocity(3:nx,j,VH), theta_wd_EW(2:(nx-1)), dv_EW(2:(nx-1)), nx)
+        dv_EW(1) = ZERO_dp
+        dv_EW(nx) = ZERO_dp
 
-
-        ! View from positive side of edge
-        ! Rather than call 'extrapolate_edge_...', we can make use of the
-        ! symmetry to get the result quickly.
- 
-        theta_wd_pos_L = theta_wd_neg_L
-
-        !call extrapolate_edge_second_order_vectorized(domain%U(2:(nx-1), j, STG), &
-        !    domain%U(1:(nx-2), j, STG), domain%U(3:nx, j, STG), theta_wd_pos_L(2:(nx-1)), neg_ones, stage_pos_L(2:(nx-1)), nx-2)
-        stage_pos_L(2:(nx-1)) = 2.0_dp * domain%U(2:(nx-1),j,STG) - stage_neg_L(3:nx)
-        stage_pos_L(nx) = domain%U(nx, j, STG)
-
-        !call extrapolate_edge_second_order_vectorized(domain%depth(2:(nx-1), j), &
-        !    domain%depth(1:(nx-2), j), domain%depth(3:nx, j), theta_wd_pos_L(2:(nx-1)), neg_ones, depth_pos_L(2:(nx-1)), nx-2)
-        depth_pos_L(2:(nx-1)) = 2.0_dp * domain%depth(2:(nx-1),j) - depth_neg_L(3:nx)
-        depth_pos_L(nx) = domain%depth(nx, j)
-       
-        !call extrapolate_edge_second_order_vectorized(domain%velocity(2:(nx-1), j, UH), &
-        !    domain%velocity(1:(nx-2), j, UH), domain%velocity(3:nx, j, UH), theta_wd_pos_L(2:(nx-1)), &
-        !    neg_ones, u_pos_L(2:(nx-1)), nx-2)
-        u_pos_L(2:(nx-1)) = 2.0_dp * domain%velocity(2:(nx-1),j, UH) - u_neg_L(3:nx)
-        u_pos_L(nx) = domain%velocity(nx, j, UH)
-         
-        !call extrapolate_edge_second_order_vectorized(domain%velocity(2:(nx-1), j, VH), &
-        !    domain%velocity(1:(nx-2), j, VH), domain%velocity(3:nx, j, VH), theta_wd_pos_L(2:(nx-1)), neg_ones, &
-        !    v_pos_L(2:(nx-1)), nx-2)
-        v_pos_L(2:(nx-1)) = 2.0_dp * domain%velocity(2:(nx-1),j, VH) - v_neg_L(3:nx)
-        v_pos_L(nx) = domain%velocity(nx, j, VH)
-        
     end subroutine
 
     !
@@ -2683,6 +2508,7 @@ TIMER_STOP('evolve_one_step')
         n_ext = domain%exterior_cells_width
         domain_volume = ZERO_dp
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, n_ext) REDUCTION(+:domain_volume)
+        domain_volume = ZERO_dp
         !$OMP DO SCHEDULE(STATIC)
         do j = (1+n_ext), (domain%nx(2) - n_ext) 
             ! Be careful about precision
@@ -4499,47 +4325,47 @@ TIMER_STOP('nesting_flux_correction')
 
         ! Basic extrapolation tests, positive side
         extrapolation_sign=1.0_dp
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = 0.5_dp * (U + U_upper)
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U + HALF_dp*extrapolation_sign*answer, __LINE__)
 
         ! As above, negative side
         extrapolation_sign = -1.0_dp
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = 0.5_dp * (U + U_lower)
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U + HALF_dp*extrapolation_sign*answer, __LINE__)
 
         ! As above, negative side, reduced theta
         theta = 0.5_dp
         extrapolation_sign = -1.0_dp
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = 0.5_dp * U + 0.5_dp*0.5_dp * (U + U_lower)
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
         ! As above, negative side, zero theta
         theta = 0.0_dp
         extrapolation_sign = 1.0_dp
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = 1.0_dp * U + 0.0_dp*0.5_dp * (U + U_lower)
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
         ! Local min.
         theta = 4.0_dp
         extrapolation_sign = 1.0_dp
         U_lower = U + 2.0_dp
         U_upper = U + 3.0_dp
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = U 
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
         ! Local max.
         theta = 4.0_dp
         U_lower = U - 2.0_dp
         U_upper = U - 3.0_dp
         extrapolation_sign = -1.0_dp
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = U 
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
         ! Limited gradients
         ! 
@@ -4548,20 +4374,20 @@ TIMER_STOP('nesting_flux_correction')
         U_upper = U + 3.0_dp
         extrapolation_sign = 1.0_dp
         theta = 1.0_dp ! Limited-gradient = 1
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = U + 0.5_dp * 1.0_dp
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
         theta = 1.5_dp ! Limited-gradient = 1.5
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = U + 0.5_dp * 1.5_dp
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
         
         extrapolation_sign = -1.0_dp ! As above, negative side
-        call extrapolate_edge_second_order_vectorized(U, U_lower, U_upper, theta, extrapolation_sign, answer, N)
+        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
         desired_answer = U - 0.5_dp * 1.5_dp
-        call assert_equal_within_tol(desired_answer, answer, __LINE__)
+        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
         contains
 

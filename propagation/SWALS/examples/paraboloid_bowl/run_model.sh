@@ -4,6 +4,12 @@ rm -r ./OUTPUTS
 # Build the code
 make -B -f make_paraboloid_bowl > build_outfile.log
 # Run the job
-./paraboloid_bowl > outfile.log
+./paraboloid_bowl '' > outfile.log
 # Plot it and report tests
 Rscript plot.R
+
+#
+# New test -- check we get the same result with openmp and mpi
+#
+source parallel_reproduce.sh
+Rscript parallel_reproduce_check.R

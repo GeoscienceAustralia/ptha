@@ -1929,7 +1929,7 @@ module multidomain_mod
             write(log_output_unit, *) '        ', md%domains(k)%time
             write(log_output_unit, *) 'nsteps_advanced:'
             write(log_output_unit, *) '        ', md%domains(k)%nsteps_advanced
-            write(log_output_unit, *) 'dt: '
+            write(log_output_unit, *) 'max_allowed_dt: '
             write(log_output_unit, *) '        ', md%domains(k)%max_dt
             write(log_output_unit, *) 'evolve_step_dt: '
             write(log_output_unit, *) '        ', md%domains(k)%evolve_step_dt
@@ -1999,7 +1999,7 @@ module multidomain_mod
         end if
 
 #ifdef COARRAY
-        if(sync_before_local) then
+        if(sync_before_local .and. ni > 1) then
             TIMER_START('sync_before_recv')
             sync images(linked_p2p_images)
             TIMER_STOP('sync_before_recv')
@@ -2085,7 +2085,7 @@ module multidomain_mod
         TIMER_STOP('receive_multidomain_halos')
 
 #ifdef COARRAY
-        if(sync_after_local) then
+        if(sync_after_local .and. ni > 1) then
             TIMER_START('sync_after_recv')
             sync images(linked_p2p_images)
             TIMER_STOP('sync_after_recv')
@@ -2154,11 +2154,17 @@ module multidomain_mod
 #ifdef TIMER
             call md%domains(j)%timer%timer_start('send_halos')
 #endif
+            !! Seems faster to do the openmp inside "process_data_to_send"?
+            !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, j, send_to_recv_buffer_local)
+            !!$OMP DO SCHEDULE(DYNAMIC)
             do i = 1, size(md%domains(j)%nesting%send_comms)
 
                 call md%domains(j)%nesting%send_comms(i)%process_data_to_send(md%domains(j)%U)
                 call md%domains(j)%nesting%send_comms(i)%send_data(send_to_recv_buffer=send_to_recv_buffer_local)
             end do
+            !!$OMP END DO
+            !!$OMP END PARALLEL
+
 #ifdef TIMER
             call md%domains(j)%timer%timer_end('send_halos')
 #endif

@@ -45,21 +45,21 @@
     ! Option to use experimental non-conservative pressure gradient term (with .false.)
     logical, parameter :: flux_conservative_pressure = .true.
     
-    ! Bottom edge values on 'positive' and 'negative' side (i.e. viewed from j and j-1 respectively)
-    ! theta_wd controls the limiting
-    real(dp) :: theta_wd_neg_B(domain%nx(1)), theta_wd_pos_B(domain%nx(1)), &
-        stage_neg_B(domain%nx(1)), stage_pos_B(domain%nx(1)), &
-        depth_neg_B(domain%nx(1)), depth_pos_B(domain%nx(1)), &
-        u_neg_B(domain%nx(1)), u_pos_B(domain%nx(1)), &
-        v_neg_B(domain%nx(1)), v_pos_B(domain%nx(1))
-   
-    ! Left edge values on 'positive' and 'negative' side (i.e. viewed from i and i-1 respectively) 
-    ! theta_wd controls the limiting
-    real(dp) :: theta_wd_neg_L(domain%nx(1)), theta_wd_pos_L(domain%nx(1)), &
-        stage_neg_L(domain%nx(1)), stage_pos_L(domain%nx(1)), &
-        depth_neg_L(domain%nx(1)), depth_pos_L(domain%nx(1)), &
-        u_neg_L(domain%nx(1)), u_pos_L(domain%nx(1)), &
-        v_neg_L(domain%nx(1)), v_pos_L(domain%nx(1))
+    ! NS change over a cell of stage/depth/u/v, and the "theta" coefficient controlling limiting
+    ! Store values for row 'j' and row 'j-1'
+    real(dp) :: dstage_NS_lower(domain%nx(1)), dstage_NS(domain%nx(1)), & 
+        ddepth_NS_lower(domain%nx(1)), ddepth_NS(domain%nx(1)), & 
+        du_NS_lower(domain%nx(1)), du_NS(domain%nx(1)), & 
+        dv_NS_lower(domain%nx(1)), dv_NS(domain%nx(1)), &
+        theta_wd_NS_lower(domain%nx(1)), theta_wd_NS(domain%nx(1))
+
+    ! EW change over a cell of stage/depth/u/v, and the "theta" coefficient controlling limiting
+    ! Only store values for row 'j'
+    real(dp) :: dstage_EW(domain%nx(1)), & 
+        ddepth_EW(domain%nx(1)), & 
+        du_EW(domain%nx(1)), & 
+        dv_EW(domain%nx(1)), &
+        theta_wd_EW(domain%nx(1))
 
     real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1)), explicit_source_im1_work(domain%nx(1))
 
@@ -129,20 +129,26 @@
         ! Get bed at j-1 (might improve cache access) 
         bed_j_minus_1 = domain%U(:,j-1,ELV)
 
-        ! Get bottom edge values
-        call get_bottom_edge_values(domain, j, nx, ny, &
-            theta_wd_neg_B, theta_wd_pos_B, &
-            stage_neg_B, stage_pos_B, &
-            depth_neg_B, depth_pos_B, &
-            u_neg_B, u_pos_B, &
-            v_neg_B, v_pos_B, &
-            reuse_gradients = (jlast == j-1))
+        ! Get the NS change in stage, depth, u-vel, v-vel, at the row 'j-1'
+        if(jlast /= j-1) then
+            call get_NS_limited_gradient_dx(domain, j-1, nx, ny, &
+                theta_wd_NS_lower, dstage_NS_lower, ddepth_NS_lower, du_NS_lower, dv_NS_lower)
+        else
+            dstage_NS_lower = dstage_NS
+            ddepth_NS_lower = ddepth_NS
+            du_NS_lower = du_NS
+            dv_NS_lower = dv_NS
+            theta_wd_NS_lower = theta_wd_NS
+        end if
+
+        ! Get the NS change in stage, depth, u-vel, v-vel, at the row 'j'
+        call get_NS_limited_gradient_dx(domain, j, nx, ny, &
+            theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS)
+
         ! By setting jlast, we allow the above subroutine call to reuse
         ! limited gradient values from the previous loop iterate
         jlast = j 
 
-        ! NOTE: much of the loop below can be vectorized, but care will be needed
-        ! for the max_dt_inv term
         !$OMP SIMD
         do i = 2, nx
             !
@@ -154,14 +160,14 @@
             !
 
             ! Negative/positive bottom edge values
-            stage_neg = stage_neg_B(i)
-            stage_pos = stage_pos_B(i)
-            depth_neg = depth_neg_B(i)
-            depth_pos = depth_pos_B(i)
-            u_neg = u_neg_B(i)
-            u_pos = u_pos_B(i)
-            v_neg = v_neg_B(i)
-            v_pos = v_pos_B(i)
+            stage_neg = domain%U(i, j-1, STG) + HALF_dp * dstage_NS_lower(i)
+            stage_pos = domain%U(i, j  , STG) - HALF_dp * dstage_NS(i)
+            depth_neg = domain%depth(i, j-1) + HALF_dp * ddepth_NS_lower(i) 
+            depth_pos = domain%depth(i, j  ) - HALF_dp * ddepth_NS(i)
+            u_neg = domain%velocity(i, j-1, UH) + HALF_dp * du_NS_lower(i)
+            u_pos = domain%velocity(i, j  , UH) - HALF_dp * du_NS(i)
+            v_neg = domain%velocity(i, j-1, VH) + HALF_dp * dv_NS_lower(i)
+            v_pos = domain%velocity(i, j  , VH) - HALF_dp * dv_NS(i)
             depth_neg_c = domain%depth(i, j-1)
             depth_pos_c = domain%depth(i, j)
 
@@ -310,31 +316,33 @@
 
         end do
 
-    !
-    !
-    ! EW Flux computation
-    !
-    !
-        ! Get left edge values
-        call get_left_edge_values(domain, j, nx, &
-            theta_wd_neg_L, theta_wd_pos_L, &
-            stage_neg_L, stage_pos_L, &
-            depth_neg_L, depth_pos_L, &
-            u_neg_L, u_pos_L, &
-            v_neg_L, v_pos_L)
+        !
+        !
+        ! EW Flux computation
+        !
+        !
+
+        ! Compute flux_EW(i,j) = flux(i-1/2,j) 
+        !
+        ! Cell i,j has East-West flux(i+1/2,j) at flux_EW index i+1,j
+        !          and East-West flux(i-1/2,j) at flux_EW index i,j
+
+        ! Get EW change in stage, depth, u, v, as well as the "theta" limiter coefficient
+        call get_EW_limited_gradient_dx(domain, j, nx, ny, &
+            theta_wd_EW, dstage_EW, ddepth_EW, du_EW, dv_EW)
 
         !$OMP SIMD
         do i = 2, nx
 
             ! left edge variables 
-            stage_neg = stage_neg_L(i)
-            stage_pos = stage_pos_L(i)
-            depth_neg = depth_neg_L(i)
-            depth_pos = depth_pos_L(i)
-            u_neg = u_neg_L(i)
-            u_pos = u_pos_L(i)
-            v_neg = v_neg_L(i)
-            v_pos = v_pos_L(i)
+            stage_neg = domain%U(i-1,j,STG) + HALF_dp * dstage_EW(i-1)
+            stage_pos = domain%U(i  ,j,STG) - HALF_dp * dstage_EW(i)
+            depth_neg = domain%depth(i-1,j) + HALF_dp * ddepth_EW(i-1)
+            depth_pos = domain%depth(i  ,j) - HALF_dp * ddepth_EW(i)
+            u_neg = domain%velocity(i-1,j,UH) + HALF_dp * du_EW(i-1)
+            u_pos = domain%velocity(i  ,j,UH) - HALF_dp * du_EW(i)
+            v_neg = domain%velocity(i-1,j,VH) + HALF_dp * dv_EW(i-1)
+            v_pos = domain%velocity(i  ,j,VH) - HALF_dp * dv_EW(i)
             depth_neg_c = domain%depth(i-1, j)
             depth_pos_c = domain%depth(i, j)
 

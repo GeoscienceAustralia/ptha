@@ -114,9 +114,14 @@ program run_paraboloid_basin
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%timestepping_method = 'rk2' !'midpoint'
+    !md%domains(1)%theta = 1.0_dp
+
+    ! Splitting the domain the same way, irrespective of np, improves reproducibility
+    !md%load_balance_file = 'load_balance_partition.txt'
+    call get_command_argument(1, md%load_balance_file)
 
     ! Allocate domains and prepare comms
-    call md%setup()
+    call md%setup(extra_halo_buffer=0_ip)
 
     ! Set initial conditions
     do j = 1, size(md%domains)
