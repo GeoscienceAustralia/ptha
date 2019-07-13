@@ -5,6 +5,7 @@ program unit_tests
     use spherical_mod, only: test_spherical_mod
     use points_in_poly_mod, only: test_points_in_poly_mod
     use which_mod, only: test_which
+    use burn_into_grid_mod, only: test_burn_into_grid_mod
     use point_gauge_mod, only: test_point_gauge_mod
     use linear_interpolator_mod, only: test_linear_interpolator_mod
     use coarray_utilities_mod, only: test_coarray_utilities_mod
@@ -22,15 +23,18 @@ program unit_tests
     print*, 'Testing spherical mod'
     call test_spherical_mod()
 
+    print*, 'Testing burn_into_grid_mod'
+    call test_burn_into_grid_mod()
+
     print*, 'Testing points_in_poly'
     call test_points_in_poly_mod()
-
-    print*, 'Testing which'
-    call test_which()
 
     print*, 'Testing qsort'
     call test_qsort_mod()
     
+    print*, 'Testing which'
+    call test_which()
+
     print*, 'Testing point_gauge_mod'
     call test_point_gauge_mod()
 
