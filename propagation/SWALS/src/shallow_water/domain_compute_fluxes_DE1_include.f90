@@ -55,11 +55,8 @@
 
     ! EW change over a cell of stage/depth/u/v, and the "theta" coefficient controlling limiting
     ! Only store values for row 'j'
-    real(dp) :: dstage_EW(domain%nx(1)), & 
-        ddepth_EW(domain%nx(1)), & 
-        du_EW(domain%nx(1)), & 
-        dv_EW(domain%nx(1)), &
-        theta_wd_EW(domain%nx(1))
+    real(dp) :: dstage_EW(domain%nx(1)), ddepth_EW(domain%nx(1)), du_EW(domain%nx(1)), & 
+        dv_EW(domain%nx(1)), theta_wd_EW(domain%nx(1))
 
     real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1)), explicit_source_im1_work(domain%nx(1))
 
