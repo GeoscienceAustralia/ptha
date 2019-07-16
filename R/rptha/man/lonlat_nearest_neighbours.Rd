@@ -29,6 +29,6 @@ spherical (longitude, latitude) coordinates.
    lonlat1 = matrix(cbind(c(0,0), c(10, 5), c(-10, 5), c(190, 0)), ncol=2, byrow=TRUE)
    lonlat2 = matrix(cbind(c(0.5,0.5), c(0,5), c(-180,0)), ncol=2, byrow=TRUE)
    index_match = lonlat_nearest_neighbours(lonlat1, lonlat2)
-   stopifnot(all(index_match = c(1,2,2,3)))
+   stopifnot(all(index_match == c(1,2,2,3)))
 
 }
