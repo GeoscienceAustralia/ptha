@@ -537,15 +537,17 @@ lonlat2xyz<-function(p0, r = 6378137){
 
 #' Nearest neighbours on the sphere
 #' 
-#' For each point in 'lonlat1', find the nearest point on 'lonlat2', assuming
+#' For each point in 'lonlat1', find the k nearest points in 'lonlat2', assuming
 #' spherical (longitude, latitude) coordinates.
 #'
-#' @param lonlat1 2 column matrix with lon,lat coordinates -- we want to find the neigbour
+#' @param lonlat1 2 column matrix with lon,lat coordinates -- we want to find the neighbour(s)
 #' nearest to these points
 #' @param lonlat2 2 column matrix with lon,lat coordiantes. We will return the indices of points
 #' in this matrix which are nearest points in lonlat1
-#' @return Vector with length == length(lonlat1[,1]), and value giving an integer index into
-#' lonlat2
+#' @param k optional integer, return the 'k' nearest neighbours. By default (k=NULL), return a vector 
+#' with the nearest neighbours. Otherwise, return a matrix with the k nearest neighbours in k columns. Note that if k=1
+#' it returns a 1-column matrix, whereas if k=NULL it returns a vector (for backwards compatibility)
+#' @return A vector (or matrix if k is not NULL) giving an integer index into lonlat2 with the nearest neighbours. 
 #' @export
 #' @examples
 #'    # Find points in lonlat2 nearest to points in lonlat1
@@ -554,14 +556,26 @@ lonlat2xyz<-function(p0, r = 6378137){
 #'    index_match = lonlat_nearest_neighbours(lonlat1, lonlat2)
 #'    stopifnot(all(index_match = c(1,2,2,3)))
 #'
-lonlat_nearest_neighbours<-function(lonlat1, lonlat2){
+lonlat_nearest_neighbours<-function(lonlat1, lonlat2, k=NULL){
+
+    if(!is.null(k)){
+        k_local = k
+    }else{
+        k_local = 1
+    }
 
     xyz1 = lonlat2xyz(lonlat1)
     xyz2 = lonlat2xyz(lonlat2)
 
-    output = knnx.index(data=xyz2, query=xyz1, k=1, algorithm = 'kd_tree')
+    output = knnx.index(data=xyz2, query=xyz1, k=k_local, algorithm = 'kd_tree')
 
-    return(output[,1])
+    # In the past we only supported k=1, and had the function return a vector
+    # For backwards compatibility, keep returning a vector if the argument k is not supplied
+    if(is.null(k)){
+        return(output[,1])
+    }else{
+        return(output)
+    }
 }
 
 #' Find the 'straight line' distance of point p0 to p1, i.e. the Euclidean

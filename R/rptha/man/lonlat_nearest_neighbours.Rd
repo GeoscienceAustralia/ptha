@@ -4,21 +4,24 @@
 \alias{lonlat_nearest_neighbours}
 \title{Nearest neighbours on the sphere}
 \usage{
-lonlat_nearest_neighbours(lonlat1, lonlat2)
+lonlat_nearest_neighbours(lonlat1, lonlat2, k = NULL)
 }
 \arguments{
-\item{lonlat1}{2 column matrix with lon,lat coordinates -- we want to find the neigbour
+\item{lonlat1}{2 column matrix with lon,lat coordinates -- we want to find the neighbour(s)
 nearest to these points}
 
 \item{lonlat2}{2 column matrix with lon,lat coordiantes. We will return the indices of points
 in this matrix which are nearest points in lonlat1}
+
+\item{k}{optional integer, return the 'k' nearest neighbours. By default (k=NULL), return a vector 
+with the nearest neighbours. Otherwise, return a matrix with the k nearest neighbours in k columns. Note that if k=1
+it returns a 1-column matrix, whereas if k=NULL it returns a vector (for backwards compatibility)}
 }
 \value{
-Vector with length == length(lonlat1[,1]), and value giving an integer index into
-lonlat2
+A vector (or matrix if k is not NULL) giving an integer index into lonlat2 with the nearest neighbours.
 }
 \description{
-For each point in 'lonlat1', find the nearest point on 'lonlat2', assuming
+For each point in 'lonlat1', find the k nearest points in 'lonlat2', assuming
 spherical (longitude, latitude) coordinates.
 }
 \examples{
