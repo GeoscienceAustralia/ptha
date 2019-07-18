@@ -738,9 +738,30 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
 
         # Check if the gauges are all in their priority domain. If so, we can
         # avoid an expensive computation to derive this info
-        all_gauges_are_priority = all(unlist(lapply(md, f<-function(x) x$gauges$priority_gauges_only)))
+        all_domain_gauges_are_priority <-function(x){
+            out = FALSE
+            if(length(x) <= 1){
+                # No md output -- something is wrong
+                stop('Error in merge_multidomain_gauges: There is an empty NULL domain in the md list')
+            }else{
+                if( (length(x$gauges) == 0 ) | (class(x$gauges) == 'try-error')){
+                    # No gauges -- no problem
+                    out = TRUE
+                }else{
+                    # This will be FALSE for older files
+                    if(x$gauges$priority_gauges_only) out = TRUE
+                }
+            }
+            return(out)
+        }
+        all_gauges_are_priority = all(unlist(lapply(md, all_domain_gauges_are_priority)))
+
         if(!all_gauges_are_priority){
-            # In this case, we will need to use the is_priority_domain data to search the gauges
+            # In this case, we will need to use the is_priority_domain data to
+            # search the gauges.
+            # This is necessary for older SWALS gauge netcdf files which did
+            # not record whether all gauges were priority (and in general they
+            # were not).
             for(j in 1:length(md)){
                 md[[j]]$is_priority_domain = try(
                     get_gridded_variable(var='is_priority_domain', output_folder=md[[j]]$output_folder), 
