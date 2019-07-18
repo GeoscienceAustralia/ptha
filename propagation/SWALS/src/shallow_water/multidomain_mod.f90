@@ -151,6 +151,9 @@ module multidomain_mod
 
         ! Domain volume tracking
         real(force_double), allocatable :: volume_initial(:), volume(:)
+        ! Work array which permits an openmp-reproducible volume summation
+        ! (since for standard REDUCE(+: variable), the summation order may change).
+        real(force_double), allocatable :: volume_work(:)
 
         ! Output directory
         character(len=charlen) :: output_basedir = default_output_folder
@@ -1396,19 +1399,34 @@ module multidomain_mod
             kend = size(md%domains)
         end if
 
+        ! Allocate the volume_work variable if it is not already allocated.
+        ! Ensure its length = maximum of domain%nx(2) over all domains
+        ! Note this loop will do nontrivial work only once
+        do k = kstart, kend
+
+            ! Quick exit
+            if(allocated(md%volume_work)) then
+                if(size(md%volume_work) > md%domains(k)%nx(2)) cycle
+            end if
+
+            ! Either the variable is unallocated, or it is too small
+            if(allocated(md%volume_work)) deallocate(md%volume_work)
+            allocate(md%volume_work(md%domains(k)%nx(2)))
+        end do
+
+
         vol = 0.0_force_double
 
         do k = kstart, kend 
    
-            vol_k = 0.0_force_long_double
+            md%volume_work = 0.0_force_long_double
 
             n_ext = md%domains(k)%exterior_cells_width
             ny = md%domains(k)%nx(2)
             nx = md%domains(k)%nx(1)
             ! Integrate over the area with this domain = priority domain, which is not in periodic regions.
             ! Be careful about precision ( see calls to real(...., force_double) )
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, n_ext, nx, ny, ti, k) REDUCTION(+:vol_k)
-            vol_k = 0.0_force_long_double
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, n_ext, nx, ny, ti, k)
             !$OMP DO SCHEDULE(STATIC)
             do j = (n_ext+1), ny - n_ext
                 local_sum = sum(&
@@ -1421,12 +1439,13 @@ module multidomain_mod
                         (md%domains(k)%x( (n_ext+1):(nx-n_ext)) > md%periodic_xs(1)) .and.&
                         (md%domains(k)%x( (n_ext+1):(nx-n_ext)) < md%periodic_xs(2))))
                 ! Avoid periodic regions 
-                if(md%domains(k)%y(j) < md%periodic_ys(1) .or. md%domains(k)%y(j) > md%periodic_ys(2)) local_sum = 0.0_dp
-                vol_k = vol_k + real(md%domains(k)%area_cell_y(j) * local_sum, force_long_double)
+                if(md%domains(k)%y(j) < md%periodic_ys(1) .or. md%domains(k)%y(j) > md%periodic_ys(2)) local_sum = 0.0_force_double
+                md%volume_work(j) = real(md%domains(k)%area_cell_y(j) * local_sum, force_long_double)
             end do 
             !$OMP END DO
             !$OMP END PARALLEL
 
+            vol_k = sum(md%volume_work)
             md%volume(k) = vol_k
             vol = vol + vol_k
 
@@ -1868,11 +1887,6 @@ module multidomain_mod
                 write(log_output_unit,*) 'domain ', k
             end if
 
-            ! Reset stats of interest
-            maxstage = -HUGE(1.0_dp)
-            maxspeed = 0.0_dp ! speed is always > 0
-            minstage = HUGE(1.0_dp)
-            minspeed = 0.0_dp ! speed is always > 0
 
             ! If nesting is occurring, the above stats are only computed
             ! in the priority domain area
@@ -1882,7 +1896,24 @@ module multidomain_mod
                 is_nesting = .false.
             end if
 
-            ! Compute stats of interest
+            ! Reset stats of interest
+            maxstage = -HUGE(1.0_dp)
+            maxspeed = 0.0_dp ! speed is always > 0
+            minstage = HUGE(1.0_dp)
+            minspeed = 0.0_dp ! speed is always > 0
+
+            ! Compute stats of interest in parallel
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(is_nesting, md, k), &
+            !$OMP REDUCTION(max: maxspeed) REDUCTION(min: minspeed), &
+            !$OMP REDUCTION(max: maxstage) REDUCTION(min: minstage)
+
+            ! Reset stats of interest
+            maxstage = -HUGE(1.0_dp)
+            maxspeed = 0.0_dp ! speed is always > 0
+            minstage = HUGE(1.0_dp)
+            minspeed = 0.0_dp ! speed is always > 0
+
+            !$OMP DO SCHEDULE(STATIC)
             do j = 2, md%domains(k)%nx(2) - 1
                 do i = 2, md%domains(k)%nx(1) - 1
     
@@ -1911,6 +1942,8 @@ module multidomain_mod
 
                 end do
             end do
+            !$OMP END DO
+            !$OMP END PARALLEL
 
             maxspeed = sqrt(maxspeed)
             minspeed = sqrt(minspeed)

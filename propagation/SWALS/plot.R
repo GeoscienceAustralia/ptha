@@ -909,46 +909,14 @@ partition_into_k<-function(vals, k){
     return(list(inds, sums))
 }
 
-# Partition a set into 'k' groups with roughly equal sum.
-#
-# Furthermore we assume the 'vals' are each associated with
-# some vals_group, and the partitioning tries to make the sums
-# rougly equal also within the vals_groups. 
-#
-# To make it concrete: suppose our 'vals' give model run-times for a
-# partitioned domain.  The 'vals_groups' might be chosen to give the
-# "domain_index" of each, in which case all of the 'k' groups would have
-# approximately equal values of 'vals' WITHIN each domain_index. 
-#
-#
-# A practical situation where we might want to do this is for a model
-# where some domains are only evolved for a fraction of the whole runtime,
-# and we want to achieve good load-balancing for the entire model run.
-#
-# This uses the naive algorithm.
-# FIXME: Needs fixing. We should have the test below working, and also,
-# make_load_balance_partition should give the same result as the DEFUNCT load balance method
-# when a different group is used for each domain_index.
-#
-## Example -- 6 domains, each split into 32, each taking "time" ranging from 1:32
-#    vals = c()
-#    for(i in 1:6) vals = c(vals, sample(1:32, size=32, replace=FALSE))
-#    vals[45] = vals[45] + 1 # Break it. This should lead to one group that has one more element than the others.
-#    group_inds = rep(1:6, each=32)
-#    test = partition_into_k_with_grouping(vals, k=32, vals_groups=group_inds)
-#    max_val = max(test[[2]])
-#    # There should be one value with max_val, and all others being max_val - 1
-#    if(sum(test[[2]] == (max_val-1)) == 31){
-#        print('PASS')
-#    }else{
-#        print('FAIL')
-#    }
-partition_into_k_with_grouping<-function(vals, k, vals_groups){
+partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups, random_ties=FALSE){
 
-    sums = rep(0, k)
-    inds = vector(mode='list', length=k)
+    cumulative_sum_vals_in_group = rep(0, k)
+    inds_in_group = vector(mode='list', length=k)
     sorted_vals = sort(vals, index.return=TRUE, decreasing=TRUE)
 
+    # Loop over each of the separate vals_groups, and partition that group
+    # alone
     unique_vals_groups = unique(vals_groups)
     tmp = vector(mode='list', length = length(unique_vals_groups))
     counter = 0
@@ -968,23 +936,114 @@ partition_into_k_with_grouping<-function(vals, k, vals_groups){
     }
 
     # Now loop over each group, ordered according to which has the largest value
-    between_group_order = rank(unlist(lapply(tmp, f<-function(x) max(x[[2]]))), ties='first')
+    if(random_ties){
+        between_group_order = rank(unlist(lapply(tmp, f<-function(x) max(x[[2]]))), ties='random')
+    }else{
+        between_group_order = rank(unlist(lapply(tmp, f<-function(x) max(x[[2]]))), ties='first')
+    }
     # Flip
     between_group_order = max(between_group_order) + 1 - between_group_order
 
     for(g in between_group_order){
-        # Within the groups, they are already ordered into k groups, longest-time first
+        # Within the groups, the 'vals' are already ordered into k groups, longest-time first
         within_group_inds = tmp[[g]][[1]]
         within_group_vals = tmp[[g]][[2]]
-        assign_to_order = rank(sums, ties='first') # Smallest to largest
+        # Here "ties='first'" would cause the test to fail
+        # Experiments suggest it isn't useful to add extra randomness
+        assign_to_order = rank(cumulative_sum_vals_in_group, ties='last')  
         for(i in 1:length(assign_to_order)){
             partition_ind = assign_to_order[i]
-            inds[[partition_ind]] = c(inds[[partition_ind]], within_group_inds[[i]])
-            sums[partition_ind] = sums[partition_ind] + within_group_vals[i]
+            inds_in_group[[partition_ind]] = c(inds_in_group[[partition_ind]], within_group_inds[[i]])
+            cumulative_sum_vals_in_group[partition_ind] = cumulative_sum_vals_in_group[partition_ind] + 
+                within_group_vals[i]
         }
     }
     
-    return(list(inds, sums))
+    return(list(inds_in_group, cumulative_sum_vals_in_group))
+}
+
+
+
+# Partition a set of values 'vals' into 'k' separate groups with roughly equal
+# sum. Furthermore we assume the 'vals' are each associated with some
+# 'vals_group', and the partitioning should make the sums rougly equal also
+# within the vals_groups. 
+#
+# To make it concrete: suppose our 'vals' give model run-times for a
+# partitioned multi-domain.  The 'vals_groups' might be chosen to give the
+# "domain_index" of each, in which case all of the 'k' groups would have
+# approximately equal values of 'vals' WITHIN each domain_index. 
+#
+# A practical situation where we might want to do this is for a model
+# where some domains are only evolved for a fraction of the whole runtime,
+# and we want to achieve good load-balancing for the entire model run.
+#
+# This basic method uses a naive partitioning algorithm. In some cases better
+# performance can be obtained using random tie-breaking. The general interface
+# (below) does this.
+#
+partition_into_k_with_grouping<-function(vals, k, vals_groups, ntries=1){
+
+    # Deterministic case first -- so we never do worse than deterministic   
+    best_try = partition_into_k_with_grouping_WORK(vals, k, vals_groups)
+    if(ntries > 1){
+        # Try to do better than deterministic case -- in some cases it works well
+        for(i in 2:ntries){
+            test = partition_into_k_with_grouping_WORK(vals, k, vals_groups, random_ties=TRUE)
+            if(max(test[[2]]) < max(best_try[[2]])) best_try = test
+        }
+    }
+    return(best_try)
+}
+
+# Basic test of partitioning
+test_partition_into_k_with_grouping<-function(){
+
+    # Example -- "nd" domains, each split into 32, each taking "time" ranging from 1:32.
+    # 
+    # By inspection, for this particular case we should be able to split the domains equally,
+    # except for one domain which will have an extra unit of work
+
+    nd = 8
+    nsplit = 32
+    vals = c()
+    for(i in 1:nd) vals = c(vals, sample(1:nsplit, size=nsplit, replace=FALSE))
+    group_inds = rep(1:nd, each=nsplit)
+
+    # Test 1 -- this should partition perfectly
+    test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds)
+    max_val = max(test[[2]])
+    if(sum(test[[2]] == max_val) == nsplit){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+
+    # Test 2 -- break the 'equal partition' balance
+    # By inspection, this should lead to one group that has one more element
+    # than the others (when nd is even)
+    vals[45] = vals[45] + 1 
+    test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds)
+    max_val = max(test[[2]])
+    # There should be one value with max_val, and all others being max_val - 1
+    if(sum(test[[2]] == (max_val-1)) == (nsplit-1)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+
+    # Test 3 -- break it even more
+    # Ideally we would have 2 values that differ from 1 by their optimal value.
+    # But this naive algorithm does not achieve that.
+    vals[145] = vals[145] + 1 
+    testA = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds)
+    test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds, ntries=1000)
+    # At least we check that the random tries led to improvement, which it seems to
+    if(max(test[[2]]) < max(testA[[2]])){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
 }
 
 
