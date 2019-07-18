@@ -4,11 +4,10 @@
 #
 source('../../../plot.R')
 
-#forcing_cases = c( 1, 2, 3)
-#forcing_cases_name = c('A', 'B', 'C')
-
 # Case A is optional in the current NTHMP -- and we had
-# issues with the runup in that one only. So just do B, C.
+# issues with the runup in that one only (recall in teh NTHMP 2011 report,
+# some modellers mention scaling the gauge for case A -- we would have to
+# do this too). Here just do B, C.
 forcing_cases = c(2, 3)
 forcing_cases_name = c('B', 'C')
 
@@ -78,27 +77,22 @@ for(model_run in 1:length(forcing_cases)){
     par(mfrow=c(4,2))
     par(mar = c(4.5,4.5,2,1))
     err_store = rep(NA, length(gauge_IDs))
+    md_gauges = merge_multidomain_gauges(x)
     for(i in 1:length(gauge_IDs)){
         plot(obs_time, obs_gauges[,i], t='p', pch=19, cex=0.2, 
              ylim=gauge_plot_ylim, xlab='Time (s)', ylab='Stage (m)',
              cex.axis=1.4, cex.lab=1.6, xlim=c(0, 40))
 
-        # Get the gauge coordinate -- always stored in the outer domain
-        gauge_x = x[[1]]$gauges$lon[i]
-        gauge_y = x[[1]]$gauges$lat[i]
+        # Get the gauge coordinate
+        gi = which(round(md_gauges$gaugeID) %in% gauge_IDs[i])
 
         # Check the domain for which it has priority. This can change because
         # the gauge locations shift
-        nearest_domain_info = nearest_point_in_multidomain(gauge_x, gauge_y, x)
-        di = nearest_domain_info$closest_domain
-        gi = which(round(x[[di]]$gauges$gaugeID) %in% gauge_IDs[i])
-        points(x[[di]]$gauges$time, x[[di]]$gauges$time_var$stage[gi,],t='l', col='red')
+        points(md_gauges$time, md_gauges$time_var$stage[gi,],t='l', col='red')
         title(paste0('Gauge ', gauge_IDs[i]), cex.main=1.8)
         grid()
 
-        err_store[i] = abs(max(x[[di]]$gauges$time_var$stage[gi,]) - max(obs_gauges[,i]))/diff(range(obs_gauges[,i]))
-        #abline(h=max(obs_gauges[,i])*c(0.8, 0.9, 1, 1.1, 1.2), lty='dotted',
-        #       col=c('purple', 'red', 'black', 'red', 'purple'))
+        err_store[i] = abs(max(md_gauges$time_var$stage[gi,]) - max(obs_gauges[,i]))/diff(range(obs_gauges[,i]))
     }
     dev.off()
 
@@ -118,8 +112,8 @@ for(model_run in 1:length(forcing_cases)){
     multidomain_image(dirname(x[[1]]$output_folder), variable='elev', time_index=1, 
         xlim=range(x[[1]]$xs), ylim=range(x[[1]]$ys), zlim=c(-0.35, 0.65),
         cols=colorRampPalette(c('lightblue', 'green', 'yellow', 'orange', 'red', 'purple', 'black'))(255))
-    points(x[[1]]$gauges$lon, x[[1]]$gauges$lat, pch=20)
-    text(x[[1]]$gauges$lon, x[[1]]$gauges$lat, round(x[[1]]$gauges$gaugeID), col='purple', 
+    points(md_gauges$lon, md_gauges$lat, pch=20)
+    text(md_gauges$lon, md_gauges$lat, round(md_gauges$gaugeID), col='purple', 
         pos=c(rep(4,4), 2, rep(4,3)), cex=1.4)
     dev.off()
 

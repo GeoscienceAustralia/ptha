@@ -127,7 +127,8 @@ get_gauges_mixed_binary_format<-function(output_folder){
     output = list(lon = static_var[,1], lat=static_var[,2], 
         gaugeID=static_var[,ncol(static_var)],
         static_var=static_var_list, 
-        time_var = time_series_var_list)
+        time_var = time_series_var_list,
+        priority_gauges_only=FALSE)
 
     return(output)        
 }
@@ -171,8 +172,16 @@ get_gauges_netcdf_format<-function(output_folder){
         time_series_var[[time_series_names[i]]] = tmp
     }
 
+    # Check for the 'priority_gauges_only' variable
+    x = ncatt_get(gauge_fid, varid=0, 'priority_gauges_only')
+    priority_gauges_only = FALSE
+    if(x$hasatt){
+        if(x$value == 'true') priority_gauges_only=TRUE
+    }
+
     outputs = list(lon=lon, lat=lat, time=time, gaugeID=gaugeID, 
-        static_var=static_var, time_var=time_series_var)
+        static_var=static_var, time_var=time_series_var, 
+        priority_gauges_only=priority_gauges_only)
     return(outputs)
 }
 
@@ -295,6 +304,7 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
     if(class(xs) != 'try_error'){
         ys = try(get_gridded_variable(var='y', output_folder=output_folder), silent=TRUE)
     }else{
+        # Old-style, beware this does not work with decimated output
         xs = lower_left_corner[1] + ((1:nx[1]) - 0.5) * dx[1]
         ys = lower_left_corner[2] + ((1:nx[2]) - 0.5) * dx[2]
     }
@@ -310,7 +320,7 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
     return(list(stage=stage, ud=ud, vd=vd, elev=elev, maxQ=maxQ, elev0=elev0, 
         is_priority_domain = is_priority_domain, time=time, 
         output_folder = output_folder, nx=nx, gauges = gauges, xs = xs, ys=ys, 
-        lower_left_corner=lower_left_corner, dx=dx))
+        lower_left_corner=lower_left_corner, dx=dx, lw=(nx*dx)))
 }
 
 ## Nice plot example
@@ -456,6 +466,34 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
     }
 
 }
+
+#
+# Determine whether coordinates x,y are on the priority domain of "domain"
+#
+is_on_priority_domain<-function(x, y, domain){
+
+    #browser()
+    # Get indices of xi/yi on the domain (if x/y are not on the domain, this
+    # may lead to indices outside the domain)
+    x_int = ceiling( (x-domain$lower_left_corner[1])/(domain$lw[1] ) * length(domain$xs))
+    y_int = ceiling( (y-domain$lower_left_corner[2])/(domain$lw[1] ) * length(domain$ys))
+
+    is_on = rep(FALSE, length(x_int))
+    nx = dim(domain$is_priority_domain) # NOTE: If the netcdf output is decimated, then possibly nx != domain$nx
+    for(i in 1:length(is_on)){
+        xi = x_int[i]
+        yi = y_int[i]
+        if( (xi > 0) & (xi <= nx[1]) & (yi > 0) & (yi <= nx[2])){
+            # We are on the domain
+            # Check if we are in the priority region
+            if(domain$is_priority_domain[xi,yi] == 1) is_on[i] = TRUE
+        }
+    }
+
+    return(is_on)
+
+}
+
 
 # Given a domain object (i.e. output from 'get_all_recent_results'), find the index and
 # distance of the point nearest to 'x', 'y'
@@ -678,7 +716,10 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
     counter = 0
 
     if(!is.na(multidomain_dir)){
-        # We should read the multidomain information
+        # In this case we passed "multidomain_dir" to the function
+        #
+        # Need to read the multidomain information
+
         if(!( (length(md) == 1))){
             stop('Cannot provide both multidomain_dir and md')
         }
@@ -691,12 +732,31 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
         if(length(md_domains) == 0) stop(paste0('Could not find any domains in multidomain_dir ', multidomain_dir))
 
         # Read the multidomain info
+        # We can avoid most variables except the gauges
         md = lapply(md_domains, 
-                    f<-function(x) get_all_recent_results(x, read_grids=FALSE, always_read_priority_domain=TRUE) )
+                    f<-function(x) get_all_recent_results(x, read_grids=FALSE, always_read_priority_domain=FALSE) )
+
+        # Check if the gauges are all in their priority domain. If so, we can
+        # avoid an expensive computation to derive this info
+        all_gauges_are_priority = all(unlist(lapply(md, f<-function(x) x$gauges$priority_gauges_only)))
+        if(!all_gauges_are_priority){
+            # In this case, we will need to use the is_priority_domain data to search the gauges
+            for(j in 1:length(md)){
+                md[[j]]$is_priority_domain = try(
+                    get_gridded_variable(var='is_priority_domain', output_folder=md[[j]]$output_folder), 
+                    silent=TRUE)
+            }
+        }
+
     }else{
+        # In this case we passed an existing md list to the function
+        #
         if(class(md) != 'list'){
             stop('Must provide named arguments with either "multidomain_dir" giving the multidomain directory, or a list "md" containing the output from get_all_recent_results for each domain in the multidomain')
         }
+
+        # Useful to have these variables
+        md_domains = lapply(md, f<-function(x) x$output_folder)
         multidomain_dir = dirname(md[[1]]$output_folder)
     }
 
@@ -709,10 +769,17 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
         # If gauges exist, they may or may not be in this priority domain
         lons = md[[j]]$gauges$lon
         lats = md[[j]]$gauges$lat
-        nearest_d = sapply(1:length(lons), f<-function(x) nearest_point_in_multidomain(lons[x], lats[x], md)$closest_domain)
-        
-        keep = which(nearest_d == j)
 
+        if(md[[j]]$gauges$priority_gauges_only){
+            keep = 1:length(lons)
+        }else{
+            # Search for the priority gauges
+            # This can be slow, but for older files it was necessary
+            nearest_d = sapply(1:length(lons), f<-function(x){
+                nearest_point_in_multidomain(lons[x], lats[x], md)$closest_domain})
+            keep = which(nearest_d == j)
+        }
+    
         if(length(keep) == 0) next
         # At this point, definitely we have some gauges of interest
 
@@ -909,6 +976,8 @@ partition_into_k<-function(vals, k){
     return(list(inds, sums))
 }
 
+# A workhorse routine for partitioning with groups. See documentation below on
+# the interface routine.
 partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups, random_ties=FALSE){
 
     cumulative_sum_vals_in_group = rep(0, k)

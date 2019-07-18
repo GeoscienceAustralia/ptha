@@ -57,6 +57,10 @@ module point_gauge_mod
 
         ! How many gauges, and the dimension of the space
         integer(ip):: n_gauges = 0, space_dim = 2
+        ! If we only store gauges that are in the priority domain, this can be set to true,
+        ! which can speed up gauge-merging for multidomains
+        logical :: priority_gauges_only = .FALSE.
+
         ! Indices of variables 
         integer(ip), allocatable:: time_series_var(:), static_var(:)
 
@@ -96,15 +100,18 @@ module point_gauge_mod
     ! @param gauge_ids real array of size n_gauges giving an ID for each
     !  gauge. Make it REAL to avoid truncation issues for large IDs
     ! @param bounding_box If provided, only keep gauges inside a given bounding box
+    ! @param priority_gauges If provided, a logical array with one entry per gauge. Gauges with .TRUE. are retained, others are
+    ! removed.
     !
     subroutine allocate_gauges(point_gauges, xy_coordinates, &
         time_series_var_indices, static_var_indices, gauge_ids, &
-        bounding_box)
+        bounding_box, priority_gauges)
         class(point_gauge_type), intent(inout) :: point_gauges
         real(dp), intent(in) :: xy_coordinates(:,:)
         integer(ip), intent(in) :: time_series_var_indices(:), static_var_indices(:)
         real(dp), intent(in) :: gauge_ids(:)
         real(dp), optional, intent(in) :: bounding_box(2,2)
+        logical, optional, intent(in) :: priority_gauges(:)
 
         integer(ip):: n_gauges, space_dim, n_ts_var, n_static_var
         logical :: all_gauges
@@ -123,18 +130,28 @@ module point_gauge_mod
             all_gauges = .TRUE.
             n_gauges = size(xy_coordinates(1,:))
 
-            if(present(bounding_box)) then
+            if(present(bounding_box) .or. present(priority_gauges)) then
                 ! It is possible that not all the gauges will be in the bounding box
                 ! Identify those which are inside
                 all_gauges = .FALSE.
 
                 allocate(points_inside(size(xy_coordinates(1,:))))
 
-                points_inside = ( &
-                    (xy_coordinates(1,:) >= bounding_box(1,1)) .and. &
-                    (xy_coordinates(1,:) <= bounding_box(2,1)) .and. &
-                    (xy_coordinates(2,:) >= bounding_box(1,2)) .and. &
-                    (xy_coordinates(2,:) <= bounding_box(2,2)) )
+                if(present(bounding_box)) then
+                    points_inside = ( &
+                        (xy_coordinates(1,:) >= bounding_box(1,1)) .and. &
+                        (xy_coordinates(1,:) <= bounding_box(2,1)) .and. &
+                        (xy_coordinates(2,:) >= bounding_box(1,2)) .and. &
+                        (xy_coordinates(2,:) <= bounding_box(2,2)) )
+                else
+                    points_inside = .TRUE.
+                end if
+
+                ! Also discard gauges that don't have priority_gauges = .true.
+                if(present(priority_gauges)) then
+                    points_inside = (points_inside .and. priority_gauges)
+                    point_gauges%priority_gauges_only = .TRUE.
+                end if
 
                 n_gauges = count(points_inside)
 
@@ -402,6 +419,8 @@ module point_gauge_mod
         integer:: iLenStringName = 32
         integer(ip):: i, j
 
+        character(len=charlen) :: local_name(1), local_value(1)
+
         if(point_gauges%n_gauges == 0) return
 
         point_gauges%netcdf_gauge_output_file = netcdf_gauge_output_file
@@ -555,6 +574,18 @@ module point_gauge_mod
                 call check(nf90_put_att(iNcid, nf90_global, attribute_names(i), attribute_values(i)), __LINE__)
             end do
         end if
+
+        !
+        ! Add an attribute that says whether all gauges are priority gauge
+        ! This means we don't need to search gauges to see if they are priority
+        !
+        local_name = 'priority_gauges_only'
+        if(point_gauges%priority_gauges_only) then
+            local_value = 'true'
+        else
+            local_value = 'false'
+        end if
+        call check(nf90_put_att(iNcid, nf90_global, local_name(1), local_value(1)), __LINE__)
 
 #ifdef SRC_GIT_VERSION
         ! Add the git revision number to the file

@@ -389,6 +389,7 @@ module domain_mod
         procedure:: nesting_boundary_flux_integral_tstep => nesting_boundary_flux_integral_tstep
         !procedure:: nesting_flux_correction => nesting_flux_correction_coarse_recvs !! DEFUNCT
         procedure:: nesting_flux_correction_everywhere => nesting_flux_correction_everywhere
+        procedure:: is_in_priority_domain => is_in_priority_domain
         ! If the current grid communicates to a coarser grid, this routine can make
         ! elevation constant within each coarse-grid cell in the send-region
         procedure:: use_constant_wetdry_send_elevation => use_constant_wetdry_send_elevation
@@ -2843,6 +2844,47 @@ TIMER_STOP('fileIO')
  
     end subroutine
 
+    ! Determine whether points x,y are in the priority domain
+    !
+    !@param domain
+    !@param x, y -- real arrays with x, y coordinates
+    !@param is_in_priority -- logical array with the same length as x and y
+    !
+    subroutine is_in_priority_domain(domain, x, y, is_in_priority)
+        class(domain_type), intent(in) :: domain 
+        real(dp), intent(in) :: x(:), y(:)
+        logical, intent(inout) :: is_in_priority(:)
+
+        integer(ip) :: i, i0, j0
+
+        if(domain%nesting%my_index == 0) then
+            write(log_output_unit, *) ' Error in is_in_priority_domain: Nesting is not active'
+            call generic_stop
+        end if
+
+        if(size(x) /= size(y) .or. size(x) /= size(is_in_priority)) then
+            write(log_output_unit, *) ' Error in is_in_priority_domain: All inputs must have same length'
+            call generic_stop
+        end if
+
+        is_in_priority = .false.
+        do i = 1, size(x)
+
+            i0 = ceiling( (x(i) - domain%lower_left(1))/domain%dx(1) )
+            j0 = ceiling( (y(i) - domain%lower_left(2))/domain%dx(2) )
+
+            if(i0 > 0 .and. i0 <= domain%nx(1) .and. j0 > 0 .and. j0 <= domain%nx(2)) then
+                if( domain%nesting%priority_domain_index(i0, j0) == domain%nesting%my_index .and. &
+                    domain%nesting%priority_domain_image(i0, j0) == domain%nesting%my_image) then
+                   is_in_priority(i) = .true.
+                end if
+            end if
+            
+        end do
+
+    end subroutine
+
+
     !
     ! Set up point gauges, which record values of variables at cells nearest
     ! the given xy points.
@@ -2871,7 +2913,8 @@ TIMER_STOP('fileIO')
         integer(ip), allocatable:: tsv(:), sv(:)
         real(dp), allocatable:: gauge_ids_local(:)
         real(dp) :: bounding_box(2,2)
-        integer(ip):: i
+        integer(ip):: i, i0, j0
+        logical, allocatable :: priority_gauges(:)
 
         if(present(time_series_var)) then
             allocate(tsv(size(time_series_var)))
@@ -2916,10 +2959,22 @@ TIMER_STOP('fileIO')
         bounding_box(1,1:2) = domain%lower_left
         bounding_box(2,1:2) = domain%lower_left + domain%lw
 
-        ! Allocate the gauges
-        call domain%point_gauges%allocate_gauges(xy_coords, tsv, sv, gauge_ids_local, &
-            bounding_box=bounding_box)
+        if(domain%nesting%my_index > 0) then
+            ! If we are nesting, tell the model which gauges are in the priority domain
+            allocate(priority_gauges(size(xy_coords(1,:))))
+            call domain%is_in_priority_domain(xy_coords(1,:), xy_coords(2,:), priority_gauges)
+            ! Allocate the gauges
+            call domain%point_gauges%allocate_gauges(xy_coords, tsv, sv, gauge_ids_local, &
+                bounding_box=bounding_box, priority_gauges = priority_gauges)
+            deallocate(priority_gauges)
+        else
+            ! Not nesting
+            ! Allocate the gauges
+            call domain%point_gauges%allocate_gauges(xy_coords, tsv, sv, gauge_ids_local, &
+                bounding_box=bounding_box)
+        end if
 
+        ! Add attributes and initialise
         if((present(attribute_names)).AND.(present(attribute_values))) then
             call domain%point_gauges%initialise_gauges(domain%lower_left, domain%dx, &
                 domain%nx, domain%U, netcdf_gauge_output_file, &
