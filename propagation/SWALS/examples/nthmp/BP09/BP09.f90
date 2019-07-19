@@ -47,8 +47,8 @@ module local_routines
             y = domain%y(j)
 
             ! Set stage - and clip 'NA' regions (since the stage raster does no cover the entire domain)
-            call stage_data%get_xy(x,y, domain%U(:,j,STG), domain%nx(1), bilinear=1_ip, na_below_limit=-1.0e-20_dp)
-            where(domain%U(:,j,STG) <= -1.0e-20_dp ) domain%U(:,j,STG) = 0.0_dp 
+            call stage_data%get_xy(x,y, domain%U(:,j,STG), domain%nx(1), bilinear=1_ip, na_below_limit=-1.0e+20_dp)
+            where(domain%U(:,j,STG) <= -1.0e+20_dp ) domain%U(:,j,STG) = 0.0_dp 
 
             ! Set elevation -- no need to clip NA.
             call elevation_data%get_xy(x,y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip)
