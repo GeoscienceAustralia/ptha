@@ -93,11 +93,9 @@ program bp1
     print*, 'h_on_d: ', h_on_d 
 
     ! Geometric parameters as specified in the description
-    !initial_depth = 1.0_dp ! This is arbitrary
     beta = atan(1.0_dp/19.85_dp)
     beach_slope = tan(beta)
     X0 = initial_depth / beach_slope 
-    !H = 0.019_dp * initial_depth
     H = h_on_d * initial_depth
     gamma0 = sqrt(3.0_dp * H / (4.0_dp * initial_depth))
     L = initial_depth * acosh(sqrt(20.0_dp))/gamma0
@@ -105,7 +103,6 @@ program bp1
 
     print*, 'd: ', initial_depth, ' H: ', H, ' beach slope: ', beach_slope, &
         ' X0 :', X0, ' X1: ', X1, ' L: ', L, ' gamma: ', gamma0
-    !stop
  
     ! Tank geometry 
     tank_width = 2.0_dp
@@ -124,8 +121,6 @@ program bp1
     print*, 'll: ', global_ll
 
     domain%timestepping_method = timestepping_method
-    !if(timestepping_method == 'euler') domain%theta = 0.0_dp
-    !if(timestepping_method == 'rk2') domain%theta = 1.0_dp
 
     ! Allocate domain -- must have set timestepping method BEFORE this
     call domain%allocate_quantities(global_lw, global_nx, global_ll)
@@ -149,10 +144,6 @@ program bp1
         if(domain%time - last_write_time >= approximate_writeout_frequency) then
 
             last_write_time = last_write_time + approximate_writeout_frequency
-
-            ! This avoids any artefacts in the numerical update of the model
-            ! which should be overwritten by the boundary condition
-            !call domain%update_boundary()
 
             call domain%print()
             call domain%write_to_output_files(time_only=.true.)

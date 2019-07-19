@@ -1,6 +1,6 @@
 module local_routines 
     use global_mod, only: dp, ip, charlen, wall_elevation, g => gravity
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: read_gdal_raster
     use which_mod, only: which
     use file_io_mod, only: count_file_lines
@@ -14,7 +14,7 @@ module local_routines
         real(dp), intent(in) :: d, beach_slope, land_length, sea_length, X0, X1, H, gamma0 
 
         integer(ip) :: i,j, ngauge
-        real(dp):: x,y, elev, stg, vel
+        real(dp):: x,y, elev, stage, vel
         real(dp), allocatable:: gauge_xy(:,:)
 
         do j = 1, domain%nx(2)
@@ -22,24 +22,24 @@ module local_routines
                 x = domain%x(i)
                 y = domain%y(j)
                 elev = max(-x * beach_slope, -d)
-                stg = H * (1.0_dp/cosh(gamma0*(x - X1)/d))**2
-                vel = - sqrt(g/d) * stg
-                domain%U(i,j, 4) = elev
-                domain%U(i,j,1) = stg
-                domain%U(i,j,2) = vel*d
-                domain%U(i,j,3) = 0.0_dp
+                stage = H * (1.0_dp/cosh(gamma0*(x - X1)/d))**2
+                vel = - sqrt(g/d) * stage
+                domain%U(i,j,ELV) = elev
+                domain%U(i,j,STG) = stage
+                domain%U(i,j,UH) = vel*d
+                domain%U(i,j,VH) = 0.0_dp
             end do
         end do
         !print*, 'Stage initial range: ', maxval(domain%U(:,:,1)), minval(domain%U(:,:,1))
 
         ! Add reflective walls, with zero velocity, and stage>=elev
-        domain%U(:,1,4) = wall_elevation
-        domain%U(:,domain%nx(2),4) = wall_elevation
-        domain%U(domain%nx(1),:,4) = wall_elevation
-        domain%U(:,:,1) = max(domain%U(:,:,1), domain%U(:,:,4)+1.0e-07_dp)
-        domain%U(:,1,2) = 0.0_dp
-        domain%U(domain%nx(1),:,2) = 0.0_dp
-        domain%U(:,domain%nx(2),2) = 0.0_dp
+        domain%U(:,1,ELV) = wall_elevation
+        domain%U(:,domain%nx(2),ELV) = wall_elevation
+        domain%U(domain%nx(1),:,ELV) = wall_elevation
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV)+1.0e-07_dp)
+        domain%U(:,1,UH) = 0.0_dp
+        domain%U(domain%nx(1),:,UH) = 0.0_dp
+        domain%U(:,domain%nx(2),UH) = 0.0_dp
 
         if(domain%timestepping_method /= 'linear') then
             ! The runup in this problem can be sensitive to friction
@@ -97,18 +97,14 @@ program bp4
     read(tempchar, *) h_on_d
 
     ! Geometric parameters as specified in the description
-    !initial_depth = 1.0_dp ! This is arbitrary
     beta = atan(1.0_dp/19.85_dp)
     beach_slope = tan(beta)
     X0 = initial_depth / beach_slope 
-    !H = 0.019_dp * initial_depth
     H = h_on_d * initial_depth
     gamma0 = sqrt(3.0_dp * H / (4.0_dp * initial_depth))
     L = initial_depth * acosh(sqrt(20.0_dp))/gamma0
     X1 = X0 + L
 
-    !stop
- 
     ! Tank geometry 
     tank_width = 0.14_dp
     land_length = 3.0_dp * X0 ! Set this so that inundation can occur
@@ -125,8 +121,6 @@ program bp4
 
 
     domain%timestepping_method = timestepping_method
-    !if(timestepping_method == 'euler') domain%theta = 0.0_dp
-    !if(timestepping_method == 'rk2') domain%theta = 1.0_dp
 
     ! Allocate domain -- must have set timestepping method BEFORE this
     call domain%allocate_quantities(global_lw, global_nx, global_ll, verbose=.false.)
@@ -160,14 +154,9 @@ program bp4
 
             last_write_time = last_write_time + approximate_writeout_frequency
 
-            ! This avoids any artefacts in the numerical update of the model
-            ! which should be overwritten by the boundary condition
-            !call domain%update_boundary()
-
             call domain%print()
             call domain%write_to_output_files(time_only=.true.)
             call domain%write_gauge_time_series()
-            !print*, 'Mass balance: ', domain%mass_balance_interior()
 
         end if
 

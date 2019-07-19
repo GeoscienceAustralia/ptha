@@ -222,10 +222,6 @@ program bp2
 
             last_write_time = last_write_time + approximate_writeout_frequency
 
-            ! This avoids any artefacts in the numerical update of the model
-            ! which should be overwritten by the boundary condition
-            call domain%update_boundary()
-
             call domain%print()
             call domain%write_to_output_files(time_only=.true.)
             call domain%write_gauge_time_series()
