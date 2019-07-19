@@ -16,9 +16,9 @@ module local_routines
         real(dp), allocatable :: random_uniform(:)
         ! Use this to check the effect of very small perturbations of the initial condition
         ! Eventually  a tiny perturbation will lead to differences in the results. This seems comparable
-        ! to the differences that eventually emerge in openmp/coarray versions, which seem
-        ! to begin with differences of this order in elevation/stage, I suppose due to round-off
-        ! scale differences in x/y etc that emerge from grid partitioning.
+        ! to the differences that eventually emerge in DEFAULT openmp/coarray versions, which seem
+        ! to begin with differences of this order in elevation/stage. That case is due to differences in
+        ! domain partitioning, and can be eliminated by providing a load_balance_partition.txt file
         real(dp), parameter :: random_perturbation_scale = 0.0e-10_dp
 
         ! Stage
@@ -43,22 +43,17 @@ module local_routines
         allocate(random_uniform(domain%nx(1)))
         
         ! Set stage and elevation row-by-row.
-        ! This saves memory compared to doing it all at once.
         do j = 1, domain%nx(2)
             y = domain%y(j)
 
-            ! Set stage
-            call stage_data%get_xy(x,y, domain%U(:,j,STG), domain%nx(1), bilinear=1_ip)
-            ! Clip 'NA' regions (since the stage raster does no cover the entire domain)
-            do i = 1, domain%nx(1)
-                if(domain%U(i,j,STG) < (-HUGE(1.0_dp)*0.99_dp) ) domain%U(i,j,STG) = 0.0_dp 
-            end do
-            ! Set elevation
+            ! Set stage - and clip 'NA' regions (since the stage raster does no cover the entire domain)
+            call stage_data%get_xy(x,y, domain%U(:,j,STG), domain%nx(1), bilinear=1_ip, na_below_limit=-1.0e-20_dp)
+            where(domain%U(:,j,STG) <= -1.0e-20_dp ) domain%U(:,j,STG) = 0.0_dp 
+
+            ! Set elevation -- no need to clip NA.
             call elevation_data%get_xy(x,y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip)
 
-            !! Test only
-            !domain%U(:,j,STG) = 1.0e+02_dp*(x + y) + 1.0e-03_dp
-            !domain%U(:,j,ELV) = 1.0e+02_dp*(x + y)
+            ! Here we can experiment with the random perturbation
             call random_number(random_uniform)
             domain%U(:,j,STG) = domain%U(:,j,STG) + random_perturbation_scale * (random_uniform-0.5_dp)
             call random_number(random_uniform)
@@ -162,7 +157,7 @@ program run_BP09
     
     ! nd domains in this model
     if(very_high_res_monai) then
-        ! In this case we put a 30cm x 30cm cell domain around the monai inundation peak.
+        ! In this case we put a 30cm x 30cm cell domain around the monai inundation peak. (with mesh_refine=1.0_dp)
         ! It leads to a peak of > 30.0m (vs 31.7 obs, although the latter varies depending on which
         ! dataset is used).
         !
@@ -173,7 +168,7 @@ program run_BP09
         ! While the result is good, there are many ways in which to question it.
         nd = 7
     else
-        ! This case has a domain res ~ 1.5x1.5m around the monai inundation peak. 
+        ! This case has a domain res ~ 1.5x1.5m around the monai inundation peak (with mesh_refine = 1.0_dp)
         !
         ! It leads to a peak of >28.0m (vs 31.7 obs, although the latter varies depending on which
         ! dataset is used). So the very_high_res_monai case does better.
@@ -186,13 +181,8 @@ program run_BP09
 
     allocate(md%domains(nd))
 
+    ! Need to provide a load_balance_partition.txt file to get exact reproducibility in openmp/coarray
     call get_command_argument(1, md%load_balance_file)
-    !md%load_balance_file = 'load_balance_partition.txt'
-    !md%load_balance_file = 'load_balance_test2.txt'
-    !md%load_balance_file = 'load_balance_partition_6.txt'
-    !md%load_balance_file = 'load_balance_6_localTS.txt'
-    !md%load_balance_file = 'load_balance_omp2.txt'
-    !md%load_balance_file = 'load_balance_split4_6im_balanced.txt'
 
     !
     ! Setup basic metadata
@@ -229,8 +219,6 @@ program run_BP09
     md%domains(3)%timestepping_method = 'rk2'
 
     ! The monai domain 
-    ! (Peak stage seems to be affected by the westward extent
-    ! of this, possibly mesh design needs more tuning)
     call md%domains(4)%match_geometry_to_parent(&
         parent_domain=md%domains(3), &
         lower_left  = [139.38_dp, 42.0828_dp], &
@@ -243,7 +231,6 @@ program run_BP09
     ! A more detailed Monai domain 
     call md%domains(5)%match_geometry_to_parent(&
         parent_domain=md%domains(4), &
-        !lower_left  = [139.4208_dp, 42.0968_dp], &
         lower_left  = [139.4150_dp, 42.0968_dp], &
         upper_right = [139.4264_dp, 42.1020_dp], &
         dx_refinement_factor = nest_ratio, &
@@ -263,7 +250,6 @@ program run_BP09
 
     if(very_high_res_monai) then
         ! An even more detailed Monai domain
-        ! Hard to get this one stable, although it's ok with EULER
         call md%domains(7)%match_geometry_to_parent(&
             parent_domain=md%domains(5), &
             !lower_left  = [139.4176_dp, 42.0935_dp], &
@@ -273,8 +259,7 @@ program run_BP09
             dx_refinement_factor = nest_ratio, &
             timestepping_refinement_factor = 6_ip,&
             rounding_method='nearest')
-        ! STABLE WITH EULER, not midpoint. I wonder if there is a dodgy interaction
-        ! with the bathymetry nesting / interpolation?
+        ! Older versions of the code needed euler for stability. Does it still?
         md%domains(7)%timestepping_method = 'euler'  
         ! Should be dry before this time -- note also we change the time-step 
         ! in the evolve loop on the basis of this value
@@ -336,7 +321,7 @@ program run_BP09
         if (md%domains(1)%time > final_time) exit
 
         if(very_high_res_monai) then
-            ! Take a different time step once the high res domain comes on line
+            ! Take a different time step once the high res domain starts evolving.
             ! This will introduce a (formal) first-order error into the linear leap-frog scheme,
             ! because that requires a fixed time step, but only at the change in time point.
             ! But practically no problem (?).
