@@ -1,3 +1,28 @@
+#
+# Compare the test cases run with OPENMP / COARRAYS
+#
+# Ideally we'd like exactly the same simulation result in either case.
+# This is nontrivial though, because of floating point round-off and
+# non-associativity. 
+#
+# By default, if we don't pass a load-balance-partition.txt file to the model,
+# then SWALS will partition the domains in the COARRAY case, but not
+# the OPENMP case. This leads to tiny differences (e.g. 1e-10) in the 
+# initial condition (I assume because of round-off scale differences in
+# coordinates and other domain properties). Those small difference will slowly
+# grow over time, and eventually be noticable (albeit not important).
+#
+# The same 'slowly growing difference' occurs if we compare 2 OPENMP models,
+# one having initial conditions perturbed by 1e-10. Given that, it is not surprising
+# that differences emerge when the domain is partitioned differently.
+#
+# However, if we desire "exactly the same" answer with OPENMP and COARRAY, we can
+# give the code a 'load-balance-partition.txt' file which specifies the same partition
+# in both cases. Then, I seem to be getting 'near perfect' reproducibility in
+# the flow variables at the end of the simulation. Interestingly the 'mass
+# conservation round-off' still shows some differences -- perhaps because of the
+# double-precision CO_SUM operations to get the full domain volume in the COARRAY case?
+#
 
 multidomain_log_openmp = readLines(rev(Sys.glob('multidomain_log*openmp.log')))
 multidomain_log_coarray = readLines(rev(Sys.glob('multidomain_log*coarray.log')))
@@ -21,8 +46,9 @@ if(all( abs(times_coarray - times_openmp) < 1.0e-06)){
     print('FAIL')
 }
 
-# Compare max stage. 
-k = which(times_coarray < 50000 | times_coarray > 60000) # Test had an isolated spike (dry-threshold?).
+# Compare max stage. Tolerances were designed with an older version of the code which
+# had worse openmp/coarray reproducibility
+k = which(times_coarray < 50000 | times_coarray > 60000) 
 err_stat = abs(max_stage_openmp - max_stage_coarray)/diff(range(max_stage_coarray))
 if(all(err_stat[k] < 5.0e-4)){
     print('PASS')
@@ -30,7 +56,7 @@ if(all(err_stat[k] < 5.0e-4)){
     print('FAIL')
 }
 
-# min stage also benefits from a late-time treatment.
+# Compare min stage 
 k = which(times_coarray < 80000)
 err_stat = abs(min_stage_openmp - min_stage_coarray)/diff(range(min_stage_coarray))
 if(all(err_stat[k] < 5.0e-4) & all(err_stat[-k] < 5e-02)){
@@ -39,14 +65,17 @@ if(all(err_stat[k] < 5.0e-4) & all(err_stat[-k] < 5e-02)){
     print('FAIL')
 }
 
-# max speed also benefits from a late-time treatment.
-#k = which(times_coarray < 1000)
+# Compare max speed
 err_stat = abs(max_speed_openmp - max_speed_coarray)/diff(range(max_speed_coarray))
 if(all(err_stat < 5.0e-3)){
     print('PASS')
 }else{
     print('FAIL')
 }
+
+#
+# Time-series plot of differences
+#
 
 png('Compare_openmp_coarray.png', width=7, height=9, units='in', res=300)
 par(mfrow=c(3,1))
@@ -67,8 +96,9 @@ points(times_coarray, max_speed_coarray, t='l', col='black', lty='dotted')
 legend('topleft', c('Openmp', 'Coarray'), lty=c('dashed', 'dotted'), col=2:1, cex=2, bty='n')
 dev.off()
 
-
+#
 # Compare coarray and openmp at a particular time-slice
+#
 
 source('../../../plot.R')
 library(fields)
