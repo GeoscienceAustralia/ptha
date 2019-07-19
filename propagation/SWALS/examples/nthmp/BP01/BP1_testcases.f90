@@ -1,6 +1,6 @@
 module local_routines 
     use global_mod, only: dp, ip, charlen, wall_elevation, g => gravity
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: read_gdal_raster
     use which_mod, only: which
     use file_io_mod, only: count_file_lines
@@ -14,7 +14,7 @@ module local_routines
         real(dp), intent(in) :: d, beach_slope, land_length, sea_length, X0, X1, H, gamma0 
 
         integer(ip) :: i,j, ngauge
-        real(dp):: x,y, elev, stg, vel
+        real(dp):: x,y, elev, stage, vel
         real(dp), allocatable:: gauge_xy(:,:)
 
         do j = 1, domain%nx(2)
@@ -22,24 +22,24 @@ module local_routines
                 x = domain%x(i)
                 y = domain%y(j)
                 elev = max(-x * beach_slope, -d)
-                stg = H * (1.0_dp/cosh(gamma0*(x - X1)/d))**2
-                vel = - sqrt(g/d) * stg
-                domain%U(i,j, 4) = elev
-                domain%U(i,j,1) = stg
-                domain%U(i,j,2) = vel*d
-                domain%U(i,j,3) = 0.0_dp
+                stage = H * (1.0_dp/cosh(gamma0*(x - X1)/d))**2
+                vel = - sqrt(g/d) * stage
+                domain%U(i,j,ELV) = elev
+                domain%U(i,j,STG) = stage
+                domain%U(i,j,UH) = vel*d
+                domain%U(i,j,VH) = 0.0_dp
             end do
         end do
-        print*, 'Stage initial range: ', maxval(domain%U(:,:,1)), minval(domain%U(:,:,1))
+        print*, 'Stage initial range: ', maxval(domain%U(:,:,STG)), minval(domain%U(:,:,STG))
 
         ! Add reflective walls, with zero velocity, and stage>=elev
-        domain%U(:,1,4) = wall_elevation
-        domain%U(:,domain%nx(2),4) = wall_elevation
-        domain%U(domain%nx(1),:,4) = wall_elevation
-        domain%U(:,:,1) = max(domain%U(:,:,1), domain%U(:,:,4)+1.0e-07_dp)
-        domain%U(:,1,2) = 0.0_dp
-        domain%U(domain%nx(1),:,2) = 0.0_dp
-        domain%U(:,domain%nx(2),2) = 0.0_dp
+        domain%U(:,1,ELV) = wall_elevation
+        domain%U(:,domain%nx(2),ELV) = wall_elevation
+        domain%U(domain%nx(1),:,ELV) = wall_elevation
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV)+1.0e-07_dp)
+        domain%U(:,1,UH) = 0.0_dp
+        domain%U(domain%nx(1),:,UH) = 0.0_dp
+        domain%U(:,domain%nx(2),UH) = 0.0_dp
 
         ! Get gauge points -- every d/10
         ngauge = nint((maxval(domain%x) - minval(domain%x))/d * 10 )
