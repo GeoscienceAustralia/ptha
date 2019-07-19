@@ -1,6 +1,6 @@
 module local_routines 
     use global_mod, only: dp, ip, wall_elevation
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
 
     contains 
@@ -15,19 +15,19 @@ module local_routines
         radius = 50.0_dp
 
         ! Stage
-        domain%U(:,:,1) = initial_stage_1 
+        domain%U(:,:,STG) = initial_stage_1 
         domain%MSL_linear = initial_stage_1
 
         ! Elevation
-        domain%U(:,:,4) = 0._dp
+        domain%U(:,:,ELV) = 0._dp
         ! Wall boundaries (without boundary conditions)
-        domain%U(1,:,4) = 20.0_dp !wall_elevation 
+        domain%U(1,:,ELV) = 20.0_dp !wall_elevation 
         domain%U(domain%nx(1),:,4) = 20.0_dp !wall_elevation 
-        domain%U(:,1,4) = 20.0_dp !wall_elevation
-        domain%U(:,domain%nx(2),4) = 20.0_dp !wall_elevation
+        domain%U(:,1,ELV) = 20.0_dp !wall_elevation
+        domain%U(:,domain%nx(2),ELV) = 20.0_dp !wall_elevation
 
         ! Ensure stage >= elevation
-        domain%U(:,:,1 ) = max(domain%U(:,:,1), domain%U(:,:,4))
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
 
         ! Add a stage perturbation
         cx = (domain%lw(1))*0.5
@@ -38,7 +38,7 @@ module local_routines
                 x = (i-0.5_dp)*domain%dx(1) - cx
                 y = (j-0.5_dp)*domain%dx(2) - cy 
                 if( x*x + y*y < (radius)**2) then
-                    domain%u(i,j,1) = initial_stage_2 !10.0_dp
+                    domain%U(i,j,STG) = initial_stage_2 !10.0_dp
                 end if
             end do
         end do
@@ -54,7 +54,7 @@ end module
 
 program radial_dam_break
     use global_mod, only: ip, dp, charlen
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: read_csv_into_array
     use local_routines
     implicit none
@@ -117,22 +117,19 @@ program radial_dam_break
 
     call domain%timer%print()
 
-    !! Compare with analytical solution
-    !analytical_solution_file = 'Ver_numerical_2.000000.csv'
-    !call read_csv_into_array(analytical_solution, analytical_solution_file)
-    !! FIXME: Need to add code to automate comparison
-
-    ! Crude check on peak velocity. 7.75 is a numerical value, not a proper
-    ! comparison with analytical solution
    
     call domain%compute_depth_and_velocity()
  
-    if((abs(maxval(domain%velocity(:,:,2)) - 7.75_dp) < 0.05) .and. &
-       (abs(maxval(domain%velocity(:,:,3)) - 7.75_dp) < 0.05) .and. &
-       (abs(minval(domain%velocity(:,:,2)) + 7.75_dp) < 0.05) .and. &
-       (abs(minval(domain%velocity(:,:,3)) + 7.75_dp) < 0.05) .and. &
-       (abs(maxval(domain%velocity(:,:,2)) + minval(domain%velocity(:,:,2))) < 1.0e-03_dp) .and. &
-       (abs(maxval(domain%velocity(:,:,3)) + minval(domain%velocity(:,:,3))) < 1.0e-03_dp) ) then
+    ! Crude check on peak velocity. The 7.75 is a numerical value, not a proper
+    ! comparison with analytical solution. Really this is just a regression test,
+    ! FIXME: get a reference solution.
+    if((abs(maxval(domain%velocity(:,:,UH)) - 7.75_dp) < 0.05) .and. &
+       (abs(maxval(domain%velocity(:,:,VH)) - 7.75_dp) < 0.05) .and. &
+       (abs(minval(domain%velocity(:,:,UH)) + 7.75_dp) < 0.05) .and. &
+       (abs(minval(domain%velocity(:,:,VH)) + 7.75_dp) < 0.05) .and. &
+       ! Symmetry tests here
+       (abs(maxval(domain%velocity(:,:,UH)) + minval(domain%velocity(:,:,UH))) < 1.0e-06_dp) .and. &
+       (abs(maxval(domain%velocity(:,:,VH)) + minval(domain%velocity(:,:,VH))) < 1.0e-06_dp) ) then
         print*, ' '
         print*, '##############'
         print*, 'PASS'
