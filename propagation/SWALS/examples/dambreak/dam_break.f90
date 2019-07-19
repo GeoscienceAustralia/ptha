@@ -1,6 +1,6 @@
 module local_routines 
     use global_mod, only: dp, ip, wall_elevation
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
 
     contains 
@@ -16,14 +16,14 @@ module local_routines
         initial_stage_2 = h_upstream !1.0_dp
 
         ! Stage
-        domain%U(:,:,1) = initial_stage_1 
+        domain%U(:,:,STG) = initial_stage_1 
         domain%MSL_linear = initial_stage_1
         do j = 1, domain%nx(2)
-            where(domain%x > 0.0_dp) domain%U(:,j,1) = initial_stage_2
+            where(domain%x > 0.0_dp) domain%U(:,j,STG) = initial_stage_2
         end do
 
         ! Elevation
-        domain%U(:,:,4) = 0._dp
+        domain%U(:,:,ELV) = 0._dp
         !! Wall boundaries (without boundary conditions)
         !domain%U(1,:,4) = 20.0_dp !wall_elevation 
         !domain%U(domain%nx(1),:,4) = 20.0_dp !wall_elevation 
@@ -31,7 +31,7 @@ module local_routines
         !domain%U(:,domain%nx(2),4) = 20.0_dp !wall_elevation
 
         ! Ensure stage >= elevation
-        domain%U(:,:,1 ) = max(domain%U(:,:,1), domain%U(:,:,4))
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
 
     
         domain%manning_squared = 0.0_dp
