@@ -1,6 +1,6 @@
 module local_routines 
     use global_mod, only: dp, ip, wall_elevation
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
     
 
@@ -21,21 +21,20 @@ module local_routines
             do j = 1, domain%nx(2)
                 x = (i-0.5_dp)*domain%dx(1) - cx
                 y = (j-0.5_dp)*domain%dx(2) - cy 
-                domain%u(i,j,4) = y*slope
+                domain%U(i,j,ELV) = y*slope
             end do
         end do
         ! Wall boundaries along the sides and top
-        domain%U(1,:,4) = wall_elevation 
-        domain%U(domain%nx(1),:,4) = wall_elevation 
-        domain%U(:,domain%nx(2),4) = wall_elevation 
-        domain%U(:,1,4) = wall_elevation 
+        domain%U(1,:,ELV) = wall_elevation 
+        domain%U(domain%nx(1),:,ELV) = wall_elevation 
+        domain%U(:,domain%nx(2),ELV) = wall_elevation 
+        domain%U(:,1,ELV) = wall_elevation 
 
         ! Stage
-        domain%U(:,:,1) = domain%U(:,:,4)
+        domain%U(:,:,STG) = domain%U(:,:,ELV)
 
         ! Ensure stage >= elevation
-        domain%U(:,:,1 ) = max(domain%U(:,:,1), domain%U(:,:,4))
-
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
 
         domain%manning_squared = 0.03_dp**2
 
@@ -48,7 +47,7 @@ end module
 
 program uniform_slope
     use global_mod, only: ip, dp, charlen, gravity
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: read_csv_into_array
     use local_routines
     implicit none
@@ -123,8 +122,8 @@ program uniform_slope
         call domain%evolve_one_step()
 
         ! Add discharge inflow
-        domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, 1) = &
-            domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, 1) + Qin*domain%evolve_step_dt / product(domain%dx)
+        domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) = &
+            domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) + Qin*domain%evolve_step_dt / product(domain%dx)
 
     end do
 
@@ -134,7 +133,7 @@ program uniform_slope
 
 
     theoretical_vol = Qin * domain%time * (domain%nx(1) - 2)!* domain%lw(1) * (global_nx(1) - 2) * 1.0_dp / global_nx(1)
-    model_vol = sum(domain%U(:,:,1) - domain%U(:,:,4)) * domain%dx(1) * domain%dx(2)
+    model_vol = sum(domain%U(:,:,STG) - domain%U(:,:,ELV)) * domain%dx(1) * domain%dx(2)
     print*, 'Cell area: ', domain%dx, product(domain%dx)
     ! Analytical solution
     ! vd = discharge_per_unit_width
@@ -144,8 +143,8 @@ program uniform_slope
 
     i = domain%nx(1)/2
     j = domain%nx(2)/2    
-    model_vd = -1.0_dp * domain%U(i,j,3)    
-    model_d = domain%U(i,j,1) - domain%U(i,j,4)
+    model_vd = -1.0_dp * domain%U(i,j,VH)    
+    model_d = domain%U(i,j,STG) - domain%U(i,j,ELV)
     model_v = model_vd/model_d
 
     theoretical_d = (domain%manning_squared(i,j) * discharge_per_unit_width**2 / bed_slope)**(3.0_dp/10.0_dp)
