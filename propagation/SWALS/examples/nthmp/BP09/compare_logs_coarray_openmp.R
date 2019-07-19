@@ -1,3 +1,29 @@
+#
+# Compare the test cases run with OPENMP / COARRAYS
+#
+# Ideally we'd like exactly the same simulation result in either case.
+# This is nontrivial though, because of floating point round-off and
+# non-associativity. 
+#
+# By default, if we don't pass a load-balance-partition.txt file to the model,
+# then SWALS will partition the domains in the COARRAY case, but not
+# the OPENMP case. This leads to tiny differences (e.g. 1e-10) in the 
+# initial condition (I assume because of round-off scale differences in
+# coordinates and other domain properties). Those small difference will slowly
+# grow over time, and eventually be noticable (albeit not important).
+#
+# The same 'slowly growing difference' occurs if we compare 2 OPENMP models,
+# one having initial conditions perturbed by 1e-10. Given that, it is not surprising
+# that differences emerge when the domain is partitioned differently.
+#
+# However, if we desire "exactly the same" answer with OPENMP and COARRAY, we can
+# give the code a 'load-balance-partition.txt' file which specifies the same partition
+# in both cases. Then, I seem to be getting 'near perfect' reproducibility in
+# the flow variables at the end of the simulation. Interestingly the 'mass
+# conservation round-off' still shows some differences -- perhaps because of the
+# double-precision CO_SUM operations to get the full domain volume in the COARRAY case?
+#
+
 
 multidomain_log_openmp = readLines(rev(Sys.glob('multidomain_log*openmp.log')))
 multidomain_log_coarray = readLines(rev(Sys.glob('multidomain_log*coarray.log')))
@@ -21,12 +47,8 @@ if(all( abs(times_coarray - times_openmp) < 1.0e-06)){
     print('FAIL')
 }
 
-# Compare max stage. Currently the test shows a differece at late times.
-# In particular the cell with highest inundation is treated 'dry' in a 
-# threshold manner, and slight roundoff significantly affects the result.
 #
-# Also, like with other tests, we see transient times of higher difference, followed
-# by 'going back to similarity'. This tests considers that
+# Compare max stage. These tolerances were made with an earlier version of the code
 #
 k1 = which(times_coarray < 200) # Well behaved
 k2 = which(times_coarray > 200 & times_coarray < 300) # Higher peak, which later reduces
@@ -38,7 +60,7 @@ if(all(err_stat[k1] < 1.0e-8) & all(err_stat[k2] <  3e-05) & all(err_stat[k3] < 
 }else{
     print('FAIL')
 }
-# min stage also benefits from a late-time treatment.
+# Compare min stage 
 err_stat = abs(min_stage_openmp - min_stage_coarray)/diff(range(min_stage_coarray))
 if(all(err_stat[k1] < 1.0e-8) & all(err_stat[k2] <  3e-04) & all(err_stat[k3] < 3e-01) & all(err_stat[k4] < 3e-01)){
     print('PASS')
@@ -46,9 +68,7 @@ if(all(err_stat[k1] < 1.0e-8) & all(err_stat[k2] <  3e-04) & all(err_stat[k3] < 
     print('FAIL')
 }
 
-# max speed also benefits from a late-time treatment.
-#k = which(times_coarray < 1000)
-#k2 = which(times_coarray > 2600)
+# Compare max speed
 err_stat = abs(max_speed_openmp - max_speed_coarray)/diff(range(max_speed_coarray))
 #if(all(err_stat[k] < 1.0e-3) & all(err_stat[-k] < 5e-02)){
 if(all(err_stat[k1] < 1.0e-11) & all(err_stat[k2] <  2e-05) & all(err_stat[k3] < 2e-02) & all(err_stat[k4] < 3e-02)){
@@ -56,6 +76,10 @@ if(all(err_stat[k1] < 1.0e-11) & all(err_stat[k2] <  2e-05) & all(err_stat[k3] <
 }else{
     print('FAIL')
 }
+
+#
+# Time-series of max stage and speed from the logfiles
+#
 
 png('Compare_openmp_coarray.png', width=7, height=9, units='in', res=300)
 par(mfrow=c(3,1))
@@ -77,8 +101,9 @@ legend('topright', c('Openmp', 'Coarray'), lty=c('dashed', 'dotted'), col=2:1, c
 dev.off()
 
 
-
+#
 # Compare coarray and openmp at a particular time-slice
+#
 
 source('../../../plot.R')
 library(fields)
@@ -91,7 +116,6 @@ if(md_omp == md_ca){
 }
 
 # Plot difference between coarray/openmp at a particular time
-# Note: Ultimately the models do differ significantly
 time_inds = c(40, 400)
 desired_var = 'uh' # 
 domain_inds = 1:6
@@ -109,10 +133,9 @@ for(time_ind in time_inds){
     }
     dev.off()
 
-    # Eventually the models diverge (apparently related to vortices, which
-    # may be quite sensitive to even minor floating point differences)
-    # So test the models in 2 ways
+    # Use different 'allowed errors' at short and long times
     if(time_ind == time_inds[1]){
+        # Small shorter-time difference
         if(all(err_stats < 1.0e-4)){
             print('PASS')
         }else{
@@ -120,8 +143,7 @@ for(time_ind in time_inds){
         }
     }else if(time_ind == time_inds[2]){
         # By now the models differ more significantly on some domains.
-        ## These were about 10x larger than the err_stats at the time of writing.
-        ## So this is really a 'regression test'.
+        # These were about 10x larger than the err_stats at the time of writing.
         target_errs = c(6e-04, 8e-04, 6e-03, 5e-01, 1e+00, 4e-04)
         if(all(err_stats < target_errs)){
             print('PASS')
