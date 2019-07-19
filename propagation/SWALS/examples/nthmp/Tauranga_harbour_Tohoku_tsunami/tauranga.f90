@@ -108,30 +108,6 @@ module local_routines
             ! stage forcing. (Not too surprising, because the boundary is quite close to the
             ! coast, in 'not very deep' water).
 
-            !! Approach 1
-            !! Transmissive momentum. Unstable with flather?
-            !!
-            !! FIXME: Currently this doesn't carefully treat 'corners' (e.g. i==1, j==1).
-            !! Could be an issue depending on boundary setup
-            !if(j == domain%nx(2)) stage_uh_vh_elev(2:3) = domain%U(i,j-1,2:3)
-            !if(j == 1) stage_uh_vh_elev(2:3) = domain%U(i,j+1,2:3)
-            !if(i == 1) stage_uh_vh_elev(2:3) = domain%U(i+1,j,2:3)
-            !if(i == domain%nx(1)) stage_uh_vh_elev(2:3) = domain%U(i-1,j,2:3)
-            !
-            !
-            ! Approach 3:
-            ! Assume the incoming wave is like a plane wave, so that vh = sqrt(g * depth) * stage
-            ! This is wrong so close to shore, and the wave is over-amplified. But in 'really deep water'
-            ! where the coast was > 1 wave-length away, I suppose this approach might work OK?
-            !if(j == domain%nx(2)) then
-            !    stage_uh_vh_elev(2) = 0.0_dp
-            !    ! Linear wave, assuming MSL = 0
-            !    stage_uh_vh_elev(3) = -sqrt(9.81_dp * (-1.0_dp*local_elev)) * stage_uh_vh_elev(1)
-            !else
-            !    stage_uh_vh_elev(2:3) = 0.0_dp
-            !end if
-
-
             select case(boundary_type)
 
             case('boundary_stage_transmissive_normal_momentum')
@@ -141,10 +117,6 @@ module local_routines
             case('boundary_stage_transmissive_momentum')
                 ! Do nothing, because we do not need uh/vh.
                 stage_uh_vh_elev(2:3) = 0.0_dp 
-
-            !case('boundary_stage_transmissive_momentum_sponge')
-            !    ! Do nothing, because we do not need uh/vh.
-            !    stage_uh_vh_elev(2:3) = 0.0_dp 
 
             case('flather_with_vh_equal_zero') 
                 ! This absorbs, but also distorts the stage at the boundary too much when
@@ -219,7 +191,7 @@ module local_routines
 
         !
         ! The DEM needs to be 'fixed' in a few places where bridges remain. Google earth    
-        ! suggests the bridges should not strongly impede the flow. So based on checks of teh DEM, ....
+        ! suggests the bridges should not strongly impede the flow. So based on checks of the DEM, ....
         !
         ! pol1 should have a value about -6.0
         !
@@ -262,18 +234,6 @@ module local_routines
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-07_dp)
 
-        !! Gauges -- instead we set them from the csv file
-        !gauge_xy(1:3, 1) = [2.724e+04_dp, 1.846e+04_dp, 1.0_dp]
-        !gauge_xy(1:3, 2) = [3.085e+04_dp, 1.512e+04_dp, 2.0_dp]
-        !gauge_xy(1:3, 3) = [3.200e+04_dp, 1.347e+04_dp, 3.0_dp]
-        !gauge_xy(1:3, 4) = [3.005e+04_dp, 1.610e+04_dp, 4.0_dp]
-        !! ADCP location -- reported
-        !gauge_xy(1:3, 5) = [2.9250e+04_dp, 1.4660e+04_dp, 5.0_dp]
-        !! ADCP location -- this is nearby, and the velocities seem to agree 
-        !! better (this place has the highest velocities in the entrance)
-        !gauge_xy(1:3, 6) = [2.9325e+04_dp, 1.4525e+04_dp, 6.0_dp]
-        !call domain%setup_point_gauges(xy_coords = gauge_xy(1:2,:), gauge_ids=gauge_xy(3,:))
-
     end subroutine
 
 end module 
@@ -286,7 +246,7 @@ program run_Tauranga
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary, &
-        boundary_stage_transmissive_momentum !, boundary_stage_transmissive_momentum_sponge
+        boundary_stage_transmissive_momentum
     use local_routines
     use timer_mod
     use logging_mod, only: log_output_unit
@@ -392,8 +352,6 @@ program run_Tauranga
         md%domains(1)%boundary_subroutine => boundary_stage_transmissive_normal_momentum
     case('boundary_stage_transmissive_momentum')
         md%domains(1)%boundary_subroutine => boundary_stage_transmissive_momentum
-    !case('boundary_stage_transmissive_momentum_sponge')
-    !    md%domains(1)%boundary_subroutine => boundary_stage_transmissive_momentum_sponge
     case('flather_with_vh_from_continuity')
         md%domains(1)%boundary_subroutine => flather_boundary
     case('flather_with_vh_equal_zero')
