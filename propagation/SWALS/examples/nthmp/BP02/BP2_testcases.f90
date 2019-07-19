@@ -1,7 +1,7 @@
 module local_routines 
 
     use global_mod, only: dp, ip, charlen, wall_elevation
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: read_gdal_raster
     use which_mod, only: which
     use file_io_mod, only: count_file_lines
@@ -72,7 +72,7 @@ module local_routines
         real(dp):: gauge_xy(2,11), wall
 
         ! Set stage
-        domain%U(:,:,1:3) = 0.0_dp
+        domain%U(:,:,STG) = 0.0_dp
 
         ! Set elevation
         tank_x = 0.0_dp
@@ -88,20 +88,20 @@ module local_routines
                         elev = elev + (min(x, tank_x(k+1)) - tank_x(k))*tank_slopes(k)
                      end if
                 end do
-            domain%U(i,j,4) = elev
+            domain%U(i,j,ELV) = elev
             end do
         end do
       
         ! Reflective boundaries on 3 sides
         wall = 0.5_dp
-        domain%U(:, 1, 4) = wall
-        domain%U(:, 2, 4) = wall
-        domain%U(:, domain%nx(2), 4) = wall
-        domain%U(:, domain%nx(2)-1, 4) = wall
-        domain%U(domain%nx(1), :, 4) = wall
-        domain%U(domain%nx(1)-1, :, 4) = wall
+        domain%U(:, 1, ELV) = wall
+        domain%U(:, 2, ELV) = wall
+        domain%U(:, domain%nx(2), ELV) = wall
+        domain%U(:, domain%nx(2)-1, ELV) = wall
+        domain%U(domain%nx(1), :, ELV) = wall
+        domain%U(domain%nx(1)-1, :, ELV) = wall
     
-        domain%U(:,:,1) = max(domain%U(:,:,1), domain%U(:,:,4))
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
         
         ! Get gauge points
         gauge_xy(2,:) = 0.0_dp
