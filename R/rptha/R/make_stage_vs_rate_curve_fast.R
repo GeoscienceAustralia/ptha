@@ -4,6 +4,43 @@
 # a family of stage-vs-exceedance-rate curves (one per logic-tree branch).
 #
 
+#'
+#' Slow R-implementation of the fortran version that is wrapped below. Useful for regression testing
+#' 
+R_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate<-function(
+    logic_tree_rate_curve_Mw,
+    logic_tree_rate_curve_exceedance_rate,
+    unique_Mw,
+    event_Mw, 
+    event_conditional_probability,
+    event_Mw_to_unique_Mw_match,
+    event_max_stage_sorted_decreasing,
+    event_max_stage_sorted_decreasing_inds,
+    output_stages){
+
+    max_mw_max = max(logic_tree_rate_curve_Mw)
+    dMw = unique_Mw[2] - unique_Mw[1]
+
+    # Get the 'incremental rate' for events with magnitude = unique_Mw
+    f1 = approxfun(logic_tree_rate_curve_Mw, logic_tree_rate_curve_exceedance_rate, rule=2, ties='ordered')
+    unique_rates = 
+        (f1(unique_Mw - dMw/2) * (unique_Mw - dMw/2 <= max_mw_max) - 
+         f1(unique_Mw + dMw/2) * (unique_Mw + dMw/2 <= max_mw_max) )
+   
+    # Partition the 'unique_rates' among all scenarios 
+    scenario_rates = event_conditional_probability * unique_rates[event_Mw_to_unique_Mw_match]
+
+    # Interpolate to get the stage exceedance rate
+    sorted_stages_with_cap = c(.Machine$double.xmax, 
+                               event_max_stage_sorted_decreasing[1]+1.0e-03, 
+                               event_max_stage_sorted_decreasing)
+    sorted_exrates_with_cap = cumsum( c(0, 0, scenario_rates[event_max_stage_sorted_decreasing_inds]) )
+    stage_exceedance_rates = approx(sorted_stages_with_cap, sorted_exrates_with_cap, xout=output_stages, rule=2:1, ties=max)$y
+
+    return(stage_exceedance_rates)
+
+}
+
 #SEXP make_stage_vs_rate_curve_site_c(SEXP rate_curve_Mw, SEXP rate_curve_exrate, SEXP N1,
 #    SEXP dMw, SEXP unique_Mw, SEXP N2, SEXP event_Mw_to_unique_Mw_match, SEXP event_conditional_prob,
 #    SEXP N3, SEXP sorted_event_stages, SEXP sorted_stage_inds, SEXP output_stages, SEXP output_stage_exrates,
@@ -54,16 +91,71 @@ fortran_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate<-function(
 #' the event occurs, given that an event with the same Mw occurred.
 #' @param event_max_stage The max stage for each event at the site of interest
 #' @param output_stages the stages at which we tabulate outputs
+#' @param use_Fortran if TRUE do the heavy computations using compiled Fortran code. Otherwise do them in R (slower)
 #' @return A matrix with one row for each logic-tree branch, and one column for each output-stage, giving the exceedance-rates
 #'
 #' @export
+#'
+#' @examples
+#' 
+#' logic_tree_rate_curve_Mw = seq(7.2, 9.8, by=0.1)
+#' # 20 logic-tree branches
+#' NB = 20
+#' logic_tree_rate_curves_exceedance_rate = matrix(0, nrow=NB, ncol=length(logic_tree_rate_curve_Mw))
+#' bs = seq(0.7, 1.3, len=NB)
+#' for(i in 1:NB){
+#'     logic_tree_rate_curves_exceedance_rate[i,] = 10**(-bs[i]*(logic_tree_rate_curve_Mw - 7))
+#' }
+#' 
+#' # Set of events -- 30 per magnitude
+#' N_per_mag = 30
+#' NE = N_per_mag*length(logic_tree_rate_curve_Mw)
+#' event_Mw = rep(logic_tree_rate_curve_Mw, n=N_per_mag)
+#' event_conditional_probability = rep(1/30, length(event_Mw))
+#' # Make up some max-stage values
+#' event_max_stage = runif(length(event_Mw)) - 0.5 + 0.5*(event_Mw - 6)
+#' output_stages = 10**seq(-2, 1.5, len=30)
+#' 
+#' # Typical version
+#' results = convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(
+#'     logic_tree_rate_curve_Mw,
+#'     logic_tree_rate_curves_exceedance_rate,
+#'     event_Mw,
+#'     event_conditional_probability,
+#'     event_max_stage,
+#'     output_stages)
+#' 
+#' ## This is in pure R code
+#' results_R = convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(
+#'     logic_tree_rate_curve_Mw,
+#'     logic_tree_rate_curves_exceedance_rate,
+#'     event_Mw,
+#'     event_conditional_probability,
+#'     event_max_stage,
+#'     output_stages,
+#'     use_Fortran=FALSE)
+#' 
+#' # They should be 'the same' up to floating point reordering
+#' ## Small absolute error
+#' stopifnot(all(abs(results - results_R) < 1.0e-15))
+#' ## Small relative error (1e-20 zero divide protection)
+#' stopifnot(all( ((results + 1e-20)/(results_R+1e-20) - 1) < 1.0e-12))
+#'
 convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates<-function(
     logic_tree_rate_curve_Mw,
     logic_tree_rate_curves_exceedance_rate,
     event_Mw,
     event_conditional_probability,
     event_max_stage,
-    output_stages){
+    output_stages,
+    use_Fortran=TRUE){
+
+    #
+    # Check inputs.
+    #
+    stopifnot(length(logic_tree_rate_curve_Mw) == ncol(logic_tree_rate_curves_exceedance_rate))
+    stopifnot(length(event_Mw) == length(event_conditional_probability))
+    stopifnot(length(event_Mw) == length(event_max_stage))
 
     #
     # Get the unique magnitudes, and ensure they satisfy our assumptions
@@ -91,18 +183,36 @@ convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates<-function(
     # This will hold the exceedance-rates 
     output_stage_exrates = matrix(0.0, ncol = length(output_stages), nrow=dim(logic_tree_rate_curves_exceedance_rate)[1])
 
-    # Get the stage exceedance-rates for each Mw-frequency curve
-    for(i in 1:(nrow(output_stage_exrates))){
-        output_stage_exrates[i,] = fortran_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate(
-            logic_tree_rate_curve_Mw,
-            logic_tree_rate_curves_exceedance_rate[i,],
-            unique_Mw,
-            event_Mw,
-            event_conditional_probability,
-            event_Mw_to_unique_Mw_match,
-            event_max_stage_sorted_decreasing,
-            event_max_stage_sorted_decreasing_inds,
-            output_stages)
+    if(use_Fortran){
+        # Get the stage exceedance-rates for each Mw-frequency curve
+        for(i in 1:(nrow(output_stage_exrates))){
+            output_stage_exrates[i,] = fortran_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate(
+                logic_tree_rate_curve_Mw,
+                logic_tree_rate_curves_exceedance_rate[i,],
+                unique_Mw,
+                event_Mw,
+                event_conditional_probability,
+                event_Mw_to_unique_Mw_match,
+                event_max_stage_sorted_decreasing,
+                event_max_stage_sorted_decreasing_inds,
+                output_stages)
+        }
+    }else{
+        # This is slower but offers some regression-test
+        # Get the stage exceedance-rates for each Mw-frequency curve
+        for(i in 1:(nrow(output_stage_exrates))){
+            output_stage_exrates[i,] = R_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate(
+                logic_tree_rate_curve_Mw,
+                logic_tree_rate_curves_exceedance_rate[i,],
+                unique_Mw,
+                event_Mw,
+                event_conditional_probability,
+                event_Mw_to_unique_Mw_match,
+                event_max_stage_sorted_decreasing,
+                event_max_stage_sorted_decreasing_inds,
+                output_stages)
+        }
+
     }
 
     return(output_stage_exrates)
@@ -127,10 +237,10 @@ convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates<-function(
 #'    weights = c(0.5, 0.1, 0.1, 0.1, 0.1, 0.1)
 #'
 #'    test_p = c(0.0, 0.5, 0.501, 0.6, 0.601, 0.7, 0.701, 0.8, 0.9, 0.901, 1.0)
-#'    empirical_p = weighted_percentile(vals, weights, test_p)
+#'    empirical_q = weighted_percentile(vals, weights, test_p)
 #'
 #'    expected_vals = c(-10, -10, -4, -4, 3, 3, 5, 5, 5, 6, 6)
-#'    stopifnot(all(empirical_p == expected_vals))
+#'    stopifnot(all(empirical_q == expected_vals))
 #'
 #' @export
 #'

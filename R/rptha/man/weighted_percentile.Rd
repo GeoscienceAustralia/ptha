@@ -27,9 +27,9 @@ This function returns the smallest value of X in 'vals' such that PR(vals <= X) 
    weights = c(0.5, 0.1, 0.1, 0.1, 0.1, 0.1)
 
    test_p = c(0.0, 0.5, 0.501, 0.6, 0.601, 0.7, 0.701, 0.8, 0.9, 0.901, 1.0)
-   empirical_p = weighted_percentile(vals, weights, test_p)
+   empirical_q = weighted_percentile(vals, weights, test_p)
 
    expected_vals = c(-10, -10, -4, -4, 3, 3, 5, 5, 5, 6, 6)
-   stopifnot(all(empirical_p == expected_vals))
+   stopifnot(all(empirical_q == expected_vals))
 
 }

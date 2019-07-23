@@ -7,7 +7,8 @@
 
   convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(logic_tree_rate_curve_Mw,
   logic_tree_rate_curves_exceedance_rate, event_Mw,
-  event_conditional_probability, event_max_stage, output_stages)
+  event_conditional_probability, event_max_stage, output_stages,
+  use_Fortran = TRUE)
 }
 \arguments{
 \item{logic_tree_rate_curve_Mw}{vector with magnitudes at which the logic-tree exceedance-rate curves are tabulated}
@@ -23,6 +24,8 @@ the event occurs, given that an event with the same Mw occurred.}
 \item{event_max_stage}{The max stage for each event at the site of interest}
 
 \item{output_stages}{the stages at which we tabulate outputs}
+
+\item{use_Fortran}{if TRUE do the heavy computations using compiled Fortran code. Otherwise do them in R (slower)}
 }
 \value{
 A matrix with one row for each logic-tree branch, and one column for each output-stage, giving the exceedance-rates
@@ -31,4 +34,50 @@ A matrix with one row for each logic-tree branch, and one column for each output
 Suppose we have a source zone containing a set of Mw-vs-exceedance rate curves, and a corresponding set
 of events, each of which lead to a given max-stage at a particular site. This routine computes a
 stage-vs-exceedance-rate curve for each Mw-vs-exceedance rate curve.
+}
+\examples{
+
+logic_tree_rate_curve_Mw = seq(7.2, 9.8, by=0.1)
+# 20 logic-tree branches
+NB = 20
+logic_tree_rate_curves_exceedance_rate = matrix(0, nrow=NB, ncol=length(logic_tree_rate_curve_Mw))
+bs = seq(0.7, 1.3, len=NB)
+for(i in 1:NB){
+    logic_tree_rate_curves_exceedance_rate[i,] = 10**(-bs[i]*(logic_tree_rate_curve_Mw - 7))
+}
+
+# Set of events -- 30 per magnitude
+N_per_mag = 30
+NE = N_per_mag*length(logic_tree_rate_curve_Mw)
+event_Mw = rep(logic_tree_rate_curve_Mw, n=N_per_mag)
+event_conditional_probability = rep(1/30, length(event_Mw))
+# Make up some max-stage values
+event_max_stage = runif(length(event_Mw)) - 0.5 + 0.5*(event_Mw - 6)
+output_stages = 10**seq(-2, 1.5, len=30)
+
+# Typical version
+results = convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(
+    logic_tree_rate_curve_Mw,
+    logic_tree_rate_curves_exceedance_rate,
+    event_Mw,
+    event_conditional_probability,
+    event_max_stage,
+    output_stages)
+
+## This is in pure R code
+results_R = convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(
+    logic_tree_rate_curve_Mw,
+    logic_tree_rate_curves_exceedance_rate,
+    event_Mw,
+    event_conditional_probability,
+    event_max_stage,
+    output_stages,
+    use_Fortran=FALSE)
+
+# They should be 'the same' up to floating point reordering
+## Small absolute error
+stopifnot(all(abs(results - results_R) < 1.0e-15))
+## Small relative error (1e-20 zero divide protection)
+stopifnot(all( ((results + 1e-20)/(results_R+1e-20) - 1) < 1.0e-12))
+
 }
