@@ -109,7 +109,7 @@ module fortran_stage_vs_rate_curve
 
         ! If we have any equal stages, then make their exrates equal as well (corresponding to the largest value).
         ! This is equivalent to the R treatment (which would employ 'ties = max' in 'approx')
-        do i = 2, N3
+        do i = 2, N3 ! No need to touch indices (N3+1, N3+2), which are "the cap"
             if(sorted_stages_with_cap(i) == sorted_stages_with_cap(i-1)) then
                 sorted_exrates_with_cap(i) = sorted_exrates_with_cap(i-1)
             end if
