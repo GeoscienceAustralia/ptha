@@ -108,3 +108,46 @@ convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates<-function(
     return(output_stage_exrates)
 
 }
+
+
+#' Get a percentile from an empirical distribution
+#'
+#' Suppose a distribution is defined empirically by a set of values (vals), each
+#' having a weight 'weight' which defines the probability mass function of each vals.
+#' This function returns the smallest value of X in 'vals' such that PR(vals <= X) >= p.
+#'
+#' @param vals vector of values
+#' @param weights vector of non-negative weights (one for each value). These will be
+#' normalised to weights/sum(weights) inside the function
+#' @param p vector, with length 1 or more, containing values for 'p' as defined above. We require 0<=p<=1
+#' @return A vector 'X' with the same length as 'p', as defined above
+#'
+#' @examples
+#'    vals = c(-10, 5, 3, -4, 5, 6)
+#'    weights = c(0.5, 0.1, 0.1, 0.1, 0.1, 0.1)
+#'
+#'    test_p = c(0.0, 0.5, 0.501, 0.6, 0.601, 0.7, 0.701, 0.8, 0.9, 0.901, 1.0)
+#'    empirical_p = weighted_percentile(vals, weights, test_p)
+#'
+#'    expected_vals = c(-10, -10, -4, -4, 3, 3, 5, 5, 5, 6, 6)
+#'    stopifnot(all(empirical_p == expected_vals))
+#'
+#' @export
+#'
+weighted_percentile<-function(vals, weights, p){
+
+    stopifnot( all(p >= 0 & p <= 1) )
+    stopifnot( all(weights >= 0) )
+
+    weights = weights/sum(weights)
+    sorted_vals = sort(vals, index.return=TRUE)
+    sorted_weights = weights[sorted_vals$ix]
+    cum_sorted_weights = cumsum(sorted_weights)
+
+    # Look up multiple indices at once
+    ind = p * 0
+    for(i in 1:length(p)){
+        ind[i] = sum(cum_sorted_weights < p[i]) + 1
+    }
+    return(sorted_vals$x[ind])
+}
