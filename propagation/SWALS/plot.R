@@ -811,6 +811,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
         # Get the "keep" subset of variables, corresponding to gauges in priority domain
         # Loop over 1-d variables lon/lat/ etc, and subset in space
         for(i in 1:length(clean_gauges[[counter]])){
+            # Only work on arrays
             if(class(clean_gauges[[counter]][[i]]) != 'array') next
             # Do not subset time! 
             if(names(clean_gauges[[counter]])[i] == 'time') next
@@ -865,16 +866,28 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
                     merged_gauges[[var]] = c(merged_gauges[[var]], clean_gauges[[counter]][[var]])
                 }
             }
-            # Time variables are 2D -- so rbind should merge properly
-            for(var in 1:length(merged_gauges$time_var)){
-                stopifnot(ncol(merged_gauges$time_var[[var]]) == ncol( clean_gauges[[counter]]$time_var[[var]] ))
-                merged_gauges$time_var[[var]] = rbind(merged_gauges$time_var[[var]], clean_gauges[[counter]]$time_var[[var]])
-            }
-            for(var in 1:length(merged_gauges$static_var)){
-                merged_gauges$static_var[[var]] = c(merged_gauges$static_var[[var]], clean_gauges[[counter]]$static_var[[var]])
-            }
-
         }
+
+        # Time variables are 2D -- so rbind should merge properly
+        # Should be faster to use do.call than repeated rbind's, due to memory allocation
+        for(var in 1:length(merged_gauges$time_var)){
+            tmp_list = vector(mode='list', length=length(clean_gauges))
+            for(counter in 1:length(clean_gauges)){
+                stopifnot(ncol(merged_gauges$time_var[[var]]) == ncol( clean_gauges[[counter]]$time_var[[var]] ))
+                tmp_list[[counter]] = clean_gauges[[counter]]$time_var[[var]]
+            }
+            merged_gauges$time_var[[var]] = do.call(rbind, tmp_list)
+        }
+        rm(tmp_list)
+
+        for(var in 1:length(merged_gauges$static_var)){
+            tmp_list = vector(mode='list', length=length(clean_gauges))
+            for(counter in 1:length(clean_gauges)){
+                tmp_list[[counter]] =  clean_gauges[[counter]]$static_var[[var]]
+            }
+            merged_gauges$static_var[[var]] = do.call(c, tmp_list)
+        }
+        rm(tmp_list)
     }
 
     # Bit of cleaning up. For missing variables, replace possibly multiple NAs with a single NA
