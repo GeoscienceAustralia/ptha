@@ -118,21 +118,24 @@ module fortran_stage_vs_rate_curve
             output_stages, output_stage_exrates)
 
         ! Ensure stages exceeding max have exceedance-rate of 0. Alternative to the 'cap' in the R code
-        do i = 1, N4
+        do i = N4, 1, -1
             if(output_stages(i) > sorted_event_stages(1)) then
                 ! In the older R scripts, we appended a point with 'stage=(max-stage+0.001), rate=0'.
-                ! This was used as a 'cap in the interpolation. 
+                ! This was used as a 'cap in the interpolation. To ensure I get 'the same' results, do that here.
                 if(output_stages(i) > sorted_event_stages(1) + 1.0e-03_dp) then
                     ! Outside the cap
                     output_stage_exrates(i) = 0.0_dp
                 else
                     ! Linear interpolation of the cap, like in the R code
-                    output_stage_exrates(i) = sorted_exrates_local(1) * &
-                        ((sorted_event_stages(1) + 1.0e-03_dp) - output_stages(i))/1.0e-03_dp
+                    output_stage_exrates(i) = sorted_exrates_local(1) / 1.0e-03_dp * &
+                        ((sorted_event_stages(1) + 1.0e-03_dp) - output_stages(i))
                     
                 end if
+            else
+                ! Because the output_stages are sorted, we can exit once they are not greater than
+                ! the maximum sorted_event_stages
+                exit
             end if
-
         end do
 
 
