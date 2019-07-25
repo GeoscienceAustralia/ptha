@@ -110,11 +110,12 @@ fortran_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate<-function(
 #' # Set of events -- 30 per magnitude
 #' N_per_mag = 30
 #' NE = N_per_mag*length(logic_tree_rate_curve_Mw)
-#' event_Mw = rep(logic_tree_rate_curve_Mw, n=N_per_mag)
-#' event_conditional_probability = rep(1/30, length(event_Mw))
+#' event_Mw = rep(logic_tree_rate_curve_Mw, times=N_per_mag)
+#' event_conditional_probability = rep(1/N_per_mag, length(event_Mw))
 #' # Make up some max-stage values
 #' event_max_stage = runif(length(event_Mw)) - 0.5 + 0.5*(event_Mw - 6)
-#' output_stages = 10**seq(-2, 1.5, len=30)
+#' N_output_stages = 100
+#' output_stages = 10**seq(-2, 1.5, len=N_output_stages)
 #' 
 #' # Typical version
 #' results = convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(

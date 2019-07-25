@@ -49,7 +49,7 @@ for(i in 1:NB){
 # Set of events -- 30 per magnitude
 N_per_mag = 30
 NE = N_per_mag*length(logic_tree_rate_curve_Mw)
-event_Mw = rep(logic_tree_rate_curve_Mw, n=N_per_mag)
+event_Mw = rep(logic_tree_rate_curve_Mw, times=N_per_mag)
 event_conditional_probability = rep(1/30, length(event_Mw))
 # Make up some max-stage values
 event_max_stage = runif(length(event_Mw)) - 0.5 + 0.5*(event_Mw - 6)
