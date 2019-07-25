@@ -59,7 +59,8 @@ module fortran_stage_vs_rate_curve
         
         ! Local variables
         real(dp) :: max_mw_max, unique_rates(N2), rate_curve_approx(N2+1), rate_curve_approx_Mws(N2+1)
-        real(dp) :: scenario_rates(N3), sorted_exrates_with_cap(N3+2), sorted_stages_with_cap(N3+2)
+        real(dp) :: scenario_rates(N3)
+        real(dp) :: sorted_exrates_local(N3)
         integer(ip) :: i
 
         !
@@ -83,7 +84,8 @@ module fortran_stage_vs_rate_curve
         !     f1(unique_Mw + dMw/2) * (unique_Mw + dMw/2 <= max_mw_max) )
         rate_curve_approx_Mws(1:N2) = unique_Mw(1:N2) - dMw(1)*0.5_dp
         rate_curve_approx_Mws(N2+1) = unique_Mw(N2) + dMw(1)*0.5_dp
-        call linear_interpolation(N1, rate_curve_Mw, rate_curve_exrate, N2+1, rate_curve_approx_Mws, rate_curve_approx)
+        call linear_interpolation_input_x_increasing(N1, rate_curve_Mw, rate_curve_exrate, N2+1, &
+            rate_curve_approx_Mws, rate_curve_approx)
         where(rate_curve_approx_Mws > max_mw_max) rate_curve_approx = 0.0_dp
         unique_rates(1:N2) = rate_curve_approx(1:N2) - rate_curve_approx(2:(N2+1))
 
@@ -92,32 +94,47 @@ module fortran_stage_vs_rate_curve
             scenario_rates(i) = event_conditional_prob(i) * unique_rates(event_Mw_to_unique_Mw_match(i))
         end do
 
-        ! The stages were already sorted. Just add the 'cap' so we can neatly treat zero exceedance-rates
-        sorted_stages_with_cap(1) = HUGE(1.0_dp)
-        sorted_stages_with_cap(2) = sorted_event_stages(1) + 1.0e-03_dp ! Same 1.0e-03 constant used in the R code
-        sorted_stages_with_cap(3:(N3+2)) = sorted_event_stages
-
-        ! sorted_exrates_with_cap = cumsum( c(0, 0, scenario_rates[sorted_stages_and_inds$ix]) )
-        sorted_exrates_with_cap(1:2) = 0.0_dp
-        do i = 1, N3
-            sorted_exrates_with_cap(i+2) = sorted_exrates_with_cap(i+1) + scenario_rates(sorted_stage_inds(i))
+        !# Interpolate to get the stage exceedance rate
+        !sorted_stages_with_cap = c(.Machine$double.xmax, 
+        !                       event_max_stage_sorted_decreasing[1]+1.0e-03, 
+        !                       event_max_stage_sorted_decreasing)
+        ! sorted_exrates_local = cumsum( c(0, 0, scenario_rates[event_max_stage_sorted_decreasing_inds]) )
+        !! Unlike in the R code, I don't add any 'cap' to for interpolation
+        sorted_exrates_local(1) = scenario_rates(sorted_stage_inds(1))
+        do i = 2, N3
+            sorted_exrates_local(i) = sorted_exrates_local(i-1) + scenario_rates(sorted_stage_inds(i))
         end do
 
-        ! The fortran interpolator requires that sorted_stages_with_cap is in increasing order
-        sorted_stages_with_cap = sorted_stages_with_cap((N3+2):1:-1)
-        sorted_exrates_with_cap = sorted_exrates_with_cap((N3+2):1:-1)
-
-        ! If we have any equal stages, then make their exrates equal as well (corresponding to the largest value).
-        ! This is equivalent to the R treatment (which would employ 'ties = max' in 'approx')
-        do i = 2, N3 ! No need to touch indices (N3+1, N3+2), which are "the cap"
-            if(sorted_stages_with_cap(i) == sorted_stages_with_cap(i-1)) then
-                sorted_exrates_with_cap(i) = sorted_exrates_with_cap(i-1)
+        ! Alternative to 'ties = max'
+        do i = N3-1, 1, -1
+            ! If the stages are tied, use the larger exceedance-rate
+            if(sorted_event_stages(i) == sorted_event_stages(i+1)) then
+                sorted_exrates_local(i) = sorted_exrates_local(i+1)
             end if
         end do
 
-        !stage_exceedance_rates = approx(sorted_stages_with_cap, sorted_exrates_with_cap, xout=stages, rule=2:1, ties=max)$y
-        call linear_interpolation(N3+2, sorted_stages_with_cap, sorted_exrates_with_cap, N4, &
+        !stage_exceedance_rates = approx(sorted_stages_with_cap, sorted_exrates_with_cap, xout=output_stages, rule=2:1, ties=max)$y
+        call linear_interpolation_input_x_decreasing(N3, sorted_event_stages, sorted_exrates_local, N4, &
             output_stages, output_stage_exrates)
+
+        ! Ensure stages exceeding max have exceedance-rate of 0. Alternative to the 'cap' in the R code
+        do i = 1, N4
+            if(output_stages(i) > sorted_event_stages(1)) then
+                ! In the older R scripts, we appended a point with 'stage=(max-stage+0.001), rate=0'.
+                ! This was used as a 'cap in the interpolation. 
+                if(output_stages(i) > sorted_event_stages(1) + 1.0e-03_dp) then
+                    ! Outside the cap
+                    output_stage_exrates(i) = 0.0_dp
+                else
+                    ! Linear interpolation of the cap, like in the R code
+                    output_stage_exrates(i) = sorted_exrates_local(1) * &
+                        ((sorted_event_stages(1) + 1.0e-03_dp) - output_stages(i))/1.0e-03_dp
+                    
+                end if
+            end if
+
+        end do
+
 
     end subroutine
 
@@ -131,7 +148,7 @@ module fortran_stage_vs_rate_curve
     ! We want to find the index corresponding to the value in 'x' that is nearest y.
     ! This is a useful operation e.g. for interpolation of sorted input data
     !
-    pure subroutine nearest_index_sorted(n, x, y, output)
+    pure subroutine nearest_index_sorted_x_increasing(n, x, y, output)
         integer(ip), intent(in) :: n
         real(dp), intent(in) :: x(n)
         real(dp), intent(in) :: y      
@@ -170,11 +187,50 @@ module fortran_stage_vs_rate_curve
 
     end subroutine
 
+    pure subroutine nearest_index_sorted_x_decreasing(n, x, y, output)
+        integer(ip), intent(in) :: n
+        real(dp), intent(in) :: x(n)
+        real(dp), intent(in) :: y      
+        integer(ip), intent(out) :: output
+
+        integer :: i, upper, lower
+
+        if(y > x(1)) then
+            output = 1
+        else 
+            if (y < x(n)) then
+                output = n
+            else
+                lower = 1
+                upper = n
+                ! Deliberate integer division
+                i = (lower + upper)/2 !floor(0.5_dp*(lower + upper))
+                do while ((x(i) < y).or.(x(i+1) > y))
+                   if(x(i) < y) then
+                       upper = i
+                   else
+                       lower = i
+                   end if
+                   ! Deliberate integer division
+                   i = (lower + upper)/2 !floor(0.5_dp*(lower + upper))
+                end do
+
+                if ( x(i) - y > y - x(i+1) ) then
+                    output = i+1
+                else
+                    output = i
+                end if
+
+            end if
+        end if
+
+    end subroutine
+
     !
     ! Suppose input_x, input_y are some data with input_x being sorted and increasing 
     ! We are given output_x, and wish to get output_y by linearly interpolating the
     ! original series.
-    pure subroutine linear_interpolation(n_input, input_x, input_y, n_output, output_x, output_y)
+    pure subroutine linear_interpolation_input_x_increasing(n_input, input_x, input_y, n_output, output_x, output_y)
         integer(ip), intent(in):: n_input, n_output
         real(dp), intent(in):: input_x(n_input), input_y(n_input), output_x(n_output)
         real(dp), intent(inout):: output_y(n_output)
@@ -184,9 +240,44 @@ module fortran_stage_vs_rate_curve
 
         do i = 1, n_output
             ! set j = nearest index to output_x(i) in input_x
-            call nearest_index_sorted(n_input, input_x, output_x(i), j)
+            call nearest_index_sorted_x_increasing(n_input, input_x, output_x(i), j)
             ! interpolate
             if (input_x(j) > output_x(i)) then
+                if(j > 1) then
+                    gradient = (input_y(j) - input_y(j-1))/(input_x(j) - input_x(j-1))
+                    output_y(i) = input_y(j-1) +  gradient * (output_x(i) - input_x(j-1))
+                else
+                    output_y(i) = input_y(1)
+                end if
+            else
+                if(j < n_input) then
+                    gradient = (input_y(j+1) - input_y(j))/(input_x(j+1) - input_x(j))
+                    output_y(i) = input_y(j) +  gradient * (output_x(i) - input_x(j))
+                else
+                    output_y(i) = input_y(n_input)
+                end if
+            end if
+        end do
+
+    end subroutine
+
+    !
+    ! Suppose input_x, input_y are some data with input_x being sorted and decreasing
+    ! We are given output_x, and wish to get output_y by linearly interpolating the
+    ! original series.
+    pure subroutine linear_interpolation_input_x_decreasing(n_input, input_x, input_y, n_output, output_x, output_y)
+        integer(ip), intent(in):: n_input, n_output
+        real(dp), intent(in):: input_x(n_input), input_y(n_input), output_x(n_output)
+        real(dp), intent(inout):: output_y(n_output)
+
+        integer(ip):: i, j
+        real(dp):: gradient
+
+        do i = 1, n_output
+            ! set j = nearest index to output_x(i) in input_x
+            call nearest_index_sorted_x_decreasing(n_input, input_x, output_x(i), j)
+            ! interpolate
+            if (input_x(j) < output_x(i)) then
                 if(j > 1) then
                     gradient = (input_y(j) - input_y(j-1))/(input_x(j) - input_x(j-1))
                     output_y(i) = input_y(j-1) +  gradient * (output_x(i) - input_x(j-1))
