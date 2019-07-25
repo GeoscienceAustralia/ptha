@@ -50,10 +50,11 @@ for(i in 1:NB){
 N_per_mag = 30
 NE = N_per_mag*length(logic_tree_rate_curve_Mw)
 event_Mw = rep(logic_tree_rate_curve_Mw, times=N_per_mag)
-event_conditional_probability = rep(1/30, length(event_Mw))
+event_conditional_probability = rep(1/N_per_mag, length(event_Mw))
 # Make up some max-stage values
 event_max_stage = runif(length(event_Mw)) - 0.5 + 0.5*(event_Mw - 6)
-output_stages = 10**seq(-2, 1.5, len=30)
+N_output_stages = 100
+output_stages = 10**seq(-2, 1.5, len=N_output_stages)
 
 # Typical version
 results = convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(
@@ -76,7 +77,7 @@ results_R = convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(
 
 # They should be 'the same' up to floating point reordering
 ## Small absolute error
-stopifnot(all(abs(results - results_R) < 1.0e-15))
+stopifnot(all(abs(results - results_R) < 1.0e-13))
 ## Small relative error (1e-20 zero divide protection)
 stopifnot(all( ((results + 1e-20)/(results_R+1e-20) - 1) < 1.0e-12))
 

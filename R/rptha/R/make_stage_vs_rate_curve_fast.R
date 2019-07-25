@@ -138,7 +138,7 @@ fortran_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate<-function(
 #' 
 #' # They should be 'the same' up to floating point reordering
 #' ## Small absolute error
-#' stopifnot(all(abs(results - results_R) < 1.0e-15))
+#' stopifnot(all(abs(results - results_R) < 1.0e-13))
 #' ## Small relative error (1e-20 zero divide protection)
 #' stopifnot(all( ((results + 1e-20)/(results_R+1e-20) - 1) < 1.0e-12))
 #'
