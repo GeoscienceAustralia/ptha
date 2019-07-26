@@ -8,7 +8,7 @@
   convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(logic_tree_rate_curve_Mw,
   logic_tree_rate_curves_exceedance_rate, event_Mw,
   event_conditional_probability, event_max_stage, output_stages,
-  use_Fortran = TRUE)
+  use_Fortran = TRUE, drop_small_events = FALSE)
 }
 \arguments{
 \item{logic_tree_rate_curve_Mw}{vector with magnitudes at which the logic-tree exceedance-rate curves are tabulated}
@@ -23,9 +23,11 @@ the event occurs, given that an event with the same Mw occurred.}
 
 \item{event_max_stage}{The max stage for each event at the site of interest}
 
-\item{output_stages}{the stages at which we tabulate outputs}
+\item{output_stages}{the stages at which we tabulate outputs. They must be sorted from low-to-high}
 
-\item{use_Fortran}{if TRUE do the heavy computations using compiled Fortran code. Otherwise do them in R (slower)}
+\item{use_Fortran}{logical if TRUE do the heavy computations using compiled Fortran code. Otherwise do them in R (slower)}
+
+\item{drop_small_events}{logical if TRUE, then remove events with (event_max_stage < min(output_stages))}
 }
 \value{
 A matrix with one row for each logic-tree branch, and one column for each output-stage, giving the exceedance-rates
@@ -53,6 +55,9 @@ event_Mw = rep(logic_tree_rate_curve_Mw, times=N_per_mag)
 event_conditional_probability = rep(1/N_per_mag, length(event_Mw))
 # Make up some max-stage values
 event_max_stage = runif(length(event_Mw)) - 0.5 + 0.5*(event_Mw - 6)
+# Make some max-stage values small, to help test drop_small_events
+event_max_stage[1:3] = 0
+# Make output_stages -- notice the minimum is > 0
 N_output_stages = 100
 output_stages = 10**seq(-2, 1.5, len=N_output_stages)
 
@@ -81,4 +86,18 @@ stopifnot(all(abs(results - results_R) < 1.0e-13))
 ## Small relative error (1e-20 zero divide protection)
 stopifnot(all( ((results + 1e-20)/(results_R+1e-20) - 1) < 1.0e-12))
 
+results_F2 = convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(
+    logic_tree_rate_curve_Mw,
+    logic_tree_rate_curves_exceedance_rate,
+    event_Mw,
+    event_conditional_probability,
+    event_max_stage,
+    output_stages, 
+    drop_small_events=TRUE)
+
+# They should be 'the same' up to floating point reordering
+## Small absolute error
+stopifnot(all(abs(results - results_F2) == 0))
+## Small relative error (1e-20 zero divide protection)
+stopifnot(all( ((results + 1e-20)/(results_F2+1e-20) - 1) == 0))
 }
