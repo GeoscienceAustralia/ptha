@@ -210,7 +210,7 @@ convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates<-function(
         if(length(low_stages) > 0){
             just_below_min_output_stage = max(event_max_stage[low_stages])
         }else{
-            just_below_min_output_stage = min_output_stage
+            just_below_min_output_stage = min_output_stages
         }
 
         # The only events that matter are these ones
