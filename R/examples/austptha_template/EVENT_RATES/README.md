@@ -186,3 +186,14 @@ routine, which is superceeded by
 [working_with_rate_curves.R](working_with_rate_curves.R) gives an example of working
 with the rate curves for a particular source-zone.
 
+## Updated stage-vs-exceedance-rate percentile uncertainty calculations
+
+These scripts apply some revised stage-vs-exceedance-rate percentile
+uncertainty calculations. 
+
+[revised_station_hazard_curves_PREPROCESSING.R](revised_station_hazard_curves_PREPROCESSING.R) preprocesses source-zone logic-tree branches to support the calculation.
+
+[revised_station_hazard_curves.R](revised_station_hazard_curves.R) computes stage-vs-exceedance-rate percentile curves
+
+[revised_ari500_station_hazard_curves_extract.R](revised_ari500_station_hazard_curves_extract.R) processes outputs from the previous script to compute the maximum-stage at ARI=500.
+
