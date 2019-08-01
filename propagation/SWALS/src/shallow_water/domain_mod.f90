@@ -75,10 +75,6 @@ module domain_mod
     ! Use this formatting when converting domain%myid to character
     character(len=charlen), parameter:: domain_myid_char_format = '(I0.20)'
 
-    ! Throw an error if we get a negative depth with magnitude larger than this
-    ! (seems not to be required with the new multidomain communication approach)
-    !real(dp), parameter :: roundoff_tol_wet_dry = 1.0e-02_dp !1.0e-04_dp
-
     ! Use this in explicitly vectorized domain routines
     ! A number of methods have been coded once with loops, and once with an
     ! explicitly vectorized alternatives. The latter is sometimes faster, but not always.
@@ -437,10 +433,6 @@ module domain_mod
 
     contains
   
-    ! Get a vectorized form of key routines
-    ! (UPDATE: Now the ones we use are included in this file)
-!#include "domain_routines_vectorized_include.f90"
-
     ! 
     ! Convenience printing function 
     ! FIXME: For nesting domains, consider modifying this to only use values
@@ -516,8 +508,8 @@ TIMER_START('printing_stats')
                 ! Linear leap-frog scheme doesn't store velocity
                 ! Get total, potential and kinetic energy in domain interior
                 !
-                ! FIXME: This does not exactly lead to energy conservation,
-                ! probably because of the details of the numerics.
+                ! This does not exactly lead to energy conservation, but with small-enough time-steps
+                ! it should be good.
                 !
 
                 ! Integrate over the model interior
@@ -589,8 +581,6 @@ TIMER_START('printing_stats')
 
         end if
 
-        ! Flux of mass through model boundaries
-        !write(domain%logfile_unit, *) 'Boundary flux time integral: ', domain%boundary_flux_time_integral
         ! Mass conservation check
         write(domain%logfile_unit, *) 'Mass Balance (domain interior): ', domain%mass_balance_interior()
 
@@ -1079,14 +1069,6 @@ TIMER_STOP('printing_stats')
             minmod_ab = ZERO_dp
         end if
 
-        !if(a>0.0_dp .and. b > 0.0_dp) then
-        !    minmod_ab = min(a, b)
-        !else if(a < 0.0_dp .and. b < 0.0_dp) then
-        !    minmod_ab = max(a, b)
-        !else
-        !    minmod_ab = ZERO_dp
-        !end if
-
     end subroutine
 
     !
@@ -1332,148 +1314,6 @@ TIMER_STOP('printing_stats')
 
         domain%negative_depth_fix_counter = domain%negative_depth_fix_counter + masscon_error
 
-        !!
-        !! Below here the code attempts to "fix" the mass balance, and throws error if it cannot
-        !! 
-        !if(masscon_error > 0_ip) then
-
-        !    unrecoverable_error = .false.
-
-        !    !
-        !    ! Try to correct the mass conservation errors. Should occur rarely
-        !    ! Can check by uncommenting this print statement
-        !    !print*, '.'
-        !    !
-        !    do j = 1, domain%nx(2)
-        !        do i = 1, domain%nx(1)
-
-        !            if(domain%depth(i,j) < ZERO_dp) then
-
-        !                ! Count how often this happens (should be rare)
-        !                domain%negative_depth_fix_counter = domain%negative_depth_fix_counter + 1
-        !                
-        !                ! Volume deficit in cell
-        !                vol_me = domain%depth(i,j) * domain%area_cell_y(j)
-        !                ! Volume deficit in cell, IF we accept that we can "clip" depths < roundoff_tol_wet_dry
-        !                vol_me_limit = (domain%depth(i,j) + roundoff_tol_wet_dry) * domain%area_cell_y(j)
-
-        !                ! Get left/right/top/bottom depths, to try to find somewhere we can steal the mass from
-        !                ! Index notation
-        !                !Left
-        !                if(i > 1) then
-        !                    d_nbr(I_LEFT) = domain%depth(i-1,j)
-        !                    area_nbr(I_LEFT) = domain%area_cell_y(j)
-        !                else
-        !                    d_nbr(I_LEFT) = ZERO_dp
-        !                    area_nbr(I_LEFT) = ZERO_dp
-        !                end if
-
-        !                ! Right
-        !                if(i < domain%nx(1)) then
-        !                    d_nbr(I_RIGHT) = domain%depth(i+1,j)
-        !                    area_nbr(I_RIGHT) = domain%area_cell_y(j)
-        !                else
-        !                    d_nbr(I_RIGHT) = ZERO_dp
-        !                    area_nbr(I_RIGHT) = ZERO_dp
-        !                end if
-
-        !                ! Bottom
-        !                if(j > 1) then
-        !                    d_nbr(I_BOTTOM) = domain%depth(i,j-1)
-        !                    area_nbr(I_BOTTOM) = domain%area_cell_y(j-1)
-        !                else
-        !                    d_nbr(I_BOTTOM) = ZERO_dp
-        !                    area_nbr(I_BOTTOM) = ZERO_dp
-        !                end if
-    
-        !                ! Top
-        !                if(j < domain%nx(2)) then
-        !                    d_nbr(I_TOP) = domain%depth(i,j+1)
-        !                    area_nbr(I_TOP) = domain%area_cell_y(j+1)
-        !                else
-        !                    d_nbr(I_TOP) = ZERO_dp
-        !                    area_nbr(I_TOP) = ZERO_dp
-        !                end if
-
-        !                ! Volume of water available in neighbours
-        !                vol_nbr = d_nbr * area_nbr
-        !                vol_avail = sum(vol_nbr, mask = vol_nbr>ZERO_dp)
-
-        !                !print*, 'DEPTH_LIMITING: ', domain%myid, i, j, domain%depth(i,j), vol_me, vol_me_limit
-        !                !print*, '                ', vol_avail, -vol_me/vol_avail, domain%time
-
-
-        !                if( vol_avail < (-vol_me_limit) ) then
-        !                    unrecoverable_error = .true.
-        !                    write(log_output_unit,*) 'Unrecoverable mass error!'
-        !                    write(log_output_unit,*) i, j, domain%depth(i,j), vol_me
-        !                    write(log_output_unit,*) d_nbr
-        !                    write(log_output_unit,*) vol_nbr
-        !                else
-        !                    if(vol_avail > vol_me_limit) then
-        !                        ! Take this fraction from each cell with positive volume
-        !                        take_fraction = min(-vol_me / vol_avail, 1.0_dp)
-        !                        !take_fraction = -vol_me / vol_avail
-        !                    else
-        !                        take_fraction = -vol_me_limit / vol_avail
-        !                    end if
-
-        !                    ! Depth corrected in i,j cell
-        !                    domain%depth(i,j) = ZERO_dp
-        !                    domain%U(i,j, STG) = domain%U(i,j,ELV)
-
-        !                    do i1 = 1, 4
-        !                        if(vol_nbr(i1) > ZERO_dp) then
-        !                            ! Take the mass
-        !                            d_nbr(i1) = d_nbr(i1) * take_fraction
-        !                            select case(i1)
-        !                            case(I_TOP)
-        !                                domain%depth(i,j+1) = d_nbr(i1)
-        !                                domain%U(i,j+1, STG) = domain%U(i,j+1, ELV) + d_nbr(i1)
-        !                            case(I_RIGHT)
-        !                                domain%depth(i+1,j) = d_nbr(i1)
-        !                                domain%U(i+1,j, STG) = domain%U(i+1,j, ELV) + d_nbr(i1)
-        !                            case(I_BOTTOM)
-        !                                domain%depth(i,j-1) = d_nbr(i1)
-        !                                domain%U(i,j-1, STG) = domain%U(i,j-1, ELV) + d_nbr(i1)
-        !                            case(I_LEFT)
-        !                                domain%depth(i-1,j) = d_nbr(i1)
-        !                                domain%U(i-1,j, STG) = domain%U(i-1,j, ELV) + d_nbr(i1)
-        !                            end select
-        !                        end if
-        !                    end do
-        !                end if
-        !            end if
-        !        end do
-        !    end do
-
-        !    ! If the error cannot be fixed, write a bunch of stuff
-        !    if(unrecoverable_error) then
-        !        masscon_error_neg_depth = minval(domain%depth)
-        !        write(domain%logfile_unit, *) 'stage < bed --> mass conservation error'
-        !        write(domain%logfile_unit, *) masscon_error_neg_depth, domain%nsteps_advanced
-        !        do j = 1, domain%nx(2)
-        !            do i = 1, domain%nx(1)
-        !                if(domain%depth(i,j) == masscon_error_neg_depth) then
-        !                    write(domain%logfile_unit,*) 'ij= ', i, j, '; x = ', domain%x(i), '; y= ', domain%y(j) , &
-        !                        domain%U(i,j,STG), domain%U(i,j,ELV), '; myid = ', domain%myid
-        !                    if(allocated(domain%nesting%priority_domain_index)) then
-        !                        write(domain%logfile_unit,*) 'priority index and image: ', &
-        !                            domain%nesting%priority_domain_index(i,j), &
-        !                            domain%nesting%priority_domain_image(i,j)
-        !                   end if
-        !                end if
-        !            end do 
-        !        end do
-        !        call domain%finalise() 
-        !        ! Need to stop here
-        !        call generic_stop()
-        !    end if
-       
-
-        !end if
-
-
     end subroutine
 
 ! Experimental energy-conservative flux computation.
@@ -1651,8 +1491,6 @@ TIMER_STOP('printing_stats')
             ! We are not doing nesting
             domain%boundary_flux_store_exterior = domain%boundary_flux_store
         end if
-
-        !print*, domain%boundary_flux_store_exterior
 
     end subroutine
 
@@ -2056,7 +1894,8 @@ TIMER_STOP('printing_stats')
     !
     ! Argument timestep is optional, but if provided should satisfy the CFL condition
     !
-    ! FIXME: Still need to implement nesting boundary flux integral timestepping, if required
+    ! FIXME: Still need to implement nesting boundary flux integral timestepping, if we
+    ! want to use this inside a multidomain
     !
     ! @param domain the domain to be updated
     ! @param timestep the timestep, by which the solution is advanced (n-1) times
@@ -2401,7 +2240,6 @@ TIMER_STOP('printing_stats')
 
 TIMER_START('evolve_one_step')
 
-
         timestepping_method = domain%timestepping_method
         time0 = domain%time
         static_before_time = domain%static_before_time
@@ -2589,10 +2427,6 @@ TIMER_STOP('evolve_one_step')
         output_folder_name = trim(domain%output_basedir) // '/RUN_ID' // trim(t3) // &
             '_' // trim(t4) // '_' // trim(t1) // '_' // trim(t2)
         call mkdir_p(output_folder_name)
-        !mkdir_command = 'mkdir -p ' // trim(output_folder_name)
-        !call execute_command_line(trim(mkdir_command))
-        !call system(trim(mkdir_command))
-
 
         ! Make a filename to hold domain metadata, and write the metadata
         t1 = trim(output_folder_name) // '/' // 'Domain_info_ID' // trim(t3) // '.txt'
@@ -2652,12 +2486,6 @@ TIMER_STOP('evolve_one_step')
         ! 
         attribute_names(7) = 'is_nesting_boundary_N_E_S_W' 
         write(attribute_values(7), *) domain%is_nesting_boundary
-        !
-        !attribute_names(8) = 'output_folder_name' 
-        !write(attribute_values(8), *) trim(output_folder_name)
-        
-
-        !print*, attribute_names, attribute_values
 
         call domain%nc_grid_output%initialise(filename=t1,&
             output_precision = output_precision, &
@@ -2899,6 +2727,9 @@ TIMER_STOP('fileIO')
     ! @param gauge_ids (optional) an REAL ID for each gauge. Default gives
     !  (1:size(xy_coords(1,:))) * 1.0. Even though integers are natural we store
     !   as REAL to avoid precision loss issues
+    ! @param attribute_names optional character vector with the names of global attributes for the netdf file
+    ! @param attribute_values optional character vector with the values for global attributes in the netcdf file (corresponding to
+    ! attribute_names)
     !
     subroutine setup_point_gauges(domain, xy_coords, time_series_var, static_var, gauge_ids, &
         attribute_names, attribute_values)
@@ -3141,218 +2972,6 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
 
     end subroutine
 
-!    !! DEFUNCT 
-!    !! THIS ROUTINE WAS REQUIRED FOR THE "OLD" evolve_multidomain_one_step, 
-!    !! BUT THE REVISED APPROACH SEEMS BETTER. 
-!    !! DELETE THIS AFTER SOME TIME
-!    !!
-!    ! Apply flux correction in recv regions, if the domain is coarser than the
-!    ! one it receives from
-!    !
-!    ! @param domain instance of domain type
-!    ! @param fraction_of multiply the correction by this number before applying. This
-!    !        is useful if we want to take multiple partial correction steps, rather than
-!    !        one big one.
-!    subroutine nesting_flux_correction_coarse_recvs(domain, fraction_of)
-!        class(domain_type), intent(inout) :: domain
-!        real(dp), optional, intent(in) :: fraction_of
-!
-!        integer(ip) :: i, k, n0, n1, m0, m1, dm, dn, dir
-!        integer(ip) :: my_index, my_image
-!        integer(ip) :: nbr_index, nbr_image
-!        integer(ip) :: var1, varN
-!        real(dp) :: fraction_of_local
-!
-!        if(present(fraction_of)) then
-!            fraction_of_local = fraction_of
-!        else
-!            fraction_of_local = 1.0_dp
-!        end if
-!
-!        if(send_boundary_flux_data .and. allocated(domain%nesting%recv_comms)) then
-!
-!!TIMER_START('nesting_flux_correction')
-!
-!            do i = 1, size(domain%nesting%recv_comms)
-!
-!                ! Only apply correction if current domain is coarse. (Since if the
-!                ! current domain is 'finer', its flux is viewed as 'correct', while the
-!                ! parent domain may require flux correction).
-!                if(domain%nesting%recv_comms(i)%my_domain_is_finer) cycle
-!
-!                my_index = domain%nesting%recv_comms(i)%my_domain_index
-!                my_image = domain%nesting%recv_comms(i)%my_domain_image_index
-!                nbr_index = domain%nesting%recv_comms(i)%neighbour_domain_index
-!                nbr_image = domain%nesting%recv_comms(i)%neighbour_domain_image_index
-!
-!                ! Suppose we are nesting domains of the same size next to each other
-!                ! In that case, it is also not obvious which ones flux should be viewed as correct
-!                if(domain%nesting%recv_comms(i)%equal_cell_ratios) then
-!                    ! Just make a 'random' decision as to which one corrects, based on the 
-!                    ! domain_index and image_index.
-!                    if(my_index > nbr_index) then
-!                        cycle
-!                    else
-!                        if(my_index == nbr_index .and. my_image > nbr_image) cycle
-!                        ! Strictly this won't work if they have the same domain_index and image_index. 
-!                        ! (in that case both will do the correction)
-!                        ! But that would be unusual. Normally when we have domains with the same grid size
-!                        ! communicating with each other, it is because of domain decomposition
-!                    end if
-!                    ! NOTE: In the case that both neighbouring domains have the same timestepping
-!                    ! method and grid size, in principle it would seem that no correction should be applied
-!                    ! to either domain (or that the corrections will anyway be zero). However, I am 
-!                    ! getting noticably better mass conservation if I only correct one, than if I correct both, or correct neither. 
-!                    ! (It is not obviously affecting the flow variables, so is plausibly "in the range of cumulative round-off").
-!                    ! Interestingly the "mass conservation error if we correct both" is very nearly equal to the negative of
-!                    ! "the mass conservation error if we correct neither" (hence why if we just correct one, the result is better).
-!                    ! This might make sense if there is significant round-off type error that leads to non-zero corrections. If we
-!                    ! correct both, or correct neither, then such errors would be amplified. But if we only correct one, they won't. 
-!                    ! Still this could be worth investigating later.
-!                    ! 
-!                end if
-!
-!                ! For linear receive domain, only correct mass fluxes. Otherwise,
-!                ! we should be able to correct mass and depth-integrated-velocity fluxes
-!                if(domain%timestepping_method == 'linear') then
-!                    ! update STG only
-!                    var1 = STG
-!                    varN = STG
-!                else
-!                    ! update STG, UH, VH
-!                    var1 = STG
-!                    varN = VH 
-!                end if
-!
-!                !
-!                ! North boundary
-!                !
-!                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
-!                n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
-!                m0 = domain%nesting%recv_comms(i)%recv_inds(2,2)
-!                dm = 1
-!                dir = 1
-!
-!                if(m0 < domain%nx(2)) then
-!                    do k = var1, varN
-!                        ! If the current domain is the priority domain @ m0+1, and
-!                        !  the recv-from domain is the priority domain @ m0, then correct
-!                        !  the [stage, uh, vh] just to the north
-!                        domain%U(n0:n1, m0+dm, k) = domain%U(n0:n1, m0+dm, k) - &
-!                            merge(ONE_dp, ZERO_dp, &
-!                                domain%nesting%priority_domain_index(n0:n1, m0+dm) == my_index .and. &
-!                                domain%nesting%priority_domain_image(n0:n1, m0+dm) == my_image .and. &
-!                                domain%nesting%priority_domain_index(n0:n1, m0) == nbr_index .and. &
-!                                domain%nesting%priority_domain_image(n0:n1, m0) == nbr_image &
-!                            ) * &
-!                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(n1-n0+1), k)/&
-!                            domain%area_cell_y(m0+dm), dp) * fraction_of_local
-!                    end do
-!                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
-!                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
-!                    domain%U(n0:n1, m0+dm, STG) = max(domain%U(n0:n1, m0+dm, ELV), domain%U(n0:n1, m0+dm, STG))
-!                end if
-!
-!                !
-!                ! South boundary
-!                !
-!                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
-!                n1 = domain%nesting%recv_comms(i)%recv_inds(2,1)
-!                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
-!                dm = -1
-!                dir = 2
-!
-!                if(m0 > 1) then
-!
-!                    do k = var1, varN 
-!                        ! If the current domain is the priority domain @ m0-1, and
-!                        !  the recv-from domain is the priority domain @ m0, then correct
-!                        !  the [stage, uh, vh] just to the south
-!                        domain%U(n0:n1, m0+dm, k) = domain%U(n0:n1, m0+dm, k) + &
-!                            merge(ONE_dp, ZERO_dp, &
-!                                domain%nesting%priority_domain_index(n0:n1, m0+dm) == my_index .and. &
-!                                domain%nesting%priority_domain_image(n0:n1, m0+dm) == my_image .and. &
-!                                domain%nesting%priority_domain_index(n0:n1, m0) == nbr_index .and. &
-!                                domain%nesting%priority_domain_image(n0:n1, m0) == nbr_image &
-!                            ) * &
-!                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(n1-n0+1), k)/&
-!                            domain%area_cell_y(m0+dm), dp) * fraction_of_local
-!                    end do
-!
-!                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
-!                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
-!                    domain%U(n0:n1, m0+dm, STG) = max(domain%U(n0:n1, m0+dm, ELV), domain%U(n0:n1, m0+dm, STG))
-!
-!                end if
-!
-!                !
-!                ! East boundary
-!                !
-!                n0 = domain%nesting%recv_comms(i)%recv_inds(2,1)
-!                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
-!                m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
-!                dn = 1
-!                dir = 3
-!
-!                if(n0 < domain%nx(1)) then
-!
-!                    do k = var1, varN
-!
-!                        domain%U(n0+dn, m0:m1, k) = domain%U(n0+dn, m0:m1, k) - &
-!                            merge(ONE_dp, ZERO_dp, &
-!                                domain%nesting%priority_domain_index(n0+dn, m0:m1) == my_index .and. &
-!                                domain%nesting%priority_domain_image(n0+dn, m0:m1) == my_image .and. &
-!                                domain%nesting%priority_domain_index(n0, m0:m1) == nbr_index .and. &
-!                                domain%nesting%priority_domain_image(n0, m0:m1) == nbr_image &
-!                            ) * &
-!                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(m1-m0+1), k)/&
-!                            domain%area_cell_y(m0:m1), dp) * fraction_of_local
-!                    end do
-!
-!                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
-!                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
-!                    domain%U(n0+dn, m0:m1, STG) = max(domain%U(n0+dn, m0:m1, ELV), domain%U(n0+dn, m0:m1, STG))
-!
-!                end if
-!
-!                !
-!                ! West boundary
-!                !
-!                n0 = domain%nesting%recv_comms(i)%recv_inds(1,1)
-!                m0 = domain%nesting%recv_comms(i)%recv_inds(1,2)
-!                m1 = domain%nesting%recv_comms(i)%recv_inds(2,2)
-!                dn = -1
-!                dir = 4
-!
-!                if(n0 > 1) then
-!
-!                    do k = var1, varN
-!
-!                        domain%U(n0+dn, m0:m1, k) = domain%U(n0+dn, m0:m1, k) + &
-!                            merge(ONE_dp, ZERO_dp, &
-!                                domain%nesting%priority_domain_index(n0+dn, m0:m1) == my_index .and. &
-!                                domain%nesting%priority_domain_image(n0+dn, m0:m1) == my_image .and. &
-!                                domain%nesting%priority_domain_index(n0, m0:m1) == nbr_index .and. &
-!                                domain%nesting%priority_domain_image(n0, m0:m1) == nbr_image &
-!                            ) * &
-!                            real(domain%nesting%recv_comms(i)%recv_box_flux_error(dir)%x(1:(m1-m0+1), k)/&
-!                            domain%area_cell_y(m0:m1), dp) * fraction_of_local
-!                    end do
-!
-!                    ! Ensure it didn't create a negative depth. Better to have a mass conservation error
-!                    ! FIXME: Be good if we could 'steal' missing mass from elsewhere in a justifiable way
-!                    domain%U(n0+dn, m0:m1, STG) = max(domain%U(n0+dn, m0:m1, ELV), domain%U(n0+dn, m0:m1, STG))
-!
-!                end if
-!    
-!
-!            end do 
-!
-!!TIMER_STOP('nesting_flux_correction')
-!
-!        end if
-!
-!    end subroutine
 
     ! Apply nesting flux correction all throughout the domain, even at non-priority-domain sites.
     !
@@ -3360,6 +2979,7 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
     ! "just like the other domains would do". This means we avoid having to do multiple nesting communications
     ! to make everything consistent.
     !
+    ! @param domain the domain
     ! @param all_dx_md rank 3 array with dx(1:2) for all domains in the multidomain
     ! @param all_is_staggered_grid_md rank 2 array with integer recording whether grid is staggered, for all domains in multidomain
     ! @param fraction_of real in [0.0,1.0], apply some fraction of the flux correction. By default apply completely (i.e. 1.0)
@@ -3392,38 +3012,6 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
 TIMER_START('nesting_flux_correction')
 
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, all_dx_md, all_is_staggered_grid_md, fraction_of_local)
-
-            ! NOTES on possible modifications that are not yet implemented.
-            !
-            ! If the domain to be corrected is 'coarser' than my_doman and the nbr_domain, then we should aggregate the flux_errors
-            ! before doing the correction (if the aim is to exactly reproduce what would happen on the coarse domain) 
-            !
-            ! If the domain to be corrected is 'finer' than my_domain, then we are doing a correction between '2 other domains', and
-            ! the one to be corrected is 'coarser or equal' than the neighbour domain. In this case, if the domain to be corrected
-            ! is coarser than its neighbour, then it seems we do not have sufficient information to do the correction exactly as it
-            ! would be done where that domain is priority, assuming we only get aggregated fluxes, and receive central-cell values?
-            ! In principle the central-cell values should be corrected and received.  Perhaps this could be dealt with by only
-            ! sending the 'central' flux correction in that case? HOWEVER -- the above doesn't matter for "reproducibility
-            ! irrespective of parallel".
-            !
-            ! Points above are worth considering if the numerical quality is not good - but not necessarily a problem.
-
-
-            !!! DEBUG PRINT
-            !do j = 1, domain%nx(2)
-            !    do i = 1, domain%nx(1)
-            !        if( (abs(domain%x(i) - 139.2958_dp) < domain%dx(1)/2.0_dp) .and. &
-            !            (abs(domain%y(j) - 42.17019_dp) < domain%dx(2)/2.0_dp) ) then
-            !            print*, 'a ', domain%nesting%recv_comms(1)%my_domain_index, &
-            !                    domain%nesting%recv_comms(1)%my_domain_image_index, &
-            !                    domain%x(i), &
-            !                    domain%y(j), &
-            !                    domain%U(i, j, 1), &
-            !                    domain%nesting%priority_domain_index(i,j), &
-            !                    domain%nesting%priority_domain_image(i,j)
-            !        end if
-            !    end do
-            !end do
 
             !
             ! NORTH BOUNDARIES. 
@@ -3516,8 +3104,6 @@ TIMER_START('nesting_flux_correction')
                         end if
                     end do
 
-                    !print*, 'N', my_index, nbr_index, out_index, m0, m1, n0, n1, equal_sizes, &
-                    !    dx_ratio, domain%y(m1) + domain%dx(2)/2
                 end if
 
             end do
@@ -3593,8 +3179,6 @@ TIMER_START('nesting_flux_correction')
                         end if
                     end do
 
-                    !print*, 'S', my_index, nbr_index, out_index, m0, m1, n0, n1, equal_sizes, &
-                    !    dx_ratio, domain%y(m0) - domain%dx(2)/2
                 end if
             end do
             !$OMP END DO
@@ -3683,7 +3267,6 @@ TIMER_START('nesting_flux_correction')
                         end if
                     end do
 
-                    !print*, 'E', my_image, my_index, nbr_index, nbr_image, out_index, out_image, m0, m1, n0, n1, equal_sizes, sg
                 end if
             end do
             !$OMP END DO
@@ -3756,19 +3339,9 @@ TIMER_START('nesting_flux_correction')
                         end if
                     end do
 
-                    !print*, 'W', my_image, my_index, nbr_index, nbr_image, out_index, out_image, m0, m1, n0, n1, equal_sizes, sg
                 end if
             end do
             !$OMP END DO
-
-            !if(domain%timestepping_method /= 'linear') then
-            !    !! FIXME: Do we need this wet/dry protection?
-            !    !$OMP DO SCHEDULE(STATIC)
-            !    do j = 1, domain%nx(2)
-            !        domain%U(:,j,STG) = max(domain%U(:,j,STG), domain%U(:,j,ELV))
-            !    end do
-            !    !$OMP END DO
-            !end if
 
             !
             ! Later we do some interpolation inside some recv boxes
@@ -3851,16 +3424,6 @@ TIMER_START('nesting_flux_correction')
                         nim = max(ic - inv_cell_ratios_ip(1), 1)
                         njp = min(jc + inv_cell_ratios_ip(2), domain%nx(2))
                         njm = max(jc - inv_cell_ratios_ip(2), 1)
-
-                        !if(ic == nip .or. ic == nim .or. jc == njp .or. jc == njm) then
-                        !    print*, 'BUG'
-                        !    my_index = domain%nesting%recv_comms(i)%my_domain_index
-                        !    my_image = domain%nesting%recv_comms(i)%my_domain_image_index
-                        !    print*, my_index, my_image
-                        !    print*, n0, n1, m0, m1, inv_cell_ratios_ip
-                        !    print*, ic, jc, nip, nim, njp, njm
-                        !    stop
-                        !end if
 
                         !
                         ! Below, compute depth change on the 'coarse grid' we receive from,
@@ -4015,22 +3578,6 @@ TIMER_START('nesting_flux_correction')
 
             !$OMP END PARALLEL
 
-            !!! DEBUG PRINT
-            !do j = 1, domain%nx(2)
-            !    do i = 1, domain%nx(1)
-            !        if( (abs(domain%x(i) - 139.2958_dp) < domain%dx(1)/2.0_dp) .and. &
-            !            (abs(domain%y(j) - 42.17019_dp) < domain%dx(2)/2.0_dp) ) then
-            !            print*, 'c ', domain%nesting%recv_comms(1)%my_domain_index, &
-            !                    domain%nesting%recv_comms(1)%my_domain_image_index, &
-            !                    domain%x(i), &
-            !                    domain%y(j), &
-            !                    domain%U(i, j, 1), &
-            !                    domain%nesting%priority_domain_index(i,j), &
-            !                    domain%nesting%priority_domain_image(i,j)
-            !        end if
-            !    end do
-            !end do
-
 TIMER_STOP('nesting_flux_correction')
 
         end if
@@ -4133,9 +3680,6 @@ TIMER_STOP('nesting_flux_correction')
                     dx_ratio = 0
                 end if
 
-                !! Turn off correction when nbr/out image have the same size.
-                !if(equal_sizes) dx_ratio = 0
-
                 !! Define variables to adjust
                 var1 = STG ! Always adjust stage, for mass conservation.
                 if(all_is_staggered_grid_md(cor_index, cor_image) == 1) then
@@ -4233,10 +3777,10 @@ TIMER_STOP('nesting_flux_correction')
     ! @param timestepping refinement factor How many time-steps should the new domain take, for each global time-step
     ! @param rounding method optional character controlling how we adjust lower-left/upper-right. 
     !   If rounding_method = 'expand' (DEFAULT), then we adjust the new domain lower-left/upper-right so that the provided
-    !   lower-left/upper-right are definitely contained in the new domain. If rounding_method = 'nearest', we move lower-left/upper-right
-    !   onto the nearest cell corner of the parent domain. This can be preferable if we want to have multiple child 
-    !   domains which share boundaries with each other -- but does not ensure the provided lower-left/upper-right are
-    !   within the new domain
+    !   lower-left/upper-right are definitely contained in the new domain. If rounding_method = 'nearest', we move
+    !   lower-left/upper-right onto the nearest cell corner of the parent domain. This can be preferable if we want to have multiple
+    !   child domains which share boundaries with each other -- but does not ensure the provided lower-left/upper-right are within
+    !   the new domain
     ! @param recursive_nesting optional logical. If TRUE(default), the domain's dx_refinement_factor will be multiplied
     !   by its parent domain's dx_refinement_factor before storing in domain%dx_refinement_facor. This will not affect 
     !   domain%dx. But it should should allow the domain to communicate 'cleanly' with "parents of its parent" if it is
@@ -4362,7 +3906,8 @@ TIMER_STOP('nesting_flux_correction')
     end subroutine
 
     !
-    ! Limited testing of the domain routines 
+    ! Very limited testing of the domain routines
+    ! More important are the validation tests.
     !
     subroutine test_domain_mod
         type(domain_type) :: domain
