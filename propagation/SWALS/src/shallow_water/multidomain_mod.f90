@@ -2046,7 +2046,8 @@ module multidomain_mod
 #ifdef TIMER
             call md%domains(j)%timer%timer_start('send_halos')
 #endif
-            !! Seems faster to do the openmp inside "process_data_to_send"?
+            !!! Seems faster to do the openmp inside "process_data_to_send"?
+            !!! So comment out openmp here. Also, ifort19 seg-faulted when I used openmp here, at least with -heap-arrays
             !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, j, send_to_recv_buffer_local)
             !!$OMP DO SCHEDULE(DYNAMIC)
             do i = 1, size(md%domains(j)%nesting%send_comms)
