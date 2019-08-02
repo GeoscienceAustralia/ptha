@@ -120,7 +120,7 @@
         !TIMER_STOP('LF_update')
 
         !TIMER_START('partitioned_comms')
-        call domain%partitioned_comms%communicate(domain%U)
+        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
         !TIMER_STOP('partitioned_comms')
 
         !TIMER_START('LF_update')

@@ -147,19 +147,19 @@ contains
 
         timer_sum = sum(timer%total)
 
-        write(out_unit, *) '############################################'
-        write(out_unit, *) 'WALLCLOCK TIME SUMMARY'
-        write(out_unit, *) '--------------------------------------------'
-        write(out_unit, *) 'Details'
+        write(out_unit, "(A)") '############################################'
+        write(out_unit, "(A)") 'WALLCLOCK TIME SUMMARY'
+        write(out_unit, "(A)") '--------------------------------------------'
+        write(out_unit, "(A)") 'Details'
         if(timer%ntimers > 0) then
             do i = 1, timer%ntimers
-                write(out_unit, *) '    ', TRIM(timer%names(i)), ': ', timer%total(i), &
-                    ' : ', timer%total(i)/timer_sum*100.0_C_DOUBLE, TRIM('%')
+                write(out_unit, "(A5, A50, A2, F20.8, A, F20.16, A2)") '    ', TRIM(timer%names(i)), ': ', timer%total(i), &
+                    ' : ', timer%total(i)/timer_sum*100.0_C_DOUBLE, TRIM(' %')
             end do
         end if
-        write(out_unit, *) '---------------'
-        write(out_unit, *) 'Total WALLCLOCK time: ', sum(timer%total)
-        write(out_unit, *) '############################################'
+        write(out_unit, "(A)") '---------------'
+        write(out_unit, "(A, F20.8)") 'Total WALLCLOCK time: ', sum(timer%total)
+        write(out_unit, "(A)") '############################################'
     end subroutine
 
 end module

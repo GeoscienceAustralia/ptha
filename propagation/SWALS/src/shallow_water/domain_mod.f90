@@ -271,6 +271,9 @@ module domain_mod
         ! This has mostly been superceeded by multidomain. However, if
         ! you really only need a single grid, then this might be an efficient choice.
         type(partitioned_domain_nesw_comms_type):: partitioned_comms
+        ! Determine whether we call domain%partitioned_comms%communicate. It would be better
+        ! to hide this inside partitioned_comms, but ifort segfaults when we do that.
+        logical :: use_partitioned_comms = .false. 
 
         ! We don't have to store the max_U. For some problems (linear solver) that can
         ! take a significant fraction of the total time, or use too much memory.
@@ -638,6 +641,7 @@ TIMER_STOP('printing_stats')
         if (present(co_size_xy)) then
             if(maxval(co_size_xy) > 1) then
                 use_partitioned_comms = .TRUE.
+                domain%use_partitioned_comms = .TRUE.
 
                 ! In parallel, we need to tell the code whether the domain is periodic or not
                 if(present(ew_periodic)) then
@@ -1788,7 +1792,7 @@ TIMER_STOP('printing_stats')
 
         ! Coarray communication, if required
         !TIMER_START('partitioned_comms')
-        call domain%partitioned_comms%communicate(domain%U)
+        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
         !TIMER_STOP('partitioned_comms')
 
     end subroutine
@@ -2027,7 +2031,7 @@ TIMER_STOP('printing_stats')
         !TIMER_STOP('update')
 
         !TIMER_START('partitioned_comms')
-        call domain%partitioned_comms%communicate(domain%U)
+        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
         !TIMER_STOP('partitioned_comms')
 
         ! Compute fluxes 
@@ -2065,7 +2069,7 @@ TIMER_STOP('printing_stats')
 
 
         !TIMER_START('partitioned_comms')
-        call domain%partitioned_comms%communicate(domain%U)
+        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
         !TIMER_STOP('partitioned_comms')
 
         domain%boundary_flux_evolve_integral = sum(domain%boundary_flux_store)*&

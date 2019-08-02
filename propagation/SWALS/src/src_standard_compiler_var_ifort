@@ -63,6 +63,16 @@ endif
 #
 # Fortran compiler
 #
+# For coarray, I could get it to work with:
+#     for SWALS_FC, replace 'ifort' with 'mpif90'
+#     for SWALS_FC_FLAGS, add "-coarray=distributed -coarray_num_images=32"
+#     for SWALS_PREPROCESSOR_FLAGS, add -DNOOPENMP and -DCOARRAY_PROVIDE_CO_ROUTINES and optionally (if coarray is slow, like old ifort) -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS 
+#         Can probably get it working with openmp too?
+# And run with something like:
+#    source ~/SWALS_ifort_modules.sh
+#    ulimit -s unlimited
+#    mpirun -genvall -genv FOR_ICAF_STATUS launched -n 32 ./model 'initial_condition_1.tif' 'sydney_test' 'test' > outfile32_ifort_test.log
+#
 SWALS_FC ?= ifort
 # If -DNOOPENMP was passed to the preprocessor, we should not link with openmp.
 ifeq ($(findstring DNOOPENMP, $(SWALS_PREPROCESSOR_FLAGS)),)

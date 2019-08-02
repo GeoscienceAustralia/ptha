@@ -1430,11 +1430,11 @@ module multidomain_mod
             vol0 = vol_and_bfi(3)
             dvol = vol_and_bfi(4) 
 #endif
-            write(log_output_unit,*) 'Volume statistics (m^3) integrated over all domains and images:'
-            write(log_output_unit,*) '  Multidomain volume       : ', vol
-            write(log_output_unit,*) '              volume change: ', dvol
-            write(log_output_unit,*) '     boundary flux integral: ', bfi
-            write(log_output_unit,*) '         unexplained change: ', dvol + bfi
+            write(log_output_unit, "(A)"         ) 'Volume statistics (m^3) integrated over all domains and images:'
+            write(log_output_unit, "(A, ES20.12)") '  Multidomain volume       : ', vol
+            write(log_output_unit, "(A, ES20.12)") '              volume change: ', dvol
+            write(log_output_unit, "(A, ES20.12)") '     boundary flux integral: ', bfi
+            write(log_output_unit, "(A, ES20.12)") '         unexplained change: ', dvol + bfi
 
     end subroutine
 
@@ -1729,8 +1729,8 @@ module multidomain_mod
         TIMER_START('printing_stats')
 
         ! Mark out the new time-step
-        write(log_output_unit, *) ''
-        write(log_output_unit, *) '###################################'
+        write(log_output_unit, "(A)") ''
+        write(log_output_unit, "(A)") '###################################'
 
         ! Variables to track extremes over all domains
         global_max_stage = -HUGE(1.0_dp)
@@ -1741,9 +1741,9 @@ module multidomain_mod
         do k = 1, size(md%domains)
 
             if(.not. only_global_stats) then
-                write(log_output_unit,*) ''
-                write(log_output_unit,*) '-----------'
-                write(log_output_unit,*) 'domain ', k
+                write(log_output_unit,"(A)") ''
+                write(log_output_unit,"(A)") '-----------'
+                write(log_output_unit,"(A,I6)") 'domain ', k
             end if
 
 
@@ -1814,32 +1814,32 @@ module multidomain_mod
             if(only_global_stats) cycle
 
             ! Print main statistics
-            write(log_output_unit, *) ''
-            write(log_output_unit, *) 'Domain ID: '
-            write(log_output_unit, *) '        ', md%domains(k)%myid
-            write(log_output_unit, *) 'Time: '
-            write(log_output_unit, *) '        ', md%domains(k)%time
-            write(log_output_unit, *) 'nsteps_advanced:'
-            write(log_output_unit, *) '        ', md%domains(k)%nsteps_advanced
-            write(log_output_unit, *) 'max_allowed_dt: '
-            write(log_output_unit, *) '        ', md%domains(k)%max_dt
-            write(log_output_unit, *) 'evolve_step_dt: '
-            write(log_output_unit, *) '        ', md%domains(k)%evolve_step_dt
-            write(log_output_unit, *) 'Stage: '
-            write(log_output_unit, *) '        ', maxstage
-            write(log_output_unit, *) '        ', minstage
-            write(log_output_unit, *) 'Speed: '
-            write(log_output_unit, *) '        ', maxspeed
-            write(log_output_unit, *) '        ', minspeed
-            write(log_output_unit, *) 'Negative_depth_clip_counter: '
-            write(log_output_unit, *) '        ', md%domains(k)%negative_depth_fix_counter
+            write(log_output_unit, "(A)"         ) ''
+            write(log_output_unit, "(A)"         ) 'Domain ID: '
+            write(log_output_unit, "(A, I15)"     ) '        ', md%domains(k)%myid
+            write(log_output_unit, "(A)"         ) 'Time: '
+            write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%time
+            write(log_output_unit, "(A)"         ) 'nsteps_advanced:'
+            write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%nsteps_advanced
+            write(log_output_unit, "(A)"         ) 'max_allowed_dt: '
+            write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%max_dt
+            write(log_output_unit, "(A)"         ) 'evolve_step_dt: '
+            write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%evolve_step_dt
+            write(log_output_unit, "(A)"         ) 'Stage: '
+            write(log_output_unit, "(A, ES20.12)") '        ', maxstage
+            write(log_output_unit, "(A, ES20.12)") '        ', minstage
+            write(log_output_unit, "(A)"         ) 'Speed: '
+            write(log_output_unit, "(A, ES20.12)") '        ', maxspeed
+            write(log_output_unit, "(A, ES20.12)") '        ', minspeed
+            write(log_output_unit, "(A)"         ) 'Negative_depth_clip_counter: '
+            write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%negative_depth_fix_counter
 
         end do
 
         ! Even if reporting global stats only, we'll still want to know the time
         if(only_global_stats) then
-            write(log_output_unit, *) 'Time: '
-            write(log_output_unit, *) '        ', md%domains(1)%time
+            write(log_output_unit, "(A)"         ) 'Time: '
+            write(log_output_unit, "(A, ES20.12)") '        ', md%domains(1)%time
         end if
 
 #ifdef COARRAY
@@ -1849,16 +1849,16 @@ module multidomain_mod
         call co_min(global_min_speed)
 #endif
 
-        write(log_output_unit, *) ''
-        write(log_output_unit,*) '-----------'
-        write(log_output_unit, *) 'Global stage range (over all domains and images): '
-        write(log_output_unit, *) '        ', global_max_stage
-        write(log_output_unit, *) '        ', global_min_stage
-        write(log_output_unit, *) 'Global speed range (over all domains and images) -- ', &
+        write(log_output_unit, "(A)"         ) ''
+        write(log_output_unit, "(A)"         ) '-----------'
+        write(log_output_unit, "(A)"         ) 'Global stage range (over all domains and images): '
+        write(log_output_unit, "(A, ES20.12)") '        ', global_max_stage
+        write(log_output_unit, "(A, ES20.12)") '        ', global_min_stage
+        write(log_output_unit, "(2A)"        ) 'Global speed range (over all domains and images) -- ', &
             'note linear domains can have very high velocities, even when stable: '
-        write(log_output_unit, *) '        ', global_max_speed
-        write(log_output_unit, *) '        ', global_min_speed
-        write(log_output_unit,*) '-----------'
+        write(log_output_unit, "(A, ES20.12)") '        ', global_max_speed
+        write(log_output_unit, "(A, ES20.12)") '        ', global_min_speed
+        write(log_output_unit, "(A)") '-----------'
         call md%report_mass_conservation_statistics()
 
 
@@ -3072,19 +3072,19 @@ module multidomain_mod
 
         ! Print out timing info for each
         do i = 1, size(md%domains)
-            write(log_output_unit,*) ''
-            write(log_output_unit,*) 'Timer of md%domains(', i, ')'
-            write(log_output_unit, *) trim(md%domains(i)%output_folder_name)
-            write(log_output_unit, *) mod(md%domains(i)%myid, large_64_int), md%domains(i)%local_index
-            write(log_output_unit,*) ''
+            write(log_output_unit, "(A)") ''
+            write(log_output_unit, "(A,I6,A)") 'Timer of md%domains(', i, ')'
+            write(log_output_unit, "(A)") trim(md%domains(i)%output_folder_name)
+            write(log_output_unit, "(I6, I6)") mod(md%domains(i)%myid, large_64_int), md%domains(i)%local_index
+            write(log_output_unit, "(A)") ''
             call md%domains(i)%timer%print(log_output_unit)
             call md%domains(i)%write_max_quantities()
             call md%domains(i)%finalise()
         end do
 
-        write(log_output_unit, *) ''
-        write(log_output_unit, *) 'Multidomain timer'
-        write(log_output_unit, *) ''
+        write(log_output_unit, "(A)") ''
+        write(log_output_unit, "(A)") 'Multidomain timer'
+        write(log_output_unit, "(A)") ''
         call md%timer%print(log_output_unit)
 
     end subroutine

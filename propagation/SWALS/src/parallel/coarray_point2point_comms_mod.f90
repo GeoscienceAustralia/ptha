@@ -179,6 +179,8 @@ module coarray_point2point_comms_mod
     !
     ! Main send buffer + metadata about what we send
     ! These are private to the module. 
+    ! Ideally they would live inside a derived-type (which would permit a program with >1 multidomain).
+    ! But is the compiler support up to this for coarrays?
     real(dp), allocatable :: send_buffer(:)
     integer(ip), allocatable :: send_start_index(:)
     integer(ip), allocatable :: send_size(:)

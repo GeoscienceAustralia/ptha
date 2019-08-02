@@ -19,7 +19,7 @@
 #endif
 
 module coarray_utilities_mod
-    use global_mod, only: dp, ip, charlen
+    use global_mod, only: dp, ip, charlen, long_long_ip
     use iso_fortran_env, only: int32
     use logging_mod, only: log_output_unit
 #ifdef COARRAY
@@ -125,6 +125,9 @@ module coarray_utilities_mod
         ! Hold the number of halo cells on the N,E,S,W boundary that are
         ! communicated from other domains
         integer(ip):: halo_pad(4) = [0, 0, 0, 0]
+
+        logical :: is_initialised = .false.
+        integer(long_long_ip) :: communicate_halos_counter = 0
 
         contains
 
@@ -273,6 +276,7 @@ module coarray_utilities_mod
         local_nx = global_nx
 
 #else
+        comms%is_initialised = .true.
 
         !ALLOCATE(comms_event_put_complete(4)[*])
         !ALLOCATE(comms_event_get_complete(4)[*])
@@ -652,36 +656,38 @@ module coarray_utilities_mod
 
         ! If COARRAY is not defined, then do nothing!
 #ifdef COARRAY
-        if(num_images() == 1) return       
-        if(all(comms%neighbour_images == 0)) return
+        if(comms%is_initialised .and. any(comms%neighbour_images > 0)) then
 
-        TIMER_START('to_buffer')
-        ! Step 1
-        ! Copy from U to buffers
-        call copy_halos_to_buffer(comms, U)
+            comms%communicate_halos_counter = comms%communicate_halos_counter + 1
 
-        TIMER_STOP('to_buffer')
-        ! Need to have finshed the communication before we can procced to copy
-        ! buffers into U
-        !write(log_output_unit,*) 'Pre sync', this_image(), ', ', comms%neighbour_images(comms%neighbour_images_keep)
-        if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
-        !write(log_output_unit,*) 'Post sync'
-        !sync all
+            TIMER_START('to_buffer')
+            ! Step 1
+            ! Copy from U to buffers
+            call copy_halos_to_buffer(comms, U)
 
-        TIMER_START('from_buffer')
-        call copy_halos_from_buffer(comms, U)
-        TIMER_STOP('from_buffer')
+            TIMER_STOP('to_buffer')
+            ! Need to have finshed the communication before we can procced to copy
+            ! buffers into U
+            !write(log_output_unit,*) 'Pre sync', this_image(), ', ', comms%neighbour_images(comms%neighbour_images_keep)
+            if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
+            !write(log_output_unit,*) 'Post sync'
+            !sync all
 
-        TIMER_START('sync')
-        ! Need to sync again, to prevent the possibility that
-        ! before the above buffer copy is complete, another image
-        ! could have completed the copy, proceeded and updated the recv buffer again.
-        !
-        ! Probably this could be more efficiently done with events
-        if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
-        !sync all
-        !sync memory
-        TIMER_STOP('sync')
+            TIMER_START('from_buffer')
+            call copy_halos_from_buffer(comms, U)
+            TIMER_STOP('from_buffer')
+
+            TIMER_START('sync')
+            ! Need to sync again, to prevent the possibility that
+            ! before the above buffer copy is complete, another image
+            ! could have completed the copy, proceeded and updated the recv buffer again.
+            !
+            ! Probably this could be more efficiently done with events
+            if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
+            !sync all
+            !sync memory
+            TIMER_STOP('sync')
+        end if
 #endif
     end subroutine
 
