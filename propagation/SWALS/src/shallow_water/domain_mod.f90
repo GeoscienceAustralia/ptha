@@ -1089,83 +1089,81 @@ TIMER_STOP('printing_stats')
         real(dp), intent(in):: U_local(n), U_lower(n), U_upper(n), theta(n) 
         real(dp), intent(out) :: gradient_dx(n)
 
-        integer(ip) :: i, imn, imx, vsize
         character(len=charlen), parameter :: limiter_type = 'MC' !'Minmod2' !'Superbee_variant' ! 'MC'
 
-        ! Local 'small' vectors used to pack data and enhance vectorization
-        integer, parameter :: v = vectorization_size
-        real(dp):: c(v), d(v), a(v), b(v), e(v), th(v)
+        integer(ip) :: i
+        real(dp):: a, b, c, d, e, th, sa, sb, half_sasb
 
+        if(limiter_type == 'MC') then
 
-        ! Strided loop by stride 'v', to help the compiler vectorize
-        do i = 1, n, v
+            !$OMP SIMD
+            do i = 1, n
 
-            ! Lower/upper indices
-            imn = i
-            imx = min(imn + v - 1, n)
-
-            ! If we have hit the end of the vector, then vsize < v, otherwise vsize=v
-            vsize = min(v, imx - imn + 1)
-
-            ! Pack data from input arrays into small arrays of size v. 
-            a(1:vsize) = U_upper(imn:imx) - U_local(imn:imx)
-            b(1:vsize) = U_local(imn:imx) - U_lower(imn:imx)
-
-            if(limiter_type == 'MC') then
-
-                th(1:vsize) = theta(imn:imx)
-                d = merge(min(abs(a), abs(b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
-                d = d * th ! Limit on the local gradient
+                a = U_upper(i) - U_local(i)
+                b = U_local(i) - U_lower(i)
+                th = theta(i)
+                sa = sign(ONE_dp,a)
+                sb = sign(ONE_dp,b)
+                half_sasb = HALF_dp * (sa + sb)
+                d = min(abs(a), abs(b)) * half_sasb * th ! Limit on local gradient
                 e = HALF_dp * (a + b)
-                b = ZERO_dp
-                c = merge(b, e, d == ZERO_dp) 
+                c = merge(ZERO_dp, e, d == ZERO_dp) 
                 ! NOTE: IF d /= 0, then clearly d, c have the same sign
                 ! We exploit this to avoid a further minmod call (which seems
                 ! expensive)
-                b = merge(min(c, d), max(c, d), d > ZERO_dp)
+                gradient_dx(i) = merge(min(c, d), max(c, d), d > ZERO_dp)
+            end do
 
-            else if(limiter_type == "Superbee_variant") then
+        else if(limiter_type == "Superbee_variant") then
 
+            !$OMP SIMD
+            do i = 1, n
+
+                a = U_upper(i) - U_local(i)
+                b = U_local(i) - U_lower(i)
                 ! Divide by 1.6 which is the default 'max theta' in the rk2 algorithms
-                th(1:vsize) = theta(imn:imx) * 2.0_dp/1.6_dp
+                th = theta(i) * 2.0_dp/1.6_dp
                 !d = minmod(a, th*b)
                 d = merge(min(abs(a), abs(th*b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
                 !e = minmod(th*a, b)
                 e = merge(min(abs(th*a), abs(b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
-                where(abs(e) > abs(d))
+                if(abs(e) > abs(d)) then
                     b = e
-                elsewhere
+                else
                     b = d
-                end where
+                endif
+                gradient_dx(i) = b 
+            end do
 
-            else if(limiter_type == "Minmod2") then
+        else if(limiter_type == "Minmod2") then
                 
-                th(1:vsize) = theta(imn:imx)
+            !$OMP SIMD
+            do i = 1, n
+
+                a = U_upper(i) - U_local(i)
+                b = U_local(i) - U_lower(i)
+                th = theta(i)
                 !d = ZERO_dp
                 e = HALF_dp * (a + b)
                 a = a * th
                 b = b * th
-                where(b > ZERO_dp .and. a > ZERO_dp)
+                if(b > ZERO_dp .and. a > ZERO_dp) then
                     ! Positive slopes
-                    where(b < a) a = b
+                    if(b < a) a = b
                     d = min(e, a)
-                elsewhere(b < ZERO_dp .and. a < ZERO_dp)
+                else if(b < ZERO_dp .and. a < ZERO_dp) then
                     ! Negative slopes
-                    where(b > a) a = b
+                    if(b > a) a = b
                     d = max(e, a)
-                elsewhere
+                else
                     d = ZERO_dp
-                end where
-                b = d
+                endif
+                gradient_dx(i) = d
+            end do
 
-            else
-
-                b = -HUGE(1.0_dp)
-
-            end if
-
-            gradient_dx(imn:imx) = b(1:vsize)
-        end do
+        else 
+            gradient_dx = ZERO_dp
+        end if
             
 
     end subroutine
@@ -1226,6 +1224,18 @@ TIMER_STOP('printing_stats')
         class(domain_type), intent(in) :: domain
         integer(ip), intent(in) :: j, nx, ny
         real(dp), intent(inout) :: theta_wd_EW(nx), dstage_EW(nx), ddepth_EW(nx), du_EW(nx), dv_EW(nx)
+
+        !real(dp) :: mindep, maxdep, theta_local
+        !integer(ip) :: i
+        !
+        !! limiter coefficient
+        !do i = 2, nx-1
+        !    mindep = min(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) - minimum_allowed_depth
+        !    maxdep = max(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) + &
+        !        limiter_coef3*minimum_allowed_depth
+        !    theta_local = limiter_coef4 * (mindep/maxdep - limiter_coef1)
+        !    theta_wd_EW(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
+        !end do
 
         ! limiter coefficient
         theta_wd_EW(2:(nx-1)) = limiter_coef4*( &

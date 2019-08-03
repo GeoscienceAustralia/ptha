@@ -104,9 +104,9 @@
     j_high = nint(loop_work_count * (my_omp_id + 1) * ONE_dp / n_omp_threads) + 2 - 1
 #endif
 
-    ! Use this in the loop to reduce computation when the previous j value was j-1.
-    ! (which is not always true because of openmp)
-    jlast = -HUGE(1_ip)
+    ! Pre-fetch the flow values at the NS edge from 'j-1'
+    call get_NS_limited_gradient_dx(domain, j_low-1, nx, ny, &
+        theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS)
 
     ! Main loop
     do j = j_low, j_high
@@ -127,24 +127,16 @@
         bed_j_minus_1 = domain%U(:,j-1,ELV)
 
         ! Get the NS change in stage, depth, u-vel, v-vel, at the row 'j-1'
-        if(jlast /= j-1) then
-            call get_NS_limited_gradient_dx(domain, j-1, nx, ny, &
-                theta_wd_NS_lower, dstage_NS_lower, ddepth_NS_lower, du_NS_lower, dv_NS_lower)
-        else
-            dstage_NS_lower = dstage_NS
-            ddepth_NS_lower = ddepth_NS
-            du_NS_lower = du_NS
-            dv_NS_lower = dv_NS
-            theta_wd_NS_lower = theta_wd_NS
-        end if
+        ! We can reuse the old values since the 'j' loop is ordered
+        dstage_NS_lower = dstage_NS
+        ddepth_NS_lower = ddepth_NS
+        du_NS_lower = du_NS
+        dv_NS_lower = dv_NS
+        theta_wd_NS_lower = theta_wd_NS
 
         ! Get the NS change in stage, depth, u-vel, v-vel, at the row 'j'
         call get_NS_limited_gradient_dx(domain, j, nx, ny, &
             theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS)
-
-        ! By setting jlast, we allow the above subroutine call to reuse
-        ! limited gradient values from the previous loop iterate
-        jlast = j 
 
         !$OMP SIMD
         do i = 2, nx
