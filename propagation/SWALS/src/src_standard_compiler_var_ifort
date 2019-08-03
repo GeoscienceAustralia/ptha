@@ -69,6 +69,7 @@ ifeq ($(findstring DNOOPENMP, $(SWALS_PREPROCESSOR_FLAGS)),)
     # Case with openmp
     # For coarray (e.g. 32 images), use SWALS_FC=mpif90 as the compiler, and add
     # -coarray=distributed -coarray-num-images=32 to the SWALS_FC_FLAGS
+    # and -DCOARRAY -DCOARRAY_PROVIDE_CO_ROUTINES
     SWALS_FC_FLAGS ?= -O3 -qopenmp -fpp -fPIC -heap-arrays
 else
     # Case without openmp
