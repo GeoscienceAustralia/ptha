@@ -154,7 +154,7 @@ A number of preprocessor variables can be defined to control features of the cod
     -DCOARRAY (build with coarray support. Otherwise only OpenMP parallisation can be used)
     -DREALFLOAT (use single precision for all reals. Otherwise double-precision is used)
     -DNOCORIOLIS (do not include Coriolis terms in spherical coordinates. By default, Coriolis terms are used when -DSPHERICAL is defined. They can ONLY be used in conjunction with spherical coordinates. But even in this case, sometimes it is useful to turn them off, hence this variable)
-    -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS (this uses MPI instead of coarrays for communication in the main evolve loop. It improved performance using Intel-Fortran 2019, which does not have great coarray performance)
+    -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS (this uses MPI instead of coarrays for communication in the main evolve loop. It improved performance using Intel-Fortran 2018, which did not have great coarray performance)
     -DCOARRAY_PROVIDE_CO_ROUTINES (provide implementations of coarray collectives using MPI. This is required for Intel-Fortran 2019, which does not support Fortran coarray collectives such as co_min, co_max, co_sum, etc)
     -DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS (Allow nonlinear domains inside a multidomain to take larger timesteps than suggested by timestepping_refinement_factor, if this would be stable. This can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file, which can be generated from a preliminary model run (see make_load_balance_partition in plot.R))
 
@@ -164,4 +164,4 @@ Other options that are less often useful include:
     -DNOOPENMP (do not use the openmp library, not even for timing the code. In this case, the timer will report the CPU time for all cores, not the wallclock time. This can occasionally be useful if you must avoid using openmp.)
     -DNONETCDF (do not use netcdf for tide gauge outputs. This is useful if you cannot build with netcdf for some reason.)
     -DMPI (use MPI_Abort in the generic stop routine. This can probably be removed?)
-
+    -DDEBUG_ARRAY (add an array domain%debug_array(nx, ny) to every domain, which is written to netcdf at every output timestep. This can provide a scratch space for debugging.)
