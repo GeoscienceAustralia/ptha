@@ -22,14 +22,17 @@ module local_routines
     ! affects the tsunami in this case.
     !
     ! Possible values are:
+    !   'boundary_stage_radiation_momentum' -- Works pretty well without tuning. 
+    ! 
     !   'boundary_stage_transmissive_normal_momentum' -- tsunami waves are over-amplified, probably 
-    !       because of reflections from the boundary. tide is OK
-    !   'boundary_stage_transmissive_momentum' -- Similar to above
+    !       because of reflections from the boundary. Tide is OK
+    !   'boundary_stage_transmissive_momentum' -- Similar to previous
     !   'flather_with_uh_equal_zero' -- tsunami waves under-amplified (i.e. too small). Tide is OK
     !   'flather_with_vh_from_continuity' -- about right? But depends on a scale for the boundary 
     !       VH term, which we can estimate from continuity, but needs tuning.
     !   
-    character(len=charlen), parameter :: boundary_type = 'flather_with_vh_from_continuity'
+    character(len=charlen), parameter :: boundary_type = 'boundary_stage_radiation_momentum'
+    !character(len=charlen), parameter :: boundary_type = 'flather_with_vh_from_continuity'
     !character(len=charlen), parameter :: boundary_type = 'boundary_stage_transmissive_momentum'
 
     ! This will hold the information -- is seen by other parts of the module
@@ -103,7 +106,7 @@ module local_routines
             stage_uh_vh_elev(2:3) = 0.0_dp
         else
 
-            ! Much experimentation was conducted here. This problem seems to be sensitive to
+            ! Much experimentation was conducted here. This problem is sensitive to
             ! imperfections in our semi-transmissive boundary conditions which allow a 
             ! stage forcing. (Not too surprising, because the boundary is quite close to the
             ! coast, in 'not very deep' water).
@@ -117,6 +120,10 @@ module local_routines
             case('boundary_stage_transmissive_momentum')
                 ! Do nothing, because we do not need uh/vh.
                 stage_uh_vh_elev(2:3) = 0.0_dp 
+
+            case('boundary_stage_radiation_momentum') 
+                ! These will never be used for this boundary
+                stage_uh_vh_elev(2:3) = 0.0_dp
 
             case('flather_with_vh_equal_zero') 
                 ! This absorbs, but also distorts the stage at the boundary too much when
@@ -189,9 +196,9 @@ module local_routines
 
         !call domain%smooth_elevation(smooth_method='9pt_average')
 
-        !
         ! The DEM needs to be 'fixed' in a few places where bridges remain. Google earth    
         ! suggests the bridges should not strongly impede the flow. So based on checks of the DEM, ....
+        ! This doesn't really affect the model results near the gauges, but....
         !
         ! pol1 should have a value about -6.0
         !
@@ -246,7 +253,7 @@ program run_Tauranga
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary, &
-        boundary_stage_transmissive_momentum
+        boundary_stage_transmissive_momentum, boundary_stage_radiation_momentum
     use local_routines
     use timer_mod
     use logging_mod, only: log_output_unit
@@ -356,6 +363,8 @@ program run_Tauranga
         md%domains(1)%boundary_subroutine => flather_boundary
     case('flather_with_vh_equal_zero')
         md%domains(1)%boundary_subroutine => flather_boundary
+    case('boundary_stage_radiation_momentum')
+        md%domains(1)%boundary_subroutine => boundary_stage_radiation_momentum
     case default
         stop "Invalid boundary_type value"
     end select
