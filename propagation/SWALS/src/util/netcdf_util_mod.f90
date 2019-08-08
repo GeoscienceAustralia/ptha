@@ -34,6 +34,10 @@ module netcdf_util
 
         ! Time varying variables
         integer :: var_stage_id, var_uh_id, var_vh_id, var_elev_id
+#ifdef DEBUG_ARRAY
+        ! Time-varying array for debugging
+        integer :: var_debug_array_id
+#endif
         ! Static variables
         integer :: var_max_stage_id, var_elev0_id, var_is_priority_domain_id, &
             var_manningsq_id, var_priority_ind, var_priority_img
@@ -239,6 +243,14 @@ module netcdf_util
             if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_elev_id, 1, 1, 3), __LINE__)
         end if
 
+#ifdef DEBUG_ARRAY
+        ! A time-varying rank-3 debug array, with spatial dimensions (nx, ny)
+        call check(nf90_def_var(iNcid, 'debug_array', output_prec, &
+                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
+                nc_grid_output%var_debug_array_id), __LINE__ )
+
+#endif
+
         ! priority_domain -- Use 1 if the current domain is the priority domain, and zero otherwise
         call check(nf90_def_var(iNcid, "is_priority_domain", output_byte, &
             [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
@@ -310,10 +322,12 @@ SRC_GIT_VERSION ))
     !@param time real model time
     !@param U rank 3 array, with size(U,3) == 4, and U(:,:,1) = stage, U(:,:,2)
     !       = uh, U(:,:,3) = vh, U(:,:,4) = elev
-    subroutine write_grids(nc_grid_output, time, U)
+    !@param debug_array optional debug_array
+    subroutine write_grids(nc_grid_output, time, U, debug_array)
 
         class(nc_grid_output_type), intent(inout) :: nc_grid_output
         real(dp), intent(in) :: U(:,:,:), time
+        real(dp), optional, intent(in) :: debug_array(:,:)
 
         integer:: iNcid, nxy(2), spatial_start(2), spatial_stride(2)
         real(C_DOUBLE) :: current_cpu_time
@@ -378,6 +392,17 @@ SRC_GIT_VERSION ))
                 start=[1,1,nc_grid_output%num_output_steps]), &
                 __LINE__)
         end if
+
+#ifdef DEBUG_ARRAY
+        if(present(debug_array)) then
+            call check(nf90_put_var(&
+                iNcid, &
+                nc_grid_output%var_debug_array_id, &
+                debug_array(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2)), &
+                start=[1,1,nc_grid_output%num_output_steps]), &
+                __LINE__)
+        end if
+#endif
 
         call check(nf90_sync(iNcid))
 

@@ -75,6 +75,7 @@ module boundary_mod
 
     end subroutine
 
+
     !
     ! Apply the boundary function domain%boundary_function at the boundaries.
     ! The latter function must take as input (domain, time, i, j) and 
@@ -159,6 +160,159 @@ module boundary_mod
         !$OMP END PARALLEL
 
     end subroutine
+
+
+    !
+    ! This is an alternative to "flather_boundary".
+    !
+    subroutine boundary_stage_radiation_momentum(domain)
+
+        type(domain_type), intent(inout):: domain
+
+        integer(ip):: i, j, k
+        real(dp):: bc_values(4), local_h
+
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+        !$OMP DO SCHEDULE(STATIC)
+        do j = 1, domain%nx(2)
+            ! West boundary
+            if(domain%boundary_exterior(4)) then
+                i = 1
+                if(associated(domain%boundary_function)) then
+                    bc_values = domain%boundary_function(domain, domain%time, i, j)
+                else
+                    ! Defaults
+                    bc_values(1) = domain%MSL_linear
+                    bc_values(2:3) = 0.0_dp
+                    bc_values(4) = domain%U(i,j,ELV)
+                end if
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
+                local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
+
+                if(domain%is_staggered_grid) then
+                    domain%U(i,j,UH) = -(sqrt(gravity * max(domain%U(i+1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
+                                         sqrt(gravity * local_h ) ) * local_h
+                else
+                    ! Nonlinear domain
+                    domain%U(i,j,UH) = -(sqrt(gravity * max(domain%U(i+1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
+                                         sqrt(gravity * local_h ) ) * local_h
+                    ! Thus reduces oscillations that can otherwise arise at the boundary
+                    domain%U(i+1,j,UH) = 0.5_dp * (domain%U(i,j,UH) + domain%U(i+1,j,UH))
+                    ! Extrapolate VH
+                    domain%U(i,j,VH) = domain%U(i+1,j,VH)
+                end if
+            end if
+
+            ! East boundary
+            if(domain%boundary_exterior(2)) then
+                i = domain%nx(1)
+                if(associated(domain%boundary_function)) then
+                    bc_values = domain%boundary_function(domain, domain%time, i, j)
+                else
+                    ! Defaults
+                    bc_values(1) = domain%MSL_linear
+                    bc_values(2:3) = 0.0_dp
+                    bc_values(4) = domain%U(i,j,ELV)
+                end if
+
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
+                local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
+
+                if(domain%is_staggered_grid) then
+                    ! Here, account for the fact that domain%U(domain%nx(1),:,UH) is never used in the staggered grid solver.
+                    ! Set it anyway, but also set the interior point that is used
+                    domain%U((i-1):i,j,UH) = &
+                        (sqrt(gravity * max(domain%U(i-1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
+                         sqrt(gravity * local_h ) ) * local_h
+                else
+                    ! The nonlinear solvers need all boundary values updated
+                    domain%U(i,j,UH) = &
+                        (sqrt(gravity * max(domain%U(i-1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
+                         sqrt(gravity * local_h ) ) * local_h
+                    ! Thus reduces oscillations that can otherwise arise at the boundary
+                    domain%U(i-1,j,UH) = 0.5_dp * (domain%U(i,j,UH) + domain%U(i-1,j,UH))
+                    ! Extrapolate VH
+                    domain%U(i,j,VH) = domain%U(i-1,j,VH)
+                end if
+
+            end if
+
+        end do
+        !$OMP END DO
+
+        !$OMP DO SCHEDULE(STATIC)
+        do i = 1, domain%nx(1)
+            ! South boundary
+            if(domain%boundary_exterior(3)) then
+                j = 1
+                if(associated(domain%boundary_function)) then
+                    bc_values = domain%boundary_function(domain, domain%time, i, j)
+                else
+                    ! Defaults
+                    bc_values(1) = domain%MSL_linear
+                    bc_values(2:3) = 0.0_dp
+                    bc_values(4) = domain%U(i,j,ELV)
+                end if
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
+                local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
+
+                if(domain%is_staggered_grid) then
+                    domain%U(i,j,VH) = -(sqrt(gravity * max(domain%U(i, j+1, STG) - bc_values(ELV), 0.0_dp) ) - &
+                                         sqrt(gravity * local_h ) ) * local_h
+                else
+                    ! The nonlinear solvers need all boundary values updated
+                    domain%U(i,j,VH) = -(sqrt(gravity * max(domain%U(i, j+1, STG) - bc_values(ELV), 0.0_dp) ) - &
+                                         sqrt(gravity * local_h ) ) * local_h
+                    ! Thus reduces oscillations that can otherwise arise at the boundary
+                    domain%U(i,j+1,VH) = 0.5_dp * (domain%U(i,j,VH) + domain%U(i,j+1,VH))
+                    ! Extrapolate UH
+                    domain%U(i,j,UH) = domain%U(i,j+1, UH)
+                end if
+
+            end if
+
+            ! North boundary
+            if(domain%boundary_exterior(1)) then
+                j = domain%nx(2)
+                if(associated(domain%boundary_function)) then
+                    bc_values = domain%boundary_function(domain, domain%time, i, j)
+                else
+                    ! Defaults
+                    bc_values(1) = domain%MSL_linear
+                    bc_values(2:3) = 0.0_dp
+                    bc_values(4) = domain%U(i,j,ELV)
+                end if
+
+                domain%U(i,j,STG) = bc_values(1)
+                domain%U(i,j,ELV) = bc_values(4)
+                local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
+
+                if(domain%is_staggered_grid) then
+                    ! Here, account for the fact that domain%U(:,j,VH) is never used in the solver
+                    ! Set it anyway, but also set the interior point that is used
+                    domain%U(i,(j-1):j,VH) = (sqrt(gravity * max(domain%U(i, j-1, STG) - bc_values(ELV), 0.0_dp) ) - &
+                                              sqrt(gravity * local_h ) ) * local_h
+                else
+                    ! The nonlinear solvers need all boundary values updated
+                    domain%U(i,j,VH) = (sqrt(gravity * max(domain%U(i, j-1, STG) - bc_values(ELV), 0.0_dp) ) - &
+                                        sqrt(gravity * local_h ) ) * local_h
+                    ! Thus reduces oscillations that can otherwise arise at the boundary
+                    domain%U(i,j-1,VH) = 0.5_dp * (domain%U(i,j,VH) + domain%U(i,j-1,VH))
+                    ! Extrapolate UH
+                    domain%U(i,j,UH) = domain%U(i,j-1, UH)
+                end if
+
+            end if
+        end do
+        !$OMP END DO
+        !$OMP END PARALLEL
+
+    end subroutine
+
+
     !
     ! Apply the boundary function domain%boundary_function at the boundaries.
     ! The latter function must take as input (domain, time, i, j) and 
@@ -370,7 +524,7 @@ module boundary_mod
                 ! Get the 'outside' values 
                 if(associated(domain%boundary_function) .EQV. .FALSE.) then
                     ! default values
-                    stage_outside = max(ZERO_dp, domain%U(i,j,ELV))!ZERO_dp 
+                    stage_outside = max(domain%msl_linear, domain%U(i,j,ELV))!ZERO_dp 
                     u_outside = ZERO_dp
                     v_outside = ZERO_dp   
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
@@ -419,7 +573,7 @@ module boundary_mod
                 ! Get the 'outside' values 
                 if(associated(domain%boundary_function) .EQV. .FALSE.) then
                     ! default values
-                    stage_outside = max(ZERO_dp, domain%U(i,j,ELV))
+                    stage_outside = max(domain%msl_linear, domain%U(i,j,ELV))
                     u_outside = ZERO_dp
                     v_outside = ZERO_dp   
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
@@ -472,7 +626,7 @@ module boundary_mod
                 ! Get the 'outside' values 
                 if(associated(domain%boundary_function) .EQV. .FALSE.) then
                     ! default values
-                    stage_outside = max(ZERO_dp, domain%U(i,j,ELV))
+                    stage_outside = max(domain%msl_linear, domain%U(i,j,ELV))
                     u_outside = ZERO_dp
                     v_outside = ZERO_dp   
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
@@ -521,7 +675,7 @@ module boundary_mod
                 ! Get the 'outside' values 
                 if(associated(domain%boundary_function) .EQV. .FALSE.) then
                     ! default values
-                    stage_outside = max(ZERO_dp, domain%U(i,j, ELV))
+                    stage_outside = max(domain%msl_linear, domain%U(i,j, ELV))
                     u_outside = ZERO_dp
                     v_outside = ZERO_dp   
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside

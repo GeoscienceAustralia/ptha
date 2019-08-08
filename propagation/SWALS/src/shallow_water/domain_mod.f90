@@ -110,14 +110,14 @@ module domain_mod
     !
     type :: domain_type
 
-        ! [Length,width] of domain in x/y units
-        real(dp):: lw(2) 
+        ! [Length,width] of domain in x/y units. 
+        real(dp):: lw(2) = -HUGE(1.0_dp)
         ! grid size [number of x-cells, number of y-cells]
-        integer(ip):: nx(2) 
+        integer(ip):: nx(2) = -1_ip
         ! cell size [dx,dy]
-        real(dp):: dx(2)
+        real(dp):: dx(2) = - HUGE(1.0_dp)
         ! Absolute lower-left coordinate (bottom left corner of cell(1,1))
-        real(dp):: lower_left(2)
+        real(dp):: lower_left(2) = HUGE(1.0_dp)
 
         ! Parameter controlling extrapolation for finite volume methods
         ! Defaults depend on timestepping_method
@@ -320,7 +320,12 @@ module domain_mod
         ! Only used for leapfrog_linear_plus_nonlinear_friction
         real(dp), allocatable :: friction_work(:,:,:)
         logical :: friction_work_is_setup = .false.
-
+#ifdef DEBUG_ARRAY
+        ! For debugging it can be helpful to have this array.
+        ! If DEBUG_ARRAY is defined, then it will be
+        ! allocated with dimensions (nx, ny), and will be written to the netcdf file
+        real(dp), allocatable :: debug_array(:,:)
+#endif
 
         CONTAINS
 
@@ -944,6 +949,12 @@ TIMER_STOP('printing_stats')
 
         end if
 
+#ifdef DEBUG_ARRAY
+        ! Optional for debugging -- this will be written to the netcdf file
+        allocate(domain%debug_array(nx, ny))
+        domain%debug_array = ZERO_dp
+#endif
+
         if(create_output) then
             CALL domain%create_output_files()
         end if
@@ -1084,7 +1095,7 @@ TIMER_STOP('printing_stats')
     ! @param gradient_dx -- hold output
     ! @param n -- length of each vector
     !
-    pure subroutine limited_gradient_dx_vectorized(U_local, U_lower, U_upper, theta, gradient_dx, n)
+    subroutine limited_gradient_dx_vectorized(U_local, U_lower, U_upper, theta, gradient_dx, n)
         integer(ip), intent(in):: n
         real(dp), intent(in):: U_local(n), U_lower(n), U_upper(n), theta(n) 
         real(dp), intent(out) :: gradient_dx(n)
@@ -1136,14 +1147,13 @@ TIMER_STOP('printing_stats')
             end do
 
         else if(limiter_type == "Minmod2") then
-                
+            ! Same as 'MC' (!!!)
             !$OMP SIMD
             do i = 1, n
 
                 a = U_upper(i) - U_local(i)
                 b = U_local(i) - U_lower(i)
                 th = theta(i)
-                !d = ZERO_dp
                 e = HALF_dp * (a + b)
                 a = a * th
                 b = b * th
@@ -1171,7 +1181,7 @@ TIMER_STOP('printing_stats')
     !
     ! Get the NS gradients for stage, depth, u-vel, v-vel, at row j
     !
-    pure subroutine get_NS_limited_gradient_dx(domain, j, nx, ny, &
+    subroutine get_NS_limited_gradient_dx(domain, j, nx, ny, &
             theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS)
 
         class(domain_type), intent(in) :: domain
@@ -1179,17 +1189,20 @@ TIMER_STOP('printing_stats')
         real(dp), intent(inout) :: theta_wd_NS(nx), dstage_NS(nx), ddepth_NS(nx), du_NS(nx), dv_NS(nx)
 
         integer(ip) :: i
+        real(dp) :: mindep, maxdep, theta_local
 
         if(j > 1 .and. j < ny) then
             ! Typical case
-
+            
             ! limiter coefficient
-            theta_wd_NS = limiter_coef4*( &
-                (min(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1)) - minimum_allowed_depth) / &
-                (max(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1)) &
-                    + limiter_coef3*minimum_allowed_depth) &
-                - limiter_coef1)
-            theta_wd_NS = max(domain%theta*min(ONE_dp, theta_wd_NS), ZERO_dp)
+            !$OMP SIMD
+            do i = 1, nx
+                mindep = min(domain%depth(i, j-1), domain%depth(i,j), domain%depth(i,j+1)) - minimum_allowed_depth
+                maxdep = max(domain%depth(i, j-1), domain%depth(i,j), domain%depth(i,j+1)) + &
+                    limiter_coef3*minimum_allowed_depth
+                theta_local = limiter_coef4 * (mindep/maxdep - limiter_coef1)
+                theta_wd_NS(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
+            end do
 
             ! stage 
             call limited_gradient_dx_vectorized(domain%U(:,j,STG), domain%U(:,j-1,STG), domain%U(:,j+1,STG), &
@@ -1218,32 +1231,25 @@ TIMER_STOP('printing_stats')
     !
     ! Get the EW gradients for stage, depth, u-vel, v-vel, at row j
     !
-    pure subroutine get_EW_limited_gradient_dx(domain, j, nx, ny, &
+    subroutine get_EW_limited_gradient_dx(domain, j, nx, ny, &
             theta_wd_EW, dstage_EW, ddepth_EW, du_EW, dv_EW)
 
         class(domain_type), intent(in) :: domain
         integer(ip), intent(in) :: j, nx, ny
         real(dp), intent(inout) :: theta_wd_EW(nx), dstage_EW(nx), ddepth_EW(nx), du_EW(nx), dv_EW(nx)
 
-        !real(dp) :: mindep, maxdep, theta_local
-        !integer(ip) :: i
-        !
-        !! limiter coefficient
-        !do i = 2, nx-1
-        !    mindep = min(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) - minimum_allowed_depth
-        !    maxdep = max(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) + &
-        !        limiter_coef3*minimum_allowed_depth
-        !    theta_local = limiter_coef4 * (mindep/maxdep - limiter_coef1)
-        !    theta_wd_EW(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
-        !end do
-
+        real(dp) :: mindep, maxdep, theta_local
+        integer(ip) :: i
+        
         ! limiter coefficient
-        theta_wd_EW(2:(nx-1)) = limiter_coef4*( &
-            (min(domain%depth(2:(nx-1),j), domain%depth(1:(nx-2),j), domain%depth(3:nx,j)) - minimum_allowed_depth) / &
-            (max(domain%depth(2:(nx-1),j), domain%depth(1:(nx-2),j), domain%depth(3:nx,j)) + &
-                limiter_coef3*minimum_allowed_depth) &
-            - limiter_coef1)
-        theta_wd_EW = max(domain%theta*min(ONE_dp, theta_wd_EW), ZERO_dp)
+        !$OMP SIMD
+        do i = 2, nx-1
+            mindep = min(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) - minimum_allowed_depth
+            maxdep = max(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) + &
+                limiter_coef3*minimum_allowed_depth
+            theta_local = limiter_coef4 * (mindep/maxdep - limiter_coef1)
+            theta_wd_EW(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
+        end do
 
         ! stage 
         call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,STG), domain%U(1:(nx-2),j,STG), domain%U(3:nx,j,STG), &
@@ -2569,8 +2575,14 @@ TIMER_START('fileIO')
                 end do
             end do
 #else
-            ! Write to netcdf
+
+#ifdef DEBUG_ARRAY
+            ! Write to netcdf, with debug_array
+            call domain%nc_grid_output%write_grids(domain%time, domain%U, domain%debug_array)    
+#else
+            ! Write to netcdf (regular case)
             call domain%nc_grid_output%write_grids(domain%time, domain%U)    
+#endif
 
 #endif
         end if
@@ -2760,6 +2772,14 @@ TIMER_STOP('fileIO')
         real(dp) :: bounding_box(2,2)
         integer(ip):: i, i0, j0
         logical, allocatable :: priority_gauges(:)
+
+        ! Ensure domain was already allocated
+        if(.not. allocated(domain%U)) then
+            write(domain%logfile_unit,*) 'Error in domain%setup_point_gauges -- the domain must be allocated and have' 
+            write(domain%logfile_unit,*) 'elevation etc initialised, before trying to setup the point_gauges' 
+            flush(domain%logfile_unit)
+            call generic_stop
+        end if
 
         if(present(time_series_var)) then
             allocate(tsv(size(time_series_var)))
@@ -3814,7 +3834,7 @@ TIMER_STOP('nesting_flux_correction')
         character(*), intent(in), optional :: rounding_method
         logical, intent(in), optional :: recursive_nesting
 
-        real(dp) :: ur(2)
+        real(dp) :: ur(2), parent_domain_dx(2)
         character(len=charlen) :: rounding
         logical :: recursive_nest
 
@@ -3830,6 +3850,16 @@ TIMER_STOP('nesting_flux_correction')
             recursive_nest = .true.
         end if
 
+        ! Check the parent_domain was setup ok
+        if(any(parent_domain%nx <= 0) .or. any(parent_domain%lw <= 0) .or. &
+           any(parent_domain%lower_left == HUGE(1.0_dp))) then
+            write(log_output_unit, *) 'Parent domain does must have lw, lower_left and nx already set' 
+            call generic_stop
+        end if
+
+        ! Parent domain's dx might not have been defined
+        parent_domain_dx = parent_domain%lw/parent_domain%nx
+
         select case (rounding)
         case ('expand')
             ! Ensure that after rounding, the original domain is contained in the final domain
@@ -3837,20 +3867,20 @@ TIMER_STOP('nesting_flux_correction')
             !  domain%lower_left is on a cell boundary of the parent domain -- and
             !  is further 'west/south' than 'lower_left'
             domain%lower_left = parent_domain%lower_left + &
-                floor((lower_left - parent_domain%lower_left)/parent_domain%dx)*parent_domain%dx 
+                floor((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx 
 
             ! upper_right = (domain%lower_left + domain%lw) is on a cell boundary of the parent domain
             ur = parent_domain%lower_left + &
-                ceiling((upper_right - parent_domain%lower_left)/parent_domain%dx)*parent_domain%dx
+                ceiling((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case('nearest')
             ! Find the 'nearest' match in parent domain. This might mean we reduce the requested size of
             ! the domain
             domain%lower_left = parent_domain%lower_left + &
-                nint((lower_left - parent_domain%lower_left)/parent_domain%dx)*parent_domain%dx 
+                nint((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx 
 
             ur = parent_domain%lower_left + &
-                nint((upper_right - parent_domain%lower_left)/parent_domain%dx)*parent_domain%dx
+                nint((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case default
 
@@ -3862,7 +3892,7 @@ TIMER_STOP('nesting_flux_correction')
 
         
         domain%lw =  ur - domain%lower_left
-        domain%dx = parent_domain%dx/dx_refinement_factor
+        domain%dx = parent_domain_dx/dx_refinement_factor
         domain%nx = nint(domain%lw / domain%dx) ! Is a multiple of dx_refinement_factor
         domain%timestepping_refinement_factor = timestepping_refinement_factor
 

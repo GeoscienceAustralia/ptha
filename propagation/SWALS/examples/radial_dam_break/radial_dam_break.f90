@@ -16,7 +16,6 @@ module local_routines
 
         ! Stage
         domain%U(:,:,STG) = initial_stage_1 
-        domain%MSL_linear = initial_stage_1
 
         ! Elevation
         domain%U(:,:,ELV) = 0._dp

@@ -17,7 +17,6 @@ module local_routines
 
         ! Stage
         domain%U(:,:,STG) = initial_stage_1 
-        domain%MSL_linear = initial_stage_1
         do j = 1, domain%nx(2)
             where(domain%x > 0.0_dp) domain%U(:,j,STG) = initial_stage_2
         end do

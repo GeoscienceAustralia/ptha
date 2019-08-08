@@ -1695,7 +1695,7 @@ module multidomain_mod
                     ' local_ti: ', local_ti, ' local_ni: ', local_ni, ' ti: ', ti, ' ni: ', ni, &
                     ' lower_left_nx: ', lower_left_nx, &
                     ' upper_right_nx: ', upper_right_nx, ' lower-left: ', md%domains(next_d)%lower_left, &
-                    ' dx: ', md%domains(next_d)%dx, ' lw: ', md%domains(next_d)%lw
+                    ' dx: ', md%domains(next_d)%lw/md%domains(next_d)%nx, ' lw: ', md%domains(next_d)%lw
             end do
         end do 
 #ifdef COARRAY
@@ -2314,6 +2314,11 @@ module multidomain_mod
             log_filename = trim(md%output_basedir) // '/multidomain_log'
             call send_log_output_to_file(log_filename)
         end if
+
+        ! Make sure 'dx' has been defined for all domains
+        do i = 1, size(md%domains)
+            md%domains(i)%dx = md%domains(i)%lw/(1.0_dp * md%domains(i)%nx)
+        end do
 
         ! Split up domains among images, and create all md%domains(i)%myid
         call md%partition_domains()
@@ -3249,7 +3254,17 @@ module multidomain_mod
 
             ! Update variables controlling the write frequency
             md%writeout_counter = md%writeout_counter + 1_ip
+            ! This is not the 'true' write time, but keeps writing regular
             md%last_write_time = md%last_write_time + approx_writeout_freq
+
+            if(model_time > md%last_write_time + approx_writeout_freq) then
+                ! If the model time-steps are longer than approx_writeout_freq,
+                ! then we could get a big lag between the model time and md%last_write_time.
+                ! If the time-steps later reduce, that could lead to overly-frequent write-outs
+                ! without this correction.
+                md%last_write_time = md%last_write_time + &
+                    floor((model_time - md%last_write_time)/approx_writeout_freq)*approx_writeout_freq
+            end if
         end if
 
     end subroutine
