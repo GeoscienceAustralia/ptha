@@ -262,7 +262,8 @@ get_gridded_variable<-function(var = 'Var_1', drop_walls=FALSE, output_folder = 
 # Because this can sometimes be prohibitive due to memory issues,
 # provide options to skip grids and gauges
 get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauges=TRUE, 
-                                 always_read_priority_domain=FALSE, quiet=FALSE){
+                                 always_read_priority_domain=FALSE, quiet=FALSE, 
+                                 always_read_max_grids=FALSE){
 
     if(quiet) sink(tempfile())
 
@@ -287,6 +288,10 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
         maxQ = NULL
         elev0 = NULL
         is_priority_domain = NULL
+        if(always_read_max_grids){
+            maxQ = try(get_gridded_variable(var='Max_quantities', output_folder=output_folder), silent=TRUE)
+            elev0 = try(get_gridded_variable(var='elev0', output_folder=output_folder), silent=TRUE)
+        }
     }
 
     if(always_read_priority_domain & !read_grids){
