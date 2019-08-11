@@ -197,8 +197,8 @@ module boundary_mod
                     ! Nonlinear domain
                     domain%U(i,j,UH) = -(sqrt(gravity * max(domain%U(i+1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
                                          sqrt(gravity * local_h ) ) * local_h
-                    ! Thus reduces oscillations that can otherwise arise at the boundary
-                    domain%U(i+1,j,UH) = 0.5_dp * (domain%U(i,j,UH) + domain%U(i+1,j,UH))
+                    !! Thus reduces oscillations that can otherwise arise at the boundary
+                    !domain%U(i+1,j,UH) = 0.5_dp * (domain%U(i,j,UH) + domain%U(i+1,j,UH))
                     ! Extrapolate VH
                     domain%U(i,j,VH) = domain%U(i+1,j,VH)
                 end if
@@ -231,8 +231,8 @@ module boundary_mod
                     domain%U(i,j,UH) = &
                         (sqrt(gravity * max(domain%U(i-1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
                          sqrt(gravity * local_h ) ) * local_h
-                    ! Thus reduces oscillations that can otherwise arise at the boundary
-                    domain%U(i-1,j,UH) = 0.5_dp * (domain%U(i,j,UH) + domain%U(i-1,j,UH))
+                    !! Thus reduces oscillations that can otherwise arise at the boundary
+                    !domain%U(i-1,j,UH) = 0.5_dp * (domain%U(i,j,UH) + domain%U(i-1,j,UH))
                     ! Extrapolate VH
                     domain%U(i,j,VH) = domain%U(i-1,j,VH)
                 end if
@@ -266,8 +266,8 @@ module boundary_mod
                     ! The nonlinear solvers need all boundary values updated
                     domain%U(i,j,VH) = -(sqrt(gravity * max(domain%U(i, j+1, STG) - bc_values(ELV), 0.0_dp) ) - &
                                          sqrt(gravity * local_h ) ) * local_h
-                    ! Thus reduces oscillations that can otherwise arise at the boundary
-                    domain%U(i,j+1,VH) = 0.5_dp * (domain%U(i,j,VH) + domain%U(i,j+1,VH))
+                    !! Thus reduces oscillations that can otherwise arise at the boundary
+                    !domain%U(i,j+1,VH) = 0.5_dp * (domain%U(i,j,VH) + domain%U(i,j+1,VH))
                     ! Extrapolate UH
                     domain%U(i,j,UH) = domain%U(i,j+1, UH)
                 end if
@@ -297,10 +297,13 @@ module boundary_mod
                                               sqrt(gravity * local_h ) ) * local_h
                 else
                     ! The nonlinear solvers need all boundary values updated
+                    !! NOTE: The Tauranga problem gives weak spatial oscillations in VH with this approach.
+                    !! You can add a (v-velocity_(j-1)) term to the RHS [v_inner + sqrt(gh_inner) = v_outer + sqrt(g h_outer)]
+                    !! which reduces that, but for Tauranga leads to clearly overly-high tsunami
                     domain%U(i,j,VH) = (sqrt(gravity * max(domain%U(i, j-1, STG) - bc_values(ELV), 0.0_dp) ) - &
                                         sqrt(gravity * local_h ) ) * local_h
-                    ! Thus reduces oscillations that can otherwise arise at the boundary
-                    domain%U(i,j-1,VH) = 0.5_dp * (domain%U(i,j,VH) + domain%U(i,j-1,VH))
+                    !! Thus reduces oscillations that can otherwise arise at the boundary
+                    !domain%U(i,j-1,VH) = 0.5_dp * (domain%U(i,j,VH) + domain%U(i,j-1,VH))
                     ! Extrapolate UH
                     domain%U(i,j,UH) = domain%U(i,j-1, UH)
                 end if
