@@ -189,13 +189,13 @@ with the rate curves for a particular source-zone.
 ## Updated stage-vs-exceedance-rate percentile uncertainty calculations
 
 These scripts apply some revised stage-vs-exceedance-rate percentile
-uncertainty calculations. 
+uncertainty calculations, as described in [Section 3.5 of this paper](https://link.springer.com/article/10.1007/s00024-019-02299-w).
 
 [revised_station_hazard_curves_PREPROCESSING.R](revised_station_hazard_curves_PREPROCESSING.R) preprocesses source-zone logic-tree branches to support the calculation.
 
-[revised_station_hazard_curves.R](revised_station_hazard_curves.R) computes stage-vs-exceedance-rate percentile curves. This version of the script uses logic-tree sampling to reduce the computational effort, and only works for stochastic-slip + fixed rigidity.
+[revised_station_hazard_curves.R](revised_station_hazard_curves.R) computes stage-vs-exceedance-rate percentile curves. This version of the script uses logic-tree sampling to reduce the computational effort, and only works for stochastic-slip + fixed rigidity. For the full calculation, instead see the script below.
 
-[revised_station_hazard_curves_FINAL.R](revised_station_hazard_curves_FINAL.R) computes stage-vs-exceedance-rate percentile curves. This is very similar to [revised_station_hazard_curves.R](revised_station_hazard_curves.R), but it doesn't use logic-tree sampling to reduce the computational effort, and applies to all combinations of slip/rigidity model. So it is much more computationally demanding. 
+[revised_station_hazard_curves_FINAL.R](revised_station_hazard_curves_FINAL.R) computes stage-vs-exceedance-rate percentile curves. This is very similar to [revised_station_hazard_curves.R](revised_station_hazard_curves.R), but it doesn't use logic-tree sampling to reduce the computational effort, and applies to all combinations of slip/rigidity model. So it is much more computationally demanding. For this reason, the script takes input arguments that allow specifying some subset of points. That enables a distributed-computing approach to the calculation.
 
 [submit_all_PBS_revised_station_hazard_curves_FINAL.R](submit_all_PBS_revised_station_hazard_curves_FINAL.R) creates 50 PBS scripts which do the calculations for [revised_station_hazard_curves_FINAL.R](revised_station_hazard_curves_FINAL.R) on 50 nodes (by splitting the points up). This enabled the calculation to be done in a reasonable time length. 
 
