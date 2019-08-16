@@ -6,7 +6,7 @@
 #
 # The script here was developed to process results where the logic-trees were sampled (3000 branches) to reduce
 # the computational effort -- so the results have some (small) monte-carlo
-# error. But at 99% of stations the mean ARI=500 max-stage changed by < 1%.
+# error. But at 99% of stations the mean ARI=500 max-stage changed by < 1%. 
 #
 
 
