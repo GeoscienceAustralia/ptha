@@ -197,7 +197,7 @@ uncertainty calculations, as described in [Section 3.5 of this paper](https://li
 
 [revised_station_hazard_curves_FINAL.R](revised_station_hazard_curves_FINAL.R) computes stage-vs-exceedance-rate percentile curves. This is very similar to [revised_station_hazard_curves.R](revised_station_hazard_curves.R), but it doesn't use logic-tree sampling to reduce the computational effort, and applies to all combinations of slip/rigidity model. So it is much more computationally demanding. For this reason, the script takes input arguments that allow specifying some subset of points. That enables a distributed-computing approach to the calculation.
 
-[submit_all_PBS_revised_station_hazard_curves_FINAL.R](submit_all_PBS_revised_station_hazard_curves_FINAL.R) creates 50 PBS scripts which do the calculations for [revised_station_hazard_curves_FINAL.R](revised_station_hazard_curves_FINAL.R) on 50 nodes (by splitting the points up). This enabled the calculation to be done in a reasonable time length. 
+[submit_all_PBS_revised_station_hazard_curves_FINAL.R](submit_all_PBS_revised_station_hazard_curves_FINAL.R) creates 50 PBS scripts which do the calculations for [revised_station_hazard_curves_FINAL.R](revised_station_hazard_curves_FINAL.R) on 50 nodes (by splitting the points up). This enabled the calculation to be done in a reasonable length of time.
 
 [revised_station_hazard_curves_FINAL_MERGE.R](revised_station_hazard_curves_FINAL_MERGE.R) combines the results created using [submit_all_PBS_revised_station_hazard_curves_FINAL.R](submit_all_PBS_revised_station_hazard_curves_FINAL.R), producing files that look the same as if they were created on a single node.
 
