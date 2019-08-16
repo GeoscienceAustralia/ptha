@@ -193,7 +193,13 @@ uncertainty calculations.
 
 [revised_station_hazard_curves_PREPROCESSING.R](revised_station_hazard_curves_PREPROCESSING.R) preprocesses source-zone logic-tree branches to support the calculation.
 
-[revised_station_hazard_curves.R](revised_station_hazard_curves.R) computes stage-vs-exceedance-rate percentile curves
+[revised_station_hazard_curves.R](revised_station_hazard_curves.R) computes stage-vs-exceedance-rate percentile curves. This version of the script uses logic-tree sampling to reduce the computational effort, and only works for stochastic-slip + fixed rigidity.
+
+[revised_station_hazard_curves_FINAL.R](revised_station_hazard_curves_FINAL.R) computes stage-vs-exceedance-rate percentile curves. This is very similar to [revised_station_hazard_curves.R](revised_station_hazard_curves.R), but it doesn't use logic-tree sampling to reduce the computational effort, and applies to all combinations of slip/rigidity model. So it is much more computationally demanding. 
+
+[submit_all_PBS_revised_station_hazard_curves_FINAL.R](submit_all_PBS_revised_station_hazard_curves_FINAL.R) creates 50 PBS scripts which do the calculations for [revised_station_hazard_curves_FINAL.R](revised_station_hazard_curves_FINAL.R) on 50 nodes (by splitting the points up). This enabled the calculation to be done in a reasonable time length. 
+
+[revised_station_hazard_curves_FINAL_MERGE.R](revised_station_hazard_curves_FINAL_MERGE.R) combines the results created using [submit_all_PBS_revised_station_hazard_curves_FINAL.R](submit_all_PBS_revised_station_hazard_curves_FINAL.R), producing files that look the same as if they were created on a single node.
 
 [revised_ari500_station_hazard_curves_extract.R](revised_ari500_station_hazard_curves_extract.R) processes outputs from the previous script to compute the maximum-stage at ARI=500.
 
