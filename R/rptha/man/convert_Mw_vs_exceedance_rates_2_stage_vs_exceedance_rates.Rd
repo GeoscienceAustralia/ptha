@@ -36,10 +36,11 @@ Fortran code. Otherwise do them in R (slower)}
 \item{drop_small_events}{logical if TRUE, then remove events with 
 (event_max_stage < min(output_stages)) AND with 
 (event_conditional_probability = 0). Beware the latter constraint leads to 
-changes in interpolation of the stage-vs-exceedance-rate curve derived from
-scenarios. For instance, suppose the scenarios have: stages = c(1, 2, 3, 4,
-5); individual_rates = c(1, 0, 0, 1, 0). Then for the given scenario
-stages, we have exceedance_rates = c(2, 1, 1, 1, 0) (here keeping the
+changes in results (typically slight), because it implies a different
+interpolation of the stage-vs-exceedance-rate curve derived from scenarios.
+For instance, suppose the scenarios have: stages = c(1, 2, 3, 4, 5);
+individual_rates = c(1, 0, 0, 1, 0). Then for the given scenario stages, we
+have exceedance_rates = c(2, 1, 1, 1, 0) (here keeping the
 zero-conditional-probability events). Then approx(stages, exceedance_rates,
 xout=2.5)$y == 1. However, if we dropped the 'zero conditional probability'
 events before interpolating, then we would get stages = c(1, 4),
