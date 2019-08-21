@@ -11,30 +11,51 @@
   use_Fortran = TRUE, drop_small_events = FALSE)
 }
 \arguments{
-\item{logic_tree_rate_curve_Mw}{vector with magnitudes at which the logic-tree exceedance-rate curves are tabulated}
+\item{logic_tree_rate_curve_Mw}{vector with magnitudes at which the 
+logic-tree exceedance-rate curves are tabulated}
 
-\item{logic_tree_rate_curves_exceedance_rate}{matrix with one row per logic-tree branch, and one column 
-per logic_tree_rate_curve_Mw, giving the exceedance rate at each magnitude.}
+\item{logic_tree_rate_curves_exceedance_rate}{matrix with one row per 
+logic-tree branch, and one column per logic_tree_rate_curve_Mw, giving the 
+exceedance rate at each magnitude.}
 
-\item{event_Mw}{vector of magnitudes for each event. These should be drawn from an evenly spaced set (e.g. 7.2, 7.3, ... 9.8)}
+\item{event_Mw}{vector of magnitudes for each event. These should be drawn 
+from an evenly spaced set (e.g. 7.2, 7.3, ... 9.8)}
 
-\item{event_conditional_probability}{vector with teh same length as event_Mw giving the conditional probability that 
-the event occurs, given that an event with the same Mw occurred.}
+\item{event_conditional_probability}{vector with the same length as 
+event_Mw giving the conditional probability that the event occurs, given 
+that an event with the same Mw occurred.}
 
 \item{event_max_stage}{The max stage for each event at the site of interest}
 
-\item{output_stages}{the stages at which we tabulate outputs. They must be sorted from low-to-high}
+\item{output_stages}{the stages at which we tabulate outputs. They must be 
+sorted from low-to-high}
 
-\item{use_Fortran}{logical if TRUE do the heavy computations using compiled Fortran code. Otherwise do them in R (slower)}
+\item{use_Fortran}{logical if TRUE do the heavy computations using compiled 
+Fortran code. Otherwise do them in R (slower)}
 
-\item{drop_small_events}{logical if TRUE, then remove events with (event_max_stage < min(output_stages))}
+\item{drop_small_events}{logical if TRUE, then remove events with 
+(event_max_stage < min(output_stages)) AND with 
+(event_conditional_probability = 0). Beware the latter constraint leads to 
+changes in interpolation of the stage-vs-exceedance-rate curve derived from
+scenarios. For instance, suppose the scenarios have: stages = c(1, 2, 3, 4,
+5); individual_rates = c(1, 0, 0, 1, 0). Then for the given scenario
+stages, we have exceedance_rates = c(2, 1, 1, 1, 0) (here keeping the
+zero-conditional-probability events). Then approx(stages, exceedance_rates,
+xout=2.5)$y == 1. However, if we dropped the 'zero conditional probability'
+events before interpolating, then we would get stages = c(1, 4),
+exceedance_rates = c(2, 1), and so approx(c(1, 4), c(2, 1), xout=2.5)$y ==
+1.5. Note this is larger (in general) than the result obtained by keeping
+'zero conditional probability' events. The latter makes the interpolation
+more like a step function.}
 }
 \value{
-A matrix with one row for each logic-tree branch, and one column for each output-stage, giving the exceedance-rates
+A matrix with one row for each logic-tree branch, and one column for
+each output-stage, giving the exceedance-rates
 }
 \description{
-Suppose we have a source zone containing a set of Mw-vs-exceedance rate curves, and a corresponding set
-of events, each of which lead to a given max-stage at a particular site. This routine computes a
+Suppose we have a source zone containing a set of Mw-vs-exceedance rate
+curves, and a corresponding set of events, each of which lead to a given
+max-stage at a particular site. This routine computes a
 stage-vs-exceedance-rate curve for each Mw-vs-exceedance rate curve.
 }
 \examples{
