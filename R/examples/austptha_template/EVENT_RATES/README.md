@@ -153,13 +153,16 @@ find these formats easy to work with.
 performance of the uniform, stochastic, and variable uniform models vs DART
 measurements (including hypothesis testing relating to the median-coverage-statistic)
 
-[earthquake_rate_comparisons_PTHA.R](earthquake_rate_comparisons_PTHA.R) is used to
-compute the modelled scenario rates in various regions (for comparison
-with regional estimates in the literature in the PTHA18 report)
+[earthquake_rate_comparisons_PTHA.R](earthquake_rate_comparisons_PTHA.R) was used to
+compute the modelled scenario rates in various regions in the 
+[PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) (for comparison with
+regional estimates in the literature)
 
-[earthquake_rate_comparisons_PAGEOPH_paper.R](earthquake_rate_comparisons_PAGEOPH_paper.R) is used to
-compute the modelled scenario rates in various regions (some changes to the region-for-comparison
-and the interpolation method, as compared with the PTHA18 report).
+[earthquake_rate_comparisons_PAGEOPH_paper.R](earthquake_rate_comparisons_PAGEOPH_paper.R) was used to
+compute the modelled scenario rates in various regions in [this
+paper](https://link.springer.com/article/10.1007%2Fs00024-019-02299-w). As compared
+with the aforementioned version, there are some changes to the
+region-for-comparison and the interpolation method.
 
 ## Exploratory routines (not directly used elsewhere)
 
