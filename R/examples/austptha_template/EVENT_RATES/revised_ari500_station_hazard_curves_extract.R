@@ -127,7 +127,7 @@ old_ari500_stages_50 = get_ari500_stages(ssr50)
 
 ## The results reported below were obtained using the "logic-tree-sampling" approach for
 ## computational efficiency (i.e. revised_station_hazard_curves.R), and so have slightly more
-## variability than the 'full' calculations.
+## variability than the 'full' calculations. They are for stochastic/fixed-mu
 ##     
 ##     
 ##     ## The ari500 stage based on the mean exrate should be "the same" in the new
