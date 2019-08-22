@@ -210,3 +210,8 @@ uncertainty calculations, as described in [Section 3.5 of this paper](https://li
 
 [revised_ari500_station_hazard_curves_extract.R](revised_ari500_station_hazard_curves_extract.R) processes outputs from the previous script to compute the maximum-stage at ARI=500.
 
+[revised_station_hazard_curves_MAKE_NETCDF.R](revised_station_hazard_curves_MAKE_NETCDF.R) makes netcdf files with the stage-vs-exceedance-rate curves, based on these revised calculations. The file format is the same as that which comes from [compute_station_hazard_curves.R](compute_station_hazard_curves.R), but the filename has `revised1_` prepended.
+
+[revised_integrated_rate_given_stage.R](revised_integrated_rate_given_stage.R) make a netcdf file with the integrated stage-vs-exceedance-rate calculations. It is similar to [integrated_rate_given_stage.R](integrated_rate_given_stage.R), but uses the revised calculations, and the output filename has `revised1_` prepended.
+
+[revised_tsunami_stage_exceedance_rates_to_csv.R](revised_tsunami_stage_exceedance_rates_to_csv.R) make some derivative products, similar to [tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R), but uses the revised calculations, with filenames having `revised1_` prepended.
