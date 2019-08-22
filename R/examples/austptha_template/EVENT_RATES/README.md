@@ -153,7 +153,7 @@ find these formats easy to work with.
 performance of the uniform, stochastic, and variable uniform models vs DART
 measurements (including hypothesis testing relating to the median-coverage-statistic)
 
-[earthquake_rate_comparisons_PTHA.R](earthquake_rate_comparisons_PTHA.R) was used to
+[earthquake_rate_comparisons_PTHA18_report.R](earthquake_rate_comparisons_PTHA18_report.R) was used to
 compute the modelled scenario rates in various regions in the 
 [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) (for comparison with
 regional estimates in the literature)
