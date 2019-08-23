@@ -321,6 +321,11 @@ parse_ID_point_index_to_index<-function(netcdf_file, hazard_point_gaugeID, targe
 #' @param make_plot If TRUE, plot the stage vs return period curve for stochastic slip
 #' @param non_stochastic_slip_sources If TRUE, also return curves for uniform
 #'     and variable_uniform slip events
+#' @param percentile_version either 'DG19' or 'DG18'. This affects the stage-percentile uncertainties. The 2019
+#'     paper \url{https://doi.org/10.1007/s00024-019-02299-w} revised the method
+#'     for computing percentile uncertainties in the maximum-stage. The latter results are
+#'     used when version='DG19' (default). Otherwise one may use the results from the original
+#'     PTHA18 report \url{http://dx.doi.org/10.11636/Record.2018.041} by setting version='DG18'.
 #' @return list containing return period info for the source-zone
 #'
 get_stage_exceedance_rate_curve_at_hazard_point<-function(
@@ -330,16 +335,27 @@ get_stage_exceedance_rate_curve_at_hazard_point<-function(
     source_name = NULL,
     make_plot = FALSE,
     non_stochastic_slip_sources=FALSE,
-    only_mean_rate_curve=FALSE){
+    only_mean_rate_curve=FALSE,
+    percentile_version = 'DG19'){
+
+    # Depending on the percentile_version, specify a prefix which chooses the
+    # correct file.
+    if(percentile_version == 'DG19'){
+        file_prefix = 'revised1_'
+    else if(percentile_version == 'DG18'){
+        file_prefix = ''
+    }else{
+        stop('Version must be either "DG19" or "DG18"')
+    }
 
     if(is.null(source_name)){
         source_name = 'sum_over_all_source_zones'
         stage_exceedance_rate_curves_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION,
-            'EVENT_RATES/tsunami_stage_exceedance_rates_', source_name, '.nc')
+            'EVENT_RATES/', file_prefix, 'tsunami_stage_exceedance_rates_', source_name, '.nc')
     }else{
         stage_exceedance_rate_curves_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION,
-            'SOURCE_ZONES/', source_name, '/TSUNAMI_EVENTS/tsunami_stage_exceedance_rates_', 
-            source_name, '.nc')
+            'SOURCE_ZONES/', source_name, '/TSUNAMI_EVENTS/', file_prefix, 
+            'tsunami_stage_exceedance_rates_', source_name, '.nc')
     }
 
     # Parse the input arguments into a target index
@@ -480,8 +496,10 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
     slip_type = 'stochastic'){
 
 
+    # Here it doesn't matter whether we use the revised1_XXXX file, or the original file
+    # that doesn't have the 'revised1_' prefix, because the data we draw is the same.
     stage_exceedance_rate_curves_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION,
-        'EVENT_RATES/tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc')
+        'EVENT_RATES/revised1_tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc')
     # Parse the input arguments into a target index
     target_index = parse_ID_point_index_to_index(
         stage_exceedance_rate_curves_file, hazard_point_gaugeID, 
