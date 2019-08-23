@@ -215,3 +215,5 @@ uncertainty calculations, as described in [Section 3.5 of this paper](https://li
 [revised_integrated_rate_given_stage.R](revised_integrated_rate_given_stage.R) make a netcdf file with the integrated stage-vs-exceedance-rate calculations. It is similar to [integrated_rate_given_stage.R](integrated_rate_given_stage.R), but uses the revised calculations, and the output filename has `revised1_` prepended.
 
 [revised_tsunami_stage_exceedance_rates_to_csv.R](revised_tsunami_stage_exceedance_rates_to_csv.R) make some derivative products, similar to [tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R), but uses the revised calculations, with filenames having `revised1_` prepended.
+
+[revised_clean_shapefiles_for_plotting.R](revised_clean_shapefiles_for_plotting.R) produces some shapefiles for convenient plotting. It is just like [clean_shapefiles_for_plotting.R](clean_shapefiles_for_plotting.R) but using the revised stage percentile results.
