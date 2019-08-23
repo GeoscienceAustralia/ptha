@@ -72,8 +72,7 @@ with the coastal landscape. However, all else being equal, a larger
 maximum-stage will generally lead to larger inundation.
 
 The simplest way to examine the PTHA18 tsunami maximum-stage exceedance-rates
-is to [download this csv
-file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv).
+is to [download this csv file](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.csv).
 It contains the following columns:
 * `lon`, `lat` give the hazard point location in longitude/latitude (degrees). 
 * `elev` is the bathymetry at the hazard point (negative = below MSL)
@@ -89,7 +88,7 @@ Note 'max stage' values below 2cm (or above 20m) are treated as missing data
 (NA). Such values are unlikely to be of interest, but if necessary they can be
 reconstructed from the [detailed information](DETAILED_README.md).
 
-[Similar data is available in shapefile format here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip). You must unzip the file after download.
+[Similar data is available in shapefile format here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.zip). You must unzip the file after download.
 Shapefiles have a weakness; attribute names must not exceed 10 characters. 
 Therefore the attributes are renamed in some instances, as compared with the
 above csv:
@@ -108,6 +107,9 @@ given exceedance-rate. This is largely due to uncertainty in the frequencies of
 high-magnitude subduction zone earthquakes. A more detailed discussion of these
 topics can be found in the 
 [Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
+
+
+The above results compute exceedance-rate percentiles following the methodology in [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w), which is slightly different to the methodology in the [the PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) (see discussion in Section 3.5 of the PAGEOPH paper). Differences are generally small and unlikely to be important, but for reference the older results can still be obtained in [csv form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv) and [shapefile form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip).
 
 ## Obtaining site-specific hazard information (including source deaggregation)
 
