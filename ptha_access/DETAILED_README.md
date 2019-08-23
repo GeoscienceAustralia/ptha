@@ -20,18 +20,50 @@ directly for support if they have difficulty with any of these steps, or simply
 to discuss how to best use the results for their study (please email Gareth
 Davies at gareth.davies@ga.gov.au). 
 
+The study results are provided under a [Creative Commons 4.0 International
+Licence](http://creativecommons.org/licenses/by/4.0/legalcode), while the
+source-code is provided under a [BSD3 license](../LICENSE). 
+
+Geoscience Australia has tried to make the information in this product as
+accurate as possible. However, it does not guarantee that the information is
+totally accurate or complete. Therefore, you should not solely rely on this
+information when making a commercial decision.
+
 Before working with the outputs, make sure you've [read the project
 report](http://dx.doi.org/10.11636/Record.2018.041) to understand what they
 are, how they were made, and how they have been tested. Users are strongly
 encouraged to independently test the results at their site of interest as part
-of any application. Geoscience Australia has tried to make the information in
-this product as accurate as possible. However, it does not guarantee that the
-information is totally accurate or complete. Therefore, you should not solely
-rely on this information when making a commercial decision.
+of any application. In particular note that:
+* The PTHA18 tsunami scenarios are tested against offshore DART buoy data observed 
+  during 18 tsunamis, for the period 2006-2016 (actually tests against a few additional
+  events are provided in the PTHA18 report). Although this is a significant
+  amount of testing relative to current standards in PTHA, it is most directly
+  relevant to the behaviour of tsunamis in the deep ocean. We would like to see
+  further testing of the scenarios when propagated into the nearshore and
+  onshore. This would also increase the number of tsunami observations
+  available to test the model. Such testing might lead to further insights
+  about the tsunami scenario performance, model biases, etc. See further
+  discussion in the [GJI paper](https://doi.org/10.1093/gji/ggz260).
+  **If you are working at a site where tsunamis have been observed, you are strongly encouraged
+  to test the results using site-specific data.**
+* The earthquake magnitude-vs-exceedance-rate models are constrained by combining
+  tectonic-plate convergence rates with earthquakes observed since 1976 having
+  magnitude > 7.15. Longer-term historical/paleo seismic information is often available,
+  but not tightly integrated into the current PTHA18 methodology. 
+  Longer-term data *is* used to constrain the PTHA18 maximum-magnitudes, and has
+  some influence the statistical model priors. However, longer-term data *does not* influence
+  the PTHA18 logic-tree weight update. We have tested the model at 7 sites with longer-term
+  data, and the result seems reasonable ([see Section 3.4 of the PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w)).
+  **But if you are working at a site with significant longer-term data, you are
+  strongly encouraged to test the rate models and double-check
+  their performance**. 
+* The PTHA18 results are dependent on the fault-source geometry (dips / maximum
+  depths / etc). This affects the tsunami scenarios, but also the maximum-magnitudes
+  and earthquake rate models, which are linked to the size of the source-zone in the PTHA18
+  methodology. The quality of the geometric information likely varies from
+  site-to-site, but currently the analysis does not include a formal treatment
+  of fault-geometry uncertainty. 
 
-The study results are provided under a [Creative Commons 4.0 International
-Licence](http://creativecommons.org/licenses/by/4.0/legalcode), while the
-source-code is provided under a [BSD3 license](../LICENSE). 
 
 
 ## **Usage**
