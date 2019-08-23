@@ -170,10 +170,13 @@ approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)
 ## [1] 0.006171845
 ```
 
-**Note:** In [this paper](https://doi.org/10.1007/s00024-019-02299-w) we developed a
-new method to compute stage-percentiles, which is considered more rigorous than
-in the original PTHA18 report. By default the above code uses the newer
-results. However you can force it to use the older results like so:
+**Note regarding updated exceedance-rate percentiles:** In [this paper](https://doi.org/10.1007/s00024-019-02299-w) we developed a
+new method to compute exceedance-rate percentiles, which is more rigorous than
+in the [original PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041). 
+By default the above code uses the newer exceedance-rate percentile results. Although
+not recommended, you can force it to use the older results by setting
+`percentile_version="DG18"` (the default is "DG19" which gives the newer
+results).:
 
 ```r
 # Get the exceedance-rate info as in Davies and Grifin (2018)
@@ -181,13 +184,40 @@ results. However you can force it to use the older results like so:
 # percentile curves. 
 er_info_old = get_stage_exceedance_rate_curve_at_hazard_point(
     target_point=hazard_point, percentile_version='DG18')
-# Compare this calculation with the one above.
+# Compare this calculation with the one above -- similar but not identical.
 approx(er_info_old$stage, er_info_old$variable_mu_stochastic_slip_rate_median, xout=0.4)$y
 ```
 
 ```
 ## [1] 0.005430505
 ```
+Mathematically the mean exceedance-rate curve should be unaffected by these
+changes. In practice this is almost true, but our implementation choices led to
+small changes at higher decimal places. For efficiency we used
+`drop_small_events=TRUE` in the function
+`rptha::convert_Mw_exceedance_rates_2_stage_exceedance_rates`. This is valid
+and can greatly speed-up calculations, but slightly changes an interpolation at
+one point in the calculation. See the help page of that function for further
+discussion. Any changes should be unimportant - for example:
+
+```r
+# New results (mean)
+approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate, xout=0.4)$y
+```
+
+```
+## [1] 0.007428284
+```
+
+```r
+# Old results (mean)
+approx(er_info_old$stage, er_info_old$variable_mu_stochastic_slip_rate, xout=0.4)$y
+```
+
+```
+## [1] 0.0074266
+```
+
 
 ### ***Obtaining metadata on the earthquake scenarios on each source-zone***
 
