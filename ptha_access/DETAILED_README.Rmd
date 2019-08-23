@@ -29,6 +29,8 @@ accurate as possible. However, it does not guarantee that the information is
 totally accurate or complete. Therefore, you should not solely rely on this
 information when making a commercial decision.
 
+## Before you start
+
 Before working with the outputs, make sure you've [read the project
 report](http://dx.doi.org/10.11636/Record.2018.041) to understand what they
 are, how they were made, and how they have been tested. Users are strongly
@@ -63,7 +65,6 @@ of any application. In particular note that:
   methodology. The quality of the geometric information likely varies from
   site-to-site, but currently the analysis does not include a formal treatment
   of fault-geometry uncertainty. 
-
 
 
 ## **Usage**
@@ -190,10 +191,12 @@ approx(er_info_old$stage, er_info_old$variable_mu_stochastic_slip_rate, xout=0.4
 ### ***Obtaining metadata on the earthquake scenarios on each source-zone***
 
 Earthquake scenario metadata is accessed on a per-source-zone basis. In a typical
-application you would use the detailed exceedance-rate plots discussed above
-to identify the main source-zones of interest for a particular site. Below
-we show an example using the `puysegur` source-zone, which is located just south
-of New Zealand, to the north of Macquarie Island.
+application you would use site-specific hazard information (including source deaggregation) 
+discussed in [README.md](README.md) to identify the main source-zones of
+interest for a particular site, and then study scenarios for the given
+source-zone of interest. Below we use the `puysegur` source-zone as an
+example, which is located just south of New Zealand and to the north of Macquarie
+Island.
 
 To download metadata from the NCI describing the earthquake scenarios on a
 particular source-zone, start R in the current directory, and do:
