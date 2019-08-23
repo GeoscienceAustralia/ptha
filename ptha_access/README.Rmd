@@ -109,7 +109,7 @@ topics can be found in the
 [Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
 
 
-The above results following the methodology in [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w) to compute exceedance-rate percentiles, which is slightly different to the methodology in the original [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) (see discussion in Section 3.5 of the PAGEOPH paper). Differences are generally small and unlikely to be important, but for reference the older results can still be obtained in [csv form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv) and [shapefile form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip).
+The above results follow the methodology in [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w) to compute exceedance-rate percentiles, which is slightly different to the methodology in the original [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) (see discussion in Section 3.5 of the PAGEOPH paper). Differences are generally small and unlikely to be important, but for reference the older results can still be obtained in [csv form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv) and [shapefile form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip).
 
 ## Obtaining site-specific hazard information (including source deaggregation)
 
@@ -138,7 +138,8 @@ the one I want).
 
 ## Interpreting exceedance-rate information
 
-Please read the [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) for
+Please read the [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) and the 
+[PAGEOPH Paper](https://link.springer.com/article/10.1007/s00024-019-02299-w) for
 further information on interpreting the exceedance-rate information. 
 
 The maximum-stage exceedance-rates vary from site to site, depending on exposure
@@ -165,8 +166,9 @@ points well offshore in deep water**. If you can, use sites where wave heights o
 do not exceed a few percent of the water depth. For tsunami propagation modelling,
 it may be preferable to simulate the tsunami from source (using initial
 conditions [provided here](DETAILED_README.md)), which circumvents these
-issues (incidently, this also facilitates the use of alternative hydrodynamic
-models and bathymetric data when simulating these large scales). Nearshore
+issues. Modelling from source also also facilitates the use of alternative hydrodynamic
+models (e.g. with dispersion and/or friction, which are important in some situations), and 
+using other bathymetric data when simulating these large scales. Nearshore
 points should **only** be used as a rough guide to possible tsunami wave
 heights, **NOT FOR FORCING INUNDATION MODELS**, and should be refined in future
 using higher resolution models and data. 
