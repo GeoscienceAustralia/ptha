@@ -13,10 +13,12 @@ process is described below. A range of software must be installed to run these
 codes, [as described here](INSTALL.md).
 
 Unfortunately the installation and data extraction process may be challenging
-for users with limited experience in scientific programming and Linux. Users
-doing tsunami hazard studies **in Australia** can alternatively contact
-Geoscience Australia directly if they have difficulty with any of these steps
-(please email Gareth Davies at gareth.davies@ga.gov.au).
+for users with limited experience in scientific programming and Linux. Although
+we cannot provide one-on-one support in every situation, users doing tsunami
+hazard studies **in Australia** are encouraged to contact Geoscience Australia
+directly for support if they have difficulty with any of these steps, or simply
+to discuss how to best use the results for their study (please email Gareth
+Davies at gareth.davies@ga.gov.au). 
 
 Before working with the outputs, make sure you've [read the project
 report](http://dx.doi.org/10.11636/Record.2018.041) to understand what they
