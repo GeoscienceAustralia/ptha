@@ -167,6 +167,25 @@ approx(er_info$stage, er_info$variable_mu_stochastic_slip_rate_median, xout=0.4)
 ```
 
 ```
+## [1] 0.006171845
+```
+
+**Note:** In [this paper](https://doi.org/10.1007/s00024-019-02299-w) we developed a
+new method to compute stage-percentiles, which is considered more rigorous than
+in the original PTHA18 report. By default the above code uses the newer
+results. However you can force it to use the older results like so:
+
+```r
+# Get the exceedance-rate info as in Davies and Grifin (2018)
+# This has all the same data as 'er_info' above, but with slightly different
+# percentile curves. 
+er_info_old = get_stage_exceedance_rate_curve_at_hazard_point(
+    target_point=hazard_point, percentile_version='DG18')
+# Compare this calculation with the one above.
+approx(er_info_old$stage, er_info_old$variable_mu_stochastic_slip_rate_median, xout=0.4)$y
+```
+
+```
 ## [1] 0.005430505
 ```
 

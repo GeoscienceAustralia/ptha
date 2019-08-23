@@ -342,7 +342,7 @@ get_stage_exceedance_rate_curve_at_hazard_point<-function(
     # correct file.
     if(percentile_version == 'DG19'){
         file_prefix = 'revised1_'
-    else if(percentile_version == 'DG18'){
+    }else if(percentile_version == 'DG18'){
         file_prefix = ''
     }else{
         stop('Version must be either "DG19" or "DG18"')
