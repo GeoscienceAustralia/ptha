@@ -327,6 +327,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
         # However, with the revised event-rate-percentile calculations from
         # the PAGEOPH paper {Davies and Griffin, 2019), the results are no
         # longer expected to be identical. 
+        main_title_extra = ""
 
         main_title = paste0('Stage-vs-exceedance-rate @ (lon=', 
             round(hp$lon[ni],3), ', lat=', round(hp$lat[ni], 2), ', elev=', 
@@ -525,7 +526,7 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
 
     }
 
-    pdf(paste0(output_dir, '/station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
+    pdf(paste0(output_dir, '/revised1_station_summary_', lon, '_', lat, '.pdf'), width=12, height=7)
     .plot_preamble()
 
     plot_stage_vs_rate()
