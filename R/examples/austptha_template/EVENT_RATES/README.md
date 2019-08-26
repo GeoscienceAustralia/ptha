@@ -198,6 +198,15 @@ with the rate curves for a particular source-zone.
 These scripts apply some revised stage-vs-exceedance-rate percentile
 uncertainty calculations, as described in [Section 3.5 of this paper](https://link.springer.com/article/10.1007/s00024-019-02299-w).
 
+The percentiles of the exceedance-rates are thus updated compared with the
+original PTHA18 report. The equations for the hazard calculation imply that the
+logic-tree mean exceedance-rate is unaffected. However our revised
+implementation induced minor numerical changes even in the mean exceedance-rate
+(typically in high significant figures -- not large enough to show up in
+plots). This was due to a change in interpolation at one point in the
+calculation. It is just as valid as the old approach, but much more
+computationally efficient in the context of the revised approach. 
+
 [revised_station_hazard_curves_PREPROCESSING.R](revised_station_hazard_curves_PREPROCESSING.R) preprocesses source-zone logic-tree branches to support the calculation.
 
 [revised_station_hazard_curves.R](revised_station_hazard_curves.R) computes stage-vs-exceedance-rate percentile curves. This version of the script uses logic-tree sampling to reduce the computational effort, and only works for stochastic-slip + fixed rigidity. For the full calculation, instead see the script below.
@@ -217,3 +226,7 @@ uncertainty calculations, as described in [Section 3.5 of this paper](https://li
 [revised_tsunami_stage_exceedance_rates_to_csv.R](revised_tsunami_stage_exceedance_rates_to_csv.R) make some derivative products, similar to [tsunami_stage_exceedance_rates_to_csv.R](tsunami_stage_exceedance_rates_to_csv.R), but uses the revised calculations, with filenames having `revised1_` prepended.
 
 [revised_clean_shapefiles_for_plotting.R](revised_clean_shapefiles_for_plotting.R) produces some shapefiles for convenient plotting. It is just like [clean_shapefiles_for_plotting.R](clean_shapefiles_for_plotting.R) but using the revised stage percentile results.
+
+[revised_quick_station_stage_exceedance_rates.R](revised_quick_station_stage_exceedance_rates.R) updates the earlier plotting code to use the newer percentiles (i.e. [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)).
+
+[revised_quick_station_plots_all_sites.R](revised_quick_station_plots_all_sites.R) updates the earlier plotting code to use the newer percentiles (i.e. [quick_station_plots_all_sites.R](quick_station_plots_all_sites.R)).
