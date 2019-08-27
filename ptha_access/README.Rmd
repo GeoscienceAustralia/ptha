@@ -122,21 +122,23 @@ For each hazard point, the PTHA18 includes a standard pdf plot which shows:
 4. Information on the maximum-stage for each unit-source tsunami.
 
 An example plot can be downloaded
-[here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/example_plot.pdf).
+[here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/example_plot.pdf).
 Because there are thousands of hazard points, the plots at other sites are provided in a set
 of zip folders. Each zip folder contains around 200 sites in a particular
 longitude range. The zip folders can be accessed 
-[here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml).
+[here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/catalog.xml).
 Follow the link to the http download to get the file. The zip folder names are
 of the form *station_summary_plots_longitudes_LOWER_UPPER.zip* where *LOWER* is
 the lower longitude limit, and *UPPER* is the upper longitude limit. 
 
 For example if I were searching for a hazard point at (lon,lat)= (151.408,
 -34.08), then by inspection of the *LOWER* and *UPPER* longitudes in files
-[here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml),
+[here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/catalog.xml),
 it should be contained in the file *station_summary_plots_151.38_152.zip*
 (because the *LOWER* and *UPPER* longitudes bracket the value 151.408, which is
 the one I want).
+
+*Note:* The exceedance-rate percentile calculation has been revised follow the methodology in [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w), as discussed above for the csv and shapefile outputs. The updates are relatively minor, but [the older results are still available here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml) in case you need to check them for some reason.
 
 ## Interpreting exceedance-rate information
 
