@@ -111,7 +111,7 @@ topics can be found in the
 [Australian Tsunami Hazard Modelling Guidelines](https://knowledge.aidr.org.au/media/5640/tsunami-planning-guidelines.pdf).
 
 
-The above results follow the methodology in [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w) to compute exceedance-rate percentiles, which is slightly different to the methodology in the original [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) (see discussion in Section 3.5 of the PAGEOPH paper). Differences are generally small and unlikely to be important, but for reference the older results can still be obtained in [csv form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv) and [shapefile form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip).
+*Note:* The above results follow the methodology in [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w) to compute exceedance-rate percentiles, which is slightly different to the methodology in the original [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) (see discussion in Section 3.5 of the PAGEOPH paper). Differences are generally small and unlikely to be important, but for reference the older results can still be obtained in [csv form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv) and [shapefile form](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/tsunami_stages_at_fixed_return_periods.zip).
 
 ## Obtaining site-specific hazard information (including source deaggregation)
 
