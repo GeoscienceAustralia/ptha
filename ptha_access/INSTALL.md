@@ -1,10 +1,10 @@
 ## **Installation**
 
-It is strongly suggested that the installation is undertaken on a Linux operating 
-system. The author is using Ubuntu 16.04, and the install should also work
-on more recent versions. If you are running Windows or Mac, it will probably be
-easiest to use a virtual machine (e.g. via
-[VirtualBox](https://www.virtualbox.org) or similar).
+It is strongly suggested that the installation is undertaken on a Linux
+operating system. The author is using Ubuntu 18.04 (and previously used 16.04
+with an updated netcdf-c build). The install should also work on more recent
+versions. If you are running Windows or Mac, it will probably be easiest to use
+a virtual machine (e.g. via [VirtualBox](https://www.virtualbox.org) or similar).
 
 ### **Installing R**
 If you don't already have R installed, the you need to get it by following the
@@ -20,19 +20,18 @@ machine (e.g. using [VirtualBox](https://www.virtualbox.org) or some other
 virtualization software) and follow the steps below.
 
 A further complication is that to work with the PTHA outputs on the NCI THREDDS
-server you need to build the package with a recent version of netcdf-c. This is
-due to a bug in netcdf-c versions prior to 4.6.1 (released in early 2018) that
+server you need to be using a recent version of netcdf-c. *NOTE: As of Ubuntu
+18.04, you can use the 'standard' netcdf install obtained with apt-get.*
+There was a bug in netcdf-c versions prior to 4.6.0 (released in early 2018) that
 prevented the remote reading of long character strings with OPeNDAP. We store
 some earthquake event data as (potentially) long character strings, and it is
-essential to be able to read these remotely.
+essential to be able to read these remotely. 
 
-At the time of writing (mid 2018), most users will have to install netcdf-c
-from source to access a suitable version. Source-code for a recent release of
+If you are using an older version of netcdf then you will have to install
+netcdf-c from source. Source-code for a recent release of
 netcdf-c can be obtained from the [netcdf-c github
 page](https://github.com/Unidata/netcdf-c/releases). You need to follow their
-instructions to get it installed. While building any complex software from
-source can be difficult, there is much online troubleshooting information
-available, and you can ask for help on the netcdf mailing list.
+instructions to get it installed. 
 
 Next you need to install R's `ncdf4` package, and specifically tell it to use
 the newly installed netcdf.  This can be done by 
