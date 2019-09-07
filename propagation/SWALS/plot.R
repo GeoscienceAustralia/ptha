@@ -46,6 +46,7 @@ get_dx<-function(output_folder){
     return(model_dx)
 }
 
+#' Get the domain lower-left corner
 get_lower_left_corner<-function(output_folder){
     file_metadata = readLines(Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
 
@@ -55,6 +56,7 @@ get_lower_left_corner<-function(output_folder){
     return(model_dim)
 }
 
+#' Get the domain output precision
 get_model_output_precision<-function(output_folder){
     file_metadata = readLines(Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
     model_dim_line = grep('output_precision', file_metadata)
@@ -62,6 +64,11 @@ get_model_output_precision<-function(output_folder){
     return(dp)
 }
 
+#' Get the domain outputs in a mixed-binary format
+#'
+#' This has been superceeded by netcdf -- but is occasionally useful if one has
+#' netcdf compilation problems.
+#'
 get_gauges_mixed_binary_format<-function(output_folder){
     # Read the gauge data, which is in a mixture of ascii and binary
 
@@ -133,7 +140,10 @@ get_gauges_mixed_binary_format<-function(output_folder){
     return(output)        
 }
 
-#' Read gauges from netcdf file.
+#' Read domain gauges from netcdf file.
+#'
+#' @param output_folder The domain's output folder
+#' 
 get_gauges_netcdf_format<-function(output_folder){
     library('ncdf4')
 
@@ -185,7 +195,8 @@ get_gauges_netcdf_format<-function(output_folder){
     return(outputs)
 }
 
-# Read either the netcdf gauges OR the mixed binary format
+#' Read EITHER the netcdf gauges OR the mixed binary format
+#'
 get_gauges<-function(output_folder){
 
     outputs = try(get_gauges_mixed_binary_format(output_folder), silent=TRUE)
@@ -196,13 +207,14 @@ get_gauges<-function(output_folder){
     return(outputs)
 }
 
-#' Quickly read model outputs
+#' Quickly read domain outputs
+#'
 #' @param var Start of name of file to read (containing a flow variable)
-#' @param binary 
 #' @param drop_walls If TRUE, then set values on the boundaries to values just inside the
-#' boundaries. Useful when we use an extreme elevation for a reflective condition
+#'        boundaries. Useful when we use an extreme elevation for a reflective condition
 #' @param output_folder folder containing output files. If NULL, read the most recent one
 #' @return The variable as a 3d array 
+#'
 get_gridded_variable<-function(var = 'Var_1', drop_walls=FALSE, output_folder = NULL){
    
     if(is.null(output_folder)){ 
@@ -328,20 +340,11 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
         lower_left_corner=lower_left_corner, dx=dx, lw=(nx*dx)))
 }
 
-## Nice plot example
-#persp(seq(0,200, len=700), seq(0,200, len=700), X[,,11], phi=40, border=NA,
-#    col='green', shade=1, axes=FALSE, box=FALSE, asp=1, scale=FALSE)
-
-
-# X = get_all_recent_results(c(1100, 800))
-# library('raster')
-# E = raster(t(X$elev[,,1]), xmn=495000, xmx=(495000+11000), ymn=1610000, ymx=1610000+8000, 
-#     crs=CRS("+init=epsg:3123"))
-# E = flip(E, direction='y')
-# library('rasterVis')
-# plot3D(E)
-
-#' Convert peak stage output to raster
+#' Convert peak stage output to raster using the domain object.
+#'
+#' Instead consider using 'merge_domains_nc_grids' which will combine partitioned domains, and
+#' can output rasters. OR if you just want to make a plot, consider 'multidomain_image', which
+#' works for the full multidomain.
 #'
 #' @param swals_out result of get_all_recent_results
 #' @param proj4string
@@ -593,7 +596,7 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
     library('rgdal')
 
     # Check input makes sense
-    if(all(is.null(nc_grid_files)) & (is.na(domain_index) | is.na(domain_index))){
+    if(all(is.null(nc_grid_files)) & (is.na(multidomain_dir) | is.na(domain_index))){
         stop('Must provide EITHER nc_grid_files OR domain_index and multidomain_dir')
     }
 
@@ -604,7 +607,8 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
         # if we have enough domains. For instance, if we have 10001 domains,
         # then domains '1' and '10001' would both match together, which
         # would be wrong. Some way off however!
-        nc_grid_files = Sys.glob(paste0(multidomain_dir, '/RUN_ID0*000', domain_index, '_*/Grid*000', domain_index, '.nc'))
+        nc_grid_files = Sys.glob(paste0(multidomain_dir, '/RUN_ID0*000', domain_index, 
+                                        '_*/Grid*000', domain_index, '.nc'))
     }
     
     # Open all the files 
@@ -714,6 +718,7 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
 #' @param md list with the multidomain info.
 #' @param multidomain_dir the directory containing all the multdomain outputs. 
 #' If this is provided then md should be NA, and the code will read the necessary information
+#'
 merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
    
     # For all gauges, figure out if they are in the priority domain
@@ -1155,28 +1160,34 @@ test_partition_into_k_with_grouping<-function(){
 }
 
 
-#
-# Make a load balance partition file, using a 'greedy' approach to distribute
-# domains to images. Unlike the old approach, there is no restruction that an equal
-# number of domains ends up on each image (so long as their run-time is closer).
-# This can improve the speed.
-#
-# @param multidomain_dir directory containing the multidomain outputs
-# @param verbose if FALSE, suppress printing
-# @param domain_index_groups either an empty list, or a list with 2 or more vectors, each defining a group of domain indices.
-# In the latter case, the partition tries to be approximately equal WITHIN each group first, and then to combine the results
-# in a good way. This will generally be less efficient than not using groups, unless you have some other information
-# that tells you that the partition should be done in this way.
-# @return the function environment invisibly (so you have to use assignment to capture it)
-#
+#' Make a load_balance_partition.txt file
+#'
+#' Suppose we have results from an existing multidomain model run, compiled with -DTIMER
+#' so that the output files contain timing information for each domain. This function
+#  can use those results to figure out a more balanced partitioning of the domains among images.
+#' It makes a load balance partition file, using a 'greedy' approach to distribute
+#' domains to images. 
+#'
+#' @param multidomain_dir directory containing the multidomain outputs
+#' @param verbose if FALSE, suppress printing
+#' @param domain_index_groups either an empty list, or a list with 2 or more vectors, each defining a group of domain indices.
+#' In the latter case, the partition tries to be approximately equal WITHIN each group first, and then to combine the results
+#' in a good way. This will generally be less efficient than not using groups, unless you have some other information
+#' that tells you that the partition should be done in this way.
+#' @return the function environment invisibly (so you have to use assignment to capture it)
+#'
 make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_index_groups = list()){
 
     if(is.na(multidomain_dir)){
         multidomain_dir = rev(sort(Sys.glob('./OUTPUTS/RUN*')))[1]
     }
 
-    print(paste0('Generating load_balance_partition.txt file in ', multidomain_dir))
-    print(' Future jobs which use this file should have the same number of images and threads')
+    if(verbose){
+        cat('############ \n')
+        cat(paste0('Generating load_balance_partition.txt file in ', multidomain_dir, '\n'))
+        cat('    Future jobs which use this file should have the same number of images and threads \n')
+        cat('\n')
+    }
 
     md_files = Sys.glob(paste0(multidomain_dir, '/multi*.log'))
 
@@ -1240,16 +1251,20 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
 
     range_new = range(splitter[[2]])
     dsplit = diff(range_new)
-    print(paste0('Range of partition total times: ', signif(range_new[1], 4), '-to-', signif(range_new[2], 4),  's '))
-    print(paste0('                  (difference): ', signif(dsplit, 4), 's '))
-    print(paste0('             (as a percentage): ', signif(dsplit/mean(splitter[[2]])*100, 4),'%'))
+    if(verbose){
+        cat(paste0('Range of partition total times: ', signif(range_new[1], 4), '-to-', signif(range_new[2], 4),  's \n'))
+        cat(paste0('                  (difference): ', signif(dsplit, 4), 's \n'))
+        cat(paste0('             (as a percentage): ', signif(dsplit/mean(splitter[[2]])*100, 4), '%\n'))
+    }
     range_old = range(unlist(lapply(md_times, sum)))
     old_range = diff(range_old)
-    print(paste0('Previous time range: ', signif(range_old[1], 4), '-to-', signif(range_old[2], 4),  's '))
-    print(paste0('      (difference) : ', signif(old_range, 4)))
-    print(paste0('Potential run-time reduction (difference in max times):', signif(range_old[2] - range_new[2], 4), 's'))
-    print(paste0('      Potential run-time reduction (% of old max time):', 
-                 signif((range_old[2] - range_new[2])/range_old[2] * 100, 4), '%'))
+    if(verbose){
+        cat(paste0('Previous time range: ', signif(range_old[1], 4), '-to-', signif(range_old[2], 4),  's \n'))
+        cat(paste0('      (difference) : ', signif(old_range, 4), '\n'))
+        cat(paste0('Potential run-time reduction (difference in max times):', signif(range_old[2] - range_new[2], 4), 's\n'))
+        cat(paste0('      Potential run-time reduction (% of old max time):', 
+                     signif((range_old[2] - range_new[2])/range_old[2] * 100, 4), '%\n'))
+    }
     # 
     unique_domains = sort(unique(md_domain_indices_vec))
     if(! all(unique_domains == seq(1, max(unique_domains)))){
@@ -1281,6 +1296,16 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
         }
     }
 
+    old_time_range = unlist(lapply(md_times, sum))
+    new_time_range = x$splitter[[2]]
+    if(verbose){
+        cat('\n')
+        cat('OLD MODEL DOMAIN TIMES (observed): Stem and leaf plot \n')
+        stem(old_time_range)
+        cat('\n')
+        cat('LOAD BALANCED DOMAIN TIMES (prediction): Stem and leaf plot\n')
+        stem(new_time_range)
+    }
     return(invisible(environment()))
 }
 
@@ -1304,5 +1329,15 @@ domain_index_from_folder<-function(folder_name){
     index_ID = substring(ID_term, nch-9, nch)
 
     return(as.numeric(index_ID))
+}
+
+# Get the indices of all domains in a multidomain, using the folder name
+#
+# This can be used to avoid hard-coding the number of domains in scripts.
+#
+get_domain_indices_in_multidomain<-function(multidomain_dir){
+    all_domain_run_folders = Sys.glob(paste0(multidomain_dir, '/RUN_ID*'))
+    all_domain_indices = sapply(basename(all_domain_run_folders), domain_index_from_folder)
+    return(unique(all_domain_indices))
 }
 
