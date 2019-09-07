@@ -147,15 +147,15 @@ module domain_mod
         !character(len=charlen) :: myid_char = '000001'
 
         ! Flag to denote boundaries at which nesting occurs: order is N, E, S, W.
-        logical :: is_nesting_boundary(4) != .FALSE. ![.FALSE., .FALSE., .FALSE., .FALSE.]
+        logical :: is_nesting_boundary(4) = .FALSE. 
 
         ! timestepping_method determines the choice of solver
         character(len=charlen):: timestepping_method = default_timestepping_method
 
         real(dp) :: max_parent_dx_ratio
 
-        ! Number of quantities (stage, uh, vh, elevation)
-        integer(ip):: nvar = 4 !global_nvar
+        ! Number of quantities in domain%U (stage, uh, vh, elevation)
+        integer(ip):: nvar = 4 
 
         ! Name of ascii file where we output metadata
         character(len=charlen):: metadata_ascii_filename

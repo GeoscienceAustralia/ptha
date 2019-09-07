@@ -1503,6 +1503,7 @@ module multidomain_mod
         integer(ip) :: parent_domain_dx_refinement_factor(2), dx_refine_ratio(2)
         integer(ip) :: best_co_size_xy(2), fileID, extra_halo_padding(2)
         real(dp) :: nboundary, best_nboundary
+        character(len=charlen) :: my_fmt
 
 #ifndef COARRAY
         ti = 1
@@ -1575,6 +1576,20 @@ module multidomain_mod
             end do
 
         end if
+
+       ! Write out md%load_balance_part
+        write(log_output_unit, *) " "
+        write(log_output_unit, *) "The load-balance-partition assigns one or more images to each domain."
+        write(log_output_unit, *) "    Integers below denote images (this_image()); each row is a domain,"
+        write(log_output_unit, *) "    split into as many pieces as their are integers in the row."
+        write(log_output_unit, *) "    Rows are ordered as was input to md%domains."
+        do i = 1, size(md%domain_metadata)
+            ! This format string ensures the write is on one line, making it easy to copy the file.
+            write(my_fmt, '(a, i0, a)') "(A,", size(md%load_balance_part%i2(i)%i1), "I5)"
+            write(log_output_unit, my_fmt) '    ', md%load_balance_part%i2(i)%i1
+        end do
+        write(log_output_unit, *) " "
+
 
         ! Count how many domains we need on the current image
         nd = 0

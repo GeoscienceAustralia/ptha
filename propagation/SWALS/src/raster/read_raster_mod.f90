@@ -434,7 +434,7 @@ module read_raster_mod
         integer(ip), optional, intent(in) :: band
         real(dp), optional, intent(in) :: na_below_limit
 
-        real(dp) :: empty_value, ll(2), ur(2), border_buffer(2), bx, by, lower_limit_l
+        real(dp) :: empty_value, ll(2), ur(2), border_buffer(2), lower_limit_l
         integer(ip) :: i, j, verbose_l, bilinear_l, band_l
 
         if(present(verbose)) then
@@ -471,21 +471,13 @@ module read_raster_mod
             ll = real(multi_raster%raster_datasets(j)%lowerleft, dp)
             ur = real(multi_raster%raster_datasets(j)%upperright, dp)
 
-            ! If bilinear is used, we need to stay away from the edges
-            !border_buffer = real(abs(multi_raster%raster_datasets(j)%dx), dp) * bilinear_l
-            !bx = border_buffer(1) * 0.50001_dp ! Just in the region that bilinear is valid
-            !by = border_buffer(2) * 0.50001_dp
-            ! Now, bilinear can deal with edge cells
-            bx = 0.0_dp
-            by = 0.0_dp
-
             do i = 1, N
 
                 ! If z is populated with a value, we are done
                 if(z(i) /= empty_value) cycle
 
                 ! Read values inside the raster extent
-                if(x(i) >= (ll(1)+bx) .and. x(i) <= (ur(1)-bx) .and. y(i) >= (ll(2)+by) .and. y(i) <= (ur(2)-by)) then
+                if(x(i) >= ll(1) .and. x(i) <= ur(1) .and. y(i) >= ll(2) .and. y(i) <= ur(2)) then
                     call multi_raster%raster_datasets(j)%get_xy(x(i), y(i), z(i), 1, verbose_l, bilinear_l, band_l)
                 end if
 

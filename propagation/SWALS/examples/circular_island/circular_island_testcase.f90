@@ -214,15 +214,14 @@ program circular_island
             ! which should be overwritten by the boundary condition
             call domain%update_boundary()
 
-            call domain%print()
-
             full_write_step = full_write_step + 1
             if(mod(full_write_step, frequency_full_write_steps) == 0) then 
                 call domain%write_to_output_files(time_only=never_write_grid_time_slices)
+                call domain%print()
+                print*, 'Mass balance: ', domain%mass_balance_interior()
             end if
 
             call domain%write_gauge_time_series()
-            print*, 'Mass balance: ', domain%mass_balance_interior()
 
         end if
 
