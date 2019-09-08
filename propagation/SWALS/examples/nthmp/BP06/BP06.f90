@@ -458,7 +458,7 @@ program BP06
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         print*, 'domain: ', j, 'ts: ', &
-            md%domains(j)%linear_timestep_max()
+            md%domains(j)%stationary_timestep_max()
     end do
 
     print*, 'End setup'

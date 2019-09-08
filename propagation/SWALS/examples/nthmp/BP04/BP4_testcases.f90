@@ -140,7 +140,7 @@ program bp4
 
     ! Linear requires a fixed timestep 
     if (timestepping_method == 'linear') then
-        timestep = domain%linear_timestep_max() 
+        timestep = domain%stationary_timestep_max() 
     end if
 
 

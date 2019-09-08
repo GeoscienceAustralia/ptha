@@ -268,6 +268,7 @@ program run_Tauranga
     type(timer_type) :: program_timer
 
     real(dp), parameter :: mesh_refine = 0.06_dp ! Increase resolution by this amount.  {e.g. 1.0 = 10m; 2 = 5m; 0.1 = 100m; etc}
+    !real(dp), parameter :: mesh_refine = 0.12_dp ! Increase resolution by this amount.  {e.g. 1.0 = 10m; 2 = 5m; 0.1 = 100m; etc}
     
     real(dp) ::  global_dt = 0.22_dp / mesh_refine
     real(dp), parameter :: final_time = 3600.0_dp * 24.0_dp * 2.0_dp !6.8_dp
@@ -373,7 +374,7 @@ program run_Tauranga
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         write(log_output_unit, *) 'domain: ', j, 'ts: ', &
-            md%domains(j)%linear_timestep_max()
+            md%domains(j)%stationary_timestep_max()
     end do
 
     print*, 'End setup'

@@ -331,7 +331,7 @@ program generic_model
         input_stage_raster, hazard_points_file, skip_header_hazard_points_file,&
         adaptive_computational_extents, negative_elevation_raster, manning_n)
 
-    timestep = domain%linear_timestep_max()
+    timestep = domain%stationary_timestep_max()
     write(domain%logfile_unit, *) 'ts: ', timestep
 
     ! Trick to get the code to write out just after the first timestep

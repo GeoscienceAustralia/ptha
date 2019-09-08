@@ -36,7 +36,7 @@ module local_routines
                    stage0 = 0.0_dp
                end if
                domain%U(i,j,STG) = stage0
-               domain%U(i,j,ELV) = d0
+               domain%U(i,j,ELV) = d0 !+ 20 * a0 * (mod(i, 3) - 0.5_dp) !! Interesting to see what a depth perturbation does -- not much.
                domain%U(i,j,UH) = (-d0) * sqrt(gravity/(-d0))*stage0
                domain%U(i,j,VH) = 0.0_dp
             end do    
@@ -256,7 +256,7 @@ program nesting_reflection
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
         print*, 'domain: ', j, 'ts: ', &
-            md%domains(j)%linear_timestep_max()
+            md%domains(j)%stationary_timestep_max()
     end do
 
     ! Trick to get the code to write out just after the first timestep

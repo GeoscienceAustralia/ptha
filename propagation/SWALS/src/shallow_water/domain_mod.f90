@@ -377,6 +377,8 @@ module domain_mod
 
         ! Time-step for linear solver (a constant)
         procedure:: linear_timestep_max => linear_timestep_max
+        procedure:: nonlinear_stationary_timestep_max => nonlinear_stationary_timestep_max
+        procedure:: stationary_timestep_max => stationary_timestep_max
 
         ! gauges
         procedure:: setup_point_gauges => setup_point_gauges
@@ -2401,7 +2403,7 @@ TIMER_STOP('evolve_one_step')
 
     !
     ! Function to compute the max timestep allowed for the linear shallow water equations,
-    ! using the provided CFL.
+    ! using the provided CFL, assuming the leap-frog time-stepping scheme
     !
     function linear_timestep_max(domain) result(timestep)
         class(domain_type), intent(in):: domain
@@ -2424,6 +2426,80 @@ TIMER_STOP('evolve_one_step')
             end do
         end do
         timestep = ts_max * domain%cfl
+
+    end function
+
+    !
+    ! Function to compute the max timestep allowed for the nonlinear shallow water equations, for a stationary flow (i.e. gravity
+    ! wave only), using the provided CFL. Results are not exactly the same as the limits for nonlinear-FV solvers, but are very
+    ! close in general.
+    !
+    function nonlinear_stationary_timestep_max(domain) result(timestep)
+        class(domain_type), intent(in):: domain
+        real(dp) :: timestep
+
+        real(dp) :: ts_max
+        integer(ip) :: i, j
+
+        ts_max = huge(ONE_dp)
+    
+        do j = 1, domain%nx(2)
+            do i = 1, domain%nx(1)
+                ! max timestep = Distance along latitude / wave-speed <= dt
+                ! Actually the non-linear schemes can often only take half this step, but we correct that elsewhere
+                ts_max = min(ts_max, &
+                    0.5_dp * min(&
+                        (domain%distance_bottom_edge(j+1) + domain%distance_bottom_edge(j)),& 
+                        (domain%distance_left_edge(i+1)   + domain%distance_left_edge(i)  ) ) / &
+                        sqrt(gravity * max(domain%U(i,j,STG)-domain%U(i,j,ELV), minimum_allowed_depth)) )
+            end do
+        end do
+        timestep = ts_max * domain%cfl
+
+    end function
+
+    ! Convenience wrapper which uses 'linear_timestep_max' or 'nonlinear_stationary_timestep_max' depending on the numerical method.
+    ! This is mainly useful when setting up models, as a guide to the timestep that one might be able to take.
+    ! Beware the time-step calculations are not exactly the same as the results from the nonlinear-FV solvers (because the latter use
+    ! the edge-based wave speed calculations). But they should be very similar. 
+    function stationary_timestep_max(domain) result(timestep)
+        class(domain_type), intent(in):: domain
+        real(dp) :: timestep
+        ! Leapfrog type numerical methods
+        character(len=charlen) :: leapfrog_type_solvers(2) = [ character(len=charlen) :: &
+            'linear', 'leapfrog_linear_plus_nonlinear_friction' ]
+        ! Typical DE1-type finite volume methods
+        character(len=charlen) :: nonlinear_FV_solvers_1(3) = [ character(len=charlen) :: &
+            'euler', 'rk2', 'midpoint' ]
+        ! Less typical finite-volume methods
+        character(len=charlen) :: nonlinear_FV_solvers_2(1) = [ character(len=charlen) :: &
+            'rk2n' ]
+
+        if( any(domain%timestepping_method == leapfrog_type_solvers) ) then
+            !
+            ! Leap-frog type solvers
+            !
+            if(domain%linear_solver_is_truely_linear) then
+                timestep = domain%linear_timestep_max()
+            else
+                timestep = domain%nonlinear_stationary_timestep_max()
+            end if
+
+        else if(any(domain%timestepping_method == nonlinear_FV_solvers_1)) then
+            !
+            ! Standard nonlinear solvers in SWALS
+            !
+            timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp
+        else if(any(domain%timestepping_method == nonlinear_FV_solvers_2)) then
+            !
+            ! The unusual 'rk2n' timestepping method.
+            !
+            timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp * 4.0_dp
+        else
+            write(log_output_unit, *) 'Error in stationary_timestep_max: Unrecognized timestepping_method'
+            write(log_output_unit, *) trim(domain%timestepping_method)
+            call generic_stop
+        end if
 
     end function
 
