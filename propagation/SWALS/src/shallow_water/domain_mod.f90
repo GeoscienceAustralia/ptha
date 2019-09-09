@@ -170,95 +170,100 @@ module domain_mod
         !    [(1+exterior_cells_width):(domain%nx(1)-exterior_cells_width), &
         !     (1+exterior_cells_width):(domain%nx(2)-exterior_cells_width)]
         ! NOTE: exterior_cells_width should only be used to influence mass conservation tracking calculations.
-        ! It is not strictly related to the halo width for parallel computations, although we may well want 
-        ! that to be the same.
+        ! It is not strictly related to the halo width for parallel computations. When using a multidomain, the
+        ! mass conservation tracking is somewhat different (based around subroutines with names matching 'nesting_boundary_flux_*')
         integer(ip):: exterior_cells_width = 2
     
         ! Count number of time steps (useful if we want to do something only
         ! every n'th timestep)
         integer(ip):: nsteps_advanced = 0
-        
+       
+        ! The evolved time in seconds
         real(dp):: time = ZERO_dp
-        ! dt computed from CFL condition (e.g. during flux computation)
+        ! dt computed from CFL condition (e.g. during flux computation). We might take a smaller timestep (e.g. to match the
+        ! timestep on other nested domains)
         real(dp):: max_dt = ZERO_dp
-        ! Record dt the last time we ran update_U
+        ! Record dt the last time we ran update_U. Useful if we want to append some other update.
         real(dp) :: dt_last_update = ZERO_dp
-        ! the time-step evolved by domain%evolve_one_step.
+        ! Record the time-step evolved by domain%evolve_one_step.
         real(dp):: evolve_step_dt = ZERO_dp
-        ! the maximum allowed timestep [used to prevent high timesteps on dry domains]
+        ! This can set the maximum allowed timestep [used to prevent high timesteps on dry domains]
         real(dp):: maximum_timestep = maximum_timestep
-        ! Do a 'trivial' evolve before this time
+        ! If the time is less than this number, then we will assume the domain flow is stationary, and will not re-compute the flow.
+        ! Useful to increase the efficiency of domains where you know nothing happens until some set time (e.g. far-field tsunami ).
         real(dp) :: static_before_time = -HUGE(1.0_dp)
         
         ! Parameter which determines how the 'static depth' is computed in
-        ! linear solver [corresponding to 'h0' in 'g h_0 d(free_surface)/dx']
+        ! linear solver [i.e. corresponding to 'h0' in the pressure gradient term 'g h_0 d(free_surface)/dx']
         real(dp):: msl_linear = 0.0_dp
         ! This flag controls whether, for the 'linear' solver, we allow the
-        ! pressure-gradient term (g depth dStage/dx) to have depth varying
-        ! over time. If linear_solver_is_truely_linear, then the depth is constant.
-        ! Otherwise the depth varies (which actually makes the equations nonlinear)
-        ! "Truely linear" seems more stable.
+        ! pressure-gradient term (g h0 dStage/dx) to have 'h0' varying
+        ! over time. If linear_solver_is_truely_linear, then 'h0' is constant.
+        ! Otherwise 'h0' varies as the stage varies (which actually makes the equations nonlinear)
         logical :: linear_solver_is_truely_linear = .true.
-        ! Use this to distinguish between 'linear solver' and 'staggered but potentially nonlinear'
+        ! Useful variable to distinguish staggered-grid and centred-grid numerical methods
         logical :: is_staggered_grid 
 
         !
-        ! Boundary conditions. (FIXME: Consider making a 'boundary_data_type' which
-        !    could hold the variables prefixed with 'boundary_'. Not essential but
-        !    might reduce proliferation of variables in domain.)
+        ! Boundary conditions. 
         !
         ! Currently 'boundary_subroutine' is the most important way of imposing
         !    boundary conditions. It must take a domain_type as an INTENT(INOUT) argument
         ! Applications need to define boundary_subroutine, either using a
         !    pre-existing bc, or making a new subroutine.
-        ! Some existing boundary conditions rely on a function as well, hence
-        !    'boundary_function', but its use should probably be discouraged. It takes
-        !    the domain_type as well as time, x, y, see the interface below
+        ! Some existing boundary conditions rely on 'boundary_function' as well. It takes
+        !    the domain_type as well as time, and the location (defined as i, j indices), see the interface below.
+        !    Note that the x/y location can easily be obtained from domain%x(i), domain%y(j)
         character(len=charlen):: boundary_type = ''
         procedure(boundary_fun), pointer, nopass:: boundary_function => NULL()
         procedure(boundary_subroutine), pointer, nopass:: boundary_subroutine => NULL() 
         !
-        ! Flag whether the boundary is exterior (TRUE) or interior (FALSE). 
+        ! Flag whether the boundary is exterior (TRUE) or interior (FALSE). We only need
+        ! to apply a boundary condition to the 'exterior boundaries' -- otherwise we have e.g. nesting updates, 
+        ! which are different.
         ! Order is North (1), East (2), South (3), West (4) 
-        ! The interior boundaries are 'overlaps between domains', and are dealt
-        ! with by communication. 
-        ! The numerical boundary conditions (e.g. reflective, etc) are applied
-        ! to the exterior boundaries
         logical :: boundary_exterior(4) = .TRUE. 
 
         ! 
         ! Mass conservation tracking  -- store as double, even if dp is single prec.
         !
-        ! Store the flux through the N, E, S, W boundaries 
+        ! Store the flux through the N, E, S, W boundaries, single domain 
         real(force_double):: boundary_flux_store(4)  = ZERO_dp
+        ! Alternative to the above which is appropriate for the nested-grid case
         real(force_double):: boundary_flux_store_exterior(4)  = ZERO_dp
-        ! Time integrate the boundary fluxes
+        ! Time integrate the boundary fluxes, single domain
         real(force_double):: boundary_flux_time_integral = ZERO_dp
+        ! Alternative to the above which is appropriate for the nested-grid case
         real(force_double):: boundary_flux_time_integral_exterior = ZERO_dp
         ! We need an intermediate variable to take care of time-stepping
-        ! This integrates the boundary fluxes within the evolve step only
+        ! This integrates the boundary fluxes within the evolve step only, single domain
         real(force_double):: boundary_flux_evolve_integral = ZERO_dp
+        ! Alternative to the above which is appropriate for the nested-grid case
         real(force_double):: boundary_flux_evolve_integral_exterior = ZERO_dp
         
         ! Lower/upper x and y indices over which the SWE computation takes place
         ! These might restrict the SWE update to a fraction of the domain (e.g.
         ! beginning of an earthquake-tsunami run where only a fraction of the domain is
         ! active.
-        ! Currently implemented for linear SWE only
+        ! Currently implemented for leap-frog solvers only
         integer(ip):: xL, xU, yL, yU
 
         ! Output folder units
-        ! (FIXME: Consider making a 'output_data_type' which
-        !    could hold the variables prefixed with 'output_'. Not essential but
-        !    might reduce proliferation of variables in domain.)
-
-        integer(ip), allocatable :: output_variable_unit_number(:)
+        ! Unit for time (stored as ascii)
         integer(ip):: output_time_unit_number
+        ! Base folder inside which we store domain outputs.
         character(len=charlen):: output_basedir = default_output_folder
+        ! Output folder (it will begin with domain%output_basedir, and include another timestamped folder) 
         character(len=charlen):: output_folder_name = ''
+        ! Unit number for domain log file
         integer(ip):: logfile_unit = output_unit
 
-        ! Count the number of time-steps we clip depths.
+        ! Units for home-brew binary output format [better to use netcdf nowadays].
+        ! This is only used when the code is compiled with "-DNONETCDF"
+        integer(ip), allocatable :: output_variable_unit_number(:)
+
+        ! Count the number of time-steps at which we clip depths.
+        ! For a 'well behaved' model this should remain zero -- non-zero values indicate mass conservation issues.
         integer(long_long_ip) :: negative_depth_fix_counter = 0
 
         ! Type to manage netcdf grid outputs
@@ -267,14 +272,13 @@ module domain_mod
         ! Type to record CPU timings
         type(timer_type):: timer
 
-        ! Type to do single-grid coarray communication
-        ! This has mostly been superceeded by multidomain. However, if
-        ! you really only need a single grid, then this might be an efficient choice.
+        ! Type to do single-grid coarray communication. This has been superceeded by multidomain. 
         type(partitioned_domain_nesw_comms_type):: partitioned_comms
         ! Determine whether we call domain%partitioned_comms%communicate. It would be better
-        ! to hide this inside partitioned_comms, but ifort segfaults when we do that.
+        ! to hide this inside the partitioned_comms class, but ifort 2019 segfaults when that is done.
         logical :: use_partitioned_comms = .false. 
 
+        ! Variables controlling the storage of maximum-stage.
         ! We don't have to store the max_U. For some problems (linear solver) that can
         ! take a significant fraction of the total time, or use too much memory.
         logical:: record_max_U = .true.
@@ -293,37 +297,35 @@ module domain_mod
         type(point_gauge_type) :: point_gauges
 
         !
-        ! Type to manage nesting communication
+        ! Type to manage nesting communication. This is required for nesting, and is the standard
+        ! approach for distributed-memory parallel runs.
         !
         type(domain_nesting_type) :: nesting
  
 
-        ! Big arrays
+        ! Big arrays to hold the domain variables
         !
-        ! U holds quantities
+        ! U holds main flow variables -- STG, UH, VH, ELV 
         ! First 2 dimensions = space, 3rd = number of quantities
         real(dp), allocatable :: U(:,:,:) ! Needed always
-        real(dp), allocatable :: max_U(:,:,:) ! Needed if max_U is to be output, but can reduce precision
+        real(dp), allocatable :: max_U(:,:,:) ! Needed if max_U is to be output. FIXME: Consider storing in output_precision
         !
-        ! Multi-dimensional arrays below are only required for nonlinear. Would be possible
+        ! Multi-dimensional arrays below are only required for nonlinear solver. Would be possible
         ! to further reduce memory usage, but not completely trivial. Not all of these are required
         ! for linear type timestepping
-        real(dp), allocatable :: flux_NS(:,:,:) ! Could avoid
-        real(dp), allocatable :: flux_EW(:,:,:) ! Could avoid
-        real(dp), allocatable :: depth(:,:) ! Could avoid
-        real(dp), allocatable :: velocity(:,:, :) ! Could avoid
-        real(dp), allocatable :: explicit_source(:,:,:) ! Could avoid
+        real(dp), allocatable :: flux_NS(:,:,:)  
+        real(dp), allocatable :: flux_EW(:,:,:)  
+        real(dp), allocatable :: depth(:,:)  
+        real(dp), allocatable :: velocity(:,:, :) 
+        real(dp), allocatable :: explicit_source(:,:,:) 
         real(dp), allocatable :: explicit_source_VH_j_minus_1(:,:) ! Separate from explicit_source for OPENMP parallel logic
-        real(dp), allocatable :: manning_squared(:,:) ! Needed for variable manning
-        real(dp), allocatable :: backup_U(:,:,:) ! Needed
-
-        ! Only used for leapfrog_linear_plus_nonlinear_friction
-        real(dp), allocatable :: friction_work(:,:,:)
-        logical :: friction_work_is_setup = .false.
+        real(dp), allocatable :: manning_squared(:,:) 
+        real(dp), allocatable :: backup_U(:,:,:) ! Needed for some timestepping methods
+        real(dp), allocatable :: friction_work(:,:,:) ! Only used for leapfrog_linear_plus_nonlinear_friction
+        logical :: friction_work_is_setup = .false. ! Flag used for efficiency with leapfrog_linear_plus_nonlinear_friction solvers
 #ifdef DEBUG_ARRAY
-        ! For debugging it can be helpful to have this array.
-        ! If DEBUG_ARRAY is defined, then it will be
-        ! allocated with dimensions (nx, ny), and will be written to the netcdf file
+        ! For debugging it can be helpful to have this array.  If DEBUG_ARRAY is defined, then it will be allocated with dimensions
+        ! (nx, ny), and will be written to the netcdf file at each time.
         real(dp), allocatable :: debug_array(:,:)
 #endif
 
@@ -349,9 +351,7 @@ module domain_mod
         ! Setup
         procedure:: precompute_friction_work => precompute_friction_work
         
-        ! Timestepping
-        ! (consider making only 'evolve_one_step' type bound -- since the user should not
-        !  really call others)
+        ! Timestepping (consider making only 'evolve_one_step' type bound -- since the user should not really call others)
         procedure:: one_euler_step => one_euler_step
         procedure:: one_rk2_step => one_rk2_step 
         procedure:: one_rk2n_step => one_rk2n_step 
@@ -361,8 +361,7 @@ module domain_mod
         procedure:: evolve_one_step => evolve_one_step
         procedure:: update_max_quantities => update_max_quantities
 
-        ! Boundary conditions. This just calls whatever domain%boundary_subroutine points to
-        ! (consider making not type bound)
+        ! Boundary conditions. This just calls whatever domain%boundary_subroutine points to (consider making not type bound)
         procedure:: update_boundary => update_boundary
 
         ! IO
@@ -371,36 +370,39 @@ module domain_mod
         procedure:: write_max_quantities => write_max_quantities
         procedure:: log_outputs => divert_logfile_unit_to_file
 
-        ! Mass conservation tracking
+        ! Mass conservation reporting
         procedure:: mass_balance_interior => mass_balance_interior
         procedure:: volume_interior => volume_interior
 
-        ! Time-step for linear solver (a constant)
+        ! Functions to estimate gravity-wave time-step (often useful to call at the start of a model run). These are not used
+        ! in the flow-algorithms, they are just for convenience.
         procedure:: linear_timestep_max => linear_timestep_max
         procedure:: nonlinear_stationary_timestep_max => nonlinear_stationary_timestep_max
         procedure:: stationary_timestep_max => stationary_timestep_max
 
-        ! gauges
+        ! Setup and store point-gauge outputs
         procedure:: setup_point_gauges => setup_point_gauges
         procedure:: write_gauge_time_series => write_gauge_time_series
 
         ! finalization (e.g. close netcdf files)
         procedure:: finalise => finalise_domain
 
-        ! Smoothing
+        ! Smoothing of elevation. Not recommended in general, but with poor elevation data it might reduce artefacts.
         procedure :: smooth_elevation => smooth_elevation
 
-        ! Nesting
+        ! Nesting.
+        ! -- Keep track of fluxes for mass-conservation tracking
         procedure:: nesting_boundary_flux_integral_multiply => nesting_boundary_flux_integral_multiply
         procedure:: nesting_boundary_flux_integral_tstep => nesting_boundary_flux_integral_tstep
-        !procedure:: nesting_flux_correction => nesting_flux_correction_coarse_recvs !! DEFUNCT
         procedure:: nesting_flux_correction_everywhere => nesting_flux_correction_everywhere
+        ! -- Determine if a given point is in the 'priority domain'
         procedure:: is_in_priority_domain => is_in_priority_domain
-        ! If the current grid communicates to a coarser grid, this routine can make
-        ! elevation constant within each coarse-grid cell in the send-region
+        ! -- If the current grid communicates to a coarser grid, this routine can make elevation constant within each coarse-grid
+        ! cell in the send-region. Useful to make elevation consistent in a nesting situation
         procedure:: use_constant_wetdry_send_elevation => use_constant_wetdry_send_elevation
-        ! With nested domains, set lower-left/upper-right/resolution near the desired locations,
-        ! but adjusting as required to support nesting
+        ! -- When initialising nested domains, set lower-left/upper-right/resolution near the desired locations,
+        ! adjusting as required to support nesting (e.g. so that edges align with parent domain, and cell size is an integer divisor
+        ! of the parent domain, etc).
         procedure:: match_geometry_to_parent => match_geometry_to_parent
 
 
@@ -445,8 +447,10 @@ module domain_mod
   
     ! 
     ! Convenience printing function 
+    !
     ! FIXME: For nesting domains, consider modifying this to only use values
-    !        where the priority_domain corresponds to the current domain
+    !        where the priority_domain corresponds to the current domain.
+    !        In general, I use the multidomain printing routines.
     subroutine print_domain_statistics(domain)
         class(domain_type), intent(inout):: domain
         real(dp):: maxstage, minstage
@@ -519,7 +523,7 @@ TIMER_START('printing_stats')
                 ! Get total, potential and kinetic energy in domain interior
                 !
                 ! This does not exactly lead to energy conservation, but with small-enough time-steps
-                ! it should be good.
+                ! it should be good for the linear solver.
                 !
 
                 ! Integrate over the model interior
@@ -600,18 +604,18 @@ TIMER_STOP('printing_stats')
     ! 
     ! Set up the full domain, allocate arrays, etc
     !
-    ! @param global_lw real(dp) array size 2. length/width of domain in same
-    !  units as x,y coordinates
+    ! @param global_lw real(dp) array size 2. length/width of domain in same units as x,y coordinates
     ! @param global_nx integer array size 2. number of x/y cells in the domain
-    ! @param global_ll real(dp) array size 2. lower left x/y coordinate of the
-    !  domain (at the corner of the lower left cell)
+    ! @param global_ll real(dp) array size 2. lower left x/y coordinate of the domain (at the corner of the lower left cell)
     ! @param create_output_files optional. If .TRUE. or not provided, then make output files
-    ! @param co_size_xy Split up domain into sub-tiles of this dimension, using coarrays
+    ! @param co_size_xy optional integer array size 2. Split up domain into sub-tiles of this dimension [coarray only -- note this
+    ! is a simple "single domain decomposition", not used with the multidomain approach]
     ! @param ew_periodic Use EW periodic boundaries [coarray only -- note this is a simple "single domain decomposition", not used
     ! with the multidomain approach]
     ! @param ns_periodic Use NS periodic boundaries [coarray only -- note this is a simple "single domain decomposition", not used
     ! with the multidomain approach]
     ! @param verbose Print info about the domain
+    !
     subroutine allocate_quantities(domain, global_lw, global_nx, global_ll, create_output_files,&
         co_size_xy, ew_periodic, ns_periodic, verbose)
 
@@ -628,8 +632,7 @@ TIMER_STOP('printing_stats')
         real(dp):: local_lw(2), local_ll(2)
         integer(ip):: local_nx(2)
 
-        ! Send domain print statements to the default log (over-ridden later if
-        ! we send the domain log to its own file
+        ! Send domain print statements to the default log (over-ridden later if we send the domain log to its own file
         domain%logfile_unit = log_output_unit
 
         if(present(create_output_files)) then
@@ -703,7 +706,7 @@ TIMER_STOP('printing_stats')
 
         if(use_partitioned_comms) then
             ! Note that this only supports a single grid, and has largely been replaced by the "multidomain"
-            ! parallel infrastructure, although in the single-grid case that may be less efficient.
+            ! parallel infrastructure.
 
             ! Compute the ll/lw/nx for this sub-domain
             call domain%partitioned_comms%initialise(co_size_xy, global_ll, global_lw, global_nx, &
@@ -715,8 +718,7 @@ TIMER_STOP('printing_stats')
 
             call domain%partitioned_comms%print()
         
-            ! Make sure that communication boundaries are not
-            ! numerical boundaries
+            ! Make sure that communication boundaries are not numerical boundaries
             do i = 1,4
                 if(domain%partitioned_comms%neighbour_images(i) > 0) domain%boundary_exterior(i) = .FALSE.
             end do
@@ -727,8 +729,8 @@ TIMER_STOP('printing_stats')
             domain%lower_left = global_ll
         end if
 
-        ! For the linear solver, these variables can be modified to evolve domain%U only in the region
-        ! domain%U(xL:xU, yL:yU). This can speed up some simulations (but the user must adaptively change the variables).
+        ! For the linear solver, these variables can be modified to evolve domain%U only in the region domain%U(xL:xU, yL:yU). This
+        ! can speed up some simulations (but the user must adaptively change the variables).
         domain%xL = 1_ip
         domain%yL = 1_ip
         domain%xU = domain%nx(1)
@@ -742,9 +744,8 @@ TIMER_STOP('printing_stats')
         nx = domain%nx(1)
         ny = domain%nx(2)
         nvar = domain%nvar 
-
-        ! x/y coordinates (only stored along domain edge, assumed constant)
         allocate(domain%x(nx), domain%y(ny))
+        ! x/y coordinates (only stored along domain edge, assumed constant)
         do i = 1, nx
             domain%x(i) = domain%lower_left(1) + ((i - HALF_dp)/(nx*ONE_dp))*domain%lw(1)
         end do
@@ -753,19 +754,21 @@ TIMER_STOP('printing_stats')
         end do
      
 #ifdef SPHERICAL
-        ! For spherical coordinates it saves computation to have cos(latitude)
-        ! at cells and edges
+        ! For spherical coordinates it saves computation to have cos(latitude) at cells and edges
         allocate(domain%coslat(ny), domain%coslat_bottom_edge(ny+1), domain%tanlat_on_radius_earth(ny))
         domain%coslat = cos(domain%y * deg2rad)
         domain%coslat_bottom_edge(1:ny) = cos((domain%y - HALF_dp * domain%dx(2))*deg2rad)
         domain%coslat_bottom_edge(ny+1) = cos((domain%y(ny) + HALF_dp*domain%dx(2))*deg2rad)
-
-        ! This term appears in 'extra' spherical shallow water equations terms from Williamson et al., (1992)
-        ! and other modern derivations
+        ! This term appears in 'extra' spherical shallow water equations terms from Williamson et al., (1992) and other modern
+        ! derivations
         domain%tanlat_on_radius_earth = tan(domain%y * deg2rad) / radius_earth
 #endif
 
 #ifdef CORIOLIS
+        ! Spherical coordinates must be used if coriolis is used.
+#ifndef SPHERICAL
+        stop 'Cannot define preprocessing flag CORIOLIS without also defining SPHERICAL'
+#endif    
         ! Coriolis parameter
         allocate(domain%coriolis_bottom_edge(ny+1), domain%coriolis(ny))
         domain%coriolis = 2.0_dp * sin(domain%y * deg2rad) * earth_angular_freq
@@ -774,9 +777,6 @@ TIMER_STOP('printing_stats')
         domain%coriolis_bottom_edge(ny+1) = 2.0_dp * earth_angular_freq * &
             sin((domain%y(ny) + HALF_dp * domain%dx(2))*deg2rad)
 
-#ifndef SPHERICAL
-        stop 'Cannot define preprocessing flag CORIOLIS without also defining SPHERICAL'
-#endif    
 #endif
 
 
@@ -822,10 +822,8 @@ TIMER_STOP('printing_stats')
 #endif
 
         !
-        ! Below we allocate the main arrays, using loops to try to 
-        ! promote openmp memory affinity (based on the first-touch).
+        ! Below we allocate the main arrays, using loops to promote openmp memory affinity (based on the first-touch principle).
         !
-
         allocate(domain%U(nx, ny, 1:nvar))
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny, nvar)
         !$OMP DO SCHEDULE(STATIC)
@@ -846,8 +844,7 @@ TIMER_STOP('printing_stats')
             !$OMP END PARALLEL
         end if
 
-        ! Many other variables are required for non-linear FV, but not for
-        ! linear leap-frog. Note non-linear FV is never on staggered grid.
+        ! Many other variables are required for the non-staggered-grid solvers (i.e. the nonlinear finite-volume solvers)
         if((.not. domain%is_staggered_grid)) then 
 
             allocate(domain%depth(nx, ny))
@@ -881,7 +878,6 @@ TIMER_STOP('printing_stats')
             !$OMP END DO
             !$OMP END PARALLEL
 
-
             ! Pressure gradient applies only to uh and vh (2 and 3 variables in U)
             allocate(domain%explicit_source(nx, ny, UH:VH))
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
@@ -891,7 +887,9 @@ TIMER_STOP('printing_stats')
             end do
             !$OMP END DO
             !$OMP END PARALLEL
-            
+           
+            ! This stores components of explicit_source related to the index 'j-1', which we must treat separately when using
+            ! openmp.
             allocate(domain%explicit_source_VH_j_minus_1(nx, ny+1))
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
             !$OMP DO SCHEDULE(STATIC)
@@ -901,6 +899,7 @@ TIMER_STOP('printing_stats')
             !$OMP END DO
             !$OMP END PARALLEL
 
+            ! (Manning friction)*(Manning friction)
             allocate(domain%manning_squared(nx, ny))
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
             !$OMP DO SCHEDULE(STATIC)
@@ -910,7 +909,6 @@ TIMER_STOP('printing_stats')
             !$OMP END DO
             !$OMP END PARALLEL
     
-
             ! If we use complex timestepping we need to back-up U for variables 1-3
             if (domain%timestepping_method /= 'euler') then
                 allocate(domain%backup_U(nx, ny, STG:VH))
@@ -925,9 +923,9 @@ TIMER_STOP('printing_stats')
 
         endif
 
-        ! The linear_plus_nonlinear_friction needs a manning term, and a work array
-        ! which can hold the "constant" part of the friction terms for efficiency
         if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+            ! The linear_plus_nonlinear_friction needs a manning term, and a work array
+            ! which can hold the "constant" part of the friction terms for efficiency
 
             ! Manning
             allocate(domain%manning_squared(nx, ny))
@@ -961,7 +959,6 @@ TIMER_STOP('printing_stats')
             CALL domain%create_output_files()
         end if
 
-
         if(verbose_) then
             write(domain%logfile_unit, *) ''
             write(domain%logfile_unit, *) 'dx: ', domain%dx
@@ -975,7 +972,6 @@ TIMER_STOP('printing_stats')
             write(domain%logfile_unit, *) 'distange_left_edge(1)', domain%distance_left_edge(1)
             write(domain%logfile_unit, *) ''
         end if
-
 
     end subroutine
 
@@ -1003,6 +999,11 @@ TIMER_STOP('printing_stats')
             stop 'friction_work is not allocated: ensure elevation is set before running this routine'
 
         if(domain%linear_solver_is_truely_linear) then
+            !
+            ! Here we evaluate the depth assuming stage=domain%msl_linear
+            ! This is the standard logic for the "truely linear" linear shallow water equations.
+            !
+
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
             !$OMP DO SCHEDULE(STATIC)
             do j = 1, domain%nx(2)
@@ -1030,6 +1031,10 @@ TIMER_STOP('printing_stats')
             ! For a truely-linear solver, this is only required once
             domain%friction_work_is_setup = .true.
         else
+            !
+            ! This differs from the above, in that we use domain%U(:,:,STG) to compute the depth.
+            ! This means we generally need to recompute the friction-work terms at every time-step.
+            !
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
             !$OMP DO SCHEDULE(STATIC)
             do j = 1, domain%nx(2)
@@ -1289,12 +1294,8 @@ TIMER_STOP('printing_stats')
 
         class(domain_type), intent(inout) :: domain
 
-        real(dp) :: depth_inv, masscon_error_neg_depth
-        integer(ip) :: i, j, masscon_error, k(1), i1
-        real(dp) :: d_nbr(4), vol_nbr(4), area_nbr(4), vol_me, vol_me_limit, vol_avail, take_fraction
-        logical :: unrecoverable_error
-        ! Indices used to denote cells above,right,below,left of a target cell.
-        integer(ip), parameter :: I_TOP=1, I_RIGHT=2, I_BOTTOM=3, I_LEFT=4
+        real(dp) :: depth_inv
+        integer(ip) :: i, j, masscon_error
 
         ! Recompute depth and velocity
         ! Must be updated before the main loop when done in parallel
@@ -1393,6 +1394,7 @@ TIMER_STOP('printing_stats')
 #include "domain_compute_fluxes_DE1_include.f90"        
 
     end subroutine
+
     !
     ! Compute the fluxes, and other things, in preparation for an update of U 
     !
@@ -1463,16 +1465,16 @@ TIMER_STOP('printing_stats')
         domain%boundary_flux_store(4) = -sum(domain%flux_EW( 1+n_ext, (1+n_ext):(ny-n_ext), STG))
 
         !
-        ! Compute fluxes relevant to the multidomain case. The key difference to above is that we
-        ! ignore fluxes associated with other "priority domain index/image" cells
+        ! Compute fluxes relevant to the multidomain case. The key difference to above is that we ignore fluxes associated with
+        ! other "priority domain index/image" cells
         !
         if(domain%nesting%my_index > 0) then
             ! We are in a multidomain -- carefully compute fluxes through
             ! exterior boundaries
             domain%boundary_flux_store_exterior = ZERO_dp
        
-            ! Here we implement masked versions of the boundary flux sums above, only counting cells
-            ! where the priority domain is receiving/sending the fluxes on actual physical boundaries 
+            ! Here we implement masked versions of the boundary flux sums above, only counting cells where the priority domain is
+            ! receiving/sending the fluxes on actual physical boundaries 
 
             ! North boundary
             if(domain%boundary_exterior(1)) then
@@ -1808,7 +1810,7 @@ TIMER_STOP('printing_stats')
                 flux_already_multiplied_by_dx=.TRUE.)
         end if
 
-        ! Coarray communication, if required
+        ! Coarray communication, if required (this has been superceeded by the multidomain approach)
         !TIMER_START('partitioned_comms')
         if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
         !TIMER_STOP('partitioned_comms')
@@ -1897,8 +1899,7 @@ TIMER_STOP('printing_stats')
         domain%boundary_flux_evolve_integral = HALF_dp * domain%boundary_flux_evolve_integral
         domain%boundary_flux_evolve_integral_exterior = HALF_dp * domain%boundary_flux_evolve_integral_exterior
 
-        ! We want the CFL timestep that is reported to always be based on the
-        ! first step -- so force that here
+        ! We want the CFL timestep that is reported to always be based on the first step -- so force that here
         domain%max_dt = max_dt_store
 
         !TIMER_STOP('average')
@@ -2353,7 +2354,8 @@ TIMER_STOP('evolve_one_step')
     !
     ! Convenience function to compute the volume of water in the 'interior' of the domain
     ! This involves all parts of the domain that are more than domain%exterior_cells_width
-    ! from the edge.
+    ! from the edge. For multidomains, there are other purpose-built routines -- this one
+    ! is appropriate for the single-domain case.
     !
     function volume_interior(domain) result(domain_volume)
         class(domain_type), intent(in):: domain
@@ -2386,12 +2388,13 @@ TIMER_STOP('evolve_one_step')
     end function
 
     !
-    ! Compute the volume on interior cells and add to
-    ! the integrated boundary flux. This should sum to a constant
-    ! in the absence of mass sources.
+    ! Compute the volume on interior cells and add to the integrated boundary flux. 
     !
-    ! Note this relies on the time-stepping routines correctly
-    ! computing the boundary_flux_time_integral
+    ! This should sum to a constant in the absence of mass sources, for single domains. Note this relies on the time-stepping
+    ! routines correctly computing the boundary_flux_time_integral. 
+    !
+    ! For multidomains, there are other purpose-built mass conservation routines (which take into account the "priority domain"
+    ! information)
     !
     function mass_balance_interior(domain) result(mass_balance)
         class(domain_type), intent(in):: domain
@@ -2402,8 +2405,8 @@ TIMER_STOP('evolve_one_step')
     end function
 
     !
-    ! Function to compute the max timestep allowed for the linear shallow water equations,
-    ! using the provided CFL, assuming the leap-frog time-stepping scheme
+    ! Function to compute the max timestep allowed for the linear shallow water equations, using the provided CFL, assuming the
+    ! leap-frog time-stepping scheme
     !
     function linear_timestep_max(domain) result(timestep)
         class(domain_type), intent(in):: domain
@@ -2417,7 +2420,6 @@ TIMER_STOP('evolve_one_step')
         do j = 1, domain%nx(2)
             do i = 1, domain%nx(1)
                 ! max timestep = Distance along latitude / wave-speed <= dt
-                ! Beware -- might need to use a different CFL number?
                 ts_max = min(ts_max, &
                     0.5_dp * min(&
                         (domain%distance_bottom_edge(j+1) + domain%distance_bottom_edge(j)),& 
@@ -2431,8 +2433,10 @@ TIMER_STOP('evolve_one_step')
 
     !
     ! Function to compute the max timestep allowed for the nonlinear shallow water equations, for a stationary flow (i.e. gravity
-    ! wave only), using the provided CFL. Results are not exactly the same as the limits for nonlinear-FV solvers, but are very
-    ! close in general.
+    ! wave only), using the provided CFL. 
+    !
+    ! Results are not exactly the same as the gravity-wave timestep limit for nonlinear-FV solvers, because the latter compute wave
+    ! speeds at edges rather than cell centres. But results are very close in general for a stationary flow.
     !
     function nonlinear_stationary_timestep_max(domain) result(timestep)
         class(domain_type), intent(in):: domain
@@ -2459,7 +2463,9 @@ TIMER_STOP('evolve_one_step')
     end function
 
     ! Convenience wrapper which uses 'linear_timestep_max' or 'nonlinear_stationary_timestep_max' depending on the numerical method.
+    !
     ! This is mainly useful when setting up models, as a guide to the timestep that one might be able to take.
+    !
     ! Beware the time-step calculations are not exactly the same as the results from the nonlinear-FV solvers (because the latter use
     ! the edge-based wave speed calculations). But they should be very similar. 
     function stationary_timestep_max(domain) result(timestep)
@@ -2492,9 +2498,13 @@ TIMER_STOP('evolve_one_step')
             timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp
         else if(any(domain%timestepping_method == nonlinear_FV_solvers_2)) then
             !
-            ! The unusual 'rk2n' timestepping method.
+            ! The unusual 'rk2n' timestepping method. 
             !
-            timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp * 4.0_dp
+            ! Note 'rk2n' will advance 4 timesteps with one call to the timestepping routine -- consider changing that interface, in
+            ! which case the '1.0' here would change to '4.0'. Currently 'rk2n' is not supported for multidomain, and is not
+            ! commonly used, so leave as-is for now.
+            !
+            timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp * 1.0_dp
         else
             write(log_output_unit, *) 'Error in stationary_timestep_max: Unrecognized timestepping_method'
             write(log_output_unit, *) trim(domain%timestepping_method)
@@ -2621,11 +2631,10 @@ TIMER_STOP('evolve_one_step')
     end subroutine create_output_files
 
     !
-    ! Write output to files (must call create_output_files first).
-    ! If time_only=.TRUE., only write the time. This is used to avoid
-    ! writing the main model grids. Typically useful when values at point-gauges
-    ! are being recorded, and we want to store the time too, but it would
-    ! take too much disk to store the model grids
+    ! Write output to files (must call create_output_files first). 
+    !
+    ! If time_only=.TRUE., only write the time. This is used to avoid writing the main model grids. Typically useful when values at
+    ! point-gauges are being recorded, and we want to store the time too, but it would take too much disk to store the model grids
     !
     subroutine write_to_output_files(domain, time_only)
         class(domain_type), intent(inout):: domain
@@ -2711,7 +2720,7 @@ TIMER_STOP('fileIO')
             !$OMP DO SCHEDULE(STATIC)
                 do j = domain%yL, domain%yU !1, domain%nx(2)
                     do i = domain%xL, domain%xU !1, domain%nx(1)
-                        domain%max_U(i,j,1) = max(domain%max_U(i,j,1), domain%U(i,j,1))
+                        domain%max_U(i,j,STG) = max(domain%max_U(i,j,STG), domain%U(i,j,STG))
                     end do
                 end do
             !END DO
@@ -2724,12 +2733,10 @@ TIMER_STOP('fileIO')
     end subroutine update_max_quantities
 
     !
-    ! Write max quantities to a file (usually just called once at the end of a
-    ! simulation). 
+    ! Write max quantities to a file (usually just called once at the end of a simulation). 
     !
-    ! Currently we only write stage, followed by the elevation. Although the
-    ! latter usually doesn't evolve, we generally want both the max stage and the
-    ! elevation for plotting purposes, so it is saved here too.
+    ! Currently we only write stage, followed by the elevation. Although the latter usually doesn't evolve, we generally want both
+    ! the max stage and the elevation for plotting purposes, so it is saved here too.
     !
     subroutine write_max_quantities(domain)
         class(domain_type), intent(in):: domain
@@ -2816,19 +2823,16 @@ TIMER_STOP('fileIO')
 
 
     !
-    ! Set up point gauges, which record values of variables at cells nearest
-    ! the given xy points.
+    ! Set up point gauges, which record values of variables at cells nearest the given xy points.
     ! 
     ! @param domain The domain within which we will record outputs (in domain%U)
-    ! @param xy_coords numeric array of x,y coordinates with 2 rows and as many
-    !  columns as points. These must all be inside the extents of the domain
-    ! @param time_series_var (optional) array with the indices of U to store at
-    !  gauges each timestep, Default is [1, 2, 3] to store stage, uh, vh
-    ! @param static_var (optional) array with the indices of U to store at
-    !  gauges only once. Default is [4] to store elevation
-    ! @param gauge_ids (optional) an REAL ID for each gauge. Default gives
-    !  (1:size(xy_coords(1,:))) * 1.0. Even though integers are natural we store
-    !   as REAL to avoid precision loss issues
+    ! @param xy_coords numeric array of x,y coordinates with 2 rows and as many columns as points. These must all be inside the
+    ! extents of the domain
+    ! @param time_series_var (optional) array with the indices of U to store at gauges each timestep, Default is [STG, UH, VH] to store
+    ! stage, uh, vh
+    ! @param static_var (optional) array with the indices of U to store at gauges only once. Default is [ELV] to store elevation
+    ! @param gauge_ids (optional) an REAL ID for each gauge. Default gives (1:size(xy_coords(1,:))) * 1.0. Even though integers are
+    ! natural for IDS, we store as REAL, just to avoid precision loss issues if someone decides to use large numbers.
     ! @param attribute_names optional character vector with the names of global attributes for the netdf file
     ! @param attribute_values optional character vector with the values for global attributes in the netcdf file (corresponding to
     ! attribute_names)
@@ -2857,6 +2861,7 @@ TIMER_STOP('fileIO')
             call generic_stop
         end if
 
+        ! Set variables in domain%U(:,:,k) that are stored at gauges every output timestep
         if(present(time_series_var)) then
             allocate(tsv(size(time_series_var)))
             tsv = time_series_var
@@ -2866,6 +2871,7 @@ TIMER_STOP('fileIO')
             tsv = [STG, UH, VH]
         end if
 
+        ! Set variables in domain%U(:,:,k) that are stored only once (at the start)
         if(present(static_var)) then
             allocate(sv(size(static_var)))
             sv = static_var
@@ -2875,6 +2881,7 @@ TIMER_STOP('fileIO')
             sv = [ELV]
         end if
 
+        ! Setup or create some 'IDs' for each gauge. These come in handy.
         if(present(gauge_ids)) then
             if(size(gauge_ids) /= size(xy_coords(1,:))) then
                 write(domain%logfile_unit,*) 'Number of gauge ids does not equal number of coordinates' 
@@ -2915,7 +2922,7 @@ TIMER_STOP('fileIO')
                 bounding_box=bounding_box)
         end if
 
-        ! Add attributes and initialise
+        ! Add attributes and initialise the point_gauges object
         if((present(attribute_names)).AND.(present(attribute_values))) then
             call domain%point_gauges%initialise_gauges(domain%lower_left, domain%dx, &
                 domain%nx, domain%U, netcdf_gauge_output_file, &
@@ -2941,9 +2948,10 @@ TIMER_STOP('write_gauge_time_series')
     end subroutine
 
     !
-    ! Routine to call once we no longer need the domain. One case where this is
-    ! important is when using netcdf output -- since if the files are not closed,
-    ! then they may not be completely written out.
+    ! Routine to call once we no longer need the domain. 
+    !
+    ! One case where this is important is when using netcdf output -- since if the files are not closed, then they may not be
+    ! completely written out.
     !
     subroutine finalise_domain(domain)
 
@@ -2956,8 +2964,9 @@ TIMER_STOP('write_gauge_time_series')
         ! writing.
         call domain%point_gauges%finalise()
     
-        ! Flush all open file units
-        do i = 1, 100
+        ! Flush all open file units -- FIXME here I assume we have only a fixed number. Likely true, but beware if it is not
+        ! satisfied.
+        do i = 1, 10000
             inquire(i, opened = is_open) 
             if(is_open) call flush(i)
         end do
@@ -2972,8 +2981,8 @@ TIMER_STOP('write_gauge_time_series')
 
     ! If doing nesting, we need to track boundary flux integrals through send/recv regions
     !
-    ! This routine multiplies all boundary_flux_integrals in send/recv regions
-    ! by a constant 'c'
+    ! This routine multiplies all boundary_flux_integrals in send/recv regions by a constant 'c', which
+    ! is required for the flux tracking.
     !
     subroutine nesting_boundary_flux_integral_multiply(domain, c)
     
@@ -2986,6 +2995,7 @@ TIMER_START('nesting_boundary_flux_integral_multiply')
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, c)
 
+        ! The 'send communicator' fluxes
         if(allocated(domain%nesting%send_comms)) then
             !$OMP DO SCHEDULE(DYNAMIC)
             do i = 1, size(domain%nesting%send_comms)
@@ -2995,6 +3005,7 @@ TIMER_START('nesting_boundary_flux_integral_multiply')
         end if
 
 
+        ! The 'receive communicator' fluxes
         if(allocated(domain%nesting%recv_comms)) then
             !$OMP DO SCHEDULE (DYNAMIC)
             do i = 1, size(domain%nesting%recv_comms)
@@ -3008,40 +3019,34 @@ TIMER_START('nesting_boundary_flux_integral_multiply')
 TIMER_STOP('nesting_boundary_flux_integral_multiply')
     end subroutine
     
-    ! If doing nesting, we may want to track boundary flux integrals through
-    ! send/recv regions -- e.g. to allow for flux correction
+    ! If doing nesting, we probably want to track boundary flux integrals through send/recv regions -- e.g. to allow for flux
+    ! correction
     !
-    ! This routine adds "dt * current_value_of_fluxes * dx" to all
-    ! boundary_flux_integrals in send/recv regions. 
+    ! This routine adds "dt * current_value_of_fluxes * dx" to all boundary_flux_integrals in send/recv regions, as required for
+    ! flux tracking.
     !
     ! @param domain
     ! @param dt real (timestep)
     ! @param flux_NS rank 3 real array with north-south fluxes
-    ! @param flux_NS_lower_index integer. Assume flux_NS(:,1,:) contains the
-    !   bottom edge flux for cells with j index = flux_NS_lower_index. For example,
-    !   "flux_NS_lower_index=1" implies that flux_NS includes fluxes along the
-    !   models' southern boundary.
-    !   For some of our solvers this is not true [e.g. linear leapfrog, because
-    !   the 'mass flux' terms are effectively stored in the domain%U variable].
-    !   Hence, it is useful to sometimes have flux_NS_lower_index != 1. In that case,
-    !   it is assumed we never try to access the flux_NS value for a location
-    !   where it doesn't exist.
+    ! @param flux_NS_lower_index integer. Assume flux_NS(:,1,:) contains the bottom edge flux for cells with j index =
+    !   flux_NS_lower_index. For example, "flux_NS_lower_index=1" implies that flux_NS includes fluxes along the models' southern
+    !   boundary.
+    !   For some of our solvers this is not true [e.g. linear leapfrog, because the 'mass flux' terms are effectively stored in the
+    !   domain%U variable].  Hence, it is useful to sometimes have flux_NS_lower_index != 1. In that case, it is assumed we never
+    !   try to access the flux_NS value for a location where it doesn't exist.
     ! @param flux_EW rank 3 real array with east-west fluxes
-    ! @param flux_EW_lower_index integer. Assume flux_EW(1,:,:) contains the left-edge
-    !   flux for cells with i index = flux_EW_lower_index. For example,
-    !   "flux_EW_lower_index=1" implies that flux_EW includes fluxes right to
-    !   the boundary. For some of our solvers this is not true [e.g. linear
-    !   leapfrog, because the 'mass flux terms are effectively stored in the
+    ! @param flux_EW_lower_index integer. Assume flux_EW(1,:,:) contains the left-edge flux for cells with i index =
+    !   flux_EW_lower_index. For example, "flux_EW_lower_index=1" implies that flux_EW includes fluxes right to the boundary. 
+    !   For some of our solvers this is not true [e.g. linear leapfrog, because the 'mass flux terms are effectively stored in the
     !   domain%U variable]. 
-    !   Hence, it is useful to sometimes have flux_EW_lower_index != 1. In that case,
-    !   it is assumed we never try to access the flux_EW value for a location
-    !   where it doesn't exist.
-    ! @param var_indices integer rank1 array of length 2. Gives [lower, upper] indices
-    !   of the 3rd rank of flux_NS/flux_EW that we use in the time-stepping
-    ! @param flux_already_multiplied_by_dx logical. If TRUE, assume that flux_NS/EW
-    !   have already been multiplied by their distance_bottom_edge/ distance_left_edge terms.
-    !   Because some solvers store 'flux' and some store 'flux . dx', this
-    !   allows us to work with whatever fluxes are available, without manual transformation.
+    !   Hence, it is useful to sometimes have flux_EW_lower_index != 1. In that case, it is assumed we never try to access the
+    !   flux_EW value for a location where it doesn't exist.
+    ! @param var_indices integer rank1 array of length 2. Gives [lower, upper] indices of the 3rd rank of flux_NS/flux_EW that we
+    !   use in the time-stepping
+    ! @param flux_already_multiplied_by_dx logical. If TRUE, assume that flux_NS/EW have already been multiplied by their
+    !   distance_bottom_edge/ distance_left_edge terms.
+    !   Because some solvers store 'flux' and some store 'flux . dx', this allows us to work with whatever fluxes are available,
+    !   without manual transformation.
     !
     subroutine nesting_boundary_flux_integral_tstep(domain, dt, &
         flux_NS, flux_NS_lower_index,&
@@ -3056,10 +3061,12 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
         integer(ip) :: i
 
 !TIMER_START('nesting_boundary_flux_integral_tstep')
+
         ! Apply to both the send and recv comms. This means that after
         ! communication, we can compare fluxes that were computed with
         ! different numerical methods, and potentially apply flux correction.
 
+        ! Deal with 'send comminicators'
         if(allocated(domain%nesting%send_comms)) then
             do i = 1, size(domain%nesting%send_comms)
                 call domain%nesting%send_comms(i)%boundary_flux_integral_tstep( dt,&
@@ -3069,7 +3076,7 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
             end do 
         end if
 
-
+        ! Deal with 'receive comminicators'
         if(allocated(domain%nesting%recv_comms)) then
             do i = 1, size(domain%nesting%recv_comms)
                 call domain%nesting%recv_comms(i)%boundary_flux_integral_tstep( dt,&
@@ -3085,9 +3092,10 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
 
     ! Apply nesting flux correction all throughout the domain, even at non-priority-domain sites.
     !
-    ! The general idea is that after we have received from other domains, we can apply flux correction
-    ! "just like the other domains would do". This means we avoid having to do multiple nesting communications
-    ! to make everything consistent.
+    ! This is a key routine for mainintaining mass conservation in the multidomain case.
+    !
+    ! The general idea is that after we have received from other domains, we can apply flux correction "just like the other domains
+    ! would do". This means we avoid having to do multiple nesting communications to make the fluxes consistent.
     !
     ! @param domain the domain
     ! @param all_dx_md rank 3 array with dx(1:2) for all domains in the multidomain
@@ -3360,7 +3368,6 @@ TIMER_START('nesting_flux_correction')
                                     if(dn /= 0) sg = -1 * sg
                                 end if
 
-                                !! Why?
                                 if((my_index /= domain%nesting%priority_domain_index(p0, mi)) .or. &
                                    (my_image /= domain%nesting%priority_domain_image(p0, mi)) ) then
                                    sg = -sg
@@ -3454,9 +3461,8 @@ TIMER_START('nesting_flux_correction')
             !$OMP END DO
 
             !
-            ! Later we do some interpolation inside some recv boxes
-            ! This may require the use of cell values outside the receive box, which hypothetically
-            ! might also be being updated.
+            ! Later we do some interpolation inside some recv boxes.
+            ! This may require the use of cell values outside the receive box, which hypothetically might also be being updated.
             ! To avoid any issues, we copy such data here, using 'recv_box_flux_error' as a scratch space.
             !
             !$OMP DO SCHEDULE(DYNAMIC)
@@ -3473,25 +3479,25 @@ TIMER_START('nesting_flux_correction')
                 inv_cell_ratios_ip = nint(1.0_dp/domain%nesting%recv_comms(i)%cell_ratios)
 
                 !
-                ! Copy values of U north of the box
+                ! Copy values of U north of the box, using recv_box_flux_error as a scratch space
                 ! 
                 ind = min(m1 + 1 + inv_cell_ratios_ip(2)/2, domain%nx(2))
                 domain%nesting%recv_comms(i)%recv_box_flux_error(NORTH)%x(1:(n1-n0+1),1:4) = domain%U(n0:n1, ind, 1:4)
                 
                 !
-                ! Copy values of U south of the box
+                ! Copy values of U south of the box, using recv_box_flux_error as a scratch space
                 ! 
                 ind = max(m0 - 1 - inv_cell_ratios_ip(2)/2, 1)
                 domain%nesting%recv_comms(i)%recv_box_flux_error(SOUTH)%x(1:(n1-n0+1),1:4) = domain%U(n0:n1, ind, 1:4)
 
                 !
-                ! Copy values of U east of the box
+                ! Copy values of U east of the box, using recv_box_flux_error as a scratch space
                 ! 
                 ind = min(n1 + 1 + inv_cell_ratios_ip(1)/2, domain%nx(1))
                 domain%nesting%recv_comms(i)%recv_box_flux_error(EAST)%x(1:(m1-m0+1),1:4) = domain%U(ind, m0:m1, 1:4)
 
                 !
-                ! Copy values of U west of the box
+                ! Copy values of U west of the box, using recv_box_flux_error as a scratch space
                 !
                 ind = max(n0 - 1 - inv_cell_ratios_ip(1)/2, 1)
                 domain%nesting%recv_comms(i)%recv_box_flux_error(WEST)%x(1:(m1-m0+1),1:4) = domain%U(ind, m0:m1, 1:4)
@@ -3500,10 +3506,9 @@ TIMER_START('nesting_flux_correction')
             !$OMP END DO
 
 
-            !!
-            !! At this point we should do the interpolation, in a manner that ensures openmp/coarray
-            !! give the same results.
-            !!
+            !
+            ! At this point we do the interpolation
+            !
 
             !$OMP DO SCHEDULE(DYNAMIC)
             do i = 1, size(domain%nesting%recv_comms)
@@ -3804,18 +3809,15 @@ TIMER_STOP('nesting_flux_correction')
 
     end subroutine
 
-    ! Make elevation constant in nesting send_regions that go to a single coarser cell,
-    ! if the maximum elevation is above elevation_threshold
+    ! Make elevation constant in nesting send_regions that go to a single coarser cell, if the maximum elevation is above
+    ! elevation_threshold
     ! 
-    ! This was done to avoid wet-dry instabilities, caused by aggregating over
-    ! wet-and-dry cells on a finer domain, which is then sent to a coarser domain.
-    ! Such an operation will break the hydrostatic balance, unless the elevation
-    ! in the fine cells is constant
+    ! This was done (in the past) to avoid wet-dry instabilities, caused by aggregating over wet-and-dry cells on a finer domain,
+    ! which is then sent to a coarser domain.  Such an operation will break the hydrostatic balance, unless the elevation in the
+    ! fine cells is constant
     !
-    ! NOTE: Instead of using this, a better approach is to send the data
-    ! from the centre cell to the coarse grid. That way we do not need to hack
-    ! the elevation data to avoid these instabilities. With that approach, this routine
-    ! seems defunct.
+    ! NOTE: Instead of using this, a better approach is to send the data from the centre cell to the coarse grid. That way we do not
+    ! need to hack the elevation data to avoid these instabilities. With the latter approach, this routine seems defunct.
     !
     subroutine use_constant_wetdry_send_elevation(domain, elevation_threshold)
 
@@ -3873,9 +3875,10 @@ TIMER_STOP('nesting_flux_correction')
     end subroutine
 
     !
-    ! Set the domain "lower-left, lw, dx" etc, in a way that ensures the domain
-    ! can nest with its parent domain, while having an extent and resolution
-    ! close to the desired values.
+    ! Convenience routine for setting up nested domain geometries.
+    !
+    ! Set the domain "lower-left, lw, dx" etc, in a way that ensures the domain can nest with its parent domain, while having an
+    ! extent and resolution close to the desired values.
     !
     ! @param domain A domain_type which is unallocated, and does not have lw, dx, nx set
     ! @param parent_domain Another domain_type which DOES have lw, dx, nx set. We want to
@@ -3929,7 +3932,7 @@ TIMER_STOP('nesting_flux_correction')
         ! Check the parent_domain was setup ok
         if(any(parent_domain%nx <= 0) .or. any(parent_domain%lw <= 0) .or. &
            any(parent_domain%lower_left == HUGE(1.0_dp))) then
-            write(log_output_unit, *) 'Parent domain does must have lw, lower_left and nx already set' 
+            write(log_output_unit, *) 'Parent domain must have lw, lower_left and nx already set' 
             call generic_stop
         end if
 
@@ -3938,10 +3941,9 @@ TIMER_STOP('nesting_flux_correction')
 
         select case (rounding)
         case ('expand')
-            ! Ensure that after rounding, the original domain is contained in the final domain
+            ! Ensure that after rounding, the originally requested domain is contained in the final domain
 
-            !  domain%lower_left is on a cell boundary of the parent domain -- and
-            !  is further 'west/south' than 'lower_left'
+            !  domain%lower_left is on a cell boundary of the parent domain -- and is further 'west/south' than 'lower_left'
             domain%lower_left = parent_domain%lower_left + &
                 floor((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx 
 
@@ -3950,8 +3952,7 @@ TIMER_STOP('nesting_flux_correction')
                 ceiling((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case('nearest')
-            ! Find the 'nearest' match in parent domain. This might mean we reduce the requested size of
-            ! the domain
+            ! Find the 'nearest' match in parent domain. This might mean we reduce the requested size of the domain
             domain%lower_left = parent_domain%lower_left + &
                 nint((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx 
 
@@ -3965,8 +3966,7 @@ TIMER_STOP('nesting_flux_correction')
 
         end select
 
-
-        
+        ! Now we can set the child domain's properties
         domain%lw =  ur - domain%lower_left
         domain%dx = parent_domain_dx/dx_refinement_factor
         domain%nx = nint(domain%lw / domain%dx) ! Is a multiple of dx_refinement_factor
@@ -4026,7 +4026,7 @@ TIMER_STOP('nesting_flux_correction')
     end subroutine
 
     !
-    ! Very limited testing of the domain routines
+    ! Very limited testing of the domain routines.
     ! More important are the validation tests.
     !
     subroutine test_domain_mod
