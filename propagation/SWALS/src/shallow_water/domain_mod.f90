@@ -1570,6 +1570,7 @@ TIMER_STOP('printing_stats')
                         sqrt(domain%velocity(i,j,UH) * domain%velocity(i,j,UH) + &
                              domain%velocity(i,j,VH) * domain%velocity(i,j,VH)) * &
                         (max(depth, minimum_allowed_depth)**(NEG_SEVEN_ON_THREE_dp))
+                        !exp(log(max(depth, minimum_allowed_depth))*NEG_SEVEN_ON_THREE_dp)
 
                     implicit_factor = ONE_dp/(ONE_dp + dt_gravity*max(depth, ZERO_dp)*fs)
                     !if(domain%U(i,j,STG) <= (domain%U(i,j,ELV) + minimum_allowed_depth)) implicit_factor = ZERO_dp
@@ -1634,24 +1635,25 @@ TIMER_STOP('printing_stats')
             !$OMP SIMD
             do i = 1, domain%nx(1)
 
+#ifndef NOFRICTION
                 depth = domain%depth(i,j)
                 depth_neg7on3 = max(depth, minimum_allowed_depth)**(NEG_SEVEN_ON_THREE_dp)
+                !depth_neg7on3 = exp(log(max(depth, minimum_allowed_depth))*NEG_SEVEN_ON_THREE_dp)
 
-#ifndef NOFRICTION
-                    ! Implicit friction slope update
-                    ! U_new = U_last + U_explicit_update - dt*depth*friction_slope_multiplier*U_new
+                ! Implicit friction slope update
+                ! U_new = U_last + U_explicit_update - dt*depth*friction_slope_multiplier*U_new
 
-                    ! If we multiply this by UH or VH, we get the associated friction slope term
-                    fs = domain%manning_squared(i,j) * &
-                        sqrt(domain%velocity(i,j,UH) * domain%velocity(i,j,UH) + &
-                             domain%velocity(i,j,VH) * domain%velocity(i,j,VH)) * &
-                        depth_neg7on3
+                ! If we multiply this by UH or VH, we get the associated friction slope term
+                fs = domain%manning_squared(i,j) * &
+                    sqrt(domain%velocity(i,j,UH) * domain%velocity(i,j,UH) + &
+                         domain%velocity(i,j,VH) * domain%velocity(i,j,VH)) * &
+                    depth_neg7on3
 
-                    ! Velocity clipping
-                    implicit_factor(i) = merge( ONE_dp/(ONE_dp + dt_gravity*max(depth, ZERO_dp)*fs), ZERO_dp, &
-                        (domain%U(i,j,STG) > (domain%U(i,j,ELV) + minimum_allowed_depth)) )
+                ! Velocity clipping
+                implicit_factor(i) = merge( ONE_dp/(ONE_dp + dt_gravity*max(depth, ZERO_dp)*fs), ZERO_dp, &
+                    (domain%U(i,j,STG) > (domain%U(i,j,ELV) + minimum_allowed_depth)) )
 #else
-                    implicit_factor(i) = ONE_dp
+                implicit_factor(i) = ONE_dp
 #endif
             end do
 
@@ -1719,6 +1721,7 @@ TIMER_STOP('printing_stats')
                      domain%velocity(:,j,VH) * domain%velocity(:,j,VH)) * &
                 !norm2(domain%velocity(i,j,UH:VH)) * &
                 (max(domain%depth(:,j), minimum_allowed_depth)**(NEG_SEVEN_ON_THREE_dp))
+                !exp(log(max(domain%depth(:,j), minimum_allowed_depth))*NEG_SEVEN_ON_THREE_dp)
 
             implicit_factor = ONE_dp/(ONE_dp + dt_gravity*max(domain%depth(:,j), ZERO_dp)*fs)
 #else

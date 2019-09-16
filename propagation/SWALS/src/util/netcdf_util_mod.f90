@@ -193,7 +193,7 @@ module netcdf_util
         !
         ! Create output file
         !
-        call check (nf90_create(filename, netcdf_file_type, nc_grid_output%nc_file_id))
+        call check(nf90_create(filename, netcdf_file_type, nc_grid_output%nc_file_id), __LINE__)
 
         iNcid = nc_grid_output%nc_file_id ! Shorthand
 
@@ -292,17 +292,18 @@ module netcdf_util
         !
         if(present(attribute_names) .and. present(attribute_values)) then
             do i = 1, size(attribute_names)
-                call check(nf90_put_att(iNcid, nf90_global, attribute_names(i), attribute_values(i)))
+                call check(nf90_put_att(iNcid, nf90_global, attribute_names(i), attribute_values(i)), __LINE__)
             end do
         end if
 #ifdef SRC_GIT_VERSION
         ! Add the git revision number to the file
         call check(nf90_put_att(iNcid, nf90_global, 'git_revision_number',& ! Continuation to reduce chance of > 132 char
-SRC_GIT_VERSION ))
+SRC_GIT_VERSION ), &
+        __LINE__)
 #endif
 
         ! Finish definitions so writing can begin
-        call check(nf90_enddef(iNcid))
+        call check(nf90_enddef(iNcid), __LINE__)
 
         !
         ! Write a few things

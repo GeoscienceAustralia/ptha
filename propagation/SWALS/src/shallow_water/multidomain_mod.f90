@@ -2428,7 +2428,7 @@ module multidomain_mod
         integer(ip) :: ijk_to_send(2,3), ijk_to_recv(2,3)
 
         real(dp) :: d_lw(2), d_dx(2), d_ll(2), a_row(srm+2), tmp_xs(2), tmp_ys(2), tmp_dxs(2)
-        real(dp) :: box_diff(4)
+        real(dp) :: box_diff(4), box_roundoff_tol
         integer(ip) :: d_nx(2), send_count, recv_count, n_ind, n_img, n_comms, n_row, tmp
         logical :: verbose1, use_wetdry_limiting, in_periodic_region1, in_periodic_region2, in_periodic_region
         character(len=charlen) :: msg
@@ -2900,7 +2900,8 @@ module multidomain_mod
                 ! identical, to within tolerable rounding
                 box_diff = all_send_metadata(3:6, i    ,     j,    ti) - &
                            all_recv_metadata(3:6, n_row, n_ind, n_img)
-                if( any( abs(box_diff) > 100.0_dp*spacing(maxval(abs(all_send_metadata(3:6, i, j, ti)))) )) then
+                box_roundoff_tol = 100.0_dp*spacing(maxval(abs(all_send_metadata(3:6, i, j, ti))))
+                if(any( abs(box_diff) > box_roundoff_tol )) then
                     ! Looks like the boxes don't match up so well
                     ! But this could be due to periodic boundaries
                     if(any(abs(box_diff(1:2)) > 0.9999_dp*(periodic_xs(2) - periodic_xs(1))) .or. &
@@ -2908,12 +2909,28 @@ module multidomain_mod
                         ! Periodic boundaries. Skip them! 
                     else
                         msg = 'Error: Send/recv metadata do not appear to have the same boxes to within round-off'
-                        write(log_output_unit,*) trim(msg)
-                        write(log_output_unit,*) i, j, ti
-                        write(log_output_unit,*) n_ind, n_img, n_row, n_comms
-                        write(log_output_unit,*) all_send_metadata(3:6,i,j,ti)
-                        write(log_output_unit,*) all_recv_metadata(3:6,n_row, n_ind, n_img)
-                        write(log_output_unit,*) 100.0_dp*spacing(maxval(abs(all_send_metadata(3:6, i, j, ti))))
+                        write(log_output_unit,"(A)") trim(msg)
+                        msg = '  This often happens if nested domains are too close to their parent bbox, such that'
+                        write(log_output_unit,"(A)") trim(msg)
+                        msg = '  the halos end up nesting with an even coarser domain. It can generally be fixed by'
+                        write(log_output_unit,"(A)") trim(msg)
+                        msg = '  refining the grid (so that halos shrink), or by increasing the separation of the domain'
+                        write(log_output_unit,"(A)") trim(msg)
+                        msg = '  boundaries in the problematic area, or by passing recursive_nesting=.true. to the ' 
+                        write(log_output_unit,"(A)", advance='no') trim(msg)
+                        msg = ' relevant domain%match_geometry_to_parent'
+                        write(log_output_unit,"(A)") trim(msg)
+
+                        write(log_output_unit,*) 'my_domain_index=', j, &
+                            '; my_image=', ti
+                        write(log_output_unit,*) 'my_send_metadata_rank2_index=', i
+                        write(log_output_unit,*) 'neighbour_domain_index=', n_ind, &
+                            '; neighbour_image=', n_img
+                        write(log_output_unit,*) 'neighbour_recv_metadata_rank2_index=', n_row, &
+                            '; neighbour_recv_metadata_recv_comms_index=', n_comms
+                        write(log_output_unit,*) 'my_send_metadata_bbox=', all_send_metadata(3:6,i,j,ti)
+                        write(log_output_unit,*) 'neighbour_recv_metadata_bbox=', all_recv_metadata(3:6,n_row, n_ind, n_img)
+                        write(log_output_unit,*) 'bbox_roundoff_threshold=', box_roundoff_tol
                     end if
                 end if
 
@@ -2966,7 +2983,8 @@ module multidomain_mod
                 ! Check that boxes have the same x/y coordinates to within tolerable round-off
                 box_diff = all_recv_metadata(3:6, i    ,     j,    ti) - &
                            all_send_metadata(3:6, n_row, n_ind, n_img)
-                if( any( (abs(box_diff) > 100.0_dp*spacing(maxval(abs(all_recv_metadata(3:6, i, j, ti))))) ) ) then
+                box_roundoff_tol = 100.0_dp*spacing(maxval(abs(all_recv_metadata(3:6, i, j, ti))))
+                if( any( (abs(box_diff) > box_roundoff_tol ))) then
                     ! Looks like the boxes don't match up so well
 
                     ! But this could be due to periodic boundaries
@@ -2975,13 +2993,29 @@ module multidomain_mod
                         ! Periodic boundaries. Skip them! 
                     else
                         ! Looks like a genuine error
-                        msg = 'Error: recv/send metadata do not appear to have the same boxes to within round-off'
-                        write(log_output_unit,*) trim(msg)
-                        write(log_output_unit,*) i, j, ti
-                        write(log_output_unit,*) n_ind, n_img, n_row, n_comms
-                        write(log_output_unit,*) all_recv_metadata(3:6,i,j,ti)
-                        write(log_output_unit,*) all_send_metadata(3:6,n_row, n_ind, n_img)
-                        write(log_output_unit,*) 100.0_dp*spacing(maxval(abs(all_recv_metadata(3:6, i, j, ti))))
+                        msg = 'Error: Send/recv metadata do not appear to have the same boxes to within round-off'
+                        write(log_output_unit,"(A)") trim(msg)
+                        msg = '  This often happens if nested domains are too close to their parent bbox, such that'
+                        write(log_output_unit,"(A)") trim(msg)
+                        msg = '  the halos end up nesting with an even coarser domain. It can generally be fixed by'
+                        write(log_output_unit,"(A)") trim(msg)
+                        msg = '  refining the grid (so that halos shrink), or by increasing the separation of the domain'
+                        write(log_output_unit,"(A)") trim(msg)
+                        msg = '  boundaries in the problematic area, or by passing recursive_nesting=.true. to the ' 
+                        write(log_output_unit,"(A)", advance='no') trim(msg)
+                        msg = ' relevant domain%match_geometry_to_parent'
+                        write(log_output_unit,"(A)") trim(msg)
+
+                        write(log_output_unit,*) 'my_domain_index=', j, &
+                            '; my_image=', ti
+                        write(log_output_unit,*) 'my_recv_metadata_rank2_index=', i
+                        write(log_output_unit,*) 'neighbour_domain_index=', n_ind, &
+                            '; neighbour_image=', n_img
+                        write(log_output_unit,*) 'neighbour_send_metadata_rank2_index=', n_row, &
+                            '; neighbour_send_metadata_send_comms_index=', n_comms
+                        write(log_output_unit,*) 'my_recv_metadata_bbox=', all_recv_metadata(3:6,i,j,ti)
+                        write(log_output_unit,*) 'neighbour_send_metadata_bbox=', all_send_metadata(3:6,n_row, n_ind, n_img)
+                        write(log_output_unit,*) 'bbox_roundoff_threshold=', box_roundoff_tol
                     end if
                 end if
 
