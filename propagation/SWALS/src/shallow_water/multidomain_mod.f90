@@ -840,7 +840,7 @@ module multidomain_mod
                 !
                 ! NOTE: This will lead to different timestepping with different numbers of cores,
                 ! so the results should depend on the number of cores.
-                nt = max(1, min(nt, ceiling(dt/md%domains(j)%max_dt) ))
+                if(md%domains(j)%max_dt > 0.0_dp) nt = max(1, min(nt, ceiling(dt/md%domains(j)%max_dt) ))
             end if
 
             dt_local = dt/(1.0_dp * nt)
