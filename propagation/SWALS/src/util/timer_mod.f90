@@ -37,10 +37,23 @@ module timer_mod
         procedure:: timer_end => timer_end
         procedure:: print => timer_print
         procedure:: find_index => find_index
+        procedure:: reset => reset_timer
 
     end type
 
 contains
+
+    ! Clear the timer
+    subroutine reset_timer(timer)
+        class(timer_type), intent(inout) :: timer
+
+        timer%names = ''
+        timer%start = unstarted
+        timer%total = 0.0_C_DOUBLE
+        timer%ntimers = 0
+        timer%last_index = 1
+
+    end subroutine
 
     subroutine find_index(timer, tname, tname_index)
         class(timer_type), intent(inout):: timer
@@ -65,7 +78,6 @@ contains
         end if
 
     end subroutine
-
 
     subroutine timer_start(timer, tname)
         class(timer_type), intent(inout):: timer
