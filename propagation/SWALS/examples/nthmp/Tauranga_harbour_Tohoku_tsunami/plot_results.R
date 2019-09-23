@@ -7,7 +7,7 @@ if(length(image_name_flag) != 1) stop('Should only pass one commandline argument
 
 # Tolerance for error at gauges in test
 # The "motu" gauge has lots of high-frequency waves that are harder to model.
-ERR_TOL_GAUGES = c(0.02, 0.02, 0.02, 0.07)
+ERR_TOL_GAUGES = c(0.02, 0.026, 0.026, 0.07)
 
 
 source('../../../plot.R')
@@ -17,7 +17,7 @@ source('../../../plot.R')
 #
 recent_dir = rev(Sys.glob('OUTPUTS/RUN_*'))[1]
 md = lapply(Sys.glob(paste0(recent_dir, '/RUN*')), 
-    f<-function(x) get_all_recent_results(x, quiet=TRUE, read_grids=FALSE, always_read_priority_domain=TRUE))
+    f<-function(x) get_all_recent_results(x, quiet=TRUE, read_grids=FALSE, always_read_priority_domain=FALSE))
 model_gauges = merge_multidomain_gauges(md)
 
 
