@@ -33,6 +33,7 @@ module domain_mod
     use netcdf_util, only: nc_grid_output_type
     use logging_mod, only: log_output_unit
     use file_io_mod, only: mkdir_p
+    use cliffs_tolkova_mod
 
 #ifdef SPHERICAL    
     ! Compile with -DSPHERICAL to get the code to run in spherical coordinates
@@ -75,10 +76,10 @@ module domain_mod
     ! Use this formatting when converting domain%myid to character
     character(len=charlen), parameter:: domain_myid_char_format = '(I0.20)'
 
-    ! Use this in explicitly vectorized domain routines
-    ! A number of methods have been coded once with loops, and once with an
-    ! explicitly vectorized alternatives. The latter is sometimes faster, but not always.
-    integer, parameter :: vectorization_size = 32
+    !! Use this in explicitly vectorized domain routines
+    !! A number of methods have been coded once with loops, and once with an
+    !! explicitly vectorized alternatives. The latter is sometimes faster, but not always.
+    !integer, parameter :: vectorization_size = 32
 
     !
     ! Coefficients controlling the edge extrapolation limiter. 
@@ -203,6 +204,14 @@ module domain_mod
         logical :: linear_solver_is_truely_linear = .true.
         ! Useful variable to distinguish staggered-grid and centred-grid numerical methods
         logical :: is_staggered_grid 
+
+        ! The CLIFFS solver seems to require tuning of the minimum allowed depth (and often it should
+        ! be larger than for SWALS). For field-scale problems, Tolkova (2014) mentions values of 0.1 m on an inundation
+        ! grid, and 0.5m on a larger-scale grid. For experimental type problems, Tolkova (2014) mentions values of say
+        ! 1 - 2 mm.
+        real(dp) :: cliffs_minimum_allowed_depth = 0.001_dp
+        ! For bathymetry smoothing with the cliffs method, Tolkova (manual) suggests this is typically a reasonable value.
+        real(dp) :: cliffs_bathymetry_smoothing_alpha = 2.0_dp
 
         !
         ! Boundary conditions. 
@@ -358,6 +367,7 @@ module domain_mod
         procedure:: one_midpoint_step => one_midpoint_step
         procedure:: one_linear_leapfrog_step => one_linear_leapfrog_step
         procedure:: one_leapfrog_linear_plus_nonlinear_friction_step => one_leapfrog_linear_plus_nonlinear_friction_step
+        procedure:: one_cliffs_step => one_cliffs_step
         procedure:: evolve_one_step => evolve_one_step
         procedure:: update_max_quantities => update_max_quantities
 
@@ -698,6 +708,9 @@ TIMER_STOP('printing_stats')
         case('leapfrog_linear_plus_nonlinear_friction')
             if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.7_dp
             domain%is_staggered_grid = .true.
+        case('cliffs')
+            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.7_dp
+            domain%is_staggered_grid = .false.
         case default
             print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
             call generic_stop()
@@ -1290,18 +1303,25 @@ TIMER_STOP('printing_stats')
     ! We also implement a mass conservation check in this routine, and zero velocities
     ! at sites with depth < minimum_allowed_depth
     !
-    subroutine compute_depth_and_velocity(domain)
+    subroutine compute_depth_and_velocity(domain, min_depth)
 
         class(domain_type), intent(inout) :: domain
+        real(dp), optional, intent(in) :: min_depth
 
-        real(dp) :: depth_inv
+        real(dp) :: depth_inv, min_depth_local
         integer(ip) :: i, j, masscon_error
 
         ! Recompute depth and velocity
         ! Must be updated before the main loop when done in parallel
 
+        if(present(min_depth)) then
+            min_depth_local = min_depth
+        else
+            min_depth_local = minimum_allowed_depth
+        end if
+
         masscon_error = 0_ip
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain) REDUCTION(+:masscon_error)
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, min_depth_local) REDUCTION(+:masscon_error)
         masscon_error = 0_ip
         !$OMP DO SCHEDULE(STATIC)
         do j = 1, domain%nx(2)
@@ -1309,7 +1329,7 @@ TIMER_STOP('printing_stats')
 
                 domain%depth(i,j) = domain%U(i,j,STG) - domain%U(i,j,ELV)
 
-                if(domain%depth(i,j) > minimum_allowed_depth) then
+                if(domain%depth(i,j) > min_depth_local) then
                     ! Typical case
                     depth_inv = ONE_dp/domain%depth(i,j)
                     domain%velocity(i,j,UH) = domain%U(i,j,UH) * depth_inv
@@ -2205,6 +2225,94 @@ TIMER_STOP('printing_stats')
 #undef LINEAR_PLUS_NONLINEAR_FRICTION
 
     end subroutine
+
+
+    ! Use the CLIFFS solver of Elena Tolkova (similar to MOST with a different wet/dry treatment)
+    subroutine one_cliffs_step(domain, dt)
+        class(domain_type), intent(inout) :: domain
+        real(dp), intent(in) :: dt
+
+        integer(ip) :: i, j
+        real(dp) :: dx, dy !, max_dt
+        real(dp) :: zeta(domain%nx(2))
+        ! Flag to remind us that some computations can be optimized later
+        logical, parameter :: update_depth_velocity_celerity = .true.
+
+#ifdef SPHERICAL              
+        ! Spherical scaling factor in CLIFFS
+        zeta = domain%tanlat_on_radius_earth * 0.125_dp
+#else
+        zeta = 0.0_dp
+#endif
+
+        if(update_depth_velocity_celerity) then
+            ! In principle we can re-use these variables if they are already up-to-date. 
+            ! FIXME: Do this in a more optimized implementation.
+
+            ! Compute depth and velocity
+            call domain%compute_depth_and_velocity(domain%cliffs_minimum_allowed_depth)
+            ! Compute celerity -- stored in backup_U(:,:,1)
+            !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain)
+            do j = 1, domain%nx(2)
+                domain%backup_U(:,j,1) = sqrt(gravity * domain%depth(:,j))
+            end do
+            !$OMP END PARALLEL DO
+        end if
+
+        ! Loop over the y coordinate
+        !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain, zeta, dt)
+        do j = 2, (domain%nx(2) - 1)
+            ! 1D-slice along the x direction
+            dx = 0.5_dp * (domain%distance_bottom_edge(j+1) + domain%distance_bottom_edge(j))
+            dy = 0.0_dp ! Never used for x-sweep 
+            ! Get that tan(lat) term
+            call cliffs(dt, 1_ip, j, domain%nx(1), domain%cliffs_minimum_allowed_depth, &
+                domain%U(:,:,ELV), &
+                ! Celerity stored in backup_U
+                domain%backup_U(:,:,1), &
+                domain%velocity(:,:,UH), domain%velocity(:,:,VH), dx, dy, &
+                zeta, domain%manning_squared)
+        end do
+        !$OMP END PARALLEL DO
+        
+
+        ! Loop over the x-coordinate. 
+        ! FIXME: This probably has poor cache performance, because of all the strided lookups like domain%backup_U(i,:,1).
+        !        Consider optimising later on
+        !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain, zeta, dt)
+        do i = 2, (domain%nx(1) - 1)
+            ! 1D-slice along the y direction
+            dx = 0.0_dp ! Never used for y-sweep
+            dy = domain%distance_left_edge(i) 
+            call cliffs(dt, 2_ip, i, domain%nx(2), domain%cliffs_minimum_allowed_depth, &
+                domain%U(:,:,ELV), &
+                ! Celerity stored in backup_U
+                domain%backup_U(:,:,1), &
+                domain%velocity(:,:,UH), domain%velocity(:,:,VH), dx, dy, &
+                zeta, domain%manning_squared)
+        end do
+        !$OMP END PARALLEL DO
+
+        ! Update domain%U -- in principle part of this could be skipped if we 
+        ! were to immediately were to take another step, except
+        ! for some required boundary updates
+        !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain)
+        do j = 1, domain%nx(2)
+            domain%depth(:,j) = (domain%backup_U(:,j,1) * domain%backup_U(:,j,1) / gravity)
+            domain%U(:,j,STG) = domain%depth(:,j) + domain%U(:,j,ELV)
+            domain%U(:,j,UH) = domain%velocity(:,j,UH) * domain%depth(:,j) * &
+                merge(1, 0, domain%depth(:,j) >= domain%cliffs_minimum_allowed_depth)
+            domain%U(:,j,VH) = domain%velocity(:,j,VH) * domain%depth(:,j) * &
+                merge(1, 0, domain%depth(:,j) >= domain%cliffs_minimum_allowed_depth)
+        end do
+        !$OMP END PARALLEL DO
+
+        domain%time = domain%time + dt
+
+        call domain%update_boundary()
+
+    end subroutine
+
     
     !
     ! Routine to run all boundary conditions
@@ -2323,6 +2431,15 @@ TIMER_START('evolve_one_step')
             else
                 write(domain%logfile_unit,*) 'ERROR: timestep must be provided for ', &
                     'leapfrog_linear_plus_nonlinear_friction evolve_one_step'
+                call generic_stop()
+            end if
+
+        case ('cliffs')
+            if(present(timestep)) then
+                call domain%one_cliffs_step(timestep)
+            else
+                write(domain%logfile_unit,*) 'ERROR: timestep must be provided for ', &
+                    'cliffs evolve_one_step'
                 call generic_stop()
             end if
 
@@ -2483,6 +2600,9 @@ TIMER_STOP('evolve_one_step')
         ! Less typical finite-volume methods
         character(len=charlen) :: nonlinear_FV_solvers_2(1) = [ character(len=charlen) :: &
             'rk2n' ]
+        ! Cliffs
+        character(len=charlen) :: cliffs_solver(1) = [ character(len=charlen) :: &
+            'cliffs' ]
 
         if( any(domain%timestepping_method == leapfrog_type_solvers) ) then
             !
@@ -2508,6 +2628,11 @@ TIMER_STOP('evolve_one_step')
             ! commonly used, so leave as-is for now.
             !
             timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp * 1.0_dp
+        else if(any(domain%timestepping_method == cliffs_solver)) then
+            !
+            ! Cliffs (Tolkova)
+            !
+            timestep = domain%nonlinear_stationary_timestep_max()
         else
             write(log_output_unit, *) 'Error in stationary_timestep_max: Unrecognized timestepping_method'
             write(log_output_unit, *) trim(domain%timestepping_method)
@@ -4022,6 +4147,16 @@ TIMER_STOP('nesting_flux_correction')
                     domain%U(i, 1:(domain%nx(2)-2),ELV) + &
                     domain%U(i, 3:(domain%nx(2)-0),ELV) )
             end do
+
+        case('cliffs')
+            ! Cliffs bathymetry smoother. Tolkova has shown (e.g. user manual) that this is important for stability.
+            ! This is written with a different elevation-sign-convention than what I use, so reverse the sign
+            domain%U(:,:,ELV) = -1*domain%U(:,:,ELV)
+            call setSSLim(domain%nx(1), domain%nx(2), domain%U(:,:,ELV), &
+                domain%cliffs_bathymetry_smoothing_alpha, domain%cliffs_minimum_allowed_depth)
+            ! Move back to our elevation sign convention
+            domain%U(:,:,ELV) = -1*domain%U(:,:,ELV)
+
         case default
             stop 'Smoothing method not recognized'
         end select

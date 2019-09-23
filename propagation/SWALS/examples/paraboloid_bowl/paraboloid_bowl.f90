@@ -41,6 +41,10 @@ module local_routines
         write(log_output_unit,*) 'Stage range is: ', minval(domain%U(:,:,STG)), maxval(domain%U(:,:,STG))
         write(log_output_unit,*) 'Elev range is: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
 
+        if(domain%timestepping_method == 'cliffs') then
+            domain%cliffs_minimum_allowed_depth = 5_dp
+        end if
+
     end subroutine
 
 end module 
@@ -74,7 +78,7 @@ program run_paraboloid_basin
     integer(ip), parameter :: mesh_refine = 4_ip
 
     ! The global (i.e. outer-domain) time-step in the multidomain 
-    real(dp) ::  global_dt = (0.23_dp/mesh_refine)
+    real(dp) ::  global_dt = (0.23_dp/mesh_refine) * 1.0_dp
 
     ! Approx timestep between outputs
     real(dp) :: approximate_writeout_frequency = 1.0_dp
@@ -113,7 +117,7 @@ program run_paraboloid_basin
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
-    md%domains(1)%timestepping_method = 'rk2' !'midpoint'
+    md%domains(1)%timestepping_method = 'rk2' !'cliffs' !'midpoint'
     !md%domains(1)%theta = 1.0_dp
 
     ! Splitting the domain the same way, irrespective of np, improves reproducibility

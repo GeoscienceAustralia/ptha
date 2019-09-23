@@ -90,9 +90,15 @@ SOURCEDIR
             call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), &
                 bilinear=1_ip)
             if(negative_elevation_raster) domain%U(:,j,ELV) = -domain%U(:,j,ELV)
+
         end do
         call elevation_data%finalise()
-  
+
+        ! This makes cliffs stable
+        if(domain%timestepping_method == 'cliffs') then
+            call domain%smooth_elevation(smooth_method='cliffs')
+        end if
+
         !print*, 'HACKING ELEVATION' 
         !domain%U(:,:,ELV) = min(domain%U(:,:,ELV), -200.0_dp) 
         !! Smooth -- y first
@@ -194,7 +200,7 @@ SOURCEDIR
         
         print*, 'Initial conditions set'
         print*, ''
-        
+
     end subroutine
 end module 
 
@@ -214,7 +220,7 @@ program generic_model
 
     character(charlen) :: timestepping_method, input_parameter_file, namelist_output_filename
 
-    real(dp) :: approximate_writeout_frequency, final_time, manning_n
+    real(dp) :: approximate_writeout_frequency, final_time, manning_n, cliffs_minimum_allowed_depth
     real(dp):: timestep, global_ur(2), global_ll(2), global_lw(2), cfl, dx(2)
     integer(ip):: global_nx(2), skip_header_hazard_points_file, file_unit_temp, grid_output_spatial_stride
     character(len=charlen):: input_elevation_raster, input_stage_raster, &
@@ -229,12 +235,13 @@ program generic_model
         final_time, timestepping_method, manning_n, &
         cfl, hazard_points_file, skip_header_hazard_points_file, record_max_U,&
         output_grid_timeseries, adaptive_computational_extents, negative_elevation_raster, &
-        linear_solver_is_truely_linear, grid_output_spatial_stride
+        linear_solver_is_truely_linear, grid_output_spatial_stride, cliffs_minimum_allowed_depth
 
     ! Predefine some variables that might not be in the input file
     manning_n = 0.0_dp
     linear_solver_is_truely_linear = .true.
     grid_output_spatial_stride = 1
+    cliffs_minimum_allowed_depth = 1.0e-03_dp
 
     ! Read the input file -- the name of this file should be the first
     ! commandline argument
@@ -326,6 +333,9 @@ program generic_model
     call domain%log_outputs()
     write(domain%logfile_unit, MODELCONFIG)
 
+    if(domain%timestepping_method == 'cliffs') then
+        domain%cliffs_minimum_allowed_depth = cliffs_minimum_allowed_depth
+    end if
     ! Call local routine to set initial conditions
     call set_initial_conditions_generic_model(domain, input_elevation_raster,&
         input_stage_raster, hazard_points_file, skip_header_hazard_points_file,&
@@ -354,8 +364,8 @@ program generic_model
         if (domain%time > final_time) exit 
 
         !! Example with fixed timestep
-        if(domain%timestepping_method == 'linear' .or. &
-           domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+        if(any(domain%timestepping_method == [character(len=charlen) :: &
+            'linear', 'leapfrog_linear_plus_nonlinear_friction', 'cliffs'])) then
             call domain%evolve_one_step(timestep=timestep)
         else
             call domain%evolve_one_step()

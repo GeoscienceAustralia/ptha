@@ -194,6 +194,11 @@ module local_routines
             end if
         end do
 
+        if(domain%timestepping_method == 'cliffs') then
+            domain%cliffs_minimum_allowed_depth = 0.1_dp
+            call domain%smooth_elevation(smooth_method='cliffs')
+        end if
+
         !call domain%smooth_elevation(smooth_method='9pt_average')
 
         ! The DEM needs to be 'fixed' in a few places where bridges remain. Google earth    
@@ -308,7 +313,7 @@ program run_Tauranga
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = 'rk2' !'midpoint' !'rk2'
+    md%domains(1)%timestepping_method = 'rk2' !'cliffs' !'midpoint' !'rk2'
     !md%domains(1)%theta = 4.0_dp
     !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
     !md%domains(1)%linear_solver_is_truely_linear = .false.
@@ -325,7 +330,7 @@ program run_Tauranga
         dx_refinement_factor=nest_ratio, &
         timestepping_refinement_factor=nest_ratio,&
         rounding_method='nearest')
-    md%domains(2)%timestepping_method = 'rk2' !'midpoint' !'rk2'
+    md%domains(2)%timestepping_method = 'rk2' !'cliffs' !'midpoint' !'rk2'
     !md%domains(2)%theta = 4.0_dp
 
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &

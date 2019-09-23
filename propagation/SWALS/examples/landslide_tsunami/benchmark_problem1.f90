@@ -73,9 +73,12 @@ module local_routines
         print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
 
         if(domain%timestepping_method /= 'linear') then
-            domain%manning_squared = 0.0_dp
+            domain%manning_squared = 0.0_dp**2
         end if
 
+        if(domain%timestepping_method == 'cliffs') then
+            domain%cliffs_minimum_allowed_depth = 0.02_dp
+        end if
 
         !! Gauges
         !gauge_xy(1:3, 1) = [4.521, 1.196, 5.0]
@@ -111,7 +114,7 @@ program benchmark_problem1
 
     real(dp), parameter :: mesh_refine = 1.0_dp ! Increase/decrease resolution by this amount
     
-    real(dp) ::  global_dt = 0.040_dp / mesh_refine
+    real(dp) ::  global_dt = 0.040_dp / mesh_refine * 1.0_dp
 
     ! Approx timestep between outputs
     real(dp) :: approximate_writeout_frequency = 1.00_dp
@@ -143,7 +146,7 @@ program benchmark_problem1
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = 'rk2' ! Can set this to 'linear', but the difference with the analytical solution becomes obvious
+    md%domains(1)%timestepping_method = 'rk2' !'cliffs' ! Can set this to 'linear', but the difference with the analytical solution becomes obvious
 
     !print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
     !    ' nx: ', md%domains(1)%nx
@@ -155,7 +158,7 @@ program benchmark_problem1
     md%domains(2)%dx = md%domains(2)%lw/md%domains(2)%nx
     md%domains(2)%timestepping_refinement_factor = 1_ip
     md%domains(2)%dx_refinement_factor = res_d1/res_d2
-    md%domains(2)%timestepping_method = 'rk2'
+    md%domains(2)%timestepping_method = 'rk2' !'cliffs'
     
     ! Allocate domains and prepare comms
     call md%setup()

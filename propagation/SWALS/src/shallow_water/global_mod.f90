@@ -33,7 +33,10 @@ real(dp), parameter:: advection_beta = 1.0_dp  ! Used to rescale advective terms
 real(dp), parameter:: radius_earth = 6371000.0_dp ! 6378137.0_dp ! 6371000.0_dp ! Radius of the earth
 
 ! Wetting and drying
-real(dp), parameter:: minimum_allowed_depth = 1.0e-05_dp
+real(dp), parameter:: minimum_allowed_depth = 1.0e-05_dp ! Depth at which velocities are zeroed. 
+! For the 'cliffs' solver, the minimum_allowed_depth needs problem-specific tuning so is set with
+! domain%cliffs_minimum_allowed_depth
+
 ! Walls (e.g. reflective boundary) are assigned this elevation
 real(dp), parameter:: wall_elevation = 1.0e+6_dp
 

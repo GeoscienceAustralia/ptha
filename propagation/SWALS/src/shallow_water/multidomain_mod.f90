@@ -1194,6 +1194,8 @@ module multidomain_mod
                 required_cells_ts_method = 2
             case('leapfrog_linear_plus_nonlinear_friction')
                 required_cells_ts_method = 2
+            case('cliffs')
+                required_cells_ts_method = 2
             case default
                 write(log_output_unit,*) 'timestepping_method not recognized'
                 error stop
@@ -2425,7 +2427,7 @@ module multidomain_mod
         real(dp), allocatable:: nbr_domain_dx_local(:,:), yc_tmp(:), xc_tmp(:), y_tmp(:)
         real(dp), allocatable:: local_metadata(:,:)
 
-        integer(ip) :: ijk_to_send(2,3), ijk_to_recv(2,3)
+        integer(ip) :: ijk_to_send(2,3), ijk_to_recv(2,3), count_cliffs
 
         real(dp) :: d_lw(2), d_dx(2), d_ll(2), a_row(srm+2), tmp_xs(2), tmp_ys(2), tmp_dxs(2)
         real(dp) :: box_diff(4), box_roundoff_tol
@@ -2461,6 +2463,20 @@ module multidomain_mod
 #ifdef COARRAY
         call co_max(nd_global)
 #endif
+
+        ! FIXME: Currently flux computation has not been added to the 'cliffs' solver, which
+        ! could cause problems if I nested it with other solvers. A "work-around/limitation" is to force
+        ! all solvers to be cliffs if any of them are. At least then we won't get confused.
+        count_cliffs = 0
+        do i = 1, size(domains)
+            if(domains(i)%timestepping_method == 'cliffs') count_cliffs = count_cliffs + 1 
+        end do
+        if(.not. (count_cliffs == 0 .or. count_cliffs == size(domains))) then
+            write(log_output_unit, *) "Currently flux-tracking is not implemented in the CLIFFS solver"
+            write(log_output_unit, *) "Until it is, a multidomain must either have all CLIFFS solvers, or none."
+            flush(log_output_unit)
+            call generic_stop
+        end if
 
         !
         ! Figure out how thick the nesting layer buffer has to be for each domain

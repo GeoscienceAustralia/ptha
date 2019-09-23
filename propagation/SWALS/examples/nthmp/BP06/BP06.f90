@@ -170,7 +170,7 @@ module local_routines
         real(dp), parameter :: time_lag = 0.2_dp
         real(dp) :: inflation_factor
 
-        real(dp) :: time_limit, dstage, stage_forced
+        real(dp) :: time_limit, dstage, stage_forced, scaler
         integer(ip) :: j, i, fc, ii
 
         !
@@ -245,8 +245,19 @@ module local_routines
                     (domain%y(j) - global_ll(2) < global_lw(2) - wavemaker_edge_offset) &
                     ) then
 
+                    scaler = 1.0_dp
+                    if(domain%y(j) - global_ll(2) < (wavemaker_edge_offset + 1.0_dp)) then
+                        scaler = min(1.0_dp, &
+                            max(0.0_dp, wavemaker_edge_offset + 1.0_dp - domain%y(j) + global_ll(2)))
+                    end if
+
+                    if(domain%y(j) - global_ll(2) > (global_lw(2) - wavemaker_edge_offset - 1.0_dp)) then
+                        scaler = min(1.0_dp, &
+                            max(0.0_dp, domain%y(j) - global_ll(2) - (global_lw(2) - wavemaker_edge_offset - 1.0_dp)))
+                    end if
+
                     ! Velocity = paddle velocity
-                    domain%U(i,j,UH) = forcing_vel * depth_ocean
+                    domain%U(i,j,UH) = scaler * forcing_vel * depth_ocean
                     ! Stage as for a linear plane wave -- beware mass conservation violation
                     stage_forced = max( domain%U(i,j,UH) / sqrt(gravity * depth_ocean), domain%U(i,j,ELV) )
                     dstage = stage_forced - domain%U(i,j,STG)
@@ -418,7 +429,8 @@ program BP06
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = 'rk2'
+    md%domains(1)%timestepping_method = 'rk2' !'cliffs' !'rk2'
+    md%domains(1)%cliffs_minimum_allowed_depth = 0.01_dp
 
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
@@ -430,7 +442,8 @@ program BP06
         upper_right=high_res_ur, &
         dx_refinement_factor=nest_ratio, &
         timestepping_refinement_factor=nest_ratio)
-    md%domains(2)%timestepping_method = 'rk2'
+    md%domains(2)%timestepping_method = 'rk2' !'cliffs' !'rk2'
+    md%domains(2)%cliffs_minimum_allowed_depth = 0.002_dp
 
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
         ' nx: ', md%domains(2)%nx

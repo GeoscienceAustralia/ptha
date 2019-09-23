@@ -63,6 +63,10 @@ module local_routines
         call elevation_data%finalise()
         call stage_data%finalise()
 
+        if(domain%timestepping_method == 'cliffs') then
+            call domain%smooth_elevation(smooth_method = 'cliffs')
+        end if
+
         !call domain%smooth_elevation()
 
         deallocate(x,y, random_uniform)
@@ -199,6 +203,7 @@ program run_BP09
     md%domains(1)%linear_solver_is_truely_linear = .true.
     !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
     !md%domains(1)%linear_solver_is_truely_linear = .false.
+    md%domains(1)%cliffs_minimum_allowed_depth = 5.0_dp
 
     ! Higher res around region of interest
     call md%domains(2)%match_geometry_to_parent(&
@@ -208,6 +213,7 @@ program run_BP09
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 1_ip)
     md%domains(2)%timestepping_method = 'rk2'
+    md%domains(2)%cliffs_minimum_allowed_depth = 2.0_dp
 
     ! Okushiri Island focus
     call md%domains(3)%match_geometry_to_parent(&
@@ -217,6 +223,7 @@ program run_BP09
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 2_ip)
     md%domains(3)%timestepping_method = 'rk2'
+    md%domains(3)%cliffs_minimum_allowed_depth = 1.0_dp
 
     ! The monai domain 
     call md%domains(4)%match_geometry_to_parent(&
@@ -227,6 +234,7 @@ program run_BP09
         timestepping_refinement_factor = 6_ip,&
         rounding_method='nearest')
     md%domains(4)%timestepping_method = 'rk2'  
+    md%domains(4)%cliffs_minimum_allowed_depth = 1.0_dp
     
     ! A more detailed Monai domain 
     call md%domains(5)%match_geometry_to_parent(&
@@ -237,6 +245,7 @@ program run_BP09
         timestepping_refinement_factor = 6_ip,&
         rounding_method='nearest')
     md%domains(5)%timestepping_method = 'rk2'  
+    md%domains(5)%cliffs_minimum_allowed_depth = 0.2_dp
 
     ! The Aonae domain
     call md%domains(6)%match_geometry_to_parent(&
@@ -247,6 +256,7 @@ program run_BP09
         timestepping_refinement_factor = 2_ip,&
         rounding_method = 'nearest')
     md%domains(6)%timestepping_method = 'rk2'  
+    md%domains(6)%cliffs_minimum_allowed_depth = 0.2_dp
 
     if(very_high_res_monai) then
         ! An even more detailed Monai domain

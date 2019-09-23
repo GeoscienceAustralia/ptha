@@ -4,7 +4,7 @@
 # See src_standard_compiler_var for examples of these
 #
 
-SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../../../.git describe --abbrev=50 --always --tags)
+SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../.git describe --abbrev=50 --always --tags)
 
 #
 # Make a library
@@ -17,7 +17,7 @@ else
     SWALS_DEVICE_OBJECTS :=gpu_interface_cu.o gpu_interface_mod.o test_gpu_interface_mod.o
 endif
 # REGULAR OBJECTS
-SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o linear_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o burn_into_grid_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_intrinsic_alternatives_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o coarray_utilities_mod.o domain_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
+SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o linear_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o cliffs_tolkova_mod.o burn_into_grid_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_intrinsic_alternatives_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o coarray_utilities_mod.o domain_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
 
 
 # Make the library
