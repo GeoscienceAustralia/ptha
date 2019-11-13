@@ -34,11 +34,14 @@ module local_routines
     real(dp), parameter :: island_slope = 0.25_dp
     real(dp), parameter :: island_max_height = 0.625_dp
 
+    ! For Funwave comparison
+    real(dp), parameter :: initial_wave_maxima_x_coordinate = island_centre(1) - 15.075 
+
     ! Wavemaker x position
     real(dp), parameter :: wavemaker_x_start = 0.0_dp
 
     ! Use the wavemaker forcing, or a gauge-based estimate?
-    logical :: use_wavemaker_forcing = .false.
+    logical :: use_wavemaker_forcing = .false. !.false.
     ! Both approaches force the velocity near the wavemaker, and also adjust the stage based
     ! on a linear plane wave approximation.
     ! The wavemaker_forcing approach estimates the velocity from the paddle displacement time-series.
@@ -47,6 +50,9 @@ module local_routines
     ! Both approaches give fairly similar results, but the gauge-based estimate can
     ! better match the gauge-1-4 initial waves (likely it is correcting for some dispersion
     ! that is not in the model itself). 
+
+    ! Alternative model forcing -- solitary wave, like the corresponding Funwave test case
+    logical :: use_initial_condition_forcing = .true. ! Funwave comparison
 
     ! Manning friction
     real(dp), parameter :: low_friction_manning  = 0.01_dp
@@ -180,98 +186,110 @@ module local_routines
         call flather_boundary(domain)
         !call transmissive_boundary(domain)
 
-        !
-        ! Secondly, we force the model velocities internally to simulate a wavemaker.
-        ! This is imperfect, but can be done based on the wavemaker paddle, OR, based
-        ! on a velocity inferred from the gauge observations.
-        !
-        fc = boundary_information%forcing_case
-
-        if(use_wavemaker_forcing) then
-            ! Here we differentiate the wavemaker paddle velocity to estimate the forcing velocity
-
-            ! The forcing is imperfect -- with these parameters we try to 'calibrate' the result.
-            ! See the alternative gauge_based approach.
-            if(fc == 1) then
-                inflation_factor = 0.9_dp
-            else
-                inflation_factor = 1.0_dp
-            end if
-
-            time = domain%time
-            time_future = time + time_lag
-            time_past = max(time - time_lag, 0.0_dp)
-
-            ! Wavemaker offset position. 
-            call boundary_information%wavemaker_position%eval([time + boundary_information%wavemaker_t0], pos_x)
-            call boundary_information%wavemaker_position%eval([time_future + boundary_information%wavemaker_t0], pos_x_future)
-            call boundary_information%wavemaker_position%eval([time_past   + boundary_information%wavemaker_t0], pos_x_past)
-          
-            ! Numerical estimate of the velocity. Time-lag needs to give enough smoothing!
-            forcing_vel = (pos_x_future(1) - pos_x_past(1)) / (2.0_dp * time_lag) * inflation_factor
-            time_limit = HUGE(1.0_dp) 
-
-        else
+        if(.not. use_initial_condition_forcing) then
             !
-            ! Here we use a gauge-based estimate of the forcing
-            ! Preprocessing is already done.
+            ! Secondly, we force the model velocities internally to simulate a wavemaker.
+            ! This is imperfect, but can be done based on the wavemaker paddle, OR, based
+            ! on a velocity inferred from the gauge observations.
             !
-            time = domain%time
-            ! We do not want to force for too long (because otherwise the gauges become affected by reflections etc)
-            time_limit = 1.0_dp + 6.0_dp/fc
+            fc = boundary_information%forcing_case
 
-            if(time < time_limit) then
-                ! Get the forcing velocity
-                call boundary_information%gauge_velocity(fc)%eval( [time], forcing_vel1)
-                forcing_vel = forcing_vel1(1)
-            else
-                forcing_vel = 0.0_dp
-            end if
-            pos_x = 0.0_dp ! Apply boundary at regular wavemaker position
-        end if
+            if(use_wavemaker_forcing) then
+                ! Here we differentiate the wavemaker paddle velocity to estimate the forcing velocity
 
-        ! Now impose this velocity at the wavemaker x-locations
-        ! Note the gauges suggest imperfections in the experiment. For instance
-        ! the leading wave at gauges 1-4 should be very similar, but there are differences.
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, forcing_vel, pos_x) 
-        !$OMP DO
-        do j = 1, domain%nx(2)
-            do i = 1, domain%nx(1)
-                if( &
-                    ! X coordinate within some distance of wavemaker position
-                    (abs(domain%x(i) - wavemaker_x_start - pos_x(1)) < 0.5*domain%dx(1)) .and. &
-                    ! Y coordinate is not too close to edge, as specified by geometry
-                    (domain%y(j) - global_ll(2) > wavemaker_edge_offset) .and. & 
-                    (domain%y(j) - global_ll(2) < global_lw(2) - wavemaker_edge_offset) &
-                    ) then
-
-                    scaler = 1.0_dp
-                    if(domain%y(j) - global_ll(2) < (wavemaker_edge_offset + 1.0_dp)) then
-                        scaler = min(1.0_dp, &
-                            max(0.0_dp, wavemaker_edge_offset + 1.0_dp - domain%y(j) + global_ll(2)))
-                    end if
-
-                    if(domain%y(j) - global_ll(2) > (global_lw(2) - wavemaker_edge_offset - 1.0_dp)) then
-                        scaler = min(1.0_dp, &
-                            max(0.0_dp, domain%y(j) - global_ll(2) - (global_lw(2) - wavemaker_edge_offset - 1.0_dp)))
-                    end if
-
-                    ! Velocity = paddle velocity
-                    domain%U(i,j,UH) = scaler * forcing_vel * depth_ocean
-                    ! Stage as for a linear plane wave -- beware mass conservation violation
-                    stage_forced = max( domain%U(i,j,UH) / sqrt(gravity * depth_ocean), domain%U(i,j,ELV) )
-                    dstage = stage_forced - domain%U(i,j,STG)
-                    domain%U(i,j,STG) = stage_forced
-                    ! Enforce mass conservation -- spread it over a 3 cells (or we can force cells dry!)
-                    do ii = 1, 3
-                        domain%U(i-ii,j,STG) = domain%U(i-ii,j,STG) - dstage/3
-                    end do
-
+                ! The forcing is imperfect -- target(actual) wave heights were 0.05(0.045), 0.1(0.096), and 0.2(0.181). 
+                ! With these parameters we try to 'calibrate' the result.
+                if(fc == 1) then
+                    inflation_factor = 0.045_dp/0.05_dp 
+                else if(fc == 2) then
+                    inflation_factor = 0.096_dp/0.1_dp 
+                else if(fc == 3) then
+                    inflation_factor = 0.181_dp/0.2_dp
                 end if
+
+                time = domain%time
+                time_future = time + time_lag
+                time_past = max(time - time_lag, 0.0_dp)
+
+                ! Wavemaker offset position. 
+                call boundary_information%wavemaker_position%eval([time + boundary_information%wavemaker_t0], pos_x)
+                call boundary_information%wavemaker_position%eval([time_future + boundary_information%wavemaker_t0], pos_x_future)
+                call boundary_information%wavemaker_position%eval([time_past   + boundary_information%wavemaker_t0], pos_x_past)
+              
+                ! Numerical estimate of the velocity. Time-lag needs to give enough smoothing!
+                forcing_vel = (pos_x_future(1) - pos_x_past(1)) / (2.0_dp * time_lag) * inflation_factor
+                time_limit = HUGE(1.0_dp) 
+
+            else
+                !
+                ! Here we use a gauge-based estimate of the forcing
+                ! Preprocessing is already done.
+                !
+                time = domain%time
+                ! We do not want to force for too long (because otherwise the gauges become affected by reflections etc)
+                time_limit = 1.0_dp + 6.0_dp/fc
+
+                if(time < time_limit) then
+                    ! Get the forcing velocity
+                    call boundary_information%gauge_velocity(fc)%eval( [time], forcing_vel1)
+                    forcing_vel = forcing_vel1(1)
+                else
+                    forcing_vel = 0.0_dp
+                end if
+                pos_x = 0.0_dp ! Apply boundary at regular wavemaker position
+            end if
+
+            ! Now impose this velocity at the wavemaker x-locations
+            ! Note the gauges suggest imperfections in the experiment. For instance
+            ! the leading wave at gauges 1-4 should be very similar, but there are differences.
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, forcing_vel, pos_x) 
+            !$OMP DO
+            do j = 1, domain%nx(2)
+                do i = 1, domain%nx(1)
+                    if( &
+                        ! X coordinate within some distance of wavemaker position
+                        (abs(domain%x(i) - wavemaker_x_start - pos_x(1)) < 0.5*domain%dx(1)) .and. &
+                        ! Y coordinate is not too close to edge, as specified by geometry
+                        (domain%y(j) - global_ll(2) > wavemaker_edge_offset) .and. & 
+                        (domain%y(j) - global_ll(2) < global_lw(2) - wavemaker_edge_offset) &
+                        ) then
+
+                        !
+                        ! Use 'scaler' to taper the forcing toward the edges, to avoid introducing a discontinuity,
+                        ! which can be numerically problematic for some solvers.
+                        !
+                        scaler = 1.0_dp
+                        if(domain%y(j) - global_ll(2) < (wavemaker_edge_offset + 1.0_dp)) then
+                            scaler = min(1.0_dp, &
+                                max(0.0_dp, wavemaker_edge_offset + 1.0_dp - domain%y(j) + global_ll(2)))
+                        end if
+
+                        if(domain%y(j) - global_ll(2) > (global_lw(2) - wavemaker_edge_offset - 1.0_dp)) then
+                            scaler = min(1.0_dp, &
+                                max(0.0_dp, domain%y(j) - global_ll(2) - (global_lw(2) - wavemaker_edge_offset - 1.0_dp)))
+                        end if
+
+                        ! Velocity = paddle velocity
+                        domain%U(i,j,UH) = scaler * forcing_vel * depth_ocean
+                        ! Stage as for a linear plane wave -- beware mass conservation violation
+                        stage_forced = max( domain%U(i,j,UH) / sqrt(gravity * depth_ocean), domain%U(i,j,ELV) )
+                        dstage = stage_forced - domain%U(i,j,STG)
+                        domain%U(i,j,STG) = stage_forced
+                        ! Enforce mass conservation -- spread it over a 3 cells (or we can force cells dry!)
+                        do ii = 1, 3
+                            domain%U(i-ii,j,STG) = domain%U(i-ii,j,STG) - dstage/3.0_dp
+                        end do
+                        !do ii = 1, 1
+                        !    domain%U(i-ii,j,STG) = domain%U(i-ii,j,STG) - dstage
+                        !end do
+
+                    end if
+                end do
             end do
-        end do
-        !$OMP END DO
-        !$OMP END PARALLEL
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+        end if
 
     end subroutine 
 
@@ -286,6 +304,8 @@ module local_routines
         real(dp) :: wall, dd, gauges_1_to_4_x_coord
         real(dp) :: gauge_xy(3,8), leftmost_x(3)
         real(dp) :: absorbing_boundary_width(2)
+        real(dp) :: gamma0, h_on_d, stage, vel, xi, yj
+        
 
         ! Thickness of absorbing boundary region
         absorbing_boundary_width = (global_lw - non_absorbing_lw)/2.0_dp
@@ -331,6 +351,39 @@ module local_routines
         deallocate(x,y)
 
         print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
+
+
+        if(use_initial_condition_forcing) then
+            !! Apply wave
+            if(forcing_case == 1) then
+                h_on_d = 0.045_dp
+            else if(forcing_case == 2) then
+                h_on_d = 0.096_dp
+            else if(forcing_case == 3) then
+                h_on_d = 0.181_dp
+            else
+                print*, 'forcing_case not recognized'
+                stop
+            end if
+
+            gamma0 = sqrt((3.0_dp / 4.0_dp) * h_on_d)
+
+            do j = 1, domain%nx(2)
+                do i = 1, domain%nx(1)
+                    xi = domain%x(i)
+                    yj = domain%y(j)
+
+                    !stage = h_on_d * depth_ocean * (1.0_dp/cosh(gamma0*(xi - wavemaker_x_start)/depth_ocean))**2
+                    stage = h_on_d * depth_ocean * (1.0_dp/cosh(gamma0*(xi - initial_wave_maxima_x_coordinate)/depth_ocean))**2
+                    vel = sqrt(gravity/depth_ocean) * stage
+
+                    domain%U(i,j,STG) = stage
+                    domain%U(i,j,UH) = vel * depth_ocean
+                end do
+            end do
+        end if
+
+        !call domain%smooth_elevation()
 
         !! Wall boundaries (without boundary conditions)
         !wall = 0.5_dp
