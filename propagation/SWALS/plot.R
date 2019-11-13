@@ -413,16 +413,23 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_abo
 #' @param add if TRUE, add to an existing plot
 #' @param var_transform_function if not NULL, a function that is used to transform the variable before plotting
 #' @param NA_if_stage_not_above_elev logical. If TRUE, the set regions with stage <= (elev + 1e-03) to NA
+#' @param use_fields logical. If TRUE, use image.plot from the fields package. Otherwise use graphics::image
+#' @param clip_to_zlim logical. If TRUE, clip the variable limits to be within zlim before plotting.
 #'
 multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, zlim, cols, add=FALSE,
-    var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE){
+    var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, use_fields=FALSE, clip_to_zlim=FALSE){
 
     library('ncdf4')
+    library(fields)
     # Find all netcdf
     all_nc = Sys.glob(paste0(multidomain_dir, '/*/Grid*.nc')) 
 
     # Start a new plot
-    if(!add) image(matrix(0, ncol=2, nrow=2), asp=1, col='white', xlim=xlim, ylim=ylim)
+    if(use_fields){
+        if(!add) image.plot(matrix(0, ncol=2, nrow=2), asp=1, xlim=xlim, ylim=ylim, zlim=zlim, col=cols, nlevel=length(cols)+1)
+    }else{
+        if(!add) image(matrix(0, ncol=2, nrow=2), asp=1, col='white', xlim=xlim, ylim=ylim, zlim=zlim)
+    }
 
     # Loop over all domains, and add them to the image
     for(i in 1:length(all_nc)){
@@ -470,7 +477,17 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
         #ys2 = c(ys - dy/2, ys[length(ys)] +dy/2)
         xs2 = seq(xs[1] - dx/2, xs[length(xs)] + dx/2, len=length(xs)+1)
         ys2 = seq(ys[1] - dy/2, ys[length(ys)] + dy/2, len=length(ys)+1)
-        image(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
+
+        if(clip_to_zlim){
+            var = pmax(var, zlim[1])
+            var = pmin(var, zlim[2])
+        }
+
+        if(use_fields){
+            image.plot(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
+        }else{
+            image(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
+        }
     }
 
 }
