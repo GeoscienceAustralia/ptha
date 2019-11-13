@@ -191,11 +191,11 @@ FroudeCap = 10.0
   ! --------------WET-DRY-------------------------------
   ! MinDepth for wetting-drying
 !MinDepth=0.001
-MinDepth=0.00001
+MinDepth=0.0001
   ! -----------------
   ! MinDepthfrc to limit bottom friction
 !MinDepthFrc = 0.001
-MinDepthFrc = 0.00001
+MinDepthFrc = 0.0001
 
   ! -------------- SHOW BREAKING -----------------------
   ! breaking is calculated using shock wave capturing scheme

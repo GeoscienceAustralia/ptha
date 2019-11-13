@@ -5,7 +5,7 @@ This is based on the FUNWAVE benchmark problem cited below, with the following c
 a clearer comparison with SWALS:
 - No dispersion
 - Grid refined to 0.025m (vs original 0.05m -- I interpolated their input data)
-- Wet-dry thresholds reduced to 1.0e-05 (previously 1.0e-03)
+- Wet-dry thresholds reduced to 1.0e-05 (previously 1.0e-03) -- except for caseC, where I used 1.0e-04 to avoid some numerical artefacts that caused substantially non-symmetric runup around the top/bottom island.
 - Manning friction
 
 
