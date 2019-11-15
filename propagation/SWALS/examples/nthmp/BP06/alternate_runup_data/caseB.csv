@@ -1,0 +1,12 @@
+"Data from table 5 in Ma et al (2019), which is reporting results from Liu et al. (1995)",,,,
+"The R_on_A variable gives the runup height around the island divided by the offshore wave amplitude (A = 0.032m in this case)",,,,
+"Angle","observed_R_on_A","Liu95_model_R_on_A","observed_R","Liu95_model_R"
+0,2.7,2.88,0.0864,0.09216
+22.5,2.65,2.5,0.0848,0.08
+45,2.55,2.38,0.0816,0.07616
+67.5,2.1,2.35,0.0672,0.0752
+90,2,2.16,0.064,0.06912
+112.5,1.8,1.78,0.0576,0.05696
+135,1.7,1.44,0.0544,0.04608
+157.5,1.54,1.37,0.04928,0.04384
+180,3.18,2.52,0.10176,0.08064

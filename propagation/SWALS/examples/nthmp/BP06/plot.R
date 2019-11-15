@@ -55,17 +55,19 @@ for(model_run in 1:length(forcing_cases)){
         gauge_plot_ylim = c(-1, 1)*0.03
         runup_data_file = '../test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/run2a.txt'
         funwave_runup_file = './funwave_comparison/caseA/max_island_runup.csv'
+        alternate_runup_data_file = 'alternate_runup_data/caseA.csv'
     }else if(forcing_case_name == 'B'){
         gauges_data_files = '../test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/ts2b.txt'
         gauge_plot_ylim = c(-1, 1)*0.06
         runup_data_file = '../test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/run2b.txt'
         funwave_runup_file = './funwave_comparison/caseB/max_island_runup.csv'
+        alternate_runup_data_file = 'alternate_runup_data/caseB.csv'
     }else if(forcing_case_name == 'C'){
         gauges_data_files = '../test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/ts2cnew1.txt'
         gauge_plot_ylim = c(-1, 1)*0.1
         runup_data_file = '../test_repository/BP06-FrankG-Solitary_wave_on_a_conical_island/run2c.txt'
         funwave_runup_file = './funwave_comparison/caseC/max_island_runup.csv'
-
+        alternate_runup_data_file = 'alternate_runup_data/caseC.csv'
     }else{
         stop('unrecognized forcing case')
     }
@@ -150,12 +152,17 @@ for(model_run in 1:length(forcing_cases)){
     # Plot runup around Island
     #
     runup_data = read.table(runup_data_file, skip=10, header=FALSE)
+    alternate_runup_data = read.csv(alternate_runup_data_file, skip=2)
     island_centre = c(12.96, 13.80)
 
     png(paste0('Runup_plot_', forcing_case_name, '.png'), width=6, height=5, units='in', res=300)
 
     plot(runup_data[,2], runup_data[,3]/100, t='p', xlab='Degrees around island', ylab='Runup (m)', 
-         ylim=c(0, max(runup_data[,3]/100)*1.5), xlim=c(0, 360), cex.lab=1.5)
+         ylim=c(0, max(c(runup_data[,3]/100, alternate_runup_data$observed_R)*1.5)), 
+                xlim=c(0, 360), cex.lab=1.5)
+
+    points(270- alternate_runup_data$Angle, alternate_runup_data$observed_R, col='orange', pch=19, cex=1.5)
+    points(270- alternate_runup_data$Angle, alternate_runup_data$Liu95_model_R, col='green', pch=15, cex=0.5, t='o', lty=2)
 
     # Get max-stage from around island
     # Find wet cells near a wet/dry boundary
@@ -195,13 +202,17 @@ for(model_run in 1:length(forcing_cases)){
 
     funwave_runup = read.csv(funwave_runup_file)
     points(funwave_runup, col='purple', cex=0.2, pch=19)
-    if(forcing_case != 1){
+    #if(forcing_case != 1){
         legend_loc = 'topleft'
-    }else{
-        legend_loc = 'bottomright'
-    }
-    legend(legend_loc, c('Observed', 'SWALS', 'Funwave (no dispersion, 0.025m grid)'),
-           col=c('black', 'red', 'purple'), pch=c(1, NA, 19), lty=c(NA, 1, NA), bty='n')
+    #}else{
+    #    legend_loc = 'bottomright'
+    #}
+    legend(legend_loc, 
+           c('Observed by Briggs (NTHMP repo)', 'Observed by Briggs (Liu95, Ma19)', 'SWALS', 'Funwave (no dispersion, 0.025m grid)',
+             'Liu et al 1995 model'),
+           col=c('black', 'orange', 'red', 'purple', 'green'), 
+           pch=c(1, 19, NA, 19, 15), 
+           lty=c(NA, NA, 1, NA, 2), bty='n')
 
     dev.off()
 
