@@ -149,14 +149,15 @@ The script [./src/src_standard_compiler_var](./src/src_standard_compiler_var) is
 
 A number of preprocessor variables can be defined to control features of the code. These are controlled by defining the variable `SWALS_PREPROCESSOR_FLAGS` in the makefile. See makefiles in the example projects for illustrations of their use. The most important cases include
 
+    -DTIMER (Time sections of the code and report on how long they take, generally in the multidomain log file. This is useful for understanding run-times. It is also used for static load-balancing calculations - see the function `make_load_balance_partition` in [./plot.R](./plot.R) which uses multidomain log-files to compute a more balanced distribution of work for multi-image coarray runs.)
     -DSPHERICAL (assume spherical coordinates. Otherwise cartesian coordinates are used)
-    -DTIMER (time sections of the code and report on how long they take)
-    -DCOARRAY (build with coarray support. Otherwise only OpenMP parallisation can be used)
-    -DREALFLOAT (use single precision for all reals. Otherwise double-precision is used)
+    -DCOARRAY (build with coarray support. Otherwise only OpenMP parallisation is used)
+    -DREALFLOAT (use single precision for all reals. Otherwise double-precision is used. Beware the nonlinear solvers generally need double-precision for accuracy.)
     -DNOCORIOLIS (do not include Coriolis terms in spherical coordinates. By default, Coriolis terms are used when -DSPHERICAL is defined. They can ONLY be used in conjunction with spherical coordinates. But even in this case, sometimes it is useful to turn them off, hence this variable)
     -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS (this uses MPI instead of coarrays for communication in the main evolve loop. It improved performance using Intel-Fortran 2018, which did not have great coarray performance)
     -DCOARRAY_PROVIDE_CO_ROUTINES (provide implementations of coarray collectives using MPI. This is required for Intel-Fortran 2019, which does not support Fortran coarray collectives such as co_min, co_max, co_sum, etc)
-    -DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS (Allow nonlinear domains inside a multidomain to take larger timesteps than suggested by timestepping_refinement_factor, if this would be stable. This can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file, which can be generated from a preliminary model run (see make_load_balance_partition in plot.R))
+    -DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS (Allow nonlinear domains inside a multidomain to take larger timesteps than suggested by timestepping_refinement_factor, if this would be stable according to their own cfl-limit. This can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file, which can be generated from a preliminary model run (see `make_load_balance_partition` in plot.R))
+    -DNETCDF4_GRIDS (Use the HDF5-based netcdf4 format for grid-file output. This requires that the netcdf library is compiled with netcdf4 support -- if not it will cause compilation to fail.)
 
 Other options that are less often useful include:
 

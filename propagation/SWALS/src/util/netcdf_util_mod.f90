@@ -11,6 +11,13 @@ module netcdf_util
     use netcdf
 #endif
 
+! Switch on/off netcdf 4 calls, which will fail if we have only compiled with netcdf 3
+#ifdef NETCDF4_GRIDS
+# define USING_NETCDF4_GUARD( x ) x    
+#else
+# define USING_NETCDF4_GUARD( x ) 
+#endif
+
     implicit none
 
     private
@@ -41,6 +48,11 @@ module netcdf_util
         ! Static variables
         integer :: var_max_stage_id, var_elev0_id, var_is_priority_domain_id, &
             var_manningsq_id, var_priority_ind, var_priority_img
+
+        ! It can be slow to flush every time we write to files. But
+        ! this can be useful for interactively looking at model results. So
+        ! optionally allow flushing after all writes.
+        logical :: flush_every_output_step = .false.
 
         integer :: num_output_steps = 0
 
@@ -132,22 +144,17 @@ module netcdf_util
         real(dp) :: dx_local(2)
 
         integer:: netcdf_file_type
-        logical:: using_netcdf4
+        !logical:: using_netcdf4
        
     ! Gracefully compile in case we don't link with netcdf
 #ifndef NONETCDF
 
         ! Setup the filetype -- currently the HDF5 format seems slower, and compression is not great
-        netcdf_file_type = NF90_CLOBBER !NF90_HDF5
-        if(netcdf_file_type == NF90_HDF5) then
-            ! This allows us to 'deflate' some variables. However, the 
-            ! file size benefit wasn't great in initial tests, but the slowdown
-            ! was substantial
-            using_netcdf4 = .true.
-        else
-            using_netcdf4 = .false.
-        end if
-
+#ifdef NETCDF4_GRIDS
+        netcdf_file_type = NF90_HDF5 
+#else
+        netcdf_file_type = NF90_CLOBBER
+#endif
 
         nx = size(xs)
         ny = size(ys)
@@ -216,7 +223,7 @@ module netcdf_util
                 [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
                 nc_grid_output%var_stage_id), __LINE__ )
             ! Compress
-            if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_stage_id, 1, 1, 3), __LINE__)
+            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_stage_id, 1, 1, 3), __LINE__) )
         end if
         ! UH
         if(nc_grid_output%time_var_store_flag(UH)) then
@@ -224,7 +231,7 @@ module netcdf_util
                 [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
                 nc_grid_output%var_uh_id), __LINE__ )
             ! Compress
-            if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_uh_id, 1, 1, 3), __LINE__)
+            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_uh_id, 1, 1, 3), __LINE__) )
         end if
         ! VH
         if(nc_grid_output%time_var_store_flag(VH)) then
@@ -232,7 +239,7 @@ module netcdf_util
                 [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
                 nc_grid_output%var_vh_id), __LINE__ )
             ! Compress
-            if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_vh_id, 1, 1, 3), __LINE__)
+            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_vh_id, 1, 1, 3), __LINE__) )
         end if
         ! Elev
         if(nc_grid_output%time_var_store_flag(ELV)) then
@@ -240,7 +247,7 @@ module netcdf_util
                 [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
                 nc_grid_output%var_elev_id), __LINE__ )
             ! Compress
-            if(using_netcdf4) call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_elev_id, 1, 1, 3), __LINE__)
+            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_elev_id, 1, 1, 3), __LINE__) )
         end if
 
 #ifdef DEBUG_ARRAY
@@ -405,7 +412,8 @@ SRC_GIT_VERSION ), &
         end if
 #endif
 
-        call check(nf90_sync(iNcid))
+        ! It can be slow to flush everytime we write to the file (but sometimes useful for interactive work)
+        if(nc_grid_output%flush_every_output_step) call check(nf90_sync(iNcid))
 
 #endif
 
