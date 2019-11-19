@@ -204,7 +204,7 @@ end module
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program run_Tauranga
+program run_model
 
     use global_mod, only: ip, dp, minimum_allowed_depth
     use domain_mod, only: domain_type
