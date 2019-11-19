@@ -60,9 +60,14 @@ The standard build scripts are based on
 [src_make_commands](./src/src_make_commands). These scripts are 'included' in
 application specific makefiles.  
 
-Variables in [src_standard_compiler_var](./src/src_standard_compiler_var) can
-be overridden by defining them before the include. This is required e.g. to use
-a different compiler or non-standard library locations. 
+The script [src_standard_compiler_var](./src/src_standard_compiler_var) simply
+points to another compiler specific script (there are variants for both
+[gfortran](./src/src_standard_compiler_var_gfortran) and
+[ifort](./src/src_standard_compiler_var_ifort)). Variables in these scripts can
+be overridden by defining them in the application-specific makefile (see the
+examples).  This is required in many situations (e.g. to use spherical
+coordinates, or compile with support for distributed-memory parallel runs, or
+to use a different compiler/options, or use non-standard library locations.)
 
 See the validation test suite for examples.
 
