@@ -1,5 +1,5 @@
 # Use gfortran -- still might want to adjust some variables
 include $(SWALS_SRC)/src_standard_compiler_var_gfortran
 # Use ifort -- still might want to adjust some variables
-#include $(SWALS_SRC)/src_standard_compiler_var_gfortran
+#include $(SWALS_SRC)/src_standard_compiler_var_ifort
 
