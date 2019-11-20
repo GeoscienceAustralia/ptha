@@ -1,7 +1,5 @@
 # **Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and wave time-series**
 
-# ***NOTE: This is a beta release. Results may be updated if any issues are identified. Please report any problems via the github issues page, or send an email to the maintainer or to hazards@ga.gov.au***
-
 For every PTHA18 scenario we provide earthquake information, tsunami
 initial conditions, and wave time-series at every hazard point. Combined with
 the exceedance-rate modelling, such inputs can be used to drive local scale
@@ -28,6 +26,11 @@ Geoscience Australia has tried to make the information in this product as
 accurate as possible. However, it does not guarantee that the information is
 totally accurate or complete. Therefore, you should not solely rely on this
 information when making a commercial decision.
+
+Results may be updated if problems are identified. Please report any problems
+via the github issues page, or send an email to the maintainer
+(gareth.davies@ga.gov.au) or to hazards@ga.gov.au. See [UPDATES](./UPDATES) for
+notes regarding updates since the 2018 report release.
 
 ## Before you start
 

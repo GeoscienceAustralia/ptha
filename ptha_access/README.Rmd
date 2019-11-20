@@ -1,7 +1,5 @@
 # **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment (PTHA18) results**
 
-# ***NOTE: This is a beta release. Results may be updated if any issues are identified. Please report any problems via the github issues page, or send an email to the maintainer or to hazards@ga.gov.au***
-
 This guide explains how to access basic tsunami hazard information in easy-to-use csv and
 shapefile formats. 
 
@@ -30,6 +28,12 @@ Geoscience Australia has tried to make the information in this product as
 accurate as possible. However, it does not guarantee that the information is
 totally accurate or complete. Therefore, you should not solely rely on this
 information when making a commercial decision. 
+
+Results may be updated if problems are identified. Please report any problems
+via the github issues page, or send an email to the maintainer
+(gareth.davies@ga.gov.au) or to hazards@ga.gov.au. See [UPDATES](./UPDATES) for
+notes regarding updates since the 2018 report release.
+
 
 # Obtaining basic tsunami hazard information.
 
