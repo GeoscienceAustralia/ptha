@@ -28,9 +28,9 @@ considering use of the bias-adjusted VAUS scenarios (p1957):
 approaches, to represent epistemic uncertainties in scenario generation.
 Furthermore, the VAUS approach may facilitate greater computational efficiency
 because it involves fewer degrees of freedom*. Considering the large uncertainties
-in scenario generation, and the fact that both the (bias-adjusted) VAUS and HS
+in scenario generation and the fact that both the (bias-adjusted) VAUS and HS
 methods lead to a similar offshore hazard for Australia, it seems reasonable to
-try both approaches. 
+try both approaches (notwithstanding that real earthquakes do have heterogeneous slip).
 
 * Both the [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) and 
 [the PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w) 
