@@ -30,7 +30,8 @@ the relevant sections of [README.md](README.md) and [DETAILED_README.md](DETAILE
 * Both the [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) and 
 [the PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w) 
 compare the modelled magnitude-exceedance-rates with site-specific results from
-other studies. While developing the PAGEOPH paper we adjusted some of the
+other studies (Section 3.7.8.2 of the PTHA18 report, and Table 1 of the PAGEOPH
+paper). While developing the PAGEOPH paper we adjusted some of the
 `region-for-comparison` definitions to better agree with the regions in the
 cited studies. We also adopted a slightly better approach to interpolating
 modelled magnitude-exceedance-rate curves at the magnitudes of interest, which
