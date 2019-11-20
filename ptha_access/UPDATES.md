@@ -17,6 +17,21 @@ in the GJI publication). The changes are too small to affect the
 interpretation. For example, the FAUS-with-fixed-rigidity p-value changed from
 0.017 (PTHA18 report) to 0.003 (GJI Paper). 
 
+* The [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) tests a range
+  of scenario generation models, and suggests that (p96): *For applications we
+recommend use of the HS scenarios, with either constant or variable
+shear-modulus depending on the perceived characteristics of the site of
+interest*. However following further analysis and review, for [the GJI
+publication](https://doi.org/10.1093/gji/ggz260) we suggested it is also worth
+considering use of the bias-adjusted VAUS scenarios (p1957): 
+*In applications it may be beneficial to use both HS and bias-adjusted VAUS
+approaches, to represent epistemic uncertainties in scenario generation.
+Furthermore, the VAUS approach may facilitate greater computational efficiency
+because it involves fewer degrees of freedom*. Considering the large uncertainties
+in scenario generation, and the fact that both the (bias-adjusted) VAUS and HS
+methods lead to a similar offshore hazard for Australia, currently it seems 
+reasonable to consider both approaches.
+
 * Both the [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041) and 
 [the PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w) 
 compare the modelled magnitude-exceedance-rates with site-specific results from
