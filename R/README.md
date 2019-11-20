@@ -110,7 +110,8 @@ lines once appropriate dependencies are installed.
 
 ### Install on NCI
 
-* To install on NCI is more challenging. See some detailed notes in the [install](install) directory
+* This may differ from the above instructions -- the approach has varied over
+  the years. See some detailed notes in the [install](install) directory
 
 
 Usage
