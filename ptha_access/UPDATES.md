@@ -43,7 +43,7 @@ modelled magnitude-exceedance-rate curves at the magnitudes of interest, which
 is less sensitive to the magnitude binning details. Combined this leads to some
 differences in the reported earthquake ARIs (e.g. compare Table 1 in the
 PAGEOPH paper to Section 3.8.7.2 in the PTHA18 report). Code for both variants
-can be accessed [here](../R/examples/austptha_template/EVENT_RATES/README.md),
+can be accessed [here](../R/examples/austptha_template/EVENT_RATES/),
 see the links to scripts with names like `earthquake_rate_comparisons_XXXX.R`.
 
 * The review of [the PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w)
@@ -51,7 +51,7 @@ prompted us to improve the stage-vs-exceedance-rate percentile uncertainty calcu
 [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041). This is discussed in Section 3.5 of the PAGEOPH paper. 
 This leads to some (generally small) changes in the uncertainty percentiles for
 stage-vs-exceedance-rate. The codes to do the revised calculations can be accessed
-[here](../R/examples/austptha_template/EVENT_RATES/README.md), see the Section
+[here](../R/examples/austptha_template/EVENT_RATES/), see the README Section
 `Updated stage-vs-exceedance-rate percentile uncertainty calculations` for the
 links and context. The online results have been updated to reflect this,
 although the older results can still be accessed (as discussed in the relevant
