@@ -31,15 +31,16 @@ PAGEOPH paper to Section 3.8.7.2 in the PTHA18 report). Code for both variants
 can be accessed [here](../R/examples/austptha_template/EVENT_RATES/README.md),
 see the links to scripts with names like `earthquake_rate_comparisons_XXXX.R`.
 
-* The review of [the PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w),
+* The review of [the PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w)
 prompted us to improve the stage-vs-exceedance-rate percentile uncertainty calculation method from the
 [PTHA18 report](http://dx.doi.org/10.11636/Record.2018.041). This is discussed in Section 3.5 of the PAGEOPH paper. 
-The codes to do the revised calculations can be accessed
+This leads to some (generally small) changes in the uncertainty percentiles for
+stage-vs-exceedance-rate. The codes to do the revised calculations can be accessed
 [here](../R/examples/austptha_template/EVENT_RATES/README.md), see the Section
 `Updated stage-vs-exceedance-rate percentile uncertainty calculations` for the
-links and context. This leads to some (generally small) changes in the
-uncertainty percentiles for stage-vs-exceedance-rate. The online results have
-been updated to reflect this, although the older results can still be accessed (as discussed in
-the relevant sections of [ptha_access/README.md](README.md) and [ptha_access/DETAILED_README.md](DETAILED_README.md)).
+links and context. The online results have been updated to reflect this,
+although the older results can still be accessed (as discussed in the relevant
+sections of [ptha_access/README.md](README.md) and
+[ptha_access/DETAILED_README.md](DETAILED_README.md)).
 
 
