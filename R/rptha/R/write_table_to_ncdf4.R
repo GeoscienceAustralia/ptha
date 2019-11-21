@@ -150,8 +150,8 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
 #'    the typical case that the desired_rows includes clusters of closely spaced data, the 
 #'    use of a large chunk_size is much more efficient than performing a large number of 
 #'    separate reads.
-#' @param varnames Either NULL, or a character vector giving the variable names to read. This
-#'    can be used only read some variables
+#' @param varnames Either NULL (in which case all variables are read), or a character vector
+#'    giving the names of variables to read.
 #' @return data.frame with the data
 #' @import ncdf4
 #' @export

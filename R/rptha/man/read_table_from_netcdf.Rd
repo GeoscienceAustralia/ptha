@@ -4,7 +4,8 @@
 \alias{read_table_from_netcdf}
 \title{Read a netcdf file into a data.frame}
 \usage{
-read_table_from_netcdf(filename, desired_rows = NULL)
+read_table_from_netcdf(filename, desired_rows = NULL, chunk_size = 100,
+  varnames = NULL)
 }
 \arguments{
 \item{filename}{netcdf file}
@@ -13,6 +14,15 @@ read_table_from_netcdf(filename, desired_rows = NULL)
 Note that rows are read in contiguous chunks (up to 100 at once) for efficiency. For
 small datasets it may well be faster to read everything. However, for large datasets
 over remote connections this is not possible.}
+
+\item{chunk_size}{integer. If desired_rows is not null, then read the file in contiguous
+chunks of rows (e.g. 100 rows if chunk_size=100), and discard any undesired rows. In 
+the typical case that the desired_rows includes clusters of closely spaced data, the 
+use of a large chunk_size is much more efficient than performing a large number of 
+separate reads.}
+
+\item{varnames}{Either NULL (in which case all variables are read), or a character vector
+giving the names of variables to read.}
 }
 \value{
 data.frame with the data
