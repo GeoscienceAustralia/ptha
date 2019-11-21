@@ -547,7 +547,7 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                     count=c(fid1$dim$event$len,1)))
 
                 ## I'm commenting out local_period, since the zero-crossing period
-                ## is quite effected by small oscillations in the stage, and not so useful
+                ## is quite affected by small oscillations in the stage, and not so useful
                 ## for qualitative interpretation
                 #local_period = try(ncvar_get(fid1, 'period', start=c(1,target_index), 
                 #    count=c(fid1$dim$event$len,1)))

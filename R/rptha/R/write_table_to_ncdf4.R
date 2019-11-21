@@ -145,17 +145,29 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
 #'   Note that rows are read in contiguous chunks (up to 100 at once) for efficiency. For
 #'   small datasets it may well be faster to read everything. However, for large datasets
 #'   over remote connections this is not possible.
+#' @param chunk_size integer. If desired_rows is not null, then read the file in contiguous
+#'    chunks of rows (e.g. 100 rows if chunk_size=100), and discard any undesired rows. In 
+#'    the typical case that the desired_rows includes clusters of closely spaced data, the 
+#'    use of a large chunk_size is much more efficient than performing a large number of 
+#'    separate reads.
+#' @param varnames Either NULL, or a character vector giving the variable names to read. This
+#'    can be used only read some variables
 #' @return data.frame with the data
 #' @import ncdf4
 #' @export
 #'
-read_table_from_netcdf<-function(filename, desired_rows = NULL){
+read_table_from_netcdf<-function(filename, desired_rows = NULL, chunk_size=100, varnames=NULL){
 
     fid = nc_open(filename)
     nc_var_names = unlist(lapply(fid$var, f<-function(x) x$name))
 
     var_list = list()
     for(i in 1:length(nc_var_names)){
+
+        if(!is.null(varnames)){
+            if(!(nc_var_names[i] %in% varnames)) next
+        }
+
         #print(i)
         if(is.null(desired_rows)){
             # Get the entire variable
@@ -171,7 +183,6 @@ read_table_from_netcdf<-function(filename, desired_rows = NULL){
             n = fid$var[[nc_var_names[i]]]$ndim
 
             max_rows = fid$var[[nc_var_names[i]]]$varsize[n]
-            chunk_size = 100
 
             for(j in seq(min(desired_rows), max(desired_rows), by=chunk_size)){
 
