@@ -20,15 +20,33 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 #' (assuming typical 2018 internet speeds).
 #'
 #' @param source_zone Name of source_zone
+#' @param slip_type 'stochastic' or 'variable_uniform' or 'uniform'
+#' @param desired_event_rows integer vector giving the rows of the table that
+#' are desired. If NULL, read all rows (unless range_list is not NULL, see below)
+#' @param range_list If not NULL, this list is used for selecting subsets of the
+#' events data. For example if range_list=list(Mw=c(9.05, 9.15), peak_slip_alongstrike_ind=c(80,90)),
+#' then the selected events will all have Mw in >9.05 and <9.15, and peak_slip_alongstrike_ind >80 and < 90.
+#' If range_list is specified, you should not provide desired_event_rows.
 #' @return list with 'events' giving summary statistics for the earthquake
 #' events, and 'unit_source_statistics' giving summary statistics for each
-#' unit source
+#' unit source, and 'gauge_netcdf_files' giving the tide-gauge netcdf filenames for each unit_source,
+#' and 'desired_event_rows' giving the row_indices that were selected from the full events table file,
+#' and 'slip_type'
 #' @export
 #' @examples
-#' puysegur_data = get_source_zone_events_data('puysegur')
+#' # Basic usage
+#' puysegur_data = get_source_zone_events_data('puysegur', slip_type='stochastic')
 #'
-get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', desired_event_rows = NULL){
+#' # Select only event_table rows in 10-20 and 40-45
+#' puysegur_data_subset = get_source_zone_events_data('puysegur', desired_event_rows = c(10:20, 40:45))
+#'
+#' # Use a range_list to only select events with Mw~8.1, with rate_annual > 0
+#' puysegur_data_Mw81 = get_source_zone_events_data('puysegur', range_list=list(Mw=c(8.05, 8.15), rate_annual=c(0, Inf)))
+#'
+get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', desired_event_rows = NULL,
+                                      range_list=NULL){
 
+    # First check that a valid source-zone was provided
     err = FALSE
     if(is.null(source_zone)){
         err = TRUE
@@ -54,8 +72,27 @@ get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', 
         'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/all_', slip_type, 
         '_slip_earthquake_events_', source_zone, '.nc')    
 
-    events_data = read_table_from_netcdf(nc_web_addr, desired_rows = desired_event_rows)
+    # Identify desired_event_rows using the range_list, if provided
+    if(!is.null(range_list)){
+        if(!is.null(desired_event_rows)) stop('Cannot provide BOTH desired_event_rows AND range_list')
+        var_data = read_table_from_netcdf(nc_web_addr, varnames=names(range_list))
+        to_keep = rep(TRUE, length(var_data[,1])) # Predefine
+        for(i in 1:length(range_list)){
+            vname = names(range_list)[i]
+            to_keep = (to_keep & 
+                       (var_data[[vname]] >= range_list[[i]][1]) & 
+                       (var_data[[vname]] <= range_list[[i]][2]) )
+            if(!any(to_keep)) stop(paste0('No events within the range_list bounds. Failed at variable_name=', vname))
+        }
+        desired_event_rows = which(to_keep)
+    }
 
+    events_file = nc_web_addr
+    events_data = read_table_from_netcdf(events_file, desired_rows = desired_event_rows)
+
+    tsunami_events_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
+        'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/all_', slip_type, 
+        '_slip_earthquake_events_tsunami_', source_zone, '.nc')    
     #
     # Get the unit source summary statistics
     #
@@ -63,7 +100,8 @@ get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', 
         source_zone, '/TSUNAMI_EVENTS/unit_source_statistics_', source_zone, 
         '.nc')    
 
-    unit_source_statistics = read_table_from_netcdf(nc_web_addr)
+    unit_source_file = nc_web_addr
+    unit_source_statistics = read_table_from_netcdf(unit_source_file)
 
     gauge_netcdf_files = unit_source_statistics$tide_gauge_file 
 
@@ -75,7 +113,10 @@ get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', 
     output[['events']] = events_data
     output[['unit_source_statistics']] = unit_source_statistics
     output[['gauge_netcdf_files']] = gauge_netcdf_files_reordered
-    
+    output[['desired_event_rows']] = desired_event_rows
+    output[['events_file']] = events_file
+    output[['unit_source_file']] = unit_source_file
+    output[['tsunami_events_file']] = tsunami_events_file
 
     return(invisible(output))
 }
@@ -481,19 +522,24 @@ get_stage_exceedance_rate_curves_all_sources<-function(
 
 #'
 #' For a point, get a list which contains (for each source-zone),
-#' Mw, max_stage, event_rate. Combined with a 'desired' max stage,
-#' this can be used to select events for further study.
+#' peak_stage, and (optionally) Mw, variable_mu_Mw, and information on
+#' whether the scenario rate is nonzero. This can be helpful to 
+#' select events for further study.
 #'
 #' @param hazard_point_gaugeID numerical gaugeID of the hazard point of interest
 #' @param target_point vector with c(lon, lat) of the target point
 #' @param target_index integer index of the hazard point in the file
 #' @param all_source_names vector with the source names to extract data from
+#' @param slip_type 'stochastic' or 'variable_uniform' or 'uniform'
+#' @param include_earthquake_data TRUE/FALSE do we also read some earthquake information?
+#' @param max_tries if a download fails, try again this many times. This can help when
+#' using unreliable internet connections and/or servers.
 #' @return list (one entry for each source) containing a list with 
-#'   peak_stage, Mw, event_rate
+#'   peak_stage, and (if include_earthquake_data=TRUE) Mw, event_rate, ...
 #'
 get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL, 
     target_point=NULL, target_index = NULL, all_source_names = NULL,
-    slip_type = 'stochastic'){
+    slip_type = 'stochastic', include_earthquake_data=TRUE, max_tries=20){
 
 
     # Here it doesn't matter whether we use the revised1_XXXX file, or the original file
@@ -531,8 +577,8 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
 
         # Allow for the download to fail up to 'max_tries' times
         counter = 0
-        max_tries = 20
-        has_vars = c(FALSE, FALSE)
+        #max_tries = 20
+        has_vars = c(FALSE, !include_earthquake_data)
         while(try_again){
 
             counter = counter + 1
@@ -542,7 +588,9 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 nc_file1 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
                     nm, '/TSUNAMI_EVENTS/', file_base, 'tsunami_', 
                     nm, '.nc')
-                fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
+                    #nm, '_MAX_STAGE_ONLY.nc')
+                #fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
+                fid1 = nc_open(nc_file1, readunlim=FALSE)
                 local_max_stage = try(ncvar_get(fid1, 'max_stage', start=c(1,target_index), 
                     count=c(fid1$dim$event$len,1)))
 
@@ -575,16 +623,34 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                     ) has_vars[2] = TRUE
             }
 
-            output[[i]] = list(
-                Mw = local_Mw,
-                max_stage = local_max_stage,
-                #period = local_period,
-                scenario_rate_is_positive = (local_rate>0),
-                target_index=target_index,
-                slip_type=slip_type,
-                variable_mu_Mw = local_Mw_variable_mu,
-                variable_mu_scenario_rate_is_positive = (local_rate_variable_mu>0)
-                )
+            if(include_earthquake_data){
+                #
+                # Full output case
+                #
+                output[[i]] = list(
+                    Mw = local_Mw,
+                    max_stage = local_max_stage,
+                    #period = local_period,
+                    scenario_rate_is_positive = (local_rate>0),
+                    target_index=target_index,
+                    slip_type=slip_type,
+                    variable_mu_Mw = local_Mw_variable_mu,
+                    variable_mu_scenario_rate_is_positive = (local_rate_variable_mu>0)
+                    )
+
+            }else{
+                #
+                # Minimal output case
+                #
+
+                output[[i]] = list(
+                    max_stage = local_max_stage,
+                    target_index=target_index,
+                    slip_type=slip_type
+                    )
+
+            }
+
 
             # Error handling
             if(!all(has_vars == TRUE)){
@@ -599,10 +665,11 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                     print('remote read failed too many times, skipping')
                 }
             }else{
+
                 try_again = FALSE
             }
-        }
-    }
+        } # End of this source zone
+    } # End loop over all source-zones
 
     return(output)
 }
