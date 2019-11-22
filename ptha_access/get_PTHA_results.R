@@ -587,8 +587,8 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
             if(!has_vars[1]){
                 nc_file1 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
                     nm, '/TSUNAMI_EVENTS/', file_base, 'tsunami_', 
-                    nm, '.nc')
-                    #nm, '_MAX_STAGE_ONLY.nc')
+                    #nm, '.nc')
+                    nm, '_MAX_STAGE_ONLY.nc') ## Read a new version of the files containing ony 'max_stage', for speed.
                 #fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
                 fid1 = nc_open(nc_file1, readunlim=FALSE)
                 local_max_stage = try(ncvar_get(fid1, 'max_stage', start=c(1,target_index), 

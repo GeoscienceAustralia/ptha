@@ -58,3 +58,11 @@ BACKUP to their name). These files can be manually deleted later if required.
 
 Contains scripts we used for processing dart data and comparing with results at
 particular source-zones.
+
+## make_reduced_tsunami_max_stage_nc_files.R
+
+After the PTHA was finished, I found that it was inefficient to remotely read 
+the 'max-stage' variable from some netcdf files that were created for the PTHA. 
+As a workaround, this script writes new netcdf files containing only the
+max-stage variable. By pointing my data-access scripts to these new files I could
+greatly improve the reliability of remote reads.
