@@ -46,6 +46,8 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', desired_event_rows = NULL,
                                       range_list=NULL){
 
+    library(rptha)
+
     # First check that a valid source-zone was provided
     err = FALSE
     if(is.null(source_zone)){
@@ -585,22 +587,15 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
 
             # Read the max stage
             if(!has_vars[1]){
+                # Read a new version of the files containing ony 'max_stage', for speed.
                 nc_file1 = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/',
-                    nm, '/TSUNAMI_EVENTS/', file_base, 'tsunami_', 
-                    #nm, '.nc')
-                    nm, '_MAX_STAGE_ONLY.nc') ## Read a new version of the files containing ony 'max_stage', for speed.
-                #fid1 = nc_open(nc_file1, readunlim=FALSE, suppress_dimvals=TRUE)
+                    nm, '/TSUNAMI_EVENTS/MAX_STAGE_ONLY_', file_base, 'tsunami_', 
+                    nm, '_MAX_STAGE_ONLY.nc') 
                 fid1 = nc_open(nc_file1, readunlim=FALSE)
                 local_max_stage = try(ncvar_get(fid1, 'max_stage', start=c(1,target_index), 
                     count=c(fid1$dim$event$len,1)))
-
-                ## I'm commenting out local_period, since the zero-crossing period
-                ## is quite affected by small oscillations in the stage, and not so useful
-                ## for qualitative interpretation
-                #local_period = try(ncvar_get(fid1, 'period', start=c(1,target_index), 
-                #    count=c(fid1$dim$event$len,1)))
                 nc_close(fid1)
-                #if((class(local_max_stage) != 'try-error') & (class(local_period) != 'try-error')) has_vars[1] = TRUE
+                # Record if it failed, to try again later
                 if((class(local_max_stage) != 'try-error')) has_vars[1] = TRUE
             }
 
@@ -616,6 +611,7 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 local_Mw_variable_mu = try(ncvar_get(fid2, 'variable_mu_Mw'))
                 local_rate_variable_mu = try(ncvar_get(fid2, 'variable_mu_rate_annual'))
                 nc_close(fid2)
+                # Record if it failed, to try again later
                 if((class(local_Mw) != 'try-error') & 
                    (class(local_rate) != 'try-error') &
                    (class(local_rate_variable_mu) != 'try-error') &
