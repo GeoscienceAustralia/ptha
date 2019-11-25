@@ -44,7 +44,7 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 #' puysegur_data_Mw81 = get_source_zone_events_data('puysegur', range_list=list(Mw=c(8.05, 8.15), rate_annual=c(0, Inf)))
 #'
 get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', desired_event_rows = NULL,
-                                      range_list=NULL){
+                                      range_list=NULL, chunk_size=100){
 
     library(rptha)
 
@@ -90,7 +90,7 @@ get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', 
     }
 
     events_file = nc_web_addr
-    events_data = read_table_from_netcdf(events_file, desired_rows = desired_event_rows)
+    events_data = read_table_from_netcdf(events_file, desired_rows = desired_event_rows, chunk_size=chunk_size)
 
     tsunami_events_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
         'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/all_', slip_type, 
@@ -353,6 +353,7 @@ parse_ID_point_index_to_index<-function(netcdf_file, hazard_point_gaugeID, targe
     return(target_index)
 }
 
+
 #'
 #' Get the stage vs exceedance rate curves at a hazard point
 #'
@@ -474,6 +475,7 @@ get_stage_exceedance_rate_curve_at_hazard_point<-function(
     }
     return(output)
 }
+
 
 #' Get stage vs exceedance rate curve for EVERY source-zone
 #'
