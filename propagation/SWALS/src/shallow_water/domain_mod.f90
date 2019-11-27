@@ -25,6 +25,8 @@ module domain_mod
                           send_boundary_flux_data,&
                           force_double, long_long_ip
     use timer_mod, only: timer_type
+    use timestepping_metadata_mod, only: timestepping_metadata, &
+        setup_timestepping_metadata, timestepping_method_index
     use point_gauge_mod, only: point_gauge_type
     use coarray_utilities_mod, only: partitioned_domain_nesw_comms_type
     use nested_grid_comms_mod, only: domain_nesting_type
@@ -33,7 +35,8 @@ module domain_mod
     use netcdf_util, only: nc_grid_output_type
     use logging_mod, only: log_output_unit
     use file_io_mod, only: mkdir_p
-    use cliffs_tolkova_mod
+    use cliffs_tolkova_mod, only: cliffs, setSSLim
+    use extrapolation_limiting_mod, only: limited_gradient_dx_vectorized
 
 #ifdef SPHERICAL    
     ! Compile with -DSPHERICAL to get the code to run in spherical coordinates
@@ -61,7 +64,7 @@ module domain_mod
     ! and the domain_metadata_type, which is sometimes more convenient to
     ! work with than the domain [since it is 'lightweight']
     private
-    public:: domain_type, test_domain_mod
+    public:: domain_type
 
     ! Indices for arrays: Stage, depth-integrated-x-velocity,
     ! depth-integrated-v-velocity, elevation. So e.g. stage
@@ -210,7 +213,7 @@ module domain_mod
         ! grid, and 0.5m on a larger-scale grid. For experimental type problems, Tolkova (2014) mentions values of say
         ! 1 - 2 mm.
         real(dp) :: cliffs_minimum_allowed_depth = 0.001_dp
-        ! For bathymetry smoothing with the cliffs method, Tolkova (manual) suggests this is typically a reasonable value.
+        ! For bathymetry smoothing with the cliffs method, Tolkova (in CLIFFS manual) suggests this is typically a reasonable value.
         real(dp) :: cliffs_bathymetry_smoothing_alpha = 2.0_dp
 
         !
@@ -357,9 +360,6 @@ module domain_mod
         !procedure:: update_U => update_U_vectorized !! Slower on an NCI test
         procedure:: backup_quantities => backup_quantities
 
-        ! Setup
-        procedure:: precompute_friction_work => precompute_friction_work
-        
         ! Timestepping (consider making only 'evolve_one_step' type bound -- since the user should not really call others)
         procedure:: one_euler_step => one_euler_step
         procedure:: one_rk2_step => one_rk2_step 
@@ -637,7 +637,7 @@ TIMER_STOP('printing_stats')
         logical, optional, intent(in) :: ew_periodic, ns_periodic, verbose
 
         integer(ip) :: nx, ny, nvar
-        integer(ip) :: i, j, k
+        integer(ip) :: i, j, k, tsi
         logical :: create_output, use_partitioned_comms, ew_periodic_, ns_periodic_, verbose_
         real(dp):: local_lw(2), local_ll(2)
         integer(ip):: local_nx(2)
@@ -683,38 +683,15 @@ TIMER_STOP('printing_stats')
             use_partitioned_comms = .FALSE.
         endif
 
-
-        ! Set good defaults for different timestepping methods
-        select case(domain%timestepping_method)
-        case('rk2')
-            if(domain%theta == -HUGE(1.0_dp)) domain%theta = 1.6_dp
-            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.99_dp
-            domain%is_staggered_grid = .false.
-        case('rk2n')
-            if(domain%theta == -HUGE(1.0_dp)) domain%theta = 1.6_dp
-            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.9_dp
-            domain%is_staggered_grid = .false.
-        case('midpoint')
-            if(domain%theta == -HUGE(1.0_dp)) domain%theta = 1.6_dp
-            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.99_dp
-            domain%is_staggered_grid = .false.
-        case('euler')
-            if(domain%theta == -HUGE(1.0_dp)) domain%theta = 0.9_dp
-            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.9_dp
-            domain%is_staggered_grid = .false.
-        case('linear')
-            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.7_dp
-            domain%is_staggered_grid = .true.
-        case('leapfrog_linear_plus_nonlinear_friction')
-            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.7_dp
-            domain%is_staggered_grid = .true.
-        case('cliffs')
-            if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = 0.7_dp
-            domain%is_staggered_grid = .false.
-        case default
-            print*, 'domain%timestepping_method = ', trim(domain%timestepping_method), ' not recognized'
-            call generic_stop()
-        end select
+        ! Set default parameters for different timestepping methods
+        ! First get the index corresponding to domain%timestepping_method in the timestepping_metadata
+        tsi = timestepping_method_index(domain%timestepping_method)
+        ! Set slope-limiter theta parameter
+        if(domain%theta == -HUGE(1.0_dp)) domain%theta = timestepping_metadata(tsi)%default_theta 
+        ! Set CFL number
+        if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = timestepping_metadata(tsi)%default_cfl
+        ! Flag to note if the grid should be interpreted as staggered
+        domain%is_staggered_grid = (timestepping_metadata(tsi)%is_staggered_grid == 1)
 
 
         if(use_partitioned_comms) then
@@ -985,315 +962,6 @@ TIMER_STOP('printing_stats')
             write(domain%logfile_unit, *) 'distange_left_edge(1)', domain%distance_left_edge(1)
             write(domain%logfile_unit, *) ''
         end if
-
-    end subroutine
-
-    ! Precompute the friction-work for the solver "leapfrog_linear_plus_nonlinear_friction"
-    !
-    ! This assumes stage/UH/VH/elev have been set
-    !
-    ! The friction work term is of the form
-    !     g * n^2 / constant_depth^(7/3)
-    ! The key point is that when multiplied by ||UH|| * uh, it will be equal to the
-    ! standard friction form: g*constant_depth*friction_slope
-    !
-    ! The pre-computation removes an expensive power-law call from the inner loop
-    !
-    subroutine precompute_friction_work(domain)
-        class(domain_type), intent(inout) :: domain
-
-        integer(ip) :: i, j, jp1, ip1
-        real(dp) :: depth_iph, depth_jph, nsq_iph, nsq_jph
-
-        if(domain%timestepping_method /= 'leapfrog_linear_plus_nonlinear_friction') &
-            stop 'precompute_friction_work can only be called with timestepping_method=leapfrog_linear_plus_nonlinear_friction'
-
-        if(.not. allocated(domain%friction_work)) &
-            stop 'friction_work is not allocated: ensure elevation is set before running this routine'
-
-        if(domain%linear_solver_is_truely_linear) then
-            !
-            ! Here we evaluate the depth assuming stage=domain%msl_linear
-            ! This is the standard logic for the "truely linear" linear shallow water equations.
-            !
-
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
-            !$OMP DO SCHEDULE(STATIC)
-            do j = 1, domain%nx(2)
-                do i = 1, domain%nx(1)
-
-                    ! UH component
-                    ip1 = min(i+1, domain%nx(1))
-                    depth_iph = 0.5_dp * (domain%msl_linear - domain%U(i,j,ELV) + domain%msl_linear - domain%U(ip1,j, ELV))
-                    depth_iph = max(depth_iph, minimum_allowed_depth)
-                    nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
-                    domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
-
-                    ! VH component
-                    jp1 = min(j+1, domain%nx(2))
-                    depth_jph = 0.5_dp * (domain%msl_linear - domain%U(i,j,ELV) + domain%msl_linear - domain%U(i,jp1, ELV))
-                    depth_jph = max(depth_jph, minimum_allowed_depth)
-                    nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
-                    domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
-
-                end do
-            end do
-            !$OMP END DO
-            !$OMP END PARALLEL
-
-            ! For a truely-linear solver, this is only required once
-            domain%friction_work_is_setup = .true.
-        else
-            !
-            ! This differs from the above, in that we use domain%U(:,:,STG) to compute the depth.
-            ! This means we generally need to recompute the friction-work terms at every time-step.
-            !
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
-            !$OMP DO SCHEDULE(STATIC)
-            do j = 1, domain%nx(2)
-                do i = 1, domain%nx(1)
-
-                    ! UH component
-                    ip1 = min(i+1, domain%nx(1))
-                    depth_iph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(ip1,j,STG) - domain%U(ip1,j, ELV))
-                    depth_iph = max(depth_iph, minimum_allowed_depth)
-                    nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
-                    domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
-
-                    ! VH component
-                    jp1 = min(j+1, domain%nx(2))
-                    depth_jph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(i,jp1,STG) - domain%U(i,jp1, ELV))
-                    depth_jph = max(depth_jph, minimum_allowed_depth)
-                    nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
-                    domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
-
-                end do
-            end do
-            !$OMP END DO
-            !$OMP END PARALLEL
-        end if
-
-    end subroutine
-
-    !
-    ! minmod function, which is used in some gradient limiters
-    !
-    ! @param a,b real numbers
-    !
-    elemental function minmod(a,b) result(minmod_ab)
-        real(dp), intent(in):: a, b
-        real(dp):: minmod_ab
-        
-        minmod_ab = merge(min(abs(a), abs(b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
-        !minmod_ab = sign(one_dp, a) * max(zero_dp, min(abs(a), sign(one_dp, a)*b))
-
-    end function
-
-    !
-    ! minmod subroutine, which is used in some gradient limiters
-    !
-    ! @param a,b real numbers
-    !
-    elemental subroutine minmod_sub(a,b, minmod_ab)
-        real(dp), intent(in):: a, b
-        real(dp), intent(out):: minmod_ab
-
-        if((a>0.0_dp .and. b>0.0_dp).or.(a<0.0_dp .and. b<0.0_dp)) then
-            minmod_ab = min(abs(a), abs(b))*sign(ONE_dp, a)
-        else
-            minmod_ab = ZERO_dp
-        end if
-
-    end subroutine
-
-    !
-    ! Get the "gradient times dx" around U_local
-    ! @param U_local -- variable at the cell of interest, say x
-    ! @param U_lower -- variable at (x - dx)
-    ! @param U_upper -- variable at (x + dx)
-    ! @param theta -- limiter parameter
-    ! @param gradient_dx -- hold output
-    ! @param n -- length of each vector
-    !
-    subroutine limited_gradient_dx_vectorized(U_local, U_lower, U_upper, theta, gradient_dx, n)
-        integer(ip), intent(in):: n
-        real(dp), intent(in):: U_local(n), U_lower(n), U_upper(n), theta(n) 
-        real(dp), intent(out) :: gradient_dx(n)
-
-        character(len=charlen), parameter :: limiter_type = 'MC' !'Minmod2' !'Superbee_variant' ! 'MC'
-
-        integer(ip) :: i
-        real(dp):: a, b, c, d, e, th, sa, sb, half_sasb
-
-        if(limiter_type == 'MC') then
-
-            !$OMP SIMD
-            do i = 1, n
-
-                a = U_upper(i) - U_local(i)
-                b = U_local(i) - U_lower(i)
-                th = theta(i)
-                sa = sign(ONE_dp,a)
-                sb = sign(ONE_dp,b)
-                half_sasb = HALF_dp * (sa + sb)
-                d = min(abs(a), abs(b)) * half_sasb * th ! Limit on local gradient
-                e = HALF_dp * (a + b)
-                c = merge(ZERO_dp, e, d == ZERO_dp) 
-                ! NOTE: IF d /= 0, then clearly d, c have the same sign
-                ! We exploit this to avoid a further minmod call (which seems
-                ! expensive)
-                gradient_dx(i) = merge(min(c, d), max(c, d), d > ZERO_dp)
-            end do
-
-        else if(limiter_type == "Superbee_variant") then
-
-            !$OMP SIMD
-            do i = 1, n
-
-                a = U_upper(i) - U_local(i)
-                b = U_local(i) - U_lower(i)
-                ! Divide by 1.6 which is the default 'max theta' in the rk2 algorithms
-                th = theta(i) * 2.0_dp/1.6_dp
-                !d = minmod(a, th*b)
-                d = merge(min(abs(a), abs(th*b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
-                !e = minmod(th*a, b)
-                e = merge(min(abs(th*a), abs(b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
-                if(abs(e) > abs(d)) then
-                    b = e
-                else
-                    b = d
-                endif
-                gradient_dx(i) = b 
-            end do
-
-        else if(limiter_type == "Minmod2") then
-            ! Same as 'MC' (!!!)
-            !$OMP SIMD
-            do i = 1, n
-
-                a = U_upper(i) - U_local(i)
-                b = U_local(i) - U_lower(i)
-                th = theta(i)
-                e = HALF_dp * (a + b)
-                a = a * th
-                b = b * th
-                if(b > ZERO_dp .and. a > ZERO_dp) then
-                    ! Positive slopes
-                    if(b < a) a = b
-                    d = min(e, a)
-                else if(b < ZERO_dp .and. a < ZERO_dp) then
-                    ! Negative slopes
-                    if(b > a) a = b
-                    d = max(e, a)
-                else
-                    d = ZERO_dp
-                endif
-                gradient_dx(i) = d
-            end do
-
-        else 
-            gradient_dx = ZERO_dp
-        end if
-            
-
-    end subroutine
-
-    !
-    ! Get the NS gradients for stage, depth, u-vel, v-vel, at row j
-    !
-    subroutine get_NS_limited_gradient_dx(domain, j, nx, ny, &
-            theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS)
-
-        class(domain_type), intent(in) :: domain
-        integer(ip), intent(in) :: j, nx, ny
-        real(dp), intent(inout) :: theta_wd_NS(nx), dstage_NS(nx), ddepth_NS(nx), du_NS(nx), dv_NS(nx)
-
-        integer(ip) :: i
-        real(dp) :: mindep, maxdep, theta_local
-
-        if(j > 1 .and. j < ny) then
-            ! Typical case
-            
-            ! limiter coefficient
-            !$OMP SIMD
-            do i = 1, nx
-                mindep = min(domain%depth(i, j-1), domain%depth(i,j), domain%depth(i,j+1)) - minimum_allowed_depth
-                maxdep = max(domain%depth(i, j-1), domain%depth(i,j), domain%depth(i,j+1)) + &
-                    limiter_coef3*minimum_allowed_depth
-                theta_local = limiter_coef4 * (mindep/maxdep - limiter_coef1)
-                theta_wd_NS(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
-            end do
-
-            ! stage 
-            call limited_gradient_dx_vectorized(domain%U(:,j,STG), domain%U(:,j-1,STG), domain%U(:,j+1,STG), &
-                theta_wd_NS, dstage_NS, nx)
-            ! depth 
-            call limited_gradient_dx_vectorized(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1), &
-                theta_wd_NS, ddepth_NS, nx)
-            ! u velocity
-            call limited_gradient_dx_vectorized(domain%velocity(:,j,UH), domain%velocity(:,j-1, UH), &
-                domain%velocity(:,j+1, UH), theta_wd_NS, du_NS, nx)
-            ! v velocity
-            call limited_gradient_dx_vectorized(domain%velocity(:,j,VH), domain%velocity(:,j-1, VH), &
-                domain%velocity(:,j+1, VH), theta_wd_NS, dv_NS, nx)
-
-        else
-            ! Border case -- all gradients = zero
-            theta_wd_NS = ZERO_dp
-            dstage_NS = ZERO_dp
-            ddepth_NS = ZERO_dp
-            du_NS = ZERO_dp
-            dv_NS = ZERO_dp
-        end if
-
-    end subroutine
-
-    !
-    ! Get the EW gradients for stage, depth, u-vel, v-vel, at row j
-    !
-    subroutine get_EW_limited_gradient_dx(domain, j, nx, ny, &
-            theta_wd_EW, dstage_EW, ddepth_EW, du_EW, dv_EW)
-
-        class(domain_type), intent(in) :: domain
-        integer(ip), intent(in) :: j, nx, ny
-        real(dp), intent(inout) :: theta_wd_EW(nx), dstage_EW(nx), ddepth_EW(nx), du_EW(nx), dv_EW(nx)
-
-        real(dp) :: mindep, maxdep, theta_local
-        integer(ip) :: i
-        
-        ! limiter coefficient
-        !$OMP SIMD
-        do i = 2, nx-1
-            mindep = min(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) - minimum_allowed_depth
-            maxdep = max(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) + &
-                limiter_coef3*minimum_allowed_depth
-            theta_local = limiter_coef4 * (mindep/maxdep - limiter_coef1)
-            theta_wd_EW(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
-        end do
-
-        ! stage 
-        call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,STG), domain%U(1:(nx-2),j,STG), domain%U(3:nx,j,STG), &
-            theta_wd_EW(2:(nx-1)), dstage_EW(2:(nx-1)), nx)
-        dstage_EW(1) = ZERO_dp
-        dstage_EW(nx) = ZERO_dp
-
-        ! depth 
-        call limited_gradient_dx_vectorized(domain%depth(2:(nx-1),j), domain%depth(1:(nx-2),j), domain%depth(3:nx,j), &
-            theta_wd_EW(2:(nx-1)), ddepth_EW(2:(nx-1)), nx)
-        ddepth_EW(1) = ZERO_dp
-        ddepth_EW(nx) = ZERO_dp
-
-        ! u velocity
-        call limited_gradient_dx_vectorized(domain%velocity(2:(nx-1),j,UH), domain%velocity(1:(nx-2),j,UH), &
-            domain%velocity(3:nx,j, UH), theta_wd_EW(2:(nx-1)), du_EW(2:(nx-1)), nx)
-        du_EW(1) = ZERO_dp
-        du_EW(nx) = ZERO_dp
-
-        ! u velocity
-        call limited_gradient_dx_vectorized(domain%velocity(2:(nx-1),j,VH), domain%velocity(1:(nx-2),j,VH), &
-            domain%velocity(3:nx,j,VH), theta_wd_EW(2:(nx-1)), dv_EW(2:(nx-1)), nx)
-        dv_EW(1) = ZERO_dp
-        dv_EW(nx) = ZERO_dp
 
     end subroutine
 
@@ -2181,11 +1849,6 @@ TIMER_STOP('printing_stats')
         class(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
 
-        ! Compute some expensive parts of the friction term
-        ! If domain%linear_solver_is_truely_linear, this will only happen
-        ! once (on the first timestep). Otherwise it should happen every timestep
-        if(.not. domain%friction_work_is_setup) call domain%precompute_friction_work
-
         if(domain%linear_solver_is_truely_linear) then
             call one_leapfrog_truely_linear_plus_nonlinear_friction_step(domain, dt)
         else
@@ -2310,6 +1973,8 @@ TIMER_STOP('printing_stats')
         domain%time = domain%time + dt
 
         call domain%update_boundary()
+
+        domain%dt_last_update = dt
 
     end subroutine
 
@@ -3227,13 +2892,14 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
     !
     ! @param domain the domain
     ! @param all_dx_md rank 3 array with dx(1:2) for all domains in the multidomain
-    ! @param all_is_staggered_grid_md rank 2 array with integer recording whether grid is staggered, for all domains in multidomain
+    ! @param all_timestepping_methods_md rank 2 array with integer recording the timestepping_method index for all domains in the
+    ! multidomain
     ! @param fraction_of real in [0.0,1.0], apply some fraction of the flux correction. By default apply completely (i.e. 1.0)
     !
-    subroutine nesting_flux_correction_everywhere(domain, all_dx_md, all_is_staggered_grid_md, fraction_of)
+    subroutine nesting_flux_correction_everywhere(domain, all_dx_md, all_timestepping_methods_md, fraction_of)
         class(domain_type), intent(inout) :: domain
         real(dp), intent(in) :: all_dx_md(:,:,:)
-        integer(ip), intent(in) :: all_is_staggered_grid_md(:,:)
+        integer(ip), intent(in) :: all_timestepping_methods_md(:,:)
         real(dp), optional, intent(in) :: fraction_of
 
         integer(ip) :: i, j, k, n0, n1, m0, m1, dm, dn, dir, ni, mi
@@ -3257,7 +2923,7 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
 
 TIMER_START('nesting_flux_correction')
 
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, all_dx_md, all_is_staggered_grid_md, fraction_of_local)
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, all_dx_md, all_timestepping_methods_md, fraction_of_local)
 
             !
             ! NORTH BOUNDARIES. 
@@ -3304,6 +2970,7 @@ TIMER_START('nesting_flux_correction')
                             ! If the area to be 'flux-corrected' has a resolution higher than
                             ! the current domain, then the flux-correction would anyway not have been
                             ! applied to the central cell. So no changes should occur in that case (dx_ratio = 0)
+                            !! FIXME: What about the (unusual) case with a nesting_ratio = 2?
                             if(dx_ratio > 0) then
 
                                 ! Indices to help us 'spread' the correction of >= 1 cell
@@ -3846,8 +3513,9 @@ TIMER_STOP('nesting_flux_correction')
             ! (depending on value of is_ew)
             ! @param equal_sizes report whether the nbr/out cells are of equal size. Note this is not the same as dx=1,
             ! because that refers to the 'my/out' cells, not 'nbr/out' cells.
-            ! @param var1 index of first variable to update (normally STG=1)
-            ! @param varN index of last variable to update (normally VH=3, except for staggered grid, where it is STG=1)
+            ! @param var1 index of first variable to update (normally STG=1) -- negative for no update
+            ! @param varN index of last variable to update (normally VH=3, except for staggered grid, where it is STG=1, or where we
+            ! don't do any updates, in which case it is negative and less than var1)
             subroutine compute_offset_inside_or_out(dm, dm_outside, out_index, out_image, nbr_index, nbr_image, &
                     my_index, my_image, is_ew, dx_ratio, equal_sizes, var1, varN)
 
@@ -3858,7 +3526,7 @@ TIMER_STOP('nesting_flux_correction')
                 logical, intent(out) :: equal_sizes
                 integer(ip), intent(out) :: var1, varN
 
-                integer(ip) :: i1, cor_index, cor_image
+                integer(ip) :: i1, cor_index, cor_image, cor_tsi, notcor_tsi
                 real(dp) :: area_out, area_nbr
 
                 ! If is_ew, then compare dx in the x direction. Otherwise compare dx in the y direction
@@ -3909,9 +3577,15 @@ TIMER_STOP('nesting_flux_correction')
                 if(dm == dm_outside) then
                     cor_image = out_image
                     cor_index = out_index
+                    ! Get the timestepping-method-index for both the 'to be corrected' and 'not to be corrected' domains
+                    cor_tsi = all_timestepping_methods_md(cor_index, cor_image)
+                    notcor_tsi = all_timestepping_methods_md(nbr_index, nbr_image)
                 else
                     cor_image = nbr_image
                     cor_index = nbr_index
+                    ! Get the timestepping-method-index for both the 'to be corrected' and 'not to be corrected' domains
+                    cor_tsi = all_timestepping_methods_md(cor_index, cor_image)
+                    notcor_tsi = all_timestepping_methods_md(out_index, out_image)
                 end if
                 
                 ! Get dx ratio of 'domain to be corrected' vs 'my domain', with round-off protection as above
@@ -3923,14 +3597,30 @@ TIMER_STOP('nesting_flux_correction')
                     dx_ratio = 0
                 end if
 
-                !! Define variables to adjust
-                var1 = STG ! Always adjust stage, for mass conservation.
-                if(all_is_staggered_grid_md(cor_index, cor_image) == 1) then
-                    ! When correcting linear domains (i.e. on the staggerd grid), we do not correct momentum fluxes.
-                    varN = STG
+                
+                if(timestepping_metadata(cor_tsi)%flux_correction_is_unsupported .or. &
+                   timestepping_metadata(notcor_tsi)%flux_correction_is_unsupported) then
+                   ! One or other solver cannot use flux correction. This is typically the case
+                   ! when the solver doesn't track mass fluxes, so it stores fluxes as zero, and there
+                   ! would be a large spurious correction if it neighbours another solver that does track fluxes.
+                   ! Prevent looping using a reversed loop range, i.e.
+                   !    do i = var1, varN
+                   ! never enters the loop if varN < var1
+                   var1 = -1
+                   varN = -2 
                 else
-                    ! When correcting properly nonlinear domains (i.e. without staggered grid), we correct momentum fluxes.
-                    varN = VH
+                    ! Some flux correction should be applied
+                    if(timestepping_metadata(cor_tsi)%flux_correction_of_mass_only) then
+                        ! Treat solvers that can only do mass-flux correction, not advective momentum fluxes.
+                        ! (e.g. linear solvers where the momentum advection terms are ignored)
+                        var1 = STG
+                        varN = STG
+                    else
+                        ! Typical case
+                        var1 = STG
+                        varN = VH
+                    end if
+
                 end if
 
             end subroutine 
@@ -4160,110 +3850,6 @@ TIMER_STOP('nesting_flux_correction')
         case default
             stop 'Smoothing method not recognized'
         end select
-
-    end subroutine
-
-    !
-    ! Very limited testing of the domain routines.
-    ! More important are the validation tests.
-    !
-    subroutine test_domain_mod
-        type(domain_type) :: domain
-    
-        integer(ip), parameter :: N = 10
-        real(dp) :: U(N), U_lower(N), U_upper(N)
-        real(dp) :: theta(N), extrapolation_sign(N)
-        real(dp) :: desired_answer(N), answer(N)
-        integer(ip) :: i
-
-        theta = 1.0_dp
-        U = (/(i*1.0_dp - 5.5_dp, i = 1, N)/)
-        U_lower = U - 1.0_dp
-        U_upper = U + 1.0_dp
-
-        ! Basic extrapolation tests, positive side
-        extrapolation_sign=1.0_dp
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = 0.5_dp * (U + U_upper)
-        call assert_equal_within_tol(desired_answer, U + HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        ! As above, negative side
-        extrapolation_sign = -1.0_dp
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = 0.5_dp * (U + U_lower)
-        call assert_equal_within_tol(desired_answer, U + HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        ! As above, negative side, reduced theta
-        theta = 0.5_dp
-        extrapolation_sign = -1.0_dp
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = 0.5_dp * U + 0.5_dp*0.5_dp * (U + U_lower)
-        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        ! As above, negative side, zero theta
-        theta = 0.0_dp
-        extrapolation_sign = 1.0_dp
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = 1.0_dp * U + 0.0_dp*0.5_dp * (U + U_lower)
-        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        ! Local min.
-        theta = 4.0_dp
-        extrapolation_sign = 1.0_dp
-        U_lower = U + 2.0_dp
-        U_upper = U + 3.0_dp
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = U 
-        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        ! Local max.
-        theta = 4.0_dp
-        U_lower = U - 2.0_dp
-        U_upper = U - 3.0_dp
-        extrapolation_sign = -1.0_dp
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = U 
-        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        ! Limited gradients
-        ! 
-        ! Central gradient = 2, lower-gradient=1, upper-gradient=3
-        U_lower = U - 1.0_dp
-        U_upper = U + 3.0_dp
-        extrapolation_sign = 1.0_dp
-        theta = 1.0_dp ! Limited-gradient = 1
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = U + 0.5_dp * 1.0_dp
-        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        theta = 1.5_dp ! Limited-gradient = 1.5
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = U + 0.5_dp * 1.5_dp
-        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        
-        extrapolation_sign = -1.0_dp ! As above, negative side
-        call limited_gradient_dx_vectorized(U, U_lower, U_upper, theta, answer, N)
-        desired_answer = U - 0.5_dp * 1.5_dp
-        call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
-
-        contains
-
-            subroutine assert_equal_within_tol(desired_answer, answer, line)
-                real(dp) :: desired_answer(N), answer(N)
-                integer :: line
-
-                real(dp) :: tol
-
-                tol = spacing(1.0_dp) * 100
-
-                if(all(abs(desired_answer - answer) < tol)) then
-                    print*, 'PASS'
-                else
-                    print*, 'FAIL', line, desired_answer - answer
-                end if
-
-            end subroutine
 
     end subroutine
 

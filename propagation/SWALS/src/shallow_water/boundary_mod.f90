@@ -191,8 +191,8 @@ module boundary_mod
                 local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
 
                 if(domain%is_staggered_grid) then
-                    domain%U(i,j,UH) = -(sqrt(gravity * max(domain%U(i+1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
-                                         sqrt(gravity * local_h ) ) * local_h
+                    !domain%U(i,j,UH) = -(sqrt(gravity * max(domain%U(i+1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
+                    !                     sqrt(gravity * local_h ) ) * local_h
                 else
                     ! Nonlinear domain
                     domain%U(i,j,UH) = -(sqrt(gravity * max(domain%U(i+1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
@@ -221,11 +221,11 @@ module boundary_mod
                 local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
 
                 if(domain%is_staggered_grid) then
-                    ! Here, account for the fact that domain%U(domain%nx(1),:,UH) is never used in the staggered grid solver.
-                    ! Set it anyway, but also set the interior point that is used
-                    domain%U((i-1):i,j,UH) = &
-                        (sqrt(gravity * max(domain%U(i-1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
-                         sqrt(gravity * local_h ) ) * local_h
+                    !! Here, account for the fact that domain%U(domain%nx(1),:,UH) is never used in the staggered grid solver.
+                    !! Set it anyway, but also set the interior point that is used
+                    !domain%U((i-1):i,j,UH) = &
+                    !    (sqrt(gravity * max(domain%U(i-1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
+                    !     sqrt(gravity * local_h ) ) * local_h
                 else
                     ! The nonlinear solvers need all boundary values updated
                     domain%U(i,j,UH) = &
@@ -260,8 +260,8 @@ module boundary_mod
                 local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
 
                 if(domain%is_staggered_grid) then
-                    domain%U(i,j,VH) = -(sqrt(gravity * max(domain%U(i, j+1, STG) - bc_values(ELV), 0.0_dp) ) - &
-                                         sqrt(gravity * local_h ) ) * local_h
+                    !domain%U(i,j,VH) = -(sqrt(gravity * max(domain%U(i, j+1, STG) - bc_values(ELV), 0.0_dp) ) - &
+                    !                     sqrt(gravity * local_h ) ) * local_h
                 else
                     ! The nonlinear solvers need all boundary values updated
                     domain%U(i,j,VH) = -(sqrt(gravity * max(domain%U(i, j+1, STG) - bc_values(ELV), 0.0_dp) ) - &
@@ -291,10 +291,10 @@ module boundary_mod
                 local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
 
                 if(domain%is_staggered_grid) then
-                    ! Here, account for the fact that domain%U(:,j,VH) is never used in the solver
-                    ! Set it anyway, but also set the interior point that is used
-                    domain%U(i,(j-1):j,VH) = (sqrt(gravity * max(domain%U(i, j-1, STG) - bc_values(ELV), 0.0_dp) ) - &
-                                              sqrt(gravity * local_h ) ) * local_h
+                    !! Here, account for the fact that domain%U(:,j,VH) is never used in the solver
+                    !! Set it anyway, but also set the interior point that is used
+                    !domain%U(i,(j-1):j,VH) = (sqrt(gravity * max(domain%U(i, j-1, STG) - bc_values(ELV), 0.0_dp) ) - &
+                    !                          sqrt(gravity * local_h ) ) * local_h
                 else
                     ! The nonlinear solvers need all boundary values updated
                     !! NOTE: The Tauranga problem gives weak spatial oscillations in VH with this approach.

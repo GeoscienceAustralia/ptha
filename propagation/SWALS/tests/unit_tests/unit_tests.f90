@@ -14,7 +14,7 @@ program unit_tests
     use reshape_array_mod, only: test_reshape_array_mod
     use qsort_mod, only: test_qsort_mod
     use multidomain_mod, only: test_multidomain_mod
-    use domain_mod, only: test_domain_mod
+    use extrapolation_limiting_mod, only: test_extrapolation_limiting_mod
     implicit none
 
     print*, 'Testing read raster'
@@ -40,6 +40,9 @@ program unit_tests
 
     print*, 'Testing linear_interpolator_mod'
     call test_linear_interpolator_mod()
+
+    print*, 'Testing extrapolation_limitining_mod'
+    call test_extrapolation_limiting_mod()
     
     print*, 'Testing reshape_array_mod'
     call test_reshape_array_mod()
@@ -56,8 +59,6 @@ program unit_tests
     print*, 'Testing multidomain_mod'
     call test_multidomain_mod()
 
-    print*, 'Testing domain'
-    call test_domain_mod()
 
 end program
     

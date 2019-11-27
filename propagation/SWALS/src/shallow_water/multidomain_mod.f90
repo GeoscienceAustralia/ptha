@@ -33,6 +33,7 @@ module multidomain_mod
         wall_elevation, minimum_allowed_depth, force_double, force_long_double, &
         default_output_folder, send_boundary_flux_data, &
         real_bytes, force_double_bytes, integer_bytes, pi
+    use timestepping_metadata_mod, only: timestepping_metadata, timestepping_method_index
     use domain_mod, only: domain_type, STG, UH, VH, ELV 
     use stop_mod, only: generic_stop
     use points_in_poly_mod, only: point_in_poly
@@ -114,14 +115,14 @@ module multidomain_mod
     integer(ip), allocatable :: all_timestepping_refinement_factor(:,:)[:]
     real(dp), allocatable :: all_recv_metadata(:,:,:,:)[:]
     real(dp), allocatable :: all_send_metadata(:,:,:,:)[:]
-    integer(ip), allocatable :: all_is_staggered_grid(:,:)[:]
+    integer(ip), allocatable :: all_timestepping_methods(:,:)[:]
 #else
     real(dp), allocatable :: all_bbox(:,:,:,:)
     real(dp), allocatable :: all_dx(:,:,:)
     integer(ip), allocatable :: all_timestepping_refinement_factor(:,:)
     real(dp), allocatable :: all_recv_metadata(:,:,:,:)
     real(dp), allocatable :: all_send_metadata(:,:,:,:)
-    integer(ip), allocatable :: all_is_staggered_grid(:,:)
+    integer(ip), allocatable :: all_timestepping_methods(:,:)
 #endif
 
     ! Store "this_image()", "num_images()"
@@ -179,8 +180,8 @@ module multidomain_mod
         ! Store all_dx in the multidomain
         real(dp), allocatable :: all_dx_md(:,:,:)
 
-        ! Store 'all_is_staggered_grid' in the multidomain
-        integer(ip), allocatable :: all_is_staggered_grid_md(:,:)
+        ! Store 'all_timestepping_methods' in the multidomain
+        integer(ip), allocatable :: all_timestepping_methods_md(:,:)
 
         ! Convenience variables controlling writeout
         integer(ip) :: writeout_counter = 0
@@ -445,7 +446,8 @@ module multidomain_mod
 
     !
     ! Convert the arrays 'priority_domain_index' and 'priority_domain_image' to a set
-    ! of boxes which are well suited to passing to communication routines
+    ! of boxes (i.e. rectangular regions with metadata about the priority domain)
+    !  which are well suited to passing to communication routines
     !
     !
     subroutine convert_priority_domain_info_to_boxes(priority_domain_index, &
@@ -709,24 +711,24 @@ module multidomain_mod
         if(allocated(all_bbox)) deallocate(all_bbox)
         if(allocated(all_dx)) deallocate(all_dx)
         if(allocated(all_timestepping_refinement_factor)) deallocate(all_timestepping_refinement_factor)
-        if(allocated(all_is_staggered_grid)) deallocate(all_is_staggered_grid)
+        if(allocated(all_timestepping_methods)) deallocate(all_timestepping_methods)
 
         ! Get interior box of other boundaries
 #ifdef COARRAY
         allocate(all_bbox(4, 2, nd, ni)[*])
         allocate(all_dx(2, nd, ni)[*])
         allocate(all_timestepping_refinement_factor(nd, ni)[*])
-        allocate(all_is_staggered_grid(nd, ni)[*])
+        allocate(all_timestepping_methods(nd, ni)[*])
 #else
         allocate(all_bbox(4, 2, nd, ni))
         allocate(all_dx(2, nd, ni))
         allocate(all_timestepping_refinement_factor(nd, ni))
-        allocate(all_is_staggered_grid(nd, ni))
+        allocate(all_timestepping_methods(nd, ni))
 #endif
         all_bbox = 0.0_dp
         all_dx = 0.0_dp
         all_timestepping_refinement_factor = 0_ip
-        all_is_staggered_grid = -1_ip
+        all_timestepping_methods = -1_ip
 
         ! Save the interior bounding box. If the latter has not yet been defined,
         ! assume it is the same as the bounding box defined by the lower left and length/width.
@@ -741,15 +743,11 @@ module multidomain_mod
                 domains(i)%interior_bounding_box(4, 1:2) = domains(i)%lower_left(1:2) + &
                     domains(i)%lw * [0.0_dp, 1.0_dp]
             end if
-            ! Store interior bounding box
+            ! Store key metadata in globally-visible (co)arrays
             all_bbox(:,:,i,ti) = domains(i)%interior_bounding_box(1:4, 1:2)
-            ! Store dx
             all_dx(1:2, i, ti) = domains(i)%dx
             all_timestepping_refinement_factor(i,ti) = domains(i)%timestepping_refinement_factor
-            ! 1 if our scheme uses a staggered grid, 0 otherwise. Currently only the linear solver does
-            all_is_staggered_grid(i,ti) = merge(1_ip, 0_ip, &
-                (domains(i)%timestepping_method == 'linear') .or. &
-                (domains(i)%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction'))
+            all_timestepping_methods(i, ti) = timestepping_method_index(domains(i)%timestepping_method)
         end do
 
 #ifdef COARRAY
@@ -763,7 +761,7 @@ module multidomain_mod
             all_bbox(1:4, 1:2, 1:nd, ti)[k] = all_bbox(1:4, 1:2, 1:nd, ti)
             all_dx(1:2, 1:nd, ti)[k] = all_dx(1:2, 1:nd, ti)
             all_timestepping_refinement_factor(1:nd,ti)[k] = all_timestepping_refinement_factor(1:nd, ti) 
-            all_is_staggered_grid(1:nd, ti)[k] = all_is_staggered_grid(1:nd, ti)
+            all_timestepping_methods(1:nd, ti)[k] = all_timestepping_methods(1:nd, ti)
         end do
         sync all
         ! At this point we know the interior bounding box for every other domain
@@ -885,7 +883,7 @@ module multidomain_mod
             ! Do flux correction
             do j = 1, size(md%domains)
                 call md%domains(j)%nesting_flux_correction_everywhere(md%all_dx_md, &
-                    md%all_is_staggered_grid_md, fraction_of = 1.0_dp)
+                    md%all_timestepping_methods_md, fraction_of = 1.0_dp)
             end do
         end if
 
@@ -1162,54 +1160,37 @@ module multidomain_mod
     !  parent domain's dx size and the current domain's dx -- so that the 
     !  nesting region represents 'full' coarse cells
     !
+    ! @param max_parent_dx_ratio maximum value of {dx-for-domains-I-nest-with}/{my-dx}
+    ! @param extra_halo_buffer A constant to add to the halo thickness (see code for details) 
+    ! @param extra_cells_in_halo A constant to add to the timestepping_metadata%nesting_thickness_for_one_step, before computing
+    ! halo thickness (see code for details & distinction with extra_halo_buffer). 
+    !
     function get_domain_nesting_layer_thickness(domain, &
         max_parent_dx_ratio, extra_halo_buffer, extra_cells_in_halo) result(thickness)
 
         type(domain_type), intent(in) :: domain
         real(dp), intent(in) :: max_parent_dx_ratio
         integer(ip), intent(in) :: extra_halo_buffer, extra_cells_in_halo
-        integer(ip) :: thickness
 
+        integer(ip) :: thickness
         integer(ip) :: required_cells_ts_method
+        integer(ip) :: tsi
 
         ! Find the minimum nesting layer thickness required by the
         ! time-stepping algorithm, assuming we only take one evolve_one_step
         ! in-between nesting updates
-        select case(domain%timestepping_method)
-            case('euler')
-                required_cells_ts_method = 2
-            case('rk2')
-                required_cells_ts_method = 4
-            case('rk2n')
-                required_cells_ts_method = 10
+        tsi = timestepping_method_index(domain%timestepping_method)
+        required_cells_ts_method = timestepping_metadata(tsi)%nesting_thickness_for_one_timestep
 
-                ! Deliberately fail for now.
-                write(log_output_unit, *) " ERROR: Currently rk2n doesn't have the mass-conservation-tracking ", &
-                    "infrastucture for multidomain. Until implemented, we deliberately STOP."
-                call generic_stop()
-
-            case('midpoint')
-                required_cells_ts_method = 4
-            case('linear')
-                required_cells_ts_method = 2
-            case('leapfrog_linear_plus_nonlinear_friction')
-                required_cells_ts_method = 2
-            case('cliffs')
-                required_cells_ts_method = 2
-            case default
-                write(log_output_unit,*) 'timestepping_method not recognized'
-                error stop
-        end select
-
-        ! Now multiply by the number of evolve_one_step calls actually taken
+        ! Now multiply by the number of evolve_one_step calls actually taken, and add any extra buffer
         thickness = (required_cells_ts_method ) * &
             domain%timestepping_refinement_factor + extra_cells_in_halo
 
         if(nint(max_parent_dx_ratio) > 1) then
-            ! Now round up to be a multiple of the parent cell-sizes
+            ! Now round up to be a multiple of the parent cell-sizes, and add another extra buffer
             thickness = (ceiling(thickness*1.0_dp/max_parent_dx_ratio) + extra_halo_buffer) * nint(max_parent_dx_ratio)
         else
-            ! Now round up to be a multiple of the parent cell-sizes
+            ! Now round up to be a multiple of the parent cell-sizes.
             thickness = (ceiling(thickness*1.0_dp/max_parent_dx_ratio)                    ) * nint(max_parent_dx_ratio)
         end if
      
@@ -1360,6 +1341,10 @@ module multidomain_mod
 
     end subroutine
 
+    !
+    ! Convenience routine for estimating memory usage
+    ! Only used for reporting
+    !
     subroutine memory_summary(md) 
         class(multidomain_type), intent(in) :: md
 
@@ -1393,6 +1378,12 @@ module multidomain_mod
 
     end subroutine
 
+    !
+    ! Convenience routine to report multidomain-wide mass conservation statistics.
+    ! This will integrate the mass using the correct priority domain in each place, 
+    ! and check whether changes in this mass match with fluxes through the physical boundary
+    ! of the multidomain.
+    !
     subroutine report_mass_conservation_statistics(md)
         class(multidomain_type), intent(inout) :: md
 
@@ -1838,7 +1829,7 @@ module multidomain_mod
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%time
             write(log_output_unit, "(A)"         ) 'nsteps_advanced:'
             write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%nsteps_advanced
-            write(log_output_unit, "(A)"         ) 'max_allowed_dt: '
+            write(log_output_unit, "(A)"         ) 'max_allowed_dt (theory): '
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%max_dt
             write(log_output_unit, "(A)"         ) 'evolve_step_dt: '
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%evolve_step_dt
@@ -1885,6 +1876,12 @@ module multidomain_mod
 
     !
     ! Convenience routine to get nested grid halo data from communication buffer in a multidomain
+    !
+    ! @param md multidomain
+    ! @param sync_before logical. If .TRUE. and using COARRAY, then "sync images" with images that we communicate with, before
+    ! receiving
+    ! @param sync_after logical. If .TRUE. and using COARRAY, then "sync images" with images that we communicate with, after
+    ! receiving
     !
     subroutine receive_multidomain_halos(md, sync_before, sync_after)
         class(multidomain_type), intent(inout) :: md
@@ -2355,7 +2352,7 @@ module multidomain_mod
             extra_halo_buffer = md%extra_halo_buffer, &
             extra_cells_in_halo = md%extra_cells_in_halo, &
             all_dx_md = md%all_dx_md, &
-            all_is_staggered_grid_md = md%all_is_staggered_grid_md)
+            all_timestepping_methods_md = md%all_timestepping_methods_md)
 
         ! Storage space for mass conservation
         allocate(md%volume_initial(size(md%domains)), md%volume(size(md%domains)))
@@ -2406,13 +2403,13 @@ module multidomain_mod
     ! @param extra_halo_buffer integer controlling the 'extra' width of halos beyond that strictly required for the solver.
     ! @param extra_cells_in_halo another integer controlling the 'extra' width of halos.
     ! @param all_dx_md stores the dx values for all domains in multidomain (i.e. copy of all_dx)
-    ! @param all_is_staggered_grid_md stores the all_is_staggered_grid variable in the multidomain.
+    ! @param all_timestepping_methods_md stores the all_timestepping_methods variable in the multidomain.
     ! Increased buffer size can be used to separate neighbouring send halo regions, which can be important for numerical stability,
     ! although this also requires the use of nesting receive weights (controlled by other parts of the code)
     !
     subroutine setup_multidomain_domains(domains, verbose, use_wetdry_limiting_nesting,&
         periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo, &
-        all_dx_md, all_is_staggered_grid_md)
+        all_dx_md, all_timestepping_methods_md)
 
         type(domain_type), intent(inout) :: domains(:)
         logical, optional, intent(in) :: verbose
@@ -2420,7 +2417,7 @@ module multidomain_mod
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
         integer(ip), intent(in) :: extra_halo_buffer, extra_cells_in_halo
         real(dp), allocatable, intent(inout) :: all_dx_md(:,:,:)
-        integer(ip), allocatable, intent(inout) :: all_is_staggered_grid_md(:,:)
+        integer(ip), allocatable, intent(inout) :: all_timestepping_methods_md(:,:)
 
         integer(ip):: i, j, k, jj, ii, nd_local, nest_layer_width, tmp2(2), nbox_max, counter, nd_global
 
@@ -2463,20 +2460,6 @@ module multidomain_mod
 #ifdef COARRAY
         call co_max(nd_global)
 #endif
-
-        ! FIXME: Currently flux computation has not been added to the 'cliffs' solver, which
-        ! could cause problems if I nested it with other solvers. A "work-around/limitation" is to force
-        ! all solvers to be cliffs if any of them are. At least then we won't get confused.
-        count_cliffs = 0
-        do i = 1, size(domains)
-            if(domains(i)%timestepping_method == 'cliffs') count_cliffs = count_cliffs + 1 
-        end do
-        if(.not. (count_cliffs == 0 .or. count_cliffs == size(domains))) then
-            write(log_output_unit, *) "Currently flux-tracking is not implemented in the CLIFFS solver"
-            write(log_output_unit, *) "Until it is, a multidomain must either have all CLIFFS solvers, or none."
-            flush(log_output_unit)
-            call generic_stop
-        end if
 
         !
         ! Figure out how thick the nesting layer buffer has to be for each domain
@@ -2972,8 +2955,10 @@ module multidomain_mod
                     my_domain_image_index = ti, &
                     send_only = .true., &
                     use_wetdry_limiting=use_wetdry_limiting, &
-                    neighbour_domain_staggered_grid = all_is_staggered_grid(n_ind, n_img),&
-                    my_domain_staggered_grid = all_is_staggered_grid(j, ti))
+                    neighbour_domain_staggered_grid = &
+                        timestepping_metadata(all_timestepping_methods(n_ind, n_img))%is_staggered_grid,&
+                    my_domain_staggered_grid = &
+                        timestepping_metadata(all_timestepping_methods(j, ti))%is_staggered_grid)
 
             end do
 
@@ -3057,8 +3042,10 @@ module multidomain_mod
                     my_domain_image_index = ti, &
                     recv_only = .true., &
                     use_wetdry_limiting=use_wetdry_limiting,&
-                    neighbour_domain_staggered_grid = all_is_staggered_grid(n_ind, n_img),&
-                    my_domain_staggered_grid = all_is_staggered_grid(j, ti))
+                    neighbour_domain_staggered_grid = &
+                        timestepping_metadata(all_timestepping_methods(n_ind, n_img))%is_staggered_grid,&
+                    my_domain_staggered_grid = &
+                        timestepping_metadata(all_timestepping_methods(j, ti))%is_staggered_grid)
 
             end do
 
@@ -3073,13 +3060,13 @@ module multidomain_mod
         if(allocated(all_send_metadata)) deallocate(all_send_metadata)
         if(allocated(all_timestepping_refinement_factor)) deallocate(all_timestepping_refinement_factor)
 
-        ! Store the 'all_is_staggered_grid' variable -- in practice it will go inside the multidomain
+        ! Store the 'all_timestepping_methods' variable -- in practice it will go inside the multidomain
         ! Cannot just have it in the multidomain from the start, because it might be a coarray
-        if(allocated(all_is_staggered_grid)) then
-            if(allocated(all_is_staggered_grid_md)) deallocate(all_is_staggered_grid_md)
-            allocate(all_is_staggered_grid_md(size(all_is_staggered_grid, 1), size(all_is_staggered_grid,2)))
-            all_is_staggered_grid_md = all_is_staggered_grid
-            deallocate(all_is_staggered_grid)
+        if(allocated(all_timestepping_methods)) then
+            if(allocated(all_timestepping_methods_md)) deallocate(all_timestepping_methods_md)
+            allocate(all_timestepping_methods_md(size(all_timestepping_methods, 1), size(all_timestepping_methods,2)))
+            all_timestepping_methods_md = all_timestepping_methods
+            deallocate(all_timestepping_methods)
         end if
 
         ! Store all dx in a variable all_dx_md, which in practice will be inside the multidomain

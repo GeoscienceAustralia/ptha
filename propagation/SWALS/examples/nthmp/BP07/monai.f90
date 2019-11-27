@@ -155,7 +155,7 @@ program monai
 
     real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
     
-    real(dp), parameter ::  global_dt = 8.0E-03_dp / mesh_refine
+    real(dp), parameter ::  global_dt = 8.0E-03_dp / mesh_refine 
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.05_dp

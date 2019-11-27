@@ -29,7 +29,8 @@
                depth_neg, depth_neg_star, depth_neg_c,&
                z_half, z_neg, z_pos
     ! velocities and momenta at + and - sides of edge
-    real(dp):: u_pos, v_pos, u_neg, v_neg, ud_neg, vd_neg, ud_pos, vd_pos, vel_beta_neg, vel_beta_pos
+    real(dp):: u_pos, v_pos, u_neg, v_neg, ud_neg, vd_neg, ud_pos, vd_pos, vel_beta_neg, vel_beta_pos, &
+        uh_neg, uh_pos, vh_neg, vh_pos
     ! convenience variables
     integer(ip):: i, j, nx, ny, jlast
     real(dp):: denom, inv_denom, max_speed, max_dt, dx_cfl_inv(2), z_pos_b, z_neg_b, stg_b, stg_a
@@ -44,6 +45,7 @@
     integer(ip):: n_ext, loop_work_count, j_low, j_high, my_omp_id, n_omp_threads
     ! Option to use experimental non-conservative pressure gradient term (with .false.)
     logical, parameter :: flux_conservative_pressure = .true.
+    logical, parameter :: extrapolate_uh_vh = .false.
     
     ! NS change over a cell of stage/depth/u/v, and the "theta" coefficient controlling limiting
     ! Store values for row 'j' and row 'j-1'
@@ -51,12 +53,14 @@
         ddepth_NS_lower(domain%nx(1)), ddepth_NS(domain%nx(1)), & 
         du_NS_lower(domain%nx(1)), du_NS(domain%nx(1)), & 
         dv_NS_lower(domain%nx(1)), dv_NS(domain%nx(1)), &
+        duh_NS_lower(domain%nx(1)), duh_NS(domain%nx(1)), & 
+        dvh_NS_lower(domain%nx(1)), dvh_NS(domain%nx(1)), &
         theta_wd_NS_lower(domain%nx(1)), theta_wd_NS(domain%nx(1))
 
     ! EW change over a cell of stage/depth/u/v, and the "theta" coefficient controlling limiting
     ! Only store values for row 'j'
     real(dp) :: dstage_EW(domain%nx(1)), ddepth_EW(domain%nx(1)), du_EW(domain%nx(1)), & 
-        dv_EW(domain%nx(1)), theta_wd_EW(domain%nx(1))
+        dv_EW(domain%nx(1)), theta_wd_EW(domain%nx(1)), duh_EW(domain%nx(1)), dvh_EW(domain%nx(1))
 
     real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1)), explicit_source_im1_work(domain%nx(1))
 
@@ -127,7 +131,7 @@
 
     ! Pre-fetch the flow values at the NS edge from 'j-1'
     call get_NS_limited_gradient_dx(domain, j_low-1, nx, ny, &
-        theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS)
+        theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS, duh_NS, dvh_NS, extrapolate_uh_vh)
 
     ! Main loop
     do j = j_low, j_high
@@ -153,11 +157,13 @@
         ddepth_NS_lower = ddepth_NS
         du_NS_lower = du_NS
         dv_NS_lower = dv_NS
+        duh_NS_lower = duh_NS
+        dvh_NS_lower = dvh_NS
         theta_wd_NS_lower = theta_wd_NS
 
         ! Get the NS change in stage, depth, u-vel, v-vel, at the row 'j'
         call get_NS_limited_gradient_dx(domain, j, nx, ny, &
-            theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS)
+            theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS, duh_NS, dvh_NS, extrapolate_uh_vh)
 
         !$OMP SIMD
         do i = 2, nx
@@ -178,6 +184,10 @@
             u_pos = domain%velocity(i, j  , UH) - HALF_dp * du_NS(i)
             v_neg = domain%velocity(i, j-1, VH) + HALF_dp * dv_NS_lower(i)
             v_pos = domain%velocity(i, j  , VH) - HALF_dp * dv_NS(i)
+            !uh_neg = domain%U(i, j-1, UH) + HALF_dp * duh_NS_lower(i)
+            !uh_pos = domain%U(i, j  , UH) - HALF_dp * duh_NS(i)
+            !vh_neg = domain%U(i, j-1, VH) + HALF_dp * dvh_NS_lower(i)
+            !vh_pos = domain%U(i, j  , VH) - HALF_dp * dvh_NS(i)
             depth_neg_c = domain%depth(i, j-1)
             depth_pos_c = domain%depth(i, j)
 
@@ -265,6 +275,9 @@
                     (s_max * vd_neg * vel_beta_neg - & 
                      s_min * vd_pos * vel_beta_pos + &
                      fr2 * sminsmax * (vd_pos - vd_neg))*inv_denom 
+                    !(s_max * vh_neg * vel_beta_neg - & 
+                    ! s_min * vh_pos * vel_beta_pos + &
+                    ! fr2 * sminsmax * (vh_pos - vh_neg))*inv_denom 
             else
                 domain%flux_NS(i, j, VH) = advection_beta * &
                     merge(v_neg, v_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
@@ -339,7 +352,7 @@
 
         ! Get EW change in stage, depth, u, v, as well as the "theta" limiter coefficient
         call get_EW_limited_gradient_dx(domain, j, nx, ny, &
-            theta_wd_EW, dstage_EW, ddepth_EW, du_EW, dv_EW)
+            theta_wd_EW, dstage_EW, ddepth_EW, du_EW, dv_EW, duh_EW, dvh_EW, extrapolate_uh_vh)
 
         !$OMP SIMD
         do i = 2, nx
@@ -353,6 +366,10 @@
             u_pos = domain%velocity(i  ,j,UH) - HALF_dp * du_EW(i)
             v_neg = domain%velocity(i-1,j,VH) + HALF_dp * dv_EW(i-1)
             v_pos = domain%velocity(i  ,j,VH) - HALF_dp * dv_EW(i)
+            !uh_neg = domain%U(i-1,j,UH) + HALF_dp * duh_EW(i-1)
+            !uh_pos = domain%U(i  ,j,UH) - HALF_dp * duh_EW(i)
+            !vh_neg = domain%U(i-1,j,VH) + HALF_dp * dvh_EW(i-1)
+            !vh_pos = domain%U(i  ,j,VH) - HALF_dp * dvh_EW(i)
             depth_neg_c = domain%depth(i-1, j)
             depth_pos_c = domain%depth(i, j)
 
@@ -421,9 +438,12 @@
 
             if(.not. upwind_normal_momentum) then
                 domain%flux_EW(i,j,UH) = &
-                    (s_max * ud_neg * vel_beta_neg  - &
-                     s_min * ud_pos * vel_beta_pos + &
+                     (s_max * ud_neg * vel_beta_neg  - &
+                      s_min * ud_pos * vel_beta_pos + &
                      fr2 * sminsmax * (ud_pos - ud_neg) )*inv_denom
+                     !(s_max * uh_neg * vel_beta_neg  - &
+                     ! s_min * uh_pos * vel_beta_pos + &
+                     !fr2 * sminsmax * (uh_pos - uh_neg) )*inv_denom
             else
                 domain%flux_EW(i,j,UH) = advection_beta * &
                     merge(u_neg, u_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
@@ -542,5 +562,137 @@
 
     max_dt = ONE_dp/max_dt_inv
     max_dt_out = max_dt
+
+
+    contains
+
+    !
+    ! Get the NS gradients for stage, depth, u-vel, v-vel, at row j
+    !
+    subroutine get_NS_limited_gradient_dx(domain, j, nx, ny, &
+            theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS, duh_NS, dvh_NS, extrapolate_uh_vh)
+
+        type(domain_type), intent(in) :: domain
+        integer(ip), intent(in) :: j, nx, ny
+        real(dp), intent(inout) :: theta_wd_NS(nx), dstage_NS(nx), ddepth_NS(nx), du_NS(nx), dv_NS(nx), duh_NS(nx), dvh_NS(nx)
+        logical, intent(in) :: extrapolate_uh_vh
+
+        integer(ip) :: i
+        real(dp) :: mindep, maxdep, theta_local
+
+        if(j > 1 .and. j < ny) then
+            ! Typical case
+            
+            ! limiter coefficient
+            !$OMP SIMD
+            do i = 1, nx
+                mindep = min(domain%depth(i, j-1), domain%depth(i,j), domain%depth(i,j+1)) - minimum_allowed_depth
+                maxdep = max(domain%depth(i, j-1), domain%depth(i,j), domain%depth(i,j+1)) + &
+                    limiter_coef3*minimum_allowed_depth
+                theta_local = limiter_coef4 * (mindep/maxdep - limiter_coef1)
+                theta_wd_NS(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
+            end do
+
+            ! stage 
+            call limited_gradient_dx_vectorized(domain%U(:,j,STG), domain%U(:,j-1,STG), domain%U(:,j+1,STG), &
+                theta_wd_NS, dstage_NS, nx)
+            ! depth 
+            call limited_gradient_dx_vectorized(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1), &
+                theta_wd_NS, ddepth_NS, nx)
+            ! u velocity
+            call limited_gradient_dx_vectorized(domain%velocity(:,j,UH), domain%velocity(:,j-1, UH), &
+                domain%velocity(:,j+1, UH), theta_wd_NS, du_NS, nx)
+            ! v velocity
+            call limited_gradient_dx_vectorized(domain%velocity(:,j,VH), domain%velocity(:,j-1, VH), &
+                domain%velocity(:,j+1, VH), theta_wd_NS, dv_NS, nx)
+            if(extrapolate_uh_vh) then
+                ! uh 
+                call limited_gradient_dx_vectorized(domain%U(:,j,UH), domain%U(:,j-1, UH), &
+                    domain%U(:,j+1, UH), theta_wd_NS, duh_NS, nx)
+                ! vh
+                call limited_gradient_dx_vectorized(domain%U(:,j,VH), domain%U(:,j-1, VH), &
+                    domain%U(:,j+1, VH), theta_wd_NS, dvh_NS, nx)
+            end if
+
+        else
+            ! Border case -- all gradients = zero
+            theta_wd_NS = ZERO_dp
+            dstage_NS = ZERO_dp
+            ddepth_NS = ZERO_dp
+            du_NS = ZERO_dp
+            dv_NS = ZERO_dp
+            if(extrapolate_uh_vh) then
+                duh_NS = ZERO_dp
+                dvh_NS = ZERO_dp
+            end if
+        end if
+
+    end subroutine
+
+    !
+    ! Get the EW gradients for stage, depth, u-vel, v-vel, at row j
+    !
+    subroutine get_EW_limited_gradient_dx(domain, j, nx, ny, &
+            theta_wd_EW, dstage_EW, ddepth_EW, du_EW, dv_EW, duh_EW, dvh_EW, extrapolate_uh_vh)
+
+        type(domain_type), intent(in) :: domain
+        integer(ip), intent(in) :: j, nx, ny
+        real(dp), intent(inout) :: theta_wd_EW(nx), dstage_EW(nx), ddepth_EW(nx), du_EW(nx), dv_EW(nx), duh_EW(nx), dvh_EW(nx)
+        logical, intent(in) :: extrapolate_uh_vh
+
+        real(dp) :: mindep, maxdep, theta_local
+        integer(ip) :: i
+        
+        ! limiter coefficient
+        !$OMP SIMD
+        do i = 2, nx-1
+            mindep = min(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) - minimum_allowed_depth
+            maxdep = max(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) + &
+                limiter_coef3*minimum_allowed_depth
+            theta_local = limiter_coef4 * (mindep/maxdep - limiter_coef1)
+            theta_wd_EW(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
+        end do
+
+        ! stage 
+        call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,STG), domain%U(1:(nx-2),j,STG), domain%U(3:nx,j,STG), &
+            theta_wd_EW(2:(nx-1)), dstage_EW(2:(nx-1)), nx)
+        dstage_EW(1) = ZERO_dp
+        dstage_EW(nx) = ZERO_dp
+
+        ! depth 
+        call limited_gradient_dx_vectorized(domain%depth(2:(nx-1),j), domain%depth(1:(nx-2),j), domain%depth(3:nx,j), &
+            theta_wd_EW(2:(nx-1)), ddepth_EW(2:(nx-1)), nx)
+        ddepth_EW(1) = ZERO_dp
+        ddepth_EW(nx) = ZERO_dp
+
+        ! u velocity
+        call limited_gradient_dx_vectorized(domain%velocity(2:(nx-1),j,UH), domain%velocity(1:(nx-2),j,UH), &
+            domain%velocity(3:nx,j, UH), theta_wd_EW(2:(nx-1)), du_EW(2:(nx-1)), nx)
+        du_EW(1) = ZERO_dp
+        du_EW(nx) = ZERO_dp
+
+        ! u velocity
+        call limited_gradient_dx_vectorized(domain%velocity(2:(nx-1),j,VH), domain%velocity(1:(nx-2),j,VH), &
+            domain%velocity(3:nx,j,VH), theta_wd_EW(2:(nx-1)), dv_EW(2:(nx-1)), nx)
+        dv_EW(1) = ZERO_dp
+        dv_EW(nx) = ZERO_dp
+
+        ! Optionally get uh/vh
+        if(extrapolate_uh_vh) then
+            ! uh 
+            call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,UH), domain%U(1:(nx-2),j,UH), &
+                domain%U(3:nx,j, UH), theta_wd_EW(2:(nx-1)), duh_EW(2:(nx-1)), nx)
+            duh_EW(1) = ZERO_dp
+            duh_EW(nx) = ZERO_dp
+
+            ! vh 
+            call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,VH), domain%U(1:(nx-2),j,VH), &
+                domain%U(3:nx,j, VH), theta_wd_EW(2:(nx-1)), dvh_EW(2:(nx-1)), nx)
+            dvh_EW(1) = ZERO_dp
+            dvh_EW(nx) = ZERO_dp
+        end if
+
+    end subroutine
+
 
 !end subroutine

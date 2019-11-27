@@ -16,6 +16,8 @@
 # one having initial conditions perturbed by 1e-10. Given that, it is not surprising
 # that differences emerge when the domain is partitioned differently.
 #
+# A similar thing seems to happen in the ROMS model: https://www.myroms.org/forum/viewtopic.php?f=30&t=3741
+#
 # However, if we desire "exactly the same" answer with OPENMP and COARRAY, we can
 # give the code a 'load-balance-partition.txt' file which specifies the same partition
 # in both cases. Then, I seem to be getting 'near perfect' reproducibility in

@@ -27,7 +27,7 @@ for(i in 1:length(ts)){
 
     plot(m1[,1], m1[,3], t='l', main=paste0('Velocity ', round(ts[i])), xlab='x', ylab='Velocity (m/s)',
         ylim=vel_ylims[[i]], lwd=3)
-    points(x$xs, x$ud[,yi,ind]/(x$stage[,yi,ind]-x$elev0[,yi]), t='o', col='red', pch=19, cex=0.2)
+    points(x$xs, x$ud[,yi,ind]/(x$stage[,yi,ind]-x$elev0[,yi] + 1e-100), t='o', col='red', pch=19, cex=0.2)
 
     model_at_analytical_x = approx(x$xs, x$stage[,yi, ind], xout=m1[,1])
 
@@ -40,7 +40,7 @@ for(i in 1:length(ts)){
     }
 
     # Test 2 -- velocity
-    model_at_analytical_x = approx(x$xs, x$ud[,yi, ind]/(x$stage[,yi,ind] -x$elev0[,yi]), xout=m1[,1])
+    model_at_analytical_x = approx(x$xs, x$ud[,yi, ind]/(x$stage[,yi,ind] -x$elev0[,yi] + 1e-100), xout=m1[,1])
     err_stat = mean(abs(m1[,3] - model_at_analytical_x$y))/diff(range(m1[,2]))
     if(err_stat < ERR_TOL){
         print(c('PASS'))

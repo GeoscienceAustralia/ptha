@@ -203,9 +203,18 @@
         domain%boundary_flux_evolve_integral_exterior = &
             sum(domain%boundary_flux_store_exterior, mask=domain%boundary_exterior) * dt
 
+
         !
         ! Update uh, vh
         !
+
+#if defined(LINEAR_PLUS_NONLINEAR_FRICTION)
+        ! Compute some expensive parts of the friction term
+        ! If domain%linear_solver_is_truely_linear, this will only happen
+        ! once (on the first timestep). Otherwise it should happen every timestep
+        if(.not. domain%friction_work_is_setup) call precompute_friction_work(domain)
+#endif
+
         ! NOTE: Here we manually determine the openmp loop indices. This is
         ! required to include the Coriolis terms without having to copy
         ! memory of size domain%U(:,:,UH:VH) -- which would increase memory use
@@ -513,4 +522,96 @@
 
         !TIMER_STOP('LF_update')
   
-!    end subroutine
+
+    contains
+
+
+    ! Precompute the friction-work for the solver "leapfrog_linear_plus_nonlinear_friction"
+    !
+    ! This assumes stage/UH/VH/elev have been set
+    !
+    ! The friction work term is of the form
+    !     g * n^2 / constant_depth^(7/3)
+    ! The key point is that when multiplied by ||UH|| * uh, it will be equal to the
+    ! standard friction form: g*constant_depth*friction_slope
+    !
+    ! The pre-computation removes an expensive power-law call from the inner loop
+    !
+    subroutine precompute_friction_work(domain)
+        type(domain_type), intent(inout) :: domain
+
+        integer(ip) :: i, j, jp1, ip1
+        real(dp) :: depth_iph, depth_jph, nsq_iph, nsq_jph
+
+        if(domain%timestepping_method /= 'leapfrog_linear_plus_nonlinear_friction') &
+            stop 'precompute_friction_work can only be called with timestepping_method=leapfrog_linear_plus_nonlinear_friction'
+
+        if(.not. allocated(domain%friction_work)) &
+            stop 'friction_work is not allocated: ensure elevation is set before running this routine'
+
+        if(domain%linear_solver_is_truely_linear) then
+            !
+            ! Here we evaluate the depth assuming stage=domain%msl_linear
+            ! This is the standard logic for the "truely linear" linear shallow water equations.
+            !
+
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, domain%nx(2)
+                do i = 1, domain%nx(1)
+
+                    ! UH component
+                    ip1 = min(i+1, domain%nx(1))
+                    depth_iph = 0.5_dp * (domain%msl_linear - domain%U(i,j,ELV) + domain%msl_linear - domain%U(ip1,j, ELV))
+                    depth_iph = max(depth_iph, minimum_allowed_depth)
+                    nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
+                    domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
+
+                    ! VH component
+                    jp1 = min(j+1, domain%nx(2))
+                    depth_jph = 0.5_dp * (domain%msl_linear - domain%U(i,j,ELV) + domain%msl_linear - domain%U(i,jp1, ELV))
+                    depth_jph = max(depth_jph, minimum_allowed_depth)
+                    nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
+                    domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
+
+                end do
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+            ! For a truely-linear solver, this is only required once
+            domain%friction_work_is_setup = .true.
+        else
+            !
+            ! This differs from the above, in that we use domain%U(:,:,STG) to compute the depth.
+            ! This means we generally need to recompute the friction-work terms at every time-step.
+            !
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, domain%nx(2)
+                do i = 1, domain%nx(1)
+
+                    ! UH component
+                    ip1 = min(i+1, domain%nx(1))
+                    depth_iph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(ip1,j,STG) - domain%U(ip1,j, ELV))
+                    depth_iph = max(depth_iph, minimum_allowed_depth)
+                    nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
+                    domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
+
+                    ! VH component
+                    jp1 = min(j+1, domain%nx(2))
+                    depth_jph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(i,jp1,STG) - domain%U(i,jp1, ELV))
+                    depth_jph = max(depth_jph, minimum_allowed_depth)
+                    nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
+                    domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
+
+                end do
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+        end if
+
+    end subroutine
+
+!end subroutine
+

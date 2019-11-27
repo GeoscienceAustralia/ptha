@@ -92,11 +92,11 @@ module cliffs_tolkova_mod
     !
     ! Compared with the cliffs original version, the code below has various interface edits to cleanly integrate into SWALS.
     !
-    subroutine cliffs(dt, iu,irw,n, cliffs_minimum_allowed_depth, &
+    subroutine cliffs(dt, iu, irw, n, cliffs_minimum_allowed_depth, &
                       elev, cel, xvel, yvel, s1, s2, zeta, manning_squared)
         !! GD comment -- arguments are:
         !!    dt -- timestep
-        !!    iu -- integer, has values 1 or 2 -- referring to computations in x (lon) or y(lat) slice
+        !!    iu -- integer, has values 1 or 2 -- referring to computations in x(lon) or y(lat) slice
         !!    irw -- the y or x index of the grid that this slice represents
         !!    n -- the number of x or y values in this slice.
         !!    cliffs_minimum_allowed_depth -- the 'ground' parameter in cliffs, which is a wet/dry depth threshold.
@@ -106,11 +106,11 @@ module cliffs_tolkova_mod
         !! elev(nXn,nYn) -- used in place of 'dep' in cliffs.f, which is the "undisturbed water depth" or "depth below MSL" -- 
         !!                  same as my "-domain%U(,,ELV)". So below the original cliffs routine is modified to 
         !!                  use '-elev' instead of 'dep'
-        !! cel(nXn,nYn) -- sqrt(g * real_water_depth). Beware the code sometimes uses 'h' to represent this 
+        !! cel(nXn,nYn) -- sqrt(g * real_water_depth). Note the code sometimes uses 'h' to represent this 
         !! xvel(nXn,nYn) -- x velocity
         !! yvel(nXn,nYn) -- y velocity
-        !! s1 -- x-direction cell size -- for SWALS, I reduced it to a constant
-        !! s2 -- y-direction cell size -- for SWALS I reduced it to a constant
+        !! s1 -- x-direction cell size -- for SWALS, I reduced it to a constant (for each slice)
+        !! s2 -- y-direction cell size -- for SWALS I reduced it to a constant (for each slice)
         !! zeta(nYn) -- spherical coordinate scale factor. In CLIFFS this is 0.125/Earth_Radius * tan(pi/180 * lat)
         !! manning_squared -- like 'crough' in the original cliffs.f source -- except for the version below, by default we use
         !!                    the standard manning formula (despite the expensive power-law computation)
