@@ -92,9 +92,11 @@ get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', 
     events_file = nc_web_addr
     events_data = read_table_from_netcdf(events_file, desired_rows = desired_event_rows, chunk_size=chunk_size)
 
+    # Record the tsunami events file too, although we don't use it here
     tsunami_events_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
         'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/all_', slip_type, 
-        '_slip_earthquake_events_tsunami_', source_zone, '.nc')    
+        '_slip_earthquake_events_tsunami_', source_zone, '.nc')
+
     #
     # Get the unit source summary statistics
     #
