@@ -549,7 +549,7 @@
         if(.not. allocated(domain%friction_work)) &
             stop 'friction_work is not allocated: ensure elevation is set before running this routine'
 
-        if(domain%linear_solver_is_truely_linear) then
+        if(truely_linear) then
             !
             ! Here we evaluate the depth assuming stage=domain%msl_linear
             ! This is the standard logic for the "truely linear" linear shallow water equations.
