@@ -219,7 +219,7 @@ module domain_mod
         real(dp) :: cliffs_bathymetry_smoothing_alpha = 2.0_dp
 
         ! Froude-limiter for leapfrog scheme
-        real(dp) :: leapfrog_froude_limit = 10.0_dp
+        real(dp) :: leapfrog_froude_limit = 3.0_dp
 
         !
         ! Boundary conditions. 

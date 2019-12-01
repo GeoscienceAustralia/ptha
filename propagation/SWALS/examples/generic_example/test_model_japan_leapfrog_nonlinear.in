@@ -1,7 +1,7 @@
 &MODELCONFIG
     ! Comment
     input_elevation_raster = 'japan_dem.tif'
-    input_stage_raster = 'tohoku_like_initial/initial_condition_1.tif'
+    input_stage_raster = 'ptha_scenario/initial_condition_1.tif'
     global_ll = 122.0 14.0
     global_ur = 185.0 55.0
     global_nx = 945 615 ! 4 arc minutes
