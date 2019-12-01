@@ -363,9 +363,8 @@ program generic_model
 
         if (domain%time > final_time) exit 
 
-        !! Example with fixed timestep
-        if(any(domain%timestepping_method == [character(len=charlen) :: &
-            'linear', 'leapfrog_linear_plus_nonlinear_friction', 'cliffs'])) then
+        if(.not. domain%adaptive_timestepping) then
+            ! Example with fixed timestep
             call domain%evolve_one_step(timestep=timestep)
         else
             call domain%evolve_one_step()

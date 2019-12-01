@@ -4,7 +4,10 @@ SWALS_SRC := ../../src
 # Trick for getting git version into code
 GIT_VERSION := $(shell git describe --abbrev=50 --always --tags --dirty)
 SOURCE_DIR := $(shell pwd)
-SWALS_PREPROCESSOR_FLAGS := -DSPHERICAL -DREALFLOAT -DTIMER -DGITVERSION=\"$(GIT_VERSION)\" -DSOURCEDIR=\"$(SOURCE_DIR)\"
+## The staggered-grid solvers are OK with single precision. 
+SWALS_PREPROCESSOR_FLAGS := -DSPHERICAL -DTIMER -DREALFLOAT -DGITVERSION=\"$(GIT_VERSION)\" -DSOURCEDIR=\"$(SOURCE_DIR)\"
+## The finite-volume and Cliffs solvers need double precision
+#SWALS_PREPROCESSOR_FLAGS := -DSPHERICAL -DTIMER -DGITVERSION=\"$(GIT_VERSION)\" -DSOURCEDIR=\"$(SOURCE_DIR)\"
 
 include $(SWALS_SRC)/src_standard_compiler_var
 

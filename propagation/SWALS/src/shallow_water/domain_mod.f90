@@ -207,6 +207,8 @@ module domain_mod
         logical :: linear_solver_is_truely_linear = .true.
         ! Useful variable to distinguish staggered-grid and centred-grid numerical methods
         logical :: is_staggered_grid 
+        ! Can the time-step vary over time?
+        logical :: adaptive_timestepping = .true.
 
         ! The CLIFFS solver seems to require tuning of the minimum allowed depth (and often it should
         ! be larger than for SWALS). For field-scale problems, Tolkova (2014) mentions values of 0.1 m on an inundation
@@ -215,6 +217,9 @@ module domain_mod
         real(dp) :: cliffs_minimum_allowed_depth = 0.001_dp
         ! For bathymetry smoothing with the cliffs method, Tolkova (in CLIFFS manual) suggests this is typically a reasonable value.
         real(dp) :: cliffs_bathymetry_smoothing_alpha = 2.0_dp
+
+        ! Froude-limiter for leapfrog scheme
+        real(dp) :: leapfrog_froude_limit = 10.0_dp
 
         !
         ! Boundary conditions. 
@@ -335,6 +340,8 @@ module domain_mod
         real(dp), allocatable :: backup_U(:,:,:) ! Needed for some timestepping methods
         real(dp), allocatable :: friction_work(:,:,:) ! Only used for leapfrog_linear_plus_nonlinear_friction
         logical :: friction_work_is_setup = .false. ! Flag used for efficiency with leapfrog_linear_plus_nonlinear_friction solvers
+        real(dp), allocatable :: advection_work(:,:,:)
+        integer(ip) :: advection_work_dim3_size = 5 ! Size of 3rd dimension of advection_work
 #ifdef DEBUG_ARRAY
         ! For debugging it can be helpful to have this array.  If DEBUG_ARRAY is defined, then it will be allocated with dimensions
         ! (nx, ny), and will be written to the netcdf file at each time.
@@ -367,6 +374,7 @@ module domain_mod
         procedure:: one_midpoint_step => one_midpoint_step
         procedure:: one_linear_leapfrog_step => one_linear_leapfrog_step
         procedure:: one_leapfrog_linear_plus_nonlinear_friction_step => one_leapfrog_linear_plus_nonlinear_friction_step
+        procedure:: one_leapfrog_nonlinear_step => one_leapfrog_nonlinear_step
         procedure:: one_cliffs_step => one_cliffs_step
         procedure:: evolve_one_step => evolve_one_step
         procedure:: update_max_quantities => update_max_quantities
@@ -692,6 +700,7 @@ TIMER_STOP('printing_stats')
         if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = timestepping_metadata(tsi)%default_cfl
         ! Flag to note if the grid should be interpreted as staggered
         domain%is_staggered_grid = (timestepping_metadata(tsi)%is_staggered_grid == 1)
+        domain%adaptive_timestepping = timestepping_metadata(tsi)%adaptive_timestepping
 
 
         if(use_partitioned_comms) then
@@ -913,7 +922,8 @@ TIMER_STOP('printing_stats')
 
         endif
 
-        if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+        if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction' .or. &
+           domain%timestepping_method == 'leapfrog_nonlinear') then
             ! The linear_plus_nonlinear_friction needs a manning term, and a work array
             ! which can hold the "constant" part of the friction terms for efficiency
 
@@ -933,6 +943,39 @@ TIMER_STOP('printing_stats')
             !$OMP DO SCHEDULE(STATIC)
             do j = 1, ny
                 domain%friction_work(:,j, UH:VH) = ZERO_dp
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+        end if
+
+        if(domain%timestepping_method == 'leapfrog_nonlinear') then
+
+            ! A work array for nonlinear advection terms
+            allocate(domain%advection_work(nx, ny, 1:domain%advection_work_dim3_size))
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, ny
+                domain%advection_work(:,j, 1:domain%advection_work_dim3_size) = ZERO_dp
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+            ! NOTE: We don't need a flux for elevation 
+            allocate(domain%flux_NS(nx, ny+1_ip, STG:VH))
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, ny+1
+                domain%flux_NS(:,j,STG:VH) = ZERO_dp
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+            allocate(domain%flux_EW(nx + 1_ip, ny, STG:VH))
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, ny
+                domain%flux_EW(:, j, STG:VH) = ZERO_dp
             end do
             !$OMP END DO
             !$OMP END PARALLEL
@@ -1889,6 +1932,24 @@ TIMER_STOP('printing_stats')
 
     end subroutine
 
+    !
+    ! Nonlinear leapfrog
+    !
+    subroutine one_leapfrog_nonlinear_step(domain, dt)
+        class(domain_type), intent(inout):: domain
+        real(dp), intent(in):: dt
+        ! The leapfrog solver code has become complex [in order to reduce memory footprint, and
+        ! include coriolis, while still having openmp work]. So it is moved here. 
+
+#define FROUDE_LIMITING
+#define NONLINEAR_ADVECTION
+#define LEAPFROG_NONLINEAR_FRICTION
+#include "domain_leapfrog_nonlinear_include.f90"
+#undef LEAPFROG_NONLINEAR_FRICTION
+#undef NONLINEAR_ADVECTION
+#undef FROUDE_LIMITING
+
+    end subroutine
 
     ! Use the CLIFFS solver of Elena Tolkova (similar to MOST with a different wet/dry treatment)
     subroutine one_cliffs_step(domain, dt)
@@ -2099,6 +2160,16 @@ TIMER_START('evolve_one_step')
                 call generic_stop()
             end if
 
+        case('leapfrog_nonlinear')
+
+            if(present(timestep)) then
+                call domain%one_leapfrog_nonlinear_step(timestep)
+            else
+                write(domain%logfile_unit,*) 'ERROR: timestep must be provided for ', &
+                    'leapfrog_nonlinear evolve_one_step'
+                call generic_stop()
+            end if
+
         case ('cliffs')
             if(present(timestep)) then
                 call domain%one_cliffs_step(timestep)
@@ -2257,8 +2328,8 @@ TIMER_STOP('evolve_one_step')
         class(domain_type), intent(in):: domain
         real(dp) :: timestep
         ! Leapfrog type numerical methods
-        character(len=charlen) :: leapfrog_type_solvers(2) = [ character(len=charlen) :: &
-            'linear', 'leapfrog_linear_plus_nonlinear_friction' ]
+        character(len=charlen) :: leapfrog_type_solvers(3) = [ character(len=charlen) :: &
+            'linear', 'leapfrog_linear_plus_nonlinear_friction', 'leapfrog_nonlinear']
         ! Typical DE1-type finite volume methods
         character(len=charlen) :: nonlinear_FV_solvers_1(3) = [ character(len=charlen) :: &
             'euler', 'rk2', 'midpoint' ]
@@ -2273,10 +2344,13 @@ TIMER_STOP('evolve_one_step')
             !
             ! Leap-frog type solvers
             !
-            if(domain%linear_solver_is_truely_linear) then
-                timestep = domain%linear_timestep_max()
-            else
+            if(domain%timestepping_method == 'leapfrog_nonlinear' .or. &
+                (.not. domain%linear_solver_is_truely_linear)) then
+                ! Nonlinear variant
                 timestep = domain%nonlinear_stationary_timestep_max()
+            else
+                ! Truely-linear variant
+                timestep = domain%linear_timestep_max()
             end if
 
         else if(any(domain%timestepping_method == nonlinear_FV_solvers_1)) then

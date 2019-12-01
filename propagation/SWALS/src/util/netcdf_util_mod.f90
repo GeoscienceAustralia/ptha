@@ -52,7 +52,7 @@ module netcdf_util
         ! It can be slow to flush every time we write to files. But
         ! this can be useful for interactively looking at model results. So
         ! optionally allow flushing after all writes.
-        logical :: flush_every_output_step = .false.
+        integer :: flush_every_n_output_steps = 25
 
         integer :: num_output_steps = 0
 
@@ -413,7 +413,7 @@ SRC_GIT_VERSION ), &
 #endif
 
         ! It can be slow to flush everytime we write to the file (but sometimes useful for interactive work)
-        if(nc_grid_output%flush_every_output_step) call check(nf90_sync(iNcid))
+        if(mod(nc_grid_output%num_output_steps, nc_grid_output%flush_every_n_output_steps) == 0) call check(nf90_sync(iNcid))
 
 #endif
 

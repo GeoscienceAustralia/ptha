@@ -27,6 +27,11 @@ rm -r ./OUTPUTS
 ./generic_model test_model_japan_almost_linear_with_nonlinear_friction.in > outfile.log
 Rscript plot.R almost_linear_with_nonlinear_friction
 
+# Run leapfrog_nonlinear
+rm -r ./OUTPUTS
+./generic_model test_model_japan_leapfrog_nonlinear.in > outfile.log
+Rscript plot.R leapfrog_nonlinear
+
 #
 # CASES WITHOUT CORIOLIS
 #
@@ -53,3 +58,8 @@ Rscript plot.R almost_linear_no_coriolis
 rm -r ./OUTPUTS
 ./generic_model test_model_japan_almost_linear_with_nonlinear_friction.in > outfile.log
 Rscript plot.R almost_linear_with_nonlinear_friction_nocoriolis
+
+# Run leapfrog_nonlinear
+rm -r ./OUTPUTS
+./generic_model test_model_japan_leapfrog_nonlinear.in > outfile.log
+Rscript plot.R leapfrog_nonlinear_nocoriolis

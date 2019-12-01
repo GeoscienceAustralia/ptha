@@ -6,11 +6,12 @@ module timestepping_metadata_mod
 
     use global_mod, only : dp, ip, charlen
     use logging_mod, only : log_output_unit
+    use stop_mod
 
     implicit none
 
     ! Number of timestepping methods
-    integer, parameter, private :: n_ts = 7
+    integer, parameter, private :: n_ts = 8
 
     ! Type that holds metadata for each type of solver
     type timestepping_metadata_type
@@ -25,6 +26,7 @@ module timestepping_metadata_mod
         real(dp) :: default_cfl = -1.0_dp
         ! Parameter affecting the slope-limiter for finite-volume methods.
         real(dp) :: default_theta = -1.0_dp
+        logical :: adaptive_timestepping = .true.
        
         ! How many halo cells are required to advance interior cells a single timestep while
         ! retaining a valid solution?
@@ -100,6 +102,7 @@ module timestepping_metadata_mod
             timestepping_metadata(5)%flux_correction_of_mass_only = .true.
             timestepping_metadata(5)%default_cfl = 0.7_dp
             timestepping_metadata(5)%nesting_thickness_for_one_timestep = 2_ip
+            timestepping_metadata(5)%adaptive_timestepping = .false.
 
             !
             ! Linear leapfrog + nonlinear friction defaults
@@ -111,6 +114,7 @@ module timestepping_metadata_mod
             timestepping_metadata(6)%flux_correction_of_mass_only = .true.
             timestepping_metadata(6)%default_cfl = 0.7_dp
             timestepping_metadata(6)%nesting_thickness_for_one_timestep = 2_ip
+            timestepping_metadata(6)%adaptive_timestepping = .false.
 
             !
             ! Cliffs (by Elena Tolkova -- similar to MOST)
@@ -122,6 +126,19 @@ module timestepping_metadata_mod
             timestepping_metadata(7)%flux_correction_is_unsupported = .true.
             timestepping_metadata(7)%default_cfl = 0.7_dp
             timestepping_metadata(7)%nesting_thickness_for_one_timestep = 2_ip
+
+
+            !
+            ! Nonlinear leapfrog with upwind advection
+            !
+            timestepping_metadata(8)%timestepping_method = 'leapfrog_nonlinear'
+            timestepping_metadata(8)%is_staggered_grid = 1
+            ! Updating the momentum advection flux between linear/nonlinear can cause instabilities, unsurprisingly
+            ! given that this flux is not included in the linear equations
+            timestepping_metadata(8)%flux_correction_of_mass_only = .true.
+            timestepping_metadata(8)%default_cfl = 0.7_dp
+            timestepping_metadata(8)%nesting_thickness_for_one_timestep = 3_ip
+            timestepping_metadata(8)%adaptive_timestepping = .false.
 
         end subroutine
 
@@ -150,7 +167,7 @@ module timestepping_metadata_mod
 
             if(ts_index == -HUGE(1_ip)) then
                 write(log_output_unit,*) 'timestepping_method: ', TRIM(timestepping_method), ' not recognized'
-                error stop
+                call generic_stop
             end if
 
         end function

@@ -1829,14 +1829,14 @@ module multidomain_mod
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%time
             write(log_output_unit, "(A)"         ) 'nsteps_advanced:'
             write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%nsteps_advanced
-            write(log_output_unit, "(A)"         ) 'max_allowed_dt (theory): '
+            write(log_output_unit, "(A)"         ) 'max_allowed_dt (theory, or 0 if not computed): '
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%max_dt
             write(log_output_unit, "(A)"         ) 'evolve_step_dt: '
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%evolve_step_dt
             write(log_output_unit, "(A)"         ) 'Stage: '
             write(log_output_unit, "(A, ES20.12)") '        ', maxstage
             write(log_output_unit, "(A, ES20.12)") '        ', minstage
-            write(log_output_unit, "(A)"         ) 'Speed: '
+            write(log_output_unit, "(A)"         ) 'Speed (approximate for staggered-grids): '
             write(log_output_unit, "(A, ES20.12)") '        ', maxspeed
             write(log_output_unit, "(A, ES20.12)") '        ', minspeed
             write(log_output_unit, "(A)"         ) 'Negative_depth_clip_counter: '
@@ -1863,7 +1863,7 @@ module multidomain_mod
         write(log_output_unit, "(A, ES20.12)") '        ', global_max_stage
         write(log_output_unit, "(A, ES20.12)") '        ', global_min_stage
         write(log_output_unit, "(2A)"        ) 'Global speed range (over all domains and images) -- ', &
-            'note linear domains can have very high velocities, even when stable: '
+            'speed calculations are approximate for staggered-grids (potential for spurious high speeds): '
         write(log_output_unit, "(A, ES20.12)") '        ', global_max_speed
         write(log_output_unit, "(A, ES20.12)") '        ', global_min_speed
         write(log_output_unit, "(A)") '-----------'
