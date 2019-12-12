@@ -1,0 +1,11 @@
+These scripts can be used to compute and store the 3D Okada displacement field
+for unit-sources in the PTHA18.
+
+To run it, edit [config.R](config.R) for your problem. Principally this
+involves specifing your sourcezone and desired region where the outputs are
+stored. See comments in that script for documentation.
+
+Once that is done, the code can be executed with (e.g.):
+
+    Rscript produce_okada3d_unit_sources.R
+
