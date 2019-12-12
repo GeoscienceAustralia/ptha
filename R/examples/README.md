@@ -50,6 +50,6 @@ okada_displacements_ptha18_scenarios
 Code which uses the 2018 Australian PTHA geometries to compute the unit-source
 easting/northing/vertical Okada displacements. This is modified from code used
 in the Australian PTHA
-([here](./austptha_template/SOURCE_ZONES/TEMPLATE/EQ_SOURCE/). Modification was
+([here](./austptha_template/SOURCE_ZONES/TEMPLATE/EQ_SOURCE/)). Modification was
 necessary because the latter only stored the Kajiura-smoothed vertical
 displacement.
