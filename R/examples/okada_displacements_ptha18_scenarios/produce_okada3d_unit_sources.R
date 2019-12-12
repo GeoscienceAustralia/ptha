@@ -10,7 +10,7 @@
 # east/north/vertical displacements.
 #
 library(rptha)
-library(raster)
+library(parallel)
 
 ###############################################################################
 #
