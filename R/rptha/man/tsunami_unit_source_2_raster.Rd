@@ -6,7 +6,7 @@
 \usage{
 tsunami_unit_source_2_raster(tsunami_unit_source, filename = NULL,
   saveonly = FALSE, tsunami_surface_points_lonlat = NULL, res = c(NA,
-  NA))
+  NA), field_to_output = "smoothed_vertical_displacement")
 }
 \arguments{
 \item{tsunami_unit_source}{output of make_tsunami_unit_source or similar.}
@@ -22,6 +22,11 @@ this in tsunami_unit_source -- however, to save memory, the latter may be set to
 which case this argument must be provided.}
 
 \item{res}{optional argument 'res' to pass to \code{rasterFromXYZ}}
+
+\item{field_to_output}{either 'smoothed_vertical_displacement' (to output vertical
+displacement with smoothing if it was applied in making the tsunami_unit_source), or
+'vertical_displacement' to output the vertical component of the Okada displacement vector, or 'easting_displacement'
+to output the easting component, or 'northing_displacement' to outut the northing component}
 }
 \value{
 Either a raster, or NULL. Can save the raster to a file as a side effect.
