@@ -10,3 +10,5 @@ Once that is done, the code can be executed with (e.g.):
 
     Rscript produce_okada3d_unit_sources.R
 
+Currently it is setup to work on the kermadectonga2 source-zone, and extract deformation
+in a region in the vicinity of Tonga.
