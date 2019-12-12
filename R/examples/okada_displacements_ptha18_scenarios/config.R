@@ -2,11 +2,12 @@
 # Configuration parameters for unit-sources on this source-zone
 #
 
+# Name of the source-zone of interest, using the PTHA18 source-zone names.
 site_name = 'kermadectonga2' 
 
 # Store Okada easting/northing/z displacements on a raster with the following lon/lat extent
 # The computational time will scale with the number of cells in this region
-output_raster_extent = c(182, 190, -24, -16)
+output_raster_extent = c(182, 190, -24, -16) # c(lower_lon, upper_lon, lower_lat, upper_lat)
 output_raster_cellsize = 2/60 # degrees. 
 
 # csv file with parameters for source-zone. We will use this to get the rake
@@ -71,39 +72,6 @@ slip_edge_taper_width = 10000
 # This can save computational effort for shallow unit sources.
 # But be careful if using a wide subunitsource_point_spacing.
 okada_distance_factor = 20 # Inf 
-
-# elevation raster (required for Kajiura filtering). Should give elevation in m, 
-# with the ocean having elevation < 0. Should have a lon/lat spatial projection. 
-# Set to NULL to not use Kajiura filtering.
-elevation_raster = NULL 
-## A realistic example would look like:
-#elevation_raster = raster('../../../DATA/ELEV/GEBCO_2014_1m/GEBCO_2014_1minx1min_W-39.9958333-E320.0041667.tif')
-## Note that for Kajiura filtering, a minimum depth of 10m will be assumed 
-## (to avoid passing negative depths to the Kajiura smoothing routine)
-
-# For computational efficiency, only apply Kajiura filtering in a box
-# containing all points where the unit source deformation exceeds
-# kajiura_use_threshold. Set to zero to apply Kajiura filter everywhere.
-#
-# Use of a small positive number can be faster.
-# Since the unit sources have 1m slip, use of e.g. 1e-03 suggests an
-# error of < 1cm to the free surface, even if the slip were 10m. 
-# In practice there might be greater difference because our Kajiura routine
-# involves interpolation to/from cartesian coordinates. Interpolation creates
-# slight diffusion, and changes to the Kajiura box will affect the
-# interpolation and so also affect this, though not in a systematic way.
-kajiura_use_threshold = 1.0e-03
-
-# When applying the kajiura filter, the data is regridded onto a grid with
-# spacing=kajiura_gridspacing. The latter should be small compared to the
-# horizontal distance over which the free surface deformation changes
-# significantly (and small compared with the distance of
-# tsunami_source_cellsize). If this is not small enough, artefacts
-# can be observed especially when summing tsunami sources.
-# A numerically easier alternative is to apply kajiura AFTER summing
-# the sources [see script in 'combine_tsunami_sources' folder]
-kajiura_grid_spacing = 500 # m
-
 
 # Spatial scale for sub-cell point integration
 # During the Okada computation, points with "abs(deformation) > 10% of max(abs(deformation))"

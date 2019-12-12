@@ -80,42 +80,6 @@ for(sourcename_index in 1:length(names(discretized_sources))){
         seq(tsunami_extent[1,1], tsunami_extent[2,1], by = output_raster_cellsize),
         seq(tsunami_extent[1,2], tsunami_extent[2,2], by = output_raster_cellsize))
 
-    # If elevation data is provided, lookup the depths at the tsunami surface points.
-    if(!is.null(elevation_raster)){
-
-        use_kajiura_filter = TRUE
-
-        # Need to ensure that we look up points at longitudes which are within
-        # the raster longitude range
-        raster_longitude_midpoint = 0.5 * 
-            (extent(elevation_raster)@xmin + extent(elevation_raster)@xmax)
-    
-        ltspl = length(tsunami_surface_points_lonlat[,1])
-        tmp_tsp = adjust_longitude_by_360_deg(tsunami_surface_points_lonlat, 
-            matrix(raster_longitude_midpoint, ncol=2, nrow=ltspl))
-
-        # Process in chunks to reduce memory usage
-        chunk_inds = floor(seq(1, ltspl + 1, len=10))
-        surface_point_ocean_depths = tmp_tsp[,1]*NA
-        for(i in 1:(length(chunk_inds)-1)){
-            inds = chunk_inds[i]:(chunk_inds[i+1]-1)
-            surface_point_ocean_depths[inds] = extract(elevation_raster, tmp_tsp[inds,1:2])
-            gc()
-        }
-
-        # Convert negative elevation to depth, and ensure a minimum depth of 10m
-        # for Kajiura filter. NOTE: When sources are on-land it may be better to increase
-        # this 10m limit to avoid running out of memory (because it affects the spacing of points
-        # in the kajiura filter). The only time I saw this was the 'makran2' source in PTHA18
-        surface_point_ocean_depths = pmax(-surface_point_ocean_depths, 10)
-        rm(tmp_tsp); gc()
-
-    }else{
-        # In this case depths are not provided, and Kajiura filtering is not used
-        use_kajiura_filter = FALSE
-        surface_point_ocean_depths = NULL
-    }
-
     # Make indices for unit sources in parallel computation.
     # If j varies fastest then the shallow unit sources
     # will be submitted early, which will be efficient if
@@ -162,10 +126,10 @@ for(sourcename_index in 1:length(names(discretized_sources))){
             approx_dx = approx_dx, 
             approx_dy = approx_dy, 
             depths_in_km=TRUE, 
-            kajiura_smooth=use_kajiura_filter, 
-            surface_point_ocean_depths=surface_point_ocean_depths,
-            kajiura_grid_spacing=kajiura_grid_spacing, 
-            kajiura_where_deformation_exceeds_threshold=kajiura_use_threshold,
+            kajiura_smooth=FALSE, 
+            surface_point_ocean_depths=NULL,
+            kajiura_grid_spacing=NA, 
+            kajiura_where_deformation_exceeds_threshold=NA,
             minimal_output=FALSE, # If TRUE then Okada vector is not stored! 
             verbose=FALSE,
             dstmx=okada_distance_factor,
@@ -214,6 +178,7 @@ for(sourcename_index in 1:length(names(discretized_sources))){
     }
 
 
+    # Run the code in parallel if there are more than 1 cores available
     if(MC_CORES > 1){
         all_tsunami_files = mcmapply(parallel_fun, ind=as.list(1:length(ij[,1])),
             mc.cores=MC_CORES, mc.preschedule=FALSE, SIMPLIFY=FALSE)

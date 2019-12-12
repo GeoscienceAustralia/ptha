@@ -3,7 +3,8 @@ for unit-sources in the PTHA18.
 
 To run it, edit [config.R](config.R) for your problem. Principally this
 involves specifing your sourcezone and desired region where the outputs are
-stored. See comments in that script for documentation.
+stored. You also have to provide some input data from the PTHA18. See comments
+in that script for further explanation.
 
 Once that is done, the code can be executed with (e.g.):
 
