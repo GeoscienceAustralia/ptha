@@ -2,7 +2,8 @@
 # Configuration parameters for unit-sources on this source-zone
 #
 
-# Name of the source-zone of interest, using the PTHA18 source-zone names.
+# Name of the source-zone of interest, using the source-zone names from the
+# 2018 Australian Probabilistic Tsunami Hazard Assessment
 site_name = 'kermadectonga2' 
 
 # Store Okada easting/northing/z displacements on a raster with the following lon/lat extent

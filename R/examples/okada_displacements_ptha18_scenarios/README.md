@@ -1,5 +1,5 @@
 These scripts can be used to compute and store the 3D Okada displacement field
-for unit-sources in the PTHA18.
+for unit-sources in the 2018 Australian Probabilistic Tsunami Hazard Assessment (PTHA18).
 
 To run it, edit [config.R](config.R) for your problem. Principally this
 involves specifing your sourcezone and desired region where the outputs are

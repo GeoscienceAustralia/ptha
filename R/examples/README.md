@@ -39,7 +39,7 @@ austptha_template
 -----------------
 
 Template codes used for the 2018 Australian Probabilistic Tsunami Hazard
-Assessment. Includes code for generating unit-source tsunami, running
+Assessment (PTHA18). Includes code for generating unit-source tsunami, running
 hydrodynamic models, creating stochastic and uniform slip events, and hazard
 computation.
 
@@ -47,8 +47,9 @@ computation.
 okada_displacements_ptha18_scenarios
 -------------------------------------
 
-Code which uses the PTHA18 geometries to compute the unit-source easting/northing/vertical
-Okada displacements. This is modified from code used in the Australian PTHA (in
-[./austptha_template/SOURCE_ZONES/TEMPLATE/EQ_SOURCE/](./austptha_template/SOURCE_ZONES/TEMPLATE/EQ_SOURCE/) ).
-Modification was necessary because the latter only stored the Kajiura-smoothed vertical
+Code which uses the 2018 Australian PTHA geometries to compute the unit-source
+easting/northing/vertical Okada displacements. This is modified from code used
+in the Australian PTHA
+([here](./austptha_template/SOURCE_ZONES/TEMPLATE/EQ_SOURCE/). Modification was
+necessary because the latter only stored the Kajiura-smoothed vertical
 displacement.
