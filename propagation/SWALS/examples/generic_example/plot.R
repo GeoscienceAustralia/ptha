@@ -95,7 +95,7 @@ expected_model_var_stats = list(
 # Basic regression test. Note that compiler options (and probably compiler choice) can lead to slight
 # differences (e.g. compiling with/without -march=native on gfortran)
 model_var_stat_change = abs(model_var_stat/expected_model_var_stats[[model_type]] - 1)
-if(all( model_var_stat_change < 2.0e-04)){
+if(all( model_var_stat_change < 1.0e-03)){
     print('PASS')
 }else{
     print(c('FAIL (change in results) ', model_type, model_var_stat_change))
