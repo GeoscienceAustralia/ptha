@@ -52,7 +52,7 @@ end module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program radial_dam_break
-    use global_mod, only: ip, dp, charlen
+    use global_mod, only: ip, dp, charlen, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: read_csv_into_array
     use local_routines
@@ -78,9 +78,7 @@ program radial_dam_break
     character(len=charlen):: analytical_solution_file
 
 
-    !domain%theta = 1.0_dp
-    domain%timestepping_method = 'rk2' !'euler' !'rk2n'
-
+    domain%timestepping_method = default_nonlinear_timestepping_method !'rk2' !'euler' !'rk2n'
     !domain%compute_fluxes_inner_method='EEC'
 
     ! Allocate domain

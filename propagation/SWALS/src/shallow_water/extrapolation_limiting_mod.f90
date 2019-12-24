@@ -54,7 +54,7 @@ module extrapolation_limiting_mod
         real(dp), intent(in):: U_local(n), U_lower(n), U_upper(n), theta(n) 
         real(dp), intent(out) :: gradient_dx(n)
 
-        character(len=charlen), parameter :: limiter_type = 'MC' !'Minmod2' !'Superbee_variant' ! 'MC'
+        character(len=charlen), parameter :: limiter_type = 'MC' !'Minmod2' !'Superbee_variant' ! 'MC'! 'nolimit' !
 
         integer(ip) :: i
         real(dp):: a, b, c, d, e, th, sa, sb, half_sasb
@@ -124,6 +124,10 @@ module extrapolation_limiting_mod
                 endif
                 gradient_dx(i) = d
             end do
+
+        else if(limiter_type == 'nolimit') then
+
+            gradient_dx = HALF_dp * (U_upper - U_lower)
 
         else 
             gradient_dx = ZERO_dp

@@ -1,6 +1,6 @@
 source('../../plot.R')
 
-ts_methods = c('rk2', 'midpoint', 'linear')
+ts_methods = c('rk2', 'midpoint', 'linear', 'leapfrog_nonlinear')
 
 for(ts_method in ts_methods){
 

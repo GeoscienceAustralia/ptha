@@ -139,8 +139,8 @@ program bp4
         land_length, sea_length, X0, X1, H, gamma0)
 
     ! Linear requires a fixed timestep 
-    if (timestepping_method == 'linear') then
-        timestep = domain%stationary_timestep_max() 
+    if (.not. domain%adaptive_timestepping) then
+        timestep = domain%stationary_timestep_max() * 0.5_dp
     end if
 
 
@@ -163,7 +163,7 @@ program bp4
         if (domain%time > final_time) exit
 
         ! Variable timestep
-        if(timestepping_method == 'linear') then
+        if(.not. domain%adaptive_timestepping) then
             call domain%evolve_one_step(timestep = timestep)
         else
             call domain%evolve_one_step()

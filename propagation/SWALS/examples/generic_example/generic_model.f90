@@ -193,7 +193,7 @@ SOURCEDIR
             deallocate(xy_coords)
         end if
 
-        if(domain%timestepping_method /= 'linear') then
+        if(allocated(domain%manning_squared)) then
             print*, 'Setting manning friction'
             domain%manning_squared = manning_n * manning_n
         end if

@@ -41,7 +41,7 @@ end module
 
 program run_model
 
-    use global_mod, only: ip, dp, minimum_allowed_depth, charlen
+    use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: flather_boundary, transmissive_boundary
@@ -113,7 +113,7 @@ program run_model
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
-    md%domains(1)%timestepping_method = 'rk2' ! Do not use linear!
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method ! Do not use linear!
 
     ! Allocate domains and prepare comms
     call md%setup()

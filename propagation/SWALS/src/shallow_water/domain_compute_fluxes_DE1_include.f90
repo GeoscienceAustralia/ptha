@@ -33,7 +33,7 @@
         uh_neg, uh_pos, vh_neg, vh_pos
     ! convenience variables
     integer(ip):: i, j, nx, ny, jlast
-    real(dp):: denom, inv_denom, max_speed, max_dt, dx_cfl_inv(2), z_pos_b, z_neg_b, stg_b, stg_a
+    real(dp):: denom, inv_denom, max_speed, max_dt, dx_cfl_half_inv(2), z_pos_b, z_neg_b, stg_b, stg_a
     real(dp):: bed_slope_pressure_s, bed_slope_pressure_n, bed_slope_pressure_e, bed_slope_pressure_w
     real(dp) :: half_g_hh_edge, precision_factor, half_g_hh_edge_a, half_g_hh_edge_b
     real(dp):: half_cfl, max_dt_inv, dxb, common_multiple, fr2
@@ -145,8 +145,8 @@
         ! Assume distance_left_edge is constant but distance_bottom_edge
         ! might change with y (spherical coordinates). For cartesian coordinates
         ! we could move this outside the loop.
-        dx_cfl_inv(1) = ONE_dp/(domain%distance_bottom_edge(j) * half_cfl)
-        dx_cfl_inv(2) = ONE_dp/(domain%distance_left_edge(1) * half_cfl)
+        dx_cfl_half_inv(1) = ONE_dp/(domain%distance_bottom_edge(j) * half_cfl)
+        dx_cfl_half_inv(2) = ONE_dp/(domain%distance_left_edge(1) * half_cfl)
 
         ! Get bed at j-1 (might improve cache access) 
         bed_j_minus_1 = domain%U(:,j-1,ELV)
@@ -334,7 +334,7 @@
             ! Timestep
             max_speed = max(s_max, -s_min)
             if (max_speed > EPS) then
-                max_dt_inv_work(i) =  max(max_dt_inv_work(i), max_speed * dx_cfl_inv(2))
+                max_dt_inv_work(i) =  max(max_dt_inv_work(i), max_speed * dx_cfl_half_inv(2))
             end if
 
         end do
@@ -545,7 +545,7 @@
             !! Timestep
             max_speed = max(s_max, -s_min)
             if (max_speed > EPS) then
-                max_dt_inv_work(i) = max(max_dt_inv_work(i), max_speed * dx_cfl_inv(1))
+                max_dt_inv_work(i) = max(max_dt_inv_work(i), max_speed * dx_cfl_half_inv(1))
             end if
 
         end do

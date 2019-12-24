@@ -1,6 +1,7 @@
 !
 ! The code here solves the linear shallow water equations in cartesian or spherical 
-! coordinates, with or without coriolis. 
+! coordinates, with or without coriolis. It can also include a nonlinear friction term,
+! (which may be an efficient choice for modelling large scale tsunami propagation with dissipation).
 !
 ! It has been moved out of domain_mod.f90, because it became complex
 !
@@ -11,8 +12,6 @@
 !    ! Linear shallow water equations leap-frog update
 !    !
 !    ! Update domain%U by timestep dt, using the linear shallow water equations.
-!    ! Note that unlike the other timestepping routines, this does not require a
-!    ! prior call to domain%compute_fluxes 
 !    !
 !    ! @param domain the domain to advance
 !    ! @param dt the timestep to advance. Should remain constant in between repeated calls
@@ -35,7 +34,7 @@
         real(dp) :: h_iph_wet(domain%nx(1)), h_jph_wet(domain%nx(1))
        
         integer(ip):: j, i, xl, xu, yl, yu, n_ext, my_omp_id, n_omp_threads, loop_work_count
-        integer(ip) :: yl_special, yU_special
+        integer(ip) :: yl_omp, yU_omp
 
 #if defined(CORIOLIS) || defined(LINEAR_PLUS_NONLINEAR_FRICTION)
         ! Vector to hold the (coriolis force x time-step x 0.5), which arises
@@ -226,8 +225,8 @@
         !
 #ifdef NOOPENMP
         ! Serial loop from yL:(yU-1)
-        yl_special = yL
-        yu_special = yU - 1
+        yl_omp = yL
+        yu_omp = yU - 1
 #else
         ! Parallel loop from yL:(yU-1)
         !
@@ -239,15 +238,15 @@
         ! we don't specify a stride other than 1].
         ! This behaviour is important for ensuring the openmp loop sharing
         ! code here works, even if e.g. we have more omp threads than loop
-        ! indices. In that case, we will have some threads with yl_special >
-        ! yu_special -- which will not loop -- and that is the desired behaviour.
+        ! indices. In that case, we will have some threads with yl_omp >
+        ! yu_omp -- which will not loop -- and that is the desired behaviour.
         !
         my_omp_id = omp_get_thread_num()
         n_omp_threads = omp_get_num_threads()
-        ! yl_special = lower loop index of the thread my_omp_id
-        yl_special = nint(loop_work_count * my_omp_id * 1.0_dp / n_omp_threads) + yL
-        ! yu_special = upper loop index of the thread my_omp_id
-        yu_special = nint(loop_work_count * (my_omp_id + 1) * 1.0_dp / n_omp_threads) + yL - 1
+        ! yl_omp = lower loop index of the thread my_omp_id
+        yl_omp = nint(loop_work_count * my_omp_id * 1.0_dp / n_omp_threads) + yL
+        ! yu_omp = upper loop index of the thread my_omp_id
+        yu_omp = nint(loop_work_count * (my_omp_id + 1) * 1.0_dp / n_omp_threads) + yL - 1
 #endif
         !
         ! Now loop indices are determined
@@ -280,9 +279,9 @@
 
         !
         ! Before starting the loop, get the value of VH at 
-        ! 'i+1/2', 'yl_special-1/2', to prevent the possibility that it is
+        ! 'i+1/2', 'yl_omp-1/2', to prevent the possibility that it is
         ! updated by another openmp thread before we read it !
-        if(yl_special == 1) then
+        if(yl_omp == 1) then
             ! In this case, there is no 'j-1/2' value, just use the boundary value
             vh_iph_jmh(xL:(xU-1)) = HALF_dp * &
                 (domain%U(xL    :(xU-1), 1, VH) + &
@@ -290,38 +289,38 @@
         else
             ! Average values at 'i' and 'i+1'
             vh_iph_jmh(xL:(xU-1)) = HALF_dp * &
-                (domain%U(xL    :(xU-1), yl_special - 1, VH) + &
-                 domain%U((xL+1):xU    , yl_special - 1, VH))
+                (domain%U(xL    :(xU-1), yl_omp - 1, VH) + &
+                 domain%U((xL+1):xU    , yl_omp - 1, VH))
         end if
 
         !
-        ! Before starting the loop, store the value of UH at 'i', 'yu_special+1', to prevent the
+        ! Before starting the loop, store the value of UH at 'i', 'yu_omp+1', to prevent the
         ! possibility that it is updated by another openmp thread before we read it
         !
         if(xL > 1) then
             ! Average values at 'i-1/2' and 'i+1/2'
             uh_i_jp1_max_loop_index(xL:(xU-1)) = HALF_dp * &
-                (domain%U( (xL-1):(xU-2), yu_special + 1, UH) + &
-                 domain%U( xL    :(xU-1), yu_special + 1, UH))
+                (domain%U( (xL-1):(xU-2), yu_omp + 1, UH) + &
+                 domain%U( xL    :(xU-1), yu_omp + 1, UH))
         else
             ! Avoid out-of bounds error
             uh_i_jp1_max_loop_index((xL+1):(xU-1)) = HALF_dp * &
-                (domain%U( xL   :(xU-2), yu_special + 1, UH) + &
-                 domain%U( xL+1 :(xU-1), yu_special + 1, UH))
-            uh_i_jp1_max_loop_index(xL) = domain%U(1, yu_special + 1, UH)
+                (domain%U( xL   :(xU-2), yu_omp + 1, UH) + &
+                 domain%U( xL+1 :(xU-1), yu_omp + 1, UH))
+            uh_i_jp1_max_loop_index(xL) = domain%U(1, yu_omp + 1, UH)
         end if
 
         !
-        ! Get the initial value of UH at 'i, yl_special'. This 'starting value' is required because 
+        ! Get the initial value of UH at 'i, yl_omp'. This 'starting value' is required because 
         ! inside the loop we set 'uh_i_j = uh_i_jph' after the update.
         !
         uh_i_j((xL+1):(xU-1)) = HALF_dp * &
-            ( domain%U((xL+1):(xU-1), yl_special, UH) + &
-              domain%U(    xL:(xU-2), yl_special, UH) )
+            ( domain%U((xL+1):(xU-1), yl_omp, UH) + &
+              domain%U(    xL:(xU-2), yl_omp, UH) )
         !
         ! Special case of xL which is protective if xL == 1
-        uh_i_j(xL) = HALF_dp * ( domain%U(xL, yl_special, UH) + &
-            domain%U(max(xL-1, 1), yl_special, UH) )
+        uh_i_j(xL) = HALF_dp * ( domain%U(xL, yl_omp, UH) + &
+            domain%U(max(xL-1, 1), yl_omp, UH) )
 
 
         !! No thread can start updating the loop until all threads have their
@@ -331,7 +330,7 @@
 #endif
         !! Main update-flux loop
         !do j = 1, ny - 1
-        do j = yl_special, yu_special
+        do j = yl_omp, yu_omp
             ! For spherical coordiantes, cell area changes with y.
             ! For cartesian coordinates this could be moved out of the loop
             inv_cell_area_dt_g = gravity * dt / domain%area_cell_y(j)
@@ -416,12 +415,12 @@
             ! Special case of xL which is protective if xL == 1
             uh_i_jp1(xL) = HALF_dp * ( domain%U(xL          , j+1, UH) + &
                                        domain%U(max(xL-1, 1), j+1, UH) )
-            ! Final step to ensure that if (j == yu_special), then we get the 
+            ! Final step to ensure that if (j == yu_omp), then we get the 
             ! non-updated value of UH.
             uh_i_jp1(xl:(xU-1)) = merge(&
                                uh_i_jp1(xL:(xU-1)), &
                 uh_i_jp1_max_loop_index(xL:(xU-1)), &
-                j /= yu_special)
+                j /= yu_omp)
 #endif
 
 #if defined(CORIOLIS)

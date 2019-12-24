@@ -98,7 +98,8 @@ end module
 
 program run_BP09
 
-    use global_mod, only: ip, dp, minimum_allowed_depth, charlen
+    use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method,&
+        default_linear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: flather_boundary, transmissive_boundary
@@ -199,10 +200,7 @@ program run_BP09
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
-    md%domains(1)%timestepping_method = 'linear'
-    md%domains(1)%linear_solver_is_truely_linear = .true.
-    !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
-    !md%domains(1)%linear_solver_is_truely_linear = .false.
+    md%domains(1)%timestepping_method = default_linear_timestepping_method 
     md%domains(1)%cliffs_minimum_allowed_depth = 5.0_dp
 
     ! Higher res around region of interest
@@ -212,7 +210,7 @@ program run_BP09
         upper_right = [140.5_dp, 43.5_dp], &
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 1_ip)
-    md%domains(2)%timestepping_method = 'rk2'
+    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method
     md%domains(2)%cliffs_minimum_allowed_depth = 2.0_dp
 
     ! Okushiri Island focus
@@ -222,7 +220,7 @@ program run_BP09
         upper_right = [139.6_dp, 42.26_dp], &
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 2_ip)
-    md%domains(3)%timestepping_method = 'rk2'
+    md%domains(3)%timestepping_method = default_nonlinear_timestepping_method
     md%domains(3)%cliffs_minimum_allowed_depth = 1.0_dp
 
     ! The monai domain 
@@ -233,7 +231,7 @@ program run_BP09
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 6_ip,&
         rounding_method='nearest')
-    md%domains(4)%timestepping_method = 'rk2'  
+    md%domains(4)%timestepping_method = default_nonlinear_timestepping_method  
     md%domains(4)%cliffs_minimum_allowed_depth = 1.0_dp
     
     ! A more detailed Monai domain 
@@ -244,7 +242,7 @@ program run_BP09
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 6_ip,&
         rounding_method='nearest')
-    md%domains(5)%timestepping_method = 'rk2'  
+    md%domains(5)%timestepping_method = default_nonlinear_timestepping_method  
     md%domains(5)%cliffs_minimum_allowed_depth = 0.2_dp
 
     ! The Aonae domain
@@ -255,7 +253,7 @@ program run_BP09
         dx_refinement_factor = nest_ratio, &
         timestepping_refinement_factor = 2_ip,&
         rounding_method = 'nearest')
-    md%domains(6)%timestepping_method = 'rk2'  
+    md%domains(6)%timestepping_method = default_nonlinear_timestepping_method  
     md%domains(6)%cliffs_minimum_allowed_depth = 0.2_dp
 
     if(very_high_res_monai) then

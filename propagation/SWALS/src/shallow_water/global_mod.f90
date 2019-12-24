@@ -43,7 +43,8 @@ real(dp), parameter:: wall_elevation = 1.0e+6_dp
 ! Timestepping
 real(dp), parameter:: cfl = 0.9_dp ! FIXME: Is this still used? Defaults now set in domain%allocate_quantities
 real(dp), parameter:: maximum_timestep = 1.0e+20_dp
-character(len=charlen), parameter:: default_timestepping_method = 'euler'
+character(len=charlen), parameter:: default_nonlinear_timestepping_method = 'rk2' !'leapfrog_nonlinear' !'rk2'
+character(len=charlen), parameter:: default_linear_timestepping_method = 'linear'
 
 ! Turn on/of sending of boundary flux data and flux correction (for nesting)
 logical, parameter :: send_boundary_flux_data = .true.

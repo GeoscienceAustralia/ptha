@@ -136,7 +136,7 @@ end module
 
 program monai
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum
@@ -193,7 +193,7 @@ program monai
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = 'rk2'
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'rk2'
 
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
@@ -205,7 +205,7 @@ program monai
         upper_right=high_res_ur, &
         dx_refinement_factor=nest_ratio, &
         timestepping_refinement_factor=nest_ratio)
-    md%domains(2)%timestepping_method = 'rk2'
+    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method !'rk2'
 
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
         ' nx: ', md%domains(2)%nx
@@ -219,7 +219,7 @@ program monai
     end do
 
     ! Build boundary conditions
-    bc_elev = minval(md%domains(1)%U(:,:,4)) 
+    bc_elev = minval(md%domains(1)%U(:,:,ELV)) 
     call setup_boundary_information(bc_file, bc_elev)
     ! Boundary
     md%domains(1)%boundary_subroutine => boundary_stage_transmissive_normal_momentum

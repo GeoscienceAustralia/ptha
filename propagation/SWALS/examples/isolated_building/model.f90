@@ -105,7 +105,7 @@ end module
 
 program model
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type
     use timer_mod
@@ -126,7 +126,7 @@ program model
     ! This can voilate the theoretical rk2 time-stepping limit, but still the solution is good. 
     ! That might be common for rk2, for instance see:
     ! Andrew Giuliani, Lilia Krivodonova, On the optimal CFL number of SSP methods for hyperbolic problems.
-    real(dp), parameter ::  global_dt = 0.02_dp / mesh_refine
+    real(dp) ::  global_dt = 0.02_dp / mesh_refine
     !real(dp) :: local_dt
 
     ! Approx timestep between outputs
@@ -159,7 +159,7 @@ program model
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = 'rk2' !'cliffs' !'rk2'
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'cliffs' !'rk2'
     md%domains(1)%cliffs_minimum_allowed_depth = 0.01_dp
     !md%domains(1)%theta = 4.0_dp
 
@@ -179,6 +179,7 @@ program model
     !print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
     !    ' nx: ', md%domains(2)%nx
 
+    if(md%domains(1)%timestepping_method == 'rk2n') global_dt = global_dt * 4.0_dp
      
     ! Allocate domains and prepare comms
     call md%setup()

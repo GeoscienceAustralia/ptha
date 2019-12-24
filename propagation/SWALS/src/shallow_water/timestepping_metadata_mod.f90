@@ -72,7 +72,7 @@ module timestepping_metadata_mod
             timestepping_metadata(2)%timestepping_method = 'rk2n'
             ! Infrastructure for rk2n to flux correct is not yet implemented
             timestepping_metadata(2)%flux_correction_is_unsupported = .true.
-            timestepping_metadata(2)%default_cfl = 0.90_dp
+            timestepping_metadata(2)%default_cfl = 0.99_dp
             timestepping_metadata(2)%default_theta = 1.6_dp
             timestepping_metadata(2)%nesting_thickness_for_one_timestep = 10_ip
 

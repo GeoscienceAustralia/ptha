@@ -360,7 +360,7 @@ module nested_grid_comms_mod
 
         prod_cell_ratios = product(cell_ratios)
 
-        if( prod_cell_ratios >= ONE_dp ) then
+        if( prod_cell_ratios >= ONE_dp .or. equal_cell_ratios) then
             ! The current domain is 'coarser' than the other, or the same size
             two_way_nesting_comms%my_domain_is_finer = .FALSE.
 
@@ -1391,6 +1391,10 @@ module nested_grid_comms_mod
             n1 = int(nint( (iU-iL+1)*(jU-jL+1)*(kU-kL+1) * &
                 product(two_way_nesting_comms%cell_ratios) * coarse_factor))
 
+            !write(log_output_unit, *) '@@DEBUG@@ ', n1, coarse_factor, iL, iU, jL, jU, kL, kU, &
+            !    product(two_way_nesting_comms%cell_ratios)
+            !flush(log_output_unit)
+
             ! Local storage
             two_way_nesting_comms%recv_work = U(iL:iU, jL:jU, STG) - U(iL:iU, jL:jU, ELV)
 
@@ -2218,7 +2222,7 @@ module nested_grid_comms_mod
 
         test_max = maxval(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer(1:b4_flux_data_c))
         test_min = minval(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer(1:b4_flux_data_c))
-        if( (test_max/(max_parent_send_val+max_parent_send_val_offset)  > ONE_dp + err_tol) .OR. &
+        if( (test_max/(max_parent_send_val+max_parent_send_val_offset) > ONE_dp + err_tol) .OR. &
             (test_min/(min_parent_send_val-max_parent_send_val_offset) < ONE_dp - err_tol)) then
     
             write(log_output_unit,*) 'FAIL: Send buffer (2) range is incorrect', __LINE__, &
@@ -2252,6 +2256,7 @@ module nested_grid_comms_mod
                     write(log_output_unit,*) 'FAIL: Error in nesting communication, case ', i, __LINE__, &
                         __FILE__
                     write(log_output_unit,*) maxval(abs(Us(i)%U - Us_store(i)%U))
+                    write(log_output_unit,*) maxval(abs(Us(i)%U - Us_store(i)%U)/Us_store(i)%U)
                     !call generic_stop()
                 else
                     write(log_output_unit,*) 'PASS'

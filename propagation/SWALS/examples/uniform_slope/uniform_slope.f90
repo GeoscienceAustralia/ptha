@@ -129,7 +129,7 @@ program uniform_slope
     ! Trick to get the code to write out just after the first timestep
     last_write_time = -approximate_writeout_frequency
 
-    if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+    if(.not. domain%adaptive_timestepping) then
         ! The leapfrog solve needs a specified timestep
         ! Because this problem is "hard" for that solver, it turns out we need a fairly
         ! small timestep
@@ -153,7 +153,7 @@ program uniform_slope
         end if
 
         ! Evolve 
-        if(domain%timestepping_method == 'leapfrog_linear_plus_nonlinear_friction') then
+        if(.not. domain%adaptive_timestepping) then
             call domain%evolve_one_step(timestep=ts)
             ! Add discharge inflow
             domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) = &

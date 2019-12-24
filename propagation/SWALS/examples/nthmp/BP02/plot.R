@@ -5,9 +5,11 @@ ERR_TOL = 1.0e-02
 test_cases = c('a', 'b', 'c')
 test_cases_caps = c('A', 'B', 'C')
 
-timestepping_method = 'linear' #'rk2'
+timestepping_method = 'linear' 
+#timestepping_method = 'leapfrog_nonlinear'
+#timestepping_method = 'rk2'
 
-show_obs = FALSE
+show_obs = TRUE #FALSE
 
 for(i in 1:length(test_cases)){
 
@@ -25,7 +27,7 @@ for(i in 1:length(test_cases)){
 
     # Plot the geometry
     if(i == 1){
-        png('solution_geometry_caseA.png', width=8, height=6, units='in', res=300)
+        png(paste0('solution_geometry_caseA_', timestepping_method, '.png'), width=8, height=6, units='in', res=300)
         l = length(x$xs)
         plot(x$xs[1:(l-1)], x$elev0[1:(l-1),10], t='l', xlab='Along-beach distance (m)', ylab='Vertical coordinate (m)',
             ylim=c(-0.25, 0.25), lwd=2)
@@ -43,7 +45,7 @@ for(i in 1:length(test_cases)){
     x$time = x$time + analytical[1,1]
 
     #pdf(paste0('solution', test_cases_caps[i], '.pdf'), width=15, height=8)
-    png(paste0('solution', test_cases_caps[i], '.png'), width=15, height=8, units='in', res=300)
+    png(paste0('solution', test_cases_caps[i], '_', timestepping_method, '.png'), width=15, height=8, units='in', res=300)
     par(mfrow=c(3,3))
     par(mar=c(5,5,3,2))
     plot_ylim = range(analytical[,2:9])

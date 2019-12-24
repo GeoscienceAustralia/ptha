@@ -53,7 +53,7 @@ end module
 
 program run_paraboloid_basin
 
-    use global_mod, only: ip, dp, minimum_allowed_depth, charlen
+    use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: flather_boundary, transmissive_boundary
@@ -63,7 +63,7 @@ program run_paraboloid_basin
     use stop_mod, only: generic_stop
     use iso_c_binding, only: C_DOUBLE !, C_INT, C_LONG
 #ifdef COARRAY_PROVIDE_CO_ROUTINES
-    use coarray_intrinsic_alternatives, only: co_max, co_sum, co_broadcast
+    use coarray_intrinsic_alternatives, only: co_min
 #endif
     !use iso_fortran_env, only: int64, int32
     implicit none
@@ -78,7 +78,7 @@ program run_paraboloid_basin
     integer(ip), parameter :: mesh_refine = 4_ip
 
     ! The global (i.e. outer-domain) time-step in the multidomain 
-    real(dp) ::  global_dt = (0.23_dp/mesh_refine) * 1.0_dp
+    real(dp) ::  global_dt != (0.23_dp/mesh_refine) * 1.0_dp
 
     ! Approx timestep between outputs
     real(dp) :: approximate_writeout_frequency = 1.0_dp
@@ -117,8 +117,7 @@ program run_paraboloid_basin
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
-    md%domains(1)%timestepping_method = 'rk2' !'cliffs' !'midpoint'
-    !md%domains(1)%theta = 1.0_dp
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'rk2' !'cliffs' !'midpoint'
 
     ! Splitting the domain the same way, irrespective of np, improves reproducibility
     !md%load_balance_file = 'load_balance_partition.txt'
@@ -144,14 +143,22 @@ program run_paraboloid_basin
         write(log_output_unit,*) 'domain: ', j, 'ts: ', &
             md%domains(j)%stationary_timestep_max()
     end do
+    global_dt = md%stationary_timestep_max()
 
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
 
 #ifdef COARRAY
     sync all
-    flush(log_output_unit)
+    ! Get the minimum global_dt
+    call co_min(global_dt)
 #endif
+    flush(log_output_unit)
+
+    ! The water will rise (and fall) in the deepest area so we need a timestep 
+    ! somewhat smaller than the initial stationary timestep. From experience 
+    ! this timestep is stable
+    global_dt = 0.71_dp * global_dt * md%domains(1)%cfl !* 1.0_dp/3.0_dp
 
     !
     ! Evolve the code

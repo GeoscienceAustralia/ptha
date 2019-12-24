@@ -19,7 +19,7 @@ module domain_mod
                           cfl, maximum_timestep, gravity, &
                           advection_beta, &
                           minimum_allowed_depth, &
-                          default_timestepping_method, &
+                          default_nonlinear_timestepping_method, &
                           wall_elevation, &
                           default_output_folder, &
                           send_boundary_flux_data,&
@@ -75,6 +75,10 @@ module domain_mod
     real(dp), parameter :: HALF_dp = 0.5_dp, ZERO_dp = 0.0_dp, ONE_dp=1.0_dp
     real(dp), parameter :: QUARTER_dp = HALF_dp * HALF_dp
     real(dp), parameter:: NEG_SEVEN_ON_THREE_dp = -2.0_dp - 1.0_dp/3.0_dp !-7.0_dp/3.0_dp
+
+    ! Make 'rk2n' involve this many flux calls -- it will evolve (rk2n_n_value -1) steps,
+    ! with one extra step used for a second-order correction
+    integer(ip), parameter :: rk2n_n_value = 5_ip
 
     ! Use this formatting when converting domain%myid to character
     character(len=charlen), parameter:: domain_myid_char_format = '(I0.20)'
@@ -154,7 +158,7 @@ module domain_mod
         logical :: is_nesting_boundary(4) = .FALSE. 
 
         ! timestepping_method determines the choice of solver
-        character(len=charlen):: timestepping_method = default_timestepping_method
+        character(len=charlen):: timestepping_method = default_nonlinear_timestepping_method
 
         real(dp) :: max_parent_dx_ratio
 
@@ -219,7 +223,7 @@ module domain_mod
         real(dp) :: cliffs_bathymetry_smoothing_alpha = 2.0_dp
 
         ! Froude-limiter for leapfrog scheme
-        real(dp) :: leapfrog_froude_limit = 3.0_dp
+        real(dp) :: leapfrog_froude_limit = 10.0_dp
 
         !
         ! Boundary conditions. 
@@ -998,8 +1002,7 @@ TIMER_STOP('printing_stats')
             write(domain%logfile_unit, *) 'nx: ', domain%nx
             write(domain%logfile_unit, *) 'lw: ', domain%lw
             write(domain%logfile_unit, *) 'lower-left: ', domain%lower_left
-            write(domain%logfile_unit, *) ''
-            write(domain%logfile_unit, *) ''
+            write(domain%logfile_unit, *) 'upper-right:', domain%lower_left + domain%lw
             write(domain%logfile_unit, *) 'Total area: ', sum(domain%area_cell_y)
             write(domain%logfile_unit, *) 'distance_bottom_edge(1): ', domain%distance_bottom_edge(1)
             write(domain%logfile_unit, *) 'distange_left_edge(1)', domain%distance_left_edge(1)
@@ -1067,6 +1070,11 @@ TIMER_STOP('printing_stats')
         !$OMP END PARALLEL
 
         domain%negative_depth_fix_counter = domain%negative_depth_fix_counter + masscon_error
+
+!#ifdef DEBUG_ARRAY        
+!        !! DEBUG -- FIXME
+!        domain%debug_array = sqrt(domain%velocity(:,:,VH)**2 + domain%velocity(:,:,UH)**2)
+!#endif
 
     end subroutine
 
@@ -1646,23 +1654,21 @@ TIMER_STOP('printing_stats')
     !
     ! This involves less flux calls per timestep advance than rk2.
     !
-    ! BEWARE: It advances (n-1) timesteps, so a call one_rk2n_step(domain, 1.0_dp)
-    ! will advance 4.0 seconds. 
-    !
-    ! Argument timestep is optional, but if provided should satisfy the CFL condition
+    ! Argument timestep is optional, but if provided, (timestep/4.0) should satisfy the CFL condition
+    ! (because this routine takes (n-1)=4 repeated time-steps of that size, where n=5)
     !
     ! FIXME: Still need to implement nesting boundary flux integral timestepping, if we
     ! want to use this inside a multidomain
     !
     ! @param domain the domain to be updated
-    ! @param timestep the timestep, by which the solution is advanced (n-1) times
+    ! @param timestep the timestep. We need to have (timestep/4.0) satisfying the CFL condition
     !
     subroutine one_rk2n_step(domain, timestep)
-        ! Advance (n-1) * timesteps in this routine, with 2nd order in time accuracy
+        ! Advance (n-1) * timestep/(n-1) in this routine, with 2nd order in time accuracy
         class(domain_type), intent(inout):: domain
         real(dp), optional, intent(in):: timestep
 
-        integer(ip), parameter:: n = 5 ! number of substeps to take, must be > 2
+        integer(ip), parameter:: n = rk2n_n_value ! number of substeps to take, must be > 2
         real(dp), parameter:: n_inverse = ONE_dp / (ONE_dp * n)
         real(dp):: backup_time, dt_first_step, reduced_dt, max_dt_store
         real(dp):: backup_flux_integral_exterior, backup_flux_integral
@@ -1674,11 +1680,11 @@ TIMER_STOP('printing_stats')
         call domain%backup_quantities()
      
         if(present(timestep)) then 
-            ! first step 
-            call domain%one_euler_step(timestep,&
-                update_nesting_boundary_flux_integral=.FALSE.)
             ! store timestep
-            dt_first_step = timestep
+            dt_first_step = timestep/(n-1.0_dp)
+            ! first step 
+            call domain%one_euler_step(dt_first_step,&
+                update_nesting_boundary_flux_integral=.FALSE.)
         else
             ! first step 
             call domain%one_euler_step(update_nesting_boundary_flux_integral=.FALSE.)
@@ -1938,15 +1944,9 @@ TIMER_STOP('printing_stats')
     subroutine one_leapfrog_nonlinear_step(domain, dt)
         class(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
-        ! The leapfrog solver code has become complex [in order to reduce memory footprint, and
-        ! include coriolis, while still having openmp work]. So it is moved here. 
 
 #define FROUDE_LIMITING
-#define NONLINEAR_ADVECTION
-#define LEAPFROG_NONLINEAR_FRICTION
 #include "domain_leapfrog_nonlinear_include.f90"
-#undef LEAPFROG_NONLINEAR_FRICTION
-#undef NONLINEAR_ADVECTION
 #undef FROUDE_LIMITING
 
     end subroutine
@@ -2360,13 +2360,10 @@ TIMER_STOP('evolve_one_step')
             timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp
         else if(any(domain%timestepping_method == nonlinear_FV_solvers_2)) then
             !
-            ! The unusual 'rk2n' timestepping method. 
+            ! The unusual 'rk2n' timestepping method -- we need (timestep/(rk2n_n_value-1)) to satisfy
+            ! the typical FV CFL condition, because we take a number of substeps
             !
-            ! Note 'rk2n' will advance 4 timesteps with one call to the timestepping routine -- consider changing that interface, in
-            ! which case the '1.0' here would change to '4.0'. Currently 'rk2n' is not supported for multidomain, and is not
-            ! commonly used, so leave as-is for now.
-            !
-            timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp * 1.0_dp
+            timestep = domain%nonlinear_stationary_timestep_max() * 0.5_dp * (rk2n_n_value-1.0_dp)
         else if(any(domain%timestepping_method == cliffs_solver)) then
             !
             ! Cliffs (Tolkova)
@@ -3883,7 +3880,7 @@ TIMER_STOP('nesting_flux_correction')
         class(domain_type), intent(inout) :: domain
         character(*), optional, intent(in) :: smooth_method
     
-        integer(ip) :: i, j
+        integer(ip) :: i, j, nx, ny
         real(dp), allocatable:: elev_block(:,:)
         character(len=charlen) :: method
 
@@ -3897,20 +3894,22 @@ TIMER_STOP('nesting_flux_correction')
         case('9pt_average')
             ! 3-point average along y, followed by 3-point average along x
 
+            nx = domain%nx(1)
+            ny = domain%nx(2)
             ! Smooth bathymetry along 'i' axis
-            do j = 2, domain%nx(2) - 1
-                domain%U(2:(domain%nx(1)-1),j,ELV) = (1.0_dp/3.0_dp)*(&
-                    domain%U(2:(domain%nx(1)-1),j,ELV) + &
-                    domain%U(1:(domain%nx(1)-2),j,ELV) + &
-                    domain%U(3:(domain%nx(1)-0),j,ELV) )
-            end do
+            !do j = 2, domain%nx(2) - 1
+            domain%U(2:(nx-1),1:ny,ELV) = (1.0_dp/3.0_dp)*(&
+                domain%U(2:(nx-1),1:ny,ELV) + &
+                domain%U(1:(nx-2),1:ny,ELV) + &
+                domain%U(3:(nx-0),1:ny,ELV) )
+            !end do
             ! Smooth bathymetry along 'j' axis
-            do i = 2, domain%nx(1) - 1
-                domain%U(i, 2:(domain%nx(2)-1),ELV) = (1.0_dp/3.0_dp)*(&
-                    domain%U(i, 2:(domain%nx(2)-1),ELV) + &
-                    domain%U(i, 1:(domain%nx(2)-2),ELV) + &
-                    domain%U(i, 3:(domain%nx(2)-0),ELV) )
-            end do
+            !do i = 2, domain%nx(1) - 1
+            domain%U(1:nx, 2:(ny-1),ELV) = (1.0_dp/3.0_dp)*(&
+                domain%U(1:nx, 2:(ny-1),ELV) + &
+                domain%U(1:nx, 1:(ny-2),ELV) + &
+                domain%U(1:nx, 3:(ny-0),ELV) )
+            !end do
 
         case('cliffs')
             ! Cliffs bathymetry smoother. Tolkova has shown (e.g. user manual) that this is important for stability.

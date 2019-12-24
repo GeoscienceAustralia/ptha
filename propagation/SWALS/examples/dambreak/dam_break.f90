@@ -43,7 +43,7 @@ end module
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program dam_break
-    use global_mod, only: ip, dp, charlen
+    use global_mod, only: ip, dp, charlen, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use file_io_mod, only: read_csv_into_array
     use local_routines
@@ -70,13 +70,18 @@ program dam_break
     character(len=charlen):: analytical_solution_file, input_char
     real(dp) :: h_upstream, h_downstream
 
-    domain%timestepping_method = 'rk2' 
+    domain%timestepping_method = default_nonlinear_timestepping_method
 
     ! Get the upstream/downstream initial depth from the command line
     call get_command_argument(1, input_char)
     read(input_char, *) h_upstream
     call get_command_argument(2, input_char)
     read(input_char, *) h_downstream
+
+    !! rk2 still works well with the following parameters, which would usually be seen
+    !! as voilating stability constraints.
+    !domain%cfl = 1.49_dp
+    !domain%theta = 4.0_dp
 
     ! Allocate domain
     CALL domain%allocate_quantities(global_lw, global_nx, global_ll)

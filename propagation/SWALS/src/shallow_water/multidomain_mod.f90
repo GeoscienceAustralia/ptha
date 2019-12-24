@@ -29,7 +29,7 @@
 !
 module multidomain_mod
 
-    use global_mod, only: dp, ip, charlen, default_timestepping_method, &
+    use global_mod, only: dp, ip, charlen, &
         wall_elevation, minimum_allowed_depth, force_double, force_long_double, &
         default_output_folder, send_boundary_flux_data, &
         real_bytes, force_double_bytes, integer_bytes, pi
@@ -213,6 +213,7 @@ module multidomain_mod
         procedure :: print => print_multidomain
         procedure :: finalise_and_print_timers => finalise_and_print_timers
         procedure :: set_point_gauges_from_csv => set_point_gauges_from_csv
+        procedure :: stationary_timestep_max => stationary_timestep_max
         ! IO
         procedure :: write_outputs_and_print_statistics => write_outputs_and_print_statistics
 
@@ -1829,9 +1830,9 @@ module multidomain_mod
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%time
             write(log_output_unit, "(A)"         ) 'nsteps_advanced:'
             write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%nsteps_advanced
-            write(log_output_unit, "(A)"         ) 'max_allowed_dt (theory, or 0 if not computed): '
+            write(log_output_unit, "(A)"         ) 'max_dt in substep [ ~(cfl*dx)/(2*wave_speed) for FV solvers; 0 otherwise]:'
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%max_dt
-            write(log_output_unit, "(A)"         ) 'evolve_step_dt: '
+            write(log_output_unit, "(A)"         ) 'evolve_step_dt (one or more sub-steps): '
             write(log_output_unit, "(A, ES20.12)") '        ', md%domains(k)%evolve_step_dt
             write(log_output_unit, "(A)"         ) 'Stage: '
             write(log_output_unit, "(A, ES20.12)") '        ', maxstage
@@ -2615,6 +2616,8 @@ module multidomain_mod
         !
         do j = 1, nd_local
 
+            if(verbose1) write(log_output_unit,*) ' '
+            if(verbose1) write(log_output_unit,*) ' #################'
             if(verbose1) write(log_output_unit,*) ' Domain ID: ', domains(j)%myid
 
             domains(j)%boundary_exterior = (.NOT. domains(j)%is_nesting_boundary)
@@ -2632,7 +2635,7 @@ module multidomain_mod
         ! even though both reals and integers are stored
         !
 
-        ! Dimensions of all_recv_metadata correspond to: 
+        ! Columns of all_recv_metadata correspond to: 
         ! recv_from_domain_index, recv_from_image_index, xlo, xhi, ylo, yhi, send_metadata_row_index, recv_comms_index
         if(allocated(all_recv_metadata)) deallocate(all_recv_metadata)
 #ifdef COARRAY
@@ -2778,9 +2781,12 @@ module multidomain_mod
         ! DEBUG: Write out all_recv_metadata. Compile with -DMULTIDOMAIN_DEBUG to do this
         write(log_output_unit, *) ''
         write(log_output_unit, *) '## all_recv_metadata:'
+        write(log_output_unit, *) 'Columns of all_recv_metadata correspond to: '
+        write(log_output_unit, *) 'recv_from_domain_index, recv_from_image_index, xlo, xhi,', &
+                                  ' ylo, yhi, send_metadata_row_index, recv_comms_index'
         do k = 1, ni
             do j = 1, size(all_recv_metadata, 3) 
-                write(log_output_unit, *) '    ', k, j
+                write(log_output_unit, *) '    image ', k, ', domain ', j
                 do i = 1, size(all_recv_metadata, 2)
                     write(log_output_unit, *) '      ', all_recv_metadata(:,i,j,k)
                 end do
@@ -2857,6 +2863,9 @@ module multidomain_mod
         ! DEBUG: Write out all_send_metadata
         write(log_output_unit, *) ''
         write(log_output_unit, *) '## all_send_metadata:'
+        write(log_output_unit, *) 'Columns of all_send_metadata correspond to: '
+        write(log_output_unit, *) 'send_to_domain_index, send_to_image_index, xlo, xhi,', &
+                                  ' ylo, yhi, recv_metadata_row_index, counter'
         do k = 1, ni
             do j = 1, size(all_send_metadata, 3) 
                 write(log_output_unit, *) '    ', k, j
@@ -3083,6 +3092,19 @@ module multidomain_mod
 
     end subroutine
 
+    ! Get the largest timestep that the multidomain can take if the flow is quiescent.
+    !
+    function stationary_timestep_max(md) result(timestep)
+        class(multidomain_type), intent(inout) :: md
+        real(dp) :: timestep
+        integer(ip) :: j
+
+        timestep = HUGE(1.0_dp)
+        do j = 1, size(md%domains)
+            timestep = min(timestep, md%domains(j)%stationary_timestep_max())
+        end do
+
+    end function
 
     ! Make elevation constant in send_regions that go to a single coarser cell,
     ! if the maximum elevation is above elevation_threshold

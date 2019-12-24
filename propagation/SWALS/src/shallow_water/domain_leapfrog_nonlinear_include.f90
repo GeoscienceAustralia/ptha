@@ -1,6 +1,6 @@
 !
-! The code here solves the nonlinear or linear shallow water equations in cartesian or spherical 
-! coordinates, with or without coriolis. 
+! The code here solves the nonlinear shallow water equations in cartesian or spherical 
+! coordinates, with or without coriolis. It is modified from the corresponding linear code.
 !
 ! It has been moved out of domain_mod.f90 because: A) it became complex, and B) including this
 ! code in different subroutines with different parameters/preprocessor-variables facilitates
@@ -11,23 +11,17 @@
 
 
 !    ! 
-!    ! Linear shallow water equations leap-frog update
+!    ! Nonlinear shallow water equations leap-frog update
 !    !
-!    ! Update domain%U by timestep dt, using the linear shallow water equations.
-!    ! Note that unlike the other timestepping routines, this does not require a
-!    ! prior call to domain%compute_fluxes 
+!    ! Update domain%U by timestep dt, using the nonlinear shallow water equations.
 !    !
 !    ! @param domain the domain to advance
 !    ! @param dt the timestep to advance. Should remain constant in between repeated calls
 !    !     to the function (since the numerical method assumes constant timestep)
 !    !
-!    subroutine one_linear_leapfrog_step(domain, dt)
+!    subroutine one_leapfrog_nonlinear_step(domain, dt)
 !        class(domain_type), intent(inout):: domain
 !        real(dp), intent(in):: dt
-!
-!        ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
-!        ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
-!        logical, parameter:: truely_linear = .TRUE.
 
         ! Domain size
         integer(ip) :: nx, ny
@@ -42,7 +36,6 @@
         integer(ip):: j, i, xl, xu, yl, yu, n_ext, my_omp_id, n_omp_threads, loop_work_count, jm1, im1, jp1, jp2
         integer(ip) :: yl_omp, yu_omp
 
-#if defined(CORIOLIS) || defined(LEAPFROG_NONLINEAR_FRICTION) || defined(NONLINEAR_ADVECTION)
         ! Vector to hold the (coriolis force x time-step x 0.5), which arises
         ! in an inner loop. Use a vector so we can zero it for dry cells
         real(dp):: dt_half_coriolis(domain%nx(1)), dt_half_coriolis_jph(domain%nx(1))
@@ -58,23 +51,19 @@
         ! the 'pre-update' UH at 'i', 'j'. We also need that at 'i', 'j+1'
         real(dp) :: uh_i_j(domain%nx(1)), uh_i_jp1(domain%nx(1))
         real(dp) :: uh_i_jp1_max_loop_index(domain%nx(1))
-#endif
 
-#if defined(NONLINEAR_ADVECTION)
         ! Work-array indices for domain%advection_work(:,:,index)
         !! FIXME: The code could be restructured to avoid the use of this memory.
         !!        The current code was edited from the linear solver (which is much more memory efficient),
-        !!        and to simplify the original implementation this large block of temporary storage was used.
+        !!        and to simplify the implementation this large block of temporary storage was used.
         !!        A re-write could follow the approach of the linear solver (where we store a few rows of data
         !!        only, and take care with openmp to ensure the required data is available).
         integer(ip), parameter :: DEPTH_LAG = 1, UUH = 2, UVH = 3, VUH = 4, VVH = 5
         real(dp) :: depth_local, inv_depth_local
-#endif
 
         domain%dt_last_update = dt
 
 
-#if defined(NONLINEAR_ADVECTION)
         ! For the nonlinear advection solver, we must store the previous stage
         domain%advection_work(:,:, DEPTH_LAG) = max(domain%U(:,:,STG) - domain%U(:,:,ELV), ZERO_dp)
         domain%advection_work(:,:, UUH) = ZERO_dp
@@ -84,7 +73,6 @@
         ! Clear uh/vh fluxes
         domain%flux_EW(:,:,UH:VH) = ZERO_dp
         domain%flux_NS(:,:,UH:VH) = ZERO_dp
-#endif
 
         !
         ! idea: U(i, j, UH) = UH_{i+1/2, j}
@@ -108,7 +96,8 @@
         nx = domain%nx(1)
         ny = domain%nx(2)
      
-        !! For now don't try to support this 
+        !! For now don't try to support evolving a subset of rows/columns
+        !! (It may or may not work but needs to be tested).
         xL = 1 !domain%xL
         xU = nx !domain%xU
         yL = 1 !domain%yL
@@ -223,11 +212,9 @@
         ! Next update uh, vh from indices 1...(domain%nx - 1), which correspond to fluxes that have exterior stage values.
         !
 
-#if defined(LEAPFROG_NONLINEAR_FRICTION)
         ! Predefine the friction terms. In the 'truely-linear' case we will only call this once,
         ! whereas in the not-truely-linear case it will be called every timestep (i.e. domain%friction_work_is_setup==FALSE)
         if(.not. domain%friction_work_is_setup) call precompute_friction_work(domain)
-#endif
 
         ! NOTE: Here we manually determine the openmp loop indices. This is
         ! required to include the Coriolis terms without having to copy
@@ -267,8 +254,6 @@
         !
         ! Now loop indices are determined
         !
-
-#if defined(NONLINEAR_ADVECTION)
 
         ! Store the depth (i,j) at the time of the previous momentum update
         do j = yl_omp, yu_omp
@@ -339,11 +324,6 @@
             domain%advection_work(xL:xU, ny  , VUH) = domain%advection_work(xL:xU,ny-2,VUH)
             domain%advection_work(xL:xU, ny-1, VUH) = domain%advection_work(xL:xU,ny-2,VUH)
         end if
-
-#endif
-
-
-#if defined(NONLINEAR_ADVECTION)
 
         ! Compute fluxes once advection_work terms are all computed
         !$OMP BARRIER
@@ -506,11 +486,6 @@
 
         end do
 
-#endif
-
-
-
-#if defined(CORIOLIS) || defined(LEAPFROG_NONLINEAR_FRICTION) || defined(NONLINEAR_ADVECTION)
         ! Tricks to implement coriolis without increasing memory usage much
         !
         ! For coriolis, we need values of 'VH' at coorinates corresponding to UH,
@@ -588,7 +563,7 @@
         !! BEWARE -- After the above barrier, we cannot safetly work with domain%U(:,:, UH:VH) EXCEPT when the j-index = j,
         !! because it may have been updated on another openmp process. However we can work with domain%U(:,:,STG), and of
         !! course ELV
-#endif
+
         !! Main update-flux loop
         !do j = 1, ny - 1
         do j = yl_omp, yu_omp
@@ -661,8 +636,6 @@
                  (domain%U(xL:xU-1,j,STG) > (domain%U(xL+1:xU,j,ELV) + minimum_allowed_depth)) ) )
 
 
-
-#if defined(CORIOLIS) || defined(LEAPFROG_NONLINEAR_FRICTION) || defined(NONLINEAR_ADVECTION)
             ! 'Old' VH at (i+1/2, j+1/2) -- requires averaging values at 'i,j+1/2' and 'i+1, j+1/2'
             vh_iph_jph(xL:(xU-1)) = HALF_dp * &
                 (domain%U(xL    :(xU-1), j, VH) + &
@@ -684,7 +657,6 @@
                                uh_i_jp1(xL:(xU-1)), &
                 uh_i_jp1_max_loop_index(xL:(xU-1)), &
                 j /= yu_omp)
-#endif
 
 #if defined(CORIOLIS)
             ! Avoid recomputing coriolis coefficient in loop. Note we set the
@@ -696,7 +668,6 @@
                 merge(ONE_dp, ZERO_dp, h_jph_wet_strict(xL:(xU-1)) > ZERO_dp)
 #endif
 
-#if defined(LEAPFROG_NONLINEAR_FRICTION)
             ! Compute a multiplier that applies a semi-implicit treatment of manning friction.
             !
             ! This is equivalent to adding a term "g * depth * friction_slope" to the equations.
@@ -725,8 +696,6 @@
                 dt * domain%friction_work(xL:(xU-1), j, VH) * &
                 sqrt(domain%U(xL:(xU-1),j,VH)**2 + (0.5_dp * ( uh_i_j(xL:(xU-1)) + uh_i_jp1(xL:(xU-1)) ) )**2 ) )
 
-#endif
-
             do i = xL , (xU-1)
                 ! Update without coriolis or friction.
 
@@ -741,7 +710,6 @@
                     inv_cell_area_dt_vh_g * h_jph_vec(i) * h_jph_wet(i) * &
                     dw_j(i) * domain%distance_bottom_edge(j+1)
 
-#if defined(NONLINEAR_ADVECTION)
                 ! Append nonlinear advection terms
                 domain%U(i, j, UH) = domain%U(i, j, UH) - &
                     inv_cell_area_dt * advection_beta * h_iph_wet(i) * (&
@@ -752,7 +720,6 @@
                     inv_cell_area_dt_vh * advection_beta * h_jph_wet(i) * (&
                         (domain%flux_EW(i+1,  j, VH) - domain%flux_EW(i, j, VH)) + &
                         (domain%flux_NS(i  ,j+1, VH) - domain%flux_NS(i, j, VH)))
-#endif
 
 #if defined(CORIOLIS)
                 ! Append coriolis term
@@ -766,11 +733,9 @@
 
 #endif
 
-#if defined(LEAPFROG_NONLINEAR_FRICTION)
                 ! Add the semi-implicit friction terms
                 domain%U(i,j,UH) = friction_multiplier_UH(i) * domain%U(i,j,UH)
                 domain%U(i,j,VH) = friction_multiplier_VH(i) * domain%U(i,j,VH)
-#endif
 
             end do
 
@@ -796,12 +761,10 @@
             end do
 #endif                      
 
-#if defined(CORIOLIS) || defined(LEAPFROG_NONLINEAR_FRICTION)
             ! On the next j iteration, the value of 'old' value of VH at i+1/2,
             ! j-1/2 can be derived using the current value of VH at i+1, j+1/2
             vh_iph_jmh(xL:(xU-1)) = vh_iph_jph(xL:(xU-1))
             uh_i_j(xL:(xU-1)) = uh_i_jp1(xL:(xU-1))
-#endif
 
         end do
 

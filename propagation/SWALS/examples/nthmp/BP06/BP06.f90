@@ -418,7 +418,7 @@ end module
 
 program BP06
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum
@@ -437,7 +437,7 @@ program BP06
 
     real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
     
-    real(dp), parameter ::  global_dt = 0.024_dp / mesh_refine
+    real(dp), parameter ::  global_dt = 0.024_dp / mesh_refine !* 0.5_dp
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
@@ -482,7 +482,7 @@ program BP06
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = 'rk2' !'cliffs' !'rk2'
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
     md%domains(1)%cliffs_minimum_allowed_depth = 0.01_dp
     !md%domains(1)%theta = 1.0_dp
     !md%domains(1)%compute_fluxes_inner_method = 'DE1_low_fr_diffusion_upwind_transverse'
@@ -497,7 +497,7 @@ program BP06
         upper_right=high_res_ur, &
         dx_refinement_factor=nest_ratio, &
         timestepping_refinement_factor= nest_ratio)
-    md%domains(2)%timestepping_method = 'rk2' !'cliffs' !'rk2'
+    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method
     md%domains(2)%cliffs_minimum_allowed_depth = 0.002_dp
     !md%domains(2)%theta = 1.0_dp
     !md%domains(2)%compute_fluxes_inner_method = 'DE1_low_fr_diffusion_upwind_transverse'

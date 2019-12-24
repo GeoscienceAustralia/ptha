@@ -207,8 +207,8 @@ program bp2
 
    
     ! Linear requires a fixed timestep 
-    if (timestepping_method == 'linear') then
-        timestep = domain%stationary_timestep_max() 
+    if (.not. domain%adaptive_timestepping) then
+        timestep = domain%stationary_timestep_max() * 0.5_dp
     end if
 
 
@@ -240,7 +240,7 @@ program bp2
         !CALL domain%evolve_one_step(timestep=2.5_dp)
 
         ! Variable timestep
-        if(timestepping_method == 'linear') then
+        if(.not. domain%adaptive_timestepping) then
             call domain%evolve_one_step(timestep = timestep)
         else
             call domain%evolve_one_step()

@@ -112,7 +112,7 @@ end module
 
 program circular_island
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp, minimum_allowed_depth, default_linear_timestepping_method
     use domain_mod, only: domain_type
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary
     use linear_interpolator_mod, only: linear_interpolator_type
@@ -128,7 +128,7 @@ program circular_island
     real(dp), parameter :: final_time = 200000.0_dp
 
     ! Domain info
-    character(charlen) :: timestepping_method = 'linear' !'rk2' !
+    character(charlen) :: timestepping_method = default_linear_timestepping_method
     
     !! length/width
     real(dp), dimension(2) :: global_lw, global_ll
@@ -187,7 +187,7 @@ program circular_island
 
    
     ! Linear requires a fixed timestep 
-    if (timestepping_method == 'linear') then
+    if (.not. domain%adaptive_timestepping) then
         timestep = domain%stationary_timestep_max() 
     end if
 
@@ -227,7 +227,7 @@ program circular_island
 
         if (domain%time > final_time) exit 
 
-        if (domain%timestepping_method == 'linear') then
+        if (.not. domain%adaptive_timestepping) then
             call domain%evolve_one_step(timestep = timestep)
         else
             call domain%evolve_one_step()

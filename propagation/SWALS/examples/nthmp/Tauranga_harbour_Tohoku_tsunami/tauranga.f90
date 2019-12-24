@@ -254,7 +254,7 @@ end module
 
 program run_Tauranga
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary, &
@@ -313,7 +313,7 @@ program run_Tauranga
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = 'rk2' !'cliffs' !'midpoint' !'rk2'
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'rk2' !'cliffs' !'midpoint' !'rk2'
     !md%domains(1)%theta = 4.0_dp
     !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
     !md%domains(1)%linear_solver_is_truely_linear = .false.
@@ -330,7 +330,7 @@ program run_Tauranga
         dx_refinement_factor=nest_ratio, &
         timestepping_refinement_factor=nest_ratio,&
         rounding_method='nearest')
-    md%domains(2)%timestepping_method = 'rk2' !'cliffs' !'midpoint' !'rk2'
+    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method !'cliffs' !'midpoint' !'rk2'
     !md%domains(2)%theta = 4.0_dp
 
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &

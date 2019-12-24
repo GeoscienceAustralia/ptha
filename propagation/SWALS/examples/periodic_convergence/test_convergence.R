@@ -55,6 +55,7 @@ get_order_accuracy<-function(var, time=0.05){
         print('PASS')
     }else{
         print('FAIL: Convergence less rapid than previously')
+        print(order[2:(NM-1)])
     }
     
     cbind(dx, errs, order) 
