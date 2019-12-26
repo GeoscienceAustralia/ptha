@@ -141,7 +141,7 @@ not a replacement for eyeballing the figures and thinking about the results.
 The validation tests provide templates for developing other models. They illustrate driver programs, compilation, and model post-processing. Some of the more practical examples include:
 
 * [./examples/nthmp/BP09/](./examples/nthmp/BP09) which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
-* [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Taurange_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
+* [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Tauranga_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
 * [./examples/periodic_multidomain/](./examples/periodic_multidomain) which illustrates a global multidomain with periodic east-west boundaries
 
 The above models can be run with OpenMP and/or coarrays, and illustrate use of the multidomain class. Another useful example is:
