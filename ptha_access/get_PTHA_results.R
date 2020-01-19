@@ -558,7 +558,8 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
         target_point, target_index)
 
     if(is.null(all_source_names)){
-        all_source_names = basename(dirname(Sys.glob('SOURCE_ZONES/*/EQ_SOURCE')))
+        #all_source_names = basename(dirname(Sys.glob('SOURCE_ZONES/*/EQ_SOURCE')))
+        all_source_names = config_env$source_names_all
     }
 
     if(slip_type == 'stochastic'){
