@@ -9,20 +9,23 @@ Installation prerequisites
 --------------------------
 
 ## Fortran compiler
-Compilation requires a version of GNU-Fortran, combined with OpenCoarrays to
-provide distributed memory coarrary support. The author hasn't comprehensively
-tested various compiler versions, but it is likely that gfortran versions 5 or
-greater will work (without coarrays), but OpenCoarrays may require a more
-recent gfortran.
+Compilation requires a version of GNU-Fortran or ifort, although the test-suite
+is setup for gfortran by default. The author hasn't comprehensively tested various
+compiler versions, but it is likely that gfortran versions 5 or greater will
+work (without coarrays), and ifort versions 19 and greater. 
 
-The code has also been compiled and run with Intel-Fortran 19, which has some
-support for coarrays. However this requires different preprocessor options to
-run efficiently, see below. It also requires adjustments to the build script.
+The code can run in parallel with both shared memory (openmp) and distributed
+memory approaches. Distributed parallel support requires that MPI is installed,
+and/or that the compiler has adequate coarray support. On gfortran, coarrays
+work well using the OpenCoarrays library. Because compiler support for coarrays
+is generally less mature than MPI, we have also created options for running the
+code with MPI (i.e replacing coarray communication with MPI). In general 
+all these parallel approaches can be used together.
 
 ## C compiler
 The code also makes limited use of C to interface with the GDAL library (thus
-providing flexible raster-based input), so a C compiler is required (typically
-gcc, or use Intel's icc with Intel-Fortran).
+providing flexible raster-based input) and qsort. Thus a C compiler is
+required, typically gcc.
 
 ## Make
 The "make" program is used for compilation.
@@ -65,11 +68,11 @@ points to another compiler specific script (there are variants for both
 [gfortran](./src/src_standard_compiler_var_gfortran) and
 [ifort](./src/src_standard_compiler_var_ifort)). Variables in these scripts can
 be overridden by defining them in the application-specific makefile (see the
-examples).  This is required in many situations (e.g. to use spherical
+examples). This is required in many situations (e.g. to use spherical
 coordinates, or compile with support for distributed-memory parallel runs, or
 to use a different compiler/options, or use non-standard library locations.)
 
-See the validation test suite for examples.
+See the validation test suite for examples, and documentation of compiler options below.
 
 # Step 1: Run the unit-tests
 
@@ -156,10 +159,10 @@ A number of preprocessor variables can be defined to control features of the cod
 
 - `-DTIMER` Time sections of the code and report on how long they take, generally in the multidomain log file. This is useful for understanding run-times. It is also used for static load-balancing calculations - see the function `make_load_balance_partition` in [./plot.R](./plot.R) which uses multidomain log-files to compute a more balanced distribution of work for multi-image coarray runs.
 - `-DSPHERICAL` Assume spherical coordinates. Otherwise cartesian coordinates are used
-- `-DCOARRAY` Build with coarray support. Otherwise only OpenMP parallisation is used.
 - `-DREALFLOAT` Use single precision for all reals. Otherwise double-precision is used. Beware the nonlinear solvers generally need double-precision for accuracy.
 - `-DNOCORIOLIS` Do not include Coriolis terms in spherical coordinates. By default, Coriolis terms are used when `-DSPHERICAL` is defined. They can ONLY be used in conjunction with spherical coordinates. But even in this case, sometimes it is useful to turn them off, hence this variable.
-- `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` This uses MPI instead of coarrays for communication. If using this option you MUST also use -DCOARRAY.
+- `-DCOARRAY` Build with coarray support (alternatively the coarray calls may be replaced with MPI using flags below). Without this falg, only OpenMP parallisation is used.
+- `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` This uses MPI instead of coarrays for communication, which is useful because compiler support for coarrays is quite variable. If using this option you MUST also use -DCOARRAY (yes, even though it replaces coarrays).
 - `-DCOARRAY_PROVIDE_CO_ROUTINES` Provide implementations of coarray collectives using MPI. This is required for compilers that do not support Fortran coarray collectives such as co_min, co_max, co_sum, etc. If using this option you MUST also use -DCOARRAY.
 - `-DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS` Allow nonlinear domains inside a multidomain to take larger timesteps than suggested by `domain%timestepping_refinement_factor`, if this would be stable according to their own cfl-limit. This can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file (e.g. `md%load_balance_file="load_balance_partition.txt"`), which can be generated from a preliminary model run. See `make_load_balance_partition` in [./plot.R](./plot.R).
 - `-DNETCDF4_GRIDS` Use the HDF5-based netcdf4 format for grid-file output. This requires that the netcdf library is compiled with netcdf4 support -- if not it will cause compilation to fail.
