@@ -1358,3 +1358,26 @@ get_domain_indices_in_multidomain<-function(multidomain_dir){
     return(unique(all_domain_indices))
 }
 
+
+#'
+#' Convenience function to get the timer-total-wallclock times for each
+#' individual domain, as recorded in the md log file
+#'
+#' @param md_log_file filename
+#' @param wallclock_time_line_spacing Number of lines after the RUN_ID00 filename that the wallclock-time line appears
+#' @param a data.frame containing the domain ID info, the wallclock time, and the domain index according to the model setup
+get_domain_wallclock_times_in_log<-function(md_log_file, wallclock_time_line_spacing = 15){
+    x = readLines(md_log_file)
+    # The timer information is preceeded by statement of the output directory, which will match this
+    inds = grep('RUN_ID00', x)
+    # Get the domain information
+    domains = basename(x[inds])
+    domains = unlist(lapply(strsplit(domains, '_'), f<-function(x) x[2]))
+    # Get the time
+    times = as.numeric(gsub(' Total WALLCLOCK time: ', '', x[inds+wallclock_time_line_spacing]))
+    # Get the domain number corresponding to the original
+    domain_number = as.numeric(gsub('ID', '', domains))%%100000
+
+    output = data.frame(domains=domains, times=times, index=domain_number)
+    return(output)
+}
