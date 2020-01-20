@@ -1,23 +1,24 @@
-!
-! Module to help have an 'image specific' log for the coarray case
-! We 'use' log_output_unit to output generic print type statements.
-! By default it just goes to stdout, but it can also be sent to a file, for
-! easier interpretation of parallel outputs
-!
 module logging_mod
+    !!
+    !! Module to make an 'image specific' file log when using coarrays. 
+    !! We 'use' log_output_unit to output generic print type statements to the log.
+    !! By default log_output_unit=stdout. But it can also be directed to a file.
+    !!
 
     use global_mod, only: charlen
+    use coarray_intrinsic_alternatives
     use iso_fortran_env, only: output_unit
     implicit none
 
     public :: log_output_unit, send_log_output_to_file
 
-    integer :: log_output_unit = output_unit
+    integer :: log_output_unit = output_unit !! File unit for output
 
     contains
 
-    ! Call this to send the log to a file (image specific, if coarrays are used)
     subroutine send_log_output_to_file(filename_prefix)
+        !! Direct the log_output_unit to a file, with name like (filename_prefix + '.log'). 
+        !! If coarrays are used, then the name will be like (filename_prefix + '_image_' + my_image + '.log')
         character(len=*), intent(in) :: filename_prefix
 
         character(len=charlen) :: log_filename, ti_char
@@ -25,7 +26,7 @@ module logging_mod
         log_filename = trim(filename_prefix) // '.log'
 
 #ifdef COARRAY
-        write(ti_char, '(I0.20)') this_image()
+        write(ti_char, '(I0.20)') this_image2()
         log_filename = trim(filename_prefix) // '_image_' // trim(ti_char) // '.log'
 #endif
 

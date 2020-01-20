@@ -10,7 +10,7 @@ module local_routines
 
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: gdal_raster_dataset_type
+    use read_raster_mod, only: multi_raster_type !gdal_raster_dataset_type
     use which_mod, only: which
     use file_io_mod, only: read_csv_into_array
     use stop_mod, only: generic_stop
@@ -31,7 +31,7 @@ module local_routines
         integer(ip):: i, j
         real(dp), allocatable:: x(:), y(:), xy_coords(:,:)
         integer(ip):: xl, xU, yl, yU
-        type(gdal_raster_dataset_type):: elevation_data, stage_data
+        type(multi_raster_type):: elevation_data, stage_data
 
         ! Make space for x/y coordinates, at which we will look-up the rasters
         allocate(x(domain%nx(1)), y(domain%nx(1)))
@@ -40,7 +40,7 @@ module local_routines
 
         print*, "Setting elevation ..."
 
-        call elevation_data%initialise(input_elevation_raster)
+        call elevation_data%initialise([input_elevation_raster])
 
         print*, '    bounding box of input elevation: ' 
         print*, '    ', elevation_data%lowerleft
@@ -65,7 +65,7 @@ module local_routines
         print*, "Setting stage ..."
         ! Set stage -- zero outside of initial condition file range
         domain%U(:,:,[STG,UH,VH]) = 0.0_dp
-        CALL stage_data%initialise(input_stage_raster)
+        CALL stage_data%initialise([input_stage_raster])
 
         ! Do not allow periodic stage data (unlike elevation, since the latter has to be set
         ! everywhere, whereas the former will just be set inside the provided data and use

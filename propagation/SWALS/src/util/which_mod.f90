@@ -1,7 +1,7 @@
 module which_mod
-    !
-    ! Emulates a few R routines: 'which', 'rle', 'cumsum', ...
-    !
+    !!
+    !! Emulates a few R routines: 'which', 'rle', 'cumsum', ...
+    !!
     use global_mod, only: ip
 
     implicit none
@@ -10,9 +10,9 @@ module which_mod
     public which, test_which, rle_ip, cumsum_ip, bind_arrays_ip, remove_rows_ip
 
     interface 
-        ! When generalising rle, it is helpful for the user to pass
-        ! a function defining whether two objects (indexed by integers)
-        ! are equal
+        !! When generalising rle, it is helpful for the user to pass
+        !! a function defining whether two objects (indexed by integers)
+        !! are equal
         function eq_fun(i1, i2) result(is_equal)
             import ip
             implicit none
@@ -23,9 +23,9 @@ module which_mod
 
     contains
 
-    ! Return an array with integers corresponding to indices where logical_array is .true.
-    ! Like 'which' in R.
     pure subroutine which(logical_array, allocatable_array)
+        !! Return an array with integers corresponding to indices where logical_array is .true. .
+        !! Like 'which' in R.
         logical, intent(in) :: logical_array(:)
         integer(ip), allocatable, intent(out):: allocatable_array(:)
         integer(ip):: arr_len, i, counter
@@ -50,24 +50,18 @@ module which_mod
 
     end subroutine
 
-    !
-    ! Emulate R's function 'rle', which computes the lengths and values of runs of equal
-    ! values in a vector
-    !
-    ! @param integer_array rank 1 array with integers
-    ! @param values return the values of the integer array
-    ! @param lengths return the length of the 'runs' of equal values
-    ! @param equality_function (optional) function f(i1, i2) which returns
-    !   .true. if i1 should be treated as equal to i2, and false otherwise. This
-    !   can be used to generalise rle_ip, e.g. we could look for equality of rows in a
-    !   matrix by having equality function return all(mymatrix(i1,:) == mymatrix(i2,:))
-    !
     subroutine rle_ip(integer_array, values, lengths, equality_function)
-
-        integer(ip), intent(in) :: integer_array(:)
-        integer(ip), allocatable, intent(inout) :: values(:)
-        integer(ip), allocatable, intent(inout) :: lengths(:)
-        procedure(eq_fun), optional :: equality_function
+        !!
+        !! Emulate R's function 'rle', which computes the lengths and values of runs of equal
+        !! values in a vector
+        integer(ip), intent(in) :: integer_array(:) !! rank 1 array with integers
+        integer(ip), allocatable, intent(inout) :: values(:) !! return the values of the integer array
+        integer(ip), allocatable, intent(inout) :: lengths(:) !! return the length of the 'runs' of equal values
+        procedure(eq_fun), optional :: equality_function 
+        !! (optional) function f(i1, i2) which returns
+        !! .true. if i1 should be treated as equal to i2, and false otherwise. This
+        !! can be used to generalise rle_ip, e.g. we could look for equality of rows in a
+        !! matrix by having equality function return all(mymatrix(i1,:) == mymatrix(i2,:))
 
         integer(ip) :: n, counter, np, i
         procedure(eq_fun), pointer :: eq_fun_local
@@ -141,10 +135,10 @@ module which_mod
 
     end subroutine
 
-    !
-    ! Cumulative sum
-    !
     pure subroutine cumsum_ip(integer_array)
+        !!
+        !! Cumulative sum (for integer(ip))
+        !!
         integer(ip), intent(inout) :: integer_array(:)
 
         integer(ip) :: sumval, n, i
@@ -161,20 +155,17 @@ module which_mod
 
     end subroutine
 
-    !
-    ! 'Bind' rank 2 arrays 'ar1' and 'ar2', either by rows or by columns
-    !
-    ! This can be used to emulate R's 'rbind' and 'cbind' functions, which
-    ! combine 2-d arrays by rows or by columns
-    !
-    ! @param ar1 rank-2 allocatable array, which will be modified on output to contain rbind(ar1, ar2), or cbind(ar1, ar2)
-    ! @param ar2 rank-2 array
-    ! @param rowbind logical indicating whether to do a 'rbind' (TRUE) or 'cbind' (FALSE)
-    !
     subroutine bind_arrays_ip(ar1, ar2, rowbind)
+        !!
+        !! 'Bind' rank 2 arrays 'ar1' and 'ar2', either by rows or by columns
+        !!
+        !! This can be used to emulate R's 'rbind' and 'cbind' functions, which
+        !! combine 2-d arrays by rows or by columns
+        !!
         integer(ip), intent(inout), allocatable :: ar1(:,:)
-        integer(ip), intent(in) :: ar2(:,:)
-        logical, optional, intent(in) :: rowbind
+        !! allocatable array, which will be modified on output to contain rbind(ar1, ar2), or cbind(ar1, ar2)
+        integer(ip), intent(in) :: ar2(:,:) !! as defined above
+        logical, optional, intent(in) :: rowbind !! logical indicating whether to do a 'rbind' (TRUE) or 'cbind' (FALSE)
 
         integer(ip), allocatable :: tmp_ar(:,:)
         logical :: bind_rows 
@@ -214,9 +205,12 @@ module which_mod
     end subroutine 
 
     subroutine remove_rows_ip(ar1, indices, apply_to_rows)
-        integer(ip), allocatable, intent(inout) :: ar1(:,:)
-        integer(ip), intent(in) :: indices(:)
-        logical, optional, intent(in) :: apply_to_rows
+        !!
+        !! Remove rows from a rank-2 allocatable array ar1. Alternatively remove columns (if apply_to_rows == .FALSE.)
+        !!
+        integer(ip), allocatable, intent(inout) :: ar1(:,:) !! Rank 2 array
+        integer(ip), intent(in) :: indices(:) !! Indices of rows (or columns) to remove
+        logical, optional, intent(in) :: apply_to_rows !! If TRUE (default) remove rows, otherwise remove columns.
 
         logical :: rows       
         integer(ip), allocatable :: tmp_ar(:,:)
@@ -277,8 +271,8 @@ module which_mod
 
     end subroutine
     
-    ! Test the module subroutine
     subroutine test_which() 
+        !! Test the module
 
         logical :: test_data(5)
         integer(ip), allocatable :: data_indices(:), values(:), lengths(:)

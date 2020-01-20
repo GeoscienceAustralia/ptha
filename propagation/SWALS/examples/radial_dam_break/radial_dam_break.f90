@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Setup the radial dam-break problem
+    !!
     use global_mod, only: dp, ip, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
@@ -49,9 +52,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program radial_dam_break
+    !!
+    !! Radial dam-break problem
+    !!
     use global_mod, only: ip, dp, charlen, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: read_csv_into_array

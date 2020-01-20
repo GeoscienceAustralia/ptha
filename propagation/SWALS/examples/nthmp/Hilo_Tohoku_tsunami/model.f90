@@ -1,7 +1,10 @@
 module local_routines 
+    !!
+    !! Setup NTHMP currents test problem -- Tohoku tsunami at Hilo Harbour with an artificial forcing.
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: gdal_raster_dataset_type
+    use read_raster_mod, only: multi_raster_type
     use file_io_mod, only: count_file_lines
     use linear_interpolator_mod, only: linear_interpolator_type
     use points_in_poly_mod, only: points_in_poly
@@ -19,8 +22,9 @@ module local_routines
 
     !
     ! Parameter controlling the northern boundary treatment
-    !
-    character(len=charlen), parameter :: boundary_type = 'boundary_stage_radiation_momentum'
+    ! Depending on the solver, it is nontrivial to get a good boundary forcing for this problem, that is sufficiently radiative
+    ! without overly distorting the tsunami.
+    character(len=charlen) :: boundary_type = 'boundary_stage_radiation_momentum'
 
     ! This will hold the information -- is seen by other parts of the module
     type(boundary_information_type):: boundary_information
@@ -117,16 +121,16 @@ module local_routines
                 ! wave frequencies are lower
                 stage_uh_vh_elev(2:3) = 0.0_dp
 
-            !case('flather_with_vh_from_continuity')
-            !    ! Approach 4: Flat-free-surface continuity
-            !    if(j == domain%nx(2)) then
-            !        stage_uh_vh_elev(2) = 0.0_dp
-            !        ! Assume flat free surface from offshore to the coast + estuary volume. 
-            !        ! That gives a rough estimate of -VH. However, in practice the factor needs tuning.
-            !        stage_uh_vh_elev(3) = 0.0_dp -dhdt(1) * 5000.0_dp
-            !    else
-            !        stage_uh_vh_elev(2:3) = 0.0_dp
-            !    end if
+            case('flather_with_vh_from_continuity')
+                ! Approach 4: Flat-free-surface continuity
+                if(j == domain%nx(2)) then
+                    stage_uh_vh_elev(2) = 0.0_dp
+                    ! Assume flat free surface from offshore to the coast + estuary volume. 
+                    ! That gives a rough estimate of -VH. However, in practice the factor needs tuning.
+                    stage_uh_vh_elev(3) = 0.0_dp -dhdt(1) * 3800.0_dp
+                else
+                    stage_uh_vh_elev(2:3) = 0.0_dp
+                end if
 
             case default
                 print*, 'boundary_type not recognised'
@@ -144,7 +148,7 @@ module local_routines
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)
         logical, allocatable:: is_inside(:)
-        type(gdal_raster_dataset_type):: elevation_data, stage_data
+        type(multi_raster_type):: elevation_data
         real(dp) :: wall, w
         real(dp) :: gauge_xy(3,6)
         real(dp) :: pol1(4,2), pol2(4,2)
@@ -159,7 +163,7 @@ module local_routines
         ! Make space for x/y coordinates, at which we will look-up the rasters
         allocate(x(domain%nx(1)), y(domain%nx(1)), is_inside(domain%nx(1)))
         x = domain%x
-        call elevation_data%initialise(input_elevation)
+        call elevation_data%initialise([input_elevation])
 
         do j = 1, domain%nx(2)
             y = domain%y(j)
@@ -202,11 +206,14 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program run_model
+program Hilo_harbour_Tohoku
+    !!
+    !! NTHMP currents test problem -- Tohoku tsunami at Hilo Harbour with an artificial forcing.
+    !!
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary, &
@@ -269,7 +276,7 @@ program run_model
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = 'rk2' !'cliffs' !'midpoint' !'rk2'
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'cliffs' !'midpoint' !'rk2'
     !md%domains(1)%theta = 4.0_dp
     !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
     !md%domains(1)%linear_solver_is_truely_linear = .false.
@@ -281,6 +288,15 @@ program run_model
 
     ! Allocate domains and prepare comms
     call md%setup()
+
+    if(md%domains(1)%is_staggered_grid) then
+        ! The 'boundary_stage_radiation_momentum' boundary is insufficiently radiative with the leapfrog solvers
+        ! This bc is still not great, but better.
+        boundary_type = 'flather_with_vh_from_continuity'
+    else
+        ! Good for rk2 and related type solvers -- but poor for leapfrog_nonlinear, and not so good for cliffs.
+        boundary_type = 'boundary_stage_radiation_momentum'
+    end if
 
     ! Initial conditions
     do j = 1, size(md%domains)

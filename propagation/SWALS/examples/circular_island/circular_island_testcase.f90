@@ -1,13 +1,6 @@
-!
-! Plane wave scattering around a circular conical island.
-! This case has an analytical solution, due to: 
-! Zhang and Zhu (1994) New solutions for the propagation of long waves over
-! variable depth. Journal of fluid mechanics 278: 391-406
-!
 
-
-! Module used to define initial and boundary conditions
 module local_routines 
+    !! Define initial and boundary conditions
 
     use global_mod, only: dp, ip, charlen, wall_elevation, pi, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
@@ -17,22 +10,21 @@ module local_routines
     use linear_interpolator_mod, only: linear_interpolator_type
     implicit none
 
-    ! Hold some data used by the boundary condition. We can set this from
-    ! inside the main program.
     type :: boundary_information_type
+        !! Hold some data used by the boundary condition. We can set this from
+        !! inside the main program.
         real(dp) :: offshore_elev
         real(dp) :: boundary_wave_period
     end type
 
-    ! The main program will modify this type to set up the boundary condition
     type(boundary_information_type), public :: boundary_information
+        !! The main program will modify this type to set up the boundary condition
 
     contains 
 
-    !
-    ! Make a function to evaluate the boundary at the domain. We will use
-    ! this in conjunction with a flather type radiation condition
     pure function boundary_function(domain, t, i, j) result(stage_uh_vh_elev)
+        !! Make a function to evaluate the boundary at the domain. We will use
+        !! this in conjunction with a flather type radiation condition
 
         type(domain_type), intent(in):: domain
         real(dp), intent(in):: t
@@ -53,8 +45,8 @@ module local_routines
 
     end function
 
-    ! Initial conditions + locations of gauges
     subroutine set_initial_conditions_circular_island(domain, offshore_depth, island_radius, slope_radius)
+        !! Setup initial conditions + locations of gauges
 
         class(domain_type), target, intent(inout):: domain
         real(dp), intent(in) :: offshore_depth, island_radius, slope_radius
@@ -108,9 +100,13 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program circular_island
+    !! Plane wave scattering around a circular conical island.
+    !! This case has an analytical solution, due to: 
+    !! Zhang and Zhu (1994) New solutions for the propagation of long waves over
+    !! variable depth. Journal of fluid mechanics 278: 391-406
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_linear_timestepping_method
     use domain_mod, only: domain_type

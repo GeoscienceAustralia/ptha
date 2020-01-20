@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Very shallow steady uniform flow down a uniform slope
+    !!
     use global_mod, only: dp, ip, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
@@ -43,9 +46,13 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program uniform_slope
+program uniform_slope_shallow
+    !!
+    !! Very shallow steady uniform flow down a uniform slope
+    !!
+
     use global_mod, only: ip, dp, charlen, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: read_csv_into_array
@@ -132,7 +139,7 @@ program uniform_slope
     call domain%timer%print()
 
 
-    theoretical_vol = Qin * domain%time * (domain%nx(1) - 2)!* domain%lw(1) * (global_nx(1) - 2) * 1.0_dp / global_nx(1)
+    theoretical_vol = Qin * domain%time * (domain%nx(1) - 2) ! * domain%lw(1) * (global_nx(1) - 2) * 1.0_dp / global_nx(1)
     model_vol = sum(domain%U(:,:,STG) - domain%U(:,:,ELV)) * domain%dx(1) * domain%dx(2)
     print*, 'Cell area: ', domain%dx, product(domain%dx)
     ! Analytical solution

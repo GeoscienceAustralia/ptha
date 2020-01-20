@@ -1,11 +1,11 @@
 module local_routines 
-    ! 
-    ! Subroutines & data used to setup the model scenario (comparable to
-    ! project.py in ANUGA)
-    !
+    !! 
+    !! Subroutines and data used to setup the model scenario 
+    !!
+
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: gdal_raster_dataset_type
+    use read_raster_mod, only: multi_raster_type 
     use which_mod, only: which
     use file_io_mod, only: read_csv_into_array
     implicit none
@@ -27,7 +27,7 @@ module local_routines
         real(dp), allocatable:: x(:), y(:), xy_coords(:,:)
         integer(ip):: stage_raster_dim(2), xl, xu, yl, yu
         real(dp) :: stage_raster_ll(2), stage_raster_ur(2)
-        type(gdal_raster_dataset_type):: elevation_data, stage_data
+        type(multi_raster_type):: elevation_data, stage_data
 
         character(charlen):: attribute_names(8), attribute_values(8)
         
@@ -72,7 +72,7 @@ SOURCEDIR
 
         print*, "Setting elevation ..."
 
-        call elevation_data%initialise(input_elevation_raster)
+        call elevation_data%initialise([input_elevation_raster])
 
         print*, '    bounding box of input elevation: ' 
         print*, '    ', elevation_data%lowerleft
@@ -99,27 +99,12 @@ SOURCEDIR
             call domain%smooth_elevation(smooth_method='cliffs')
         end if
 
-        !print*, 'HACKING ELEVATION' 
-        !domain%U(:,:,ELV) = min(domain%U(:,:,ELV), -200.0_dp) 
-        !! Smooth -- y first
-        !do j = 1, domain%nx(2)
-        !    domain%U(2:(domain%nx(1)-1),j,ELV) = (1.0_dp/3.0_dp) * ( &
-        !        domain%U(2:(domain%nx(1)-1),j,ELV) + &
-        !        domain%U(3:domain%nx(1), j, ELV) + domain%U(1:(domain%nx(1)-2), j, ELV))
-        !end do
-        !! Smooth -- x second
-        !do i = 1, domain%nx(1)
-        !    domain%U(i, 2:(domain%nx(2) - 1), ELV) = (1.0_dp/3.0_dp)*( &
-        !        domain%U(i, 2:(domain%nx(2)-1),ELV) + &
-        !        domain%U(i, 3:domain%nx(2), ELV) + domain%U(i, 1:(domain%nx(2)-2), ELV))
-        !end do
-
         print*, "Setting stage ..."
 
         ! Set stage -- zero outside of initial condition file range
         domain%U(:,:,[STG,UH,VH]) = 0.0_dp
        
-        call stage_data%initialise(input_stage_raster)
+        call stage_data%initialise([input_stage_raster])
 
         ! Get the x indices which are inside the stage raster 
         ! We permit this to only cover a small part of the domain
@@ -204,9 +189,10 @@ SOURCEDIR
     end subroutine
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program generic_model
+    !! Generic single-grid spherical coordinate model. Useful for quickly running ocean-scale tsunami propagation problems.
 
     use global_mod, only: ip, dp, minimum_allowed_depth
     use domain_mod, only: domain_type
@@ -370,7 +356,7 @@ program generic_model
             call domain%evolve_one_step()
         end if
 
-        !! Evolve the active domain?
+        ! Evolve the active domain?
         domain%xL = max(domain%xL - 1, 1)
         domain%xU = min(domain%xU + 1, domain%nx(1))
         domain%yL = max(domain%yL - 1, 1)

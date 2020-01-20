@@ -1,17 +1,17 @@
 module points_in_poly_mod
     !
-    ! Module to find whether points are inside (or on the boundary of) a polygon
+    !! Module to find whether points are inside (or on the boundary of) a polygon
     !
-    ! The tests suggest being on the boundary is counted as being inside, although
-    ! I would not rely on it for complex polygons.
-    !
-    ! Main routine is 
-    !   points_in_poly(vertx, verty, px, py, is_inside)
-    ! where all arguments are arrays 
-    ! (with size(vertx) == size(verty) & (size(px) == size(py) == size(is_inside))
-    !
-    ! A discussion of the problem is here (we use a similar algorithm)
-    ! https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html
+    !! The tests suggest being on the boundary is counted as being inside, although
+    !! I would not rely on that behaviour always being true for complex polygons.
+    !!
+    !! Main routine is 
+    !!   points_in_poly(vertx, verty, px, py, is_inside)
+    !! where all arguments are arrays 
+    !! (with size(vertx) == size(verty) & (size(px) == size(py) == size(is_inside))
+    !!
+    !! A discussion of the problem is here (we use a similar algorithm)
+    !! https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html
     !
     use global_mod, only: ip, dp
     implicit none

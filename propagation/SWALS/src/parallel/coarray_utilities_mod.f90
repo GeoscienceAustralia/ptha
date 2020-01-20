@@ -1,7 +1,3 @@
-!
-! Various coarray based parallel communication routines
-!
-
 ! If POINT2POINT is defined, then we use the coarray_point2point_comms_mod
 ! to do communication. Otherwise we use local coarrays. POINT2POINT is
 ! currently required if more than one domain is being modelled (i.e.
@@ -19,6 +15,10 @@
 #endif
 
 module coarray_utilities_mod
+    !! Various coarray based parallel communication routines.
+    !! These have largely been superceeded by coarray_point2point_comms_mod, which
+    !! is much more flexible.
+
     use global_mod, only: dp, ip, charlen, long_long_ip
     use iso_fortran_env, only: int32
     use logging_mod, only: log_output_unit
@@ -39,6 +39,8 @@ module coarray_utilities_mod
     use timer_mod
 #endif
 
+    use coarray_intrinsic_alternatives
+
     implicit none
 
     private
@@ -52,23 +54,28 @@ module coarray_utilities_mod
 #endif
 
 #ifdef COARRAY
-    !! comms%put_complete records the event that the data has been put into our
-    !! buffer by a neighbouring image.
-    !! FIXME: Put into derived type when opencoarray supports this
+    !@ comms%put_complete records the event that the data has been put into our
+    !@ buffer by a neighbouring image.
+    !@ FIXME: Put into derived type when opencoarray supports this
     !TYPE(event_type), ALLOCATABLE :: comms_event_put_complete(:)[:]
-    !! comms%get_complete records the event that the data from each boundary has been
-    !! received by our neighbour image [i.e. copied from its buffer to the main array]
+    !@ comms%get_complete records the event that the data from each boundary has been
+    !@ received by our neighbour image [i.e. copied from its buffer to the main array]
     !TYPE(event_type), ALLOCATABLE :: comms_event_get_complete(:)[:]
 
      !real(dp), allocatable :: dummy_buffer(:)[:,:]
 #endif
 
+#ifdef POINT2POINT
+    logical, parameter :: send_halos_immediately=.FALSE.
+#endif
 
-    !
-    ! Type for managing communications in a domain that is partitioned into a 'grid'
-    ! of sub-domains.
-    !
+
     type :: partitioned_domain_NESW_comms_type
+        !!
+        !! Type for managing communications in a domain that is partitioned into a 'grid'
+        !! of sub-domains. This has been superceeded by coarray_point2point_comms_mod and
+        !! the multidomain nesting approach, which is far more flexible.
+        !!
 
         ! We want to be able to compile the code with non-coarray compilers.
         ! The preprocessing flag should ensure that the type 'does nothing gracefully'
@@ -153,9 +160,9 @@ module coarray_utilities_mod
     ! If COARRAY is not defined, then remove all code from this subroutine
 #ifdef COARRAY
 
-        do j = 1, num_images()
-            if(this_image() == j) then
-                write(log_output_unit,*) 'Image: ', this_image()
+        do j = 1, num_images2()
+            if(this_image2() == j) then
+                write(log_output_unit,*) 'Image: ', this_image2()
                 write(log_output_unit,*) '  ti_xy: ', comms%ti_xy
                 write(log_output_unit,*) '  neighbour_im_xy: '
                 do i = 1, 4
@@ -167,7 +174,7 @@ module coarray_utilities_mod
                     comms%neighbour_images(comms%neighbour_images_keep)
                 write(log_output_unit,*) '  halo_pad: ', comms%halo_pad
             end if
-            sync all
+            call sync_all_generic
         end do
 #endif
 
@@ -286,9 +293,9 @@ module coarray_utilities_mod
         nvar = 4
         halo_width = 2
     
-        if(product(co_size_xy) /= num_images()) then
+        if(product(co_size_xy) /= num_images2()) then
             write(log_output_unit,*) 'Error: Need to split domain into number of coarray images'
-            sync all
+            call sync_all_generic
             error stop
         end if
 
@@ -331,12 +338,12 @@ module coarray_utilities_mod
             error stop
         end if
 
-        !!! Get coarray images of neighbours
+        !@ Get coarray images of neighbours
         !comms%ti_xy = this_image(dummy_buffer) !
         !ti = this_image()
-        !!!write(log_output_unit,*) 'before: ', ti, comms%ti_xy , '     ', co_size_xy
-        !! Alternative
-        call corank_from_image(co_size_xy, this_image(), comms%ti_xy)
+        !@!write(log_output_unit,*) 'before: ', ti, comms%ti_xy , '     ', co_size_xy
+        !@ Alternative
+        call corank_from_image(co_size_xy, this_image2(), comms%ti_xy)
         !write(log_output_unit,*) '    after: ', ti, comms%ti_xy
         
         ! Lower-left of this sub-domain, if there is no halo
@@ -526,7 +533,8 @@ module coarray_utilities_mod
             !event post(comms_event_put_complete(3)[comms%neighbour_images(1)])
 #else
             buffer_label = 'N2S_NESW'
-            call send_to_p2p_comms(U((1+Wp):(nx-Ep), (ny-Np - 1):(ny-Np), 1:nvar), buffer_label)
+            call send_to_p2p_comms(U((1+Wp):(nx-Ep), (ny-Np - 1):(ny-Np), 1:nvar), buffer_label, &
+                put_in_recv_buffer=send_halos_immediately)
 #endif
         end if
         if(comms%neighbour_images(2) /= 0) then
@@ -539,7 +547,8 @@ module coarray_utilities_mod
             !event post(comms_event_put_complete(4)[comms%neighbour_images(2)])
 #else
             buffer_label = 'E2W_NESW'
-            call send_to_p2p_comms(U((nx-Ep-1):(nx-Ep), (1+Sp):(ny-Np), 1:nvar), buffer_label)
+            call send_to_p2p_comms(U((nx-Ep-1):(nx-Ep), (1+Sp):(ny-Np), 1:nvar), buffer_label, &
+                put_in_recv_buffer=send_halos_immediately)
 #endif
         end if
         if(comms%neighbour_images(3) /= 0) then
@@ -552,7 +561,8 @@ module coarray_utilities_mod
             !event post(comms_event_put_complete(1)[comms%neighbour_images(3)])
 #else
             buffer_label = 'S2N_NESW'
-            call send_to_p2p_comms(U((1+Wp):(nx-Ep), (1+Sp):(2+Sp), 1:nvar), buffer_label)
+            call send_to_p2p_comms(U((1+Wp):(nx-Ep), (1+Sp):(2+Sp), 1:nvar), buffer_label, &
+                put_in_recv_buffer=send_halos_immediately)
 #endif
         end if
         if(comms%neighbour_images(4) /= 0) then
@@ -564,9 +574,19 @@ module coarray_utilities_mod
             !event post(comms_event_put_complete(2)[comms%neighbour_images(4)])
 #else
             buffer_label = 'W2E_NESW'
-            call send_to_p2p_comms(U((1+Wp):(2+Wp), (1+Sp):(ny-Np), 1:nvar), buffer_label)
+            call send_to_p2p_comms(U((1+Wp):(2+Wp), (1+Sp):(ny-Np), 1:nvar), buffer_label, &
+                put_in_recv_buffer=send_halos_immediately)
 #endif
         end if
+
+#ifdef POINT2POINT        
+    if(.not. send_halos_immediately) then
+        ! This is too much syncing for some setups -- but not worth refining as this module is defunct 
+        call sync_all_generic
+        call communicate_p2p
+        call sync_all_generic
+    end if
+#endif
 
 #endif
     end subroutine
@@ -596,7 +616,7 @@ module coarray_utilities_mod
         ny = comms%array_shape(2)
         nvar = comms%array_shape(3) 
 
-        !! Copy from buffer to U
+        !@ Copy from buffer to U
         if(comms%neighbour_images(1) /= 0) then
 #ifndef POINT2POINT
             !event wait(comms_event_put_complete(1))
@@ -666,18 +686,20 @@ module coarray_utilities_mod
             call copy_halos_to_buffer(comms, U)
 
             TIMER_STOP('to_buffer')
+#ifndef POINT2POINT            
             ! Need to have finshed the communication before we can procced to copy
             ! buffers into U
             !write(log_output_unit,*) 'Pre sync', this_image(), ', ', comms%neighbour_images(comms%neighbour_images_keep)
             if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
             !write(log_output_unit,*) 'Post sync'
             !sync all
-
+#endif
             TIMER_START('from_buffer')
             call copy_halos_from_buffer(comms, U)
             TIMER_STOP('from_buffer')
 
             TIMER_START('sync')
+#ifndef POINT2POINT            
             ! Need to sync again, to prevent the possibility that
             ! before the above buffer copy is complete, another image
             ! could have completed the copy, proceeded and updated the recv buffer again.
@@ -686,6 +708,7 @@ module coarray_utilities_mod
             if(size(comms%neighbour_images_keep) > 0) sync images(comms%neighbour_images(comms%neighbour_images_keep))
             !sync all
             !sync memory
+#endif
             TIMER_STOP('sync')
         end if
 #endif
@@ -710,14 +733,14 @@ module coarray_utilities_mod
 #else
 
         ! Choose coarray layout. Might not be the most time efficient, but good to test more
-        if(mod(num_images(),2) == 0) then
-            if(mod(num_images(), 4) == 0) then
-                coarray_size = [num_images()/4, 4]
+        if(mod(num_images2(),2) == 0) then
+            if(mod(num_images2(), 4) == 0) then
+                coarray_size = [num_images2()/4, 4]
             else
-                coarray_size = [num_images()/2, 2]
+                coarray_size = [num_images2()/2, 2]
             end if
         else
-            coarray_size = [1, num_images()]
+            coarray_size = [1, num_images2()]
         end if
 
         ! Make up some values
@@ -774,7 +797,7 @@ module coarray_utilities_mod
                 !write(log_output_unit,*) 'PASS image', this_image(), maxval(abs(U)), local_ll + comms%halo_pad([4,3])*local_dx, &
                 !    local_ll + local_lw - comms%halo_pad([2,1])*local_dx, ncomms
             else
-                write(log_output_unit,*) 'FAIL image', this_image(), maxval(abs(U)), local_ll + comms%halo_pad([4,3])*local_dx, &
+                write(log_output_unit,*) 'FAIL image', this_image2(), maxval(abs(U)), local_ll + comms%halo_pad([4,3])*local_dx, &
                     local_ll + local_lw - comms%halo_pad([2,1])*local_dx, ncomms
                 error stop
             end if
@@ -787,7 +810,7 @@ module coarray_utilities_mod
 #endif
 
 #ifdef TIMER_PARTITIONED_COMMS
-        if(this_image() == 1) then
+        if(this_image2() == 1) then
             call timer%print()
         end if
 #endif

@@ -1,8 +1,5 @@
 module timer_mod
-    !
-    ! Module to time parts of code
-    !
-    ! Notice we do not use dp/ip precision variables -- instead use C_INT, C_DOUBLE
+    !! Module to time parts of code, using the class timer_type
 
 #ifdef COARRAY
     ! Assumes that mpi is available with coarrays, which should
@@ -17,34 +14,35 @@ module timer_mod
 
     implicit none
 
-    integer, parameter, private:: max_timers = 100
-    integer, parameter, private:: charlen_timer_names=128
-    real(C_DOUBLE), parameter :: unstarted = -HUGE(1.0_C_DOUBLE)
+    integer, parameter, private:: max_timers = 100 !! At most this many timers are permitted in a timer_type
+    integer, parameter, private:: charlen_timer_names=128  !! Default charlen for the timer names
+    real(C_DOUBLE), parameter :: unstarted = -HUGE(1.0_C_DOUBLE) !! Real value denoting an unstarted time
 
     private
     public:: timer_type
 
     type:: timer_type
-        character(len=charlen_timer_names) :: names(max_timers)
-        real(C_DOUBLE):: start(max_timers) = unstarted
-        real(C_DOUBLE):: total(max_timers) = 0.0_C_DOUBLE
-        integer:: ntimers = 0
-        integer:: last_index = 1
+        !! Main type to do the timing
+        character(len=charlen_timer_names) :: names(max_timers) !! Names for the sections of code that are timed
+        real(C_DOUBLE):: start(max_timers) = unstarted 
+        !! Work array holding the time when we last started timing each named section of code
+        real(C_DOUBLE):: total(max_timers) = 0.0_C_DOUBLE !! The total time taken in each named section of code
+        integer:: ntimers = 0 !! How many sections of code are being timed? 
+        integer:: last_index = 1 !! The index of timer_type%names that was timed most recently.
 
         contains
 
-        procedure:: timer_start => timer_start
-        procedure:: timer_end => timer_end
-        procedure:: print => timer_print
-        procedure:: find_index => find_index
-        procedure:: reset => reset_timer
+        procedure:: timer_start => timer_start !! Start the timer for a given named section of code.
+        procedure:: timer_end => timer_end !! Stop the timer for a given named section of code, and add the time taken to its overall time.
+        procedure:: print => timer_print !! Print timing information.
+        procedure:: reset => reset_timer !! Clear the timer.
 
     end type
 
 contains
 
-    ! Clear the timer
     subroutine reset_timer(timer)
+        !! Clear the timer
         class(timer_type), intent(inout) :: timer
 
         timer%names = ''
@@ -56,9 +54,10 @@ contains
     end subroutine
 
     subroutine find_index(timer, tname, tname_index)
-        class(timer_type), intent(inout):: timer
-        character(len=*), intent(in):: tname
-        integer, intent(out):: tname_index
+        !! Find the index of timer%names that matches tname
+        class(timer_type), intent(inout):: timer !! The timer class
+        character(len=*), intent(in):: tname !! The timer name
+        integer, intent(out):: tname_index !! The index
 
         integer:: i
 
@@ -80,6 +79,7 @@ contains
     end subroutine
 
     subroutine timer_start(timer, tname)
+        !! Start timing part of the code. Use the name 'tname' to denote that part of code.
         class(timer_type), intent(inout):: timer
         character(len=*), intent(in):: tname
 
@@ -107,6 +107,7 @@ contains
 
 
     subroutine timer_end(timer, tname)
+        !! Stop timing the part of the code named 'tname'.
         class(timer_type), intent(inout):: timer
         character(len=*), intent(in):: tname
 
@@ -139,14 +140,12 @@ contains
 
     end subroutine
 
-    !
-    ! @param timer
-    ! @param output_file_unit Optional unit of file to write the information to. If not provide, uses output_unit
-    ! from iso_fortran_env, which prints to screen
-    !
     subroutine timer_print(timer, output_file_unit)
-        class(timer_type), intent(in):: timer
-        integer(C_INT), optional:: output_file_unit
+        !! Print the timer results
+        class(timer_type), intent(in):: timer !! The timer class
+        integer(C_INT), optional:: output_file_unit 
+        !! Optional unit of file to write the information to. If not provide, uses output_unit from iso_fortran_env, which prints to
+        !! screen
 
         integer:: i, out_unit
         real(C_DOUBLE):: timer_sum

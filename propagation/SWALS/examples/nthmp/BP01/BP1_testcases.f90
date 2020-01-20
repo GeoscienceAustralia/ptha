@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Setup the simple beach geometry and initial condition
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation, g => gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: read_gdal_raster
@@ -55,9 +58,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program bp1
+program BP01
+    !!
+    !! NTHMP benchmark problem 1 - Single wave on a simple beach.
+    !!
     use global_mod, only: ip, dp, minimum_allowed_depth, pi
     use domain_mod, only: domain_type
     use linear_interpolator_mod, only: linear_interpolator_type

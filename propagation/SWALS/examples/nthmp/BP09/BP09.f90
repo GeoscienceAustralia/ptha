@@ -1,4 +1,8 @@
 module local_routines 
+    !!
+    !! NTHMP benchmark problem 9 -- Okushiri tsunami field test case
+    !!
+
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
@@ -94,9 +98,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program run_BP09
+program BP09
+    !!
+    !! NTHMP benchmark problem 9 -- Okushiri tsunami field test case
+    !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method,&
         default_linear_timestepping_method
@@ -108,6 +115,7 @@ program run_BP09
     use logging_mod, only: log_output_unit, send_log_output_to_file
     use stop_mod, only: generic_stop
     use iso_c_binding, only: C_DOUBLE !, C_INT, C_LONG
+    use coarray_intrinsic_alternatives, only : swals_mpi_init, swals_mpi_finalize
 
     implicit none
 
@@ -152,6 +160,8 @@ program run_BP09
 
     ! Useful misc variables
     integer(ip):: j, nd
+
+    call swals_mpi_init()
 
     call program_timer%timer_start('setup')
 
@@ -311,10 +321,7 @@ program run_BP09
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
 
-#ifdef COARRAY
-    sync all
     flush(log_output_unit)
-#endif
 
     !
     ! Evolve the code
@@ -357,4 +364,6 @@ program run_BP09
     write(log_output_unit, *) 'Program timer'
     write(log_output_unit, *) ''
     call program_timer%print(log_output_unit)
+
+    call swals_mpi_finalize()
 end program

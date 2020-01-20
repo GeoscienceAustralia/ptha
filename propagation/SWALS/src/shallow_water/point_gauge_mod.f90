@@ -1,7 +1,7 @@
 module point_gauge_mod
-    !
-    ! Type to store and write out gauge time-series at chosen locations
-    !
+    !!
+    !! Make a type to store and write out gauge time-series at chosen locations
+    !!
     use global_mod, only: dp, ip, output_precision, charlen
     use file_io_mod, only: read_csv_into_array
     use stop_mod, only: generic_stop
@@ -40,13 +40,16 @@ module point_gauge_mod
     ! The first 2 dimensions are spatial (x/y or lon/lat), and 
     ! the last dimension represents the quantity (e.g. Stage, UH, VH, ELEV)
     type point_gauge_type
+        !!
+        !! Type for storing outputs at an unstructured set of points
+        !!
 
 #ifdef NONETCDF
-        !! Variables for writing binary/ascii output
+        ! Variables for writing binary/ascii output
         character(len=charlen):: static_output_file, time_series_output_file, gauge_metadata_file
         integer(ip):: static_output_unit, time_series_output_unit, gauge_metadata_unit
 #else
-        !! Variables for writing out to netcdf
+        ! Variables for writing out to netcdf
         character(len=charlen):: netcdf_gauge_output_file
         integer :: netcdf_gauge_output_file_ID 
         integer(ip) :: netcdf_time_var_ID
@@ -425,9 +428,9 @@ module point_gauge_mod
 
         point_gauges%netcdf_gauge_output_file = netcdf_gauge_output_file
 
-        !! Using netcdf interface
+        ! Using netcdf interface
 
-        !! Create output file
+        ! Create output file
         call check (nf90_create(netcdf_gauge_output_file, NF90_CLOBBER, iNcid), __LINE__)
     
         point_gauges%netcdf_gauge_output_file_ID = iNcid
@@ -702,7 +705,7 @@ SRC_GIT_VERSION ), __LINE__)
         call point_gauges%allocate_gauges(xy_coords, time_series_var_indices, &
             static_var_indices, gauge_ids)
 
-        !! Tests
+        ! Tests
         call assert_test(all(point_gauges%gauge_ids == gauge_ids))
         call assert_test(all(point_gauges%xy == xy_coords))
         call assert_test(point_gauges%n_gauges == size(xy_coords(1,:)))

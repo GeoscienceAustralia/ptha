@@ -1,14 +1,15 @@
-!
-! Module for nesting communication. It defines a type 'two_way_nesting_comms_type'
-! which can send and recv data between 2 domains. Optionally it can also be setup
-! to 'only send' or 'only recv' [i.e. one way communication]. 
-!
-! As of 09/2017, I have been using separate instances for 'sending' and
-! 'receiving'. While not essential, this seems logically cleaner at a higher
-! level in the code.
-!
 
 module nested_grid_comms_mod
+    !!
+    !! Module for nesting communication. It defines a type 'two_way_nesting_comms_type'
+    !! which can send and/or receive data between corresponding rectangular regions in 2 domains. 
+    !! In practice each domain in a multidomain contains two arrays of this type - one to manage
+    !! the data it sends to other domains, and one to manage the data it receives from other domains.
+    !!
+    ! As of 09/2017, I have been using separate instances for 'sending' and
+    ! 'receiving'. While not essential, this seems logically cleaner at a higher
+    ! level in the code.
+    !
 
     use global_mod, only: dp, ip, charlen, minimum_allowed_depth, send_boundary_flux_data, force_double, &
         real_bytes, integer_bytes, force_double_bytes
@@ -16,9 +17,10 @@ module nested_grid_comms_mod
     ! Note: coarray_point2point_comms_mod works in serial or parallel 
     use coarray_point2point_comms_mod, only: include_in_p2p_send_buffer, &
         send_to_p2p_comms, recv_from_p2p_comms, linked_p2p_images, &
-        allocate_p2p_comms, deallocate_p2p_comms
+        allocate_p2p_comms, deallocate_p2p_comms, communicate_p2p
     use reshape_array_mod, only: repack_rank1_array
     use logging_mod, only: log_output_unit
+    use coarray_intrinsic_alternatives, only: this_image2, num_images2
     !use mpi
 
     !use iso_c_binding, only: C_DOUBLE
@@ -29,26 +31,28 @@ module nested_grid_comms_mod
     public two_way_nesting_comms_type, domain_nesting_type, test_nested_grid_comms_mod
     public process_received_data
 
-    !
-    ! When sending from a fine grid to a coarse grid cell, should we average over all cells
-    ! in the fine grid that are inside the coarse grid cell (.TRUE.), or just sent a 
-    ! single 'central value' from the fine grid (.FALSE.). 
-    ! While the former could be more accurarate, it also may have wet/dry challenges which
-    ! are not an issue for the latter.
-    !
     logical, parameter :: use_averaging_for_fine_to_coarse_data_sends = .false.
+    !!
+    !! When sending from a fine grid to a coarse grid cell, should we average over all cells
+    !! in the fine grid that are inside the coarse grid cell (.TRUE.), or just sent a 
+    !! single 'central value' from the fine grid (.FALSE.). 
+    !! While the former could be more accurarate, it also may have wet/dry challenges which
+    !! are not an issue for the latter.
+    !!
 
     !
     ! Useful constants
     !
     real(dp), parameter :: ONE_dp = 1.0_dp, ZERO_dp = 0.0_dp, HALF_dp = 0.5_dp
     real(dp), parameter :: EPS = 1.0e-06_dp
-    ! Spatial dimensions of the problem -- we solve the 2D shallow water equations
+
     integer(ip), parameter, public :: SPATIAL_DIM = 2
-    ! In a coarse-to-fine send, we send the coarse data, and a number of gradient terms
-    ! which the fine domain can use to interpolate the result. For instance we might send
-    ! 2 x-gradients (forward and backward) and 2 y-gradients (forward and backward)
+    !! Spatial dimensions of the problem -- we solve the 2D shallow water equations
+
     integer(ip), parameter :: number_of_gradients_coarse_to_fine = 4_ip
+    !! In a coarse-to-fine send, we send the coarse data, and a number of gradient terms
+    !! which the fine domain can use to interpolate the result. For instance we might send
+    !! 2 x-gradients (forward and backward) and 2 y-gradients (forward and backward)
 
     ! Received data can partially weighted using "receive_weights". This might help
     ! with nesting stability, BUT can cause problems if applied in wet/dry areas. So 
@@ -76,6 +80,11 @@ module nested_grid_comms_mod
     ! The main type of the module
     !
     type :: two_way_nesting_comms_type
+        !!
+        !! Send and/or receive data between rectangular sub-regions of two domains.
+        !! In SWALS, multidomain nesting is achieved by splitting the nesting regions
+        !! into rectangular send/receive regions, and managing each of those with this type.
+        !!
 
         ! cell_ratios = my_dx/neighbour_dx
         real(dp) :: cell_ratios(SPATIAL_DIM)
@@ -175,30 +184,28 @@ module nested_grid_comms_mod
 
     end type
 
-    !
-    ! Type which holds everything a domain needs to do nesting
-    !
     type :: domain_nesting_type
+        !!
+        !! Type which holds everything a domain needs to do nesting
+        !!
 
-        ! 'Tables' with metadata describing the send/recv regions, and regions
-        ! they communicate with.
-        integer(ip), allocatable :: recv_metadata(:,:)
-        integer(ip), allocatable :: send_metadata(:,:)
+        integer(ip), allocatable :: recv_metadata(:,:), send_metadata(:,:)
+            !! 'Tables' with metadata describing the send/recv regions, and regions
+            !! they communicate with.
 
-        ! Arrays of communication types. Seems easiest to split into separate
-        ! send and receive, although the two_way_nesting_comms_type
-        ! can do both within a single instance. Each element of the array
-        ! takes care of one rectangular send or recv region
         type(two_way_nesting_comms_type), allocatable :: send_comms(:), recv_comms(:)
+            !! Arrays of communication types. Seems easiest to split into separate
+            !! send and receive, although the two_way_nesting_comms_type
+            !! can do both within a single instance. Each element of the array
+            !! takes care of one rectangular send or recv region
 
-        ! Arrays describing the 'priority domain' index and its image. The
-        ! 'priority domain' is the domain holding the 'correct' representation of the flow at
-        ! a point. Domains overlap [e.g. for nesting], and the flow
-        ! in some of the overlapping regions might not be realistic (e.g.
-        ! nesting buffer regions). However, on the priority domain, it will be
-        ! realistic.
-        integer(ip), allocatable :: priority_domain_index(:,:)
-        integer(ip), allocatable :: priority_domain_image(:,:)
+        integer(ip), allocatable :: priority_domain_index(:,:), priority_domain_image(:,:)
+            !! Arrays describing the 'priority domain' index and its image. The
+            !! 'priority domain' is the domain holding the 'correct' representation of the flow at
+            !! a point. Domains overlap [e.g. for nesting], and the flow
+            !! in some of the overlapping regions might not be realistic (e.g.
+            !! nesting buffer regions). However, on the priority domain, it will be
+            !! realistic.
         integer(ip) :: my_index = 0_ip
         integer(ip) :: my_image = 0_ip
 
@@ -2009,8 +2016,8 @@ module nested_grid_comms_mod
         integer(ip), parameter :: strd = 1_ip + number_of_gradients_coarse_to_fine
 
 #ifdef COARRAY
-        this_image_local = this_image()
-        num_images_local = num_images()
+        this_image_local = this_image2()
+        num_images_local = num_images2()
         !! Approach using MPI
         !call mpi_comm_rank(MPI_COMM_WORLD, this_image_local, ierr)
         !this_image_local = this_image_local + 1
@@ -2234,10 +2241,16 @@ module nested_grid_comms_mod
         end if
         !print*, 'Us(2): ', test_max, test_min
 
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)        
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data(send_to_recv_buffer=.FALSE.)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%send_data(send_to_recv_buffer=.FALSE.)
+        call communicate_p2p
+#else
         ! Communicate
         call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data()
         call Us(2)%two_way_nesting_comms(child_comms_index)%send_data()
-#ifdef COARRAY
+#endif
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         sync images(linked_p2p_images)
 #endif
 

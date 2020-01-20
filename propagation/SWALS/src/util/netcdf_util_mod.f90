@@ -1,7 +1,7 @@
-!
-! Useful netcdf stuff. 
-!
 module netcdf_util
+    !!
+    !! Class to write domain variables to a netcdf file.
+    !!
 
     use global_mod, only: charlen, ip, dp
     use stop_mod, only: generic_stop
@@ -20,67 +20,62 @@ module netcdf_util
 
     implicit none
 
-    private
+    private 
     public :: nc_grid_output_type, check
 
     ! Indices of stage, uh, vh, elevation in domain%U
     integer(ip), parameter :: STG=1, UH=2, VH=3, ELV=4
     ! Note -- the above definitions must agree with those in domain_mod.f90
 
-    !
-    ! Type for saving gridded data to netcdf. Holds unit numbers, etc
-    !
     type :: nc_grid_output_type
+        !!
+        !! Type for saving domain data to netcdf. Holds unit numbers, etc
+        !!
 
         character(len=charlen) :: filename
-        ! Netcdf file id should be 'plain' integer
         integer :: nc_file_id
+            !! Netcdf file id should be 'plain' integer
 
         integer :: dim_time_id, dim_x_id, dim_y_id
         integer :: var_time_id, var_x_id, var_y_id
 
-        ! Time varying variables
         integer :: var_stage_id, var_uh_id, var_vh_id, var_elev_id
+            !! Time varying variables
 #ifdef DEBUG_ARRAY
-        ! Time-varying array for debugging
         integer :: var_debug_array_id
+            !! Time-varying array for debugging
 #endif
-        ! Static variables
         integer :: var_max_stage_id, var_elev0_id, var_is_priority_domain_id, &
             var_manningsq_id, var_priority_ind, var_priority_img
+            !! Static variables
 
-        ! It can be slow to flush every time we write to files. But
-        ! this can be useful for interactively looking at model results. So
-        ! optionally allow flushing after all writes.
         integer :: flush_every_n_output_steps = 25
+            !! It can be slow to flush every time we write to files. But
+            !! this can be useful for interactively looking at model results. So
+            !! use this variable to control the frequency of file-flushing.
 
         integer :: num_output_steps = 0
+            ! Track number of output steps
 
-        ! Flag for whether we store max stage, etc
         logical :: record_max_U
+            !! Flag for whether we store max stage, etc
 
-        ! Options to store stage/uh/vh/elev over time.
-        ! .true. or .false. for STG, UH, VH, ELV
         logical :: time_var_store_flag(4) = [.true. , .true., .true., .true.]
-        ! For example, if we didn't want to store ELV every time-step, we
-        ! would do "nc_grid_output%time_var_store_flag(ELV) = .false."
+            !! Options to store stage/uh/vh/elev over time.
+            !! .true. or .false. for STG, UH, VH, ELV
+            !! For example, if we didn't want to store ELV every time-step, we
+            !! would do "nc_grid_output%time_var_store_flag(ELV) = .false."
 
-        ! Allow only storing every n'th point in x/y space.
-        ! For instance, on a 1-arc-minute model, a value of 4 would
-        ! store the results at 4 arc-minutes
         integer :: spatial_stride = 1
+            !! Allow only storing every n'th point in x/y space.
+            !! For instance, on a 1-arc-minute model, a value of 4 would
+            !! store the results at 4 arc-minutes
         integer :: spatial_start(2)
         integer :: spatial_count(2)
-        ! When we partition domains, this can store the lower-left of the FULL domain
-        ! We can then use that to make spatial_start consistent among all domains
-        real(dp) :: spatial_ll_full_domain(2) = [-HUGE(1.0_dp), -HUGE(1.0_dp)]
 
-        !! To avoid flushing the file too often, record the time since we last
-        !! wrote, and flush if the cpu_time change is beyond some threshold
-        !! FIXME: Check if this is of benefit -- maybe no improvement?
-        !! (YEP, NO IMPROVEMENT THAT I HAVE SEEN. AND IT IS CONVENIENT TO HAVE THE FILE REGULARLY FLUSHED)
-        !real(C_DOUBLE) :: last_write_time = -HUGE(1.0_dp)
-        !real(C_DOUBLE) :: flush_threshold = 300.0_dp 
+        real(dp) :: spatial_ll_full_domain(2) = [-HUGE(1.0_dp), -HUGE(1.0_dp)]
+            !! When we partition domains, this can store the lower-left of the FULL domain
+            !! We can then use that to make spatial_start consistent among all domains
 
         contains
         procedure :: initialise => initialise
@@ -117,27 +112,20 @@ module netcdf_util
 
     end subroutine
 
-    !
-    ! Create nc file to hold gridded outputs
-    !
-    ! @param nc_grid_output type with nc_grid_output info
-    ! @param filename name of output file
-    ! @param output_precision Fortran real kind denoting precision of output (either C_FLOAT or C_DOUBLE)
-    ! @param record_max_U Do we record max stage?
-    ! @param xs array of grid x coordinates
-    ! @param ys array of grid y coordinates
-    ! @param attribute_names character array of rank 1 with attribute names
-    ! @param attribute_values character array of rank 1 with attribute values
     subroutine initialise(nc_grid_output, filename, output_precision, &
         record_max_U, xs, ys, attribute_names, attribute_values)
+        !!
+        !! Create nc file to hold gridded outputs
+        !!
 
-        class(nc_grid_output_type), intent(inout) :: nc_grid_output
-        character(len=charlen), intent(in) :: filename
-        integer(ip), intent(in) :: output_precision
-        logical, intent(in) :: record_max_U
-        real(dp), intent(in) :: xs(:), ys(:)
-        character(charlen), optional, intent(in):: attribute_names(:)
-        character(charlen), optional, intent(in):: attribute_values(:)
+        class(nc_grid_output_type), intent(inout) :: nc_grid_output !!type with nc_grid_output info
+        character(len=charlen), intent(in) :: filename !! Name of the output netcdf file
+        integer(ip), intent(in) :: output_precision !! Fortran real kind denoting precision of output (either C_FLOAT or C_DOUBLE)
+        logical, intent(in) :: record_max_U !! Do we record the max-stage ?
+        real(dp), intent(in) :: xs(:), ys(:) !! array of grid x/y coordinates
+        character(charlen), optional, intent(in):: attribute_names(:) !! global attribute names for netcdf file
+        character(charlen), optional, intent(in):: attribute_values(:) 
+            !! values for global attributes of netcdf file (same length as attribute_names)
 
         integer:: iNcid, output_prec, i, output_byte, output_int4, spatial_stride, spatial_start(2)
         integer:: nx, ny, first_index_relative_to_full_domain(2), output_prec_force_double
@@ -324,18 +312,21 @@ SRC_GIT_VERSION ), &
 
     end subroutine
 
-    ! Write variables in U to file associated with nc_grid_output
-    !
-    !@param nc_grid_output instance of nc_grid_output_type which has been initialised
-    !@param time real model time
-    !@param U rank 3 array, with size(U,3) == 4, and U(:,:,1) = stage, U(:,:,2)
-    !       = uh, U(:,:,3) = vh, U(:,:,4) = elev
-    !@param debug_array optional debug_array
     subroutine write_grids(nc_grid_output, time, U, debug_array)
+        !!
+        !! Write variables in U to file associated with nc_grid_output
+        !!
 
-        class(nc_grid_output_type), intent(inout) :: nc_grid_output
-        real(dp), intent(in) :: U(:,:,:), time
+        class(nc_grid_output_type), intent(inout) :: nc_grid_output 
+            !! instance of nc_grid_output_type which has been initialised
+        real(dp), intent(in) :: U(:,:,:) 
+            !! array with the flow data. It has size(U,3) == 4. 
+            !! Also U(:,:,1) = stage, U(:,:,2) = uh, U(:,:,3) = vh, U(:,:,4) = elev
+        real(dp), intent(in) :: time 
+            !! Time associated with U(:,:,:)
         real(dp), optional, intent(in) :: debug_array(:,:)
+            !! If compiled with -DDEBUG_ARRAY, this array will also be written to the netcdf file.
+            !! Provides a useful means of debugging or reporting non-standard quantities.
 
         integer:: iNcid, nxy(2), spatial_start(2), spatial_stride(2)
         real(C_DOUBLE) :: current_cpu_time
@@ -419,16 +410,26 @@ SRC_GIT_VERSION ), &
 
     end subroutine
 
-    !
-    ! Store a 1 byte integer, denoting the cells in the current domain that are 
-    ! priority_domain cells. Also store regular integer grids with the priority domain index
-    ! and image.
-    !
+
     subroutine store_priority_domain_cells(nc_grid_output, priority_domain_index, &
         priority_domain_image, my_index, my_image)
-        class(nc_grid_output_type), intent(in) :: nc_grid_output
-        integer(ip), intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:)
+        !! Store a 1 byte integer, denoting the cells in the current domain that are 
+        !! priority_domain cells. Also store regular integer grids with the priority domain index
+        !! and image.
+        class(nc_grid_output_type), intent(in) :: nc_grid_output 
+            !! Initialised nc_grid_output type 
+        integer(ip), intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:) 
+            !! Arrays denoting the priority domain index and image, i.e., the index/image of
+            !! the domain that is consider to contain the 'real' solution on each cell. Generally the priority domain
+            !! corresponds to the finest resolution domain covering that cell. Each domain will
+            !! hold arrays like this, which cover its own grid points only, and are used to determine
+            !! whether a given part of the flow solution should be considered the 'true' solution, or merely
+            !! a halo region. It is important to know this, e.g. for mass conservation calculations, for
+            !! the creation of the nesting communication data structures, and for making seamless outputs using
+            !! only priority domain values.
         integer(ip) :: my_index, my_image
+            !! The domain index (i.e. index of the domain in md%domains(:)) and image (i.e. always 1 for non-coarray programs, or
+            !! equal to this_image() for coarray programs) 
 
         integer(ip) :: i, iNcid, spatial_start(2), nxy(2), spatial_stride(2)
     
@@ -477,10 +478,12 @@ SRC_GIT_VERSION ), &
 
 #endif
     end subroutine
-    !
-    ! Store the 'max-stage' variable. Also store elevation, if provided.
-    !
+
+
     subroutine store_max_stage(nc_grid_output, max_stage, elevation, manning_squared)
+        !!
+        !! Store the 'max-stage' variable. Also store elevation and manning_squared, if provided.
+        !!
         class(nc_grid_output_type), intent(in) :: nc_grid_output
         real(dp), intent(in) :: max_stage(:,:)
         real(dp), optional, intent(in) :: elevation(:,:)
@@ -531,10 +534,8 @@ SRC_GIT_VERSION ), &
 
     end subroutine
 
-    !
-    ! Close the file 
-    !
     subroutine finalise(nc_grid_output)
+        !! Close the netcdf file. 
 
         class(nc_grid_output_type), intent(inout) :: nc_grid_output
 

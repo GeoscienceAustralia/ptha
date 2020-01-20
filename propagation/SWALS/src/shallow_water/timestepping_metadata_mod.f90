@@ -1,8 +1,8 @@
-!
-! Try to keep most solver metadata here in an array of type "timestepping_metadata_type", 
-! where each entry contains important metadata for one numerical method.
-!
 module timestepping_metadata_mod
+    !!
+    !! Keep most solver metadata here in an array of type "timestepping_metadata_type", 
+    !! where each entry contains important metadata for one numerical method.
+    !!
 
     use global_mod, only : dp, ip, charlen
     use logging_mod, only : log_output_unit
@@ -13,47 +13,48 @@ module timestepping_metadata_mod
     ! Number of timestepping methods
     integer, parameter, private :: n_ts = 8
 
-    ! Type that holds metadata for each type of solver
     type timestepping_metadata_type
-        character(len=charlen) :: timestepping_method = ''
-        ! Is the grid treated as staggered?
-        integer(ip) :: is_staggered_grid = 0
-        ! Flag for solvers that do not track fluxes (so cannot do any flux-correction)
+        !! Type that holds metadata for each type of solver
+        character(len=charlen) :: timestepping_method = '' !! Name of the timestepping method
+        
+        integer(ip) :: is_staggered_grid = 0 
+        !! Is the grid treated as staggered (1) or colocated (0) ?
         logical :: flux_correction_is_unsupported = .false. 
-        ! Some solvers can only do flux correction of mass, but not momentum
+        !! Flag for solvers that do not track fluxes (so cannot do any flux-correction)
         logical :: flux_correction_of_mass_only = .false. 
-        ! CFL condition
+        !! Some solvers can only do flux correction of mass, but not momentum
         real(dp) :: default_cfl = -1.0_dp
-        ! Parameter affecting the slope-limiter for finite-volume methods.
+        !! CFL condition
         real(dp) :: default_theta = -1.0_dp
+        !! Parameter affecting the slope-limiter for finite-volume methods.
         logical :: adaptive_timestepping = .true.
+        !! Can the solver compute its own time-step adaptively?
        
-        ! How many halo cells are required to advance interior cells a single timestep while
-        ! retaining a valid solution?
         integer(ip) :: nesting_thickness_for_one_timestep = -1_ip
-        ! For example, consider the 'euler' finite-volume timestepping method.  A single 'euler' step of the finite volume solver
-        ! needs a 2-layer halo. Suppose the cells are indexed 1, 2, 3, ... N, and initially contain valid values. If we try to
-        ! evolve in time by one step, then 'cell 1' has no-way to compute the flux at 'edge (1-1/2)' -- and furthermore, the flux at
-        ! 'edge (1+1/2)' is problematic because 'cell 1' cannot compute its gradient, so the update of 'cell 2' is also invalid. 
-        ! Thus, a 2-layer halo is needed (where the values for 'cell 1', 'cell 2', 'cell (N-1)', 'cell N' are provided
-        ! by halo exchanges with another grid, or by boundary-condition assumptions).
-        ! 
+        !! How many halo cells are required to advance interior cells a single timestep while
+        !! retaining a valid solution?
+        !! For example, consider the 'euler' finite-volume timestepping method.  A single 'euler' step of the finite volume solver
+        !! needs a 2-layer halo. Suppose the cells are indexed 1, 2, 3, ... N, and initially contain valid values. If we try to
+        !! evolve in time by one step, then 'cell 1' has no-way to compute the flux at 'edge (1-1/2)' -- and furthermore, the flux at
+        !! 'edge (1+1/2)' is problematic because 'cell 1' cannot compute its gradient, so the update of 'cell 2' is also invalid. 
+        !! Thus, a 2-layer halo is needed (where the values for 'cell 1', 'cell 2', 'cell (N-1)', 'cell N' are provided
+        !! by halo exchanges with another grid, or by boundary-condition assumptions).
     end type
 
-    !
-    ! Main source of metadata. Initialise this in a subroutine (although it's static - ideally this would
-    ! be a parameter -- not sure how to do that neatly in Fortran)
-    !
     type(timestepping_metadata_type), public, protected :: timestepping_metadata(n_ts)
+    !!
+    !! Main source of metadata. Initialise this in a subroutine (although it's static - ideally this would
+    !! be a parameter -- not sure how to do that neatly in Fortran)
+    !!
 
-    ! Record whether we've setup the metadata, so we don't have to call setup_timestepping_metadata too often.
     logical, private :: IS_SETUP = .FALSE.
+    !! Record whether we've setup the metadata, so we don't have to call setup_timestepping_metadata too often.
 
     contains
 
-        ! Populate timestepping_metadata.
-        ! Note this only needs to be called once
         subroutine setup_timestepping_metadata()
+            !! Populate timestepping_metadata.
+            !! Note this only needs to be called once
 
             !
             ! rk2 defaults
@@ -70,8 +71,6 @@ module timestepping_metadata_mod
             ! rk2n defaults
             !
             timestepping_metadata(2)%timestepping_method = 'rk2n'
-            ! Infrastructure for rk2n to flux correct is not yet implemented
-            timestepping_metadata(2)%flux_correction_is_unsupported = .true.
             timestepping_metadata(2)%default_cfl = 0.99_dp
             timestepping_metadata(2)%default_theta = 1.6_dp
             timestepping_metadata(2)%nesting_thickness_for_one_timestep = 10_ip
@@ -142,13 +141,10 @@ module timestepping_metadata_mod
 
         end subroutine
 
-        ! Given a timestepping_method (e.g. 'linear' or 'rk2'),
-        ! return the corresponding index of timestepping_metadata
-        !
-        ! @param timestepping_method the timestepping method
-        !
         function timestepping_method_index(timestepping_method) result(ts_index)
-            character(len=*), intent(in) :: timestepping_method
+            !! Given a timestepping_method (e.g. 'linear' or 'rk2'),
+            !! return the corresponding index of timestepping_metadata
+            character(len=*), intent(in) :: timestepping_method !! The timestepping method (e.g. 'rk2' or 'linear')
             integer(ip) :: ts_index
 
             integer(ip) :: i

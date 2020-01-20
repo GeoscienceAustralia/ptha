@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Set initial conditions for periodic_multidomain
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
@@ -80,9 +83,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program run_model
+program periodic_multidomain
+    !!
+    !! Example model using a multidomain with periodic EW boundary conditions.
+    !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, charlen
     use domain_mod, only: domain_type
@@ -162,7 +168,7 @@ program run_model
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%timestepping_method = 'linear'
 
-    !! Higher res around region of interest
+    !@ Higher res around region of interest
     !call md%domains(2)%match_geometry_to_parent(&
     !    parent_domain=md%domains(1), &
     !    lower_left  = [139.2_dp, 41.5_dp], &

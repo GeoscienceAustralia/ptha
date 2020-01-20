@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Steady uniform flow down a planar slope
+    !!
     use global_mod, only: dp, ip, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
@@ -65,9 +68,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program uniform_slope
+    !!
+    !! Steady uniform flow down a planar slope
+    !!
     use global_mod, only: ip, dp, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: read_csv_into_array

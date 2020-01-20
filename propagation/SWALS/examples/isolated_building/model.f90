@@ -1,11 +1,9 @@
-!
-! Isolated building test
-!
-! S. Soares-Frazao and Y. Zech, "Experimental study of dam-break flow against an isolated obstacle" Journal of Hydraulic research,
-! 2007, VOL 45 Extra Issue, 27-36
-!
 
 module local_routines 
+    !! Setup isolated building test.
+    !! S. Soares-Frazao and Y. Zech, "Experimental study of dam-break flow against an isolated obstacle" Journal of Hydraulic research,
+    !! 2007, VOL 45 Extra Issue, 27-36
+
     use global_mod, only: dp, ip, charlen, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use burn_into_grid_mod, only: xyz_lines_type
@@ -16,11 +14,6 @@ module local_routines
     !
     ! Parameters defining the domain geometry.
     !
-
-    ! Length/Width
-    real(dp), parameter :: global_lw(2) = [35.8_dp, 3.60_dp]
-    ! Lower-left coordinate
-    real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp]
 
     ! Manning friction. This affects the placement of shocks, and so has
     ! significant on some gauge time-series (e.g. G2).
@@ -87,7 +80,7 @@ module local_routines
 
         print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
 
-        !! Wall boundaries (without boundary conditions)
+        ! Wall boundaries (without boundary conditions)
         domain%U(:,1,ELV) = wall
         domain%U(:,domain%nx(2),ELV) = wall
         domain%U(domain%nx(1),:,ELV) = wall
@@ -101,9 +94,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program model
+program isolated_building
+    !! Run the isolated building test.
+    !! S. Soares-Frazao and Y. Zech, "Experimental study of dam-break flow against an isolated obstacle" Journal of Hydraulic research,
+    !! 2007, VOL 45 Extra Issue, 27-36
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
@@ -134,8 +130,13 @@ program model
     real(dp), parameter :: final_time = 40._dp
 
     !
-    ! Key geometric parameters are defined in the 'local routines' module
+    ! Key geometric parameters (others defined in the 'local routines' module)
     !
+    ! Length/Width
+    real(dp), parameter :: global_lw(2) = [35.8_dp, 3.60_dp]
+    ! Lower-left coordinate
+    real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp]
+
 
     ! Grid size (number of x/y cells) in outer domain
     integer(ip), parameter:: global_nx(2) = nint(global_lw*10*mesh_refine, ip)
@@ -166,7 +167,7 @@ program model
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
 
-    !! A detailed domain
+    !@ A detailed domain
     !call md%domains(2)%match_geometry_to_parent(&
     !    parent_domain=md%domains(1), &
     !    lower_left=high_res_ll, &

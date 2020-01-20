@@ -1,6 +1,6 @@
 program unit_tests
+    !! Call all the unit test subroutines
 
-    ! Get the test subroutines
     use read_raster_mod, only: test_read_raster1
     use spherical_mod, only: test_spherical_mod
     use points_in_poly_mod, only: test_points_in_poly_mod

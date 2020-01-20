@@ -1,44 +1,53 @@
 module linear_interpolator_mod
-    !
-    ! Type for linear interpolation
-    !
+    !!
+    !! Type for linear interpolation
+    !!
     use global_mod, only: dp, ip
     use stop_mod, only: generic_stop
     implicit none
 
 
     type linear_interpolator_type
-        real(dp), allocatable:: xs_local(:), ys_local(:)
-        real(dp), pointer :: xs(:), ys(:)
+        !!
+        !! Type for linear interpolation
+        !!
+        real(dp), allocatable:: xs_local(:), ys_local(:) 
+            !! Copies of the x/y data used for interpolation (used if initialised with copy_data=.FALSE.)
+        real(dp), pointer :: xs(:), ys(:) 
+            !! Pointers to the x/y data used for interpolation.
         integer(ip) :: n
+            !! Size of xs/ys
 
         contains
-        ! To build the an interpolator from x,y data (with x monotonic
-        !   increasing, NO REPEATED VALUES), we do
-        ! CALL linear_interpolator%initialise(x,y)
-        ! or to not copy x,y
-        ! CALL linear_interpolator%initialise(x,y, copy_data=.FALSE.)
-        !
         procedure:: initialise => initialise_linear_interpolator
-        !
-        ! CALL linear_interpolator%eval(xout, yout)
-        ! will update yout with values interpolated at xout
-        !
+            !! To build the an interpolator from x,y data (with x monotonic
+            !!   increasing, NO REPEATED VALUES), we do
+            !! CALL linear_interpolator%initialise(x,y)
+            !! or to not copy x,y
+            !! CALL linear_interpolator%initialise(x,y, copy_data=.FALSE.)
+
         procedure:: eval => eval_linear_interpolator
-        !
-        ! CALL linear_interpolator%finalise()
-        ! to clear pointers, deallocate data, etc
-        !
+            !! CALL linear_interpolator%eval(xout, yout)
+            !! will update yout with values interpolated at xout
+
         procedure:: finalise => finalise_linear_interpolator
+            !! CALL linear_interpolator%finalise()
+            !! to clear pointers, deallocate data, etc
 
     end type
 
     contains
 
     subroutine initialise_linear_interpolator(linear_interpolator, x, y, copy_data)
+        !! Make a function f(x) which interpolates the x,y arrays.
+        !! The array x must be monotonic increasing (no repeated values).
+
         class(linear_interpolator_type), target, intent(inout):: linear_interpolator
         real(dp), target, intent(in):: x(:), y(:)
-        logical, optional, intent(in):: copy_data
+            !! x/y data used for interpolation
+        logical, optional, intent(in):: copy_data 
+            !! If .TRUE., then make a copy of x/y in the class for interpolation. Otherwise
+            !! just store pointers to x/y.
         integer(ip):: i, n
         logical:: use_pointers
         
@@ -80,6 +89,7 @@ module linear_interpolator_mod
     end subroutine
 
     subroutine finalise_linear_interpolator(linear_interpolator)
+        !! Clean-up and deallocate the linear_interpolator
         class(linear_interpolator_type), intent(inout):: linear_interpolator
 
         if(allocated(linear_interpolator%xs_local)) then        
@@ -92,6 +102,7 @@ module linear_interpolator_mod
     end subroutine
 
     subroutine eval_linear_interpolator(linear_interpolator, output_x, output_y)
+        !! Output y values at a given set of output_x values using linear interpolation
         class(linear_interpolator_type), intent(in):: linear_interpolator
         real(dp), intent(in):: output_x(:)
         real(dp), intent(out):: output_y(:)

@@ -1,4 +1,11 @@
 module local_routines 
+    !!
+    !! Setup routine for "Benchmark Problem 1" from the "Third International workshop
+    !! on long-wave runup models, June 17-18 2004". It models the runup of an initial
+    !! waveform on a linearly sloping beach. The analytical solution was produced
+    !! using the techniques of Carrier, Wu and Yeh (2003). The problem descriptions
+    !! and solution were sourced from http://isec.nacse.org/workshop/2004\_cornell/bmark1.html
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use linear_interpolator_mod, only: linear_interpolator_type
@@ -7,7 +14,6 @@ module local_routines
 
     contains 
 
-    ! Main setup routine
     subroutine set_initial_conditions(domain, wall_width)
         class(domain_type), target, intent(inout):: domain
         real(dp), intent(in) :: wall_width
@@ -90,9 +96,14 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program benchmark_problem1
+program landslide_tsunami 
+    !! "Benchmark Problem 1" from the "Third International workshop
+    !! on long-wave runup models, June 17-18 2004". It models the runup of an initial
+    !! waveform on a linearly sloping beach. The analytical solution was produced
+    !! using the techniques of Carrier, Wu and Yeh (2003). The problem descriptions
+    !! and solution were sourced from http://isec.nacse.org/workshop/2004\_cornell/bmark1.html
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type

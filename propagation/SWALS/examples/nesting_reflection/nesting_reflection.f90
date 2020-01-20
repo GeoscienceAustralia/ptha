@@ -1,4 +1,5 @@
 module local_routines 
+    !! Setup for plane wave propagation problem with nesting
     use global_mod, only: dp, ip, charlen, wall_elevation, gravity, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use linear_interpolator_mod, only: linear_interpolator_type
@@ -36,7 +37,7 @@ module local_routines
                    stage0 = 0.0_dp
                end if
                domain%U(i,j,STG) = stage0
-               domain%U(i,j,ELV) = d0 !+ 20 * a0 * (mod(i, 3) - 0.5_dp) !! Interesting to see what a depth perturbation does -- not much.
+               domain%U(i,j,ELV) = d0 !+ 20 * a0 * (mod(i, 3) - 0.5_dp) ! Interesting to see what a depth perturbation does -- not much.
                domain%U(i,j,UH) = (-d0) * sqrt(gravity/(-d0))*stage0
                domain%U(i,j,VH) = 0.0_dp
             end do    
@@ -60,7 +61,7 @@ module local_routines
         end if
 
 
-        !! Gauges
+        !@ Gauges
         !gauge_xy(1:3, 1) = [4.521, 1.196, 5.0]
         !gauge_xy(1:3, 2) = [4.521, 1.696, 7.0]
         !gauge_xy(1:3, 3) = [4.521, 2.196, 9.0]
@@ -70,9 +71,14 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program nesting_reflection 
+    !! Plane wave propagation problem with nesting. This problem can highlight weaknesses
+    !! in structured grid finite-volume methods with TVD limiters, which tend to dissipate the wave too 
+    !! quickly. That is unrelated to the use of nesting - rather it's due to limiter clipping.
+    !! That issue can be solved using non-TVD limiting, or no limiting. Alternatively, the leapfrog schemes
+    !! are better suited to this kind of problem.
 
     use global_mod, only: ip, dp, minimum_allowed_depth, charlen
     use domain_mod, only: domain_type
@@ -119,9 +125,9 @@ program nesting_reflection
     real(dp), parameter :: nonlinear_theta = 4.0_dp
     character(len=charlen) :: compute_fluxes_inner_method = "DE1_low_fr_diffusion" ! "DE1" -- distinguishes 'rk2' and 'midpoint'
 
-    !! Alternate version -- shows the dissipation of the regular 'DE1' type approach.
-    !! Similar behaviour is seen in 1D "Basilisk", which employs a very similar algorithm.
-    !! Note the dissipation also occurs with >1 domain (but n_domains=1 for simplicity here)
+    !@ Alternate version -- shows the dissipation of the regular 'DE1' type approach.
+    !@ Similar behaviour is seen in 1D "Basilisk", which employs a very similar algorithm.
+    !@ Note the dissipation also occurs with >1 domain (but n_domains=1 for simplicity here)
     !integer(ip), parameter :: n_domains = 1_ip
     !real(dp), parameter :: nonlinear_theta = 1.3_dp
     !character(len=charlen), parameter :: compute_fluxes_inner_method = 'DE1' !'DE1_low_fr_diffusion'

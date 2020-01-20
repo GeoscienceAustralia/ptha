@@ -7,27 +7,32 @@
 #   define TIMER_STOP(tname)
 #endif
 
-!
-! Contains a multidomain_type, to hold multiple rectangular domains which
-! communicate with each other. 
-! - Finer resolution domains may overlap coarser domains. 
-! - Domains with the same cell size cannot overlap each other, because where domains
-!   overlap, we need to decide which one has 'priority', and this is currently
-!   done by selecting the one with finest cell area. Overlaps would lead to an ambiguous choice,
-!   and so are not currently supported.
-! - Internally, the code will extend each domain with 'communication buffers',
-!   where they take values copied from neighbouring 'priority' domains. Flux correction
-!   is also applied (by default, see a flag in global_mod) so that the multidomain
-!   is mass conservative. 
-! - When determining the size of the communication buffers, each domain figures out
-!   which priority domains are 'just outside' its own initially provided domain extent.
-!   It then extends communication buffers, which completely cover enough cells in the neighbouring
-!   domain [so that waves do not propagate through the communication buffer in-between communications].
-!
-! Note that most of the 'setup' type functions in this module work
-! with domains that have not run domain%allocate_quantities. 
-!
 module multidomain_mod
+!! Contains a multidomain_type, to hold multiple rectangular domains which
+!! communicate with each other (i.e. for nesting). 
+
+!! The idea of the multidomain type is that it contains multiple domains that communicate with each other:
+!!
+!!   * Finer resolution domains may overlap coarser domains. 
+!!
+!!   * Domains with the same cell size cannot overlap each other, because where domains
+!!     overlap, we need to decide which one has 'priority', and this is currently
+!!     done by selecting the one with finest cell area. Overlaps with the same cell size 
+!!     would lead to an ambiguous choice, and so are not currently supported.
+!!
+!!   * Internally, the code will extend each domain with 'communication buffers',
+!!     where they take values copied from neighbouring 'priority' domains. Flux correction
+!!     is also applied (for the finite volume & leapfrog solvers) so that the multidomain
+!!     is mass conservative. For the finite volume solvers, we also flux-correct the advected momentum.
+!!
+!!   * When determining the size of the communication buffers, each domain figures out
+!!     which priority domains are 'just outside' its own initially provided domain extent.
+!!     It then extends communication buffers, which completely cover enough cells in the neighbouring
+!!     domain [so that waves do not propagate through the communication buffer in-between communications].
+!!
+!! Note that most of the 'setup' type functions in this module work
+!! with domains that have not run domain%allocate_quantities. 
+!!
 
     use global_mod, only: dp, ip, charlen, &
         wall_elevation, minimum_allowed_depth, force_double, force_long_double, &
@@ -47,8 +52,14 @@ module multidomain_mod
     use logging_mod, only: log_output_unit, send_log_output_to_file
     use file_io_mod, only: mkdir_p, read_ragged_array_2d_ip, read_csv_into_array
     use timer_mod, only: timer_type
-#ifdef COARRAY_PROVIDE_CO_ROUTINES
-    use coarray_intrinsic_alternatives, only: co_broadcast, co_max, co_sum, co_min
+#if defined(COARRAY_PROVIDE_CO_ROUTINES)
+    use coarray_intrinsic_alternatives, only: co_broadcast, co_max, co_sum, co_min, sync_all_generic, this_image2, num_images2
+#elif defined(COARRAY)
+    use coarray_intrinsic_alternatives, only: sync_all_generic, this_image2, num_images2
+#endif 
+#ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
+    use iso_c_binding
+    use mpi
 #endif
 
     implicit none
@@ -57,135 +68,148 @@ module multidomain_mod
     public :: multidomain_type
     public :: setup_multidomain, test_multidomain_mod
 
-    ! Key parameter affecting parallel communication:
-    ! - If TRUE, send halos as soon as they've been computed. This might give more time to overlap computation and comms
-    ! - If FALSE, then send all at once. This allows us to do only one send to each image, which may have other efficiencies
-    logical, parameter :: send_halos_immediately = .false. ! Must be .false. with MPI
+    logical, parameter :: send_halos_immediately = .false. 
+        !! Key parameter affecting parallel communication.
+        !! If .TRUE., send halos as soon as they've been computed. This might give more time to overlap computation and comms.
+        !! If .FALSE., then send all at once. This allows us to do only one send to each image, which may have other efficiencies.
+        !! Must be .false. if we COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
 
-    ! If we are doing coarray communication, the puts are non-blocking, and we
-    ! sync at the start/end of we md%recv_halos. But if we use MPI for the main
-    ! communication, this is not required (because alltoallv is blocking)
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
     logical, parameter :: sync_before_recv = .false., sync_after_recv=.false.
 #else
     logical, parameter :: sync_before_recv = .true., sync_after_recv=.true.
 #endif
+        !! If we are doing coarray communication, the puts are non-blocking, and we
+        !! sync at the start/end of md%recv_halos. But if MPI is used for the main
+        !! communication, this is not required (because alltoallv is blocking)
 
 
-    ! Parameter affecting default halo approach.
-    !
-    ! Set this to an integer > 0 so that "parts of another domain that I receive from"
-    ! do not directly neighbour "parts of my domain that I send to that domain". 
     integer(ip), parameter :: extra_halo_buffer_default = 0_ip !
-    ! This can be overridden in the multidomain setup stage as e.g. " call md%setup(extra_halo_buffer=1_ip) "
-    ! This could help with stability with the "old" evolve_multidomain_one_step approach.
-    ! Other references suggest such an approach can help with stability 
-    ! (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS nesting). But 
-    ! it seems not required with the 'revised' nesting technique in SWALS
-    ! It is ignored if we only communicate with domains that have the same domain%dx, 
-    ! as the benefit is really for coarse-to-fine communication
+        !! Parameter affecting default halo approach.
+        !! Set this to an integer > 0 so that "parts of another domain that I receive from"
+        !! do not directly neighbour "parts of my domain that I send to that domain". 
+        !! This can be overridden in the multidomain setup stage as e.g. " call md%setup(extra_halo_buffer=1_ip) "
+        !! This could help with stability with the "old" evolve_multidomain_one_step approach.
+        !! Other references suggest such an approach can help with stability 
+        !! (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS nesting). But 
+        !! it seems not required with the 'revised' nesting technique in SWALS
+        !! It is ignored if we only communicate with domains that have the same domain%dx, 
+        !! as the benefit is really for coarse-to-fine communication
 
-    ! This is another "padding" factor for the halos. By adding an extra-pad, 
-    ! we can ensure that e.g. gradient calculations are
-    ! valid, when otherwise they might involve 'out-of-date' cells.
     integer(ip), parameter :: extra_cells_in_halo_default = 1_ip
+        !! This is another "padding" factor for the halos. By adding an extra-pad, 
+        !! we can ensure that e.g. gradient calculations are
+        !! valid, when otherwise they might involve 'out-of-date' cells.
 
-    ! Local timestepping of domains
-    ! This affects the distributed-memory version of the model, where we 
-    ! partition the larger domains in parallel. Doing that allows
-    ! for some domains to take shorter timesteps than others (if the 
-    ! depth/speed vary significantly). We can exploit this to reduce
-    ! model run-times (generally load-balancing will be required)
 #ifdef LOCAL_TIMESTEP_PARTITIONED_DOMAINS
     logical, parameter :: local_timestep_partitioned_domains = .true.
 #else
     logical, parameter :: local_timestep_partitioned_domains = .false.
 #endif
+        !! Option to permit local timestepping of domains.
+        !! This affects the distributed-memory version of the model, where we 
+        !! partition the larger domains in parallel. Doing that allows
+        !! for some domains to take shorter timesteps than others (if the 
+        !! depth/speed vary significantly). We can exploit this to reduce
+        !! model run-times (generally load-balancing will be required)
 
-    ! (co)array to store the interior bounding-box of ALL domains (i.e. not 
-    ! including their nesting layer), and their dx(1:2) values, and some 
-    ! metadata describing inter-domain communication needs. 
-    ! Also store info on whether each domain uses a staggered grid, because this
-    ! should affect details of how we do nesting communication (interpolation)
-    ! It would seem cleaner to have this in a derived type, but for now coarray
-    ! in derived type does not sound well supported.
-#ifdef COARRAY
-    real(dp), allocatable :: all_bbox(:,:,:,:)[:]
-    real(dp), allocatable :: all_dx(:,:,:)[:]
-    integer(ip), allocatable :: all_timestepping_refinement_factor(:,:)[:]
-    real(dp), allocatable :: all_recv_metadata(:,:,:,:)[:]
-    real(dp), allocatable :: all_send_metadata(:,:,:,:)[:]
-    integer(ip), allocatable :: all_timestepping_methods(:,:)[:]
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+    ! Use mpi rather than coarrays for communication
+    real(dp), allocatable :: all_bbox(:,:,:,:) !! Interior bounding box of all domains
+    real(dp), allocatable :: all_dx(:,:,:) !! dx values of all domains
+    integer(ip), allocatable :: all_timestepping_refinement_factor(:,:) !! The timestepping_refinement_factor of all domains
+    integer(ip), allocatable :: all_timestepping_methods(:,:) !! The timestepping method of all domains
+    real(dp), allocatable :: all_recv_metadata(:,:,:,:) !! The recv_metadata for all domains (for nesting communication)
+    real(dp), allocatable :: all_send_metadata(:,:,:,:) !! The send metadata for all domains (for nesting communication)
+#elif defined(COARRAY)
+    real(dp), allocatable :: all_bbox(:,:,:,:)[:] !! Interior bounding box of all domains
+    real(dp), allocatable :: all_dx(:,:,:)[:] !! dx values of all domains
+    integer(ip), allocatable :: all_timestepping_refinement_factor(:,:)[:] !! The timestepping_refinement_factor of all domains
+    real(dp), allocatable :: all_recv_metadata(:,:,:,:)[:] !! The recv_metadata for all domains (for nesting communication)
+    real(dp), allocatable :: all_send_metadata(:,:,:,:)[:] !! The send metadata for all domains (for nesting communication)
+    integer(ip), allocatable :: all_timestepping_methods(:,:)[:] !! The timestepping method of all domains
 #else
-    real(dp), allocatable :: all_bbox(:,:,:,:)
-    real(dp), allocatable :: all_dx(:,:,:)
-    integer(ip), allocatable :: all_timestepping_refinement_factor(:,:)
-    real(dp), allocatable :: all_recv_metadata(:,:,:,:)
-    real(dp), allocatable :: all_send_metadata(:,:,:,:)
-    integer(ip), allocatable :: all_timestepping_methods(:,:)
+    real(dp), allocatable :: all_bbox(:,:,:,:) !! Interior bounding box of all domains
+    real(dp), allocatable :: all_dx(:,:,:) !! dx values of all domains
+    integer(ip), allocatable :: all_timestepping_refinement_factor(:,:) !! The timestepping_refinement_factor of all domains
+    real(dp), allocatable :: all_recv_metadata(:,:,:,:) !! The recv_metadata for all domains (for nesting communication)
+    real(dp), allocatable :: all_send_metadata(:,:,:,:) !! The send metadata for all domains (for nesting communication)
+    integer(ip), allocatable :: all_timestepping_methods(:,:) !! The timestepping method of all domains
+#endif
+    ! It would seem cleaner to have the above in a derived type, but for now coarray
+    ! in derived type does not sound well supported.
+
+
+    integer :: ti = -1 !! Result of this_image(). Default values will cause error if not set later
+    integer :: ni = -1 !! Result of num_images(). Default values will cause error if not set later
+
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS) 
+#ifdef REALFLOAT
+    integer :: mympi_dp = MPI_REAL
+#else
+    integer :: mympi_dp = MPI_DOUBLE_PRECISION
+#endif
 #endif
 
-    ! Store "this_image()", "num_images()"
-    integer :: ti = -1 ! Dummy values which will cause error if not set later
-    integer :: ni = -1
 
-
-    ! Number of variables used to describe send/recv_metadata. We often need 
-    ! this constant, so put it here to reduce 'magic numbers'
     integer(ip), parameter :: srm = 6
+        !! Number of variables used to describe send/recv_metadata. We often need 
+        !! this constant, so put it here to reduce 'magic numbers'
 
-    ! Useful to have a very large integer, which is still smaller than huge(1_int64)
     integer(int64), parameter :: large_64_int = 10000000000_int64
+        !! Useful to have a very large integer, which is still smaller than huge(1_int64)
 
-    ! Main 'array of domains'. Idea is for this to have methods with names
-    ! matching domain as much as possible, for easy translation of existing
-    ! scripts.
     type :: multidomain_type
+        !! Type to hold nested-grids that communicate with each other.
+        !! Each nested grid is a domain_type. 
+        ! Idea is for the multidomain_type to have methods matching the domain type as much as possible, for easy translation of
+        ! existing scripts which use single-grid domains to multidomains.
 
-        ! Array of domains 
         type(domain_type), allocatable :: domains(:)
+            !! Array of domains in the multidomain
 
-        ! If we split domains in parallel (COARRAYS), then
-        ! this will hold the 'initial, unallocated' domains
         type(domain_type), allocatable :: domain_metadata(:)
+            !! If we split domains in parallel (COARRAYS), then
+            !! this will hold the 'initial, unallocated' domains
 
-        ! Domain volume tracking
         real(force_double), allocatable :: volume_initial(:), volume(:)
-        ! Work array which permits an openmp-reproducible volume summation
-        ! (since for standard REDUCE(+: variable), the summation order may change).
+            !! Domain volume tracking
+
         real(force_double), allocatable :: volume_work(:)
+            !! Work array which permits an openmp-reproducible volume summation
+            !! (since for standard REDUCE(+: variable), the summation order may change).
 
-        ! Output directory
         character(len=charlen) :: output_basedir = default_output_folder
+            !! Output directory
 
-        ! The multidomain's timer -- important if we do load balancing
         type(timer_type) :: timer
+            !! The multidomain's timer -- important if we do load balancing
 
-        ! The lower/upper extents of periodic domains. For example, on the earth,
-        ! we could have EW periodic spherical coordinates with 
-        ! periodic_xs = [-180.0_dp, 180.0_dp]
         real(dp) :: periodic_xs(2) = [-HUGE(1.0_dp), HUGE(1.0_dp)]
         real(dp) :: periodic_ys(2) = [-HUGE(1.0_dp), HUGE(1.0_dp)]
+            !! The lower/upper extents of periodic domains. For example, on the earth,
+            !! we could have EW periodic spherical coordinates with 
+            !! periodic_xs = [-180.0_dp, 180.0_dp]
 
-        ! File with information on load balancing
         character(len=charlen) :: load_balance_file = ''
-        ! If load_balancing_file is provided, we can use this
+            !! File with information on load balancing
         type(ragged_array_2d_ip_type) :: load_balance_part
+            !! If load_balancing_file is provided, this ragged array is used to store the information
 
-        ! Control additional halo width. This can enable separation of send/recv halos,
-        ! which can reduce nesting artefacts in some cases
         integer(ip) :: extra_halo_buffer = extra_halo_buffer_default
         integer(ip) :: extra_cells_in_halo = extra_cells_in_halo_default
+            !! Controls on any additional halo width. This can enable separation of send/recv halos,
+            !! which may reduce nesting artefacts in some situations.
 
-        ! Store all_dx in the multidomain
         real(dp), allocatable :: all_dx_md(:,:,:)
+            !! Store all_dx (i.e. dx values of all domains) in the multidomain
 
-        ! Store 'all_timestepping_methods' in the multidomain
         integer(ip), allocatable :: all_timestepping_methods_md(:,:)
+            !! Store 'all_timestepping_methods' in the multidomain
 
-        ! Convenience variables controlling writeout
         integer(ip) :: writeout_counter = 0
         real(dp) :: last_write_time = -HUGE(1.0_dp)
+            !! Convenience variables controlling writeout
         
 
         contains
@@ -339,8 +363,8 @@ module multidomain_mod
 
         ! Set the coarray-related module variables ni, ti 
 #ifdef COARRAY
-        ni = num_images()
-        ti = this_image()
+        ni = num_images2()
+        ti = this_image2()
 #else
         ni = 1
         ti = 1
@@ -698,7 +722,7 @@ module multidomain_mod
         type(domain_type), intent(inout) :: domains(:)
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
 
-        integer(ip):: nd, i, j, k, nd_local
+        integer(ip):: nd, i, j, k, nd_local, ierr
 
         nd_local = size(domains)
 
@@ -715,7 +739,13 @@ module multidomain_mod
         if(allocated(all_timestepping_methods)) deallocate(all_timestepping_methods)
 
         ! Get interior box of other boundaries
-#ifdef COARRAY
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        allocate(all_bbox(4, 2, nd, ni))
+        allocate(all_dx(2, nd, ni))
+        allocate(all_timestepping_refinement_factor(nd, ni))
+        allocate(all_timestepping_methods(nd, ni))
+        call sync_all_generic
+#elif defined(COARRAY)
         allocate(all_bbox(4, 2, nd, ni)[*])
         allocate(all_dx(2, nd, ni)[*])
         allocate(all_timestepping_refinement_factor(nd, ni)[*])
@@ -751,14 +781,25 @@ module multidomain_mod
             all_timestepping_methods(i, ti) = timestepping_method_index(domains(i)%timestepping_method)
         end do
 
-#ifdef COARRAY
-        ! Need a synt to ensure that every domain has already set its all_bbox
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        ! Broadcast the current 'domains' metadata to all other images.
+        call mpi_allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, all_bbox, size(all_bbox(:,:,:,1)), &
+            mympi_dp, MPI_COMM_WORLD, ierr)
+        call mpi_allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, all_dx, size(all_dx(:,:,1)), &
+            mympi_dp, MPI_COMM_WORLD, ierr)
+        call mpi_allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, all_timestepping_refinement_factor, &
+            size(all_timestepping_refinement_factor(:,1)), MPI_INTEGER, MPI_COMM_WORLD, ierr)
+        call mpi_allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, all_timestepping_methods, &
+            size(all_timestepping_methods(:,1)), MPI_INTEGER, MPI_COMM_WORLD, ierr)
+#elif defined(COARRAY)
+        ! Need a sync to ensure that every domain has already set its all_bbox
         ! to zero a few lines above. Otherwise, below we could communicate our data, but then
         ! have it set to zero elsewhere!
         sync all 
-        ! Broadcast the current 'domains' metadata to all other images.
+        ! broadcast the current 'domains' metadata to all other images.
         ! ni-to-ni one-sided communication.
         do k = 1, ni
+            ! Alternatively do mpi_allgather for each
             all_bbox(1:4, 1:2, 1:nd, ti)[k] = all_bbox(1:4, 1:2, 1:nd, ti)
             all_dx(1:2, 1:nd, ti)[k] = all_dx(1:2, 1:nd, ti)
             all_timestepping_refinement_factor(1:nd,ti)[k] = all_timestepping_refinement_factor(1:nd, ti) 
@@ -1327,9 +1368,10 @@ module multidomain_mod
             separate_halos_local = .false.
         end if
 
-        call md%send_halos()
+        call md%send_halos(send_to_recv_buffer=send_halos_immediately)
+        if(.not. send_halos_immediately) call communicate_p2p
 #ifdef COARRAY
-        sync all
+        call sync_all_generic
 #endif
         call md%recv_halos()
 
@@ -1504,8 +1546,8 @@ module multidomain_mod
         ni = 1
 #else
         ! Coarray case, we split the images
-        ti = this_image()
-        ni = num_images()
+        ti = this_image2()
+        ni = num_images2()
 #endif
 
         ! Name domains as " image_index * 1e+10 + original_domain_index "
@@ -1708,7 +1750,7 @@ module multidomain_mod
             end do
         end do 
 #ifdef COARRAY
-        sync all
+        call sync_all_generic
 #endif
         flush(log_output_unit)
 
@@ -1905,7 +1947,7 @@ module multidomain_mod
             sync_after_local = .false.
         end if
 
-#ifdef COARRAY
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         if(sync_before_local .and. ni > 1) then
             TIMER_START('sync_before_recv')
             sync images(linked_p2p_images)
@@ -1991,7 +2033,7 @@ module multidomain_mod
 
         TIMER_STOP('receive_multidomain_halos')
 
-#ifdef COARRAY
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         if(sync_after_local .and. ni > 1) then
             TIMER_START('sync_after_recv')
             sync images(linked_p2p_images)
@@ -2252,34 +2294,28 @@ module multidomain_mod
 #ifndef COARRAY
         call mkdir_p(md%output_basedir)
 #else
-        if(this_image() == 1) call mkdir_p(md%output_basedir)
-        sync all ! Ensure the directory creation is finished
+        if(this_image2() == 1) call mkdir_p(md%output_basedir)
+        call sync_all_generic ! Ensure the directory creation is finished
 #endif
     end subroutine
 
 
-    ! Initial entry-point to setup multidomain
-    !
-    ! Setup defaults, partition the domains if required, and call setup_multidomain_domains
-    !
-    ! @param md multidomain
-    ! @param verbose control print-out verbosity
-    ! @param use_wetdry_limiting_nesting If .true., then in wet-dry regions the nesting communication differs. This is important to
-    ! avoid wet-dry artefacts related to nesting.
-    ! @param capture_log log outputs in a multidomain specific file
-    ! @param extra_halo_buffer integer controlling the 'extra' width of halos beyond that strictly required for the solver.
-    ! Increased buffer size can be used to separate neighbouring send halo regions, which can be important for numerical stability,
-    ! although this also requires the use of nesting receive weights (controlled by other parts of the code)
-    ! @param allocate_comms Call allocate_p2p_comms to setup the parallel communication structures
-    !
     subroutine setup_multidomain(md, verbose, use_wetdry_limiting_nesting, capture_log, extra_halo_buffer, allocate_comms)
+        !! Initial entry-point to setup multidomain.
+        !! Setup defaults, partition the domains if required, and call setup_multidomain_domains.
 
         class(multidomain_type), intent(inout) :: md
-        logical, optional, intent(in) :: verbose
+        logical, optional, intent(in) :: verbose !! Control print-out verbosity
         logical, optional, intent(in) :: use_wetdry_limiting_nesting
-        logical, optional, intent(in) :: capture_log
+            !! If .true., then in wet-dry regions the nesting communication differs. This is important to
+            !! avoid wet-dry artefacts related to nesting.
+        logical, optional, intent(in) :: capture_log !! log outputs in a multidomain specific file
         integer(ip), optional, intent(in) :: extra_halo_buffer
+            !! integer controlling the 'extra' width of halos beyond that strictly required for the solver.
+            !! Increased buffer size can be used to separate neighbouring send halo regions, which can be important for numerical
+            !! stability, although this also requires the use of nesting receive weights (controlled by other parts of the code).
         logical, optional, intent(in) :: allocate_comms
+            !! Call allocate_p2p_comms to setup the parallel communication structures
 
         logical:: verbose1, use_wetdry_limiting, capture_log_local, allocate_comms_local
         integer(ip) :: i, extra_halo_buffer_local
@@ -2341,6 +2377,8 @@ module multidomain_mod
         ! Make sure all domains use the new output_basedir 
         do i = 1, size(md%domains)
             md%domains(i)%output_basedir = md%output_basedir
+            ! Make output folders. This involves system calls and forks, so we should do it before allocating lots of memory
+            call md%domains(i)%create_output_folders(copy_code=(i==1))
         end do
 
 
@@ -2428,10 +2466,15 @@ module multidomain_mod
         integer(ip) :: ijk_to_send(2,3), ijk_to_recv(2,3), count_cliffs
 
         real(dp) :: d_lw(2), d_dx(2), d_ll(2), a_row(srm+2), tmp_xs(2), tmp_ys(2), tmp_dxs(2)
-        real(dp) :: box_diff(4), box_roundoff_tol
+        real(dp) :: box_diff(4), box_roundoff_tol, counter_dp(1)
         integer(ip) :: d_nx(2), send_count, recv_count, n_ind, n_img, n_comms, n_row, tmp
         logical :: verbose1, use_wetdry_limiting, in_periodic_region1, in_periodic_region2, in_periodic_region
         character(len=charlen) :: msg
+#ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
+        integer :: win_mpi, disp, ierr, win_mpi_info
+        integer, allocatable :: request_array(:)
+        integer(MPI_ADDRESS_KIND) :: arr_size, target_disp
+#endif
 
         !! Index labels for send/recv metadata 
         !! The following parameters give the 'row-index' at which we store various types of metadata.
@@ -2461,6 +2504,7 @@ module multidomain_mod
 #ifdef COARRAY
         call co_max(nd_global)
 #endif
+ 
 
         !
         ! Figure out how thick the nesting layer buffer has to be for each domain
@@ -2638,7 +2682,21 @@ module multidomain_mod
         ! Columns of all_recv_metadata correspond to: 
         ! recv_from_domain_index, recv_from_image_index, xlo, xhi, ylo, yhi, send_metadata_row_index, recv_comms_index
         if(allocated(all_recv_metadata)) deallocate(all_recv_metadata)
-#ifdef COARRAY
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        allocate( all_recv_metadata(srm+2, nbox_max, nd_global, ni ))
+        call sync_all_generic
+        ! Make an MPI window and open it
+        arr_size = size(all_recv_metadata) * real_bytes
+        disp = real_bytes
+        call mpi_info_create(win_mpi_info, ierr)
+        call mpi_info_set(win_mpi_info, 'no_locks', 'true', ierr)
+        call mpi_info_set(win_mpi_info, 'same_size', 'true', ierr)
+        call mpi_info_set(win_mpi_info, 'same_disp_unit', 'true', ierr)
+        call mpi_win_create(all_recv_metadata, arr_size, disp, win_mpi_info, MPI_COMM_WORLD, win_mpi, ierr)
+        call mpi_win_fence(0, win_mpi, ierr)
+        if(allocated(request_array)) deallocate(request_array)
+        allocate(request_array(ni))
+#elif defined(COARRAY)
         allocate( all_recv_metadata(srm+2, nbox_max, nd_global, ni )[*])
 #else     
         allocate( all_recv_metadata(srm+2, nbox_max, nd_global, ni ) )
@@ -2688,8 +2746,17 @@ module multidomain_mod
                 end if
 
             end do
-#ifdef COARRAY
-            ! One-sided parallel communication to all images 
+
+            ! Put local_metadata on all images, within all_recv_metadata
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+            target_disp = size(all_recv_metadata(:,:,:,1)) * (ti-1) + &
+                          size(all_recv_metadata(:,:,1,1)) * (j-1)
+            do k = 1, ni
+                call mpi_rput(local_metadata, size(local_metadata), mympi_dp, &
+                    k-1, target_disp, size(local_metadata), mympi_dp, win_mpi, request_array(k), ierr)
+            end do
+            call mpi_waitall(ni, request_array, MPI_STATUSES_IGNORE, ierr)
+#elif defined(COARRAY)
             do k = 1, ni
                 all_recv_metadata(:,:,j,ti)[k] = local_metadata
             end do
@@ -2697,8 +2764,12 @@ module multidomain_mod
             all_recv_metadata(:,:,j,ti) = local_metadata
 #endif
         end do
-#ifdef COARRAY        
-        sync all
+
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call mpi_win_fence(0, win_mpi, ierr)
+#endif
+#if defined(COARRAY)
+        call sync_all_generic
 #endif
 
         !
@@ -2758,10 +2829,19 @@ module multidomain_mod
                             domains(j)%nesting%send_metadata(8, counter) = count([in_periodic_region])
 
                             ! Now, tell all_recv_metadata this row index in send_metadata
-#ifdef COARRAY
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+                            counter_dp = 1.0_dp * counter
+                            target_disp = size(all_recv_metadata(:,:,:,1)) * (k-1) + &
+                                          size(all_recv_metadata(:,:,1,1)) * (jj-1) + &
+                                          size(all_recv_metadata(:,1,1,1)) * (i-1) + &
+                                          (7-1)
                             do ii = 1, ni
-                                ! One-sided all-to-all communication of the send_metadata index to the recv_metadata
-                                ! This index will be the same as the one into all_send_metadata
+                                call mpi_rput(counter_dp, 1, mympi_dp, ii-1, target_disp, 1, &
+                                    mympi_dp, win_mpi, request_array(ii), ierr)
+                            end do
+                            call mpi_waitall(ni, request_array, MPI_STATUSES_IGNORE, ierr)
+#elif defined(COARRAY)
+                            do ii = 1, ni
                                 all_recv_metadata(7,i,jj,k)[ii] = (1.0_dp * counter)
                             end do
 #else
@@ -2773,8 +2853,12 @@ module multidomain_mod
             end do
 
         end do
-#ifdef COARRAY
-        sync all
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call mpi_win_fence(0, win_mpi, ierr)
+        call mpi_win_free(win_mpi, ierr)
+#endif
+#if defined(COARRAY)
+        call sync_all_generic
 #endif        
 
 #ifdef MULTIDOMAIN_DEBUG
@@ -2800,7 +2884,16 @@ module multidomain_mod
         !
 
         if(allocated(all_send_metadata)) deallocate(all_send_metadata)
-#ifdef COARRAY
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call co_max(nbox_max)
+        allocate(all_send_metadata(srm+2, nbox_max, nd_global, ni))
+        call sync_all_generic
+        ! Open an MPI Window onto the send metadata
+        arr_size = size(all_send_metadata) * real_bytes
+        disp = real_bytes
+        call mpi_win_create(all_send_metadata, arr_size, disp, win_mpi_info, MPI_COMM_WORLD, win_mpi, ierr)
+        call mpi_win_fence(0, win_mpi, ierr)
+#elif defined(COARRAY)
         call co_max(nbox_max)
         allocate(all_send_metadata(srm+2, nbox_max, nd_global, ni)[*])
 #else
@@ -2846,7 +2939,16 @@ module multidomain_mod
                 end if
 
             end do
-#ifdef COARRAY
+
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+            target_disp = size(all_send_metadata(:,:,:,1)) * (ti-1) + &
+                          size(all_send_metadata(:,:,1,1)) * (j-1)
+            do k = 1, ni
+                call mpi_rput(local_metadata, size(local_metadata), mympi_dp, &
+                    k-1, target_disp, size(local_metadata), mympi_dp, win_mpi, request_array(k), ierr)
+            end do
+            call mpi_waitall(ni, request_array, MPI_STATUSES_IGNORE, ierr)
+#elif defined(COARRAY)
             ! One-sided parallel communication to all images
             do k = 1, ni
                 all_send_metadata(:,:,j,ti)[k] = local_metadata
@@ -2855,8 +2957,13 @@ module multidomain_mod
             all_send_metadata(:,:,j,ti) = local_metadata
 #endif
         end do
-#ifdef COARRAY        
-        sync all
+
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call mpi_win_fence(0, win_mpi, ierr)
+        call mpi_win_free(win_mpi, ierr)
+#endif
+#if defined(COARRAY)
+        call sync_all_generic
 #endif
 
 #ifdef MULTIDOMAIN_DEBUG
@@ -3642,10 +3749,11 @@ __FILE__
 
         end do
 
-        call md%send_halos()
+        call md%send_halos(send_to_recv_buffer=send_halos_immediately)
+        if(.not. send_halos_immediately) call communicate_p2p
 
 #ifdef COARRAY
-        sync all
+        call sync_all_generic
 #endif
 
         call md%recv_halos()
@@ -3693,7 +3801,7 @@ __FILE__
             end do
 #ifdef COARRAY
             call flush(log_output_unit)
-            sync all
+            call sync_all_generic
 #endif
             ! Here if it's working, the 'err' will depend on the precision.
             ! A pragmatic guide to the allowed error is the square root of the distance between
@@ -3735,7 +3843,7 @@ __FILE__
         logical :: passed, periodic_point
 
         call deallocate_p2p_comms
-        
+
         ! Try to make a periodic domain
         md%periodic_xs = [-10.0_dp, 350.0_dp]
         md%periodic_ys = [-80.0_dp, 90.0_dp]
@@ -3772,9 +3880,11 @@ __FILE__
         ! Make sure flow/elev values are consistent between domains, by doing one
         ! halo exchange
         !
-        call md%send_halos()
+        call md%send_halos(send_to_recv_buffer=send_halos_immediately)
+        if(.not. send_halos_immediately) call communicate_p2p
+
 #ifdef COARRAY
-        sync all
+        call sync_all_generic
 #endif
         call md%recv_halos()
 
@@ -3975,9 +4085,11 @@ __FILE__
 
             ! Make sure flow/elev values are consistent between domains, by doing one
             ! halo exchange
-            call md%send_halos()
+            call md%send_halos(send_to_recv_buffer=send_halos_immediately)
+            if(.not. send_halos_immediately) call communicate_p2p
+
 #ifdef COARRAY
-            sync all
+            call sync_all_generic
 #endif
             call md%recv_halos()
 

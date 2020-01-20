@@ -1,33 +1,32 @@
 
 module spherical_mod
-    !
-    ! Useful routines for computation on sphere
-    !
-    use global_mod, only: dp, ip, radius_earth, force_double
-    !use iso_c_binding, only: C_DOUBLE
+    !!
+    !! Useful routines for computation on sphere
+    !!
+    use global_mod, only: dp, ip, radius_earth, force_double, pi
     implicit none
 
-    real(dp), parameter, private:: PI = atan(1.0_dp)*4.0_dp
-    real(dp), parameter :: DEG2RAD = PI/180.0_dp
-    ! Radians/second of earth rotation
-    real(dp), parameter :: EARTH_ANGULAR_FREQ = 2.0_dp * PI / (3600.0_dp * 24.0_dp)
+    real(dp), parameter :: DEG2RAD = pi /180.0_dp
+    !! Convert degrees to radians
+    real(dp), parameter :: EARTH_ANGULAR_FREQ = 2.0_dp * pi / (3600.0_dp * 24.0_dp)
+    !! Radians/second of earth rotation
 
-    CONTAINS
+    contains
 
-    ! Compute the area on a sphere of a 'rectangle' bounded by lines of
-    ! constant latitude and longitude, defined by lon1, lon1+dlon, lat1, lat1+dlat.
-    ! Here lon1, lat1 must be the lower-left corner
-    !
-    ! The input parameters are in degrees, with latitude ranging from -90 to 90
-    !
-    ! Solution is explained here
-    ! http://mathforum.org/library/drmath/view/63767.html
-    !
-    ! Note similarity with area = R^2 cos(lat) * dlat * dlon.
-    ! The equation here is similar if we note [sin(lat+dlat)-sin(lat)]/dlat = cos(lat)
-    ! as dlat --> 0
-    ! If flat=.true. then we use the 'cos' formula, but if flat=.FALSE. (default) we do not.
     elemental function area_lonlat_rectangle(lon1, lat1, dlon, dlat, flat) result (area_sp)
+        !! Compute the area on a sphere of a 'rectangle' bounded by lines of
+        !! constant latitude and longitude, defined by lon1, lon1+dlon, lat1, lat1+dlat.
+        !! Here lon1, lat1 must be the lower-left corner.
+        !!
+        !! The input parameters are in degrees, with latitude ranging from -90 to 90.
+        !!
+        !! Solution is explained here
+        !! http://mathforum.org/library/drmath/view/63767.html
+        !!
+        !! Note similarity with area = R^2 cos(lat) * dlat * dlon.
+        !! The equation here is similar if we note [sin(lat+dlat)-sin(lat)]/dlat = cos(lat)
+        !! as dlat --> 0.
+        !! If flat=.true. then we use the 'cos' formula, but if flat=.FALSE. (default) we do not.
         real(dp), intent(in):: lon1, lat1, dlon, dlat
         logical, optional, intent(in):: flat
         real(dp) :: area_sp
@@ -58,6 +57,7 @@ module spherical_mod
     end function
 
     subroutine test_spherical_mod()
+        !! Unit tests
         real(dp):: lon1, lon2, lat1, lat2, area
         real(dp):: ans 
         ! the test cases assume this radius

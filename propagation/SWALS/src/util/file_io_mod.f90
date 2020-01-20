@@ -1,7 +1,7 @@
 module file_io_mod
-    !
-    ! Various convenience routines for ascii file IO
-    !
+    !!
+    !! Various convenience routines for ascii file IO
+    !!
 
     use global_mod, only: dp, ip, charlen
     use ragged_array_mod
@@ -10,9 +10,8 @@ module file_io_mod
 
     contains
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     function count_file_lines(input_file_unit_no)
-        ! Count the number of lines in input_file_unit_no
+        !! Count the number of lines in input_file_unit_no
         integer(ip):: input_file_unit_no
         integer(ip):: count_file_lines
 
@@ -30,12 +29,11 @@ module file_io_mod
 
         rewind(input_file_unit_no) ! Start of file
     end function
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     subroutine mkdir_p(output_folder, mkdir_status)
-        ! Make a directory, recursively (i.e. like "mkdir -p output_folder")
-        ! We try to work-around possible failures in parallel.
-        ! It would be good to have a less hacky implementation however
+        !! Make a directory, recursively (i.e. like "mkdir -p output_folder")
+        !! We try to work-around possible failures in parallel.
+        !! It would be good to have a less hacky implementation however
         character(*), intent(in) :: output_folder
         integer(ip), optional, intent(out) :: mkdir_status
 
@@ -68,11 +66,11 @@ module file_io_mod
 
     end subroutine
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     subroutine read_character_file(input_file_unit_no, output_lines, format_string)
-        ! Read the entire contents of input_file_unit_no into the allocatable
-        ! character array 'output_lines'. Use format_string in the read
+        !! Read the entire contents of input_file_unit_no into the allocatable
+        !! character array 'output_lines'. Use format_string in the read
         integer(ip), intent(in):: input_file_unit_no
         character(*), intent(in):: format_string
         character(len=charlen), allocatable, intent(inout):: output_lines(:)
@@ -97,14 +95,14 @@ module file_io_mod
 
     end subroutine
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     subroutine read_csv_into_array(array, csv_file, skip_header)
-        ! Read the contents of csv_file into an array
-        ! Allocation is automatically taken care of
-        real(dp), allocatable, intent(inout):: array(:,:)
-        character(len=charlen), intent(in):: csv_file
-        integer(ip), optional, intent(in):: skip_header
+        !! Read the contents of csv_file into an array
+        !! Allocation is automatically taken care of
+        real(dp), allocatable, intent(inout):: array(:,:) !! Array to store the output
+        character(len=charlen), intent(in):: csv_file !! Filename
+        integer(ip), optional, intent(in):: skip_header !! Number of lines to skip in read
 
         character(len=charlen):: local_buffer
         integer(ip) :: file_unit_no, file_columns, file_rows, i, skip_header_local
@@ -141,8 +139,8 @@ module file_io_mod
 
     end subroutine
 
-    ! Basic routine to read a ragged array from a file
     subroutine read_ragged_array_2d_ip(ragged_array_2d_ip, filename)
+        !! Basic routine to read a ragged array from a file
         type(ragged_array_2d_ip_type), intent(inout) :: ragged_array_2d_ip
         character(len=charlen), intent(in) :: filename
 

@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Simulate wave motion in a paraboloid bowl, which has an analytical solution 
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
@@ -49,9 +52,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program run_paraboloid_basin
+    !!
+    !! Simulate wave motion in a paraboloid bowl, which has an analytical solution 
+    !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
@@ -78,7 +84,7 @@ program run_paraboloid_basin
     integer(ip), parameter :: mesh_refine = 4_ip
 
     ! The global (i.e. outer-domain) time-step in the multidomain 
-    real(dp) ::  global_dt != (0.23_dp/mesh_refine) * 1.0_dp
+    real(dp) ::  global_dt ! = (0.23_dp/mesh_refine) * 1.0_dp
 
     ! Approx timestep between outputs
     real(dp) :: approximate_writeout_frequency = 1.0_dp
@@ -117,10 +123,10 @@ program run_paraboloid_basin
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
-    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'rk2' !'cliffs' !'midpoint'
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method 
 
-    ! Splitting the domain the same way, irrespective of np, improves reproducibility
-    !md%load_balance_file = 'load_balance_partition.txt'
+    !@ Splitting the domain the same way, irrespective of np, improves reproducibility
+    ! md%load_balance_file = 'load_balance_partition.txt'
     call get_command_argument(1, md%load_balance_file)
 
     ! Allocate domains and prepare comms
@@ -158,7 +164,7 @@ program run_paraboloid_basin
     ! The water will rise (and fall) in the deepest area so we need a timestep 
     ! somewhat smaller than the initial stationary timestep. From experience 
     ! this timestep is stable
-    global_dt = 0.71_dp * global_dt * md%domains(1)%cfl !* 1.0_dp/3.0_dp
+    global_dt = 0.71_dp * global_dt * md%domains(1)%cfl ! * 1.0_dp/3.0_dp
 
     !
     ! Evolve the code

@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Setup the Merewether problem.
+    !!
 
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
@@ -165,9 +168,13 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program merewether
+    !! Urban flooding test case in Merewether from Australian Rainfall and Runoff.
+    !! Smith, G. & Wasko, C. Revision Project 15: Two Dimensional Simulations In 
+    !! Urban Areas - Representation of Buildings in 2D Numerical Flood Models Australian 
+    !! Rainfall and Runoff, Engineers Australia, 2012
 
     use global_mod, only: ip, dp, minimum_allowed_depth
     use ragged_array_mod, only: ragged_array_2d_ip_type

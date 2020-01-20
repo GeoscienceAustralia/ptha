@@ -1,111 +1,112 @@
 module coarray_point2point_comms_mod
 
 !
-! Module for doing coarray 'point-to-point' communications of real
-! arrays (rank from 1 to 4), in a 'multiple-program, multiple data' style.
+!! Module for doing coarray 'point-to-point' communications of real
+!! arrays (rank from 1 to 4), in a 'multiple-program, multiple data' style.
 !
-! Send an arbitrary (and varying) number of arrays between any pairs of images.
-! The array dimensions do not have to be consistent among images.
-!
-! Background
-! ------------
-!
-! Coarrays by definition must be the same size on each image. It is not always
-! straightforward to apply coarrays to problems where we need to: 
-!    A) send different numbers of variables between pairs of communicating images, or; 
-!    B) send different sizes of variables between pairs of communicating images.
-!
-! For example, consider a 2D grid-based PDE solver, where a single program might
-! contain multiple nested grids (to allow high resolution in target areas). Each
-! of these grids can be partitioned across a number of images, which communicate 
-! boundary data to each other (i.e. halo exchange). The nesting
-! boundaries will force an irregular communication pattern on the code, depending on
-! the geometric placement of each grid, as well as on how they are partitioned.
-!
-! An approach to the 'irregular communication problem', implemented here, is to
-! use one coarray to do all send/recv communications. By definition, 
-! this gives a separate chunk of communicable memory (of the same size) on each
-! image. For each array 'x' that we want to communicate, we use a distinct
-! contiguous slice of the coarray for communication. 
-!
-! This module takes care of the details of communication, and provides the user
-! with a 'hopefully' simple interface.
-!
-! Note that memory will necessarily be wasted if the amount of data to
-! receive is unequal among images. In the target applications, the amount
-! of data to send is quite small compared with the overall memory usage, and in
-! such cases this wasted memory is insignificant.
-!
-! Usage
-! -----
-! 
-! The general outline of the usage is below, ignoring details which are
-! not relevant to the application (such as allocating variables, treating
-! cases with 'this_image - 1 == zero', etc). 
-! For a 'real' example, see the unit-test subroutine
-! 'test_coarray_point2point_comms_mod'.
-!
-!
-! ! import the module
-! use coarray_point2point_comms_mod
-!
-! ! Communicate arrays with possibly varying shapes on each image
-! real(dp) :: x_send(10), y_send(this_image())
-! real(dp) :: x_recv(10), y_recv(this_image() - 1) 
-!
-! ! .... define x_send, y_send ....
-!
-! ! Let the module know which arrays will be communicated, and where they
-! ! will be received. Each set of array data is given a label which will be
-! ! used in sending and receiving. Note we do not have to communicate the
-! ! same arrays on all images
-!
-! ! associate the label 'y_comms1' with communication of the 'y_' variables to
-! ! image 'this_image() + 1'
-! call include_in_p2p_send_buffer(y_send, buffer_label='y_comms1', receiver_image=this_image() + 1_ip)
-! if(this_image() == 1) then
-!     ! If we are on image 1, then associate the label 'x_comms1' with
-!     ! communication of the 'x_' variables to image 2
-!     call include_in_p2p_send_buffer(x_send, buffer_label='x_comms1', receiver_image=2_ip)
-! end if
-! 
-! ! Once we have identified which arrays are communicated using
-! ! 'include_in_p2p_send_buffer', we can allocate communication buffers.
-! ! At this stage, we should not call 'include_in_p2p_send_buffer' anymore.
-! ! All images should call this subroutine, even if they are not sending or receiving,
-! ! because the coarray must be allocated on all images at once.
-! call allocate_p2p_comms
-!
-! ! Now the main computational work begins
-! do while (.... main iteration loop ... )
-!     
-!     !... update x, y, based on values at previous iteration
-!     
-!     ! Copy x,y to the receiver image 
-!     !
-!     ! send y_send to image (this_image()+1) -- note the receive image was
-!     ! defined above
-!     call send_to_p2p_comms(y_send, buffer_label='y_comms1')
-!     if(this_image() == 1) then
-!         ! send x_send to image 2
-!         call send_to_p2p_comms(x_send, buffer_label='x_comms1')
-!     end if
-!
-!     ! Make sure images we receive from have sent their data.
-!     ! This needs to be called on all communicating images
-!     if(size(linked_p2p_images) > 0) sync images(linked_p2p_images)
-!     ! linked_p2p_images is an array containing all image_indexes that
-!     ! we send to or receive from
-!
-!     ! Copy from recv buffer back to computational array
-!     call recv_from_p2p_comms(y_recv, buffer_label='y_comms1')
-!     if(this_image() == 2) then
-!         call recv_from_p2p_comms(x_recv, buffer_label='x_comms1')
-!     end if
-!   
-!     ! Do something with the received data, update x_, y_, more computations ....
-!
-! end do
+!! Send an arbitrary (and varying) number of arrays between any pairs of images.
+!! The array dimensions do not have to be consistent among images.
+!!
+!! Background
+!! ------------
+!!
+!! Coarrays by definition must be the same size on each image. It is not always
+!! straightforward to apply coarrays to problems where we need to: 
+!!    A) send different numbers of variables between pairs of communicating images, or; 
+!!    B) send different sizes of variables between pairs of communicating images.
+!!
+!! For example, consider a 2D grid-based PDE solver, where a single program might
+!! contain multiple nested grids (to allow high resolution in target areas). Each
+!! of these grids can be partitioned across a number of images, which communicate 
+!! boundary data to each other (i.e. halo exchange). The nesting
+!! boundaries will force an irregular communication pattern on the code, depending on
+!! the geometric placement of each grid, as well as on how they are partitioned.
+!!
+!! An approach to the 'irregular communication problem', implemented here, is to
+!! use one coarray to do all send/recv communications. By definition, 
+!! this gives a separate chunk of communicable memory (of the same size) on each
+!! image. For each array 'x' that we want to communicate, we use a distinct
+!! contiguous slice of the coarray for communication. 
+!!
+!! This module takes care of the details of communication, and provides the user
+!! with a 'hopefully' simple interface.
+!!
+!! Note that memory will necessarily be wasted if the amount of data to
+!! receive is unequal among images. In the target applications, the amount
+!! of data to send is quite small compared with the overall memory usage, and in
+!! such cases this wasted memory is insignificant.
+!!
+!! Usage
+!! -----
+!! 
+!!     ! The general outline of the usage is below, ignoring details which are
+!!     ! not relevant to the application (such as allocating variables, treating
+!!     ! cases with 'this_image - 1 == zero', etc). 
+!!     ! For a 'real' example, see the unit-test subroutine
+!!     ! 'test_coarray_point2point_comms_mod'.
+!!
+!!
+!!     ! import the module
+!!     use coarray_point2point_comms_mod
+!!
+!!     ! Communicate arrays with possibly varying shapes on each image
+!!     real(dp) :: x_send(10), y_send(this_image())
+!!     real(dp) :: x_recv(10), y_recv(this_image() - 1) 
+!!
+!!     ! .... define x_send, y_send ....
+!!
+!!     ! Let the module know which arrays will be communicated, and where they
+!!     ! will be received. Each set of array data is given a label which will be
+!!     ! used in sending and receiving. Note we do not have to communicate the
+!!     ! same arrays on all images
+!!
+!!     ! associate the label 'y_comms1' with communication of the 'y_' variables to
+!!     ! image 'this_image() + 1' (for simplicity of exposition, ignore the special 
+!!     ! treatment when (this_image()+1) > num_images() )
+!!     call include_in_p2p_send_buffer(y_send, buffer_label='y_comms1', receiver_image=this_image() + 1_ip)
+!!     if(this_image() == 1) then
+!!         ! If we are on image 1, then associate the label 'x_comms1' with
+!!         ! communication of the 'x_' variables to image 2
+!!         call include_in_p2p_send_buffer(x_send, buffer_label='x_comms1', receiver_image=2_ip)
+!!     end if
+!!     
+!!     ! Once we have identified which arrays are communicated using
+!!     ! 'include_in_p2p_send_buffer', we can allocate communication buffers.
+!!     ! At this stage, we should not call 'include_in_p2p_send_buffer' anymore.
+!!     ! All images should call this subroutine, even if they are not sending or receiving,
+!!     ! because the coarray must be allocated on all images at once.
+!!     call allocate_p2p_comms
+!!
+!!     ! Now the main computational work begins
+!!     do while (.... main iteration loop ... )
+!!         
+!!         !... update x, y, based on values at previous iteration
+!!         
+!!         ! Copy x,y to the receiver image 
+!!         !
+!!         ! send y_send to image (this_image()+1) -- note the receive image was
+!!         ! defined above
+!!         call send_to_p2p_comms(y_send, buffer_label='y_comms1')
+!!         if(this_image() == 1) then
+!!             ! send x_send to image 2
+!!             call send_to_p2p_comms(x_send, buffer_label='x_comms1')
+!!         end if
+!!
+!!         ! Make sure images we receive from have sent their data.
+!!         ! This needs to be called on all communicating images
+!!         if(size(linked_p2p_images) > 0) sync images(linked_p2p_images)
+!!         ! linked_p2p_images is an array containing all image_indexes that
+!!         ! we send to or receive from
+!!
+!!         ! Copy from recv buffer back to computational array
+!!         call recv_from_p2p_comms(y_recv, buffer_label='y_comms1')
+!!         if(this_image() == 2) then
+!!             call recv_from_p2p_comms(x_recv, buffer_label='x_comms1')
+!!         end if
+!!       
+!!         ! Do something with the received data, update x_, y_, more computations ....
+!!
+!!     end do
 
     ! kinds for double, integer, and default character length
     use global_mod, only: dp, ip, charlen, real_bytes
@@ -117,8 +118,10 @@ module coarray_point2point_comms_mod
     use logging_mod, only: log_output_unit
     use qsort_mod, only: sort_index
     use iso_c_binding, only: c_int ! For call to sort_index, which uses C
-#ifdef COARRAY_PROVIDE_CO_ROUTINES
-    use coarray_intrinsic_alternatives, only: co_broadcast, co_max, co_sum
+#if defined(COARRAY_PROVIDE_CO_ROUTINES)
+    use coarray_intrinsic_alternatives, only: co_broadcast, co_max, co_sum, sync_all_generic, this_image2, num_images2
+#elif defined(COARRAY)
+    use coarray_intrinsic_alternatives, only: sync_all_generic, this_image2, num_images2
 #endif
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
     ! The 'inner loop' put will use MPI_IAllToAllv
@@ -134,21 +137,29 @@ module coarray_point2point_comms_mod
     ! any integer precision (without effort)
     integer, parameter :: ocaIP = int32
 
-    ! Unit test subroutine
     public :: test_coarray_point2point_comms_mod
+        ! Unit test subroutine
 
     ! Methods we need to use
     public :: include_in_p2p_send_buffer
+        !! Append another point2point send to the data structures
     public :: allocate_p2p_comms
+        !! Allocate arrays to do the point2point sends
     public :: deallocate_p2p_comms
+        !! Clean up arrays to do the point2point sends
     public :: send_to_p2p_comms, recv_from_p2p_comms
+        !! Send and unpack the buffers
     public :: communicate_p2p 
+        !! Do all sends
     public :: print_p2p_comms
+        !! Print info about the point2point comms data structures
     public :: size_of_send_recv_buffers
+        !! Compute the size of the send/receive buffers
 
     ! This must be public to allow control of syncs
     public :: linked_p2p_images
     protected :: linked_p2p_images
+        !! Array with the coarray indices of images we communicate with
 
     ! Useful to have the send/recv buffers publically visible for debugging
     ! But it kills the parallel efficiency on NCI for some reason! At 256
@@ -157,9 +168,9 @@ module coarray_point2point_comms_mod
     !public :: send_buffer, recv_buffer
     !protected :: send_buffer, recv_buffer
 
-    ! This is useful, if we need to make distinct buffer_labels based on
-    ! integers
     public:: integer_to_id
+        !! This is useful, if we need to make distinct buffer_labels based on
+        !! integers
 
 
 
@@ -171,10 +182,10 @@ module coarray_point2point_comms_mod
     ! len of character used for buffer_label
     integer(ocaIP), parameter :: p2p_id_len = charlen
 
-    ! Do we order the send data by image? If true, then 'communicate_p2p' can
-    ! involve less individual sends. There does not seem to be any reason
-    ! not to do this.
     logical, parameter :: reorder_send_data_by_image = .true.
+        !! Do we order the send data by image? If true, then 'communicate_p2p' can
+        !! involve less individual sends. There does not seem to be any reason
+        !! not to do this.
 
     !
     ! Main send buffer + metadata about what we send
@@ -196,7 +207,7 @@ module coarray_point2point_comms_mod
     !
     ! Main receive buffer + metadata about what we receive
     ! These are private to the module
-#if defined(COARRAY)
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
     real(dp), allocatable :: recv_buffer(:)[:]
 #else
     real(dp), allocatable :: recv_buffer(:)
@@ -211,7 +222,7 @@ module coarray_point2point_comms_mod
     ! send_buffer on [recvfrom_image_index(i)]. We don't store the exact
     ! slice that it originates from, since we use 'put' communication here
 
-#ifdef COARRAY
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
     ! We need to communicate various integer arrays when initialising
     integer(ocaIP), allocatable :: work_coarray(:, :)[:]
     ! This is used to communicate a character of up to length p2p_id_len, using
@@ -245,16 +256,18 @@ module coarray_point2point_comms_mod
 #else
     integer :: mympi_dp = MPI_DOUBLE_PRECISION
 #endif
+    integer :: mympi_int = MPI_INTEGER
+    integer :: mympi_real64 = MPI_DOUBLE_PRECISION
 #endif
 
-    ! Allow 'include_in_p2p_send_buffer' to apply to input arrays with rank from 1 to 4
     interface include_in_p2p_send_buffer
+        !! Allow 'include_in_p2p_send_buffer' to apply to input arrays with rank from 1 to 4
         module procedure include_in_p2p_send_buffer_rank1, include_in_p2p_send_buffer_rank2, &
             include_in_p2p_send_buffer_rank3, include_in_p2p_send_buffer_rank4
     end interface
 
-    ! Allow 'send_to_p2p_comms' to apply to input arrays with rank from 1 to 4
     interface send_to_p2p_comms
+        !! Allow 'send_to_p2p_comms' to apply to input arrays with rank from 1 to 4
         module procedure send_to_p2p_comms_rank1, send_to_p2p_comms_rank2, &
             send_to_p2p_comms_rank3, send_to_p2p_comms_rank4
     end interface
@@ -267,26 +280,22 @@ module coarray_point2point_comms_mod
    
     contains
 
-    !
-    ! Define the need for space to communicate 'send_array' to image 'receiver_image'.
-    !
-    ! Identify the communication with a string 'buffer_label', which can also
-    ! be used to receive the sent data.
-    !
-    ! Note the actual allocations happen later (once we know all the arrays
-    ! we'd like to send).
-    ! 
-    ! @param send_array A one dimensional real array with kind dp
-    ! @param buffer_label A character string (len=p2p_id_len) used to
-    !   identify the communication data in both the send and recv buffers
-    ! @param receiver_image image index which will receive the data
-    !
     subroutine include_in_p2p_send_buffer_generic(send_array_size, buffer_label, &
         receiver_image)
+        !!
+        !! Define the need for space to communicate 'send_array' to image 'receiver_image'.
+        !!
+        !! Identify the communication with a string 'buffer_label', which can also
+        !! be used to receive the sent data.
+        !!
+        !! Note the actual allocations happen later (once we know all the arrays
+        !! we'd like to send).
 
-        integer(ip), intent(in) :: send_array_size
+        integer(ip), intent(in) :: send_array_size !! A one dimensional real array with kind dp
         character(len=p2p_id_len), intent(in) :: buffer_label
-        integer(ip), intent(in) :: receiver_image
+            !! A character string (len=p2p_id_len) used to
+            !! identify the communication data in both the send and recv buffers
+        integer(ip), intent(in) :: receiver_image !! image index which will receive the data
 
         if ( allocated(send_buffer) ) then
             write(log_output_unit,*) 'send_buffer is already allocated. Cannot create ', & 
@@ -330,9 +339,11 @@ module coarray_point2point_comms_mod
     ! For rank1 send_array's
     subroutine include_in_p2p_send_buffer_rank1(send_array, buffer_label, &
         receiver_image)
-        real(dp), intent(in) :: send_array(:)
-        character(len=p2p_id_len), intent(in) :: buffer_label
-        integer(ip), intent(in) :: receiver_image
+        !! Make space to send 'send_array' to the image 'receiver_image'. The send is associated
+        !! with the buffer_label, which will be used to hide the book-keeping.
+        real(dp), intent(in) :: send_array(:) !! A rank-1 array with the data to send
+        character(len=p2p_id_len), intent(in) :: buffer_label !! The label associated with the sent data
+        integer(ip), intent(in) :: receiver_image !! The image that the data should be sent to
 
         integer(ip) :: n
 
@@ -383,18 +394,23 @@ module coarray_point2point_comms_mod
             receiver_image)
     end subroutine
 
-    !
-    ! Allocate the send_buffer, assuming all calls to
-    ! include_in_p2p_send_buffer have already been made
-    !
     subroutine allocate_p2p_comms
+        !!
+        !! Allocate the send_buffer, assuming all calls to
+        !! include_in_p2p_send_buffer have already been made
+        !!
 
-        integer(ocaIP) :: desired_size, desired_size_local, i, j, n, k, ierr
+        integer(ocaIP) :: desired_size, desired_size_local, i, j, n, k
         character(p2p_id_len) :: charlabel
 
         ! Variables for call to sort_index
         integer(c_int), allocatable :: send_data_order(:), send_data_sort_criterion(:)
         integer(c_int) :: n1
+#ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS        
+        ! MPI variables
+        integer :: win_mpi_work_coarray, win_mpi_real64_coarray, disp, ierr, request, win_mpi_info
+        integer(kind=MPI_ADDRESS_KIND) :: arr_size, target_disp
+#endif
 
         if(have_allocated_p2p_comms) then
             ! Send message to a few places to make it more likely we see it
@@ -406,9 +422,8 @@ module coarray_point2point_comms_mod
         have_allocated_p2p_comms = .TRUE.
 
 #ifdef COARRAY
-        this_image_local = this_image()
-        num_images_local = num_images()
-
+        this_image_local = this_image2()
+        num_images_local = num_images2()
         ! Approach using MPI
         !call mpi_comm_rank(MPI_COMM_WORLD, this_image_local, ierr)
         !this_image_local = this_image_local + 1
@@ -500,19 +515,21 @@ module coarray_point2point_comms_mod
             end if
 #ifdef COARRAY
             call co_sum(desired_size)
-
-            !! Here's how to do it with MPI. 
-            !call MPI_Allreduce(MPI_IN_PLACE, desired_size, 1, MPI_INTEGER4, MPI_SUM, MPI_COMM_WORLD, ierr) 
 #endif
             if(i == this_image_local) then
                 desired_size_local = desired_size
             end if
         end do
         desired_size = desired_size_local
-#if defined(COARRAY)
+
+        ! Make the recv_buffer -- used for communication every timestep
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call co_max(desired_size)
+        allocate(recv_buffer(desired_size))
+        call sync_all_generic
+#elif defined(COARRAY)
         call co_max(desired_size)
         allocate(recv_buffer(desired_size)[*])
-        ! MPI -- see MPI_Win_allocate
 #else
         allocate(recv_buffer(desired_size))
 #endif
@@ -531,24 +548,41 @@ module coarray_point2point_comms_mod
         else
             desired_size = 0
         end if
-#ifdef COARRAY
+
+        ! Make 'work_coarray' which is used to send/receive data between images
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call co_max(desired_size)
+        allocate( work_coarray(desired_size, 3))
+        call sync_all_generic
+        ! Make an mpi window for work_coarray
+        arr_size = size(work_coarray) * storage_size(1_ocaIP)/8
+        disp = storage_size(1_ocaIP)/8
+        call mpi_info_create(win_mpi_info, ierr)
+        call mpi_info_set(win_mpi_info, 'no_locks', 'true', ierr)
+        call mpi_info_set(win_mpi_info, 'same_size', 'true', ierr)
+        call mpi_info_set(win_mpi_info, 'same_disp_unit', 'true', ierr)
+        call mpi_win_create(work_coarray, arr_size, disp, win_mpi_info, MPI_COMM_WORLD, win_mpi_work_coarray, ierr)
+        call mpi_win_fence(0, win_mpi_work_coarray, ierr)
+#elif defined(COARRAY)
         call co_max(desired_size)
         allocate( work_coarray(desired_size, 3)[*] )
 #else
         allocate( work_coarray(desired_size, 3))
 #endif
-        ! Use real64_coarary to communicate the send_buffer_label (can send length
+
+        ! Make real64_coarary to communicate the send_buffer_label (can send length
         ! p2p_id_len characters using 'transfer')
         n = (p2p_id_len ) / real64 + 1
-#ifdef COARRAY
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        allocate( real64_coarray(n, desired_size))
+        call sync_all_generic
+#elif defined(COARRAY) 
         allocate( real64_coarray(n, desired_size)[*] )
 #else
         allocate( real64_coarray(n, desired_size))
 #endif
 
         do i = 1, num_images_local
-            !if(this_image_local == 1) write(log_output_unit,*) '...... ', i
-
             ! Broadcast the send metadata from image i to all images
             if( this_image_local == i) then
                 work_coarray = 0 
@@ -568,34 +602,13 @@ module coarray_point2point_comms_mod
                 end if
             end if
 
-            !! Approach 1: Broadcast everything
-            !! These broadcasts seem slow at high core counts.
-            !! (or maybe it is just that I am oversubscribing the cores on this machine)
-            !call co_broadcast(work_coarray, source_image = i)
-            !call co_broadcast(real64_coarray, source_image = i)
-            !!
-            !! Approach 2.1: 
-            !! Only 'broadcast' the indices of images linked to 'image_index = i'
-            !sync all
-            !work_coarray(:,1) = work_coarray(:,1)[i]
-            !!
-            !! Approach 2.2 -- as above, using co_broadcast, but only sending non-zero values
-#ifdef COARRAY
-            call co_broadcast(n, source_image = i)
-            !! MPI Alternative
-            !call MPI_Bcast(n, 1, MPI_INTEGER4, i-1, MPI_COMM_WORLD, ierr)
-            if(n > 0) then
-                call co_broadcast(work_coarray(1:n,1), source_image = i)
-                !! MPI alternative
-                !call MPI_Bcast(work_coarray(1:n,1), n, MPI_INTEGER4, i-1, MPI_COMM_WORLD, ierr)
-            end if
+#if defined(COARRAY) 
+            call co_broadcast(work_coarray, source_image = i)
+            call co_broadcast(real64_coarray, source_image = i)
 #endif
-            if(size(work_coarray(:,1)) > n) work_coarray((n+1):,1) = 0
-   
-            ! work_coarray now contains the image_indices that image-i sends to,
-            ! and the size of the data
+
             do j = 1, size(work_coarray(:,1))        
-                
+                ! If the current image receives data from image i, note that
                 if(work_coarray(j,1) == this_image_local) then
    
                     ! Record the receive-from image index
@@ -614,22 +627,12 @@ module coarray_point2point_comms_mod
                         linked_p2p_images = [i] 
                     end if
 
-                    ! Record the recv_size
-#ifdef COARRAY
-                    work_coarray(j,2) = work_coarray(j,2)[i]
-                    ! call mpi_get(....)
-#endif
                     if(allocated(recv_size)) then
                         recv_size = [recv_size, work_coarray(j, 2) * 1_ip ]
                     else
                         recv_size = [work_coarray(j,2) * 1_ip]
                     end if
 
-                    ! Record the receive buffer label
-#ifdef COARRAY
-                    real64_coarray(:,j) = real64_coarray(:,j)[i]
-                    ! call mpi_get(...)
-#endif
                     if(allocated(recv_buffer_label)) then
                         recv_buffer_label = [recv_buffer_label, &
                             transfer(real64_coarray(:, j), charlabel)]
@@ -646,7 +649,6 @@ module coarray_point2point_comms_mod
                     else
                         recv_start_index = [1_ip]
                     end if
-                    !write(log_output_unit,*) 'ti: ', this_image_local, 'recv_size: ', recv_size, 'recv_start_index: ', recv_start_index
 
                     ! Put the recv_start_index into the work_coarray, so
                     ! we can send it back to the recvfrom_image_index
@@ -654,9 +656,11 @@ module coarray_point2point_comms_mod
                     work_coarray(j,3) = recv_start_index(n)
                 end if
             end do
-#ifdef COARRAY
-            sync all
-            ! call mpi_barrier(MPI_COMM_WORLD)
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+                call mpi_win_fence(0, win_mpi_work_coarray, ierr)
+#endif
+#ifdef COARRAY  
+            call sync_all_generic 
 #endif
 
             ! Finally, broadcast the recv_start_indices back to the
@@ -666,9 +670,13 @@ module coarray_point2point_comms_mod
                     allocate(sendto_start_index(size(send_size)))
                     if(size(send_size) > 0) then
                         do j = 1, size(send_size)
-#ifdef COARRAY
+                            
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS) 
+                            target_disp = size(work_coarray(:,1))*(3-1) + (j-1)
+                            call mpi_get(sendto_start_index(j), 1, mympi_int, sendto_image_index(j)-1, &
+                                target_disp, 1, mympi_int, win_mpi_work_coarray, ierr)
+#elif defined(COARRAY)
                             sendto_start_index(j) = work_coarray(j,3)[sendto_image_index(j)]
-                            ! Call mpi_get(....)
 #else
                             sendto_start_index(j) = work_coarray(j,3)
 #endif
@@ -676,12 +684,16 @@ module coarray_point2point_comms_mod
                     end if
                 end if
             end if
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+            call mpi_win_fence(0, win_mpi_work_coarray, ierr)
+#endif
 #ifdef COARRAY
-            sync all
-            !MPI_Win_Fence -- also need a prior MPI_Win_Fence call (??)
-            ! Or consider lock/unlock.
+            call sync_all_generic
 #endif
         end do
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)        
+        call mpi_win_free(win_mpi_work_coarray, ierr)
+#endif
 
         deallocate(work_coarray)
         deallocate(real64_coarray)
@@ -786,10 +798,10 @@ module coarray_point2point_comms_mod
 
     end subroutine
 
-    !
-    ! Clear all allocatable arrays in this module
-    !
     subroutine deallocate_p2p_comms
+        !!
+        !! Clear all allocatable arrays in this module
+        !!
 
         !deallocate(send_buffer, send_start_index, send_size, sendto_image_index, &
         !    sendto_start_index, send_buffer_label, recv_buffer, recv_start_index, &
@@ -820,19 +832,20 @@ module coarray_point2point_comms_mod
         if(allocated(mympi_recv_counts)) deallocate(mympi_recv_counts)
         if(allocated(mympi_send_displacements)) deallocate(mympi_send_displacements)
         if(allocated(mympi_recv_displacements)) deallocate(mympi_recv_displacements)
+        call sync_all_generic
 #endif
 
     end subroutine
 
-    !
-    ! Find the index of send_buffer_label which matches 'buffer_label'.
-    !
-    ! Uses a naive scan of all buffer_labels, but should be efficient enough
-    ! for typical cases with a small number of 'buffer_label' values.
-    !
     subroutine find_send_buffer_label_index(buffer_label, buffer_label_int)
-        character(len=p2p_id_len), intent(in) :: buffer_label
-        integer(ip), intent(out) :: buffer_label_int
+        !!
+        !! Find the index of send_buffer_label which matches 'buffer_label'.
+        !!
+        !! Uses a naive scan of all buffer_labels, but should be efficient enough
+        !! for typical cases with a small number of 'buffer_label' values.
+        !!
+        character(len=p2p_id_len), intent(in) :: buffer_label !! The buffer label to match
+        integer(ip), intent(out) :: buffer_label_int !! The corresponding index in send_buffer_label
        
         integer(ip) :: i 
 
@@ -855,14 +868,14 @@ module coarray_point2point_comms_mod
 
     end subroutine
 
-    ! 
-    ! Put the send_buffer(si:ei) on the recv_buffer associated
-    ! with sendto_start_index(buffer_label_int)
-    !
-    ! Convenience routine for something we often have to do in
-    ! send_ routines for all ranks
-    !
     subroutine put_on_recv_buffer(buffer_label_int, si, ei)
+        !! 
+        !! Put the send_buffer(si:ei) on the recv_buffer associated
+        !! with sendto_start_index(buffer_label_int)
+        !!
+        !! Convenience routine for something we often have to do in
+        !! send_ routines for all ranks
+        !!
         integer(ip), intent(in) :: buffer_label_int, si, ei
 
         integer(ip):: i, recv_start_index_local, recv_end_index, recv_image
@@ -872,8 +885,13 @@ module coarray_point2point_comms_mod
         recv_end_index = recv_start_index_local + send_size(i) - 1
         recv_image = sendto_image_index(i)
 
+#if defined(COARRAY) && defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        write(log_output_unit,*) 'ERROR: Cannot call put_on_recv_buffer with COARRAY_USE_MPI_FOR_INTENSIVE_COMMS'
+        flush(log_output_unit)
+        call local_stop()
+#endif
         ! put communication
-#if defined(COARRAY)
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         recv_buffer(recv_start_index_local:recv_end_index)[recv_image] = &
             send_buffer(si:ei)
 #else
@@ -883,23 +901,26 @@ module coarray_point2point_comms_mod
 
     end subroutine
 
-    !
-    ! put array 'send_array' in the send buffer, in preparation for
-    ! sending to the recv buffer
-    !
-    ! @param send_array a rank 1 array with kind dp
-    ! @param buffer_label a character string (same as was used to define
-    !    the communication in other routines)
-    ! @param put_in_recv_buffer logical, optional (default .TRUE.). If .TRUE.
-    !    then we do the parallel 'put' here, otherwise we do not, and
-    !    'communicate_p2p' must be called later
-    ! 
     subroutine send_to_p2p_comms_rank1(send_array, buffer_label, &
         put_in_recv_buffer)
+        !!
+        !! put array 'send_array' in the send buffer, in preparation for
+        !! sending to the recv buffer
+        !!
+        ! @param send_array a rank 1 array with kind dp
+        ! @param buffer_label a character string (same as was used to define
+        !    the communication in other routines)
+        ! @param put_in_recv_buffer logical, optional (default .TRUE.). If .TRUE.
+        !    then we do the parallel 'put' here, otherwise we do not, and
+        !    'communicate_p2p' must be called later
+        ! 
 
-        real(dp), intent(in) :: send_array(:)
-        character(len=p2p_id_len), intent(in) :: buffer_label
+        real(dp), intent(in) :: send_array(:) !! a rank 1 array with kind dp
+        character(len=p2p_id_len), intent(in) :: buffer_label 
+            !! a character string (same as was used to define the communication in other routines)
         logical, intent(in), optional :: put_in_recv_buffer
+            !! If .TRUE. then we do the parallel 'put' here, otherwise we do not, and
+            !! 'communicate_p2p' must be called later
 
         ! Generic code 
         include 'point2point_include_send_p2p.f90'
@@ -942,17 +963,18 @@ module coarray_point2point_comms_mod
     end subroutine
 
 #ifndef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
-    !
-    ! Use coarray parallel communication to send ALL data to the recv buffer.
-    !
-    ! This uses a 'put' model of communication.
-    !
-    ! Note this routine is not needed if the puts are done with send_to_p2p_comms.
-    ! But, this version is optimized by merging the puts (e.g. merging sends of all
-    ! send arrays corresponding to the same recv_image). This can be switched off
-    ! with the parameter reorder_send_data_by_image
-    !
+
     subroutine communicate_p2p
+        !!
+        !! Use coarray parallel communication to send ALL data to the recv buffer.
+        !!
+        !! This uses a 'put' model of communication.
+        !!
+        !! Note this routine is not needed if the puts are done with send_to_p2p_comms.
+        !! But, this version is optimized by merging the puts (e.g. merging sends of all
+        !! send arrays corresponding to the same recv_image). This can be switched off
+        !! with the parameter reorder_send_data_by_image
+        !!
 
         integer(ocaIP) :: i, start_index, end_index, recv_image, &
             recv_start_index_local, recv_end_index
@@ -1042,10 +1064,11 @@ module coarray_point2point_comms_mod
     !
 
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
-    !
-    !  Use MPI for the most intensive point2point comms routine
-    !  Note this requires that the appropriate preprocessor variable has been defined
     subroutine communicate_p2p
+        !!
+        !!  If COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined, then use MPI for the most intensive point2point comms routine
+        !!  Note this requires that the appropriate preprocessor variable has been defined
+        !!
    
         integer:: mympi_my_ierr
 
@@ -1117,12 +1140,12 @@ module coarray_point2point_comms_mod
 
     end subroutine
 
-    ! 
-    ! Convert an integer to a 2-character ID. This can be useful in generating
-    ! buffer_labels. The labels seem unique for intgers ranging from 1 to 60000,
-    ! beyond that at some stage repeats occur
-    !
     elemental function integer_to_id(myint) result(mychar)
+        !! 
+        !! Convert an integer to a 2-character ID. This can be useful in generating
+        !! buffer_labels. The labels seem unique for intgers ranging from 1 to 60000,
+        !! beyond that at some stage repeats occur
+        !!
         integer(ip), intent(in) :: myint
         character(len=2) :: mychar
 
@@ -1130,10 +1153,10 @@ module coarray_point2point_comms_mod
 
     end function
 
-    ! 
-    ! Useful to know how big the send/recv buffers are
-    !
     function size_of_send_recv_buffers() result(mysize)
+        !! 
+        !! Useful to know how big the send/recv buffers are
+        !!
         integer(ip) :: mysize
         mysize = 0
         if(allocated(send_buffer)) then
@@ -1143,10 +1166,11 @@ module coarray_point2point_comms_mod
             mysize = mysize + size(recv_buffer)*real_bytes
         end if
     end function
-    !
-    ! Utility printing routine, useful for debugging
-    !
+
     subroutine print_p2p_comms(verbose)
+        !!
+        !! Utility printing routine, useful for debugging
+        !!
         logical, optional, intent(in) :: verbose
 
         integer :: i, si, ei
@@ -1157,7 +1181,7 @@ module coarray_point2point_comms_mod
         else
             verbose_in = .TRUE.
         end if
-#ifdef COARRAY
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         critical 
 #endif
         write(log_output_unit,*) ' '
@@ -1197,15 +1221,15 @@ module coarray_point2point_comms_mod
             if(verbose_in) write(log_output_unit,*) '        recv_buffer: ', recv_buffer(si:ei)
         end do
 
-#ifdef COARRAY
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         end critical
 #endif
     end subroutine
 
-    !
-    ! Call either 'error stop' or just 'stop'. FIXME: Is this needed?
-    !
     subroutine local_stop
+        !!
+        !! Call either 'error stop' or just 'stop'. FIXME: Is this needed?
+        !!
 #ifdef COARRAY
         error stop  
 #else
@@ -1213,11 +1237,11 @@ module coarray_point2point_comms_mod
 #endif 
     end subroutine
 
-    !
-    ! Do some point-2-point communication of arrays, and check that results are
-    ! as expected
-    !
     subroutine test_coarray_point2point_comms_mod
+        !!
+        !! Unit tests. Do some point-2-point communication of arrays, and check that results are
+        !! as expected
+        !!
 
         implicit none
 
@@ -1232,8 +1256,8 @@ module coarray_point2point_comms_mod
         logical :: local_puts
 
 #ifdef COARRAY
-        ti = this_image()
-        ni = num_images()
+        ti = this_image2()
+        ni = num_images2()
 #else
         ti = 1
         ni = 1
@@ -1284,8 +1308,12 @@ module coarray_point2point_comms_mod
 
         ! Run the send's twice -- once doing all puts inside 'communicate_p2p'
         do k = 1, 2
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS) 
+            local_puts = .FALSE.
+#else
             ! Try doing the 'put' communication in different ways
             local_puts = (k == 1)
+#endif
 
 
             ! Modify the data we send
@@ -1307,7 +1335,7 @@ module coarray_point2point_comms_mod
                 ! Do the parallel put
                 call communicate_p2p()
             end if
-#ifdef COARRAY
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
             sync images(linked_p2p_images)
 #endif
 
@@ -1321,7 +1349,7 @@ module coarray_point2point_comms_mod
 
             ! sync to prevent the 'k' loop moving ahead before we have received
             ! data
-#ifdef COARRAY
+#if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
             sync images(linked_p2p_images)
 #endif
 

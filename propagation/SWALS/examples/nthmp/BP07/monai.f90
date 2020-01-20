@@ -1,7 +1,10 @@
 module local_routines 
+    !!
+    !! Setup NTHMP benchmark problem 7 -- experiment inspired by Okushiri tsunami
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: gdal_raster_dataset_type
+    use read_raster_mod, only: multi_raster_type
     use file_io_mod, only: count_file_lines
     use linear_interpolator_mod, only: linear_interpolator_type
 
@@ -84,7 +87,7 @@ module local_routines
         integer(ip):: i, j
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)
-        type(gdal_raster_dataset_type):: elevation_data, stage_data
+        type(multi_raster_type):: elevation_data
         real(dp) :: wall
         real(dp) :: gauge_xy(3,3)
 
@@ -97,7 +100,7 @@ module local_routines
         ! Make space for x/y coordinates, at which we will look-up the rasters
         allocate(x(domain%nx(1)), y(domain%nx(1)))
         x = domain%x
-        call elevation_data%initialise(input_elevation)
+        call elevation_data%initialise([input_elevation])
 
         do j = 1, domain%nx(2)
             y = domain%y(j)
@@ -132,9 +135,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program monai
+program BP07
+    !!
+    !! NTHMP benchmark problem 7 -- experiment inspired by Okushiri tsunami
+    !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type

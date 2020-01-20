@@ -1,17 +1,17 @@
 
 module boundary_mod
     !
-    ! Here we define subroutines that update the exterior boundaries
-    ! of the domain.
-    !
-    ! In a typical application the user might provide their own, which
-    !  is passed to the procedure pointer 'domain%boundary_subroutine'.
-    ! The only requirement on the boundary_subroutine is that it 
-    !  has 'domain' as its only input argument.
-    ! If access to other data is required for boundary_subroutine, you 
-    ! can create the boundary_subroutine in its own module, and put the
-    ! required data in the same module.
-    !
+    !! Define subroutines that update the exterior boundaries
+    !! of the domain.
+
+    !! In a typical application the user might provide their own, which
+    !!  is passed to the procedure pointer 'domain%boundary_subroutine'.
+    !! The only requirement on the boundary_subroutine is that it 
+    !!  has 'domain' as its only input argument.
+    !! If access to other data is required for boundary_subroutine, you 
+    !! can create the boundary_subroutine in its own module, and put the
+    !! required data in the same module.
+    !!
     use global_mod, only: dp, ip, charlen, gravity, minimum_allowed_depth, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
 
@@ -197,7 +197,7 @@ module boundary_mod
                     ! Nonlinear domain
                     domain%U(i,j,UH) = -(sqrt(gravity * max(domain%U(i+1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
                                          sqrt(gravity * local_h ) ) * local_h
-                    !! Thus reduces oscillations that can otherwise arise at the boundary
+                    ! Thus reduces oscillations that can otherwise arise at the boundary
                     !domain%U(i+1,j,UH) = 0.5_dp * (domain%U(i,j,UH) + domain%U(i+1,j,UH))
                     ! Extrapolate VH
                     domain%U(i,j,VH) = domain%U(i+1,j,VH)
@@ -221,8 +221,8 @@ module boundary_mod
                 local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
 
                 if(domain%is_staggered_grid) then
-                    !! Here, account for the fact that domain%U(domain%nx(1),:,UH) is never used in the staggered grid solver.
-                    !! Set it anyway, but also set the interior point that is used
+                    ! Here, account for the fact that domain%U(domain%nx(1),:,UH) is never used in the staggered grid solver.
+                    ! Set it anyway, but also set the interior point that is used
                     !domain%U((i-1):i,j,UH) = &
                     !    (sqrt(gravity * max(domain%U(i-1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
                     !     sqrt(gravity * local_h ) ) * local_h
@@ -231,7 +231,7 @@ module boundary_mod
                     domain%U(i,j,UH) = &
                         (sqrt(gravity * max(domain%U(i-1, j, STG) - bc_values(ELV), 0.0_dp) ) - &
                          sqrt(gravity * local_h ) ) * local_h
-                    !! Thus reduces oscillations that can otherwise arise at the boundary
+                    ! Thus reduces oscillations that can otherwise arise at the boundary
                     !domain%U(i-1,j,UH) = 0.5_dp * (domain%U(i,j,UH) + domain%U(i-1,j,UH))
                     ! Extrapolate VH
                     domain%U(i,j,VH) = domain%U(i-1,j,VH)
@@ -266,7 +266,7 @@ module boundary_mod
                     ! The nonlinear solvers need all boundary values updated
                     domain%U(i,j,VH) = -(sqrt(gravity * max(domain%U(i, j+1, STG) - bc_values(ELV), 0.0_dp) ) - &
                                          sqrt(gravity * local_h ) ) * local_h
-                    !! Thus reduces oscillations that can otherwise arise at the boundary
+                    ! Thus reduces oscillations that can otherwise arise at the boundary
                     !domain%U(i,j+1,VH) = 0.5_dp * (domain%U(i,j,VH) + domain%U(i,j+1,VH))
                     ! Extrapolate UH
                     domain%U(i,j,UH) = domain%U(i,j+1, UH)
@@ -291,18 +291,18 @@ module boundary_mod
                 local_h = max(bc_values(STG) - bc_values(ELV), 0.0_dp)
 
                 if(domain%is_staggered_grid) then
-                    !! Here, account for the fact that domain%U(:,j,VH) is never used in the solver
-                    !! Set it anyway, but also set the interior point that is used
+                    ! Here, account for the fact that domain%U(:,j,VH) is never used in the solver
+                    ! Set it anyway, but also set the interior point that is used
                     !domain%U(i,(j-1):j,VH) = (sqrt(gravity * max(domain%U(i, j-1, STG) - bc_values(ELV), 0.0_dp) ) - &
                     !                          sqrt(gravity * local_h ) ) * local_h
                 else
                     ! The nonlinear solvers need all boundary values updated
-                    !! NOTE: The Tauranga problem gives weak spatial oscillations in VH with this approach.
-                    !! You can add a (v-velocity_(j-1)) term to the RHS [v_inner + sqrt(gh_inner) = v_outer + sqrt(g h_outer)]
-                    !! which reduces that, but for Tauranga leads to clearly overly-high tsunami
+                    ! NOTE: The Tauranga problem gives weak spatial oscillations in VH with this approach.
+                    ! You can add a (v-velocity_(j-1)) term to the RHS [v_inner + sqrt(gh_inner) = v_outer + sqrt(g h_outer)]
+                    ! which reduces that, but for Tauranga leads to clearly overly-high tsunami
                     domain%U(i,j,VH) = (sqrt(gravity * max(domain%U(i, j-1, STG) - bc_values(ELV), 0.0_dp) ) - &
                                         sqrt(gravity * local_h ) ) * local_h
-                    !! Thus reduces oscillations that can otherwise arise at the boundary
+                    ! Thus reduces oscillations that can otherwise arise at the boundary
                     !domain%U(i,j-1,VH) = 0.5_dp * (domain%U(i,j,VH) + domain%U(i,j-1,VH))
                     ! Extrapolate UH
                     domain%U(i,j,UH) = domain%U(i,j-1, UH)

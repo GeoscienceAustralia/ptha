@@ -1,7 +1,7 @@
-!
-! Some useful routines for extrapolation and slope-limiting. These do not rely on the domain_type.
-!
 module extrapolation_limiting_mod
+    !!
+    !! Some useful routines for extrapolation and slope-limiting. These do not rely on the domain_type.
+    !!
 
     use global_mod, only: dp, ip, charlen
     implicit none
@@ -9,12 +9,13 @@ module extrapolation_limiting_mod
     real(dp), parameter :: HALF_dp = 0.5_dp, ZERO_dp = 0.0_dp, ONE_dp=1.0_dp
 
     contains
-    !
-    ! minmod function, which is used in some gradient limiters
-    !
-    ! @param a,b real numbers
-    !
+
     elemental function minmod(a,b) result(minmod_ab)
+        !!
+        !! minmod function, which is used in some gradient limiters
+        !!
+        !! @param a,b real numbers
+        !!
         real(dp), intent(in):: a, b
         real(dp):: minmod_ab
         
@@ -23,16 +24,16 @@ module extrapolation_limiting_mod
 
     end function
 
-    !
-    ! minmod subroutine, which is used in some gradient limiters
-    !
-    ! @param a,b real numbers
-    !
     elemental subroutine minmod_sub(a,b, minmod_ab)
+        !!
+        !! minmod subroutine, which is used in some gradient limiters
+        !!
+        !! @param a,b real numbers
+        !!
         real(dp), intent(in):: a, b
         real(dp), intent(out):: minmod_ab
 
-        if((a>0.0_dp .and. b>0.0_dp).or.(a<0.0_dp .and. b<0.0_dp)) then
+        if((a>ZERO_dp .and. b>ZERO_dp).or.(a<ZERO_dp .and. b<ZERO_dp)) then
             minmod_ab = min(abs(a), abs(b))*sign(ONE_dp, a)
         else
             minmod_ab = ZERO_dp
@@ -40,21 +41,19 @@ module extrapolation_limiting_mod
 
     end subroutine
 
-    !
-    ! Get the "gradient times dx" around U_local
-    ! @param U_local -- variable at the cell of interest, say x
-    ! @param U_lower -- variable at (x - dx)
-    ! @param U_upper -- variable at (x + dx)
-    ! @param theta -- limiter parameter
-    ! @param gradient_dx -- hold output
-    ! @param n -- length of each vector
-    !
     subroutine limited_gradient_dx_vectorized(U_local, U_lower, U_upper, theta, gradient_dx, n)
-        integer(ip), intent(in):: n
-        real(dp), intent(in):: U_local(n), U_lower(n), U_upper(n), theta(n) 
-        real(dp), intent(out) :: gradient_dx(n)
+        !!
+        !! Slope limiter -- get the "gradient times dx" around U_local, given the upper and lower values of U.
+        !!
+        integer(ip), intent(in):: n !! Length of the input arrays
+        real(dp), intent(in):: U_local(n) !! U_{i}
+        real(dp), intent(in):: U_lower(n) !! U_{i-1}
+        real(dp), intent(in):: U_upper(n) !! U_{i+1}
+        real(dp), intent(in):: theta(n) !! Limiter parameter, often in [1-2].
+        real(dp), intent(out) :: gradient_dx(n) !! Output
 
         character(len=charlen), parameter :: limiter_type = 'MC' !'Minmod2' !'Superbee_variant' ! 'MC'! 'nolimit' !
+        !! Type of limiter
 
         integer(ip) :: i
         real(dp):: a, b, c, d, e, th, sa, sb, half_sasb
@@ -137,11 +136,8 @@ module extrapolation_limiting_mod
     end subroutine
 
 
-    !
-    ! Very limited testing of the domain routines.
-    ! More important are the validation tests.
-    !
     subroutine test_extrapolation_limiting_mod
+        !! Unit tests
     
         integer(ip), parameter :: N = 10
         real(dp) :: U(N), U_lower(N), U_upper(N)

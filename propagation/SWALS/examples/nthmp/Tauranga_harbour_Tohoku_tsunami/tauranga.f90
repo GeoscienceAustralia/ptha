@@ -1,7 +1,10 @@
 module local_routines 
+    !!
+    !! Setup the Tauranga harbour geometry and boundary conditions
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: gdal_raster_dataset_type
+    use read_raster_mod, only: multi_raster_type
     use file_io_mod, only: count_file_lines
     use linear_interpolator_mod, only: linear_interpolator_type
     use points_in_poly_mod, only: points_in_poly
@@ -22,18 +25,17 @@ module local_routines
     ! affects the tsunami in this case.
     !
     ! Possible values are:
-    !   'boundary_stage_radiation_momentum' -- Works pretty well without tuning. 
-    ! 
+    !   'boundary_stage_radiation_momentum' -- Works pretty well without tuning for rk2 and related. 
+    !   'flather_with_vh_from_continuity' -- about right? But depends on a scale for the boundary 
+    !       VH term, which we can estimate from continuity, but needs tuning. OK for leapfrog_nonlinear.
     !   'boundary_stage_transmissive_normal_momentum' -- tsunami waves are over-amplified, probably 
     !       because of reflections from the boundary. Tide is OK
     !   'boundary_stage_transmissive_momentum' -- Similar to previous
     !   'flather_with_uh_equal_zero' -- tsunami waves under-amplified (i.e. too small). Tide is OK
-    !   'flather_with_vh_from_continuity' -- about right? But depends on a scale for the boundary 
-    !       VH term, which we can estimate from continuity, but needs tuning.
     !   
-    character(len=charlen), parameter :: boundary_type = 'boundary_stage_radiation_momentum'
-    !character(len=charlen), parameter :: boundary_type = 'flather_with_vh_from_continuity'
-    !character(len=charlen), parameter :: boundary_type = 'boundary_stage_transmissive_momentum'
+    character(len=charlen) :: boundary_type = 'boundary_stage_radiation_momentum'
+    !character(len=charlen) :: boundary_type = 'flather_with_vh_from_continuity'
+    !character(len=charlen) :: boundary_type = 'boundary_stage_transmissive_momentum'
 
     ! This will hold the information -- is seen by other parts of the module
     type(boundary_information_type):: boundary_information
@@ -157,7 +159,7 @@ module local_routines
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)
         logical, allocatable:: is_inside(:)
-        type(gdal_raster_dataset_type):: elevation_data, stage_data
+        type(multi_raster_type):: elevation_data
         real(dp) :: wall, w
         real(dp) :: gauge_xy(3,6)
         real(dp) :: pol1(4,2), pol2(4,2)
@@ -172,7 +174,7 @@ module local_routines
         ! Make space for x/y coordinates, at which we will look-up the rasters
         allocate(x(domain%nx(1)), y(domain%nx(1)), is_inside(domain%nx(1)))
         x = domain%x
-        call elevation_data%initialise(input_elevation)
+        call elevation_data%initialise([input_elevation])
 
         do j = 1, domain%nx(2)
             y = domain%y(j)
@@ -195,6 +197,8 @@ module local_routines
         end do
 
         if(domain%timestepping_method == 'cliffs') then
+            ! Bathymetry smoothing is essential for CLIFFS, but can also reduce the static-noise in 
+            ! the finite volume solvers where the elevation changes rapidly.
             domain%cliffs_minimum_allowed_depth = 0.1_dp
             call domain%smooth_elevation(smooth_method='cliffs')
         end if
@@ -250,9 +254,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program run_Tauranga
+program Tauranga
+    !!
+    !! NTHMP currents test problem -- Tohoku tsunami observed at Tauganga Harbour, New Zealand.
+    !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
@@ -313,8 +320,9 @@ program run_Tauranga
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'rk2' !'cliffs' !'midpoint' !'rk2'
-    !md%domains(1)%theta = 4.0_dp
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
+    !md%domains(1)%compute_fluxes_inner_method = 'DE1'
+    !md%domains(1)%theta = 4.0_dp !! No big impact for this problem.
     !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
     !md%domains(1)%linear_solver_is_truely_linear = .false.
 
@@ -322,7 +330,7 @@ program run_Tauranga
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
 
-    !! A detailed domain [Cannot partially share a physical boundary with the outer domain]
+    ! A detailed domain [Cannot partially share a physical boundary with the outer domain]
     call md%domains(2)%match_geometry_to_parent(&
         parent_domain=md%domains(1), &
         lower_left=[28500.0_dp, 11500.0_dp], &
@@ -331,13 +339,23 @@ program run_Tauranga
         timestepping_refinement_factor=nest_ratio,&
         rounding_method='nearest')
     md%domains(2)%timestepping_method = default_nonlinear_timestepping_method !'cliffs' !'midpoint' !'rk2'
-    !md%domains(2)%theta = 4.0_dp
+    !md%domains(2)%theta = 4.0_dp ! No big impact for this problem.
 
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
         ' nx: ', md%domains(2)%nx
 
     ! Allocate domains and prepare comms
     call md%setup()
+
+    if(md%domains(1)%is_staggered_grid) then
+        ! The 'boundary_stage_radiation_momentum' boundary is not sufficiently radiative with the
+        ! leapfrog nonlinear solver.
+        boundary_type = 'flather_with_vh_from_continuity'
+    else
+        ! Good for rk2 and related solvers, and OK for cliffs.
+        boundary_type = 'boundary_stage_radiation_momentum'
+    end if
+        
 
     ! Initial conditions
     do j = 1, size(md%domains)

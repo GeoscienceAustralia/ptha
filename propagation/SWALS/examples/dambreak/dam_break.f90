@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Setup for the dam-break problem
+    !!
     use global_mod, only: dp, ip, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
@@ -6,6 +9,9 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions_dam(domain, h_upstream, h_downstream)
+        !!
+        !! Initial conditions for the dam-break problem
+        !!
         class(domain_type), target, intent(inout):: domain
         real(dp), intent(in) :: h_upstream, h_downstream
 
@@ -23,11 +29,6 @@ module local_routines
 
         ! Elevation
         domain%U(:,:,ELV) = 0._dp
-        !! Wall boundaries (without boundary conditions)
-        !domain%U(1,:,4) = 20.0_dp !wall_elevation 
-        !domain%U(domain%nx(1),:,4) = 20.0_dp !wall_elevation 
-        !domain%U(:,1,4) = 20.0_dp !wall_elevation
-        !domain%U(:,domain%nx(2),4) = 20.0_dp !wall_elevation
 
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
@@ -40,9 +41,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program dam_break
+    !!
+    !! 1D Dam-break problem with a flat bed.
+    !!
     use global_mod, only: ip, dp, charlen, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use file_io_mod, only: read_csv_into_array
@@ -78,8 +82,8 @@ program dam_break
     call get_command_argument(2, input_char)
     read(input_char, *) h_downstream
 
-    !! rk2 still works well with the following parameters, which would usually be seen
-    !! as voilating stability constraints.
+    !@ rk2 still works well with the following parameters, which would usually be seen
+    !@ as voilating stability constraints.
     !domain%cfl = 1.49_dp
     !domain%theta = 4.0_dp
 
@@ -117,9 +121,6 @@ program dam_break
     call domain%write_max_quantities()
 
     call domain%timer%print()
-
-    !call domain%compute_depth_and_velocity()
- 
 
     CALL domain%finalise()
 

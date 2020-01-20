@@ -1,32 +1,29 @@
 module reshape_array_mod
-    ! Module to efficiently reshape arrays, without calling 'reshape' function.
-    !
-    ! Useful for coarray_point2point_comms_mod, which uses rank1 buffers, but can be generalised
-    ! to other ranks with this module
+    !! Module to efficiently reshape arrays, without calling the 'reshape' function, which seems relatively expensive.
+    !!
+    !! Useful for coarray_point2point_comms_mod, which uses rank1 buffers, but can be generalised
+    !! to other ranks with this module
 
     use global_mod, only: dp, ip, charlen
     use stop_mod, only: generic_stop
     implicit none
 
     private
-    ! Need to convert nd arrays to 1d [n=1,2,3,4]
-    public :: flatten_array
-    ! Need to convert rank1 arrays to rankn [n=1,2,3,4]
-    public :: repack_rank1_array
-    ! Unit tests
-    public :: test_reshape_array_mod
+    public :: flatten_array ! Convert nd arrays to 1d [n=1,2,3,4]
+    public :: repack_rank1_array ! Convert rank1 arrays to rankn [n=1,2,3,4]
+    public :: test_reshape_array_mod ! Unit tests
 
-    ! Subroutine to copy a rank-n array into a rank1 array
-    ! This can be faster than using the intrinsic 'reshape' function
-    ! HOWEVER, the intrinsic 'pack' function might be better?
     interface flatten_array
+        !! Subroutine to copy a rank-n array into a rank-1 array.
+        !! This can be faster than using the intrinsic 'reshape' function.
+        ! HOWEVER, the intrinsic 'pack' function might be better?
         module procedure flatten_array_rank4, flatten_array_rank3, &
             flatten_array_rank2, flatten_array_rank1
     end interface 
     
-    ! Copy a rank1 array into an array with some other rank but the same size
-    ! This can be faster than using the intrinsic 'reshape' function
     interface repack_rank1_array
+        !! Copy a rank-1 array into an array with some other rank but the same size.
+        !! This can be faster than using the intrinsic 'reshape' function.
         module procedure repack_rank1_array_rank1, repack_rank1_array_rank2, &
             repack_rank1_array_rank3, repack_rank1_array_rank4
     end interface
@@ -186,10 +183,10 @@ module reshape_array_mod
         
     end subroutine
     
-    !
-    ! Unit tests
-    !
     subroutine test_reshape_array_mod
+        !!
+        !! Unit tests
+        !!
         real(dp) :: r1(10), r2(10,9), r3(10,9,8), r4(10, 9, 8, 7)        
         real(dp) :: a1(10), a2(90),   a3(720),    a4(5040)        
         integer(ip) :: i

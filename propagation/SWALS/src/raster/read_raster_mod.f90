@@ -1,19 +1,15 @@
 module read_raster_mod 
-    ! Fortran 2008 code to call C and read from a gdal raster, and also interpolate
-    ! from a set of rasters (multi_raster)
-    !
-    ! Both a type-based interface and a basic procedural interface are provided.
-    !
-    ! The type-based interface is more flexible and should be preferred. You can open
-    ! the file once, then read many times, and then close it, and also make various
-    ! enquiries about the file. It also more carefully treats missing data. Further, it can
-    ! work with multiple files at once. See 'gdal_raster_dataset_type' and 'multi_raster_type'
-    !
-    ! The procedural interface was developed first, but is not recommended anymore.  
-    ! It involves opening/closing the input file each time a subroutine is called. 
-    ! While not necessarily a problem, this could cause issues. See 'read_gdal_raster' 
-    ! and 'get_raster_dimensions'.
-    !
+    !! Read GDAL supported rasters. Both a type-based interface and a basic procedural interface are provided.
+    !!
+    !! The type-based interface (using the multi_raster_type) is more flexible and should 
+    !! be preferred. Given a set of raster filenames (in order of preference) it can 
+    !! extract raster data at a given set of coordinates. At each coordinates, it will use 
+    !! the highest-preference raster that has non-missing data. Constant and bilinear interpolation
+    !! are supported. The code does not fully read the files into memory. 
+    !!
+    !! The procedural interface is not recommended anymore, because it does not separate "opening and closing
+    !! the files" from "reading the data". But see 'read_gdal_raster' and 'get_raster_dimensions'.
+    !!
     use global_mod, only: charlen, ip, dp
     use logging_mod, only: log_output_unit
     use iso_c_binding
@@ -32,44 +28,54 @@ module read_raster_mod
     ! Flag to use bilinear interpolation (1) or not (0) by default
     integer(C_INT), parameter :: use_bilinear_default = 1_C_INT
 
-    !
-    ! Type to hold c pointers and related info for the raster
-    !
     type :: gdal_raster_dataset_type
+        !!
+        !! Type to work with a single raster dataset. 
+        !!
 
-        type(c_ptr) :: hDataset
-        character(charlen):: inputFile
-        logical:: isOpen = .FALSE.
-        integer(C_INT) :: xydim(2)
-        real(C_DOUBLE) :: lowerleft(2), upperright(2), adfGeoTransform(6), dx(2)
-        real(C_DOUBLE) :: nodata_value
+        type(c_ptr) :: hDataset !! Pointer to GDAL raster data structure
+        character(charlen):: inputFile !! Filename
+        logical:: isOpen = .FALSE. !! Record if the file is open
+        integer(C_INT) :: xydim(2) !! x-y dimensions of the raster
+        real(C_DOUBLE) :: lowerleft(2) !! Lower left (corner) of raster
+        real(C_DOUBLE) :: upperright(2) !! Upper right (corner) of raster
+        real(C_DOUBLE) :: adfGeoTransform(6) !! GDAL's geotransform information
+        real(C_DOUBLE) :: dx(2) !! Raster cell size
+        real(C_DOUBLE) :: nodata_value !! The raster's nodata value
     
         contains
-        procedure:: initialise => initialise_gdal_raster_dataset
-        procedure:: get_xy => get_xy_values
-        procedure:: finalise => close_gdal_raster
-        procedure:: print => print_summary_gdal_raster_dataset
+        procedure:: initialise => initialise_gdal_raster_dataset !! Initialise the object
+        procedure:: get_xy => get_xy_values !! Interpolate at coordinates
+        procedure:: finalise => close_gdal_raster !! Close the object
+        procedure:: print => print_summary_gdal_raster_dataset !! Print summary information
 
     end type
 
-    !
-    ! Type to hold multiple rasters, and interpolate from multiple rasters
-    ! **with preference order defined by the order of the input file names**.
-    !
-    ! Often in applications we have multiple raster datasets, and have an order in which
-    ! we would like to use them. That's what this type is for
-    !
     type :: multi_raster_type
+        !!
+        !! Type to interpolate data from multiple rasters with different resoltuions and spatial extents.
+        !!
+        !! Often in applications we have multiple raster datasets for interpolation, and have an order in which
+        !! we would like to use them. This type will manage that.
+        !!
+        !! **The raster_files should all have the same projection, but they can have different resolutions,
+        !! extents, and they can overlap. Where the raster overlap, their preference order (for interpolation)
+        !! corresponds to the order of the input file names.**
+        !!
 
-        character(len=charlen), allocatable :: raster_files(:)
-        type(gdal_raster_dataset_type), allocatable :: raster_datasets(:)
+        character(len=charlen), allocatable :: raster_files(:) !! Raster filenames in order of preference
+        type(gdal_raster_dataset_type), allocatable :: raster_datasets(:) !! Objects corresponding to each file
+
+        real(C_DOUBLE) :: lowerleft(2) !! minimum lower left (corner) of all rasters combined
+        REAL(C_DOUBLE) :: upperright(2) !! maximum upper right (corner) of all rasters combined
 
         contains
-        procedure:: initialise => initialise_multi_raster
-        procedure:: get_xy => get_xy_values_multi_raster
-        procedure:: finalise => close_multi_raster
+        procedure:: initialise => initialise_multi_raster !! Initialise the object
+        procedure:: get_xy => get_xy_values_multi_raster !! Interpolate at coordinates
+        procedure:: finalise => close_multi_raster !! Close the object
 
     end type
+
 
     interface
 
@@ -77,57 +83,59 @@ module read_raster_mod
     ! Here we interface many C routines
     !
 
-    ! Object based raster access
     subroutine open_gdal_raster_Cfun(inputFile, hDataset) bind(C, name='open_gdal_raster')
+        !! Open raster via GDAL
         use iso_c_binding
         implicit none
-        character(kind=C_CHAR), intent(in) :: inputFile(*)
-        type(c_ptr), intent(out) :: hDataset
+        character(kind=C_CHAR), intent(in) :: inputFile(*) !! Input filename
+        type(c_ptr), intent(out) :: hDataset !! GDAL raster object
     end subroutine
     
-    ! Object based raster access
     subroutine close_gdal_raster_Cfun(hDataset) bind(C, name='close_gdal_raster')
+        !! Close the raster via GDAL
         use iso_c_binding
         implicit none
-        type(c_ptr), intent(inout) :: hDataset
+        type(c_ptr), intent(inout) :: hDataset !! GDAL raster object
     end subroutine
 
-    ! Object based raster access
     subroutine get_gdal_raster_dimensions_Cfun(hDataset, xydim, lowerleft, upperright, &
         adfGeoTransform, dx, nodata_value) bind(C, name='get_gdal_raster_dimensions')
+        !! Store the raster dimensions, lower-left and upper-right coordinates, cellsize, nodata value, and some GDAL geo-transform
+        !! information 
         use iso_c_binding
         implicit none
-        type(C_PTR), intent(in) :: hDataset
-        integer(C_INT), intent(inout):: xydim(2)
+        type(C_PTR), intent(in) :: hDataset !! GDAL raster object
+        integer(C_INT), intent(inout):: xydim(2) !! x/y dimensions
         real(C_DOUBLE), intent(inout):: lowerleft(2), upperright(2), adfGeoTransform(6), dx(2), nodata_value
     end subroutine
 
-    ! Object based raster access
     subroutine get_values_at_xy_Cfun(hDataset, adfGeoTransform, x, y, z, N, verbose, bilinear, &
         band) bind(C, name='get_values_at_xy')
+        !! Get the raster values at the given x/y coordinates
         use iso_c_binding
         implicit none
-        type(C_PTR), intent(in) :: hDataset
-        integer(C_INT), value, intent(in):: N
-        real(C_DOUBLE) :: adfGeoTransform(6)
+        type(C_PTR), intent(in) :: hDataset !! GDAL raster object
+        integer(C_INT), value, intent(in):: N !! Number of x/y/z points
+        real(C_DOUBLE) :: adfGeoTransform(6) !! GDAL geo-transform data
         real(C_DOUBLE) :: x(N), y(N), z(N)
         integer(C_INT), value, intent(in):: verbose, bilinear, band
     end subroutine
 
-    ! Non-object based interface
     subroutine read_gdal_raster_Cfun(inputFile, x, y, z, N, verbose, bilinear) bind(C, name='read_gdal_raster')
+        !! Procedural interface for reading the raster. This routine opens the inputFile, reads the data and closes the file before
+        !! returning. 
         use iso_c_binding
         implicit none
-        character(kind = C_CHAR), intent(in) :: inputFile(*)
+        character(kind = C_CHAR), intent(in) :: inputFile(*) !! Raster file name
         integer(C_INT), value, intent(in) :: N, verbose, bilinear
         real(C_DOUBLE), intent(in) :: x(N), y(N)
         real(C_DOUBLE), intent(out) :: z(N)
         
     end subroutine
 
-    ! Non-object based interface
     subroutine get_raster_dimensions_Cfun(inputFile, xydim, lowerleft, upperright) bind(C, name='get_raster_dimensions')
         use iso_c_binding
+        !! Procedural interface for reading raster dimensions, lower-left and upper-right coordinates.
         implicit none
         character(kind = C_CHAR), intent(in) :: inputFile(*)
         real(C_DOUBLE), intent(out):: lowerleft(2), upperright(2)
@@ -137,13 +145,9 @@ module read_raster_mod
     
     end interface
 
-    !! read_gdal_raster is a non-object based interface
-    !! It can handle C_DOUBLE and C_FLOAT as input
-    !! In the latter case we need to copy input data, which increases memory
-    !! so it's good to use a different routine. 
-    !! Also, it is based around passing x,y (at which z is desired) in one go,
-    !! which can force us to use lots of memory (temporaries for x,y)
     interface read_gdal_raster
+        !! read_gdal_raster is a procedural interface. Each call opens the file, extracts the data, and closes the file,
+        !! whereas the object based interface (multi_raster_type & gdal_raster_dataset_type) can separate opening & closing from reading.
         module procedure read_gdal_raster_C_DOUBLE, read_gdal_raster_C_FLOAT, &
             read_gdal_raster_C_DOUBLE_2D, read_gdal_raster_C_FLOAT_2D
     end interface
@@ -166,8 +170,8 @@ module read_raster_mod
 
     end subroutine
 
-    !! Finalise routine for gdal_raster_dataset_type
     subroutine close_gdal_raster(gdal_raster_dataset)
+        !! Finalise routine for gdal_raster_dataset_type
         class(gdal_raster_dataset_type), intent(inout):: gdal_raster_dataset
 
         call close_gdal_raster_Cfun(gdal_raster_dataset%hDataset)
@@ -187,8 +191,8 @@ module read_raster_mod
 
     end subroutine
 
-    !! This is the main initialiser of gdal_raster_dataset_type
     subroutine initialise_gdal_raster_dataset(gdal_raster_dataset, inputFile)
+        !! This is the main initialiser of gdal_raster_dataset_type
         class(gdal_raster_dataset_type), intent(inout):: gdal_raster_dataset
         character(len=charlen), intent(in) :: inputFile
 
@@ -197,8 +201,8 @@ module read_raster_mod
 
     end subroutine
 
-    !! This is the key useful routine for gdal_raster_dataset_type
     subroutine get_xy_values(gdal_raster_dataset, x, y, z, N, verbose, bilinear, band)
+        !! This is the key useful routine for gdal_raster_dataset_type
         class(gdal_raster_dataset_type), intent(in):: gdal_raster_dataset
         integer(ip), intent(in):: n
         real(dp), intent(in):: x(n), y(n)
@@ -243,9 +247,9 @@ module read_raster_mod
 
     end subroutine
 
-    !! Non-object-based interface
-    !! Avoid this
     subroutine get_raster_dimensions(inputFile, xydim, lowerleft, upperright)
+        !! Non-object-based interface
+        !! Avoid this
         character(len=charlen), intent(in) :: inputFile
         integer(ip), intent(out):: xydim(2)
         real(dp), intent(out):: lowerleft(2), upperright(2)
@@ -367,10 +371,12 @@ module read_raster_mod
 
     end subroutine
 
-    !
-    ! Read a number of rasters into a single object
-    !
     subroutine initialise_multi_raster(multi_raster, raster_files)
+        !!
+        !! Read a number of rasters into a single multi_raster object. The
+        !! rasters should all have the same projection, but can have different resolutions
+        !! and extents. 
+        !!
         class(multi_raster_type), intent(inout) :: multi_raster
         character(len=charlen) :: raster_files(:)
 
@@ -391,12 +397,20 @@ module read_raster_mod
             call multi_raster%raster_datasets(i)%initialise(raster_files(i))
         end do
 
+        !! Make the lowerleft/upperright of the multiraster correspond to the extremes of the individual rasters
+        multi_raster%lowerleft = [HUGE(1.0_C_DOUBLE) , HUGE(1.0_C_DOUBLE)]
+        multi_raster%upperright = [-HUGE(1.0_C_DOUBLE), -HUGE(1.0_C_DOUBLE)]
+        do i = 1, n
+            multi_raster%lowerleft  = min(multi_raster%lowerleft , multi_raster%raster_datasets(i)%lowerleft )
+            multi_raster%upperright = max(multi_raster%upperright, multi_raster%raster_datasets(i)%upperright)
+        end do
+
     end subroutine
 
-    !
-    ! Close/cleanup a multi raster object
-    !
     subroutine close_multi_raster(multi_raster)
+        !!
+        !! Close/cleanup a multi raster object
+        !!
         class(multi_raster_type), intent(inout) :: multi_raster
         
         integer(ip) :: i, n
@@ -410,29 +424,21 @@ module read_raster_mod
 
     end subroutine
 
-    !
-    ! Interpolation from multi_raster
-    !
-    ! @param multi_raster a multi_raster object
-    ! @param x real array if size N, with x coordinates where we want z values
-    ! @param y real array if size N, with y coordinates where we want z values
-    ! @param z real array if size N -- on output will contain the z values
-    ! @param N -- as above
-    ! @param verbose -- integer 1 (true) or 0 (false)
-    ! @param bilinear -- integer 1 (true) or 0 (false)
-    ! @param band -- integer giving the raster band
-    ! @param na_below_limit -- treat 'z' values below this limit as NA. This can be useful if nodata values are not preserved exactly
-    ! (e.g. due to changes in precision), I have found this tricky to control in some cases.
-    !
     subroutine get_xy_values_multi_raster(multi_raster, x, y, z, N, verbose, bilinear, band, na_below_limit)
-        class(multi_raster_type), intent(in) :: multi_raster
-        integer(ip), intent(in) :: N
-        real(dp), intent(in) :: x(N), y(N)
-        real(dp), intent(inout):: z(N)
-        integer(ip), optional, intent(in) :: verbose
-        integer(ip), optional, intent(in) :: bilinear
-        integer(ip), optional, intent(in) :: band
-        real(dp), optional, intent(in) :: na_below_limit
+        !!
+        !! Interpolation from multi_raster
+        !!
+        class(multi_raster_type), intent(in) :: multi_raster !! a multi_raster object
+        integer(ip), intent(in) :: N !! Number of x/y/z coordinates
+        real(dp), intent(in) :: x(N), y(N) !! Input coordinates
+        real(dp), intent(inout):: z(N) !! Output raster values at x/y
+        integer(ip), optional, intent(in) :: verbose !! Print information
+        integer(ip), optional, intent(in) :: bilinear !! Use bilinear interpolation (1) or nearest-cell interpolation (0)
+        integer(ip), optional, intent(in) :: band !! Integer giving the raster band to interpolate from
+        real(dp), optional, intent(in) :: na_below_limit 
+        !! Treat raster values below this number as NA. This can be useful if nodata values are not preserved exactly (e.g. due to
+        !! changes in precision). Often nodata values are large negative numbers, in which case we can be sure that all numbers below
+        !! some threshold (e.g. `na_below_limit = -1.0e+10`) should be treated as NA. 
 
         real(dp) :: empty_value, ll(2), ur(2), border_buffer(2), lower_limit_l
         integer(ip) :: i, j, verbose_l, bilinear_l, band_l
@@ -492,6 +498,7 @@ module read_raster_mod
     end subroutine
 
     subroutine print_summary_gdal_raster_dataset(raster_data)
+        !! Print summary information about the raster data
         class(gdal_raster_dataset_type) :: raster_data
 
         write(log_output_unit, *) 'inputFile   : ', trim(raster_data%inputFile)
@@ -505,7 +512,7 @@ module read_raster_mod
     end subroutine 
 
     subroutine test_read_raster1()
-        ! Test code for read_raster_mod
+        !! Unit tests for read_raster_mod
         implicit none
 
         character(len=charlen) :: inputFile, inputFiles(2)
@@ -554,11 +561,11 @@ module read_raster_mod
         real_zf_bl = real(real_z_bl, csp)
        
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
         !
         ! Test gdal raster dataset class
         !
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
 
         call test_file%initialise(inputFile)
 
@@ -610,11 +617,11 @@ module read_raster_mod
             print*, 'FAIL' 
         end if
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
         !
         ! Test reading of raster summary data
         !
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
         call get_raster_dimensions(inputFile, xydim, lowerleft, upperright) 
         if( (xydim(1) == 50) .and. (xydim(2) == 50) ) then
             print*, 'PASS'
@@ -634,11 +641,11 @@ module read_raster_mod
             print*, 'FAIL'
         end if
 
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
         !
         ! Test of raster IO and bilinear interpolation
         !
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        !
 
 
         ! Test double precision version 

@@ -1,4 +1,5 @@
 module local_routines 
+    !! Test the convergence of the code in a periodic domain
     use global_mod, only: dp, ip, charlen, wall_elevation, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
@@ -37,9 +38,10 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program run_model
+program periodic_convergence
+    !! Test the convergence of the code in a periodic domain
 
     use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type

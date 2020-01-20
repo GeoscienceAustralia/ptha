@@ -1,29 +1,29 @@
-!
-! Module for sorting, based on C's qsort
-!
-! Contains a generic subroutine 
-!   sort(x, size(x))
-! which changes x to be in sorted order. 
-
-! It also contains a generic subroutine
-!   sort_index(inds, x, size(x))
-! which puts indices in 'inds' such that x(inds) is sorted. Here it is required
-! that "size(inds) == size(x)"
-
-! It also contains a generic match subroutine
-!   match(x1, x2, matches)
-! which puts indices in matches such that x1(i) == x2(matches(i)), or else
-! matches(i) == -1. 
-!
-! The routines work with 'x' being c_int, c_float, or c_double
-!
-! Note -- sorts of large arrays (e.g. 10^7 elements) may fail if compiled with '-Ofast',
-! unless the stack-size is unlimited (ulimit -s unlimited).  On the other hand,
-! I do not get this with the less aggressive compiler optimization '-O3'
-!
 
 
 module qsort_mod
+    !
+    !! Module for sorting, based on C's qsort
+    !
+    !! Contains a generic subroutine 
+    !!   sort(x, size(x))
+    !! which changes x to be in sorted order. 
+
+    !! It also contains a generic subroutine
+    !!   sort_index(inds, x, size(x))
+    !! which puts indices in 'inds' such that x(inds) is sorted. Here it is required
+    !! that "size(inds) == size(x)"
+
+    !! It also contains a generic match subroutine
+    !!   match(x1, x2, matches)
+    !! which puts indices in matches such that x1(i) == x2(matches(i)), or else
+    !! matches(i) == -1. 
+    !
+    !! The routines work with 'x' being c_int, c_float, or c_double
+    !
+    !! Note -- sorts of large arrays (e.g. 10^7 elements) may fail if compiled with '-Ofast',
+    !! unless the stack-size is unlimited (ulimit -s unlimited).  On the other hand,
+    !! I do not get this with the less aggressive compiler optimization '-O3'
+    !
     use iso_c_binding
 
     implicit none
@@ -35,7 +35,7 @@ module qsort_mod
 
         ! Call qsort from C
         subroutine qsort(array,elem_count,elem_size,compare) bind(C,name="qsort")
-          import
+          import c_ptr, c_size_t, c_funptr
           type(c_ptr), value       :: array
           integer(c_size_t), value :: elem_count
           integer(c_size_t), value :: elem_size

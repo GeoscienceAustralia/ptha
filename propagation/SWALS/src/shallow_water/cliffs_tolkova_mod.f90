@@ -1,77 +1,77 @@
 module cliffs_tolkova_mod
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! The code below contains edited excerpts from the Cliffs solver. Cliffs was developed by 
-    ! Elena Tolkova. It is based on the MOST solver but has an alternate treatment of 
-    ! wetting and drying.
-    !
-    ! The Cliffs code is available on github (https://github.com/Delta-function/cliffs-src)
-    ! under a FreeBSD licence. The code here is a modified version of that. 
-    !
-    ! Below we reproduce the copyright information of cliffs_main.f as required by the FreeBSD licence.
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!
+    !!
+    !! This module contains edited excerpts from the Cliffs solver. Cliffs was developed by 
+    !! Elena Tolkova. It is based on the MOST solver but has an alternate treatment of 
+    !! wetting and drying.
+    !!
+    !! The Cliffs code is available on github (https://github.com/Delta-function/cliffs-src)
+    !! under a FreeBSD licence. The code here is a modified version of that. 
+    !!
+    !! Below we reproduce the copyright information of cliffs_main.f as required by the FreeBSD licence.
+    !!
+    !!
 
-    !!! From cliffs_main.f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! https://github.com/Delta-function/cliffs-src/blob/master/cliffs_main.f
-    ! 
-    !  Cliffs is an open-source model for tsunami propagation and inundation computations       
-    !  in the framework of the shallow-water equations. Cliffs implements:                      
-    !  (1) VTCS-2 finite-difference scheme in an open ocean and on the open boundary            
-    ! 	 as in (Titov and Synolakis, 1995, 1998);                                               
-    !  (2) dimensional splitting as in (Titov and Gonzalez, 1997; Titov and Synolakis, 1998);   
-    !  (3) reflection and inundation computations as in (Tolkova, 2014);                        
-    !  (4) data flows similar to curvilinear MOST and MOST-4 (Burwell and Tolkova, 2008).       
-    !                               REFERENCE:                                                  
-    !  E. Tolkova. Land-Water Boundary Treatment for a Tsunami Model With Dimensional Splitting 
-    !  Pure and Applied Geophysics, Vol. 171, Issue 9 (2014), pp. 2289-2314                     
-    !                                                                                           
-    !  FEATURES: Cartezian or Geophysical (lon/lat) coordinates; 2D or 1D domains;              
-    !           grid nesting with one-way coupling; initial conditions or/and boundary forcing;
-    !           Open MP; NetCDF format of I/O                                                  
-    !
-    !           Copyright (c) 2014, Elena Tolkova                                              
-    !           under the terms of FreeBSD License                                             
-    !                                                                                          
-    !  Redistribution and use in source and binary forms, with or without                       
-    !  modification, are permitted provided that the following conditions are met:              
-    !                                                                                          
-    !   1. Redistributions of source code must retain the above copyright notice, this          
-    !     list of conditions and the following disclaimer.                                     
-    !   2. Redistributions in binary form must reproduce the above copyright notice,            
-    !     this list of conditions and the following disclaimer in the documentation            
-    !     and/or other materials provided with the distribution.                               
-    !                                                                                          
-    !  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND          
-    !  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED            
-    !  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                   
-    !  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR          
-    !  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES           
-    !  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;             
-    !  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND              
-    !  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT               
-    !  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS            
-    !  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                             
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!! From cliffs_main.f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !! https://github.com/Delta-function/cliffs-src/blob/master/cliffs_main.f
+    !! 
+    !!  Cliffs is an open-source model for tsunami propagation and inundation computations       
+    !!  in the framework of the shallow-water equations. Cliffs implements:                      
+    !!  (1) VTCS-2 finite-difference scheme in an open ocean and on the open boundary            
+    !! 	 as in (Titov and Synolakis, 1995, 1998);                                               
+    !!  (2) dimensional splitting as in (Titov and Gonzalez, 1997; Titov and Synolakis, 1998);   
+    !!  (3) reflection and inundation computations as in (Tolkova, 2014);                        
+    !!  (4) data flows similar to curvilinear MOST and MOST-4 (Burwell and Tolkova, 2008).       
+    !!                               REFERENCE:                                                  
+    !!  E. Tolkova. Land-Water Boundary Treatment for a Tsunami Model With Dimensional Splitting 
+    !!  Pure and Applied Geophysics, Vol. 171, Issue 9 (2014), pp. 2289-2314                     
+    !!                                                                                           
+    !!  FEATURES: Cartezian or Geophysical (lon/lat) coordinates; 2D or 1D domains;              
+    !!           grid nesting with one-way coupling; initial conditions or/and boundary forcing;
+    !!           Open MP; NetCDF format of I/O                                                  
+    !!
+    !!           Copyright (c) 2014, Elena Tolkova                                              
+    !!           under the terms of FreeBSD License                                             
+    !!                                                                                          
+    !!  Redistribution and use in source and binary forms, with or without                       
+    !!  modification, are permitted provided that the following conditions are met:              
+    !!                                                                                          
+    !!   1. Redistributions of source code must retain the above copyright notice, this          
+    !!     list of conditions and the following disclaimer.                                     
+    !!   2. Redistributions in binary form must reproduce the above copyright notice,            
+    !!     this list of conditions and the following disclaimer in the documentation            
+    !!     and/or other materials provided with the distribution.                               
+    !!                                                                                          
+    !!  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND          
+    !!  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED            
+    !!  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE                   
+    !!  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR          
+    !!  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES           
+    !!  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;             
+    !!  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND              
+    !!  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT               
+    !!  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS            
+    !!  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.                             
+    !!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    !! From cliffs.f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! https://github.com/Delta-function/cliffs-src/blob/master/cliffs.f
-    !
-    ! Cliffs SOLVER to propagate tsunami wave through one time step in 1D with:                !
-    ! (1) VTCS-2 finite-difference scheme in an open ocean and on the open boundary            !
-    !	 as in (Titov and Synolakis, 1995, 1998)                                             !
-    ! (2) reflection and inundation computations as in (Tolkova, 2014)                         !
-    !                               REFERENCES:                                                !   
-    ! V. Titov and C. Synolakis. Modeling of Breaking and Nonbreaking Long-Wave Evolution and  !
-    ! Runup Using VTCS-2. J. of Waterway, Port, Coastal, and Ocean Eng. Vol. 121, No 6 (1995), ! 
-    ! pp. 308-316.                                                                             !
-    ! E. Tolkova. Land-Water Boundary Treatment for a Tsunami Model With Dimensional Splitting.!
-    ! Pure and Applied Geophysics, Vol. 171, Issue 9 (2014), pp. 2289-2314                     !
-    !                                                                                          !
-    !     Copyright (C) 2014, Elena Tolkova                                                    !
-    !     For conditions of distribution and use, see copyright notice in cliffs_main.f        !
-    !
+    !! From cliffs.f !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !! https://github.com/Delta-function/cliffs-src/blob/master/cliffs.f
+    !!
+    !! Cliffs SOLVER to propagate tsunami wave through one time step in 1D with:                !
+    !! (1) VTCS-2 finite-difference scheme in an open ocean and on the open boundary            !
+    !!	 as in (Titov and Synolakis, 1995, 1998)                                             !
+    !! (2) reflection and inundation computations as in (Tolkova, 2014)                         !
+    !!                               REFERENCES:                                                !   
+    !! V. Titov and C. Synolakis. Modeling of Breaking and Nonbreaking Long-Wave Evolution and  !
+    !! Runup Using VTCS-2. J. of Waterway, Port, Coastal, and Ocean Eng. Vol. 121, No 6 (1995), ! 
+    !! pp. 308-316.                                                                             !
+    !! E. Tolkova. Land-Water Boundary Treatment for a Tsunami Model With Dimensional Splitting.!
+    !! Pure and Applied Geophysics, Vol. 171, Issue 9 (2014), pp. 2289-2314                     !
+    !!                                                                                          !
+    !!     Copyright (C) 2014, Elena Tolkova                                                    !
+    !!     For conditions of distribution and use, see copyright notice in cliffs_main.f        !
+    !!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! SWALS parameters
@@ -85,36 +85,33 @@ module cliffs_tolkova_mod
 
     contains
 
-    !
-    ! This is the Cliffs 1D time-stepping routine. 
-    ! 
-    ! It was originally taken from the cliffs source-code by Elena Tolkova, see comments above for licence etc.
-    !
-    ! Compared with the cliffs original version, the code below has various interface edits to cleanly integrate into SWALS.
-    !
     subroutine cliffs(dt, iu, irw, n, cliffs_minimum_allowed_depth, &
                       elev, cel, xvel, yvel, s1, s2, zeta, manning_squared)
-        !! GD comment -- arguments are:
-        !!    dt -- timestep
-        !!    iu -- integer, has values 1 or 2 -- referring to computations in x(lon) or y(lat) slice
-        !!    irw -- the y or x index of the grid that this slice represents
-        !!    n -- the number of x or y values in this slice.
-        !!    cliffs_minimum_allowed_depth -- the 'ground' parameter in cliffs, which is a wet/dry depth threshold.
-        !!                                    This value needs to be tuned for the problem.
-        !! GD Comments
-        !!
-        !! elev(nXn,nYn) -- used in place of 'dep' in cliffs.f, which is the "undisturbed water depth" or "depth below MSL" -- 
-        !!                  same as my "-domain%U(,,ELV)". So below the original cliffs routine is modified to 
-        !!                  use '-elev' instead of 'dep'
-        !! cel(nXn,nYn) -- sqrt(g * real_water_depth). Note the code sometimes uses 'h' to represent this 
-        !! xvel(nXn,nYn) -- x velocity
-        !! yvel(nXn,nYn) -- y velocity
-        !! s1 -- x-direction cell size -- for SWALS, I reduced it to a constant (for each slice)
-        !! s2 -- y-direction cell size -- for SWALS I reduced it to a constant (for each slice)
-        !! zeta(nYn) -- spherical coordinate scale factor. In CLIFFS this is 0.125/Earth_Radius * tan(pi/180 * lat)
-        !! manning_squared -- like 'crough' in the original cliffs.f source -- except for the version below, by default we use
-        !!                    the standard manning formula (despite the expensive power-law computation)
-        !!
+        !! This is the Cliffs 1D time-stepping routine. 
+        !! It was originally taken from the cliffs source-code by Elena Tolkova, see comments above for licence etc.
+        !! Compared with the cliffs original version, the code below has various interface edits to cleanly integrate into SWALS.
+
+        ! GD comment -- arguments are:
+        !    dt -- timestep
+        !    iu -- integer, has values 1 or 2 -- referring to computations in x(lon) or y(lat) slice
+        !    irw -- the y or x index of the grid that this slice represents
+        !    n -- the number of x or y values in this slice.
+        !    cliffs_minimum_allowed_depth -- the 'ground' parameter in cliffs, which is a wet/dry depth threshold.
+        !                                    This value needs to be tuned for the problem.
+        ! GD Comments
+        !
+        ! elev(nXn,nYn) -- used in place of 'dep' in cliffs.f, which is the "undisturbed water depth" or "depth below MSL" -- 
+        !                  same as my "-domain%U(,,ELV)". So below the original cliffs routine is modified to 
+        !                  use '-elev' instead of 'dep'
+        ! cel(nXn,nYn) -- sqrt(g * real_water_depth). Note the code sometimes uses 'h' to represent this 
+        ! xvel(nXn,nYn) -- x velocity
+        ! yvel(nXn,nYn) -- y velocity
+        ! s1 -- x-direction cell size -- for SWALS, I reduced it to a constant (for each slice)
+        ! s2 -- y-direction cell size -- for SWALS I reduced it to a constant (for each slice)
+        ! zeta(nYn) -- spherical coordinate scale factor. In CLIFFS this is 0.125/Earth_Radius * tan(pi/180 * lat)
+        ! manning_squared -- like 'crough' in the original cliffs.f source -- except for the version below, by default we use
+        !                    the standard manning formula (despite the expensive power-law computation)
+        !
         real(dp), intent(in):: dt, cliffs_minimum_allowed_depth
         integer(ip), intent(in) :: iu,irw,n
         real(dp), intent(in) :: elev(:,:), s1, s2, zeta(:), manning_squared(:,:) !, edge1(:,:), edge2(:,:)
@@ -137,10 +134,10 @@ module cliffs_tolkova_mod
         celmin = sqrt(gravity * cliffs_minimum_allowed_depth)
 
 
-        !! GD -- This is packing a 1D slice of the 2D grid into a 1D array (the algorithm is based on dimension splitting, so is
-        !!       essentially 1D)
+        ! GD -- This is packing a 1D slice of the 2D grid into a 1D array (the algorithm is based on dimension splitting, so is
+        !       essentially 1D)
         if(iu.eq.1) then
-            !! GD -- iu == 1, Computations in lon (x) direction
+            ! GD -- iu == 1, Computations in lon (x) direction
              do i = 1,n
                 depth(i)= -elev(i,irw) ! GD Comment -- here we use negative elevation in place of 'dep' in CLIFFS
                 h(i) = cel(i,irw)
@@ -151,7 +148,7 @@ module cliffs_tolkova_mod
                 crough(i) = manning_squared(i, irw)
             end do 
         else
-            !! GD -- iu == 2, Computations in lat (y) direction
+            ! GD -- iu == 2, Computations in lat (y) direction
             do i = 1,n
                 depth(i)= -elev(irw,i) ! GD Comment -- here we use negative elevation in place of 'dep' in CLIFFS
                 h(i) = cel(irw,i)
@@ -164,9 +161,9 @@ module cliffs_tolkova_mod
         endif
 
 
-        !!
-        !! GD -- note below here, everything is 1D, until the very end where arrays are repacked.
-        !!
+        !
+        ! GD -- note below here, everything is 1D, until the very end where arrays are repacked.
+        !
 
         lghost(1:n)=0
         rghost(1:n)=0
@@ -177,7 +174,7 @@ module cliffs_tolkova_mod
         end do
         newland=land
         
-        !! GD -- figure out if the left-most-cell is land or water 
+        ! GD -- figure out if the left-most-cell is land or water 
         water=.false.
         kseg=0
         if(.not.land(1)) then
@@ -187,27 +184,27 @@ module cliffs_tolkova_mod
         endif
         k1=kseg+1 ! first segment with left shore
           
-        !! GD -- some wetting and drying stuff 
+        ! GD -- some wetting and drying stuff 
         do i= 2,n
             if(water) then
                 ! Here segment (i-1) is wet
                 if(land(i)) then
                     ! Here segment (i) is dry
 
-                    !! GD Comment -- notice h**2 / grav = (grav * real_water_depth / grav ) = real_water_depth.
-                    !!               Whereas 'depth' here refers to the "undisturbed water depth"
-                    !!               So "(h(i-1)**2)/grav-depth(i-1)" is like stage(i-1),
-                    !!               flood = stage(i-1) + undisturbed_water_depth(i)
+                    ! GD Comment -- notice h**2 / grav = (grav * real_water_depth / grav ) = real_water_depth.
+                    !               Whereas 'depth' here refers to the "undisturbed water depth"
+                    !               So "(h(i-1)**2)/grav-depth(i-1)" is like stage(i-1),
+                    !               flood = stage(i-1) + undisturbed_water_depth(i)
                     flood=(h(i-1)**2)/grav-depth(i-1)+depth(i)
                     if((flood.gt.ground).and.(.not.land(i-1)).and.(u(i-1).gt.0)) then ! expand
-                        !! GD Comment -- here, the dry cell has u/v/depth extrapolated from its left neighbour,
-                        !!               because 'flood' was deep enough to suggest flooding occurs
+                        ! GD Comment -- here, the dry cell has u/v/depth extrapolated from its left neighbour,
+                        !               because 'flood' was deep enough to suggest flooding occurs
                         u(i)=u(i-1)
                         v(i)=v(i-1)
                         h(i)=celmin
                         newland(i)=.false.
                     else
-                        !! GD Comment -- here, segment (i) remains dry
+                        ! GD Comment -- here, segment (i) remains dry
                         water=.false. ! close wet segment
                         rghost(kseg)=i
                     endif
@@ -218,8 +215,8 @@ module cliffs_tolkova_mod
                     ! Here segment (i) is wet
                     water = .true.
                     kseg = kseg+1
-                    !! GD Comment -- so 'flood' = stage(i) + undisturbed_water_depth(i-1)
-                    !!               See comment above for details
+                    ! GD Comment -- so 'flood' = stage(i) + undisturbed_water_depth(i-1)
+                    !               See comment above for details
                     flood = (h(i)**2)/grav-depth(i)+depth(i-1) 
                     if((flood.gt.ground).and.(u(i).lt.0)) then ! expand
                         !! Here the initially dry 'i-1' cell has u/v/depth extrapolated because it
@@ -335,7 +332,7 @@ module cliffs_tolkova_mod
                 end if
                 uj=u(i)
                 vj=v(i)
-                !! GD Comment -- hj = real_water_depth(i)
+                ! GD Comment -- hj = real_water_depth(i)
                 hj=h(i)**2/grav
                 !  Almost Manning - Preferred friction model     
                 !cc=grav*crough(i)*uj*sqrt((uj**2+vj**2)/hj)/hj  
@@ -456,9 +453,9 @@ module cliffs_tolkova_mod
         !    u(n)=(pp(n)+qq(n))/2
         !endif
 
-        !!
-        !! GD comment -- here the arrays are re-packed.
-        !!
+        !
+        ! GD comment -- here the arrays are re-packed.
+        !
           
         if(iu.eq.1_ip) then
             do i = 1,n
@@ -478,16 +475,12 @@ module cliffs_tolkova_mod
     end subroutine cliffs
 
 
-    !
-    ! The Cliffs bathymetry smoother. 
-    !
-    ! This bathymetry smoothing routine is from the CLIFFS source code by Elena Tolkova. It also has superficial edits to cleanly
-    ! integrate into SWALS. See comments at the top of this file for licence information etc.
-    !
-    ! Cliffs tends to go unstable if the bathymetry is insufficiently smooth (see analysis by Tolkova in the CLIFFS manual), so
-    ! this routine is very important.
-    !
     subroutine setSSLim(nXn,nYn,bbb,alpha,depmin)
+        !! The Cliffs bathymetry smoother. 
+        !! This bathymetry smoothing routine is from the CLIFFS source code by Elena Tolkova. It also has superficial edits to cleanly
+        !! integrate into SWALS. See comments at the top of this file for licence information etc.
+        !! Cliffs tends to go unstable if the bathymetry is insufficiently smooth (see analysis by Tolkova in the CLIFFS manual), so
+        !! this routine is very important.
     
         integer(ip), intent(in) :: nXn,nYn
         real(dp), intent(inout) :: bbb(nXn,nYn)

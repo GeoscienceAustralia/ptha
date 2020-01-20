@@ -1,4 +1,7 @@
 MODULE local_routines 
+    !!
+    !! Setup uniform channel problem (aligned to grid)
+    !!
     USE global_mod, only: dp, ip, wall_elevation
     USE domain_mod, only: domain_type
     USE which_mod, only: which
@@ -49,9 +52,12 @@ MODULE local_routines
 
 END MODULE 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 PROGRAM uniform_channel
+    !!
+    !! Steady uniform flow in a grid-aligned channel.
+    !!
     USE global_mod, only: ip, dp, charlen
     USE domain_mod, only: domain_type
     USE file_io_mod, only: read_csv_into_array

@@ -1,11 +1,10 @@
-!
-! NTHMP Benchmark problem 6
-!
 
 module local_routines 
+    !!
+    !! NTHMP Benchmark problem 6
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: gdal_raster_dataset_type
     use file_io_mod, only: count_file_lines, read_csv_into_array
     use linear_interpolator_mod, only: linear_interpolator_type
     use boundary_mod, only: flather_boundary, transmissive_boundary
@@ -41,7 +40,7 @@ module local_routines
     real(dp), parameter :: wavemaker_x_start = 0.0_dp
 
     ! Use the wavemaker forcing, or a gauge-based estimate?
-    logical :: use_wavemaker_forcing = .false. !.false.
+    logical :: use_wavemaker_forcing = .false. ! .false.
     ! Both approaches force the velocity near the wavemaker, and also adjust the stage based
     ! on a linear plane wave approximation.
     ! The wavemaker_forcing approach estimates the velocity from the paddle displacement time-series.
@@ -216,7 +215,7 @@ module local_routines
                 call boundary_information%wavemaker_position%eval([time_future + boundary_information%wavemaker_t0], pos_x_future)
                 call boundary_information%wavemaker_position%eval([time_past   + boundary_information%wavemaker_t0], pos_x_past)
               
-                ! Numerical estimate of the velocity. Time-lag needs to give enough smoothing!
+                ! Numerical estimate of the velocity. Time-lag needs to give enough smoothing
                 forcing_vel = (pos_x_future(1) - pos_x_past(1)) / (2.0_dp * time_lag) * inflation_factor
                 time_limit = HUGE(1.0_dp) 
 
@@ -236,7 +235,8 @@ module local_routines
                 else
                     forcing_vel = 0.0_dp
                 end if
-                pos_x = 0.0_dp ! Apply boundary at regular wavemaker position
+                ! Apply boundary at regular wavemaker position
+                pos_x = 0.0_dp 
             end if
 
             ! Now impose this velocity at the wavemaker x-locations
@@ -339,7 +339,7 @@ module local_routines
                         (y(i) - global_ll(2) < absorbing_boundary_width(2)) .or. &
                         (y(i) - global_ll(2) > non_absorbing_lw(2) + absorbing_boundary_width(2)) ) then
                         ! High friction around absorbing boundary
-                        domain%manning_squared(i,j) = high_friction_manning**2 !1.0_dp * 1.0_dp
+                        domain%manning_squared(i,j) = high_friction_manning**2 ! 1.0_dp * 1.0_dp
                     else
                         ! Regular manning
                         domain%manning_squared(i,j) = low_friction_manning**2 
@@ -354,7 +354,7 @@ module local_routines
 
 
         if(use_initial_condition_forcing) then
-            !! Apply wave
+            ! Apply wave
             if(forcing_case == 1) then
                 h_on_d = 0.045_dp
             else if(forcing_case == 2) then
@@ -385,7 +385,7 @@ module local_routines
 
         !call domain%smooth_elevation()
 
-        !! Wall boundaries (without boundary conditions)
+        ! Wall boundaries (without boundary conditions)
         !wall = 0.5_dp
         !domain%U(:,1,ELV) = wall
         !domain%U(:,domain%nx(2),ELV) = wall
@@ -414,9 +414,12 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program BP06
+    !!
+    !! NTHMP benchmark problem 6 -- wave runup around a Conical Island, compared with experimental data.
+    !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
@@ -437,7 +440,7 @@ program BP06
 
     real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
     
-    real(dp), parameter ::  global_dt = 0.024_dp / mesh_refine !* 0.5_dp
+    real(dp), parameter ::  global_dt = 0.024_dp / mesh_refine ! * 0.5_dp
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.2_dp

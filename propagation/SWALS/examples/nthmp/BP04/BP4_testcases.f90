@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Setup NTHMP benchmark problem 4.
+    !!
     use global_mod, only: dp, ip, charlen, wall_elevation, g => gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: read_gdal_raster
@@ -41,7 +44,7 @@ module local_routines
         domain%U(domain%nx(1),:,UH) = 0.0_dp
         domain%U(:,domain%nx(2),UH) = 0.0_dp
 
-        if(domain%timestepping_method /= 'linear') then
+        if(allocated(domain%manning_squared)) then
             ! The runup in this problem can be sensitive to friction
             ! This value is 'tuned' to work ok on both problems, but we could
             ! change runup for the large-amplitude case quite a bit by adjusting this.
@@ -62,9 +65,15 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program bp4
+program BP04
+    !!
+    !! NTHMP benchmark problem 4 -- solitary wave on a simple beach. This has
+    !! various experimental results, leading to a dimensionless relation between
+    !! the onshore runup and offshore wave height.
+    !!
+
     use global_mod, only: ip, dp, minimum_allowed_depth, pi
     use domain_mod, only: domain_type
     use linear_interpolator_mod, only: linear_interpolator_type
@@ -82,7 +91,7 @@ program bp4
     ! Domain info
     character(charlen) :: timestepping_method, tempchar != 'linear' !'rk2' !'linear'
     
-    !! length/width
+    ! length/width
     real(dp), dimension(2) :: global_lw, global_ll
     integer(ip), dimension(2) :: global_nx 
 

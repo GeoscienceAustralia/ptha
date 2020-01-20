@@ -1,4 +1,7 @@
 module local_routines 
+    !!
+    !! Setup the "wave on a composite beach" problem
+    !!
 
     use global_mod, only: dp, ip, charlen, wall_elevation
     use domain_mod, only: domain_type, STG, UH, VH, ELV
@@ -122,12 +125,16 @@ module local_routines
 
 end module 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program bp2
+program BP02
+    !!
+    !! NTHMP benchmark problem 2 (and 4) -- Wave on a composite beach.
+    !! This has an analytical solution (for the linear shallow water equations), and
+    !! some experimental results. 
+    !!
     use global_mod, only: ip, dp, minimum_allowed_depth
     use domain_mod, only: domain_type
-    !use boundary_mod, only: boundary_stage_transmissive_normal_momentum
     use boundary_mod, only: boundary_stage_transmissive_momentum
     use linear_interpolator_mod, only: linear_interpolator_type
     use local_routines
@@ -144,7 +151,7 @@ program bp2
     ! Domain info
     character(charlen) :: timestepping_method != 'linear' !'rk2' !'linear'
     
-    !! length/width
+    ! length/width
     real(dp), dimension(2) :: global_lw, global_ll
     integer(ip), dimension(2) :: global_nx 
 
@@ -236,7 +243,7 @@ program bp2
         !    domain%boundary_type = 'flather_still_water' !'transmissive'
         !    domain%boundary_function => NULL()
         !END IF
-        !! Example with fixed timestep
+        ! Example with fixed timestep
         !CALL domain%evolve_one_step(timestep=2.5_dp)
 
         ! Variable timestep

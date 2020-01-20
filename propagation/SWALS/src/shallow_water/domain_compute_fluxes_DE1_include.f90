@@ -86,9 +86,9 @@
     !
     !
 
-    !!! This openmp REDUCTION is buggy in ifort2019, so we work-around it below
-    !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, half_cfl, nx, ny, loop_work_count, max_dt), &
-    !!$OMP REDUCTION(MAX:max_dt_inv)
+    !@ This openmp REDUCTION is buggy in ifort2019, so we work-around it below
+    !@!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, half_cfl, nx, ny, loop_work_count, max_dt), &
+    !@!$OMP REDUCTION(MAX:max_dt_inv)
 
     ! WORKAROUND FOR IFORT2019 OMP REDUCTION BUG -- emulate a MAX reduction
     !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, half_cfl, nx, ny, loop_work_count, max_dt, log_output_unit, scratch_omp)
@@ -212,6 +212,7 @@
 
             ! Gravity wave celerity
             gs_neg = sqrt(gravity * depth_neg_star)
+            !gs_neg = sqrt(gravity * max(depth_neg_c, depth_pos_c)) ! DEBUG
 
             ! Audusse stage and depths, positive side
             stage_pos_star = max(stage_pos, z_half)
@@ -228,6 +229,7 @@
 
             ! Gravity wave celerity
             gs_pos = sqrt(gravity * depth_pos_star)
+            !gs_pos = gs_neg !sqrt(gravity * depth_pos_c) ! DEBUG
 
             vel_beta_neg = v_neg * advection_beta
             vel_beta_pos = v_pos * advection_beta
@@ -292,22 +294,22 @@
                     s_max * depth_neg_star * depth_neg_star - &
                     s_min * depth_pos_star * depth_pos_star)
 
-                !! 'bed slope' part of pressure gradient term at i,j-1, north side
+                ! 'bed slope' part of pressure gradient term at i,j-1, north side
                 bed_slope_pressure_n = half_gravity * ( &
                     (depth_neg_star - depth_neg)*(depth_neg_star + depth_neg) - &
                     (depth_neg + depth_neg_c)*(z_neg - bed_j_minus_1(i)))
 
-                !! NOTE regarding OPENMP!!
-                !! We cannot naively do:
+                ! NOTE regarding OPENMP !
+                ! We cannot naively do:
                 ! domain%explicit_source(i, j - 1 ,VH) = domain%explicit_source(i, j-1, VH) + bed_slope_pressure_n + ...
-                !! Since j-1 might also be updated on another OMP thread
-                !! The solution is below
-                !! Other pressure gradient cases refer to i,j, or i-1,j, so should be ok
+                ! Since j-1 might also be updated on another OMP thread
+                ! The solution is below
+                ! Other pressure gradient cases refer to i,j, or i-1,j, so should be ok
                 domain%explicit_source_VH_j_minus_1(i,j) = &
                     bed_slope_pressure_n * domain%distance_bottom_edge(j) - &
                     half_g_hh_edge 
 
-                !! 'bed slope' part of pressure gradient term at i,j, south-side
+                ! 'bed slope' part of pressure gradient term at i,j, south-side
                 bed_slope_pressure_s = half_gravity * ( & 
                     (depth_pos_star - depth_pos) * (depth_pos_star + depth_pos) - &
                     (depth_pos + depth_pos_c)*(z_pos - domain%U(i, j, ELV)) ) 
@@ -392,12 +394,13 @@
             vd_neg = v_neg * depth_neg_star
 
             gs_neg = sqrt(gravity * depth_neg_star)
+            !gs_neg = sqrt(gravity * max(depth_neg_c, depth_pos_c)) ! DEBUG
 
             ! Audusse stage and depths, positive side
             stage_pos_star = max(stage_pos, z_half)
             depth_pos_star = stage_pos_star - z_half
 
-            ! Velocity (in NS direction)
+            ! Velocity (in EW direction)
             if(depth_pos_star == ZERO_dp) then
                 u_pos = ZERO_dp
                 v_pos = ZERO_dp
@@ -406,6 +409,7 @@
             vd_pos = v_pos * depth_pos_star
 
             gs_pos = sqrt(gravity * depth_pos_star)
+            !gs_pos = gs_neg !sqrt(gravity * depth_pos_c) ! DEBUG
 
             vel_beta_neg = u_neg * advection_beta
             vel_beta_pos = u_pos * advection_beta
@@ -468,7 +472,7 @@
                     s_max * depth_neg_star * depth_neg_star - &
                     s_min * depth_pos_star * depth_pos_star)
 
-                !! Pressure gradient term at i-1,j -- east side of cell i-1,j
+                ! Pressure gradient term at i-1,j -- east side of cell i-1,j
                 bed_slope_pressure_e = half_gravity * (&
                     (depth_neg_star - depth_neg)*(depth_neg_star + depth_neg) - &
                     (depth_neg + depth_neg_c)*(z_neg - domain%U(i-1 , j, ELV)))
@@ -478,7 +482,7 @@
                 explicit_source_im1_work(i-1) =  &
                     bed_slope_pressure_e * domain%distance_left_edge(i) - half_g_hh_edge
 
-                !! Pressure gradient term at i,j -- west_side
+                ! Pressure gradient term at i,j -- west_side
                 bed_slope_pressure_w = half_gravity * (&
                     (depth_pos_star - depth_pos) * (depth_pos_star + depth_pos) - &
                     (depth_pos + depth_pos_c)*(z_pos - domain%U(i, j, ELV)) )
@@ -506,14 +510,14 @@
 
 #ifdef SPHERICAL
 
-            !! Source term associated with integrating 'grad' in spherical coordinates
-            !! This puts the equations in flux-conservative form as required for finite volumes.
-            !! Say we need to integrate 1/R d(F)/dlat over the cell area.
-            !! This gives an expression like { R cos(lat) dlon [F_{lat+} - F_{lat-}] }
-            !! This is not in finite volume friendly form.
-            !! Using the product rule for derivatives we can write
+            ! Source term associated with integrating 'grad' in spherical coordinates
+            ! This puts the equations in flux-conservative form as required for finite volumes.
+            ! Say we need to integrate 1/R d(F)/dlat over the cell area.
+            ! This gives an expression like { R cos(lat) dlon [F_{lat+} - F_{lat-}] }
+            ! This is not in finite volume friendly form.
+            ! Using the product rule for derivatives we can write
             ! R cos(lat) dlon * [(F)_{lat+} - (F)_{lat-}] = flux - source
-            !! where
+            ! where
             ! (flux)  = [ (F R cos(lat) dlon)_{lat+} - (F R cos(lat) dlon)_{lat-} ] 
             ! (source) = F [(R cos(lat) dlon)_{lat+} - (R cos(lat) dlon)_{lat-}]
             if(flux_conservative_pressure) then
@@ -542,7 +546,7 @@
                 common_multiple * domain%U(i,j,UH)
 #endif
 
-            !! Timestep
+            ! Timestep
             max_speed = max(s_max, -s_min)
             if (max_speed > EPS) then
                 max_dt_inv_work(i) = max(max_dt_inv_work(i), max_speed * dx_cfl_half_inv(1))
@@ -600,9 +604,11 @@
             call limited_gradient_dx_vectorized(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1), &
                 theta_wd_NS, ddepth_NS, nx)
             ! u velocity
+            !theta_wd_NS = domain%theta ! DEBUG
             call limited_gradient_dx_vectorized(domain%velocity(:,j,UH), domain%velocity(:,j-1, UH), &
                 domain%velocity(:,j+1, UH), theta_wd_NS, du_NS, nx)
             ! v velocity
+            !theta_wd_NS = domain%theta ! DEBUG
             call limited_gradient_dx_vectorized(domain%velocity(:,j,VH), domain%velocity(:,j-1, VH), &
                 domain%velocity(:,j+1, VH), theta_wd_NS, dv_NS, nx)
             if(extrapolate_uh_vh) then
@@ -666,12 +672,14 @@
         ddepth_EW(nx) = ZERO_dp
 
         ! u velocity
+        !theta_wd_EW = domain%theta ! DEBUG
         call limited_gradient_dx_vectorized(domain%velocity(2:(nx-1),j,UH), domain%velocity(1:(nx-2),j,UH), &
             domain%velocity(3:nx,j, UH), theta_wd_EW(2:(nx-1)), du_EW(2:(nx-1)), nx)
         du_EW(1) = ZERO_dp
         du_EW(nx) = ZERO_dp
 
-        ! u velocity
+        ! v velocity
+        !theta_wd_EW = domain%theta  ! DEBUG
         call limited_gradient_dx_vectorized(domain%velocity(2:(nx-1),j,VH), domain%velocity(1:(nx-2),j,VH), &
             domain%velocity(3:nx,j,VH), theta_wd_EW(2:(nx-1)), dv_EW(2:(nx-1)), nx)
         dv_EW(1) = ZERO_dp

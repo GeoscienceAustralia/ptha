@@ -1,5 +1,5 @@
-! Provide a 'stop' command that works with both CAF and non-CAF code
 module stop_mod
+    !! Provide a 'stop' command that works with both CAF and non-CAF code
 #ifdef MPI
     use mpi
 #endif
@@ -9,6 +9,8 @@ module stop_mod
     contains
 
     subroutine generic_stop()
+        !! Alternative to 'stop' and 'error stop' that tries to flush log files before halting.
+        !! This makes it more likely that a useful error message is recorded.
         integer :: ierr, i
         logical :: is_open_file_unit
 

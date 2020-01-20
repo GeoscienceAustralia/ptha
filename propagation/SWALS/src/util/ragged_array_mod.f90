@@ -1,9 +1,7 @@
 module ragged_array_mod
-    !
-    ! Make a type to hold 'ragged' arrays
-    ! (i.e. an allocatable array where each element is an allocatable
-    ! array)
-    ! 
+    !! Make a type to hold 'ragged' arrays
+    !! (i.e. an allocatable array where each element is an allocatable
+    !! array)
 
     use global_mod, only: ip, dp, force_double
     implicit none
