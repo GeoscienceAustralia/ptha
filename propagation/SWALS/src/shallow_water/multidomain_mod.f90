@@ -2461,9 +2461,9 @@ module multidomain_mod
         integer(ip):: i, j, k, jj, ii, nd_local, nest_layer_width, tmp2(2), nbox_max, counter, nd_global
 
         real(dp), allocatable:: nbr_domain_dx_local(:,:), yc_tmp(:), xc_tmp(:), y_tmp(:)
-        real(dp), allocatable:: local_metadata(:,:)
+        real(dp), allocatable:: local_metadata(:,:,:)
 
-        integer(ip) :: ijk_to_send(2,3), ijk_to_recv(2,3), count_cliffs
+        integer(ip) :: ijk_to_send(2,3), ijk_to_recv(2,3), count_cliffsi, ims
 
         real(dp) :: d_lw(2), d_dx(2), d_ll(2), a_row(srm+2), tmp_xs(2), tmp_ys(2), tmp_dxs(2)
         real(dp) :: box_diff(4), box_roundoff_tol, counter_dp(1)
@@ -2471,9 +2471,7 @@ module multidomain_mod
         logical :: verbose1, use_wetdry_limiting, in_periodic_region1, in_periodic_region2, in_periodic_region
         character(len=charlen) :: msg
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
-        integer :: win_mpi, disp, ierr, win_mpi_info
-        integer, allocatable :: request_array(:)
-        integer(MPI_ADDRESS_KIND) :: arr_size, target_disp
+        integer :: ierr
 #endif
 
         !! Index labels for send/recv metadata 
@@ -2685,17 +2683,6 @@ module multidomain_mod
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         allocate( all_recv_metadata(srm+2, nbox_max, nd_global, ni ))
         call sync_all_generic
-        ! Make an MPI window and open it
-        arr_size = size(all_recv_metadata) * real_bytes
-        disp = real_bytes
-        call mpi_info_create(win_mpi_info, ierr)
-        call mpi_info_set(win_mpi_info, 'no_locks', 'true', ierr)
-        call mpi_info_set(win_mpi_info, 'same_size', 'true', ierr)
-        call mpi_info_set(win_mpi_info, 'same_disp_unit', 'true', ierr)
-        call mpi_win_create(all_recv_metadata, arr_size, disp, win_mpi_info, MPI_COMM_WORLD, win_mpi, ierr)
-        call mpi_win_fence(0, win_mpi, ierr)
-        if(allocated(request_array)) deallocate(request_array)
-        allocate(request_array(ni))
 #elif defined(COARRAY)
         allocate( all_recv_metadata(srm+2, nbox_max, nd_global, ni )[*])
 #else     
@@ -2704,17 +2691,17 @@ module multidomain_mod
 
         ! Fill the local_metadata (which will be communicated to all_recv_metadata)
         if(allocated(local_metadata)) deallocate(local_metadata)
-        allocate(local_metadata(srm+2, nbox_max))
+        allocate(local_metadata(srm+2, nbox_max, nd_global))
+        local_metadata = -1.0_dp ! Default 'empty box' value
 
         do j = 1, nd_local
 
-            local_metadata = -1.0_dp ! Default 'empty box' value
             counter = 0 ! Keep track of 'real' receive indices -- i.e. those that communicate with another domain/image
     
             do i = 1, size(domains(j)%nesting%recv_metadata, 2)
 
                 ! Domain index and image that is needed for box i [as reals, even though the values are integer]
-                local_metadata([IND,IMG],i) = 1.0_dp * domains(j)%nesting%recv_metadata([IND,IMG], i)
+                local_metadata([IND,IMG],i,j) = 1.0_dp * domains(j)%nesting%recv_metadata([IND,IMG], i)
 
                 ! Range of x/y values in communication zone
                 ! Firstly, get centroid  coordinates, and determine if we are in the periodic region
@@ -2726,13 +2713,13 @@ module multidomain_mod
                 call check_periodic(tmp_xs(2), tmp_ys(2), periodic_xs, periodic_ys, in_periodic_region, &
                     adjust_coordinates=.FALSE.)
                 ! Range of the communication regions, extended to cell edges
-                local_metadata(3:4,i) = tmp_xs + [-0.5_dp, 0.5_dp]*domains(j)%dx(1)
-                local_metadata(5:6,i) = tmp_ys +  [-0.5_dp, 0.5_dp]*domains(j)%dx(2)
+                local_metadata(3:4,i,j) = tmp_xs + [-0.5_dp, 0.5_dp]*domains(j)%dx(1)
+                local_metadata(5:6,i,j) = tmp_ys +  [-0.5_dp, 0.5_dp]*domains(j)%dx(2)
     
                 ! Sequential index for 'true' communication rows
                 if( ( (.not. in_periodic_region).and.&
-                      (local_metadata(IND,i) == j .and. local_metadata(IMG,i) == ti)) .or. &
-                      (local_metadata(IND,i) < 1) ) then
+                      (local_metadata(IND,i,j) == j .and. local_metadata(IMG,i,j) == ti)) .or. &
+                      (local_metadata(IND,i,j) < 1) ) then
                     ! Not 'true' communication, because we are "not in the periodic region, and we are
                     ! communicating with our own image and index", or we're not in an active region 
                     ! The code design ensures this corresponds to regions which do not need nesting information.
@@ -2742,32 +2729,24 @@ module multidomain_mod
                     ! For now we skip index 7 in local_metadata
  
                     counter = counter + 1
-                    local_metadata(8,i) = counter
+                    local_metadata(8,i,j) = counter
                 end if
 
             end do
+        end do
 
             ! Put local_metadata on all images, within all_recv_metadata
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-            target_disp = size(all_recv_metadata(:,:,:,1)) * (ti-1) + &
-                          size(all_recv_metadata(:,:,1,1)) * (j-1)
-            do k = 1, ni
-                call mpi_rput(local_metadata, size(local_metadata), mympi_dp, &
-                    k-1, target_disp, size(local_metadata), mympi_dp, win_mpi, request_array(k), ierr)
-            end do
-            call mpi_waitall(ni, request_array, MPI_STATUSES_IGNORE, ierr)
+        call mpi_allgather(local_metadata, size(local_metadata), mympi_dp, all_recv_metadata, &
+            size(local_metadata), mympi_dp, MPI_COMM_WORLD, ierr)
 #elif defined(COARRAY)
-            do k = 1, ni
-                all_recv_metadata(:,:,j,ti)[k] = local_metadata
-            end do
-#else
-            all_recv_metadata(:,:,j,ti) = local_metadata
-#endif
+        do k = 1, ni
+            all_recv_metadata(:,:,:,ti)[k] = local_metadata
         end do
-
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_win_fence(0, win_mpi, ierr)
+#else
+        all_recv_metadata(:,:,:,ti) = local_metadata
 #endif
+
 #if defined(COARRAY)
         call sync_all_generic
 #endif
@@ -2828,38 +2807,30 @@ module multidomain_mod
                             ! In column 8, store whether or not we are doing a periodic nest
                             domains(j)%nesting%send_metadata(8, counter) = count([in_periodic_region])
 
-                            ! Now, tell all_recv_metadata this row index in send_metadata
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-                            counter_dp = 1.0_dp * counter
-                            target_disp = size(all_recv_metadata(:,:,:,1)) * (k-1) + &
-                                          size(all_recv_metadata(:,:,1,1)) * (jj-1) + &
-                                          size(all_recv_metadata(:,1,1,1)) * (i-1) + &
-                                          (7-1)
-                            do ii = 1, ni
-                                call mpi_rput(counter_dp, 1, mympi_dp, ii-1, target_disp, 1, &
-                                    mympi_dp, win_mpi, request_array(ii), ierr)
-                            end do
-                            call mpi_waitall(ni, request_array, MPI_STATUSES_IGNORE, ierr)
-#elif defined(COARRAY)
-                            do ii = 1, ni
-                                all_recv_metadata(7,i,jj,k)[ii] = (1.0_dp * counter)
-                            end do
-#else
-                            all_recv_metadata(7,i,jj,k) = (1.0_dp * counter)
-#endif
                         end if
                     end do
                 end do
             end do
-
         end do
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_win_fence(0, win_mpi, ierr)
-        call mpi_win_free(win_mpi, ierr)
-#endif
-#if defined(COARRAY)
-        call sync_all_generic
-#endif        
+
+        ! Tell all_recv_metadata the row index in domain%nesting%send_metadata that its data comes from
+        ! Notice how this reproduces the calculation of 'counter' above, but on every image.
+        do ims = 1, ni
+            do j = 1, nd_global
+                counter = 0
+                do k = 1, size(all_recv_metadata, 4) ! Number of images
+                    do jj = 1, size(all_recv_metadata,3) ! Number of domains
+                        do i = 1, size(all_recv_metadata,2) ! Every row in the receive metadata
+                            ! Tell all_recv_metadata the row index in send_metadata
+                            if(all_recv_metadata(IND,i,jj,k) == j .and. all_recv_metadata(IMG,i,jj,k) == ims) then
+                                counter = counter + 1 
+                                all_recv_metadata(7, i, jj, k) = 1.0_dp * counter
+                            end if
+                        end do
+                    end do
+                end do
+            end do
+        end do
 
 #ifdef MULTIDOMAIN_DEBUG
         ! DEBUG: Write out all_recv_metadata. Compile with -DMULTIDOMAIN_DEBUG to do this
@@ -2887,12 +2858,6 @@ module multidomain_mod
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         call co_max(nbox_max)
         allocate(all_send_metadata(srm+2, nbox_max, nd_global, ni))
-        call sync_all_generic
-        ! Open an MPI Window onto the send metadata
-        arr_size = size(all_send_metadata) * real_bytes
-        disp = real_bytes
-        call mpi_win_create(all_send_metadata, arr_size, disp, win_mpi_info, MPI_COMM_WORLD, win_mpi, ierr)
-        call mpi_win_fence(0, win_mpi, ierr)
 #elif defined(COARRAY)
         call co_max(nbox_max)
         allocate(all_send_metadata(srm+2, nbox_max, nd_global, ni)[*])
@@ -2900,25 +2865,25 @@ module multidomain_mod
         allocate(all_send_metadata(srm+2, nbox_max, nd_global, ni))
 #endif
         if(allocated(local_metadata)) deallocate(local_metadata)
-        allocate(local_metadata(srm+2, nbox_max))
+        allocate(local_metadata(srm+2, nbox_max, nd_global))
+        local_metadata = -1.0_dp ! Default 'empty box' value
 
         !
         ! For every domain, pack the metadata into a local array, and send to all_send_metadata
         !
         do j = 1, nd_local
 
-            local_metadata = -1.0_dp ! Default 'empty box' value
             counter = 0 ! Keep track of 'true sends', as opposed to rows that don't need sends
 
             do i = 1, size(domains(j)%nesting%send_metadata, 2)
 
                 ! Domain index and image that is needed for box i [as reals, even though the values are integer]
-                local_metadata([IND, IMG],i) = 1.0_dp * domains(j)%nesting%send_metadata([IND, IMG], i)
+                local_metadata([IND, IMG],i,j) = 1.0_dp * domains(j)%nesting%send_metadata([IND, IMG], i)
                 ! Range of x values in communication zone
-                local_metadata([XLO, XHI],i) = domains(j)%x( domains(j)%nesting%send_metadata([XLO, XHI],i) ) + &
+                local_metadata([XLO, XHI],i,j) = domains(j)%x( domains(j)%nesting%send_metadata([XLO, XHI],i) ) + &
                     [-0.5_dp, 0.5_dp]*domains(j)%dx(1)
                 ! Range of y values in communication zone
-                local_metadata([YLO, YHI],i) = domains(j)%y( domains(j)%nesting%send_metadata([YLO, YHI],i) ) + &
+                local_metadata([YLO, YHI],i,j) = domains(j)%y( domains(j)%nesting%send_metadata([YLO, YHI],i) ) + &
                     [-0.5_dp, 0.5_dp]*domains(j)%dx(2)
 
                 ! Is the receive in a periodic region? (Of course the send is not, by construction, since periodic regions
@@ -2927,43 +2892,31 @@ module multidomain_mod
 
                 ! Sequential index for 'true' communication rows
                 if((.not. in_periodic_region) .and. &
-                   ((local_metadata(IND,i) == j).and.(local_metadata(IMG,i) == ti)).or.(local_metadata(IND,i) < 1)) then
+                   ((local_metadata(IND,i,j) == j).and.(local_metadata(IMG,i,j) == ti)).or.(local_metadata(IND,i,j) < 1)) then
                     ! Not real communication. Either the domain is sending to
                     ! itself, at a site that is not in a periodic region, OR the metadata is empty
                 else
 
-                    local_metadata(7,i) = 1.0_dp * domains(j)%nesting%send_metadata(7,i)
+                    local_metadata(7,i,j) = 1.0_dp * domains(j)%nesting%send_metadata(7,i)
 
                     counter = counter+1
-                    local_metadata(8,i) = 1.0_dp * counter
+                    local_metadata(8,i,j) = 1.0_dp * counter
                 end if
 
             end do
-
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-            target_disp = size(all_send_metadata(:,:,:,1)) * (ti-1) + &
-                          size(all_send_metadata(:,:,1,1)) * (j-1)
-            do k = 1, ni
-                call mpi_rput(local_metadata, size(local_metadata), mympi_dp, &
-                    k-1, target_disp, size(local_metadata), mympi_dp, win_mpi, request_array(k), ierr)
-            end do
-            call mpi_waitall(ni, request_array, MPI_STATUSES_IGNORE, ierr)
-#elif defined(COARRAY)
-            ! One-sided parallel communication to all images
-            do k = 1, ni
-                all_send_metadata(:,:,j,ti)[k] = local_metadata
-            end do
-#else
-            all_send_metadata(:,:,j,ti) = local_metadata
-#endif
         end do
 
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_win_fence(0, win_mpi, ierr)
-        call mpi_win_free(win_mpi, ierr)
-#endif
-#if defined(COARRAY)
+        call mpi_allgather(local_metadata, size(local_metadata), mympi_dp, all_send_metadata, &
+            size(local_metadata), mympi_dp, MPI_COMM_WORLD, ierr)
+#elif defined(COARRAY)
+        ! One-sided parallel communication to all images
+        do k = 1, ni
+            all_send_metadata(:,:,:,ti)[k] = local_metadata
+        end do
         call sync_all_generic
+#else
+        all_send_metadata(:,:,:,ti) = local_metadata
 #endif
 
 #ifdef MULTIDOMAIN_DEBUG

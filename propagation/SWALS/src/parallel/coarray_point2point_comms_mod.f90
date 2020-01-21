@@ -408,7 +408,7 @@ module coarray_point2point_comms_mod
         integer(c_int) :: n1
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS        
         ! MPI variables
-        integer :: win_mpi_work_coarray, win_mpi_real64_coarray, disp, ierr, request, win_mpi_info
+        integer :: win_mpi_work_coarray, disp, ierr, request, win_mpi_info
         integer(kind=MPI_ADDRESS_KIND) :: arr_size, target_disp
 #endif
 
