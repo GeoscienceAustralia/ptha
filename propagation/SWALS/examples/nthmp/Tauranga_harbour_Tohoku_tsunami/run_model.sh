@@ -1,8 +1,9 @@
 #
 # NON-COARRAY
 #
+export SWALS_SRC='../../../src'
+source ${SWALS_SRC}/test_run_commands
 
-source ../../../src/test_run_commands
 echo 'Will run openmp version with: ' $OMP_RUN_COMMAND
 echo 'Will run coarray version with: ' $CAF_RUN_COMMAND
 
