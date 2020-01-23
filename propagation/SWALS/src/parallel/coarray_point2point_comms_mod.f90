@@ -1,4 +1,9 @@
 module coarray_point2point_comms_mod
+!
+! This module was originally written to use coarrays, but it can also be compiled to only require mpi.
+! Many comments refer only to the coarray case.
+!
+
 
 !
 !! Module for doing coarray 'point-to-point' communications of real
@@ -126,7 +131,6 @@ module coarray_point2point_comms_mod
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
     ! The 'inner loop' put will use MPI_IAllToAllv
     use mpi
-    !include "mpif.h"
 #endif
     implicit none
 
@@ -400,7 +404,7 @@ module coarray_point2point_comms_mod
         !! include_in_p2p_send_buffer have already been made
         !!
 
-        integer(ocaIP) :: desired_size, desired_size_local, i, j, n, k
+        integer(ocaIP) :: desired_size, desired_size_local, i, j, n, k, n2
         character(p2p_id_len) :: charlabel
 
         ! Variables for call to sort_index
@@ -408,8 +412,8 @@ module coarray_point2point_comms_mod
         integer(c_int) :: n1
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS        
         ! MPI variables
-        integer :: win_mpi_work_coarray, disp, ierr, request, win_mpi_info
-        integer(kind=MPI_ADDRESS_KIND) :: arr_size, target_disp
+        integer :: ierr
+        integer, allocatable :: wc3_all(:,:)
 #endif
 
         if(have_allocated_p2p_comms) then
@@ -553,16 +557,8 @@ module coarray_point2point_comms_mod
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         call co_max(desired_size)
         allocate( work_coarray(desired_size, 3))
+        allocate(wc3_all(size(work_coarray(:,3)), num_images_local))
         call sync_all_generic
-        ! Make an mpi window for work_coarray
-        arr_size = size(work_coarray) * storage_size(1_ocaIP)/8
-        disp = storage_size(1_ocaIP)/8
-        call mpi_info_create(win_mpi_info, ierr)
-        call mpi_info_set(win_mpi_info, 'no_locks', 'true', ierr)
-        call mpi_info_set(win_mpi_info, 'same_size', 'true', ierr)
-        call mpi_info_set(win_mpi_info, 'same_disp_unit', 'true', ierr)
-        call mpi_win_create(work_coarray, arr_size, disp, win_mpi_info, MPI_COMM_WORLD, win_mpi_work_coarray, ierr)
-        call mpi_win_fence(0, win_mpi_work_coarray, ierr)
 #elif defined(COARRAY)
         call co_max(desired_size)
         allocate( work_coarray(desired_size, 3)[*] )
@@ -572,7 +568,23 @@ module coarray_point2point_comms_mod
 
         ! Make real64_coarary to communicate the send_buffer_label (can send length
         ! p2p_id_len characters using 'transfer')
-        n = (p2p_id_len ) / real64 + 1
+        !n = (p2p_id_len ) / real64 + 1
+        if(modulo(storage_size(charlabel), storage_size(real(1.0, real64))) == 0) then
+            n = storage_size(charlabel)/storage_size(real(1.0, real64))
+        else
+            write(log_output_unit, *) "storage_size(charlabel) cannot be evenly divided into real64's "
+            flush(log_output_unit)
+            call local_stop
+        end if
+        ! Determine number of empty characters ' ' required to fill a real64
+        if(modulo(storage_size(real(1.0, real64)), storage_size(" ")) == 0) then
+            n2 = storage_size(real(1.0, real64))/storage_size(" ")
+        else
+            write(log_output_unit, *) "storage_size(real 64) cannot be evenly divided into empty space characters "
+            flush(log_output_unit)
+            call local_stop
+        end if
+
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         allocate( real64_coarray(n, desired_size))
         call sync_all_generic
@@ -586,7 +598,7 @@ module coarray_point2point_comms_mod
             ! Broadcast the send metadata from image i to all images
             if( this_image_local == i) then
                 work_coarray = 0 
-                real64_coarray = transfer("        ", real(1.0, real64))
+                real64_coarray = transfer(repeat(" ", n2), real(1.0, real64))
 
                 if(allocated(send_size)) then
                     n = size(sendto_image_index)
@@ -595,7 +607,7 @@ module coarray_point2point_comms_mod
                     ! To broadcast the send_buffer_label, convert to a real
                     do j = 1, n
                         real64_coarray(:, j) = transfer(send_buffer_label(j), &
-                            real64_coarray(:,1))
+                            real64_coarray(:,1), size(real64_coarray(:,1)))
                     end do
                 else
                     n = 0
@@ -656,25 +668,24 @@ module coarray_point2point_comms_mod
                     work_coarray(j,3) = recv_start_index(n)
                 end if
             end do
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-                call mpi_win_fence(0, win_mpi_work_coarray, ierr)
-#endif
 #ifdef COARRAY  
             call sync_all_generic 
 #endif
 
-            ! Finally, broadcast the recv_start_indices back to the
-            ! sendto_image_start_index 
+
+            ! Finally, broadcast the recv_start_indices back to the sendto_image_start_index 
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+            ! Broadcast the 3rd column of work_coarray to image i
+            call mpi_gather(work_coarray(:,3), size(work_coarray(:,3)), mympi_int, wc3_all, &
+                size(work_coarray(:,3)), mympi_int, i-1, MPI_COMM_WORLD, ierr)
+#endif
             if(this_image_local == i) then
                 if(allocated(send_size)) then
                     allocate(sendto_start_index(size(send_size)))
                     if(size(send_size) > 0) then
                         do j = 1, size(send_size)
-                            
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS) 
-                            target_disp = size(work_coarray(:,1))*(3-1) + (j-1)
-                            call mpi_get(sendto_start_index(j), 1, mympi_int, sendto_image_index(j)-1, &
-                                target_disp, 1, mympi_int, win_mpi_work_coarray, ierr)
+                            sendto_start_index(j) = wc3_all(j,sendto_image_index(j))
 #elif defined(COARRAY)
                             sendto_start_index(j) = work_coarray(j,3)[sendto_image_index(j)]
 #else
@@ -684,19 +695,18 @@ module coarray_point2point_comms_mod
                     end if
                 end if
             end if
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-            call mpi_win_fence(0, win_mpi_work_coarray, ierr)
-#endif
 #ifdef COARRAY
             call sync_all_generic
 #endif
         end do
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)        
-        call mpi_win_free(win_mpi_work_coarray, ierr)
-#endif
 
         deallocate(work_coarray)
         deallocate(real64_coarray)
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS) 
+        call sync_all_generic
+        deallocate(wc3_all)
+#endif
+
 
         ! Check that send_buffer_label does not have repeated values
         if(allocated(send_buffer_label)) then

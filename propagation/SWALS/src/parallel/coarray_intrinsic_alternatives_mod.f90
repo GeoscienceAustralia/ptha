@@ -273,8 +273,10 @@ module coarray_intrinsic_alternatives
     subroutine swals_mpi_finalize()
         !! Calls mpi_finalize(ierr) if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined. Otherwise do nothing
         integer :: ierr
+        logical :: flag
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_finalize(ierr)
+        call mpi_finalized(flag, ierr)
+        if (.not. flag) call mpi_finalize(ierr)
 #endif
     end subroutine
 

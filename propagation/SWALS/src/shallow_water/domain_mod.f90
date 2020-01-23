@@ -1554,6 +1554,7 @@ TIMER_STOP('printing_stats')
         real(dp):: backup_time, dt_first_step, max_dt_store
         integer(ip):: j
         character(len=charlen):: timer_name
+        integer, parameter :: var_inds(2) = [STG, VH]
 
         ! Backup quantities
         backup_time = domain%time
@@ -1580,7 +1581,7 @@ TIMER_STOP('printing_stats')
             dt=(dt_first_step*HALF_dp),&
             flux_NS=domain%flux_NS, flux_NS_lower_index=1_ip, &
             flux_EW=domain%flux_EW, flux_EW_lower_index=1_ip, &
-            var_indices=[STG, VH],&
+            var_indices=var_inds,&
             flux_already_multiplied_by_dx=.TRUE.)
 
 
@@ -1595,7 +1596,7 @@ TIMER_STOP('printing_stats')
             dt=(dt_first_step*HALF_dp),&
             flux_NS=domain%flux_NS, flux_NS_lower_index=1_ip, &
             flux_EW=domain%flux_EW, flux_EW_lower_index=1_ip, &
-            var_indices=[STG, VH],&
+            var_indices=var_inds,&
             flux_already_multiplied_by_dx=.TRUE.)
 
 
