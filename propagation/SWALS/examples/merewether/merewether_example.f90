@@ -284,7 +284,7 @@ program merewether
     call domain%timer%print()
 
     ! Simple test (mass conservation only)
-    print*, ''
+    print*, 'MASS CONSERVATION TEST'
     if(abs(domain%mass_balance_interior() - volume_added) < 1.0e-06_dp) then
         print*, 'PASS'
     else

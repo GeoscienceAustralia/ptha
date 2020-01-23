@@ -5,7 +5,8 @@ source('../../plot.R')
 # (just a mass conservation check)
 #
 model_log = readLines('outfile.log')
-if(model_log[length(model_log)] == ' PASS'){
+k = grep('MASS CONSERVATION TEST', model_log)
+if(model_log[k+1] == ' PASS'){
     print('PASS')
 }else{
     print('FAIL')
