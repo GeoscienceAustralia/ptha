@@ -70,7 +70,8 @@ points to another compiler specific script (there are variants for both
 [the gadi machine on NCI](./src/src_standard_compiler_var_NCI_gadi_ifort). Variables in these scripts can
 be overridden by defining them in the application-specific makefile (see the
 examples). This is required in many situations (e.g. to use spherical
-coordinates, different compilers or compiler options, or non-standard library locations.)
+coordinates, different compilers or compiler options, or non-standard library locations).
+
 
 See the validation test suite for examples, and documentation of compiler options below.
 
@@ -116,8 +117,15 @@ obvious error messages.
 
 # Step 3: Run the validation tests
 
-Open a terminal in the [./tests/validation_tests](./tests/validation_tests)
-folder, and run:
+Before running the validation tests, you might need to modify
+[./src/test_run_commands](./src/test_run_commands) to tell the validation test suite how to run MPI/openmp
+on your machine. This file points to another script to make it easier to move between machines.
+For instance the script [./src/test_run_commands_basic](./src/test_run_commands_basic) works on
+my home machine, while [./src/test_run_commands_gadi_1node](./src/test_run_commands_gadi_1node) works
+on a single node of NCI's gadi machine.
+
+To run the validation tests, open a terminal in the
+[./tests/validation_tests](./tests/validation_tests) folder, and run:
 
     Rscript run_validations.R
 
