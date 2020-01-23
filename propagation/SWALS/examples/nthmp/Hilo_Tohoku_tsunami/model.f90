@@ -221,6 +221,7 @@ program Hilo_harbour_Tohoku
     use local_routines
     use timer_mod
     use logging_mod, only: log_output_unit
+    use coarray_intrinsic_alternatives, only: swals_mpi_init, swals_mpi_finalize
     implicit none
 
     ! Useful misc variables
@@ -257,6 +258,7 @@ program Hilo_harbour_Tohoku
     integer(ip), dimension(2), parameter :: global_nx = nint(global_lw/onethird_arcsec * mesh_refine) 
     integer(ip), parameter :: boundary_domain_thickness = 0_ip
 
+    call swals_mpi_init
     call program_timer%timer_start('setup')
 
     ! nd domains in this model
@@ -378,4 +380,5 @@ program Hilo_harbour_Tohoku
     write(log_output_unit, *) ''
     call program_timer%print(log_output_unit)
 
+    call swals_mpi_finalize
 end program

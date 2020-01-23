@@ -269,6 +269,7 @@ program Tauranga
     use local_routines
     use timer_mod
     use logging_mod, only: log_output_unit
+    use coarray_intrinsic_alternatives, only: swals_mpi_init, swals_mpi_finalize
     implicit none
 
     ! Useful misc variables
@@ -300,6 +301,8 @@ program Tauranga
     integer(ip), dimension(2):: global_nx = nint([4100_ip, 1860_ip] * mesh_refine) !nint([4100_ip, 2240_ip] * mesh_refine) !
     integer(ip), parameter :: nest_ratio = 3_ip
     integer(ip), parameter :: boundary_domain_thickness = 0_ip
+
+    call swals_mpi_init
 
     call program_timer%timer_start('setup')
 
@@ -434,4 +437,5 @@ program Tauranga
     write(log_output_unit, *) ''
     call program_timer%print(log_output_unit)
 
+    call swals_mpi_finalize
 end program

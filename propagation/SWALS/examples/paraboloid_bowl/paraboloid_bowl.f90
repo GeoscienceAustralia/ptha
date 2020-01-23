@@ -71,6 +71,7 @@ program run_paraboloid_basin
 #ifdef COARRAY_PROVIDE_CO_ROUTINES
     use coarray_intrinsic_alternatives, only: co_min
 #endif
+    use coarray_intrinsic_alternatives, only: swals_mpi_init, swals_mpi_finalize
     !use iso_fortran_env, only: int64, int32
     implicit none
 
@@ -101,6 +102,7 @@ program run_paraboloid_basin
     integer(ip):: nd, i, j
     real(dp):: last_write_time
 
+    call swals_mpi_init
     call program_timer%timer_start('setup')
 
 #ifdef SPHERICAL
@@ -155,7 +157,6 @@ program run_paraboloid_basin
     call program_timer%timer_start('evolve')
 
 #ifdef COARRAY
-    sync all
     ! Get the minimum global_dt
     call co_min(global_dt)
 #endif
@@ -190,4 +191,5 @@ program run_paraboloid_basin
     write(log_output_unit, *) 'Program timer'
     write(log_output_unit, *) ''
     call program_timer%print(log_output_unit)
+    call swals_mpi_finalize
 end program
