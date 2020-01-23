@@ -7,7 +7,8 @@ SWALS_SRC=../../src
 # Preprocessor variables. 
 SWALS_PREPROCESSOR_FLAGS := -DTIMER -DREALFLOAT
 # Other flags for for fortran compiler $(FC)
-SWALS_FC_FLAGS := -Ofast -fopenmp -g -fbounds-check -cpp
+#SWALS_FC_FLAGS := -Ofast -fopenmp -g -fbounds-check -cpp
+#SWALS_FC_ARCH_FLAGS := -mtune=native -march=native
 
 #
 # Get the other compiler variables. See this file to understand the pre-defined variables above

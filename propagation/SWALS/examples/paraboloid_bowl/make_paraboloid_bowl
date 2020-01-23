@@ -2,9 +2,7 @@
 # SOURCE CODE DIRECTORY relative to the current directory
 SWALS_SRC := ../../src
 
-## For distributed memory parallel
-# SWALS_FC = caf
-# SWALS_PREPROCESSOR_FLAGS = -DCOARRAY
+SWALS_PREPROCESSOR_FLAGS = -DTIMER
 
 include $(SWALS_SRC)/src_standard_compiler_var
 

@@ -3,7 +3,6 @@ SWALS_SRC := ../../../src
 
 # Need spherical coordinates
 SWALS_PREPROCESSOR_FLAGS := -DTIMER -DSPHERICAL
-#SWALS_FC_ARCH_FLAGS := -march=native -mtune=native
 
 include $(SWALS_SRC)/src_standard_compiler_var
 

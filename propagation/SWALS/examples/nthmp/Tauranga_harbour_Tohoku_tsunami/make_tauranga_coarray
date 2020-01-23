@@ -1,9 +1,7 @@
 # Source code location
 SWALS_SRC := ../../../src
 
-# Need spherical coordinates
-SWALS_PREPROCESSOR_FLAGS := -DTIMER -DCOARRAY
-SWALS_FC := caf
+SWALS_BUILD_WITH_PARALLEL_DEFAULTS := true
 
 include $(SWALS_SRC)/src_standard_compiler_var
 

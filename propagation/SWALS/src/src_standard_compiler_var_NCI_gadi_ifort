@@ -96,7 +96,7 @@ endif
 # -xHost or -xSKYLAKE . Better not to have these by default, because
 # they can be sub-optimal in some situations (e.g. when compiling on one
 # machine and running on another)
-SWALS_FC_ARCH_FLAGS ?= 
+SWALS_FC_ARCH_FLAGS ?= -xCASCADELAKE
 SWALS_FC_FLAGS := $(SWALS_FC_FLAGS) $(SWALS_FC_ARCH_FLAGS)
 
 

@@ -2,6 +2,8 @@
 # SOURCE CODE DIRECTORY relative to the current directory
 SWALS_SRC := ../../src
 
+SWALS_PREPROCESSOR_FLAGS := -DTIMER
+
 include $(SWALS_SRC)/src_standard_compiler_var
 
 #

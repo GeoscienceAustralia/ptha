@@ -1,6 +1,7 @@
 # Source code location
 SWALS_SRC := ../../src
 
+SWALS_PREPROCESSOR_FLAGS := -DTIMER 
 include $(SWALS_SRC)/src_standard_compiler_var
 
 #

@@ -4,7 +4,15 @@
 # can be overwritten by redefining them.
 #
 
-SWALS_PREPROCESSOR_FLAGS ?=
+# Preprocessor options passed to compiler
+SWALS_PREPROCESSOR_FLAGS ?= 
+
+# Flag to run in parallel using a default setup.
+# If defined then this will compile a distributed memory version of the code,
+# with default compiler options below.
+# To use other options, do not set this variable, but instead manually define
+# SWALS_FC, SWALS_PREPROCESSOR_FLAGS 
+SWALS_BUILD_WITH_PARALLEL_DEFAULTS ?= 
 
 #
 # C compiler and gdal libraries
@@ -63,12 +71,21 @@ endif
 #
 # Fortran compiler
 #
-SWALS_FC ?= gfortran
+ifeq ($(findstring true, $(SWALS_BUILD_WITH_PARALLEL_DEFAULTS)), true)
+    # Parallel compiler defaults. 
+    SWALS_FC ?= caf
+    SWALS_PREPROCESSOR_FLAGS := $(SWALS_PREPROCESSOR_FLAGS) -DTIMER -DCOARRAY
+else
+    SWALS_FC ?= gfortran
+endif
+
 # If -DNOOPENMP was passed to the preprocessor, we should not link with openmp.
 ifeq ($(findstring DNOOPENMP, $(SWALS_PREPROCESSOR_FLAGS)),)
+    # Case with openmp
     SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp -fopenmp
 else
-    SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp
+    # Case without openmp
+    SWALS_FC_FLAGS ?= -Ofast -fall-intrinsics -cpp 
 endif
 
 # Make it easier to append flags for hardware-specific optimization, such as
@@ -77,6 +94,7 @@ endif
 # machine and running on another)
 SWALS_FC_ARCH_FLAGS ?= 
 SWALS_FC_FLAGS := $(SWALS_FC_FLAGS) $(SWALS_FC_ARCH_FLAGS)
+
 
 SWALS_FC_INCLUDE ?=
 SWALS_FC_INCLUDE := $(SWALS_FC_INCLUDE) $(SWALS_CUDA_CC_INCLUDE) $(SWALS_NETCDF_FINCLUDE)
