@@ -13,9 +13,9 @@
 
 export OMP_RUN_COMMAND='OMP_NUM_THREADS=48 OMP_PROC_BIND=true '
 
-export CAF_RUN_COMMAND='OMP_NUM_THREADS=8 mpiexec -n 6 -ppr:3:socket:PE=8 '
+export CAF_RUN_COMMAND='OMP_NUM_THREADS=8 mpiexec -n 6 --map-by ppr:3:socket:PE=8 '
 
 # These calls are used for a parallel reproducibility check that splits the domain in 4.
-export CAF_RUN_COMMAND_ONE_IMAGE='OMP_NUM_THREADS=48 mpiexec -n 1 -ppr:1:node:PE=48 '
-export CAF_RUN_COMMAND_FOUR_IMAGES='OMP_NUM_THREADS=12 mpiexec -n 4 -ppr:2:socket:PE=12 '
+export CAF_RUN_COMMAND_ONE_IMAGE='OMP_NUM_THREADS=48 mpiexec -n 1 --map-by ppr:1:node:PE=48 '
+export CAF_RUN_COMMAND_FOUR_IMAGES='OMP_NUM_THREADS=12 mpiexec -n 4 --map-by ppr:2:socket:PE=12 '
 

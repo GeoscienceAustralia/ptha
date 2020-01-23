@@ -102,7 +102,7 @@ this only tests the coarray parallel operations, not OpenMP. To run the tests, o
 a terminal in that directory and do:
 
     # Look at this script to see the build/run commands
-    source run_tests.sh > outfile.log
+    source run_test.sh > outfile.log
 
 As above, you can count the PASS/FAIL reports in outfile.log, and eyeball it.
 

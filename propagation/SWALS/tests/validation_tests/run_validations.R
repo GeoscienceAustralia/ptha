@@ -3,7 +3,7 @@
 # Before running, ensure OMP_NUM_THREADS is NOT set. If it is set, I can't use OMP 
 # in the system calls inside R.
 #
-
+library(parallel)
 basedir = getwd()
 test_files = c(Sys.glob('../../examples/*/run_model.sh'), Sys.glob('../../examples/*/*/run_model.sh'))
 
@@ -15,7 +15,7 @@ test_example<-function(test_file){
     setwd(dirname(test_file))
     print('')
     print(paste0('Testing ', test_file))
-    run_results = system('bash ./run_model.sh', intern=TRUE) 
+    run_results = system(paste0('export OMP_NUM_THREADS=', detectCores(), ' ; bash ./run_model.sh'), intern=TRUE) 
     # Filter out system messages (e.g. often when R closes a graphics device)
     k = grep('[1]', run_results, fixed=TRUE)
     cat(run_results[k], sep="\n")
