@@ -5,7 +5,12 @@
 # to invoke mpi. Makes it easier to test efficiently on different machines.
 #
 
-# This is setup for a machine with 6 cores, 12 threads.
+# This is setup for a machine with 6 cores, 12 threads. 
+# FIXME: Currently some of the validation tests ASSUME 6 mpi processes (or
+# coarray images). This includes the tests with a prescribed
+# load_balance_partition file. In future the tests might be adapted to generate
+# those files from the information below. For now keep 6 mpi processes, but
+# optionally change the number of openmp threads
 
 export OMP_RUN_COMMAND='OMP_NUM_THREADS=12 OMP_PROC_BIND=true '
 
