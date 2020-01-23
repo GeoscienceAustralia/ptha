@@ -1,1 +1,2 @@
 include $(SWALS_SRC)/src_standard_compiler_var_gfortran
+#include $(SWALS_SRC)/src_standard_compiler_var_NCI_gadi_ifort

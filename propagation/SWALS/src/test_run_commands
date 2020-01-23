@@ -5,20 +5,6 @@
 # to invoke mpi. Makes it easier to test efficiently on different machines.
 #
 
-# This is setup for a machine with 6 cores, 12 threads. 
-# FIXME: Currently some of the validation tests ASSUME 6 mpi processes (or
-# coarray images). This includes the tests with a prescribed
-# load_balance_partition file. In future the tests might be adapted to generate
-# those files from the information below. For now keep 6 mpi processes, but
-# optionally change the number of openmp threads
-
-#export OMP_RUN_COMMAND='OMP_NUM_THREADS=12 OMP_PROC_BIND=true '
-
-#export CAF_RUN_COMMAND='OMP_NUM_THREADS=2 OMP_PROC_BIND=true mpiexec -n 6'
-
-# These calls are used for a parallel reproducibility check that splits the domain in 4.
-#export CAF_RUN_COMMAND_ONE_IMAGE='OMP_NUM_THREADS=12 mpiexec -n 1 '
-#export CAF_RUN_COMMAND_FOUR_IMAGES='OMP_NUM_THREADS=3 mpiexec -n 4 '
-
 source ${SWALS_SRC}/test_run_commands_basic
+#source ${SWALS_SRC}/test_run_commands_gadi_1node
 
