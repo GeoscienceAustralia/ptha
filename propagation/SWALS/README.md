@@ -1,11 +1,11 @@
-SWALS
+# SWALS
 -----
 
 SWALS includes a number of "Shallow WAter Like Solvers". These solve the linear
 and nonlinear shallow water equations (the latter with Manning friction) using
 either Cartesian or Spherical Coordinates. 
 
-Installation prerequisites
+## Installation prerequisites
 --------------------------
 
 ## Fortran compiler
@@ -55,10 +55,10 @@ can be installed from inside R with the following command:
     install.packages(c('ncdf4', 'fields', 'raster', 'sp', 'rgdal', 'maptools', 'rasterVis'))
 
 
-Compiling and testing
+# Compiling and testing
 ---------------------
 
-# Step 0: Adapting the build scripts for your machine 
+## Step 0: Adapting the build scripts for your machine 
 
 The standard build scripts are based on
 [src_standard_compiler_var](./src/src_standard_compiler_var) and
@@ -90,7 +90,7 @@ and change the 'mymodel' variable to correspond to your main f90 file.
 
 See the validation test suite for examples, and documentation of compiler options below.
 
-# Step 1: Run the unit-tests
+## Step 1: Run the unit-tests
 
 The unit test suite is in [./tests/unit_tests](./tests/unit_tests). These are most
 useful for ensuring that your install is working, and to help us avoid
@@ -110,7 +110,7 @@ You can count PASS or FAIL statements like this:
     # Count the failures (should be 0)
     grep "FAIL" outfile.log | wc -w
 
-# Step 2: Run the parallel unit-tests
+## Step 2: Run the parallel unit-tests
 
 The parallel unit-test suite is in [./tests/parallel_tests](./tests/parallel_tests). Note
 this only tests the coarray parallel operations, not OpenMP. To run the tests, open
@@ -130,7 +130,7 @@ Currently the parallel tests print out other information (e.g. nesting
 metadata) in outfile.log. That's OK -- but there should not be any FAILs or
 obvious error messages.
 
-# Step 3: Run the validation tests
+## Step 3: Run the validation tests
 
 Before running the validation tests, you might need to modify
 [./src/test_run_commands](./src/test_run_commands) to tell the validation test suite how to run MPI/openmp
@@ -162,7 +162,7 @@ not a replacement for eyeballing the figures and thinking about the results.
 # Running models
 ----------------
 
-# Examples to consider
+## Examples to consider
 
 The validation tests provide templates for developing other models. They illustrate driver programs, compilation, and model post-processing. Some of the more practical examples include:
 
@@ -174,7 +174,7 @@ The above models can be run with OpenMP and/or coarrays, and illustrate use of t
 
 * [./examples/generic_model/](./examples/generic_model) which can run basic single-grid spherical coordinate models, e.g. for oceanic-scale tsunami modelling. This supports OpenMP but not coarrays.
 
-# Advanced compilation
+## Advanced compilation
 
 The script [./src/src_standard_compiler_var](./src/src_standard_compiler_var) is included in build scripts to define compiler variables (e.g. see the example models above). The user can override most variables in this file by pre-defining them before it is included. This is required, e.g. to use compilers other than gfortran.
 
