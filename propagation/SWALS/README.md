@@ -2,7 +2,7 @@
 -----
 
 Shallow WAter Like Solvers (SWALS) computes solutions to several variants of
-the 1D shallow-water equations (linear/nonlinear) in cartesian and spherical
+the 2D shallow-water equations (linear/nonlinear) in cartesian and spherical
 coordinates, on domains represented as a connected set of structured grids.
 
 A number of different numerical methods are implemented, suitable for a range of
