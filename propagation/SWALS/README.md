@@ -71,7 +71,7 @@ where to find your compilers and other libraries. To make it easier to move betw
 includes another machine specific script. A few variants of these are provided, which use
 [gfortran](./src/src_standard_compiler_var_gfortran) and
 [ifort](./src/src_standard_compiler_var_ifort), and one that works on 
-[the gadi machine on NCI](./src/src_standard_compiler_var_NCI_gadi_ifort)).
+[the gadi machine on NCI](./src/src_standard_compiler_var_NCI_gadi_ifort).
 Make sure you edit [src_standard_compiler_var](./src/src_standard_compiler_var)
 so the variables are suitable for your machine.
 
@@ -82,7 +82,7 @@ situations (e.g. to use spherical coordinates, different compilers or compiler
 options, or non-standard library locations). There are many examples of
 application makefiles in the [examples folder](./examples/) (look for files
 with names beginning with make\_). For instance [this
-makefile](./examples/BP09/make_BP09_coarray) builds a model with
+makefile](./examples/nthmp/BP09/make_BP09_coarray) builds a model with
 distributed-memory-parallel support, while [this
 makefile](examples/circular_island/make_circular_island) builds an openmp-only
 model. To make a new makefile, you generally just need to copy an existing oine
