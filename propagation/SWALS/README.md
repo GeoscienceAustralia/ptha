@@ -3,20 +3,24 @@
 
 Shallow WAter Like Solvers (SWALS) computes solutions to several variants of
 the 1D shallow-water equations (linear/nonlinear) in cartesian and spherical
-coordinates, on domains represented as a connected set of structured grids. A
-number of different numerical methods are implemented, suitable for a range of
-flow regimes. This includes classical leapfrog schemes, shock-capturing finite
-volume schemes, and the [CLIFFS](https://github.com/Delta-function/cliffs-src)
-solver developed by Elena Tolkova (which is similar to MOST but uses a
-different wetting and drying scheme). Two-way nesting allows for the use of
+coordinates, on domains represented as a connected set of structured grids.
+
+A number of different numerical methods are implemented, suitable for a range of
+flow regimes, with particular emphasis on tsunami-like problems. This includes
+classical leapfrog schemes, shock-capturing finite volume schemes, and the
+[CLIFFS](https://github.com/Delta-function/cliffs-src) solver developed by
+Elena Tolkova (which is similar to the well-known MOST tsunami solver, but uses
+a different wetting and drying scheme). Two-way nesting allows for the use of
 higher-resolution domains in specified areas. Nested domains may use different
 numerical solvers, and take different timesteps. For some solvers, flux
 correction is used to enforce the conservation of mass and advected momentum
-through nested domain interfaces. Parallel computation (shared and distributed
-memory CPU) is supported with a mixture of Fortran coarrays and/or MPI and/or
-openmp. Static load balancing can be used to improve the efficiency of large
-parallel jobs. The code includes a unit test suite, a parallel unit test suite,
-and a validation test suite (the latter focussing on tsunami type problems).
+through nested domain interfaces.
+
+Parallel computation (shared and distributed memory CPU) is supported with a
+mixture of Fortran coarrays and/or MPI and/or openmp. Static load balancing can
+be used to improve the efficiency of large parallel jobs. The code includes a
+unit test suite, a parallel unit test suite, and a validation test suite (the
+latter focussing on tsunami type problems).
 
 ## Installation prerequisites
 --------------------------
