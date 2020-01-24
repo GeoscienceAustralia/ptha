@@ -9,6 +9,9 @@ in that script for further explanation.
 Once that is done, the code can be executed with (e.g.):
 
     Rscript produce_okada3d_unit_sources.R
+    Rscript get_displacements_for_events.R
 
 Currently it is setup to work on the kermadectonga2 source-zone, and extract deformation
 in a region in the vicinity of Tonga.
+
+
