@@ -85,9 +85,9 @@ with names beginning with make\_). For instance [this
 makefile](./examples/nthmp/BP09/make_BP09_coarray) builds a
 spherical-coordinates model with distributed-memory-parallel support, while
 [this makefile](examples/circular_island/make_circular_island) builds an
-openmp-only model with cartesian coordinates. To make a new makefile, you
-often just need to copy an existing one and change the 'mymodel' variable
-to correspond to your main f90 file.
+openmp-only model with cartesian coordinates using single-precision reals and
+code-timing. To make a new makefile, you often just need to copy an existing
+one and change the 'mymodel' variable to correspond to your main f90 file.
 
 See the validation test suite for examples, and documentation of compiler options below.
 
