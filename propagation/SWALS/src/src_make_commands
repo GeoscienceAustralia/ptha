@@ -4,7 +4,9 @@
 # See src_standard_compiler_var for examples of these
 #
 
-SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../.git describe --abbrev=50 --always --tags)
+#SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../.git describe --abbrev=50 --always --tags)
+SWALS_SRC_GIT_VERSION := $(shell git log -n1 | head -n1 | tail -c41)
+
 
 #
 # Make a library
