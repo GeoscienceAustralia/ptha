@@ -1314,7 +1314,7 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
     }
 
     old_time_range = unlist(lapply(md_times, sum))
-    new_time_range = x$splitter[[2]]
+    new_time_range = splitter[[2]]
     if(verbose){
         cat('\n')
         cat('OLD MODEL DOMAIN TIMES (observed): Stem and leaf plot \n')
