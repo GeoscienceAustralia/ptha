@@ -1374,7 +1374,7 @@ get_domain_wallclock_times_in_log<-function(md_log_file, wallclock_time_line_spa
     domains = basename(x[inds])
     domains = unlist(lapply(strsplit(domains, '_'), f<-function(x) x[2]))
     # Get the time
-    times = as.numeric(gsub(' Total WALLCLOCK time: ', '', x[inds+wallclock_time_line_spacing]))
+    times = as.numeric(gsub('Total WALLCLOCK time: ', '', x[inds+wallclock_time_line_spacing]))
     # Get the domain number corresponding to the original
     domain_number = as.numeric(gsub('ID', '', domains))%%100000
 

@@ -2,7 +2,7 @@ module global_mod
 !! Defines globally useful parameters (e.g. real and integer precisions, physical constants, defaults)
 
 use iso_c_binding, only: C_FLOAT, C_INT, C_DOUBLE, C_LONG, C_SIZEOF, C_LONG_DOUBLE, C_LONG_LONG
-use iso_fortran_env, only: REAL128, REAL32 !, INT32, INT64
+use iso_fortran_env, only: REAL128 
 
 implicit none
 
@@ -27,7 +27,7 @@ integer(ip), parameter:: output_precision = C_FLOAT !! Store real output at this
 ! involves subtracting the stage from the elevation, where these differ by several
 ! km). The following constants are used for that purpose
 integer(ip), parameter:: force_double = C_DOUBLE !! Double precision irrespective of whether -DREALFLOAT was passed to compiler.
-integer(ip), parameter:: force_long_double = C_LONG_DOUBLE !! Long double precision
+integer(ip), parameter:: force_long_double = REAL128 !C_LONG_DOUBLE !! Long double precision
 
 ! Physical constants
 real(dp), parameter:: gravity = 9.8_dp !! Gravitational acceleration in m/s**2
