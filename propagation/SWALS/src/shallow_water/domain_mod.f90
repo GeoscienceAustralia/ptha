@@ -227,6 +227,14 @@ module domain_mod
         real(dp) :: leapfrog_froude_limit = 10.0_dp
             !! Froude-limiter for leapfrog scheme. Velocity will be supressed at higher froude numbers, so as not to exceed this.
 
+        character(len=charlen) :: friction_type = 'manning'
+            !! If friction_type = 'manning' then interpret domain%manning_squared as (manning's n)**2
+            !! If friction_type = 'chezy' then interpret domain%manning_squared as (1/chezy_friction)**2, and use the Chezy friction
+            !! model
+        real(dp) :: friction_power_depth = NEG_SEVEN_ON_THREE_dp
+            !! A constant used in the friction evaluation. For manning friction it should be NEG_SEVEN_ON_THREE. For Chezy friction
+            !! it should be -2.0_dp
+
         !
         ! Boundary conditions. 
         !
@@ -354,8 +362,13 @@ module domain_mod
         real(dp), allocatable :: debug_array(:,:)
             !! For debugging it can be helpful to have this array.  If DEBUG_ARRAY is defined, then it will be allocated with
             !! dimensions (nx, ny), and will be written to the netcdf file at each time.
-
 #endif
+
+        ! Optionally include other currents (e.g. tides) in the friction term. This is an experiment, currently only supported for
+        ! leapfrog_linear and leapfrog_linear_with_nonlinear_friction
+        logical :: friction_with_ambient_fluxes = .false. 
+        ! Ambient (e.g. tidal) depth-integrated velocities with easting/northing
+        real(dp), allocatable :: ambient_flux(:,:,:)
 
         CONTAINS
 
@@ -897,7 +910,7 @@ TIMER_STOP('printing_stats')
             !$OMP END DO
             !$OMP END PARALLEL
 
-            ! (Manning friction)*(Manning friction)
+            ! (Manning friction)*(Manning friction) {Or (1/chezy_friction)^2 if domain%friction_type == 'chezy'}
             allocate(domain%manning_squared(nx, ny))
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
             !$OMP DO SCHEDULE(STATIC)
@@ -981,11 +994,41 @@ TIMER_STOP('printing_stats')
 
         end if
 
+        ! Setup for Chezy or Manning friction
+        if(domain%friction_type == 'manning') then
+            domain%friction_power_depth = NEG_SEVEN_ON_THREE_dp
+        else if(domain%friction_type == 'chezy') then
+            domain%friction_power_depth = -2.0_dp
+        else
+            write(log_output_unit, *) ' Error: Unrecognized value of domain%friction_type '
+            call generic_stop
+        end if
+
 #ifdef DEBUG_ARRAY
         ! Optional for debugging -- this will be written to the netcdf file
         allocate(domain%debug_array(nx, ny))
         domain%debug_array = ZERO_dp
 #endif
+
+        if(domain%friction_with_ambient_fluxes) then
+            ! Include ambient fluxes (e.g. from some external tide model) when computing friction terms for leapfrog solver.
+
+            if(.not. any(domain%timestepping_method == ['leapfrog_linear_plus_nonlinear_friction'])) then
+                write(log_output_unit, *) 'Error: domain%friction_with_ambient_fluxes = TRUE is only supported when using'
+                write(log_output_unit, *) '       domain%timestepping_method = "leapfrog_linear_plus_nonlinear_friction" '
+                call generic_stop
+            end if
+
+            allocate(domain%ambient_flux(nx, ny, UH:VH))
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, ny
+                domain%ambient_flux(:, j, UH:VH) = ZERO_dp
+            end do
+            !$OMP END DO
+            !$OMP END PARALLEL
+        end if
+
 
         if(create_output) then
             CALL domain%create_output_files()
@@ -1253,7 +1296,7 @@ TIMER_STOP('printing_stats')
         class(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt !! Timestep to advance
 
-        real(dp):: inv_cell_area_dt, depth, implicit_factor, dt_gravity, fs
+        real(dp):: inv_cell_area_dt, depth, implicit_factor, dt_gravity, fs, power_depth
         integer(ip):: j, i, kk
 
         domain%dt_last_update = dt
@@ -1295,7 +1338,7 @@ TIMER_STOP('printing_stats')
                     fs = domain%manning_squared(i,j) * &
                         sqrt(domain%velocity(i,j,UH) * domain%velocity(i,j,UH) + &
                              domain%velocity(i,j,VH) * domain%velocity(i,j,VH)) * &
-                        (max(depth, minimum_allowed_depth)**(NEG_SEVEN_ON_THREE_dp))
+                        max(depth, minimum_allowed_depth)**domain%friction_power_depth
                         !exp(log(max(depth, minimum_allowed_depth))*NEG_SEVEN_ON_THREE_dp)
 
                     implicit_factor = ONE_dp/(ONE_dp + dt_gravity*max(depth, ZERO_dp)*fs)
@@ -1363,7 +1406,7 @@ TIMER_STOP('printing_stats')
 
 #ifndef NOFRICTION
                 depth = domain%depth(i,j)
-                depth_neg7on3 = max(depth, minimum_allowed_depth)**(NEG_SEVEN_ON_THREE_dp)
+                depth_neg7on3 = max(depth, minimum_allowed_depth)**domain%friction_power_depth
                 !depth_neg7on3 = exp(log(max(depth, minimum_allowed_depth))*NEG_SEVEN_ON_THREE_dp)
 
                 ! Implicit friction slope update
@@ -1446,7 +1489,7 @@ TIMER_STOP('printing_stats')
                 sqrt(domain%velocity(:,j,UH) * domain%velocity(:,j,UH) + &
                      domain%velocity(:,j,VH) * domain%velocity(:,j,VH)) * &
                 !norm2(domain%velocity(i,j,UH:VH)) * &
-                (max(domain%depth(:,j), minimum_allowed_depth)**(NEG_SEVEN_ON_THREE_dp))
+                max(domain%depth(:,j), minimum_allowed_depth)**domain%friction_power_depth
                 !exp(log(max(domain%depth(:,j), minimum_allowed_depth))*NEG_SEVEN_ON_THREE_dp)
 
             implicit_factor = ONE_dp/(ONE_dp + dt_gravity*max(domain%depth(:,j), ZERO_dp)*fs)

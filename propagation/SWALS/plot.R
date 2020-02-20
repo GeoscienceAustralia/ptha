@@ -340,6 +340,18 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
         lower_left_corner=lower_left_corner, dx=dx, lw=(nx*dx)))
 }
 
+#' Read all domains in a multidomain directory into a list.
+#'
+#' @param multidomain_dir the directory with the results
+#' @param ... Further arguments to get_all_recent_results
+#'
+get_multidomain<-function(multidomain_dir, ...){
+
+    all_domain_files = Sys.glob(paste0(multidomain_dir, '/RUN_*'))
+    md = lapply(all_domain_files, f<-function(x) get_all_recent_results(x, ...))
+    return(md)
+}
+
 #' Convert peak stage output to raster using the domain object.
 #'
 #' Instead consider using 'merge_domains_nc_grids' which will combine partitioned domains, and

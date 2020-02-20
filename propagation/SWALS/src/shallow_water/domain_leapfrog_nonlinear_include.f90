@@ -829,7 +829,7 @@ contains
                 depth_iph = max(depth_iph, minimum_allowed_depth)
                 !nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
                 nsq_iph = 0.5_dp * (domain%manning_squared(i,j) + domain%manning_squared(ip1,j))
-                domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
+                domain%friction_work(i,j,UH) = gravity * nsq_iph * depth_iph**domain%friction_power_depth
 
                 ! VH component
                 jp1 = min(j+1, domain%nx(2))
@@ -837,7 +837,7 @@ contains
                 depth_jph = max(depth_jph, minimum_allowed_depth)
                 !nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
                 nsq_jph = 0.5_dp * (domain%manning_squared(i,j) + domain%manning_squared(i,jp1))
-                domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
+                domain%friction_work(i,j,VH) = gravity * nsq_jph * depth_jph**domain%friction_power_depth
 
             end do
         end do

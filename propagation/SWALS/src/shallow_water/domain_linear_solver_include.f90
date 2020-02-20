@@ -453,13 +453,36 @@
             ! Thus, appending the term g * depth * friction slope to the equations can be reduced to
             ! a multiplication of the form { 1/(1 + explicit_part_of_friction_terms) }
             !
-            friction_multiplier_UH(xL:(xU-1)) = 1.0_dp / ( 1.0_dp + &
-                dt * domain%friction_work(xL:(xU-1), j, UH) * &
-                sqrt(domain%U(xL:(xU-1),j,UH)**2 + (0.5_dp * ( vh_iph_jmh(xL:(xU-1)) + vh_iph_jph(xL:(xU-1)) ) )**2 ) )
 
-            friction_multiplier_VH(xL:(xU-1)) = 1.0_dp / (1.0_dp + &
-                dt * domain%friction_work(xL:(xU-1), j, VH) * &
-                sqrt(domain%U(xL:(xU-1),j,VH)**2 + (0.5_dp * ( uh_i_j(xL:(xU-1)) + uh_i_jp1(xL:(xU-1)) ) )**2 ) )
+            if(domain%friction_with_ambient_fluxes) then
+                ! Add a tidal current to the friction speed term
+                friction_multiplier_UH(xL:(xU-1)) = 1.0_dp / ( 1.0_dp + &
+                    dt * domain%friction_work(xL:(xU-1), j, UH) * ( &
+                    ! Velocity * depth
+                    ! FIXME: Stagger tidal flux appropriately
+                    sqrt( (domain%U(xL:(xU-1),j,UH) + domain%ambient_flux(xL:(xU-1), j, UH)) **2 + &
+                        (0.5_dp * ( vh_iph_jmh(xL:(xU-1)) + vh_iph_jph(xL:(xU-1)) ) + &
+                         domain%ambient_flux(xL:(xU-1), j, VH) )**2 )))
+                friction_multiplier_VH(xL:(xU-1)) = 1.0_dp / (1.0_dp + &
+                    dt * domain%friction_work(xL:(xU-1), j, VH) * ( &
+                    ! Velocity * depth
+                    ! FIXME: Stagger tidal flux appropriately
+                    sqrt( (domain%U(xL:(xU-1),j,VH) + domain%ambient_flux(xL:(xU-1), j, VH))**2 + & 
+                        (0.5_dp * ( uh_i_j(xL:(xU-1)) + uh_i_jp1(xL:(xU-1)) ) + &
+                         domain%ambient_flux(xL:(xU-1), j, UH) )**2) ))
+            else
+                ! Regular friction
+                friction_multiplier_UH(xL:(xU-1)) = 1.0_dp / ( 1.0_dp + &
+                    dt * domain%friction_work(xL:(xU-1), j, UH) * ( &
+                    ! Velocity * depth
+                    sqrt(domain%U(xL:(xU-1),j,UH)**2 + &
+                         (0.5_dp * ( vh_iph_jmh(xL:(xU-1)) + vh_iph_jph(xL:(xU-1)) ) )**2 ) ))
+                friction_multiplier_VH(xL:(xU-1)) = 1.0_dp / (1.0_dp + &
+                    dt * domain%friction_work(xL:(xU-1), j, VH) * ( &
+                    ! Velocity * depth
+                    sqrt(domain%U(xL:(xU-1),j,VH)**2 + &
+                         (0.5_dp * ( uh_i_j(xL:(xU-1)) + uh_i_jp1(xL:(xU-1)) ) )**2 ) ))
+            endif
 
 #endif
 
@@ -563,15 +586,17 @@
                     ip1 = min(i+1, domain%nx(1))
                     depth_iph = 0.5_dp * (domain%msl_linear - domain%U(i,j,ELV) + domain%msl_linear - domain%U(ip1,j, ELV))
                     depth_iph = max(depth_iph, minimum_allowed_depth)
-                    nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
-                    domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
+                    !nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
+                    nsq_iph = 0.5_dp * (domain%manning_squared(i,j) + domain%manning_squared(ip1,j))
+                    domain%friction_work(i,j,UH) = gravity * nsq_iph * depth_iph**domain%friction_power_depth
 
                     ! VH component
                     jp1 = min(j+1, domain%nx(2))
                     depth_jph = 0.5_dp * (domain%msl_linear - domain%U(i,j,ELV) + domain%msl_linear - domain%U(i,jp1, ELV))
                     depth_jph = max(depth_jph, minimum_allowed_depth)
-                    nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
-                    domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
+                    !nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
+                    nsq_jph = 0.5_dp * (domain%manning_squared(i,j) + domain%manning_squared(i,jp1))
+                    domain%friction_work(i,j,VH) = gravity * nsq_jph * depth_jph**domain%friction_power_depth
 
                 end do
             end do
@@ -594,15 +619,17 @@
                     ip1 = min(i+1, domain%nx(1))
                     depth_iph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(ip1,j,STG) - domain%U(ip1,j, ELV))
                     depth_iph = max(depth_iph, minimum_allowed_depth)
-                    nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
-                    domain%friction_work(i,j,UH) = gravity * nsq_iph * (depth_iph**(-7.0_dp/3.0_dp))
+                    !nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
+                    nsq_iph = 0.5_dp * (domain%manning_squared(i,j) + domain%manning_squared(ip1,j))
+                    domain%friction_work(i,j,UH) = gravity * nsq_iph * depth_iph**domain%friction_power_depth
 
                     ! VH component
                     jp1 = min(j+1, domain%nx(2))
                     depth_jph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(i,jp1,STG) - domain%U(i,jp1, ELV))
                     depth_jph = max(depth_jph, minimum_allowed_depth)
-                    nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
-                    domain%friction_work(i,j,VH) = gravity * nsq_jph * (depth_jph**(-7.0_dp/3.0_dp))
+                    !nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
+                    nsq_jph = 0.5_dp * (domain%manning_squared(i,j) + domain%manning_squared(i,jp1))
+                    domain%friction_work(i,j,VH) = gravity * nsq_jph * depth_jph**domain%friction_power_depth
 
                 end do
             end do
