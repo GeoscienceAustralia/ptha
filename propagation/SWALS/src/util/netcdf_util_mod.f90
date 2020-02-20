@@ -6,6 +6,7 @@ module netcdf_util
     use global_mod, only: charlen, ip, dp
     use stop_mod, only: generic_stop
     use iso_c_binding, only: C_DOUBLE
+    use iso_fortran_env
 
 #ifndef NONETCDF
     use netcdf
@@ -130,6 +131,7 @@ module netcdf_util
         integer:: iNcid, output_prec, i, output_byte, output_int4, spatial_stride, spatial_start(2)
         integer:: nx, ny, first_index_relative_to_full_domain(2), output_prec_force_double
         real(dp) :: dx_local(2)
+        character(len=charlen) :: local_att
 
         integer:: netcdf_file_type
         !logical:: using_netcdf4
@@ -296,6 +298,16 @@ module netcdf_util
 SRC_GIT_VERSION ), &
         __LINE__)
 #endif
+        ! Add the command-line call
+        call get_command(local_att)
+        call check(nf90_put_att(iNcid, nf90_global, 'run_command', TRIM(local_att)), &
+        __LINE__)
+        ! Add the compiler version
+        call check(nf90_put_att(iNcid, nf90_global, 'compiler_version', TRIM(compiler_version())), &
+        __LINE__)
+        ! Add the compiler options
+        call check(nf90_put_att(iNcid, nf90_global, 'compiler_options', TRIM(compiler_options())), &
+        __LINE__)
 
         ! Finish definitions so writing can begin
         call check(nf90_enddef(iNcid), __LINE__)
