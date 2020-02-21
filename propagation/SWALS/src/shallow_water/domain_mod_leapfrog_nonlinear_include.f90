@@ -801,7 +801,7 @@
 
 contains
 
-    ! Precompute the friction-work for the solver "leapfrog_linear_plus_nonlinear_friction"
+    ! Partial computation of friction term 
     !
     ! This assumes stage/UH/VH/elev have been set
     !
@@ -810,39 +810,27 @@ contains
     ! The key point is that when multiplied by ||UH|| * uh, it will be equal to the
     ! standard friction form: g*constant_depth*friction_slope
     !
-    ! The pre-computation removes an expensive power-law call from the inner loop
-    !
     subroutine precompute_friction_work(domain)
         type(domain_type), intent(inout) :: domain
 
         integer(ip) :: i, j, jp1, ip1
         real(dp) :: depth_iph, depth_jph, nsq_iph, nsq_jph
 
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
-        !$OMP DO SCHEDULE(STATIC)
-        do j = 1, domain%nx(2)
-            do i = 1, domain%nx(1)
+        real(dp), parameter :: manning_depth_power = NEG_SEVEN_ON_THREE_dp, chezy_depth_power = -2.0_dp
 
-                ! UH component
-                ip1 = min(i+1, domain%nx(1))
-                depth_iph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(ip1,j,STG) - domain%U(ip1,j, ELV))
-                depth_iph = max(depth_iph, minimum_allowed_depth)
-                !nsq_iph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(ip1,j))))**2
-                nsq_iph = 0.5_dp * (domain%manning_squared(i,j) + domain%manning_squared(ip1,j))
-                domain%friction_work(i,j,UH) = gravity * nsq_iph * depth_iph**domain%friction_power_depth
+        if(domain%friction_type == 'manning') then
 
-                ! VH component
-                jp1 = min(j+1, domain%nx(2))
-                depth_jph = 0.5_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + domain%U(i,jp1,STG) - domain%U(i,jp1, ELV))
-                depth_jph = max(depth_jph, minimum_allowed_depth)
-                !nsq_jph = (0.5_dp * (sqrt(domain%manning_squared(i,j)) + sqrt(domain%manning_squared(i,jp1))) )**2
-                nsq_jph = 0.5_dp * (domain%manning_squared(i,j) + domain%manning_squared(i,jp1))
-                domain%friction_work(i,j,VH) = gravity * nsq_jph * depth_jph**domain%friction_power_depth
+#define _FRICTION_DEPTH_POWER_ manning_depth_power
+#include "domain_mod_leapfrog_nonlinear_inner_include.f90"
+#undef _FRICTION_DEPTH_POWER_
 
-            end do
-        end do
-        !$OMP END DO
-        !$OMP END PARALLEL
+        else if(domain%friction_type == 'chezy') then
+
+#define _FRICTION_DEPTH_POWER_ chezy_depth_power
+#include "domain_mod_leapfrog_nonlinear_inner_include.f90"
+#undef _FRICTION_DEPTH_POWER_
+
+        end if
 
     end subroutine
 
