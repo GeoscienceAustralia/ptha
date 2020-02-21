@@ -8,6 +8,7 @@ program unit_tests
     use burn_into_grid_mod, only: test_burn_into_grid_mod
     use point_gauge_mod, only: test_point_gauge_mod
     use linear_interpolator_mod, only: test_linear_interpolator_mod
+    use grid_spacetime_interpolator_mod, only: test_grid_spacetime_interpolator_mod
     use coarray_utilities_mod, only: test_coarray_utilities_mod
     use nested_grid_comms_mod, only: test_nested_grid_comms_mod
     use coarray_point2point_comms_mod, only: test_coarray_point2point_comms_mod
@@ -40,6 +41,9 @@ program unit_tests
 
     print*, 'Testing linear_interpolator_mod'
     call test_linear_interpolator_mod()
+    
+    print*, 'Testing grid_spacetime_interpolator_mod'
+    call test_grid_spacetime_interpolator_mod()
 
     print*, 'Testing extrapolation_limitining_mod'
     call test_extrapolation_limiting_mod()
