@@ -129,7 +129,7 @@ end module
 
 program BP02
     !!
-    !! NTHMP benchmark problem 2 (and 4) -- Wave on a composite beach.
+    !! NTHMP benchmark problem 2 (and 5) -- Wave on a composite beach.
     !! This has an analytical solution (for the linear shallow water equations), and
     !! some experimental results. 
     !!

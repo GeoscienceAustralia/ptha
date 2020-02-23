@@ -11,7 +11,7 @@
         !! This is also used as a component of more advanced timestepping schemes.
         !! Argument 'timestep' is optional, but if provided should satisfy the CFL condition
         !!
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), optional, intent(in):: timestep
             !! The timestep by which the solution is advanced. If not provided, advance by the CFL permitted timestep, computed by
             !! domain%compute_fluxes
@@ -77,7 +77,7 @@
         !! Standard 2-step second order timestepping runge-kutta scheme.
         !! Argument timestep is optional, but if provided should satisfy the CFL condition
         !!
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), optional, intent(in):: timestep !! Advance this far in time
 
         real(dp):: backup_time, dt_first_step, max_dt_store
@@ -95,11 +95,11 @@
 
         ! First euler step -- 
         if(present(timestep)) then
-            call domain%one_euler_step(timestep, &
+            call one_euler_step(domain, timestep, &
                 update_nesting_boundary_flux_integral = .FALSE.)
             dt_first_step = timestep
         else
-            call domain%one_euler_step(update_nesting_boundary_flux_integral = .FALSE.)
+            call one_euler_step(domain, update_nesting_boundary_flux_integral = .FALSE.)
             dt_first_step = domain%max_dt
         end if
 
@@ -117,7 +117,7 @@
         max_dt_store = domain%max_dt
        
         ! Second euler step with the same timestep 
-        call domain%one_euler_step(dt_first_step, &
+        call one_euler_step(domain, dt_first_step, &
             update_nesting_boundary_flux_integral=.FALSE.)
 
         ! Update the nesting boundary flux, by the other 1/2 tstep
@@ -167,7 +167,7 @@
         !! (because this routine takes (n-1)=4 repeated time-steps of that size, where n=5).
         !! FIXME: Still need to implement nesting boundary flux integral timestepping, if we
         !! want to use this inside a multidomain
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), optional, intent(in):: timestep !! The timestep. Need to have (timestep/4.0) satisfying the CFL condition
 
         integer(ip), parameter:: n = rk2n_n_value ! number of substeps to take, must be > 2
@@ -185,11 +185,11 @@
             ! store timestep
             dt_first_step = timestep/(n-1.0_dp)
             ! first step 
-            call domain%one_euler_step(dt_first_step,&
+            call one_euler_step(domain, dt_first_step,&
                 update_nesting_boundary_flux_integral=.FALSE.)
         else
             ! first step 
-            call domain%one_euler_step(update_nesting_boundary_flux_integral=.FALSE.)
+            call one_euler_step(domain, update_nesting_boundary_flux_integral=.FALSE.)
             ! store timestep
             dt_first_step = domain%max_dt
         end if
@@ -207,7 +207,7 @@
 
         ! Steps 2, n-1
         do j = 2, n-1        
-            call domain%one_euler_step(dt_first_step,&
+            call one_euler_step(domain, dt_first_step,&
                 update_nesting_boundary_flux_integral=.FALSE.)
 
             call domain%nesting_boundary_flux_integral_tstep(&
@@ -238,7 +238,7 @@
         ! Now take one step of duration (n-1)/n * dt.
         ! For this step we flux-track as normal
         reduced_dt = (ONE_dp * n - ONE_dp) * n_inverse * dt_first_step
-        call domain%one_euler_step(reduced_dt, &
+        call one_euler_step(domain, reduced_dt, &
             update_nesting_boundary_flux_integral=.TRUE.)
         
         !TIMER_START('final_update')
@@ -272,7 +272,7 @@
         !! Another 2nd order timestepping scheme (like the trapezoidal rule).
         !! Argument timestep is optional, but if provided should satisfy the CFL condition.
         !!
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), optional, intent(in) :: timestep
 
         real(dp):: backup_time, dt_first_step
@@ -357,7 +357,7 @@
         !! Note that unlike the other timestepping routines, this does not require a
         !! prior call to domain%compute_fluxes 
         !!
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
             !! The timestep to advance. Should remain constant in between repeated calls
             !! to the function (since the numerical method assumes constant timestep)
@@ -372,7 +372,7 @@
 
     ! Truely-linear leap-frog solver
     subroutine one_truely_linear_leapfrog_step(domain, dt)
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
 
         ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
@@ -387,7 +387,7 @@
 
     ! Not-truely-linear leap-frog solver
     subroutine one_not_truely_linear_leapfrog_step(domain, dt)
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
 
         ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
@@ -403,7 +403,7 @@
     subroutine one_leapfrog_linear_plus_nonlinear_friction_step(domain, dt)
         !! Linear solver is combined with nonlinear friction. This might be useful to allow some dissipation
         !! in very large scale tsunami models.
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
 
         if(domain%linear_solver_is_truely_linear) then
@@ -416,7 +416,7 @@
 
     ! Truely-linear leap-frog solver PLUS NONLINEAR FRICTION
     subroutine one_leapfrog_truely_linear_plus_nonlinear_friction_step(domain, dt)
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
         ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
         ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
@@ -432,7 +432,7 @@
 
     ! Not-truely-linear leap-frog solver PLUS NONLINEAR FRICTION
     subroutine one_leapfrog_not_truely_linear_plus_nonlinear_friction_step(domain, dt)
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
         ! Do we represent pressure gradients with a 'truely' linear term g * depth0 * dStage/dx,
         ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
@@ -450,7 +450,7 @@
     ! Nonlinear leapfrog
     !
     subroutine one_leapfrog_nonlinear_step(domain, dt)
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
 
 #define FROUDE_LIMITING
@@ -461,7 +461,7 @@
 
     subroutine one_cliffs_step(domain, dt)
         !! Use the CLIFFS solver of Elena Tolkova (similar to MOST with a different wet/dry treatment).
-        class(domain_type), intent(inout) :: domain
+        type(domain_type), intent(inout) :: domain
         real(dp), intent(in) :: dt !! Timestep to advance -- should satisfy the CFL condition
 
         integer(ip) :: i, j

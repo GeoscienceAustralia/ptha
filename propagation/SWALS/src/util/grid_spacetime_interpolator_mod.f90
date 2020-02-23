@@ -7,8 +7,8 @@ module grid_spacetime_interpolator_mod
     use stop_mod, only: generic_stop
     implicit none
 
-    ! Parameters for test case
     real(dp), parameter :: cx = 2.7_dp, cy = 3.05_dp
+        !! Parameters for test case
 
     type grid_spacetime_interpolator_type
         !! Interpolation of multi-gridded time-series.
@@ -38,6 +38,7 @@ module grid_spacetime_interpolator_mod
         procedure :: initialise => initialise_grid_spacetime_interpolator
         procedure :: setup_to_read_at_time => setup_to_read_at_time
         procedure :: interpolate => interpolate_from_grid_spacetime
+        procedure :: interpolate_grid_in_time => interpolate_full_grids_time_only
         procedure :: finalise => finalise_grid_spacetime_interpolator
             
     end type
@@ -121,6 +122,7 @@ module grid_spacetime_interpolator_mod
         !! before doing interpolation in parallel.
         class(grid_spacetime_interpolator_type), intent(inout) :: gsi
         real(dp), intent(in) :: time
+            !! Time at which we will want to interpolate
 
         if(time < gsi%g1_time) then
             write(log_output_unit, *) "Currently cannot interpolate at time < gsi%g1_time=", gsi%g1_time
@@ -145,19 +147,88 @@ module grid_spacetime_interpolator_mod
 
         end if
 
+        if(.not. (time >= gsi%g1_time .and. time <= gsi%g2_time)) then
+            write(log_output_unit, *) "Logical error in grid_spacetime setup_to_read_at_time"
+            call generic_stop
+        end if
+
+    end subroutine
+
+    subroutine interpolate_full_grids_time_only(gsi, time, values, suppress_checks)
+        !!
+        !! Interpolate linearly in time between gsi%g1 and gsi%g2. Return an array with 
+        !! the same dimensions as gsi%g1 and gsi%g2
+        !!
+        class(grid_spacetime_interpolator_type), intent(inout) :: gsi
+        real(dp), intent(in) :: time
+            !! Time at which interpolated grid values are required
+        real(dp), intent(inout) :: values(:,:,:)
+            !! Stores output
+        logical, optional :: suppress_checks
+            !! If .TRUE., do not check that time is inside the current 'gsi grids time range', or the dimensions of the inputs. 
+            !! This check will provoke an automatic update of the grids if required, so if you suppress it, ensure you know that no
+            !! update is needed.
+
+        logical :: check
+        integer :: i, j, k
+        real(dp) :: w1_t, w2_t
+
+        if(present(suppress_checks)) then
+            check = .not.(suppress_checks)
+        else
+            check = .true.
+        end if
+
+        
+        if(check) then
+            ! Ensure that time is within [gsi%g1_time, gsi%g2_time]
+            ! If not, update gsi
+            call gsi%setup_to_read_at_time(time)
+
+        end if
+
+        if(.not.(all(shape(gsi%g1) == shape(values)))) then
+            write(log_output_unit, *) "Error in grid_spacetime_interpolator_type: shape of values must equal shape of gsi grids"
+            call generic_stop
+        end if
+
+
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(gsi, values, time)
+
+        ! Time-interpolation weights
+        w1_t = (gsi%g2_time - time)/(gsi%g2_time - gsi%g1_time)
+        w2_t = 1.0_dp - w1_t
+
+        !$OMP DO COLLAPSE(3)
+        do k = 1, size(values, 3)
+            do j = 1, size(values, 2)
+                do i = 1, size(values, 1)
+                    values(i, j, k) = w1_t * gsi%g1(i,j,k) + w2_t * gsi%g2(i,j,k)
+                end do
+            end do
+        end do
+        !$OMP END DO
+        !$OMP END PARALLEL
+
     end subroutine
 
     subroutine interpolate_from_grid_spacetime(gsi, time, xs, ys, values, suppress_checks)
-        !! Get 'values' given coordinates xs, ys at the given time
-        !! Use bilinear interpolation in space, and linear interpolation in time
+        !! Get 'values' given coordinates xs, ys at the given time. 
+        !! Use bilinear interpolation in space, and linear interpolation in time.
+        !! Note that xs, ys can be completely unstructured -- however, this means the lookup is relatively slow (finding the
+        !! nearest cell involves 2 bisection searches for each point). 
 
         class(grid_spacetime_interpolator_type), intent(inout) :: gsi
         real(dp), intent(in) :: time
+            !! Time when output is desired
         real(dp), intent(in) :: xs(:), ys(:)
             !! Coordinates where output is desired
         real(dp), intent(inout) :: values(:,:)
             !! Holds output
         logical, optional, intent(in) :: suppress_checks
+            !! If .TRUE., do not check that time is inside the current 'gsi grids time range', or the dimensions of the inputs. 
+            !! This check will provoke an automatic update  if required, so if you suppress it, ensure you know that no update is
+            !! needed.
 
         real(dp) :: w1_t, w2_t, w0_x, w1_x, w0_y, w1_y, v0, v1, g1_val, g2_val
         integer(ip) :: i, i0, i1, j0, j1, k
@@ -173,20 +244,16 @@ module grid_spacetime_interpolator_mod
 
             call gsi%setup_to_read_at_time(time)
 
-            if(.not. (time >= gsi%g1_time .and. time <= gsi%g2_time)) then
-                write(log_output_unit, *) "Logical error in grid_spacetime_interpolator"
-                call generic_stop
-            end if
-
             if(.not. (size(xs) == size(ys) .and. size(xs) == size(values(:,1)))) then
                 write(log_output_unit, *) "Sizes of xs, ys and the first-dim of values should be equal"
                 call generic_stop
             end if
-        end if
 
-        if(size(values, 2) /= size(gsi%g1, 3)) then
-            write(log_output_unit, *) "Error: The second dimension of values should have"
-            write(log_output_unit, *) "       the same size as the third dimension of gsi%g1"
+            if(size(values, 2) /= size(gsi%g1, 3)) then
+                write(log_output_unit, *) "Error: The second dimension of values should have"
+                write(log_output_unit, *) "       the same size as the third dimension of gsi%g1"
+            end if
+
         end if
 
         ! Time-interpolation weights
@@ -298,7 +365,7 @@ module grid_spacetime_interpolator_mod
         real(dp) :: dx, dy, x0, y0
         integer(ip), parameter :: ng = 2
         integer(ip) :: i, j, k
-        real(dp) :: tx(5), ty(5), tv(5,ng)
+        real(dp) :: tx(5), ty(5), tv(5,ng), test_grid(10, 20, ng)
         real(dp), parameter :: errtol = 3*spacing(100.0_dp) 
 
         ! x-coordinates of gsi
@@ -363,6 +430,22 @@ module grid_spacetime_interpolator_mod
                 print*, 'FAIL', abs(tv(:,k) - k*(time + cx * tx + cy * ty))
             end if
         end do
+
+        ! Finally check we can interpolate the grids in time
+        time = 0.6_dp*gsi%g1_time + 0.4_dp*gsi%g2_time
+        if(abs(time - (0.6_dp*50.0_dp + 0.4_dp*65.0_dp)) < errtol) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL', time, time - (0.6_dp*50.0_dp + 0.4_dp*65.0_dp), errtol
+        end if
+        call gsi%interpolate_grid_in_time(time, test_grid)
+        if(all(abs(test_grid - (0.6_dp * gsi%g1 + 0.4_dp * gsi%g2)) < errtol)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+        call gsi%finalise
 
     end subroutine
 

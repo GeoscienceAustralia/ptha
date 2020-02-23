@@ -53,11 +53,11 @@
         real(dp) :: uh_i_jp1_max_loop_index(domain%nx(1))
 
         ! Work-array indices for domain%advection_work(:,:,index)
-        !! FIXME: The code could be restructured to avoid the use of this memory.
-        !!        The current code was edited from the linear solver (which is much more memory efficient),
-        !!        and to simplify the implementation this large block of temporary storage was used.
-        !!        A re-write could follow the approach of the linear solver (where we store a few rows of data
-        !!        only, and take care with openmp to ensure the required data is available).
+        ! FIXME: The code could be restructured to avoid the use of this memory.
+        !        The current code was edited from the linear solver (which is much more memory efficient),
+        !        and to simplify the implementation this large block of temporary storage was used.
+        !        A re-write could follow the approach of the linear solver (where we store a few rows of data
+        !        only, and take care with openmp to ensure the required data is available).
         integer(ip), parameter :: DEPTH_LAG = 1, UUH = 2, UVH = 3, VUH = 4, VVH = 5
         real(dp) :: depth_local, inv_depth_local
 
@@ -96,8 +96,8 @@
         nx = domain%nx(1)
         ny = domain%nx(2)
      
-        !! For now don't try to support evolving a subset of rows/columns
-        !! (It may or may not work but needs to be tested).
+        ! For now don't try to support evolving a subset of rows/columns
+        ! (It may or may not work but needs to be tested).
         xL = 1 !domain%xL
         xU = nx !domain%xU
         yL = 1 !domain%yL
@@ -134,7 +134,7 @@
         if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
 
 
-        !! Boundary flux integration (relevant to single-domain case)
+        ! Boundary flux integration (relevant to single-domain case)
         ! note : U(i, j, UH) = UH_{i+1/2, j}
         !      : U(i, j, VH) = VH_{i, j+1/2}
         n_ext = domain%exterior_cells_width
@@ -328,9 +328,9 @@
         ! Compute fluxes once advection_work terms are all computed
         !$OMP BARRIER
 
-        !!
-        !! Simple upwind advection as in Tunawi and other schemes
-        !!
+        !
+        ! Simple upwind advection as in Tunawi and other schemes
+        !
 
         ! EW flux of UH
         do j = yl_omp, yu_omp
@@ -557,14 +557,14 @@
             domain%U(max(xL-1, 1), yl_omp, UH) )
 
 
-        !! No thread can start updating the loop until all threads have their
-        !! 'bounding' coriolis terms
+        ! No thread can start updating the loop until all threads have their
+        ! 'bounding' coriolis terms
         !$OMP BARRIER
-        !! BEWARE -- After the above barrier, we cannot safetly work with domain%U(:,:, UH:VH) EXCEPT when the j-index = j,
-        !! because it may have been updated on another openmp process. However we can work with domain%U(:,:,STG), and of
-        !! course ELV
+        ! BEWARE -- After the above barrier, we cannot safetly work with domain%U(:,:, UH:VH) EXCEPT when the j-index = j,
+        ! because it may have been updated on another openmp process. However we can work with domain%U(:,:,STG), and of
+        ! course ELV
 
-        !! Main update-flux loop
+        ! Main update-flux loop
         !do j = 1, ny - 1
         do j = yl_omp, yu_omp
 
@@ -794,7 +794,7 @@
         end do
             
 
-        !!!!!$OMP END DO
+        !@!$OMP END DO
         !$OMP END PARALLEL
         domain%time = domain%time + HALF_dp*dt
 

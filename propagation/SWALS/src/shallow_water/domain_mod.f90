@@ -387,14 +387,14 @@ module domain_mod
         procedure:: backup_quantities => backup_quantities
 
         ! Timestepping (consider making only 'evolve_one_step' type bound -- since the user should not really call others)
-        procedure:: one_euler_step => one_euler_step
-        procedure:: one_rk2_step => one_rk2_step 
-        procedure:: one_rk2n_step => one_rk2n_step 
-        procedure:: one_midpoint_step => one_midpoint_step
-        procedure:: one_linear_leapfrog_step => one_linear_leapfrog_step
-        procedure:: one_leapfrog_linear_plus_nonlinear_friction_step => one_leapfrog_linear_plus_nonlinear_friction_step
-        procedure:: one_leapfrog_nonlinear_step => one_leapfrog_nonlinear_step
-        procedure:: one_cliffs_step => one_cliffs_step
+        !procedure:: one_euler_step => one_euler_step
+        !procedure:: one_rk2_step => one_rk2_step 
+        !procedure:: one_rk2n_step => one_rk2n_step 
+        !procedure:: one_midpoint_step => one_midpoint_step
+        !procedure:: one_linear_leapfrog_step => one_linear_leapfrog_step
+        !procedure:: one_leapfrog_linear_plus_nonlinear_friction_step => one_leapfrog_linear_plus_nonlinear_friction_step
+        !procedure:: one_leapfrog_nonlinear_step => one_leapfrog_nonlinear_step
+        !procedure:: one_cliffs_step => one_cliffs_step
         procedure:: evolve_one_step => evolve_one_step
         procedure:: update_max_quantities => update_max_quantities
 
@@ -1344,38 +1344,38 @@ TIMER_START('evolve_one_step')
             end if
         case ('euler')
             if(present(timestep)) then
-                call domain%one_euler_step(timestep)
+                call one_euler_step(domain, timestep)
             else
-                call domain%one_euler_step()
+                call one_euler_step(domain)
             end if
         case ('rk2')
             if(present(timestep)) then
-                call domain%one_rk2_step(timestep)
+                call one_rk2_step(domain, timestep)
             else
-                call domain%one_rk2_step()
+                call one_rk2_step(domain)
             end if
         case('rk2n')
             if(present(timestep)) then
-                call domain%one_rk2n_step(timestep)
+                call one_rk2n_step(domain, timestep)
             else
-                call domain%one_rk2n_step()
+                call one_rk2n_step(domain)
             end if
         case ('midpoint')
             if(present(timestep)) then
-                call domain%one_midpoint_step(timestep)
+                call one_midpoint_step(domain, timestep)
             else
-                call domain%one_midpoint_step()
+                call one_midpoint_step(domain)
             end if
         case ('linear')
             if(present(timestep)) then
-                call domain%one_linear_leapfrog_step(timestep)
+                call one_linear_leapfrog_step(domain, timestep)
             else
                 write(domain%logfile_unit,*) 'ERROR: timestep must be provided for linear evolve_one_step'
                 call generic_stop()
             end if
         case ('leapfrog_linear_plus_nonlinear_friction')
             if(present(timestep)) then
-                call domain%one_leapfrog_linear_plus_nonlinear_friction_step(timestep)
+                call one_leapfrog_linear_plus_nonlinear_friction_step(domain, timestep)
             else
                 write(domain%logfile_unit,*) 'ERROR: timestep must be provided for ', &
                     'leapfrog_linear_plus_nonlinear_friction evolve_one_step'
@@ -1385,7 +1385,7 @@ TIMER_START('evolve_one_step')
         case('leapfrog_nonlinear')
 
             if(present(timestep)) then
-                call domain%one_leapfrog_nonlinear_step(timestep)
+                call one_leapfrog_nonlinear_step(domain, timestep)
             else
                 write(domain%logfile_unit,*) 'ERROR: timestep must be provided for ', &
                     'leapfrog_nonlinear evolve_one_step'
@@ -1394,7 +1394,7 @@ TIMER_START('evolve_one_step')
 
         case ('cliffs')
             if(present(timestep)) then
-                call domain%one_cliffs_step(timestep)
+                call one_cliffs_step(domain, timestep)
             else
                 write(domain%logfile_unit,*) 'ERROR: timestep must be provided for ', &
                     'cliffs evolve_one_step'
