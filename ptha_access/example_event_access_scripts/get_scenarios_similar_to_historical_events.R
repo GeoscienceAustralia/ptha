@@ -447,3 +447,16 @@ for(i in 1:length(scenarios_like_events)){
 }
 dev.off()
 
+# Rasters to a file
+out_dir = 'ptha18_scenario_initial_conditions'
+dir.create(out_dir, showWarnings=FALSE)
+for(i in 1:length(scenarios_like_events)){
+    for(j in 1:length(source_zone_data[[i]]$desired_event_rows)){
+        out_name = paste0(out_dir, '/', scenarios_like_events[[i]]$source_zone, '_', 
+                          scenarios_like_events[[i]]$desired_event_rows[j], '_', 
+                          basename(scenarios_like_events[[i]]$stats_file), '.tif')
+        writeRaster(source_zone_data[[i]]$deformation_rasters[[j]], out_name)
+    }
+}
+
+
