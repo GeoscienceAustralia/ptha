@@ -147,7 +147,10 @@ get_gauges_mixed_binary_format<-function(output_folder){
 get_gauges_netcdf_format<-function(output_folder){
     library('ncdf4')
 
-    gauge_fid = nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1])
+    gauge_fid = try(nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1], readunlim=FALSE))
+    if(class(gauge_fid) == 'try-error'){
+        return(gauge_fid)        
+    }
     lon = ncvar_get(gauge_fid, 'lon')
     lat = ncvar_get(gauge_fid, 'lat')
     time = ncvar_get(gauge_fid, 'time')
@@ -189,6 +192,8 @@ get_gauges_netcdf_format<-function(output_folder){
         if(x$value == 'true') priority_gauges_only=TRUE
     }
 
+    nc_close(gauge_fid)
+
     outputs = list(lon=lon, lat=lat, time=time, gaugeID=gaugeID, 
         static_var=static_var, time_var=time_series_var, 
         priority_gauges_only=priority_gauges_only)
@@ -199,12 +204,33 @@ get_gauges_netcdf_format<-function(output_folder){
 #'
 get_gauges<-function(output_folder){
 
-    outputs = try(get_gauges_mixed_binary_format(output_folder), silent=TRUE)
+    outputs = try(get_gauges_netcdf_format(output_folder), silent=TRUE)
     if(class(outputs) == 'try-error'){
-        outputs = try(get_gauges_netcdf_format(output_folder), silent=TRUE)
+        outputs = try(get_gauges_mixed_binary_format(output_folder), silent=TRUE)
     }
 
     return(outputs)
+}
+
+
+#' Get a global attribute from a netcdf file
+#'
+#' The netcdf file can be provided as a filename (in which case the function
+#' opens,reads, and closes the file) or an existing file-handle (in which case
+#' the function only reads the attribute)
+#'
+#' @param nc_file netcdf file name, or file object created by a call to 'ncdf4::nc_open'
+#' @param attname name of global attribute in the file
+#
+get_nc_global_attribute<-function(nc_file, attname){
+    if(class(nc_file) == 'character'){
+        fid = nc_open(nc_file, readunlim=FALSE)
+        bbox = ncatt_get(fid, varid=0, attname=attname)
+        nc_close(fid)
+    }else{
+        bbox = ncatt_get(fid, varid=0, attname=attname)
+    }
+    return(bbox)
 }
 
 #' Quickly read domain outputs
@@ -274,7 +300,10 @@ get_gridded_variable<-function(var = 'Var_1', drop_walls=FALSE, output_folder = 
 # Because this can sometimes be prohibitive due to memory issues,
 # provide options to skip grids and gauges
 get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauges=TRUE, 
-                                 always_read_priority_domain=FALSE, quiet=FALSE, 
+                                 read_time_and_geometry = TRUE, 
+                                 always_read_priority_domain=FALSE, 
+                                 always_read_xy = read_time_and_geometry,
+                                 quiet=FALSE, 
                                  always_read_max_grids=FALSE){
 
     if(quiet) sink(tempfile())
@@ -310,20 +339,32 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
         is_priority_domain = try(get_gridded_variable(var='is_priority_domain', output_folder=output_folder), silent=TRUE)
     }
 
-    # time is often not written until the sim is finished
-    time = try(get_time(output_folder), silent=TRUE) 
-    nx = try(get_model_dim(output_folder), silent=TRUE)
-    dx = try(get_dx(output_folder), silent=TRUE)
-    lower_left_corner = try(get_lower_left_corner(output_folder), silent=TRUE)
-
-    # x and y --  get from netcdf if we can
-    xs = try(get_gridded_variable(var='x', output_folder=output_folder), silent=TRUE)
-    if(class(xs) != 'try_error'){
-        ys = try(get_gridded_variable(var='y', output_folder=output_folder), silent=TRUE)
+    if(read_time_and_geometry){
+        # time is often not written until the sim is finished
+        time = try(get_time(output_folder), silent=TRUE) 
+        nx = try(get_model_dim(output_folder), silent=TRUE)
+        dx = try(get_dx(output_folder), silent=TRUE)
+        lower_left_corner = try(get_lower_left_corner(output_folder), silent=TRUE)
     }else{
-        # Old-style, beware this does not work with decimated output
-        xs = lower_left_corner[1] + ((1:nx[1]) - 0.5) * dx[1]
-        ys = lower_left_corner[2] + ((1:nx[2]) - 0.5) * dx[2]
+        time = NULL
+        nx = NULL
+        dx = NULL
+        lower_left_corner = NULL
+    }
+
+    if(always_read_xy){
+        # x and y --  get from netcdf if we can
+        xs = try(get_gridded_variable(var='x', output_folder=output_folder), silent=TRUE)
+        if(class(xs) != 'try_error'){
+            ys = try(get_gridded_variable(var='y', output_folder=output_folder), silent=TRUE)
+        }else{
+            # Old-style, beware this does not work with decimated output
+            xs = lower_left_corner[1] + ((1:nx[1]) - 0.5) * dx[1]
+            ys = lower_left_corner[2] + ((1:nx[2]) - 0.5) * dx[2]
+        }
+    }else{
+        xs = NULL
+        ys = NULL
     }
 
     if(read_gauges){
@@ -533,7 +574,7 @@ is_on_priority_domain<-function(x, y, domain){
 
 
 # Given a domain object (i.e. output from 'get_all_recent_results'), find the index and
-# distance of the point nearest to 'x', 'y'
+# distance of the point (grid-cell) nearest to 'x', 'y'
 nearest_point_in_domain<-function(x, y, domain){
 
     kx = which.min(abs(x-domain$xs))
@@ -747,8 +788,9 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
 #' @param md list with the multidomain info.
 #' @param multidomain_dir the directory containing all the multdomain outputs. 
 #' If this is provided then md should be NA, and the code will read the necessary information
+#' @param assume_all_gauges_are_priority If TRUE this assumes 
 #'
-merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
+merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauges_are_priority=TRUE){
    
     # For all gauges, figure out if they are in the priority domain
     clean_gauges = list()
@@ -773,7 +815,8 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
         # Read the multidomain info
         # We can avoid most variables except the gauges
         md = lapply(md_domains, 
-                    f<-function(x) get_all_recent_results(x, read_grids=FALSE, always_read_priority_domain=FALSE) )
+                    f<-function(x) get_all_recent_results(x, read_grids=FALSE, always_read_priority_domain=FALSE,
+                                                          read_time_and_geometry=(!assume_all_gauges_are_priority)) )
 
         # Check if the gauges are all in their priority domain. If so, we can
         # avoid an expensive computation to derive this info
@@ -867,8 +910,12 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA){
                 # There is only one gauge in the whole thing. Since length(keep) > 0, this must be it
                 dim(clean_gauges[[counter]]$time_var[[i]]) = c(1, length(clean_gauges[[counter]]$time_var[[i]])) 
             }else{
-                # There is more than one gauge
-                clean_gauges[[counter]]$time_var[[i]] = clean_gauges[[counter]]$time_var[[i]][keep,,drop=FALSE] 
+                # There is more than one gauge. If we have
+                # priority_gauges_only, then keep includes all rows and we can
+                # do nothing
+                if(!clean_gauges[[counter]]$priority_gauges_only){
+                    clean_gauges[[counter]]$time_var[[i]] = clean_gauges[[counter]]$time_var[[i]][keep,,drop=FALSE] 
+                }
             }
         }
         # Static variables
@@ -1392,4 +1439,72 @@ get_domain_wallclock_times_in_log<-function(md_log_file, wallclock_time_line_spa
 
     output = data.frame(domains=domains, times=times, index=domain_number)
     return(output)
+}
+
+#' Find the domain thas has a given point in its priority domain, 
+#' while minimising the amount/time reading data
+#'
+#' @param xy_mat a 2-colum matrix with point coordinates
+#' @param md result of get_multidomain or similar (i.e. list of domain objects)
+#' @param multidomain_dir name of the directory containing the multidomain
+#' 
+find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
+
+    if(!is.null(multidomain_dir)){
+        if(length(md) != 0) stop("cannot provide both multidomain_dir and md")
+
+        # Read the multidomain, getting only the x/y coordinates
+        md = get_multidomain(multidomain_dir, read_grids=FALSE, read_gauges=FALSE, 
+            read_time_and_geometry=FALSE, always_read_xy=TRUE, quiet=TRUE)
+    }
+    
+    # "xy_mat" should be a matrix -- but if it is a vector of length(2), then assume
+    # this gives the xy coordinates of a single point, and coerce to a matrix
+    if(length(dim(xy_mat)) == 0){
+        if(length(xy_mat) == 2){
+            dim(xy_mat) = c(1, 2)
+        }
+    }
+
+    # Find dx/dy for each domain, and take the product as the 'cell area', with finer
+    # cell-areas having higher priority domains
+    md_cell_dx = unlist(lapply(md, f<-function(x) x$xs[2] - x$xs[1])) 
+    md_cell_dy = unlist(lapply(md, f<-function(x) x$ys[2] - x$ys[1]))
+    md_cell_areas = md_cell_dx * md_cell_dy 
+    
+    # Get the "interior bounding box" of each domain    
+    md_bboxes = vector(mode='list', length=length(md))
+    for(i in 1:length(md)){
+        nc_file = Sys.glob(paste0(md[[i]]$output_folder, '/Grid_output_*.nc'))
+        tmp_text = get_nc_global_attribute(nc_file, 'interior_bounding_box')
+        md_bboxes[[i]] = matrix(as.numeric(scan(text=tmp_text$value, quiet=TRUE)), ncol=2)
+    }
+
+
+    md_cell_xmin = unlist(lapply(md_bboxes, f<-function(x) min(x[,1])))
+    md_cell_xmax = unlist(lapply(md_bboxes, f<-function(x) max(x[,1])))
+    md_cell_ymin = unlist(lapply(md_bboxes, f<-function(x) min(x[,2])))
+    md_cell_ymax = unlist(lapply(md_bboxes, f<-function(x) max(x[,2])))
+
+    point_domain = rep(NA, nrow(xy_mat))
+    point_dir = rep(NA, nrow(xy_mat))
+    for(i in 1:nrow(xy_mat)){
+        xy = xy_mat[i,1:2]
+        point_in_domain = (xy[1] >= md_cell_xmin) & (xy[1] <= md_cell_xmax) & 
+                          (xy[2] >= md_cell_ymin) & (xy[2] <= md_cell_ymax)
+
+        if(!any(point_in_domain)){
+            next
+        }else{
+            local_areas = md_cell_areas
+            local_areas[!point_in_domain] = Inf
+            point_domain[i] = which.min(local_areas)
+            point_dir[i] = md[[point_domain[i]]]$output_folder
+        }
+    }
+
+    output = list(points = xy_mat, domain_index=point_domain, domain_dir=point_dir)
+
+    return(output)
+
 }
