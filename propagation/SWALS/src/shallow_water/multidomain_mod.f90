@@ -81,7 +81,7 @@ module multidomain_mod
 #endif
         !! If we are doing coarray communication, the puts are non-blocking, and we
         !! sync at the start/end of md%recv_halos. But if MPI is used for the main
-        !! communication, this is not required (because alltoallv is blocking)
+        !! communication this is not required.
 
 
     integer(ip), parameter :: extra_halo_buffer_default = 0_ip !
@@ -3374,16 +3374,20 @@ module multidomain_mod
 
             ! Grids
             if(mod(md%writeout_counter, write_grids_n) == 0) then
+                !!$OMP PARALLEL DO DEFAULT(SHARED)
                 do j = 1, size(md%domains)
                     call md%domains(j)%write_to_output_files()
                 end do
+                !!$OMP END PARALLEL DO
             end if
 
             ! Gauges
             if(mod(md%writeout_counter, write_gauges_n) == 0) then
+                !!$OMP PARALLEL DO DEFAULT(SHARED)
                 do j = 1, size(md%domains)
                     call md%domains(j)%write_gauge_time_series()
                 end do
+                !!$OMP END PARALLEL DO
             end if
 
             ! Update variables controlling the write frequency

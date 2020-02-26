@@ -129,7 +129,7 @@ module coarray_point2point_comms_mod
     use coarray_intrinsic_alternatives, only: sync_all_generic, this_image2, num_images2
 #endif
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
-    ! The 'inner loop' put will use MPI_IAllToAllv
+    ! The 'inner loop' communication will use mpi rather than coarrays
     use mpi
 #endif
     implicit none
@@ -257,8 +257,10 @@ module coarray_point2point_comms_mod
     integer, allocatable:: mympi_send_displacements(:), mympi_recv_displacements(:)
     ! Variables required for MPI_ISEND and MPI_IRECV. This is an alternative to using alltoallv.
     integer, allocatable :: mpi_recv_requests(:), mpi_send_requests(:)
-    ! NOTE/FIXME: Currently we allocate buffers for both the 'alltoallv' and the 'isend/irecv' versions
-    ! The memory is probably unimportant, but it could be cleaner to only do one or the other
+
+    logical, parameter :: mpi_timestep_loop_use_alltoallv = .false.
+        ! If TRUE then use mpi_alltoallv in the inner communication loop
+        ! Otherwise use mpi_isend/irecv
 
 #ifdef REALFLOAT
     integer :: mympi_dp = MPI_REAL
@@ -747,73 +749,77 @@ module coarray_point2point_comms_mod
 
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
 
-
-        ! Allocate key input variables for mpi_alltoallv
+        ! Allocate key input variables for mpi_comms
         if(.not. reorder_send_data_by_image) then
             write(log_output_unit, *) 'ERROR: If COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined,'
             write(log_output_unit, *) 'then must have reorder_send_data_by_image=.true, so that'
             write(log_output_unit, *) 'there is only one send from image A to image B'
             call local_stop
         end if
-        allocate(mympi_send_counts(num_images_local), mympi_send_displacements(num_images_local))
-        allocate(mympi_recv_counts(num_images_local), mympi_recv_displacements(num_images_local))
-        !print*, 'BEGIN MPI STUFF'
 
-        mympi_send_counts = 0
-        mympi_recv_counts = 0
-        mympi_send_displacements = 0
-        mympi_recv_displacements = 0
+        if(mpi_timestep_loop_use_alltoallv) then
+            ! Define variables needed for mpi_alltoallv
 
-        ! Set the values for MPI_alltoallv, based on the metadata above
-        do i = 1, num_images_local
-            if(allocated(sendto_image_index)) then
-                if(any(sendto_image_index == i)) then
-                    ! Set the send information 
+            allocate(mympi_send_counts(num_images_local), mympi_send_displacements(num_images_local))
+            allocate(mympi_recv_counts(num_images_local), mympi_recv_displacements(num_images_local))
+            !print*, 'BEGIN MPI STUFF'
 
-                    ! Find the first index with image == i
-                    do j = 1, size(sendto_image_index)
-                        if(sendto_image_index(j) == i) then
-                            n = j 
-                            exit
+            mympi_send_counts = 0
+            mympi_recv_counts = 0
+            mympi_send_displacements = 0
+            mympi_recv_displacements = 0
+
+            ! Set the values for MPI_alltoallv, based on the metadata above
+            do i = 1, num_images_local
+                if(allocated(sendto_image_index)) then
+                    if(any(sendto_image_index == i)) then
+                        ! Set the send information 
+
+                        ! Find the first index with image == i
+                        do j = 1, size(sendto_image_index)
+                            if(sendto_image_index(j) == i) then
+                                n = j 
+                                exit
+                            end if
+                        end do
+                        ! If the start index is 'p', the MPI displacement is 'p-1'
+                        mympi_send_displacements(i) = send_start_index(n) - 1
+                        if(size(send_size) > 0) then
+                            mympi_send_counts(i) = sum(send_size, mask=(sendto_image_index == i))
+                        else
+                            mympi_send_counts(i) = 0 
                         end if
-                    end do
-                    ! If the start index is 'p', the MPI displacement is 'p-1'
-                    mympi_send_displacements(i) = send_start_index(n) - 1
-                    if(size(send_size) > 0) then
-                        mympi_send_counts(i) = sum(send_size, mask=(sendto_image_index == i))
-                    else
-                        mympi_send_counts(i) = 0 
                     end if
                 end if
-            end if
-            ! As above, for recv information
-            if(allocated(recvfrom_image_index)) then
-                if(any(recvfrom_image_index == i)) then
-                    ! Set the recv information 
+                ! As above, for recv information
+                if(allocated(recvfrom_image_index)) then
+                    if(any(recvfrom_image_index == i)) then
+                        ! Set the recv information 
 
-                    ! Find the first index with image == i
-                    do j = 1, size(recvfrom_image_index)
-                        if(recvfrom_image_index(j) == i) then
-                            n = j 
-                            exit
+                        ! Find the first index with image == i
+                        do j = 1, size(recvfrom_image_index)
+                            if(recvfrom_image_index(j) == i) then
+                                n = j 
+                                exit
+                            end if
+                        end do
+                        ! If the start index is 'p', the MPI displacement is 'p-1'
+                        mympi_recv_displacements(i) = recv_start_index(n) - 1
+                        if(size(recv_size) > 0) then
+                            mympi_recv_counts(i) = sum(recv_size, mask=(recvfrom_image_index == i))
+                        else
+                            mympi_recv_counts(i) = 0
                         end if
-                    end do
-                    ! If the start index is 'p', the MPI displacement is 'p-1'
-                    mympi_recv_displacements(i) = recv_start_index(n) - 1
-                    if(size(recv_size) > 0) then
-                        mympi_recv_counts(i) = sum(recv_size, mask=(recvfrom_image_index == i))
-                    else
-                        mympi_recv_counts(i) = 0
                     end if
                 end if
-            end if
-        end do
-
-        ! For isend/irecv
-        allocate(mpi_recv_requests(size(recv_start_index)))
-        mpi_recv_requests = MPI_REQUEST_NULL
-        allocate(mpi_send_requests(size(send_start_index)))
-        mpi_send_requests = MPI_REQUEST_NULL
+            end do
+        else
+            ! Define variables for mpi_isend/irecv - an alternative to the alltoallv approach
+            allocate(mpi_recv_requests(size(recv_start_index)))
+            mpi_recv_requests = MPI_REQUEST_NULL
+            allocate(mpi_send_requests(size(send_start_index)))
+            mpi_send_requests = MPI_REQUEST_NULL
+        end if
 #endif
 
     end subroutine
@@ -1095,15 +1101,12 @@ module coarray_point2point_comms_mod
         integer:: mympi_my_ierr
         integer :: i, mpi_count, mpi_source, mpi_dest, mpi_ierr, mpi_tag
 
-        ! Switch between 2 methods for communicating -- either alltoallv, or a bunch of isend/irecv
-        logical, parameter :: use_alltoallv = .FALSE.
-
         if (.not. reorder_send_data_by_image) then
            write(log_output_unit, *) 'ERROR: communicate_p2p with MPI assumes reorder_send_data_by_image=.true'
            call local_stop
         end if
    
-        if(use_alltoallv) then
+        if(mpi_timestep_loop_use_alltoallv) then
             !
             ! Version using mpi_alltoallv
             !
