@@ -159,8 +159,9 @@ source('plot_hazard_curves_utilities.R', local=plot_hazard_curves_utilities)
 #' @param lon longitude near the gauge to check
 #' @param lat latitude near the gauge to check
 #' @param output_dir directory for the pdf plot
+#' @param alternative_ex_rates A vector of exceedance rates for deaggregation plots. The default is c(1/100, 1/500, 1/2500)
 #'
-quick_source_deagg<-function(lon, lat, output_dir='.'){
+quick_source_deagg<-function(lon, lat, output_dir='.', alternative_ex_rates = NULL){
 
     tsunami_files = Sys.glob(
         '../SOURCE_ZONES/*/TSUNAMI_EVENTS/all_stochastic_slip_earthquake_events_tsunami_*.nc')
@@ -533,7 +534,11 @@ quick_source_deagg<-function(lon, lat, output_dir='.'){
     gc()
 
     # Plot at a few exceedance rates, median curve
-    ex_rates = c(1/100, 1/500, 1/2500)
+    if(is.null(alternative_ex_rates)){
+        ex_rates = c(1/100, 1/500, 1/2500)
+    }else{
+        ex_rates = alternative_ex_rates
+    }
     stages_ex_rates_mean = approx(ers, stages, xout=ex_rates, ties='min')$y
     median_rates_for_stages   = approx(stages, ers_median, xout=stages_ex_rates_mean)$y
     for(sv in 1:length(ex_rates)){
