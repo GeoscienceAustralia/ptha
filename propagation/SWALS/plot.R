@@ -64,7 +64,7 @@ get_model_output_precision<-function(output_folder){
     return(dp)
 }
 
-#' Get the domain outputs in a mixed-binary format
+#' Get the domain outputs in a DEFUNCT mixed-binary format
 #'
 #' This has been superceeded by netcdf -- but is occasionally useful if one has
 #' netcdf compilation problems.
@@ -147,7 +147,7 @@ get_gauges_mixed_binary_format<-function(output_folder){
 get_gauges_netcdf_format<-function(output_folder){
     library('ncdf4')
 
-    gauge_fid = try(nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1], readunlim=FALSE))
+    gauge_fid = try(nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1], readunlim=FALSE), silent=TRUE)
     if(class(gauge_fid) == 'try-error'){
         return(gauge_fid)        
     }
@@ -200,7 +200,7 @@ get_gauges_netcdf_format<-function(output_folder){
     return(outputs)
 }
 
-#' Read EITHER the netcdf gauges OR the mixed binary format
+#' Read EITHER the netcdf gauges OR the DEFUNCT mixed binary format
 #'
 get_gauges<-function(output_folder){
 
@@ -249,7 +249,7 @@ get_gridded_variable<-function(var = 'Var_1', drop_walls=FALSE, output_folder = 
 
     nc_file = Sys.glob(paste0(output_folder, '/Grid_output_*.nc'))
 
-    # If netcdf output does not exist, then use home-brew binary
+    # If netcdf output does not exist, then use home-brew binary (DEFUNCT)
     if(length(nc_file) != 1){
     
         # FIXME: Update for parallel

@@ -255,6 +255,11 @@ module coarray_point2point_comms_mod
     ! integer, etc.
     integer, allocatable:: mympi_send_counts(:), mympi_recv_counts(:) 
     integer, allocatable:: mympi_send_displacements(:), mympi_recv_displacements(:)
+    ! Variables required for MPI_ISEND and MPI_IRECV. This is an alternative to using alltoallv.
+    integer, allocatable :: mpi_recv_requests(:), mpi_send_requests(:)
+    ! NOTE/FIXME: Currently we allocate buffers for both the 'alltoallv' and the 'isend/irecv' versions
+    ! The memory is probably unimportant, but it could be cleaner to only do one or the other
+
 #ifdef REALFLOAT
     integer :: mympi_dp = MPI_REAL
 #else
@@ -759,7 +764,7 @@ module coarray_point2point_comms_mod
         mympi_send_displacements = 0
         mympi_recv_displacements = 0
 
-        ! Set the values for MPI_alltoallw, based on the metadata above
+        ! Set the values for MPI_alltoallv, based on the metadata above
         do i = 1, num_images_local
             if(allocated(sendto_image_index)) then
                 if(any(sendto_image_index == i)) then
@@ -804,6 +809,11 @@ module coarray_point2point_comms_mod
             end if
         end do
 
+        ! For isend/irecv
+        allocate(mpi_recv_requests(size(recv_start_index)))
+        mpi_recv_requests = MPI_REQUEST_NULL
+        allocate(mpi_send_requests(size(send_start_index)))
+        mpi_send_requests = MPI_REQUEST_NULL
 #endif
 
     end subroutine
@@ -842,6 +852,8 @@ module coarray_point2point_comms_mod
         if(allocated(mympi_recv_counts)) deallocate(mympi_recv_counts)
         if(allocated(mympi_send_displacements)) deallocate(mympi_send_displacements)
         if(allocated(mympi_recv_displacements)) deallocate(mympi_recv_displacements)
+        if(allocated(mpi_recv_requests)) deallocate(mpi_recv_requests)
+        if(allocated(mpi_send_requests)) deallocate(mpi_send_requests)
         call sync_all_generic
 #endif
 
@@ -1081,26 +1093,64 @@ module coarray_point2point_comms_mod
         !!
    
         integer:: mympi_my_ierr
+        integer :: i, mpi_count, mpi_source, mpi_dest, mpi_ierr, mpi_tag
+
+        ! Switch between 2 methods for communicating -- either alltoallv, or a bunch of isend/irecv
+        logical, parameter :: use_alltoallv = .FALSE.
 
         if (.not. reorder_send_data_by_image) then
-           write(log_output_unit, *) 'ERROR: communicate_mpi_iall2allv requires reorder_send_data_by_image=.true'
+           write(log_output_unit, *) 'ERROR: communicate_p2p with MPI assumes reorder_send_data_by_image=.true'
            call local_stop
         end if
-    
-        !NOTE -- send_size, recv_size, send_start_index, recv_start_index, ierr, need to be of type integer
-        !        also send_size, etc need to be the of size num_images()
-        call mpi_alltoallv(send_buffer , mympi_send_counts, mympi_send_displacements, mympi_dp, &
-                           recv_buffer , mympi_recv_counts, mympi_recv_displacements, mympi_dp, &
-                           MPI_COMM_WORLD, mympi_my_ierr)
-  
-        if(mympi_my_ierr /= 0) then 
-            write(log_output_unit,*) 'FAIL, MPI_alltoallv error: mympi_my_ierr= ', mympi_my_ierr
-            write(log_output_unit,*) __LINE__,&
-                __FILE__
-            call local_stop
-        end if
+   
+        if(use_alltoallv) then
+            !
+            ! Version using mpi_alltoallv
+            !
 
+            !NOTE -- send_size, recv_size, send_start_index, recv_start_index, ierr, need to be of type integer
+            !        also send_size, etc need to be the of size num_images()
+            call mpi_alltoallv(send_buffer , mympi_send_counts, mympi_send_displacements, mympi_dp, &
+                               recv_buffer , mympi_recv_counts, mympi_recv_displacements, mympi_dp, &
+                               MPI_COMM_WORLD, mympi_my_ierr)
+      
+            if(mympi_my_ierr /= 0) then 
+                write(log_output_unit,*) 'FAIL, MPI_alltoallv error: mympi_my_ierr= ', mympi_my_ierr
+                write(log_output_unit,*) __LINE__,&
+                    __FILE__
+                call local_stop
+            end if
+        else
+            !
+            ! Version using repeated isend/irecv calls. 
+            !
  
+            ! Open up receives         
+            do i = 1, size(recv_start_index)
+                mpi_count = recv_size(i)
+                mpi_source = recvfrom_image_index(i) - 1
+                
+                call mpi_irecv(recv_buffer(recv_start_index(i):(recv_start_index(i) + recv_size(i) - 1)), &
+                    mpi_count, mympi_dp, mpi_source, MPI_ANY_TAG, MPI_COMM_WORLD, mpi_recv_requests(i), mpi_ierr)
+
+            end do
+            
+            ! Do sends
+            do i = 1, size(send_start_index)
+                mpi_count = send_size(i)
+                mpi_dest = sendto_image_index(i) - 1
+                mpi_tag = i
+                call mpi_isend(send_buffer(send_start_index(i):(send_start_index(i) + send_size(i) - 1)), &
+                    mpi_count, mympi_dp, mpi_dest, mpi_tag, MPI_COMM_WORLD, mpi_send_requests(i), mpi_ierr)
+            end do
+
+            ! Ensure completion -- more strategic location of these calls would be possible
+            mpi_count = size(send_start_index)
+            call mpi_waitall(mpi_count, mpi_send_requests, MPI_STATUSES_IGNORE, mpi_ierr)
+            mpi_count = size(mpi_recv_requests)
+            call mpi_waitall(mpi_count, mpi_recv_requests, MPI_STATUSES_IGNORE, mpi_ierr)
+        end if 
+
     end subroutine
 #endif
 
