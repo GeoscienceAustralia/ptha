@@ -122,7 +122,7 @@ Note you have to manually edit the script to specify whethere variable shear mod
 
 ## Plotting routines are
 
-*(NOTE -- it is preferable to use revised versions of the routines discussed in this paragraph -- see the section below named "Updated stage-vs-exceedance-rate percentile uncertainty calculations")* 
+*(NOTE -- it is preferable to use revised versions of the routines discussed [here](#updated-stage-vs-exceedance-rate-percentile-uncertainty-calculations))* 
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
 contains code to make diagnostic plots that help to understand the result at a
 single point.  The plots are designed both to convey the results, and try to
