@@ -44,9 +44,9 @@ are not tightly integrated with the previous computations*):
 3. To make a shapefile for 'general-plot' purposes, run [clean_shapefiles_for_plotting.R](clean_shapefiles_for_plotting.R).
 
 You can also use
-[quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
+[revised_quick_station_stage_exceedance_rates.R](revised_quick_station_stage_exceedance_rates.R)
 to make 'standard station deaggregation plots' on-demand. To assist with batch-production of such
-plots, see [quick_station_plots_all_sites.R](quick_station_plots_all_sites.R)
+plots, see [revised_quick_station_plots_all_sites.R](revised_quick_station_plots_all_sites.R)
 which runs a group of hazard points based on their longitude.
 
 ## Details
@@ -122,6 +122,7 @@ Note you have to manually edit the script to specify whethere variable shear mod
 
 ## Plotting routines are
 
+*(DEFUNCT -- it is preferable to use [the revised versions of these routines](updated-stage-vs-exceedance-rate-percentile-uncertainty-calculations))* 
 [quick_station_stage_exceedance_rates.R](quick_station_stage_exceedance_rates.R)
 contains code to make diagnostic plots that help to understand the result at a
 single point.  The plots are designed both to convey the results, and try to
