@@ -317,15 +317,15 @@ source_names_4 = basename(dirname(dirname(all_source_stochastic_slip_tsunami)))
 source_names_5 = basename(dirname(dirname(all_source_variable_uniform_slip_tsunami)))
 
 if(!all(source_names_1 == source_names_2)){
-    stop('unit_source_statistics_netcdf_files and unit_source_grid_polygon_shapefiles must refer to the same source-zones, in the same order')
+    stop('unit_source_statistics_netcdf_files and unit_source_grid_polygon_shapefiles must refer to the same source-zones, in the same order. Ensure the files have a natural pairing. If they do, but their sort order is inconsistent, it might be fixed by setting an environment variable (export LC_ALL=C) before running')
 }
 if(!all(source_names_1 == source_names_3)){
-    stop('unit_source_statistics_netcdf_files and all_source_uniform_slip_tsunami must refer to the same source-zones, in the same order')
+    stop('unit_source_statistics_netcdf_files and all_source_uniform_slip_tsunami must refer to the same source-zones, in the same order. Ensure the files have a natural pairing. If their sort order is inconsistent, it might be fixed by setting an environment variable (export LC_ALL=C) before running')
 }
 if(!all(source_names_1 == source_names_4)){
-    stop('unit_source_statistics_netcdf_files and all_source_stochastic_slip_tsunami must refer to the same source-zones, in the same order')
+    stop('unit_source_statistics_netcdf_files and all_source_stochastic_slip_tsunami must refer to the same source-zones, in the same order. Ensure the files have a natural pairing. If their sort order is inconsistent, it might be fixed by setting an environment variable (export LC_ALL=C) before running')
 }
 if(!all(source_names_1 == source_names_5)){
-    stop('unit_source_statistics_netcdf_files and all_source_variable_uniform_slip_tsunami must refer to the same source-zones, in the same order')
+    stop('unit_source_statistics_netcdf_files and all_source_variable_uniform_slip_tsunami must refer to the same source-zones, in the same order. Ensure the files have a natural pairing. If their sort order is inconsistent, it might be fixed by setting an environment variable (export LC_ALL=C) before running')
 }
 
