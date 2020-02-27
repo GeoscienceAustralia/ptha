@@ -8,15 +8,16 @@ From within R, do this.
 
 ```{r loadvars, results='hide'}
     library(rptha) # Get the package
-    load('3D_displacements_R_image.Rdata') # Get the data (the file is on gadi in the directory you found)
-    
     # Also get a fresh version of the get_PTHA_results.R script.
     ptha18_access = new.env()
     source('../../../ptha_access/get_PTHA_results.R', local=ptha18_access, chdir=TRUE)
-    # Versions of those functions will already be loaded (because they were used in the 
+    # Versions of those functions will be loaded again below (because they were used in the 
     # session that was saved in 3D_displacements_R_image.Rdata). But they
     # are configured incorrectly because that session was run on NCI. Here we put
     # them in their own environment (ptha18_access) to avoid any conflicts
+
+    load('3D_displacements_R_image.Rdata') # Get the data (the file is on gadi in the directory you found)
+    
 ```
 
 The above command will make your R session contain a bunch of variables, just
@@ -116,9 +117,13 @@ As a first step to understand the problem better, lets ignore these issues and w
 
 From perusing the [hazard points](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.csv), I decided to look at the gauge with ID=3458.3. We can get the max-stage values (over the 36 hour simulation) with:
 ```{r maxstage}
-max_stages = ptha18$get_peak_stage_at_point_for_each_event(hazard_point_gaugeID = 3458.3, 
+max_stages = ptha18_access$get_peak_stage_at_point_for_each_event(hazard_point_gaugeID = 3458.3, 
     all_source_names=list('kermadectonga2'), include_earthquake_data=FALSE)
+
+# Have a look at the structure of max_stages
+str(max_stages)
 
 ```
 
+From the `str` command, you can see that `max_stages` is a list containing a single entry named `kermadectonga2`. We could have asked for additional source-zones in creating it, and they would have been stored in other list entries. The list `max_stages$kermadectonga2` itself has 3 entries: one is a vector of `max_stage` values, and the other two report the slip-type and the index of the hazard point.
 
