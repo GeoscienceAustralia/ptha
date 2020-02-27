@@ -307,7 +307,7 @@ xyz_displacement_events[30:50,]
 ## [21,] 0.000000e+00 0.0000000000 0.000000e+00
 ```
 
-Notice how many of the displacements are zero. The reason for this is that in the PTHA18 unit-source construction, we only compute the Okada deformation within a neighbourhood of the unit-source (radius = 20x unit-source depth). This neighbourhood is larger for deep unit-sources, and shallower for near-trench sources. But if earthquakes only include unit-sources far from our `target_pt`, the displacement is zero.
+Notice how many of the displacements are zero. The reason for this is that in the PTHA18 unit-source construction, we only compute the Okada deformation within a neighbourhood of the unit-source. For each sub-unit-source, we ignore points with distance more than 20x the sub-unit-source depth (execept we always include points within 20 km). This neighbourhood is larger for deep unit-sources, and shallower for near-trench sources. But if earthquakes only include unit-sources far from our `target_pt`, the displacement is zero.
 
 If you would like to use a larger radius for the Okada calculation, to reduce the number of zero displacement events, we can change the variable `okada_distance_factor` in [config.R](config.R) and re-run the unit-source creation code.
 
