@@ -9,7 +9,7 @@ From within R, do this.
 
 ```r
     library(rptha) # Get the package
-    load('3D_displacements_R_image.Rdata') # Get the data (on gadi)
+    load('3D_displacements_R_image.Rdata') # Get the data (the file is on gadi in the directory you found)
 ```
 
 The above command will make your R session contain a bunch of variables, just
