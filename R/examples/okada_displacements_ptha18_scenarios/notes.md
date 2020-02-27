@@ -216,6 +216,8 @@ Important columns include:
 We can get the indices of possible events like so
 
 ```r
+# Get events where at least one logic-tree branch says they can occur.
+# They still might be impossible according to other logic-tree branches.
 possible_inds = which(kt2$events$rate_annual > 0)
 head(possible_inds)
 ```
@@ -357,5 +359,24 @@ str(max_stages)
 ##   ..$ slip_type   : chr "stochastic"
 ```
 
-From the `str` command, you can see that `max_stages` is a list containing a single entry named `kermadectonga2`. We could have asked for additional source-zones in creating it, and they would have been stored in other list entries. The list `max_stages$kermadectonga2` itself has 3 entries: one is a vector of `max_stage` values, and the other two report the slip-type and the index of the hazard point.
+From the `str` command, you can see that `max_stages` is a list containing a single entry named `kermadectonga2`. We could have asked for additional source-zones in creating it, and they would have been stored in other list entries. The list `max_stages$kermadectonga2` itself has 3 entries: one is a vector of `max_stage` values (one for each event), and the other two report the slip-type and the index of the hazard point.
+
+Is there a relation between the wave-height maxima and the displacement? Yes.
+Here is a crude check (run it yourself to see the plot).
+
+
+```r
+displacement_norm = sqrt(rowSums(xyz_displacement_events**2))
+max_stage_events = max_stages$kermadectonga2$max_stage
+
+# Be sure to only plot possible events, where at least one logic-tree branch says they might occur!
+plot(displacement_norm[possible_inds], max_stage_events[possible_inds], 
+     log='xy', xlim=c(0.01, 20), ylim=c(0.01, 20), 
+     xlab='|Displacement| (m)', ylab='Max stage (m)',
+     main=' Absolute displacement vs maximum-stage for events with non-zero annual rate ')
+grid(col='orange')
+```
+Clearly not all these events will be equally likely. 
+
+We could also look at other slip types (e.g. compact uniform slip).
 
