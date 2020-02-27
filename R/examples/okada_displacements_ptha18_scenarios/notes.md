@@ -6,63 +6,6 @@ From within R, do this.
 
 ```r
     library(rptha) # Get the package
-```
-
-```
-## Loading required package: rgeos
-```
-
-```
-## Loading required package: sp
-```
-
-```
-## rgeos version: 0.5-2, (SVN revision 621)
-##  GEOS runtime version: 3.6.2-CAPI-1.10.2 
-##  Linking to sp version: 1.3-1 
-##  Polygon checking: TRUE
-```
-
-```
-## Loading required package: rgdal
-```
-
-```
-## rgdal: version: 1.4-7, (SVN revision 845)
-##  Geospatial Data Abstraction Library extensions to R successfully loaded
-##  Loaded GDAL runtime: GDAL 2.2.3, released 2017/11/20
-##  Path to GDAL shared files: /usr/share/gdal/2.2
-##  GDAL binary built with GEOS: TRUE 
-##  Loaded PROJ.4 runtime: Rel. 4.9.3, 15 August 2016, [PJ_VERSION: 493]
-##  Path to PROJ.4 shared files: (autodetected)
-##  Linking to sp version: 1.3-1
-```
-
-```
-## Loading required package: geosphere
-```
-
-```
-## Loading required package: raster
-```
-
-```
-## Loading required package: FNN
-```
-
-```
-## Loading required package: minpack.lm
-```
-
-```
-## Loading required package: geometry
-```
-
-```
-## Loading required package: ncdf4
-```
-
-```r
     load('3D_displacements_R_image.Rdata') # Get the data
 ```
 
@@ -77,36 +20,39 @@ as though you had ran the script yourself. To print the names of these variables
 ##  [1] "clean_gaugeID"                                  
 ##  [2] "config_env"                                     
 ##  [3] "easting_disp_files"                             
-##  [4] "event_slip"                                     
-##  [5] "event_unit_source_inds"                         
-##  [6] "get_displacements_due_to_unit_source"           
-##  [7] "get_flow_time_series_at_hazard_point"           
-##  [8] "get_flow_time_series_SWALS"                     
-##  [9] "get_initial_condition_for_event"                
-## [10] "get_netcdf_attribute_initial_stage_raster"      
-## [11] "get_netcdf_gauge_index_matching_ID"             
-## [12] "get_netcdf_gauge_indices_in_polygon"            
-## [13] "get_netcdf_gauge_indices_near_points"           
-## [14] "get_netcdf_gauge_locations"                     
-## [15] "get_netcdf_gauge_output_times"                  
-## [16] "get_peak_stage_at_point_for_each_event"         
-## [17] "get_source_zone_events_data"                    
-## [18] "get_stage_exceedance_rate_curve_at_hazard_point"
-## [19] "get_stage_exceedance_rate_curves_all_sources"   
-## [20] "get_supporting_data"                            
-## [21] "i"                                              
-## [22] "kt2"                                            
-## [23] "make_tsunami_event_from_unit_sources"           
-## [24] "northing_disp_files"                            
-## [25] "parse_ID_point_index_to_index"                  
-## [26] "sort_tide_gauge_files_by_unit_source_table"     
-## [27] "source_zone"                                    
-## [28] "summarise_events"                               
-## [29] "target_pt"                                      
-## [30] "test_sum_tsunami_unit_sources"                  
-## [31] "vertical_disp_files"                            
-## [32] "xyz_displacement_events"                        
-## [33] "xyz_displacement_unit_sources"
+##  [4] "event_inds_list"                                
+##  [5] "event_slip"                                     
+##  [6] "event_slips_list"                               
+##  [7] "event_unit_source_inds"                         
+##  [8] "get_displacements_due_to_unit_source"           
+##  [9] "get_flow_time_series_at_hazard_point"           
+## [10] "get_flow_time_series_SWALS"                     
+## [11] "get_initial_condition_for_event"                
+## [12] "get_netcdf_attribute_initial_stage_raster"      
+## [13] "get_netcdf_gauge_index_matching_ID"             
+## [14] "get_netcdf_gauge_indices_in_polygon"            
+## [15] "get_netcdf_gauge_indices_near_points"           
+## [16] "get_netcdf_gauge_locations"                     
+## [17] "get_netcdf_gauge_output_times"                  
+## [18] "get_peak_stage_at_point_for_each_event"         
+## [19] "get_source_zone_events_data"                    
+## [20] "get_stage_exceedance_rate_curve_at_hazard_point"
+## [21] "get_stage_exceedance_rate_curves_all_sources"   
+## [22] "get_supporting_data"                            
+## [23] "i"                                              
+## [24] "kt2"                                            
+## [25] "make_tsunami_event_from_unit_sources"           
+## [26] "northing_disp_files"                            
+## [27] "parse_ID_point_index_to_index"                  
+## [28] "possible_inds"                                  
+## [29] "sort_tide_gauge_files_by_unit_source_table"     
+## [30] "source_zone"                                    
+## [31] "summarise_events"                               
+## [32] "target_pt"                                      
+## [33] "test_sum_tsunami_unit_sources"                  
+## [34] "vertical_disp_files"                            
+## [35] "xyz_displacement_events"                        
+## [36] "xyz_displacement_unit_sources"
 ```
 
 # 2) How do I associate each 3D displacement vector with the correct earthquake slip distribution?
