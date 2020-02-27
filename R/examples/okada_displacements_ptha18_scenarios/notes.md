@@ -368,13 +368,17 @@ Here is a crude check (run it yourself to see the plot).
 ```r
 displacement_norm = sqrt(rowSums(xyz_displacement_events**2))
 max_stage_events = max_stages$kermadectonga2$max_stage
+Mw = kt2$events$Mw
 
 # Be sure to only plot possible events, where at least one logic-tree branch says they might occur!
 plot(displacement_norm[possible_inds], max_stage_events[possible_inds], 
      log='xy', xlim=c(0.01, 20), ylim=c(0.01, 20), 
-     xlab='|Displacement| (m)', ylab='Max stage (m)',
+     xlab='||Displacement|| (m)', ylab='Max stage (m)', 
+     col=floor(Mw[possible_inds] - 6),
+     pch=19, cex=0.5,
      main=' Absolute displacement vs maximum-stage for events with non-zero annual rate ')
 grid(col='orange')
+legend('bottomright', c('Mw 7-8', 'Mw 8-9', 'Mw > 9'), col=1:3, pch=19, pt.cex=0.5)
 ```
 Clearly not all these events will be equally likely. 
 
