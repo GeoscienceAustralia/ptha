@@ -212,6 +212,7 @@ Important columns include:
 * `kt2$events$rate_annual` is important, even if you do not care about event frequencies, because **some events are impossible** and
   these have `kt2$events$rate_annual = 0`. The impossible events either have Mw-max being too large, or, they have max-slip being
   too great for their magnitude. See the PTHA18 report for details.
+* `kt2$events$Mw` is the constant rigidity magnitude (assuming rigidity of 30GPa).
 
 We can get the indices of possible events like so
 
@@ -226,11 +227,12 @@ head(possible_inds)
 ## [1] 1 2 3 4 5 6
 ```
 
-Note you can separate the `event_index_string` and `event_slip_string` into a set of numbers for each event like so:
+Note you can separate the `event_index_string` and `event_slip_string` into a separate vector for each event like so:
 
 ```r
 # Split the strings and cast to numeric. The result will be a list, containing one vector for each event
 event_inds_list = lapply( strsplit(kt2$events$event_index_string, '-'), as.numeric)
+# Look at the top few
 head(event_inds_list)
 ```
 
@@ -252,6 +254,15 @@ head(event_inds_list)
 ## 
 ## [[6]]
 ## [1] 1
+```
+
+```r
+# Get the 30,000th event indices -- double bracket [[ ]] notation to index into lists
+event_inds_list[[30000]]
+```
+
+```
+## [1] 140 143 146 155
 ```
 
 
@@ -279,6 +290,15 @@ head(event_slips_list)
 ## 
 ## [[6]]
 ## [1] 1.109
+```
+
+```r
+# Get the 30,000th event slips -- double bracket [[ ]] notation to index into lists
+event_slips_list[[30000]]
+```
+
+```
+## [1]  5.6480 19.9400 10.1200  0.9342
 ```
 
 ## Geting the 3D displacement vector associated with each event.
@@ -322,21 +342,22 @@ A few observations about these numbers:
 
 * Notice how many of the displacements are zero. The reason for this is that in the PTHA18 unit-source construction, we only compute the Okada deformation within a neighbourhood of the unit-source. For each sub-unit-source, we ignore points with distance more than 20x the sub-unit-source depth (execept we always include points within 20 km). This neighbourhood is larger for deep unit-sources, and shallower for near-trench sources. But if earthquakes only include unit-sources far from our `target_pt`, the displacement is zero. If you would like to use a larger radius for the Okada calculation, to reduce the number of zero displacement events, we can change the variable `okada_distance_factor` in [config.R](config.R) and re-run the unit-source creation code.
 
-* There is some repetition among the non-zero displacement values. The reason is that these events have low magnitudes, because the event table is sorted low-high magnitude. Low-magnitude events often only consist of a single unit-source. With only 1 unit-source, the slip is determined by the magnitude alone (i.e. there is no slip heterogenity), hence the repitition in these displacements. This will not be common for larger magnitudes.
+* There is some repetition among the non-zero displacement values. The reason is that these events have low magnitudes, because the event table is sorted from low-to-high magnitude. Low-magnitude events often only consist of a single unit-source, in which case the slip is determined by the magnitude alone (i.e. there is no slip heterogenity). These events can repeat - hence the repitition in these displacements. This will not be common for larger magnitudes.
 
 Remember that not all of these events are possible according to the PTHA18! This will matter for large events.
 
 # 3) How can I associate each event and displacement with a tsunami height at, say, Nuku'alofa
 
-In the PTHA18 we only do offshore waves, and we only have a few hazard points around Tonga. The bathymetry here is complex, and clearly not well resolved with our 1-arc-min linear solver (using GEBCO2014 topography). I would prefer to have points further offshore. Anyway, clearly it will be nontrivial to move between the modelled wave height offshore and the nearshore height of interest. 
+In the PTHA18 we only do offshore waves, and we only have a few hazard points around Tonga. The bathymetry here is complex, and clearly not well resolved with our 1-arcmin linear solver (using GEBCO2014 topography). I would prefer to have points further offshore. Anyway, clearly it will be nontrivial to move between the modelled wave height offshore and the nearshore height of interest. 
 
-One might prefer to simulate inundation directly from the Okada displacements. That is definitely an option; Rikki and I have modelled the area to 50 m spatial res, and a single 4-hour simulation takes 100s on 2 gadi nodes - so one could run hundreds of such simulations. That model would need some work (bathymetry is no good; need to manage output file size; QC with so many scenarios) but nothing insurmountable.
+One might prefer to simulate inundation directly from the Okada displacements. That is definitely an option; Rikki and I have modelled the area to 50 m spatial res, and a single 4-hour simulation takes 100s on 2 gadi nodes - so one could run hundreds or thousands of such simulations. That model would need some work (bathymetry is no good; need to manage output file size; QC with so many scenarios) but nothing insurmountable.
 
 As a first step to understand the problem better, lets ignore these issues and work directly with modelled offshore waves.
 
-From perusing the [hazard points](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.csv), I decided to look at the gauge with ID=3458.3. We can get the max-stage values (over the 36 hour simulation) with:
+After perusing the [hazard points](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.csv), I decided to look at the gauge with ID=3458.3. We can get the max-stage values (over the 36 hour simulation) with:
 
 ```r
+# This will read from the NCI THREDDS SERVER
 max_stages = ptha18_access$get_peak_stage_at_point_for_each_event(hazard_point_gaugeID = 3458.3, 
     all_source_names=list('kermadectonga2'), include_earthquake_data=FALSE)
 ```
@@ -347,7 +368,7 @@ max_stages = ptha18_access$get_peak_stage_at_point_for_each_event(hazard_point_g
 ```
 
 ```r
-# Have a look at the structure of max_stages
+# Have a look at the structure of the "max_stages" object
 str(max_stages)
 ```
 
@@ -359,11 +380,10 @@ str(max_stages)
 ##   ..$ slip_type   : chr "stochastic"
 ```
 
-From the `str` command, you can see that `max_stages` is a list containing a single entry named `kermadectonga2`. We could have asked for additional source-zones in creating it, and they would have been stored in other list entries. The list `max_stages$kermadectonga2` itself has 3 entries: one is a vector of `max_stage` values (one for each event), and the other two report the slip-type and the index of the hazard point.
+From the `str` command, you can see that `max_stages` is a list containing a single entry named `kermadectonga2`. We could have put additional source-zones into `all_source_names` when creating it, and those results would have been stored in other list entries. The list `max_stages$kermadectonga2` itself has 3 entries: one is a vector of `max_stage` values (one for each event), and the other two report the slip-type and the index of the hazard point.
 
 Is there a relation between the wave-height maxima and the displacement? Yes.
 Here is a crude check (run it yourself to see the plot).
-
 
 ```r
 displacement_norm = sqrt(rowSums(xyz_displacement_events**2))
