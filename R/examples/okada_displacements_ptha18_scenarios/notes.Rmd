@@ -1,3 +1,6 @@
+# **Answers to some questions on this script**
+
+
 
 # 1) How do I read the data created by running "get_displacements_for_events.R"?
 
@@ -87,9 +90,11 @@ Let's print rows 30:50 (corresponding to the events in `kt2$events[30:50,]`)
 xyz_displacement_events[30:50,]
 ``` 
 
-Notice how many of the displacements are zero. The reason for this is that in the PTHA18 unit-source construction, we only compute the Okada deformation within a neighbourhood of the unit-source. For each sub-unit-source, we ignore points with distance more than 20x the sub-unit-source depth (execept we always include points within 20 km). This neighbourhood is larger for deep unit-sources, and shallower for near-trench sources. But if earthquakes only include unit-sources far from our `target_pt`, the displacement is zero.
+A few observations about these numbers:
 
-If you would like to use a larger radius for the Okada calculation, to reduce the number of zero displacement events, we can change the variable `okada_distance_factor` in [config.R](config.R) and re-run the unit-source creation code.
+* Notice how many of the displacements are zero. The reason for this is that in the PTHA18 unit-source construction, we only compute the Okada deformation within a neighbourhood of the unit-source. For each sub-unit-source, we ignore points with distance more than 20x the sub-unit-source depth (execept we always include points within 20 km). This neighbourhood is larger for deep unit-sources, and shallower for near-trench sources. But if earthquakes only include unit-sources far from our `target_pt`, the displacement is zero. If you would like to use a larger radius for the Okada calculation, to reduce the number of zero displacement events, we can change the variable `okada_distance_factor` in [config.R](config.R) and re-run the unit-source creation code.
+
+* There is some repetition among the non-zero displacement values. The reason is that these events have low magnitudes, because the event table is sorted low-high magnitude. Low-magnitude events often only consist of a single unit-source. With only 1 unit-source, the slip is determined by the magnitude alone (i.e. there is no slip heterogenity), hence the repitition in these displacements. This will not be common for larger magnitudes.
 
 Remember that not all of these events are possible according to the PTHA18! This will matter for large events.
 
