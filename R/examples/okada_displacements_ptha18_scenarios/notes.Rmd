@@ -109,7 +109,7 @@ A few observations about these numbers:
 
 Remember that not all of these events are possible according to the PTHA18! This will matter for large events.
 
-# 3) Associate each event and displacement with a tsunami height at, say, Nuku'alofa
+# 3) How can I associate each event and displacement with a tsunami height at, say, Nuku'alofa
 
 In the PTHA18 we only do offshore waves, and we only have a few hazard points around Tonga. The bathymetry here is complex, and clearly not well resolved with our 1-arc-min linear solver (using GEBCO2014 topography). I would prefer to have points further offshore. Anyway, clearly it will be nontrivial to move between the modelled wave height offshore and the nearshore height of interest. 
 
