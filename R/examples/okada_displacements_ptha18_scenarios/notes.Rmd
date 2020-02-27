@@ -8,7 +8,7 @@ From within R, do this.
 
 ```{r loadvars, results='hide'}
     library(rptha) # Get the package
-    load('3D_displacements_R_image.Rdata') # Get the data
+    load('3D_displacements_R_image.Rdata') # Get the data (on gadi)
 ```
 
 The above command will make your R session contain a bunch of variables, just
