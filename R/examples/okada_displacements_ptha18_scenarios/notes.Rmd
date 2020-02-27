@@ -1,0 +1,97 @@
+
+# 1) How do I read the data created by running "get_displacements_for_events.R"?
+
+From within R, do this.
+
+```{r loadvars, results='hide'}
+    library(rptha) # Get the package
+    load('3D_displacements_R_image.Rdata') # Get the data
+```
+
+The above command will make your R session contain a bunch of variables, just
+as though you had ran the script yourself. To print the names of these variables, do:
+```{r printvars}
+    ls() # Like dir() in python
+```
+
+# 2) How do I associate each 3D displacement vector with the correct earthquake slip distribution?
+
+After reading the following comments, it might also help to read the script [get_displacements_for_events.R](get_displacements_for_events.R).
+  
+## Getting the earthquake events and their slip distributions
+
+The earthquake events are stored in a list named "kt2". In R, a list is similar
+to a python dict AND a python list (since you can look up values by name, or
+by index).
+
+The data that 'kt2' holds is named:
+```{r lookatkt2}
+    names(kt2)
+```
+These are like the 'keys' in a python dict -- except we lookup using the `$`
+notation (e.g. `kt2$events_file`).
+
+The important variables describing the events are both "data.frames": a table 
+of data where the columns can be different data types. In python the package
+"pandas" provides something similar.
+* `kt2$unit_source_statistics` summarises info on the unit-sources
+* `kt2$events` describes the earthquake events, including their slip and occurrence rate, with reference to the unit-sources
+
+Now look at a few rows of the `unit_source_statistics` data.frame.
+```{r lookatkt2uss}
+    head(kt2$unit_source_statistics)
+```
+Important info includes:
+* `kt2$unit_source_statistics$downdip_number` - a location index, where 1 means "at trench", 2 means "middle row", 3 means "most down-dip"
+* `kt2$unit_source_statistics$alongstrike_number` - another location index
+* `kt2$unit_source_statistics$subfault_number` - used in `kt2$events` to refer to individual unit-sources.
+
+Next have a look at the events data, which contains 1 row for every event.
+```{r lookatkt2events}
+    head(kt2$events)
+```
+Important columns include:
+* `kt2$events$event_index_string` contains the `subfault_number` of each unit-source involved in the event, separated by a `-`.
+* `kt2$events$event_slip_string` contains the slip on each of unit-source involved in the event, separated by a `_`.
+* `kt2$events$rate_annual` is important, even if you do not care about event frequencies, because **some events are impossible** and
+  these have `kt2$events$rate_annual = 0`. The impossible events either have Mw-max being too large, or, they have max-slip being
+  too great for their magnitude. See the PTHA18 report for details.
+
+We can get the indices of possible events like so
+```{r possibleEvents}
+possible_inds = which(kt2$events$rate_annual > 0)
+head(possible_inds)
+```
+
+Note you can separate the `event_index_string` and `event_slip_string` into a set of numbers for each event like so:
+```{r, indsSplit}
+# Split the strings and cast to numeric. The result will be a list, containing one vector for each event
+event_inds_list = lapply( strsplit(kt2$events$event_index_string, '-'), as.numeric)
+head(event_inds_list)
+```
+
+```{r slipSplit}
+# Split the slips and cast to numeric. The result will be a list, containing one vector for each event
+event_slips_list = lapply( strsplit(kt2$events$event_slip_string, '_'), as.numeric)
+head(event_slips_list)
+```
+
+## Geting the 3D displacement vector associated with each event.
+
+The events are in a big table named `kt2$events`. The script [get_displacements_for_events.R](get_displacements_for_events.R)
+computed their displacements at a chosen location (see `target_pt` therein), and stored it in a matrix named `xyz_displacement_events`.This has 3 columns (x/y/z displacement), and the same number of rows as `kt2$events`. 
+
+Let's print rows 30:50 (corresponding to the events in `kt2$events[30:50,]`)
+```{r disp1}
+# First column is easting (m), second is northing (m), third is up/down (m)
+xyz_displacement_events[30:50,]
+``` 
+
+Notice how many of the displacements are zero. The reason for this is that in the PTHA18 unit-source construction, we only compute the Okada deformation within a neighbourhood of the unit-source (radius = 20x unit-source depth). This neighbourhood is larger for deep unit-sources, and shallower for near-trench sources. But if earthquakes only include unit-sources far from our `target_pt`, the displacement is zero.
+
+If you would like to use a larger radius for the Okada calculation, to reduce the number of zero displacement events, we can change the variable `okada_distance_factor` in [config.R](config.R) and re-run the unit-source creation code.
+
+Remember that not all of these events are possible according to the PTHA18! This will matter for large events.
+
+# 3) Associate each event and displacement with a tsunami height at, say, Nuku'alofa
+
