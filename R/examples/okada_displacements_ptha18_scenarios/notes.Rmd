@@ -20,7 +20,7 @@ After reading the following comments, it might also help to read the script [get
   
 ## Getting the earthquake events and their slip distributions
 
-The earthquake events are stored in a list named "kt2". In R, a list is similar
+The earthquake events are stored in a list named `kt2`. In R, a list is similar
 to a python dict AND a python list (since you can look up values by name, or
 by index).
 
