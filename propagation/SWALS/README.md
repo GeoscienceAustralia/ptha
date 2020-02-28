@@ -17,7 +17,7 @@ correction is used to enforce the conservation of mass and advected momentum
 through nested domain interfaces.
 
 Parallel computation (shared and distributed memory CPU) is supported with a
-mixture of Fortran coarrays and/or MPI and/or openmp. Static load balancing can
+mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can
 be used to improve the efficiency of large parallel jobs. The code includes a
 unit test suite, a parallel unit test suite, and a validation test suite (the
 latter focussing on tsunami type problems).
@@ -131,7 +131,7 @@ You can count PASS or FAIL statements like this:
 ## Step 2: Run the parallel unit-tests
 
 The parallel unit-test suite is in [./tests/parallel_tests](./tests/parallel_tests). Note
-this only tests the coarray parallel operations, not OpenMP. To run the tests, open
+this only tests the MPI (or coarray) parallel operations, not OpenMP. To run the tests, open
 a terminal in that directory and do:
 
     # Look at this script to see the build/run commands
@@ -165,8 +165,8 @@ To run the validation tests, open a terminal in the
 
 This will run over a dozen tests in examples/, and report one or more PASS
 statements for each. There should be no FAIL statements if your install is
-working. If you are missing some prerequisites (e.g. for coarrays, or R
-packages), then there will be some failures. 
+working. If you are missing some prerequisites (e.g. R packages), then there
+will be some failures. 
 
 The code also generates various figures in the relevant directories in
 examples/, and these should be visually inspected to better understand the test
@@ -189,9 +189,9 @@ The validation tests provide templates for developing other models. They illustr
 * [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Tauranga_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
 * [./examples/periodic_multidomain/](./examples/periodic_multidomain) which illustrates a global multidomain with periodic east-west boundaries
 
-The above models can be run with OpenMP and/or coarrays, and illustrate use of the multidomain class. Another useful example is:
+The above models can be run with OpenMP and/or MPI (or coarrays), and illustrate use of the multidomain class. Another useful example is:
 
-* [./examples/generic_model/](./examples/generic_model) which can run basic single-grid spherical coordinate models, e.g. for oceanic-scale tsunami modelling. This supports OpenMP but not coarrays.
+* [./examples/generic_model/](./examples/generic_model) which can run basic single-grid spherical coordinate models, e.g. for oceanic-scale tsunami modelling. This supports OpenMP but not MPI/coarray.
 
 ## Advanced compilation
 
@@ -199,13 +199,13 @@ The script [./src/src_standard_compiler_var](./src/src_standard_compiler_var) is
 
 A number of preprocessor variables can be defined to control features of the code. These are controlled by defining the variable `SWALS_PREPROCESSOR_FLAGS` in the makefile. See makefiles in the example projects for illustrations of their use. The most important cases include
 
-- `-DTIMER` Time sections of the code and report on how long they take, generally in the multidomain log file. This is useful for understanding run-times. It is also used for static load-balancing calculations - see the function `make_load_balance_partition` in [./plot.R](./plot.R) which uses multidomain log-files to compute a more balanced distribution of work for multi-image coarray runs.
+- `-DTIMER` Time sections of the code and report on how long they take, generally in the multidomain log file. This is useful for understanding run-times. It is also used for static load-balancing calculations - see the function `make_load_balance_partition` in [./plot.R](./plot.R) which uses multidomain log-files to compute a more balanced distribution of work for multi-image MPI/coarray runs.
 - `-DSPHERICAL` Assume spherical coordinates. Otherwise cartesian coordinates are used
 - `-DREALFLOAT` Use single precision for all reals. Otherwise double-precision is used. Beware the nonlinear solvers generally need double-precision for accuracy.
 - `-DNOCORIOLIS` Do not include Coriolis terms in spherical coordinates. By default, Coriolis terms are used when `-DSPHERICAL` is defined. They can ONLY be used in conjunction with spherical coordinates. But even in this case, sometimes it is useful to turn them off, hence this variable.
-- `-DCOARRAY` Build with coarray support (alternatively the coarray calls may be replaced with MPI using flags below). Without this flag, only OpenMP parallisation is used.
-- `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` This uses MPI instead of coarrays for communication, which is useful because compiler support for coarrays is quite variable. If using this option you MUST also use -DCOARRAY (yes, even though it replaces coarrays). 
-- `-DCOARRAY_PROVIDE_CO_ROUTINES` Provide implementations of coarray collectives using MPI. This is required for compilers that do not support Fortran coarray collectives such as co_min, co_max, co_sum, etc. If using this option you MUST also use -DCOARRAY. Note that if this option and the previous 2 are provided, then the compiler doesn't need to support coarrays.
+- `-DCOARRAY` Build with distributed memory paralle support. If only this flag is provided the coarrays are used - alternatively the coarray calls may be replaced with MPI by ALSO using flags below. Without this flag, only OpenMP parallisation is used.
+- `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` This uses MPI instead of coarrays for communication, which is useful because compiler support for coarrays is quite variable. If using this option you MUST also use -DCOARRAY (even though MPI replaces coarrays). 
+- `-DCOARRAY_PROVIDE_CO_ROUTINES` Provide implementations of coarray collectives using MPI. This is required for compilers that do not support Fortran coarray collectives such as co_min, co_max, co_sum, etc. If using this option you MUST also use -DCOARRAY. Note that if this option and the previous 2 are provided, then the compiler doesn't need to support coarrays (i.e. the code can be run with pure MPI).
 - `-DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS` Allow nonlinear domains inside a multidomain to take larger timesteps than suggested by `domain%timestepping_refinement_factor`, if this would be stable according to their own cfl-limit. This can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file (e.g. `md%load_balance_file="load_balance_partition.txt"`), which can be generated from a preliminary model run. See `make_load_balance_partition` in [./plot.R](./plot.R).
 - `-DNETCDF4_GRIDS` Use the HDF5-based netcdf4 format for grid-file output. This requires that the netcdf library is compiled with netcdf4 support -- if not it will cause compilation to fail.
 
