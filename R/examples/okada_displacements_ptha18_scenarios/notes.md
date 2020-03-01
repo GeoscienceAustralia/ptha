@@ -135,6 +135,13 @@ Important info includes:
 * `kt2$unit_source_statistics$alongstrike_number` - another location index
 * `kt2$unit_source_statistics$subfault_number` - used in `kt2$events` to refer to individual unit-sources.
 
+Other geometric entries were computed using `discretized_source_approximate_summary_statistics`, and give an approximate summary of the detailed unit-source geometry (which is actually non-planar and non-rectangular, due to the use of sub-unit-sources). They include:
+* `kt2$lon_c`, `kt2$lat_c` - unit-source centroid coordinates
+* `kt2$depth` - an approximate mean unit-source depth below the trench (not MSL). 
+* `kt2$strike, kt2$dip, kt2$rake, kt2$slip` - reference values of the unit-source rupture parameters. These are approximate only because we use sub-unit-sources, which have smoothly varying strike and dip. Rake will always be 90 or -90 (we only consider pure-thrust or pure-normal sources).
+* `kt2$length, kt2$width` - reference values of the length and width in km. 
+
+
 Next have a look at the events data, which contains 1 row for every event.
 
 ```r
