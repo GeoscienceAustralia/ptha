@@ -31,37 +31,44 @@ as though you had ran the script yourself. To print the names of these variables
 ##  [1] "clean_gaugeID"                                  
 ##  [2] "config_env"                                     
 ##  [3] "easting_disp_files"                             
-##  [4] "event_slip"                                     
-##  [5] "event_unit_source_inds"                         
-##  [6] "get_displacements_due_to_unit_source"           
-##  [7] "get_flow_time_series_at_hazard_point"           
-##  [8] "get_flow_time_series_SWALS"                     
-##  [9] "get_initial_condition_for_event"                
-## [10] "get_netcdf_attribute_initial_stage_raster"      
-## [11] "get_netcdf_gauge_index_matching_ID"             
-## [12] "get_netcdf_gauge_indices_in_polygon"            
-## [13] "get_netcdf_gauge_indices_near_points"           
-## [14] "get_netcdf_gauge_locations"                     
-## [15] "get_netcdf_gauge_output_times"                  
-## [16] "get_peak_stage_at_point_for_each_event"         
-## [17] "get_source_zone_events_data"                    
-## [18] "get_stage_exceedance_rate_curve_at_hazard_point"
-## [19] "get_stage_exceedance_rate_curves_all_sources"   
-## [20] "get_supporting_data"                            
-## [21] "i"                                              
-## [22] "kt2"                                            
-## [23] "make_tsunami_event_from_unit_sources"           
-## [24] "northing_disp_files"                            
-## [25] "parse_ID_point_index_to_index"                  
-## [26] "ptha18_access"                                  
-## [27] "sort_tide_gauge_files_by_unit_source_table"     
-## [28] "source_zone"                                    
-## [29] "summarise_events"                               
-## [30] "target_pt"                                      
-## [31] "test_sum_tsunami_unit_sources"                  
-## [32] "vertical_disp_files"                            
-## [33] "xyz_displacement_events"                        
-## [34] "xyz_displacement_unit_sources"
+##  [4] "event_inds_list"                                
+##  [5] "event_slip"                                     
+##  [6] "event_slips_list"                               
+##  [7] "event_unit_source_inds"                         
+##  [8] "get_displacements_due_to_unit_source"           
+##  [9] "get_flow_time_series_at_hazard_point"           
+## [10] "get_flow_time_series_SWALS"                     
+## [11] "get_initial_condition_for_event"                
+## [12] "get_netcdf_attribute_initial_stage_raster"      
+## [13] "get_netcdf_gauge_index_matching_ID"             
+## [14] "get_netcdf_gauge_indices_in_polygon"            
+## [15] "get_netcdf_gauge_indices_near_points"           
+## [16] "get_netcdf_gauge_locations"                     
+## [17] "get_netcdf_gauge_output_times"                  
+## [18] "get_peak_stage_at_point_for_each_event"         
+## [19] "get_source_zone_events_data"                    
+## [20] "get_stage_exceedance_rate_curve_at_hazard_point"
+## [21] "get_stage_exceedance_rate_curves_all_sources"   
+## [22] "get_supporting_data"                            
+## [23] "i"                                              
+## [24] "kt2"                                            
+## [25] "kt2_geo_shapefile"                              
+## [26] "kt2_shp"                                        
+## [27] "make_tsunami_event_from_unit_sources"           
+## [28] "max_stages"                                     
+## [29] "northing_disp_files"                            
+## [30] "parse_ID_point_index_to_index"                  
+## [31] "possible_inds"                                  
+## [32] "pt"                                             
+## [33] "ptha18_access"                                  
+## [34] "sort_tide_gauge_files_by_unit_source_table"     
+## [35] "source_zone"                                    
+## [36] "summarise_events"                               
+## [37] "target_pt"                                      
+## [38] "test_sum_tsunami_unit_sources"                  
+## [39] "vertical_disp_files"                            
+## [40] "xyz_displacement_events"                        
+## [41] "xyz_displacement_unit_sources"
 ```
 
 # 2) How do I associate each 3D displacement vector with the correct earthquake slip distribution?
@@ -355,9 +362,7 @@ Remember that not all of these events are possible according to the PTHA18! This
 
 # 3) How can I associate each event and displacement with a tsunami height at, say, Nuku'alofa
 
-In the PTHA18 we only do offshore waves, and we only have a few hazard points around Tonga. The bathymetry here is complex, and clearly not well resolved with our 1-arcmin linear solver (using GEBCO2014 topography). I would prefer to have points further offshore. Anyway, clearly it will be nontrivial to move between the modelled wave height offshore and the nearshore height of interest. 
-
-One might prefer to simulate inundation directly from the Okada displacements. That is definitely an option; Rikki and I have modelled the area to 50 m spatial res, and a single 4-hour simulation takes 100s on 2 gadi nodes - so one could run hundreds or thousands of such simulations. That model would need some work (bathymetry is no good; need to manage output file size; QC with so many scenarios) but nothing insurmountable.
+In the PTHA18 we only do offshore waves, and we only have a few hazard points around Tonga. The bathymetry here is complex, and clearly not well resolved with our 1-arcmin linear solver (using GEBCO2014 topography). I would prefer to have points further offshore. Anyway, clearly it will be nontrivial to move between the modelled wave height offshore and the nearshore height of interest. One might prefer to simulate inundation directly from the Okada displacements. 
 
 As a first step to understand the problem better, lets ignore these issues and work directly with modelled offshore waves.
 
@@ -370,8 +375,11 @@ max_stages = ptha18_access$get_peak_stage_at_point_for_each_event(hazard_point_g
 ```
 
 ```
-## [[1]]
-## [1] "kermadectonga2"
+## Error in R_nc4_open: No such file or directory
+```
+
+```
+## Error in nc_open(netcdf_file, readunlim = FALSE): Error in nc_open trying to open file /g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc
 ```
 
 ```r
@@ -411,3 +419,47 @@ Clearly not all these events will be equally likely.
 
 We could also look at other slip types (e.g. compact uniform slip).
 
+
+# 4) How can I find the unit-source containing a given epicenter? 
+
+If we assume the epicenter is contained in the unit-source geometry, one could do it like this
+
+```r
+# Read the unit-source shapefile -- it should have automatically downloaded
+kt2_geo_shapefile = '../../../ptha_access/SOURCE_ZONES/kermadectonga2/EQ_SOURCE/unit_source_grid/kermadectonga2.shp'
+kt2_shp = readOGR(kt2_geo_shapefile, layer=gsub('.shp', '', basename(kt2_geo_shapefile)))
+```
+
+```
+## OGR data source with driver: ESRI Shapefile 
+## Source: "/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/CODE/ptha/ptha_access/SOURCE_ZONES/kermadectonga2/EQ_SOURCE/unit_source_grid/kermadectonga2.shp", layer: "kermadectonga2"
+## with 216 features
+## It has 2 fields
+## Integer64 fields read as strings:  dwndp_n alngst_
+```
+
+```r
+# Suppose we want the unit-source containing this point
+pt = c(184.745, -24.515) # Longitude between [-40, 320]
+pt_index = find_unit_source_index_containing_point(pt, kt2_shp, kt2$unit_source_statistics)
+pt_index # This is a row of the unit-source-statistics table
+```
+
+```
+## [1] 73
+```
+
+```r
+kt2$unit_source_statistics[pt_index,]
+```
+
+```
+##       lon_c     lat_c    depth   strike      dip rake slip   length
+## 73 184.5727 -24.59811 5.278963 187.0979 13.54274   90    1 45.42004
+##       width downdip_number alongstrike_number subfault_number max_depth
+## 73 45.05669              1                 25              73  10.85401
+##                                                                                                         initial_condition_file
+## 73 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/EQ_SOURCE/Unit_source_data/kermadectonga2/kermadectonga2_1_25.tif
+##                                                                                                                                                                                     tide_gauge_file
+## 73 /g/data/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/TSUNAMI_UNIT_SOURCES/unit_source_tsunami/RUN_20180815163223_kermadectonga2_1_25/RUN_ID100001_20180815_182027.065/Gauges_data_ID100001.nc
+```

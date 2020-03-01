@@ -124,9 +124,7 @@ Remember that not all of these events are possible according to the PTHA18! This
 
 # 3) How can I associate each event and displacement with a tsunami height at, say, Nuku'alofa
 
-In the PTHA18 we only do offshore waves, and we only have a few hazard points around Tonga. The bathymetry here is complex, and clearly not well resolved with our 1-arcmin linear solver (using GEBCO2014 topography). I would prefer to have points further offshore. Anyway, clearly it will be nontrivial to move between the modelled wave height offshore and the nearshore height of interest. 
-
-One might prefer to simulate inundation directly from the Okada displacements. That is definitely an option; Rikki and I have modelled the area to 50 m spatial res, and a single 4-hour simulation takes 100s on 2 gadi nodes - so one could run hundreds or thousands of such simulations. That model would need some work (bathymetry is no good; need to manage output file size; QC with so many scenarios) but nothing insurmountable.
+In the PTHA18 we only do offshore waves, and we only have a few hazard points around Tonga. The bathymetry here is complex, and clearly not well resolved with our 1-arcmin linear solver (using GEBCO2014 topography). I would prefer to have points further offshore. Anyway, clearly it will be nontrivial to move between the modelled wave height offshore and the nearshore height of interest. One might prefer to simulate inundation directly from the Okada displacements. 
 
 As a first step to understand the problem better, lets ignore these issues and work directly with modelled offshore waves.
 
@@ -164,3 +162,18 @@ Clearly not all these events will be equally likely.
 
 We could also look at other slip types (e.g. compact uniform slip).
 
+
+# 4) How can I find the unit-source containing a given epicenter? 
+
+If we assume the epicenter is contained in the unit-source geometry, one could do it like this
+```{r geometry}
+# Read the unit-source shapefile -- it should have automatically downloaded
+kt2_geo_shapefile = '../../../ptha_access/SOURCE_ZONES/kermadectonga2/EQ_SOURCE/unit_source_grid/kermadectonga2.shp'
+kt2_shp = readOGR(kt2_geo_shapefile, layer=gsub('.shp', '', basename(kt2_geo_shapefile)))
+
+# Suppose we want the unit-source containing this point
+pt = c(184.745, -24.515) # Longitude between [-40, 320]
+pt_index = find_unit_source_index_containing_point(pt, kt2_shp, kt2$unit_source_statistics)
+pt_index # This is a row of the unit-source-statistics table
+kt2$unit_source_statistics[pt_index,]
+```
