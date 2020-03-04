@@ -12,7 +12,7 @@ source('R/config.R', local=TRUE)
 unit_source_stats_puysegur = paste0(.GDATA_OPENDAP_BASE_LOCATION, 
     'SOURCE_ZONES/puysegur2/TSUNAMI_EVENTS/unit_source_statistics_puysegur2.nc')
 fid = nc_open(unit_source_stats_puysegur)
-gauge_netcdf_file = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(4096,1))[1]
+gauge_netcdf_file = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(fid$dim$max_nchar$len,1))[1]
 nc_close(fid)
 gauge_netcdf_file = adjust_path_to_gdata_base_location(gauge_netcdf_file)
 
