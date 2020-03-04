@@ -59,3 +59,15 @@ sections of [ptha_access/README.md](README.md) and
 [ptha_access/DETAILED_README.md](DETAILED_README.md)).
 
 
+## 2020
+
+* To speed up remote reads (from the NCI THREDDS Server) we have created netcdf
+files containing ONLY the max_stage variable for each tsunami event. The code in ptha_access
+now often directly reads max_stage from such files, rather than reading it from 
+other files that contain additional variables (which tends to be slower).
+
+* To speed up remote reads (from the NCI THREDDS Server) we have created a single
+netcdf file containing the ONLY the gauge variables: lon,lat,elev,gaugeID. Now in a
+number of situations the ptha_access codes read from this file directly to get
+coordinate variables. Previously we would read from other netcdf files, which also
+contain other variables - but this can be slow. 
