@@ -3,13 +3,7 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 source('R/config.R', local=TRUE)
 
 # Make a file on NCI to use to test
-#test_file = "unit_source_tsunami/RUN_20161121104520_puysegur_1_1/RUN_ID100001_20161123_082248.005/Gauges_data_ID100001.nc"
-#source_zone = 'puysegur'
-#gauge_netcdf_file = paste0(.GDATA_OPENDAP_BASE_LOCATION, 'SOURCE_ZONES/', 
-#     source_zone, '/TSUNAMI_UNIT_SOURCE/', test_file) 
-
-# Find a file that contains hazard points. Easiest way is to read them from a tide gauge file,
-# but this is slow.
+# Find a file that contains hazard points. Easiest way is to read them from a tide gauge file.
 unit_source_stats_puysegur = paste0(.GDATA_OPENDAP_BASE_LOCATION, 
     'SOURCE_ZONES/puysegur2/TSUNAMI_EVENTS/unit_source_statistics_puysegur2.nc')
 fid = nc_open(unit_source_stats_puysegur)
@@ -17,12 +11,8 @@ gauge_netcdf_file = ncvar_get(fid, 'tide_gauge_file', start=c(1, 1), count=c(fid
 nc_close(fid)
 gauge_netcdf_file = adjust_path_to_gdata_base_location(gauge_netcdf_file)
 
-## Run the unit tests in sum_tsunami_unit_sources.R
-## NO -- THIS IS SLOW FOR TESTING -- BETTER TO READ FROM A GAUGES ONLY FILE
+# Run the unit tests in sum_tsunami_unit_sources.R
 test_sum_tsunami_unit_sources(gauge_netcdf_file)
-#gauges_netcdf_file = adjust_path_to_gdata_base_location(paste0(.GDATA_OPENDAP_BASE_LOCATION, 
-#    'EVENT_RATES/STATIONS_ONLY_lon_lat_elev_gaugeID.nc'))
-#test_sum_tsunami_unit_sources(gauges_netcdf_file)
 
 # Make a regression test to check that we get the same results
 # for Puysegur. Obviously this will have to be updated each time
