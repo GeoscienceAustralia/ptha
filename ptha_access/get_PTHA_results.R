@@ -431,10 +431,13 @@ get_stage_exceedance_rate_curve_at_hazard_point<-function(
     }
 
     if(!only_mean_rate_curve){
-        output$lon = ncvar_get(fid, 'lon', start=target_index, count=1)
-        output$lat = ncvar_get(fid, 'lat', start=target_index, count=1)
-        output$elev = ncvar_get(fid, 'elev', start=target_index, count=1)
-        output$gaugeID = ncvar_get(fid, 'gaugeID', start=target_index, count=1)
+        ncdf_file_stations_only = get_file_with_gauges_only_if_on_NCI_THREDDS(stage_exceedance_rate_curves_file)
+        fid2 = nc_open(ncdf_file_stations_only, readunlim=FALSE)
+        output$lon = ncvar_get(fid2, 'lon', start=target_index, count=1)
+        output$lat = ncvar_get(fid2, 'lat', start=target_index, count=1)
+        output$elev = ncvar_get(fid2, 'elev', start=target_index, count=1)
+        output$gaugeID = ncvar_get(fid2, 'gaugeID', start=target_index, count=1)
+        nc_close(fid2)
     }
     output$target_index = target_index
     output$source_name = source_name

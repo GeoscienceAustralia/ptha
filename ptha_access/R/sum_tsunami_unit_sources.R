@@ -28,6 +28,10 @@
 suppressPackageStartupMessages(library(ncdf4))
 suppressPackageStartupMessages(library(rptha))
 
+# Get the config data -- this will allow us to use information on the NCI THREDDS filesystem
+config_env = new.env()
+source('R/config.R', local=config_env)
+
 #'
 #' Get the 'input_stage_raster' attribute from the tide gauge netcdf files. This
 #' helps us match netcdf files to unit sources
@@ -58,16 +62,42 @@ clean_gaugeID<-function(gaugeID){
     return(clean_gauge_val)
 }
 
+#' It can be slow to read gauge locations remotely if using files where station
+#' is an unlimited dimension. To work around this, the current function takes
+#' a netcdf file, and if it deems the file is on NCI THREDDS then it returns the
+#' name of another file which only contains the station lon/lat/elev/gaugeID.
+#' Calling this in the right place can speed up the program
+get_file_with_gauges_only_if_on_NCI_THREDDS<-function(netcdf_file){
+
+    on_NCI = (length(grep(config_env$.GDATA_OPENDAP_BASE_LOCATION, netcdf_file, fixed=TRUE)) > 0)
+    if(on_NCI){
+        # Read a file that ONLY contains gauges -- this is generally faster
+        netcdf_file = config_env$adjust_path_to_gdata_base_location(
+            paste0(.GDATA_OPENDAP_BASE_LOCATION, 
+                   'EVENT_RATES/STATIONS_ONLY_lon_lat_elev_gaugeID.nc'))
+    }
+
+    return(netcdf_file)
+}
+
 #'
 #' Get lon/lat/depth/gaugeID from gauges in netcdf file
 #' 
 #' @param netcdf_file name of netdf tide gauge file
 #' @param indices_of_subset integer vector with rows of the table to return. By
 #' default return all rows
+#' @param FASTREAD If true, check if we are trying to get a ptha18 file on the NCI
+#' THREDDS server. If we are, then read instead from a "STATIONS_ONLY" file. This can
+#' be quicker than reading the coordinates alone.
 #' @return data.frame with lon, lat, elev, gaugeID
 #' @export
-get_netcdf_gauge_locations<-function(netcdf_file, indices_of_subset = NULL){
+get_netcdf_gauge_locations<-function(netcdf_file, indices_of_subset = NULL, FASTREAD=TRUE){
 
+    if(FASTREAD){
+        # Change the local copy of netcdf_file (in this function ONLY) to point to a file
+        # that contains only station data.
+        netcdf_file = get_file_with_gauges_only_if_on_NCI_THREDDS(netcdf_file)
+    }
     fid = nc_open(netcdf_file, readunlim=FALSE)
 
     # Most files have the elevation in a variable 'elevation0',
@@ -88,50 +118,21 @@ get_netcdf_gauge_locations<-function(netcdf_file, indices_of_subset = NULL){
         elev = ncvar_get(fid, elev_var_name)
 
     }else{
-        ## Determine whether we are on a remote filesystem
-        ## If yes, then it's better to read in chunks. 
-        ## But if the file lives on our filesystem, it seems better
-        ## to read one by one
-        #point_by_point = file.exists(fid$filename)
 
-        #if(point_by_point){
-        #    # Read one point at a time -- might be faster for few points
-        #    gauge_ids = NA * indices_of_subset
-        #    lon = NA * indices_of_subset
-        #    lat = NA * indices_of_subset
-        #    elev = NA * indices_of_subset
+        # Read in one chunk -- faster over a remote filesystem
+        contiguous_inds = min(indices_of_subset):max(indices_of_subset)
+        contig_match = match(indices_of_subset, contiguous_inds)
 
-        #    for(i in 1:length(gauge_ids)){
-        #        gauge_ids[i] = ncvar_get(fid, 'gaugeID', start=indices_of_subset[i], count=1)
-        #    }
-        #    gauge_ids = clean_gaugeID(gauge_ids)
-        #    for(i in 1:length(gauge_ids)){
-        #        lon[i] = ncvar_get(fid, 'lon', start=indices_of_subset[i], count=1)
-        #    }
-        #    for(i in 1:length(gauge_ids)){
-        #        lat[i] = ncvar_get(fid, 'lat', start=indices_of_subset[i], count=1)
-        #    }
-        #    for(i in 1:length(gauge_ids)){
-        #        elev[i] = ncvar_get(fid, 'elevation0', start=indices_of_subset[i], count=1)
-        #    }
+        # In case it is faster to read everything -- seems to be over a remote connection
+        gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID', start=contiguous_inds[1], count=length(contiguous_inds)))
+        gauge_ids = gauge_ids[contig_match]
+        lon = ncvar_get(fid, 'lon', start=contiguous_inds[1], count=length(contiguous_inds))
+        lon = lon[contig_match]
+        lat = ncvar_get(fid, 'lat', start=contiguous_inds[1], count=length(contiguous_inds))
+        lat = lat[contig_match]
+        elev = ncvar_get(fid, elev_var_name, start=contiguous_inds[1], count=length(contiguous_inds))
+        elev = elev[contig_match]
 
-        #}else{
-
-            # Read in one chunk -- faster over a remote filesystem
-            contiguous_inds = min(indices_of_subset):max(indices_of_subset)
-            contig_match = match(indices_of_subset, contiguous_inds)
-
-            # In case it is faster to read everything -- seems to be over a remote connection
-            gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID', start=contiguous_inds[1], count=length(contiguous_inds)))
-            gauge_ids = gauge_ids[contig_match]
-            lon = ncvar_get(fid, 'lon', start=contiguous_inds[1], count=length(contiguous_inds))
-            lon = lon[contig_match]
-            lat = ncvar_get(fid, 'lat', start=contiguous_inds[1], count=length(contiguous_inds))
-            lat = lat[contig_match]
-            elev = ncvar_get(fid, elev_var_name, start=contiguous_inds[1], count=length(contiguous_inds))
-            elev = elev[contig_match]
-
-        #}
     }
 
     nc_close(fid)
@@ -258,12 +259,20 @@ get_netcdf_gauge_indices_in_polygon<-function(netcdf_file, region_poly){
 #'
 #' @param netcdf_file netcdf filename
 #' @param gauge_ID vector of numeric gauge IDs
+#' @param FASTREAD if possible, read from a file that ONLY contains station data
 #'
-get_netcdf_gauge_index_matching_ID<-function(netcdf_file, gauge_ID){
+get_netcdf_gauge_index_matching_ID<-function(netcdf_file, gauge_ID, FASTREAD=TRUE){
 
     fid = nc_open(netcdf_file, readunlim=FALSE)
 
-    point_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
+    if(FASTREAD){
+        netcdf_stations_only = get_file_with_gauges_only_if_on_NCI_THREDDS(netcdf_file)
+        fid2 = nc_open(netcdf_stations_only, readunlim=FALSE)
+        point_ids = clean_gaugeID(ncvar_get(fid2, 'gaugeID'))
+        nc_close(fid2)
+    }else{
+        point_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
+    }
 
     closest_ID = match(gauge_ID, point_ids)
 
@@ -281,6 +290,8 @@ get_netcdf_gauge_index_matching_ID<-function(netcdf_file, gauge_ID){
 
 
 .test_get_netcdf_gauge_index_matching_ID<-function(netcdf_file){
+
+    netcdf_file = get_file_with_gauges_only_if_on_NCI_THREDDS(netcdf_file)
 
     desired_id = c(1.1, 10.1)
     desired_index = get_netcdf_gauge_index_matching_ID(netcdf_file, desired_id)
@@ -412,10 +423,13 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
     run_atts = ncatt_get(fid, varid=0)
 
     if(!flow_and_attributes_only){
-        gauge_ids = clean_gaugeID(ncvar_get(fid, 'gaugeID'))
-        lat = ncvar_get(fid, 'lat')
-        lon = ncvar_get(fid, 'lon')
-        elev = ncvar_get(fid, 'elevation0')
+        netcdf_file2 = get_file_with_gauges_only_if_on_NCI_THREDDS(netcdf_file)
+        fid2 = nc_open(netcdf_file)
+        gauge_ids = clean_gaugeID(ncvar_get(fid2, 'gaugeID'))
+        lat = ncvar_get(fid2, 'lat')
+        lon = ncvar_get(fid2, 'lon')
+        elev = ncvar_get(fid2, 'elevation0')
+        nc_close(fid2)
     }else{
         # Don't bother reading other gauge information
         gauge_ids = NULL
@@ -733,7 +747,9 @@ make_tsunami_event_from_unit_sources<-function(
 #' Generic routine to run the test codes on a netcdf file
 #'
 #' Helps to detect connection issues as well as errors in code logic
-#'
+#' 
+#' Note the test_all.R code also runs a test on actual waveform summation
+#' (whereas the tests below only check gauge-finding routines -- which is limited).
 test_sum_tsunami_unit_sources<-function(netcdf_file){
 
     .test_get_netcdf_gauge_indices_near_points(netcdf_file)

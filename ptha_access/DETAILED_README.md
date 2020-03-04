@@ -331,7 +331,8 @@ names(puysegur)
 
 ```
 ## [1] "events"                 "unit_source_statistics"
-## [3] "gauge_netcdf_files"
+## [3] "gauge_netcdf_files"     "events_file"           
+## [5] "unit_source_file"       "tsunami_events_file"
 ```
 
 ```r
@@ -346,6 +347,15 @@ lapply(puysegur, class) # Get class of each entry in the list 'puysegur'
 ## [1] "data.frame"
 ## 
 ## $gauge_netcdf_files
+## [1] "character"
+## 
+## $events_file
+## [1] "character"
+## 
+## $unit_source_file
+## [1] "character"
+## 
+## $tsunami_events_file
 ## [1] "character"
 ```
 
@@ -877,12 +887,64 @@ write.csv(site_flow, output_file, row.names=FALSE)
 
 ### ***Finding earthquake scenarios within a particular wave-height range at a particular hazard point***
 
-FIXME: Discuss how to do this, and mention that because the magnitudes are
-sorted, the smaller magnitude events will tend to be *high-extremes* for their
-magnitude, the middle magnitudes will be *typical* for their magnitude, and the
-higher magnitudes will be *low-extremes*. This implies potential for bias in
-event selection (e.g. if you only picked the first event, which will always
-have a low magnitude because the outputs are sorted by magnitude.).
+An approach to doing this is presented below. It's worth keeping in mind that
+the events will still be sorted by magnitude. Thus smaller magnitude events
+will tend to be *high-extremes* for their magnitude, the middle magnitudes
+events will be *typical* for their magnitude, and the higher magnitude events
+will be *low-extremes*. If you don't consider this, then there is potential for
+bias in event selection (e.g. if you only picked the first event, which will
+always have a low magnitude).
+
+The basic idea is:
+
+```r
+# Our point of interest
+point_id = 54401.4
+# Source-zone(s) of interest
+source_zone_name = 'kermadectonga2'
+# Get the peak-stages 
+ps = get_peak_stage_at_point_for_each_event(
+    hazard_point_gaugeID=point_id, 
+    all_source_names=list(source_zone_name), 
+    include_earthquake_data=FALSE)
+```
+
+```
+## [[1]]
+## [1] "kermadectonga2"
+```
+
+```r
+# Here ps is a list, with one entry for each source-zone in all_source_names,
+# containing the peak-stage for every event.
+
+# Suppose we want waves within this range
+stage_range = c(0.34, 0.37)
+desired_event_rows = which(
+          ps[[source_zone_name]]$max_stage >= stage_range[1] &
+          ps[[source_zone_name]]$max_stage <= stage_range[2])
+
+# Get the data -- a large chunk_size is probably a good idea unless there are few events
+event_subset =  get_source_zone_events_data('kermadectonga2', 
+    desired_event_rows=desired_event_rows, chunk_size=99999)
+
+# So now event_subset$events should contain one row for each of "desired_event_rows"
+stopifnot(length(desired_event_rows) == dim(event_subset$events)[1])
+# It also stores their indices as event_subset$desired_event_rows 
+names(event_subset)
+```
+
+```
+## [1] "events"                 "unit_source_statistics"
+## [3] "gauge_netcdf_files"     "desired_event_rows"    
+## [5] "events_file"            "unit_source_file"      
+## [7] "tsunami_events_file"
+```
+
+```r
+# As mentioned above the events are sorted by magnitude -- and you should consider
+# this when selecting events.
+```
 
 ### ***Viewing the locations of hazard points and source zones***
 
