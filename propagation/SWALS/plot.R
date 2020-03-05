@@ -179,6 +179,8 @@ get_gauges_netcdf_format<-function(output_folder){
             if(class(tmp) == 'try-error'){
                 tmp = NA
             }
+            # Force it to be a matrix even if there is only 1 gauge
+            if(length(dim(tmp)) < 2) dim(tmp) = c(1, length(tmp))
         }else{
             tmp = NA
         }
@@ -514,7 +516,12 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
             }else{
                 stage = ncvar_get(fid, 'stage', start=c(1,1, time_index), count=c(-1,-1,1))
             }
-            elevation = ncvar_get(fid, 'elev', start=c(1,1, time_index), count=c(-1,-1,1))
+            if('elev' %in% names(fid$var)){
+                elevation = ncvar_get(fid, 'elev', start=c(1,1, time_index), count=c(-1,-1,1))
+            }else{
+                elevation = ncvar_get(fid, 'elevation0', start=c(1,1), count=c(-1,-1))
+            }
+
             var[stage < elevation + 1.0e-03] = NA
         }
         nc_close(fid)
@@ -536,11 +543,11 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
             var = pmin(var, zlim[2])
         }
 
-        if(use_fields){
-            image.plot(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
-        }else{
+        #if(use_fields){
+        #    image.plot(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
+        #}else{
             image(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
-        }
+        #}
     }
 
 }
