@@ -73,7 +73,7 @@ get_file_with_gauges_only_if_on_NCI_THREDDS<-function(netcdf_file){
     if(on_NCI){
         # Read a file that ONLY contains gauges -- this is generally faster
         netcdf_file = config_env$adjust_path_to_gdata_base_location(
-            paste0(.GDATA_OPENDAP_BASE_LOCATION, 
+            paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
                    'EVENT_RATES/STATIONS_ONLY_lon_lat_elev_gaugeID.nc'))
     }
 
