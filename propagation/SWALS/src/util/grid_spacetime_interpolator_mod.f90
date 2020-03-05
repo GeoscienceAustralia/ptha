@@ -5,6 +5,7 @@ module grid_spacetime_interpolator_mod
     use linear_interpolator_mod, only: nearest_index_sorted
     use logging_mod, only: log_output_unit
     use stop_mod, only: generic_stop
+    use iso_c_binding, only: c_ptr
     implicit none
 
     real(dp), parameter :: cx = 2.7_dp, cy = 3.05_dp
@@ -29,6 +30,9 @@ module grid_spacetime_interpolator_mod
             !! The second dimension has size = size(y)
             !! The third dimension has size = "number of grids". Often this will be 1,
             !! but sometimes we want several grids (e.g. east/north velocity)
+        type(c_ptr) :: interp_dataptr
+            !! Used to store any data required by the get_grid_at_time function
+
        
         procedure(get_grid_at_time), pointer, nopass :: get_grid_at_time => NULL()
             !! User-provided subroutine to update the g1 and g2 values 
