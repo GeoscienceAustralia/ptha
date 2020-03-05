@@ -1,6 +1,10 @@
 library(rptha)
 ptha = new.env()
-source('../get_PTHA_results.R', local=ptha, chdir=TRUE)
+ptha_access_script_path = '../../get_PTHA_results.R'
+
+if(!file.exsts(ptha_access_script_path)) stop('Please edit ptha_access_script_path to point to the correct script location')
+
+source(ptha_access_script_path, local=ptha, chdir=TRUE)
 
 # INPUTS
 all_nc = Sys.glob('event_time_series/*.nc')

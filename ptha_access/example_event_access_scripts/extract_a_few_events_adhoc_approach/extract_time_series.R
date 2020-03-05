@@ -9,7 +9,7 @@
 
 ptha = new.env()
 # EDIT THE FOLLOWING PATH AS REQUIRED
-source('../../../ptha/ptha_access/get_PTHA_results.R', local=ptha, chdir=TRUE)
+source('../../../../ptha/ptha_access/get_PTHA_results.R', local=ptha, chdir=TRUE)
 
 # Hazard point here will be used to define return periods -- prefer points far offshore
 return_period_point = c(154.6667, -26.6667)
