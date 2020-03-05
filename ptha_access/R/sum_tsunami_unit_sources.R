@@ -1,28 +1,6 @@
-# Below is a note on a strange netcdf bug that I encountered while developing
-# this. The problem turned out to be associated with netcdf-4.1.3 (only,
-# apparently). I worked around it by compiling R's ncdf4 library with a more
-# recent version of netcdf (which coincidently I'd build earlier, for working with opencoarrays)
-##  
-##  # I can access ncdf files via opendap. However, there is a strange bug that appears when indexing subsets.
-##  
-##  library(ncdf4)
-##  fid = nc_open('http://dapds00.nci.org.au/thredds/dodsC/fj6/PTHA/AustPTHA/v2017/SOURCE_ZONES/puysegur/TSUNAMI_UNIT_SOURCE/unit_source_tsunami/RUN_20161121104520_puysegur_1_1/RUN_ID100001_20161123_082248.005/Gauges_data_ID100001.nc')
-##  
-##  # This works -- note that start[2] is not = 1 (start[2] corresponds to the tide gauge index)
-##  stage = ncvar_get(fid, 'stage', start=c(1,2), count=c(-1,1))
-##  # If start[2] = 1, then it hangs on my machine, and on an ubuntu 14.04 virtual machine I tested. However, the command works on the NCI.
-##  # stage = ncvar_get(fid, 'stage', start=c(1,1), count=c(-1,1))
-##  
-##  # Further, ncks seems to HANG when retrieving the first tide gauge index
-##  ncks -d station,0 -v stage 'http://dapds00.nci.org.au/thredds/dodsC/fj6/PTHA/AustPTHA/v2017/SOURCE_ZONES/puysegur/TSUNAMI_UNIT_SOURCE/unit_source_tsunami/RUN_20161121104520_puysegur_1_1/RUN_ID100001_20161123_082248.005/Gauges_data_ID100001.nc'
-##  # See this related bug!
-##  https://sourceforge.net/p/nco/bugs/57/
-##  # That link says it's only on netcdf version 4.1.3 -- that is the default ubuntu 14.04 version.
-##  # So I re-installed the ncdf4 package in R, using the following commands to use my gcc 6.1 updated ncdf install:
-##  #
-##  sudo R CMD INSTALL --configure-args='--with-nc-config=/home/gareth/Code_Experiments/alternate_compiler_lib/gcc_6.1/netcdf/install/bin/nc-config' ncdf4
-##  # Actually, I also set my PATH, C_INCLUDE_PATH, and LD_LIBRARY_PATH to point to the associated bin/include/lib dirs respectively -- but that might not have done anything.
-##  
+#
+# Code for summing unit-source tsunami waveforms
+#
 
 
 suppressPackageStartupMessages(library(ncdf4))
@@ -648,7 +626,7 @@ make_tsunami_event_from_unit_sources<-function(
 
         names(flow_data)[i] = netcdf_file
 
-        gc()
+        #gc()
     }
 
     if(verbose) print('Summing unit sources ...') 

@@ -6,21 +6,54 @@ ptha = new.env()
 # EDIT THE FOLLOWING PATH AS REQUIRED
 source('../../../ptha/ptha_access/get_PTHA_results.R', local=ptha, chdir=TRUE)
 
-# Hazard point here will be used to define return periods
-return_period_point = c(153.9422, -27.2858)
-lower_depth_limit = 40 # Only get wave time-series at points deeper than this (m)
+# Hazard point here will be used to define return periods -- prefer points far offshore
+return_period_point = c(154.6667, -26.6667)
+# Only get wave time-series at points deeper than this (m). Prefer deep points (e.g. 1000+m)
+lower_depth_limit = 200 
 
 # We extract wave time series at hazard points in this polygon. It can have an
-# arbitrary number of points.
+# arbitrary number of points (but the download will take longer)
 # If you only want time-series at the return period point, then set this to NULL
 # Note that if the return period point is not inside the polygon, will
 # anyway include it 
 point_extraction_polygon = rbind(
-    c(150.4, -28.6),   # Lower left
-    c(157.0, -28.6), # Lower right
-    c(157.0, -22.5),  # Upper right
-    c(150.4, -22.5)  # Upper left
+    c(154.5, -28.8),   # Lower left
+    c(154.8, -28.8), # Lower right
+    c(154.8, -24.5),  # Upper right
+    c(154.5, -24.5)  # Upper left
     )
+
+# Rates at which outputs are desired
+all_desired_rates = c(1/500, 1/2500) #c(1/750, 1/3000, 1/10000)
+# Alternative to specifying rates -- specify stages directly. In that case, the
+# rates should be NA. 
+all_desired_stages = c(NA, NA) # c(NA, NA, NA)
+
+# Choose at most this many source-zones at each return period
+max_number_of_source_zones = 2 # 4
+
+# Specify the number of events that should be selected for each
+# source-zone/rate combination
+number_of_events_per_source_and_rate = 2 # 5
+
+# Search for events that have max-stage within a given fraction of the desired_stage,
+# or within the given absolute tolerance -- whichever is more generous.
+max_stage_relative_tolerance = 0.05 # 0.1
+max_stage_absolute_tolerance = 0.01 # 0.05
+
+#
+# End Inputs
+#
+
+#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+if(length(all_desired_stages) != length(all_desired_rates)){
+    stop('length(all_desired_stages) does not equal length(all_desired_rates) -- but it should')
+}
+
+if(any(is.na(all_desired_stages) + is.na(all_desired_rates) != 1)){
+    stop("Please specify EITHER all_desired_stages, OR all_desired_rates, with the other being a vector of NA's with the same length")
+}
 
 # Get stage-vs-exceedance at the return_period_point
 return_period_info = ptha$get_stage_exceedance_rate_curve_at_hazard_point(
@@ -57,10 +90,13 @@ wave_target_points = wave_target_points[k,]
 #
 #
 
-all_desired_rates = c(1/750, 1/3000, 1/10000)
-all_desired_stages = c(NA, NA, NA)
-output_rdata_file = rep("", length(all_desired_rates))
+# Get return periods for all sources -- used repeatedly in the loop below we
+# will repeatedly use this
+all_source_return_periods = ptha$get_stage_exceedance_rate_curves_all_sources(
+    target_index = return_period_info$target_index,
+    only_mean_rate_curve=TRUE)
 
+output_rdata_file = rep("", length(all_desired_rates)) 
 for(ir in 1:length(all_desired_rates)){
 
     desired_rate = all_desired_rates[ir]
@@ -85,9 +121,6 @@ for(ir in 1:length(all_desired_rates)){
 
     # Find domainant source-zones, by finding the exceedance rate of
     # 'desired_stage' at the return_period_point on a source-by-source basis
-    all_source_return_periods = ptha$get_stage_exceedance_rate_curves_all_sources(
-        target_index = return_period_info$target_index,
-        only_mean_rate_curve=TRUE)
     desired_stage_exceedance_rate_by_source = unlist(lapply(all_source_return_periods,
         f<-function(x) approx(x$stage, x$stochastic_slip_rate, xout=desired_stage)$y))
     # Order by decreasing rate
@@ -99,7 +132,7 @@ for(ir in 1:length(all_desired_rates)){
     stopifnot(isTRUE(all.equal(sum(desired_stage_exceedance_rate_by_source), desired_rate, tol=1.0e-06)))
 
     # Choose source_zones with non-zero rate -- up to 4 here
-    n = min(max(1, max(which(desired_stage_exceedance_rate_by_source > 0))), 4)
+    n = min(max(1, max(which(desired_stage_exceedance_rate_by_source > 0))), max_number_of_source_zones)
     source_zones_of_interest = names(desired_stage_exceedance_rate_by_source)[1:n]
     rates_by_source_zone_of_interest = desired_stage_exceedance_rate_by_source[1:n]
 
@@ -110,8 +143,8 @@ for(ir in 1:length(all_desired_rates)){
     sourcezone_event_stage_Mw = ptha$get_peak_stage_at_point_for_each_event(
         target_index=return_period_info$target_index,
         all_source_names = source_zones_of_interest)
-    relative_tolerance = 0.05 # Within 5% of the desired value
-    absolute_tolerance = 0.01 # Within 1cm
+    relative_tolerance = max_stage_relative_tolerance 
+    absolute_tolerance = max_stage_absolute_tolerance 
     # Indices of events in the earthquake_events_table
     sourcezone_event_inds_near_desired_stage = lapply(
         sourcezone_event_stage_Mw,
@@ -158,7 +191,7 @@ for(ir in 1:length(all_desired_rates)){
     # with properties that are more 'central'. However, it has little justification, need
     # to study event reduction
     chosen_events = lapply(event_summaries, f<-function(x){
-        desired_nevents = 2
+        desired_nevents = number_of_events_per_source_and_rate
         n = min(desired_nevents, length(x$mh_distance)) # In case we do not have enough events
         output = order(x$mh_distance)[1:n]
         return(output) 
@@ -184,7 +217,7 @@ for(ir in 1:length(all_desired_rates)){
     #   is also a wave_target_index
     for(i in 1:length(sourcezone_waves)){
         sw = sourcezone_waves[[i]]
-        site = which.min(abs(c(sw$locations[,1]) - return_period_info$lon) + abs(c(sw$locations[,2]) - return_period_info$lat))
+        site = which.min(abs(c(sw$locations[,1]) - return_period_info$lon[1]) + abs(c(sw$locations[,2]) - return_period_info$lat[1]))
         flow = sw$flow[[site]]
         max_stage_summary = sourcezone_event_stage_Mw[[i]]$max_stage[sourcezone_event_inds_near_desired_stage[[i]]]
         for(j in 1:length(chosen_events[[i]])){

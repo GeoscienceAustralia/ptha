@@ -1,5 +1,6 @@
 library(rptha)
-
+ptha = new.env()
+source('../get_PTHA_results.R', local=ptha, chdir=TRUE)
 
 # INPUTS
 all_nc = Sys.glob('event_time_series/*.nc')
@@ -26,35 +27,16 @@ fid = nc_open(all_nc[1])
 txt = ncatt_get(fid, varid=0, 'reference_point_coordinates_where_stage_exceedance_rates_were_computed')
 reference_point_in_file = as.numeric(scan(text=txt$value, sep=","))
 if(is.null(reference_point)[1]) reference_point = reference_point_in_file
-
-rp_stages = ncvar_get(fid, 'rp_curve_stage')
-rp_rate = ncvar_get(fid, 'rp_curve_rate')
-rp_rate_lower = ncvar_get(fid, 'rp_curve_rate_lower_ci')
-rp_rate_upper = ncvar_get(fid, 'rp_curve_rate_upper_ci')
 gauges = data.frame(ncvar_get(fid, 'lon'), ncvar_get(fid, 'lat'), ncvar_get(fid, 'elev'), ncvar_get(fid, 'gaugeID'))
-
 nc_close(fid)
-
+#
 par(mfrow=c(2,1))
-plot(rp_stages, rp_rate, log='xy', t='o', 
-    xlab=paste0(' Peak stage'),
-    ylab='Exceedance rate (events/year)',
-    ylim=c(1.0e-06, 1))
-points(rp_stages, rp_rate_upper, t='l', col='red')
-points(rp_stages, rp_rate_lower, t='l', col='red')
-title(paste0('Peak tsunami stage vs exceedance rate (due to all earthquake source-zones in this PTHA) \n', 
-    round(reference_point_in_file[1],4), ', ', round(reference_point_in_file[2],4)))
-abline(h=10**(seq(-6, 0)), col='brown', lty='dotted')
-abline(v=c(0.02, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20), 
-    col='brown', lty='dotted')
-legend('topright', c('Mean rate (over all logic tree branches)', '95% credible intervals'),
-    col=c('black', 'red'), lty=c(1,1), pch=c(1,NA), bg='white')
+return_period_info = ptha$get_stage_exceedance_rate_curve_at_hazard_point(
+    target_point=reference_point, make_plot=TRUE)
 
 #
 # Location of gauges
 #
-#plot(wrld_simpl, xlim=range(gauges[,1]), ylim=range(gauges[,2]), asp=1, 
-#    axes=TRUE, col='grey', xlab='lon', ylab='lat')
 plot(gauges[,1], gauges[,2], col='red', asp=1, xlab='lon', ylab='lat')
 if(class(aus_coastline) != 'try-error'){
     plot(aus_coastline, add=TRUE, col=rgb(0, 0, 0, alpha=0.2))
