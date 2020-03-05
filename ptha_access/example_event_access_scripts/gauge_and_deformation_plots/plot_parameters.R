@@ -5,7 +5,7 @@ library(rptha)
 
 # Get the ptha-access routines
 ptha=new.env()
-source('../../../CODE/ptha/ptha_access/get_PTHA_results.R', chdir=TRUE, local=ptha)
+source('../../../../CODE/ptha/ptha_access/get_PTHA_results.R', chdir=TRUE, local=ptha)
 # Local routine that is helpful
 source('./find_unit_sources_near_hypocentre.R')
 
@@ -13,11 +13,11 @@ source('./find_unit_sources_near_hypocentre.R')
 source_zone = 'kermadectonga2'
 # The PTHA18 unit-sources shapefile
 unit_source_polygon_shapefile = 
-    '../../../CODE/ptha/ptha_access/SOURCE_ZONES/kermadectonga2/EQ_SOURCE/unit_source_grid/kermadectonga2.shp'
+    '../../../../CODE/ptha/ptha_access/SOURCE_ZONES/kermadectonga2/EQ_SOURCE/unit_source_grid/kermadectonga2.shp'
 # A background DEM
-dem = raster('../../../MODELS/AustPTHA_c/DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif')
+dem = raster('../../../../MODELS/AustPTHA_c/DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif')
 # A background zero-contour shapefile
-zero_contour = '../../../MODELS/AustPTHA_c/DATA/ELEV/merged_dem/zero_contour/zero_contour.shp'
+zero_contour = '../../../../MODELS/AustPTHA_c/DATA/ELEV/merged_dem/zero_contour/zero_contour.shp'
 
 # Files with earthquake events for stochastic/variable-uniform, and uniform
 # Download these from the NCI THREDDS SERVER
