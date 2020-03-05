@@ -1,4 +1,9 @@
 #
+# This script takes a given point and a set of max-stage return periods, and uses
+# an ad-hoc method to pick a few events from one or more source-zones.
+#
+
+#
 # Inputs
 #
 
