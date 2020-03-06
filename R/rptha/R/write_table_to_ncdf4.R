@@ -211,6 +211,8 @@ read_table_from_netcdf<-function(filename, desired_rows = NULL, chunk_size=100, 
 
     output_df = as.data.frame(var_list, stringsAsFactors=FALSE)
 
+    nc_close(fid)
+
     return(output_df)
 }
 
