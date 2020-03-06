@@ -8,20 +8,9 @@ scenarios from the PTHA database.
 The code in [gauge_and_deformation_plots](gauge_and_deformation_plots) can be
 useful to eyeball many scenarios, to assist with manual event selection.
 
-## Extracting a few time-series at some target points, with prescribed maximum-stage values or exceedance-rates, using an ad-hoc approach to get just a few scenarios
+## Extract a few time-series at some target points, with prescribed maximum-stage values or exceedance-rates, using an ad-hoc approach to get just a few scenarios
 
-To run the code, you first need to open the file
-[./extract_a_few_events_adhoc_approach/extract_time_series.R](./extract_a_few_events_adhoc_approach/extract_time_series.R),
-and edit the input variables and the location of the
-[get_PTHA_results.R](../get_PTHA_results.R) script on your machine.
-
-Then, supposing `rptha` and all other add-on packages are installed, and you have
-a good internet connection, you should be able to run the code with: 
-
-    Rscript extract_time_series.R
-
-You can also make a quick plot of the results (again, make sure the path to [get_PTHA_results.R](../get_PTHA_results.R) is correct).
-    Rscript quick_plot_stage_at_reference_point.R
+See [extract_a_few_events_adhoc_approach](extract_a_few_events_adhoc_approach)
 
 ## Initial conditions for scenarios that are similar to historic tsunamis
 
