@@ -1,3 +1,5 @@
+Rprof(line.profiling=TRUE)
+
 # Read key codes
 source('R/sum_tsunami_unit_sources.R', local=TRUE)
 source('R/config.R', local=TRUE)
@@ -115,3 +117,5 @@ test_large_event_read<-function(){
 }
 
 test_large_event_read()
+
+Rprof(NULL)
