@@ -2,7 +2,7 @@ library(rptha)
 ptha = new.env()
 ptha_access_script_path = '../../get_PTHA_results.R'
 
-if(!file.exsts(ptha_access_script_path)) stop('Please edit ptha_access_script_path to point to the correct script location')
+if(!file.exists(ptha_access_script_path)) stop('Please edit ptha_access_script_path to point to the correct script location')
 
 source(ptha_access_script_path, local=ptha, chdir=TRUE)
 

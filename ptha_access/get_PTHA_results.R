@@ -44,7 +44,7 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 #' puysegur_data_Mw81 = get_source_zone_events_data('puysegur', range_list=list(Mw=c(8.05, 8.15), rate_annual=c(0, Inf)))
 #'
 get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', desired_event_rows = NULL,
-                                      range_list=NULL, chunk_size=100){
+                                      range_list=NULL, chunk_size=1000){
 
     library(rptha)
 

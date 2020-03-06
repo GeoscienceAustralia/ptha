@@ -482,7 +482,7 @@ get_flow_time_series_SWALS<-function(netcdf_file, indices_of_subset=NULL,
             # continuous (or close to). Take the transpose of the stages for
             # consistency with the case when time is an unlimited dimension
 
-            chunk_size = ifelse(is_remote, 100, 1) 
+            chunk_size = ifelse(is_remote, 1000, 1) 
             #print(paste0('chunk size: ', chunk_size))
             #print('stage...')
             stages = .chunked_read(fid, 'stage', indices_of_subset, chunk_size=chunk_size)
