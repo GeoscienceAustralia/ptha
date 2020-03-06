@@ -84,6 +84,7 @@ get_netcdf_gauge_locations<-function(netcdf_file, indices_of_subset = NULL, FAST
     if(length(grep(elev_var_name, names(fid$var))) == 0){
         elev_var_name = 'elev'
         if(length(grep(elev_var_name, names(fid$var))) == 0){
+            nc_close(fid)
             stop(paste0('No elevation variable found in file ', netcdf_file))
         }
     }
@@ -283,6 +284,7 @@ get_netcdf_gauge_index_matching_ID<-function(netcdf_file, gauge_ID, FASTREAD=TRU
     }else{
         print('FAIL')
     }
+    nc_close(fid)
 
 }
 
