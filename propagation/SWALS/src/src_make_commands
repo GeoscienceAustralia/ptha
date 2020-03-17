@@ -41,9 +41,14 @@ qsort_mod.o : $(SWALS_SRC)/util/qsort_mod.f90
 #	gcc -O3 -c $^
 
 
-# read_raster_c relies on GDAL and the C compiler
+# read_raster_c relies on GDAL and the C compiler. Also heavy optimization can
+# cause read issues with some files, so we use -O2 only here.
 read_raster_c.o: $(SWALS_SRC)/raster/read_raster_c.c
-	$(SWALS_CC) -c $(SWALS_SRC)/raster/read_raster_c.c $(SWALS_GDAL_CFLAGS)
+	$(SWALS_CC) -O2 -c $^ $(SWALS_GDAL_CFLAGS)
+# Heavy optimization of the read_raster_mod.f90 can cause issues
+read_raster_mod.o: $(SWALS_SRC)/raster/read_raster_mod.f90
+	$(SWALS_FORTRAN) -O2 -c $^ $(SWALS_GDAL_CFLAGS)
+
 
 #
 # These rely on NETCDF, unless compiled with -DNONETCDF,
