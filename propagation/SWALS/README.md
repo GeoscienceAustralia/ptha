@@ -17,11 +17,13 @@ correction is used to enforce the conservation of mass and advected momentum
 through nested domain interfaces.
 
 Parallel computation (shared and distributed memory CPU) is supported with a
-mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can
-be used to improve the efficiency of large parallel jobs. The code includes a
-unit test suite, a parallel unit test suite, and a validation test suite. The
-latter focussus on tsunami type problems; see [here for tests from NTHMP suite](./examples/nthmp) 
-(well known in the tsunami community) and [here](./exampels) for various other problems.
+mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can be
+used to improve the efficiency of large parallel jobs. The code includes
+various test suits that can be run automatically, including [unit test suite](./tests/unit_tests), 
+a [parallel unit test suite](./tests/parallel_tests) , and a 
+[validation test suite](./tests/validation_tests). The latter focussus on tsunami type problems;
+see [here for code for NTHMP tests](./examples/nthmp) (well known in the
+tsunami community) and [here](./examples) for code for other problems.
 
 ## Installation prerequisites
 --------------------------
