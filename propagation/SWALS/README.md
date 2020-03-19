@@ -19,8 +19,9 @@ through nested domain interfaces.
 Parallel computation (shared and distributed memory CPU) is supported with a
 mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can
 be used to improve the efficiency of large parallel jobs. The code includes a
-unit test suite, a parallel unit test suite, and a validation test suite (the
-latter focussing on tsunami type problems).
+unit test suite, a parallel unit test suite, and a validation test suite. The
+latter focussus on tsunami type problems; see [here for tests from NTHMP suite](./examples/nthmp) 
+(well known in the tsunami community) and [here](./exampels) for various other problems.
 
 ## Installation prerequisites
 --------------------------
@@ -183,7 +184,7 @@ not a replacement for eyeballing the figures and thinking about the results.
 
 ## Examples to consider
 
-The validation tests provide templates for developing other models. They illustrate driver programs, compilation, and model post-processing. Some of the more practical examples include:
+The validation tests  in [./examples/](./examples) provide templates for developing other models. They illustrate driver programs, compilation, and model post-processing. Some of the more practical examples include:
 
 * [./examples/nthmp/BP09/](./examples/nthmp/BP09) which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
 * [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Tauranga_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
