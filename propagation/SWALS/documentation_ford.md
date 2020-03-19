@@ -27,6 +27,8 @@ src_dir: ./examples/merewether/
 exclude_dir: ./examples/merewether/OUTPUTS/
 src_dir: ./examples/nesting_reflection/
 exclude_dir: ./examples/nesting_reflection/OUTPUTS/
+src_dir: ./examples/parabolic_canal/
+exclude_dir: ./examples/parabolic_canal/OUTPUTS/
 src_dir: ./examples/paraboloid_bowl/
 exclude_dir: ./examples/paraboloid_bowl/OUTPUTS/
 src_dir: ./examples/periodic_convergence/
