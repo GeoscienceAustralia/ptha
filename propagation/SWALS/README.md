@@ -228,6 +228,6 @@ HTML documentation of the source-code can be generated using [ford](https://gith
 
     ford documentation_ford.md 
 
-in the current directory. This will make a folder `doc`. You can then browse the documentation by opening `./doc/index.html` in your web-browser.
+in the current directory. This will make a folder `doc`. You can then browse the documentation by opening `./doc/index.html` in your web-browser. It may be useful to start by looking at the derived type `domain_type` which solves the shallow water equations on a single grid, as well as the `multidomain_type` which holds multiple domains and manages communication between them.
 
 
