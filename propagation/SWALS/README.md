@@ -220,3 +220,14 @@ Other options that are less often useful include:
 - `-DNONETCDF` Do not use netcdf for model outputs. This is useful if you cannot build with netcdf for some reason. However the output format is poorly supported, this is really just for testing if you'd like to bypass netcdf troubles.
 - `-DMPI` Use `MPI_Abort` in the generic stop routine. This can probably be removed?
 - `-DDEBUG_ARRAY` Add an array `domain%debug_array(nx, ny)` to every domain, which is written to netcdf at every output timestep. This can provide a scratch space for debugging.
+
+## Source-code html documentation
+-------------------------
+
+HTML documentation of the source-code can be generated using [ford](https://github.com/Fortran-FOSS-Programmers/ford). Assuming ford is installed you can create the documentation by running:
+
+    ford documentation_ford.md 
+
+in the current directory. This will make a folder `doc`. You can then browse the documentation by opening `./doc/index.html` in your web-browser.
+
+
