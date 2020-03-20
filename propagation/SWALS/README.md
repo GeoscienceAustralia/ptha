@@ -23,8 +23,8 @@ used to improve the efficiency of large parallel jobs.
 The code includes various test suits that can be run automatically, including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
  and a [validation test suite](./tests/validation_tests). The latter focussus 
-on tsunami type problems; see [here for code for NTHMP tests](./examples/nthmp) 
-(which are well known in the tsunami community) and [here](./examples) for various other problems.
+on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
+(which are well known in the tsunami community) and [here](./examples) for other problems.
 
 ## Installation prerequisites
 --------------------------
