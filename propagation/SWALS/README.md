@@ -20,7 +20,7 @@ Parallel computation (shared and distributed memory CPU) is supported with a
 mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can be
 used to improve the efficiency of large parallel jobs. 
 
-The code includes various test suits that can be run automatically, including a
+The code includes various test suits that [can be run automatically](#compiling-and-testing), including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
  and a [validation test suite](./tests/validation_tests). The latter focussus 
 on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
