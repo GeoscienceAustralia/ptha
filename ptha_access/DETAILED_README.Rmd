@@ -505,13 +505,20 @@ initial_condition = get_initial_condition_for_event(puysegur, row_index, force_f
 
 ### ***Extracting the tsunami time-series for a particular scenario at a particular hazard point***
 
-Here we show how to read a flow time-series for a given earthquake scenario, at a
-given hazard point. To do this, you have to know the hazard point `gaugeID`,
-which can be found by examining the maximum-stage vs exceedance-rate datasets (csv
-and shapefile), or by using the interactive hazard point viewer discussed below. (***In the
-latter case, please do not confuse this with the Feature ID that is shown by
-default in the interactive map - I would like to remove this field, but do not
-yet know how/if it can be done!***). 
+Here we show how to read a flow time-series for a given earthquake scenario, at
+a given hazard point. Users should beware that these time-series are derived by
+solving the linear shallow water equations on a global 1-arcmin grid. An
+important limitation of such time-series is that they ignore friction. Friction
+leads to a slow attenuation of the tsunami at the global scale. *Thus,
+frictionless simulations are likely to overestimate the size of late-arriving waves
+in any location.* To work around this it is preferable to simulate the tsunami from
+source using a model that includes global-scale friction, especially if the
+most significant waves occur 8 or more hours after the tsunami arrives at your site of
+interest.
+
+To obtain a time-series, you have to know the hazard point `gaugeID`.  This can
+be found by examining the maximum-stage vs exceedance-rate datasets (csv and
+shapefile). 
 
 ```{r getflow, fig.width=5, fig.height=5}
 # Get stage, uh, vh time-series at DART gauges 55015 and 55042
