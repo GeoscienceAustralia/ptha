@@ -512,16 +512,21 @@ Users should beware that these time-series are derived by solving the linear
 shallow water equations on a global 1-arcmin grid. An important limitation of
 such time-series is that they ignore friction. Friction leads to a slow
 attenuation of the tsunami at the global scale. This does not seem important
-for modelling the early part of the tsunami time-series, even at sites far from
-the earthquake-source, because the early arrivals are generally dominated by
-waves that have predominantly travelled through the deep ocean where friction
-is small. However late arrival are more likely to represent waves that
-have reflected off coastlines or travelled through shallow waters, where
-friction is greater. *Hence frictionless simulations are likely to overestimate
-the size of late-arriving waves in any location.* To work around this it is
-preferable to simulate the tsunami from source using a model that includes
-global-scale friction, especially if the most significant waves occur 8 or more
-hours after the tsunami arrives at your site of interest. 
+for modelling the early part of the tsunami time-series in deep water, even at
+sites far from the earthquake-source, because the early arrivals are generally
+dominated by waves that have travelled through the deep ocean where friction is
+small. However late arrival are more likely to represent waves that have
+interacted with nearshore areas, where friction is greater. *Hence frictionless
+simulations are likely to overestimate the size of late-arriving waves in any
+location.* To work around this it is preferable to simulate the tsunami from
+source using a model that includes global-scale friction, especially if the
+most significant waves occur 8 or more hours after the tsunami arrives at your
+site of interest.  Furthermore, preference should be given to using points in
+deep waters well away from the coast. This is because the linear shallow water
+equations assume that the wave height is much smaller than the water depth,
+which is increasingly violated in shallow waters, and furthermore our 1 arcmin
+grid is insufficient to represent the details of coastal topography which are
+affect the tsunami closer to shore.
 
 To obtain a time-series, you have to know the hazard point `gaugeID`.  This can
 be found by examining the maximum-stage vs exceedance-rate datasets (csv and
