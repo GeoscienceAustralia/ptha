@@ -821,7 +821,7 @@ In addition preference should be given to using points in deep waters well away
 from the coast. This is because the linear shallow water equations assume that
 the wave height is much smaller than the water depth, which is increasingly
 violated in shallow waters, and furthermore our 1 arcmin grid is insufficient
-to represent the details of coastal topography which are affect the tsunami
+to represent the details of coastal topography which substantially affect the tsunami
 closer to shore.
 
 To obtain a time-series, you have to know the hazard point `gaugeID`.  This can
