@@ -1,7 +1,7 @@
-# **Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and wave time-series**
+# **Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and tsunami time-series**
 
 For every PTHA18 scenario we provide earthquake information, tsunami
-initial conditions, and wave time-series at every hazard point. Combined with
+initial conditions, and tsunami time-series at every hazard point. Combined with
 the exceedance-rate modelling, such inputs can be used to drive local scale
 tsunami inundation models for hazard and risk assessments.
 
@@ -799,28 +799,30 @@ initial_condition = get_initial_condition_for_event(puysegur, row_index, force_f
 
 ### ***Extracting the tsunami time-series for a particular scenario at a particular hazard point***
 
-Here we show how to read a flow time-series for a given earthquake scenario, at
+Here we show how to read a tsunami time-series for a given earthquake scenario, at
 a given hazard point. 
 
-Users should beware that these time-series are derived by solving the linear
+Users should note that these time-series are derived by solving the linear
 shallow water equations on a global 1-arcmin grid. An important limitation of
-such time-series is that they ignore friction. Friction leads to a slow
-attenuation of the tsunami at the global scale. This does not seem important
-for modelling the early part of the tsunami time-series in deep water, even at
-sites far from the earthquake-source, because the early arrivals are generally
-dominated by waves that have travelled through the deep ocean where friction is
-small. However late arriving waves are more likely to have interacted with
-nearshore areas, where friction is greater. *Hence frictionless simulations are
-likely to overestimate the size of late-arriving waves in any location.* To
-work around this it is preferable to simulate the tsunami from source using a
-model that includes global-scale friction, especially if the most significant
-waves occur 8 or more hours after the tsunami arrives at your site of interest.
-Furthermore, preference should be given to using points in deep waters well
-away from the coast. This is because the linear shallow water equations assume
-that the wave height is much smaller than the water depth, which is
-increasingly violated in shallow waters, and furthermore our 1 arcmin grid is
-insufficient to represent the details of coastal topography which are affect
-the tsunami closer to shore.
+this model is that it ignores friction. Friction leads to a slow attenuation of
+the tsunami at the global scale. This does not seem important for modelling the
+early part of the tsunami time-series in deep water, even at sites far from the
+earthquake-source, because the early arrivals are generally dominated by waves
+that have travelled through the deep ocean where friction is small. However
+late arriving waves are more likely to have interacted with nearshore areas,
+where friction is greater. *Hence frictionless simulations are likely to
+overestimate the size of late-arriving waves in any location.* To work around
+this it is preferable to simulate the tsunami from source using a model that
+includes global-scale friction. While always worthd doing, it is particularly
+encouraged if the most significant waves occur (say) 8 or more hours after the
+tsunami arrives at your site of interest.
+
+In addition preference should be given to using points in deep waters well away
+from the coast. This is because the linear shallow water equations assume that
+the wave height is much smaller than the water depth, which is increasingly
+violated in shallow waters, and furthermore our 1 arcmin grid is insufficient
+to represent the details of coastal topography which are affect the tsunami
+closer to shore.
 
 To obtain a time-series, you have to know the hazard point `gaugeID`.  This can
 be found by examining the maximum-stage vs exceedance-rate datasets (csv and
@@ -881,7 +883,7 @@ title('Stage time-series for the scenario at 2 gauges')
 
 ![plot of chunk getflow](figure/getflow-1.png)
 
-To export the flow time-series to a csv, you can do something like this for
+To export the tsunami time-series to a csv, you can do something like this for
 the station of interest:
 
 ```r
