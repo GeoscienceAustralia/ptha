@@ -813,7 +813,7 @@ late arriving waves are more likely to have interacted with nearshore areas,
 where friction is greater. *Hence frictionless simulations are likely to
 overestimate the size of late-arriving waves in any location.* To work around
 this it is preferable to simulate the tsunami from source using a model that
-includes global-scale friction. While always worthd doing, it is particularly
+includes global-scale friction. While always worth doing, it is particularly
 encouraged if the most significant waves occur (say) 8 or more hours after the
 tsunami arrives at your site of interest.
 
