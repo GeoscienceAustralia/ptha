@@ -16,6 +16,7 @@ program unit_tests
     use qsort_mod, only: test_qsort_mod
     use multidomain_mod, only: test_multidomain_mod
     use extrapolation_limiting_mod, only: test_extrapolation_limiting_mod
+    use date_to_numeric_mod, only: test_date_to_numeric_mod
     implicit none
 
     print*, 'Testing read raster'
@@ -35,6 +36,9 @@ program unit_tests
     
     print*, 'Testing which'
     call test_which()
+
+    print*, 'Testing date_to_numeric'
+    call test_date_to_numeric_mod()
 
     print*, 'Testing point_gauge_mod'
     call test_point_gauge_mod()
