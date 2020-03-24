@@ -437,10 +437,11 @@
             ! Compute a multiplier that applies a semi-implicit treatment of manning friction.
             !
             ! This is equivalent to adding a term "g * depth * friction_slope" to the equations.
-            !   where friction_slope = {manning_sq * depth**(-4./3.) * speed * velocity_component}
+            !   where friction_slope = {manning_sq * depth**(-4./3.) * speed * velocity_component} 
+            !   assuming Manning friction; for Chezy friction the power term is depth**(-1.)
             !
             ! The term is broken up into a fast, semi-implicit discretization. 
-            ! For UH, we break it up as (terms in { })
+            ! For UH, we break it up as (terms in { } -- again assuming Manning friction for illustration)
             !    g * depth * friction_slope = {g * manning_sq * depth^(-7/3)} * { sqrt(uh^2 + vh^2) } * {uh}
             ! while for VH, the final term is vh
             !    g * depth * friction_slope = {g * manning_sq * depth^(-7/3)} * { sqrt(uh^2 + vh^2) } * {vh}
@@ -456,14 +457,20 @@
 
             if(domain%friction_with_ambient_fluxes) then
                 ! Add a tidal current to the friction speed term
-                friction_multiplier_UH(xL:(xU-1)) = 1.0_dp / ( 1.0_dp + &
+                friction_multiplier_UH(xL:(xU-1)) = ONE_dp / ( ONE_dp + &
+                    ! Linear friction like in Fine et al (2012), Kulikov et al (2014)
+                    dt * domain%linear_friction_coeff + &
+                    ! Nonlinear friction
                     dt * domain%friction_work(xL:(xU-1), j, UH) * ( &
                     ! Velocity * depth
                     ! FIXME: Stagger tidal flux appropriately
                     sqrt( (domain%U(xL:(xU-1),j,UH) + domain%ambient_flux(xL:(xU-1), j, UH)) **2 + &
                         (0.5_dp * ( vh_iph_jmh(xL:(xU-1)) + vh_iph_jph(xL:(xU-1)) ) + &
                          domain%ambient_flux(xL:(xU-1), j, VH) )**2 )))
-                friction_multiplier_VH(xL:(xU-1)) = 1.0_dp / (1.0_dp + &
+                friction_multiplier_VH(xL:(xU-1)) = ONE_dp / (ONE_dp + &
+                    ! Linear friction like in Fine et al (2012), Kulikov et al (2014)
+                    dt * domain%linear_friction_coeff + &
+                    ! Nonlinear friction
                     dt * domain%friction_work(xL:(xU-1), j, VH) * ( &
                     ! Velocity * depth
                     ! FIXME: Stagger tidal flux appropriately
@@ -472,12 +479,18 @@
                          domain%ambient_flux(xL:(xU-1), j, UH) )**2) ))
             else
                 ! Regular friction
-                friction_multiplier_UH(xL:(xU-1)) = 1.0_dp / ( 1.0_dp + &
+                friction_multiplier_UH(xL:(xU-1)) = ONE_dp / ( ONE_dp + &
+                    ! Linear friction like in Fine et al (2012), Kulikov et al (2014)
+                    dt * domain%linear_friction_coeff + &
+                    ! Nonlinear friction
                     dt * domain%friction_work(xL:(xU-1), j, UH) * ( &
                     ! Velocity * depth
                     sqrt(domain%U(xL:(xU-1),j,UH)**2 + &
                          (0.5_dp * ( vh_iph_jmh(xL:(xU-1)) + vh_iph_jph(xL:(xU-1)) ) )**2 ) ))
-                friction_multiplier_VH(xL:(xU-1)) = 1.0_dp / (1.0_dp + &
+                friction_multiplier_VH(xL:(xU-1)) = ONE_dp / (ONE_dp + &
+                    ! Linear friction like in Fine et al (2012), Kulikov et al (2014)
+                    dt * domain%linear_friction_coeff + &
+                    ! Nonlinear friction
                     dt * domain%friction_work(xL:(xU-1), j, VH) * ( &
                     ! Velocity * depth
                     sqrt(domain%U(xL:(xU-1),j,VH)**2 + &
@@ -522,12 +535,22 @@
 #endif
 
 #ifdef LINEAR_PLUS_NONLINEAR_FRICTION
-                ! Add the friction terms, if desired
+                ! Add the friction terms, if desired -- including both nonlinear and linear friction
                 domain%U(i,j,UH) = friction_multiplier_UH(i) * domain%U(i,j,UH)
                 domain%U(i,j,VH) = friction_multiplier_VH(i) * domain%U(i,j,VH)
 #endif
 
             end do
+
+#ifndef LINEAR_PLUS_NONLINEAR_FRICTION
+            if(domain%linear_friction_coeff /= ZERO_dp) then
+                ! Add an implicit linear friction treatment for the 'regular linear solver', which missed out
+                ! earlier for cases treated using LINEAR_PLUS_NONLINEAR_FRICTION. 
+                ! This is linear friction like in Fine et al (2012), Kulikov et al (2014)
+                domain%U(xL:(xU-1),j,UH) = ONE_dp/(ONE_dp + dt*domain%linear_friction_coeff) * domain%U(xL:(xU-1),j,UH)
+                domain%U(xL:(xU-1),j,VH) = ONE_dp/(ONE_dp + dt*domain%linear_friction_coeff) * domain%U(xL:(xU-1),j,VH)
+            end if
+#endif
 
 #if defined(CORIOLIS) || defined(LINEAR_PLUS_NONLINEAR_FRICTION)
             ! On the next j iteration, the value of 'old' value of VH at i+1/2,
@@ -576,13 +599,13 @@
         if(domain%friction_type == 'manning') then
 
 #define _FRICTION_DEPTH_POWER_ manning_depth_power
-#include "domain_mod_linear_solver_inner_include.f90"
+#include "domain_mod_leapfrog_solver_friction_include.f90"
 #undef _FRICTION_DEPTH_POWER_
 
         else if(domain%friction_type == 'chezy') then
 
 #define _FRICTION_DEPTH_POWER_ chezy_depth_power
-#include "domain_mod_linear_solver_inner_include.f90"
+#include "domain_mod_leapfrog_solver_friction_include.f90"
 #undef _FRICTION_DEPTH_POWER_
 
         end if

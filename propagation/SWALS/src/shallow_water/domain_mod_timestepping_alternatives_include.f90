@@ -503,7 +503,7 @@
                 ! Celerity stored in backup_U
                 domain%backup_U(:,:,1), &
                 domain%velocity(:,:,UH), domain%velocity(:,:,VH), dx, dy, &
-                zeta, domain%manning_squared)
+                zeta, domain%manning_squared, domain%linear_friction_coeff)
         end do
         !$OMP END PARALLEL DO
         
@@ -521,7 +521,7 @@
                 ! Celerity stored in backup_U
                 domain%backup_U(:,:,1), &
                 domain%velocity(:,:,UH), domain%velocity(:,:,VH), dx, dy, &
-                zeta, domain%manning_squared)
+                zeta, domain%manning_squared, domain%linear_friction_coeff)
         end do
         !$OMP END PARALLEL DO
 

@@ -688,11 +688,18 @@
             ! Thus, appending the term g * depth * friction slope to the equations can be reduced to
             ! a multiplication of the form { 1/(1 + explicit_part_of_friction_terms) }
             !
-            friction_multiplier_UH(xL:(xU-1)) = 1.0_dp / ( 1.0_dp + &
+            !
+            friction_multiplier_UH(xL:(xU-1)) = ONE_dp / ( ONE_dp + &
+                ! Linear friction like in Fine et al (2012), Kulikov et al (2014)
+                dt * domain%linear_friction_coeff + &
+                ! Nonlinear friction
                 dt * domain%friction_work(xL:(xU-1), j, UH) * &
                 sqrt(domain%U(xL:(xU-1),j,UH)**2 + (0.5_dp * ( vh_iph_jmh(xL:(xU-1)) + vh_iph_jph(xL:(xU-1)) ) )**2 ) )
 
-            friction_multiplier_VH(xL:(xU-1)) = 1.0_dp / (1.0_dp + &
+            friction_multiplier_VH(xL:(xU-1)) = ONE_dp / (ONE_dp + &
+                ! Linear friction like in Fine et al (2012), Kulikov et al (2014)
+                dt * domain%linear_friction_coeff + &
+                ! Nonlinear friction
                 dt * domain%friction_work(xL:(xU-1), j, VH) * &
                 sqrt(domain%U(xL:(xU-1),j,VH)**2 + (0.5_dp * ( uh_i_j(xL:(xU-1)) + uh_i_jp1(xL:(xU-1)) ) )**2 ) )
 
@@ -817,17 +824,20 @@ contains
         real(dp) :: depth_iph, depth_jph, nsq_iph, nsq_jph
 
         real(dp), parameter :: manning_depth_power = NEG_SEVEN_ON_THREE_dp, chezy_depth_power = -2.0_dp
+        ! The "#include" code below can also work for a "linear with nonlinear friction" model, but here
+        ! that is not done
+        logical, parameter :: truely_linear = .FALSE.
 
         if(domain%friction_type == 'manning') then
 
 #define _FRICTION_DEPTH_POWER_ manning_depth_power
-#include "domain_mod_leapfrog_nonlinear_inner_include.f90"
+#include "domain_mod_leapfrog_solver_friction_include.f90"
 #undef _FRICTION_DEPTH_POWER_
 
         else if(domain%friction_type == 'chezy') then
 
 #define _FRICTION_DEPTH_POWER_ chezy_depth_power
-#include "domain_mod_leapfrog_nonlinear_inner_include.f90"
+#include "domain_mod_leapfrog_solver_friction_include.f90"
 #undef _FRICTION_DEPTH_POWER_
 
         end if

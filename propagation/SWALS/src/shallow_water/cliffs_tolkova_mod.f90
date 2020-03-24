@@ -86,7 +86,8 @@ module cliffs_tolkova_mod
     contains
 
     subroutine cliffs(dt, iu, irw, n, cliffs_minimum_allowed_depth, &
-                      elev, cel, xvel, yvel, s1, s2, zeta, manning_squared)
+                      elev, cel, xvel, yvel, s1, s2, zeta, manning_squared, &
+                      linear_friction_coeff)
         !! This is the Cliffs 1D time-stepping routine. 
         !! It was originally taken from the cliffs source-code by Elena Tolkova, see comments above for licence etc.
         !! Compared with the cliffs original version, the code below has various interface edits to cleanly integrate into SWALS.
@@ -111,11 +112,14 @@ module cliffs_tolkova_mod
         ! zeta(nYn) -- spherical coordinate scale factor. In CLIFFS this is 0.125/Earth_Radius * tan(pi/180 * lat)
         ! manning_squared -- like 'crough' in the original cliffs.f source -- except for the version below, by default we use
         !                    the standard manning formula (despite the expensive power-law computation)
-        !
+        ! linear_friction_coeff -- drag term, which if written in terms of the depth-integrated-velocity equations, would be
+        !                          like subtracting "linear_friction_coef * UH (or VH)" from the right-hand-side of the UH/VH 
+        !                          evolution equations. This form of drag is used in Fine et al (2012) and Kulikov et al (2014)
         real(dp), intent(in):: dt, cliffs_minimum_allowed_depth
         integer(ip), intent(in) :: iu,irw,n
         real(dp), intent(in) :: elev(:,:), s1, s2, zeta(:), manning_squared(:,:) !, edge1(:,:), edge2(:,:)
         real(dp), intent(inout) :: cel(:,:), xvel(:,:), yvel(:,:)
+        real(dp), intent(in) :: linear_friction_coeff
 
         real(dp) :: h(n),pp(n),qq(n),vv(n),dx(n),scl(n)
         real(dp) :: depth(n),Pinv(n),Qinv(n),v(n),u(n), crough(n)
@@ -339,7 +343,9 @@ module cliffs_tolkova_mod
                 !   Drag force 
                 !  		cc=grav*crough(i)*uj*sqrt(uj**2+vj**2)/hj
                 !  Manning friction - SLOW -- but for SWALS we use this by default
-                cc = grav*crough(i)*uj*sqrt(uj**2+vj**2)/hj**(4.0_dp/3.0_dp)
+                cc = grav*crough(i)*uj*sqrt(uj**2+vj**2)/hj**(4.0_dp/3.0_dp) + &
+                    ! Here we append a linear drag model like Fine et al., (2012), Kulikov et al., (2014).
+                    linear_friction_coeff * uj
                 
                 pj=Pinv(i)
                 qj=Qinv(i)

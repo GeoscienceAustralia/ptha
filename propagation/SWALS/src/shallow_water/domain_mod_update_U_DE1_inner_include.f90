@@ -47,7 +47,8 @@
                 else
 #ifndef NOFRICTION
                     ! Implicit friction slope update
-                    ! U_new = U_last + U_explicit_update - dt*depth*friction_slope_multiplier*U_new
+                    ! U_new = U_last + U_explicit_update - dt_gravity*depth*friction_slope_multiplier*U_new - 
+                    !         dt * linear_friction_coeff * U_new
 
                     ! If we multiply this by UH or VH, we get the associated friction slope term
                     fs = domain%manning_squared(i,j) * &
@@ -56,7 +57,7 @@
                         max(depth, minimum_allowed_depth)**friction_power_depth
                         !exp(log(max(depth, minimum_allowed_depth))*NEG_SEVEN_ON_THREE_dp)
 
-                    implicit_factor = ONE_dp/(ONE_dp + dt_gravity*max(depth, ZERO_dp)*fs)
+                    implicit_factor = ONE_dp/(ONE_dp + dt_gravity*max(depth, ZERO_dp)*fs + dt*domain%linear_friction_coeff)
                     !if(domain%U(i,j,STG) <= (domain%U(i,j,ELV) + minimum_allowed_depth)) implicit_factor = ZERO_dp
 #else
                     implicit_factor = ONE_dp

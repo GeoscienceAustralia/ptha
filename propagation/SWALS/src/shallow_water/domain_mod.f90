@@ -225,12 +225,23 @@ module domain_mod
             !! value.
 
         real(dp) :: leapfrog_froude_limit = 10.0_dp
-            !! Froude-limiter for leapfrog scheme. Velocity will be supressed at higher froude numbers, so as not to exceed this.
+            !! Froude-limiter for nonlinear leapfrog scheme. Velocity will be supressed at higher 
+            !! froude numbers, so as not to exceed this.
 
         character(len=charlen) :: friction_type = 'manning'
             !! If friction_type = 'manning' then interpret domain%manning_squared as (manning's n)**2
             !! If friction_type = 'chezy' then interpret domain%manning_squared as (1/chezy_friction)**2, and use the Chezy friction
             !! model
+
+        real(dp) :: linear_friction_coeff = 0.0_dp
+            !! Linear friction coefficient similar to Fine et al., (2012),  Kulikov et al., (2014), and others. 
+            !! For the UH (and VH) equations we add a term '- linear_friction_coeff * UH (or VH)' to the right-hand-side. 
+            !! This kind of linear decay seems heuristically consistent with the observed exponential decay of tsunami energy once
+            !! it has spread globally. In the aforementioned papers which do not use nonlinear friction, they use
+            !! linear_friction_coeff = 1.0e-05_dp.
+            !! Note this parameterization is different to that used often in the global tidal modelling literature for
+            !! linear friction -- where instead the term is like "drag_coefficient * U (or V)" when the momentum equation
+            !! is written in terms of the depth-integrated velocity (e.g. Egbert and Erofeeva 2002)
 
         !
         ! Boundary conditions. 
@@ -362,9 +373,9 @@ module domain_mod
 #endif
 
         ! Optionally include other currents (e.g. tides) in the friction term. This is an experiment, currently only supported for
-        ! leapfrog_linear and leapfrog_linear_with_nonlinear_friction
+        ! leapfrog_linear_with_nonlinear_friction
         logical :: friction_with_ambient_fluxes = .false. 
-        ! Ambient (e.g. tidal) depth-integrated velocities with easting/northing
+        ! Ambient (e.g. tidal) depth-integrated velocities with easting/northing, used if friction_with_ambient_fluxes=.true.
         real(dp), allocatable :: ambient_flux(:,:,:)
 
         CONTAINS
