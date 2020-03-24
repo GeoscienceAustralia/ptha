@@ -134,6 +134,8 @@ SOURCEDIR
 
         print*, '    max stage: ', maxval(domain%U(:,:,STG))
         print*, '    min stage: ', minval(domain%U(:,:,STG))
+        print*, '    max elev: ', maxval(domain%U(:,:,ELV))
+        print*, '    min elev: ', minval(domain%U(:,:,ELV))
 
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
@@ -207,7 +209,7 @@ program generic_model
     character(charlen) :: timestepping_method, input_parameter_file, namelist_output_filename
 
     real(dp) :: approximate_writeout_frequency, final_time, manning_n, cliffs_minimum_allowed_depth
-    real(dp):: timestep, global_ur(2), global_ll(2), global_lw(2), cfl, dx(2)
+    real(dp):: timestep, global_ur(2), global_ll(2), global_lw(2), cfl, dx(2), linear_friction_coeff
     integer(ip):: global_nx(2), skip_header_hazard_points_file, file_unit_temp, grid_output_spatial_stride
     character(len=charlen):: input_elevation_raster, input_stage_raster, &
         hazard_points_file, output_basedir
@@ -218,13 +220,14 @@ program generic_model
     namelist /MODELCONFIG/ &
         input_elevation_raster, input_stage_raster, global_ll, &
         global_ur, global_nx, approximate_writeout_frequency, output_basedir, &
-        final_time, timestepping_method, manning_n, &
+        final_time, timestepping_method, manning_n, linear_friction_coeff, &
         cfl, hazard_points_file, skip_header_hazard_points_file, record_max_U,&
         output_grid_timeseries, adaptive_computational_extents, negative_elevation_raster, &
         linear_solver_is_truely_linear, grid_output_spatial_stride, cliffs_minimum_allowed_depth
 
     ! Predefine some variables that might not be in the input file
     manning_n = 0.0_dp
+    linear_friction_coeff = 0.0_dp
     linear_solver_is_truely_linear = .true.
     grid_output_spatial_stride = 1
     cliffs_minimum_allowed_depth = 1.0e-03_dp
@@ -259,6 +262,7 @@ program generic_model
     print*, 'timestepping_method: ', TRIM(timestepping_method)
     print*, 'linear_solver_is_truely_linear: ', linear_solver_is_truely_linear
     print*, 'manning n: ', manning_n
+    print*, 'linear friction coefficient: ', linear_friction_coeff
     print*, 'cfl: ', cfl
     print*, 'hazard_points_file: ', TRIM(hazard_points_file)
     print*, 'skip_header_hazard_points_file: ', skip_header_hazard_points_file
@@ -302,6 +306,9 @@ program generic_model
     domain%output_basedir = output_basedir
     domain%linear_solver_is_truely_linear = linear_solver_is_truely_linear
     domain%nc_grid_output%spatial_stride = grid_output_spatial_stride
+
+    !domain%friction_type = 'chezy'
+    domain%linear_friction_coeff = linear_friction_coeff
 
     !! Optionally suppress limiting with rk2
     !!domain%theta = 4.0_dp
