@@ -922,11 +922,13 @@ module multidomain_mod
         call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
 
         if(send_boundary_flux_data) then
+            TIMER_START('nesting_flux_correction')
             ! Do flux correction
             do j = 1, size(md%domains)
                 call md%domains(j)%nesting_flux_correction_everywhere(md%all_dx_md, &
                     md%all_timestepping_methods_md, fraction_of = 1.0_dp)
             end do
+            TIMER_STOP('nesting_flux_correction')
         end if
 
     end subroutine
