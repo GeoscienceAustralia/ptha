@@ -470,9 +470,13 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_abo
 #' @param NA_if_stage_not_above_elev logical. If TRUE, the set regions with stage <= (elev + 1e-03) to NA
 #' @param use_fields logical. If TRUE, use image.plot from the fields package. Otherwise use graphics::image
 #' @param clip_to_zlim logical. If TRUE, clip the variable limits to be within zlim before plotting.
+#' @param buffer_is_priority_domain. If TRUE, replace "is_priority_domain" with a version that is TRUE
+#' even if the neighbouring cell is a priority domain. This is an attempt to remove gaps in the image that
+#' can occur if we use a spatial_stride != 1 
 #'
 multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, zlim, cols, add=FALSE,
-    var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, use_fields=FALSE, clip_to_zlim=FALSE){
+    var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, use_fields=FALSE, clip_to_zlim=FALSE,
+    buffer_is_priority_domain=FALSE){
 
     library('ncdf4')
     library(fields)
@@ -505,6 +509,20 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
 
         # Find out where the priority domain is
         is_priority = ncvar_get(fid, 'is_priority_domain')
+
+        if(buffer_is_priority_domain){
+            # In some situations this can remove 'gaps' in the image that result
+            # from using non-zero strides in the output grids
+            nx = length(xs)
+            ny = length(ys)
+            for(inner_i in (-1):1){
+                for(inner_j in (-1):1){
+                    is_priority[2:(nx-1), 2:(ny-1)] = pmax(
+                        is_priority[2:(nx-1), 2:(ny-1)],
+                        is_priority[(2:(nx-1)) + inner_i, (2:(ny-1)) + inner_j])
+                }
+            }
+        }
 
         # Set areas outside of priority domain to NA
         var[is_priority != 1] = NA
@@ -1313,7 +1331,7 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
 
     if(length(domain_index_groups) == 0){
         # Make a partition of md_times_vec into num_images groups, with roughly equal sums
-        splitter = partition_into_k(md_times_vec, num_images)
+        new_times_and_grouping = partition_into_k(md_times_vec, num_images)
     }else{
         # Make a partition of md_times_vec into num_images groups, with roughly equal sums.
         # Further, ensure the sums are also rougly equal for images within the
@@ -1329,15 +1347,15 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
             groups[k] = j
         }
 
-        splitter = partition_into_k_with_grouping(md_times_vec, num_images, groups)
+        new_times_and_grouping = partition_into_k_with_grouping(md_times_vec, num_images, groups)
     }
 
-    range_new = range(splitter[[2]])
+    range_new = range(new_times_and_grouping[[2]])
     dsplit = diff(range_new)
     if(verbose){
         cat(paste0('Range of partition total times: ', signif(range_new[1], 4), '-to-', signif(range_new[2], 4),  's \n'))
         cat(paste0('                  (difference): ', signif(dsplit, 4), 's \n'))
-        cat(paste0('             (as a percentage): ', signif(dsplit/mean(splitter[[2]])*100, 4), '%\n'))
+        cat(paste0('             (as a percentage): ', signif(dsplit/mean(new_times_and_grouping[[2]])*100, 4), '%\n'))
     }
     range_old = range(unlist(lapply(md_times, sum)))
     old_range = diff(range_old)
@@ -1363,9 +1381,9 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
         for(j in 1:max(local_inds)){
             n = which(local_inds == j)
             kn = k[n]
-            # kn will only be in one entry of splitter[[1]] (the list of
+            # kn will only be in one entry of new_times_and_grouping[[1]] (the list of
             # indices on each images). Find it 
-            target_domain = which(unlist(lapply(splitter[[1]], f<-function(x) kn%in%x)))
+            target_domain = which(unlist(lapply(new_times_and_grouping[[1]], f<-function(x) kn%in%x)))
             load_balance_data[[i]] = c(load_balance_data[[i]], target_domain)
         }
     }
@@ -1380,7 +1398,7 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
     }
 
     old_time_range = unlist(lapply(md_times, sum))
-    new_time_range = splitter[[2]]
+    new_time_range = new_times_and_grouping[[2]]
     if(verbose){
         cat('\n')
         cat('OLD MODEL DOMAIN TIMES (observed): Stem and leaf plot \n')
