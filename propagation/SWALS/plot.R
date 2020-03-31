@@ -476,7 +476,7 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_abo
 #'
 multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, zlim, cols, add=FALSE,
     var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, use_fields=FALSE, clip_to_zlim=FALSE,
-    buffer_is_priority_domain=FALSE){
+    buffer_is_priority_domain=FALSE, asp=1){
 
     library('ncdf4')
     library(fields)
@@ -485,9 +485,9 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
 
     # Start a new plot
     if(use_fields){
-        if(!add) image.plot(matrix(0, ncol=2, nrow=2), asp=1, xlim=xlim, ylim=ylim, zlim=zlim, col=cols, nlevel=length(cols)+1)
+        if(!add) image.plot(matrix(0, ncol=2, nrow=2), asp=asp, xlim=xlim, ylim=ylim, zlim=zlim, col=cols, nlevel=length(cols)+1)
     }else{
-        if(!add) image(matrix(0, ncol=2, nrow=2), asp=1, col='white', xlim=xlim, ylim=ylim, zlim=zlim)
+        if(!add) image(matrix(0, ncol=2, nrow=2), asp=asp, col='white', xlim=xlim, ylim=ylim, zlim=zlim)
     }
 
     # Loop over all domains, and add them to the image
@@ -512,7 +512,7 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
 
         if(buffer_is_priority_domain){
             # In some situations this can remove 'gaps' in the image that result
-            # from using non-zero strides in the output grids
+            # from using (stride > 1) in the output grids
             nx = length(xs)
             ny = length(ys)
             for(inner_i in (-1):1){
@@ -529,7 +529,7 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
 
         if(NA_if_stage_not_above_elev){
             # Read stage and elevation, and set var to NA there
-            if(variable == 'max_stage'){
+            if(variable %in% c('max_stage', 'stage')){
                 stage = var
             }else{
                 stage = ncvar_get(fid, 'stage', start=c(1,1, time_index), count=c(-1,-1,1))
