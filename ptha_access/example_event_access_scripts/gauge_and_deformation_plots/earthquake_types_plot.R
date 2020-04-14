@@ -131,7 +131,8 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
     #
     # First panel of plot
     #
-    plot(plot_region, col='white', asp=1)
+    plot_aspect = 1/cos(0.5*(plot_region@ymin + plot_region@ymax)/180*pi)
+    plot(plot_region, col='white', asp=plot_aspect)
     plot(usp, add=TRUE)
     image(smalldem, add=TRUE, col=grey(seq(0,1,len=100), alpha=0.3), 
         zlim=dem_zlim, maxpixels=1e+08)
@@ -162,7 +163,7 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
         xout=c(-surface_def_max/50, surface_def_max/50))$y
     mycolz[floor(min(myind)):ceiling(max(myind))] = rgb(1, 1, 1, alpha=0)
 
-    plot(plot_region, col='white', asp=1)
+    plot(plot_region, col='white', asp=plot_aspect)
     image(smalldem, add=TRUE, col=grey(seq(0,1,len=100), alpha=0.3), 
         zlim=dem_zlim, maxpixels=1e+08)
     plot(usp, add=TRUE)

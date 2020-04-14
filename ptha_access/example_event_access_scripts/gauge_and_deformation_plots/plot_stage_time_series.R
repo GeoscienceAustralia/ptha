@@ -1,11 +1,27 @@
-# Get the PTHA access codes
+#
+# Find the most recent 'earthquake_types_plot_image_*.RData' file, and read it.
+#
+recent_earthquake_types_plot_image = sort(Sys.glob('earthquake_types_plot_image*.RData'), decreasing=TRUE)[1]
+print(paste0('Plot will use earthquake data saved in ', recent_earthquake_types_plot_image))
+load(recent_earthquake_types_plot_image)
+
+# Read plot_parameters in case things affecting this plot were updated
 source('plot_parameters.R', local=TRUE)
 
-desired_rows = stage_plot_desired_rows 
+# Figure out which subset of the events to plot
+if(!is.null(stage_plot_desired_rows)){
+    desired_rows = stage_plot_desired_rows 
+}else{
+    # Choose a subset of desired rows, evenly spaced, such that
+    nseq = unique(round(seq(1, sum(keep_stochastic), len=stage_plot_desired_count)))
+    desired_rows = which(keep_stochastic)[nseq]
+}
 
+
+#kt2_events = ptha$get_source_zone_events_data(source_zone=source_zone, 
+#    slip_type='stochastic', desired_event_rows = desired_rows)
 kt2_events = ptha$get_source_zone_events_data(source_zone=source_zone, 
     slip_type='stochastic', desired_event_rows = desired_rows)
-
 
 #
 # Wave time series
@@ -39,13 +55,16 @@ if(!is.null(dart_data_site2)){
 #
 # Plot the waves
 #
-pdf('waves_check.pdf', width=9, height=8)
+mytime = as.character(julian(Sys.time(), units='secs'))
+
+pdf(paste0('waves_check_', mytime, '.pdf'), width=9, height=8)
 for(i in 1:nrow(kt2_events$events)){
 
     layout(matrix(c(1, 1, 3, 2, 2, 4), nrow=2, byrow=TRUE))
 
     par(mar = c(5.1, 4.1, 4.1, 2.1))
-    plot(wave_ts[[1]]$time, wave_ts[[1]]$flow[[1]][i,,1], t='l', ylim=c(-1,1)*site1_yrange, xlim=c(0, 15000) + site1_tstart)
+    plot(wave_ts[[1]]$time, wave_ts[[1]]$flow[[1]][i,,1], t='l', ylim=c(-1,1)*site1_yrange, 
+         xlim=c(site1_tstart, site1_tend))
     grid()
     max_slip = round(max(as.numeric(strsplit(wave_ts[[1]]$events$event_slip_string[i], '_')[[1]])))
     mw = round(wave_ts[[1]]$events$Mw[i], 1)
@@ -63,7 +82,8 @@ for(i in 1:nrow(kt2_events$events)){
     }
     
     # Add second wave site
-    plot(wave_ts[[2]]$time, wave_ts[[2]]$flow[[1]][i,,1], t='l', ylim=c(-1,1)*site2_yrange, xlim=c(0, 15000) + site2_tstart)
+    plot(wave_ts[[2]]$time, wave_ts[[2]]$flow[[1]][i,,1], t='l', ylim=c(-1,1)*site2_yrange,
+         xlim=c(site2_tstart, site2_tend))
     grid()
     #title('DART in Pacific Ocean east of Tonga')
     title('Site 2')
@@ -97,6 +117,5 @@ dev.off()
 #
 # Save the session to keep the data handy
 # 
-mytime = as.character(julian(Sys.time(), units='secs'))
 save.image(paste0('stage_time_series_plot_', mytime, '.RData'))
 
