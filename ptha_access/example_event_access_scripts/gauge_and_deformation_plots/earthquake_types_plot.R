@@ -71,28 +71,28 @@ keep_vari_unif = (vari_unif_meta$events_with_Mw$uniform_event_row %in% which(kee
 #
 # @param i row_index in the event table to plot
 # @param sim_meta  -- one of stoch_meta, unif_meta, vari_unif_meta
-# @param base start of filename for each figure
+# @param base_filename start of filename for each figure
 # @param dem_zlim zlim for DEM in plot
 # @param max_slip_val before plotting, clip all slip values to below this
 # @param surface_def_max before plotting, clip all surface deformation values to below this
 # @param surface_def_min before plotting, clip all surface deformation values to above this
 # @param uniform_slip flag denoting uniform slip values
 # @return 0 (but makes a plot as a side-effect)
-single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max, 
+single_plot<-function(i, sim_meta, base_filename, dem_zlim, max_slip_val, surface_def_max, 
     surface_def_min, uniform_slip){ 
 
     # Skip 'zero rate' events
     if(sim_meta$events_with_Mw$rate_annual[i] == 0) return(0)
     
-    png_name = paste0(out_dir, '/', base, '_', 100000 + i, '.png')
+    png_name = paste0(out_dir, '/', base_filename, '_', 100000 + i, '.png')
     print(png_name)
 
     # Get included unit-sources (so we know which ones to colour)
     included_uss = get_unit_source_indices_in_event(sim_meta$events_with_Mw[i,])
     included_uss_dd = uss$downdip_number[included_uss]
     included_uss_as = uss$alongstrike_number[included_uss]
-    included_uss_usp = (usp$dwndp_n %in% included_uss_dd & 
-        usp$alngst_ %in% included_uss_as)
+    #included_uss_usp = (usp$dwndp_n %in% included_uss_dd & 
+    #    usp$alngst_ %in% included_uss_as)
 
     # Get slip
     if(!uniform_slip){ 
@@ -103,7 +103,7 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
     }
 
     # Make deformation raster
-    local_raster_files = uss$initial_condition_file[included_uss]
+    #local_raster_files = uss$initial_condition_file[included_uss]
     r1 = ptha$get_initial_condition_for_event(sim_meta, event_ID=i)
 
     # Map slip onto polygons
@@ -117,11 +117,11 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
     # Make an informative title
     if(!uniform_slip){
         title_extra = paste0('Mw = ', round(sim_meta$events_with_Mw$Mw[i], 1), 
-            '; Peak slip = ', 
-            round(max(as.numeric(strsplit(sim_meta$events_with_Mw$event_slip_string[i], '_')[[1]])), 1))
+            '; Peak slip = ', round(max(included_uss_slip[i]), 1))
     }else{
-        title_extra = paste0('Mw = ', round(sim_meta$events_with_Mw$Mw[i], 1), '; Peak slip = ', 
-            round(sim_meta$events_with_Mw$slip[i], 1))
+        title_extra = paste0('Mw = ', round(sim_meta$events_with_Mw$Mw[i], 1), 
+                             '; Peak slip = ', 
+                             round(sim_meta$events_with_Mw$slip[i], 1))
     }
 
     png(png_name, width=8, height=16, res=75, units='in')
@@ -131,8 +131,9 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
     #
     # First panel of plot
     #
-    plot_aspect = 1/cos(0.5*(plot_region@ymin + plot_region@ymax)/180*pi)
-    plot(plot_region, col='white', asp=plot_aspect)
+
+    plot_aspect_ratio = 1/cos(0.5*(plot_region@ymin + plot_region@ymax)/180*pi)
+    plot(plot_region, col='white', asp=plot_aspect_ratio)
     plot(usp, add=TRUE)
     image(smalldem, add=TRUE, col=grey(seq(0,1,len=100), alpha=0.3), 
         zlim=dem_zlim, maxpixels=1e+08)
@@ -141,13 +142,10 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
     ncol = 100
     colz = c('green', rev(heat.colors(ncol)))
     slip2col = ceiling(pmin(included_slip_vals/max_slip_val, 1)*(ncol)) + 1
-    plot(usp, add=TRUE, col=colz[slip2col], 
-        density=50)
-    #title(paste0('Kurils-Japan stochastic slip events'), cex.main=2)
+    plot(usp, add=TRUE, col=colz[slip2col], density=50)
     title(title_extra, cex.main=2)
     # Add a legend to the plot
-    plot(smalldem, add=TRUE, legend.only=TRUE, zlim=c(0, max_slip_val),
-        col = colz)
+    plot(smalldem, add=TRUE, legend.only=TRUE, zlim=c(0, max_slip_val), col = colz)
     if(!all(is.null(wave_sites))){
         points(wave_sites, pch=19, cex=2)
         text(wave_sites[,1], wave_sites[,2], paste0('S', 1:2), pos=2, col='red', cex=1.5)
@@ -163,7 +161,7 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
         xout=c(-surface_def_max/50, surface_def_max/50))$y
     mycolz[floor(min(myind)):ceiling(max(myind))] = rgb(1, 1, 1, alpha=0)
 
-    plot(plot_region, col='white', asp=plot_aspect)
+    plot(plot_region, col='white', asp=plot_aspect_ratio)
     image(smalldem, add=TRUE, col=grey(seq(0,1,len=100), alpha=0.3), 
         zlim=dem_zlim, maxpixels=1e+08)
     plot(usp, add=TRUE)
@@ -187,7 +185,7 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
 # Do lots of plots in parallel
 #
 # @param sim_meta  -- one of stoch_meta, unif_meta, vari_unif_meta
-# @param base start of filename for each figure
+# @param base_filename start of filename for each figure
 # @param dem_zlim zlim for DEM in plot
 # @param max_slip_val before plotting, clip all slip values to below this
 # @param surface_def_max before plotting, clip all surface deformation values to below this
@@ -195,7 +193,7 @@ single_plot<-function(i, sim_meta, base, dem_zlim, max_slip_val, surface_def_max
 # @param uniform_slip flag denoting uniform slip values
 # @param desired_indices event indices to plot (row_indices in sim_meta$events_with_Mw)
 # @return 0 (but makes a plot as a side-effect)
-many_plots<-function(sim_meta, base='stochastic_slip',
+many_plots<-function(sim_meta, base_filename='stochastic_slip',
     dem_zlim = c(-6500, 0), max_slip_val=50, 
     surface_def_max=12, surface_def_min=-8,
     uniform_slip=FALSE, desired_indices=NULL){
@@ -204,13 +202,14 @@ many_plots<-function(sim_meta, base='stochastic_slip',
         desired_indices = length(sim_meta$events_with_Mw[,1])
     }
 
+    # Wrap it in try, so a single error doesn't kill all the other plots.
     try_single_plot<-function(...){
         try(single_plot(...))
     }
    
     library(parallel)
     error_catch = mclapply(as.list(desired_indices), try_single_plot, 
-        sim_meta=sim_meta, base=base,
+        sim_meta=sim_meta, base_filename=base_filename,
         dem_zlim = dem_zlim, max_slip_val=max_slip_val, 
         surface_def_max=surface_def_max, surface_def_min=surface_def_min,
         uniform_slip=uniform_slip,
@@ -223,10 +222,10 @@ many_plots<-function(sim_meta, base='stochastic_slip',
 ## Uncomment these to remake the plots
 ##
 #many_plots(unif_meta, base='uniform_slip', uniform_slip=TRUE, desired_indices = which(keep_uniform))
-errs = many_plots(stoch_meta, base='stochastic_slip', uniform_slip=FALSE, desired_indices = which(keep_stochastic),
+errs = many_plots(stoch_meta, base_filename='stochastic_slip', uniform_slip=FALSE, desired_indices = which(keep_stochastic),
     surface_def_min=SURFACE_DEF_MIN, surface_def_max=SURFACE_DEF_MAX, max_slip_val=MAX_SLIP_VAL,
     dem_zlim = DEM_ZLIM)
-#many_plots(vari_unif_meta, base='variable_uniform_slip', uniform_slip=FALSE, desired_indices = which(keep_vari_unif))
+#many_plots(vari_unif_meta, base_filename='variable_uniform_slip', uniform_slip=FALSE, desired_indices = which(keep_vari_unif))
 
 
 # Stand-alone plot of earthquake slip
