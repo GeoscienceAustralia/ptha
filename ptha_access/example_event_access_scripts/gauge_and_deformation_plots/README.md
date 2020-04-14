@@ -8,10 +8,10 @@ To use it, do the following:
 
 2. Run source the [earthquake_types_plot.R](earthquake_types_plot.R), e.g.
 
-    Rscript earthquake_types_plot.R
+    `Rscript earthquake_types_plot.R`
 
 3. Source the [plot_stage_time_series.R](plot_stage_time_series.R) script.
 
-    Rscript plot_stage_time_series.R
+    `Rscript plot_stage_time_series.R`
 
 For further details, see the inline comments in [plot_parameters.R](plot_parameters.R).
