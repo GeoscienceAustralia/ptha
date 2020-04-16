@@ -59,6 +59,19 @@ get_file_with_gauges_only_if_on_NCI_THREDDS<-function(netcdf_file){
 }
 
 #'
+#' Read all the gauges.
+#'
+get_all_gauges<-function(){
+
+    netcdf_file = config_env$adjust_path_to_gdata_base_location(
+        '/g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/STATIONS_ONLY_lon_lat_elev_gaugeID.nc')
+
+    all_gauges = read_table_from_netcdf(netcdf_file)
+
+    return(all_gauges)
+}
+
+#'
 #' Get lon/lat/depth/gaugeID from gauges in netcdf file
 #' 
 #' @param netcdf_file name of netdf tide gauge file
