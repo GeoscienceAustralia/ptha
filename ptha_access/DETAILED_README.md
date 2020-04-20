@@ -41,14 +41,15 @@ encouraged to independently test the results at their site of interest as part
 of any application. In particular note that:
 * The PTHA18 tsunami scenarios are tested against offshore DART buoy data observed 
   during 18 tsunamis, for the period 2006-2016 (actually tests against a few additional
-  events are provided in the PTHA18 report). Although this is a significant
+  events are provided in the PTHA18 report). The time-series comparisons last at most 3 hours per site,
+  so do not address the late-time dissipation of the tsunami. Although a significant
   amount of testing relative to current standards in PTHA, it is most directly
-  relevant to the behaviour of tsunamis in the deep ocean. We would like to see
-  further testing of the scenarios when propagated into the nearshore and
-  onshore. This would also increase the number of tsunami observations
-  available to test the model. Such testing might lead to further insights
-  about the tsunami scenario performance, model biases, etc. See further
-  discussion in the [GJI paper](https://doi.org/10.1093/gji/ggz260).
+  relevant to the behaviour of tsunamis in the deep ocean for relatively short times following arrival. 
+  We would like to see further testing of the scenarios when propagated into
+  the nearshore and onshore, and for longer times. This would also
+  increase the number of tsunami observations available to test the model. Such
+  testing might lead to further insights about the tsunami scenario
+  performance, model biases, etc. See further discussion in the [GJI paper](https://doi.org/10.1093/gji/ggz260).
   **If you are working at a site where tsunamis have been observed, you are strongly encouraged
   to test the results using site-specific data.**
 * The earthquake magnitude-vs-exceedance-rate models are constrained by combining
@@ -68,7 +69,15 @@ of any application. In particular note that:
   methodology. The quality of the geometric information likely varies from
   site-to-site, but currently the analysis does not include a formal treatment
   of fault-geometry uncertainty. 
-
+* The modelled wave time-series are derived using a frictionless linear model with a 1 arcmin
+  cell-size (around 1.8 x 1.8 km2 at the equator). This model can simulate many aspects of 
+  tsunami propagation in the deep ocean, and the linear approximation enables many scenarios
+  to be considered via superposition. However it is too coarse to reliably simulate waves nearshore.
+  Furthermore, it does not capture the slow dissipation of real tsunamis at the
+  global scale. If this is important for your application, you may re-simulate
+  the tsunami from source using a more complex hydrodynamic model with
+  appropriate resolution and/or dissipation. We provide tsunami initial
+  conditions to facilitate this. 
 
 ## **Usage**
 
