@@ -42,8 +42,8 @@ of any application. In particular note that:
 * The PTHA18 tsunami scenarios are tested against offshore DART buoy data observed 
   during 18 tsunamis, for the period 2006-2016 (actually tests against a few additional
   events are provided in the PTHA18 report). The time-series comparisons last
-  at most 3 hours per site. Although a significant amount of testing relative
-  to current standards in PTHA, it is most directly relevant to the behaviour
+  at most 3 hours per site. Although this is a significant amount of testing relative
+  to typical PTHA studies in 2018, it is most relevant to the behaviour
   of tsunamis in the deep ocean for relatively short times following arrival.
   We would like to see further testing of the scenarios when propagated into
   the nearshore and onshore, and for longer times. This would also increase the
@@ -77,7 +77,9 @@ of any application. In particular note that:
   global scale. If this is important for your application (e.g. according to
   your own site-specific testing), you may re-simulate the tsunami from source
   using a more complex hydrodynamic model with appropriate resolution and/or
-  dissipation. We provide tsunami initial conditions to facilitate this. 
+  dissipation. We provide tsunami initial conditions to facilitate this. If you're working 
+  on hazards in Australia and need some support with this, please contact the
+  maintainer (described above).
 
 ## **Usage**
 
