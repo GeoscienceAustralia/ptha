@@ -74,10 +74,10 @@ of any application. In particular note that:
   tsunami propagation in the deep ocean, and the linear approximation enables many scenarios
   to be considered via superposition. However it is too coarse to reliably simulate waves nearshore.
   Furthermore, it does not capture the slow dissipation of real tsunamis at the
-  global scale. If this is important for your application, you may re-simulate
-  the tsunami from source using a more complex hydrodynamic model with
-  appropriate resolution and/or dissipation. We provide tsunami initial
-  conditions to facilitate this. 
+  global scale. If this is important for your application (e.g. according to
+  your own site-specific testing), you may re-simulate the tsunami from source
+  using a more complex hydrodynamic model with appropriate resolution and/or
+  dissipation. We provide tsunami initial conditions to facilitate this. 
 
 ## **Usage**
 
