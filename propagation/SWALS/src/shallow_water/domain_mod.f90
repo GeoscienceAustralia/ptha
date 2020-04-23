@@ -500,7 +500,8 @@ module domain_mod
 
         real(dp):: maxstage, minstage
         integer:: i,j, ecw, nx, ny
-        real(dp):: dry_depth_threshold, energy_total, energy_potential, energy_kinetic
+        real(dp):: dry_depth_threshold
+        real(force_double) :: energy_total, energy_potential, energy_kinetic
         real(dp):: depth, depth_iplus, depth_jplus
         logical, parameter:: report_energy_statistics=.TRUE.
 
@@ -559,8 +560,8 @@ TIMER_START('printing_stats')
         if(report_energy_statistics) then
 
             ecw = domain%exterior_cells_width
-            energy_potential = ZERO_dp
-            energy_kinetic = ZERO_dp
+            energy_potential = 0.0_force_double
+            energy_kinetic = 0.0_force_double
 
             if(domain%is_staggered_grid .and. domain%linear_solver_is_truely_linear) then
                 !
@@ -578,25 +579,26 @@ TIMER_START('printing_stats')
                         ! Integrate over wet cells
                         if(domain%msl_linear > domain%U(i,j,ELV) + dry_depth_threshold) then
             
-                            energy_potential = energy_potential + domain%area_cell_y(j) *&
-                                (domain%U(i,j,STG) - domain%msl_linear)**2
+                            energy_potential = energy_potential + real(domain%area_cell_y(j) *&
+                                (domain%U(i,j,STG) - domain%msl_linear)**2, force_double)
 
                             !
                             ! Kinetic energy integration needs to account for grid staggering -- cell
                             ! areas are constant for constant lat, but changing as lat changes.
                             !
-                            depth_iplus = HALF_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + &
-                                domain%U(i+1,j,STG) - domain%U(i+1,j,ELV))
+                            depth_iplus = HALF_dp * (domain%msl_linear - domain%U(i,j,ELV) + &
+                                domain%msl_linear - domain%U(i+1,j,ELV))
                             if(depth_iplus > dry_depth_threshold) then
-                                energy_kinetic = energy_kinetic + domain%area_cell_y(j)*&
-                                    (domain%U(i,j,UH)**2)/depth_iplus
+                                energy_kinetic = energy_kinetic + real(domain%area_cell_y(j)*&
+                                    (domain%U(i,j,UH)**2)/depth_iplus, force_double)
                             end if
 
-                            depth_jplus = HALF_dp * (domain%U(i,j,STG) - domain%U(i,j,ELV) + &
-                                domain%U(i,j+1,STG) - domain%U(i,j+1,ELV))
+                            depth_jplus = HALF_dp * (domain%msl_linear - domain%U(i,j,ELV) + &
+                                domain%msl_linear - domain%U(i,j+1,ELV))
                             if(depth_jplus > dry_depth_threshold) then
-                                energy_kinetic = energy_kinetic + HALF_dp * (domain%area_cell_y(j) + domain%area_cell_y(j+1))*&
-                                    (domain%U(i,j,VH)**2)/depth_jplus
+                                energy_kinetic = energy_kinetic + real(&
+                                    HALF_dp * (domain%area_cell_y(j) + domain%area_cell_y(j+1))*&
+                                    (domain%U(i,j,VH)**2)/depth_jplus, force_double)
                             end if
 
                         end if
@@ -612,11 +614,11 @@ TIMER_START('printing_stats')
                     do i = (1+ecw), (domain%nx(1)-ecw)
                         depth = domain%U(i,j,STG) - domain%U(i,j,ELV)
                         if(depth > dry_depth_threshold) then
-                            energy_potential = energy_potential + domain%area_cell_y(j) * &
-                                (domain%U(i,j,STG) - domain%msl_linear)**2
+                            energy_potential = energy_potential + real(domain%area_cell_y(j) * &
+                                (domain%U(i,j,STG) - domain%msl_linear)**2, force_double)
                                 !depth * domain%U(i,j,STG) 
-                            energy_kinetic = energy_kinetic + domain%area_cell_y(j) * &
-                                (domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2)/depth
+                            energy_kinetic = energy_kinetic + real(domain%area_cell_y(j) * &
+                                (domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2)/depth, force_double)
                         end if 
                     end do
                 end do
@@ -629,8 +631,8 @@ TIMER_START('printing_stats')
                 ! Do nothing
             else
                 ! Rescale energy statistics appropriately 
-                energy_potential = energy_potential * gravity * HALF_dp
-                energy_kinetic = energy_kinetic * HALF_dp
+                energy_potential = energy_potential * gravity * 0.5_force_double
+                energy_kinetic = energy_kinetic * 0.5_force_double
                 energy_total = energy_potential + energy_kinetic
 
                 write(domain%logfile_unit, *) 'Energy Total / rho: ', energy_total
