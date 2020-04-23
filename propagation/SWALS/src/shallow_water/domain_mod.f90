@@ -559,9 +559,13 @@ TIMER_START('printing_stats')
         ! Optionally report integrated energy
         if(report_energy_statistics) then
 
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dry_depth_threshold) REDUCTION(+:energy_potential), &
+            !$OMP REDUCTION(+:energy_kinetic)
+
             ecw = domain%exterior_cells_width
             energy_potential = 0.0_force_double
             energy_kinetic = 0.0_force_double
+
 
             if(domain%is_staggered_grid .and. domain%linear_solver_is_truely_linear) then
                 !
@@ -573,6 +577,7 @@ TIMER_START('printing_stats')
                 !
 
                 ! Integrate over the model interior
+                !$OMP DO
                 do j = 1 + ecw, (domain%nx(2) - ecw)
                     do i = (1+ecw), (domain%nx(1)-ecw)
 
@@ -604,12 +609,15 @@ TIMER_START('printing_stats')
                         end if
                     end do
                 end do
+                !$OMP END DO
+
             else if(.not. domain%is_staggered_grid) then
                 !
                 ! Compute energy statistics using non-staggered grid
                 !
 
                 ! Integrate over the model interior
+                !$OMP DO
                 do j = 1 + ecw, (domain%nx(2) - ecw)
                     do i = (1+ecw), (domain%nx(1)-ecw)
                         depth = domain%U(i,j,STG) - domain%U(i,j,ELV)
@@ -622,8 +630,11 @@ TIMER_START('printing_stats')
                         end if 
                     end do
                 end do
+                !$OMP END DO
 
             end if
+
+            !$OMP END PARALLEL
 
             ! In the case we use a "not-truely-linear" variant of the linear solver, the energy
             ! calculations do not really make sense
