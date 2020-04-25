@@ -90,7 +90,7 @@ unit_source_grids = .read_all_unit_source_grids()
             tg_filename = config_env$adjust_path_to_gdata_base_location(tg_filename)
             hazard_points = try(get_netcdf_gauge_locations(tg_filename))
 
-            if(class(hazard_points) == 'try-error'){
+            if(is(hazard_points, 'try-error')){
                 stop('hazard point read failed. This may occur with slower internet connections, so you could try again')
             }
 
@@ -110,7 +110,7 @@ unit_source_grids = .read_all_unit_source_grids()
 
             hazard_points = try(read.csv(tg_filename))
 
-            if(class(hazard_points) == 'try-error'){
+            if(is(hazard_points, 'try-error')){
                 stop('hazard point read failed. This may occur with slower internet connections, so you could try again')
             }
 
