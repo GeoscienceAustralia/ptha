@@ -104,8 +104,8 @@ unit_source_grids = .read_all_unit_source_grids()
             # Read a csv version on the thredds server
             #
             tg_filename = paste0(config_env$.GDATA_HTTP_BASE_LOCATION, 
-                'EVENT_RATES/tsunami_stages_at_fixed_return_periods.csv')
-            tg_filename_local = paste0('DATA/tsunami_stages_at_fixed_return_periods.csv')
+                'EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.csv')
+            tg_filename_local = paste0('DATA/revised1_tsunami_stages_at_fixed_return_periods.csv')
             download.file(tg_filename, dest= tg_filename_local)
 
             hazard_points = try(read.csv(tg_filename))
