@@ -152,7 +152,7 @@ discretized_source_from_source_contours<-function(
     downdip_lines=NULL){
 
     # Get the shapefile
-    if(class(source_shapefile) == 'SpatialLinesDataFrame'){
+    if(is(source_shapefile, 'SpatialLinesDataFrame')){
         source_contours = source_shapefile
     }else{
         if(!file.exists(source_shapefile)) stop('cannot find shapefile')
@@ -1191,7 +1191,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     # If there are 'just touching' relations and similar, then
     # p_intersect may not be SpatialPolygons. Throw an error for now
-    stopifnot(class(p_intersect)=='SpatialPolygons')
+    stopifnot(is(p_intersect, 'SpatialPolygons'))
 
     areas = unlist(lapply(p_intersect@polygons, 
         f<-function(x) x@Polygons[[1]]@area))

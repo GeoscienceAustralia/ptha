@@ -150,7 +150,7 @@ get_event_probabilities_conditional_on_Mw<-function(
             return(slip_inv/sum(slip_inv))
         }
 
-    }else if( class(conditional_probability_model) == 'function'){
+    }else if( is(conditional_probability_model, 'function')){
 
         # Here the user must provide a function which can convert a subset of
         # the event table, containing all events with fixed Mw, to a

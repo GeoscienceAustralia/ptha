@@ -53,14 +53,14 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
     if(is.null(var_prec)){
         var_prec = rep("", ncol(dataframe))
         for(i in 1:ncol(dataframe)){
-            if(class(dataframe[1,i]) %in% c('numeric', 'integer')){
+            if(any(class(dataframe[1,i]) %in% c('numeric', 'integer'))){
                 # Check if they can be represented as integers
                 if(all(floor(dataframe[,i]) == dataframe[,i])){
                     var_prec[i] = 'integer' 
                 }else{
                     var_prec[i] = 'double'
                 }
-            }else if(class(dataframe[1,i]) %in% c('character', 'factor')){
+            }else if(any(class(dataframe[1,i]) %in% c('character', 'factor'))){
                 var_prec[i] = 'char'
             }else{
                 stop(paste0('Cannot automatically detect var_prec for column ', 

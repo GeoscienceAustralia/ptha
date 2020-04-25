@@ -16,7 +16,7 @@ parent_script_name <- function() {
         } else {
                 # 'source'd via R console
                 output = try(normalizePath(sys.frames()[[1]]$ofile), silent=TRUE)
-                if(class(output) != 'try-error'){
+                if(!is(output, 'try-error')){
                     return(normalizePath(sys.frames()[[1]]$ofile))
                 }else{
                     return('Error: Could not determine path. Possibly parent_script_name() was called from the console?')

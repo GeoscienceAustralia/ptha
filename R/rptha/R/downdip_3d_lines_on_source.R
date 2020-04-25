@@ -179,7 +179,7 @@ get_quality_matrix<-function(s_matrix, source_contours_interpolator_list){
     tmp = try(
         get_xy_coords(s_matrix, source_contours_interpolator_list), 
         silent=TRUE)
-    if(class(tmp) == 'try-error'){
+    if(is(tmp, 'try-error')){
         # In case of error, return values which indicate 'very bad fit'
         q_matrix = s_matrix * 0 + Inf
         return(q_matrix)

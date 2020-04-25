@@ -220,7 +220,7 @@ sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_paramet
         new_reg_par = reg_par
         new_reg_par[1:2] = reg_par[1:2] / sub_sample_size
 
-        if(class(tg_mat) == 'RasterLayer'){
+        if(is(tg_mat, 'RasterLayer')){
             new_tg_mat = raster(new_tg_mat, xmn = extent(tg_mat)@xmin, 
                 xmx = extent(tg_mat)@xmax, ymn = extent(tg_mat)@ymin,
                 ymx = extent(tg_mat)@ymax)
@@ -328,13 +328,13 @@ sffm_simulate<-function(reg_par, tg_mat, sffm_pars = .sffm_default_model_paramet
     }
 
     # Ensure final mean = data mean 
-    if(class(tg_mat)=='RasterLayer'){
+    if(is(tg_mat, 'RasterLayer')){
         fake_data_clip = fake_data_clip/sum(fake_data_clip)*sum(as.matrix(tg_mat))
     }else{
         fake_data_clip = fake_data_clip/sum(fake_data_clip)*sum(tg_mat)
     }
 
-    if(class(tg_mat)=='RasterLayer' ){
+    if(is(tg_mat, 'RasterLayer') ){
         final_rast = raster(tg_mat)
         final_rast = setValues(final_rast, fake_data_clip)
     }else{
@@ -419,7 +419,7 @@ sffm_recentre_slip<-function(m1, tg=NULL){
         newCols[which(newCols==0)] = nc 
         m1_mat = m1_mat[, newCols, drop=FALSE]
     }
-    if(class(m1) == 'RasterLayer'){
+    if(is(m1, 'RasterLayer')){
         output = raster(m1)
         output = setValues(output,m1_mat)
     }else{
@@ -637,7 +637,7 @@ sffm_fit_parameters<-function(
                  control=list(maxit=2000))
             )
 
-    if(class(output)=='try-error'){
+    if(is(output, 'try-error')){
         #print(output)
         output=list(convergence=-999, output=output, 
             reg_par_start=reg_par_start, m1=m1)

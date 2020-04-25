@@ -461,7 +461,7 @@ kajiura_smooth_raster<-function(
             origin_lonlat = new_orig)
     }
 
-    if(class(elevation_raster) != 'RasterLayer'){
+    if(!is(elevation_raster, 'RasterLayer')){
         elevation_raster = raster(elevation_raster)
     }
     xyz_depth = extract(elevation_raster, 
