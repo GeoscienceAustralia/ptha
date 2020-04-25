@@ -604,7 +604,8 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                     count=c(fid1$dim$event$len,1)))
                 nc_close(fid1)
                 # Record if it failed, to try again later
-                if((class(local_max_stage) != 'try-error')) has_vars[1] = TRUE
+                #if((class(local_max_stage) != 'try-error')) has_vars[1] = TRUE
+                if(!is(local_max_stage, 'try-error')) has_vars[1] = TRUE
             }
 
             # Read Mw and the event rate from the file that doesn't contain the tsunami
@@ -620,11 +621,17 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
                 local_rate_variable_mu = try(ncvar_get(fid2, 'variable_mu_rate_annual'))
                 nc_close(fid2)
                 # Record if it failed, to try again later
-                if((class(local_Mw) != 'try-error') & 
-                   (class(local_rate) != 'try-error') &
-                   (class(local_rate_variable_mu) != 'try-error') &
-                   (class(local_Mw_variable_mu) != 'try-error')
+                #if((class(local_Mw) != 'try-error') & 
+                #   (class(local_rate) != 'try-error') &
+                #   (class(local_rate_variable_mu) != 'try-error') &
+                #   (class(local_Mw_variable_mu) != 'try-error')
+                #    ) has_vars[2] = TRUE
+                if((!is(local_Mw, 'try-error')) & 
+                   (!is(local_rate, 'try-error')) &
+                   (!is(local_rate_variable_mu, 'try-error')) &
+                   (!is(local_Mw_variable_mu, 'try-error'))
                     ) has_vars[2] = TRUE
+
             }
 
             if(include_earthquake_data){
@@ -719,7 +726,8 @@ summarise_events<-function(events_near_desired_stage){
         # We can do a mahalanobis distance calculation
         obs = apply(obs, 2, f<-function(x) qnorm(rank(x)/(length(x)+1)))
         mh_distance = try(mahalanobis(obs, center=mean(obs), cov=cov(obs)), silent=TRUE)
-        if(class(mh_distance) == 'try-error'){
+        #if(class(mh_distance) == 'try-error'){
+        if(is(mh_distance, 'try-error')){
             # Mahalanobis distance failed (perhaps too few events, or
             # problematic input data leading to singular covariance matrix).
             # Prioritize events with intermediate magnitudes
