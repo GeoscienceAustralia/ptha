@@ -7,8 +7,13 @@
 #
 # In general any single domain will contain "halo regions" (i.e. where the flow
 # state is received from other domains), and other regions where it is the
-# "priority domain". Therefore, some care is required to combine results from
-# multiple domains while only using "priority domain" cells.
+# "priority domain". In the halo regions the values that are stored in output
+# files should not be used (because some other domain is the priority domain in
+# those regions). In some cases the halo values can very misleading (e.g. for
+# maximum stage, the halo values can be dominated by boundary artefacts - note
+# those artefacts never affect the domain interior, due to the design of our
+# halo updates). In sum, care is required to combine results from multiple domains
+# while only using "priority domain" cells. 
 #
 
 
@@ -20,7 +25,7 @@ get_recent_output_folder<-function(){
     return(output_folder)
 }
 
-#' Get times at which output is written
+#' Get times at which grid output is written
 get_time<-function(output_folder){
     model_time = try(scan(Sys.glob(paste0(output_folder, '/', 'Time_*'))[1], quiet=TRUE), silent=TRUE)
     return(model_time)
@@ -67,7 +72,9 @@ get_model_output_precision<-function(output_folder){
 #' Get the domain outputs in a DEFUNCT mixed-binary format
 #'
 #' This has been superceeded by netcdf -- but is occasionally useful if one has
-#' netcdf compilation problems.
+#' netcdf compilation problems and wants to test something out. However not all
+#' the functionality is supported with this file format, so it isn't a general
+#' solution to netcdf problems.
 #'
 get_gauges_mixed_binary_format<-function(output_folder){
     # Read the gauge data, which is in a mixture of ascii and binary
@@ -140,17 +147,24 @@ get_gauges_mixed_binary_format<-function(output_folder){
     return(output)        
 }
 
-#' Read domain gauges from netcdf file.
+#' Read domain gauges from netcdf file. 
+#'
+#' In general this is the output format we actually use -- the alternative 'home-brew binary format'
+#' is not comprehensively supported.
 #'
 #' @param output_folder The domain's output folder
 #' 
 get_gauges_netcdf_format<-function(output_folder){
     library('ncdf4')
 
-    gauge_fid = try(nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1], readunlim=FALSE), silent=TRUE)
-    if(class(gauge_fid) == 'try-error'){
+    gauge_fid = try(
+        nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1], readunlim=FALSE),
+        silent=TRUE)
+    if(is(gauge_fid,'try-error')){
         return(gauge_fid)        
     }
+
+    # Gauge coordinates
     lon = ncvar_get(gauge_fid, 'lon')
     lat = ncvar_get(gauge_fid, 'lat')
     time = ncvar_get(gauge_fid, 'time')
@@ -159,24 +173,29 @@ get_gauges_netcdf_format<-function(output_folder){
     gauge_output_names = names(gauge_fid)    
 
     time_series_names = c('stage', 'uh', 'vh', 'elevation')
+    # The variables that are only written once [e.g. often chosen for
+    # elevation] have a zero appended to the name
     static_names = paste0(time_series_names, '0')
 
+    # Read static variables (i.e. things that are not written every time-step
+    # -- sometime elevation0)
     static_var = list()
     for(i in 1:length(static_names)){
         if(static_names[i] %in% names(gauge_fid$var)){
             tmp = try(ncvar_get(gauge_fid, static_names[i]), silent=TRUE)
-            if(class(tmp) == 'try-error') tmp = NA
+            if(is(tmp, 'try-error')) tmp = NA
         }else{
             tmp = NA
         }
         static_var[[static_names[i]]] = tmp
     }
 
+    # Read teh time-series variables (i.e. typically stage, uh, vh)
     time_series_var = list()
     for(i in 1:length(time_series_names)){
         if(time_series_names[i] %in% names(gauge_fid$var)){
             tmp = try(ncvar_get(gauge_fid, time_series_names[i]), silent=TRUE)
-            if(class(tmp) == 'try-error'){
+            if(is(tmp, 'try-error')){
                 tmp = NA
             }
             # Force it to be a matrix even if there is only 1 gauge
@@ -187,7 +206,9 @@ get_gauges_netcdf_format<-function(output_folder){
         time_series_var[[time_series_names[i]]] = tmp
     }
 
-    # Check for the 'priority_gauges_only' variable
+    # Check for the 'priority_gauges_only' variable -- this tells us if all the
+    # stored gauges are inside the priority domain. If TRUE, that's convenient, because
+    # we don't need to worry about throwing away non-priority-domain gauges.
     x = ncatt_get(gauge_fid, varid=0, 'priority_gauges_only')
     priority_gauges_only = FALSE
     if(x$hasatt){
@@ -207,7 +228,7 @@ get_gauges_netcdf_format<-function(output_folder){
 get_gauges<-function(output_folder){
 
     outputs = try(get_gauges_netcdf_format(output_folder), silent=TRUE)
-    if(class(outputs) == 'try-error'){
+    if(is(outputs, 'try-error')){
         outputs = try(get_gauges_mixed_binary_format(output_folder), silent=TRUE)
     }
 
@@ -225,7 +246,7 @@ get_gauges<-function(output_folder){
 #' @param attname name of global attribute in the file
 #
 get_nc_global_attribute<-function(nc_file, attname){
-    if(class(nc_file) == 'character'){
+    if(is(nc_file, 'character')){
         fid = nc_open(nc_file, readunlim=FALSE)
         bbox = ncatt_get(fid, varid=0, attname=attname)
         nc_close(fid)
@@ -235,15 +256,28 @@ get_nc_global_attribute<-function(nc_file, attname){
     return(bbox)
 }
 
-#' Quickly read domain outputs
+#' Quickly read domain gridded outputs
 #'
-#' @param var Start of name of file to read (containing a flow variable)
-#' @param drop_walls If TRUE, then set values on the boundaries to values just inside the
-#'        boundaries. Useful when we use an extreme elevation for a reflective condition
-#' @param output_folder folder containing output files. If NULL, read the most recent one
+#' This function probably should not be called directly -- but it is called by
+#' get_all_recent_results etc. FIXME: It should probably be re-written to use more sensible names. 
+#'
+#' @param var A variable name -- beware the names are archaic (derived from the
+#'        old home-brew binary file format). The accepted variable names are denoted 
+#'        below [left-hand-side] along with the mapping to more sensible names 
+#'        in the netcdf file:
+#'            Var_1 = 'stage'
+#'            Var_2 = 'uh'
+#'            Var_3 = 'vh'
+#'            Var_4 = 'elev'
+#'            x = 'x'
+#'            y = 'y'
+#'            Max_quantities = 'max_stage'
+#'            elev0 = 'elevation0'
+#'            is_priority_domain='is_priority_domain'
+#' @param output_folder folder containing the domain output files. If NULL, read the most recent one
 #' @return The variable as a 3d array 
 #'
-get_gridded_variable<-function(var = 'Var_1', drop_walls=FALSE, output_folder = NULL){
+get_gridded_variable<-function(var = 'Var_1', output_folder = NULL){
    
     if(is.null(output_folder)){ 
         output_folder = get_recent_output_folder()
@@ -253,6 +287,7 @@ get_gridded_variable<-function(var = 'Var_1', drop_walls=FALSE, output_folder = 
 
     # If netcdf output does not exist, then use home-brew binary (DEFUNCT)
     if(length(nc_file) != 1){
+        # Home-brew binary -- not really well supported, avoid this.
     
         # FIXME: Update for parallel
         file_to_read = Sys.glob(paste0(output_folder, '/', var, '*'))[1]
@@ -276,7 +311,9 @@ get_gridded_variable<-function(var = 'Var_1', drop_walls=FALSE, output_folder = 
         dim(output_stage_scan) = c(model_dim, num_times)
 
     }else{
-        # Netcdf output
+
+        # Netcdf output -- this is the usual approach. Here the naming convention is inherited from
+        # the hacky old binary format.
         var_list = list(Var_1 = 'stage', Var_2 = 'uh', Var_3 = 'vh', Var_4 = 'elev', x = 'x', y = 'y',
             Max_quantities = 'max_stage', elev0 = 'elevation0', is_priority_domain='is_priority_domain')
         library('ncdf4')
@@ -288,19 +325,29 @@ get_gridded_variable<-function(var = 'Var_1', drop_walls=FALSE, output_folder = 
         nc_close(fid)
     }
    
-    if(drop_walls){
-        output_stage_scan[1,,] = output_stage_scan[2,,]
-        output_stage_scan[,1,] = output_stage_scan[,2,]
-        output_stage_scan[model_dim[1],,] = output_stage_scan[model_dim[1]-1,,]
-        output_stage_scan[,model_dim[2],] = output_stage_scan[, model_dim[2]-1,]
-    }
-
     return(output_stage_scan) 
 }
 
-# Convenient function to read in pretty much all of the results
-# Because this can sometimes be prohibitive due to memory issues,
-# provide options to skip grids and gauges
+#' Convenient function to read in pretty much all of the results in a SINGLE DOMAIN.
+#'
+#' For multidomains, see 'get_multidomain' (or just manually loop over all domains).
+#' The default options in this function can sometimes be prohibitive due to memory issues, so
+#' there are options to skip reading grids and gauges (i.e. to obtain minimal domain metadata,
+#' which can later be used for more efficient reading of data subsets).
+#' 
+#' @param output_folder the domain output folder
+#' @param read_grids Should we read the stage/uh/vh/elev grids? These can require large memory.
+#' @param read_gauges Should we read the gauge outputs?
+#' @param read_time_and_geometry Should we read the grid output time and geometry information?
+#' @param always_read_priority_domain Only matters if read_grids=FALSE. In that case, setting this
+#'        to TRUE ensures the priority domain information is read. By default, it is always read.
+#' @param always_read_xy Only matters if read_grids=FALSE. In that case, setting this to TRUE ensures
+#'        the x/y grid coordinates are read. Otherwise they are always read. 
+#' @param quiet Try to minimise printed output. Note we cannot completely control this due to the ncdf4
+#'        package (which reports errors in a manner that we can't seem to suppress).
+#' @param always_read_max_grids Only matters if read_grids=FALSE. In that case, setting this to TRUE ensures
+#'        the max_stage and elevation are read. Otherwise they are always read. 
+#' @return A list with all the domain data.
 get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauges=TRUE, 
                                  read_time_and_geometry = TRUE, 
                                  always_read_priority_domain=FALSE, 
@@ -357,7 +404,7 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
     if(always_read_xy){
         # x and y --  get from netcdf if we can
         xs = try(get_gridded_variable(var='x', output_folder=output_folder), silent=TRUE)
-        if(class(xs) != 'try_error'){
+        if(!is(xs, 'try_error')){
             ys = try(get_gridded_variable(var='y', output_folder=output_folder), silent=TRUE)
         }else{
             # Old-style, beware this does not work with decimated output
@@ -385,9 +432,11 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
 
 #' Read all domains in a multidomain directory into a list.
 #'
+#' This just applies get_all_recent_results to all domain output folders in a multidomain.
+#'
 #' @param multidomain_dir the directory with the results
 #' @param ... Further arguments to get_all_recent_results
-#'
+#' @return A list with one entry per domain, containing the result of get_all_recent_results
 get_multidomain<-function(multidomain_dir, ...){
 
     all_domain_files = Sys.glob(paste0(multidomain_dir, '/RUN_*'))
@@ -405,6 +454,10 @@ get_multidomain<-function(multidomain_dir, ...){
 #' @param proj4string
 #' @param na_above_zero logical. If TRUE, then when elevation is > 0, set all stages to NA
 #' @param return_elevation logical. If TRUE, return a list with max_stage AND elevation as rasters
+#' @param na_outside_priority_domain If TRUE, set the raster to NA in non-priority-domain regions. 
+#'        This is a good idea to simplify interpretation.
+#' @return Either the max_stage_raster (if return_elevation=FALSE), or a list with both the max_stage
+#'        and elevation rasters.
 make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_above_zero=FALSE, 
                                 return_elevation=FALSE, na_outside_priority_domain=FALSE){
     library('raster')
@@ -455,8 +508,11 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_abo
         
 }
 
-#'
 #' Make an image plot for a multidomain
+#'
+#' This function will read the required output data from all domains in the multidomain,
+#' and combine into a single plot. It generally doesn't need to use much memory, and is
+#' particularly useful in cases where reading all the multidomain data would be prohibitive.
 #'
 #' @param multidomain_dir directory where all multidomain outputs live
 #' @param variable 'max_stage' or 'stage' or any other variable in the netcdf file
@@ -473,7 +529,7 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_abo
 #' @param buffer_is_priority_domain. If TRUE, replace "is_priority_domain" with a version that is TRUE
 #' even if the neighbouring cell is a priority domain. This is an attempt to remove gaps in the image that
 #' can occur if we use a spatial_stride != 1 
-#'
+#' @return Nothing, but make the plot.
 multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, zlim, cols, add=FALSE,
     var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1){
@@ -575,7 +631,6 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
 #
 is_on_priority_domain<-function(x, y, domain){
 
-    #browser()
     # Get indices of xi/yi on the domain (if x/y are not on the domain, this
     # may lead to indices outside the domain)
     x_int = ceiling( (x-domain$lower_left_corner[1])/(domain$lw[1] ) * length(domain$xs))
@@ -851,7 +906,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
                 # No md output -- something is wrong
                 stop('Error in merge_multidomain_gauges: There is an empty NULL domain in the md list')
             }else{
-                if( (length(x$gauges) == 0 ) | (class(x$gauges) == 'try-error')){
+                if( (length(x$gauges) == 0 ) | (is(x$gauges, 'try-error'))){
                     # No gauges -- no problem
                     out = TRUE
                 }else{
@@ -879,7 +934,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
     }else{
         # In this case we passed an existing md list to the function
         #
-        if(class(md) != 'list'){
+        if(!is(md, 'list')){
             stop('Must provide named arguments with either "multidomain_dir" giving the multidomain directory, or a list "md" containing the output from get_all_recent_results for each domain in the multidomain')
         }
 
@@ -892,7 +947,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
 
         # Some domains might have no gauges -- skip them
         if( (length(md[[j]]$gauges) == 0) ) next
-        if( (class(md[[j]]$gauges) == 'try-error') ) next
+        if( (is(md[[j]]$gauges, 'try-error')) ) next
 
         # If gauges exist, they may or may not be in this priority domain
         lons = md[[j]]$gauges$lon
@@ -919,7 +974,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
         # Loop over 1-d variables lon/lat/ etc, and subset in space
         for(i in 1:length(clean_gauges[[counter]])){
             # Only work on arrays
-            if(class(clean_gauges[[counter]][[i]]) != 'array') next
+            if(!is(clean_gauges[[counter]][[i]], 'array')) next
             # Do not subset time! 
             if(names(clean_gauges[[counter]])[i] == 'time') next
             clean_gauges[[counter]][[i]] = as.numeric(clean_gauges[[counter]][[i]][keep])
@@ -928,7 +983,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
         for(i in 1:length(clean_gauges[[counter]]$time_var)){
 
             # Non arrays are e.g. missing data -- ignore.
-            if(!(class(clean_gauges[[counter]]$time_var[[i]]) %in% c('matrix', 'array'))) next
+            if(!any(class(clean_gauges[[counter]]$time_var[[i]]) %in% c('matrix', 'array'))) next
 
             dd = dim(clean_gauges[[counter]]$time_var[[i]])
             if(is.null(dd) | length(dd) == 1){
@@ -947,7 +1002,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
         for(i in 1:length(clean_gauges[[counter]]$static_var)){
 
             # Non arrays are e.g. missing data -- ignore?
-            if(!(class(clean_gauges[[counter]]$static_var[[i]]) %in% c('matrix', 'array'))) next
+            if(!any(class(clean_gauges[[counter]]$static_var[[i]]) %in% c('matrix', 'array'))) next
             # There is more than one gauge
             clean_gauges[[counter]]$static_var[[i]] = as.numeric(clean_gauges[[counter]]$static_var[[i]][keep])
 
@@ -965,7 +1020,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
             # Combine single variables like lon/lat,gaugeID... but not time!
             for(var in 1:length(merged_gauges)){
 
-                if(class(merged_gauges[[var]]) == 'list') next
+                if(is(merged_gauges[[var]], 'list')) next
 
                 if(names(clean_gauges[[counter]])[var] == 'time'){
                     # Treat time separately. But test that all times are the same
@@ -1511,6 +1566,7 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
     md_cell_ymin = unlist(lapply(md_bboxes, f<-function(x) min(x[,2])))
     md_cell_ymax = unlist(lapply(md_bboxes, f<-function(x) max(x[,2])))
 
+    # For each point, find which domain(s) it is in
     point_domain = rep(NA, nrow(xy_mat))
     point_dir = rep(NA, nrow(xy_mat))
     for(i in 1:nrow(xy_mat)){
@@ -1521,6 +1577,8 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
         if(!any(point_in_domain)){
             next
         }else{
+            # Select the domain with the smallest cell area [which in SWALS is
+            # always the priority domain].
             local_areas = md_cell_areas
             local_areas[!point_in_domain] = Inf
             point_domain[i] = which.min(local_areas)
@@ -1532,4 +1590,106 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
 
     return(output)
 
+}
+
+#' Energy-type computations for leapfrog-type solvers that have "domain%linear_solver_is_truely_linear=.TRUE."
+#'
+#' @param domain_dir the domain directory
+#' @param spherical Is the domain spherical?
+#' @param radius_earth radius of the earth in m
+#' @param gravity gravitational acceleration (m/s^2)
+#' @param msl the mean-sea-level for the truely linear solver
+#' @param dry_depth the depth at which velocities are set to zero
+#' @param water_density density of (sea) water in kg/m^3
+#' @param time_indices optional vector of time indices at which energy should be computed. By default compute all times.
+#' @return List with the 'available energy' - including:
+#'             potential energy (1/2 integral (h-msl)**2)
+#'             kinetic energy   (1/2 integral (u^2 + v^2)*depth) 
+#'             total energy (potential + kinetic)
+#'        We use the 'available energy' (i.e. so a still ocean with stage=msl has energy = 0)
+#
+get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, radius_earth=6371e+03, 
+    gravity=9.8, msl=0.0, dry_depth=1.0e-05, water_density = 1024, time_indices=NULL){
+
+    deg2rad = pi/180
+
+    library(ncdf4)
+    fid = nc_open(paste0(domain_dir, "/Grid_output_ID00000000000000000001.nc"))
+    elev = ncvar_get(fid, 'elevation0')
+    ys = ncvar_get(fid, 'y')
+    xs = ncvar_get(fid, 'x')
+    times = ncvar_get(fid, 'time')
+    is_priority_domain = ncvar_get(fid, 'is_priority_domain')
+
+    # If the priority domain is empty it seems filled with negative 127
+    if(any(is_priority_domain < 0)){
+        is_priority_domain = 1
+    }
+
+    # Depth below MSL -- avoiding singularity
+    EPS = dry_depth
+    depth = pmax(msl-elev, EPS)
+    nx = dim(depth)
+    is_wet = (elev < (msl-EPS))
+
+    # Remove boundaries -- 2 cells.
+    is_wet[1:2,] = 0
+    is_wet[(nx[1]-1):nx[1],] = 0
+    is_wet[,1:2] = 0
+    is_wet[,(nx[2]-1):nx[2]] = 0
+
+    # Get the grid cell area, assuming spherical coordinates
+    cell_area = elev*0
+    dy = mean(diff(ys))
+    dx = mean(diff(xs))
+    for(i in 1:ncol(cell_area)){
+        if(spherical){
+            # Spherical area
+            cell_area[,i] = radius_earth**2 * cos(ys[i]*deg2rad) * dy * deg2rad * dx * deg2rad
+        }else{
+            cell_area[,i] = dx*dy
+        }
+    }
+
+    # Cell area at i+1/2
+    cell_area_ip = cell_area
+    # Cell area at j+1/2
+    cell_area_jp = cell_area
+    cell_area_jp[, 1:(nx[2]-1)] = 0.5 * (cell_area[,2:nx[2]] + cell_area[,1:(nx[2]-1)])
+
+    #
+    depth_ip = depth
+    depth_ip[1:(nx[1]-1),] = 0.5 * (depth[2:nx[1],] + depth[1:(nx[1]-1),])
+    depth_jp = depth
+    depth_jp[, 1:(nx[2]-1)] = 0.5 * (depth[,2:nx[2]] + depth[,1:(nx[2]-1)])
+
+    # Below we'll either get results at a specific time, or all times.
+    if(is.null(time_indices)){
+        time_inds = 1:length(times)
+    }else{
+        time_inds = time_indices
+        times = times[time_indices]
+    }
+
+    # Potential and kinetic energy
+    energy_pot_on_rho = rep(NA, length(time_inds))
+    energy_kin_on_rho = rep(NA, length(time_inds))
+    for(i in time_inds){
+        stg = ncvar_get(fid, 'stage', start=c(1, 1, i), count=c(nx[1], nx[2], 1))
+        uh = ncvar_get(fid, 'uh', start=c(1, 1, i), count=c(nx[1], nx[2], 1))
+        vh = ncvar_get(fid, 'vh', start=c(1, 1, i), count=c(nx[1], nx[2], 1))
+
+        energy_pot_on_rho[i] = 0.5 * gravity * sum( (stg[,]*is_wet)**2 * cell_area * is_priority_domain)
+        energy_kin_on_rho[i] = 0.5 * 
+            sum( ((uh[,]**2/depth_ip)*cell_area + (vh[,]**2/depth_jp)* cell_area_jp) * is_priority_domain)
+    }
+
+    nc_close(fid)
+
+    energy_tot = energy_pot_on_rho + energy_kin_on_rho
+
+    output = list(times=times, energy_total=energy_tot*water_density, 
+        energy_potential=energy_pot_on_rho*water_density, 
+        energy_kinetic=energy_kin_on_rho*water_density)
+    return(output)
 }
