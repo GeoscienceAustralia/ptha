@@ -144,8 +144,8 @@ er_info = get_stage_exceedance_rate_curve_at_hazard_point(
 ```
 
 ```
-## Warning in xy.coords(x, y, xlabel, ylabel, log): 17 y values <= 0 omitted
-## from logarithmic plot
+## Warning in xy.coords(x, y, xlabel, ylabel, log): 17 y values <= 0 omitted from
+## logarithmic plot
 ```
 
 ![plot of chunk numericalRP](figure/numericalRP-1.png)
@@ -341,9 +341,8 @@ names(puysegur)
 ```
 
 ```
-## [1] "events"                 "unit_source_statistics"
-## [3] "gauge_netcdf_files"     "events_file"           
-## [5] "unit_source_file"       "tsunami_events_file"
+## [1] "events"                 "unit_source_statistics" "gauge_netcdf_files"    
+## [4] "events_file"            "unit_source_file"       "tsunami_events_file"
 ```
 
 ```r
@@ -384,14 +383,11 @@ names(puysegur$unit_source_statistics)
 ```
 
 ```
-##  [1] "lon_c"                  "lat_c"                 
-##  [3] "depth"                  "strike"                
-##  [5] "dip"                    "rake"                  
-##  [7] "slip"                   "length"                
-##  [9] "width"                  "downdip_number"        
-## [11] "alongstrike_number"     "subfault_number"       
-## [13] "max_depth"              "initial_condition_file"
-## [15] "tide_gauge_file"
+##  [1] "lon_c"                  "lat_c"                  "depth"                 
+##  [4] "strike"                 "dip"                    "rake"                  
+##  [7] "slip"                   "length"                 "width"                 
+## [10] "downdip_number"         "alongstrike_number"     "subfault_number"       
+## [13] "max_depth"              "initial_condition_file" "tide_gauge_file"
 ```
 Here we determine the dimensions of the table, and look at a few rows
 
@@ -410,12 +406,12 @@ puysegur$unit_source_statistics[1:2,]
 ```
 
 ```
-##      lon_c     lat_c     depth   strike      dip rake slip   length
-## 1 163.6647 -49.88909  6.364741 20.39946 18.67347   90    1 45.92458
-## 2 164.1119 -49.96848 26.364741 14.18287 43.24057   90    1 45.54654
-##      width downdip_number alongstrike_number subfault_number max_depth
-## 1 39.80127              1                  1               1  12.83707
-## 2 39.98489              2                  1               2  40.00000
+##      lon_c     lat_c     depth   strike      dip rake slip   length    width
+## 1 163.6647 -49.88909  6.364741 20.39946 18.67347   90    1 45.92458 39.80127
+## 2 164.1119 -49.96848 26.364741 14.18287 43.24057   90    1 45.54654 39.98489
+##   downdip_number alongstrike_number subfault_number max_depth
+## 1              1                  1               1  12.83707
+## 2              2                  1               2  40.00000
 ##                                                                                        initial_condition_file
 ## 1 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/EQ_SOURCE/Unit_source_data/puysegur2/puysegur2_1_1.tif
 ## 2 /g/data1a/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/EQ_SOURCE/Unit_source_data/puysegur2/puysegur2_2_1.tif
@@ -498,34 +494,30 @@ puysegur$events[2050:2052, ]
 ## 2050                  0.003639969                  0.004682143  puysegur2
 ## 2051                  0.009215376                  0.011996502  puysegur2
 ## 2052                  0.006078464                  0.010341691  puysegur2
-##      uniform_event_row   rate_annual rate_annual_lower_ci
-## 2050               131 0.00002739742       0.000001266245
-## 2051               131 0.00002817468       0.000001302168
-## 2052               131 0.00002995223       0.000001384323
-##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 2050        0.00004482371       7.612915           0.00003637125
-## 2051        0.00004609535       7.977218           0.00003508704
-## 2052        0.00004900353       7.980054           0.00003349598
-##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 2050                   0.000001889921                    0.00006254488
-## 2051                   0.000001823191                    0.00006033652
-## 2052                   0.000001740517                    0.00005760049
-##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
-## 2050                  0.00003163438                0.00004400736
-## 2051                  0.00003051742                0.00004245353
-## 2052                  0.00002913357                0.00004052843
-##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
-## 2050                0.00004105183                            0.9956551
-## 2051                0.00003960236                            0.9956551
-## 2052                0.00003780654                            0.9956551
-##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
-## 2050                0.9952935    0.00003309469    0.00003120997
-## 2051                0.9952935    0.00003403359    0.00003209539
-## 2052                0.9952935    0.00003618078    0.00003412030
-##      rate_annual_median
-## 2050      0.00002463771
-## 2051      0.00002533668
-## 2052      0.00002693518
+##      uniform_event_row   rate_annual rate_annual_lower_ci rate_annual_upper_ci
+## 2050               131 0.00002739742       0.000001266245        0.00004482371
+## 2051               131 0.00002817468       0.000001302168        0.00004609535
+## 2052               131 0.00002995223       0.000001384323        0.00004900353
+##      variable_mu_Mw variable_mu_rate_annual variable_mu_rate_annual_lower_ci
+## 2050       7.612915           0.00003637125                   0.000001889921
+## 2051       7.977218           0.00003508704                   0.000001823191
+## 2052       7.980054           0.00003349598                   0.000001740517
+##      variable_mu_rate_annual_upper_ci variable_mu_rate_annual_median
+## 2050                    0.00006254488                  0.00003163438
+## 2051                    0.00006033652                  0.00003051742
+## 2052                    0.00005760049                  0.00002913357
+##      variable_mu_rate_annual_16pc variable_mu_rate_annual_84pc
+## 2050                0.00004400736                0.00004105183
+## 2051                0.00004245353                0.00003960236
+## 2052                0.00004052843                0.00003780654
+##      variable_mu_weight_with_nonzero_rate weight_with_nonzero_rate
+## 2050                            0.9956551                0.9952935
+## 2051                            0.9956551                0.9952935
+## 2052                            0.9956551                0.9952935
+##      rate_annual_16pc rate_annual_84pc rate_annual_median
+## 2050    0.00003309469    0.00003120997      0.00002463771
+## 2051    0.00003403359    0.00003209539      0.00002533668
+## 2052    0.00003618078    0.00003412030      0.00002693518
 ```
 
 The most important variables from a users perspective are the moment magnitude
@@ -758,20 +750,18 @@ puysegur$events[row_index,]
 ## 1567                     2                         9
 ##      physical_corner_wavenumber_x physical_corner_wavenumber_y sourcename
 ## 1567                  0.006060465                   0.01252411  puysegur2
-##      uniform_event_row  rate_annual rate_annual_lower_ci
-## 1567               103 0.0000445935        0.00002923208
-##      rate_annual_upper_ci variable_mu_Mw variable_mu_rate_annual
-## 1567        0.00006758251       7.803452           0.00003468984
-##      variable_mu_rate_annual_lower_ci variable_mu_rate_annual_upper_ci
-## 1567                    0.00002256976                     0.0000539477
-##      variable_mu_rate_annual_median variable_mu_rate_annual_16pc
-## 1567                  0.00003371586                0.00002696215
-##      variable_mu_rate_annual_84pc variable_mu_weight_with_nonzero_rate
-## 1567                0.00004304128                                    1
-##      weight_with_nonzero_rate rate_annual_16pc rate_annual_84pc
-## 1567                        1    0.00003529042    0.00005484906
-##      rate_annual_median
-## 1567      0.00004317951
+##      uniform_event_row  rate_annual rate_annual_lower_ci rate_annual_upper_ci
+## 1567               103 0.0000445935        0.00002923208        0.00006758251
+##      variable_mu_Mw variable_mu_rate_annual variable_mu_rate_annual_lower_ci
+## 1567       7.803452           0.00003468984                    0.00002256976
+##      variable_mu_rate_annual_upper_ci variable_mu_rate_annual_median
+## 1567                     0.0000539477                  0.00003371586
+##      variable_mu_rate_annual_16pc variable_mu_rate_annual_84pc
+## 1567                0.00002696215                0.00004304128
+##      variable_mu_weight_with_nonzero_rate weight_with_nonzero_rate
+## 1567                                    1                        1
+##      rate_annual_16pc rate_annual_84pc rate_annual_median
+## 1567    0.00003529042    0.00005484906      0.00004317951
 ```
 To get its initial condition, you pass the earthquake metadata to the function
 `get_initial_condition_for_event`:
@@ -967,9 +957,8 @@ names(event_subset)
 ```
 
 ```
-## [1] "events"                 "unit_source_statistics"
-## [3] "gauge_netcdf_files"     "desired_event_rows"    
-## [5] "events_file"            "unit_source_file"      
+## [1] "events"                 "unit_source_statistics" "gauge_netcdf_files"    
+## [4] "desired_event_rows"     "events_file"            "unit_source_file"      
 ## [7] "tsunami_events_file"
 ```
 
