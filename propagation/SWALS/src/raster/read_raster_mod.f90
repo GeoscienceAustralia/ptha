@@ -67,7 +67,7 @@ module read_raster_mod
         type(gdal_raster_dataset_type), allocatable :: raster_datasets(:) !! Objects corresponding to each file
 
         real(C_DOUBLE) :: lowerleft(2) !! minimum lower left (corner) of all rasters combined
-        REAL(C_DOUBLE) :: upperright(2) !! maximum upper right (corner) of all rasters combined
+        real(C_DOUBLE) :: upperright(2) !! maximum upper right (corner) of all rasters combined
 
         contains
         procedure:: initialise => initialise_multi_raster !! Initialise the object
