@@ -4,8 +4,10 @@
 \alias{get_event_probabilities_conditional_on_Mw}
 \title{Assign conditional probabilities to earthquakes with the same Mw}
 \usage{
-get_event_probabilities_conditional_on_Mw(event_table,
-  conditional_probability_model = "all_equal")
+get_event_probabilities_conditional_on_Mw(
+  event_table,
+  conditional_probability_model = "all_equal"
+)
 }
 \arguments{
 \item{event_table}{A data.frame containing information on all earthquake

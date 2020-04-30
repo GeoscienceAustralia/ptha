@@ -4,8 +4,13 @@
 \alias{gauge_energy_banding}
 \title{Spectral energy in frequency bands of gauge time-series}
 \usage{
-gauge_energy_banding(data_t, data_s, bin_divisors, interp_dt = NULL,
-  exclude_mean = TRUE)
+gauge_energy_banding(
+  data_t,
+  data_s,
+  bin_divisors,
+  interp_dt = NULL,
+  exclude_mean = TRUE
+)
 }
 \arguments{
 \item{data_t}{vector of numeric times at which stages are recorded (usually in seconds)}

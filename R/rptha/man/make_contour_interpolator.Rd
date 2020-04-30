@@ -4,8 +4,12 @@
 \alias{make_contour_interpolator}
 \title{Interpolate along downdip lines defining (cartesian) source contours}
 \usage{
-make_contour_interpolator(mid_line_with_cutpoints,
-  convert_to_cartesian = FALSE, origin_lonlat = NULL, r = 6378137)
+make_contour_interpolator(
+  mid_line_with_cutpoints,
+  convert_to_cartesian = FALSE,
+  origin_lonlat = NULL,
+  r = 6378137
+)
 }
 \arguments{
 \item{mid_line_with_cutpoints}{A list of matrices which is typically obtained

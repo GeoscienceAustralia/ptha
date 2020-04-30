@@ -4,8 +4,13 @@
 \alias{gauge_statistics_simple}
 \title{Simple gauge summary statistics}
 \usage{
-gauge_statistics_simple(gauge_times, flow_data,
-  stage_threshold_for_arrival_time, use_fortran = TRUE, ...)
+gauge_statistics_simple(
+  gauge_times,
+  flow_data,
+  stage_threshold_for_arrival_time,
+  use_fortran = TRUE,
+  ...
+)
 }
 \arguments{
 \item{gauge_times}{vector giving the times at which each flow-time-series

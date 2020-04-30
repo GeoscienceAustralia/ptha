@@ -4,9 +4,13 @@
 \alias{sffm_fit_parameters}
 \title{Fit SFFM parameters}
 \usage{
-sffm_fit_parameters(m1, default_seed = 1, NumRandSf = 400,
+sffm_fit_parameters(
+  m1,
+  default_seed = 1,
+  NumRandSf = 400,
   sffm_pars = .sffm_default_model_parameters,
-  reg_par_start = c(2/dim(m1)[1], 2/dim(m1)[2]))
+  reg_par_start = c(2/dim(m1)[1], 2/dim(m1)[2])
+)
 }
 \arguments{
 \item{m1}{matrix or RasterLayer with slip values}

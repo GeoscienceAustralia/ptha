@@ -4,8 +4,14 @@
 \alias{bisection}
 \title{Function for vectorized 1d root finding with bisection.}
 \usage{
-bisection(f, lower, upper, ..., numiter = 20000,
-  tolerance = .Machine$double.eps^0.5)
+bisection(
+  f,
+  lower,
+  upper,
+  ...,
+  numiter = 20000,
+  tolerance = .Machine$double.eps^0.5
+)
 }
 \arguments{
 \item{f}{the function}

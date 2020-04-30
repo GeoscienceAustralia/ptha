@@ -4,8 +4,11 @@
 \alias{find_unit_source_index_containing_point}
 \title{Find the unit source containing a given xy coordinate}
 \usage{
-find_unit_source_index_containing_point(point_xy, unit_source_geometry,
-  unit_source_statistics)
+find_unit_source_index_containing_point(
+  point_xy,
+  unit_source_geometry,
+  unit_source_statistics
+)
 }
 \arguments{
 \item{point_xy}{numeric vector of length 2 giving c(lon, lat)}

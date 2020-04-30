@@ -4,10 +4,16 @@
 \alias{compute_grid_point_areas_in_polygon}
 \title{Fill a polygon with grid points (typically used for numerical integration)}
 \usage{
-compute_grid_point_areas_in_polygon(polygon, approx_dx, approx_dy,
-  rotation_origin = NULL, rotation_x_axis_vector = NULL,
-  edge_taper_width = 0, bounding_polygon = NULL,
-  full_unit_source_grid = NULL)
+compute_grid_point_areas_in_polygon(
+  polygon,
+  approx_dx,
+  approx_dy,
+  rotation_origin = NULL,
+  rotation_x_axis_vector = NULL,
+  edge_taper_width = 0,
+  bounding_polygon = NULL,
+  full_unit_source_grid = NULL
+)
 }
 \arguments{
 \item{polygon}{matrix with x,y coordinates defining a polygon}

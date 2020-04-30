@@ -4,8 +4,14 @@
 \alias{approxSpatialLines}
 \title{Return a set of points with chosen spacing along a SpatialLines object}
 \usage{
-approxSpatialLines(SL, spacing = NULL, n = NULL, longlat = FALSE,
-  verbose = FALSE, distinguish_disjoint_line_segments = FALSE)
+approxSpatialLines(
+  SL,
+  spacing = NULL,
+  n = NULL,
+  longlat = FALSE,
+  verbose = FALSE,
+  distinguish_disjoint_line_segments = FALSE
+)
 }
 \arguments{
 \item{SL}{a SpatialLines object, along which we desire evenly spaced points.}

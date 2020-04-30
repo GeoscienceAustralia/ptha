@@ -4,8 +4,12 @@
 \alias{read_mux2_data}
 \title{Read mux2 data format}
 \usage{
-read_mux2_data(mux2file, inds = NULL, return_nstations_only = FALSE,
-  file_subtype = "GAR15")
+read_mux2_data(
+  mux2file,
+  inds = NULL,
+  return_nstations_only = FALSE,
+  file_subtype = "GAR15"
+)
 }
 \arguments{
 \item{mux2file}{character. Filename of a mux2 file which is to be read}

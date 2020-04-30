@@ -4,12 +4,21 @@
 \alias{kajiura_filter}
 \title{Implementation of a Kajiura filter}
 \usage{
-kajiura_filter(xyDef, depth, grid_dx = max(depth)/2,
-  grid_dy = max(depth)/2, edge_buffer_value = 0,
-  edge_effect_correction_scale = 1.5, kajiuraGmax = 9,
-  interpolator = "linear", interpolator_categories = function(xy) {    
-  xy[, 1] * 0 }, volume_change_error_threshold = 0.02,
-  volume_change_MSL = 0, verbose = FALSE, fortran_inner_loop = TRUE)
+kajiura_filter(
+  xyDef,
+  depth,
+  grid_dx = max(depth)/2,
+  grid_dy = max(depth)/2,
+  edge_buffer_value = 0,
+  edge_effect_correction_scale = 1.5,
+  kajiuraGmax = 9,
+  interpolator = "linear",
+  interpolator_categories = function(xy) {     xy[, 1] * 0 },
+  volume_change_error_threshold = 0.02,
+  volume_change_MSL = 0,
+  verbose = FALSE,
+  fortran_inner_loop = TRUE
+)
 }
 \arguments{
 \item{xyDef}{3 column matrix with x,y, deformation. x and y can be unstructured.

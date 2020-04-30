@@ -5,11 +5,14 @@
 \title{Create a function to simulate random length/width/kcx/kcy for synthetic
 finite fault models.}
 \usage{
-sffm_make_random_lwkc_function(log10kcx_regression_par = c(-0.54, 2.03,
-  0.22), log10kcy_regression_par = c(-0.41, 1.18, 0.19),
+sffm_make_random_lwkc_function(
+  log10kcx_regression_par = c(-0.54, 2.03, 0.22),
+  log10kcy_regression_par = c(-0.41, 1.18, 0.19),
   cor_kcx_kcy_residual = 0.68,
-  clip_random_parameter_ranges_to_2sd = FALSE, relation = "Strasser",
-  force_deterministic = FALSE)
+  clip_random_parameter_ranges_to_2sd = FALSE,
+  relation = "Strasser",
+  force_deterministic = FALSE
+)
 }
 \arguments{
 \item{log10kcx_regression_par}{vector of length 3 with the gradient,

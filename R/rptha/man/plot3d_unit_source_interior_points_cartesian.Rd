@@ -4,8 +4,13 @@
 \alias{plot3d_unit_source_interior_points_cartesian}
 \title{3D rgl plot of the unit source interior points}
 \usage{
-plot3d_unit_source_interior_points_cartesian(us, aspect = "iso",
-  add = FALSE, add_zero_plane = TRUE, ...)
+plot3d_unit_source_interior_points_cartesian(
+  us,
+  aspect = "iso",
+  add = FALSE,
+  add_zero_plane = TRUE,
+  ...
+)
 }
 \arguments{
 \item{us}{List with unit source interior points information: Output of

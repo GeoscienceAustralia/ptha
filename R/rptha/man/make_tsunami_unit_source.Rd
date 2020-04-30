@@ -4,15 +4,27 @@
 \alias{make_tsunami_unit_source}
 \title{unit_source water surface deformation}
 \usage{
-make_tsunami_unit_source(i, j, discrete_source, rake,
-  tsunami_surface_points_lonlat, approx_dx = NULL, approx_dy = NULL,
-  scale_dxdy = 1, depths_in_km = TRUE, kajiura_smooth = FALSE,
-  surface_point_ocean_depths = NULL, kajiura_grid_spacing = NULL,
+make_tsunami_unit_source(
+  i,
+  j,
+  discrete_source,
+  rake,
+  tsunami_surface_points_lonlat,
+  approx_dx = NULL,
+  approx_dy = NULL,
+  scale_dxdy = 1,
+  depths_in_km = TRUE,
+  kajiura_smooth = FALSE,
+  surface_point_ocean_depths = NULL,
+  kajiura_grid_spacing = NULL,
   kajiura_volume_change_error_threshold = 0.1,
   kajiura_where_deformation_exceeds_threshold = 0,
   minimal_output = FALSE,
   tsunami_function = unit_source_cartesian_to_okada_tsunami_source,
-  verbose = FALSE, edge_taper_width = 0, ...)
+  verbose = FALSE,
+  edge_taper_width = 0,
+  ...
+)
 }
 \arguments{
 \item{i}{integer. The down-dip index of the unit source}

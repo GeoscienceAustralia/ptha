@@ -4,10 +4,18 @@
 \alias{get_all_earthquake_events}
 \title{Compute all synthetic uniform slip earthquake events for a sourcezone}
 \usage{
-get_all_earthquake_events(discrete_source = NULL,
-  unit_source_statistics = NULL, Mmin = 7.5, Mmax = 9.6, dMw = 0.1,
-  mu = 3e+10, constant = 9.05, target_location = NULL,
-  source_zone_name = NA, relation = "Strasser")
+get_all_earthquake_events(
+  discrete_source = NULL,
+  unit_source_statistics = NULL,
+  Mmin = 7.5,
+  Mmax = 9.6,
+  dMw = 0.1,
+  mu = 3e+10,
+  constant = 9.05,
+  target_location = NULL,
+  source_zone_name = NA,
+  relation = "Strasser"
+)
 }
 \arguments{
 \item{discrete_source}{The discrete source for the source-zone, as from 

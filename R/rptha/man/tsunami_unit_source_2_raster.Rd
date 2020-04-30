@@ -4,9 +4,14 @@
 \alias{tsunami_unit_source_2_raster}
 \title{Convert the tsunami unit source to a z-displacement raster}
 \usage{
-tsunami_unit_source_2_raster(tsunami_unit_source, filename = NULL,
-  saveonly = FALSE, tsunami_surface_points_lonlat = NULL, res = c(NA,
-  NA), field_to_output = "smoothed_vertical_displacement")
+tsunami_unit_source_2_raster(
+  tsunami_unit_source,
+  filename = NULL,
+  saveonly = FALSE,
+  tsunami_surface_points_lonlat = NULL,
+  res = c(NA, NA),
+  field_to_output = "smoothed_vertical_displacement"
+)
 }
 \arguments{
 \item{tsunami_unit_source}{output of make_tsunami_unit_source or similar.}

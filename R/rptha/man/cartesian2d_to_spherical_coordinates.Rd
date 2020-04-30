@@ -4,8 +4,7 @@
 \alias{cartesian2d_to_spherical_coordinates}
 \title{Inverse of spherical_to_cartesian2d_coordinates}
 \usage{
-cartesian2d_to_spherical_coordinates(coords_xy, origin_lonlat,
-  r = 6378137)
+cartesian2d_to_spherical_coordinates(coords_xy, origin_lonlat, r = 6378137)
 }
 \arguments{
 \item{coords_xy}{matrix with 2 columns containing x,y coordinates in the

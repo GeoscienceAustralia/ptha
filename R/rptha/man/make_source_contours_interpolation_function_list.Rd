@@ -4,8 +4,10 @@
 \alias{make_source_contours_interpolation_function_list}
 \title{Functions to interpolate points on source contours}
 \usage{
-make_source_contours_interpolation_function_list(source_contours,
-  contour_depth_attribute = "level")
+make_source_contours_interpolation_function_list(
+  source_contours,
+  contour_depth_attribute = "level"
+)
 }
 \arguments{
 \item{source_contours}{SpatialLinesDataFrame containing the contour

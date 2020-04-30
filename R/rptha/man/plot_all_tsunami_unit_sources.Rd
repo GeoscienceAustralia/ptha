@@ -4,8 +4,12 @@
 \alias{plot_all_tsunami_unit_sources}
 \title{Make plot of all tsunami unit sources and their sum}
 \usage{
-plot_all_tsunami_unit_sources(sourcename, all_tsunami, all_tsunami_rast,
-  discrete_source)
+plot_all_tsunami_unit_sources(
+  sourcename,
+  all_tsunami,
+  all_tsunami_rast,
+  discrete_source
+)
 }
 \arguments{
 \item{sourcename}{name for source zone}

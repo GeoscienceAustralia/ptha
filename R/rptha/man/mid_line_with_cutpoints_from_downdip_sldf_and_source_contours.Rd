@@ -4,10 +4,13 @@
 \alias{mid_line_with_cutpoints_from_downdip_sldf_and_source_contours}
 \title{Make mid_line_with_cutpoints from two shapefiles}
 \usage{
-
-  mid_line_with_cutpoints_from_downdip_sldf_and_source_contours(source_contours,
-  downdip_lines, contour_depth_attribute = "level",
-  buffer_width = 1e-06, make_plot = FALSE)
+mid_line_with_cutpoints_from_downdip_sldf_and_source_contours(
+  source_contours,
+  downdip_lines,
+  contour_depth_attribute = "level",
+  buffer_width = 1e-06,
+  make_plot = FALSE
+)
 }
 \arguments{
 \item{source_contours}{SpatialLinesDataFrame with the source contours. Must have

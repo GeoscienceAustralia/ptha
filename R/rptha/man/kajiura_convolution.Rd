@@ -4,8 +4,17 @@
 \alias{kajiura_convolution}
 \title{Call the fortran kajiura_convolution routine via C}
 \usage{
-kajiura_convolution(depth_inv, initial_deformation_padded, filterXYr,
-  kajiuraGmax, lfx, lfy, lnx, lny, output)
+kajiura_convolution(
+  depth_inv,
+  initial_deformation_padded,
+  filterXYr,
+  kajiuraGmax,
+  lfx,
+  lfy,
+  lnx,
+  lny,
+  output
+)
 }
 \arguments{
 \item{depth_inv}{matrix with inverse of depth (no NaN's)}

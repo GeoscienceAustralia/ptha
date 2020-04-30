@@ -4,9 +4,16 @@
 \alias{write_table_to_netcdf}
 \title{Write a data.frame to a netcdf file}
 \usage{
-write_table_to_netcdf(dataframe, filename, global_attributes_list = NULL,
-  units = NULL, long_names = NULL, var_prec = NULL,
-  add_session_info_attribute = FALSE, force_v4 = FALSE)
+write_table_to_netcdf(
+  dataframe,
+  filename,
+  global_attributes_list = NULL,
+  units = NULL,
+  long_names = NULL,
+  var_prec = NULL,
+  add_session_info_attribute = FALSE,
+  force_v4 = FALSE
+)
 }
 \arguments{
 \item{dataframe}{the input data.frame to be written to file}

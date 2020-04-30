@@ -4,9 +4,13 @@
 \alias{slip_from_Mw}
 \title{Compute slip given Mw (and optionally mu, and a function to compute the area from Mw)}
 \usage{
-slip_from_Mw(Mw, mu = 3e+10, relation = "Strasser",
-  area_function = function(Mw) {     Mw_2_rupture_size(Mw, relation =
-  relation)[1] }, constant = 9.05)
+slip_from_Mw(
+  Mw,
+  mu = 3e+10,
+  relation = "Strasser",
+  area_function = function(Mw) {     Mw_2_rupture_size(Mw, relation = relation)[1] },
+  constant = 9.05
+)
 }
 \arguments{
 \item{Mw}{Moment magnitude}

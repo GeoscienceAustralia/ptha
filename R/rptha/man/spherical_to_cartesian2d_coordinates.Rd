@@ -4,8 +4,11 @@
 \alias{spherical_to_cartesian2d_coordinates}
 \title{Convert from spherical coordinates to a local 2D cartesian coordinate system}
 \usage{
-spherical_to_cartesian2d_coordinates(coords_lonlat, origin_lonlat = NULL,
-  r = 6378137)
+spherical_to_cartesian2d_coordinates(
+  coords_lonlat,
+  origin_lonlat = NULL,
+  r = 6378137
+)
 }
 \arguments{
 \item{coords_lonlat}{matrix with 2 columns (lon/lat) in degrees}

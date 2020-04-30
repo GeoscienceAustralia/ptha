@@ -4,11 +4,16 @@
 \alias{convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates}
 \title{Get a set of stage-vs-exceedance-rate curves (one for each magnitude-exceedance rate logic-tree branch)}
 \usage{
-
-  convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(logic_tree_rate_curve_Mw,
-  logic_tree_rate_curves_exceedance_rate, event_Mw,
-  event_conditional_probability, event_max_stage, output_stages,
-  use_Fortran = TRUE, drop_small_events = FALSE)
+convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates(
+  logic_tree_rate_curve_Mw,
+  logic_tree_rate_curves_exceedance_rate,
+  event_Mw,
+  event_conditional_probability,
+  event_max_stage,
+  output_stages,
+  use_Fortran = TRUE,
+  drop_small_events = FALSE
+)
 }
 \arguments{
 \item{logic_tree_rate_curve_Mw}{vector with magnitudes at which the 

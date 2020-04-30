@@ -5,9 +5,15 @@
 \title{Compute summary statistics for all unit sources in a discretized source
 zone.}
 \usage{
-discretized_source_summary_statistics(discretized_source,
-  default_rake = 90, default_slip = 1, approx_dx = 2000,
-  approx_dy = 2000, make_plot = FALSE, depth_in_km = TRUE)
+discretized_source_summary_statistics(
+  discretized_source,
+  default_rake = 90,
+  default_slip = 1,
+  approx_dx = 2000,
+  approx_dy = 2000,
+  make_plot = FALSE,
+  depth_in_km = TRUE
+)
 }
 \arguments{
 \item{discretized_source}{list with an entry 'unit_source_grid' containing a

@@ -6,8 +6,12 @@
 distribution' of slip, supposing area varies as a log-normal distribution
 according to the Strasser (2010) scaling relation.}
 \usage{
-compute_slip_density_parameters(Mw, mu = 3e+10, constant = 9.05,
-  relation = "Strasser")
+compute_slip_density_parameters(
+  Mw,
+  mu = 3e+10,
+  constant = 9.05,
+  relation = "Strasser"
+)
 }
 \arguments{
 \item{Mw}{the moment magnitude}

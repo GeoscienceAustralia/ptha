@@ -4,10 +4,17 @@
 \alias{kajiura_smooth_raster}
 \title{Apply kajiura to a deformation raster}
 \usage{
-kajiura_smooth_raster(source_raster, new_origin, elevation_raster,
-  kj_filter_grid_dxdy = 1000, kj_filter_def_threshold = 0.001,
-  kj_cartesian_buffer = 10000, minimum_kj_depth = 10,
-  elevation_extraction_x_offset = 0, spherical_input = NULL)
+kajiura_smooth_raster(
+  source_raster,
+  new_origin,
+  elevation_raster,
+  kj_filter_grid_dxdy = 1000,
+  kj_filter_def_threshold = 0.001,
+  kj_cartesian_buffer = 10000,
+  minimum_kj_depth = 10,
+  elevation_extraction_x_offset = 0,
+  spherical_input = NULL
+)
 }
 \arguments{
 \item{source_raster}{the raster (object of class RasterLayer) with the stage

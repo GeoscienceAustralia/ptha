@@ -4,18 +4,29 @@
 \alias{rate_of_earthquakes_greater_than_Mw_function}
 \title{Get a function to compute the rate of earthquakes with magnitude > Mw}
 \usage{
-rate_of_earthquakes_greater_than_Mw_function(slip_rate, slip_rate_prob, b,
-  b_prob, Mw_min, Mw_min_prob, Mw_max, Mw_max_prob, sourcezone_total_area,
-  event_table, event_conditional_probabilities,
+rate_of_earthquakes_greater_than_Mw_function(
+  slip_rate,
+  slip_rate_prob,
+  b,
+  b_prob,
+  Mw_min,
+  Mw_min_prob,
+  Mw_max,
+  Mw_max_prob,
+  sourcezone_total_area,
+  event_table,
+  event_conditional_probabilities,
   computational_increment = 0.01,
   Mw_frequency_distribution = "truncated_gutenberg_richter",
   Mw_frequency_distribution_prob = 1,
   update_logic_tree_weights_with_data = FALSE,
-  Mw_count_duration = c(NA, NA, NA), Mw_obs_data = list(Mw = NULL, t =
-  NULL), Mw_2_M0 = function(x) M0_2_Mw(x, inverse = TRUE),
+  Mw_count_duration = c(NA, NA, NA),
+  Mw_obs_data = list(Mw = NULL, t = NULL),
+  Mw_2_M0 = function(x) M0_2_Mw(x, inverse = TRUE),
   account_for_moment_below_mwmin = FALSE,
   mw_max_posterior_equals_mw_max_prior = FALSE,
-  mw_observation_error_cdf = NULL)
+  mw_observation_error_cdf = NULL
+)
 }
 \arguments{
 \item{slip_rate}{numeric vector with 1 or more long-term seismogenic slip

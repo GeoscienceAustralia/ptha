@@ -5,8 +5,7 @@
 \title{Evaluate the rate of earthquakes with magnitude > Mw using a characteristic
 variant of the Gutenberg Richter distribution.}
 \usage{
-Mw_exceedance_rate_characteristic_gutenberg_richter(Mw, a, b, Mw_min,
-  Mw_max)
+Mw_exceedance_rate_characteristic_gutenberg_richter(Mw, a, b, Mw_min, Mw_max)
 }
 \arguments{
 \item{Mw}{Moment magnitude}

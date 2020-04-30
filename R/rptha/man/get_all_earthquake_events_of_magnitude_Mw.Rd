@@ -5,8 +5,13 @@
 \title{Given the summary statistics for a source zone, compute **all** uniform slip events
 with moment magnitude Mw.}
 \usage{
-get_all_earthquake_events_of_magnitude_Mw(Mw, unit_source_stats,
-  mu = 3e+10, constant = 9.05, relation = "Strasser")
+get_all_earthquake_events_of_magnitude_Mw(
+  Mw,
+  unit_source_stats,
+  mu = 3e+10,
+  constant = 9.05,
+  relation = "Strasser"
+)
 }
 \arguments{
 \item{Mw}{Moment magnitude.}

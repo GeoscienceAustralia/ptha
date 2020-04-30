@@ -4,11 +4,18 @@
 \alias{discretized_source_from_source_contours}
 \title{Make discretized_source from subduction interface contours}
 \usage{
-discretized_source_from_source_contours(source_shapefile,
-  desired_subfault_length, desired_subfault_width, make_plot = FALSE,
-  contour_depth_attribute = "level", contour_depth_in_km = TRUE,
-  extend_line_fraction = 1e-06, orthogonal_near_trench = FALSE,
-  improved_downdip_lines = TRUE, downdip_lines = NULL)
+discretized_source_from_source_contours(
+  source_shapefile,
+  desired_subfault_length,
+  desired_subfault_width,
+  make_plot = FALSE,
+  contour_depth_attribute = "level",
+  contour_depth_in_km = TRUE,
+  extend_line_fraction = 1e-06,
+  orthogonal_near_trench = FALSE,
+  improved_downdip_lines = TRUE,
+  downdip_lines = NULL
+)
 }
 \arguments{
 \item{source_shapefile}{character filename of the line shapefile defining the

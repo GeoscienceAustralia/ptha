@@ -4,8 +4,12 @@
 \alias{read_table_from_netcdf}
 \title{Read a netcdf file into a data.frame}
 \usage{
-read_table_from_netcdf(filename, desired_rows = NULL, chunk_size = 100,
-  varnames = NULL)
+read_table_from_netcdf(
+  filename,
+  desired_rows = NULL,
+  chunk_size = 100,
+  varnames = NULL
+)
 }
 \arguments{
 \item{filename}{netcdf file}

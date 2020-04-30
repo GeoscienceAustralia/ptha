@@ -4,9 +4,14 @@
 \alias{sffm_slip_goodness_of_fit}
 \title{Goodness of fit for SFFM parameters}
 \usage{
-sffm_slip_goodness_of_fit(reg_par, tg_rast, verbose = FALSE,
-  default_seed = 1, NumRandSf = 200,
-  sffm_pars = .sffm_default_model_parameters)
+sffm_slip_goodness_of_fit(
+  reg_par,
+  tg_rast,
+  verbose = FALSE,
+  default_seed = 1,
+  NumRandSf = 200,
+  sffm_pars = .sffm_default_model_parameters
+)
 }
 \arguments{
 \item{reg_par}{= vector of 2 proposed regression parameters (kcxN, kcyN) **in numerical

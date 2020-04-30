@@ -4,8 +4,7 @@
 \alias{get_unit_source_from_discretized_source}
 \title{Coordinates of a single unit source}
 \usage{
-get_unit_source_from_discretized_source(discretized_source,
-  unit_source_index)
+get_unit_source_from_discretized_source(discretized_source, unit_source_index)
 }
 \arguments{
 \item{discretized_source}{List holding the discretized_source information (e.g. output

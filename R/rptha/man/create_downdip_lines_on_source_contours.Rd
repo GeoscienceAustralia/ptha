@@ -4,9 +4,14 @@
 \alias{create_downdip_lines_on_source_contours}
 \title{Make '3D' down-dip lines along source contours [deprecated]}
 \usage{
-create_downdip_lines_on_source_contours(source_contours,
-  desired_subfault_length, contour_depth_attribute, extend_line_fraction,
-  orthogonal_near_trench, make_plot)
+create_downdip_lines_on_source_contours(
+  source_contours,
+  desired_subfault_length,
+  contour_depth_attribute,
+  extend_line_fraction,
+  orthogonal_near_trench,
+  make_plot
+)
 }
 \arguments{
 \item{source_contours}{SpatialLinesDataFrame with the source contours and an

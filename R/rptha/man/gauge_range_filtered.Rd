@@ -4,8 +4,13 @@
 \alias{gauge_range_filtered}
 \title{Gauge time-series filtered range}
 \usage{
-gauge_range_filtered(data_t, data_s, filter_freq = 1/(2 * 60),
-  interp_dt = NULL, detailed = FALSE)
+gauge_range_filtered(
+  data_t,
+  data_s,
+  filter_freq = 1/(2 * 60),
+  interp_dt = NULL,
+  detailed = FALSE
+)
 }
 \arguments{
 \item{data_t}{vector of numeric times (usually in seconds)}

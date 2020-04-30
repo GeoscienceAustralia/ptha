@@ -4,8 +4,13 @@
 \alias{exceedance_rate_of_observed}
 \title{Exceedance rate of observations with random errors}
 \usage{
-exceedance_rate_of_observed(exceedance_true, cdf_obs_error, data_value,
-  true_value_range_with_nontrivial_cdf_value, integration_dy = 0.01)
+exceedance_rate_of_observed(
+  exceedance_true,
+  cdf_obs_error,
+  data_value,
+  true_value_range_with_nontrivial_cdf_value,
+  integration_dy = 0.01
+)
 }
 \arguments{
 \item{exceedance_true}{exceedance rate function R(y) giving the rate of

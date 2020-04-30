@@ -4,9 +4,13 @@
 \alias{intersect_surface_path_with_depth_contours}
 \title{Get points along a path which intersect with depth contours}
 \usage{
-intersect_surface_path_with_depth_contours(surface_path, depth_contours,
-  n = 200, contour_depth_attribute = "level",
-  extend_line_fraction = 0)
+intersect_surface_path_with_depth_contours(
+  surface_path,
+  depth_contours,
+  n = 200,
+  contour_depth_attribute = "level",
+  extend_line_fraction = 0
+)
 }
 \arguments{
 \item{surface_path}{2 points defining a great-circle path (2x2 matrix with

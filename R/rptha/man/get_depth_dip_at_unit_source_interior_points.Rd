@@ -4,8 +4,12 @@
 \alias{get_depth_dip_at_unit_source_interior_points}
 \title{Interpolate depth and dip at interior points in the unit source [deprecated]}
 \usage{
-get_depth_dip_at_unit_source_interior_points(unit_source, grid_points,
-  fine_downdip_transects, grid_points_strike)
+get_depth_dip_at_unit_source_interior_points(
+  unit_source,
+  grid_points,
+  fine_downdip_transects,
+  grid_points_strike
+)
 }
 \arguments{
 \item{unit_source}{matrix with 4 rows and 3 columns (x,y,depth) defining the

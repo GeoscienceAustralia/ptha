@@ -5,8 +5,13 @@
 \title{Fit a truncated GR distribution to multiple earthquake catalogues with different
 completeness magnitudes.}
 \usage{
-fit_truncGR_multiple_catalogues(catalogue_lists, start_par, mw_max = Inf,
-  return_environment = FALSE, ...)
+fit_truncGR_multiple_catalogues(
+  catalogue_lists,
+  start_par,
+  mw_max = Inf,
+  return_environment = FALSE,
+  ...
+)
 }
 \arguments{
 \item{catalogue_lists}{list-of-lists, containing a single list for each catalogue. 

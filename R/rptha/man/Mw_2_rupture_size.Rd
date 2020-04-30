@@ -5,8 +5,7 @@
 \title{Compute earthquake rupture area, width and length from Mw based on an
 empirical scaling relation}
 \usage{
-Mw_2_rupture_size(Mw, relation = "Strasser", detailed = FALSE,
-  CI_sd = 1)
+Mw_2_rupture_size(Mw, relation = "Strasser", detailed = FALSE, CI_sd = 1)
 }
 \arguments{
 \item{Mw}{Moment Magnitude (must have length(Mw) == 1)}

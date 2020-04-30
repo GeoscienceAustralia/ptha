@@ -4,9 +4,13 @@
 \alias{create_downdip_lines_on_source_contours_improved}
 \title{Downdip lines on source contours}
 \usage{
-create_downdip_lines_on_source_contours_improved(source_contours,
-  desired_unit_source_length, contour_depth_attribute = "level",
-  force_even_point_spacing = FALSE, make_plot = FALSE)
+create_downdip_lines_on_source_contours_improved(
+  source_contours,
+  desired_unit_source_length,
+  contour_depth_attribute = "level",
+  force_even_point_spacing = FALSE,
+  make_plot = FALSE
+)
 }
 \arguments{
 \item{source_contours}{SpatialLinesDataFrame with the source contours in lon/lat coordinates}
