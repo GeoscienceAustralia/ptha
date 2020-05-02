@@ -2,7 +2,7 @@
 
 These notes provide some details on the code used to compare model scenarios and observations on a single source-zone. 
 
-Codes in this folder can be run after executing codes in the parent directory (as described [here](../README.md)). They can only be run on source-zones for which DART test data exists. Before running these scripts, the source-zone specific script corresponding to [../check_dart_example.R](../check_dart_example.R) should have been run (see [here](../../../dart_check_codes) for source-zone-specific scripts and further explanation).
+Codes in this folder can be run after executing codes in the parent directory (as described [here](../README.md)). They can only be run on source-zones for which DART test data exists. Before running these scripts, the source-zone specific script corresponding to [../check_dart_example.R](../check_dart_example.R) should have been run (see [here](../../../dart_check_codes) for source-zone-specific dart-buoy scripts and further explanation).
 
 ## A note on the file/folder structure when the PTHA18 scripts were run
 
@@ -10,7 +10,7 @@ Codes in this folder can be run after executing codes in the parent directory (a
 
 ## Usage
 
-Once the `../check_dart_SOURCE_ZONE_NAME_HERE.R` code has been run, the script [gauge_summary_statistics.R](./gauge_summary_statistics.R) is used to compare the observed tsunami(s) to a set of PTHA18 events having similar location and magnitude. Please note the script does not account for any earthquake-rate information, and it also treats scenarios that are impossible according to the PTHA18 (e.g. based on peak-slip limits). 
+Once the `../check_dart_SOURCE_ZONE_NAME_HERE.R` code has been run, the script [gauge_summary_statistics.R](./gauge_summary_statistics.R) is used to do some processing on a set of PTHA18 scenarios having similar location and magnitude and the observations. Please note the script does not account for any earthquake-rate information, and it does not attempt to exclude scenarios that are impossible according to the PTHA18 (e.g. based on peak-slip limits). 
 
 The script can be run from the commandline like:
 
