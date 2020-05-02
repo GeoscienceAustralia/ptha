@@ -53,7 +53,7 @@ Next we give a more concrete example of the output file structure using the `kur
 
 Going back to the `kurilsjapan` example: if we download any of the `*.Rdata` files [from this directory](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.xml) (say `gauge_summary_stats_session_kurilsjapan_tohoku_2011_03_11_Mw9.1.Rdata`), then it can be loaded from within R using:
     
-    # Here we just pick on file for an example
+    # Here we just pick one file as an example
     load('./gauge_summary_stats_session_kurilsjapan_tohoku_2011_03_11_Mw9.1.Rdata')
 
 and you can see that many variables have been defined (use the `ls()` command to show all variables in the workspace). The variables correspond to those created by [gauge_summary_statistics.R](./gauge_summary_statistics.R). 
