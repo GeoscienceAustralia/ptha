@@ -30,7 +30,8 @@ The [gauge_summary_statistics.R](gauge_summary_statistics.R) script reads all th
 
 Beware [gauge_summary_statistics.R](gauge_summary_statistics.R) does not give any consideration of the earthquake rates (which are computed later in [../../../../EVENT_RATES](../../../../EVENT_RATES)). Also, it does not exclude scenarios that are "impossible" according to the peak-slip limits in PTHA18. Such scenarios are excluded in later processing (example - the script [stage_range_summary.R](../../../../EVENT_RATES/stage_range_summary.R) does this around lines 101-116 -- and you will see similar exclusions in other scripts). 
 
-### Example 
+### Structure of output files 
+
 Next we give a more concrete example of the output file structure using the `kurilsjapan` source-zone as an example. On the `kurilsjapan` source-zone we had two test events (both defined in [check_dart_kurilsjapan.R](../../../dart_check_codes/check_dart_kurilsjapan.R)). This means [gauge_summary_statistics.R](gauge_summary_statistics.R) produces [4 different R-workspace files that are available here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.xml) - two files per event, with constant and depth-varying rigidity respectively. The latter are distinguished by having `varyMu` in the filname. If we download any of those files [from this directory](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.xml) (say `gauge_summary_stats_session_kurilsjapan_tohoku_2011_03_11_Mw9.1.Rdata`), then it can be loaded from within R using:
     
     # Here we just pick on file for an example
