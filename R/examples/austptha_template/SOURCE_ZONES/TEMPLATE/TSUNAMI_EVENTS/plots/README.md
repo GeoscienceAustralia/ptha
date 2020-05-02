@@ -2,7 +2,7 @@
 
 These notes provide some details on the code used to compare model scenarios and observations on a single source-zone. 
 
-Codes in this folder can be run after executing codes in the parent directory (as described [here](../README.md)). They can only be run on source-zones for which DART test data exists. Before running these scripts, the source-zone specific script corresponding to [../check_dart_example.R](../check_dart_example.R) should have been run (see [here](../../../dart_check_codes) for source-zone-specific dart-buoy scripts and further explanation).
+Codes in this folder can be run after executing codes in the parent directory (as described [here](../README.md)). They can only be run on source-zones for which DART test data exists. Before running these scripts, the source-zone specific script corresponding to [../check_dart_example.R](../check_dart_example.R) should have been run (see [here](../../../dart_check_codes) for source-zone-specific DART-buoy scripts and further explanation).
 
 ## Getting the resulting files 
 
