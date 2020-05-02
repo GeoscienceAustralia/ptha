@@ -4,6 +4,8 @@ These notes provide some details on the code used to compare model scenarios and
 
 Codes in this folder can be run after executing codes in the parent directory (as described [here](../README.md)). They can only be run on source-zones for which DART test data exists. Before running these scripts, the source-zone specific script corresponding to [../check_dart_example.R](../check_dart_example.R) should have been run (see [here](../../../dart_check_codes) for source-zone-specific dart-buoy scripts and further explanation).
 
+## Getting the resulting files 
+
 The files produced by running [gauge_summary_statistics.R](gauge_summary_statistics.R) are often used in subsequent analysis - for instance, the corresponding file paths in the original analysis are stored [here](../../../../EVENT_RATES/config_DART_test_files.R) and are used to examine the statistical properties of random tsunamis [here](../../../../EVENT_RATES/stage_range_summary.R) and [here](../../../../EVENT_RATES/event_properties_and_GOF.R) and [here](../../../../EVENT_RATES/event_dart_coverage_vs_distance.R) ). These output files can also be downloaded from the NCI THREDDS server at the following locations: [kermadectonga2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/TSUNAMI_EVENTS/plots/catalog.xml),
 [kurilsjapan](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.xml), 
 [newhebrides2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/newhebrides2/TSUNAMI_EVENTS/plots/catalog.xml), 
@@ -18,7 +20,7 @@ The files produced by running [gauge_summary_statistics.R](gauge_summary_statist
 
 [As stated earlier](https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template/SOURCE_ZONES), when the PTHA18 was run the folder [../../../../SOURCE_ZONES](../../../../SOURCE_ZONES) contained one folder per source zone, [just like the data available on NCI THREDDS here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/catalog.xml). Inside each source-zone folder were the scripts from the [../../../TEMPLATE](../../../TEMPLATE) directory, as well as the resulting datasets. The scripts were identical **except** for those used to compare the results with DART buoys for specific events, which are provided with some discussion [here](../../../dart_check-codes). 
 
-## Usage
+# Usage
 
 Once the `../check_dart_SOURCE_ZONE_NAME_HERE.R` code has been run, the script [gauge_summary_statistics.R](./gauge_summary_statistics.R) is used to do some processing on a set of PTHA18 scenarios having similar location and magnitude and the observations. Please note the script does not account for any earthquake-rate information, and it does not attempt to exclude scenarios that are impossible according to the PTHA18 (e.g. based on peak-slip limits). 
 
