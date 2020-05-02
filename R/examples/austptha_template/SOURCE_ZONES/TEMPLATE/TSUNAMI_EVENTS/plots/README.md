@@ -22,7 +22,7 @@ and may optionally be followed by a plotting script:
 
 ## Details of event_plot.R
 
-The [event_plot.R](event_plot.R) script is simple so is described first. It creates model-vs-data time-series plots for scenarios processed by [gauge_summary_statistics.R](gauge_summary_statistics.R). The first numeric argument (e.g. 5) gives the number of hours after tsunami arrival to plot at each DART. The second numeric argument (e.g. 7.5) will exclude scenarios that have peak-slip greater than 7.5 times the mean-scaling-relation-slip inferred from the magnitude. See Section 3.2.3 in the [PTHA18 Report]() for discussion of peak-slip limits, noting PTHA18 also uses the 7.5 factor.
+The [event_plot.R](event_plot.R) script is simple so is described first. It creates model-vs-data time-series plots for scenarios processed by [gauge_summary_statistics.R](gauge_summary_statistics.R). The first numeric argument (e.g. 5) gives the number of hours after tsunami arrival to plot at each DART. The second numeric argument (e.g. 7.5) will exclude scenarios that have peak-slip greater than 7.5 times the mean-scaling-relation-slip inferred from the magnitude. See Section 3.2.3 in the [PTHA18 Report]() for discussion of peak-slip limits, which explains why PTHA18 uses the 7.5 factor. In reality there is much uncertainty around this limit, because it is poorly resolved in earthquake-slip inversions. 
 
 ## Details of gauge_summary_statistics.R
 
