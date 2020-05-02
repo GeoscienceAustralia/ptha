@@ -11,6 +11,15 @@ file named **source_name**.shp, and also ../DATA/SOURCE_DOWNDIP_LINES has one
 called **source_name**_downdip.shp. (For example, for the 'sunda' case, they
 would be 'sunda.shp' and 'sunda_downdip.shp' respectively). 
 
+After the PTHA18 was completed, most of the data from the resulting source-zone
+specific files was copied to the NCI THREDDS Server [here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/catalog.xml). When originally
+run, each source-zone-specific folder also contained a copy of all the scripts
+in [./TEMPLATE](./TEMPLATE) (notice the subdirectory structure of [./TEMPLATE](./TEMPLATE)
+is identical to the subdirectory structure of each source-zone folder on the
+NCI THREDDS Server). Some of the source-zone specific folders also contained a
+unique script to compare model results with observed tsunamis - they are
+provided [here](./dart_check_codes). 
+
 ## Extras
 
 ### run_16.sh
