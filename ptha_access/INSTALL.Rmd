@@ -17,7 +17,10 @@ You need to install the R package `ncdf4` with OPeNDAP support. This may be
 difficult unless you are running Linux (although you can do this using a
 virtual machine). Non-Linux users are encouraged to install an Ubuntu virtual
 machine (e.g. using [VirtualBox](https://www.virtualbox.org) or some other
-virtualization software) and follow the steps below.
+virtualization software) and follow the steps below. If you must run Windows,
+we have heard of people successfully running the PTHA codes by using [this
+package]{https://github.com/pmjherman/r-ncdf4-build-opendap-windows} instead of
+the `ncdf4` package - although the author has not tried this.
 
 A further complication is that to work with the PTHA outputs on the NCI THREDDS
 server you need to be using a recent version of netcdf-c. *NOTE: As of Ubuntu
