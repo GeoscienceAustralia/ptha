@@ -66,10 +66,15 @@ below we remove repeated gauges using a distance-matrix based technique.
     # have '0' IN THE UPPER TRIANGLE of the distance matrix. Restriction to the
     # upper triangle will mean we don't remove both points
     site_gauges_distm = distm(cbind(site_gauges$lon, site_gauges$lat)) # Distance matrix
-    to_remove = which((upper.tri(site_gauges_distm) & (site_gauges_distm == 0)), arr.ind=TRUE)
+    # Identify indices in the distance matrix upper triangle with a distance of 0.0. These
+    # should be removed. Notice we could change 0.0 to some other distance if we wanted to
+    # get rid of 'nearby but non-zero distance' points.
+    to_remove = which((upper.tri(site_gauges_distm) & (site_gauges_distm == 0.0)), arr.ind=TRUE)
     if(length(to_remove) > 0){
-        site_gauge_inds = site_gauge_inds[-to_remove[,1]]
-        site_gauges = site_gauges[-to_remove[,1],]
+        # There are repeated gauges
+        inds_to_remove = unique(to_remove[,1])
+        site_gauge_inds = site_gauge_inds[-inds_to_remove]
+        site_gauges = site_gauges[-inds_to_remove,]
     }
 
     # Now print the gauges (should not be any repetition)
