@@ -153,7 +153,7 @@ metadata) in outfile.log. That's OK -- but there should not be any FAILs or
 obvious error messages.
 
 ## Step 3: Run the validation tests
-These tests include a range of analyticalaf flow solutions, and comparisons with laboratory and field data. 
+These tests include a range of analytical flow solutions, and comparisons with laboratory and field data. 
 
 Before running the validation tests, you might need to modify
 [./src/test_run_commands](./src/test_run_commands) to tell the validation test suite how to run MPI/openmp
