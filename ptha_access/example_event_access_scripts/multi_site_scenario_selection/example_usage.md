@@ -207,13 +207,13 @@ the scenarios.
 ![plot of chunk scenarioCriteria3](figure/scenarioCriteria3-1.png)
 Here we explain the above plot:
 
-    * The top-left panel shows the scenario magnitude vs the probability that the scenario is possible according to the PTHA18. Because the maximum magnitude on any particular source-zone is uncertain, in general we do not know whether large magnitude scenarios are even possible. The PTHA's rate-modelling method gives a quantitative description of this, which is depicted in plot. 
+* The top-left panel shows the scenario magnitude vs the probability that the scenario is possible according to the PTHA18. Because the maximum magnitude on any particular source-zone is uncertain, in general we do not know whether large magnitude scenarios are even possible. The PTHA's rate-modelling method gives a quantitative description of this, which is depicted in plot. 
 
-    * The top-right panel shows the scenario's peak-slip and magnitude. For comparison purposes the blue line shows the *average* slip for a hypothetical uniform-slip earthquake with rigidity of 30 GPA, and length and width following the median scaling relation used in the PTHA18 (from Strasser et al. 2010). The orange and red-lines show the latter values multipled by 3 and 6 respectively. For variable-area-uniform-slip earthquakes, high peak-slip values correspond to compact earthquakes and vice-versa. For heterogeneous-slip earthquakes, high peak-slip values are also often associated with compact earthquakes, but more generally indicate that slip is concentrated on an asperity. In the PTHA18 peak-slip values greater than 7.5 times the blue-line are not permitted; however there is much uncertainty around this threshold. Some users may prefer to choose scenarios with lower slip-maxima, and this plot can help.
+* The top-right panel shows the scenario's peak-slip and magnitude. For comparison purposes the blue line shows the *average* slip for a hypothetical uniform-slip earthquake with rigidity of 30 GPA, and length and width following the median scaling relation used in the PTHA18 (from Strasser et al. 2010). The orange and red-lines show the latter values multipled by 3 and 6 respectively. For variable-area-uniform-slip earthquakes, high peak-slip values correspond to compact earthquakes and vice-versa. For heterogeneous-slip earthquakes, high peak-slip values are also often associated with compact earthquakes, but more generally indicate that slip is concentrated on an asperity. In the PTHA18 peak-slip values greater than 7.5 times the blue-line are not permitted; however there is much uncertainty around this threshold. Some users may prefer to choose scenarios with lower slip-maxima, and this plot can help.
 
-    * The middle panel shows the distribution of maximum-stage values for each of the selected scenarios, along with the target maximum-stage values. As expected the target value is never exceeded by much. Also, not all gauges achieve the target value. That's because these gauges are less affected by the Kermadec-Tonga source-zone, as compared with other sources. We should search other source-zones to find scenarios that are appropriate for those gauges.
+* The middle panel shows the distribution of maximum-stage values for each of the selected scenarios, along with the target maximum-stage values. As expected the target value is never exceeded by much. Also, not all gauges achieve the target value. That's because these gauges are less affected by the Kermadec-Tonga source-zone, as compared with other sources. We should search other source-zones to find scenarios that are appropriate for those gauges.
 
-    * The bottom panel shows, for each scenario, which gauges attained maximum-stage values within the target window. This can help with manually selecting some subset of scenarios for further analysis. 
+* The bottom panel shows, for each scenario, which gauges attained maximum-stage values within the target window. This can help with manually selecting some subset of scenarios for further analysis. 
 
 To help select scenarios of interest, it is also useful to consider which among the above scenarios are more likely. For this purpose we consider the magnitude cumulative distribution function (weighted by the scenario rates). Magnitudes corresponding to a value of 0.5 can be considered as `typical` (i.e. it is equally likely to have a higher or lower magnitude scenario that matches the criteria). 
 
@@ -230,3 +230,39 @@ To help select scenarios of interest, it is also useful to consider which among 
 ```
 
 ![plot of chunk scenarioCriteria4](figure/scenarioCriteria4-1.png)
+
+
+# Suggestions on usage
+
+* If you obtain too few events, try decreasing the `number_matching_gauges`, or increasing the `target_stage_tolerance`. 
+* The opposite holds if you have too many events.
+* In practice you probably want to select just a few of the identified events using the plots above (and also subsequent plots of the uplift and/or wave-time-series). To find particular events, note the row-indices of the events in the original table are stored in `kermedectonga_events_2500$desired_event_rows`. Below we provide an example of checking the uplift. Please do these kinds of checks to make sure you're happy with the selected scenarios.
+
+
+```r
+# This can be used to get some subset of the events
+kermadectonga_events_2500$desired_event_rows
+```
+
+```
+##  [1] 28628 36690 37651 37732 38611 38655 38729 39614 40509 42728 42735 42847
+## [13] 42899 43320 43338 43344 43381 43387 43490 43716 43865 43926 43932 43934
+## [25] 43943 43979 44059 44073 44115 44138 44192 44196 44253
+```
+
+```r
+# For instance if we wanted the earthquake data for 2nd entry, in a format
+# easily compatable with our the PTHA18 DETAILED_README, we could do:
+event_id = kermadectonga_events_2500$desired_event_rows[2]
+
+# Get the event data directly from the PTHA database (easier than hacking it
+# out of the above objects).
+event_of_interest = ptha18$get_source_zone_events_data(
+    source_zone, slip_type=slip_type, desired_event_rows=event_id)
+
+# Get the initial deformation, using the regular approach.
+event_raster = ptha18$get_initial_condition_for_event(event_of_interest, event_ID=1)
+plot(event_raster, main='Initial condition for a selected event of interest')
+```
+
+![plot of chunk suggestedUsage](figure/suggestedUsage-1.png)
