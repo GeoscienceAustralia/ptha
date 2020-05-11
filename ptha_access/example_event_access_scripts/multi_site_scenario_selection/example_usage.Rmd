@@ -1,0 +1,150 @@
+# An approach for multi-gauge-based scenario selection
+
+The code in [select_scenarios.R]{./select_scenarios.R) can be used to identify
+a set of earthquake-tsunami scenarios from a given source-zone, which satisfy
+some exceedance-rate criteria at multiple gauges simultaneously. At gauges
+where the exceedance-rate criteria is not satisfied, the maximum-stage is
+always smaller than the target ARI maximum-stage.
+
+Why do this? For hazard applications we might want to select a suite of
+scenarios (perhaps from multiple source-zones) that collectively meet some
+exceedance-rate criteria at multiple gauges of interest. 
+
+For example, suppose we are interested in tsunami hazards throughout the the
+island of Samoa. According to the PTHA18, large waves offshore of Samoa may
+occur from multiple sources: on the southern side the Kermadec-Tonga trench
+domainates, whereas on the northern side a number of other Pacific source-zones
+are also significant. To make a whole-island hazard map, one approach is to
+select a set of scenarios that *in combination* have maximum-stage meeting a
+given exceedance-rate criteria at all gauges around the island. If we run all these
+scenarios and take the maxima, then we might consider this to give an
+island-wide representation of the tsunami at the given exceedance-rate. The
+scripts in this directory can help with that.
+
+The code usage is illustrated below, using the example of the Kermadec-Tonga
+source-zone (only). In practice one would repeat this for multiple
+source-zones, and apply some subjectivity to determine the final set of
+scenarios.
+
+## Step 0: Source the functions into R
+
+The [select_scenarios.R](select_scenarios.R) script contains the main functions
+we use. Beware it contains a hard-coded path to the [get_PTHA_results.R](../../get_PTHA_results.R)
+script - and if you are working in a different directory that path will have to be changed.
+
+```{r sourcescripts, cache=FALSE}
+source('select_scenarios.R')    
+
+```
+
+## Step 1: Get the gauges of interest, and remove any repeated points
+
+Below we select a set of gauges around Samoa. One gauge is repeated twice with
+a different `gaugeID`. Such repetition is not particularly unusual in the
+PTHA18, due to the automated method used to create the gauges. For this
+particular application the repetition would be a problem - because we will
+count the number of gauges that satisfy the AEP criteria - and so repetition
+would make 1 gauge count as 2.
+
+```{r readGauges, cache=FALSE, warning=FALSE}
+
+    #
+    # Define the gauge indices of interest -- you need to make BOTH "site_gauge_inds" and "site_gauges"
+    #
+    all_gauges = ptha18$get_all_gauges()
+    site_gauge_inds = which(all_gauges$lon > 186 & all_gauges$lon < 188.9 &
+                            all_gauges$lat > -15 & all_gauges$lat < -12)
+    site_gauges = all_gauges[site_gauge_inds,]
+    # In this case we have a double-up of one gauge. This is not unusual in
+    # PTHA18. For the analysis here we don't want that because it will make 1
+    # site count as 2. 
+    # Let's remove it by computing a distance matrix, and removing points that
+    # have '0' IN THE UPPER TRIANGLE of the distance matrix. Restriction to the
+    # upper triangle will mean we don't remove both points
+    site_gauges_distm = distm(cbind(site_gauges$lon, site_gauges$lat)) # Distance matrix
+    to_remove = which((upper.tri(site_gauges_distm) & (site_gauges_distm == 0)), arr.ind=TRUE)[,1]
+    site_gauge_inds = site_gauge_inds[-to_remove]
+    site_gauges = site_gauges[-to_remove,]
+
+    site_gauges
+
+```
+
+## Step 2: Choose the source-zone and the earthquake-slip-type
+
+In this example we search among earthquake scenarios on the `kermadectonga2`
+source-zone that have variable-area-uniform-slip (`variable_uniform` below). In
+practice one may consider other source-zones and slip types.
+
+```{r chooseSource, cache=FALSE}
+# Slip type -- either 'stochastic' or 'variable_uniform'
+slip_type = 'variable_uniform'
+# Name of a source-zone in PTHA18
+source_zone = 'kermadectonga2'
+
+# Download the hazard curves at gauges, and the peak-stage values for all
+# gauges at the source-zone. This takes a minute or so on my machine.
+kermadec_source_data = get_hazard_curves_and_peak_stages(
+    site_gauge_inds, site_gauges, source_zone, slip_type)
+```
+
+## Step 3: Define the properties of scenarios of interest
+
+Next we specify properties of the scenarios of interest. The rough idea is that
+we pick an exceedance-rate `exrate` for the scenarios of interest, given the
+`hazard_curve_type` and rigidity model `mu\_type`. Then we search for scenarios
+which approximately satisfy this AEP at a number of the gauges simultaneously.
+By *approximately*, I mean the max-stage is within some window of the target
+value, defined by a fractional `target_stage_tolerance`. The number of gauges
+that should simultaneously satisfy this is user-defined
+`number_matching_gauges`. By trying to meet the exceedance-rate criteria at
+multiple gauges at once, we may be able to run fewer scenarios. 
+
+An important aspect of this algorithm is that it *excludes scenarios
+that produce max-stage greater than the desired max-stage-window at any
+gauge*. Thus for the selected scenarios, if gauges do not have stage values
+inside the target window, then they must be smaller, but are never larger.
+
+The idea is that by doing this over (potentially) multiple source-zones, we should be able
+to make a relatively small set of scenarios with these properties:
+    * For every gauge, at least one scenario has a max-stage that approximately matches the desired exceedance-rate. 
+    * No scenarios exceed the desired exceedance-rate by very much at any gauge.
+
+Imagine we took that set of scenarios and computed inundation for all cases.
+Then, if we merged the results by taking the 'max' of all scenarios, the result
+should have exceedance-rate similar to the desired exceedance-rate in most
+places. At least, this should certainly be true at the offshore gauges, and we
+hope they are broadly representative of the inundation exceedance-rates. In the
+absence of a fully probabilistic approach, it seems tentatively reasonable to
+consider this merged result as a nominal inundation map with the desired
+exceedance-rate.
+
+```{r ScenarioCriteria, cache=FALSE, fig.width=8, fig.height=9}
+    #
+    # Set the criteria for picking scenarios. 
+    scenario_match = list()
+    # Desired exceedance_rate
+    scenario_match$exrate = 1/2500
+    # Hazard curve mean or percentile type -- a string identifying the stage-vs-exceedance-rate curve
+    # type. Either 'rate' (mean) or 'rate_84pc' (84th percentile) or 'rate_16pc'
+    # (16th percentile), 'rate_median' (50th percentile), 'rate_lower_ci' (2.5th
+    # percentile), 'rate_upper_ci' (97.5 percentile)
+    scenario_match$hazard_curve_type = 'rate_median' # 'rate_84pc' # 'rate_84pc'
+    # Rigidity type used for hazard calculations -- either an empty string ''
+    # (constant rigidity) or 'variable_mu' (depth varying rigidity). If you use
+    # variable_mu, be sure to use the variable_mu_Mw from the event table
+    scenario_match$mu_type = '' # 'variable_mu'
+    # The 'allowed fractional deviation of the peak-stage from the target value'
+    # that is still regarded as a match, e.g. 0.1 = 10%
+    scenario_match$target_stage_tolerance = 0.1 #
+    # The minimum number of gauges that should satisfy the allowed tolerance, for the
+    # scenario to be stored. At all other gauges, the peak-stage must be
+    # less than or equal the aep-derived value
+    scenario_match$number_matching_gauges = 3
+
+    # Find scenarios which match the above criteria at the previously downloaded gauge+"source-zone"
+    kermadectonga_events_2500 = get_matching_scenarios(kermadec_source_data, scenario_match)
+    
+    # Get summary information
+    summarise_scenarios(kermadectonga_events_2500)
+```
