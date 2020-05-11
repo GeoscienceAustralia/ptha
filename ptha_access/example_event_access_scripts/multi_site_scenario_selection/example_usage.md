@@ -174,12 +174,42 @@ exceedance-rate.
     # scenario to be stored. At all other gauges, the peak-stage must be
     # less than or equal the aep-derived value
     scenario_match$number_matching_gauges = 3
+```
 
+## Step 4: Find the scenarios matching the above criteria
+
+Here we define an object `kermadectonga_events_2500` which contains information
+on scenarios matching the criteria above. The plots
+
+
+```r
     # Find scenarios which match the above criteria at the previously downloaded gauge+"source-zone"
     kermadectonga_events_2500 = get_matching_scenarios(kermadec_source_data, scenario_match)
-    
-    # Get summary information
+    names(kermadectonga_events_2500)    
+```
+
+```
+##  [1] "events"                 "unit_source_statistics" "gauge_netcdf_files"    
+##  [4] "desired_event_rows"     "events_file"            "unit_source_file"      
+##  [7] "tsunami_events_file"    "peak_stages"            "peak_stages_within_tol"
+## [10] "peak_slip"              "max_stage_at_exrate"
+```
+
+The function `summarise_scenarios` can be used to plot summary information on
+the scenarios. 
+
+```r
+    # Plot summary information
     summarise_scenarios(kermadectonga_events_2500)
 ```
 
-![plot of chunk ScenarioCriteria](figure/ScenarioCriteria-1.png)
+![plot of chunk scenarioCriteria3](figure/scenarioCriteria3-1.png)
+Here we explain the above plots:
+
+    * The top-left panel shows the scenario magnitude vs the probability that the scenario is possible according to the PTHA18. Because the maximum magnitude on any particular source-zone is uncertain, in general we do not know whether large magnitude scenarios are even possible. The PTHA's rate-modelling method gives a quantitative description of this, which is depicted in plot. 
+
+    * The top-right panel shows the scenario's peak-slip and magnitude. For comparison purposes the blue line shows the *average* slip for a hypothetical uniform-slip earthquake with rigidity of 30 GPA, and length and width following the median scaling relation used in the PTHA18 (from Strasser et al. 2010). The orange and red-lines show the latter values multipled by 3 and 6 respectively. For variable-area-uniform-slip earthquakes, high peak-slip values correspond to compact earthquakes and vice-versa. For heterogeneous-slip earthquakes, high peak-slip values are also often associated with compact earthquakes, but more generally indicate that slip is concentrated on an asperity. In the PTHA18 peak-slip values greater than 7.5 times the blue-line are not permitted; however there is much uncertainty around this threshold. Some users may prefer to choose scenarios with lower slip-maxima, and this plot can help.
+
+    * The middle panel shows the distribution of maximum-stage values for each of the selected scenarios, along with the target maximum-stage values. As expected the target value is never exceeded by much. Also, not all gauges achieve the target value. That's because these gauges are less affected by the Kermadec-Tonga source-zone, as compared with other sources. We should search other source-zones to find scenarios that are appropriate for those gauges.
+
+    * The bottom panel shows, for each scenario, which gauges attained maximum-stage values within the target window. This can help with manually selecting some subset of scenarios for further analysis. 
