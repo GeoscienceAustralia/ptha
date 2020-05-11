@@ -42,12 +42,13 @@ source('select_scenarios.R')
 
 ## Step 1: Get the gauges of interest, and remove any repeated points
 
-Below we select a set of gauges around Samoa. One gauge is repeated twice with
-a different `gaugeID`. Such repetition is not particularly unusual in the
-PTHA18, due to the automated method used to create the gauges. For this
-particular application the repetition would be a problem - because we will
-count the number of gauges that satisfy the AEP criteria - and so repetition
-would make 1 gauge count as 2.
+Below we select a set of gauges around Samoa. It turns out that in our initially
+selected set of gauges, one gauge is repeated twice (with a different `gaugeID`
+each time). Such repetition is not unusual in the PTHA18, due to the automated
+method used to create the gauges. But for this particular application the
+repetition would be a problem - because we will count the number of gauges that
+satisfy the exceedance-rate criteria - and so repetition would make 1 gauge count as 2. Hence
+below we remove repeated gauges using a distance-matrix based technique.
 
 
 ```r
@@ -66,9 +67,12 @@ would make 1 gauge count as 2.
     # upper triangle will mean we don't remove both points
     site_gauges_distm = distm(cbind(site_gauges$lon, site_gauges$lat)) # Distance matrix
     to_remove = which((upper.tri(site_gauges_distm) & (site_gauges_distm == 0)), arr.ind=TRUE)[,1]
-    site_gauge_inds = site_gauge_inds[-to_remove]
-    site_gauges = site_gauges[-to_remove,]
+    if(length(to_remove) > 0){
+        site_gauge_inds = site_gauge_inds[-to_remove]
+        site_gauges = site_gauges[-to_remove,]
+    }
 
+    # Now print the gauges (should not be any repetition)
     site_gauges
 ```
 
@@ -125,8 +129,8 @@ kermadec_source_data = get_hazard_curves_and_peak_stages(
 Next we specify properties of the scenarios of interest. The rough idea is that
 we pick an exceedance-rate `exrate` for the scenarios of interest, given the
 `hazard_curve_type` and rigidity model `mu_type`. Then we search for scenarios
-which approximately satisfy this AEP at a number of the gauges simultaneously.
-By *approximately*, I mean the max-stage is within some window of the target
+which approximately satisfy this exceedance-rate at a number of the gauges simultaneously.
+By *approximately*, I mean the max-stage is within some window near the target
 value, defined by a fractional `target_stage_tolerance` (e.g. 0.1 = within
 10%). The number of gauges that should simultaneously satisfy this is
 user-defined `number_matching_gauges`. By trying to meet the exceedance-rate
@@ -207,9 +211,10 @@ the scenarios.
 ```
 
 ![plot of chunk scenarioCriteria3](figure/scenarioCriteria3-1.png)
+
 Here we explain the above plot:
 
-* The top-left panel shows the scenario magnitude vs the probability that the scenario is possible according to the PTHA18. Because the maximum magnitude on any particular source-zone is uncertain, in general we do not know whether large magnitude scenarios are even possible. The PTHA's rate-modelling method gives a quantitative description of this, which is depicted in plot. 
+* The top-left panel shows the scenario magnitude vs the probability that the scenario is possible according to the PTHA18. Because the maximum magnitude on any particular source-zone is uncertain, in general we do not know whether large magnitude scenarios are even possible. The PTHA's rate-modelling method gives a quantitative description of this, which is depicted in plot. In this case we can see that scenarios with magnitude below 9 are considered quite plausible (> 50%), whereas scenarios with magnitude of 9.6 are considered relatively unlikely to ever occur (< 20%). This reflects the relatively narrow width of the Kermadec-Tonga source-zone, which affects maximum magnitude estimation in the PTHA18 methodology. This information is provided to reduce the chance of accidently selecting scenarios that are *probably impossible* according to the PTHA18. For instance, we may want to avoid scenarios that have a very low chance of being possible. Although there are no hard-and-fast rules about this, the author generally prefers to use scenarios that have a reasonable chance of being possible according to the PTHA18.
 
 * The top-right panel shows the scenario's peak-slip and magnitude. For comparison purposes the blue line shows the *average* slip for a hypothetical uniform-slip earthquake with rigidity of 30 GPA, and length and width following the median scaling relation used in the PTHA18 (from Strasser et al. 2010). The orange and red-lines show the latter values multipled by 3 and 6 respectively. For variable-area-uniform-slip earthquakes, high peak-slip values correspond to compact earthquakes and vice-versa. For heterogeneous-slip earthquakes, high peak-slip values are also often associated with compact earthquakes, but more generally indicate that slip is concentrated on an asperity. In the PTHA18 peak-slip values greater than 7.5 times the blue-line are not permitted; however there is much uncertainty around this threshold. Some users may prefer to choose scenarios with lower slip-maxima, and this plot can help.
 
