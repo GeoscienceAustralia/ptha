@@ -42,12 +42,13 @@ source('select_scenarios.R')
 
 ## Step 1: Get the gauges of interest, and remove any repeated points
 
-Below we select a set of gauges around Samoa. One gauge is repeated twice with
-a different `gaugeID`. Such repetition is not particularly unusual in the
-PTHA18, due to the automated method used to create the gauges. For this
-particular application the repetition would be a problem - because we will
-count the number of gauges that satisfy the AEP criteria - and so repetition
-would make 1 gauge count as 2.
+Below we select a set of gauges around Samoa. It turns out that in our initially
+selected set of gauges, one gauge is repeated twice (with a different `gaugeID`
+each time). Such repetition is not unusual in the PTHA18, due to the automated
+method used to create the gauges. But for this particular application the
+repetition would be a problem - because we will count the number of gauges that
+satisfy the AEP criteria - and so repetition would make 1 gauge count as 2. Hence
+below we remove repeated gauges using a distance-matrix based technique.
 
 ```{r readGauges, cache=FALSE, warning=FALSE}
 
@@ -66,9 +67,12 @@ would make 1 gauge count as 2.
     # upper triangle will mean we don't remove both points
     site_gauges_distm = distm(cbind(site_gauges$lon, site_gauges$lat)) # Distance matrix
     to_remove = which((upper.tri(site_gauges_distm) & (site_gauges_distm == 0)), arr.ind=TRUE)[,1]
-    site_gauge_inds = site_gauge_inds[-to_remove]
-    site_gauges = site_gauges[-to_remove,]
+    if(length(to_remove) > 0){
+        site_gauge_inds = site_gauge_inds[-to_remove]
+        site_gauges = site_gauges[-to_remove,]
+    }
 
+    # Now print the gauges (should not be any repetition)
     site_gauges
 
 ```
