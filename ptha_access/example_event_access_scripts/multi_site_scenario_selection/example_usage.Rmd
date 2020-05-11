@@ -2,9 +2,9 @@
 
 The code in [select_scenarios.R](./select_scenarios.R) can be used to identify
 a set of earthquake-tsunami scenarios from a given source-zone, which satisfy
-some exceedance-rate criteria at multiple gauges simultaneously. At gauges
+some max-stage exceedance-rate criteria at multiple gauges simultaneously. At gauges
 where the exceedance-rate criteria is not satisfied, the maximum-stage is
-always smaller than the target ARI maximum-stage.
+always smaller than the target maximum-stage.
 
 Why do this? For hazard applications we might want to select a suite of
 scenarios (perhaps from multiple source-zones) that collectively meet some
@@ -148,7 +148,7 @@ exceedance-rate.
     scenario_match$target_stage_tolerance = 0.1 #
     # The minimum number of gauges that should satisfy the allowed tolerance, for the
     # scenario to be stored. At all other gauges, the peak-stage must be
-    # less than or equal the aep-derived value
+    # less than or equal the exceedance-rate-derived value
     scenario_match$number_matching_gauges = 3
 ```
 
