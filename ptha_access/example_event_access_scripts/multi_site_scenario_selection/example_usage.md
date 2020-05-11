@@ -1,29 +1,30 @@
 # An approach for multi-gauge-based scenario selection
 
-The code in [select_scenarios.R]{./select_scenarios.R) can be used to identify
+The code in [select_scenarios.R](./select_scenarios.R) can be used to identify
 a set of earthquake-tsunami scenarios from a given source-zone, which satisfy
 some exceedance-rate criteria at multiple gauges simultaneously. At gauges
 where the exceedance-rate criteria is not satisfied, the maximum-stage is
 always smaller than the target ARI maximum-stage.
 
 Why do this? For hazard applications we might want to select a suite of
-scenarios (perhaps from multiple source-zones) that collectively meet some ARI
-criteria at multiple gauges of interest. 
+scenarios (perhaps from multiple source-zones) that collectively meet some
+exceedance-rate criteria at multiple gauges of interest. 
 
 For example, suppose we are interested in tsunami hazards throughout the the
 island of Samoa. According to the PTHA18, large waves offshore of Samoa may
 occur from multiple sources: on the southern side the Kermadec-Tonga trench
-domainates, whereas on the northern side a number of other Pacific source-zones
+domanates, whereas on the northern side a number of other Pacific source-zones
 are also significant. To make a whole-island hazard map, one approach is to
 select a set of scenarios that *in combination* have maximum-stage meeting a
-given ARI criteria at all gauges around the island. If we run all these
+given exceedance-rate criteria at all gauges around the island. If we run all these
 scenarios and take the maxima, then we might consider this to give an
-island-wide representation of the tsunami at the given ARI. The scripts
-in this directory can help with that.
+island-wide representation of the tsunami at the given exceedance-rate. The
+scripts in this directory can help with that.
 
 The code usage is illustrated below, using the example of the Kermadec-Tonga
 source-zone (only). In practice one would repeat this for multiple
-source-zones, and apply some subjectivity to determine the final set of scenarios.
+source-zones, and apply some subjectivity to determine the final set of
+scenarios.
 
 ## Step 0: Source the functions into R
 
@@ -33,6 +34,9 @@ script - and if you are working in a different directory that path will have to 
 
 
 ```r
+# If this throws an error, edit the line
+#     ptha_access_script_location = '../../get_PTHA_results.R'
+# to point to the correct path of that script.
 source('select_scenarios.R')    
 ```
 
@@ -60,102 +64,7 @@ would make 1 gauge count as 2.
     # Let's remove it by computing a distance matrix, and removing points that
     # have '0' IN THE UPPER TRIANGLE of the distance matrix. Restriction to the
     # upper triangle will mean we don't remove both points
-    site_gauges_distm = distm(cbind(site_gauges$lon, site_gauges$lat))
-```
-
-```
-## Warning in .pointsToMatrix(x): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p1): longitude > 180
-```
-
-```
-## Warning in .pointsToMatrix(p2): longitude > 180
-```
-
-```r
+    site_gauges_distm = distm(cbind(site_gauges$lon, site_gauges$lat)) # Distance matrix
     to_remove = which((upper.tri(site_gauges_distm) & (site_gauges_distm == 0)), arr.ind=TRUE)[,1]
     site_gauge_inds = site_gauge_inds[-to_remove]
     site_gauges = site_gauges[-to_remove,]
