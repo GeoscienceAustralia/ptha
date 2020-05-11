@@ -179,7 +179,8 @@ exceedance-rate.
 ## Step 4: Find the scenarios matching the above criteria
 
 Here we define an object `kermadectonga_events_2500` which contains information
-on scenarios matching the criteria above. The plots
+on scenarios matching the criteria above. Most of these variables are similar to
+those used to describe scenarios in our [DETAILED_README.md](../../DETAILED_README.md).
 
 
 ```r
@@ -204,7 +205,7 @@ the scenarios.
 ```
 
 ![plot of chunk scenarioCriteria3](figure/scenarioCriteria3-1.png)
-Here we explain the above plots:
+Here we explain the above plot:
 
     * The top-left panel shows the scenario magnitude vs the probability that the scenario is possible according to the PTHA18. Because the maximum magnitude on any particular source-zone is uncertain, in general we do not know whether large magnitude scenarios are even possible. The PTHA's rate-modelling method gives a quantitative description of this, which is depicted in plot. 
 
@@ -213,3 +214,19 @@ Here we explain the above plots:
     * The middle panel shows the distribution of maximum-stage values for each of the selected scenarios, along with the target maximum-stage values. As expected the target value is never exceeded by much. Also, not all gauges achieve the target value. That's because these gauges are less affected by the Kermadec-Tonga source-zone, as compared with other sources. We should search other source-zones to find scenarios that are appropriate for those gauges.
 
     * The bottom panel shows, for each scenario, which gauges attained maximum-stage values within the target window. This can help with manually selecting some subset of scenarios for further analysis. 
+
+To help select scenarios of interest, it is also useful to consider which among the above scenarios are more likely. For this purpose we consider the magnitude cumulative distribution function (weighted by the scenario rates). Magnitudes corresponding to a value of 0.5 can be considered as `typical` (i.e. it is equally likely to have a higher or lower magnitude scenario that matches the criteria). 
+
+
+```r
+    par(mfrow=c(1,1)) # Reset plot
+
+    # Compute the Mw cumulative distribution function for the selected
+    # scenarios (weighted by the scenario rates). This gives an idea of
+    # which magnitudes are more-or-less likely, among the identified scenarios.
+    weighted_Mw_distrbution = weighted_cdf(kermadectonga_events_2500$events$Mw, 
+        kermadectonga_events_2500$events$rate_annual)
+    title(main='Mw distribution for selected scenarios, weighted by annual rate')
+```
+
+![plot of chunk scenarioCriteria4](figure/scenarioCriteria4-1.png)
