@@ -181,7 +181,7 @@ Here we explain the above plot:
 
 * The bottom panel shows, for each scenario, which gauges attained maximum-stage values within the target window. This can help with manually selecting some subset of scenarios for further analysis. 
 
-To help select scenarios of interest, it is also useful to consider which among the above scenarios are more likely. For this purpose we consider the magnitude cumulative distribution function (weighted by the scenario rates). Magnitudes corresponding to a value of 0.5 can be considered as `typical` (i.e. it is equally likely to have a higher or lower magnitude scenario that matches the criteria). 
+To help select scenarios of interest, it is also useful to consider which among the above scenarios are more likely. For this purpose we consider the magnitude cumulative distribution function (weighted by the scenario rates). Magnitudes corresponding to a value of 0.5 can be considered as `typical` (i.e. it is equally likely to have a higher or lower magnitude scenario that matches the criteria).  
 
 ```{r scenarioCriteria4, cache=FALSE, fig.width=8, fig.height=6}
     par(mfrow=c(1,1)) # Reset plot
