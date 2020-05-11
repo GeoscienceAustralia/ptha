@@ -95,13 +95,13 @@ kermadec_source_data = get_hazard_curves_and_peak_stages(
 
 Next we specify properties of the scenarios of interest. The rough idea is that
 we pick an exceedance-rate `exrate` for the scenarios of interest, given the
-`hazard_curve_type` and rigidity model `mu\_type`. Then we search for scenarios
+`hazard_curve_type` and rigidity model `mu_type`. Then we search for scenarios
 which approximately satisfy this AEP at a number of the gauges simultaneously.
 By *approximately*, I mean the max-stage is within some window of the target
-value, defined by a fractional `target_stage_tolerance`. The number of gauges
-that should simultaneously satisfy this is user-defined
-`number_matching_gauges`. By trying to meet the exceedance-rate criteria at
-multiple gauges at once, we may be able to run fewer scenarios. 
+value, defined by a fractional `target_stage_tolerance` (e.g. 0.1 = within
+10%). The number of gauges that should simultaneously satisfy this is
+user-defined `number_matching_gauges`. By trying to meet the exceedance-rate
+criteria at multiple gauges at once, we may be able to run fewer scenarios. 
 
 An important aspect of this algorithm is that it *excludes scenarios
 that produce max-stage greater than the desired max-stage-window at any
@@ -110,8 +110,10 @@ inside the target window, then they must be smaller, but are never larger.
 
 The idea is that by doing this over (potentially) multiple source-zones, we should be able
 to make a relatively small set of scenarios with these properties:
-    * For every gauge, at least one scenario has a max-stage that approximately matches the desired exceedance-rate. 
-    * No scenarios exceed the desired exceedance-rate by very much at any gauge.
+
+* For every gauge, at least one scenario has a max-stage that approximately matches the desired exceedance-rate. 
+
+* No scenarios create tsunamis exceeding the desired max-stage exceedance-rate by very much, at any gauge.
 
 Imagine we took that set of scenarios and computed inundation for all cases.
 Then, if we merged the results by taking the 'max' of all scenarios, the result
@@ -164,9 +166,10 @@ the scenarios.
     # Plot summary information
     summarise_scenarios(kermadectonga_events_2500)
 ```
+
 Here we explain the above plot:
 
-* The top-left panel shows the scenario magnitude vs the probability that the scenario is possible according to the PTHA18. Because the maximum magnitude on any particular source-zone is uncertain, in general we do not know whether large magnitude scenarios are even possible. The PTHA's rate-modelling method gives a quantitative description of this, which is depicted in plot. 
+* The top-left panel shows the scenario magnitude vs the probability that the scenario is possible according to the PTHA18. Because the maximum magnitude on any particular source-zone is uncertain, in general we do not know whether large magnitude scenarios are even possible. The PTHA's rate-modelling method gives a quantitative description of this, which is depicted in plot. The information is provided to caution against using scenarios that are *probably impossible* according to the PTHA18. For instance, we may want to avoid scenarios that have a very low chance of being possible. Although there are no hard-and-fast rules about this, the author generally prefers to use scenarios that have a reasonable chance of being possible according to the PTHA18.
 
 * The top-right panel shows the scenario's peak-slip and magnitude. For comparison purposes the blue line shows the *average* slip for a hypothetical uniform-slip earthquake with rigidity of 30 GPA, and length and width following the median scaling relation used in the PTHA18 (from Strasser et al. 2010). The orange and red-lines show the latter values multipled by 3 and 6 respectively. For variable-area-uniform-slip earthquakes, high peak-slip values correspond to compact earthquakes and vice-versa. For heterogeneous-slip earthquakes, high peak-slip values are also often associated with compact earthquakes, but more generally indicate that slip is concentrated on an asperity. In the PTHA18 peak-slip values greater than 7.5 times the blue-line are not permitted; however there is much uncertainty around this threshold. Some users may prefer to choose scenarios with lower slip-maxima, and this plot can help.
 

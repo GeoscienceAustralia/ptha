@@ -124,13 +124,13 @@ kermadec_source_data = get_hazard_curves_and_peak_stages(
 
 Next we specify properties of the scenarios of interest. The rough idea is that
 we pick an exceedance-rate `exrate` for the scenarios of interest, given the
-`hazard_curve_type` and rigidity model `mu\_type`. Then we search for scenarios
+`hazard_curve_type` and rigidity model `mu_type`. Then we search for scenarios
 which approximately satisfy this AEP at a number of the gauges simultaneously.
 By *approximately*, I mean the max-stage is within some window of the target
-value, defined by a fractional `target_stage_tolerance`. The number of gauges
-that should simultaneously satisfy this is user-defined
-`number_matching_gauges`. By trying to meet the exceedance-rate criteria at
-multiple gauges at once, we may be able to run fewer scenarios. 
+value, defined by a fractional `target_stage_tolerance` (e.g. 0.1 = within
+10%). The number of gauges that should simultaneously satisfy this is
+user-defined `number_matching_gauges`. By trying to meet the exceedance-rate
+criteria at multiple gauges at once, we may be able to run fewer scenarios. 
 
 An important aspect of this algorithm is that it *excludes scenarios
 that produce max-stage greater than the desired max-stage-window at any
@@ -139,8 +139,10 @@ inside the target window, then they must be smaller, but are never larger.
 
 The idea is that by doing this over (potentially) multiple source-zones, we should be able
 to make a relatively small set of scenarios with these properties:
-    * For every gauge, at least one scenario has a max-stage that approximately matches the desired exceedance-rate. 
-    * No scenarios exceed the desired exceedance-rate by very much at any gauge.
+
+* For every gauge, at least one scenario has a max-stage that approximately matches the desired exceedance-rate. 
+
+* No scenarios create tsunamis exceeding the desired max-stage exceedance-rate by very much, at any gauge.
 
 Imagine we took that set of scenarios and computed inundation for all cases.
 Then, if we merged the results by taking the 'max' of all scenarios, the result
