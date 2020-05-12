@@ -146,7 +146,7 @@ module coarray_intrinsic_alternatives
     subroutine co_sum_int32(var)
         integer(int32), intent(inout) :: var
 
-        integer :: ierr
+        integer :: ierr, size_var
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_INTEGER4, MPI_SUM, MPI_COMM_WORLD, ierr)
     end subroutine

@@ -1,6 +1,6 @@
 module local_routines 
     !! Test the convergence of the code in a periodic domain
-    use global_mod, only: dp, ip, charlen, wall_elevation, pi
+    use global_mod, only: dp, ip, wall_elevation, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use logging_mod, only: log_output_unit
@@ -43,15 +43,13 @@ end module
 program periodic_convergence
     !! Test the convergence of the code in a periodic domain
 
-    use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method
+    use global_mod, only: ip, dp, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
-    use boundary_mod, only: flather_boundary, transmissive_boundary
-    use local_routines
-    use timer_mod
-    use logging_mod, only: log_output_unit, send_log_output_to_file
+    use multidomain_mod, only: multidomain_type
+    use timer_mod, only: timer_type
+    use logging_mod, only: log_output_unit
     use stop_mod, only: generic_stop
-    use iso_c_binding, only: C_DOUBLE !, C_INT, C_LONG
+    use local_routines
     implicit none
 
     ! Type holding all domains 
@@ -76,9 +74,8 @@ program periodic_convergence
     ! grid size (number of x/y cells)
     integer(ip), dimension(2):: global_nx
 
-    ! Useful misc variables
-    integer(ip):: j, i, nd
-    character(len=charlen) :: md_file, ti_char, stage_file, model_name
+    ! Number of domains in model; loop variable
+    integer(ip):: nd, j
 
     call get_command_argument(1, mesh_refine_input)
     read(mesh_refine_input, '(I4)') mesh_refine

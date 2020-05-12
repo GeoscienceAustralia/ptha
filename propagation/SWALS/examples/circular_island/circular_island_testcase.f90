@@ -164,7 +164,7 @@ program circular_island
     
     ! Incoming wave
     ! wavelength = 2 x slope_radius
-    boundary_wave_period = slope_radius * 2.0_dp /sqrt(9.8 * offshore_depth) !12.0_dp * 60.0_dp
+    boundary_wave_period = slope_radius * 2.0_dp /sqrt(9.8_dp * offshore_depth) !12.0_dp * 60.0_dp
 
 
     domain%timestepping_method = timestepping_method

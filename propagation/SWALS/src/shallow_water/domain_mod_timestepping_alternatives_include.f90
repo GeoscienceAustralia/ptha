@@ -542,6 +542,7 @@
         domain%time = domain%time + dt
 
         call domain%update_boundary()
+        call domain%apply_forcing(dt)
 
         domain%dt_last_update = dt
 

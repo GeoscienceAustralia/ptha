@@ -230,13 +230,13 @@ module nested_grid_comms_mod
         buffer_size = 0_ip
 
         if(allocated(domain_nesting%send_comms)) then
-            do i = 1, size(domain_nesting%send_comms)
+            do i = 1, size(domain_nesting%send_comms, kind=ip)
                 call domain_nesting%send_comms(i)%memory_summary(local_buffer_size)
                 buffer_size = buffer_size + local_buffer_size
             end do        
         end if
         if(allocated(domain_nesting%recv_comms)) then
-            do i = 1, size(domain_nesting%recv_comms)
+            do i = 1, size(domain_nesting%recv_comms, kind=ip)
                 call domain_nesting%recv_comms(i)%memory_summary(local_buffer_size)
                 buffer_size = buffer_size + local_buffer_size
             end do        
@@ -630,34 +630,34 @@ module nested_grid_comms_mod
         buffer_size = 0
 
         if(allocated(two_way_nesting_comms%send_buffer)) then
-            buffer_size = buffer_size + size(two_way_nesting_comms%send_buffer)*real_bytes
+            buffer_size = buffer_size + size(two_way_nesting_comms%send_buffer, kind=ip)*real_bytes
         end if
 
         if(allocated(two_way_nesting_comms%recv_buffer)) then
-            buffer_size = buffer_size + size(two_way_nesting_comms%recv_buffer)*real_bytes
+            buffer_size = buffer_size + size(two_way_nesting_comms%recv_buffer, kind=ip)*real_bytes
         end if
 
         do i = 1, size(two_way_nesting_comms%send_box_flux_integral)        
             if(.not. allocated(two_way_nesting_comms%send_box_flux_integral(i)%x)) continue
-            buffer_size = buffer_size + size(two_way_nesting_comms%send_box_flux_integral(i)%x)*real_bytes
+            buffer_size = buffer_size + size(two_way_nesting_comms%send_box_flux_integral(i)%x, kind=ip)*real_bytes
         end do
 
         do i = 1, size(two_way_nesting_comms%recv_box_flux_integral)        
             if(.not. allocated(two_way_nesting_comms%recv_box_flux_integral(i)%x)) continue
-            buffer_size = buffer_size + size(two_way_nesting_comms%recv_box_flux_integral(i)%x)*real_bytes
+            buffer_size = buffer_size + size(two_way_nesting_comms%recv_box_flux_integral(i)%x, kind=ip)*real_bytes
         end do
 
         do i = 1, size(two_way_nesting_comms%recv_box_flux_error)        
             if(.not. allocated(two_way_nesting_comms%recv_box_flux_error(i)%x)) continue
-            buffer_size = buffer_size + size(two_way_nesting_comms%recv_box_flux_error(i)%x)*force_double_bytes
+            buffer_size = buffer_size + size(two_way_nesting_comms%recv_box_flux_error(i)%x, kind=ip)*force_double_bytes
         end do
 
         if(allocated(two_way_nesting_comms%recv_weights)) then
-           buffer_size = buffer_size + size(two_way_nesting_comms%recv_weights)*real_bytes 
+           buffer_size = buffer_size + size(two_way_nesting_comms%recv_weights, kind=ip)*real_bytes 
         end if
 
         if(allocated(two_way_nesting_comms%recv_work)) then
-           buffer_size = buffer_size + size(two_way_nesting_comms%recv_work)*real_bytes 
+           buffer_size = buffer_size + size(two_way_nesting_comms%recv_work, kind=ip)*real_bytes 
         end if
 
     end subroutine
@@ -702,8 +702,8 @@ module nested_grid_comms_mod
 
         imn = 1
         jmn = 1
-        imx = size(U, 1)
-        jmx = size(U, 2)
+        imx = size(U, 1, kind=ip)
+        jmx = size(U, 2, kind=ip)
 
         ! Lower/upper spatial indices involved in nesting
         iL = two_way_nesting_comms%send_inds(1, 1)
@@ -1267,8 +1267,8 @@ module nested_grid_comms_mod
 
                 do nb = 1, size(dir_ip)
                     j = dir_ip(nb)
-                    imx = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 1)
-                    nvar = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 2)
+                    imx = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 1, kind=ip)
+                    nvar = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 2, kind=ip)
 
                     do k = 1, nvar
                         two_way_nesting_comms%send_buffer((already_sent + 1):(already_sent+imx)) = &
@@ -1296,8 +1296,8 @@ module nested_grid_comms_mod
 
                         ! Boundary info
                         j = dir_ip(nb)
-                        imx = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 1)
-                        nvar = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 2)
+                        imx = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 1, kind=ip)
+                        nvar = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 2, kind=ip)
 
                         do k = 1, nvar
                             ! Genuine fine to coarse case
@@ -1326,8 +1326,8 @@ module nested_grid_comms_mod
 
                         ! Boundary info
                         j = dir_ip(nb)
-                        imx = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 1)
-                        nvar = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 2)
+                        imx = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 1, kind=ip)
+                        nvar = size(two_way_nesting_comms%send_box_flux_integral(j)%x, 2, kind=ip)
                         ! We need to 'spread' the flux integral over stride(nb) cells, hence this factor
                         inv_stride = 1.0_dp/stride(nb)
                         do k = 1, nvar
@@ -1517,8 +1517,8 @@ module nested_grid_comms_mod
             dir_ip = [NORTH, SOUTH, EAST, WEST]
 
             do j = 1, size(dir_ip)
-                nvar = size(two_way_nesting_comms%recv_box_flux_integral(dir_ip(j))%x, 2)
-                s1 = size(two_way_nesting_comms%recv_box_flux_integral(dir_ip(j))%x, 1)
+                nvar = size(two_way_nesting_comms%recv_box_flux_integral(dir_ip(j))%x, 2, kind=ip)
+                s1 = size(two_way_nesting_comms%recv_box_flux_integral(dir_ip(j))%x, 1, kind=ip)
                 do i = 1, nvar
                     ! Indices into recv_buffer
                     n0 = n1 + 1
@@ -1660,7 +1660,7 @@ module nested_grid_comms_mod
                 dns = (flux_NS_lower_index - 1_ip)
 
                 edge = edge_ip(i)
-                if(ns - dns >= 1_ip .and. ns - dns <= size(flux_NS,2)) then
+                if(ns - dns >= 1_ip .and. ns - dns <= size(flux_NS,2, kind=ip)) then
                     two_way_nesting_comms%send_box_flux_integral(edge)%x(:,ks(1):ks(2)) = &
                         two_way_nesting_comms%send_box_flux_integral(edge)%x(:,ks(1):ks(2)) + &
                         dt * flux_NS(ms(1):ms(2), ns - dns, ks(1):ks(2)) * &
@@ -1683,7 +1683,7 @@ module nested_grid_comms_mod
                 ms(1:2) = two_way_nesting_comms%send_inds(:,2)
 
                 edge = edge_ip(i)
-                if(ns - dns >= 1_ip .and. ns - dns <= size(flux_EW,1)) then
+                if(ns - dns >= 1_ip .and. ns - dns <= size(flux_EW,1, kind=ip)) then
                     two_way_nesting_comms%send_box_flux_integral(edge)%x(:,ks(1):ks(2)) = &
                         two_way_nesting_comms%send_box_flux_integral(edge)%x(:,ks(1):ks(2)) + &
                         dt * flux_EW(ns-dns, ms(1):ms(2), ks(1):ks(2)) * &
@@ -1713,7 +1713,7 @@ module nested_grid_comms_mod
                 dns = (flux_NS_lower_index - 1_ip)
 
                 edge = edge_ip(i)
-                if(ns - dns >= 1_ip .and. ns - dns <= size(flux_NS,2)) then
+                if(ns - dns >= 1_ip .and. ns - dns <= size(flux_NS,2, kind=ip)) then
                     two_way_nesting_comms%recv_box_flux_integral(edge)%x(:,ks(1):ks(2)) = &
                         two_way_nesting_comms%recv_box_flux_integral(edge)%x(:,ks(1):ks(2)) + &
                         dt * flux_NS(ms(1):ms(2), ns - dns, ks(1):ks(2)) * &
@@ -1736,7 +1736,7 @@ module nested_grid_comms_mod
                 ms(1:2) = two_way_nesting_comms%recv_inds(:,2)
 
                 edge = edge_ip(i)
-                if(ns - dns >= 1_ip .and. ns - dns <= size(flux_EW,1)) then
+                if(ns - dns >= 1_ip .and. ns - dns <= size(flux_EW,1, kind=ip)) then
                     two_way_nesting_comms%recv_box_flux_integral(edge)%x(:,ks(1):ks(2)) = &
                         two_way_nesting_comms%recv_box_flux_integral(edge)%x(:,ks(1):ks(2)) + &
                         dt * flux_EW(ns-dns, ms(1):ms(2), ks(1):ks(2)) * &
@@ -1770,7 +1770,7 @@ module nested_grid_comms_mod
             ! Compute the mass fluxes that are going to the 'real' part of
             ! another domain (i.e. where that domain is the priority domain)
 
-            do i = 1, size(nesting%send_comms)
+            do i = 1, size(nesting%send_comms, kind=ip)
 
                 nbr_index = nesting%send_comms(i)%neighbour_domain_index
                 nbr_image = nesting%send_comms(i)%neighbour_domain_image_index
@@ -1791,7 +1791,7 @@ module nested_grid_comms_mod
                     i1 = nesting%send_comms(i)%send_inds(:,1)
 
                     edge = edge_ip(j)
-                    if(n <= size(nesting%priority_domain_index,2) .and. n >= 1) then
+                    if(n <= size(nesting%priority_domain_index,2, kind=ip) .and. n >= 1) then
                         ! Find the mass flux northward to/from the neighbour domain (if any) 
                         flux_send(edge) = sum(&
                             nesting%send_comms(i)%send_box_flux_integral(edge)%x(:,1), &
@@ -1827,7 +1827,7 @@ module nested_grid_comms_mod
 
                     edge = edge_ip(j)
 
-                    if(n <= size(nesting%priority_domain_index, 1) .and. n >= 1) then
+                    if(n <= size(nesting%priority_domain_index, 1, kind=ip) .and. n >= 1) then
                         flux_send(edge) = sum(&
                             nesting%send_comms(i)%send_box_flux_integral(edge)%x(:,1), &
                             mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == nbr_index) .and. &
@@ -1862,7 +1862,7 @@ module nested_grid_comms_mod
             ! Compute the mass fluxes that are going to/from the 'real' part of
             ! my domain (i.e. where my domain is the priority domain)
 
-            do i = 1, size(nesting%recv_comms)
+            do i = 1, size(nesting%recv_comms, kind=ip)
 
                 nbr_index = nesting%recv_comms(i)%neighbour_domain_index
                 nbr_image = nesting%recv_comms(i)%neighbour_domain_image_index
@@ -1884,7 +1884,7 @@ module nested_grid_comms_mod
                     i1 = nesting%recv_comms(i)%recv_inds(:,1)
 
                     edge = edge_ip(j)
-                    if(n <= size(nesting%priority_domain_index,2) .and. n>=1) then
+                    if(n <= size(nesting%priority_domain_index,2, kind=ip) .and. n>=1) then
                         flux_recv(edge) = sum(&
                             nesting%recv_comms(i)%recv_box_flux_integral(edge)%x(:,1), &
                             mask=( (nesting%priority_domain_index(i1(1):i1(2),n) == my_index) .and. &
@@ -1926,7 +1926,7 @@ module nested_grid_comms_mod
                     i1 = nesting%recv_comms(i)%recv_inds(:,2)
 
                     edge = edge_ip(j)
-                    if(n <= size(nesting%priority_domain_index, 1) .and. n>=1) then
+                    if(n <= size(nesting%priority_domain_index, 1, kind=ip) .and. n>=1) then
                         flux_recv(edge) = sum(&
                             nesting%recv_comms(i)%recv_box_flux_integral(edge)%x(:,1), &
                             mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == my_index) .and. &
@@ -2140,13 +2140,13 @@ module nested_grid_comms_mod
         !
         ! Send/recv buffers have corresponding sizes
         !
-        if( size(Us(1)%two_way_nesting_comms(parent_comms_index)%send_buffer) /= &
-            size(Us(2)%two_way_nesting_comms(child_comms_index)%recv_buffer)) then
+        if( size(Us(1)%two_way_nesting_comms(parent_comms_index)%send_buffer, kind=ip) /= &
+            size(Us(2)%two_way_nesting_comms(child_comms_index)%recv_buffer, kind=ip)) then
 
             write(log_output_unit,*) 'FAIL: Problems with send/recv buffer sizes', __LINE__,&
                 __FILE__
-            write(log_output_unit,*) size(Us(1)%two_way_nesting_comms(parent_comms_index)%send_buffer)
-            write(log_output_unit,*) size(Us(2)%two_way_nesting_comms(child_comms_index)%recv_buffer)
+            write(log_output_unit,*) size(Us(1)%two_way_nesting_comms(parent_comms_index)%send_buffer, kind=ip)
+            write(log_output_unit,*) size(Us(2)%two_way_nesting_comms(child_comms_index)%recv_buffer, kind=ip)
             write(log_output_unit,*) Us(1)%two_way_nesting_comms(parent_comms_index)%nsend
             write(log_output_unit,*) Us(1)%two_way_nesting_comms(parent_comms_index)%nsend_interior
             write(log_output_unit,*) Us(2)%two_way_nesting_comms(child_comms_index)%nrecv
@@ -2156,13 +2156,13 @@ module nested_grid_comms_mod
             write(log_output_unit,*) 'PASS'
         end if
 
-        if(size(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer) /= &
-            size(Us(1)%two_way_nesting_comms(parent_comms_index)%recv_buffer)) then
+        if(size(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer, kind=ip) /= &
+            size(Us(1)%two_way_nesting_comms(parent_comms_index)%recv_buffer, kind=ip)) then
 
             write(log_output_unit,*) 'FAIL: Problems with send/recv buffer sizes', __LINE__,&
                 __FILE__
-            write(log_output_unit,*) size(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer)
-            write(log_output_unit,*) size(Us(1)%two_way_nesting_comms(parent_comms_index)%recv_buffer)
+            write(log_output_unit,*) size(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer, kind=ip)
+            write(log_output_unit,*) size(Us(1)%two_way_nesting_comms(parent_comms_index)%recv_buffer, kind=ip)
             call generic_stop()
         else
             write(log_output_unit,*) 'PASS'
@@ -2212,7 +2212,7 @@ module nested_grid_comms_mod
 
             write(log_output_unit,*) 'FAIL: Send buffer (1) range is incorrect', __LINE__, &
                 __FILE__
-            write(log_output_unit,*) size(Us(1)%two_way_nesting_comms(parent_comms_index)%send_buffer)
+            write(log_output_unit,*) size(Us(1)%two_way_nesting_comms(parent_comms_index)%send_buffer, kind=ip)
             write(log_output_unit,*) test_max
             write(log_output_unit,*) test_min
             write(log_output_unit,*) Us(1)%two_way_nesting_comms(parent_comms_index)%send_buffer(1:b4_flux_data_p)
@@ -2235,7 +2235,7 @@ module nested_grid_comms_mod
             write(log_output_unit,*) 'FAIL: Send buffer (2) range is incorrect', __LINE__, &
                 __FILE__
             write(log_output_unit,*) Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer(1:b4_flux_data_c)
-            write(log_output_unit,*) size(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer)
+            write(log_output_unit,*) size(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer, kind=ip)
             !call generic_stop()
 
         end if

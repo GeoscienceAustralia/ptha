@@ -3,24 +3,28 @@ module local_routines
     !! Setup the Merewether problem.
     !!
 
-    use global_mod, only: dp, ip, charlen, wall_elevation
+    use global_mod, only: dp, ip, force_double, charlen, wall_elevation, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: read_gdal_raster
     use which_mod, only: which
     use ragged_array_mod, only: ragged_array_2d_ip_type
-    use file_io_mod, only: read_character_file, read_csv_into_array, count_file_lines
+    use file_io_mod, only: read_character_file, read_csv_into_array
     use points_in_poly_mod, only: points_in_poly
-    implicit nONE
+    implicit none
+
+    ! Add rain
+    ! Discharge of 19.7 m^3/s occurs over a cirle with radius 15
+    real(dp), parameter :: rain_centre(2) = [382300.0_dp, 6354290.0_dp], rain_radius = 15.0_dp
+    real(force_double) :: rain_rate =  real(19.7_dp, force_double)/(pi * rain_radius**2)
 
     contains 
 
     !
     ! Main setup routine
     !
-    subroutine set_initial_conditions_merewether(domain, input_discharge_indices, reflective_boundaries)            
+    subroutine set_initial_conditions_merewether(domain, reflective_boundaries)            
 
         class(domain_type), target, intent(inout):: domain
-        type(ragged_array_2d_ip_type), intent(inout) :: input_discharge_indices
         logical, intent(in):: reflective_boundaries
 
         integer(ip):: i, j, k
@@ -43,15 +47,13 @@ module local_routines
         allocate(x(domain%nx(1),domain%nx(2)), y(domain%nx(1),domain%nx(2)))
 
         !
-        ! Stage
+        ! Dry flow to start with. Later we clip stage to elevation.
         !
-
         domain%U(:,:,[STG, UH, VH]) = 0.0_dp
 
         !
         ! Set elevation with the raster
         !
-
         input_elevation_file = "./topography/topography1.tif"
 
         do j = 1, domain%nx(2)
@@ -60,7 +62,6 @@ module local_routines
             y(i,j) = domain%lower_left(2) + (j-0.5_dp)*domain%dx(2) 
           end dO
         end do
-
         call read_gdal_raster(input_elevation_file, x, y, domain%U(:,:,ELV), &
             domain%nx(1)*domain%nx(2), verbose=1_ip, bilinear=0_ip)
 
@@ -101,23 +102,29 @@ module local_routines
         print*, '# cells in houses: ', house_cell_count
        
         if(reflective_boundaries) then 
+            ! Walls all sides
             domain%U(1,:,ELV) = wall_elevation
             domain%U(domain%nx(1), :, ELV) = wall_elevation    
             domain%U(:, 1 ,ELV) = wall_elevation
             domain%U(:, domain%nx(2), ELV) = wall_elevation    
-        END IF
+        else
+            ! Transmissive outflow -- but we prevent mass leaking out of the back of the domain. 
+            ! Also block off other sides -- only need outflow on east edge of domain.
+            domain%U(:, 1:2, ELV) = domain%U(:,1:2, ELV) + 10.0_dp
+            domain%U(1:2, :, ELV) = domain%U(1:2, :, ELV) + 10.0_dp
+            domain%U(:, (domain%nx(2)-1):domain%nx(2), ELV) = 10.0_dp + &
+                domain%U(:, (domain%nx(2)-1):domain%nx(2), ELV)
+        end if 
 
-        ! Ensure stage >= elevation
-        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-06_dp)
-        
+
         !
         ! Set friction
         !
-
-        ! Initial value
+        
+        ! Initial value -- later updated based on roads
         domain%manning_squared = friction_other * friction_other
 
-        ! Find points in road polygon
+        ! Find points in road polygon and set friction there
         polygon_filename = 'Road/RoadPolygon.csv'
         call read_csv_into_array(polygon_coords, polygon_filename)
         inside_point_counter = 0
@@ -136,33 +143,40 @@ module local_routines
         print*, '# Points in road polygon :', inside_point_counter
         print*, ''
 
-        !       
-        ! Get input discharge indices 
-        !
-        ! The anuga code was:
-        ! fixed_inflow = anuga.Inflow(domain,
-        !           center=(382300.0,6354290.0),
-        !           radius=15.00,
-        !           rate=19.7)
-
-        allocate(input_discharge_indices%i2(domain%nx(2)))
-
-        ! For each column, find the indices within 15m of a particular point
-        do j = 1, domain%nx(2)
-            call which( (x(:,j) - 382300.0)**2 + (y(:,j) - 6354290.0)**2 < 15.0_dp**2, &
-                input_discharge_indices%i2(j)%i1)
-        end do
-
-        if(.not. reflective_boundaries) THEN
-            ! prevent mass leaking out of the back of the domain
-            domain%U(:, 1:2, ELV) = domain%U(:,1:2, ELV) + 10.0_dp
-        end if 
-
         ! Ensure stage >= elevation
-        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-06_dp)
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-08_dp)
 
         print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
         print*, 'Stage range: ', minval(domain%U(:,:,STG)), maxval(domain%U(:,:,STG))
+
+    end subroutine
+
+
+    !
+    ! This is the discharge source term, called every time-step. It's like rainfall 
+    ! in a "circle"
+    !
+    subroutine apply_rainfall_forcing(domain, dt)
+        type(domain_type), intent(inout) :: domain
+        real(dp), intent(in) :: dt
+
+        integer(ip) :: j, i
+        real(dp) :: dy_sq
+
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, rain_rate, dt)
+        !$OMP DO SCHEDULE(STATIC)
+        do j = 1, domain%nx(2)
+            dy_sq = (domain%y(j) - rain_centre(2))**2
+            if( dy_sq < rain_radius**2 ) then
+                ! Rainfall at cells within a circle of radius "rain_radius" about "rain_centre"
+                where( (domain%x - rain_centre(1))**2  < (rain_radius**2 - dy_sq) )
+                        domain%U(:,j,STG) = domain%U(:,j,STG) + rain_rate*dt
+                end where
+            end if
+        end do
+        !$OMP END DO
+        !$OMP END PARALLEL
+
 
     end subroutine
 
@@ -177,19 +191,15 @@ program merewether
     !! Rainfall and Runoff, Engineers Australia, 2012
 
     use global_mod, only: ip, dp, minimum_allowed_depth
-    use ragged_array_mod, only: ragged_array_2d_ip_type
     use domain_mod, only: domain_type
     use boundary_mod, only: transmissive_boundary
     use local_routines
-    use iso_c_binding, only: C_DOUBLE
 
     implicit none
 
     integer(ip):: j
-    real(dp):: last_write_time, rain_rate, mass_integral, domain_volume
-    real(C_DOUBLE) :: volume_added
+    real(dp):: last_write_time
     type(domain_type):: domain
-    real(dp), parameter:: pi = atan(1.0_dp) * 4.0_dp
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 60.0_dp
@@ -203,38 +213,41 @@ program merewether
     integer(ip), parameter, dimension(2):: global_nx = [320_ip, 415_ip] ![160_ip, 208_ip] ![321_ip, 416_ip]
     ! Use reflective or transmissive boundaries
     logical, parameter:: reflective_boundaries = .FALSE.
-   
-    ! indices where the input discharge goes 
-    type(ragged_array_2d_ip_type):: input_discharge_indices
-    integer(ip) :: num_input_discharge_indices
-    
-    !domain%theta = 1.00_dp
+    ! Track mass
+    real(force_double) :: volume_added, volume_initial
+    integer(ip) :: num_input_discharge_cells
+    ! Use a small time step at the start
+    real(dp) :: startup_timestep = 0.05_dp
+    real(dp) :: startup_time = 10.0_dp
+  
     domain%timestepping_method = 'rk2n' !'euler' !'rk2n'
-    domain%maximum_timestep = 5.0_dp
-    
-    ! Allow waves to propagate outside all edges
-    if(.not. reflective_boundaries) then
-        domain%boundary_subroutine => transmissive_boundary
-    end if
 
-    ! Allocate domain -- must have set timestepping method BEFORE this
+    ! Use a very small maximum timestep initially, because the domain is dry, but water is quickly
+    ! added, which can cause 'first-step' instability otherwise. Re-set it after an evolve
     call domain%allocate_quantities(global_lw, global_nx, global_ll)
 
+    if((.not. reflective_boundaries) .and. (.not. all(domain%is_nesting_boundary))) then
+        ! Allow waves to propagate outside all edges
+        domain%boundary_subroutine => transmissive_boundary
+    end if
+    ! Add rainfall to the domain
+    domain%forcing_subroutine => apply_rainfall_forcing
+
     ! Call local routine to set initial conditions
-    call set_initial_conditions_merewether(domain, input_discharge_indices, reflective_boundaries)
-    call domain%update_boundary() ! Make boundary consistent
-    volume_added = domain%volume_interior()
+    call set_initial_conditions_merewether(domain, reflective_boundaries)
+    call domain%update_boundary()
+    volume_initial = domain%mass_balance_interior()
     
+    ! Count the input discharge indices
+    num_input_discharge_cells = 0
+    do j = 1, domain%nx(2)
+        num_input_discharge_cells = num_input_discharge_cells + count(&
+            ((domain%x - rain_centre(1))**2 + (domain%y(j) - rain_centre(2))**2) < rain_radius**2)
+    end do
+    print*, '# discharge indices :', num_input_discharge_cells
+
     ! Trick to get the code to write out just after the first timestep
     last_write_time = -approximate_writeout_frequency
-
-    ! Count the input discharge indices
-    num_input_discharge_indices = 0
-    do j = 1, size(input_discharge_indices%i2)
-        num_input_discharge_indices = num_input_discharge_indices + size(input_discharge_indices%i2(j)%i1)
-        !print*, ' ## ', j, ' ## ', input_discharge_indices%i2(j)%i1
-    end do
-    print*, '# discharge indices :', num_input_discharge_indices
 
     ! Evolve the code
     do while (.TRUE.)
@@ -245,36 +258,29 @@ program merewether
 
             call domain%print()
             call domain%write_to_output_files()
-
+        
             print*, 'mass_balance: ', domain%mass_balance_interior() 
-            print*, 'volume_added: ', volume_added
-            print*, '.... difference: ', domain%mass_balance_interior() - volume_added
+            print*, 'volume_added + initial: ', volume_added + volume_initial
+            print*, '.... difference: ', domain%mass_balance_interior() - (volume_added + volume_initial)
         end if
 
         if (domain%time > final_time) then
             exit 
         end if
 
-        call domain%evolve_one_step()
+        ! At the start, evolve with a specified (small) timestep.
+        ! Later allow an adaptive step
+        if(domain%time < startup_time) then
+            call domain%evolve_one_step(startup_timestep)
+        else
+            call domain%evolve_one_step()
+        end if
 
-        !print*, 'MAX-dt: ', domain%max_dt
+        ! Track volume added 'in theory' based on the known rainfall rate that is going into 
+        ! a known number of cells
+        volume_added = domain%time * rain_rate * num_input_discharge_cells * product(domain%dx)
 
-        ! Add rain
-        ! Discharge of 19.7 m^3/s occurs over a cirle with radius 15
-        rain_rate = domain%evolve_step_dt * (19.7_dp/(pi * 15.0_dp**2))
-
-        volume_added = volume_added + rain_rate * num_input_discharge_indices * product(domain%dx)
-
-        !$OMP PARALLEL SHARED(domain, rain_rate, input_discharge_indices)
-        !$OMP DO SCHEDULE(STATIC)
-        do j = 1, domain%nx(2)
-            if (size(input_discharge_indices%i2(j)%i1) > 0) then
-                domain%U(input_discharge_indices%i2(j)%i1,j,1) = &
-                domain%U(input_discharge_indices%i2(j)%i1,j,1) + rain_rate
-            end if
-        end do
-        !$OMP END DO
-        !$OMP END PARALLEL
+        !print*, 'negative_depth_fix_counter: ', domain%negative_depth_fix_counter
 
     end do
 
@@ -285,7 +291,7 @@ program merewether
 
     ! Simple test (mass conservation only)
     print*, 'MASS CONSERVATION TEST'
-    if(abs(domain%mass_balance_interior() - volume_added) < 1.0e-06_dp) then
+    if(abs(domain%mass_balance_interior() - (volume_added + volume_initial) ) < 1.0e-06_dp) then
         print*, 'PASS'
     else
         print*, 'FAIL -- mass conservation not good enough. ', &

@@ -45,7 +45,7 @@ module burn_into_grid_mod
             skip_h = 0
         end if
 
-        nl = size(line_files)
+        nl = size(line_files, kind=ip)
 
         allocate(xyz_lines%lines(nl))
 
@@ -81,7 +81,7 @@ module burn_into_grid_mod
         end if
         
 
-        if(size(x) /= size(y) .or. size(x) /= size(z)) then
+        if(size(x, kind=ip) /= size(y, kind=ip) .or. size(x, kind=ip) /= size(z, kind=ip)) then
             write(log_output_unit, *) "Error in burn_xyz_into_grid: x,y, and z must have the same length"
             call generic_stop
         end if     
@@ -94,12 +94,12 @@ module burn_into_grid_mod
         ! Cell size
         dx = (upper_right - lower_left)/(1.0_dp * shape(grid))
 
-        do i = 1, size(x)
+        do i = 1, size(x, kind=ip)
             ! Indices of x,y
             i0 = floor((x(i)-lower_left(1))/dx(1)) + 1
             j0 = floor((y(i)-lower_left(2))/dx(2)) + 1
             ! Burn z if it is inside the grid
-            if(i0 > 0 .and. j0 > 0 .and. i0 <= size(grid, 1) .and. j0 <= size(grid, 2)) then
+            if(i0 > 0 .and. j0 > 0 .and. i0 <= size(grid, 1, kind=ip) .and. j0 <= size(grid, 2, kind=ip)) then
                 select case (burnt)
                 case('point_value')
                     grid(i0, j0) = z(i)
@@ -139,7 +139,7 @@ module burn_into_grid_mod
             burnt = 'point_value'
         end if
 
-        if(size(x) /= size(y) .or. size(x) /= size(z)) then
+        if(size(x, kind=ip) /= size(y, kind=ip) .or. size(x, kind=ip) /= size(z, kind=ip)) then
             write(log_output_unit, *) "Error in burn_line_into_grid: x,y, and z must have the same length"
             call generic_stop
         end if     
@@ -152,8 +152,8 @@ module burn_into_grid_mod
         ! Cell size
         dx = (upper_right - lower_left)/(1.0_dp * shape(grid))
 
-        do i = 1, size(x)
-            if(i < size(x)) then
+        do i = 1, size(x, kind=ip)
+            if(i < size(x, kind=ip)) then
                 xi = x(i)
                 yi = y(i)
                 zi = z(i)
@@ -196,7 +196,7 @@ module burn_into_grid_mod
             burnt = 'point_value'
         end if
 
-        do i = 1, size(xyz_lines%lines)
+        do i = 1, size(xyz_lines%lines, kind=ip)
             call burn_line_into_grid(&
                 xyz_lines%lines(i)%xyz(1,:), xyz_lines%lines(i)%xyz(2,:), xyz_lines%lines(i)%xyz(3,:), &
                 grid, lower_left, upper_right, burnt)

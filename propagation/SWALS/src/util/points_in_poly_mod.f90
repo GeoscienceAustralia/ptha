@@ -76,8 +76,8 @@ module points_in_poly_mod
         ! bounding box for polygon to speed up check
         real(dp):: min_vertx, max_vertx, min_verty, max_verty
        
-        nvert = size(vertx)
-        np = size(px)
+        nvert = size(vertx, kind=ip)
+        np = size(px, kind=ip)
 
         min_vertx = minval(vertx)
         max_vertx = maxval(vertx)
@@ -120,7 +120,7 @@ module points_in_poly_mod
         real(dp):: test_points_array(10, 2)
         logical:: is_inside_result_array(10), is_inside_array(10)
      
-        nvert = size(vertx)
+        nvert = size(vertx, kind=ip)
  
         ! Manually make test points and flag if they lie on a boundary 
         ! 

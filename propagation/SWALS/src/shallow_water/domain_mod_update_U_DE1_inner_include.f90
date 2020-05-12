@@ -25,7 +25,7 @@
             ! For cartesian coordinates this could be moved out of the loop
             inv_cell_area_dt = dt / domain%area_cell_y(j)
 
-            !$OMP SIMD
+            !$OMP SIMD PRIVATE(kk)
             do i = 1, domain%nx(1)
                 !! Fluxes
                 do kk = 1, 3
@@ -35,7 +35,7 @@
                 end do
             end do
 
-            !$OMP SIMD
+            !$OMP SIMD PRIVATE(depth, fs, implicit_factor)
             do i = 1, domain%nx(1)
 
                 ! Velocity clipping

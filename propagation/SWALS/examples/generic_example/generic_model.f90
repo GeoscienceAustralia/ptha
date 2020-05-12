@@ -310,8 +310,8 @@ program generic_model
     !domain%friction_type = 'chezy'
     domain%linear_friction_coeff = linear_friction_coeff
 
-    !! Optionally suppress limiting with rk2
-    !!domain%theta = 4.0_dp
+    ! !Optionally suppress limiting with rk2
+    !domain%theta = 4.0_dp
     
     ! Allocate domain -- must have set timestepping method BEFORE this
     call domain%allocate_quantities(global_lw, global_nx, global_ll)

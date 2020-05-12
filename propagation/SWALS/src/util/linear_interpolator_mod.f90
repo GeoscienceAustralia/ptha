@@ -58,9 +58,9 @@ module linear_interpolator_mod
             use_pointers = .FALSE.
         end if
 
-        n = size(x) 
+        n = size(x, kind=ip) 
         linear_interpolator%n = n
-        if(n /= size(y)) then
+        if(n /= size(y, kind=ip)) then
             print*, 'initialise_linear_interpolator error: size of x and y must be equal'
             call generic_stop()
         end if
@@ -79,7 +79,7 @@ module linear_interpolator_mod
         end if
       
         ! Check xs is monotonic 
-        do i = 1, size(linear_interpolator%xs)-1
+        do i = 1, size(linear_interpolator%xs, kind=ip)-1_ip
             if(linear_interpolator%xs(i) >= linear_interpolator%xs(i+1)) then
                 print*, 'initialise_linear_interpolator error: x must be monotonic increasing (no repeated values)'
                 call generic_stop()
@@ -108,8 +108,8 @@ module linear_interpolator_mod
         real(dp), intent(out):: output_y(:)
         integer(ip):: n
 
-        n = size(output_x)
-        if(n /= size(output_y)) then
+        n = size(output_x, kind=ip)
+        if(n /= size(output_y, kind=ip)) then
             print*, 'eval_linear_interpolator error: size of x and y must be equal'
             call generic_stop()
         end if

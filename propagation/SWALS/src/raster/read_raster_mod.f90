@@ -204,7 +204,7 @@ module read_raster_mod
     subroutine get_xy_values(gdal_raster_dataset, x, y, z, N, verbose, bilinear, band)
         !! This is the key useful routine for gdal_raster_dataset_type
         class(gdal_raster_dataset_type), intent(in):: gdal_raster_dataset
-        integer(ip), intent(in):: n
+        integer(ip), intent(in):: N
         real(dp), intent(in):: x(n), y(n)
         real(dp), intent(out):: z(n)
         integer(ip), intent(in), optional:: verbose
@@ -288,7 +288,7 @@ module read_raster_mod
 
         ! Use C types
         inputFile_c = trim(inputFile) // C_NULL_CHAR
-        N_c = size(x)
+        N_c = size(x, kind=C_INT)
         verbose_c = 1_C_INT * verbose
         
         call read_gdal_raster_Cfun(inputFile_c, x, y, z, N_c, verbose_c, use_bilinear_local)
@@ -338,7 +338,7 @@ module read_raster_mod
 
         ! Use C types
         inputFile_c = trim(inputFile) // C_NULL_CHAR
-        N_c = size(x)
+        N_c = size(x, kind=C_INT)
         verbose_c = 1_C_INT * verbose
         
         ! If x,y,z are not C_DOUBLE, we copy C_DOUBLE versions
@@ -387,7 +387,7 @@ module read_raster_mod
             stop
         end if
 
-        n = size(raster_files)
+        n = size(raster_files, kind=ip)
         allocate(multi_raster%raster_files(n))
         multi_raster%raster_files = raster_files
 
@@ -415,7 +415,7 @@ module read_raster_mod
         
         integer(ip) :: i, n
 
-        do i = 1, size(multi_raster%raster_datasets)
+        do i = 1, size(multi_raster%raster_datasets, kind=ip)
             call multi_raster%raster_datasets(i)%finalise()
         end do
 
@@ -440,7 +440,7 @@ module read_raster_mod
         !! changes in precision). Often nodata values are large negative numbers, in which case we can be sure that all numbers below
         !! some threshold (e.g. `na_below_limit = -1.0e+10`) should be treated as NA. 
 
-        real(dp) :: empty_value, ll(2), ur(2), border_buffer(2), lower_limit_l
+        real(dp) :: empty_value, ll(2), ur(2), lower_limit_l
         integer(ip) :: i, j, verbose_l, bilinear_l, band_l
 
         if(present(verbose)) then
@@ -472,7 +472,7 @@ module read_raster_mod
         z = empty_value
 
         ! Read rasters until no values are missing
-        do j = 1, size(multi_raster%raster_datasets)
+        do j = 1, size(multi_raster%raster_datasets, kind=ip)
 
             ll = real(multi_raster%raster_datasets(j)%lowerleft, dp)
             ur = real(multi_raster%raster_datasets(j)%upperright, dp)
@@ -752,7 +752,7 @@ module read_raster_mod
         real_z_bl(1) = 3722691.0_dp
     
         call test_multi_raster%initialise(inputFiles)
-        call test_multi_raster%get_xy(x_dp, y_dp, z_dp, size(z_dp), verbose=0, bilinear=1)
+        call test_multi_raster%get_xy(x_dp, y_dp, z_dp, size(z_dp, kind=ip), verbose=0, bilinear=1)
 
         if(all(abs(z_dp - real_z_bl) < (1.0e-6_dp*real_z_bl))) then
             print*, 'PASS'

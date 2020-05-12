@@ -130,6 +130,7 @@
 
         domain%time = domain%time + dt * HALF_dp
         call domain%update_boundary()
+        call domain%apply_forcing(dt)
 
         if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
 

@@ -73,7 +73,7 @@ module grid_spacetime_interpolator_mod
         integer(ip), intent(in), optional :: ng
             !! Size of the third dimension of gsi%g1, gsi%g2
 
-        integer :: i, ng_local
+        integer(ip) :: i, ng_local
 
         ! By default assume third dimension of gsi%g1, gsi%g2 has size 1
         if(present(ng)) then
@@ -82,13 +82,13 @@ module grid_spacetime_interpolator_mod
             ng_local = 1_ip
         end if
 
-        do i = 1, (size(x)-1)
+        do i = 1, (size(x, kind=ip)-1)
             if(x(i+1) <= x(i)) then
                 write(log_output_unit, *) "x must be increasing", x
                 call generic_stop
             end if
         end do
-        do i = 1, (size(y)-1)
+        do i = 1, (size(y, kind=ip)-1)
             if(y(i+1) <= y(i)) then
                 write(log_output_unit, *) "y must be increasing", y
                 call generic_stop 
@@ -96,10 +96,10 @@ module grid_spacetime_interpolator_mod
         end do
 
         ! Grid size
-        gsi%nx = [size(x), size(y), ng_local]
+        gsi%nx = [size(x, kind=ip), size(y, kind=ip), ng_local]
 
         ! Grid coordinates
-        allocate(gsi%x(size(x)), gsi%y(size(y)))
+        allocate(gsi%x(size(x, kind=ip)), gsi%y(size(y, kind=ip)))
         gsi%x = x
         gsi%y = y
 
@@ -174,7 +174,7 @@ module grid_spacetime_interpolator_mod
             !! update is needed.
 
         logical :: check
-        integer :: i, j, k
+        integer(ip) :: i, j, k
         real(dp) :: w1_t, w2_t
 
         if(present(suppress_checks)) then
@@ -204,9 +204,9 @@ module grid_spacetime_interpolator_mod
         w2_t = 1.0_dp - w1_t
 
         !$OMP DO COLLAPSE(3)
-        do k = 1, size(values, 3)
-            do j = 1, size(values, 2)
-                do i = 1, size(values, 1)
+        do k = 1, size(values, 3, kind=ip)
+            do j = 1, size(values, 2, kind=ip)
+                do i = 1, size(values, 1, kind=ip)
                     values(i, j, k) = w1_t * gsi%g1(i,j,k) + w2_t * gsi%g2(i,j,k)
                 end do
             end do
@@ -248,12 +248,12 @@ module grid_spacetime_interpolator_mod
 
             call gsi%setup_to_read_at_time(time)
 
-            if(.not. (size(xs) == size(ys) .and. size(xs) == size(values(:,1)))) then
+            if(.not. (size(xs, kind=ip) == size(ys, kind=ip) .and. size(xs, kind=ip) == size(values, 1, kind=ip))) then
                 write(log_output_unit, *) "Sizes of xs, ys and the first-dim of values should be equal"
                 call generic_stop
             end if
 
-            if(size(values, 2) /= size(gsi%g1, 3)) then
+            if(size(values, 2, kind=ip) /= size(gsi%g1, 3, kind=ip)) then
                 write(log_output_unit, *) "Error: The second dimension of values should have"
                 write(log_output_unit, *) "       the same size as the third dimension of gsi%g1"
             end if
@@ -267,7 +267,7 @@ module grid_spacetime_interpolator_mod
 
         ! Do the interpolation
         !$OMP PARALLEL DO DEFAULT(FIRSTPRIVATE) SHARED(gsi, xs, ys, values, time)
-        do i = 1, size(xs)
+        do i = 1, size(xs, kind=ip)
 
             ! Get x-indices for bilinear interpolation: i0 < i1
             call nearest_index_sorted(gsi%nx(1), gsi%x, xs(i), i0)
@@ -305,7 +305,7 @@ module grid_spacetime_interpolator_mod
             
             !print*, ys(i), gsi%y(j0), gsi%y(j1), j0, j1, w0_y, w1_y
 
-            do k = 1, size(gsi%g1, 3)
+            do k = 1, size(gsi%g1, 3, kind=ip)
                 !! Bilinear interpolation on g1
                 ! Pure j0 value
                 v0 = w0_x * gsi%g1(i0, j0, k) + w1_x * gsi%g1(i1, j0, k)
@@ -354,8 +354,8 @@ module grid_spacetime_interpolator_mod
 
             integer(ip) :: j, k
 
-            do k = 1, size(grid,3)
-            do j = 1, size(grid,2)
+            do k = 1, size(grid,3, kind=ip)
+            do j = 1, size(grid,2, kind=ip)
                 grid(:,j,k) = (cx * x + cy * y(j) + time)*k
             end do
             end do

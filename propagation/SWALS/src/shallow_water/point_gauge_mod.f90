@@ -122,7 +122,7 @@ module point_gauge_mod
         integer(ip), allocatable :: indices_inside(:)
             
             ! At the moment the space dimension must be 2 
-            if (point_gauges%space_dim /= size(xy_coordinates(:,1))) then
+            if (point_gauges%space_dim /= size(xy_coordinates, 1)) then
                 write(log_output_unit,*) 'gauge xy dimension is not equal ', &
                     point_gauges%space_dim
                 flush(log_output_unit)
@@ -131,14 +131,14 @@ module point_gauge_mod
             ! Make space for all gauges. Depending on optional arguments passed, this
             ! may be updated again below
             all_gauges = .TRUE.
-            n_gauges = size(xy_coordinates(1,:))
+            n_gauges = size(xy_coordinates, 2, kind=ip)
 
             if(present(bounding_box) .or. present(priority_gauges)) then
                 ! It is possible that not all the gauges will be in the bounding box
                 ! Identify those which are inside
                 all_gauges = .FALSE.
 
-                allocate(points_inside(size(xy_coordinates(1,:))))
+                allocate(points_inside(size(xy_coordinates, 2, kind=ip)))
 
                 if(present(bounding_box)) then
                     points_inside = ( &
@@ -182,8 +182,8 @@ module point_gauge_mod
             space_dim = point_gauges%space_dim
             n_gauges = point_gauges%n_gauges
 
-            n_ts_var = size(time_series_var_indices)
-            n_static_var = size(static_var_indices)
+            n_ts_var = size(time_series_var_indices, kind=ip)
+            n_static_var = size(static_var_indices, kind=ip)
    
             allocate(point_gauges%site_index(space_dim, n_gauges))
             allocate(point_gauges%time_series_values(n_gauges, n_ts_var))
@@ -225,12 +225,12 @@ module point_gauge_mod
 
         if(point_gauges%n_gauges == 0) return
 
-        if(size(var_inds) /= size(time_series_values(1,:))) then
+        if(size(var_inds, kind=ip) /= size(time_series_values, 2, kind=ip)) then
             write(log_output_unit,*) 'Dimension mismatch between time_series_values and var_inds'
             call generic_stop()
         end if
 
-        do j = 1, size(var_inds)
+        do j = 1, size(var_inds, kind=ip)
             do i = 1, point_gauges%n_gauges
                 xind = point_gauges%site_index(1,i)
                 yind = point_gauges%site_index(2,i)
@@ -272,7 +272,7 @@ module point_gauge_mod
             start=[point_gauges%netcdf_num_output_steps]), __LINE__)
 
         ! Save all the time-series variables
-        do i = 1, size(point_gauges%time_series_var)
+        do i = 1, size(point_gauges%time_series_var, kind=ip)
             call check(nf90_put_var(&
                 point_gauges%netcdf_gauge_output_file_ID, &
                 point_gauges%time_series_ncdf_iVar_ID(i), &
@@ -491,7 +491,7 @@ module point_gauge_mod
         call check(nf90_put_att(iNcid, iVarGAUGEID_ID, "units", "-"), __LINE__)
 
         ! Define variables we store statically (i.e. once at the start)
-        do i = 1, size(point_gauges%static_var)
+        do i = 1, size(point_gauges%static_var, kind=ip)
             j = point_gauges%static_var(i)
 
             ! Initial stage 
@@ -530,9 +530,9 @@ module point_gauge_mod
         ! Define variables we store each timestep.
 
         ! We need to store the netcdf Var ID's for these variables
-        allocate(point_gauges%time_series_ncdf_iVar_ID(size(point_gauges%time_series_var)))
+        allocate(point_gauges%time_series_ncdf_iVar_ID(size(point_gauges%time_series_var, kind=ip)))
 
-        do i = 1, size(point_gauges%time_series_var)
+        do i = 1, size(point_gauges%time_series_var, kind=ip)
             j = point_gauges%time_series_var(i)
             if (j == STG) then
                 call check( nf90_def_var(iNcid, "stage", NF90_REAL4, [iDimStation_ID, iDimTime_ID], &
@@ -573,7 +573,7 @@ module point_gauge_mod
    
         ! Here we add other attributes that might be useful (e.g. the name of the input stage and elevation) 
         if((present(attribute_names)).and.(present(attribute_values))) then
-            do i = 1, size(attribute_names)
+            do i = 1, size(attribute_names, kind=ip)
                 call check(nf90_put_att(iNcid, nf90_global, attribute_names(i), attribute_values(i)), __LINE__)
             end do
         end if
@@ -605,7 +605,7 @@ SRC_GIT_VERSION ), __LINE__)
         call check(nf90_put_var(iNcid, iVarGAUGEID_ID, point_gauges%gauge_ids(:)), __LINE__)
 
         ! Write static variables
-        do i = 1, size(point_gauges%static_var)
+        do i = 1, size(point_gauges%static_var, kind=ip)
             j = point_gauges%static_var(i)
             if(j == STG) then
                 call check(nf90_put_var(iNcid, iVar_STG_static_ID , point_gauges%static_values(:,i) ), __LINE__) 

@@ -327,8 +327,8 @@ module coarray_point2point_comms_mod
             !    (0:(send_size(send_array_coomms_id) - 1)) &
             !    )
             send_start_index = [send_start_index, &
-                send_start_index(size(send_start_index)) + &
-                    send_size(size(send_size))]
+                send_start_index(size(send_start_index, kind=ip)) + &
+                    send_size(size(send_size, kind=ip))]
             send_size = [send_size, int(send_array_size, ip)]
             sendto_image_index = [sendto_image_index, int(receiver_image, ocaIP)]
             if(.not. any(linked_p2p_images == receiver_image)) then
@@ -358,7 +358,7 @@ module coarray_point2point_comms_mod
 
         integer(ip) :: n
 
-        n = size(send_array)
+        n = size(send_array, kind=ip)
         call include_in_p2p_send_buffer_generic(n, buffer_label, &
             receiver_image)
     end subroutine
@@ -372,7 +372,7 @@ module coarray_point2point_comms_mod
 
         integer(ip) :: n
 
-        n = size(send_array)
+        n = size(send_array, kind=ip)
         call include_in_p2p_send_buffer_generic(n, buffer_label, &
             receiver_image)
     end subroutine
@@ -386,7 +386,7 @@ module coarray_point2point_comms_mod
 
         integer(ip) :: n
 
-        n = size(send_array)
+        n = size(send_array, kind=ip)
         call include_in_p2p_send_buffer_generic(n, buffer_label, &
             receiver_image)
     end subroutine
@@ -400,7 +400,7 @@ module coarray_point2point_comms_mod
 
         integer(ip) :: n
 
-        n = size(send_array)
+        n = size(send_array, kind=ip)
         call include_in_p2p_send_buffer_generic(n, buffer_label, &
             receiver_image)
     end subroutine
@@ -456,10 +456,10 @@ module coarray_point2point_comms_mod
 
         ! Fill with a value which is suggestive of problems, in case of
         ! out-of-bounds mistakes
-        if(size(send_buffer) > 0) send_buffer = HUGE(1.0_dp)
+        if(size(send_buffer, kind=ip) > 0) send_buffer = HUGE(1.0_dp)
 
         if(allocated(send_size) .OR. allocated(sendto_image_index)) then
-            if(size(send_size) /= size(sendto_image_index)) then
+            if(size(send_size, kind=ip) /= size(sendto_image_index, kind=ip)) then
                 stop 'BUG: send_size should have equal length to sendto_image_index'
             end if
         end if
@@ -470,10 +470,10 @@ module coarray_point2point_comms_mod
         ! can allow sends to occur 'in groups' which may potentially have
         ! speed benefits
         !
-        if(reorder_send_data_by_image .and. size(send_size) > 0 .and. num_images_local > 1) then
+        if(reorder_send_data_by_image .and. size(send_size, kind=ip) > 0 .and. num_images_local > 1) then
         
             ! Get the index of the send-to data
-            n1 = size(send_size)
+            n1 = size(send_size, kind=ip)
             allocate(send_data_order(n1), send_data_sort_criterion(n1))
             send_data_order = [(i, i=1, n1)]
             ! Make the order so that images above the current image are near the start 
@@ -555,7 +555,7 @@ module coarray_point2point_comms_mod
         ! recvfrom_image_index
         !
         if(allocated(send_size)) then
-            desired_size = size(send_size)
+            desired_size = size(send_size, kind=ip)
         else
             desired_size = 0
         end if
@@ -564,7 +564,7 @@ module coarray_point2point_comms_mod
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         call co_max(desired_size)
         allocate( work_coarray(desired_size, 3))
-        allocate(wc3_all(size(work_coarray(:,3)), num_images_local))
+        allocate(wc3_all(size(work_coarray(:,3), kind=ip), num_images_local))
         call sync_all_generic
 #elif defined(COARRAY)
         call co_max(desired_size)
@@ -608,13 +608,13 @@ module coarray_point2point_comms_mod
                 real64_coarray = transfer(repeat(" ", n2), real(1.0, real64))
 
                 if(allocated(send_size)) then
-                    n = size(sendto_image_index)
+                    n = size(sendto_image_index, kind=ip)
                     work_coarray(1:n, 1) = sendto_image_index
                     work_coarray(1:n, 2) = send_size
                     ! To broadcast the send_buffer_label, convert to a real
                     do j = 1, n
                         real64_coarray(:, j) = transfer(send_buffer_label(j), &
-                            real64_coarray(:,1), size(real64_coarray(:,1)))
+                            real64_coarray(:,1), size(real64_coarray(:,1), kind=ip))
                     end do
                 else
                     n = 0
@@ -626,7 +626,7 @@ module coarray_point2point_comms_mod
             call co_broadcast(real64_coarray, source_image = i)
 #endif
 
-            do j = 1, size(work_coarray(:,1))        
+            do j = 1, size(work_coarray(:,1), kind=ip)        
                 ! If the current image receives data from image i, note that
                 if(work_coarray(j,1) == this_image_local) then
    
@@ -661,7 +661,7 @@ module coarray_point2point_comms_mod
 
                     ! Compute the recv_start_index
                     if(allocated(recv_start_index)) then
-                        n = size(recv_start_index)
+                        n = size(recv_start_index, kind=ip)
                         recv_start_index = [recv_start_index, &
                             ! Sum of previous start index + previous recv_size
                             recv_start_index(n) + recv_size(n)]
@@ -671,7 +671,7 @@ module coarray_point2point_comms_mod
 
                     ! Put the recv_start_index into the work_coarray, so
                     ! we can send it back to the recvfrom_image_index
-                    n = size(recv_start_index)
+                    n = size(recv_start_index, kind=ip)
                     work_coarray(j,3) = recv_start_index(n)
                 end if
             end do
@@ -688,9 +688,9 @@ module coarray_point2point_comms_mod
 #endif
             if(this_image_local == i) then
                 if(allocated(send_size)) then
-                    allocate(sendto_start_index(size(send_size)))
-                    if(size(send_size) > 0) then
-                        do j = 1, size(send_size)
+                    allocate(sendto_start_index(size(send_size, kind=ip)))
+                    if(size(send_size, kind=ip) > 0) then
+                        do j = 1, size(send_size, kind=ip)
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS) 
                             sendto_start_index(j) = wc3_all(j,sendto_image_index(j))
 #elif defined(COARRAY)
@@ -717,8 +717,8 @@ module coarray_point2point_comms_mod
 
         ! Check that send_buffer_label does not have repeated values
         if(allocated(send_buffer_label)) then
-            do i = 1, (size(send_buffer_label) - 1)
-                do j = i+1, size(send_buffer_label)
+            do i = 1, (size(send_buffer_label, kind=ip) - 1)
+                do j = i+1, size(send_buffer_label, kind=ip)
                     if(send_buffer_label(i) == send_buffer_label(j)) then
                         write(log_output_unit,*) 'Error: repeated send_buffer_labels: ', &
                             send_buffer_label(i)
@@ -729,8 +729,8 @@ module coarray_point2point_comms_mod
 
         ! Check that recv_buffer_label does not have repeated values
         if(allocated(recv_buffer_label)) then
-            do i = 1, (size(recv_buffer_label) - 1)
-                do j = i+1, size(recv_buffer_label)
+            do i = 1, (size(recv_buffer_label, kind=ip) - 1)
+                do j = i+1, size(recv_buffer_label, kind=ip)
                     if(recv_buffer_label(i) == recv_buffer_label(j)) then
                         write(log_output_unit,*) 'Error: repeated recv_buffer_labels: ', &
                             recv_buffer_label(i)
@@ -740,9 +740,9 @@ module coarray_point2point_comms_mod
         end if
 
         if(allocated(recv_size)) then
-            if(size(recv_start_index) /= size(recv_size)) then
+            if(size(recv_start_index, kind=ip) /= size(recv_size, kind=ip)) then
                 write(log_output_unit,*) 'Error:  size(recv_start_index) /= size(recv_size) ', &
-                    size(recv_start_index), size(recv_size)
+                    size(recv_start_index, kind=ip), size(recv_size, kind=ip)
                 call local_stop 
             end if
         end if
@@ -776,7 +776,7 @@ module coarray_point2point_comms_mod
                         ! Set the send information 
 
                         ! Find the first index with image == i
-                        do j = 1, size(sendto_image_index)
+                        do j = 1, size(sendto_image_index, kind=ip)
                             if(sendto_image_index(j) == i) then
                                 n = j 
                                 exit
@@ -784,7 +784,7 @@ module coarray_point2point_comms_mod
                         end do
                         ! If the start index is 'p', the MPI displacement is 'p-1'
                         mympi_send_displacements(i) = send_start_index(n) - 1
-                        if(size(send_size) > 0) then
+                        if(size(send_size, kind=ip) > 0) then
                             mympi_send_counts(i) = sum(send_size, mask=(sendto_image_index == i))
                         else
                             mympi_send_counts(i) = 0 
@@ -797,7 +797,7 @@ module coarray_point2point_comms_mod
                         ! Set the recv information 
 
                         ! Find the first index with image == i
-                        do j = 1, size(recvfrom_image_index)
+                        do j = 1, size(recvfrom_image_index, kind=ip)
                             if(recvfrom_image_index(j) == i) then
                                 n = j 
                                 exit
@@ -805,7 +805,7 @@ module coarray_point2point_comms_mod
                         end do
                         ! If the start index is 'p', the MPI displacement is 'p-1'
                         mympi_recv_displacements(i) = recv_start_index(n) - 1
-                        if(size(recv_size) > 0) then
+                        if(size(recv_size, kind=ip) > 0) then
                             mympi_recv_counts(i) = sum(recv_size, mask=(recvfrom_image_index == i))
                         else
                             mympi_recv_counts(i) = 0
@@ -815,9 +815,9 @@ module coarray_point2point_comms_mod
             end do
         else
             ! Define variables for mpi_isend/irecv - an alternative to the alltoallv approach
-            allocate(mpi_recv_requests(size(recv_start_index)))
+            allocate(mpi_recv_requests(size(recv_start_index, kind=ip)))
             mpi_recv_requests = MPI_REQUEST_NULL
-            allocate(mpi_send_requests(size(send_start_index)))
+            allocate(mpi_send_requests(size(send_start_index, kind=ip)))
             mpi_send_requests = MPI_REQUEST_NULL
         end if
 #endif
@@ -882,7 +882,7 @@ module coarray_point2point_comms_mod
         ! Find the integer index in the metadata corresponding to
         ! buffer_label, by finding a match with the send_buffer_label's
         buffer_label_int = -1
-        do i = 1, size(send_buffer_label)
+        do i = 1, size(send_buffer_label, kind=ip)
             if(buffer_label == send_buffer_label(i)) then
                 buffer_label_int = i 
                 exit
@@ -1014,7 +1014,7 @@ module coarray_point2point_comms_mod
 
         if(.not. reorder_send_data_by_image) then
             ! Send ALL of the send buffers to the recv buffers, one by one
-            do i = 1, size(send_size)
+            do i = 1, size(send_size, kind=ip)
                 start_index = send_start_index(i)
                 end_index = start_index + send_size(i) - 1
                 recv_start_index_local = sendto_start_index(i)
@@ -1041,7 +1041,7 @@ module coarray_point2point_comms_mod
             recv_start_index_local = sendto_start_index(1)
             recv_end_index = recv_start_index_local  - 1
 
-            do i = 1, size(send_size)
+            do i = 1, size(send_size, kind=ip)
 
                 if(sendto_image_index(i) == recv_image) then
                     ! The 'previous' sendto image is the same as the current image
@@ -1070,7 +1070,7 @@ module coarray_point2point_comms_mod
                 end if
 
                 ! If we are on the final send, we definitely need to send
-                if(i == size(send_size)) then
+                if(i == size(send_size, kind=ip)) then
 #ifdef COARRAY
                     recv_buffer(recv_start_index_local:recv_end_index)[recv_image] = &
                         send_buffer(start_index:end_index)
@@ -1129,7 +1129,7 @@ module coarray_point2point_comms_mod
             !
  
             ! Open up receives         
-            do i = 1, size(recv_start_index)
+            do i = 1, size(recv_start_index, kind=ip)
                 mpi_count = recv_size(i)
                 mpi_source = recvfrom_image_index(i) - 1
                 
@@ -1139,7 +1139,7 @@ module coarray_point2point_comms_mod
             end do
             
             ! Do sends
-            do i = 1, size(send_start_index)
+            do i = 1, size(send_start_index, kind=ip)
                 mpi_count = send_size(i)
                 mpi_dest = sendto_image_index(i) - 1
                 mpi_tag = i
@@ -1148,9 +1148,9 @@ module coarray_point2point_comms_mod
             end do
 
             ! Ensure completion -- more strategic location of these calls would be possible
-            mpi_count = size(send_start_index)
+            mpi_count = size(send_start_index, kind=ip)
             call mpi_waitall(mpi_count, mpi_send_requests, MPI_STATUSES_IGNORE, mpi_ierr)
-            mpi_count = size(mpi_recv_requests)
+            mpi_count = size(mpi_recv_requests, kind=ip)
             call mpi_waitall(mpi_count, mpi_recv_requests, MPI_STATUSES_IGNORE, mpi_ierr)
         end if 
 
@@ -1223,10 +1223,10 @@ module coarray_point2point_comms_mod
         integer(ip) :: mysize
         mysize = 0
         if(allocated(send_buffer)) then
-            mysize = mysize + size(send_buffer)*real_bytes
+            mysize = mysize + size(send_buffer, kind=ip)*real_bytes
         end if
         if(allocated(recv_buffer)) then
-            mysize = mysize + size(recv_buffer)*real_bytes
+            mysize = mysize + size(recv_buffer, kind=ip)*real_bytes
         end if
     end function
 
@@ -1255,8 +1255,8 @@ module coarray_point2point_comms_mod
         write(log_output_unit,*) 'send_size: ', send_size
         write(log_output_unit,*) 'sendto_image_index: ', sendto_image_index
         write(log_output_unit,*) 'sendto_start_index: ', sendto_start_index
-        write(log_output_unit,*) 'size(send_buffer): ', size(send_buffer)
-        do i = 1, size(send_start_index)
+        write(log_output_unit,*) 'size(send_buffer): ', size(send_buffer, kind=ip)
+        do i = 1, size(send_start_index, kind=ip)
             si = send_start_index(i)
             ei = si + send_size(i) - 1
             write(log_output_unit,*) '    ----'
@@ -1269,11 +1269,11 @@ module coarray_point2point_comms_mod
         end do
 
         !write(log_output_unit,*) 'recv_buffer: ', recv_buffer
-        write(log_output_unit,*) 'size(recv_buffer): ', size(recv_buffer)
+        write(log_output_unit,*) 'size(recv_buffer): ', size(recv_buffer, kind=ip)
         write(log_output_unit,*) 'recv_start_index: ', recv_start_index
         write(log_output_unit,*) 'recv_size: ', recv_size
         write(log_output_unit,*) 'recvfrom_image_index: ', recvfrom_image_index
-        do i = 1, size(recv_size)
+        do i = 1, size(recv_size, kind=ip)
             si = recv_start_index(i)
             ei = si + recv_size(i) - 1
             write(log_output_unit,*) '    ----'

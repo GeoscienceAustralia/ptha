@@ -20,7 +20,7 @@
 
         ! Copy the send array to the right part of the send buffer
         si = send_start_index(buffer_label_int) 
-        ei = si + size(send_array) - 1
+        ei = si + size(send_array, kind=ip) - 1
         ! The following routine is generic, for send_array having rank 1 to 4.
         call flatten_array(send_array, send_buffer(si:ei))
         ! Intrinsic alternative (but would this make a copy?

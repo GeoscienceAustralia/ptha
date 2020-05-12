@@ -40,7 +40,7 @@ module which_mod
 
         if(arr_len > 0) then
             counter = 0
-            do i = 1, size(logical_array)
+            do i = 1, size(logical_array, kind=ip)
                 if(logical_array(i)) then
                     counter = counter + 1
                     allocatable_array(counter) = i
@@ -76,7 +76,7 @@ module which_mod
         if(allocated(values)) deallocate(values)
         if(allocated(lengths)) deallocate(lengths)
         
-        n = size(integer_array)
+        n = size(integer_array, kind=ip)
 
         select case(n)
         case(0)
@@ -143,7 +143,7 @@ module which_mod
 
         integer(ip) :: sumval, n, i
 
-        n = size(integer_array)
+        n = size(integer_array, kind=ip)
 
         if(n > 0) then
             sumval = 0_ip

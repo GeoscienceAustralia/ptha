@@ -114,9 +114,8 @@ program landslide_tsunami
     use logging_mod, only: log_output_unit
     implicit none
 
-    ! Useful misc variables
-    integer(ip):: j, i, i0, j0, centoff, nd, lg
-    real(dp):: last_write_time, gx(4), gy(4)
+    ! nd domains in the model; j is for loops
+    integer(ip):: nd, j
 
     ! Type holding all domains 
     type(multidomain_type) :: md
@@ -198,14 +197,9 @@ program landslide_tsunami
     ! rk2n needs a shorter timestep
     if(md%domains(1)%timestepping_method == 'rk2n') global_dt = global_dt * 0.8_dp
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
-
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
 
-    ! Trick to get the code to write out at the first timestep
-    last_write_time = -approximate_writeout_frequency
     ! Evolve the code
     do while (.true.)
         

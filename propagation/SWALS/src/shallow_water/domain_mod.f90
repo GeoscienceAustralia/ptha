@@ -262,6 +262,11 @@ module domain_mod
             !! which are different.
             !! Order is North (1), East (2), South (3), West (4) 
 
+        !
+        ! Forcing subroutine -- the user can use this to create source-terms
+        !
+        procedure(forcing_subroutine), pointer, nopass:: forcing_subroutine => NULL()
+
         ! 
         ! Mass conservation tracking  -- store as double, even if dp is single prec.
         !
@@ -362,6 +367,7 @@ module domain_mod
         real(dp), allocatable :: explicit_source_VH_j_minus_1(:,:) !! Separate from explicit_source for OPENMP parallel logic
         real(dp), allocatable :: manning_squared(:,:) !! Friction
         real(dp), allocatable :: backup_U(:,:,:) !! Needed for some timestepping methods
+        real(dp), allocatable :: forcing_work(:,:,:) !! Optional array we might want to use for a forcing term
         real(dp), allocatable :: friction_work(:,:,:) !! Friction for leapfrog_nonlinear and leapfrog_linear_plus_nonlinear_friction
         logical :: friction_work_is_setup = .false. !! Flag used for efficiency with leapfrog_linear_plus_nonlinear_friction solvers
         real(dp), allocatable :: advection_work(:,:,:) !! Work array
@@ -411,6 +417,9 @@ module domain_mod
 
         ! Boundary conditions. This just calls whatever domain%boundary_subroutine points to (consider making not type bound)
         procedure:: update_boundary => update_boundary
+
+        ! Forcing term
+        procedure :: apply_forcing => apply_forcing
 
         ! IO
         procedure:: create_output_folders => create_output_folders
@@ -486,6 +495,16 @@ module domain_mod
             type(domain_type), intent(inout):: domain
         end subroutine
     
+        subroutine forcing_subroutine(domain, dt)
+            !! The user can provide a boundary subroutine which is supposed to update
+            !! the domain boundaries. It is called by domain%update_boundary whenever
+            !! a boundary update is required by the timestepping_method. Note that
+            !! this may well mean 'boundary_fun' is not required
+            import domain_type, dp
+            implicit none
+            type(domain_type), intent(inout):: domain
+            real(dp), intent(in) :: dt
+        end subroutine
     end interface
 
     contains
@@ -532,6 +551,8 @@ TIMER_START('printing_stats')
         write(domain%logfile_unit, *) '        ', domain%time
         write(domain%logfile_unit, *) 'nsteps_advanced:'
         write(domain%logfile_unit, *) '        ', domain%nsteps_advanced
+        write(domain%logfile_unit, *) 'negative_depth_fix_counter:'
+        write(domain%logfile_unit, *) '        ', domain%negative_depth_fix_counter
         write(domain%logfile_unit, *) 'max_allowed_dt: '
         write(domain%logfile_unit, *) '        ', domain%max_dt
         write(domain%logfile_unit, *) 'evolve_step_dt: '
@@ -1281,6 +1302,7 @@ TIMER_STOP('printing_stats')
         end if
 
         call domain%update_boundary()
+        call domain%apply_forcing(dt)
 
     end subroutine
 
@@ -1297,6 +1319,20 @@ TIMER_STOP('printing_stats')
         end if
 
         !TIMER_STOP('boundary_update')
+
+    end subroutine
+
+    subroutine apply_forcing(domain, dt)
+        !!
+        !! Routine to call a forcing term (i.e. user-specified source term)
+        !! In general this will require knowledge of the timestep
+        !! 
+        class(domain_type), intent(inout):: domain 
+        real(dp), intent(in) :: dt
+
+        if(associated(domain%forcing_subroutine)) then
+            call domain%forcing_subroutine(domain, dt)
+        end if
 
     end subroutine
 
@@ -1930,13 +1966,13 @@ TIMER_STOP('fileIO')
             call generic_stop
         end if
 
-        if(size(x) /= size(y) .or. size(x) /= size(is_in_priority)) then
+        if(size(x, kind=ip) /= size(y, kind=ip) .or. size(x, kind=ip) /= size(is_in_priority, kind=ip)) then
             write(log_output_unit, *) ' Error in is_in_priority_domain: All inputs must have same length'
             call generic_stop
         end if
 
         is_in_priority = .false.
-        do i = 1, size(x)
+        do i = 1, size(x, kind=ip)
 
             i0 = ceiling( (x(i) - domain%lower_left(1))/domain%dx(1) )
             j0 = ceiling( (y(i) - domain%lower_left(2))/domain%dx(2) )
@@ -1991,7 +2027,7 @@ TIMER_STOP('fileIO')
 
         ! Set variables in domain%U(:,:,k) that are stored at gauges every output timestep
         if(present(time_series_var)) then
-            allocate(tsv(size(time_series_var)))
+            allocate(tsv(size(time_series_var, kind=ip)))
             tsv = time_series_var
         else
             ! Default case -- store stage/uh/vh every output step
@@ -2001,7 +2037,7 @@ TIMER_STOP('fileIO')
 
         ! Set variables in domain%U(:,:,k) that are stored only once (at the start)
         if(present(static_var)) then
-            allocate(sv(size(static_var)))
+            allocate(sv(size(static_var, kind=ip)))
             sv = static_var
         else 
             ! Default case -- store elevation once
@@ -2011,17 +2047,17 @@ TIMER_STOP('fileIO')
 
         ! Setup or create some 'IDs' for each gauge. These come in handy.
         if(present(gauge_ids)) then
-            if(size(gauge_ids) /= size(xy_coords(1,:))) then
+            if(size(gauge_ids, kind=ip) /= size(xy_coords(1,:), kind=ip)) then
                 write(domain%logfile_unit,*) 'Number of gauge ids does not equal number of coordinates' 
                 flush(domain%logfile_unit)
                 call generic_stop
             end if
-            allocate(gauge_ids_local(size(gauge_ids)))
+            allocate(gauge_ids_local(size(gauge_ids, kind=ip)))
             gauge_ids_local = gauge_ids
         else
             ! Default case -- give sequential integer ids
-            allocate(gauge_ids_local(size(xy_coords(1,:))))
-            do i = 1, size(gauge_ids_local)
+            allocate(gauge_ids_local(size(xy_coords(1,:), kind=ip)))
+            do i = 1, size(gauge_ids_local, kind=ip)
                 gauge_ids_local(i) = i*ONE_dp
             end do
         end if
@@ -2037,7 +2073,7 @@ TIMER_STOP('fileIO')
 
         if(domain%nesting%my_index > 0) then
             ! If we are nesting, tell the model which gauges are in the priority domain
-            allocate(priority_gauges(size(xy_coords(1,:))))
+            allocate(priority_gauges(size(xy_coords(1,:), kind=ip)))
             call domain%is_in_priority_domain(xy_coords(1,:), xy_coords(2,:), priority_gauges)
             ! Allocate the gauges
             call domain%point_gauges%allocate_gauges(xy_coords, tsv, sv, gauge_ids_local, &
@@ -2123,7 +2159,7 @@ TIMER_START('nesting_boundary_flux_integral_multiply')
         ! The 'send communicator' fluxes
         if(allocated(domain%nesting%send_comms)) then
             !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%send_comms)
+            do i = 1, size(domain%nesting%send_comms, kind=ip)
                 call domain%nesting%send_comms(i)%boundary_flux_integral_multiply(c)
             end do 
             !$OMP END DO
@@ -2133,7 +2169,7 @@ TIMER_START('nesting_boundary_flux_integral_multiply')
         ! The 'receive communicator' fluxes
         if(allocated(domain%nesting%recv_comms)) then
             !$OMP DO SCHEDULE (DYNAMIC)
-            do i = 1, size(domain%nesting%recv_comms)
+            do i = 1, size(domain%nesting%recv_comms, kind=ip)
                 call domain%nesting%recv_comms(i)%boundary_flux_integral_multiply(c)
             end do 
             !$OMP END DO
@@ -2193,7 +2229,7 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
 
         ! Deal with 'send comminicators'
         if(allocated(domain%nesting%send_comms)) then
-            do i = 1, size(domain%nesting%send_comms)
+            do i = 1, size(domain%nesting%send_comms, kind=ip)
                 call domain%nesting%send_comms(i)%boundary_flux_integral_tstep( dt,&
                     flux_NS, flux_NS_lower_index, domain%distance_bottom_edge, &
                     flux_EW, flux_EW_lower_index, domain%distance_left_edge, & 
@@ -2203,7 +2239,7 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
 
         ! Deal with 'receive comminicators'
         if(allocated(domain%nesting%recv_comms)) then
-            do i = 1, size(domain%nesting%recv_comms)
+            do i = 1, size(domain%nesting%recv_comms, kind=ip)
                 call domain%nesting%recv_comms(i)%boundary_flux_integral_tstep( dt,&
                     flux_NS, flux_NS_lower_index, domain%distance_bottom_edge, &
                     flux_EW, flux_EW_lower_index, domain%distance_left_edge, &
@@ -2260,7 +2296,7 @@ TIMER_START('nesting_flux_correction')
             ! threads do not try to update the same domain%U cells at once.
             !
             !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%recv_comms)
+            do i = 1, size(domain%nesting%recv_comms, kind=ip)
 
                 my_index = domain%nesting%recv_comms(i)%my_domain_index
                 my_image = domain%nesting%recv_comms(i)%my_domain_image_index
@@ -2354,7 +2390,7 @@ TIMER_START('nesting_flux_correction')
             ! SOUTH BOUNDARIES.
             !
             !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%recv_comms)
+            do i = 1, size(domain%nesting%recv_comms, kind=ip)
 
                 my_index = domain%nesting%recv_comms(i)%my_domain_index
                 my_image = domain%nesting%recv_comms(i)%my_domain_image_index
@@ -2428,7 +2464,7 @@ TIMER_START('nesting_flux_correction')
             ! EAST BOUNDARIES.
             !
             !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%recv_comms)
+            do i = 1, size(domain%nesting%recv_comms, kind=ip)
                 my_index = domain%nesting%recv_comms(i)%my_domain_index
                 my_image = domain%nesting%recv_comms(i)%my_domain_image_index
                 nbr_index = domain%nesting%recv_comms(i)%neighbour_domain_index
@@ -2515,7 +2551,7 @@ TIMER_START('nesting_flux_correction')
             ! WEST BOUNDARIES.
             !
             !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%recv_comms)
+            do i = 1, size(domain%nesting%recv_comms, kind=ip)
                 my_index = domain%nesting%recv_comms(i)%my_domain_index
                 my_image = domain%nesting%recv_comms(i)%my_domain_image_index
                 nbr_index = domain%nesting%recv_comms(i)%neighbour_domain_index
@@ -2589,7 +2625,7 @@ TIMER_START('nesting_flux_correction')
             ! To avoid any issues, we copy such data here, using 'recv_box_flux_error' as a scratch space.
             !
             !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%recv_comms)
+            do i = 1, size(domain%nesting%recv_comms, kind=ip)
 
                 ! If my domain is not finer, we do not need to do anything
                 if(.not. domain%nesting%recv_comms(i)%my_domain_is_finer) cycle
@@ -2634,7 +2670,7 @@ TIMER_START('nesting_flux_correction')
             !
 
             !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(domain%nesting%recv_comms)
+            do i = 1, size(domain%nesting%recv_comms, kind=ip)
 
                 ! If my domain is not finer, we do not need to do anything
                 if(.not. domain%nesting%recv_comms(i)%my_domain_is_finer) cycle
@@ -2978,7 +3014,7 @@ TIMER_STOP('nesting_flux_correction')
         if(.not. allocated(domain%nesting%send_comms) ) return
 
         ! Loop over all 'send' regions
-        do i = 1, size(domain%nesting%send_comms)
+        do i = 1, size(domain%nesting%send_comms, kind=ip)
 
             ! Only operate on finer domains
             if(.not. domain%nesting%send_comms(i)%my_domain_is_finer) cycle

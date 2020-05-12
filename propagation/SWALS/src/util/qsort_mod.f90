@@ -80,7 +80,7 @@ module qsort_mod
        
         integer(c_size_t) :: elem_count, elem_size 
 
-        elem_count = size(array)
+        elem_count = size(array, kind=c_size_t)
         elem_size = c_sizeof(array(1))
 
         call qsort(c_loc(array(1)), elem_count, elem_size, c_funloc(compare_int))
@@ -107,7 +107,7 @@ module qsort_mod
        
         integer(c_size_t) :: elem_count, elem_size 
 
-        elem_count = size(array)
+        elem_count = size(array, kind=c_size_t)
         elem_size = c_sizeof(array(1))
 
         call qsort(c_loc(array(1)), elem_count, elem_size, c_funloc(compare_float))
@@ -134,7 +134,7 @@ module qsort_mod
        
         integer(c_size_t) :: elem_count, elem_size 
 
-        elem_count = size(array)
+        elem_count = size(array, kind=c_size_t)
         elem_size = c_sizeof(array(1))
 
         call qsort(c_loc(array(1)), elem_count, elem_size, c_funloc(compare_double))

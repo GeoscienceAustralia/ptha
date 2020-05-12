@@ -116,6 +116,7 @@
 
         domain%time = domain%time + dt * HALF_dp
         call domain%update_boundary()
+        call domain%apply_forcing(dt)
         !TIMER_STOP('LF_update')
 
         !TIMER_START('partitioned_comms')

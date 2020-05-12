@@ -165,7 +165,11 @@
         call get_NS_limited_gradient_dx(domain, j, nx, ny, &
             theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS, duh_NS, dvh_NS, extrapolate_uh_vh)
 
-        !$OMP SIMD
+        !$OMP SIMD PRIVATE(stage_neg, stage_pos, depth_neg, depth_pos, u_neg, u_pos, v_neg, v_pos, depth_neg_c, depth_pos_c, &
+        !$OMP vd_neg, ud_neg, vd_pos, ud_pos, &
+        !$OMP z_neg, z_pos, z_half, stage_neg_star, depth_neg_star, stage_pos_star, depth_pos_star, gs_neg, gs_pos, vel_beta_neg, &
+        !$OMP vel_beta_pos, s_min, s_max, inv_denom, denom, sminsmax, fr2, half_g_hh_edge, bed_slope_pressure_e, &
+        !$OMP bed_slope_pressure_w, dxb, stg_b, stg_a, common_multiple, max_speed)
         do i = 2, nx
             !
             ! North-South flux computation
@@ -356,7 +360,11 @@
         call get_EW_limited_gradient_dx(domain, j, nx, ny, &
             theta_wd_EW, dstage_EW, ddepth_EW, du_EW, dv_EW, duh_EW, dvh_EW, extrapolate_uh_vh)
 
-        !$OMP SIMD
+        !$OMP SIMD PRIVATE(stage_neg, stage_pos, depth_neg, depth_pos, u_neg, u_pos, v_neg, v_pos, depth_neg_c, depth_pos_c, &
+        !$OMP vd_neg, ud_neg, vd_pos, ud_pos, &
+        !$OMP z_neg, z_pos, z_half, stage_neg_star, depth_neg_star, stage_pos_star, depth_pos_star, gs_neg, gs_pos, vel_beta_neg, &
+        !$OMP vel_beta_pos, s_min, s_max, inv_denom, denom, sminsmax, fr2, half_g_hh_edge, bed_slope_pressure_e, &
+        !$OMP bed_slope_pressure_w, dxb, stg_b, stg_a, common_multiple, max_speed)
         do i = 2, nx
 
             ! left edge variables 
@@ -588,7 +596,7 @@
             ! Typical case
             
             ! limiter coefficient
-            !$OMP SIMD
+            !$OMP SIMD PRIVATE(mindep, maxdep, theta_local)
             do i = 1, nx
                 mindep = min(domain%depth(i, j-1), domain%depth(i,j), domain%depth(i,j+1)) - minimum_allowed_depth
                 maxdep = max(domain%depth(i, j-1), domain%depth(i,j), domain%depth(i,j+1)) + &
@@ -650,7 +658,7 @@
         integer(ip) :: i
         
         ! limiter coefficient
-        !$OMP SIMD
+        !$OMP SIMD PRIVATE(mindep, maxdep, theta_local)
         do i = 2, nx-1
             mindep = min(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) - minimum_allowed_depth
             maxdep = max(domain%depth(i-1, j), domain%depth(i,j), domain%depth(i+1,j)) + &

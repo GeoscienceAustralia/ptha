@@ -18,7 +18,7 @@
 
         ! Find the integer recv index corresponding to the label
         buffer_label_int = -1
-        do i = 1, size(recv_buffer_label)
+        do i = 1, size(recv_buffer_label, kind=ip)
             if(buffer_label == recv_buffer_label(i)) then
                 buffer_label_int = i
                 exit
@@ -32,7 +32,7 @@
         end if
        
         ! Check the array sizes agree 
-        if(size(recv_array) /= recv_size(buffer_label_int)) then
+        if(size(recv_array, kind=ip) /= recv_size(buffer_label_int)) then
             !print*, 'size(recv_array) = ', size(recv_array), &
             !    ' does not match buffer size (', &
             !    recv_size(buffer_label_int), ') for ', &
@@ -42,7 +42,7 @@
 
         !Start/end indices
         si = recv_start_index(buffer_label_int)
-        ei = si + size(recv_array) - 1
+        ei = si + size(recv_array, kind=ip) - 1
 
         ! Main copy. Note this routine is generic, with recv_array having rank 1
         ! to 4

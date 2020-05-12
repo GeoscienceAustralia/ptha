@@ -2,7 +2,7 @@ module local_routines
     !!
     !! Simulate wave motion in a paraboloid bowl, which has an analytical solution 
     !!
-    use global_mod, only: dp, ip, charlen, wall_elevation, gravity
+    use global_mod, only: dp, ip
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use logging_mod, only: log_output_unit
@@ -59,20 +59,18 @@ program run_paraboloid_basin
     !! Simulate wave motion in a paraboloid bowl, which has an analytical solution 
     !!
 
-    use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method
+    use global_mod, only: ip, dp, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
-    use boundary_mod, only: flather_boundary, transmissive_boundary
-    use local_routines
-    use timer_mod
+    use multidomain_mod, only: multidomain_type
+    use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit, send_log_output_to_file
     use stop_mod, only: generic_stop
-    use iso_c_binding, only: C_DOUBLE !, C_INT, C_LONG
 #ifdef COARRAY_PROVIDE_CO_ROUTINES
     use coarray_intrinsic_alternatives, only: co_min
 #endif
     use coarray_intrinsic_alternatives, only: swals_mpi_init, swals_mpi_finalize
-    !use iso_fortran_env, only: int64, int32
+    use local_routines
+
     implicit none
 
     ! Type holding all domains 
@@ -99,8 +97,7 @@ program run_paraboloid_basin
     integer(ip), parameter, dimension(2):: global_nx = [100, 100]*mesh_refine + 1
 
     ! Useful misc variables
-    integer(ip):: nd, i, j
-    real(dp):: last_write_time
+    integer(ip):: nd, j
 
     call swals_mpi_init
     call program_timer%timer_start('setup')

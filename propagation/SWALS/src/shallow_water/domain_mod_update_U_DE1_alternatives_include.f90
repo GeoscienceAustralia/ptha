@@ -116,6 +116,7 @@
         domain%time = domain%time + dt
 
         call domain%update_boundary()
+        call domain%apply_forcing(dt)
     
     end subroutine
     
@@ -187,6 +188,7 @@
         domain%time = domain%time + dt
 
         call domain%update_boundary()
+        call domain%apply_forcing(dt)
     
     end subroutine
 

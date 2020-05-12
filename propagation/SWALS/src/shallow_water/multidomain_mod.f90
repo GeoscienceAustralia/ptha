@@ -346,7 +346,7 @@ module multidomain_mod
             verbose1 = .true.
         end if
 
-        nd_local = size(domains)
+        nd_local = size(domains, kind=ip)
         allocate(is_nesting_boundary(4,nd_local))
 
         ! Allocate arrays of ragged arrays (one entry for each domain on this_image), which
@@ -453,7 +453,7 @@ module multidomain_mod
                 ! Only check cells right next to the original domain boundary,
                 ! since it is possible that other cells are not nested [e.g. if this domain
                 ! lies on the physical boundary of the "full multidomain extent" ]
-                do ii = 2, size(nbr_image_ind(j)%i2(i)%i1) - 1 
+                do ii = 2, size(nbr_image_ind(j)%i2(i)%i1, kind=ip) - 1 
                     if((nbr_image_ind(j)%i2(i)%i1(ii) > 0)) then
                         if((nbr_image_ind(j)%i2(i)%i1(ii) < 0)) then
                             write(log_output_unit,*) 'Boundary cannot be half nested and half un-nested'
@@ -499,7 +499,7 @@ module multidomain_mod
 
         ! ID cells that are in the periodic boundary regions. This is necessary because
         ! we must avoid the 'boxes' crossing the periodic boundary
-        allocate(in_periodic_x(size(xs)), in_periodic_y(size(ys)))
+        allocate(in_periodic_x(size(xs, kind=ip)), in_periodic_y(size(ys, kind=ip)))
         in_periodic_x = (xs < periodic_xs(1) .or. xs > periodic_xs(2))
         in_periodic_y = (ys < periodic_ys(1) .or. ys > periodic_ys(2))
 
@@ -549,7 +549,7 @@ module multidomain_mod
             call cumsum_ip(ends) 
             ! 'starts' gives the start index of the chunk
             if(allocated(starts)) deallocate(starts)
-            allocate(starts(size(ends)))
+            allocate(starts(size(ends, kind=ip)))
             starts = ends - (run_lengths - 1) 
 
             ! Sanity check
@@ -568,7 +568,7 @@ module multidomain_mod
                 ! Candidate_boxes is a table (integer matrix) with 6 variables:
                 ! domain_index, domain_image, box_left_i, box_right_i, 
                 ! box_bottom_j, box_top_j
-                allocate(candidate_boxes(srm, size(run_values)))
+                allocate(candidate_boxes(srm, size(run_values, kind=ip)))
                 candidate_boxes(1,:) = nest_ind(run_values)
                 candidate_boxes(2,:) = nest_image(run_values)
                 candidate_boxes(3,:) = starts
@@ -587,9 +587,9 @@ module multidomain_mod
             else
                 
                 if(allocated(box_i_string)) deallocate(box_i_string)
-                allocate( box_i_string( size(starts) ) )
+                allocate( box_i_string( size(starts, kind=ip) ) )
                 if(allocated(cbox_i_string)) deallocate(cbox_i_string)
-                allocate( cbox_i_string( size(candidate_boxes(1,:)) ) )
+                allocate( cbox_i_string( size(candidate_boxes(1,:), kind=ip) ) )
 
                 ! Perform a 'match' of starts/ends on the current row with 
                 ! starts/ends of existing candidate boxes.
@@ -602,12 +602,12 @@ module multidomain_mod
                 ! on the end (to prevent boxes from crossing 'y' periodic' boundaries). Note
                 ! we already prevented it from crossing x periodic boundaries by the equality function
                 ! passed to rle_ip
-                do i = 1, size(run_values)
+                do i = 1, size(run_values, kind=ip)
                     ii = run_values(i)
                     write(box_i_string(i), *) nest_ind(ii), ',', &
                         nest_image(ii), ',', starts(i), ',', ends(i), ',', in_periodic_y(j)
                 end do
-                do i = 1, size(cbox_i_string)
+                do i = 1, size(cbox_i_string, kind=ip)
                     write(cbox_i_string(i), *) candidate_boxes(1,i), ',', &
                         candidate_boxes(2,i), ',', candidate_boxes(3,i), ',', &
                         candidate_boxes(4,i), ',', in_periodic_y(j-1)
@@ -615,19 +615,19 @@ module multidomain_mod
 
                 ! Boxes without a match are 'new'
                 if(allocated(match_ind)) deallocate(match_ind)
-                allocate(match_ind(size(box_i_string)))
+                allocate(match_ind(size(box_i_string, kind=ip)))
                 call match(box_i_string, cbox_i_string, match_ind)
                 call which(match_ind == -1_ip, new_boxes)
                 
                 ! Candidate boxes without a match are 'finished' 
                 deallocate(match_ind)
-                allocate(match_ind(size(cbox_i_string)))
+                allocate(match_ind(size(cbox_i_string, kind=ip)))
                 call match(cbox_i_string, box_i_string, match_ind)
                 call which(match_ind == -1_ip, end_boxes)
 
                 ! Transfer completed candidate boxes to the final_boxes array,
                 ! and remove them from the candidate boxes array
-                if( size(end_boxes) > 0) then
+                if( size(end_boxes, kind=ip) > 0) then
                     ! We now know the upper-right y index of the box
                     candidate_boxes(srm,end_boxes) = j - 1 
                     call bind_arrays_ip(final_boxes, &
@@ -639,9 +639,9 @@ module multidomain_mod
                 !
                 ! Add new boxes to the candidate_boxes array
                 !
-                if( size(new_boxes) > 0) then
+                if( size(new_boxes, kind=ip) > 0) then
                     if(allocated(candidate_boxes_new)) deallocate(candidate_boxes_new)
-                    allocate( candidate_boxes_new(srm, size(new_boxes)) )
+                    allocate( candidate_boxes_new(srm, size(new_boxes, kind=ip)) )
                     candidate_boxes_new(1,:) = nest_ind(run_values(new_boxes))
                     candidate_boxes_new(2,:) = nest_image(run_values(new_boxes))
                     candidate_boxes_new(3,:) = starts(new_boxes)
@@ -654,7 +654,7 @@ module multidomain_mod
                 end if
 
                 ! On the last row, any candidate boxes should be finalised
-                if( j == dims(2) .and. size(candidate_boxes) > 0) then
+                if( j == dims(2) .and. size(candidate_boxes, kind=ip) > 0) then
                     candidate_boxes(6,:) = j
                     call bind_arrays_ip(final_boxes, candidate_boxes, &
                         rowbind=.false.)
@@ -669,7 +669,7 @@ module multidomain_mod
         box_metadata = final_boxes
 
         ! Final check
-        do j = 1, size(box_metadata(1,:))
+        do j = 1, size(box_metadata(1,:), kind=ip)
             ! The logic below won't work for boxes matching 0
             ! because we don't distinguish that for priority_domain_index
             if(box_metadata(1,j) == 0) cycle
@@ -724,7 +724,7 @@ module multidomain_mod
 
         integer(ip):: nd, i, j, k, nd_local, ierr
 
-        nd_local = size(domains)
+        nd_local = size(domains, kind=ip)
 
 #ifdef COARRAY
         nd = nd_local
@@ -857,7 +857,7 @@ module multidomain_mod
 
         ! Evolve every domain, sending the data to communicate straight after
         ! the evolve
-        do j = 1, size(md%domains)
+        do j = 1, size(md%domains, kind=ip)
 
             TIMER_START('domain_evolve')
 
@@ -924,7 +924,7 @@ module multidomain_mod
         if(send_boundary_flux_data) then
             TIMER_START('nesting_flux_correction')
             ! Do flux correction
-            do j = 1, size(md%domains)
+            do j = 1, size(md%domains, kind=ip)
                 call md%domains(j)%nesting_flux_correction_everywhere(md%all_dx_md, &
                     md%all_timestepping_methods_md, fraction_of = 1.0_dp)
             end do
@@ -988,7 +988,7 @@ module multidomain_mod
         !
         !
         !ni = size(all_bbox(1,1,1,:))
-        nd = size(all_bbox, 3)
+        nd = size(all_bbox, 3, kind=ip)
         do ii = 1, ni
             do di = 1, nd
 
@@ -1000,7 +1000,7 @@ module multidomain_mod
                 if(all(bbox(:,1) == 0.0_dp) .and. &
                     all(bbox(:,2) == 0.0_dp)) cycle
 
-                do xi = 1, size(xs) 
+                do xi = 1, size(xs, kind=ip) 
                     ! Find whether xs(xi), ys(x) is inside the di'th domain on
                     ! image ii
 
@@ -1184,9 +1184,9 @@ module multidomain_mod
         if(allocated(nbr_domain_dx)) deallocate(nbr_domain_dx)
 
         ! Make space to record the domain/image index we nest with
-        allocate(nbr_domain_ind(size(xs)), &
-            nbr_image_ind(size(xs)), &
-            nbr_domain_dx(size(xs), 2))
+        allocate(nbr_domain_ind(size(xs, kind=ip)), &
+            nbr_image_ind(size(xs, kind=ip)), &
+            nbr_domain_dx(size(xs, kind=ip), 2))
 
         call find_priority_domain_containing_xy(xs, ys, nbr_domain_ind, &
             nbr_image_ind, nbr_domain_dx, error_domain_overlap_same_dx=.true.,&
@@ -1295,7 +1295,7 @@ module multidomain_mod
             kend = domain_index
         else
             kstart = 1
-            kend = size(md%domains)
+            kend = size(md%domains, kind=ip)
         end if
 
         ! Allocate the volume_work variable if it is not already allocated.
@@ -1305,7 +1305,7 @@ module multidomain_mod
 
             ! Quick exit
             if(allocated(md%volume_work)) then
-                if(size(md%volume_work) > md%domains(k)%nx(2)) cycle
+                if(size(md%volume_work, kind=ip) > md%domains(k)%nx(2)) cycle
             end if
 
             ! Either the variable is unallocated, or it is too small
@@ -1402,7 +1402,7 @@ module multidomain_mod
         nesting_buffer_size = 0
         tmp = 0
 
-        do i = 1, size(md%domains)
+        do i = 1, size(md%domains, kind=ip)
             ! This can overflow if we do not force it to be a 'long' integer!
             big_tmp = 1_int64 * md%domains(i)%nx(1) * md%domains(i)%nx(2) * &
                 md%domains(i)%nvar * real_bytes
@@ -1443,7 +1443,7 @@ module multidomain_mod
 
             ! Compute the 'exterior' boundary flux integral
             bfi = 0.0_dp
-            do i = 1, size(md%domains)
+            do i = 1, size(md%domains, kind=ip)
                 bfi = bfi + md%domains(i)%boundary_flux_time_integral_exterior
             end do
 
@@ -1554,7 +1554,7 @@ module multidomain_mod
 
         ! Name domains as " image_index * 1e+10 + original_domain_index "
         ! The naming will be implemented below -- for now, check that the naming will not overflow.
-        if(ni * large_64_int + size(md%domains) > HUGE(md%domains(1)%myid)) then
+        if(ni * large_64_int + size(md%domains, kind=int64) > HUGE(md%domains(1)%myid)) then
             write(log_output_unit, *) 'The number of images and local domains is too high for the naming convention'
             flush(log_output_unit)
             call generic_stop()
@@ -1568,18 +1568,18 @@ module multidomain_mod
 
             call read_ragged_array_2d_ip(md%load_balance_part, md%load_balance_file)
 
-            if(size(md%load_balance_part%i2) /= size(md%domains)) &
+            if(size(md%load_balance_part%i2, kind=ip) /= size(md%domains, kind=ip)) &
                 stop 'Rows in load_balance_file not equal to number of domains '
 
             ! No values < 1
-            do i = 1, size(md%load_balance_part%i2)
+            do i = 1, size(md%load_balance_part%i2, kind=ip)
                 if( minval(md%load_balance_part%i2(i)%i1) < 1 ) then
                     stop 'load_balance_file contains numbers < 1'
                 end if
             end do
 
             ! If there are values > ni, convert to the range 1-ni, with a warning
-            do i = 1, size(md%load_balance_part%i2)
+            do i = 1, size(md%load_balance_part%i2, kind=ip)
                 if( maxval(md%load_balance_part%i2(i)%i1) > ni ) then
                     write(log_output_unit, *) &
                         ' WARNING: load_balance_file contains values > num_images: converting to smaller values.'
@@ -1589,7 +1589,7 @@ module multidomain_mod
             end do
 
             ! Final check
-            do i = 1, size(md%load_balance_part%i2)
+            do i = 1, size(md%load_balance_part%i2, kind=ip)
                 if( minval(md%load_balance_part%i2(i)%i1) < 1 .or.  &
                     maxval(md%load_balance_part%i2(i)%i1) > ni) then
                     stop 'hit uncorrectable error in md%load_balance_part'
@@ -1605,8 +1605,8 @@ module multidomain_mod
         else
 
             ! By default, spread all images over all domains
-            allocate(md%load_balance_part%i2(size(md%domain_metadata)))
-            do i = 1, size(md%domain_metadata)
+            allocate(md%load_balance_part%i2(size(md%domain_metadata, kind=ip)))
+            do i = 1, size(md%domain_metadata, kind=ip)
                 allocate(md%load_balance_part%i2(i)%i1(ni))
                 do j = 1, ni
                     md%load_balance_part%i2(i)%i1(j) = j
@@ -1621,9 +1621,9 @@ module multidomain_mod
         write(log_output_unit, *) "    Integers below denote images (this_image()); each row is a domain,"
         write(log_output_unit, *) "    split into as many pieces as their are integers in the row."
         write(log_output_unit, *) "    Rows are ordered as was input to md%domains."
-        do i = 1, size(md%domain_metadata)
+        do i = 1, size(md%domain_metadata, kind=ip)
             ! This format string ensures the write is on one line, making it easy to copy the file.
-            write(my_fmt, '(a, i0, a)') "(A,", size(md%load_balance_part%i2(i)%i1), "I5)"
+            write(my_fmt, '(a, i0, a)') "(A,", size(md%load_balance_part%i2(i)%i1, kind=ip), "I5)"
             write(log_output_unit, my_fmt) '    ', md%load_balance_part%i2(i)%i1
         end do
         write(log_output_unit, *) " "
@@ -1631,7 +1631,7 @@ module multidomain_mod
 
         ! Count how many domains we need on the current image
         nd = 0
-        do i = 1, size(md%load_balance_part%i2)
+        do i = 1, size(md%load_balance_part%i2, kind=ip)
             nd = nd + count( md%load_balance_part%i2(i)%i1 == ti )
         end do
         ! Make space for nd domains
@@ -1640,9 +1640,9 @@ module multidomain_mod
 
         ! Split the originally provided domains 
         next_d = 0
-        do i = 1, size(md%domain_metadata)
+        do i = 1, size(md%domain_metadata, kind=ip)
             ! Number of pieces that we split the i'th domain into
-            local_ni = size(md%load_balance_part%i2(i)%i1)
+            local_ni = size(md%load_balance_part%i2(i)%i1, kind=ip)
 
             ! Loop over each piece
             do j = 1, local_ni
@@ -1791,7 +1791,7 @@ module multidomain_mod
         global_max_speed = 0.0_dp 
         global_min_speed = 0.0_dp
 
-        do k = 1, size(md%domains)
+        do k = 1, size(md%domains, kind=ip)
 
             if(.not. only_global_stats) then
                 write(log_output_unit,"(A)") ''
@@ -1966,13 +1966,13 @@ module multidomain_mod
 
         !!!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md)
         !!!$OMP DO SCHEDULE(DYNAMIC)
-        do j = 1, size(md%domains)
+        do j = 1, size(md%domains, kind=ip)
 #ifdef TIMER
             call md%domains(j)%timer%timer_start('receive_halos')
 #endif
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, j)
             !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(md%domains(j)%nesting%recv_comms)
+            do i = 1, size(md%domains(j)%nesting%recv_comms, kind=ip)
 
                 !! Avoid use of type-bound-procedure in openmp region
                 !call md%domains(j)%nesting%recv_comms(i)%process_received_data(md%domains(j)%U)
@@ -1998,12 +1998,12 @@ module multidomain_mod
                     do jj = jL, jU
 
                         ! jj+1, avoiding out-of-bounds
-                        jp1 = min(jj+1, size(md%domains(j)%U, 2))
+                        jp1 = min(jj+1, size(md%domains(j)%U, 2, kind=ip))
 
                         do ii = iL, iU
 
                             ! ii+1, avoiding out-of-bounds
-                            ip1 = min(ii+1, size(md%domains(j)%U, 1))
+                            ip1 = min(ii+1, size(md%domains(j)%U, 1, kind=ip))
 
                             ! Condition for zero EW flux on staggered grid
                             if( (md%domains(j)%U(ii,jj,ELV) >= elev_lim) .or. &
@@ -2054,7 +2054,7 @@ module multidomain_mod
 
         integer(ip):: i
 
-        do i = 1, size(md%volume_initial)        
+        do i = 1, size(md%volume_initial, kind=ip)        
             call md%get_flow_volume(md%volume_initial(i), i)
         end do
 
@@ -2085,7 +2085,7 @@ module multidomain_mod
             jmx = domain_index
         else
             jmn = 1
-            jmx = size(md%domains)
+            jmx = size(md%domains, kind=ip)
         end if
 
         if(present(send_to_recv_buffer)) then
@@ -2109,7 +2109,7 @@ module multidomain_mod
             !!! So comment out openmp here. Also, ifort19 seg-faulted when I used openmp here, at least with -heap-arrays
             !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, j, send_to_recv_buffer_local)
             !!$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(md%domains(j)%nesting%send_comms)
+            do i = 1, size(md%domains(j)%nesting%send_comms, kind=ip)
 
                 call md%domains(j)%nesting%send_comms(i)%process_data_to_send(md%domains(j)%U)
                 call md%domains(j)%nesting%send_comms(i)%send_data(send_to_recv_buffer=send_to_recv_buffer_local)
@@ -2147,13 +2147,13 @@ module multidomain_mod
 
 
         ! Search all domains
-        do j = 1, size(md%domains)
+        do j = 1, size(md%domains, kind=ip)
 
             ! Quick exit
             if(.not. allocated(md%domains(j)%nesting%recv_comms)) cycle
 
-            nx = size(md%domains(j)%nesting%priority_domain_index, 1)
-            ny = size(md%domains(j)%nesting%priority_domain_index, 2)
+            nx = size(md%domains(j)%nesting%priority_domain_index, 1, kind=ip)
+            ny = size(md%domains(j)%nesting%priority_domain_index, 2, kind=ip)
 
             if(md%domains(j)%max_parent_dx_ratio > 1_ip) then
                 ! Separate this much from halos -- must be a multiple of md%domains(j)%max_parent_dx_ratio
@@ -2164,7 +2164,7 @@ module multidomain_mod
             end if
 
             ! Search the recv comms
-            do i = 1, size(md%domains(j)%nesting%recv_comms)
+            do i = 1, size(md%domains(j)%nesting%recv_comms, kind=ip)
 
                 ! Look for recv_comms where a fine domain receives
                 if(.not. (md%domains(j)%nesting%recv_comms(i)%recv_active .and. &
@@ -2240,7 +2240,7 @@ module multidomain_mod
             ignore_linear_local = .false.
         end if 
 
-        do j = 1, size(md%domains)
+        do j = 1, size(md%domains, kind=ip)
 
             ! Quick exit
             if(.not. allocated(md%domains(j)%nesting%recv_metadata)) cycle
@@ -2252,7 +2252,7 @@ module multidomain_mod
                  .and. ignore_linear_local) cycle
 
             ! Loop over recv_metadata boxes
-            do i = 1, size(md%domains(j)%nesting%recv_metadata, 2)
+            do i = 1, size(md%domains(j)%nesting%recv_metadata, 2, kind=ip)
 
                 ! Check for null region
                 if( (md%domains(j)%nesting%recv_metadata(1, i) == null_index) .and. &
@@ -2369,7 +2369,7 @@ module multidomain_mod
         end if
 
         ! Make sure 'dx' has been defined for all domains
-        do i = 1, size(md%domains)
+        do i = 1, size(md%domains, kind=ip)
             md%domains(i)%dx = md%domains(i)%lw/(1.0_dp * md%domains(i)%nx)
         end do
 
@@ -2377,7 +2377,7 @@ module multidomain_mod
         call md%partition_domains()
 
         ! Make sure all domains use the new output_basedir 
-        do i = 1, size(md%domains)
+        do i = 1, size(md%domains, kind=ip)
             md%domains(i)%output_basedir = md%output_basedir
             ! Make output folders. This involves system calls and forks, so we should do it before allocating lots of memory
             call md%domains(i)%create_output_folders(copy_code=(i==1))
@@ -2396,7 +2396,7 @@ module multidomain_mod
             all_timestepping_methods_md = md%all_timestepping_methods_md)
 
         ! Storage space for mass conservation
-        allocate(md%volume_initial(size(md%domains)), md%volume(size(md%domains)))
+        allocate(md%volume_initial(size(md%domains, kind=ip)), md%volume(size(md%domains, kind=ip)))
     
         md%volume_initial = 0.0_dp
         md%volume = 0.0_dp
@@ -2499,7 +2499,7 @@ module multidomain_mod
             use_wetdry_limiting = .true.
         end if
 
-        nd_local = size(domains)
+        nd_local = size(domains, kind=ip)
         nd_global = nd_local
 #ifdef COARRAY
         call co_max(nd_global)
@@ -2580,7 +2580,7 @@ module multidomain_mod
             ! Also convenient to have a x/y row-wise coordinate vector
             call get_domain_xs_ys(domains(j), xc_tmp, yc_tmp)
             if(allocated(y_tmp)) deallocate(y_tmp)
-            allocate(y_tmp(size(xc_tmp)))
+            allocate(y_tmp(size(xc_tmp, kind=ip)))
 
             ! Loop over each column (i.e. with fixed y coordinate) and for each
             ! cell, find the priority domain index and corresponding image in
@@ -2700,7 +2700,7 @@ module multidomain_mod
 
             counter = 0 ! Keep track of 'real' receive indices -- i.e. those that communicate with another domain/image
     
-            do i = 1, size(domains(j)%nesting%recv_metadata, 2)
+            do i = 1, size(domains(j)%nesting%recv_metadata, 2, kind=ip)
 
                 ! Domain index and image that is needed for box i [as reals, even though the values are integer]
                 local_metadata([IND,IMG],i,j) = 1.0_dp * domains(j)%nesting%recv_metadata([IND,IMG], i)
@@ -2770,9 +2770,9 @@ module multidomain_mod
 
             ! Fill the send metadata
             counter = 0
-            do k = 1, size(all_recv_metadata, 4) ! Number of images
-                do jj = 1, size(all_recv_metadata,3) ! Number of domains
-                    do i = 1, size(all_recv_metadata,2) ! Every row in the receive metadata
+            do k = 1, size(all_recv_metadata, 4, kind=ip) ! Number of images
+                do jj = 1, size(all_recv_metadata,3, kind=ip) ! Number of domains
+                    do i = 1, size(all_recv_metadata,2, kind=ip) ! Every row in the receive metadata
 
                         ! Find 'recvs' which need to get data from this index/image
                         if(all_recv_metadata(IND,i,jj,k) == j .and. all_recv_metadata(IMG,i,jj,k) == ti) then
@@ -2820,9 +2820,9 @@ module multidomain_mod
         do ims = 1, ni
             do j = 1, nd_global
                 counter = 0
-                do k = 1, size(all_recv_metadata, 4) ! Number of images
-                    do jj = 1, size(all_recv_metadata,3) ! Number of domains
-                        do i = 1, size(all_recv_metadata,2) ! Every row in the receive metadata
+                do k = 1, size(all_recv_metadata, 4, kind=ip) ! Number of images
+                    do jj = 1, size(all_recv_metadata,3, kind=ip) ! Number of domains
+                        do i = 1, size(all_recv_metadata,2, kind=ip) ! Every row in the receive metadata
                             ! Tell all_recv_metadata the row index in send_metadata
                             if(all_recv_metadata(IND,i,jj,k) == j .and. all_recv_metadata(IMG,i,jj,k) == ims) then
                                 counter = counter + 1 
@@ -2842,9 +2842,9 @@ module multidomain_mod
         write(log_output_unit, *) 'recv_from_domain_index, recv_from_image_index, xlo, xhi,', &
                                   ' ylo, yhi, send_metadata_row_index, recv_comms_index'
         do k = 1, ni
-            do j = 1, size(all_recv_metadata, 3) 
+            do j = 1, size(all_recv_metadata, 3, kind=ip) 
                 write(log_output_unit, *) '    image ', k, ', domain ', j
-                do i = 1, size(all_recv_metadata, 2)
+                do i = 1, size(all_recv_metadata, 2, kind=ip)
                     write(log_output_unit, *) '      ', all_recv_metadata(:,i,j,k)
                 end do
             end do
@@ -2877,7 +2877,7 @@ module multidomain_mod
 
             counter = 0 ! Keep track of 'true sends', as opposed to rows that don't need sends
 
-            do i = 1, size(domains(j)%nesting%send_metadata, 2)
+            do i = 1, size(domains(j)%nesting%send_metadata, 2, kind=ip)
 
                 ! Domain index and image that is needed for box i [as reals, even though the values are integer]
                 local_metadata([IND, IMG],i,j) = 1.0_dp * domains(j)%nesting%send_metadata([IND, IMG], i)
@@ -2929,9 +2929,9 @@ module multidomain_mod
         write(log_output_unit, *) 'send_to_domain_index, send_to_image_index, xlo, xhi,', &
                                   ' ylo, yhi, recv_metadata_row_index, counter'
         do k = 1, ni
-            do j = 1, size(all_send_metadata, 3) 
+            do j = 1, size(all_send_metadata, 3, kind=ip) 
                 write(log_output_unit, *) '    ', k, j
-                do i = 1, size(all_send_metadata, 2)
+                do i = 1, size(all_send_metadata, 2, kind=ip)
                     write(log_output_unit, *) '      ', all_send_metadata(:,i,j,k)
                 end do
             end do
@@ -2954,7 +2954,7 @@ module multidomain_mod
             ! Loop over rows of all_send_metadata(:,:,j,ti), and set up the
             ! send comms if required
             counter = 0
-            do i = 1, size(all_send_metadata, 2)
+            do i = 1, size(all_send_metadata, 2, kind=ip)
 
                 if(all_send_metadata(8,i,j,ti) < 1) cycle
 
@@ -3042,7 +3042,7 @@ module multidomain_mod
             ! Loop over rows of all_recv_metadata(:,:,j,ti), and set up the
             ! recv comms if required
             counter = 0
-            do i = 1, size(all_recv_metadata, 2)
+            do i = 1, size(all_recv_metadata, 2, kind=ip)
 
                 if(all_recv_metadata(8,i,j,ti) < 1) cycle
 
@@ -3135,7 +3135,8 @@ module multidomain_mod
         ! Cannot just have it in the multidomain from the start, because it might be a coarray
         if(allocated(all_timestepping_methods)) then
             if(allocated(all_timestepping_methods_md)) deallocate(all_timestepping_methods_md)
-            allocate(all_timestepping_methods_md(size(all_timestepping_methods, 1), size(all_timestepping_methods,2)))
+            allocate(all_timestepping_methods_md(size(all_timestepping_methods, 1, kind=ip), &
+                                                 size(all_timestepping_methods, 2, kind=ip)))
             all_timestepping_methods_md = all_timestepping_methods
             deallocate(all_timestepping_methods)
         end if
@@ -3144,7 +3145,7 @@ module multidomain_mod
         ! Cannot just have it in the multidomain from the start, because it might be a coarray
         if(allocated(all_dx)) then
             if(allocated(all_dx_md)) deallocate(all_dx_md)  
-            allocate( all_dx_md(2, size(all_dx, 2), size(all_dx,3)) )
+            allocate( all_dx_md(2, size(all_dx, 2, kind=ip), size(all_dx,3, kind=ip)) )
             all_dx_md = all_dx
             deallocate(all_dx)
         end if
@@ -3162,7 +3163,7 @@ module multidomain_mod
         integer(ip) :: j
 
         timestep = HUGE(1.0_dp)
-        do j = 1, size(md%domains)
+        do j = 1, size(md%domains, kind=ip)
             timestep = min(timestep, md%domains(j)%stationary_timestep_max())
         end do
 
@@ -3195,7 +3196,7 @@ module multidomain_mod
 
         integer(ip) :: nd, j
 
-        nd = size(md%domains)
+        nd = size(md%domains, kind=ip)
 
         ! Loop over domains
         do j = 1, nd
@@ -3213,7 +3214,7 @@ module multidomain_mod
         integer(ip) :: i
 
         ! Print out timing info for each
-        do i = 1, size(md%domains)
+        do i = 1, size(md%domains, kind=ip)
             write(log_output_unit, "(A)") ''
             write(log_output_unit, "(A,I6,A)") 'Timer of md%domains(', i, ')'
             write(log_output_unit, "(A)") trim(md%domains(i)%output_folder_name)
@@ -3261,14 +3262,14 @@ module multidomain_mod
         end if
 
         if(present(time_var)) then
-            allocate(time_var_local(size(time_var)))
+            allocate(time_var_local(size(time_var, kind=ip)))
             time_var_local = time_var
         else
             time_var_local = [STG, UH, VH]
         end if
 
         if(present(static_var)) then
-            allocate(static_var_local(size(static_var)))
+            allocate(static_var_local(size(static_var, kind=ip)))
             static_var_local = static_var
         else
             static_var_local = [ELV]
@@ -3284,7 +3285,7 @@ module multidomain_mod
         write(log_output_unit,*) '    ... have read file, point_gauges dimensions are', shape(point_gauges)
         flush(log_output_unit)
 
-        if(size(point_gauges, dim=1) /= 3) then
+        if(size(point_gauges, dim=1, kind=ip) /= 3) then
             write(log_output_unit, *) 'ERROR: First dimensions of point_gauges should have size=3.'
             write(log_output_unit, *) '       Either change the point_gauges_csv_file to have 3 columns (x,y,gaugeID)'
             write(log_output_unit, *) '       or manually set hazard points for each domain with domain%setup_point_gauges'
@@ -3292,7 +3293,7 @@ module multidomain_mod
             call generic_stop
         end if
 
-        do j = 1, size(md%domains)
+        do j = 1, size(md%domains, kind=ip)
             call md%domains(j)%setup_point_gauges(point_gauges(1:2,:), &
                 time_series_var=time_var_local, static_var=static_var_local, &
                 gauge_ids = point_gauges(3,:))
@@ -3377,7 +3378,7 @@ module multidomain_mod
             ! Grids
             if(mod(md%writeout_counter, write_grids_n) == 0) then
                 !!$OMP PARALLEL DO DEFAULT(SHARED)
-                do j = 1, size(md%domains)
+                do j = 1, size(md%domains, kind=ip)
                     call md%domains(j)%write_to_output_files()
                 end do
                 !!$OMP END PARALLEL DO
@@ -3386,7 +3387,7 @@ module multidomain_mod
             ! Gauges
             if(mod(md%writeout_counter, write_gauges_n) == 0) then
                 !!$OMP PARALLEL DO DEFAULT(SHARED)
-                do j = 1, size(md%domains)
+                do j = 1, size(md%domains, kind=ip)
                     call md%domains(j)%write_gauge_time_series()
                 end do
                 !!$OMP END PARALLEL DO
@@ -3604,7 +3605,7 @@ __FILE__
             ! Loop over all domains
             do i = 1, 4
                 ! Loop over all rows in nesting%recv_metadata
-                do j = 1, size(md%domains(i)%nesting%recv_metadata(1,:))
+                do j = 1, size(md%domains(i)%nesting%recv_metadata(1,:), kind=ip)
 
                     ! Row i
                     ri = md%domains(i)%nesting%recv_metadata(:,j)                
@@ -3821,7 +3822,7 @@ __FILE__
         call md%setup()
 
         ! Set initial conditions
-        do k = 1, size(md%domains)
+        do k = 1, size(md%domains, kind=ip)
             do j = 1, md%domains(k)%nx(2)
                 do i = 1, md%domains(k)%nx(1)
                     ! Make up some data
