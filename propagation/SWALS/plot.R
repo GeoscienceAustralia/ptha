@@ -1594,6 +1594,8 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
 
 #' Energy-type computations for leapfrog-type solvers that have "domain%linear_solver_is_truely_linear=.TRUE."
 #'
+#' FIXME: Update this to treat cases other than the linear shallow water equations.
+#'
 #' @param domain_dir the domain directory
 #' @param spherical Is the domain spherical?
 #' @param radius_earth radius of the earth in m
@@ -1693,5 +1695,27 @@ get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, radius_ear
     output = list(times=times, energy_total=energy_tot*water_density, 
         energy_potential=energy_pot_on_rho*water_density, 
         energy_kinetic=energy_kin_on_rho*water_density)
+    return(output)
+}
+
+#
+# Apply get_energy_truely_linear_domain to a multidomain
+# FIXME: Update this to cases other than linear
+#
+get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
+
+    all_domain_dirs = Sys.glob(paste0(multidomain_dir, '/RUN*'))
+
+    if(length(all_domain_dirs) < 1){
+        stop(paste0('Could not find any domain directories beginning with RUN* in ', multidomain_dir))
+    }
+
+    library(parallel)
+
+    all_energies = mclapply(all_domain_dirs, get_energy_truely_linear_domain, mc.preschedule=FALSE, mc.cores=24)
+    all_energy = all_energies[[1]]$energy_total
+    for(i in 2:length(all_energies)) all_energy = all_energy + all_energies[[i]]$energy_total
+
+    output = list(time = all_energies[[1]]$time, energy_total = all_energy, all_domain_energies=all_energies)
     return(output)
 }
