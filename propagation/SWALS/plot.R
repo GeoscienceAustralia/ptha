@@ -1614,7 +1614,9 @@ get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, radius_ear
     deg2rad = pi/180
 
     library(ncdf4)
-    fid = nc_open(paste0(domain_dir, "/Grid_output_ID00000000000000000001.nc"))
+    target_file = Sys.glob(paste0(domain_dir, "/Grid_output_ID*.nc"))
+    if(length(target_file) != 1) stop(paste0('Did not find exactly one Grid_output_ID*.nc file in ', domain_dir))
+    fid = nc_open(target_file)
     elev = ncvar_get(fid, 'elevation0')
     ys = ncvar_get(fid, 'y')
     xs = ncvar_get(fid, 'x')
