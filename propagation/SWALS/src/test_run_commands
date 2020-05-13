@@ -7,4 +7,5 @@
 
 source ${SWALS_SRC}/test_run_commands_basic
 #source ${SWALS_SRC}/test_run_commands_gadi_1node
+#source ${SWALS_SRC}/test_run_commands_gadi_halfnode
 

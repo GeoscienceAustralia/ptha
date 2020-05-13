@@ -11,11 +11,11 @@
 # those files from the information below. For now keep 6 mpi processes, but
 # optionally change the number of openmp threads
 
-export OMP_RUN_COMMAND='OMP_NUM_THREADS=48 OMP_PROC_BIND=true '
+export OMP_RUN_COMMAND='OMP_NUM_THREADS=24 OMP_PROC_BIND=true '
 
-export CAF_RUN_COMMAND='OMP_NUM_THREADS=8 mpiexec -n 6 --map-by ppr:6:node:PE=8 '
+export CAF_RUN_COMMAND='OMP_NUM_THREADS=4 OMP_PROC_BIND=true mpiexec -n 6 --map-by ppr:6:node:PE=4 '
 
 # These calls are used for a parallel reproducibility check that splits the domain in 4.
-export CAF_RUN_COMMAND_ONE_IMAGE='OMP_NUM_THREADS=48 mpiexec -n 1 --map-by ppr:1:node:PE=48 '
-export CAF_RUN_COMMAND_FOUR_IMAGES='OMP_NUM_THREADS=12 mpiexec -n 4 --map-by ppr:4:node:PE=12 '
+export CAF_RUN_COMMAND_ONE_IMAGE='OMP_NUM_THREADS=24 OMP_PROC_BIND=true mpiexec -n 1 --map-by ppr:1:node:PE=24 '
+export CAF_RUN_COMMAND_FOUR_IMAGES='OMP_NUM_THREADS=6 OMP_PROC_BIND=true mpiexec -n 4 --map-by ppr:4:node:PE=6 '
 
