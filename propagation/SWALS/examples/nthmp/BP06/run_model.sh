@@ -1,4 +1,4 @@
-export SWALS_SRC='../../src'
+export SWALS_SRC='../../../src'
 source ${SWALS_SRC}/test_run_commands
 
 # Clean existing binary
