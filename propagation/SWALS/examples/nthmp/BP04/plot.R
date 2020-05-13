@@ -1,4 +1,6 @@
 source('../../../plot.R')
+# Since we call SWALS from inside R, let's pass the openmp commands.
+omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
 
 #
 # First standard test case
@@ -159,7 +161,8 @@ for(NJOB in 1:ncase){
     attach(MODEL_CASE, warn.conflicts=FALSE)
 
     # Run the model
-    system(paste0('./BP4_testcases "rk2" ', d, ' ', h_on_d))
+    system(paste0(omp_run_command, ' ./BP4_testcases "rk2" ', d, ' ', h_on_d))
+    #system(paste0('./BP4_testcases "leapfrog_nonlinear" ', d, ' ', h_on_d))
 
     # Get time-series at 2 locations
     # Avoid noisy messages about IO

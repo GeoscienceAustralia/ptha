@@ -1,10 +1,13 @@
 source('../../../plot.R')
+# Since we call SWALS from inside R, let's pass the openmp commands.
+omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
+
 
 numerical_methods = c('rk2', 'leapfrog_nonlinear')
 
 for(numerical_method in numerical_methods){
 
-    run_command = paste0('./BP1_testcases ', numerical_method, ' 1.0 0.019 > outfile.log')
+    run_command = paste0(omp_run_command, ' ./BP1_testcases ', numerical_method, ' 1.0 0.019 > outfile.log')
     system(run_command)
 
     ERR_TOL = 1.0e-02

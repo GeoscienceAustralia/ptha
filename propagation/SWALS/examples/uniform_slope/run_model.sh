@@ -1,10 +1,13 @@
+export SWALS_SRC='../../src'
+source ${SWALS_SRC}/test_run_commands
+
 # Clean existing binary
 rm ./uniform_slope ./outfile.log
 rm -r ./OUTPUTS
 # Build the code
 make -B -f make_uniform_slope > build_outfile.log
 # Run the job
-./uniform_slope 'rk2' > outfile.log
+eval "$OMP_RUN_COMMAND ./uniform_slope 'rk2' > outfile.log"
 # Report tests
 Rscript plot_results.R
 
@@ -18,6 +21,6 @@ Rscript plot_results.R
 rm ./outfile.log
 rm -r ./OUTPUTS
 # Run the job
-./uniform_slope 'leapfrog_linear_plus_nonlinear_friction' > outfile.log
+eval "$OMP_RUN_COMMAND ./uniform_slope 'leapfrog_linear_plus_nonlinear_friction' > outfile.log"
 # Report tests
 Rscript plot_results.R

@@ -3,6 +3,8 @@
 # Conical Island experiment
 #
 source('../../../plot.R')
+# Since we call SWALS from inside R, let's pass the openmp commands.
+omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
 
 # Case A is optional in the current NTHMP. 
 # For Case A, we get 'relatively high' runup compared to the observations,
@@ -36,7 +38,7 @@ for(model_run in 1:length(forcing_cases)){
     forcing_case_name = forcing_cases_name[model_run]
 
     # Run the model
-    system(paste0('./BP06 ', forcing_case, ' > outfile.log'))
+    system(paste0(omp_run_command, ' ./BP06 ', forcing_case, ' > outfile.log'))
 
     #
     # Get the multidomain

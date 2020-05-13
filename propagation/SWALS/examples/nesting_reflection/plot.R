@@ -1,11 +1,14 @@
 source('../../plot.R')
 
+# Since we call SWALS from inside R, let's pass the openmp commands.
+omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
+
 ts_methods = c('rk2', 'midpoint', 'linear', 'leapfrog_nonlinear')
 
 for(ts_method in ts_methods){
 
     # Run the model
-    system(paste0('./nesting_reflection ', ts_method, ' > outfile.log'))
+    system(paste0(omp_run_command, ' ./nesting_reflection ', ts_method, ' > outfile.log'))
 
     # Read the recent data
     my_dir = rev(Sys.glob('OUTPUTS/RUN*'))[1]

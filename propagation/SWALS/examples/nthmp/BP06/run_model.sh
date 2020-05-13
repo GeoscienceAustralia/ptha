@@ -1,3 +1,6 @@
+export SWALS_SRC='../../src'
+source ${SWALS_SRC}/test_run_commands
+
 # Clean existing binary
 rm ./BP06
 rm -r ./OUTPUTS

@@ -1,4 +1,6 @@
 source('../../../plot.R')
+# Since we call SWALS from inside R, let's pass the openmp commands.
+omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
 
 ERR_TOL = 1.0e-02
 
@@ -13,7 +15,7 @@ show_obs = TRUE #FALSE
 
 for(i in 1:length(test_cases)){
 
-    run_command = paste0('./BP2_testcases case', test_cases_caps[i], ' ', timestepping_method, ' > outfile.log')
+    run_command = paste0(omp_run_command, ' ./BP2_testcases case', test_cases_caps[i], ' ', timestepping_method, ' > outfile.log')
     system(run_command)
 
     x = get_all_recent_results(quiet=TRUE)
