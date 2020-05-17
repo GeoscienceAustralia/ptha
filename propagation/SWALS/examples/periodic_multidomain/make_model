@@ -1,12 +1,8 @@
 # SOURCE CODE DIRECTORY relative to the current directory
 SWALS_SRC := ../../src
 
-## For coarray parallel we can do
-SWALS_FC = caf
-SWALS_PREPROCESSOR_FLAGS = -DCOARRAY -DSPHERICAL
-
-## For non-coarray, just to this
-# SWALS_PREPROCESSOR_FLAGS = -DSPHERICAL -DTIMER
+SWALS_PREPROCESSOR_FLAGS = -DTIMER -DSPHERICAL
+SWALS_BUILD_WITH_PARALLEL_DEFAULTS = true
 
 include $(SWALS_SRC)/src_standard_compiler_var
 

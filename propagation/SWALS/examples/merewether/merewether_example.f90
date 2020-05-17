@@ -10,12 +10,14 @@ module local_routines
     use ragged_array_mod, only: ragged_array_2d_ip_type
     use file_io_mod, only: read_character_file, read_csv_into_array
     use points_in_poly_mod, only: points_in_poly
+    use iso_c_binding, only: c_f_pointer, c_loc
     implicit none
 
     ! Add rain
     ! Discharge of 19.7 m^3/s occurs over a cirle with radius 15
     real(dp), parameter :: rain_centre(2) = [382300.0_dp, 6354290.0_dp], rain_radius = 15.0_dp
     real(force_double) :: rain_rate =  real(19.7_dp, force_double)/(pi * rain_radius**2)
+    integer(ip) :: num_input_discharge_cells
 
     contains 
 
@@ -42,6 +44,8 @@ module local_routines
         integer(ip):: house_file_unit, inside_point_counter, house_cell_count
         real(dp), allocatable:: polygon_coords(:,:)
         logical, allocatable:: is_inside_poly(:)
+        type(ragged_array_2d_ip_type), pointer :: rainfall_region_indices
+        integer(ip), allocatable :: i_inside(:)
 
 
         allocate(x(domain%nx(1),domain%nx(2)), y(domain%nx(1),domain%nx(2)))
@@ -149,8 +153,23 @@ module local_routines
         print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
         print*, 'Stage range: ', minval(domain%U(:,:,STG)), maxval(domain%U(:,:,STG))
 
-    end subroutine
 
+        ! Figure out indices that are inside the rainfall forcing region.
+        allocate(rainfall_region_indices)
+        allocate(rainfall_region_indices%i2(domain%nx(2)))
+        num_input_discharge_cells = 0
+        do j = 1, domain%nx(2)
+            ! Find cells in this row that are within the rain circle
+            call which( (domain%x - rain_centre(1))**2 < rain_radius**2 - (domain%y(j) - rain_centre(2))**2, &
+                rainfall_region_indices%i2(j)%i1)
+
+            ! For this routine we cross-check conservation by counting the number of input discharge cells and
+            ! doing a separate mass balance. This assumes 1 domain (only)
+            num_input_discharge_cells = num_input_discharge_cells + size(rainfall_region_indices%i2(j)%i1)
+        end do
+        domain%forcing_context_cptr = c_loc(rainfall_region_indices)
+
+    end subroutine
 
     !
     ! This is the discharge source term, called every time-step. It's like rainfall 
@@ -160,25 +179,27 @@ module local_routines
         type(domain_type), intent(inout) :: domain
         real(dp), intent(in) :: dt
 
-        integer(ip) :: j, i
-        real(dp) :: dy_sq
+        integer(ip) :: j
+        type(ragged_array_2d_ip_type), pointer :: rainfall_region_indices
 
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, rain_rate, dt)
+        ! Unpack the forcing context pointer. In this case it is a ragged array giving the indices
+        ! where we should apply the rainfall in this domain
+        call c_f_pointer(domain%forcing_context_cptr, rainfall_region_indices)
+
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, rain_rate, dt, rainfall_region_indices)
         !$OMP DO SCHEDULE(STATIC)
         do j = 1, domain%nx(2)
-            dy_sq = (domain%y(j) - rain_centre(2))**2
-            if( dy_sq < rain_radius**2 ) then
+            if(size(rainfall_region_indices%i2(j)%i1) > 0) then
                 ! Rainfall at cells within a circle of radius "rain_radius" about "rain_centre"
-                where( (domain%x - rain_centre(1))**2  < (rain_radius**2 - dy_sq) )
-                        domain%U(:,j,STG) = domain%U(:,j,STG) + rain_rate*dt
-                end where
+                domain%U(    rainfall_region_indices%i2(j)%i1, j,STG) = rain_rate * dt + &
+                    domain%U(rainfall_region_indices%i2(j)%i1, j,STG) 
             end if
         end do
         !$OMP END DO
         !$OMP END PARALLEL
 
-
     end subroutine
+
 
 end module 
 
@@ -215,7 +236,6 @@ program merewether
     logical, parameter:: reflective_boundaries = .FALSE.
     ! Track mass
     real(force_double) :: volume_added, volume_initial
-    integer(ip) :: num_input_discharge_cells
     ! Use a small time step at the start
     real(dp) :: startup_timestep = 0.05_dp
     real(dp) :: startup_time = 10.0_dp
@@ -238,14 +258,6 @@ program merewether
     call domain%update_boundary()
     volume_initial = domain%mass_balance_interior()
     
-    ! Count the input discharge indices
-    num_input_discharge_cells = 0
-    do j = 1, domain%nx(2)
-        num_input_discharge_cells = num_input_discharge_cells + count(&
-            ((domain%x - rain_centre(1))**2 + (domain%y(j) - rain_centre(2))**2) < rain_radius**2)
-    end do
-    print*, '# discharge indices :', num_input_discharge_cells
-
     ! Trick to get the code to write out just after the first timestep
     last_write_time = -approximate_writeout_frequency
 

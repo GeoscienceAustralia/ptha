@@ -11,7 +11,7 @@
     !    class(domain_type), intent(inout):: domain
     !    real(dp), intent(in):: dt !! Timestep to advance
         
-        real(dp):: inv_cell_area_dt, depth, implicit_factor, dt_gravity, fs, power_depth
+        real(dp):: inv_cell_area_dt, depth, implicit_factor, dt_gravity, fs
         integer(ip):: j, i, kk
 
         domain%dt_last_update = dt

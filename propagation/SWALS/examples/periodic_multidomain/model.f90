@@ -6,17 +6,24 @@ module local_routines
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use logging_mod, only: log_output_unit
+    use forcing_mod, only: forcing_patch_type, apply_forcing_patch
+    use iso_c_binding, only: c_loc, c_f_pointer
     implicit none
 
     contains 
 
-    subroutine set_initial_conditions(domain, stage_file)            
+    subroutine set_initial_conditions(domain, stage_file, rise_time)            
         class(domain_type), intent(inout):: domain
         character(len=charlen), intent(in) :: stage_file
+        real(dp), intent(in) :: rise_time
+
         integer(ip):: i, j
         character(len=charlen):: input_elevation(1), input_stage(1)
-        real(dp), allocatable:: x(:), y(:)
         type(multi_raster_type):: elevation_data, stage_data
+        real(dp), allocatable:: x(:), y(:)
+        type(forcing_patch_type), pointer :: forcing_context
+            ! Use the forcing_context to optionally apply the stage deformation over time
+        integer :: i0, i1, j0, j1
 
         ! Stage
         domain%U(:,:,STG) = 0.0e-0_dp
@@ -52,10 +59,53 @@ module local_routines
             !    if(domain%U(i,j,ELV) < (-HUGE(1.0_dp)*0.99_dp) ) print*, i,j,x(i), y(j)
             !end do
 
-
         end do
         call elevation_data%finalise()
         call stage_data%finalise()
+
+        if(rise_time > 0.0_dp) then
+            ! If a non-zero rise time was used, then create the forcing context to apply the stage perturbation over time.
+            ! This is an object which contains the stage perturbations (and optionally ELV/UH/VH perturbations),
+            ! and the start-time and end-time over which it is applied.
+            allocate(forcing_context)
+
+            ! Find the region where the stage deformation applies
+            i0 = count(domain%x <= stage_data%lowerleft(1))
+            i1 = count(domain%x <= stage_data%upperright(1))
+            j0 = count(domain%y <= stage_data%lowerleft(2))
+            j1 = count(domain%y <= stage_data%upperright(2))
+
+            if(i0 < i1 .and. j0 < j1) then
+                ! The domain overlaps with the stage raster, so we need to apply the forcing.
+
+                forcing_context%i0 = i0
+                forcing_context%i1 = i1
+                forcing_context%j0 = j0
+                forcing_context%j1 = j1
+
+                ! Set the forcing work to be equal to the stage deformation
+                allocate(forcing_context%forcing_work(i0:i1, j0:j1, STG:ELV))
+                forcing_context%forcing_work(i0:i1,j0:j1,STG) = domain%U(i0:i1, j0:j1, STG)
+                forcing_context%forcing_work(i0:i1,j0:j1,ELV) = 0.0_dp !domain%U(i0:i1, j0:j1, STG)
+                forcing_context%forcing_work(:,:,UH:VH) = 0.0_dp
+
+                ! Define the time over which the forcing occurs
+                forcing_context%start_time = 0.0_dp
+                forcing_context%end_time = rise_time
+
+                ! Store the forcing context inside the domain
+                domain%forcing_context_cptr = c_loc(forcing_context)
+                forcing_context => NULL()
+                ! Define the forcing subroutine
+                domain%forcing_subroutine => apply_forcing_patch
+                ! Re-set the stage deformation to zero, because now we will apply it as a forcing_subroutine
+                domain%U(:,:,STG) = 0.0_dp
+            else
+                deallocate(forcing_context)
+            end if
+
+        end if
+
 
         ! Wall boundaries N/S
         domain%U(:,1:2,ELV) = 100.0_dp
@@ -98,6 +148,7 @@ program periodic_multidomain
     use timer_mod
     use logging_mod, only: log_output_unit, send_log_output_to_file
     use stop_mod, only: generic_stop
+    use coarray_intrinsic_alternatives, only: swals_mpi_init, swals_mpi_finalize
     use iso_c_binding, only: C_DOUBLE !, C_INT, C_LONG
     implicit none
 
@@ -130,11 +181,23 @@ program periodic_multidomain
 
     ! Useful misc variables
     integer(ip):: j, i, nd
-    character(len=charlen) :: stage_file, model_name
+    real(dp) :: rise_time
+    character(len=charlen) :: stage_file, model_name, rise_time_char
+
+    call swals_mpi_init
 
     ! Assume the stage file was passed to the command line
     call get_command_argument(1, stage_file)
+    ! Name for the model output folder, passed to the command line
     call get_command_argument(2, model_name)
+    ! The "rise time" for the earthquake in seconds, optionally passed to the commandline
+    call get_command_argument(3, rise_time_char)
+    if(rise_time_char == '') then
+        rise_time = 0.0_dp
+    else
+        read(rise_time_char, *) rise_time
+    end if
+
 
     ! Set the model name
     md%output_basedir = './OUTPUTS/' // trim(model_name)
@@ -189,7 +252,7 @@ program periodic_multidomain
 
     ! Set initial conditions
     do j = 1, size(md%domains)
-        call set_initial_conditions(md%domains(j), stage_file)
+        call set_initial_conditions(md%domains(j), stage_file, rise_time)
     end do
     call md%make_initial_conditions_consistent()
     
@@ -208,10 +271,7 @@ program periodic_multidomain
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
 
-#ifdef COARRAY
-    sync all
     flush(log_output_unit)
-#endif
 
     !
     ! Evolve the code
@@ -236,4 +296,6 @@ program periodic_multidomain
     write(log_output_unit, *) 'Program timer'
     write(log_output_unit, *) ''
     call program_timer%print(log_output_unit)
+
+    call swals_mpi_finalize
 end program

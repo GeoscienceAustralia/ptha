@@ -30,6 +30,7 @@ module domain_mod
     use nested_grid_comms_mod, only: domain_nesting_type
     use stop_mod, only: generic_stop
     use iso_fortran_env, only: output_unit, int32, int64
+    use iso_c_binding, only: c_ptr, c_null_ptr
     use netcdf_util, only: nc_grid_output_type
     use logging_mod, only: log_output_unit
     use file_io_mod, only: mkdir_p
@@ -256,16 +257,22 @@ module domain_mod
             !! boundary conditions. It must take a domain_type as an INTENT(INOUT) argument.
             !! Applications need to define boundary_subroutine, either using a
             !! pre-existing bc, or making a new subroutine.
+        type(c_ptr) :: boundary_context_cptr = c_null_ptr
+            !! This can be used to pass arbitrary data to the user-specified boundary subroutine.
+            !! The latter takes the domain as an argument, so one can access the boundary_context
+            !! via that.
         logical :: boundary_exterior(4) = .TRUE. 
             !! Flag whether the boundary is exterior (TRUE) or interior (FALSE). We only need
             !! to apply a boundary condition to the 'exterior boundaries' -- otherwise we have e.g. nesting updates, 
             !! which are different.
             !! Order is North (1), East (2), South (3), West (4) 
 
-        !
-        ! Forcing subroutine -- the user can use this to create source-terms
-        !
         procedure(forcing_subroutine), pointer, nopass:: forcing_subroutine => NULL()
+            !! The user can use this to create source-terms. If associated, is called inside domain%apply_forcing
+        type(c_ptr) :: forcing_context_cptr = c_null_ptr
+            !! This can be used to pass arbitrary data to the user-specified forcing_subroutine.
+            !! The latter takes the domain as an argument, so one can access the forcing_context
+            !! via that.
 
         ! 
         ! Mass conservation tracking  -- store as double, even if dp is single prec.
@@ -367,7 +374,6 @@ module domain_mod
         real(dp), allocatable :: explicit_source_VH_j_minus_1(:,:) !! Separate from explicit_source for OPENMP parallel logic
         real(dp), allocatable :: manning_squared(:,:) !! Friction
         real(dp), allocatable :: backup_U(:,:,:) !! Needed for some timestepping methods
-        real(dp), allocatable :: forcing_work(:,:,:) !! Optional array we might want to use for a forcing term
         real(dp), allocatable :: friction_work(:,:,:) !! Friction for leapfrog_nonlinear and leapfrog_linear_plus_nonlinear_friction
         logical :: friction_work_is_setup = .false. !! Flag used for efficiency with leapfrog_linear_plus_nonlinear_friction solvers
         real(dp), allocatable :: advection_work(:,:,:) !! Work array

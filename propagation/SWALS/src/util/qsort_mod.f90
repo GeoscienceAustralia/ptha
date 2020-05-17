@@ -1,29 +1,28 @@
 
 
 module qsort_mod
-    !
-    !! Module for sorting, based on C's qsort
-    !
-    !! Contains a generic subroutine 
+    !!
+    !! Module for sorting.
+    !!
+    !! Contains a generic interface
     !!   sort(x, size(x))
     !! which changes x to be in sorted order. 
-
-    !! It also contains a generic subroutine
+    !!
+    !! It also contains a generic interface
     !!   sort_index(inds, x, size(x))
     !! which puts indices in 'inds' such that x(inds) is sorted. Here it is required
     !! that "size(inds) == size(x)"
-
-    !! It also contains a generic match subroutine
+    !!
+    !! It also contains a generic match interface
     !!   match(x1, x2, matches)
     !! which puts indices in matches such that x1(i) == x2(matches(i)), or else
     !! matches(i) == -1. 
-    !
-    !! The routines work with 'x' being c_int, c_float, or c_double
-    !
-    !! Note -- sorts of large arrays (e.g. 10^7 elements) may fail if compiled with '-Ofast',
-    !! unless the stack-size is unlimited (ulimit -s unlimited).  On the other hand,
-    !! I do not get this with the less aggressive compiler optimization '-O3'
-    !
+    !!
+    !! The routines work with 'x' being c_int, c_float, c_double, or character(len=*)
+    !!
+    !! There is also an iso_c_binding interface to C's qsort, which allows sorting anything with a user-defined compare function.
+    !! Originally the sorting routines were based on this, using locally defined compare functions (generally contained inside the
+    !! subroutine that called qsort). However this approach was not supported with PGI the compiler, so was changed.
     use iso_c_binding
 
     implicit none
@@ -33,7 +32,9 @@ module qsort_mod
 
     interface
 
-        ! Call qsort from C
+        ! Call qsort from C -- this gave me trouble with PGI compiler when used with 
+        ! functions defined in contains blocks of other subroutines, so is not used below, 
+        ! but is useful as one can pass arbitrary types and "compare" functions to it.
         subroutine qsort(array,elem_count,elem_size,compare) bind(C,name="qsort")
           import c_ptr, c_size_t, c_funptr
           type(c_ptr), value       :: array
@@ -64,105 +65,72 @@ module qsort_mod
     ! Sort for c_int
     ! 
 
-    pure function compare_int(i1, i2) result(compar) bind(C)
-        integer(c_int), intent(in) :: i1, i2
-        integer(c_int) :: compar
-
-        if( i1 > i2 ) compar = 1
-        if( i1 == i2 ) compar = 0
-        if( i1 < i2 )  compar = -1
-
-    end function
-
     subroutine sort_cint(array, n)
         integer, intent(in) :: n
-        integer(c_int), intent(inout), target :: array(n)
-       
-        integer(c_size_t) :: elem_count, elem_size 
+        integer(c_int), intent(inout) :: array(n)
 
-        elem_count = size(array, kind=c_size_t)
-        elem_size = c_sizeof(array(1))
+        integer(c_int), allocatable :: inds(:)
 
-        call qsort(c_loc(array(1)), elem_count, elem_size, c_funloc(compare_int))
+        allocate(inds(n))
+        call sort_index_cint(inds, array, n)
+        array = array(inds)
+        deallocate(inds)       
 
     end subroutine
 
     !
     ! Sort for c_float
     ! 
-
-    pure function compare_float(i1, i2) result(compar) bind(C)
-        real(c_float), intent(in) :: i1, i2
-        integer(c_int) :: compar
-
-        if( i1 > i2 ) compar = 1
-        if( i1 == i2 ) compar = 0
-        if( i1 < i2 )  compar = -1
-
-    end function
-
     subroutine sort_cfloat(array, n)
         integer, intent(in) :: n
-        real(c_float), intent(inout), target :: array(n)
-       
-        integer(c_size_t) :: elem_count, elem_size 
+        real(c_float), intent(inout) :: array(n)
 
-        elem_count = size(array, kind=c_size_t)
-        elem_size = c_sizeof(array(1))
+        integer(c_int), allocatable :: inds(:)
 
-        call qsort(c_loc(array(1)), elem_count, elem_size, c_funloc(compare_float))
+        allocate(inds(n))
+        call sort_index_cfloat(inds, array, n)
+        array = array(inds)
+        deallocate(inds)       
 
     end subroutine
 
     !
     ! Sort for c_double
     ! 
-
-    pure function compare_double(i1, i2) result(compar) bind(C)
-        real(c_double), intent(in) :: i1, i2
-        integer(c_int) :: compar
-
-        if( i1 > i2 ) compar = 1
-        if( i1 == i2 ) compar = 0
-        if( i1 < i2 )  compar = -1
-
-    end function
-
     subroutine sort_cdouble(array, n)
         integer, intent(in) :: n
-        real(c_double), intent(inout), target :: array(n)
-       
-        integer(c_size_t) :: elem_count, elem_size 
+        real(c_double), intent(inout) :: array(n)
 
-        elem_count = size(array, kind=c_size_t)
-        elem_size = c_sizeof(array(1))
+        integer(c_int), allocatable :: inds(:)
 
-        call qsort(c_loc(array(1)), elem_count, elem_size, c_funloc(compare_double))
+        allocate(inds(n))
+        call sort_index_cdouble(inds, array, n)
+        array = array(inds)
+        deallocate(inds)       
+
     end subroutine
+
 
     ! For sort character, we use 'sort_index' to work around the complexity of passing fortran strings to C
     subroutine sort_character(array, n)
-        integer(c_int), intent(in) :: n
+        integer, intent(in) :: n
         character(len=*), intent(inout) :: array(n)
-       
-        integer(c_int), allocatable :: index_array(:)
 
-        allocate(index_array(n))
-        call sort_index_character(index_array, array, n)
-        array = array(index_array)
-    
+        integer(c_int), allocatable :: inds(:)
+
+        allocate(inds(n))
+        call sort_index_character(inds, array, n)
+        array = array(inds)
+        deallocate(inds)       
+
     end subroutine
 
     subroutine sort_index_character(inds, array, n)
-        integer(c_int), intent(in) :: n
-        character(len=*), intent(in) :: array(n)
-        integer(c_int), intent(inout), target :: inds(n)
-
-        integer(c_size_t) :: elem_count, elem_size 
-        integer(c_int) :: i
-
-#include "qsort_sort_index_include.inc"
-
+#define SORT_INDEX_TYPE character(len=*)
+#define SORT_INDEX_TYPE2 character(len=len(array))
+#include "sort_index_template2.f90"
+#undef SORT_INDEX_TYPE
+#undef SORT_INDEX_TYPE2
 
     end subroutine
 
@@ -170,14 +138,11 @@ module qsort_mod
     ! Index sort of c_int
     !
     subroutine sort_index_cint(inds, array, n)
-        integer(c_int), intent(in) :: n
-        integer(c_int), intent(in) :: array(n)
-        integer(c_int), intent(inout), target :: inds(n)
-
-        integer(c_size_t) :: elem_count, elem_size 
-        integer(c_int) :: i
-
-#include "qsort_sort_index_include.inc"
+#define SORT_INDEX_TYPE integer(c_int)
+#define SORT_INDEX_TYPE2 integer(c_int)
+#include "sort_index_template2.f90"
+#undef SORT_INDEX_TYPE2
+#undef SORT_INDEX_TYPE
 
     end subroutine 
 
@@ -185,14 +150,11 @@ module qsort_mod
     ! Index sort of c_float
     !
     subroutine sort_index_cfloat(inds, array, n)
-        integer(c_int), intent(in) :: n
-        real(c_float), intent(in) :: array(n)
-        integer(c_int), intent(inout), target :: inds(n)
-
-        integer(c_size_t) :: elem_count, elem_size 
-        integer(c_int) :: i
-
-#include "qsort_sort_index_include.inc"
+#define SORT_INDEX_TYPE real(c_float)
+#define SORT_INDEX_TYPE2 real(c_float)
+#include "sort_index_template2.f90"
+#undef SORT_INDEX_TYPE2
+#undef SORT_INDEX_TYPE
 
     end subroutine 
 
@@ -200,14 +162,11 @@ module qsort_mod
     ! Index sort of c_double
     !
     subroutine sort_index_cdouble(inds, array, n)
-        integer(c_int), intent(in) :: n
-        real(c_double), intent(in) :: array(n)
-        integer(c_int), intent(inout), target :: inds(n)
-
-        integer(c_size_t) :: elem_count, elem_size 
-        integer(c_int) :: i
-
-#include "qsort_sort_index_include.inc"
+#define SORT_INDEX_TYPE real(c_double)
+#define SORT_INDEX_TYPE2 real(c_double)
+#include "sort_index_template2.f90"
+#undef SORT_INDEX_TYPE2
+#undef SORT_INDEX_TYPE
 
     end subroutine 
 
@@ -277,7 +236,7 @@ module qsort_mod
         real(c_double), allocatable :: rns_d(:), rns2_d(:)
         integer(c_int), allocatable :: rns_int(:), rns2_int(:)
         character(len=12) :: cx(10), cx_sorted(10), cx_match(4)
-        integer(c_int) :: cx_matches(10)
+        integer(c_int) :: cx_matches(10), counter
         logical :: failed
 
 
@@ -306,7 +265,7 @@ module qsort_mod
         z = x * 3.0d0
        
         call sort_index(inds, x, 10)
-        if(all(inds - index_order_x == 0)) then
+        if(all(x(inds) - x(index_order_x) == 0)) then
             print*, 'PASS'
         else
             print*, 'FAIL'
@@ -323,7 +282,7 @@ module qsort_mod
 
         ! Sort of c_float
         call sort_index(inds, y, 10)
-        if(all(inds - index_order_x == 0)) then
+        if(all(y(inds) - y(index_order_x) == 0)) then
             print*, 'PASS'
         else
             print*, 'FAIL'
@@ -339,7 +298,7 @@ module qsort_mod
 
         ! Sort of c_double 
         call sort_index(inds, z, 10)
-        if(all(inds - index_order_x == 0)) then
+        if(all(z(inds) - z(index_order_x) == 0)) then
             print*, 'PASS'
         else
             print*, 'FAIL'
@@ -352,6 +311,30 @@ module qsort_mod
         else
             print*, 'FAIL'
         endif
+
+        ! Check we can apply sort to a constant array, e.g. [2,2,2,2,2 ... ]
+        x(1:10) = 2
+        call sort(x, size(x))
+        if(all(x == 2)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+        ! Check we can apply sort_index to a constant array, e.g. [2,2,2,2,2 ... ]
+        call sort_index(inds, x, size(x))
+        ! Test that all numbers from 1-10 appeared
+        counter=0
+        do i = 1, size(x)
+            if(any(inds == i)) counter=counter+1
+        end do
+        if(counter == size(x)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+
 
         !
         ! Sort a large random vector
@@ -392,6 +375,7 @@ module qsort_mod
         !
         match1 = [1, -1, 1, 3, 5, 8, 9, 11, 0, 0]
         match2 = [1, 1, -2, 5, 90, 0]
+        allocate(matches(size(match1)))
         matches = 0 * match1 
 
         call match_cint(match1, match2, matches)
@@ -427,7 +411,7 @@ module qsort_mod
 
         ! This 'match' should be equivalent to getting the sorted indices
         call match(rns_int, rns2_int, matches)
-        if(all(matches == rns_inds)) then
+        if(all(rns2_int(matches) == rns_int)) then
             print*, "PASS"
         else
             print*, 'FAIL'
@@ -439,10 +423,8 @@ module qsort_mod
         call sort(rns, size(rns))
 
         ! This 'match' should be equivalent to getting the sorted indices
-        !! FIXME: rare failures? Perhaps for some particular random values?
-        !! Is it because of repeated values?
         call match(rns, rns2, matches)
-        if(all(matches == rns_inds)) then
+        if(all(rns2(matches) == rns)) then
             print*, "PASS"
         else
             print*, 'FAIL'
@@ -453,13 +435,11 @@ module qsort_mod
         call random_number(rns_d)
         rns2_d = rns_d
         call sort_index(rns_inds, rns_d, n)
-        call sort(rns_d, size(rns))
+        call sort(rns_d, size(rns_d))
 
         ! This 'match' should be equivalent to getting the sorted indices
-        !! FIXME: rare failures? Perhaps for some particular random values?
-        !! Is it because of repeated values?
         call match(rns_d, rns2_d, matches)
-        if(all(matches == rns_inds)) then
+        if(all(rns2_d(matches) == rns_d)) then
             print*, "PASS"
         else
             print*, 'FAIL'
@@ -483,9 +463,6 @@ module qsort_mod
         else
             print*, 'FAIL'
         endif
-
-        ! FIXME: Check we can apply sort_index to a constant array, e.g. [2,2,2,2,2]
-        ! I think it has issues
 
     end subroutine
 end module
