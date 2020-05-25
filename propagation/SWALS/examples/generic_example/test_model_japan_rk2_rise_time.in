@@ -1,0 +1,22 @@
+&MODELCONFIG
+    ! Comment
+    input_elevation_raster = 'japan_dem.tif'
+    input_stage_raster = 'ptha_scenario/initial_condition_1.tif'
+    global_ll = 122.0 14.0
+    global_ur = 185.0 55.0
+    global_nx = 945 615 ! 4 arc minutes
+    approximate_writeout_frequency = 5.0
+    output_basedir='OUTPUTS/test_tohoku'
+    final_time = 21600.0
+    timestepping_method = 'rk2'
+    manning_n = 0.03
+    cfl = 0.999
+    hazard_points_file = 'dart_test_data/dart_locations.csv'
+    skip_header_hazard_points_file=1
+    record_max_U = TRUE 
+    output_grid_timeseries = FALSE
+    adaptive_computational_extents=TRUE
+    negative_elevation_raster = FALSE
+    linear_solver_is_truely_linear = FALSE
+    rise_time=1000.0
+/

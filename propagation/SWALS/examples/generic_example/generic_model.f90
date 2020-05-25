@@ -8,20 +8,22 @@ module local_routines
     use read_raster_mod, only: multi_raster_type 
     use which_mod, only: which
     use file_io_mod, only: read_csv_into_array
+    use forcing_mod, only: forcing_patch_type, apply_forcing_patch
+    use iso_c_binding, only: c_loc
     implicit none
 
     contains 
 
     subroutine set_initial_conditions_generic_model(domain, input_elevation_raster, &
         input_stage_raster, hazard_points_file, skip_header,&
-        adaptive_computational_extents, negative_elevation_raster, manning_n)
+        adaptive_computational_extents, negative_elevation_raster, manning_n, rise_time)
 
         class(domain_type), target, intent(inout):: domain
         character(len=charlen), intent(in):: input_elevation_raster, &
             input_stage_raster, hazard_points_file
         integer(ip), intent(in):: skip_header
         logical, intent(in):: adaptive_computational_extents, negative_elevation_raster
-        real(dp), intent(in) :: manning_n
+        real(dp), intent(in) :: manning_n, rise_time
 
         integer(ip):: i, j, extra_buffer
         real(dp), allocatable:: x(:), y(:), xy_coords(:,:)
@@ -30,6 +32,8 @@ module local_routines
         type(multi_raster_type):: elevation_data, stage_data
 
         character(charlen):: attribute_names(8), attribute_values(8)
+
+        type(forcing_patch_type), pointer :: forcing_patch
         
         ! Attributes to be stored in the netcdf files as attributes
         attribute_names(1) = 'input_elevation_raster'
@@ -132,6 +136,27 @@ SOURCEDIR
         end if
         CALL stage_data%finalise() 
 
+
+        if(rise_time > 0.0_dp .and. xl > 0 .and. xU > 0 .and. yl > 0 .and. yU > 0) then
+            ! Apply the source over some finite rise time, rather than as the initial stage.
+            
+            ! Make a forcing_patch that does this
+            allocate(forcing_patch)
+            call forcing_patch%setup(start_time=0.0_dp, end_time=rise_time, i0=xl, i1=xU, j0=yl, j1=yU, k0=STG, k1=STG)
+
+            ! Set the forcing to be equal to the stage that we just created
+            forcing_patch%forcing_work(xl:xU, yl:yU, STG) = domain%U(xl:xU, yl:yU, STG)
+
+            ! Move the forcing patch into the domain, and ensure it is used in a forcing term
+            domain%forcing_context_cptr = c_loc(forcing_patch)
+            forcing_patch => NULL()
+            domain%forcing_subroutine => apply_forcing_patch
+
+            ! Re-set the stage deformation to zero, as it will be applied in a forcing instead.
+            domain%U(:,:,STG) = 0.0_dp
+        end if
+
+
         print*, '    max stage: ', maxval(domain%U(:,:,STG))
         print*, '    min stage: ', minval(domain%U(:,:,STG))
         print*, '    max elev: ', maxval(domain%U(:,:,ELV))
@@ -209,7 +234,7 @@ program generic_model
     character(charlen) :: timestepping_method, input_parameter_file, namelist_output_filename
 
     real(dp) :: approximate_writeout_frequency, final_time, manning_n, cliffs_minimum_allowed_depth
-    real(dp):: timestep, global_ur(2), global_ll(2), global_lw(2), cfl, dx(2), linear_friction_coeff
+    real(dp):: timestep, global_ur(2), global_ll(2), global_lw(2), cfl, dx(2), linear_friction_coeff, rise_time
     integer(ip):: global_nx(2), skip_header_hazard_points_file, file_unit_temp, grid_output_spatial_stride
     character(len=charlen):: input_elevation_raster, input_stage_raster, &
         hazard_points_file, output_basedir
@@ -220,7 +245,7 @@ program generic_model
     namelist /MODELCONFIG/ &
         input_elevation_raster, input_stage_raster, global_ll, &
         global_ur, global_nx, approximate_writeout_frequency, output_basedir, &
-        final_time, timestepping_method, manning_n, linear_friction_coeff, &
+        final_time, timestepping_method, manning_n, linear_friction_coeff, rise_time, &
         cfl, hazard_points_file, skip_header_hazard_points_file, record_max_U,&
         output_grid_timeseries, adaptive_computational_extents, negative_elevation_raster, &
         linear_solver_is_truely_linear, grid_output_spatial_stride, cliffs_minimum_allowed_depth
@@ -231,6 +256,7 @@ program generic_model
     linear_solver_is_truely_linear = .true.
     grid_output_spatial_stride = 1
     cliffs_minimum_allowed_depth = 1.0e-03_dp
+    rise_time = 0.0_dp
 
     ! Read the input file -- the name of this file should be the first
     ! commandline argument
@@ -332,7 +358,7 @@ program generic_model
     ! Call local routine to set initial conditions
     call set_initial_conditions_generic_model(domain, input_elevation_raster,&
         input_stage_raster, hazard_points_file, skip_header_hazard_points_file,&
-        adaptive_computational_extents, negative_elevation_raster, manning_n)
+        adaptive_computational_extents, negative_elevation_raster, manning_n, rise_time)
 
     timestep = domain%stationary_timestep_max()
     write(domain%logfile_unit, *) 'ts: ', timestep

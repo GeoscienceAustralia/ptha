@@ -65,33 +65,30 @@ module local_routines
 
         if(rise_time > 0.0_dp) then
             ! If a non-zero rise time was used, then create the forcing context to apply the stage perturbation over time.
-            ! This is an object which contains the stage perturbations (and optionally ELV/UH/VH perturbations),
-            ! and the start-time and end-time over which it is applied.
-            allocate(forcing_context)
-
             ! Find the region where the stage deformation applies
             i0 = count(domain%x <= stage_data%lowerleft(1))
             i1 = count(domain%x <= stage_data%upperright(1))
             j0 = count(domain%y <= stage_data%lowerleft(2))
             j1 = count(domain%y <= stage_data%upperright(2))
 
+
             if(i0 < i1 .and. j0 < j1) then
                 ! The domain overlaps with the stage raster, so we need to apply the forcing.
 
-                forcing_context%i0 = i0
-                forcing_context%i1 = i1
-                forcing_context%j0 = j0
-                forcing_context%j1 = j1
+                ! This is an object which contains the stage perturbations (and optionally ELV/UH/VH perturbations),
+                ! and the start-time and end-time over which it is applied.
+                allocate(forcing_context)
 
-                ! Set the forcing work to be equal to the stage deformation
-                allocate(forcing_context%forcing_work(i0:i1, j0:j1, STG:ELV))
+                ! ! We can either force all of domain%U -- or if we provide k0,k1 we can only force some slice - which
+                ! ! requires less memory in this case
+                call forcing_context%setup(start_time=0.0_dp, end_time=rise_time, i0=i0, i1=i1, j0=j0, j1=j1, k0=STG, k1=STG)
                 forcing_context%forcing_work(i0:i1,j0:j1,STG) = domain%U(i0:i1, j0:j1, STG)
-                forcing_context%forcing_work(i0:i1,j0:j1,ELV) = 0.0_dp !domain%U(i0:i1, j0:j1, STG)
-                forcing_context%forcing_work(:,:,UH:VH) = 0.0_dp
-
-                ! Define the time over which the forcing occurs
-                forcing_context%start_time = 0.0_dp
-                forcing_context%end_time = rise_time
+                ! ! Alternative where we can force everything
+                !call forcing_context%setup(start_time=0.0_dp, end_time=rise_time, i0=i0, i1=i1, j0=j0, j1=j1)
+                ! Set the forcing work to be equal to the stage deformation. 
+                ! forcing_context%forcing_work(i0:i1,j0:j1,STG) = domain%U(i0:i1, j0:j1, STG)
+                !forcing_context%forcing_work(i0:i1,j0:j1,ELV) = 0.0_dp !domain%U(i0:i1, j0:j1, STG)
+                !forcing_context%forcing_work(:,:,UH:VH) = 0.0_dp
 
                 ! Store the forcing context inside the domain
                 domain%forcing_context_cptr = c_loc(forcing_context)
@@ -100,8 +97,6 @@ module local_routines
                 domain%forcing_subroutine => apply_forcing_patch
                 ! Re-set the stage deformation to zero, because now we will apply it as a forcing_subroutine
                 domain%U(:,:,STG) = 0.0_dp
-            else
-                deallocate(forcing_context)
             end if
 
         end if

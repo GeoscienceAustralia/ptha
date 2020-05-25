@@ -36,6 +36,20 @@ eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_leapfrog_nonlinear.in > 
 Rscript plot.R leapfrog_nonlinear
 
 #
+# TEST RISE-TIME
+#
+rm -r ./OUTPUTS
+eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_linear_risetime0.in > outfile.log"
+eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_linear_rise_time.in > outfile.log"
+Rscript check_rise_time_jobs.R 'linear'
+
+rm -r ./OUTPUTS
+eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_rk2_risetime0.in > outfile.log"
+eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_rk2_rise_time.in > outfile.log"
+Rscript check_rise_time_jobs.R 'rk2'
+
+
+#
 # CASES WITHOUT CORIOLIS
 #
 
@@ -66,3 +80,16 @@ Rscript plot.R almost_linear_with_nonlinear_friction_nocoriolis
 rm -r ./OUTPUTS
 eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_leapfrog_nonlinear.in > outfile.log"
 Rscript plot.R leapfrog_nonlinear_nocoriolis
+
+#
+# COMPARE RISE-TIME
+#
+rm -r ./OUTPUTS
+eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_linear_risetime0.in > outfile.log"
+eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_linear_rise_time.in > outfile.log"
+Rscript check_rise_time_jobs.R 'linear'
+
+rm -r ./OUTPUTS
+eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_rk2_risetime0.in > outfile.log"
+eval "$OMP_RUN_COMMAND ./generic_model test_model_japan_rk2_rise_time.in > outfile.log"
+Rscript check_rise_time_jobs.R 'rk2'

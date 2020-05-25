@@ -1,0 +1,22 @@
+&MODELCONFIG
+    ! Comment
+    input_elevation_raster = 'japan_dem.tif'
+    input_stage_raster = 'tohoku_like_initial/initial_condition_1.tif'
+    global_ll = 122.0 14.0
+    global_ur = 185.0 55.0
+    global_nx = 945 615 ! 4 arc minutes
+    approximate_writeout_frequency = 60.0
+    output_basedir='OUTPUTS/test_tohoku'
+    final_time = 36000.0 
+    timestepping_method = 'cliffs'
+    manning_n = 0.00
+    cliffs_minimum_allowed_depth = 5.0
+    cfl = 0.49
+    hazard_points_file = 'dart_test_data/dart_locations.csv'
+    skip_header_hazard_points_file=1
+    record_max_U = TRUE 
+    output_grid_timeseries = TRUE
+    adaptive_computational_extents=FALSE
+    negative_elevation_raster = FALSE
+    linear_solver_is_truely_linear = TRUE
+/

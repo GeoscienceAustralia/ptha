@@ -23,16 +23,22 @@ module forcing_mod
 
     type forcing_patch_type
         !! Suppose we want to apply a forcing over some rectangular subset of domain%U,
-        !! say domain%U(i0:i1, j0:j1, :). The forcing is applied between some specified start_time and end_time. 
+        !! say domain%U(i0:i1, j0:j1, k0:k1). The forcing is applied between some specified start_time and end_time. 
         !! This data structure can help with that
         real(dp), allocatable :: forcing_work(:,:,:)
-            !! This is added to domain%U(i0:i1, j0:j1, :) over the specified time interval
-        integer(ip) :: i0 = HUGE(1_ip), i1=-HUGE(1_ip), j0=HUGE(1_ip), j1=-HUGE(1_ip)
-            !! An index denoting where the forcing is applied (i.e. to domain%U(i0:i1, j0:j1, :). 
+            !! This is added to domain%U(i0:i1, j0:j1, k0:k1) over the specified time interval
+        integer(ip) :: i0 = HUGE(1_ip), i1=-HUGE(1_ip), j0=HUGE(1_ip), j1=-HUGE(1_ip), k0=STG, k1=ELV
+            !! An index denoting where the forcing is applied (i.e. to domain%U(i0:i1, j0:j1, k0:k1). 
             !! The default value will cause an error if used in apply_forcing_patch
         real(dp) :: start_time = HUGE(1.0_dp), end_time = -HUGE(1.0_dp)
             !! Controls the time-interval over which the forcing is applied. Must have start_time >= end_time.
             !! The default values will throw an error if used in apply_forcing_patch
+        contains
+
+        procedure:: setup => setup_forcing_patch
+            !! Allocate forcing_patch%forcing_work and set start_time, end_time, and spatial indices
+        procedure:: finalise => deallocate_forcing_patch
+            !! Deallocate forcing_patch%forcing_work and revert to default start_time, end_time, and spatial indices
     end type
 
     type forcing_patch_array_type
@@ -78,11 +84,12 @@ module forcing_mod
                 call generic_stop
             end if
 
-            if(start_time > end_time) then
-                write(log_output_unit, *) &
-                    'Error: start_time must be > end_time in add_forcing_work_to_U_over_time'
-                call generic_stop
-            end if
+            ! !This if-statement must always be .FALSE. given the outer if
+            !if(start_time > end_time) then
+            !    write(log_output_unit, *) &
+            !        'Error: start_time must be > end_time in add_forcing_work_to_U_over_time'
+            !    call generic_stop
+            !end if
 
             ! Determine what fraction of forcing_work should be added to U
             if(start_time == end_time) then
@@ -123,13 +130,15 @@ module forcing_mod
         real(dp), intent(in) :: dt
         type(forcing_patch_type), intent(in) :: fp
 
-        integer(ip) :: i0, i1, j0, j1
+        integer(ip) :: i0, i1, j0, j1, k0, k1
 
         ! Unpack the indices where the forcing applies
         i0 = fp%i0
         i1 = fp%i1
         j0 = fp%j0
         j1 = fp%j1
+        k0 = fp%k0
+        k1 = fp%k1
 
         ! Do a few sanity checks
         if(i0 > i1 .or. j0 > j1) then
@@ -141,8 +150,14 @@ module forcing_mod
             call generic_stop
         end if
 
+        if(.not. ( (k0 <= ELV) .and. (k0 >= STG) .and. (k1 <= ELV) .and. (k0 <= k1))) then
+            write(log_output_unit, *) 'Error in apply_forcing_patch_base: the forcing_patch%forcing_work does not'
+            write(log_output_unit, *) 'have 3rd dimension compatible with domain%U', k0, k1
+            call generic_stop
+        end if
+
         ! All seems well so apply the forcing. 
-        call add_forcing_work_to_U_over_time(domain%U(i0:i1, j0:j1, STG:ELV), fp%forcing_work, domain%time, &
+        call add_forcing_work_to_U_over_time(domain%U(i0:i1, j0:j1, k0:k1), fp%forcing_work, domain%time, &
             dt, fp%start_time, fp%end_time)
 
     end subroutine
@@ -189,6 +204,81 @@ module forcing_mod
 
     end subroutine
 
+    subroutine setup_forcing_patch(forcing_patch, start_time, end_time, i0, i1, j0, j1, k0, k1)
+        !! Convenience routine to setup a forcing_patch_type. This sets the start and end times, and 
+        !! allocates forcing_patch%forcing_work(i0:i1, j0:j1, k0:k1). If k0,k1 are not provided then
+        !! they are set to STG,ELV as used in the domain object.
+        class(forcing_patch_type), intent(inout) :: forcing_patch
+            !! The input forcing patch
+        real(dp), intent(in) :: start_time, end_time
+            !! The time range over which forcing_patch%forcing_work will be added. Beware the values
+            !! of forcing_patch%forcing_work will have to be specified separately
+        integer(ip), intent(in) :: i0, i1, j0, j1
+            !! Range for first dimension is i0:i1, range for second dimension is j0:j1
+        integer(ip), optional, intent(in) :: k0, k1
+            !! Range for third dimension is k0:k1, by default that is STG:ELV
+
+        forcing_patch%start_time = start_time
+        forcing_patch%end_time   = end_time
+
+        forcing_patch%i0 = i0
+        forcing_patch%i1 = i1
+        forcing_patch%j0 = j0
+        forcing_patch%j1 = j1
+
+        ! Allocate the forcing_work component
+        if( (.not. present(k0)) .and. (.not. present(k1)) )  then
+            ! In this case we have not specified the bounds of the 3rd dimension.
+            ! Just use STG:ELV
+
+            forcing_patch%k0 = STG
+            forcing_patch%k1 = ELV
+
+            ! Make the same dimensions as domain%U
+            allocate(forcing_patch%forcing_work(i0:i1, j0:j1, STG:ELV))
+        else
+            ! In this case we have specified the bounds of the 3rd dimension.
+            ! In that case both should be provided
+            if(present(k0) .and. present(k1)) then
+                ! User-specified k0:k1
+                forcing_patch%k0 = k0
+                forcing_patch%k1 = k1
+
+                ! The 3rd dimension indices are specified
+                allocate(forcing_patch%forcing_work(i0:i1, j0:j1, k0:k1))
+
+            else
+                ! Not permitted
+
+                write(log_output_unit, *) 'Error in calling forcing_patch%setup: Must either provide BOTH k0 and k1, or neither'
+                call generic_stop
+            end if
+        end if
+
+        ! Initialise it to something.
+        forcing_patch%forcing_work = 0.0_dp
+
+    end subroutine
+
+    subroutine deallocate_forcing_patch(forcing_patch)
+        !! Deallocate forcing_patch%forcing_work and revert to the default start_time, end_time, and spatial indices
+        class(forcing_patch_type), intent(inout) :: forcing_patch
+            !! A forcing patch to deallocate
+
+        deallocate(forcing_patch%forcing_work)
+
+        ! Set the other parameters to the typical defaults
+        forcing_patch%i0 = HUGE(1_ip)
+        forcing_patch%i1 = -HUGE(1_ip)
+        forcing_patch%j0 = HUGE(1_ip)
+        forcing_patch%j1 = -HUGE(1_ip)
+        forcing_patch%start_time = HUGE(1.0_dp)
+        forcing_patch%end_time = -HUGE(1.0_dp)
+
+        forcing_patch%k0 = STG
+        forcing_patch%k1 = ELV
+
+    end subroutine
 
     subroutine setup_domain_for_test(domain, global_lw, global_nx, global_ll)
         !! Routine to setup the domain for the test, and make the forcing_context
@@ -216,11 +306,8 @@ module forcing_mod
         ! Make up the forcing -- first allocate it, so that there is a unique one for the domain
         ! When the routine exits this memory will not be freed because init_context is a pointer (not an allocatable)
         allocate(init_context)
-        allocate(init_context%forcing_work(domain%nx(1), domain%nx(2), 4))
-        init_context%i0 = 1
-        init_context%i1 = domain%nx(1)
-        init_context%j0 = 1
-        init_context%j1 = domain%nx(2)
+        call init_context%setup(start_time = 0.0_dp, end_time = 0.0_dp, i0=1, i1=domain%nx(1), j0=1, j1=domain%nx(2))
+            ! Later we will manually change start_time, end_time 
 
         init_context%forcing_work(:,:,1) = 10.0_dp
         init_context%forcing_work(:,:,2) = 5.0_dp
