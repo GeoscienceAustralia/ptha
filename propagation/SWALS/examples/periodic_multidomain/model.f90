@@ -66,9 +66,9 @@ module local_routines
         if(rise_time > 0.0_dp) then
             ! If a non-zero rise time was used, then create the forcing context to apply the stage perturbation over time.
             ! Find the region where the stage deformation applies
-            i0 = count(domain%x <= stage_data%lowerleft(1))
+            i0 = count(domain%x < stage_data%lowerleft(1)) + 1
             i1 = count(domain%x <= stage_data%upperright(1))
-            j0 = count(domain%y <= stage_data%lowerleft(2))
+            j0 = count(domain%y < stage_data%lowerleft(2)) + 1
             j1 = count(domain%y <= stage_data%upperright(2))
 
 

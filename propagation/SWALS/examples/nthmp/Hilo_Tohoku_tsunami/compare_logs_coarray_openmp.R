@@ -29,18 +29,23 @@
 multidomain_log_openmp = readLines(rev(Sys.glob('multidomain_log*openmp.log')))
 multidomain_log_coarray = readLines(rev(Sys.glob('multidomain_log*coarray.log')))
 
+
 # Get max/min stage, and max speed, globally over the domains
 k = grep('Global stage range', multidomain_log_openmp)
 max_stage_openmp = as.numeric(multidomain_log_openmp[k+1])
 min_stage_openmp = as.numeric(multidomain_log_openmp[k+2])
-max_speed_openmp = as.numeric(multidomain_log_openmp[k+4])
-times_openmp = as.numeric(multidomain_log_openmp[k-17])
+k = grep('Global speed range', multidomain_log_openmp)
+max_speed_openmp = as.numeric(multidomain_log_openmp[k+1])
+k = grep('Time:', multidomain_log_openmp, fixed=TRUE)
+times_openmp = sort(unique(as.numeric(multidomain_log_openmp[k+1])))
 
 k = grep('Global stage range', multidomain_log_coarray)
 max_stage_coarray = as.numeric(multidomain_log_coarray[k+1])
 min_stage_coarray = as.numeric(multidomain_log_coarray[k+2])
-max_speed_coarray = as.numeric(multidomain_log_coarray[k+4])
-times_coarray = as.numeric(multidomain_log_coarray[k-17])
+k = grep('Global speed range', multidomain_log_coarray)
+max_speed_coarray = as.numeric(multidomain_log_coarray[k+1])
+k = grep('Time:', multidomain_log_coarray, fixed=TRUE)
+times_coarray = sort(unique(as.numeric(multidomain_log_coarray[k+1])))
 
 if(all( abs(times_coarray - times_openmp) < 1.0e-06)){
     print('PASS')

@@ -206,12 +206,14 @@ module nested_grid_comms_mod
             !! in some of the overlapping regions might not be realistic (e.g.
             !! nesting buffer regions). However, on the priority domain, it will be
             !! realistic.
+        integer(ip), allocatable :: is_priority_domain_not_periodic(:,:)
+            !! This will be 1.0 where the domain is priority and not in a periodic region, and 0.0 otherwise.
         integer(ip) :: my_index = 0_ip
         integer(ip) :: my_image = 0_ip
 
         contains
 
-        procedure:: print => print_nesting_fluxes
+        !procedure:: print => print_nesting_fluxes
         procedure:: memory_size => domain_nesting_type_memory_size
 
     end type
@@ -291,8 +293,7 @@ module nested_grid_comms_mod
         neighbour_domain_image_index, my_domain_image_index,&
         send_only, recv_only,&
         use_wetdry_limiting, &
-        neighbour_domain_staggered_grid, my_domain_staggered_grid) !,&
-        !priority_domain_index, priority_domain_image)
+        neighbour_domain_staggered_grid, my_domain_staggered_grid)
 
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
         real(dp), intent(in) :: my_dx(SPATIAL_DIM), &
@@ -304,7 +305,6 @@ module nested_grid_comms_mod
         integer(ip), optional, intent(in) :: neighbour_domain_image_index, my_domain_image_index
         logical, optional, intent(in) :: send_only, recv_only, use_wetdry_limiting
         integer(ip), optional, intent(in) :: neighbour_domain_staggered_grid, my_domain_staggered_grid
-        !integer(ip), optional, intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:)
 
         ! Local variables
         real(dp) :: cell_ratios(SPATIAL_DIM), prod_cell_ratios
@@ -1749,223 +1749,224 @@ module nested_grid_comms_mod
 
     end subroutine
 
-    ! Report on fluxes between nesting comms type and target domain
-    !
-    ! @param nesting nesting type
-    ! @param xs optional vector of x coordinates, in domain%x
-    ! @param ys optional vector of y coordinates, in domain%y
-    !
-    subroutine print_nesting_fluxes(nesting, xs, ys)
+    !! Report on fluxes between nesting comms type and target domain.
+    !! FIXME: This was used in development but is likely out of date now.
+    !!
+    !! @param nesting nesting type
+    !! @param xs optional vector of x coordinates, in domain%x
+    !! @param ys optional vector of y coordinates, in domain%y
+    !!
+    !subroutine print_nesting_fluxes(nesting, xs, ys)
 
-        class(domain_nesting_type), intent(in) :: nesting
-        real(dp), intent(in), optional :: xs(:), ys(:)
+    !    class(domain_nesting_type), intent(in) :: nesting
+    !    real(dp), intent(in), optional :: xs(:), ys(:)
 
-        integer(ip) :: i, j, nbr_index, nbr_image, nbr_comms, n, my_index, my_image, my_comms, i1(2)
-        real(dp) :: xr(2), yr(2)
-        real(dp) :: flux_send(4), flux_recv(4), flux_err_coarse_recv(4)
-        integer(ip) :: edge_ip(2), ind1_ip(2), ind2_ip(2), edge
+    !    integer(ip) :: i, j, nbr_index, nbr_image, nbr_comms, n, my_index, my_image, my_comms, i1(2)
+    !    real(dp) :: xr(2), yr(2)
+    !    real(dp) :: flux_send(4), flux_recv(4), flux_err_coarse_recv(4)
+    !    integer(ip) :: edge_ip(2), ind1_ip(2), ind2_ip(2), edge
 
-        if(allocated(nesting%send_comms)) then
+    !    if(allocated(nesting%send_comms)) then
 
-            ! Compute the mass fluxes that are going to the 'real' part of
-            ! another domain (i.e. where that domain is the priority domain)
+    !        ! Compute the mass fluxes that are going to the 'real' part of
+    !        ! another domain (i.e. where that domain is the priority domain)
 
-            do i = 1, size(nesting%send_comms, kind=ip)
+    !        do i = 1, size(nesting%send_comms, kind=ip)
 
-                nbr_index = nesting%send_comms(i)%neighbour_domain_index
-                nbr_image = nesting%send_comms(i)%neighbour_domain_image_index
-                nbr_comms = nesting%send_comms(i)%neighbour_domain_comms_index
-                my_index = nesting%send_comms(i)%my_domain_index
-                my_image = nesting%send_comms(i)%my_domain_image_index
-                my_comms = nesting%send_comms(i)%my_domain_comms_index
-           
-                !
-                ! NORTH-SOUTH SIDE
-                ! 
-                edge_ip = [NORTH, SOUTH] ! Index into send_box_flux_integral(.)
-                ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%send_inds(.,2)
-                ind2_ip = [1, -1] ! Offset required to get 'j index of cell just outside the bbox ' -- +1 for NORTH, -1 for SOUTH
-                do j = 1, 2 
+    !            nbr_index = nesting%send_comms(i)%neighbour_domain_index
+    !            nbr_image = nesting%send_comms(i)%neighbour_domain_image_index
+    !            nbr_comms = nesting%send_comms(i)%neighbour_domain_comms_index
+    !            my_index = nesting%send_comms(i)%my_domain_index
+    !            my_image = nesting%send_comms(i)%my_domain_image_index
+    !            my_comms = nesting%send_comms(i)%my_domain_comms_index
+    !       
+    !            !
+    !            ! NORTH-SOUTH SIDE
+    !            ! 
+    !            edge_ip = [NORTH, SOUTH] ! Index into send_box_flux_integral(.)
+    !            ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%send_inds(.,2)
+    !            ind2_ip = [1, -1] ! Offset required to get 'j index of cell just outside the bbox ' -- +1 for NORTH, -1 for SOUTH
+    !            do j = 1, 2 
 
-                    n = nesting%send_comms(i)%send_inds(ind1_ip(j),2) + ind2_ip(j) ! j-index just outside the send bbox
-                    i1 = nesting%send_comms(i)%send_inds(:,1)
+    !                n = nesting%send_comms(i)%send_inds(ind1_ip(j),2) + ind2_ip(j) ! j-index just outside the send bbox
+    !                i1 = nesting%send_comms(i)%send_inds(:,1)
 
-                    edge = edge_ip(j)
-                    if(n <= size(nesting%priority_domain_index,2, kind=ip) .and. n >= 1) then
-                        ! Find the mass flux northward to/from the neighbour domain (if any) 
-                        flux_send(edge) = sum(&
-                            nesting%send_comms(i)%send_box_flux_integral(edge)%x(:,1), &
-                            mask=( (nesting%priority_domain_index(i1(1):i1(2),n) == nbr_index) .and. &
-                                   (nesting%priority_domain_image(i1(1):i1(2),n) == nbr_image) ) )
-                    else
-                        flux_send(edge) = 0.0_dp
-                    end if
+    !                edge = edge_ip(j)
+    !                if(n <= size(nesting%priority_domain_index,2, kind=ip) .and. n >= 1) then
+    !                    ! Find the mass flux northward to/from the neighbour domain (if any) 
+    !                    flux_send(edge) = sum(&
+    !                        nesting%send_comms(i)%send_box_flux_integral(edge)%x(:,1), &
+    !                        mask=( (nesting%priority_domain_index(i1(1):i1(2),n) == nbr_index) .and. &
+    !                               (nesting%priority_domain_image(i1(1):i1(2),n) == nbr_image) ) )
+    !                else
+    !                    flux_send(edge) = 0.0_dp
+    !                end if
 
-                end do
+    !            end do
 
-                !
-                ! Store x range of this send bounding box
-                !
-                if(present(xs)) then
-                    xr = xs(i1) + 0.5_dp * [xs(i1(1)) - xs(i1(1)+1), xs(i1(2))  - xs(i1(2)-1)]
-                else
-                    xr = 0.0_dp
-                end if
+    !            !
+    !            ! Store x range of this send bounding box
+    !            !
+    !            if(present(xs)) then
+    !                xr = xs(i1) + 0.5_dp * [xs(i1(1)) - xs(i1(1)+1), xs(i1(2))  - xs(i1(2)-1)]
+    !            else
+    !                xr = 0.0_dp
+    !            end if
 
-                !
-                ! EAST-WEST SIDE
-                !
-                edge_ip = [EAST, WEST] ! Index into send_box_flux_integral(.)
-                ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%send_inds(.,2)
-                ind2_ip = [1, -1] ! Offset required to get 'i index of cell just outside the bbox ' -- +1 for EAST, -1 for WEST 
+    !            !
+    !            ! EAST-WEST SIDE
+    !            !
+    !            edge_ip = [EAST, WEST] ! Index into send_box_flux_integral(.)
+    !            ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%send_inds(.,2)
+    !            ind2_ip = [1, -1] ! Offset required to get 'i index of cell just outside the bbox ' -- +1 for EAST, -1 for WEST 
 
-                do j = 1, 2
+    !            do j = 1, 2
 
-                    ! Find the mass flux going eastward to/from the neighbour domain (if any)
-                    n = nesting%send_comms(i)%send_inds(ind1_ip(j),1) + ind2_ip(j) ! i-index just outside the send bbox
-                    i1 = nesting%send_comms(i)%send_inds(:,2)
+    !                ! Find the mass flux going eastward to/from the neighbour domain (if any)
+    !                n = nesting%send_comms(i)%send_inds(ind1_ip(j),1) + ind2_ip(j) ! i-index just outside the send bbox
+    !                i1 = nesting%send_comms(i)%send_inds(:,2)
 
-                    edge = edge_ip(j)
+    !                edge = edge_ip(j)
 
-                    if(n <= size(nesting%priority_domain_index, 1, kind=ip) .and. n >= 1) then
-                        flux_send(edge) = sum(&
-                            nesting%send_comms(i)%send_box_flux_integral(edge)%x(:,1), &
-                            mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == nbr_index) .and. &
-                                   (nesting%priority_domain_image(n,i1(1):i1(2)) == nbr_image) ) )
-                    else
-                        flux_send(edge) = 0.0_dp
-                    end if
-                end do
+    !                if(n <= size(nesting%priority_domain_index, 1, kind=ip) .and. n >= 1) then
+    !                    flux_send(edge) = sum(&
+    !                        nesting%send_comms(i)%send_box_flux_integral(edge)%x(:,1), &
+    !                        mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == nbr_index) .and. &
+    !                               (nesting%priority_domain_image(n,i1(1):i1(2)) == nbr_image) ) )
+    !                else
+    !                    flux_send(edge) = 0.0_dp
+    !                end if
+    !            end do
 
-                !
-                ! Store y range of this send bounding box
-                !
-                if(present(ys)) then
-                    yr = ys(i1) + 0.5_dp * [ys(i1(1)) - ys(i1(1)+1), ys(i1(2)) - ys(i1(2) - 1)]
-                else
-                    yr = 0.0_dp
-                end if
+    !            !
+    !            ! Store y range of this send bounding box
+    !            !
+    !            if(present(ys)) then
+    !                yr = ys(i1) + 0.5_dp * [ys(i1(1)) - ys(i1(1)+1), ys(i1(2)) - ys(i1(2) - 1)]
+    !            else
+    !                yr = 0.0_dp
+    !            end if
 
-                write(log_output_unit,*) 'send flux from ', &
-                    my_index, my_image, my_comms, ' to ', &
-                    nbr_index, nbr_image, nbr_comms, &
-                    ' N: ', flux_send(NORTH), ' S: ', flux_send(SOUTH), &
-                    ' E: ', flux_send(EAST), ' W: ', flux_send(WEST), &
-                    'bbox: ', xr, yr
+    !            write(log_output_unit,*) 'send flux from ', &
+    !                my_index, my_image, my_comms, ' to ', &
+    !                nbr_index, nbr_image, nbr_comms, &
+    !                ' N: ', flux_send(NORTH), ' S: ', flux_send(SOUTH), &
+    !                ' E: ', flux_send(EAST), ' W: ', flux_send(WEST), &
+    !                'bbox: ', xr, yr
 
-            end do
+    !        end do
 
-        end if
+    !    end if
 
-        if(allocated(nesting%recv_comms)) then
+    !    if(allocated(nesting%recv_comms)) then
 
-            ! Compute the mass fluxes that are going to/from the 'real' part of
-            ! my domain (i.e. where my domain is the priority domain)
+    !        ! Compute the mass fluxes that are going to/from the 'real' part of
+    !        ! my domain (i.e. where my domain is the priority domain)
 
-            do i = 1, size(nesting%recv_comms, kind=ip)
+    !        do i = 1, size(nesting%recv_comms, kind=ip)
 
-                nbr_index = nesting%recv_comms(i)%neighbour_domain_index
-                nbr_image = nesting%recv_comms(i)%neighbour_domain_image_index
-                nbr_comms = nesting%recv_comms(i)%neighbour_domain_comms_index
-                my_index = nesting%recv_comms(i)%my_domain_index
-                my_image = nesting%recv_comms(i)%my_domain_image_index
-                my_comms = nesting%recv_comms(i)%my_domain_comms_index
+    !            nbr_index = nesting%recv_comms(i)%neighbour_domain_index
+    !            nbr_image = nesting%recv_comms(i)%neighbour_domain_image_index
+    !            nbr_comms = nesting%recv_comms(i)%neighbour_domain_comms_index
+    !            my_index = nesting%recv_comms(i)%my_domain_index
+    !            my_image = nesting%recv_comms(i)%my_domain_image_index
+    !            my_comms = nesting%recv_comms(i)%my_domain_comms_index
 
 
-                !
-                ! NORTH-SOUTH SIDE
-                !
-                edge_ip = [NORTH, SOUTH] ! Index into send_box_flux_integral(.)
-                ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%send_inds(.,2)
-                ind2_ip = [1, -1] ! Offset required to get 'j index of cell just outside the bbox ' -- +1 for NORTH, -1 for SOUTH
-                do j = 1, 2
-                    ! Find fluxes flowing north (or south) to/from the 'real' part of my domain
-                    n = nesting%recv_comms(i)%recv_inds(ind1_ip(j),2) + ind2_ip(j) ! j-index just outside the bbox
-                    i1 = nesting%recv_comms(i)%recv_inds(:,1)
+    !            !
+    !            ! NORTH-SOUTH SIDE
+    !            !
+    !            edge_ip = [NORTH, SOUTH] ! Index into send_box_flux_integral(.)
+    !            ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%send_inds(.,2)
+    !            ind2_ip = [1, -1] ! Offset required to get 'j index of cell just outside the bbox ' -- +1 for NORTH, -1 for SOUTH
+    !            do j = 1, 2
+    !                ! Find fluxes flowing north (or south) to/from the 'real' part of my domain
+    !                n = nesting%recv_comms(i)%recv_inds(ind1_ip(j),2) + ind2_ip(j) ! j-index just outside the bbox
+    !                i1 = nesting%recv_comms(i)%recv_inds(:,1)
 
-                    edge = edge_ip(j)
-                    if(n <= size(nesting%priority_domain_index,2, kind=ip) .and. n>=1) then
-                        flux_recv(edge) = sum(&
-                            nesting%recv_comms(i)%recv_box_flux_integral(edge)%x(:,1), &
-                            mask=( (nesting%priority_domain_index(i1(1):i1(2),n) == my_index) .and. &
-                                   (nesting%priority_domain_image(i1(1):i1(2),n) == my_image) ) )
-                        ! On coarse domains which recv, record the flux error
-                        flux_err_coarse_recv(edge) = &
-                            count([send_boundary_flux_data])*&
-                            count([(.not. nesting%recv_comms(i)%my_domain_is_finer)]) * &
-                            sum(nesting%recv_comms(i)%recv_box_flux_error(edge)%x(:,1), &
-                            mask=( (nesting%priority_domain_index(i1(1):i1(2),n) == my_index) .and. &
-                                   (nesting%priority_domain_image(i1(1):i1(2),n) == my_image) ) )
+    !                edge = edge_ip(j)
+    !                if(n <= size(nesting%priority_domain_index,2, kind=ip) .and. n>=1) then
+    !                    flux_recv(edge) = sum(&
+    !                        nesting%recv_comms(i)%recv_box_flux_integral(edge)%x(:,1), &
+    !                        mask=( (nesting%priority_domain_index(i1(1):i1(2),n) == my_index) .and. &
+    !                               (nesting%priority_domain_image(i1(1):i1(2),n) == my_image) ) )
+    !                    ! On coarse domains which recv, record the flux error
+    !                    flux_err_coarse_recv(edge) = &
+    !                        count([send_boundary_flux_data])*&
+    !                        count([(.not. nesting%recv_comms(i)%my_domain_is_finer)]) * &
+    !                        sum(nesting%recv_comms(i)%recv_box_flux_error(edge)%x(:,1), &
+    !                        mask=( (nesting%priority_domain_index(i1(1):i1(2),n) == my_index) .and. &
+    !                               (nesting%priority_domain_image(i1(1):i1(2),n) == my_image) ) )
 
-                    else
-                        flux_recv(edge) = 0.0_dp
-                        flux_err_coarse_recv(edge) = 0.0_dp
-                    end if
+    !                else
+    !                    flux_recv(edge) = 0.0_dp
+    !                    flux_err_coarse_recv(edge) = 0.0_dp
+    !                end if
 
-                end do
+    !            end do
 
-                !
-                ! Store x range of this recv bounding box
-                !
-                if(present(xs)) then
-                    xr = xs(i1) + 0.5_dp * [xs(i1(1)) - xs(i1(1)+1), xs(i1(2))  - xs(i1(2)-1)]
-                else
-                    xr = 0.0_dp
-                end if
+    !            !
+    !            ! Store x range of this recv bounding box
+    !            !
+    !            if(present(xs)) then
+    !                xr = xs(i1) + 0.5_dp * [xs(i1(1)) - xs(i1(1)+1), xs(i1(2))  - xs(i1(2)-1)]
+    !            else
+    !                xr = 0.0_dp
+    !            end if
 
-                !
-                ! EAST-WEST SIDE
-                !
-                edge_ip = [EAST, WEST] ! Index into recv_box_flux_integral(.)
-                ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%recv_inds(.,2)
-                ind2_ip = [1, -1] ! Offset required to get 'i index of cell just outside the bbox ' -- +1 for EAST, -1 for WEST 
+    !            !
+    !            ! EAST-WEST SIDE
+    !            !
+    !            edge_ip = [EAST, WEST] ! Index into recv_box_flux_integral(.)
+    !            ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%recv_inds(.,2)
+    !            ind2_ip = [1, -1] ! Offset required to get 'i index of cell just outside the bbox ' -- +1 for EAST, -1 for WEST 
 
-                do j = 1, 2
-                    ! Find the mass flux eastward/westward to/from the priority part of my domain (if any) 
-                    n = nesting%recv_comms(i)%recv_inds(ind1_ip(j),1) + ind2_ip(j) ! i-index just outside the recv bbox
-                    i1 = nesting%recv_comms(i)%recv_inds(:,2)
+    !            do j = 1, 2
+    !                ! Find the mass flux eastward/westward to/from the priority part of my domain (if any) 
+    !                n = nesting%recv_comms(i)%recv_inds(ind1_ip(j),1) + ind2_ip(j) ! i-index just outside the recv bbox
+    !                i1 = nesting%recv_comms(i)%recv_inds(:,2)
 
-                    edge = edge_ip(j)
-                    if(n <= size(nesting%priority_domain_index, 1, kind=ip) .and. n>=1) then
-                        flux_recv(edge) = sum(&
-                            nesting%recv_comms(i)%recv_box_flux_integral(edge)%x(:,1), &
-                            mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == my_index) .and. &
-                                   (nesting%priority_domain_image(n,i1(1):i1(2)) == my_image) ) )
+    !                edge = edge_ip(j)
+    !                if(n <= size(nesting%priority_domain_index, 1, kind=ip) .and. n>=1) then
+    !                    flux_recv(edge) = sum(&
+    !                        nesting%recv_comms(i)%recv_box_flux_integral(edge)%x(:,1), &
+    !                        mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == my_index) .and. &
+    !                               (nesting%priority_domain_image(n,i1(1):i1(2)) == my_image) ) )
 
-                        ! On coarse domains which recv, record the flux error
-                        flux_err_coarse_recv(edge) = &
-                            count([send_boundary_flux_data])*&
-                            count([(.not. nesting%recv_comms(i)%my_domain_is_finer)]) * &
-                            sum(nesting%recv_comms(i)%recv_box_flux_error(edge)%x(:,1), &
-                            mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == my_index) .and. &
-                                   (nesting%priority_domain_image(n,i1(1):i1(2)) == my_image) ) )
-                    else
-                        flux_recv(edge) = 0.0_dp 
-                        flux_err_coarse_recv(edge) = 0.0_dp
-                    end if
+    !                    ! On coarse domains which recv, record the flux error
+    !                    flux_err_coarse_recv(edge) = &
+    !                        count([send_boundary_flux_data])*&
+    !                        count([(.not. nesting%recv_comms(i)%my_domain_is_finer)]) * &
+    !                        sum(nesting%recv_comms(i)%recv_box_flux_error(edge)%x(:,1), &
+    !                        mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == my_index) .and. &
+    !                               (nesting%priority_domain_image(n,i1(1):i1(2)) == my_image) ) )
+    !                else
+    !                    flux_recv(edge) = 0.0_dp 
+    !                    flux_err_coarse_recv(edge) = 0.0_dp
+    !                end if
 
-                end do
+    !            end do
 
-                ! Store the y-range of the recv bbox
-                if(present(ys)) then
-                    yr = ys(i1) + 0.5_dp * [ys(i1(1)) - ys(i1(1)+1), ys(i1(2)) - ys(i1(2) - 1)]
-                else
-                    yr = 0.0_dp
-                end if
+    !            ! Store the y-range of the recv bbox
+    !            if(present(ys)) then
+    !                yr = ys(i1) + 0.5_dp * [ys(i1(1)) - ys(i1(1)+1), ys(i1(2)) - ys(i1(2) - 1)]
+    !            else
+    !                yr = 0.0_dp
+    !            end if
 
-                write(log_output_unit,*) 'recv flux from ', &
-                    nbr_index, nbr_image, nbr_comms, ' to ', &
-                    my_index, my_image, my_comms, &
-                    ' N: ', flux_recv(NORTH), '(', flux_err_coarse_recv(NORTH), ')', &
-                    ' S: ', flux_recv(SOUTH), '(', flux_err_coarse_recv(SOUTH), ')', &
-                    ' E: ', flux_recv(EAST),  '(', flux_err_coarse_recv(EAST), ')', &
-                    ' W: ', flux_recv(WEST),  '(', flux_err_coarse_recv(WEST), ')', &
-                    'bbox: ', xr, yr
-            end do
+    !            write(log_output_unit,*) 'recv flux from ', &
+    !                nbr_index, nbr_image, nbr_comms, ' to ', &
+    !                my_index, my_image, my_comms, &
+    !                ' N: ', flux_recv(NORTH), '(', flux_err_coarse_recv(NORTH), ')', &
+    !                ' S: ', flux_recv(SOUTH), '(', flux_err_coarse_recv(SOUTH), ')', &
+    !                ' E: ', flux_recv(EAST),  '(', flux_err_coarse_recv(EAST), ')', &
+    !                ' W: ', flux_recv(WEST),  '(', flux_err_coarse_recv(WEST), ')', &
+    !                'bbox: ', xr, yr
+    !        end do
 
-        end if
+    !    end if
 
-    end subroutine
+    !end subroutine
 
     !
     ! Workhorse unit-test routine.

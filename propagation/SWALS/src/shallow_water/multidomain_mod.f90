@@ -34,7 +34,7 @@ module multidomain_mod
 !! with domains that have not run domain%allocate_quantities. 
 !!
 
-    use global_mod, only: dp, ip, charlen, &
+    use global_mod, only: dp, ip, charlen, gravity, &
         wall_elevation, minimum_allowed_depth, force_double, force_long_double, &
         default_output_folder, send_boundary_flux_data, &
         real_bytes, force_double_bytes, integer_bytes, pi
@@ -1331,14 +1331,7 @@ module multidomain_mod
                 local_sum = sum(&
                         real(md%domains(k)%U( (n_ext+1):(nx-n_ext) ,j ,STG), force_long_double) - &
                         real(md%domains(k)%U( (n_ext+1):(nx-n_ext) ,j ,ELV), force_long_double ), &
-                    mask=(&
-                        (md%domains(k)%nesting%priority_domain_index( (n_ext+1):(nx-n_ext) ,j) == k) .and. &
-                        (md%domains(k)%nesting%priority_domain_image( (n_ext+1):(nx-n_ext) ,j) == ti) .and. &
-                        ! Avoid periodic regions (because they might not be excluded by the previous criteria)
-                        (md%domains(k)%x( (n_ext+1):(nx-n_ext)) > md%periodic_xs(1)) .and.&
-                        (md%domains(k)%x( (n_ext+1):(nx-n_ext)) < md%periodic_xs(2))))
-                ! Avoid periodic regions 
-                if(md%domains(k)%y(j) < md%periodic_ys(1) .or. md%domains(k)%y(j) > md%periodic_ys(2)) local_sum = 0.0_force_double
+                    mask=(md%domains(k)%nesting%is_priority_domain_not_periodic( (n_ext+1):(nx-n_ext) ,j) == 1_ip) )
                 md%volume_work(j) = real(md%domains(k)%area_cell_y(j) * local_sum, force_long_double)
             end do 
             !$OMP END DO
@@ -1766,10 +1759,12 @@ module multidomain_mod
         class(multidomain_type), intent(inout) :: md ! inout allows for timer to run
         logical, optional, intent(in) :: global_stats_only
 
-        integer(ip) :: i, j, k
-        real(dp) :: minstage, maxstage, minspeed, maxspeed, stg1, speed1, depth1
+        integer(ip) :: i, j, k, ecw
+        real(dp) :: minstage, maxstage, minspeed, maxspeed, stg1, speed_sq, depth_C, depth_E, depth_N
+        real(dp) :: energy_potential_on_rho, energy_kinetic_on_rho, energy_total_on_rho
         logical :: is_nesting, only_global_stats
-        real(dp) :: global_max_stage, global_min_stage, global_max_speed, global_min_speed
+        real(dp) :: global_max_stage, global_min_stage, global_max_speed, global_min_speed, &
+            global_energy_potential_on_rho, global_energy_kinetic_on_rho, global_energy_total_on_rho
         real(dp) :: wrk(2)
 
         if(present(global_stats_only)) then
@@ -1790,6 +1785,9 @@ module multidomain_mod
         global_min_stage = HUGE(1.0_dp)
         global_max_speed = 0.0_dp 
         global_min_speed = 0.0_dp
+        global_energy_potential_on_rho = 0.0_dp
+        global_energy_kinetic_on_rho = 0.0_dp
+        global_energy_total_on_rho = 0.0_dp
 
         do k = 1, size(md%domains, kind=ip)
 
@@ -1799,70 +1797,16 @@ module multidomain_mod
                 write(log_output_unit,"(A,I6)") 'domain ', k
             end if
 
+            call md%domains(k)%compute_domain_statistics(maxstage, maxspeed, minstage, minspeed, &
+                energy_potential_on_rho, energy_kinetic_on_rho, energy_total_on_rho)
 
-            ! If nesting is occurring, the above stats are only computed
-            ! in the priority domain area
-            if(md%domains(k)%nesting%my_index > 0) then
-                is_nesting = .true.
-            else
-                is_nesting = .false.
-            end if
-
-            ! Reset stats of interest
-            maxstage = -HUGE(1.0_dp)
-            maxspeed = 0.0_dp ! speed is always > 0
-            minstage = HUGE(1.0_dp)
-            minspeed = 0.0_dp ! speed is always > 0
-
-            ! Compute stats of interest in parallel
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(is_nesting, md, k), &
-            !$OMP REDUCTION(max: maxspeed) REDUCTION(min: minspeed), &
-            !$OMP REDUCTION(max: maxstage) REDUCTION(min: minstage)
-
-            ! Reset stats of interest
-            maxstage = -HUGE(1.0_dp)
-            maxspeed = 0.0_dp ! speed is always > 0
-            minstage = HUGE(1.0_dp)
-            minspeed = 0.0_dp ! speed is always > 0
-
-            !$OMP DO SCHEDULE(STATIC)
-            do j = 2, md%domains(k)%nx(2) - 1
-                do i = 2, md%domains(k)%nx(1) - 1
-    
-                    if(.not. is_nesting) cycle
-
-                    ! Only act inside the priority domain
-                    if( (md%domains(k)%nesting%priority_domain_index(i,j) /= md%domains(k)%nesting%my_index) .or. &
-                        (md%domains(k)%nesting%priority_domain_image(i,j) /= md%domains(k)%nesting%my_image)) cycle
-
-                    ! Actual stats    
-                    if( (md%domains(k)%U(i,j,STG) > md%domains(k)%U(i,j,ELV) + minimum_allowed_depth)) then
-                        stg1 = md%domains(k)%U(i,j,STG)
-                        depth1 = stg1 - md%domains(k)%U(i,j,ELV)
-        
-                        maxstage = max(maxstage, stg1)
-                        minstage = min(minstage, stg1)
-
-                        ! Compute 'velocity**2', and update later 
-                        speed1 = (md%domains(k)%U(i,j,UH) * md%domains(k)%U(i,j,UH) + &
-                                  md%domains(k)%U(i,j,VH) * md%domains(k)%U(i,j,VH)   )/ &
-                                 (depth1*depth1)
-
-                        maxspeed = max(maxspeed, speed1)
-                        minspeed = min(minspeed, speed1)
-                    end if
-
-                end do
-            end do
-            !$OMP END DO
-            !$OMP END PARALLEL
-
-            maxspeed = sqrt(maxspeed)
-            minspeed = sqrt(minspeed)
             global_max_stage = max(global_max_stage, maxstage)
             global_min_stage = min(global_min_stage, minstage)
             global_max_speed = max(global_max_speed, maxspeed)
             global_min_speed = min(global_min_speed, minspeed)
+            global_energy_potential_on_rho = global_energy_potential_on_rho + energy_potential_on_rho
+            global_energy_kinetic_on_rho = global_energy_kinetic_on_rho + energy_kinetic_on_rho
+            global_energy_total_on_rho = global_energy_total_on_rho + energy_total_on_rho
 
             if(only_global_stats) cycle
 
@@ -1881,9 +1825,16 @@ module multidomain_mod
             write(log_output_unit, "(A)"         ) 'Stage: '
             write(log_output_unit, "(A, ES20.12)") '        ', maxstage
             write(log_output_unit, "(A, ES20.12)") '        ', minstage
-            write(log_output_unit, "(A)"         ) 'Speed (approximate for staggered-grids): '
+            write(log_output_unit, "(A)"         ) 'Speed: '
             write(log_output_unit, "(A, ES20.12)") '        ', maxspeed
             write(log_output_unit, "(A, ES20.12)") '        ', minspeed
+            write(log_output_unit, "(A)"         ) &
+                'Energy (potential) / rho [= integral of (g * depth * z + g/2 depth^2) ], zero when stage=domain%msl_linear: '
+            write(log_output_unit, "(A, ES20.12)") '        ', energy_potential_on_rho
+            write(log_output_unit, "(A)"         ) 'Energy (kinetic) / rho [i.e. integral of (1/2 depth * speed^2) ]: '
+            write(log_output_unit, "(A, ES20.12)") '        ', energy_kinetic_on_rho
+            write(log_output_unit, "(A)"         ) 'Energy (total) / rho: '
+            write(log_output_unit, "(A, ES20.12)") '        ', energy_total_on_rho
             write(log_output_unit, "(A)"         ) 'Negative_depth_clip_counter: '
             write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%negative_depth_fix_counter
 
@@ -1900,6 +1851,9 @@ module multidomain_mod
         call co_max(global_max_speed)
         call co_min(global_min_stage)
         call co_min(global_min_speed)
+        call co_sum(global_energy_potential_on_rho)
+        call co_sum(global_energy_kinetic_on_rho)
+        call co_sum(global_energy_total_on_rho)
 #endif
 
         write(log_output_unit, "(A)"         ) ''
@@ -1907,10 +1861,17 @@ module multidomain_mod
         write(log_output_unit, "(A)"         ) 'Global stage range (over all domains and images): '
         write(log_output_unit, "(A, ES20.12)") '        ', global_max_stage
         write(log_output_unit, "(A, ES20.12)") '        ', global_min_stage
-        write(log_output_unit, "(2A)"        ) 'Global speed range (over all domains and images) -- ', &
-            'speed calculations are approximate for staggered-grids (potential for spurious high speeds): '
+        write(log_output_unit, "(2A)"        ) 'Global speed range (over all domains and images): '
         write(log_output_unit, "(A, ES20.12)") '        ', global_max_speed
         write(log_output_unit, "(A, ES20.12)") '        ', global_min_speed
+        write(log_output_unit, "(2A)"        ) &
+            'Global energy-potential / rho (over all domains and images), zero when stage=domain%msl_linear: '
+        write(log_output_unit, "(A, ES20.12)") '        ', global_energy_potential_on_rho
+        write(log_output_unit, "(2A)"        ) 'Global energy-kinetic / rho (over all domains and images): '
+        write(log_output_unit, "(A, ES20.12)") '        ', global_energy_kinetic_on_rho
+        write(log_output_unit, "(2A)"        ) &
+            'Global energy-total / rho (over all domains and images): '
+        write(log_output_unit, "(A, ES20.12)") '        ', global_energy_total_on_rho
         write(log_output_unit, "(A)") '-----------'
         call md%report_mass_conservation_statistics()
 
@@ -2571,6 +2532,7 @@ module multidomain_mod
             ! domain is overlapped by finer domains, then they will be recorded here
             allocate( domains(j)%nesting%priority_domain_index(d_nx(1), d_nx(2)) )
             allocate( domains(j)%nesting%priority_domain_image(d_nx(1), d_nx(2)) )
+            allocate( domains(j)%nesting%is_priority_domain_not_periodic(d_nx(1), d_nx(2)) )
 
             ! Below we call 'find_priority_domain_containing_xy', and need to
             ! pass an array which can store the neighbour dx.
@@ -2597,6 +2559,15 @@ module multidomain_mod
                 ! Useful to store the current domain index and image inside the nesting structure
                 domains(j)%nesting%my_index = j
                 domains(j)%nesting%my_image = ti
+
+                ! Useful to flag points that are inside the priority domain AND not in periodic regions.
+                ! For instance to do mass conservation calculations we often want to integrate over these
+                domains(j)%nesting%is_priority_domain_not_periodic(:,jj) = merge(1_ip, 0_ip, &
+                    (domains(j)%nesting%priority_domain_index(:,jj) == j ) .and. &
+                    (domains(j)%nesting%priority_domain_image(:,jj) == ti) .and. &
+                    (xc_tmp > periodic_xs(1) .and. xc_tmp < periodic_xs(2) .and. &
+                      y_tmp > periodic_ys(1) .and. y_tmp  < periodic_ys(2) )  )
+
           
                 if(any(domains(j)%nesting%priority_domain_index(:,jj) < 0)) then
                     write(log_output_unit, *) &

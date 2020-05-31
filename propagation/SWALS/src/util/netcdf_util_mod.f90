@@ -423,14 +423,14 @@ SRC_GIT_VERSION ), &
     end subroutine
 
 
-    subroutine store_priority_domain_cells(nc_grid_output, priority_domain_index, &
-        priority_domain_image, my_index, my_image)
+    subroutine store_priority_domain_cells(nc_grid_output, priority_domain_index, priority_domain_image, &
+        is_priority_domain_not_periodic, my_index, my_image)
         !! Store a 1 byte integer, denoting the cells in the current domain that are 
         !! priority_domain cells. Also store regular integer grids with the priority domain index
         !! and image.
         class(nc_grid_output_type), intent(in) :: nc_grid_output 
             !! Initialised nc_grid_output type 
-        integer(ip), intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:) 
+        integer(ip), intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:)
             !! Arrays denoting the priority domain index and image, i.e., the index/image of
             !! the domain that is consider to contain the 'real' solution on each cell. Generally the priority domain
             !! corresponds to the finest resolution domain covering that cell. Each domain will
@@ -439,6 +439,9 @@ SRC_GIT_VERSION ), &
             !! a halo region. It is important to know this, e.g. for mass conservation calculations, for
             !! the creation of the nesting communication data structures, and for making seamless outputs using
             !! only priority domain values.
+        integer(ip), intent(in) :: is_priority_domain_not_periodic(:,:)
+            !! Integer array with value 1_ip where the cell is in the priority domain and not in periodic regions,
+            !! and value 0_ip otherwise
         integer(ip) :: my_index, my_image
             !! The domain index (i.e. index of the domain in md%domains(:)) and image (i.e. always 1 for non-coarray programs, or
             !! equal to this_image() for coarray programs) 
@@ -455,13 +458,15 @@ SRC_GIT_VERSION ), &
 
         ! Loop to avoid making a temporary variable that contains the 0/1 mask
         do i = spatial_start(2), nxy(2), spatial_stride(2)
-
+            ! NOTE: This records cells that are in the priority domain, but it may double-count
+            ! cells if there are periodic regions, and the domain receives periodic halos from itself. 
+            ! There is another variable (integer(ip) domain%nesting%is_priority_domain_not_periodic) that records
+            ! this info - consider making use of that here instead.
             call check(nf90_put_var(&
                 iNcid, &
                 nc_grid_output%var_is_priority_domain_id, &
                 merge(1, 0, &
-                    mask=(priority_domain_index(spatial_start(1):nxy(1):spatial_stride(1),i) == my_index .and. &
-                          priority_domain_image(spatial_start(1):nxy(1):spatial_stride(1),i) == my_image)), &
+                    mask=(is_priority_domain_not_periodic(spatial_start(1):nxy(1):spatial_stride(1),i) == 1_ip)), &
                 start = [1, (i - spatial_start(2))/spatial_stride(2) + 1]), &
                 __LINE__)
         end do 

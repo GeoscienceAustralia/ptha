@@ -399,8 +399,7 @@ module domain_mod
         procedure:: print => print_domain_statistics
 
         ! Core routines that occur within a timestep
-        ! (consider making these not type bound -- since the user should not
-        !  really call them)
+        ! (consider making these not type bound -- since the user should not really call them)
         procedure:: compute_depth_and_velocity => compute_depth_and_velocity
         procedure:: compute_fluxes => compute_fluxes
         !procedure:: compute_fluxes => compute_fluxes_vectorized !! Slower than un-vectorized version on GD home machine
@@ -410,14 +409,6 @@ module domain_mod
         procedure:: backup_quantities => backup_quantities
 
         ! Timestepping (consider making only 'evolve_one_step' type bound -- since the user should not really call others)
-        !procedure:: one_euler_step => one_euler_step
-        !procedure:: one_rk2_step => one_rk2_step 
-        !procedure:: one_rk2n_step => one_rk2n_step 
-        !procedure:: one_midpoint_step => one_midpoint_step
-        !procedure:: one_linear_leapfrog_step => one_linear_leapfrog_step
-        !procedure:: one_leapfrog_linear_plus_nonlinear_friction_step => one_leapfrog_linear_plus_nonlinear_friction_step
-        !procedure:: one_leapfrog_nonlinear_step => one_leapfrog_nonlinear_step
-        !procedure:: one_cliffs_step => one_cliffs_step
         procedure:: evolve_one_step => evolve_one_step
         procedure:: update_max_quantities => update_max_quantities
 
@@ -434,9 +425,10 @@ module domain_mod
         procedure:: write_max_quantities => write_max_quantities
         procedure:: log_outputs => divert_logfile_unit_to_file
 
-        ! Mass conservation reporting
+        ! Mass conservation and other reporting
         procedure:: mass_balance_interior => mass_balance_interior
         procedure:: volume_interior => volume_interior
+        procedure:: compute_domain_statistics => compute_domain_statistics_new
 
         ! Functions to estimate gravity-wave time-step (often useful to call at the start of a model run). These are not used
         ! in the flow-algorithms, they are just for convenience.
@@ -518,36 +510,17 @@ module domain_mod
     subroutine print_domain_statistics(domain)
         !! 
         !! Convenience printing function.
-        !! FIXME: For nesting domains, consider modifying this to only use values
-        !!        where the priority_domain corresponds to the current domain.
-        !!        In general, I use the multidomain printing routines.
+        !!
         class(domain_type), intent(inout):: domain
 
-        real(dp):: maxstage, minstage
-        integer:: i,j, ecw, nx, ny
-        real(dp):: dry_depth_threshold
-        real(force_double) :: energy_total, energy_potential, energy_kinetic
-        real(dp):: depth, depth_iplus, depth_jplus
-        logical, parameter:: report_energy_statistics=.TRUE.
+        real(dp):: maxstage, minstage, minspeed, maxspeed
+        integer:: ecw
+        real(dp) :: energy_total_on_rho, energy_potential_on_rho, energy_kinetic_on_rho
 
 TIMER_START('printing_stats')
 
-        dry_depth_threshold = minimum_allowed_depth
-
-        nx = domain%nx(1)
-        ny = domain%nx(2)
-            
-        ! Min/max stage in wet areas
-        maxstage = -huge(ONE_dp)
-        minstage = huge(ONE_dp)
-        do j = 2, ny-1
-            do i = 2, nx-1
-                if(domain%U(i,j,STG) > domain%U(i,j,ELV) + dry_depth_threshold) then
-                    maxstage = max(maxstage, domain%U(i,j,STG))
-                    minstage = min(minstage, domain%U(i,j,STG))
-                end if
-            end do
-        end do
+        call domain%compute_domain_statistics(maxstage, maxspeed, minstage, minspeed, energy_potential_on_rho,&
+            energy_kinetic_on_rho, energy_total_on_rho)
 
         ! Print main statistics
         write(domain%logfile_unit, *) ''
@@ -566,125 +539,191 @@ TIMER_START('printing_stats')
         write(domain%logfile_unit, *) 'Stage: '
         write(domain%logfile_unit, *) '        ', maxstage
         write(domain%logfile_unit, *) '        ', minstage
-
-        if((.not. domain%is_staggered_grid)) then
-
-            ! Typically depth/velocity are not up-to-date with domain%U, so fix
-            ! that here.
-            call domain%compute_depth_and_velocity()
-
-            write(domain%logfile_unit, *) 'u: '
-            write(domain%logfile_unit, *) '        ', maxval(domain%velocity(2:(nx-1), 2:(ny-1),UH))
-            write(domain%logfile_unit, *) '        ', minval(domain%velocity(2:(nx-1), 2:(ny-1),UH))
-            write(domain%logfile_unit, *) 'v: '
-            write(domain%logfile_unit, *) '        ', maxval(domain%velocity(2:(nx-1), 2:(ny-1),VH))
-            write(domain%logfile_unit, *) '        ', minval(domain%velocity(2:(nx-1), 2:(ny-1),VH))
-            write(domain%logfile_unit, *) '.........'
-
-        end if
-
-        ! Optionally report integrated energy
-        if(report_energy_statistics) then
-
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dry_depth_threshold) REDUCTION(+:energy_potential), &
-            !$OMP REDUCTION(+:energy_kinetic)
-
-            ecw = domain%exterior_cells_width
-            energy_potential = 0.0_force_double
-            energy_kinetic = 0.0_force_double
-
-
-            if(domain%is_staggered_grid .and. domain%linear_solver_is_truely_linear) then
-                !
-                ! Linear leap-frog scheme doesn't store velocity
-                ! Get total, potential and kinetic energy in domain interior
-                !
-                ! This does not exactly lead to energy conservation, but with small-enough time-steps
-                ! it should be good for the linear solver.
-                !
-
-                ! Integrate over the model interior
-                !$OMP DO
-                do j = 1 + ecw, (domain%nx(2) - ecw)
-                    do i = (1+ecw), (domain%nx(1)-ecw)
-
-                        ! Integrate over wet cells
-                        if(domain%msl_linear > domain%U(i,j,ELV) + dry_depth_threshold) then
-            
-                            energy_potential = energy_potential + real(domain%area_cell_y(j) *&
-                                (domain%U(i,j,STG) - domain%msl_linear)**2, force_double)
-
-                            !
-                            ! Kinetic energy integration needs to account for grid staggering -- cell
-                            ! areas are constant for constant lat, but changing as lat changes.
-                            !
-                            depth_iplus = HALF_dp * (domain%msl_linear - domain%U(i,j,ELV) + &
-                                domain%msl_linear - domain%U(i+1,j,ELV))
-                            if(depth_iplus > dry_depth_threshold) then
-                                energy_kinetic = energy_kinetic + real(domain%area_cell_y(j)*&
-                                    (domain%U(i,j,UH)**2)/depth_iplus, force_double)
-                            end if
-
-                            depth_jplus = HALF_dp * (domain%msl_linear - domain%U(i,j,ELV) + &
-                                domain%msl_linear - domain%U(i,j+1,ELV))
-                            if(depth_jplus > dry_depth_threshold) then
-                                energy_kinetic = energy_kinetic + real(&
-                                    HALF_dp * (domain%area_cell_y(j) + domain%area_cell_y(j+1))*&
-                                    (domain%U(i,j,VH)**2)/depth_jplus, force_double)
-                            end if
-
-                        end if
-                    end do
-                end do
-                !$OMP END DO
-
-            else if(.not. domain%is_staggered_grid) then
-                !
-                ! Compute energy statistics using non-staggered grid
-                !
-
-                ! Integrate over the model interior
-                !$OMP DO
-                do j = 1 + ecw, (domain%nx(2) - ecw)
-                    do i = (1+ecw), (domain%nx(1)-ecw)
-                        depth = domain%U(i,j,STG) - domain%U(i,j,ELV)
-                        if(depth > dry_depth_threshold) then
-                            energy_potential = energy_potential + real(domain%area_cell_y(j) * &
-                                (domain%U(i,j,STG) - domain%msl_linear)**2, force_double)
-                                !depth * domain%U(i,j,STG) 
-                            energy_kinetic = energy_kinetic + real(domain%area_cell_y(j) * &
-                                (domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2)/depth, force_double)
-                        end if 
-                    end do
-                end do
-                !$OMP END DO
-
-            end if
-
-            !$OMP END PARALLEL
-
-            ! In the case we use a "not-truely-linear" variant of the linear solver, the energy
-            ! calculations do not really make sense
-            if(domain%is_staggered_grid .and. (.not. domain%linear_solver_is_truely_linear)) then
-                ! Do nothing
-            else
-                ! Rescale energy statistics appropriately 
-                energy_potential = energy_potential * gravity * 0.5_force_double
-                energy_kinetic = energy_kinetic * 0.5_force_double
-                energy_total = energy_potential + energy_kinetic
-
-                write(domain%logfile_unit, *) 'Energy Total / rho: ', energy_total
-                write(domain%logfile_unit, *) 'Energy Potential / rho: ', energy_potential
-                write(domain%logfile_unit, *) 'Energy Kinetic / rho: ', energy_kinetic
-            end if
-
-        end if
-
+        write(domain%logfile_unit, *) 'Speed: '
+        write(domain%logfile_unit, *) '        ', maxspeed
+        write(domain%logfile_unit, *) '        ', minspeed
+        write(domain%logfile_unit, "(A, ES20.12)") 'Energy Potential / rho (zero when stage=domain%msl_linear): ', &
+                                      energy_potential_on_rho
+        write(domain%logfile_unit, "(A, ES20.12)") 'Energy Kinetic / rho: ', energy_kinetic_on_rho
+        write(domain%logfile_unit, "(A, ES20.12)") 'Energy Total / rho: ', energy_total_on_rho
         ! Mass conservation check
         write(domain%logfile_unit, *) 'Mass Balance (domain interior): ', domain%mass_balance_interior()
 
 TIMER_STOP('printing_stats')
     end subroutine
+
+
+    subroutine compute_domain_statistics_new(domain, maxstage, maxspeed, minstage, minspeed, &
+        energy_potential_on_rho, energy_kinetic_on_rho, energy_total_on_rho)
+        !!
+        !! Compute various statistics in the domain. If nesting is occurring, then only consider
+        !! priority_domain cells. Never include cells within 'exterior_cells_width' from the boundary.
+        !!
+        class(domain_type), intent(in) :: domain
+            !! The domain for which we compute statistics
+        real(dp), intent(out) :: maxstage, maxspeed, minstage, minspeed
+            !! Stage and speed statistics in wet areas
+        real(dp), intent(out) :: energy_potential_on_rho
+            !! Potential-energy/water-density. Potential energy includes an arbitrary offset, and herein that
+            !! is defined so that the potential energy is zero if stage=msl_linear (or dry) everywhere.
+        real(dp), intent(out) :: energy_kinetic_on_rho
+            !! Kinetic energy/water-density. 
+        real(dp), intent(out) :: energy_total_on_rho
+
+        logical :: is_nesting, is_wet, use_truely_linear_method
+        integer(ip) :: ecw, i, j
+        real(dp) :: depth_C, depth_N, depth_E, depth_N_inv, depth_E_inv, speed_sq
+        ! Ensure the energy accumulation uses high precision, easy to lose precision here.
+        real(force_double) :: e_potential_on_rho, e_kinetic_on_rho, e_total_on_rho, e_flow, e_constant, w0, d1, w2, d3
+
+        ! If nesting is occurring, the above stats are only computed
+        ! in the priority domain area
+        is_nesting = (domain%nesting%my_index > 0) 
+
+        ! Reset stats of interest
+        maxstage = -HUGE(1.0_dp)
+        maxspeed = 0.0_dp ! speed is always > 0
+        minstage = HUGE(1.0_dp)
+        minspeed = 0.0_dp ! speed is always > 0
+        e_potential_on_rho = 0.0_force_double
+        e_kinetic_on_rho = 0.0_force_double
+
+        ecw = domain%exterior_cells_width
+
+        ! Compute stats of interest in parallel
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(is_nesting, domain, ecw), &
+        !$OMP REDUCTION(max: maxspeed) REDUCTION(min: minspeed), &
+        !$OMP REDUCTION(max: maxstage) REDUCTION(min: minstage), &
+        !$OMP REDUCTION(+: e_potential_on_rho) REDUCTION(+: e_kinetic_on_rho)
+
+        ! Reset stats of interest
+        maxstage = -HUGE(1.0_dp)
+        maxspeed = 0.0_dp ! speed is always > 0
+        minstage = HUGE(1.0_dp)
+        minspeed = 0.0_dp ! speed is always > 0
+        e_potential_on_rho = 0.0_force_double
+        e_kinetic_on_rho = 0.0_force_double
+
+        ! If we are using a 'truely-linear' solver then the depth is always recorded from MSL.
+        use_truely_linear_method = domain%is_staggered_grid .and. domain%linear_solver_is_truely_linear .and. &
+            any(domain%timestepping_method == [character(len=charlen) :: 'linear', 'leapfrog_linear_plus_nonlinear_friction'])
+
+        !$OMP DO SCHEDULE(STATIC)
+        do j = (1 + ecw), (domain%nx(2) - ecw )
+            do i = (1 + ecw), (domain%nx(1) - ecw )
+    
+                if(is_nesting) then
+                    ! Cycle if this cell is not on the priority domain 
+                    if( domain%nesting%is_priority_domain_not_periodic(i, j) == 0_ip ) cycle
+                end if
+
+                if(use_truely_linear_method) then
+                    is_wet = (domain%msl_linear > domain%U(i,j,ELV) + minimum_allowed_depth)
+                        ! For the 'truely linear' equations, the "depth" is relative to MSL, irrespective
+                        ! of the stage. Note that for 'truely-linear' equations it is valid to have
+                        ! the stage below the bed (we can create such a model -- just multiply the
+                        ! solution by a sufficiently large number -- which must be a solution according to linearity).
+                else
+                    is_wet = (domain%U(i,j,STG) > domain%U(i,j,ELV) + minimum_allowed_depth)
+                end if
+
+                ! The potential energy is defined as:
+                !     Integral of [ g * depth*(elev + 1/2 depth) ]
+                ! This can be rearranged noting (depth = stage - elev) to give
+                !     Integral of [ (g/2 stage^2 - g/2 elev^2) ] 
+                ! ('difference of 2 squares')
+                w0 = real(domain%U(i,j,STG), force_double) + real(domain%U(i,j,ELV), force_double)
+                d1 = real(domain%U(i,j,STG), force_double) - real(domain%U(i,j,ELV), force_double)
+                e_flow = merge( w0*d1, 0.0_force_double, is_wet)
+                ! Once integrated the g/2 elev^2 term will be a constant if the bathymetry is fixed and there is no wetting and
+                ! drying. We are only interested in changes in integrated energy, and subtracting that constant recovers the
+                ! (g/2 stage^2) formulation of potential energy, which is typically used for the linear shallow water equations in
+                ! deep ocean tsunami type cases.
+                w2 = real(domain%msl_linear, force_double) + real(domain%U(i,j,ELV), force_double)
+                d3 = real(domain%msl_linear, force_double) - real(domain%U(i,j,ELV), force_double)
+                e_constant = merge( w2*d3, 0.0_force_double, domain%msl_linear > domain%U(i,j,ELV) + minimum_allowed_depth)
+                    ! e_constant must be COMPLETELY UNAFFECTED by changes in the flow - it is a constant offset.
+
+                e_potential_on_rho = e_potential_on_rho + &
+                    real(domain%area_cell_y(j) * gravity * 0.5_dp, force_double) * (e_flow - e_constant)
+
+                if(is_wet) then
+
+                    maxstage = max(maxstage, domain%U(i,j,STG))
+                    minstage = min(minstage, domain%U(i,j,STG))
+
+                    if(domain%is_staggered_grid) then
+
+                        ! Get depths at UH point (E) and VH point (N).
+                        ! The interpretation of 'depth' varies depending on whether we are using the 'truely-linear'
+                        ! treatment of the pressure gradient term in the linear shallow water equations.
+                        if(use_truely_linear_method) then
+                            ! Depth is always relative to MSL.
+
+                            depth_E = 0.5_dp * ( (domain%msl_linear - domain%U(i+1,j,ELV)) + &
+                                                 (domain%msl_linear - domain%U(i  ,j,ELV)) )
+                            depth_N = 0.5_dp * ( (domain%msl_linear - domain%U(i,j+1,ELV)) + &
+                                                 (domain%msl_linear - domain%U(i,j  ,ELV)) )
+                        else
+                            ! In this case the convential definition of depth is appropriate.
+                            depth_E = 0.5_dp * ( (domain%U(i+1,j,STG) - domain%U(i+1,j,ELV)) + &
+                                                 (domain%U(i  ,j,STG) - domain%U(i  ,j,ELV)) )
+                            depth_N = 0.5_dp * ( (domain%U(i,j+1,STG) - domain%U(i,j+1,ELV)) + &
+                                                 (domain%U(i,j  ,STG) - domain%U(i,j  ,ELV)) )
+                        end if
+
+                        if(depth_E > minimum_allowed_depth) then
+                            depth_E_inv = 1.0_dp/depth_E
+                        else
+                            depth_E_inv = 0.0_dp
+                        end if
+
+                        if(depth_N > minimum_allowed_depth) then
+                            depth_N_inv = 1.0_dp/depth_N
+                        else
+                            depth_N_inv = 0.0_dp
+                        end if
+
+                        speed_sq = domain%U(i,j,UH) * domain%U(i,j,UH) * depth_E_inv**2  + &
+                                   domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv**2
+
+                        ! The kinetic energy is integral of ( 1/2 depth speed^2)
+                        e_kinetic_on_rho = e_kinetic_on_rho + real(0.5_dp * &
+                            (domain%area_cell_y(j) * domain%U(i,j,UH) * domain%U(i,j,UH) * depth_E_inv + &
+                            0.5_dp * (domain%area_cell_y(j) + domain%area_cell_y(j+1)) * &
+                                domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv  ), &
+                            force_double)
+ 
+                    else
+                        ! Co-loated grid
+                        depth_C = domain%U(i,j,STG) - domain%U(i,j,ELV)
+                        speed_sq = (domain%U(i,j,UH) * domain%U(i,j,UH) + domain%U(i,j,VH) * domain%U(i,j,VH)   )/ &
+                                    (depth_C*depth_C)
+
+                        ! The kinetic energy is integral of ( 1/2 depth speed^2)
+                        e_kinetic_on_rho = e_kinetic_on_rho + real(domain%area_cell_y(j) * &
+                            0.5_dp * depth_C * speed_sq, force_double)
+                     end if
+
+                    maxspeed = max(maxspeed, speed_sq) ! Will undo the sqrt later.
+                    minspeed = min(minspeed, speed_sq) ! Will undo the sqrt later
+
+                end if
+            end do
+        end do
+        !$OMP END DO
+        !$OMP END PARALLEL
+
+        ! Convert 'speed**2' to 'speed'
+        maxspeed = sqrt(maxspeed)
+        minspeed = sqrt(minspeed)
+        ! Copy energies (in force_double) precision back to possibly lower precision input var
+        energy_kinetic_on_rho = e_kinetic_on_rho
+        energy_potential_on_rho = e_potential_on_rho
+        energy_total_on_rho = e_potential_on_rho + e_kinetic_on_rho
+
+    end subroutine
+
 
     subroutine allocate_quantities(domain, global_lw, global_nx, global_ll, create_output_files,&
         co_size_xy, ew_periodic, ns_periodic, verbose)
@@ -1253,36 +1292,28 @@ TIMER_STOP('printing_stats')
             if(domain%boundary_exterior(1)) then
                 domain%boundary_flux_store_exterior(1) = sum(&
                     domain%flux_NS( (1+n_ext):(nx-n_ext), ny+1-n_ext, STG),&
-                    mask = (&
-                        domain%nesting%priority_domain_index((1+n_ext):(nx-n_ext), ny-n_ext) == domain%nesting%my_index .and. &
-                        domain%nesting%priority_domain_image((1+n_ext):(nx-n_ext), ny-n_ext) == domain%nesting%my_image ))
+                    mask = (domain%nesting%is_priority_domain_not_periodic((1+n_ext):(nx-n_ext), ny-n_ext) == 1_ip) )
             end if
 
             ! East boundary
             if(domain%boundary_exterior(2)) then
                 domain%boundary_flux_store_exterior(2) = sum(&
                     domain%flux_EW( nx+1-n_ext, (1+n_ext):(ny-n_ext), STG),&
-                    mask = (&
-                        domain%nesting%priority_domain_index(nx-n_ext, (1+n_ext):(ny-n_ext)) == domain%nesting%my_index .and. &
-                        domain%nesting%priority_domain_image(nx-n_ext, (1+n_ext):(ny-n_ext)) == domain%nesting%my_image ))
+                    mask = (domain%nesting%is_priority_domain_not_periodic(nx-n_ext, (1+n_ext):(ny-n_ext)) == 1_ip) )
             end if
 
             ! South boundary
             if(domain%boundary_exterior(3)) then
                 domain%boundary_flux_store_exterior(3) = -sum(&
                     domain%flux_NS( (1+n_ext):(nx-n_ext), 1+n_ext, STG),&
-                    mask = (&
-                        domain%nesting%priority_domain_index((1+n_ext):(nx-n_ext), 1+n_ext) == domain%nesting%my_index .and. &
-                        domain%nesting%priority_domain_image((1+n_ext):(nx-n_ext), 1+n_ext) == domain%nesting%my_image ))
+                    mask = (domain%nesting%is_priority_domain_not_periodic((1+n_ext):(nx-n_ext), 1+n_ext) == 1_ip) )
             end if
 
             ! West boundary
             if(domain%boundary_exterior(4)) then
                 domain%boundary_flux_store_exterior(4) = -sum(&
                     domain%flux_EW( 1+n_ext, (1+n_ext):(ny-n_ext), STG),&
-                    mask = (&
-                        domain%nesting%priority_domain_index(1+n_ext, (1+n_ext):(ny-n_ext)) == domain%nesting%my_index .and. &
-                        domain%nesting%priority_domain_image(1+n_ext, (1+n_ext):(ny-n_ext)) == domain%nesting%my_image ))
+                    mask = (domain%nesting%is_priority_domain_not_periodic(1+n_ext, (1+n_ext):(ny-n_ext)) == 1_ip) )
             end if 
         else
             ! We are not doing nesting
@@ -1800,6 +1831,7 @@ TIMER_STOP('evolve_one_step')
             call domain%nc_grid_output%store_priority_domain_cells(&
                 domain%nesting%priority_domain_index,&
                 domain%nesting%priority_domain_image,&
+                domain%nesting%is_priority_domain_not_periodic,&
                 domain%nesting%my_index,&
                 domain%nesting%my_image)
         end if
@@ -1984,10 +2016,10 @@ TIMER_STOP('fileIO')
             j0 = ceiling( (y(i) - domain%lower_left(2))/domain%dx(2) )
 
             if(i0 > 0 .and. i0 <= domain%nx(1) .and. j0 > 0 .and. j0 <= domain%nx(2)) then
-                if( domain%nesting%priority_domain_index(i0, j0) == domain%nesting%my_index .and. &
-                    domain%nesting%priority_domain_image(i0, j0) == domain%nesting%my_image) then
-                   is_in_priority(i) = .true.
-                end if
+                ! Here we INCLUDE points in any periodic regions that receive from their own domain.
+                is_in_priority(i) = ( &
+                    domain%nesting%priority_domain_index(i0, j0) == domain%nesting%my_index .and. &
+                    domain%nesting%priority_domain_image(i0, j0) == domain%nesting%my_image )
             end if
             
         end do

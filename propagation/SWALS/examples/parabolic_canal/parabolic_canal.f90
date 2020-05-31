@@ -162,6 +162,8 @@ program parabolic_canal
         non_adaptive_ts = md%domains(1)%stationary_timestep_max() * 0.9_dp
     end if
 
+    call md%make_initial_conditions_consistent()
+
 
     ! Evolve the code
     do while (.TRUE.)

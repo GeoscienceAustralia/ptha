@@ -2,7 +2,11 @@ timestepping_method = commandArgs(trailingOnly=TRUE)[1]
 
 library(rptha)
 source('../../plot.R')
-x = get_multidomain(rev(Sys.glob('OUTPUTS/RUN*'))[1])
+md_dir = rev(Sys.glob('OUTPUTS/RUN*'))[1]
+x = get_multidomain(md_dir)
+
+# Logfile
+md_file_lines = readLines(Sys.glob(paste0(md_dir, '/multidom*.log'))[1])
 
 # Get dx/dy in cartesian-like coordinates
 dx = distHaversine(cbind(x[[1]]$xs[1], x[[1]]$ys[1]), cbind(x[[1]]$xs[2], x[[1]]$ys[1]))
@@ -90,3 +94,44 @@ for(k in ks){
     }
 }
 dev.off()
+
+##
+## Check some statistics from the log file
+##
+
+expected_initial_energy_total =  2.170550448602E+04
+k = grep("Global energy-total", md_file_lines, fixed=TRUE)
+energy_totals = as.numeric(md_file_lines[k+1])
+# Check the starting energy is as expected
+if(abs(energy_totals[1] - expected_initial_energy_total) < 0.001 * expected_initial_energy_total){
+    print('PASS')
+}else{
+    print('FAIL')
+}
+n = length(energy_totals)
+# Check the final energy is not too different -- noting some solvers are more dissipative than others
+if(abs(energy_totals[n] - expected_initial_energy_total) < 0.05 * expected_initial_energy_total){
+    print('PASS')
+}else{
+    print('FAIL')
+}
+
+
+expected_initial_volume_total = 1.997761893443E+07
+k = grep("Multidomain volume    ", md_file_lines, fixed=TRUE)
+volume_totals = sapply(md_file_lines[k], f<-function(x) as.numeric(strsplit(x, ':')[[1]][2]), USE.NAMES=FALSE)
+# Check the starting volume is as expected
+if(abs(volume_totals[1] - expected_initial_volume_total) < 0.001 * expected_initial_volume_total){
+    print('PASS')
+}else{
+    print('FAIL')
+}
+n = length(volume_totals)
+# Check the final volume is not too different -- noting some solvers are more dissipative than others
+if(abs(volume_totals[n] - expected_initial_volume_total) < 0.001 * expected_initial_volume_total){
+    print('PASS')
+}else{
+    print('FAIL')
+}
+
+

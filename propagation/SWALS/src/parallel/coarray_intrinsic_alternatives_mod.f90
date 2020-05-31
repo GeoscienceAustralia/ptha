@@ -249,6 +249,7 @@ module coarray_intrinsic_alternatives
 #endif
 
     subroutine sync_all_generic
+        !! Alternative to "sync all" which uses mpi directly if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined
         integer :: ierr
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         call mpi_barrier(MPI_COMM_WORLD, ierr)
