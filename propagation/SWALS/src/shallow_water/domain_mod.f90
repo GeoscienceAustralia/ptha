@@ -59,11 +59,12 @@ module domain_mod
 
     implicit none
 
-    ! Make everything private, except domain_type, which has its own methods.
+    ! Make everything private except domain_type (which has its own methods) and
+    ! the indices of key variables in the 3rd dimension of domain%U(:,:,:)
     private
-    public:: domain_type
+    public:: domain_type, STG, UH, VH, ELV
 
-    integer(int32), parameter, public:: STG=1, UH=2, VH=3, ELV=4
+    integer(int32), parameter :: STG=1, UH=2, VH=3, ELV=4
         ! Indices for arrays: Stage, depth-integrated-x-velocity, depth-integrated-v-velocity, elevation. So e.g. stage is in
         ! domain%U(:,:,STG), and elevation is in domain%U(:,:,ELV)
 
