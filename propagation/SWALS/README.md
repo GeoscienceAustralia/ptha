@@ -22,7 +22,7 @@ used to improve the efficiency of large parallel jobs.
 
 The code includes various test suits that [can be run automatically](#compiling-and-testing), including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
- and a [validation test suite](./tests/validation_tests). The latter focussus 
+ and a [validation test suite](./tests/validation_tests). The latter focusses 
 on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
 (which are well known in the tsunami community) and [here](./examples) for other problems.
 
@@ -37,16 +37,13 @@ work (without coarrays), and ifort versions 19 and greater.
 
 The code can run in parallel with both shared memory (openmp) and distributed
 memory approaches. Distributed parallel support requires that MPI is installed,
-and/or that the compiler has adequate coarray support. On gfortran, coarrays
-work well using the OpenCoarrays library. Because compiler support for coarrays
-is generally less mature than MPI, we have also created options for running the
-code with MPI (i.e replacing coarray communication with MPI). In general 
-all these parallel approaches can be used together.
+and/or that the compiler has adequate coarray support. In general all these
+parallel approaches can be used together.
 
 ## C compiler
 The code also makes limited use of C to interface with the GDAL library (thus
-providing flexible raster-based input) and qsort. Thus a C compiler is
-required, typically gcc.
+providing flexible raster-based input). Thus a C compiler is required,
+typically gcc.
 
 ## Make
 The "make" program is used for compilation.
@@ -99,14 +96,14 @@ so the variables are suitable for your machine.
 Variables in [src_standard_compiler_var](./src/src_standard_compiler_var) can
 be overridden in particular applications, by defining them in the
 application-specific makefile (see the examples). This is required in many
-situations (e.g. to use spherical coordinates, different compilers or compiler
-options, or non-standard library locations). There are many examples of
+situations (e.g. to use spherical coordinates; different compiler
+options; non-standard library locations). There are many examples of
 application makefiles in the [examples folder](./examples/) (look for files
 with names beginning with make\_). For instance [this
 makefile](./examples/nthmp/BP09/make_BP09_coarray) builds a
 spherical-coordinates model with distributed-memory-parallel support, while
 [this makefile](examples/circular_island/make_circular_island) builds an
-openmp-only model with cartesian coordinates using single-precision reals and
+openmp-only model with Cartesian coordinates using single-precision reals and
 code-timing. To make a new makefile, you often just need to copy an existing
 one and change the 'mymodel' variable to correspond to your main f90 file.
 
@@ -135,8 +132,10 @@ You can count PASS or FAIL statements like this:
 ## Step 2: Run the parallel unit-tests
 
 The parallel unit-test suite is in [./tests/parallel_tests](./tests/parallel_tests). Note
-this only tests the MPI (or coarray) parallel operations, not OpenMP. To run the tests, open
-a terminal in that directory and do:
+this only tests the distributed memory parallel code (MPI or coarray), not
+OpenMP; both are tested in the validation suite. 
+
+To run the tests, open a terminal in that directory and do:
 
     # Look at this script to see the build/run commands
     source run_test.sh > outfile.log
@@ -154,6 +153,7 @@ obvious error messages.
 
 ## Step 3: Run the validation tests
 These tests include a range of analytical flow solutions, and comparisons with laboratory and field data. 
+They also check that results are consistent when running in parallel in different ways.
 
 Before running the validation tests, you might need to modify
 [./src/test_run_commands](./src/test_run_commands) to tell the validation test suite how to run MPI/openmp
@@ -191,35 +191,34 @@ The validation tests  in [./examples/](./examples) provide templates for develop
 
 * [./examples/nthmp/BP09/](./examples/nthmp/BP09) which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
 * [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Tauranga_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
-* [./examples/periodic_multidomain/](./examples/periodic_multidomain) which illustrates a global multidomain with periodic east-west boundaries
+* [./examples/periodic_multidomain/](./examples/periodic_multidomain) which illustrates a global multidomain with periodic east-west boundaries. This also optionally permits a rise-time to be used in the earthquake co-seismic deformation.
 
 The above models can be run with OpenMP and/or MPI (or coarrays), and illustrate use of the multidomain class. Another useful example is:
 
-* [./examples/generic_model/](./examples/generic_model) which can run basic single-grid spherical coordinate models, e.g. for oceanic-scale tsunami modelling. This supports OpenMP but not MPI/coarray.
+* [./examples/generic_model/](./examples/generic_model) which can run basic single-grid spherical coordinate models, e.g. for oceanic-scale tsunami modelling. It permits a rise-time to be applied to the initial co-seismic deformation. This supports OpenMP but not MPI/coarray (for a broadly similar model with distributed memory support, see [./examples/periodic_multidomain/](./examples/periodic_multidomain)). 
 
 ## Advanced compilation
 
-The script [./src/src_standard_compiler_var](./src/src_standard_compiler_var) is included in build scripts to define compiler variables (e.g. see the example models above). The user can override most variables in this file by pre-defining them before it is included. This is required, e.g. to use compilers other than gfortran.
+The script [./src/src_standard_compiler_var](./src/src_standard_compiler_var) is included in build scripts to define compiler variables (e.g. see the example models above). The user can override most variables in this file by pre-defining them before it is included. This is required, e.g. to use spherical coordinates, single precision, unusual compiler options, etc.
 
 A number of preprocessor variables can be defined to control features of the code. These are controlled by defining the variable `SWALS_PREPROCESSOR_FLAGS` in the makefile. See makefiles in the example projects for illustrations of their use. The most important cases include
 
 - `-DTIMER` Time sections of the code and report on how long they take, generally in the multidomain log file. This is useful for understanding run-times. It is also used for static load-balancing calculations - see the function `make_load_balance_partition` in [./plot.R](./plot.R) which uses multidomain log-files to compute a more balanced distribution of work for multi-image MPI/coarray runs.
 - `-DSPHERICAL` Assume spherical coordinates. Otherwise cartesian coordinates are used
-- `-DREALFLOAT` Use single precision for all reals. Otherwise double-precision is used. Beware the nonlinear solvers generally need double-precision for accuracy.
+- `-DREALFLOAT` Use single precision for all reals. Otherwise double-precision is used. This generally makes the code run faster, but beware - the nonlinear solvers generally need double-precision for accuracy, as do nested-grid models. If in doubt, test!
 - `-DNOCORIOLIS` Do not include Coriolis terms in spherical coordinates. By default, Coriolis terms are used when `-DSPHERICAL` is defined. They can ONLY be used in conjunction with spherical coordinates. But even in this case, sometimes it is useful to turn them off, hence this variable.
-- `-DCOARRAY` Build with distributed memory paralle support. If only this flag is provided the coarrays are used - alternatively the coarray calls may be replaced with MPI by ALSO using flags below. Without this flag, only OpenMP parallisation is used.
-- `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` This uses MPI instead of coarrays for communication, which is useful because compiler support for coarrays is quite variable. If using this option you MUST also use -DCOARRAY (even though MPI replaces coarrays). 
-- `-DCOARRAY_PROVIDE_CO_ROUTINES` Provide implementations of coarray collectives using MPI. This is required for compilers that do not support Fortran coarray collectives such as co_min, co_max, co_sum, etc. If using this option you MUST also use -DCOARRAY. Note that if this option and the previous 2 are provided, then the compiler doesn't need to support coarrays (i.e. the code can be run with pure MPI).
+- `-DCOARRAY` Build with distributed memory parallel support (in addition to shared memory support with openmp - which is enabled by default in any case). If ONLY this flag is provided then coarrays are used - alternatively, the coarray calls may be replaced with MPI by ALSO using flags below.
+- `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` This uses MPI instead of coarrays for communication, which is useful because compiler support for coarrays is quite variable, while MPI is very mature. If using this option you MUST also use -DCOARRAY (even though MPI replaces coarrays). 
+- `-DCOARRAY_PROVIDE_CO_ROUTINES` Provide implementations of coarray collectives using MPI. This is required for compilers that do not support Fortran coarray collectives such as `co_min`, `co_max`, `co_sum`, etc. If using this option you MUST also use -DCOARRAY, and -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS if using MPI. To be clear; if this option and the previous 2 are provided, then the compiler does NOT need to support coarrays (i.e. all distributed-memory communication is done with MPI).
 - `-DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS` Allow nonlinear domains inside a multidomain to take larger timesteps than suggested by `domain%timestepping_refinement_factor`, if this would be stable according to their own cfl-limit. This can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file (e.g. `md%load_balance_file="load_balance_partition.txt"`), which can be generated from a preliminary model run. See `make_load_balance_partition` in [./plot.R](./plot.R).
 - `-DNETCDF4_GRIDS` Use the HDF5-based netcdf4 format for grid-file output. This requires that the netcdf library is compiled with netcdf4 support -- if not it will cause compilation to fail.
+- `-DDEBUG_ARRAY` Add an array `domain%debug_array(nx, ny)` to every domain, which is written to netcdf at every output timestep. This can provide a scratch space for debugging.
 
 Other options that are less often useful include:
 
 - `-DNOFRICTION` Do not use friction terms in the nonlinear shallow water equations. This can improve the speed for frictionless cases.
-- `-DNOOPENMP` Do not use the openmp library, not even for timing the code. In this case, the timer will report the CPU time for all cores, not the wallclock time. This can occasionally be useful if you must avoid using openmp.
-- `-DNONETCDF` Do not use netcdf for model outputs. This is useful if you cannot build with netcdf for some reason. However the output format is poorly supported, this is really just for testing if you'd like to bypass netcdf troubles.
-- `-DMPI` Use `MPI_Abort` in the generic stop routine. This can probably be removed?
-- `-DDEBUG_ARRAY` Add an array `domain%debug_array(nx, ny)` to every domain, which is written to netcdf at every output timestep. This can provide a scratch space for debugging.
+- `-DNOOPENMP` Do not use the openmp library, not even for timing the code. In this case the code will run on a single core (or a single core per-MPI process), and an alternative timer is used which measures time somewhat differently. This can occasionally be useful if you must avoid using an openmp library (e.g. in some debugging contexts). Note this is NOT required to run the code single-threaded; in that case just set `OMP_NUM_THREADS=1`.
+- `-DNONETCDF` Do not use netcdf for model outputs. This is occasionally useful if you cannot build with netcdf for some reason and want to test something else; however the output format is poorly supported and the validation tests will not pass. While occasionally useful this is NOT a sustainable way to use the code.
 
 ## Source-code html documentation
 -------------------------
