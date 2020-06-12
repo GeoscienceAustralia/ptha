@@ -59,9 +59,7 @@ module domain_mod
 
     implicit none
 
-    ! Make everything private, except domain_type, which has its own methods,
-    ! and the domain_metadata_type, which is sometimes more convenient to
-    ! work with than the domain [since it is 'lightweight']
+    ! Make everything private, except domain_type, which has its own methods.
     private
     public:: domain_type
 
@@ -80,11 +78,6 @@ module domain_mod
 
     ! Use this formatting when converting domain%myid to character
     character(len=charlen), parameter:: domain_myid_char_format = '(I0.20)'
-
-    !! Use this in explicitly vectorized domain routines
-    !! A number of methods have been coded once with loops, and once with an
-    !! explicitly vectorized alternatives. The latter is sometimes faster, but not always.
-    !integer, parameter :: vectorization_size = 32
 
     !
     ! Coefficients controlling the edge extrapolation limiter. 
@@ -151,7 +144,8 @@ module domain_mod
         
         integer(int64):: myid = 1
             !! Domain ID, which is useful if multiple domains are running
-        integer(int64):: local_index = 1 !! Useful when we partition a domain in parallel
+        integer(int64):: local_index = 1 
+            !! Useful when we partition a domain in parallel
 
         logical :: is_nesting_boundary(4) = .FALSE. 
             !! Flag to denote boundaries at which nesting occurs: order is N, E, S, W.
