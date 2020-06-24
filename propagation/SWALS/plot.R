@@ -715,8 +715,9 @@ nearest_point_in_multidomain<-function(x, y, md){
 }
 
 # Given a collection of netcdf grid files which partition A SINGLE DOMAIN,
-# merge them. This can provide a method for working with coarray multidomains,
-# by first combining each domain into a single output.
+# merge them. This can provide a method for working with
+# distributed-memory-parallel multidomains, by first combining each domain into
+# a single output.
 #
 # There are 2 ways to select the netcdf files to merge: 
 #    1) Provide 'nc_grid_files', OR 
@@ -1069,95 +1070,6 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
     return(merged_gauges)
 }
 
-#
-# Make a load balance partition file, using a 'greedy' approach to distribute
-# domains to images. The calculations assume that multidomain_dir did not
-# use load balancing.
-#
-# @param multidomain_dir directory containing the multidomain outputs
-# @param verbose if FALSE, suppress printing
-# @return the function environment invisibly (so you have to use assignment to capture it)
-#
-make_load_balance_partition_DEFUNCT<-function(multidomain_dir=NA, verbose=TRUE){
-
-    if(is.na(multidomain_dir)){
-        multidomain_dir = rev(sort(Sys.glob('./OUTPUTS/RUN*')))[1]
-    }
-
-    print(paste0('Generating load_balance_partition.txt file in ', multidomain_dir))
-    print('To be valid, this assumes that job used coarrays without any load balancing.')
-    print(' Future jobs which use this file should have the same number of images and threads')
-
-    md_files = Sys.glob(paste0(multidomain_dir, '/multi*.log'))
-
-    # Get the runtime from the log file. 
-    # This depends on the timer information having been printed
-    md_runtime<-function(md_file){
-        md_lines = readLines(md_file)
-
-        domain_timer_starts = grep('Timer of md%domains(', md_lines, fixed=TRUE)
-        total_wallclock_lines = grep('Total WALLCLOCK', md_lines)
-
-        # Get the wallclock time as numeric
-        nd = length(domain_timer_starts)
-        total_wallclock = sapply(md_lines[total_wallclock_lines[1:nd]], 
-            f<-function(x) as.numeric(strsplit(x, ':', fixed=TRUE)[[1]][2]))
-
-        # Get the domain index and local index
-        domain_index_and_local_index = sapply(md_lines[domain_timer_starts + 2], 
-            f<-function(x) as.numeric(read.table(text=x)),
-            simplify=FALSE)
-        names(domain_index_and_local_index) = rep("", length(domain_index_and_local_index))
-        domain_index_and_local_index = matrix(unlist(domain_index_and_local_index), ncol=2, byrow=TRUE)
-    
-        output = list(total_wallclock = as.numeric(total_wallclock), 
-                      domain_index_and_local_index = domain_index_and_local_index) 
-        #return(as.numeric(total_wallclock))
-        return(output)
-    }
-
-    md_times = sapply(md_files, f<-function(x) md_runtime(x)$total_wallclock)
-
-    # 
-    image_i_domains = matrix(NA, nrow=nrow(md_times), ncol=ncol(md_times))
-
-    mean_domain_times = apply(md_times, 1, mean)
-
-    counter = 0
-    for(i in rev(order(mean_domain_times))){
-        counter = counter+1
-        if(counter == 1){
-            # Assign the largest domain in the same order
-            image_i_domains[i,] = 1:ncol(image_i_domains)
-            total_time = md_times[i, image_i_domains[i,]]
-        }else{
-            # Assign domains to images based on their "total time" so far
-            rank_next_domains = rank(md_times[i,], ties='random')
-            rank_total_times = rank(-total_time, ties='random')
-            image_i_domains[i,] = match(rank_total_times, rank_next_domains)
-            total_time = total_time + md_times[i, image_i_domains[i,]]
-        }
-
-        if(length(unique(image_i_domains[i,])) != length(image_i_domains[i,])){
-            stop('Some domains are missing / double ups')
-        }
-    }
-
-    previous_sum_times = colSums(md_times)
-    new_sum_times = total_time
-
-    print(paste0('Previous time range: ', diff(range(previous_sum_times))))
-    print(paste0('  Previous ', rev(c('min', 'max')), ' times : ', rev(range(previous_sum_times))))
-    print(paste0('New time range: ', diff(range(new_sum_times))))
-    print(paste0('  New ', rev(c('min', 'max')), ' times : ', rev(range(new_sum_times))))
-    print(paste0('Theoretical time reduction: ', max(previous_sum_times) - max(new_sum_times)))
-
-    write.table(image_i_domains, paste0(multidomain_dir, '/load_balance_partition.txt'), 
-                sep=" ", row.names=FALSE, col.names=FALSE)
-
-    return(invisible(environment()))
-}
-
 
 # Partition a set into 'k' groups with roughly equal sum
 # This uses the naive algorithm.
@@ -1487,6 +1399,27 @@ domain_index_from_folder<-function(folder_name){
     return(as.numeric(index_ID))
 }
 
+# Extract the domain_image from its folder name
+#
+# Domain folders from multidomains have names like here:
+#    RUN_ID00000000590000000002_00070_20190529_094228.898
+# Where the ID00... has first 10 digits being the image index (59 here),
+# and the next 10 digits being the domain_index (2 here).
+#
+#
+#stopifnot(domain_image_from_folder('RUN_ID00000000590000000002_00070_20190529_094228.898') == 59)
+# 
+domain_image_from_folder<-function(folder_name){
+
+    ID_term = gsub("ID", "", as.character(strsplit(folder_name, '_')[[1]][2]))
+
+    nch = nchar(ID_term)
+
+    image_ID = substring(ID_term, nch-19, nch-10)
+
+    return(as.numeric(image_ID))
+}
+
 # Get the indices of all domains in a multidomain, using the folder name
 #
 # This can be used to avoid hard-coding the number of domains in scripts.
@@ -1495,6 +1428,73 @@ get_domain_indices_in_multidomain<-function(multidomain_dir){
     all_domain_run_folders = Sys.glob(paste0(multidomain_dir, '/RUN_ID*'))
     all_domain_indices = sapply(basename(all_domain_run_folders), domain_index_from_folder)
     return(unique(all_domain_indices))
+}
+
+# Get the interior bounding box (i.e. the domain box prior to halo padding) for
+# each domain in a multidomain. 
+#
+# It is reported in both a 'merged form' (i.e. ignoring any parallel
+# partitioning), and in a parallel partition
+#
+# @param multidomain_dir the directory with the multidomain
+get_domain_interior_bbox_in_multidomain<-function(multidomain_dir){
+    library(ncdf4)
+
+    all_domain_run_folders = Sys.glob(paste0(multidomain_dir, '/RUN_ID*')) 
+
+    if(length(all_domain_run_folders) == 0) stop('No domains found')
+
+    all_domain_ibb = vector(mode='list', length=length(all_domain_run_folders))
+
+    # Read the interior bounding box 
+    for(i in 1:length(all_domain_run_folders)){
+        nc_file = Sys.glob(paste0(all_domain_run_folders[i], '/Grid*.nc'))
+        fid = nc_open(nc_file, readunlim=FALSE)
+        all_att = ncatt_get(fid, varid=0)
+        ibb = as.numeric(scan(text=(all_att$interior_bounding_box)[[1]], quiet=TRUE))
+        nc_close(fid)
+        dim(ibb) = c(4,2) 
+        all_domain_ibb[[i]] = ibb
+    }
+
+    # Unsplit domain indices
+    all_domain_indices = sapply(basename(all_domain_run_folders), domain_index_from_folder)
+    all_domain_images = sapply(basename(all_domain_run_folders), domain_image_from_folder)
+
+    # Unsplit domain bounding box
+    split_domain_ibb = do.call(rbind, lapply(all_domain_ibb, c))
+    lower_x = aggregate(split_domain_ibb[,1], by=list(all_domain_indices), min)
+    upper_x = aggregate(split_domain_ibb[,2], by=list(all_domain_indices), max)
+    lower_y = aggregate(split_domain_ibb[,5], by=list(all_domain_indices), min)
+    upper_y = aggregate(split_domain_ibb[,7], by=list(all_domain_indices), max)
+
+    # Useful to know the extent of the multidomain
+    multidomain_xlim = c(min(lower_x$x), max(upper_x$x))
+    multidomain_ylim = c(min(lower_y$x), max(upper_y$x))
+
+    unsplit_domain_ibb = cbind(lower_x$x, upper_x$x, upper_x$x, lower_x$x, 
+                               lower_y$x, lower_y$x, upper_y$x, upper_y$x)
+    merged_domain_indices = lower_x[,1]
+
+    merged_domain_ibb = vector(mode='list', length=nrow(unsplit_domain_ibb))
+    for(i in 1:length(merged_domain_ibb)){
+        merged_domain_ibb[[i]] = matrix(unsplit_domain_ibb[i,], ncol=2)
+    }
+    names(merged_domain_ibb) = as.character(merged_domain_indices)
+
+    ## Order the domains like 1, 2, 3, ....
+    #merged_domain_indices_order = order(merged_domain_indices)
+    #merged_domain_ibb = merged_domain_ibb[merged_domain_indices_order]
+    #merged_domain_indices = merged_domain_indices[merged_domain_indices_order]
+
+    outputs = list(domain_folders = all_domain_run_folders, 
+                   domain_interior_bbox = all_domain_ibb,
+                   domain_indices = all_domain_indices,
+                   domain_images = all_domain_images,
+                   multidomain_xlim = multidomain_xlim,
+                   multidomain_ylim = multidomain_ylim,
+                   merged_domain_indices = merged_domain_indices,
+                   merged_domain_interior_bbox = merged_domain_ibb)
 }
 
 
@@ -1594,7 +1594,8 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
 
 #' Energy-type computations for leapfrog-type solvers that have "domain%linear_solver_is_truely_linear=.TRUE."
 #'
-#' FIXME: Update this to treat cases other than the linear shallow water equations.
+#' FIXME: Update this to treat cases other than the linear shallow water equations. However there might not
+#' be any point now that the logfiles output this information.
 #'
 #' @param domain_dir the domain directory
 #' @param spherical Is the domain spherical?
