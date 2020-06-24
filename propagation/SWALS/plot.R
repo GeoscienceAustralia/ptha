@@ -1441,12 +1441,12 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir){
     library(ncdf4)
 
     all_domain_run_folders = Sys.glob(paste0(multidomain_dir, '/RUN_ID*')) 
-
     if(length(all_domain_run_folders) == 0) stop('No domains found')
 
-    all_domain_ibb = vector(mode='list', length=length(all_domain_run_folders))
+    all_domain_dx = lapply(all_domain_run_folders, get_dx)
 
-    # Read the interior bounding box 
+    # Read the interior bounding box and dx/dy
+    all_domain_ibb = vector(mode='list', length=length(all_domain_run_folders))
     for(i in 1:length(all_domain_run_folders)){
         nc_file = Sys.glob(paste0(all_domain_run_folders[i], '/Grid*.nc'))
         fid = nc_open(nc_file, readunlim=FALSE)
@@ -1467,14 +1467,19 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir){
     upper_x = aggregate(split_domain_ibb[,2], by=list(all_domain_indices), max)
     lower_y = aggregate(split_domain_ibb[,5], by=list(all_domain_indices), min)
     upper_y = aggregate(split_domain_ibb[,7], by=list(all_domain_indices), max)
+    unsplit_domain_ibb = cbind(lower_x$x, upper_x$x, upper_x$x, lower_x$x, 
+                               lower_y$x, lower_y$x, upper_y$x, upper_y$x)
+    merged_domain_indices = lower_x[,1]
+
+    # Domain dx
+    split_domain_dx = do.call(rbind, all_domain_dx)
+    merged_domain_dx_1 = aggregate(split_domain_dx[,1], by=list(all_domain_indices), mean)
+    merged_domain_dx_2 = aggregate(split_domain_dx[,1], by=list(all_domain_indices), mean)
+    merged_domain_dx = cbind(merged_domain_dx_1$x, merged_domain_dx_2$x)
 
     # Useful to know the extent of the multidomain
     multidomain_xlim = c(min(lower_x$x), max(upper_x$x))
     multidomain_ylim = c(min(lower_y$x), max(upper_y$x))
-
-    unsplit_domain_ibb = cbind(lower_x$x, upper_x$x, upper_x$x, lower_x$x, 
-                               lower_y$x, lower_y$x, upper_y$x, upper_y$x)
-    merged_domain_indices = lower_x[,1]
 
     merged_domain_ibb = vector(mode='list', length=nrow(unsplit_domain_ibb))
     for(i in 1:length(merged_domain_ibb)){
@@ -1482,19 +1487,16 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir){
     }
     names(merged_domain_ibb) = as.character(merged_domain_indices)
 
-    ## Order the domains like 1, 2, 3, ....
-    #merged_domain_indices_order = order(merged_domain_indices)
-    #merged_domain_ibb = merged_domain_ibb[merged_domain_indices_order]
-    #merged_domain_indices = merged_domain_indices[merged_domain_indices_order]
-
     outputs = list(domain_folders = all_domain_run_folders, 
                    domain_interior_bbox = all_domain_ibb,
                    domain_indices = all_domain_indices,
                    domain_images = all_domain_images,
+                   domain_dx = all_domain_dx,
                    multidomain_xlim = multidomain_xlim,
                    multidomain_ylim = multidomain_ylim,
                    merged_domain_indices = merged_domain_indices,
-                   merged_domain_interior_bbox = merged_domain_ibb)
+                   merged_domain_interior_bbox = merged_domain_ibb,
+                   merged_domain_dx = merged_domain_dx)
 }
 
 
