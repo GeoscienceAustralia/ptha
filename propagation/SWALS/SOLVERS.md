@@ -50,7 +50,7 @@ For all schemes above the spatial extrapolation of the flow-state to cell edges 
 
 * `theta=1.0` is the smallest value that is second order accurate in space for sufficiently smooth flows. In practice it is still relatively dissipative (MinMod limiter). 
 
-* `theta=2.0` is the upper threshold for which the extrapolation to edges is "total-variation-diminishing"  (TVD). Here we use the term  TVD loosely to mean that `left-cell-value <= edge-value <= right-cell-value`, or `left-cell-value >= edge-value >= right-cell-value`.. For some other PDEs and numerical methods, this will prevent the creation of new extrema and ensure the total-variation does not increase. Actually this is not true for the shallow water equations because they are not TVD, but the term is often used to discuss limiters and the technique remains useful. 
+* `theta=2.0` is the upper threshold for which the extrapolation to edges is "total-variation-diminishing"  (TVD). Here we use the term  TVD loosely to mean that `left-cell-value <= edge-value <= right-cell-value`, or `left-cell-value >= edge-value >= right-cell-value`. For some other PDEs and numerical methods, this will prevent the creation of new extrema and ensure the total-variation does not increase. Actually this is not true for the shallow water equations because they are not TVD, but the term is often used to discuss limiters and the technique remains useful. 
 
 * `theta>2.0` is even less dissipative and is not TVD (i.e. the extrapolated edge values are not necessarily bound by neighbouring cell values). In practice this remains stable for many problems, and can be important in cases where the limiter otherwise leads to excessive dissipation (e.g. some low Froude-number flows with many minima and maxima).
 
