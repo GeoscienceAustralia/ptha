@@ -56,7 +56,7 @@ For all schemes above the spatial extrapolation of the flow-state to cell edges 
 
 * `theta>2.0` is even less dissipative and is not TVD (i.e. edge values can exceed neighbouring cell values). In practice this remains stable for many problems, and can be important in cases where the limiter otherwise leads to excessive dissipation (e.g. low Froude-number flows with many minima and maxima).
 
-In all cases `theta` is tapered to zero in flows that are near a wet/dry boundary or extremely shallow -- for details on how this is done see (domain_mod.f90)[./src/shallow_water/domain_mod.f90] including comments near the definition of `limiter_coef`1-3.
+In all cases `theta` is tapered to zero in flows that are near a wet/dry boundary or extremely shallow -- for details on how this is done see [domain_mod.f90](./src/shallow_water/domain_mod.f90) including comments near the definition of `limiter_coef`1-3.
 
 The friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
 
