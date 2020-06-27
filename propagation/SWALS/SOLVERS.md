@@ -16,7 +16,7 @@ We also include the CLIFFS solver developed by Elena Tolkova, but have not worke
 
 # Setting the solver type.
 
-A SWALS `multidomain` object (denoted `md`) contains one or more structured grids (`domains`) on which we solve the shallow water equations. These domains are stored in an allocatable array (`md%domains(:)`) of type `domain_type`. This allocated at the beginning of an application code (e.g. `allocate(md%domains(10))` will allow 10 domains). 
+A SWALS `multidomain` object (denoted `md`) contains one or more structured grids (`domains`) on which we solve the shallow water equations. These domains are stored in an allocatable array (`md%domains(:)`) of type `domain_type`. This is allocated at the beginning of an application code (e.g. `allocate(md%domains(10))` will allow 10 domains). 
 
 The solver for each domain is set by specifying its timestepping method. For example by setting `md%domains(3)%timestepping_method = "linear"`, we make the 3rd domain use the linear leapfrog solver. Alternatively this information can be provided to the subroutine `md%domains(3)%match_geometry_to_parent` which is also used to nest domains inside other domains; this approach is common in the example programs (such as [here](./examples/nthmp/BP09/BP09.f90)). 
 
