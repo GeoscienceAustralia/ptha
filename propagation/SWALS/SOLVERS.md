@@ -30,7 +30,11 @@ This mean you should not assume that all schemes are equally tested -- they defi
 
 ## The finite-volume solvers
 
-SWALS has a number of classical shock-capturing finite-volume schemes with accuracy up to second order in space and time. They use a range of different timestepping schemes, flux functions, and spatial extrapolations to derive the flow state at edges. Each scheme has a default limiter coefficient, flux function, and friction model, but these can be changed by the user prior to calling `md%setup`:
+SWALS has a number of classical shock-capturing finite-volume schemes with accuracy up to second order in space and time. These work well for flows with moderate or high Froude-numbers, but may be too dissipative at very low Froude-numbers (e.g. they are not well suited to global-scale tsunami propagation, but can work well the nearshore and inundation simulation). 
+
+In general the finite-volume schemes in SWALS have good stability when used in conjunction with nesting. Occasionally these solvers can be subject to artifical vortices at coarse-to-fine nesting regions, especially where the elevation has rapid variation. This is not particularly common though, and can usually be solved by moving the domain boundary to an area with weaker elevation variation.
+
+The finite-volume schemes in SWALS use a range of different timestepping schemes, flux functions, and spatial extrapolations to derive the flow state at edges. Each scheme has a default limiter coefficient, flux function, and friction model, but these can be changed by the user prior to calling `md%setup`:
 
 The finite-volume solvers are supported by setting `md%domains(j)%timestepping_method` to:
 
@@ -77,7 +81,11 @@ Broadly speaking the solvers with `_low_fr_diffusion` might perform better in lo
 
 ## The leapfrog schemes
 
-Leapfrog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this is has not been a focus in SWALS). They have good energy conservation properties which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. The variants provided by SWALS are:
+Leapfrog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this is has not been a focus in SWALS). They have good energy conservation properties which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. 
+
+In general the leapfrog schemes in SWALS do not have good long-time stability when used in conjunction with nesting. They work well as the coarsest grid in a multidomain, but if used for a refined grid (which receives halo data from a coarser domain) then they often develop instability during long-time integration. This is not always a problem, but more common than we'd like. 
+
+The leapfrog solver variants provided by SWALS are:
 
 * `"linear"`. This solves the linear shallow water equations if `md%domains(j)%linear_solver_is_truely_linear=.true.` (default). In that case the pressure gradient term is linearized by setting the depth equal to the depth at mean-sea-level; the mean-sea level should be set by specifying `md%domains(j)%msl_linear` (which is 0.0 by default). With these settings we solve the standard linear shallow water equations. If you set `md%domains(j)%linear_solver_is_truely_linear=.false.` then the pressure gradient term is not linearized, and the equations are nonlinear (but without nonlinear advection terms or nonlinear friction).
 
