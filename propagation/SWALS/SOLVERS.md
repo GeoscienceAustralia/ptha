@@ -7,9 +7,9 @@ In general the different solvers have different strengths and limitations, which
 
 Generally speaking the SWALS code development has focussed most on:
 
-* A range of shock-capturing finite volume schemes. These are mainly used for flows with significant nonlinearity, medium to high Froude-numbers, etc. They are quite robust for this purpose, but tend to be more diffusive than the leapfrog schemes (and thus less well suited to global scale tsunami propagation). Some variants of these schemes have better performance at low Froude-numbers than others.
+* A range of shock-capturing finite volume schemes. These are mainly used for flows with significant nonlinearity, medium to high Froude-numbers, etc. They are quite robust for this purpose, but tend to be more diffusive than the leap-frog schemes (and thus less well suited to global scale tsunami propagation). Some variants of these schemes have better performance at low Froude-numbers than others.
 
-* A range of leapfrog schemes. These solve the linear shallow water equations; variants on the latter with some additional nonlinear terms (e.g. nonlinear pressure gradient terms; manning friction); and there is a variant with all nonlinear terms. The leapfrog schemes have mostly been used for flows domainated by low Froude-numbers (especially global-scale tsunami propagation simulation). The fully nonlinear leapfrog scheme can perform well in some more strongly nonlinear problems (e.g. inundation), but we haven't focussed on making it extremely robust for such purposes (and generally prefer the finite-volume schemes such as `rk2`).
+* A range of leap-frog schemes. These solve the linear shallow water equations; variants on the latter with some additional nonlinear terms (e.g. nonlinear pressure gradient terms; manning friction); and there is a variant with all nonlinear terms. The leap-frog schemes have mostly been used for flows domainated by low Froude-numbers (especially global-scale tsunami propagation simulation). The fully nonlinear leap-frog scheme can perform well in some more strongly nonlinear problems (e.g. inundation), but we haven't focussed on making it extremely robust for such purposes (and generally prefer the finite-volume schemes such as `rk2`).
 
 We also include the CLIFFS solver developed by Elena Tolkova, but have not worked extensively with that.
 
@@ -18,7 +18,7 @@ We also include the CLIFFS solver developed by Elena Tolkova, but have not worke
 
 A SWALS `multidomain` object (denoted `md`) contains one or more structured grids (`domains`) on which we solve the shallow water equations. These domains are stored in an allocatable array (`md%domains(:)`) of type `domain_type`. This is allocated at the beginning of an application code (e.g. `allocate(md%domains(10))` will allow 10 domains). 
 
-The solver for each domain is set by specifying its timestepping method. For example by setting `md%domains(3)%timestepping_method = "linear"`, we make the 3rd domain use the linear leapfrog solver. Many examples are included in the validation test suite, such as [here](./examples/nthmp/BP09/BP09.f90). 
+The solver for each domain is set by specifying its timestepping method. For example by setting `md%domains(3)%timestepping_method = "linear"`, we make the 3rd domain use the linear leap-frog solver. Many examples are included in the validation test suite, such as [here](./examples/nthmp/BP09/BP09.f90). 
 
 The available solver types are specified in the file [timestepping\_metadata\_mod.f90](./src/shallow_water/timestepping_metadata_mod.f90). This also sets solver specific variables such as the halo thickness required to advance one time-step. Additional aspects of the solver behavior are controlled by other variables in the domain. 
 
@@ -62,7 +62,7 @@ The friction model can be controlled by setting the variable `md%domains(j)%fric
 
 * `"chezy"`. This is Chezy friction. In this case the array `md%domains(j)%manning_squared(:,:)` is interpreted as (1/chezy_friction)^2
 
-In addition one can set a linear friction coefficient `md%domains(j)%linear_drag_coef` which is zero by default. If non-zero this implements a non-standard linear friction model following *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. In practice you probably do not want to use this for the finite-volume schemes, which are already somewhat numerically dissipative; it is more likely to be useful to add slow friction to the leapfrog schemes.
+In addition one can set a linear friction coefficient `md%domains(j)%linear_drag_coef` which is zero by default. If non-zero this implements a non-standard linear friction model following *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. In practice you probably do not want to use this for the finite-volume schemes, which are already somewhat numerically dissipative; it is more likely to be useful to add slow friction to the leap-frog schemes.
 
 The numerical fluxes are derived from the left and right cell edge values using an approximate Riemann solver. Various options can be controlled by setting the character string `md%domains(j)%compute_fluxes_inner_method`. Values are:
 
@@ -77,22 +77,25 @@ The numerical fluxes are derived from the left and right cell edge values using 
 Broadly speaking the solvers with `_low_fr_diffusion` might perform better in low Froude-number flows, although often results will be similar. The solvers with `_upwind_transverse` may have less numerical dissipation in shear flows, which may be a good or bad thing, but more often will be similar. 
 
 
-## The leapfrog schemes
+## The Leap-frog schemes
 
-Leapfrog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this is has not been a focus for leapfrog schemes in SWALS). They have good energy conservation properties which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. 
+Leap-frog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this is has not been a focus for leap-frog schemes in SWALS). They have good energy conservation properties which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. Some references that describe classical leap-frog schemes for the linear and nonlinear shallow water equations are:
 
-In general the leapfrog schemes in SWALS do not have good long-time stability when used in conjunction with nesting. They work well as the coarsest grid in a multidomain, but if used in a refined grid (which receives halo data from a coarser domain) then they often develop instability during long-time integration. This is not always a problem, especially for short model runs, but is not particularly unusual. 
+* *IOC Numerical method of tsunami simulation with the leap-frog scheme IUGG/IOC Time Project, IUGG/IOC Time Project, 1997*
+* *Liu, P. L. F.; Cho, Y.-S.; Briggs, M. J.; Kanoglu, U. & Synolakis, C. E. Runup of solitary waves on a circular Island Journal of Fluid Mechanics, Cambridge University Press, 1995, 302, 259–285*
 
-The leapfrog solver variants provided by SWALS are:
+In general the leap-frog schemes in SWALS do not have good long-time stability when used in conjunction with nesting. They work well as the coarsest grid in a multidomain, but if used in a refined grid (which receives halo data from a coarser domain) then they often develop instability during long-time integration. This is not always a problem, especially for short model runs, but if it is a problem one should consider using a finite-volume scheme such as `rk2` on problematic domains. 
+
+The leap-frog solver variants provided by SWALS are:
 
 * `"linear"`. This solves the linear shallow water equations in the default case that `md%domains(j)%linear_solver_is_truely_linear=.true.`. In that case the pressure gradient term is linearized by setting the depth equal to the depth at mean-sea-level; the mean-sea level should be set by specifying `md%domains(j)%msl_linear` (which is 0.0 by default). Thus, these settings solve the standard linear shallow water equations. Alternatively, if you set `md%domains(j)%linear_solver_is_truely_linear=.false.` then the pressure gradient term is not linearized, and the equations are nonlinear (but without nonlinear advection terms or nonlinear friction).
 
 * `"leapfrog_linear_plus_nonlinear_friction"`. This is similar to `"linear"` above with the addition of a nonlinear friction term (either Manning or Chezy as discussed below). The same parameters as discussed above should be specified to control nonlinearity in the pressure gradient term. This is useful as a cheap way to include friction in global scale tsunami models.
 
-* `"leapfrog_nonlinear"`. This solves the nonlinear shallow water equations with a leapfrog scheme, including wetting and drying. 
+* `"leapfrog_nonlinear"`. This solves the nonlinear shallow water equations with a leap-frog scheme, including wetting and drying. 
 
 
-For all leapfrog solvers except `"linear"`, the friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
+For all leap-frog solvers except `"linear"`, the friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
 
 * `"manning"`. This is Manning friction, so the array `md%domains(j)%manning_squared(:,:)` is interpreted as the (manning friction)**2
 
