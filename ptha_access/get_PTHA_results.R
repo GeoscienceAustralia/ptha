@@ -147,6 +147,9 @@ get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', 
 get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
     force_file_download=FALSE){
 
+    if(length(event_ID) != 1){
+        stop('must have (length(event_ID)==1) in get_initial_condition_for_event -- you cannot pass a vector argument')
+    }
     # Shorthand notation
     szed = source_zone_events_data
 
