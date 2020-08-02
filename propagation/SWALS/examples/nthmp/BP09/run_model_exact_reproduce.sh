@@ -19,7 +19,7 @@ rm -r ./OUTPUTS
 make -B -f make_BP09 > build_outfile.log
 # Run the code
 eval "$OMP_RUN_COMMAND ./BP09 load_balance_6_trivial.txt > outfile_omp.log"
-#eval "$OMP_RUN_COMMAND ./BP09 '' > outfile_omp.log"
+#eval "OMP_NUM_THREADS=1 ./BP09 load_balance_6_trivial.txt > outfile_omp.log"
 # Plot and report tests
 echo '# Testing openmp version '
 Rscript plot_results.R lowresolution_omp
@@ -36,7 +36,7 @@ rm ./BP09
 make -B -f make_BP09_coarray > build_outfile.log
 # Run the code
 eval "$CAF_RUN_COMMAND ./BP09 load_balance_6_trivial.txt > outfile_ca.log"
-#eval "$CAF_RUN_COMMAND ./BP09 '' > outfile_ca.log"
+#eval "OMP_NUM_THREADS=1 mpiexec -np 6 ./BP09 load_balance_6_trivial.txt > outfile_ca.log"
 # Plot and report tests
 echo '# Testing coarray version '
 Rscript plot_results.R lowresolution_coarray

@@ -79,7 +79,7 @@ model_time = model_gauges$time
 model_speed = sqrt(model_gauges$time_var$uh[ind,]^2 + model_gauges$time_var$vh[ind,]^2)/
     (model_gauges$time_var$stage[ind,] - model_gauges$static_var$elevation0[ind])
 
-# This seems closer to the 'right' location'
+# This seems closer to the 'right' location'.
 ind = match(6, model_gauges$gaugeID)
 model_speed_extra = sqrt(model_gauges$time_var$uh[ind,]^2 + model_gauges$time_var$vh[ind,]^2)/
     (model_gauges$time_var$stage[ind,] - model_gauges$static_var$elevation0[ind])
@@ -91,5 +91,28 @@ points(model_time/3600, model_speed_extra, t='l', col='blue', lty='dotted')
 title('Currents at ADCP (Improves with higher resolution). \n Underestimates reported by several codes, adcp position uncertainty?')
 legend('topleft', c('Data', 'Model @ reported coord', 'Model near reported coord'),
     lty=c('solid','solid','dotted'), col=c('black', 'red', 'blue'))
+# In the NTHMP report, several groups discuss issues with the locations:
+# See https://nws.weather.gov/nthmp/documents/NTHMP_Currents_Workshop_Report.pdf
+#
+# For CLIFFS solver, Tolkova notes that (page 85),
+#    "The simulated current at the prescribed ADCP position was lower than  the
+#    measurements  (Figure  5).  However,  the  current  rapidly  varied
+#    across  narrow  harbor entrance where the ADCP was positioned, being fast
+#    on the channel centerline, and low next to the banks. The flow transition
+#    from low by the shore to high in the  channel occupied a slightly wider
+#    zone on the numerical grid. Indeed, simulated current 127 m (3 nodes
+#    diagonally) from the prescribed position toward the channel centerline
+#    provided nearly perfect fit to the observations (Figure 5, red)"
+#
+# For the MOST solver, Arcas notes that (p 71) 
+#   "Computed values of wave elevation were also in extremely good agreement with observations in
+#    the case of tsunami+tide, however, current speed results for this second case tend to underestimate
+#    observed values for the tidal component of the signal as seen in Figure 5. This deficiency is most
+#    probably due to the lack of knowledge about velocity initial and boundary conditions along grid
+#    boundaries when tidal effects are included. A quick analysis of the accuracy of the results suggests
+#    that accurate calculation of the velocity solution, particularly when large tidal currents are present
+#    will require some a priori knowledge of tidal velocity boundary conditions."
+#
+# In the presentations from that workshop, the simulations from Kirby (FUNWAVE) have a similar issue.
 dev.off()
 

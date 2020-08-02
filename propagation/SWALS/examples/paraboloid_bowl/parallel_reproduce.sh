@@ -1,3 +1,7 @@
+# Run two models that use the same domain partition, but different numbers of mpi threads.
+# We should get the same result on the model grids (but perhaps not for printed
+# summary statistics, where we allow floating point reordering in parallel).
+
 export SWALS_SRC='../../src'
 source ${SWALS_SRC}/test_run_commands
 rm -r OUTPUTS
