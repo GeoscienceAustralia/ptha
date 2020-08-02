@@ -769,7 +769,7 @@
             end do
 #endif                      
 
-            ! On the next j iteration, the value of 'old' value of VH at i+1/2,
+            ! On the next j iteration, the 'old' value of VH at i+1/2,
             ! j-1/2 can be derived using the current value of VH at i+1, j+1/2
             vh_iph_jmh(xL:(xU-1)) = vh_iph_jph(xL:(xU-1))
             uh_i_j(xL:(xU-1)) = uh_i_jp1(xL:(xU-1))

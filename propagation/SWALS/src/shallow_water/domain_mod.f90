@@ -599,7 +599,8 @@ TIMER_STOP('printing_stats')
         e_potential_on_rho = 0.0_force_double
         e_kinetic_on_rho = 0.0_force_double
 
-        ! If we are using a 'truely-linear' solver then the depth is always recorded from MSL.
+        ! If we are using a 'truely-linear' solver then the depth is always recorded from MSL for certain
+        ! calculations (pressure gradient term, and wetting/drying)
         use_truely_linear_method = domain%is_staggered_grid .and. domain%linear_solver_is_truely_linear .and. &
             any(domain%timestepping_method == [character(len=charlen) :: 'linear', 'leapfrog_linear_plus_nonlinear_friction'])
 

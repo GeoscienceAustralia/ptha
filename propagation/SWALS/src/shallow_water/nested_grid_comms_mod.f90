@@ -168,7 +168,7 @@ module nested_grid_comms_mod
         ! ID's which are passed to send/recv communication routines
         character(len=charlen) :: send_ID, recv_ID
 
-        logical :: use_wetdry_limiting
+        logical :: use_wetdry_limiting = .true.
 
         contains
 

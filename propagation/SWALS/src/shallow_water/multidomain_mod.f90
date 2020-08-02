@@ -1893,7 +1893,7 @@ module multidomain_mod
         class(multidomain_type), intent(inout) :: md
         logical, optional, intent(in) :: sync_before, sync_after
 
-        integer(ip) :: i, j, ii, jj, iL, iU, jL, jU, ip1, jp1
+        integer(ip) :: i, j, ii, jj, iL, iU, jL, jU, ip1, jp1, nbr_j, nbr_ti
         real(dp) :: elev_lim
         logical :: sync_before_local, sync_after_local
 
@@ -1938,24 +1938,51 @@ module multidomain_mod
                 !! Avoid use of type-bound-procedure in openmp region
                 !call md%domains(j)%nesting%recv_comms(i)%process_received_data(md%domains(j)%U)
                 call process_received_data(md%domains(j)%nesting%recv_comms(i), md%domains(j)%U)
+            end do
 
-                ! If a staggered-grid domain is receiving, need to avoid getting non-zero UH/VH at wet/dry
-                ! boundaries
-                if(md%domains(j)%nesting%recv_comms(i)%recv_active .and. &
-                   md%domains(j)%nesting%recv_comms(i)%use_wetdry_limiting .and. &
-                   md%domains(j)%is_staggered_grid) then
+            !$OMP DO SCHEDULE(DYNAMIC)
+            do i = 1, size(md%domains(j)%nesting%recv_comms, kind=ip)
+                !
+                ! Need some more processing of staggered-grid receive regions to deal with potential wetting/drying issues.
+                ! This cannot be included in the loop above because for some solvers, we refer to stage values outside
+                ! the receive region (extreme values of indices ip1, jp1), which could lead to a race condition. 
+                ! However one could restructure the code to put much of this content inside the loop above (truely linear solvers,
+                ! updates of non-boundary cells).
+                !
+                if( (.not. md%domains(j)%is_staggered_grid) .or. &
+                    (.not. md%domains(j)%nesting%recv_comms(i)%recv_active) &
+                  ) cycle
+                ! Below here we are definitely using a leapfrog-type solver.
 
-                    ! Indices of the region that received data
-                    iL = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,1)
-                    iU = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,1)
-                    jL = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,2)
-                    jU = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,2)
+                !! If we are receiving from a domain with the same solver type and grid size, there will never be any issues.
+                !! Actually this is not true -- counter example: suppose they differ in domain%linear_solver_is_truely_linear
+                !nbr_ti = md%domains(j)%nesting%recv_comms(i)%neighbour_domain_image_index
+                !nbr_j = md%domains(j)%nesting%recv_comms(i)%neighbour_domain_index
+                !if( md%domains(j)%nesting%recv_comms(i)%equal_cell_ratios .and. &
+                !   (md%timestepping_methods(j, ti) == md%timestepping_methods(nbr_j, nbr_ti)) &
+                !   ) cycle
 
-                    ! Elevation above which flux = 0 for linear domain
+                ! Need to avoid receiving non-zero UH/VH at wet/dry boundaries, in a way that would violate
+                ! the solver logic
+
+                ! Indices of the region that received data
+                iL = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,1)
+                iU = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,1)
+                jL = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,2)
+                jU = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,2)
+
+                ! Depending on the numerical method, we need to treat the wet/dry issues differently
+                if( any( md%domains(j)%timestepping_method == [character(len=charlen) :: &
+                        'linear', 'leapfrog_linear_plus_nonlinear_friction'] ) .and. &
+                    md%domains(j)%linear_solver_is_truely_linear) then
+                    ! Here we treat the 'truely linear' solvers where all cells 
+                    ! above (domain%msl_linear - minimum_allowed_depth)
+                    ! are dry. Flux is zero if either neighbouring elevation is dry
+
+                    ! Elevation above which flux = 0 for truely-linear domain
                     elev_lim = (md%domains(j)%msl_linear - minimum_allowed_depth)
 
-                    ! Loop over the received region, and ensure UH/VH on
-                    ! wet-dry boundaries are 0
+                    ! Loop over the received region, and ensure UH/VH on wet-dry boundaries are 0
                     do jj = jL, jU
 
                         ! jj+1, avoiding out-of-bounds
@@ -1980,17 +2007,80 @@ module multidomain_mod
                             
                         end do
                     end do
-                    
-                end if
 
-            end do
+                else if(md%domains(j)%timestepping_method /= 'leapfrog_nonlinear') then
+                    ! This treats 'not-truely-linear' staggered grid solvers, which are not fully nonlinear.
+                    ! In this case the UH/VH terms should be zero if either neighbouring cell has
+                    ! ( stage <= (elev + minimum_allowed_depth) )
+
+                    ! Loop over the received region, and ensure UH/VH on
+                    ! wet-dry boundaries are 0
+                    do jj = jL, jU
+
+                        ! jj+1, avoiding out-of-bounds
+                        jp1 = min(jj+1, size(md%domains(j)%U, 2, kind=ip))
+
+                        do ii = iL, iU
+
+                            ! ii+1, avoiding out-of-bounds
+                            ip1 = min(ii+1, size(md%domains(j)%U, 1, kind=ip))
+
+                            ! No EW flux if either neighbouring cell is dry
+                            if( (md%domains(j)%U(ii,jj,STG)  - md%domains(j)%U(ii,jj,ELV)  <= minimum_allowed_depth) .or. &
+                                (md%domains(j)%U(ip1,jj,STG) - md%domains(j)%U(ip1,jj,ELV) <= minimum_allowed_depth) ) then
+                                md%domains(j)%U(ii,jj,UH) = 0.0_dp
+                            end if
+
+                            ! No NS flux if either neighbouring cell is dry
+                            if( (md%domains(j)%U(ii,jj,STG)  - md%domains(j)%U(ii,jj,ELV)  <= minimum_allowed_depth) .or. &
+                                (md%domains(j)%U(ii,jp1,STG) - md%domains(j)%U(ii,jp1,ELV) <= minimum_allowed_depth) ) then
+                                md%domains(j)%U(ii,jj,VH) = 0.0_dp
+                            end if
+                            
+                        end do
+                    end do
+
+                else if(md%domains(j)%timestepping_method == 'leapfrog_nonlinear') then
+                    ! For the fully nonlinear staggered-grid solver, we just need to ensure there is no outflow from dry cells
+                    do jj = jL, jU
+
+                        ! jj+1, avoiding out-of-bounds
+                        jp1 = min(jj+1, size(md%domains(j)%U, 2, kind=ip))
+
+                        do ii = iL, iU
+
+                            ! ii+1, avoiding out-of-bounds
+                            ip1 = min(ii+1, size(md%domains(j)%U, 1, kind=ip))
+
+                            ! No easterly outflow from dry cell
+                            if( (md%domains(j)%U(ii,jj,STG)  - md%domains(j)%U(ii,jj,ELV)  <= minimum_allowed_depth) .and. &
+                                (md%domains(j)%U(ii,jj, UH) > 0.0_dp) ) md%domains(j)%U(ii,jj,UH) = 0.0_dp 
+                            
+                            ! No westerly outflow from dry cell -- not applicable if ii+1 extends outside eastern boundary
+                            if( (ip1 == ii + 1) .and. &
+                                (md%domains(j)%U(ip1,jj,STG) - md%domains(j)%U(ip1,jj,ELV) <= minimum_allowed_depth) .and. & 
+                                (md%domains(j)%U(ii,jj, UH) < 0.0_dp) ) md%domains(j)%U(ii,jj,UH) = 0.0_dp 
+
+                            ! No northerly outflow from dry cell
+                            if( (md%domains(j)%U(ii,jj,STG)  - md%domains(j)%U(ii,jj,ELV)  <= minimum_allowed_depth) .and. &
+                                (md%domains(j)%U(ii,jj,VH) > 0.0_dp ) ) md%domains(j)%U(ii,jj,VH) = 0.0_dp
+                           
+                            ! No southerly outflow from dry cell -- not applicable if jj+1 extends outside northern boundary
+                            if( (jp1 == jj + 1) .and. &
+                                (md%domains(j)%U(ii,jp1,STG) - md%domains(j)%U(ii,jp1,ELV) <= minimum_allowed_depth) .and. &
+                                (md%domains(j)%U(ii,jj,VH) < 0.0_dp ) ) md%domains(j)%U(ii,jj,VH) = 0.0_dp
+                            
+                        end do
+                    end do
+                end if
+            end do ! End of loop over nesting receive comms
             !$OMP END DO
             !$OMP END PARALLEL
 
 #ifdef TIMER            
             call md%domains(j)%timer%timer_end('receive_halos')
 #endif
-        end do
+        end do ! End of loop over domains
         !!$OMP END DO
         !!$OMP END PARALLEL
 
