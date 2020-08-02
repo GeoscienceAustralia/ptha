@@ -26,7 +26,7 @@ module logging_mod
         log_filename = trim(filename_prefix) // '.log'
 
 #ifdef COARRAY
-        write(ti_char, '(I0.20)') this_image2()
+        write(ti_char, '(I20.20)') this_image2()
         log_filename = trim(filename_prefix) // '_image_' // trim(ti_char) // '.log'
 #endif
 

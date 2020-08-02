@@ -1,8 +1,5 @@
 module stop_mod
     !! Provide a 'stop' command that works with both CAF and non-CAF code
-#ifdef MPI
-    use mpi
-#endif
     use logging_mod, only: log_output_unit
     implicit none
 
@@ -30,8 +27,6 @@ module stop_mod
         ! Call the most relevant 'stop' command
 #ifdef COARRAY
         error stop
-#elif defined(MPI)
-        call MPI_Abort(MPI_COMM_WORLD, 1, ierr)
 #else
         stop
 #endif
