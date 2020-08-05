@@ -60,6 +60,17 @@ get_hazard_curves_and_peak_stages<-function(site_gauge_inds, site_gauges, source
 # @param scenario_match a list containing variables which define how we match scenarios.
 get_matching_scenarios<-function(source_zone_data, scenario_match){
 
+    if(scenario_match$number_matching_gauges > length(source_zone_data$site_gauge_inds)){
+        msg = paste0('You requested scenarios where at least ', 
+                     scenario_match$number_matching_gauge, 
+                     ' gauges satisfy the target stage(or exrate). This is more than',
+                     ' the number of gauges you provided in the source_zone_data (which is ', 
+                     length(source_zone_data$site_gauge_inds), '). Please either reduce ', 
+                     'scenario_match$number_matching_gauges, or provide more gauges when ', 
+                     'creating the source_zone_data')
+        stop(msg)
+    }
+
     # Copy out key data for the source-zone
     stage_exrate_curves = source_zone_data$stage_exrate_curves
     peak_stage_sourcezone_matrix = source_zone_data$peak_stage_sourcezone_matrix
@@ -125,10 +136,10 @@ get_matching_scenarios<-function(source_zone_data, scenario_match){
 
     # Append a matrix that shows whether each gauge is within the tolerance for each event
     candidate_events$peak_stages_within_tol = (
-        (peak_stage_sourcezone_matrix[ii,] > 
-             target_max_stage_matrix[ii,]*(1-scenario_match$target_stage_tolerance)) &
-        (peak_stage_sourcezone_matrix[ii,] < 
-             target_max_stage_matrix[ii,]*(1+scenario_match$target_stage_tolerance)) ) 
+        (peak_stage_sourcezone_matrix[ii,,drop=FALSE] > 
+             target_max_stage_matrix[ii,,drop=FALSE]*(1-scenario_match$target_stage_tolerance)) &
+        (peak_stage_sourcezone_matrix[ii,,drop=FALSE] < 
+             target_max_stage_matrix[ii,,drop=FALSE]*(1+scenario_match$target_stage_tolerance)) ) 
 
     # Append the peak slip
     candidate_events$peak_slip = sapply(candidate_events$events$event_slip_string, 
@@ -187,7 +198,7 @@ summarise_scenarios<-function(candidate_events){
     grid(col='orange')
 
     image(candidate_events$peak_stages_within_tol, axes=FALSE, 
-          col=c('white', 'red'))
+          col=c('white', 'red'), zlim=c(0, 1))
     nc = ncol(candidate_events$peak_stages_within_tol)
     nr = nrow(candidate_events$peak_stages_within_tol)
     axis(side=2, at=seq(0, 1, length=nc), 
@@ -257,6 +268,10 @@ example_usage<-function(run_as_regression_test=FALSE){
     site_gauge_inds = site_gauge_inds[-to_remove]
     site_gauges = site_gauges[-to_remove,]
 
+    ## For test
+    #site_gauges = site_gauges[1,,drop=FALSE]
+    #site_gauge_inds = site_gauge_inds[1]
+
     # 
     # Define the source-zone and slip type. This will be used to download
     # background data for scenario selection.
@@ -293,6 +308,7 @@ example_usage<-function(run_as_regression_test=FALSE){
     # scenario to be stored. At all other gauges, the peak-stage must be
     # less than or equal the exrate-derived value
     scenario_match$number_matching_gauges = 3
+    #scenario_match$number_matching_gauges = 1
 
     # Find scenarios which match the above criteria at the previously downloaded gauge+"source-zone"
     kermadectonga_events_2500 = get_matching_scenarios(kermadec_source_data, scenario_match)
