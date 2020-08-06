@@ -34,7 +34,9 @@ initial conditions for complex earthquake scenarios, see
 [here](examples/combine_tsunami_sources/combine_tsunami_sources.R). In the
 [2018 Australian PTHA](http://dx.doi.org/10.11636/Record.2018.041) we treated non-uniform slip
 earthquakes by associating a set of them with a `parent' uniform-slip
-earthquake; see codes associated with that project [here](examples/austptha_template).
+earthquake; see codes associated with that project [here](examples/austptha_template) and
+papers on the approach [here](https://link.springer.com/article/10.1007/s00024-019-02299-w) 
+and [here](https://doi.org/10.1093/gji/ggz260)
 
 * Compute the tsunami associated with each earthquake event. In
 realistic PTHA applications this is the most computationally demanding part of
