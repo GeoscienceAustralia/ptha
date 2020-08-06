@@ -52,7 +52,8 @@ scripts to make these are [here](examples/make_hazard_points).
   * If nonlinear solvers are required, then the user must first create the 
 initial conditions for each event (by linearly combining the unit source
 initial conditions), and then run each through the nonlinear propagation code. 
-See [here](examples/combine_tsunami_sources/combine_tsunami_sources.R) for an example.
+See [here](examples/combine_tsunami_sources/combine_tsunami_sources.R) for an example
+of linearly combining tsunami water surface deformations.
 
 * Assign an mean annual rate to each event in the earthquake catalogue. This
 is based on seismic moment conservation principles, and requires the user to
