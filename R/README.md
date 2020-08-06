@@ -60,7 +60,8 @@ is based on seismic moment conservation principles, and requires the user to
 specify the source-zone convergence rate and various other parameters
 controlling seismicity. Uncertainties can be accounted for using a logic tree.
 See the the example script [here](examples/event_rates/single_source_rate_computation.R),
-and a relatively complex global-scale application for the 2018 Australian PTHA [here](examples/austptha_template/EVENT_RATES).
+and a relatively complex global-scale application for the 2018 Australian PTHA
+[here](examples/austptha_template/EVENT_RATES).
 
 
 Installation from source
