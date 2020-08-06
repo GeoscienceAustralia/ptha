@@ -29,9 +29,12 @@ combinations of the unit sources. Currently rptha supports uniform slip
 earthquakes with dimensions determined to (approximately) agree with the
 scaling relations of Strasser et al. (2010). See the function
 `get_all_earthquake_events` in the rptha package. Modifications are required to
-treat non-uniform slip earthquakes, but for an example of making tsunami
+treat non-uniform slip earthquakes. For an example of making tsunami
 initial conditions for complex earthquake scenarios, see
-[here](examples/combine_tsunami_sources/combine_tsunami_sources.R).
+[here](examples/combine_tsunami_sources/combine_tsunami_sources.R). In the
+[2018 Australian PTHA](http://dx.doi.org/10.11636/Record.2018.041) we treated non-uniform slip
+earthquakes by associating a set of them with a `parent' uniform-slip
+earthquake; see codes associated with that project [here](examples/austptha_template).
 
 * Compute the tsunami associated with each earthquake event. In
 realistic PTHA applications this is the most computationally demanding part of
