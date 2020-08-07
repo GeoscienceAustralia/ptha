@@ -1,7 +1,9 @@
 Test problems and example model setups
 --------------------------------------
 
-See [here](./nthmp) for additional tests using the NTHMP benchmark problems
+You can run all the test problems in one hit using the script in [../tests/validation_tests/][../tests/validation_tests/], which takes about 35 minutes on the authors home desktop. Before trying this, make sure you can get the unit-tests and parallel-tests to PASS (as discussed [here](../README.md)). In each subdirectory this will compile and run the model, make a series of the plots, and report multiple PASS/FAIL criteria for the problem. 
+
+All tests should PASS for the default setup. However if you are trying a non-default flow algorithm it is possible for some of the tests to FAIL even if the results are ok (because some of the tests require ad-hoc threshold criteria, which can arguably be relaxed). In that case examination of the plots will give insight into the model performance.
 
 The problems are:
 
@@ -34,3 +36,5 @@ The problems are:
 * uniform_slope -- This tests the model with steady-uniform-flow in a uniform slope
 
 * uniform_slope_shallow -- This tests the model with steady-uniform-flow in a uniform slope, when the flow is very shallow.
+
+See [here](./nthmp) for additional tests using the NTHMP benchmark problems, which are also run by the aforementioned validation test script.
