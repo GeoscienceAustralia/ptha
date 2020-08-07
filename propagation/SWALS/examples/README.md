@@ -9,7 +9,7 @@ The problems are:
 
 * dambreak -- This compares the model with analytical solutions to the dam-break problem with various initial depths.
 
-* generic_example -- This is useful for modelling single-grid global-scale tsunami propagation. It is also set up as a regression test; we simulate a PTHA scenario that is loosely similar to the Tohoku tsunami, compare a range of flow algorithms with observations, and check that the results are the same as when we first set up the problem (to within some tolerance that will likely catch changes in the model behaviour, but should allow for differences between compilers).
+* generic_example -- This is useful for modelling single-grid global-scale tsunami propagation. It is also set up as a regression test; we simulate a PTHA scenario that is loosely similar to the Tohoku tsunami, compare a range of flow algorithms with observations, and check that the results are the same as when we first set up the problem (to within some tolerance that will likely catch changes in the model behaviour, but should allow for differences between compilers). We also check that adding a uniform rise-time to the earthquake source is equivalent to smoothing time (as is mathematically true for linear equations).
 
 * isolated_building -- This compares the model with a well-know dam-break type experiment.
 
@@ -24,6 +24,8 @@ The problems are:
 * paraboloid_bowl -- This compares the model with a 2D analytical solution for flow in a paraboloid bowl, which is periodic with strong wetting and drying.
 
 * periodic_convergence -- This checks the order of accuracy of the model via convergence tests, using test problem from the literature.
+
+* periodic_multidomain -- This is not a test, but illustrates a multidomain model with periodic east-west boundary conditions, and allows a rise-time in the earthquake source.
 
 * radial_dam_break -- This runs a radial dam break problem.
 
