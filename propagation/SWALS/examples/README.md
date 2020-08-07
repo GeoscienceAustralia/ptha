@@ -21,7 +21,7 @@ The problems are:
 
 * nesting_reflection -- This is a simple 1D plane wave propagation test problem which includes a nested grid. 
 
-* parabolic_canal -- This compares the model with a 2D analytical solution for flow in a parabolic canal, which also includes a coriolis term and periodic wetting and drying.
+* parabolic_canal -- This compares the model with a 2D analytical solution for flow in a parabolic canal, which also includes a Coriolis term and periodic wetting and drying.
 
 * paraboloid_bowl -- This compares the model with a 2D analytical solution for flow in a paraboloid bowl, which is periodic with strong wetting and drying.
 
@@ -39,8 +39,7 @@ The problems are:
 
 See [here](./nthmp) for additional tests using the NTHMP benchmark problems, which are also run by the aforementioned validation test script.
 
+All tests should PASS for the default setup, which largely focusses on the `rk2` solver for the nonlinear shallow water equations and the leapfrog `linear` solver for the linear shallow water equations. There are variables controlling the default timestepping methods in [global_mod.f90](../src/shallow_water/global_mod.f90) which can be changed. The validation tests do exercise other solver types in any case - but less thoroughly. 
 
-All tests should PASS for the default setup, which largely focusses on the `rk2` solver for the nonlinear shallow water equations and the leapfrog `linear` solver for the linear shallow water equations. There are variables controlling the default timestepping [here](../src/shallow_water/global_mod.f90)) which can be changed. The tests exercise other solver types in any case - but less thoroughly. 
-
-If you are trying a non-default flow algorithm you should not be surprised if some tests FAIL, perhaps even when the results are ok (this can happen because some PASS/FAIL tests require ad-hoc thresholds to define the boundary between PASS and FAIL, and these criteria can arguably be relaxed). In other cases the problem setup might require some adjustments specific to the solver. In any case examination of the model outputs and plots will give insight into the model performance.
+If you are experimenting with a non-default flow algorithm, you should not be surprised if some tests FAIL, perhaps even when the results are ok. This can happen because some PASS/FAIL tests require ad-hoc thresholds to define the boundary between PASS and FAIL, and these criteria are debatable. In other cases the problem setup might require some adjustments specific to the solver. In any case examination of the model outputs and plots will give insight into the model performance.
 
