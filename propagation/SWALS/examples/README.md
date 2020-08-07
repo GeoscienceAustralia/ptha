@@ -37,7 +37,7 @@ The problems are:
 
 * uniform_slope_shallow -- This tests the model with steady-uniform-flow in a uniform slope, when the flow is very shallow.
 
-See [here](./nthmp) for additional tests using the NTHMP benchmark problems, which are also run by the aforementioned validation test script.
+See [here for additional tests using the NTHMP benchmark problems](./nthmp), which are also run by the aforementioned validation test script.
 
 All tests should PASS for the default setup, which largely focusses on the `rk2` solver for the nonlinear shallow water equations and the leapfrog `linear` solver for the linear shallow water equations. There are variables controlling the default timestepping methods in [global_mod.f90](../src/shallow_water/global_mod.f90) which can be changed. The validation tests do exercise other solver types in any case - but less thoroughly. 
 
