@@ -21,7 +21,7 @@
 
 ## Procedure to run the tsunami models
 
-Assuming all the dependent files are set-up correctly (i.e. elevation data is under the `../elevation` folder, breakwalls are in the `../breakwalls` folder), then on NCI's gadi machine the models can be run like this:
+Assuming all the dependent files are set-up correctly (i.e. elevation data is under the `../elevation` folder, breakwalls are in the `../breakwalls` folder, sources are in the `../sources` folder, etc), then on NCI's gadi machine the models can be run like this:
 
 * Load the required compilers / libraries etc:
 
@@ -31,7 +31,7 @@ Assuming all the dependent files are set-up correctly (i.e. elevation data is un
 
     `make -B -f make_model_ifort`
 
-* At this point the code is ready to run. Below are details on running the tsunami models.
+* At this point the code is ready to run. Below scripts for running these particular tsunami models on gadi. These would need to be edited to run on a different machine.
 
 ```
 
