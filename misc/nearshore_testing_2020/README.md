@@ -8,6 +8,8 @@ The sub-folders here are:
 * [./sources](./sources) The source models used to initialise our tsunami model. The content of this folder should be augmented with data which can be downloaded as explained therein.
 * [./swals](./swals) The tsunami model application specific code, job submission scripts, and some plotting scripts. 
 
-The sub-folders contain code, and instructions to download zipped-versions of the folders with datasets (model input / model output / test data). The latter are too large to version control. In principle you could use this data and code to re-run the study. Beware our job-submission and module-loading scripts are specific to the computer we were using, and some of our R scripts included hard-coded links to our SWALS install on that machine - these kinds of things would have to be updated to run on another machine.
+The sub-folders contain code, and instructions to download zipped-versions of the folders with datasets (model input / model output / test data). The latter are too large to version control. 
+
+In principle you could use this data and code to re-run the study. In that instance, beware our job-submission and module-loading scripts are specific to [NCI's Gadi computer](https://nci.org.au/our-systems/hpc-systems) that were using. Also some of our R scripts included hard-coded links to our [ptha](https://github.com/GeoscienceAustralia/ptha) install on that machine - these kinds of things would have to be updated to run on another machine.
 
 We rely on a separate install of the [SWALS source code](https://github.com/GeoscienceAustralia/ptha/tree/master/propagation/SWALS), and the [rptha](https://github.com/GeoscienceAustralia/ptha/tree/master/R) R package. Those links are also in the [ptha repository](https://github.com/GeoscienceAustralia/ptha). Various R packages from CRAN will also be used (generally available by calling `install.packages(...)` from within R).
