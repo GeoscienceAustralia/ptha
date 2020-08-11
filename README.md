@@ -11,6 +11,8 @@ The folder [ptha_access](ptha_access) contains scripts/tutorials to access the
 2018 Australian PTHA results - typically subsets thereof, since the full
 analysis is several TB in size.
 
+The folder [misc](misc) contains data and code for related work, as detailed therein.
+
 *Please use the most up-to-date source code, not the "releases".  In this
 repository, "releases" are only used to snapshot the code at some point in time
 (e.g. a reference for older studies). The master branch is recommended for general
