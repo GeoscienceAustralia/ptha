@@ -15,9 +15,9 @@ as well as the current README file.
 
 Following the download above, this folder will contain two sub-folders with elevation data that was created for some nearshore tsunami model testing in Australia.
 
-See the sub-folders for information on the underlying data sources. For the most part they were derived from data available from [ELVIS](https://elevation.fsdf.org.au/) and [AODN](https://portal.aodn.org.au/search) and [Ausseabed](http://www.ausseabed.gov.au/).
+See the sub-folders for information on the underlying data sources. For the most part they were derived from data available from [ELVIS](https://elevation.fsdf.org.au/) and [AODN](https://portal.aodn.org.au/search) and [Ausseabed](http://www.ausseabed.gov.au/). The coarsest-scale grid is based on the 2014 version of [GEBCO](https://www.gebco.net/) and the [2009 Australian Bathymetry and Topography Grid](https://data.gov.au/data/dataset/australian-bathymetry-and-topography-grid-june-2009).
 
-The data herein is provided for scientific transparency. It was created to run the model code in [../swals](../swals), using various products discussed in the sub-folders. We make no guarentees about the accuracy or fitness for any purpose, aside from repeating the computations in our study.
+The data herein is provided for scientific transparency. It was created to run the model code in [../swals](../swals), using various products discussed in the sub-folders. We make no guarentees about the accuracy or fitness for any purpose, aside from repeating the computations in our study, which was the sole focus of our elevation data processing.
 
 ## How it is used in our study 
 
