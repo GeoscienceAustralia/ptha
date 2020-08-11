@@ -7,7 +7,7 @@
 
 * `point_gauges_combined.csv` -- Coordinates of all sites at which the tsunami model stores gauge time-series. A small subset of these have observational data and are used in further processing; many others are points from the 2018 PTHA.
 
-* `make_model_ifort`, `SWALS_ifort_modules.sh` -- The former is used to compile `model.f90` on NCI's Gadi machine. To do this, first load various software modules (using the latter).
+* `make_model_ifort`, `SWALS_ifort_modules.sh` -- These are used to load software and compile `model.f90` on NCI's Gadi machine. They are run with `source SWALS_ifort_modules.sh; make -B -f make_model_ifort`.
 
 * Files like `load_balance_files/load_balance_XXXXX.txt` -- Tell SWALS how to split the domains among coarray images for different kinds of model runs. Note coarray-images are equivalent to mpi-ranks, except that `coarray-image-index = mpi-rank + 1`. Actually we used the MPI version of the code for this study, but much of the code refers to analogous coarray concepts.
     - As background: the `model.f90` code creates a multidomain object `md` that contains an array of domains `md%domains(:)`. Each domain corresponds to a structured grid where we solve the shallow water equations. To run in distributed-memory parallel, the code splits each domain up into a certain number of pieces and distributes them among coarray images -- this information is encoded in the `./load_balance_files/load_balance_XXX.txt` files. Ideally we partition the domains in a way that minimises the total runtime (so roughly equal work is given to each rank).
