@@ -31,7 +31,7 @@ Assuming all the dependent files are set-up correctly (i.e. elevation data is un
 
     `make -B -f make_model_ifort`
 
-* At this point the code is ready to run. Below scripts for running these particular tsunami models on gadi. These would need to be edited to run on a different machine.
+* At this point the code is ready to run. Below are the scripts we used for this study, which use the PBS queueing system on the Gadi supercomputer. These would need to be edited to run on a different machine.
 
 ```
 
