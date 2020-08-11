@@ -10,8 +10,7 @@ out_dir = 'multidomain_image'
 dir.create(out_dir, showWarnings=FALSE)
 
 # Zero contour
-zc = readOGR('/g/data/w85/tsunami/MODELS/inundation/australia_wide/clean_version/sources/figures/zero_contour/zero_contour.shp', 
-             layer='zero_contour')
+zc = readOGR('../sources/figures/zero_contour/zero_contour.shp', layer='zero_contour')
 
 # Add in domain boundaries
 md_bbox = get_domain_interior_bbox_in_multidomain('.')
