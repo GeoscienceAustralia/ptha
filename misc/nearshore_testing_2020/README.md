@@ -4,10 +4,10 @@ The sub-folders contain code, and instructions to download zipped-versions of th
 
 * [./breakwalls](./breakwalls) Make the breakwalls that we burn into our elevation model.
 * [./gauges](./gauges) FIXME
-* [./elevation](./elevation) Elevation grids created for our model and used by the code in [./swals](./swals). The content of this folder should be augmented with data which can be downloaded as explained therein.
-* [./sources](./sources) The source models used to initialise our tsunami model. The content of this folder should be augmented with data which can be downloaded as explained therein.
+* [./elevation](./elevation) Elevation grids created for our model and used by the code in [./swals](./swals). The content of this folder should be augmented with data which can be downloaded, as explained therein.
+* [./sources](./sources) The source models used to initialise our tsunami model. The content of this folder should be augmented with data which can be downloaded, as explained therein.
 * [./swals](./swals) The tsunami model application specific code, job submission scripts, and some plotting scripts. 
-* [./analysis](./analysis) FIXME Analysis of the model results and creation of plots (this is the last step in the analysis). The content of this folder should be augmented with data which can be downloaded as explained therein. 
+* [./analysis](./analysis) FIXME Analysis of the model results and creation of plots (this is the last step in the analysis). The content of this folder should be augmented with data which can be downloaded, as explained therein. 
 
 In principle you could use this data and code to re-run the study. In that instance, beware our job-submission and module-loading scripts are specific to [NCI's Gadi computer](https://nci.org.au/our-systems/hpc-systems) that were using. Also some of our R scripts included hard-coded links to our [ptha](https://github.com/GeoscienceAustralia/ptha) install on that machine - these kinds of things would have to be updated to run on another machine.
 
