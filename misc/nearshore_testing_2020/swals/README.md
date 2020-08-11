@@ -1,6 +1,7 @@
-This folder contains code to run various SWALS tsunami models for the inversions. 
+# This folder contains code to run various SWALS tsunami models for the inversions. 
+---------------------------------------------------------------------------------
 
-# The key files are:
+## The key files are:
 
 * `model.f90` and `model_local_routines.f90`  -- Tsunami model setup codes. Designed for this study only. See comments therein for documentation.
 
@@ -21,7 +22,7 @@ This folder contains code to run various SWALS tsunami models for the inversions
 
 * Other misc. R scripts are present but not essential.
 
-# To run the tsunami models
+## Procedure to run the tsunami models
 
 Assuming all the dependent files are set-up correctly (i.e. elevation data is under the `../elevation` folder, breakwalls are in the `../breakwalls` folder), then on NCI's gadi machine the models can be run like this:
 
