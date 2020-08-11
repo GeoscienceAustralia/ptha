@@ -2,8 +2,9 @@ This folder contains code and links to data required for a study comparing model
 
 The sub-folders here are:
 
-* [./analysis](./analysis) Analysis of the model results and creation of plots (this is the last step in the analysis) 
+* [./analysis](./analysis) FIXME Analysis of the model results and creation of plots (this is the last step in the analysis). The content of this folder should be augmented with data which can be downloaded as explained therein. 
 * [./breakwalls](./breakwalls) Make the breakwalls that we burn into our elevation model.
+* gauges FIXME
 * [./elevation](./elevation) Elevation grids created for our model and used by the code in [./swals](./swals). The content of this folder should be augmented with data which can be downloaded as explained therein.
 * [./sources](./sources) The source models used to initialise our tsunami model. The content of this folder should be augmented with data which can be downloaded as explained therein.
 * [./swals](./swals) The tsunami model application specific code, job submission scripts, and some plotting scripts. 
