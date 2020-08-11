@@ -66,6 +66,8 @@ For other inversions that have a `Okada_vertical_component.R` script, analogous 
 Once all the rasters have been created, the script `apply_kajiura_to_rasters.R` can be run
 to apply a Kajiura filter to most of the rasters. 
 
+    Rscript apply_kajiura_to_rasters.R
+
 This is not applicable for Chile1960/HoEtAl2019, which is already a
 water-surface deformation - so that is skipped.
 
