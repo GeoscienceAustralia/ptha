@@ -13,5 +13,6 @@ To make the xyz data using the shapefiles, do this:
 
     Rscript make_breakwalls.R
 
-The code will write an csv file inside each subdirectory (one per shapefile), and these
-are referenced by the SWALs model to ensure the breakwalls are burned into the grid.
+The code writes one or more csv files inside each subdirectory (one per
+shapefile; included herein). These are referenced by the SWALs model to ensure
+the breakwalls are burned into the grid.
