@@ -1,3 +1,4 @@
+source('../config.R') # Get logical variable NEARSHORE_TESTING_PAPER_2020_ONLY
 
 library(rptha)
 
@@ -7,7 +8,13 @@ source('/g/data/w85/tsunami/CODE/gadi/ptha/propagation/SWALS/plot.R', local=swal
 
 # Get gauge data interface
 gd = new.env()
-source('/g/data/w85/tsunami/DATA/TIDES/CODE_INTERFACE/gauge_data_links.R', local=gd, chdir=TRUE)
+if(!NEARSHORE_TESTING_PAPER_2020_ONLY){
+    # Use our local database
+    source('/g/data/w85/tsunami/DATA/TIDES/CODE_INTERFACE/gauge_data_links.R', local=gd, chdir=TRUE)
+}else{
+    # Use a stripped-back database with only data used in the 2020 nearshore testing paper	 
+    source('../../gauges/gauge_data_links.R', local=gd, chdir=TRUE)
+}
 # Read the event data where it exists
 event_data = gd$get_data_for_event(event_id)
 
@@ -39,15 +46,15 @@ for(i in 1:length(event_data)){
         matrix(c(target_gauges[i,1:2]), ncol=2, nrow=length(gauges$lon), byrow=TRUE))
         )
 
-    # Ensure the gauge is within e.g. 50 km of the target. If it isn't, then we have no nearby
-    # hazard point, so should move-on. 
-    # FIXME: Remove this -- it should not be required anymore after addition of gauges.
-    ##fifty_km = 50*1000
-    ##if(distHaversine(
-    ##    cbind(gauges$lon[gi], gauges$lat[gi]), 
-    ##    matrix(c(target_gauges[i,1:2]), ncol=2, nrow=1)) > fifty_km){
-    ##    next
-    ##}
+    ## Ensure the gauge is within e.g. 50 km of the target. If it isn't, then we have no nearby
+    ## hazard point, so should move-on. 
+    ## FIXME: Remove this -- it should not be required anymore after addition of gauges.
+    #fifty_km = 50*1000
+    #if(distHaversine(
+    #    cbind(gauges$lon[gi], gauges$lat[gi]), 
+    #    matrix(c(target_gauges[i,1:2]), ncol=2, nrow=1)) > fifty_km){
+    #    next
+    #}
 
     par(mfrow=c(3,1))
     par(mar=c(4,2,4,1))

@@ -3,13 +3,59 @@
 # ../analysis/gauge_RDS_files/
 # Then we do analysis in ../analysis/, and avoid cluttering this directory
 #
+source('./config.R') # Get the variable NEARSHORE_TESTING_PAPER_2020_ONLY to cleanly remove our PTHA18 study
 
-output_basedir = '../analysis/gauge_RDS_files/'
+if(NEARSHORE_TESTING_PAPER_2020_ONLY){
+    output_basedir = '../analysis_nearshore2020/gauge_RDS_files/'
+    # Copy over all runs that are used in the 2020 nearshore testing paper.
+    # I've been using this directory to do other things (e.g. ptha18 scenario testing)
+    # This ensures we only copy over runs used in that paper. 
+    model_base = c(
+        'Tohoku2011_YamakaziEtAl2018-risetime_0-full-',
+        'Tohoku2011_YamakaziEtAl2018_HIGHRES-risetime_0-full-',
+        'Tohoku2011_SatakeEtAl2013-risetime_0-full-',
+        'Tohoku2011_RomanoEtAl2015-risetime_0-full-',
+        'Sumatra2004_PiatanesiLorito2007-risetime_0-full-',
+        'Sumatra2004_LoritoEtAl2010-risetime_0-full-',
+        'Sumatra2004_FujiSatake2007_HIGHRES-risetime_0-full-',
+        'Sumatra2004_FujiSatake2007-risetime_0-full-',
+        'Chile2015_WilliamsonEtAl2017-risetime_0-full-',
+        'Chile2015_RomanoEtAl2016-risetime_0-full-',
+        'Chile2010_LoritoEtAl2011-risetime_0-full-',
+        'Chile2010_FujiSatake2013-risetime_0-full-',
+        'Chile1960_HoEtAl2019-risetime_0-full-',
+        'Chile1960_FujiSatake2013-risetime_0-full-')
+
+    model_types = c(
+        'linear_with_no_friction',
+        'linear_with_linear_friction',
+        'linear_with_reduced_linear_friction',
+        'linear_with_delayed_linear_friction',
+        'linear_with_manning-0.035',
+        'leapfrog_nonlinear')
+
+    all_gauge_files_list = sapply(model_base, f<-function(model_base_name){
+        
+        all_gauge_files = sapply(model_types, g<-function(model_type){
+                Sys.glob(paste0('OUTPUTS/', model_base_name, model_type, '*/*/gauge*'))
+            }, simplify=FALSE, USE.NAMES=FALSE)
+
+        return(unlist(all_gauge_files))
+        }, 
+        simplify=FALSE, USE.NAMES=FALSE) 
+    # Here is the equivalent of 'all_gauge_files' for cases relevant to the 2020 nearshore testing paper.
+    all_gauge_files = unlist(all_gauge_files_list)
+
+}else{
+    output_basedir = '../analysis/gauge_RDS_files/'
+    # Copy over files beginning with 'gauge*'
+    all_gauge_files = Sys.glob('OUTPUTS/*/*/gauge*')
+}
 
 dir.create(output_basedir, showWarnings=FALSE, recursive=TRUE)
 
-# Copy over files beginning with 'gauge*'
-all_gauge_files = Sys.glob('OUTPUTS/*/*/gauge*')
+
+
 # Copy over the multidomain log for 'image 1' [i.e. mpi-rank = 0]. All individual log-files
 # include global energy balance and mass balance information so we don't need them all.
 all_md_files = paste0(dirname(all_gauge_files), '/multidomain_log_image_00000000000000000001.log')
@@ -26,9 +72,9 @@ for(i in 1:length(all_gauge_files)){
     if(endsWith(gauge_file, 'pdf')){
         all_tifs = Sys.glob(paste0(dirname(gauge_file), '/*.tif'))
         for(j in 1:length(all_tifs)){
-            file.copy(all_tifs[j], 
-            paste0(output_dir, '/', basename(all_tifs[j])), 
-                overwrite=TRUE)
+             file.copy(all_tifs[j], 
+                       paste0(output_dir, '/', basename(all_tifs[j])), 
+                       overwrite=TRUE)
         }
     }
 }
