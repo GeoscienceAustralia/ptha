@@ -16,4 +16,4 @@ In principle you could use this data and code to re-run the study. In that insta
 
 We rely on a separate install of the [rptha](https://github.com/GeoscienceAustralia/ptha/tree/master/R) R package, and repeatedly link to a copy of the [ptha repository](https://github.com/GeoscienceAustralia/ptha) to use the SWALS source code. Various R packages from CRAN are also used (and these can generally be installed by calling `install.packages(...)` from within R).
 
-The code and data herein is provided for scientific transparency (i.e. to show what we did). We do not guarentee that the contents are totally accurate or complete, or that they are suitable for any purposes other than understanding what we done in our study. You should not solely rely on this information when making a commercial decision .
+The code and data herein is provided for scientific transparency (i.e. to show what we did). We do not guarentee that the contents are totally accurate or complete, or that they are suitable for any purposes other than understanding what was done in our study. You should not solely rely on this information when making a commercial decision .
