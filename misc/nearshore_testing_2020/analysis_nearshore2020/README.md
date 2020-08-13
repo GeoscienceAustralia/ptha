@@ -1,6 +1,11 @@
-This is where do most of the analysis, and make most figures, for the paper.
+Figures and statistics for the paper
+----------------------------------------------
+
+Codes here do most of the analysis for the paper (and make most figures).
 
 Before running any code in this directory we first had to run all the models and post-processing scripts in [../swals](../swals) as discussed therein. That created a set of post-processed outputs in [./gauge_RDS_files](./gauge_RDS_files), and we provide a [direct download of those files here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2020/OUTPUTS.zip). 
+
+In addition you can find time-series plots for all model types and nearshore gauges [here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2020/all_models_sites_vs_data.zip).
 
 Here we explain the location of code used to make various figures in the paper. 
 * Figure 1 - The figure with all the source models is made in ../sources/figures/
