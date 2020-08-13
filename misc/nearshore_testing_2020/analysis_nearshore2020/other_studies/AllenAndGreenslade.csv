@@ -1,0 +1,12 @@
+Allen and Greenslade,,,,
+,,,,
+Event,Inversion,Site,data_max,model_max_BOM
+Sumatra2004,BOM04a,Port_Kembla_outer,0.32,0.18
+Solomons2007,BOM07a,Port_Kembla_outer,0.2,0.07
+Puysegur2007,BOM07b,Port_Kembla_outer,0.18,0.19
+Puysegur2009,BOM09a,Port_Kembla_outer,0.15,0.08
+Samoa2009,BOM09b,Port_Kembla_outer,0.15,0.11
+Chile2010,BOM10a,Port_Kembla_outer,0.3,0.47
+Honshu2011,BOM11a,Port_Kembla_outer,0.36,0.49
+Solomons2013,BOM13a,Port_Kembla_outer,0.08,0.1
+Chile2014,BOM14a,Port_Kembla_outer,0.1,0.09
