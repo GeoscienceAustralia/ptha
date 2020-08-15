@@ -529,10 +529,13 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_abo
 #' @param buffer_is_priority_domain. If TRUE, replace "is_priority_domain" with a version that is TRUE
 #' even if the neighbouring cell is a priority domain. This is an attempt to remove gaps in the image that
 #' can occur if we use a spatial_stride != 1 
+#' @param asp plot x-y aspect ratio
+#' @param fields_axis_args If use_fields=TRUE, then this list is passed to image.plot(..., axis.args=fields_axis_args).
+#' It can be used to control the labels on the colourbar.
 #' @return Nothing, but make the plot.
 multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, zlim, cols, add=FALSE,
     var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, use_fields=FALSE, clip_to_zlim=FALSE,
-    buffer_is_priority_domain=FALSE, asp=1){
+    buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list()){
 
     library('ncdf4')
     library(fields)
@@ -541,7 +544,8 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
 
     # Start a new plot
     if(use_fields){
-        if(!add) image.plot(matrix(0, ncol=2, nrow=2), asp=asp, xlim=xlim, ylim=ylim, zlim=zlim, col=cols, nlevel=length(cols)+1)
+        if(!add) image.plot(matrix(0, ncol=2, nrow=2), asp=asp, xlim=xlim, ylim=ylim, zlim=zlim, 
+                            col=cols, nlevel=length(cols)+1, axis.args=fields_axis_args)
     }else{
         if(!add) image(matrix(0, ncol=2, nrow=2), asp=asp, col='white', xlim=xlim, ylim=ylim, zlim=zlim)
     }

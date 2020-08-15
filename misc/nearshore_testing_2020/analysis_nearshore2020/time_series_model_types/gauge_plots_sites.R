@@ -34,7 +34,7 @@ make_plot<-function(Fujii_Hillarys, plot_filename, plot_ylim, legend_xy=c(35, -0
     plot(Fujii_Hillarys[[1]]$model_t/3600, Fujii_Hillarys[[1]]$model_stage, t='l', col='red', lwd=0.7, 
          ylim=plot_ylim, xlim=plot_xlim, 
          xlab='', ylab='', main='', cex.axis=1.5, las=1)
-    title(paste0('LSWE + no friction on global grid', extra_title), cex.main=1.7, line=0.5)
+    title(paste0('LSWE + frictionless on global grid', extra_title), cex.main=1.7, line=0.5)
     points(obs_t, obs_h, t='o', col='black', cex=0.2)
     grid(col='orange')
     legend(x=legend_xy[1], y=legend_xy[2], c('Observed', 'Modelled'), lty=c(1, 1), pch=c(1, NA), 
