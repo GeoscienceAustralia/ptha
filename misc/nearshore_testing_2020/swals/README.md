@@ -99,6 +99,8 @@ Assuming all the dependent files are set-up correctly (i.e. elevation data is un
 
 * At this point run the code in `./plots` by changing into that directory and running `Rscript plot_all.R`. This will create a lot of plots and also RDS files with observations and models at gauges.
 
+* Next make png files with the max stage and elevation for each model with `Rscript plot_max_stage_and_elevation.R` (note the hard-coded assumption of 24 cores).
+
 * To copy the gauge results and plots to a folder in ../analysis for further processing, do `Rscript copy_gauges_to_analysis_directory.R`
 
 ## Further information on the load balance file format
