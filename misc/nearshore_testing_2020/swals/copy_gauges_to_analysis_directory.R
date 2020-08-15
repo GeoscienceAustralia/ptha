@@ -68,14 +68,26 @@ for(i in 1:length(all_gauge_files)){
     file.copy(all_md_files[i], paste0(output_dir, '/', basename(all_md_files[i])), overwrite=TRUE)
 
     # Assume we copy a matching gauge_*.RDS file and a gauge*.pdf file, as well
-    # as a bunch of tifs. Here we only copy the tifs with pdf files, to avoid double copy.
+    # as a bunch of tifs and png files. Here we only copy the tifs with pdf files, to avoid double copy.
     if(endsWith(gauge_file, 'pdf')){
-        all_tifs = Sys.glob(paste0(dirname(gauge_file), '/*.tif'))
-        for(j in 1:length(all_tifs)){
-             file.copy(all_tifs[j], 
-                       paste0(output_dir, '/', basename(all_tifs[j])), 
+        # Do not copy the the tiffs for the nearshore testing paper
+        if(!NEARSHORE_TESTING_PAPER_2020_ONLY){
+            all_tifs = Sys.glob(paste0(dirname(gauge_file), '/*.tif'))
+            for(j in 1:length(all_tifs)){
+                 file.copy(all_tifs[j], 
+                           paste0(output_dir, '/', basename(all_tifs[j])), 
+                           overwrite=TRUE)
+            }
+        }
+
+        # Copy the png files with max-stage and elevation0 
+        all_pngs = Sys.glob(paste0(dirname(gauge_file), '/*.png'))
+        for(j in 1:length(all_pngs)){
+             file.copy(all_pngs[j], 
+                       paste0(output_dir, '/', basename(all_pngs[j])), 
                        overwrite=TRUE)
         }
+
     }
 }
 
