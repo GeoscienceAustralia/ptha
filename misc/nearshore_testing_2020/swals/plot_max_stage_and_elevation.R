@@ -1,3 +1,13 @@
+#
+# Make a PNG with max-stage, and one with the elevation, for all models.
+# Note these plots sometimes show linear-features or gaps at nesting boundaries
+# between the coarse domain and the other domains -- because we only stored every 4'th
+# grid point on the coarse domains -- so the boundaries might not match up. Below
+# I use "buffer_is_priority_domain=TRUE" to try to fill any resulting gaps, but
+# it isn't a flawless solution (ideally we should just store every cell).
+# 
+#
+
 all_multidomain_dirs = Sys.glob('OUTPUTS/*/RUN*')
 source('/g/data/w85/tsunami/CODE/gadi/ptha/propagation/SWALS/plot.R')
 library(cptcity)
