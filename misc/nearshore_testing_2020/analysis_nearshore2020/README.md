@@ -17,5 +17,5 @@ Here we explain the location of code used to make various figures in the paper.
 * Figure 7,8,9 -- These figures compare modelled/observed gauge time-series at several sites, and are made in [./time_series_model_types/](./time_series_model_types) with the script gauge_plots_sites.R. There is another script in that folder which can plot the model and data at all gauges.
 * Figure 10, 11 -- These figures were made in [./tsunami_size/](./tsunami_size) with analysis.R, specifically the function "combined_plot_model_vs_data". The analysis.R script also reports many statistics that are used in this part of the paper (e.g. comparison of our statistics vs other studies).
 * Figure 12 -- This was made in [./tsunami_size/](./tsunami_size) with analysis.R, by a call to the function 'boxplot_relative_errors'
-* Figure 12 -- This was made in [./tsunami_size/](./tsunami_size) with analysis.R, by a call to the function model_vs_model_maxima_change()
+* Figure 13 -- This was made in [./tsunami_size/](./tsunami_size) with analysis.R, by a call to the function model_vs_model_maxima_change()
 
