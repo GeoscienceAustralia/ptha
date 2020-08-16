@@ -1,4 +1,4 @@
-Nearshore testing various alternative tsunami modelling approaches at Australian tidal gauges, using published source-inversions to represent the historic tsunami sources.
+Testing various alternative tsunami modelling approaches at Australian tidal gauges, using published source-inversions to represent the historic tsunami sources.
 --------------------------------------------------------------------------------------------------------
 
 This folder contains code and links to data required for a study comparing models and observations of nearshore tsunamis in Australia. The working title of the paper is *Davies, G. et al. (2020) Global dissipation models for simulating tsunamis at far-field coasts up to 60 hours post-earthquake: Multi-site tests in Australia.*
