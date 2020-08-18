@@ -227,21 +227,98 @@ plot(event_raster, main='Initial condition for a selected event of interest')
 
 # Quickly plotting initial conditions and wave time-series for several events
 
-This example code plots the initial condition and wave time-series for all
-selected events, as files in a specified output directory. For other source zones 
-one might need to modify it (e.g. different figure dimensions or axes limits, etc).
+The code below plots the initial condition and wave time-series for all
+selected events, as files in a specified output directory. For other source
+zones one might need to modify it (e.g. different figure dimensions or axes
+limits, etc).
 
 ```{r quickplots, cache=FALSE}
+# Name of the output directory for the plots. Here we insert some variables into the name
+plot_outdir = paste0('batch_plots', 
+                     '_SRC_', source_zone, 
+                     '_SLP_', slip_type, 
+                     '_CRV_', scenario_match$hazard_curve_type, 
+                     '_EXRATE_', as.character(scenario_match$exrate), 
+                     '_STGTOL_', as.character(scenario_match$target_stage_tolerance), 
+                     '_NGAUGE_', as.character(scenario_match$number_matching_gauges))
+
+# Use this to control the gauges plot xlimits, ylimits, and label position
+gauge_plot_xlim = c(0, 10*3600) # Plot the first 10 hours
+gauge_plot_vertical_spacing = 1.0 # Plot all gauge time-series on one figure, using this vertical spacing.
+gauge_plot_ylim_extra = c(-1, 1) # Add this to the plot y-range implied by the gauge_plot_vertical_spacing
+gauge_plot_gaugeID_offset = c(0, 0.5) # Offset for the gaugeID text that is added to the plot.
+
+# Make the output directory
+dir.create(plot_outdir, showWarnings=FALSE)
+
 # Get all the events in a format that the ptha_access codes will work with
 events_of_interest = ptha18$get_source_zone_events_data(source_zone, 
     slip_type=slip_type, 
     desired_event_rows=kermadectonga_events_2500$desired_event_rows)
 
+# Get the wave time-series for all events at all 'site_gauges'
 all_tsunamis_at_gauges = ptha18$get_flow_time_series_at_hazard_point(
     events_of_interest,
     event_ID = 1:nrow(events_of_interest$events),  # Check all "events_of_interest"
     target_points = site_gauges)
 
+# Plot everything
+for(i in 1:length(events_of_interest$desired_event_rows)){
+    # This is the index of the event AMONG ALL EVENTS IN THE DATABASE
+    event_row_index = events_of_interest$desired_event_rows[i]
+
+    # Read the initial condition raster
+    event_raster = ptha18$get_initial_condition_for_event(events_of_interest, event_ID=i)
+    # Save the initial condition raster
+    output_raster_file = paste0(plot_outdir, '/initial_condition_DESIRED_EVENT_ROW_', 
+                                event_row_index, '.tif')
+    writeRaster(event_raster, filename = output_raster_file, options=c('COMPRESS=DEFLATE'), 
+                overwrite=TRUE)
+
+    # Make a PNG of the initial condition raster 
+    raster_extent = extent(event_raster)
+    raster_asp = (raster_extent@ymax - raster_extent@ymin)/(raster_extent@xmax - raster_extent@xmin)
+    output_png_file = paste0(plot_outdir, '/initial_condition_DESIRED_EVENT_ROW_', 
+                                event_row_index, '.png')
+    png(output_png_file, width=9, height=max(4, raster_asp*9 + 1), res=200, units='in')
+    plot(event_raster) 
+    title(main=paste0("Tsunami initial condition \n Mw=", events_of_interest$events$Mw[i], 
+                      "; desired_event_row=", event_row_index)
+         )
+    dev.off() # Finish plot
+
+    # Make a PNG of the gauges
+    ngauges = length(all_tsunamis_at_gauges$flow)
+    gauge_offset = seq(-ngauges/2, ngauges/2, length=ngauges)*gauge_plot_vertical_spacing
+
+    output_png_file = paste0(plot_outdir, '/tsunami_gauges_DESIRED_EVENT_ROW_', 
+                                event_row_index, '.png')
+    png(output_png_file, width=9, height=9, units='in', res=200)
+    plot(all_tsunamis_at_gauges$time, all_tsunamis_at_gauges$flow[[1]][i,,1] + gauge_offset[1], t='l', 
+         xlim=gauge_plot_xlim, ylim=range(gauge_offset)+gauge_plot_ylim_extra,
+         xlab='Time (seconds post-earthquake)', ylab='Stage (m, with datum vertical offset)')
+    for(j in 1:ngauges){
+        points(all_tsunamis_at_gauges$time, 
+               all_tsunamis_at_gauges$flow[[j]][i,,1] + gauge_offset[j], 
+               t='l')
+    }
+    abline(v=seq(0, 36)*3600, col='grey', lty='dashed')
+    abline(h=gauge_offset, col='grey', lty='dashed')
+    text(gauge_plot_xlim[2] - 0.1*diff(gauge_plot_xlim) + gauge_plot_gaugeID_offset[1], 
+         gauge_offset + gauge_plot_gaugeID_offset[2],
+         names(all_tsunamis_at_gauges$flow), col='blue')
+    title(main=paste0("Tsunami gauge time-series \n Mw=", events_of_interest$events$Mw[i], 
+                 "; desired_event_row=", event_row_index))
+    dev.off()
+    
+}
+
 ```
 
+The code above produces some figures showing the initial condition in the output directory named `r plot_outdir`. An example is below.
 
+![Example raster plot](batch_plots_SRC_kermadectonga2_SLP_variable_uniform_CRV_rate_median_EXRATE_4e-04_STGTOL_0.1_NGAUGE_3/initial_condition_DESIRED_EVENT_ROW_28628.png)
+
+It also produces some plots of the gauge time-series. Notice the script includes parameters that can be used to control the vertical spacing of the gauges, as well as the plot x-and-y limits, and the gaugeID label placement.
+
+![Example gauges plot](batch_plots_SRC_kermadectonga2_SLP_variable_uniform_CRV_rate_median_EXRATE_4e-04_STGTOL_0.1_NGAUGE_3/tsunami_gauges_DESIRED_EVENT_ROW_28628.png)
