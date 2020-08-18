@@ -279,3 +279,24 @@ plot(event_raster, main='Initial condition for a selected event of interest')
 ```
 
 ![plot of chunk suggestedUsage](figure/suggestedUsage-1.png)
+
+# Quickly plotting initial conditions and wave time-series for several events
+
+This example code plots the initial condition and wave time-series for all
+selected events, as files in a specified output directory. For other source zones 
+one might need to modify it (e.g. different figure dimensions or axes limits, etc).
+
+
+```r
+# Get all the events in a format that the ptha_access codes will work with
+events_of_interest = ptha18$get_source_zone_events_data(source_zone, 
+    slip_type=slip_type, 
+    desired_event_rows=kermadectonga_events_2500$desired_event_rows)
+
+all_tsunamis_at_gauges = ptha18$get_flow_time_series_at_hazard_point(
+    events_of_interest,
+    event_ID = 1:nrow(events_of_interest$events),  # Check all "events_of_interest"
+    target_points = site_gauges)
+```
+
+

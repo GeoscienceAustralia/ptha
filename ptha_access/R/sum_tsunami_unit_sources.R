@@ -67,6 +67,7 @@ get_all_gauges<-function(){
         '/g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/STATIONS_ONLY_lon_lat_elev_gaugeID.nc')
 
     all_gauges = read_table_from_netcdf(netcdf_file)
+    all_gauges$gaugeID = clean_gaugeID(all_gauges$gaugeID)
 
     return(all_gauges)
 }
