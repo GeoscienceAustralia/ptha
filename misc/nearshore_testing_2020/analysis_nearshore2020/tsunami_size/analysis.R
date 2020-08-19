@@ -1022,3 +1022,26 @@ model_vs_model_maxima_change<-function(){
     dev.off()
 }
 model_vs_model_maxima_change()
+
+#
+# A few checks to support the discussion.
+#
+
+# For the linear-with-delayed-linear-friction model, only 2 of the 68 model-vs-observed series
+# do not have BOTH modelled-max < 14hours AND modelled-max > 3hours-post-arrival
+late_model_maxima = (model_stats_nearshore$LinearDelayedFriction$model_time_of_max > 14*3600) & 
+                  # Modelled maxima occurs well after 12 hours
+              (model_stats_nearshore$LinearDelayedFriction$model_time_of_max - 
+               model_stats_nearshore$LinearDelayedFriction$model_time_to_arrive > 3*3600)
+                  # Modelled maxima is well after arrival time.
+
+summary(late_model_maxima)
+#> summary(late_model_maxima)
+#   Mode   FALSE    TRUE 
+#logical       2      66 
+late_observed_maxima = model_stats_nearshore$LinearDelayedFriction$obs_max_time_to_arrive/3600 < 18
+model_stats_nearshore$LinearDelayedFriction$site_and_event[which(late_observed_maxima)]
+#> model_stats_nearshore$LinearDelayedFriction$site_and_event[which(late_observed_maxima)]
+#[1] "Sumatra-2004_Hillarys_BOM_1min_2004" "Sumatra-2004_Hillarys_BOM_1min_2004"
+#[3] "Sumatra-2004_Hillarys_BOM_1min_2004"
+

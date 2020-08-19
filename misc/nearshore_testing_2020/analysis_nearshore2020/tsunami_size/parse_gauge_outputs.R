@@ -84,6 +84,7 @@ get_statistics_at_site<-function(site_data){
         model_time_to_arrive = NA
         obs_max_time_to_arrive = NA
 
+        model_time_of_max = NA
     }else{
         
         wave_threshold = WAVE_ARRIVAL_TIME_RELATIVE_THRESHOLD *max(abs(model$resid))
@@ -155,6 +156,10 @@ get_statistics_at_site<-function(site_data){
         model_keep = which( (model$juliant >= model$juliant[n]-1.5) & (model$juliant <= (model$juliant[n]-1)) )
         model_range_24to36 = range(model$resid[model_keep])
         data_range_24to36 = range(obs$resid[obs_keep], na.rm=TRUE)
+
+        # Time of modelled maxima
+        k = which.max(model$resid)
+        model_time_of_max = site_data$model_time[k]
     }
 
     # For the output, make sensible names
@@ -218,7 +223,10 @@ get_statistics_at_site<-function(site_data){
                   #
                   model_arrival_time = model_arrival_time,
                   model_time_to_arrive = model_time_to_arrive,
-                  obs_max_time_to_arrive = obs_max_time_to_arrive
+                  obs_max_time_to_arrive = obs_max_time_to_arrive,
+                  #
+                  model_time_of_max = model_time_of_max
+
                   )
 
     # We could have "Inf" or "-Inf" values above if the data didn't cover the
