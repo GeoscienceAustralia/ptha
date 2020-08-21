@@ -244,6 +244,36 @@ To help select scenarios of interest, it is also useful to consider which among 
 
 ![plot of chunk scenarioCriteria4](figure/scenarioCriteria4-1.png)
 
+# Identifying subsets of the above scenarios
+
+Based on the above plot, we might decide to look further at some subset of scenarios. For example, suppose we want to look at the events with magnitude ranging from 8.2-8.8 having peak-slip between 10 and 20m (this is subjective, and other decisions are certainly possible - but it serves as an example). Below we show how to find their event numbers, and make a plot of their peak-slip values to check it worked:
+
+
+```r
+    # Find events with Mw >8.15 and Mw < 8.85 -- this will include all events
+    # with Mw 8.2-8.8, and the offsets by 0.05 protect us against tiny floating point
+    # rounding. Also only take events with peak-slip between 10 and 20 m.
+    k = which((kermadectonga_events_2500$events$Mw > 8.15) &
+              (kermadectonga_events_2500$events$Mw < 8.85) &
+              (kermadectonga_events_2500$peak_slip > 10) & 
+              (kermadectonga_events_2500$peak_slip < 20)  
+              )
+    # Here are the row-indices of those scenarios 
+    row_indices_of_subset = kermadectonga_events_2500$desired_event_rows[k]
+    row_indices_of_subset # These could be used to get the initial condition or gauge time-series -- see below
+```
+
+```
+## [1] 28628 36690 37651 37732 38611 38655 38729
+```
+
+```r
+    # Here is a histogram of their peak-slip values
+    hist(kermadectonga_events_2500$peak_slip[k], main='Peak-slip values for the event subset',
+         xlab='Peak slip (m)')
+```
+
+![plot of chunk scenarioSubsetting](figure/scenarioSubsetting-1.png)
 
 # Suggestions on usage
 
@@ -264,10 +294,17 @@ kermadectonga_events_2500$desired_event_rows
 ```
 
 ```r
-# For instance if we wanted the earthquake data for 2nd entry, in a format
+# For instance if we wanted the earthquake data the 2nd event, in a format
 # easily compatable with our the PTHA18 DETAILED_README, we could do:
 event_id = kermadectonga_events_2500$desired_event_rows[2]
+event_id # This is the row-index of the second event in the PTHA database
+```
 
+```
+## [1] 36690
+```
+
+```r
 # Get the event data directly from the PTHA database (easier than hacking it
 # out of the above objects).
 event_of_interest = ptha18$get_source_zone_events_data(

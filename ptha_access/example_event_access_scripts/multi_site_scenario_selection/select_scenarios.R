@@ -26,6 +26,9 @@ source(ptha_access_script_location, local=ptha18, chdir=TRUE)
 # among other things.
 #
 get_hazard_curves_and_peak_stages<-function(site_gauge_inds, site_gauges, source_zone, slip_type){
+
+    if(length(site_gauge_inds) != nrow(site_gauges)) stop('length(site_gauge_inds) is not equal to nrow(site_gauges)')
+
     #
     # Read the hazard curve data for each gauge 
     #
