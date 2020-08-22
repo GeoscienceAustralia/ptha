@@ -71,3 +71,106 @@ to apply a Kajiura filter to most of the rasters.
 This is not applicable for Chile1960/HoEtAl2019, which is already a
 water-surface deformation - so that is skipped.
 
+# Further background on the source-inversions
+
+Here we give a brief overview of the source inversion techniques used in the original studies, in terms of the following categories:
+1. Data
+2. Geometry
+3. Earthquake Green's functions details
+4. Tsunami Green's functions details (e.g. SW --> use of shallow water equations to model tsunami)
+5. Inversion (i.e. which one was used in our paper)
+
+
+## Chile 1960
+
+F13
+1. Tsunami waveforms from tide-gauges, coseismic deformation from land-level changes
+2. Planar fault.
+3. Okada, horizontal displacement.
+4. SW.
+5. Best slip model from joint inversion (tsunami + geodetic), instantaneous rupture,
+
+H19
+1. Tsunami waveforms from tide-gauges, coseismic deformation from land-level changes
+2. Planar fault.
+3. Okada.
+4. SW. 
+5. Best slip model from joint inversion (tsunami + geodetic), instantaneous rupture, optimal time alignment + correction.
+
+## Sumatra 2004
+
+P07
+1. Tsunami waveforms from tide-gauges.
+2. Variable strike and dip.
+3. Okada.
+4. SW.
+5. Average slip model from nonlinear inversion, constant rupture velocity.
+
+L10
+1. Tsunami waveforms from tide-gauges and satellite altimetry, coseismic deformation from GPS.
+2. Variable strike and dip.
+3. Okada+FEM (GPS, ridigity as free parameter).
+4. SW.
+5. Average slip model from nonlinear inversion, constant rupture velocity.
+
+F07
+1. Tsunami waveforms from tide-gauges and satellite altimetry.
+2. Variable strike and dip.
+3. Okada, horizontal displacement.
+4. SW.
+5. Best slip model from linear joint inversion of tide-gauges and satellite altimetry, instantaneous rupture.
+
+## Chile 2010
+
+L11:
+1. Tsunami waveforms from DART and tide-gauges, coseismic deformation from InSAR, GPS, and land-level changes.
+2. Variable strike and dip (rake as free parameter).
+3. Okada.
+4. SW.
+5. Average slip model from nonlinear joint inversion, constant rupture velocity, smoothness regularization, moment minimization.
+
+F13:
+1. Tsunami waveforms from DART and tide-gauges, coseismic deformation from land-level changes.
+2. Planar.
+3. Okada, horizontal displacement.
+4. SW.
+5. Best slip model from joint inversion (tsunami + geodetic), instantaneous rupture
+
+## Tohoku 2011
+
+S13:
+1. Tsunami waveforms from ocean-bottom pressure, DART, GPS buoys, coastal wave gauges, tsunameters and tide gauges.
+2. Variable strike and dip.
+3. Okada, horizontal displacement. 
+4. SW. 
+5. Best slip model from Linear, multiple time-window inversion.
+
+R14:
+1. Tsunami waveforms from ocean-bottom pressure, DART, GPS buoys, coastal wave gauges, tsunameters, coseismic deformation from inland GPS and sea bottom data.
+2. 3D faults.
+3. Heterogeneous FEM, horizontal displacement.
+4. Non-hydrostatic SW. 
+5. Average slip model from nonlinear joint inversion (tsunami + geodetic), constant rupture velocity, smoothness regularization, moment minimization.
+
+Y18:
+1. Teleseismic waveforms, tsunami waveforms from ocean-bottom pressure, DART, GPS buoys, tsunameters, runup, coseismic deformation from inland GPS and sea bottom data.
+2. Variable dip.
+3. Okada.
+4. Non-hydrostatic SW. 
+5. Best slip model, teleseismic inversion, smoothness regularization + near-field iterative, kinematic.
+
+## Chile 2015
+
+R16
+1. Tsunami waveforms from tide-gauges and DART, coseismic deformation from InSAR.
+2. Variable strike and dip.
+3. Okada, horizontal displacement.
+4. SW.
+5. Average slip model from nonlinear joint inversion (tsunami + geodetic), constant rupture velocity, smoothness regularization, moment minimization.
+
+W17
+1. Tsunami waveforms from tide-gauges and DART buoys, coseismic deformation from GPS and InSAR.
+2. Variable strike and dip.
+3. Okada.
+4. Kajiura, SW.
+5. Best slip model from linear joint inversion (tsunami + geodetic), smoothness regularization, instantaneous rupture.
