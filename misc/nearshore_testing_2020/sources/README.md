@@ -105,14 +105,14 @@ P07
 2. Variable strike and dip.
 3. Okada.
 4. SW.
-5. Average slip model from nonlinear inversion, constant rupture velocity.
+5. Best slip model from nonlinear inversion, constant rupture velocity.
 
 L10
 1. Tsunami waveforms from tide-gauges and satellite altimetry, coseismic deformation from GPS.
 2. Variable strike and dip.
 3. Okada+FEM (GPS, ridigity as free parameter).
 4. SW.
-5. Average slip model from nonlinear inversion, constant rupture velocity.
+5. Best slip model from nonlinear inversion, constant rupture velocity.
 
 F07
 1. Tsunami waveforms from tide-gauges and satellite altimetry.
@@ -128,7 +128,7 @@ L11:
 2. Variable strike and dip (rake as free parameter).
 3. Okada.
 4. SW.
-5. Average slip model from nonlinear joint inversion, constant rupture velocity, smoothness regularization, moment minimization.
+5. Best slip model from nonlinear joint inversion, constant rupture velocity, smoothness regularization, moment minimization.
 
 F13:
 1. Tsunami waveforms from DART and tide-gauges, coseismic deformation from land-level changes.
@@ -151,7 +151,7 @@ R14:
 2. 3D faults.
 3. Heterogeneous FEM, horizontal displacement.
 4. Non-hydrostatic SW. 
-5. Average slip model from nonlinear joint inversion (tsunami + geodetic), constant rupture velocity, smoothness regularization, moment minimization.
+5. Slip model from nonlinear joint inversion (tsunami + geodetic), constant rupture velocity, smoothness regularization, moment minimization.
 
 Y18:
 1. Teleseismic waveforms, tsunami waveforms from ocean-bottom pressure, DART, GPS buoys, tsunameters, runup, coseismic deformation from inland GPS and sea bottom data.
@@ -167,7 +167,7 @@ R16
 2. Variable strike and dip.
 3. Okada, horizontal displacement.
 4. SW.
-5. Average slip model from nonlinear joint inversion (tsunami + geodetic), constant rupture velocity, smoothness regularization, moment minimization.
+5. Slip model from nonlinear joint inversion (tsunami + geodetic), constant rupture velocity, smoothness regularization, moment minimization.
 
 W17
 1. Tsunami waveforms from tide-gauges and DART buoys, coseismic deformation from GPS and InSAR.
