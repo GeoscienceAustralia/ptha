@@ -231,6 +231,7 @@ module multidomain_mod
         procedure :: send_halos => send_multidomain_halos
         procedure :: recv_halos => receive_multidomain_halos
         procedure :: separate_halos => separate_fine_halos_from_their_domain
+        procedure :: communicate_max_U => communicate_max_U
         ! Memory tracking
         procedure :: memory_summary => memory_summary
         ! Convenience
@@ -309,6 +310,103 @@ module multidomain_mod
             print*, 'Make sure periodic_ys covers the input y-range of the multidomain'
         end if
 
+    end subroutine
+
+    ! Communicate max-stage array in halo regions.
+    !
+    ! Often max-stage values in non-priority domain areas are clearly wrong 
+    ! (because during timestepping we allow halos to become invalid -- we only 
+    ! communicate frequently enough to ensure validity of priority domain areas - and
+    ! the max-stage is thus derived from the invalid values).
+    ! That's not really a problem (because we should never use non-priority-domain
+    ! cell values), but for visualisation it is nice to correct them before the end
+    ! of the simulation. 
+    !
+    ! Here we make max_U consistent between domains by:
+    ! A) Swapping max_U and domain%U
+    ! B) Communicating
+    ! C) Swapping domain%U and max_U
+    !
+    subroutine communicate_max_U(md)
+        class(multidomain_type), intent(inout) :: md
+
+        integer(ip) :: j, i, k, n, j1
+        real(dp) :: swapper
+
+        ! Preliminaries: Check that all domains are storing max_U.
+        ! If they are not, do a quick exit
+        do j = 1, size(md%domains)
+            if(.not. md%domains(j)%record_max_U) then
+                write(log_output_unit) 'Note: Not communicating max_U values because not all domains record_max_U.'
+                return
+            end if 
+        end do
+
+        ! Check the array dimensions are compatible with our logic
+        do j = 1, size(md%domains)
+            n = size(md%domains(j)%max_U, 3)
+            if(n > size(md%domains(j)%U, 3)) then 
+                write(log_output_unit) 'Error (not fatal): Will not communicate max_U values because it contains '
+                write(log_output_unit) 'more variables than domain%U, which we use as a scratch space. Skipping'
+                return
+            end if
+
+            if( (size(md%domains(j)%max_U, 1) /= size(md%domains(j)%U, 1)) .or. &
+                (size(md%domains(j)%max_U, 2) /= size(md%domains(j)%U, 2)) ) then
+                write(log_output_unit) 'Error (not fatal): Will not communicate max_U values because its dimensions '
+                write(log_output_unit) 'are not consistent with domain%U, which we use as a scratch space. Skipping'
+                return
+            end if
+        end do
+
+        ! Swap max_U and domain%U, without using signifiant extra memory
+        do j = 1, size(md%domains)
+            n = size(md%domains(j)%max_U, 3)
+            do k = 1, n
+                do j1 = 1, size(md%domains(j)%max_U, 2)
+                    do i = 1, size(md%domains(j)%max_U, 1)
+                        swapper = md%domains(j)%U(i, j1, k)
+                        md%domains(j)%U(i, j1, k) = md%domains(j)%max_U(i, j1, k)
+                        md%domains(j)%max_U(i, j1, k) = swapper
+                    end do
+                end do
+            end do
+        end do
+
+        ! Communicate between domains
+        call md%send_halos(send_to_recv_buffer = send_halos_immediately)
+
+        if(.not. send_halos_immediately) then
+            ! Do all the coarray communication in one hit
+            ! This lets us 'collapse' multiple sends to a single image,
+            ! and is more efficient in a bunch of cases.
+            TIMER_START('comms1')
+            call communicate_p2p
+            TIMER_STOP('comms1')
+        end if
+        
+        ! Get the halo information from neighbours
+        ! For coarray comms, we need to sync before to ensure the information is sent, and
+        ! also sync after to ensure it is not overwritten before it is used
+        call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
+
+        ! Now domain%U contains the max_U variable, updated consistently between domains,
+        ! whereas the max_U variable contains the value of domain%U. Swap them 
+        do j = 1, size(md%domains)
+            n = size(md%domains(j)%max_U, 3)
+            do k = 1, n
+                do j1 = 1, size(md%domains(j)%max_U, 2)
+                    do i = 1, size(md%domains(j)%max_U, 1)
+                        swapper = md%domains(j)%U(i, j1, k)
+                        md%domains(j)%U(i, j1, k) = md%domains(j)%max_U(i, j1, k)
+                        md%domains(j)%max_U(i, j1, k) = swapper
+                    end do
+                end do
+            end do
+        end do
+
+        ! At this point all the domain%U values should be unchanged, while domain%max_U
+        ! should be consistent between domains
     end subroutine
 
     !
@@ -878,8 +976,9 @@ module multidomain_mod
                 ! domain could support substantially different time-steps in different parts of the
                 ! "big domain". In combination with load balancing, we can get large speedups.
                 !
-                ! NOTE: This will lead to different timestepping with different numbers of cores,
-                ! so the results should depend on the number of cores.
+                ! NOTE: This will lead to different timestepping with different domain partitions,
+                ! so the results should depend on the number of cores unless we specity the partition
+                ! via a load_balance_file.
                 if(md%domains(j)%max_dt > 0.0_dp) nt = max(1, min(nt, ceiling(dt/md%domains(j)%max_dt) ))
             end if
 
@@ -3273,6 +3372,9 @@ module multidomain_mod
         class(multidomain_type), intent(inout) :: md
 
         integer(ip) :: i
+
+        ! Make the max_U values in each domain consistent across halos
+        call md%communicate_max_U
 
         ! Print out timing info for each
         do i = 1, size(md%domains, kind=ip)
