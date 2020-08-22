@@ -72,6 +72,7 @@ This is not applicable for Chile1960/HoEtAl2019, which is already a
 water-surface deformation - so that is skipped.
 
 # Further background on the source-inversions
+---------------------------------------------
 
 Here we give a brief overview of the source inversion techniques used in the original studies, in terms of the following categories:
 1. Data
