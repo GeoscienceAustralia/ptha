@@ -14,10 +14,14 @@ The directories here contain code and data to create vertical deformation
 rasters from published earthquake source inversions, and (in most cases) smooth
 the result with a Kajiura filter.
 
-*Beware in some cases the folder names have slightly misleading years; for instance the
-source model referred to as "RomanoEtAl2015" is actually based on a paper "Romano et al. (2014)".
-In the paper it is correctly called the R14 source. Because such references persist throughout the
-code I will keep them as is.*
+*Beware in some cases the folder or file names are misleading -- e.g. the years
+are wrong, or we incorrectly spell the author name. For instance the source
+model referred to as "RomanoEtAl2015" is actually based on a paper "Romano et
+al. (2014)". In our manuscript the naming conventions are correct (e.g. for the
+aforementioned case we refer to the "R14" source, not R15). The name
+corrections are enforced as required in the plotting code; but GD didn't fix
+the file names because the models had already been run and such changes would 
+risk breaking the code.* 
 
 # How to run it
 
