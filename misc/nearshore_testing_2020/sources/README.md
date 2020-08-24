@@ -12,7 +12,12 @@ Below is the regular documentation.
 
 The directories here contain code and data to create vertical deformation
 rasters from published earthquake source inversions, and (in most cases) smooth
-the result with a Kajuira filter.
+the result with a Kajiura filter.
+
+*Beware in some cases the folder names have slightly misleading years; for instance the
+source model referred to as "RomanoEtAl2015" is actually based on a paper "Romano et al. (2014)".
+In the paper it is correctly called the R14 source. Because such references persist throughout the
+code I will keep them as is.*
 
 # How to run it
 
@@ -58,8 +63,8 @@ vertical deformation `Fuji_chile1960_sources_SUM.tif`.
 
 For other inversions that have a `Okada_vertical_component.R` script, analogous files are created. In some other cases different approaches apply (i.e. some inversions do not have a `Okada_vertical_component.R` script). Thoses cases are:
 * Chile1960/HoEtAl2019/  - the script makes a linear combination of gaussian free-surface perturbations.
-* Chile2015/RomanoEtAl2016/ - this inversions uses triangular elements, and relies on an associated TFD code provided by Fabrizio Romano (not currently included herein -- but if that is installed, then the provided script can produce the deformation raster).
-* Tohoku2011/RomanoEtAl2015 - this inversion is a sum of unit-sources derived from a 3D finite-element model. In this case only the raster is provided.
+* Chile2015/RomanoEtAl2016/ - this inversions uses triangular elements, and relies on the Fortran version of the TFD code (Meade 2007) provided by Fabrizio Romano (not currently included herein -- but if that is installed, then the provided script can produce the deformation raster).
+* Tohoku2011/RomanoEtAl2015 - this inversion is a sum of unit-sources derived from a 3D finite-element model. In this case only the raster is provided. (*As mentioned above the name is misleading, I should have called it RomanoEtAl2014, but the names persist throughout this project code so I have chosen not to correct it.*).
 
 ## Step 2: Apply Kajiura filter to the vertical deformations (in most cases)
 
@@ -165,8 +170,8 @@ Y18:
 R16
 1. Tsunami waveforms from tide-gauges and DART, coseismic deformation from InSAR.
 2. Variable strike and dip.
-3. Okada, horizontal displacement.
-4. SW.
+3. Meade (a triangular variant of Okada), horizontal displacement.
+4. Non-hydrostatic SW.
 5. Slip model from nonlinear joint inversion (tsunami + geodetic), constant rupture velocity, smoothness regularization, moment minimization.
 
 W17
