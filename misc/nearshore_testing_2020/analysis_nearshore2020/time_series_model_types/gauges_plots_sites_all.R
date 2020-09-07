@@ -73,7 +73,7 @@ make_plot<-function(Fujii_Hillarys, plot_filename, plot_ylim, legend_xy=c(35, -0
     plot(Fujii_Hillarys[[4]]$model_t/3600, Fujii_Hillarys[[4]]$model_stage, t='l', col='red', lwd=1.2, 
          ylim=plot_ylim, xlim=plot_xlim, 
          xlab='', ylab='', main='', cex.main=1.4, cex.axis=1.5, las=1)
-    title(paste0('LSWE + Reduded-Linear-friction on global grid', extra_title), cex.main=1.7, line=0.5)
+    title(paste0('LSWE + Reduced-Linear-friction on global grid', extra_title), cex.main=1.7, line=0.5)
     points(obs_t, obs_h, t='o', col='black', cex=0.2)
     grid(col='orange')
     legend(x=35, y=legend_xy[2], c('Observed', 'Modelled'), lty=c(1, 1), pch=c(1, NA), 
@@ -124,6 +124,22 @@ for(source_ind in 1:length(model_base)){
         plot_ylim = c(-1, 1)*vertical_scale[source_ind]
         plot_filename = paste0(output_dir, '/', model_base[source_ind], site_names[h], '.png')
         make_plot(event_site, plot_filename, plot_ylim, extra_title = paste0(' @ ', site_names[h]) )
+    }
+
+    # Loop over gauges, first 10 hours after arrival, case-specific ylimit
+    n_hours = 10
+    for(h in 1:n0){
+        event_site = lapply(event_RDS, f<-function(x) x[[h]])
+        model_arrival_ind = min(which(abs(event_site[[1]]$model_stage) > 5e-04*max(abs(event_site[[1]]$model_stage))))
+        model_arrival_time = event_site[[1]]$model_t[model_arrival_ind]
+        include_inds = which((event_site[[1]]$model_t > model_arrival_time) & 
+                             (event_site[[1]]$model_t < (model_arrival_time + n_hours*3600)))
+        model_maxima = max(abs(event_site[[1]]$model_stage[include_inds]))
+
+        plot_filename = paste0(output_dir, '/ZOOM_', model_base[source_ind], site_names[h], '.png')
+        plot_ylim = c(-1, 1)*1.5 * model_maxima
+        plot_xlim = model_arrival_time/3600 + c(0, n_hours) # 10 hours
+        make_plot(event_site, plot_filename, plot_ylim, extra_title = paste0(' @ ', site_names[h]) , plot_xlim=plot_xlim)
     }
 }
 
