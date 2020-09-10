@@ -44,29 +44,50 @@ if(FALSE){
     # Find the initial potential energy from the source models, using the multidomain file
     # So long as we get one log file per source, all good
     #
-    reference_log_files = sapply(basename(dirname(all_sources)), f<-function(x){
-        all_md_files = Sys.glob('../../analysis/gauge_RDS_files/OUTPUTS/*')    
-        this_source_md_files = all_md_files[grepl(x, all_md_files)]
-        md_file = Sys.glob(paste0(this_source_md_files[1], '/*/*.log'))[1]
-        return(md_file)
-    })
+
+    reference_log_files = paste0('../../analysis_nearshore2020/gauge_RDS_files/OUTPUTS/',
+                                 c(
+        'Chile1960_FujiSatake2013-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200618_140206501/multidomain_log_image_00000000000000000001.log',
+        'Chile1960_HoEtAl2019-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200618_154852777/multidomain_log_image_00000000000000000001.log',
+        'Sumatra2004_FujiSatake2007-risetime_0-full-linear_with_delayed_linear_friction-0-highres_australia/RUN_20200618_173556019/multidomain_log_image_00000000000000000001.log',
+        'Sumatra2004_LoritoEtAl2010-risetime_0-full-linear_with_delayed_linear_friction-0-highres_australia/RUN_20200618_193826090/multidomain_log_image_00000000000000000001.log',
+        'Sumatra2004_PiatanesiLorito2007-risetime_0-full-linear_with_delayed_linear_friction-0-highres_australia/RUN_20200618_214110205/multidomain_log_image_00000000000000000001.log',
+        'Chile2010_FujiSatake2013-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200618_234357549/multidomain_log_image_00000000000000000001.log',
+        'Chile2010_LoritoEtAl2011-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200619_013059101/multidomain_log_image_00000000000000000001.log',
+        'Tohoku2011_SatakeEtAl2013-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200619_031737093/multidomain_log_image_00000000000000000001.log',
+        'Tohoku2011_YamakaziEtAl2018-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200619_050353064/multidomain_log_image_00000000000000000001.log',
+        'Tohoku2011_RomanoEtAl2015-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200619_065012059/multidomain_log_image_00000000000000000001.log',
+        'Chile2015_WilliamsonEtAl2017-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200619_083635687/multidomain_log_image_00000000000000000001.log',
+        'Chile2015_RomanoEtAl2016-risetime_0-full-linear_with_delayed_linear_friction-0-highres_NSW/RUN_20200619_102302795/multidomain_log_image_00000000000000000001.log'))
+
     initial_energy_on_rho = sapply(reference_log_files, f<-function(x){
         logfile = readLines(x)
         k = grep('Global energy-total', logfile)[1]
         energy0 = as.numeric(logfile[k+1])
         return(energy0)
     })
+
+    names(initial_energy_on_rho) = substring(basename(dirname(dirname(reference_log_files))), 1, 20)
+
 }else{
-    # Here I've copied the result derived from the code above, to reduce
-    # fragility of the file search in case more simulations are conducted in
-    # future
-    initial_energy_on_rho = c(FujiSatake2013 = 7403960839017, HoEtAl2019 = 6612244454705, 
-            FujiSatake2007 = 2251862472431, LoritoEtAl2010 = 6341031803671, 
-            PiatanesiLorito2007 = 3394111187122, FujiSatake2013 = 7403960839017, 
-            LoritoEtAl2011 = 1049038594552, SatakeEtAl2013 = 1533431939409, 
-            YamakaziEtAl2018 = 2450568199069, RomanoEtAl2015 = 3207686671737, 
-            WilliamsonEtAl2017 = 63771049934.81, RomanoEtAl2016 = 50556024746.96
-            )
+    # # Here I've copied the result derived from the code above, to reduce
+    # # fragility of the file search in case more simulations are conducted in
+    # # future
+    # initial_energy_on_rho = c(FujiSatake2013 = 7403960839017, HoEtAl2019 = 6612244454705, 
+    #         FujiSatake2007 = 2251862472431, LoritoEtAl2010 = 6341031803671, 
+    #         PiatanesiLorito2007 = 3394111187122, FujiSatake2013 = 7403960839017, 
+    #         LoritoEtAl2011 = 1049038594552, SatakeEtAl2013 = 1533431939409, 
+    #         YamakaziEtAl2018 = 2450568199069, RomanoEtAl2015 = 3207686671737, 
+    #         WilliamsonEtAl2017 = 63771049934.81, RomanoEtAl2016 = 50556024746.96
+    #         )
+
+    initial_energy_on_rho = c(Chile1960_FujiSatake = 7403960839017, Chile1960_HoEtAl2019 = 6612244454705, 
+        Sumatra2004_FujiSata = 2249397410783, Sumatra2004_LoritoEt = 6341031803671, 
+        Sumatra2004_Piatanes = 3394111187122, Chile2010_FujiSatake = 545012408712.3, 
+        Chile2010_LoritoEtAl = 1049038594552, Tohoku2011_SatakeEtA = 1533431939409, 
+        Tohoku2011_YamakaziE = 2450129131445, Tohoku2011_RomanoEtA = 3207686671737, 
+        Chile2015_Williamson = 63771049934.81, Chile2015_RomanoEtAl = 50556024746.96
+        )
 }
 
 initial_energy = initial_energy_on_rho * 1024 # Multiply by typical seawater density
