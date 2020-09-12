@@ -4,11 +4,14 @@
 \alias{get_unit_source_indices_in_event}
 \title{Find unit sources contained in event}
 \usage{
-get_unit_source_indices_in_event(earthquake_event)
+get_unit_source_indices_in_event(earthquake_event, also_return_slip = FALSE)
 }
 \arguments{
 \item{earthquake_event}{A single row of the earthquake event table made with
 \code{get_all_earthquake_events}}
+
+\item{also_return_slip}{logical - if TRUE the result is a list with 'inds'
+and 'slip', otherwise we directly return 'inds'}
 }
 \value{
 Integer indices in earthquake_event$event_index_string. These correspond
