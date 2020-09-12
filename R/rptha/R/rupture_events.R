@@ -386,10 +386,12 @@ get_all_earthquake_events<-function(discrete_source = NULL, unit_source_statisti
 #' 
 #' @param earthquake_event A single row of the earthquake event table made with
 #' \code{get_all_earthquake_events}
+#' @param also_return_slip logical - if TRUE the result is a list with 'inds'
+#' and 'slip', otherwise we directly return 'inds'
 #' @return Integer indices in earthquake_event$event_index_string. These correspond
 #' to rows in the unit_source_summary_statistics for the source.
 #' @export
-get_unit_source_indices_in_event<-function(earthquake_event){
+get_unit_source_indices_in_event<-function(earthquake_event, also_return_slip=FALSE){
 
     if(nrow(earthquake_event) != 1){
         stop('only a single row of the earthquake event table can be passed as input')
@@ -398,7 +400,19 @@ get_unit_source_indices_in_event<-function(earthquake_event){
     unit_source_indices_text = gsub('-', ' ', as.character(earthquake_event$event_index_string))
     event_unit_source_inds = scan(text=unit_source_indices_text, quiet=TRUE)
 
-    return(event_unit_source_inds)
+    if(!also_return_slip){
+        return(event_unit_source_inds)
+    }else{
+        # Get the slip as well
+        if('event_slip_string' %in% names(earthquake_events)){
+            slip = as.numeric(strsplit(earthquake_events$event_slip_string, '_')[[1]])
+        }else{
+            slip = rep(earthquake_event$slip, length(event_unit_source_inds))
+        }
+
+        output = list(inds=event_unit_source_inds, slip=slip)
+        return(output)
+    }
 }
 
 
