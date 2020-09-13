@@ -404,8 +404,8 @@ get_unit_source_indices_in_event<-function(earthquake_event, also_return_slip=FA
         return(event_unit_source_inds)
     }else{
         # Get the slip as well
-        if('event_slip_string' %in% names(earthquake_events)){
-            slip = as.numeric(strsplit(earthquake_events$event_slip_string, '_')[[1]])
+        if('event_slip_string' %in% names(earthquake_event)){
+            slip = as.numeric(strsplit(earthquake_event$event_slip_string, '_')[[1]])
         }else{
             slip = rep(earthquake_event$slip, length(event_unit_source_inds))
         }
