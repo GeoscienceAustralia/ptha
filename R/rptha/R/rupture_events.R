@@ -492,7 +492,7 @@ get_event_slip_weighted_centriod<-function(event_row, unit_source_statistics, as
         return(c(mean_lon, mean_lat))
 
     }else{
-        # Get the nearest along-string and down-dip indices
+        # Get the nearest along-strike and down-dip indices
         mean_downdip_number = weighted.mean(unit_source_statistics$downdip_number[inds], w=slip)
         dd = round(mean_downdip_number)
         mean_alongstrike_number = weighted.mean(unit_source_statistics$alongstrike_number[inds], w=slip)
