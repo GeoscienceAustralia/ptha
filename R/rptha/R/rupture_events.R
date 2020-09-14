@@ -415,6 +415,98 @@ get_unit_source_indices_in_event<-function(earthquake_event, also_return_slip=FA
     }
 }
 
+#' Earthquake centroid calculation, weighted by slip
+#'
+#' Compute either: 1) the weighted mean of the unit-source locations lon_c and lat_c 
+#' (using the angular mean) or; 2) a weighted mean of the downdip and alongstrike 
+#' unit_source indices. In this case we return the rounded values, and also values
+#' prior to rounding (to give the user greater control in corner cases).
+#'
+#' @param event_row A single row of the event table. The code can work with either 
+#' uniform_slip or variable/stochastic slip formats.
+#' @param unit_source_statistics data.frame giving the unit-source summary statistics.
+#' This could be the output from the function \code{discretized_source_summary_statistics}.
+#' @param as_subfault_number If FALSE then return a lon/lat coordinate. If TRUE, then
+#' compute the weighted downdip_number and alongstrike_number. These might not be integers,
+#' so we return the unrounded values as well as the rounded values, and the subfault_number
+#' corresponding to the rounded values (i.e. the corresponding row of the unit_source_statistics)
+#' @return either a coordinate (subfault_number == FALSE) or a list with the downdip_number, 
+#' alongstrike_number, subfault_number, mean_downdip_number (i.e. before rounding), 
+#' mean_alongstrike_number (i.e. before rounding).
+#' @export
+#' @examples
+#' puysegur = readOGR(system.file('extdata/puysegur.shp', package='rptha'), layer='puysegur')
+#' # Get downdip lines
+#' puysegur_downdip = readOGR(system.file('extdata/puysegur_downdip.shp', package='rptha'), 
+#'    layer='puysegur_downdip')
+#' # Make discretized_source with 50km x 50km unit-sources (approximately)
+#' puysegur_discretized_source = discretized_source_from_source_contours(
+#'     source_shapefile=puysegur,
+#'    desired_subfault_length=50,
+#'    desired_subfault_width=50,
+#'    downdip_lines=puysegur_downdip)
+#' 
+#' puysegur_unit_source_stats = discretized_source_summary_statistics(
+#'    puysegur_discretized_source, approx_dx=10000, approx_dy=10000)
+#' puysegur_events = get_all_earthquake_events(
+#'     unit_source_statistics = puysegur_unit_source_stats,
+#'     Mmin = 7.2, Mmax = 9.2, dMw = 0.1, 
+#'     source_zone_name='puysegur')
+#' 
+#' #
+#' # Example earthquake with a single unit-source
+#' #
+#' 
+#' for(event_ind in seq(1, nrow(puysegur_events))){
+#'     pinds = as.numeric(strsplit(puysegur_events$event_index_string[event_ind], '-')[[1]])
+#' 
+#'     # Get the coordinates
+#'     p = get_event_slip_weighted_centriod(puysegur_events[event_ind,], puysegur_unit_source_stats)
+#'     # Check the coordinates, being careful about rounding issues
+#'     stopifnot(isTRUE(all.equal(p[1], mean_angle(puysegur_unit_source_stats$lon_c[pinds]))) & 
+#'               isTRUE(all.equal(p[2],  mean_angle(puysegur_unit_source_stats$lat_c[pinds]))))
+#' 
+#'     # Get the subfault
+#'     p = get_event_slip_weighted_centriod(puysegur_events[event_ind,], puysegur_unit_source_stats, 
+#'                                          as_subfault_number=TRUE)
+#'     # To avoid issues with rounding and tiny floating point issues, here we check the unrounded
+#'     # indices 
+#'     stopifnot(isTRUE(all.equal(p$mean_downdip_number, 
+#'                                mean(puysegur_unit_source_stats$downdip_number[pinds]))) &
+#'               isTRUE(all.equal(p$mean_alongstrike_number, 
+#'                                mean(puysegur_unit_source_stats$alongstrike_number[pinds]))))
+#' }
+#' 
+get_event_slip_weighted_centriod<-function(event_row, unit_source_statistics, as_subfault_number=FALSE){
+
+    inds_slip = get_unit_source_indices_in_event(event_row, also_return_slip=TRUE)
+    inds = inds_slip$inds
+    slip = inds_slip$slip
+
+    if(!as_subfault_number){
+        # Get the weighted mean angle of the unit sources
+        lon = unit_source_statistics$lon_c[inds]
+        lat = unit_source_statistics$lat_c[inds]
+        mean_lon = mean_angle(lon, weights=slip)
+        mean_lat = mean_angle(lat, weights=slip)
+        return(c(mean_lon, mean_lat))
+
+    }else{
+        # Get the nearest along-string and down-dip indices
+        mean_downdip_number = weighted.mean(unit_source_statistics$downdip_number[inds], w=slip)
+        dd = round(mean_downdip_number)
+        mean_alongstrike_number = weighted.mean(unit_source_statistics$alongstrike_number[inds], w=slip)
+        as = round(mean_alongstrike_number)
+        nearest_subfault = which(unit_source_statistics$alongstrike_number == as &
+                                 unit_source_statistics$downdip_number == dd)
+        output = list(subfault_number=nearest_subfault, alongstrike_number=as, 
+                      downdip_number=dd, mean_downdip_number=mean_downdip_number,
+                      mean_alongstrike_number = mean_alongstrike_number)
+        return(output)
+    }
+
+}
+
 
 #' Graphical checks of earthquake events
 #'
