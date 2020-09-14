@@ -477,7 +477,7 @@ get_unit_source_indices_in_event<-function(earthquake_event, also_return_slip=FA
 #'                                mean(puysegur_unit_source_stats$alongstrike_number[pinds]))))
 #' }
 #' 
-get_event_slip_weighted_centriod<-function(event_row, unit_source_statistics, as_subfault_number=FALSE){
+get_event_slip_weighted_centroid<-function(event_row, unit_source_statistics, as_subfault_number=FALSE){
 
     inds_slip = get_unit_source_indices_in_event(event_row, also_return_slip=TRUE)
     inds = inds_slip$inds
