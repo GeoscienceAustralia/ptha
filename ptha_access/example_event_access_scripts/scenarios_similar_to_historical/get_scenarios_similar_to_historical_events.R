@@ -25,7 +25,7 @@ for(slip_type in c('stochastic', 'variable_uniform')){
         print(paste0('Working on ', scenarios_like_events[[i]]$stats_file))
 
         # Tag for the filenames
-        if(grepl(scenarios_like_events[[i]]$stats_file, 'varyMu')){
+        if(grepl('varyMu', scenarios_like_events[[i]]$stats_file)){
             name_info = paste0(slip_type, '_varyMu')
         }else{
             name_info = slip_type
@@ -85,7 +85,7 @@ for(slip_type in c('stochastic', 'variable_uniform')){
         for(j in 1:length(source_zone_data[[i]]$desired_event_rows)){
             out_name = paste0(out_dir, '/', scenarios_like_events[[i]]$source_zone, '_', 
                               scenarios_like_events[[i]]$desired_event_rows[j], '_', 
-                              scenarios_like_events[[i]]$name_info, '_',
+                              source_zone_data[[i]]$name_info, '_',
                               basename(scenarios_like_events[[i]]$stats_file), '.tif')
             writeRaster(source_zone_data[[i]]$deformation_rasters[[j]], out_name)
         }
