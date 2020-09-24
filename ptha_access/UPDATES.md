@@ -71,3 +71,16 @@ netcdf file containing the ONLY the gauge variables: lon,lat,elev,gaugeID. Now i
 number of situations the ptha_access codes read from this file directly to get
 coordinate variables. Previously we would read from other netcdf files, which also
 contain other variables - but this can be slow. 
+
+
+# Updates worth considering in future
+
+* Advice on tsunami dissipation models, and integration of something like this into the peak-stage exceedance-rate products.
+
+* We missed one of the DART buoys for the 2013 Santa Cruz event -- add it in.
+
+* Consider there were strike-slip components in some historical events (e.g. Sumatra 2004, and recent literature suggests also perhaps Chile 1960). One could either add this in to the model, or re-interpret the data to focus on the thrust component.
+
+* Consider making the Mw-frequency model have a stronger relation with "the capacity of a source-zone to host an earthquake". Currently we have hard-threshold geometric limits on earthquake size, which are not particularly restrictive because we don't want to rule out large compact ruptures. However the threshold is actually uncertain. Perhaps this information should have greater influence on the Mw-frequency model, say via the Mw-max priors (e.g. some tapering rather than a hard-threshold)?
+
+
