@@ -8,7 +8,8 @@
 # Get the ptha_access functions (from the ptha repository)
 source('../../get_PTHA_results.R', chdir=TRUE)
 
-# These are hard-coded lists with our "best" scenarios
+# These are hard-coded lists with our "best" scenarios, created with find_desired_event_rows.R
+# There can be repetition [especially for VAUS, as it's easy to randomly repeat VAUS rupture]
 source('best_fitting_HS.R')
 source('best_fitting_VAUS.R')
 
