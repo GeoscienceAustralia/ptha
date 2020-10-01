@@ -20,7 +20,10 @@ at your specific site of interest.
 double-ups" with slip differing by 0.001m (see the VAUS cases in the puysegur
 example). Currently such VAUS "near double-ups" are treated as distinct,
 although they probably shouldn't be. I was surprised that such "near double-up"
-scenarios exist - they might reflect some tiny rounding instabilities in the
+scenarios exist - however on reflection, the code to make the vaus-scenarios sets the
+slip based on a corresponding heterogeneous-slip scenario by summing its (slip x area) and
+dividing by the total area. With different heterogeneous-slip, there is potential for round-off
+level changes in the sum of (slip x area), and this might reflect some tiny rounding instabilities in the
 source-creation code. Our post-hoc tests confirmed that the integrated (slip x area x
 rigidity) of all PTHA18 scenarios that is within 1/1000 of the target value, so
 these differences will necessarily be very small and unimportant in regards
