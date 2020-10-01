@@ -16,15 +16,15 @@ elsewhere -- sometimes they will, but not always. In principle one should
 expect to get better accuracy using an inverted source that considers data
 at your specific site of interest.
 
-*After writing I noticed that in some VAUS cases we are finding "near
-double-ups" with slip differing by 0.001m (see the VAUS cases in the puysegur
-example). Currently such VAUS "near double-ups" are treated as distinct,
+*2020/10/02: I noticed that in some VAUS cases we are finding "near
+double-ups" with slip differing by 0.001m (see the VAUS cases for the puysegur2009
+scenario). Currently such VAUS "near double-ups" are treated as distinct,
 although they probably shouldn't be. I was surprised that such "near double-up"
-scenarios exist - however on reflection, the code to make the vaus-scenarios sets the
-slip based on a corresponding heterogeneous-slip scenario by summing its (slip x area) and
-dividing by the total area. With different heterogeneous-slip, there is potential for round-off
-level changes in the sum of (slip x area), and this might reflect some tiny rounding instabilities in the
-source-creation code. Our post-hoc tests confirmed that the integrated (slip x area x
-rigidity) of all PTHA18 scenarios that is within 1/1000 of the target value, so
-these differences will necessarily be very small and unimportant in regards
+scenarios exist - however on reflection, the code to make the vaus-scenarios
+sets the slip based on a corresponding heterogeneous-slip scenario by summing
+its (slip x area) and dividing by the total area. With different
+heterogeneous-slip, there is potential for round-off level changes in the sum
+of (slip x area). Our post-hoc tests confirmed that the integrated (slip x area
+x rigidity) of all PTHA18 scenarios was within 1/1000 of the target value,
+so any such differences will necessarily be very small and unimportant in regards
 of the earthquake magnitude.*
