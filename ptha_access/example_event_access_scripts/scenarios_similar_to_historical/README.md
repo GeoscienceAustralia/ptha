@@ -4,9 +4,13 @@ The code
 shows how to download and plot the initial conditions for PTHA18 scenarios that
 had top-3 goodness of fit when compared with historical data at DART buoys. In the
 case of VAUS scenarios we include more than 3 if there are "double-ups" (i.e. identical
-scenarios, which can easily happen with uniform-slip). *After writing I noticed that in some cases
-we finding "near double-ups" with slip differing by 0.001m (see the VAUS cases in the
-puysegur example). Currently these are treated as distinct, although they probably shouldn't be.*
+scenarios, which can easily happen with uniform-slip). *After writing I noticed that in some VAUS cases
+we are finding "near double-ups" with slip differing by 0.001m (see the VAUS cases in the
+puysegur example). These might reflect some tiny rounding instabilities in the
+source-creation code (note we did post-hoc checks to ensure that the specified
+slip is consistent with the moment to within 1/1000, so this will not be
+important in regards of the earthquake size). Currently such VAUS "near double-ups"
+are treated as distinct, although they probably shouldn't be.*
 
 It uses a hard-coded record of the 'best scenarios' that was created with
 [find_desired_event_rows.R](find_desired_event_rows.R), and is stored in (for
