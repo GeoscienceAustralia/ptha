@@ -12,7 +12,7 @@
 #' in meters**2. This can be a constant (e.g. for regular cells in Cartesian coordinates) or
 #' it can be a matrix of the same size as sea_surface
 #' @param gravity Gravitational acceleration at the earth's surface (m/s^2)
-#' @param seawater density Density of seawater in kg/m^3
+#' @param seawater_density Density of seawater in kg/m^3
 #' @param MSL the mean sea level
 #' @return The available potential energy in units of joules (kg m^2/s^2)
 #' @export

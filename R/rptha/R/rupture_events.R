@@ -461,13 +461,13 @@ get_unit_source_indices_in_event<-function(earthquake_event, also_return_slip=FA
 #'     pinds = as.numeric(strsplit(puysegur_events$event_index_string[event_ind], '-')[[1]])
 #' 
 #'     # Get the coordinates
-#'     p = get_event_slip_weighted_centriod(puysegur_events[event_ind,], puysegur_unit_source_stats)
+#'     p = get_event_slip_weighted_centroid(puysegur_events[event_ind,], puysegur_unit_source_stats)
 #'     # Check the coordinates, being careful about rounding issues
 #'     stopifnot(isTRUE(all.equal(p[1], mean_angle(puysegur_unit_source_stats$lon_c[pinds]))) & 
 #'               isTRUE(all.equal(p[2],  mean_angle(puysegur_unit_source_stats$lat_c[pinds]))))
 #' 
 #'     # Get the subfault
-#'     p = get_event_slip_weighted_centriod(puysegur_events[event_ind,], puysegur_unit_source_stats, 
+#'     p = get_event_slip_weighted_centroid(puysegur_events[event_ind,], puysegur_unit_source_stats, 
 #'                                          as_subfault_number=TRUE)
 #'     # To avoid issues with rounding and tiny floating point issues, here we check the unrounded
 #'     # indices 
