@@ -24,13 +24,13 @@
 #' # recognizes that the raster is lonlat
 #' cell_areas_m2 = area(chile1960_free_surface_NA_on_land) * 1e+03 * 1e+03 # convert km^2 to m^2
 #' # Compute the available potential energy. It should be about 6.8x10^15
-#' ape = available_potential_energy(
+#' ape = sea_surface_available_potential_energy(
 #'     as.matrix(chile1960_free_surface_NA_on_land),
 #'     as.matrix(cell_areas_m2),
 #'     gravity=9.8, seawater_density=1024, MSL=0)
 #' stopifnot(signif(ape, 2) == 6.8e+15)
 #' 
-available_potential_energy<-function(
+sea_surface_available_potential_energy<-function(
     sea_surface, 
     cell_areas_m2, 
     gravity=9.8, 
