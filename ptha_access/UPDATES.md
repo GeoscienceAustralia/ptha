@@ -83,4 +83,5 @@ contain other variables - but this can be slow.
 
 * Consider making the Mw-frequency model have a stronger relation with "the capacity of a source-zone to host an earthquake". Currently we have hard-threshold geometric limits on earthquake size, which are not particularly restrictive because we don't want to rule out large compact ruptures. However the threshold is actually uncertain. Perhaps this information should have greater influence on the Mw-frequency model, say via the Mw-max priors (e.g. some tapering rather than a hard-threshold)?
 
+* Draw on JG's revised ideas on large magnitude normal fault sources.
 
