@@ -21,9 +21,9 @@ it can be a matrix of the same size as sea_surface}
 
 \item{gravity}{Gravitational acceleration at the earth's surface (m/s^2)}
 
-\item{MSL}{the mean sea level}
+\item{seawater_density}{Density of seawater in kg/m^3}
 
-\item{seawater}{density Density of seawater in kg/m^3}
+\item{MSL}{the mean sea level}
 }
 \value{
 The available potential energy in units of joules (kg m^2/s^2)
