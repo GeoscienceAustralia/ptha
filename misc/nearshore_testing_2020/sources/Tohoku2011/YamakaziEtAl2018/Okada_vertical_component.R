@@ -37,6 +37,10 @@ if(make_plot){
 
 # Move lon/lat to be at the 'top-edge' of the rupture, since they are currently at the NE corner
 new_lonlat = destPoint(cbind(lon, lat), strike, length/2*1000)
+# NOTE: The code used in the paper missed the following 2 lines, which will cause a ~ 20km spatial offset
+# since the unit-sources are 40km long.
+lon = new_lonlat[,1] 
+lat = new_lonlat[,2]
 
 #
 # Flags to denote meaning of lon, lat and depth
