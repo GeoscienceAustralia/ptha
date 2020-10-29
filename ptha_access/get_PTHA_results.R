@@ -759,17 +759,23 @@ get_wet_or_dry_DEM<-function(force_download_again=FALSE){
     wet_or_dry_DEM_file = paste0(config_env$.GDATA_HTTP_BASE_LOCATION, 
         'DATA/wet_or_dry_gebco_ga250_dem_patched.tif')
 
-    output_file = './wet_or_dry_gebco_ga250_dem_patched/wet_or_dry_gebco_ga250_dem_patched.tif'
+    output_file = './.wet_or_dry_gebco_ga250_dem_patched/wet_or_dry_gebco_ga250_dem_patched.tif'
 
     if(file.exists(output_file) & !force_download_again){
         # We do not need to download the data
+        wd = raster(output_file)
     }else{
         # We do need to download the data
         dir.create(dirname(output_file), showWarnings=FALSE)
-        download.file(wet_or_dry_DEM_file, output_file)
+        if(file.exists(wet_or_dry_DEM_file)){
+            file.copy(wet_or_dry_DEM_file, output_file)
+        }else{
+            download.file(wet_or_dry_DEM_file, output_file)
+        }
+        wd = raster(output_file)
+        writeRaster(wd, file=output_file, options=c('COMPRESS=DEFLATE'))
     }
 
-    wd = raster(output_file)
 
     return(wd)
 }
