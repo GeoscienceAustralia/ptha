@@ -36,7 +36,7 @@ Patch over a few obvious defects in the GA250 dem using the GEBCO DEM.
 
 ## [Step 4 -- this was done well after the PTHA18 publication]
 
-It is useful to have a DEM that is '1' in areas above MSL, and '0' elsewhere.
+It is useful to have a DEM that is '1' in areas below MSL, and '0' elsewhere.
 
     Rscript make_wet_or_dry_dem.R
 
