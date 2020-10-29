@@ -34,3 +34,10 @@ Patch over a few obvious defects in the GA250 dem using the GEBCO DEM.
 
     Rscript patch_dem.R
 
+## [Step 4 -- this was done well after the PTHA18 publication]
+
+It is useful to have a DEM that is '1' in areas above MSL, and '0' elsewhere.
+
+    Rscript make_wet_or_dry_dem.R
+
+This has a very small file size so is easy to distribute.
