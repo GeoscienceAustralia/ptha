@@ -747,3 +747,29 @@ summarise_events<-function(events_near_desired_stage){
         magnitude_prop_mid, mh_distance))
 }
 
+#'
+#' Download a DEM with 1 in 'below MSL' and 0 in 'above MSL' regions. This
+#' was derived from the input merged DEM used for the PTHA18, created with
+#' this script (which in turn relies on the other codes in the same directory): 
+#'
+#' https://github.com/GeoscienceAustralia/ptha/blob/master/R/examples/austptha_template/DATA/ELEV/merged_dem/make_wet_or_dry_dem.R
+#' 
+get_wet_or_dry_DEM<-function(force_download_again=FALSE){
+    
+    wet_or_dry_DEM_file = paste0(config_env$.GDATA_HTTP_BASE_LOCATION, 
+        'DATA/wet_or_dry_gebco_ga250_dem_patched.tif')
+
+    output_file = './wet_or_dry_gebco_ga250_dem_patched/wet_or_dry_gebco_ga250_dem_patched.tif'
+
+    if(file.exists(output_file) & !force_download_again){
+        # We do not need to download the data
+    }else{
+        # We do need to download the data
+        dir.create(dirname(output_file), showWarnings=FALSE)
+        download.file(wet_or_dry_DEM_file, output_file)
+    }
+
+    wd = raster(output_file)
+
+    return(wd)
+}
