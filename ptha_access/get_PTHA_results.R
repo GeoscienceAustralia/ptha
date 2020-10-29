@@ -768,12 +768,13 @@ get_wet_or_dry_DEM<-function(force_download_again=FALSE){
         # We do need to download the data
         dir.create(dirname(output_file), showWarnings=FALSE)
         if(file.exists(wet_or_dry_DEM_file)){
-            file.copy(wet_or_dry_DEM_file, output_file)
+            file.copy(wet_or_dry_DEM_file, output_file, overwrite=force_download_again)
         }else{
             download.file(wet_or_dry_DEM_file, output_file)
         }
         wd = raster(output_file)
-        writeRaster(wd, file=output_file, options=c('COMPRESS=DEFLATE'))
+        writeRaster(wd, file=output_file, options=c('COMPRESS=DEFLATE'), 
+                    overwrite=force_download_again)
     }
 
 
