@@ -40,4 +40,4 @@ It is useful to have a DEM that is '1' in areas above MSL, and '0' elsewhere.
 
     Rscript make_wet_or_dry_dem.R
 
-This has a very small file size so is easy to distribute.
+This has a very small file size so is easy to distribute -- see [here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/DATA/wet_or_dry_gebco_ga250_dem_patched.tif)
