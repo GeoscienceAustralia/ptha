@@ -210,7 +210,6 @@ for(si in 1:length(source_zones)){
 #
 all_RDS_potential_energy_files = Sys.glob('./*/TSUNAMI_EVENTS/potential_energy*.RDS')
 for(i_file in 1:length(all_RDS_potential_energy_files)){
-#for(i_file in 2:2){
 
     pe = readRDS(all_RDS_potential_energy_files[i_file])
    
