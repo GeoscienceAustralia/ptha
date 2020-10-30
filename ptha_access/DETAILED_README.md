@@ -106,6 +106,9 @@ source('test_all.R')
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
 ```
 **If the above script fails even after repeated trials, you need to troubleshoot
 your installation before proceeding**. [See here](INSTALL.md).
