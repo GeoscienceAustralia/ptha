@@ -826,6 +826,24 @@ get_wet_or_dry_DEM<-function(force_download_again=FALSE){
 get_source_zone_events_potential_energy<-function(source_zone, slip_type='stochastic', 
     desired_event_rows=NULL, chunk_size=1000){
 
+    # First check that a valid source-zone was provided
+    err = FALSE
+    if(is.null(source_zone)){
+        err = TRUE
+    }else{
+        if(sum(config_env$source_names_all == source_zone) == 0) err=TRUE
+    }
+
+    if(err){
+        print('You did not pass a valid source_zone to get_source_zone_events_data. The allowed source_zone values are:')
+        print(paste0('   ', config_env$source_names_all))
+        print('Please pass one of the above source_zone names to this function to get its metadata')
+        # Fail gracefully
+        output = list(initial_potential_energy = NA, rate_annual=NA, 
+                      weight_with_nonzero_rate = NA, Mw = NA)
+        return(invisible(output))
+    }
+
     library(rptha)
 
     nc_web_addr = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
