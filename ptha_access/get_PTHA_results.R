@@ -27,6 +27,9 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 #' events data. For example if range_list=list(Mw=c(9.05, 9.15), peak_slip_alongstrike_ind=c(80,90)),
 #' then the selected events will all have Mw in >9.05 and <9.15, and peak_slip_alongstrike_ind >80 and < 90.
 #' If range_list is specified, you should not provide desired_event_rows.
+#' @param chunk_size The chunk_size passed to read_table_from_netcdf. This can impact the efficiency when only
+#' reading a subset of the file. A small chunk size will lead to many reads, whereas a large chunk size may lead
+#' to too much data being read at once. The best size depends on the system and the interconnect.
 #' @return list with 'events' giving summary statistics for the earthquake
 #' events, and 'unit_source_statistics' giving summary statistics for each
 #' unit source, and 'gauge_netcdf_files' giving the tide-gauge netcdf filenames for each unit_source,
@@ -44,7 +47,7 @@ source('R/sum_tsunami_unit_sources.R', local=TRUE)
 #' puysegur_data_Mw81 = get_source_zone_events_data('puysegur', range_list=list(Mw=c(8.05, 8.15), rate_annual=c(0, Inf)))
 #'
 get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', desired_event_rows = NULL,
-                                      range_list=NULL, chunk_size=1000){
+                                      range_list=NULL, chunk_size=1000, include_potential_energy=FALSE){
 
     library(rptha)
 
@@ -91,6 +94,33 @@ get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', 
 
     events_file = nc_web_addr
     events_data = read_table_from_netcdf(events_file, desired_rows = desired_event_rows, chunk_size=chunk_size)
+
+    if(include_potential_energy){
+        # Read the initial condition potential energy information as well
+        potential_energy_data = get_source_zone_events_potential_energy(source_zone, 
+            slip_type, desired_event_rows, chunk_size)
+        # Logical checks
+        if(nrow(potential_energy_data) != nrow(events_data)){
+            stop('error reading potential energy -- not aligned with event_data')
+        }
+
+        # More sanity checks. 
+        # Confirm that Mw, rate_annual, and weight_with_nonzero_rate are the same
+        t1 = all(abs(events_data$Mw - potential_energy_data$Mw) <= 1.e-04)
+        t2 = all(abs(events_data$rate_annual - potential_energy_data$rate_annual) <= 
+                 1.0e-04*events_data$rate_annual)
+        t3 = all(abs(events_data$weight_with_nonzero_rate - potential_energy_data$weight_with_nonzero_rate) <=
+                 1.0e-04*events_data$weight_with_nonzero_rate)
+
+        if(!(t1 & t2 & t3)){
+            stop('Error reading potential energy -- rows may not be aligned')
+        }
+
+        # If we got here, then it all worked
+        events_data$initial_potential_energy = potential_energy_data$initial_potential_energy
+        rm(potential_energy_data)
+        gc()
+    }
 
     # Record the tsunami events file too, although we don't use it here
     tsunami_events_file = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
@@ -779,4 +809,32 @@ get_wet_or_dry_DEM<-function(force_download_again=FALSE){
 
 
     return(wd)
+}
+
+#' Read the initial potential energy from the precomputed database
+#'
+#' For details on the potential energy calculation, see here: https://github.com/GeoscienceAustralia/ptha/blob/master/R/examples/austptha_template/SOURCE_ZONES/compute_initial_condition_potential_energy.R
+#'
+#' @param source_zone Name of source_zone
+#' @param slip_type 'stochastic' or 'variable_uniform' or 'uniform'
+#' @param desired_event_rows integer vector giving the rows of the table that
+#' are desired. If NULL, read all rows (unless range_list is not NULL, see below)
+#' @param chunk_size The chunk_size passed to read_table_from_netcdf. This can impact the efficiency when only
+#' reading a subset of the file. A small chunk size will lead to many reads, whereas a large chunk size may lead
+#' to too much data being read at once. The best size depends on the system and the interconnect.
+#'
+get_source_zone_events_potential_energy<-function(source_zone, slip_type='stochastic', 
+    desired_event_rows=NULL, chunk_size=1000){
+
+    library(rptha)
+
+    nc_web_addr = paste0(config_env$.GDATA_OPENDAP_BASE_LOCATION, 
+        'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/POTENTIAL_ENERGY_all_', slip_type, 
+        '_slip_earthquake_events_', source_zone, '_POTENTIAL_ENERGY.nc')
+
+    potential_energy_data = read_table_from_netcdf(nc_web_addr, 
+        desired_rows=desired_event_rows, chunk_size=chunk_size)
+
+    return(potential_energy_data)
+
 }

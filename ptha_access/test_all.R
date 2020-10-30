@@ -22,7 +22,45 @@ test_sum_tsunami_unit_sources(gauge_netcdf_file)
 test_puysegur2<-function(){
     source('./get_PTHA_results.R', local=TRUE)
 
-    puysegur = get_source_zone_events_data('puysegur2')
+    # Events data [stochastic slip]. We will use this for tests here AND further down
+    # in this function
+    puysegur = get_source_zone_events_data('puysegur2', include_potential_energy=TRUE)
+
+    # Check the potential energy by comparison with a few independently calculated values
+    # (which will not be exactly the same because of discretization/projection/DEM differences
+    # , but are very similar)
+    inds = c(1643    , 1767    ) 
+    pes  = c(6.93e+12, 8.86e+12)
+    if(all(abs(puysegur$events$initial_potential_energy[inds] - pes) < 0.01*pes)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+
+    # As above, but check uniform slip with some subset of rows
+    inds = c(107     , 117     )
+    pes  = c(2.62e+12, 1.13e+13)
+    puysegur_U = get_source_zone_events_data('puysegur2', slip_type='uniform', 
+        desired_event_rows = inds, include_potential_energy=TRUE) 
+    if(all(abs(puysegur_U$events$initial_potential_energy - pes) < 0.01*pes)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+    rm(inds, pes, puysegur_U)
+
+    # As above, but check variable_uniform slip with some subset of rows
+    inds = c(1815    , 1835    )
+    pes  = c(2.77e+13, 1.39e+13)
+    puysegur_VU = get_source_zone_events_data('puysegur2', slip_type='variable_uniform', 
+        desired_event_rows = inds, include_potential_energy=TRUE) 
+    if(all(abs(puysegur_VU$events$initial_potential_energy - pes) < 0.01*pes)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+    rm(inds, pes, puysegur_VU)
+
     model_3051 = get_flow_time_series_at_hazard_point(puysegur, 3051, 
         hazard_point_ID = c(1.1, 10.1, 22.1, 55015.4, 55042.4))
 
