@@ -221,7 +221,7 @@ for(i_file in 1:length(all_RDS_potential_energy_files)){
         any(unlist(lapply(pe$ipe_V, f<-function(x) is(x, 'try-error')))) )
 
     if(has_try_errors){
-        print(paste0('skipping ', ps$source_zone))
+        print(paste0('skipping ', pe$source_zone))
         next
     }
 
