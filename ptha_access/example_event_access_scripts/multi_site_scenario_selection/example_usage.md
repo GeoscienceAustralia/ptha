@@ -349,7 +349,8 @@ dir.create(plot_outdir, showWarnings=FALSE)
 # Get all the events in a format that the ptha_access codes will work with
 events_of_interest = ptha18$get_source_zone_events_data(source_zone, 
     slip_type=slip_type, 
-    desired_event_rows=kermadectonga_events_2500$desired_event_rows)
+    desired_event_rows=kermadectonga_events_2500$desired_event_rows,
+    include_potential_energy=TRUE)
 
 # Get the wave time-series for all events at all 'site_gauges'
 all_tsunamis_at_gauges = ptha18$get_flow_time_series_at_hazard_point(
