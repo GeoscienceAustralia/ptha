@@ -85,3 +85,4 @@ contain other variables - but this can be slow.
 
 * Draw on JG's revised ideas on large magnitude normal fault sources.
 
+* There is a mistake in the `arutrough` and `tanimbar` scenarios -- both of which are normal faults. The scenarios appear to have been created with a rigidity of 30 GPa. Apparently later the rigidity was changed to 60 GPa, which is how we treat normal faults in general - but it appears we did not update the scenarios. Although these source-zones are minor, this should be fixed. The other normal fault sources seem fine. 

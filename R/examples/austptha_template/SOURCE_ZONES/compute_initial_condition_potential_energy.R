@@ -203,3 +203,95 @@ for(si in 1:length(source_zones)){
     gc()
 
 }
+
+#
+# Write the potential energy to a netcdf file.
+# We need a separate one for each source zone and slip type.
+#
+all_RDS_potential_energy_files = Sys.glob('./*/TSUNAMI_EVENTS/potential_energy*.RDS')
+for(i_file in 1:length(all_RDS_potential_energy_files)){
+#for(i_file in 2:2){
+
+    pe = readRDS(all_RDS_potential_energy_files[i_file])
+   
+    # For the 'defunct' source-zones, the RDS file is nearly empty and will contain try-errors
+    # Skip those ones 
+    has_try_errors = (
+        any(unlist(lapply(pe$ipe_U, f<-function(x) is(x, 'try-error')))) |
+        any(unlist(lapply(pe$ipe_S, f<-function(x) is(x, 'try-error')))) |
+        any(unlist(lapply(pe$ipe_V, f<-function(x) is(x, 'try-error')))) )
+
+    if(has_try_errors){
+        print(paste0('skipping ', ps$source_zone))
+        next
+    }
+
+    source_zone = pe$source_zone
+
+    # Write one file for each slip type. 
+    for(slip_type in c('uniform', 'stochastic', 'variable_uniform')){
+
+        # Put useful attributes in the netcdf file
+        global_attributes = list()
+        global_attributes$source_zone = source_zone
+        global_attributes$slip_type = slip_type
+        global_attributes$parent_script_name = parent_script_name()
+
+        # Get the appropriate initial potential energy
+        if(slip_type == 'uniform'){
+            ipe = unlist(pe$ipe_U)
+        }else if(slip_type == 'stochastic'){
+            ipe = unlist(pe$ipe_S)
+        }else if(slip_type == 'variable_uniform'){
+            ipe = unlist(pe$ipe_V)
+        }else{
+            stop(paste0('unrecognized slip_type ', slip_type, 
+                        ' on source_zone ', source_zone))
+        }
+
+        # Read the event metadata
+        earthquake_events_file = paste0('./', source_zone, '/TSUNAMI_EVENTS/all_', 
+            slip_type, '_slip_earthquake_events_', source_zone, '.nc')
+        if(!file.exists(earthquake_events_file)){
+            stop(paste0('could not find earthquake_events_file ', earthquake_events_file))
+        }
+        global_attributes$earthquake_events_file = normalizePath(earthquake_events_file)
+
+        global_attributes$Note_on_potential_energy = 'The initial potential energy (units joules) has been computed by spatially integrating the potential energy of the tsunami initial condition. Land-areas were zeroed-out by interpolating from wet-dry mask, which was itself derived from the DEM used in PTHA18. Note differences with other potential energy calculations can occur -- typically the effect is small, but differences of a few percent are not unusual. Larger differences might be expected if most of the deformation occurs near wet-dry boundaries. The following factors can cause that: A) The cell-area computation will vary depending on whether a sphere or an ellipsoid is assumed, and; B) our hydrodynamic models often interpolate the initial condition and the elevation to a different resolution prior to computation, and; C) the designation of wet-or-dry areas used herein, derived by interpolating from a logical raster, is not identical to what would be obtained by interpolating DEM values, even if the resolution is otherwise the same.'
+       global_attributes$Note_on_earthquake_scenarios = 'The potential energies herein correspond to model scenarios in the earthquake_events_file, so the number of rows in that file should equal the number of rows here. Herein we also provide the rate_annual, the weight_with_nonzero_rate, and Mw, mainly to cross-reference with the same variables in the earthquake_events_file (and thus check that we have correctly associated potential energies with their scenarios). Note that not all of the earthquake scenarios are considered possible according to PTHA18 (i.e. some have a rate of zero).'
+
+        # Get the annual rate from the earthquake events file
+        # This is mainly included to enable cross-checking with the earthquake
+        # events file -- since the annual rate will vary often between scenarios.
+        events = read_table_from_netcdf(earthquake_events_file)
+        rate_annual = events$rate_annual
+        weight_with_nonzero_rate = events$weight_with_nonzero_rate
+        Mw = events$Mw
+        rm(events)
+        gc()
+
+        # Make a new file for potential energy, without breaking the code
+        potential_energy_output_nc_file = paste0(dirname(normalizePath(earthquake_events_file)),
+             '/POTENTIAL_ENERGY_all_', slip_type, '_slip_earthquake_events_', source_zone, '_POTENTIAL_ENERGY.nc')
+
+        output_data = data.frame(initial_potential_energy = ipe, 
+                                 rate_annual=rate_annual, 
+                                 weight_with_nonzero_rate=weight_with_nonzero_rate,
+                                 Mw=Mw)
+
+        write_table_to_netcdf(
+            output_data, 
+            filename=potential_energy_output_nc_file, 
+            global_attributes_list=global_attributes,
+            units=c('joules', 'events_per_year', '', 'moment_magnitude'),
+            long_names=c('potential_energy_integrated_from_tsunami_initial_condition', 
+                         'logic_tree_mean_annual_rate_of_events', 
+                         'weighted_fraction_of_logic_tree_branches_having_nonzero_rate',
+                         'moment_magnitude_with_constant_rigidity'),
+            var_prec=c('double', 'double', 'double', 'double'),
+            add_session_info_attribute=TRUE)
+
+    }
+    
+}
+
