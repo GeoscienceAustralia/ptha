@@ -124,7 +124,7 @@ get_matching_scenarios<-function(source_zone_data, scenario_match){
 
     # Get the event data for the candidate events
     candidate_events = ptha18$get_source_zone_events_data(source_zone=source_zone,
-        slip_type=slip_type, desired_event_rows=candidate_inds)
+        slip_type=slip_type, desired_event_rows=candidate_inds, include_potential_energy=TRUE)
 
     # We should only consider events that are possible
     k = which(candidate_events$events$rate_annual > 0)
@@ -163,7 +163,7 @@ summarise_scenarios<-function(candidate_events){
     #stem(candidate_events$events$Mw)
 
     par(mfrow=c(2,2))
-    layout(matrix(c(1, 2, 3, 3, 4, 4), byrow=TRUE, ncol=2))
+    layout(matrix(c(1, 2, 3, 4, 4, 4, 5, 5, 5), byrow=TRUE, ncol=3))
     # Show the event magnitude, and the likeihood they are possible (i.e. chance
     # that Mw-max > Mw)
     plot(candidate_events$events$Mw, candidate_events$events$weight_with_nonzero_rate,
@@ -189,6 +189,22 @@ summarise_scenarios<-function(candidate_events){
     legend('topleft', c('Scaling-relation mean-slip', ' "" times 3', ' "" times 6'), 
            col=c('blue', 'orange', 'red'), bty='n',
            lty=c(1,1,1))
+
+    # Mw vs energy
+    plot(candidate_events$events$Mw, 
+         candidate_events$events$initial_potential_energy,
+         log='y', main="Mw vs initial potential energy \n (Historical event energies are approximate!)", 
+         xlab='Mw', ylab='Potential Energy (joules)',
+         cex.main=1.5, cex.lab=1.3, cex.axis=1.3)
+    grid(col='orange')
+    min_mw = min(candidate_events$events$Mw)
+    energies = c(1e+15, 3e+15, 4.5e+15, 6.5e+15, 1e+16, 4e+16)
+    linecol = c('blue', 'green', 'violet', 'purple', 'red', 'black')
+    abline(h=energies, col=linecol)
+    labels= c('Chile 2010', 'Tohoku 2011', 'Alaska 1964', 
+             'Sumatra2004', 'Chile 1960', '2x Chile 1960 wave size')
+    text(min_mw+energies*0, energies, labels, adj=c(0, 0.), col=linecol)
+         
 
     # Look at the peak-stage for each event
     boxplot(candidate_events$peak_stages, 
