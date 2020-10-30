@@ -444,6 +444,42 @@ get_multidomain<-function(multidomain_dir, ...){
     return(md)
 }
 
+#' Get the times at which grids or gauges are output in the multidomain
+#'
+#' Sometimes it is useful to know how many times there are
+#'
+#' @param multidomain_dir Directory containing the multidomain
+#' @param output_type either 'grids' (default) or 'gauges'
+#' @return a vector of times at which the 'grids' or 'gauges' are output
+#'
+get_multidomain_output_times<-function(multidomain_dir, output_type='grids'){
+    library(ncdf4)
+
+    if(!file.exists(multidomain_dir)){
+        stop(paste0('Could not find multidomain_dir ', multidomain_dir))
+    }
+   
+    # Find the netcdf grid or gauges files, depending 
+    if(output_type =='grids'){
+        target_files = Sys.glob(paste0(multidomain_dir, '/RUN_*/Grid_output_*.nc'))
+    }else if(output_type == 'gauges'){
+        target_files = Sys.glob(paste0(multidomain_dir, '/RUN_*/Gauges_data_*.nc'))
+    }else{
+        stop(paste0('output_type should be "grids" or "gauges", but I got: ', output_type))
+    }
+
+
+    if(length(target_files) < 1){
+        stop(paste0('Could not find any files holding ', output_type, ' in multidomain ', multidomain_dir))
+    }
+
+    fid = nc_open(target_files[1], readunlim=FALSE)
+    time = as.numeric(ncvar_get(fid, 'time'))
+    nc_close(fid)
+
+    return(time)
+}
+
 #' Convert peak stage output to raster using the domain object.
 #'
 #' Instead consider using 'merge_domains_nc_grids' which will combine partitioned domains, and
