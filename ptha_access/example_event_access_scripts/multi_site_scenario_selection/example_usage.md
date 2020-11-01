@@ -52,33 +52,33 @@ below we remove repeated gauges using a distance-matrix based technique.
 
 
 ```r
-    #
-    # Define the gauge indices of interest -- you need to make BOTH "site_gauge_inds" and "site_gauges"
-    #
-    all_gauges = ptha18$get_all_gauges()
-    site_gauge_inds = which(all_gauges$lon > 186 & all_gauges$lon < 188.9 &
-                            all_gauges$lat > -15 & all_gauges$lat < -12)
-    site_gauges = all_gauges[site_gauge_inds,]
-    # In this case we have a double-up of one gauge. This is not unusual in
-    # PTHA18. For the analysis here we don't want that because it will make 1
-    # site count as 2. 
-    # Let's remove it by computing a distance matrix, and removing points that
-    # have '0' IN THE UPPER TRIANGLE of the distance matrix. Restriction to the
-    # upper triangle will mean we don't remove both points
-    site_gauges_distm = distm(cbind(site_gauges$lon, site_gauges$lat)) # Distance matrix
-    # Identify indices in the distance matrix upper triangle with a distance of 0.0. These
-    # should be removed. Notice we could change 0.0 to some other distance if we wanted to
-    # get rid of 'nearby but non-zero distance' points.
-    to_remove = which((upper.tri(site_gauges_distm) & (site_gauges_distm == 0.0)), arr.ind=TRUE)
-    if(length(to_remove) > 0){
-        # There are repeated gauges
-        inds_to_remove = unique(to_remove[,1])
-        site_gauge_inds = site_gauge_inds[-inds_to_remove]
-        site_gauges = site_gauges[-inds_to_remove,]
-    }
+#
+# Define the gauge indices of interest -- you need to make BOTH "site_gauge_inds" and "site_gauges"
+#
+all_gauges = ptha18$get_all_gauges()
+site_gauge_inds = which(all_gauges$lon > 186 & all_gauges$lon < 188.9 &
+                        all_gauges$lat > -15 & all_gauges$lat < -12)
+site_gauges = all_gauges[site_gauge_inds,]
+# In this case we have a double-up of one gauge. This is not unusual in
+# PTHA18. For the analysis here we don't want that because it will make 1
+# site count as 2. 
+# Let's remove it by computing a distance matrix, and removing points that
+# have '0' IN THE UPPER TRIANGLE of the distance matrix. Restriction to the
+# upper triangle will mean we don't remove both points
+site_gauges_distm = distm(cbind(site_gauges$lon, site_gauges$lat)) # Distance matrix
+# Identify indices in the distance matrix upper triangle with a distance of 0.0. These
+# should be removed. Notice we could change 0.0 to some other distance if we wanted to
+# get rid of 'nearby but non-zero distance' points.
+to_remove = which((upper.tri(site_gauges_distm) & (site_gauges_distm == 0.0)), arr.ind=TRUE)
+if(length(to_remove) > 0){
+    # There are repeated gauges
+    inds_to_remove = unique(to_remove[,1])
+    site_gauge_inds = site_gauge_inds[-inds_to_remove]
+    site_gauges = site_gauges[-inds_to_remove,]
+}
 
-    # Now print the gauges (should not be any repetition)
-    site_gauges
+# Now print the gauges (should not be any repetition)
+site_gauges
 ```
 
 ```
@@ -164,27 +164,27 @@ exceedance-rate.
 
 
 ```r
-    #
-    # Set the criteria for picking scenarios. 
-    scenario_match = list()
-    # Desired exceedance_rate
-    scenario_match$exrate = 1/2500
-    # Hazard curve mean or percentile type -- a string identifying the stage-vs-exceedance-rate curve
-    # type. Either 'rate' (mean) or 'rate_84pc' (84th percentile) or 'rate_16pc'
-    # (16th percentile), 'rate_median' (50th percentile), 'rate_lower_ci' (2.5th
-    # percentile), 'rate_upper_ci' (97.5 percentile)
-    scenario_match$hazard_curve_type = 'rate_median' # 'rate_84pc' # 'rate_84pc'
-    # Rigidity type used for hazard calculations -- either an empty string ''
-    # (constant rigidity) or 'variable_mu' (depth varying rigidity). If you use
-    # variable_mu, be sure to use the variable_mu_Mw from the event table
-    scenario_match$mu_type = '' # 'variable_mu'
-    # The 'allowed fractional deviation of the peak-stage from the target value'
-    # that is still regarded as a match, e.g. 0.1 = 10%
-    scenario_match$target_stage_tolerance = 0.1 #
-    # The minimum number of gauges that should satisfy the allowed tolerance, for the
-    # scenario to be stored. At all other gauges, the peak-stage must be
-    # less than or equal the exceedance-rate-derived value
-    scenario_match$number_matching_gauges = 3
+#
+# Set the criteria for picking scenarios. 
+scenario_match = list()
+# Desired exceedance_rate
+scenario_match$exrate = 1/2500
+# Hazard curve mean or percentile type -- a string identifying the stage-vs-exceedance-rate curve
+# type. Either 'rate' (mean) or 'rate_84pc' (84th percentile) or 'rate_16pc'
+# (16th percentile), 'rate_median' (50th percentile), 'rate_lower_ci' (2.5th
+# percentile), 'rate_upper_ci' (97.5 percentile)
+scenario_match$hazard_curve_type = 'rate_median' # 'rate_84pc' # 'rate_84pc'
+# Rigidity type used for hazard calculations -- either an empty string ''
+# (constant rigidity) or 'variable_mu' (depth varying rigidity). If you use
+# variable_mu, be sure to use the variable_mu_Mw from the event table
+scenario_match$mu_type = '' # 'variable_mu'
+# The 'allowed fractional deviation of the peak-stage from the target value'
+# that is still regarded as a match, e.g. 0.1 = 10%
+scenario_match$target_stage_tolerance = 0.1 #
+# The minimum number of gauges that should satisfy the allowed tolerance, for the
+# scenario to be stored. At all other gauges, the peak-stage must be
+# less than or equal the exceedance-rate-derived value
+scenario_match$number_matching_gauges = 3
 ```
 
 ## Step 4: Find the scenarios matching the above criteria
@@ -195,9 +195,9 @@ those used to describe scenarios in our [DETAILED_README.md](../../DETAILED_READ
 
 
 ```r
-    # Find scenarios which match the above criteria at the previously downloaded gauge+"source-zone"
-    kermadectonga_events_2500 = get_matching_scenarios(kermadec_source_data, scenario_match)
-    names(kermadectonga_events_2500)    
+# Find scenarios which match the above criteria at the previously downloaded gauge+"source-zone"
+kermadectonga_events_2500 = get_matching_scenarios(kermadec_source_data, scenario_match)
+names(kermadectonga_events_2500)    
 ```
 
 ```
@@ -211,8 +211,8 @@ The function `summarise_scenarios` can be used to plot summary information on
 the scenarios. 
 
 ```r
-    # Plot summary information
-    summarise_scenarios(kermadectonga_events_2500)
+# Plot summary information
+summarise_scenarios(kermadectonga_events_2500)
 ```
 
 ![plot of chunk scenarioCriteria3](figure/scenarioCriteria3-1.png)
@@ -233,15 +233,15 @@ To help select scenarios of interest, it is also useful to consider which among 
 
 
 ```r
-    par(mfrow=c(1,1)) # Reset plot
+par(mfrow=c(1,1)) # Reset plot
 
-    # Compute the Mw cumulative distribution function for the selected
-    # scenarios (weighted by the scenario rates). This gives an idea of
-    # which magnitudes are more-or-less likely, among the identified scenarios.
-    weighted_Mw_distrbution = weighted_cdf(kermadectonga_events_2500$events$Mw, 
-        kermadectonga_events_2500$events$rate_annual)
-    abline(h=0.5, col='red')
-    title(main='Mw distribution for selected scenarios, weighted by annual rate')
+# Compute the Mw cumulative distribution function for the selected
+# scenarios (weighted by the scenario rates). This gives an idea of
+# which magnitudes are more-or-less likely, among the identified scenarios.
+weighted_Mw_distrbution = weighted_cdf(kermadectonga_events_2500$events$Mw, 
+    kermadectonga_events_2500$events$rate_annual)
+abline(h=0.5, col='red')
+title(main='Mw distribution for selected scenarios, weighted by annual rate')
 ```
 
 ![plot of chunk scenarioCriteria4](figure/scenarioCriteria4-1.png)
@@ -252,17 +252,17 @@ Based on the above plot, we might decide to look further at some subset of scena
 
 
 ```r
-    # Find events with Mw >8.15 and Mw < 8.85 -- this will include all events
-    # with Mw 8.2-8.8, and the offsets by 0.05 protect us against tiny floating point
-    # rounding. Also only take events with peak-slip between 10 and 20 m.
-    k = which((kermadectonga_events_2500$events$Mw > 8.15) &
-              (kermadectonga_events_2500$events$Mw < 8.85) &
-              (kermadectonga_events_2500$peak_slip > 10) & 
-              (kermadectonga_events_2500$peak_slip < 20)  
-              )
-    # Here are the row-indices of those scenarios 
-    row_indices_of_subset = kermadectonga_events_2500$desired_event_rows[k]
-    row_indices_of_subset # These could be used to get the initial condition or gauge time-series -- see below
+# Find events with Mw >8.15 and Mw < 8.85 -- this will include all events
+# with Mw 8.2-8.8, and the offsets by 0.05 protect us against tiny floating point
+# rounding. Also only take events with peak-slip between 10 and 20 m.
+k = which((kermadectonga_events_2500$events$Mw > 8.15) &
+          (kermadectonga_events_2500$events$Mw < 8.85) &
+          (kermadectonga_events_2500$peak_slip > 10) & 
+          (kermadectonga_events_2500$peak_slip < 20)  
+          )
+# Here are the row-indices of those scenarios 
+row_indices_of_subset = kermadectonga_events_2500$desired_event_rows[k]
+row_indices_of_subset # These could be used to get the initial condition or gauge time-series -- see below
 ```
 
 ```
@@ -270,9 +270,9 @@ Based on the above plot, we might decide to look further at some subset of scena
 ```
 
 ```r
-    # Here is a histogram of their peak-slip values
-    hist(kermadectonga_events_2500$peak_slip[k], main='Peak-slip values for the event subset',
-         xlab='Peak slip (m)')
+# Here is a histogram of their peak-slip values
+hist(kermadectonga_events_2500$peak_slip[k], main='Peak-slip values for the event subset',
+     xlab='Peak slip (m)')
 ```
 
 ![plot of chunk scenarioSubsetting](figure/scenarioSubsetting-1.png)
