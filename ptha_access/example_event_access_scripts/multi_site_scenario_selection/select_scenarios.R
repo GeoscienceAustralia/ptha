@@ -162,7 +162,7 @@ summarise_scenarios<-function(candidate_events){
     # Better to look at the weighted distribution
     #stem(candidate_events$events$Mw)
 
-    par(mfrow=c(2,2))
+    #par(mfrow=c(2,2))
     layout(matrix(c(1, 2, 3, 4, 4, 4, 5, 5, 5), byrow=TRUE, ncol=3))
     # Show the event magnitude, and the likeihood they are possible (i.e. chance
     # that Mw-max > Mw)
