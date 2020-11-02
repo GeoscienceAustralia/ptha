@@ -163,7 +163,7 @@ summarise_scenarios<-function(candidate_events){
     #stem(candidate_events$events$Mw)
 
     #par(mfrow=c(2,2))
-    layout(matrix(c(1, 2, 3, 4, 4, 4, 5, 5, 5), byrow=TRUE, ncol=3))
+    layout(matrix(c(1, 2, 3, 4, 5, 5, 6, 6), byrow=TRUE, ncol=2))
     # Show the event magnitude, and the likeihood they are possible (i.e. chance
     # that Mw-max > Mw)
     plot(candidate_events$events$Mw, candidate_events$events$weight_with_nonzero_rate,
@@ -204,7 +204,17 @@ summarise_scenarios<-function(candidate_events){
     labels= c('Chile 2010', 'Tohoku 2011', 'Alaska 1964', 
              'Sumatra2004', 'Chile 1960', '2x Chile 1960 wave size')
     text(min_mw+energies*0, energies, labels, adj=c(0, 0.), col=linecol)
-         
+
+    # Weighted Cumulative Mw
+    weighted_Mw_distribution = weighted_cdf(candidate_events$events$Mw, 
+        candidate_events$events$rate_annual, make_plot=FALSE)
+    plot(weighted_Mw_distribution$x, weighted_Mw_distribution$fraction_less_or_equal, t='s',
+         xlab='Mw', ylab='Cumulative distribution', ylim=c(0, 1), cex.lab=1.3, cex.axis=1.3)
+    points(weighted_Mw_distribution$x, weighted_Mw_distribution$fraction_less_or_equal, pch=19)
+    grid(col='orange')
+    abline(h=0.5, col='red')
+    title(main='Mw cumulative distribution for selected \n scenarios, weighted by annual rate',
+          cex.main=1.5)
 
     # Look at the peak-stage for each event
     boxplot(candidate_events$peak_stages, 
