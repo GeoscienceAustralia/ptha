@@ -64,10 +64,11 @@ get_hazard_curves_and_peak_stages<-function(site_gauge_inds, site_gauges, source
 # whereas for PTHA18 we know what it should be (depends on the focal mechanism)
 get_default_slip_from_Mw_function<-function(source_zone_data){
 
-    if(source_zone_data$unit_source_statistics$rake[1] > 80){
+    if(source_zone_data$unit_source_statistics$rake[1] > 89.9){
         # Thrust faults
         slip_from_Mw_function <-function(x) slip_from_Mw(x)
-    }else if(source_zone_data$unit_source_statistics$rake[1] < -80){
+
+    }else if(source_zone_data$unit_source_statistics$rake[1] < -89.9){
         # Normal faults -- higher rigidity, difference scaling relation
         slip_from_Mw_function <- function(x){
             slip_from_Mw(x, mu = 6e+10, relation = "Blaser-normal",
