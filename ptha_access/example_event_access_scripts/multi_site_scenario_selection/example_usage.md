@@ -229,7 +229,7 @@ Here we explain the above plot:
 
 * The third-row panel shows the distribution of maximum-stage values for each of the selected scenarios using [box-plots](https://en.wikipedia.org/wiki/Box_plot), along with the target maximum-stage values. As expected the target value is never exceeded by much. Also, not all gauges achieve the target value. That's because some gauges are less affected by the Kermadec-Tonga source-zone, as compared with other sources. Scenarios that produced high maximum-stage values at these gauges would likely produce excessively high maximum-stage values at the other gauges, and so are disallowed in the current methodology. We should search other source-zones to find scenarios that are appropriate for those gauges.
 
-* The bottom panel shows, for each scenario, which gauges attained maximum-stage values within the target window. This can help with manually selecting some subset of scenarios for further analysis. 
+* The bottom panel shows, for each scenario, which gauges attained maximum-stage values within the target window. This can help with manually selecting some subset of scenarios for further analysis. The gauge labels are on the LHS axis, the scenario magnitude is on the RHS axis and is shown on the line.
 
 # Identifying subsets of the above scenarios
 
