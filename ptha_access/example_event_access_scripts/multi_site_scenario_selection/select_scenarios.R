@@ -236,8 +236,20 @@ summarise_scenarios<-function(candidate_events){
     axis(side=2, at=seq(0, 1, length=nc), 
          labels=colnames(candidate_events$peak_stages), las=1)
     axis(side=1, at=seq(0, 1, length=nr), labels=1:nr)
-    title('Are gauges within the target range for each event? Red = yes', 
+    title('Are gauges within the target range for each event? Red = yes \n Line gives scenario Mw [RHS axis]', 
           cex.main=1.7)
+
+    # Add magnitudes
+    mw_seq = seq(min(candidate_events$events$Mw)-0.1/2, max(candidate_events$events$Mw)+0.1/2, by=0.1)
+    mw_line = sapply(mw_seq, f<-function(x) sum(candidate_events$events$Mw <= x))
+
+    min_mw = min(candidate_events$events$Mw)
+    max_mw = max(candidate_events$events$Mw)
+    points((0:(nr-1))/(nr-1), 
+           (candidate_events$events$Mw - min_mw)/(max_mw - min_mw),
+           t='o', lty='dashed')
+    axis_pts = pretty(c(min_mw, max_mw), n=4)
+    axis(side=4, at=(axis_pts-min_mw)/(max_mw-min_mw), labels=axis_pts)
 }
 
 # This is also worth looking at -- plot the peak stages for each event/gauge
