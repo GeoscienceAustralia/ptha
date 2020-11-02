@@ -204,7 +204,8 @@ names(kermadectonga_events_2500)
 ##  [1] "events"                 "unit_source_statistics" "gauge_netcdf_files"    
 ##  [4] "desired_event_rows"     "events_file"            "unit_source_file"      
 ##  [7] "tsunami_events_file"    "peak_stages"            "peak_stages_within_tol"
-## [10] "peak_slip"              "max_stage_at_exrate"
+## [10] "peak_slip"              "slip_from_Mw_function"  "peak_slip_ratio"       
+## [13] "max_stage_at_exrate"
 ```
 
 The function `summarise_scenarios` can be used to plot summary information on
