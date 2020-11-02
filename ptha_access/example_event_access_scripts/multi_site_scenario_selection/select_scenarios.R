@@ -58,11 +58,37 @@ get_hazard_curves_and_peak_stages<-function(site_gauge_inds, site_gauges, source
     return(environment())
 }
 
-# Find scenarios matching various criteria using the source_zone_data
-#
-# @param source_zone_data result of function get_hazard_curves_and_peak_stages
-# @param scenario_match a list containing variables which define how we match scenarios.
-get_matching_scenarios<-function(source_zone_data, scenario_match){
+# Choose a default function to compute average slip given Mw.
+# For some plotting, we need a function f(Mw) which gives the scaling-relation-mean slip,
+# assuming a mean rupture area. While it can be provided, it's a bit inconvenient to create,
+# whereas for PTHA18 we know what it should be (depends on the focal mechanism)
+get_default_slip_from_Mw_function<-function(source_zone_data){
+
+    if(source_zone_data$unit_source_statistics$rake[1] > 80){
+        # Thrust faults
+        slip_from_Mw_function <-function(x) slip_from_Mw(x)
+    }else if(source_zone_data$unit_source_statistics$rake[1] < -80){
+        # Normal faults -- higher rigidity, difference scaling relation
+        slip_from_Mw_function <- function(x){
+            slip_from_Mw(x, mu = 6e+10, relation = "Blaser-normal",
+                        area_function = function(Mw) {Mw_2_rupture_size(Mw, relation = relation)[1] },
+                        constant = 9.05)
+            }
+    }else{
+        stop('Default slip_from_Mw_function only exists for thrust and normal faults')
+    }
+
+    return(slip_from_Mw_function)
+}
+
+#' Find scenarios matching various criteria using the source_zone_data
+#'
+#' @param source_zone_data result of function get_hazard_curves_and_peak_stages
+#' @param scenario_match a list containing variables which define how we match scenarios.
+#' @param slip_from_Mw_function optional function to compute the earthquake
+#' slip given Mw. By default use the PTHA18 approach
+#'
+get_matching_scenarios<-function(source_zone_data, scenario_match, slip_from_Mw_function=NULL){
 
     if(scenario_match$number_matching_gauges > length(source_zone_data$site_gauge_inds)){
         msg = paste0('You requested scenarios where at least ', 
@@ -75,6 +101,7 @@ get_matching_scenarios<-function(source_zone_data, scenario_match){
         stop(msg)
     }
 
+    
     # Copy out key data for the source-zone
     stage_exrate_curves = source_zone_data$stage_exrate_curves
     peak_stage_sourcezone_matrix = source_zone_data$peak_stage_sourcezone_matrix
@@ -150,6 +177,16 @@ get_matching_scenarios<-function(source_zone_data, scenario_match){
         f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])),
         USE.NAMES=FALSE)
 
+    # Useful to also know the ratio of peak slip to the mean slip
+    if(is.null(slip_from_Mw_function)){
+        # Choose a default approach to computing mean slip from Mw, based on the PTHA18 approach
+        slip_from_Mw_function = get_default_slip_from_Mw_function(candidate_events)
+    }
+    candidate_events$slip_from_Mw_function=slip_from_Mw_function
+    strasser_mean_slip = slip_from_Mw_function(candidate_events$events$Mw)
+    candidate_events$peak_slip_ratio = candidate_events$peak_slip/strasser_mean_slip
+
+
     candidate_events$max_stage_at_exrate = max_stage_at_exrate
 
     return(candidate_events)
@@ -162,6 +199,8 @@ summarise_scenarios<-function(candidate_events){
     # What is the distribution of magnitudes for these possible-candidate-events?
     # Better to look at the weighted distribution
     #stem(candidate_events$events$Mw)
+
+    slip_from_Mw_function = candidate_events$slip_from_Mw_function
 
     #par(mfrow=c(2,2))
     layout(matrix(c(1, 2, 3, 4, 5, 5, 6, 6), byrow=TRUE, ncol=2))
@@ -183,7 +222,7 @@ summarise_scenarios<-function(candidate_events){
          xlab='Mw', ylab='Peak slip', 
          cex.main=1.5, cex.lab=1.3, cex.axis=1.3)
     grid(col='orange')
-    strasser_mean_slip = slip_from_Mw(candidate_events$events$Mw)
+    strasser_mean_slip = slip_from_Mw_function(candidate_events$events$Mw)
     points(candidate_events$events$Mw, strasser_mean_slip, t='l', col='blue')
     points(candidate_events$events$Mw, strasser_mean_slip*3, t='l', col='orange')
     points(candidate_events$events$Mw, strasser_mean_slip*6, t='l', col='red')
