@@ -170,7 +170,7 @@ names(kermadectonga_events_2500)
 
 The function `summarise_scenarios` can be used to plot summary information on
 the scenarios. 
-```{r scenarioCriteria3, cache=FALSE, fig.width=10, fig.height=16} 
+```{r scenarioCriteria3, cache=FALSE, fig.width=8, fig.height=12} 
 # Plot summary information
 summarise_scenarios(kermadectonga_events_2500)
 ```

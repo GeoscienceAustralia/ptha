@@ -10,6 +10,7 @@ if(!file.exists(ptha_access_script_location)){
     stop('Error: get_PTHA_results.R not found -- please edit the file path to suit your machine, and try again')
 }
 source(ptha_access_script_location, local=ptha18, chdir=TRUE)
+library(rptha)
 
 #
 # Get hazard curves and peak-stages for all events at a specified set of gauges.
@@ -189,6 +190,7 @@ summarise_scenarios<-function(candidate_events){
     legend('topleft', c('Scaling-relation mean-slip', ' "" times 3', ' "" times 6'), 
            col=c('blue', 'orange', 'red'), bty='n',
            lty=c(1,1,1))
+    add_log_axis_ticks(side=2)
 
     # Mw vs energy
     plot(candidate_events$events$Mw, 
@@ -204,6 +206,7 @@ summarise_scenarios<-function(candidate_events){
     labels= c('Chile 2010', 'Tohoku 2011', 'Alaska 1964', 
              'Sumatra2004', 'Chile 1960', '2x Chile 1960 wave size')
     text(min_mw+energies*0, energies, labels, adj=c(0, 0.), col=linecol)
+    add_log_axis_ticks(side=2)
 
     # Weighted Cumulative Mw
     weighted_Mw_distribution = weighted_cdf(candidate_events$events$Mw, 
