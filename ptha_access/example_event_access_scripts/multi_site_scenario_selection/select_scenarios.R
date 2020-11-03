@@ -184,11 +184,15 @@ get_matching_scenarios<-function(source_zone_data, scenario_match, slip_from_Mw_
         slip_from_Mw_function = get_default_slip_from_Mw_function(candidate_events)
     }
     candidate_events$slip_from_Mw_function=slip_from_Mw_function
+    # For later plotting it is handy to have the function which computes average slip based on Mw 
     strasser_mean_slip = slip_from_Mw_function(candidate_events$events$Mw)
     candidate_events$peak_slip_ratio = candidate_events$peak_slip/strasser_mean_slip
 
-
+    # Convenient to know, for each gauge, the max-stage associated with the exceedance-rate.
     candidate_events$max_stage_at_exrate = max_stage_at_exrate
+
+    # Useful to store the criteria used for matching
+    candidate_events$scenario_match = scenario_match
 
     return(candidate_events)
 
