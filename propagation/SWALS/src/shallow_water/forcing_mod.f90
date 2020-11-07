@@ -7,7 +7,7 @@ module forcing_mod
     !! derived_types to help with such cases.
     !!
 
-    use global_mod, only: dp, ip
+    use global_mod, only: dp, ip, charlen
     use logging_mod, only: log_output_unit
     use stop_mod, only: generic_stop
     use domain_mod, only: domain_type, STG, UH, VH, ELV
@@ -153,6 +153,15 @@ module forcing_mod
         if(.not. ( (k0 <= ELV) .and. (k0 >= STG) .and. (k1 <= ELV) .and. (k0 <= k1))) then
             write(log_output_unit, *) 'Error in apply_forcing_patch_base: the forcing_patch%forcing_work does not'
             write(log_output_unit, *) 'have 3rd dimension compatible with domain%U', k0, k1
+            call generic_stop
+        end if
+
+        if(k1 == ELV .and. &
+           any(domain%timestepping_method == [character(len=charlen):: 'rk2', 'rk2n', 'midpoint'])) then
+            write(log_output_unit, *) 'Error in apply_forcing_patch_base: It appears the forcing_patch is setup to'
+            write(log_output_unit, *) 'change the elevation. Not all timestepping methods can do this.'
+            write(log_output_unit, *) 'domain%myid: ', domain%myid
+            write(log_output_unit, *) 'domain%timestepping_method: ', trim(domain%timestepping_method)
             call generic_stop
         end if
 
