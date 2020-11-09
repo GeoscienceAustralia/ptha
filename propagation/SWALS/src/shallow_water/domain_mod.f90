@@ -269,7 +269,7 @@ module domain_mod
             !! The latter takes the domain as an argument, so one can access the forcing_context
             !! via that.
         logical :: support_elevation_forcing = .FALSE.
-            !! If the forcing_subroutine tries to evolve the elevation, but support_elevation_forcing is FALSE, then
+            !! If the forcing_patch_type tries to evolve the elevation, but support_elevation_forcing is FALSE, then
             !! the code will throw an error. The value of this variable will be overridden automatically for schemes
             !! where forcing the elevation is always OK. For other schemes one can manually set this to TRUE, and
             !! the code will do extra calculations to enable elevation forcing. 

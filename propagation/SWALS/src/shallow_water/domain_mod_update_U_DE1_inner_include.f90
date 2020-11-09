@@ -27,7 +27,7 @@
 
             !$OMP SIMD PRIVATE(kk)
             do i = 1, domain%nx(1)
-                !! Fluxes
+                ! Fluxes
                 do kk = 1, 3
                     domain%U(i,j,kk) = domain%U(i,j,kk) - inv_cell_area_dt * ( & 
                         (domain%flux_NS(i, j+1, kk) - domain%flux_NS(i, j, kk)) + &
