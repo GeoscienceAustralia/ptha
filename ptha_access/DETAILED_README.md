@@ -110,7 +110,12 @@ source('test_all.R')
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
-## [1] "PASS"
+## Error in Rsx_nc4_get_vara_int: NetCDF: DAP failure
+## Var: table_rows  Ndims: 1   Start: 0 Count: 151755
+```
+
+```
+## Error in ncvar_get_inner(d$dimvarid$group_id, d$dimvarid$id, default_missval_ncdf4(), : C function Rsx_nc4_get_var_int returned error
 ```
 **If the above script fails even after repeated trials, you need to troubleshoot
 your installation before proceeding**. [See here](INSTALL.md).
@@ -915,6 +920,56 @@ output_file = paste0('output_gauge_data_puysegur_event_', row_index, '_station_'
     sitename, '.csv')
 write.csv(site_flow, output_file, row.names=FALSE)
 ```
+
+For long-time modelling where friction might be important, you may try implementing the 
+delayed-linear-friction model presented [in this paper (see Equation 16)](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full). Essentially this leads to a slow decay of the tsunami following a delay of 12 hours from the earthquake.
+Below is an example calculation.
+
+```r
+# Given flow variable 'var', and the time (in seconds, with 0 = earthquake time), 
+# apply delayed linear friction to var. By default use a delay of 12 hours, and 
+# a linear drag coefficient of 1e-05 following Fine et al. (2013)
+delayed_linear_friction<-function(time_in_seconds, var, 
+    delay_time=12*3600, linear_drag=1e-05){
+
+    var_with_delayed_friction = var*
+        exp(-linear_drag/2 * pmax(0, time_in_seconds - delay_time))
+
+    return(var_with_delayed_friction)
+}
+
+# Copy the 'site-flow' variable above, then apply delayed-linear-friction
+# to the stage, uh, and vh
+site_flow_dlf = site_flow
+for(var_name in c('stage', 'uh', 'vh')){
+    site_flow_dlf[[var_name]] = delayed_linear_friction(
+        site_flow[['time']], site_flow[[var_name]])
+}
+
+# Make a plot comparing the results
+par(mfrow=c(2,1))
+plot(site_flow$time/3600, site_flow$stage, t='l', 
+     xlab='Time (hours)', ylab='Stage (m)')
+points(site_flow_dlf$time/3600, site_flow_dlf$stage, t='l', col='red')
+grid(col='orange')
+abline(v=12*3600, col='green')
+legend('topright', c('Original', 'Delayed linear friction', 
+    '12 hours post earthquake \n (delayed linear friction begins to act)'),
+    col=c('black', 'red', 'green'), lty=c(1,1,1), bty='n')
+title(paste0(
+    'Comparison of original and delayed linear-friction series. Note ',
+    'small difference at the end. \n While unimportant here, ',
+    'it may affect time-series with significant late-arrivals.'))
+# As above, zoom on the end
+plot(site_flow$time/3600, site_flow$stage, t='l', 
+     xlab='Time (hours)', ylab='Stage (m)', ylim=c(-1,1)*0.01)
+points(site_flow_dlf$time/3600, site_flow_dlf$stage, t='l', col='red')
+grid(col='orange')
+abline(v=12*3600, col='green')
+title('As above with reduced y-axis range to highlight the late-time differences')
+```
+
+![plot of chunk delayedLinearFriction](figure/delayedLinearFriction-1.png)
 
 ### ***Finding earthquake scenarios within a particular wave-height range at a particular hazard point***
 
