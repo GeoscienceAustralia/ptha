@@ -12,10 +12,11 @@ module local_routines
 
     contains 
 
-    subroutine set_initial_conditions(domain, stage_file, rise_time)            
+    subroutine set_initial_conditions(domain, stage_file, rise_time, global_dt)
         class(domain_type), intent(inout):: domain
         character(len=charlen), intent(in) :: stage_file
         real(dp), intent(in) :: rise_time
+        real(dp), intent(in) :: global_dt
 
         integer(ip):: i, j
         character(len=charlen):: input_elevation(1), input_stage(1)
@@ -79,12 +80,18 @@ module local_routines
                 ! and the start-time and end-time over which it is applied.
                 allocate(forcing_context)
 
+                ! Start forcing only after the model has evolved for one timestep. Otherwise the rk2 solver may
+                ! not apply the full forcing [since in theory, some of the forcing should have been applied in evolving
+                ! juts before time 0.0, because of how rk2 works].
+
                 ! ! We can either force all of domain%U -- or if we provide k0,k1 we can only force some slice - which
-                ! ! requires less memory in this case
-                call forcing_context%setup(start_time=0.0_dp, end_time=rise_time, i0=i0, i1=i1, j0=j0, j1=j1, k0=STG, k1=STG)
+                ! ! requires less memory in this case. 
+                call forcing_context%setup(start_time=global_dt, end_time=rise_time+global_dt, &
+                    i0=i0, i1=i1, j0=j0, j1=j1, k0=STG, k1=STG)
                 forcing_context%forcing_work(i0:i1,j0:j1,STG) = domain%U(i0:i1, j0:j1, STG)
                 ! ! Alternative where we can force everything
-                !call forcing_context%setup(start_time=0.0_dp, end_time=rise_time, i0=i0, i1=i1, j0=j0, j1=j1)
+                !call forcing_context%setup(start_time=global_dt, end_time=rise_time+global_dt, &
+                !    i0=i0, i1=i1, j0=j0, j1=j1)
                 ! Set the forcing work to be equal to the stage deformation. 
                 ! forcing_context%forcing_work(i0:i1,j0:j1,STG) = domain%U(i0:i1, j0:j1, STG)
                 !forcing_context%forcing_work(i0:i1,j0:j1,ELV) = 0.0_dp !domain%U(i0:i1, j0:j1, STG)
@@ -235,6 +242,7 @@ program periodic_multidomain
     !    timestepping_refinement_factor = 1_ip,
     !    rounding_method='nearest')
     !md%domains(2)%timestepping_method = 'midpoint'
+    !md%domains(2)%support_elevation_forcing = .true.
 
     ! Allocate domains and prepare comms
     call md%setup()
@@ -247,7 +255,7 @@ program periodic_multidomain
 
     ! Set initial conditions
     do j = 1, size(md%domains)
-        call set_initial_conditions(md%domains(j), stage_file, rise_time)
+        call set_initial_conditions(md%domains(j), stage_file, rise_time, global_dt)
     end do
     call md%make_initial_conditions_consistent()
     

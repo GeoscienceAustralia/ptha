@@ -30,6 +30,7 @@ module local_routines
         integer(ip):: stage_raster_dim(2), xl, xu, yl, yu
         real(dp) :: stage_raster_ll(2), stage_raster_ur(2)
         type(multi_raster_type):: elevation_data, stage_data
+        real(dp) :: delay_forcing_time
 
         character(charlen):: attribute_names(8), attribute_values(8)
 
@@ -139,10 +140,24 @@ SOURCEDIR
 
         if(rise_time > 0.0_dp .and. xl > 0 .and. xU > 0 .and. yl > 0 .and. yU > 0) then
             ! Apply the source over some finite rise time, rather than as the initial stage.
+
+            ! For rk2, we should not start the forcing right away to ensure the full forcing
+            ! is applied. This is because of rk2's approach:
+            !     [start, advance 2-time-steps to end, then-average(start,end)].
+            ! If we don't have timestepping before the forcing start_time, we miss out on part of
+            ! of the forcing that should have been obtained (hypothetically if we evolved from time=-dt to 
+            ! time=0, we would have included some of the forcing -- this is the part we miss).
+            if(any(domain%timestepping_method == [character(len=charlen) :: 'rk2', 'rk2n'])) then
+                delay_forcing_time = 30.0_dp
+            else
+                delay_forcing_time = 0.0_dp
+            end if
+
             
-            ! Make a forcing_patch that does this
+            ! Make a forcing_patch that applies the source 
             allocate(forcing_patch)
-            call forcing_patch%setup(start_time=0.0_dp, end_time=rise_time, i0=xl, i1=xU, j0=yl, j1=yU, k0=STG, k1=STG)
+            call forcing_patch%setup(start_time=delay_forcing_time, end_time=rise_time+delay_forcing_time, &
+                i0=xl, i1=xU, j0=yl, j1=yU, k0=STG, k1=STG)
 
             ! Set the forcing to be equal to the stage that we just created
             forcing_patch%forcing_work(xl:xU, yl:yU, STG) = domain%U(xl:xU, yl:yU, STG)

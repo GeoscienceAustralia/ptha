@@ -27,7 +27,11 @@ integer(ip), parameter:: output_precision = C_FLOAT !! Store real output at this
 ! involves subtracting the stage from the elevation, where these differ by several
 ! km). The following constants are used for that purpose
 integer(ip), parameter:: force_double = C_DOUBLE !! Double precision irrespective of whether -DREALFLOAT was passed to compiler.
+#ifdef PGI_COMPILER
+integer(ip), parameter:: force_long_double = C_DOUBLE !C_LONG_DOUBLE !! Long double precision
+#else
 integer(ip), parameter:: force_long_double = REAL128 !C_LONG_DOUBLE !! Long double precision
+#endif
 
 ! Physical constants
 real(dp), parameter:: gravity = 9.8_dp !! Gravitational acceleration in m/s**2

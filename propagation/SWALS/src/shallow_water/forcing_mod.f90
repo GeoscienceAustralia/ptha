@@ -156,10 +156,13 @@ module forcing_mod
             call generic_stop
         end if
 
-        if(k1 == ELV .and. &
-           any(domain%timestepping_method == [character(len=charlen):: 'rk2', 'rk2n', 'midpoint'])) then
+        if(k1 >= ELV .and. k0 <= ELV .and. (.not. domain%support_elevation_forcing)) then
             write(log_output_unit, *) 'Error in apply_forcing_patch_base: It appears the forcing_patch is setup to'
-            write(log_output_unit, *) 'change the elevation. Not all timestepping methods can do this.'
+            write(log_output_unit, *) 'change the elevation. However, this is not allowed because'
+            write(log_output_unit, *) 'the current timestepping method has domain%support_elevation_forcing=.FALSE.'
+            write(log_output_unit, *) 'You can try manually setting the domain%support_elevation_forcing=.TRUE. '
+            write(log_output_unit, *) 'before allocating the domain. This will work IF the numerical scheme is able'
+            write(log_output_unit, *) 'to optionally support elevation forcing (by doing extra work).'
             write(log_output_unit, *) 'domain%myid: ', domain%myid
             write(log_output_unit, *) 'domain%timestepping_method: ', trim(domain%timestepping_method)
             call generic_stop

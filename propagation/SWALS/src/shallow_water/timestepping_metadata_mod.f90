@@ -40,6 +40,12 @@ module timestepping_metadata_mod
             !! 'edge (1+1/2)' is problematic because 'cell 1' cannot compute its gradient, so the update of 'cell 2' is also invalid. 
             !! Thus, a 2-layer halo is needed (where the values for 'cell 1', 'cell 2', 'cell (N-1)', 'cell N' are provided
             !! by halo exchanges with another grid, or by boundary-condition assumptions).
+
+        character(len=charlen) :: forcing_elevation_is_allowed = 'never'
+            !! SWALS supports user-provided forcing terms (via domain%forcing_subroutine). This can in-principle also
+            !! operate on the domain elevation. However, some solvers cannot do this (or need special options enabled to
+            !! do it). Allowed values are "always" [for schemes that don't have any issues] and "optional" [for schemes
+            !! where it must be enabled manually, by setting domain%elevation_forcing_allowed = .TRUE.], and "never".
     end type
 
     type(timestepping_metadata_type), public, protected :: timestepping_metadata(n_ts)
@@ -67,6 +73,7 @@ module timestepping_metadata_mod
             timestepping_metadata(1)%default_cfl = 0.99_dp
             timestepping_metadata(1)%default_theta = 1.6_dp
             timestepping_metadata(1)%nesting_thickness_for_one_timestep = 4_ip
+            timestepping_metadata(1)%forcing_elevation_is_allowed = 'optional'
 
             !
             ! rk2n defaults
@@ -75,6 +82,7 @@ module timestepping_metadata_mod
             timestepping_metadata(2)%default_cfl = 0.99_dp
             timestepping_metadata(2)%default_theta = 1.6_dp
             timestepping_metadata(2)%nesting_thickness_for_one_timestep = 10_ip
+            timestepping_metadata(2)%forcing_elevation_is_allowed = 'optional'
 
             !
             ! midpoint defaults
@@ -83,6 +91,7 @@ module timestepping_metadata_mod
             timestepping_metadata(3)%default_cfl = 0.99_dp
             timestepping_metadata(3)%default_theta = 1.6_dp
             timestepping_metadata(3)%nesting_thickness_for_one_timestep = 4_ip
+            timestepping_metadata(3)%forcing_elevation_is_allowed = 'optional'
 
             !
             ! Euler defaults
@@ -91,6 +100,7 @@ module timestepping_metadata_mod
             timestepping_metadata(4)%default_cfl = 0.9_dp
             timestepping_metadata(4)%default_theta = 0.9_dp
             timestepping_metadata(4)%nesting_thickness_for_one_timestep = 2_ip
+            timestepping_metadata(4)%forcing_elevation_is_allowed = 'always'
 
             !
             ! Linear leapfrog defaults
@@ -103,6 +113,7 @@ module timestepping_metadata_mod
             timestepping_metadata(5)%default_cfl = 0.7_dp
             timestepping_metadata(5)%nesting_thickness_for_one_timestep = 2_ip
             timestepping_metadata(5)%adaptive_timestepping = .false.
+            timestepping_metadata(5)%forcing_elevation_is_allowed = 'always'
 
             !
             ! Linear leapfrog + nonlinear friction defaults
@@ -115,6 +126,7 @@ module timestepping_metadata_mod
             timestepping_metadata(6)%default_cfl = 0.7_dp
             timestepping_metadata(6)%nesting_thickness_for_one_timestep = 2_ip
             timestepping_metadata(6)%adaptive_timestepping = .false.
+            timestepping_metadata(6)%forcing_elevation_is_allowed = 'always'
 
             !
             ! Cliffs (by Elena Tolkova -- similar to MOST)
@@ -126,6 +138,7 @@ module timestepping_metadata_mod
             timestepping_metadata(7)%flux_correction_is_unsupported = .true.
             timestepping_metadata(7)%default_cfl = 0.7_dp
             timestepping_metadata(7)%nesting_thickness_for_one_timestep = 2_ip
+            timestepping_metadata(7)%forcing_elevation_is_allowed = 'always'
 
 
             !
@@ -137,6 +150,7 @@ module timestepping_metadata_mod
             timestepping_metadata(8)%default_cfl = 0.7_dp
             timestepping_metadata(8)%nesting_thickness_for_one_timestep = 3_ip
             timestepping_metadata(8)%adaptive_timestepping = .false.
+            timestepping_metadata(8)%forcing_elevation_is_allowed = 'always'
 
         end subroutine
 

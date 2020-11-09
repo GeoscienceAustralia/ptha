@@ -32,6 +32,7 @@ module local_routines
         input_stage(1) = "../test_repository/BP09-FrankG-Okushiri_island/initial_condition_raster/HNO1993.tif"
         call stage_data%initialise(input_stage)
 
+        ! Preference order for elevation: input_elevation(1) > input_elevation(2) > .... > input_elevation(6)
         input_elevation(6) = "../test_repository/BP09-FrankG-Okushiri_island/bathymetry_rasters_continuous/OK24.tif"
         input_elevation(5) = "../test_repository/BP09-FrankG-Okushiri_island/bathymetry_rasters_continuous/OK08.tif"
         input_elevation(4) = "../test_repository/BP09-FrankG-Okushiri_island/bathymetry_rasters_continuous/OK03.tif"
@@ -172,8 +173,9 @@ program BP09
     
     ! nd domains in this model
     if(very_high_res_monai) then
-        ! In this case we put a 30cm x 30cm cell domain around the monai inundation peak. (with mesh_refine=1.0_dp)
-        ! It leads to a peak of > 30.0m (vs 31.7 obs, although the latter varies depending on which
+        ! In this case we put a 30cm x 30cm cell domain around the monai inundation peak (with mesh_refine=1.0_dp)
+        !
+        ! It leads to a peak of > 30.0m with mesh_refine=1.0_dp (vs 31.7 obs, although the latter varies depending on which
         ! dataset is used).
         !
         ! The model needs various modifications to do this stably, and it takes more than twice as long.
@@ -185,7 +187,7 @@ program BP09
     else
         ! This case has a domain res ~ 1.5x1.5m around the monai inundation peak (with mesh_refine = 1.0_dp)
         !
-        ! It leads to a peak of >28.0m (vs 31.7 obs, although the latter varies depending on which
+        ! It leads to a peak of >28.0m with mesh_refine=1.0_dp (vs 31.7 obs, although the latter varies depending on which
         ! dataset is used). So the very_high_res_monai case does better.
         !
         ! Keep in mind the poor quality bathymetry, the steep slopes (making SWE 

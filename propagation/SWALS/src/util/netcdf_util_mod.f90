@@ -302,12 +302,14 @@ SRC_GIT_VERSION ), &
         call get_command(local_att)
         call check(nf90_put_att(iNcid, nf90_global, 'run_command', TRIM(local_att)), &
         __LINE__)
+#ifndef PGI_COMPILER
         ! Add the compiler version
         call check(nf90_put_att(iNcid, nf90_global, 'compiler_version', TRIM(compiler_version())), &
         __LINE__)
         ! Add the compiler options
         call check(nf90_put_att(iNcid, nf90_global, 'compiler_options', TRIM(compiler_options())), &
         __LINE__)
+#endif
 
         ! Finish definitions so writing can begin
         call check(nf90_enddef(iNcid), __LINE__)

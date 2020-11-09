@@ -17,8 +17,10 @@ if(length(solver_type) == 0){
 }
 if(solver_type == 'linear'){
     tol = 1e-04
+    delay_forcing_time = 0.0
 }else if(solver_type == 'rk2'){
     tol = 1e-03
+    delay_forcing_time = 30.0
 }else{
     stop('FAIL -- unknown solver type')
 }
@@ -27,7 +29,7 @@ x = lapply(model_runs, get_all_recent_results)
 
 approx_f = approxfun(x[[1]]$gauges$time, x[[1]]$gauges$time_var$stage[10,], rule=2)
 rise_time = 1000
-smoother = sapply(x[[2]]$gauges$time, f<-function(t) mean(approx_f(t + seq(-rise_time, 0))) )
+smoother = sapply(x[[2]]$gauges$time, f<-function(t) mean(approx_f(t + seq(-rise_time, 0) - delay_forcing_time)) )
 
 #plot(x[[1]]$gauges$time, x[[1]]$gauges$time_var$stage[10,],t='l')
 #points(x[[2]]$gauges$time, x[[2]]$gauges$time_var$stage[10,],t='l', col='red')

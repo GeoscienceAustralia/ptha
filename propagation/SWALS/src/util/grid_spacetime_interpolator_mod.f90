@@ -370,7 +370,9 @@ module grid_spacetime_interpolator_mod
         integer(ip), parameter :: ng = 2
         integer(ip) :: i, j, k
         real(dp) :: tx(5), ty(5), tv(5,ng), test_grid(10, 20, ng)
-        real(dp), parameter :: errtol = 3*spacing(100.0_dp) 
+        real(dp) :: errtol 
+        
+        errtol = 3*spacing(100.0_dp) 
 
         ! x-coordinates of gsi
         dx = 0.5_dp

@@ -147,8 +147,8 @@ module boundary_mod
             if(domain%boundary_exterior(1)) then
                 j = domain%nx(2)
                 bc_values = domain%boundary_function(domain, domain%time, i, j)
-                domain%U(i,j,STG) = bc_values(1)
-                domain%U(i,j,ELV) = bc_values(4)
+                domain%U(i,j,STG) = bc_values(STG)
+                domain%U(i,j,ELV) = bc_values(ELV)
                 !domain%U(i,j,2:3) = ZERO_dp
                 if(.not. domain%is_staggered_grid) then
                     domain%U(i,j,VH) = domain%U(i,j-1,VH) !2.0_dp * domain%U(i,j-1,3) - domain%U(i,j-2,3)

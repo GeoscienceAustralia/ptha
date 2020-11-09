@@ -81,7 +81,7 @@
         real(dp), optional, intent(in):: timestep !! Advance this far in time
 
         real(dp):: backup_time, dt_first_step, max_dt_store
-        integer(ip):: j
+        integer(ip):: j, k
         character(len=charlen):: timer_name
         integer, parameter :: var_inds(2) = [STG, VH]
 
@@ -134,16 +134,14 @@
         ! Take average (but allow for openmp)
         !
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
-        !$OMP DO SCHEDULE(STATIC)
-        do j = 1, domain%nx(2)
-            domain%U(:, j, STG) = HALF_dp * (domain%U(:, j, STG) +&
-                domain%backup_U(:, j, STG))
-            domain%U(:, j, UH) = HALF_dp * (domain%U(:, j, UH) +&
-                domain%backup_U(:, j, UH))
-            domain%U(:, j, VH) = HALF_dp * (domain%U(:, j, VH) +&
-                domain%backup_U(:, j, VH))
+        do k = 1, size(domain%backup_U, 3)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, domain%nx(2)
+                domain%U(:, j, k) = HALF_dp * (domain%U(:, j, k) +&
+                    domain%backup_U(:, j, k))
+            end do
+            !$OMP END DO NOWAIT
         end do
-        !$OMP END DO 
         !$OMP END PARALLEL
 
         ! Fix time (since we updated twice) and boundary flux integral
@@ -222,13 +220,13 @@
         ! evolved flow for the last (n-1) steps]
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
-        !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
-        do k = 1, 3
+        do k = 1, size(domain%backup_U, 3)
+            !$OMP DO SCHEDULE(STATIC)
             do j = 1, domain%nx(2)
                 domain%backup_U(:,j,k) = (domain%backup_U(:,j, k) - domain%U(:,j,k)) * n_inverse
             end do
+            !$OMP END DO NOWAIT
         end do
-        !$OMP END DO 
         !$OMP END PARALLEL
 
         ! Later when we add backup_U, the effect on the boundary_flux_integral is like subtracting( 1/n*flux_at_this_point)
@@ -246,13 +244,13 @@
         ! Final update
         ! domain%U = domain%U + domain%backup_U
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
-        !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
-        do k = 1, 3
+        do k = 1, size(domain%backup_U, 3)
+            !$OMP DO SCHEDULE(STATIC)
             do j = 1, domain%nx(2)
                 domain%U(:, j, k) = domain%U(:, j, k) + domain%backup_U(:, j, k)
             end do
+            !$OMP END DO NOWAIT
         end do
-        !$OMP END DO 
         !$OMP END PARALLEL
 
         ! Fix time and timestep (since we updated (n-1)*dt regular timesteps)
@@ -276,7 +274,7 @@
         real(dp), optional, intent(in) :: timestep
 
         real(dp):: backup_time, dt_first_step
-        integer(ip):: j
+        integer(ip):: j, k
 
         ! Backup quantities
         backup_time = domain%time
@@ -312,13 +310,13 @@
         ! Set U back to backup_U
         !
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
-        !$OMP DO SCHEDULE(STATIC)
-        do j = 1, domain%nx(2)
-            domain%U(:, j, STG) = domain%backup_U(:, j, STG)
-            domain%U(:, j,  UH) = domain%backup_U(:, j, UH)
-            domain%U(:, j,  VH) = domain%backup_U(:, j, VH)
+        do k = 1, size(domain%backup_U, 3)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = 1, domain%nx(2)
+                domain%U(:, j, k) = domain%backup_U(:, j, k)
+            end do
+            !$OMP END DO NOWAIT
         end do
-        !$OMP END DO 
         !$OMP END PARALLEL
 
         ! Fix time
@@ -509,7 +507,7 @@
         
 
         ! Loop over the x-coordinate. 
-        ! FIXME: This probably has poor cache performance, because of all the strided lookups like domain%backup_U(i,:,1).
+        ! NOTE: This may have reduced performance because of all the strided lookups like domain%backup_U(i,:,1).
         !        Consider optimising later on
         !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain, zeta, dt)
         do i = 2, (domain%nx(1) - 1)

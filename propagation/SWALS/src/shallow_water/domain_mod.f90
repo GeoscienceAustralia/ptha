@@ -268,6 +268,11 @@ module domain_mod
             !! This can be used to pass arbitrary data to the user-specified forcing_subroutine.
             !! The latter takes the domain as an argument, so one can access the forcing_context
             !! via that.
+        logical :: support_elevation_forcing = .FALSE.
+            !! If the forcing_subroutine tries to evolve the elevation, but support_elevation_forcing is FALSE, then
+            !! the code will throw an error. The value of this variable will be overridden automatically for schemes
+            !! where forcing the elevation is always OK. For other schemes one can manually set this to TRUE, and
+            !! the code will do extra calculations to enable elevation forcing. 
 
         ! 
         ! Mass conservation tracking  -- store as double, even if dp is single prec.
@@ -797,6 +802,22 @@ TIMER_STOP('printing_stats')
         domain%is_staggered_grid = (timestepping_metadata(tsi)%is_staggered_grid == 1)
         domain%adaptive_timestepping = timestepping_metadata(tsi)%adaptive_timestepping
 
+        ! Determine whether we allow domain%forcing_subroutine to update the elevation
+        if(timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'always') then
+            domain%support_elevation_forcing=.TRUE.
+        end if
+        ! Note that if: 
+        !     timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'optional'
+        ! then one can manually set domain%support_elevation_forcing=TRUE, prior to this function.
+        ! However, one cannot do that if:
+        !     timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'never'
+        if(timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'never' .and. &
+            domain%support_elevation_forcing) then
+            write(log_output_unit, *) 'Error: The numerical scheme ', trim(domain%timestepping_method)
+            write(log_output_unit, *) 'does not allow forcing of elevation.'
+            call generic_stop
+        end if
+
 
         if(use_partitioned_comms) then
             ! Note that this only supports a single grid, and has largely been replaced by the "multidomain"
@@ -1005,13 +1026,23 @@ TIMER_STOP('printing_stats')
     
             ! If we use complex timestepping we need to back-up U for variables 1-3
             if (domain%timestepping_method /= 'euler') then
-                allocate(domain%backup_U(nx, ny, STG:VH))
+                ! For these schemes, if domain%forcing_subroutine modifies the elevation, then
+                ! we need to include elevation in domain%backup_U, and time-step the elevation like
+                ! other variables. This adds some storage and computation, so we do not enable it by
+                ! default.
+                if(domain%support_elevation_forcing) then
+                    allocate(domain%backup_U(nx, ny, STG:ELV))
+                else
+                    allocate(domain%backup_U(nx, ny, STG:VH))
+                end if
                 !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
-                !$OMP DO SCHEDULE(STATIC)
-                do j = 1, ny
-                    domain%backup_U(:,j,STG:VH) = ZERO_dp
+                do k = 1, size(domain%backup_U, 3)
+                    !$OMP DO SCHEDULE(STATIC)
+                    do j = 1, ny
+                        domain%backup_U(:,j,STG:VH) = ZERO_dp
+                    end do
+                    !$OMP END DO NOWAIT
                 end do
-                !$OMP END DO
                 !$OMP END PARALLEL
             end if
 
@@ -1380,13 +1411,13 @@ TIMER_STOP('printing_stats')
         !TIMER_START('backup')
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
-        !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
-        do k = STG, VH
+        do k = STG, size(domain%backup_U, 3)
+            !$OMP DO SCHEDULE(STATIC)
             do j = 1, domain%nx(2)
                 domain%backup_U(:, j, k) = domain%U(:, j, k)
             end do
+            !$OMP END DO NOWAIT
         end do
-        !$OMP END DO 
         !$OMP END PARALLEL
 
         !TIMER_STOP('backup')

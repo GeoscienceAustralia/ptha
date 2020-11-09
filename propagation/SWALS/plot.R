@@ -9,10 +9,7 @@
 # state is received from other domains), and other regions where it is the
 # "priority domain". In the halo regions the values that are stored in output
 # files should not be used (because some other domain is the priority domain in
-# those regions). In some cases the halo values can very misleading (e.g. for
-# maximum stage, the halo values can be dominated by boundary artefacts - note
-# those artefacts never affect the domain interior, due to the design of our
-# halo updates). In sum, care is required to combine results from multiple domains
+# those regions). In sum, care is required to combine results from multiple domains
 # while only using "priority domain" cells. 
 #
 
@@ -458,7 +455,7 @@ get_multidomain_output_times<-function(multidomain_dir, output_type='grids'){
     if(!file.exists(multidomain_dir)){
         stop(paste0('Could not find multidomain_dir ', multidomain_dir))
     }
-   
+
     # Find the netcdf grid or gauges files, depending 
     if(output_type =='grids'){
         target_files = Sys.glob(paste0(multidomain_dir, '/RUN_*/Grid_output_*.nc'))
