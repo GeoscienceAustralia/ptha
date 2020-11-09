@@ -76,7 +76,9 @@ of any application. In particular note that:
   linear approximation enables many scenarios to be considered via
   superposition. However it is too coarse to reliably simulate waves nearshore.
   Furthermore, it does not capture the slow dissipation of real tsunamis at the
-  global scale. If this is important for your application (e.g. according to your own
+  global scale (although a transformation of the frictionless solutions may enable this, 
+  [see Equation 16 in this paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full)). 
+  If these limitations are important for your application (e.g. according to your own
   site-specific testing), you may re-simulate the tsunami from source using a
   more complex hydrodynamic model with appropriate resolution and/or
   dissipation. We provide tsunami initial conditions to facilitate this. If
@@ -534,7 +536,9 @@ overestimate the size of late-arriving waves in any location.* To work around
 this it is preferable to simulate the tsunami from source using a model that
 includes global-scale friction. While always worth doing, it is particularly
 encouraged if the most significant waves occur (say) 8 or more hours after the
-tsunami arrives at your site of interest.
+tsunami arrives at your site of interest. Alternatively, one can apply a delayed-linear-friction
+transformation to the frictionless tsunami simulations, 
+[as in Equation 16 of this paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full). 
 
 In addition preference should be given to using points in deep waters well away
 from the coast. This is because the linear shallow water equations assume that
