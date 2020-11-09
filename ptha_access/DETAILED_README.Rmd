@@ -636,7 +636,7 @@ plot(site_flow$time/3600, site_flow$stage, t='l',
      xlab='Time (hours)', ylab='Stage (m)')
 points(site_flow_dlf$time/3600, site_flow_dlf$stage, t='l', col='red')
 grid(col='orange')
-abline(v=12*3600, col='green')
+abline(v=12, col='green')
 legend('topright', c('Original', 'Delayed linear friction', 
     '12 hours post earthquake \n (delayed linear friction begins to act)'),
     col=c('black', 'red', 'green'), lty=c(1,1,1), bty='n')
@@ -649,8 +649,8 @@ plot(site_flow$time/3600, site_flow$stage, t='l',
      xlab='Time (hours)', ylab='Stage (m)', ylim=c(-1,1)*0.01)
 points(site_flow_dlf$time/3600, site_flow_dlf$stage, t='l', col='red')
 grid(col='orange')
-abline(v=12*3600, col='green')
-title('As above with reduced y-axis range to highlight the late-time differences')
+abline(v=12, col='green')
+title('As above with reduced y-axis range to highlight the late-time differences (RHS of plot)')
 
 
 ```

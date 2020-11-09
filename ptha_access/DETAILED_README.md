@@ -110,12 +110,7 @@ source('test_all.R')
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
-## Error in Rsx_nc4_get_vara_int: NetCDF: DAP failure
-## Var: table_rows  Ndims: 1   Start: 0 Count: 151755
-```
-
-```
-## Error in ncvar_get_inner(d$dimvarid$group_id, d$dimvarid$id, default_missval_ncdf4(), : C function Rsx_nc4_get_var_int returned error
+## [1] "PASS"
 ```
 **If the above script fails even after repeated trials, you need to troubleshoot
 your installation before proceeding**. [See here](INSTALL.md).
@@ -952,7 +947,7 @@ plot(site_flow$time/3600, site_flow$stage, t='l',
      xlab='Time (hours)', ylab='Stage (m)')
 points(site_flow_dlf$time/3600, site_flow_dlf$stage, t='l', col='red')
 grid(col='orange')
-abline(v=12*3600, col='green')
+abline(v=12, col='green')
 legend('topright', c('Original', 'Delayed linear friction', 
     '12 hours post earthquake \n (delayed linear friction begins to act)'),
     col=c('black', 'red', 'green'), lty=c(1,1,1), bty='n')
@@ -965,8 +960,8 @@ plot(site_flow$time/3600, site_flow$stage, t='l',
      xlab='Time (hours)', ylab='Stage (m)', ylim=c(-1,1)*0.01)
 points(site_flow_dlf$time/3600, site_flow_dlf$stage, t='l', col='red')
 grid(col='orange')
-abline(v=12*3600, col='green')
-title('As above with reduced y-axis range to highlight the late-time differences')
+abline(v=12, col='green')
+title('As above with reduced y-axis range to highlight the late-time differences (RHS of plot)')
 ```
 
 ![plot of chunk delayedLinearFriction](figure/delayedLinearFriction-1.png)
