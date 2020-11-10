@@ -210,6 +210,12 @@ module domain_mod
             !! Useful variable to distinguish staggered-grid and centred-grid numerical methods
         logical :: adaptive_timestepping = .true.
             !! Can the time-step vary over time?
+        real(dp) :: local_timestepping_scale = 1.0_dp
+            !! If LOCAL_TIMESTEP_PARTITIONED_DOMAINS is used in a multidomain, then the partitioned domain's time-step 
+            !! may be increased above that implied by its timestep_refinement_factor, up to 
+            !! (local_timestepping_scale * domain%max_dt). The idea is that local_timestepping_scale
+            !! can be set to a value between [0-1], with smaller values making for a less aggressive 
+            !! local-timestep increase. This can help with stability on some occasions.
 
         real(dp) :: cliffs_minimum_allowed_depth = 0.001_dp
             !! The CLIFFS solver seems to require tuning of the minimum allowed depth (and often it should

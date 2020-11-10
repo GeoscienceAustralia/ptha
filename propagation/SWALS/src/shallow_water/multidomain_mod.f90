@@ -239,6 +239,7 @@ module multidomain_mod
         procedure :: finalise_and_print_timers => finalise_and_print_timers
         procedure :: set_point_gauges_from_csv => set_point_gauges_from_csv
         procedure :: stationary_timestep_max => stationary_timestep_max
+        procedure :: check_for_overflow => check_for_overflow
         ! IO
         procedure :: write_outputs_and_print_statistics => write_outputs_and_print_statistics
 
@@ -311,6 +312,61 @@ module multidomain_mod
         end if
 
     end subroutine
+
+
+    ! Scan domains for unreasonably large numbers or NaN issues
+    subroutine check_for_overflow(md, flag, domain_ind)
+        class(multidomain_type), intent(inout) :: md
+        character(len=*) :: flag
+        integer(ip), optional, intent(in):: domain_ind
+
+        logical :: throw_error
+        integer(ip) :: i1, i2, i3, j, d1, d2
+        real(dp), parameter :: bignum = HUGE(1.0)/2.0 ! Deliberate single-precision number
+       
+        if(present(domain_ind)) then
+            d1 = domain_ind
+            d2 = domain_ind
+        else
+            d1 = 1
+            d2 = size(md%domains)
+        end if
+
+        throw_error = .FALSE.
+        do j = d1, d2
+            do i1 = STG, ELV
+                do i2 = 1, md%domains(j)%nx(2)
+                    do i3 = 1, md%domains(j)%nx(1)
+                        if((md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
+                           (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
+                           (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1))) then
+                           throw_error = .TRUE.
+                           write(log_output_unit,*) flag
+                           write(log_output_unit,*) 'md%domains(', j,')%U(', i3, i2, i1, ')'
+                           write(log_output_unit,*) md%domains(j)%U(i3, i2, i1)
+                           write(log_output_unit,*) 'x: ', md%domains(j)%x(i3), '; y: ', md%domains(j)%y(i2)
+                           write(log_output_unit,*) 'time: ', md%domains(j)%time
+                           write(log_output_unit,*) 'stg:elv, ', md%domains(j)%U(i3, i2, STG:ELV)
+                           if(md%domains(j)%nesting%my_index > 0) then
+                               write(log_output_unit,*) 'priority domain index'
+                               write(log_output_unit,*) md%domains(j)%nesting%priority_domain_index(i3, i2)
+                               write(log_output_unit,*) 'priority domain image'
+                               write(log_output_unit,*) md%domains(j)%nesting%priority_domain_image(i3, i2)
+                           end if
+                        end if
+                    end do
+                end do
+            end do
+        end do 
+
+        if(throw_error) then
+            flush(log_output_unit)
+            call generic_stop
+        end if
+
+
+    end subroutine
+
 
     ! Communicate max-stage array in halo regions.
     !
@@ -953,6 +1009,9 @@ module multidomain_mod
         ! there, leading to tiny numerical differences in the time.
         ! To avoid any issues, we explicitly set them to the same number
 
+        !FIXME DEBUG
+        !call md%check_for_overflow('start')
+
         ! Evolve every domain, sending the data to communicate straight after
         ! the evolve
         do j = 1, size(md%domains, kind=ip)
@@ -979,13 +1038,16 @@ module multidomain_mod
                 ! NOTE: This will lead to different timestepping with different domain partitions,
                 ! so the results should depend on the number of cores unless we specity the partition
                 ! via a load_balance_file.
-                if(md%domains(j)%max_dt > 0.0_dp) nt = max(1, min(nt, ceiling(dt/md%domains(j)%max_dt) ))
+                if(md%domains(j)%max_dt > 0.0_dp) then
+                    nt = max(1, min(nt, ceiling(dt/(md%domains(j)%local_timestepping_scale * md%domains(j)%max_dt) )))
+                end if
             end if
 
             dt_local = dt/(1.0_dp * nt)
 
             ! Step once
             call md%domains(j)%evolve_one_step(dt_local)
+            !call md%check_for_overflow('inner', j)
 
             ! Report max_dt as the peak dt during the first timestep
             ! In practice max_dt may cycle between time-steps
@@ -994,6 +1056,7 @@ module multidomain_mod
             ! Do the remaining sub-steps
             do i = 2, nt ! Loop never runs if nt < 2
                 call md%domains(j)%evolve_one_step(dt_local)
+                !call md%check_for_overflow('innerB', j)
             end do
             md%domains(j)%max_dt = max_dt_store
 
@@ -1005,6 +1068,9 @@ module multidomain_mod
             ! Ensure numerically identical time for all domains
             md%domains(j)%time = tend
         end do
+
+        !FIXME DEBUG
+        !call md%check_for_overflow('step-before-comms')
 
         if(.not. send_halos_immediately) then
             ! Do all the coarray communication in one hit
@@ -1020,6 +1086,9 @@ module multidomain_mod
         ! also sync after to ensure it is not overwritten before it is used
         call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
 
+        !FIXME DEBUG
+        !call md%check_for_overflow('step-after-comms')
+
         if(send_boundary_flux_data) then
             TIMER_START('nesting_flux_correction')
             ! Do flux correction
@@ -1028,6 +1097,9 @@ module multidomain_mod
                     md%all_timestepping_methods_md, fraction_of = 1.0_dp)
             end do
             TIMER_STOP('nesting_flux_correction')
+
+            !FIXME DEBUG
+            !call md%check_for_overflow('step-after-flux_correct')
         end if
 
     end subroutine
