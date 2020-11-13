@@ -47,7 +47,7 @@ MINIMUM_ALLOWED_MW_MAX = config$MINIMUM_ALLOWED_MW_MAX  # 7.65
 dMw = config$dMw # 0.1
 
 # Only assign non-zero probability to earthquakes with Mw greater than this
-MW_MIN = config$MW_MIN # 7.45
+MW_MIN = config$MW_MIN # 
 
 # We ensure that (Mw_max >= maximum_observed_mw + mw_observed_perturbation)
 # This ensures that no logic-tree curve assigns zero probability to the largest
