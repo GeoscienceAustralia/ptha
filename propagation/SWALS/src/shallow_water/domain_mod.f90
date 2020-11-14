@@ -1045,7 +1045,7 @@ TIMER_STOP('printing_stats')
                 do k = 1, size(domain%backup_U, 3)
                     !$OMP DO SCHEDULE(STATIC)
                     do j = 1, ny
-                        domain%backup_U(:,j,STG:VH) = ZERO_dp
+                        domain%backup_U(:,j,k) = ZERO_dp
                     end do
                     !$OMP END DO NOWAIT
                 end do
