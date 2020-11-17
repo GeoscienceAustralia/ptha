@@ -1577,7 +1577,7 @@ write_rates_to_event_table<-function(source_env, scale_rate=1.0,
                 k = which(event_uniform_event_row == euer)
 
                 bias_adjuster = rep(0, length(k))
-                # We must zero rate for events with peak_slip <= allowed value
+                # We must zero rate for events with peak_slip > allowed value
                 acceptable_k = which(event_peak_slip[k] <= allowed_peak_slip[k])
                 if(length(acceptable_k) > 0){
                     # Weight individual events, based on the 'bias adjustment' functions devised by
