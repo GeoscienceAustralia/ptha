@@ -1926,9 +1926,10 @@ module multidomain_mod
     !
     ! Convenience print routine
     !
-    subroutine print_multidomain(md, global_stats_only)
+    subroutine print_multidomain(md, global_stats_only, energy_is_finite)
         class(multidomain_type), intent(inout) :: md ! inout allows for timer to run
         logical, optional, intent(in) :: global_stats_only
+        logical, optional, intent(out) :: energy_is_finite
 
         integer(ip) :: i, j, k, ecw
         real(dp) :: minstage, maxstage, minspeed, maxspeed, stg1, speed_sq, depth_C, depth_E, depth_N
@@ -2046,6 +2047,14 @@ module multidomain_mod
         write(log_output_unit, "(A)") '-----------'
         call md%report_mass_conservation_statistics()
 
+        ! Unstable models may produce NaN energy -- this is useful to detect.
+        if(present(energy_is_finite)) then
+            energy_is_finite = .true.
+            ! Check for infinity
+            if(global_energy_total_on_rho > HUGE(global_energy_total_on_rho)) energy_is_finite = .false.
+            ! Check for NA or NaN based on the "not equal to itself" property of those numbers
+            if(global_energy_total_on_rho /= global_energy_total_on_rho) energy_is_finite = .false.
+        end if
 
         TIMER_STOP('printing_stats')
 
@@ -3553,19 +3562,25 @@ module multidomain_mod
     ! @param print_less_often optional integer (default 1) -- only print every 'nth' time we would otherwise writeout
     ! @param timing_tol real (default 0) if the time since the last write out is > "approximate_writeout_frequency - timing_tol" 
     ! , then do the write. This is an attempt to avoid round-off causing a shift in the write-out times
+    ! @param energy_is_finite optional logical variable -- if present it will be passed to the statistics printing routine. In that
+    ! case it will be .TRUE. if the global_energy_on_rho is finite, and .FALSE. otherwise. If the statistics are not printed (e.g.
+    ! print_less_often > 1) then we do not compute energy, and it will be set to .TRUE.
     subroutine write_outputs_and_print_statistics(md, &
         approximate_writeout_frequency, &
         write_grids_less_often, &
         write_gauges_less_often, &
         print_less_often,&
-        timing_tol)
+        timing_tol, &
+        energy_is_finite)
 
         class(multidomain_type), intent(inout) :: md
         real(dp), optional, intent(in) :: approximate_writeout_frequency, timing_tol
         integer(ip), optional, intent(in) :: write_grids_less_often, write_gauges_less_often, print_less_often
+        logical, optional, intent(out) :: energy_is_finite
 
         real(dp) :: approx_writeout_freq, model_time, timing_tol_local
         integer(ip) :: write_grids_n, write_gauges_n, print_n, j
+        logical :: energy_is_finite_local
 
         if(present(approximate_writeout_frequency)) then
             approx_writeout_freq = approximate_writeout_frequency
@@ -3597,6 +3612,8 @@ module multidomain_mod
             timing_tol_local = 0.0_dp
         end if
 
+        energy_is_finite_local = .TRUE.
+
         ! All the domain times should be the same
         model_time = md%domains(1)%time
 
@@ -3608,7 +3625,7 @@ module multidomain_mod
         if(model_time - approx_writeout_freq >= md%last_write_time - timing_tol_local) then
 
             ! Printing
-            if(mod(md%writeout_counter, print_n) == 0) call md%print
+            if(mod(md%writeout_counter, print_n) == 0) call md%print(energy_is_finite=energy_is_finite_local)
 
             ! Grids
             if(mod(md%writeout_counter, write_grids_n) == 0) then
@@ -3642,6 +3659,8 @@ module multidomain_mod
                     floor((model_time - md%last_write_time)/approx_writeout_freq)*approx_writeout_freq
             end if
         end if
+
+        if(present(energy_is_finite)) energy_is_finite = energy_is_finite_local
 
     end subroutine
 
