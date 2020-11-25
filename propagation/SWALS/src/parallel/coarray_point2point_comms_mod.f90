@@ -1127,31 +1127,40 @@ module coarray_point2point_comms_mod
             !
             ! Version using repeated isend/irecv calls. 
             !
- 
-            ! Open up receives         
-            do i = 1, size(recv_start_index, kind=ip)
-                mpi_count = recv_size(i)
-                mpi_source = recvfrom_image_index(i) - 1
-                
-                call mpi_irecv(recv_buffer(recv_start_index(i):(recv_start_index(i) + recv_size(i) - 1)), &
-                    mpi_count, mympi_dp, mpi_source, MPI_ANY_TAG, MPI_COMM_WORLD, mpi_recv_requests(i), mpi_ierr)
 
-            end do
-            
-            ! Do sends
-            do i = 1, size(send_start_index, kind=ip)
-                mpi_count = send_size(i)
-                mpi_dest = sendto_image_index(i) - 1
-                mpi_tag = i
-                call mpi_isend(send_buffer(send_start_index(i):(send_start_index(i) + send_size(i) - 1)), &
-                    mpi_count, mympi_dp, mpi_dest, mpi_tag, MPI_COMM_WORLD, mpi_send_requests(i), mpi_ierr)
-            end do
+            if(allocated(recv_size)) then 
+                ! Open up receives         
+                do i = 1, size(recv_start_index, kind=ip)
+                    mpi_count = recv_size(i)
+                    mpi_source = recvfrom_image_index(i) - 1
+                    
+                    call mpi_irecv(recv_buffer(recv_start_index(i):(recv_start_index(i) + recv_size(i) - 1)), &
+                        mpi_count, mympi_dp, mpi_source, MPI_ANY_TAG, MPI_COMM_WORLD, mpi_recv_requests(i), mpi_ierr)
+
+                end do
+            end if 
+           
+            if(allocated(send_size)) then 
+                ! Do sends
+                do i = 1, size(send_start_index, kind=ip)
+                    mpi_count = send_size(i)
+                    mpi_dest = sendto_image_index(i) - 1
+                    mpi_tag = i
+                    call mpi_isend(send_buffer(send_start_index(i):(send_start_index(i) + send_size(i) - 1)), &
+                        mpi_count, mympi_dp, mpi_dest, mpi_tag, MPI_COMM_WORLD, mpi_send_requests(i), mpi_ierr)
+                end do
+            end if
 
             ! Ensure completion -- more strategic location of these calls would be possible
-            mpi_count = size(send_start_index, kind=ip)
-            call mpi_waitall(mpi_count, mpi_send_requests, MPI_STATUSES_IGNORE, mpi_ierr)
-            mpi_count = size(mpi_recv_requests, kind=ip)
-            call mpi_waitall(mpi_count, mpi_recv_requests, MPI_STATUSES_IGNORE, mpi_ierr)
+            if(allocated(send_size)) then
+                mpi_count = size(send_start_index, kind=ip)
+                call mpi_waitall(mpi_count, mpi_send_requests, MPI_STATUSES_IGNORE, mpi_ierr)
+            end if
+
+            if(allocated(recv_size)) then
+                mpi_count = size(mpi_recv_requests, kind=ip)
+                call mpi_waitall(mpi_count, mpi_recv_requests, MPI_STATUSES_IGNORE, mpi_ierr)
+            end if
         end if 
 
     end subroutine
