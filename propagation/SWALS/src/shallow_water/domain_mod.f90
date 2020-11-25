@@ -21,7 +21,7 @@ module domain_mod
                           wall_elevation, &
                           default_output_folder, &
                           send_boundary_flux_data,&
-                          force_double, long_long_ip
+                          force_double, force_long_double, long_long_ip
     use timer_mod, only: timer_type
     use timestepping_metadata_mod, only: timestepping_metadata, &
         setup_timestepping_metadata, timestepping_method_index
@@ -548,10 +548,10 @@ TIMER_START('printing_stats')
         write(domain%logfile_unit, *) 'Speed: '
         write(domain%logfile_unit, *) '        ', maxspeed
         write(domain%logfile_unit, *) '        ', minspeed
-        write(domain%logfile_unit, "(A, ES20.12)") 'Energy Potential / rho (zero when stage=domain%msl_linear): ', &
+        write(domain%logfile_unit, "(A, ES25.12)") 'Energy Potential / rho (zero when stage=domain%msl_linear): ', &
                                       energy_potential_on_rho
-        write(domain%logfile_unit, "(A, ES20.12)") 'Energy Kinetic / rho: ', energy_kinetic_on_rho
-        write(domain%logfile_unit, "(A, ES20.12)") 'Energy Total / rho: ', energy_total_on_rho
+        write(domain%logfile_unit, "(A, ES25.12)") 'Energy Kinetic / rho: ', energy_kinetic_on_rho
+        write(domain%logfile_unit, "(A, ES25.12)") 'Energy Total / rho: ', energy_total_on_rho
         ! Mass conservation check
         write(domain%logfile_unit, *) 'Mass Balance (domain interior): ', domain%mass_balance_interior()
 
@@ -576,11 +576,16 @@ TIMER_STOP('printing_stats')
             !! Kinetic energy/water-density. 
         real(dp), intent(out) :: energy_total_on_rho
 
+
         logical :: is_nesting, is_wet, use_truely_linear_method
         integer(ip) :: ecw, i, j
         real(dp) :: depth_C, depth_N, depth_E, depth_N_inv, depth_E_inv, speed_sq
         ! Ensure the energy accumulation uses high precision, easy to lose precision here.
-        real(force_double) :: e_potential_on_rho, e_kinetic_on_rho, e_total_on_rho, e_flow, e_constant, w0, d1, w2, d3
+        integer(ip), parameter :: e_prec = force_double ! force_long_double
+        real(e_prec) :: e_potential_on_rho, e_kinetic_on_rho, e_total_on_rho, e_flow, e_constant, w0, d1, w2, d3
+
+        !print*, "e_prec: ", e_prec
+        !print*, "domain%msl_linear: ", domain%msl_linear
 
         ! If nesting is occurring, the above stats are only computed
         ! in the priority domain area
@@ -591,8 +596,8 @@ TIMER_STOP('printing_stats')
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
         minspeed = 0.0_dp ! speed is always > 0
-        e_potential_on_rho = 0.0_force_double
-        e_kinetic_on_rho = 0.0_force_double
+        e_potential_on_rho = 0.0_e_prec
+        e_kinetic_on_rho = 0.0_e_prec
 
         ecw = domain%exterior_cells_width
 
@@ -607,8 +612,8 @@ TIMER_STOP('printing_stats')
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
         minspeed = 0.0_dp ! speed is always > 0
-        e_potential_on_rho = 0.0_force_double
-        e_kinetic_on_rho = 0.0_force_double
+        e_potential_on_rho = 0.0_e_prec
+        e_kinetic_on_rho = 0.0_e_prec
 
         ! If we are using a 'truely-linear' solver then the depth is always recorded from MSL for certain
         ! calculations (pressure gradient term, and wetting/drying)
@@ -639,20 +644,25 @@ TIMER_STOP('printing_stats')
                 ! This can be rearranged noting (depth = stage - elev) to give
                 !     Integral of [ (g/2 stage^2 - g/2 elev^2) ] 
                 ! ('difference of 2 squares')
-                w0 = real(domain%U(i,j,STG), force_double) + real(domain%U(i,j,ELV), force_double)
-                d1 = real(domain%U(i,j,STG), force_double) - real(domain%U(i,j,ELV), force_double)
-                e_flow = merge( w0*d1, 0.0_force_double, is_wet)
+                w0 = real(domain%U(i,j,STG), e_prec) + real(domain%U(i,j,ELV), e_prec)
+                d1 = real(domain%U(i,j,STG), e_prec) - real(domain%U(i,j,ELV), e_prec)
+                e_flow = merge( w0*d1, 0.0_e_prec, is_wet)
                 ! Once integrated the g/2 elev^2 term will be a constant if the bathymetry is fixed and there is no wetting and
                 ! drying. We are only interested in changes in integrated energy, and subtracting that constant recovers the
                 ! (g/2 stage^2) formulation of potential energy, which is typically used for the linear shallow water equations in
                 ! deep ocean tsunami type cases.
-                w2 = real(domain%msl_linear, force_double) + real(domain%U(i,j,ELV), force_double)
-                d3 = real(domain%msl_linear, force_double) - real(domain%U(i,j,ELV), force_double)
-                e_constant = merge( w2*d3, 0.0_force_double, domain%msl_linear > domain%U(i,j,ELV) + minimum_allowed_depth)
+                w2 = real(domain%msl_linear, e_prec) + real(domain%U(i,j,ELV), e_prec)
+                d3 = real(domain%msl_linear, e_prec) - real(domain%U(i,j,ELV), e_prec)
+                e_constant = merge( w2*d3, 0.0_e_prec, domain%msl_linear > domain%U(i,j,ELV) + minimum_allowed_depth)
                     ! e_constant must be COMPLETELY UNAFFECTED by changes in the flow - it is a constant offset.
 
+                ! ! Here is the classical form of available potential energy (which works without wetting/drying)
+                !w0 = (real(domain%U(i,j,STG), e_prec) - real(domain%msl_linear, e_prec))**2
+                !e_flow = merge(w0, 0.0_e_prec, is_wet)
+                !e_constant = 0.0_e_prec
+
                 e_potential_on_rho = e_potential_on_rho + &
-                    real(domain%area_cell_y(j) * gravity * 0.5_dp, force_double) * (e_flow - e_constant)
+                    real(domain%area_cell_y(j) * gravity * 0.5_dp, e_prec) * (e_flow - e_constant)
 
                 if(is_wet) then
 
@@ -699,7 +709,7 @@ TIMER_STOP('printing_stats')
                             (domain%area_cell_y(j) * domain%U(i,j,UH) * domain%U(i,j,UH) * depth_E_inv + &
                             0.5_dp * (domain%area_cell_y(j) + domain%area_cell_y(j+1)) * &
                                 domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv  ), &
-                            force_double)
+                            e_prec)
  
                     else
                         ! Co-loated grid
@@ -709,7 +719,7 @@ TIMER_STOP('printing_stats')
 
                         ! The kinetic energy is integral of ( 1/2 depth speed^2)
                         e_kinetic_on_rho = e_kinetic_on_rho + real(domain%area_cell_y(j) * &
-                            0.5_dp * depth_C * speed_sq, force_double)
+                            0.5_dp * depth_C * speed_sq, e_prec)
                      end if
 
                     maxspeed = max(maxspeed, speed_sq) ! Will undo the sqrt later.
@@ -724,10 +734,12 @@ TIMER_STOP('printing_stats')
         ! Convert 'speed**2' to 'speed'
         maxspeed = sqrt(maxspeed)
         minspeed = sqrt(minspeed)
-        ! Copy energies (in force_double) precision back to possibly lower precision input var
+        ! Copy energies (in e_prec) precision back to possibly lower precision input var
         energy_kinetic_on_rho = e_kinetic_on_rho
         energy_potential_on_rho = e_potential_on_rho
         energy_total_on_rho = e_potential_on_rho + e_kinetic_on_rho
+
+        !print*, "energies: ", e_potential_on_rho + e_kinetic_on_rho, e_potential_on_rho, e_kinetic_on_rho
 
     end subroutine
 
