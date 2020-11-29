@@ -1633,10 +1633,10 @@ module multidomain_mod
             dvol = vol_and_bfi(4) 
 #endif
             write(log_output_unit, "(A)"         ) 'Volume statistics (m^3) integrated over all domains and images:'
-            write(log_output_unit, "(A, ES25.12)") '  Multidomain volume       : ', vol
-            write(log_output_unit, "(A, ES25.12)") '              volume change: ', dvol
-            write(log_output_unit, "(A, ES25.12)") '     boundary flux integral: ', bfi
-            write(log_output_unit, "(A, ES25.12)") '         unexplained change: ', dvol + bfi
+            write(log_output_unit, "(A, ES25.12E3)") '  Multidomain volume       : ', vol
+            write(log_output_unit, "(A, ES25.12E3)") '              volume change: ', dvol
+            write(log_output_unit, "(A, ES25.12E3)") '     boundary flux integral: ', bfi
+            write(log_output_unit, "(A, ES25.12E3)") '         unexplained change: ', dvol + bfi
 
     end subroutine
 
@@ -1987,26 +1987,26 @@ module multidomain_mod
             write(log_output_unit, "(A)"         ) 'Domain ID: '
             write(log_output_unit, "(A, I15)"     ) '        ', md%domains(k)%myid
             write(log_output_unit, "(A)"         ) 'Time: '
-            write(log_output_unit, "(A, ES25.12)") '        ', md%domains(k)%time
+            write(log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%time
             write(log_output_unit, "(A)"         ) 'nsteps_advanced:'
             write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%nsteps_advanced
             write(log_output_unit, "(A)"         ) 'max_dt in substep [ ~(cfl*dx)/(2*wave_speed) for FV solvers; 0 otherwise]:'
-            write(log_output_unit, "(A, ES25.12)") '        ', md%domains(k)%max_dt
+            write(log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%max_dt
             write(log_output_unit, "(A)"         ) 'evolve_step_dt (one or more sub-steps): '
-            write(log_output_unit, "(A, ES25.12)") '        ', md%domains(k)%evolve_step_dt
+            write(log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%evolve_step_dt
             write(log_output_unit, "(A)"         ) 'Stage: '
-            write(log_output_unit, "(A, ES25.12)") '        ', maxstage
-            write(log_output_unit, "(A, ES25.12)") '        ', minstage
+            write(log_output_unit, "(A, ES25.12E3)") '        ', maxstage
+            write(log_output_unit, "(A, ES25.12E3)") '        ', minstage
             write(log_output_unit, "(A)"         ) 'Speed: '
-            write(log_output_unit, "(A, ES25.12)") '        ', maxspeed
-            write(log_output_unit, "(A, ES25.12)") '        ', minspeed
+            write(log_output_unit, "(A, ES25.12E3)") '        ', maxspeed
+            write(log_output_unit, "(A, ES25.12E3)") '        ', minspeed
             write(log_output_unit, "(A)"         ) &
                 'Energy (potential) / rho [= integral of (g * depth * z + g/2 depth^2) ], zero when stage=domain%msl_linear: '
-            write(log_output_unit, "(A, ES25.12)") '        ', energy_potential_on_rho
+            write(log_output_unit, "(A, ES25.12E3)") '        ', energy_potential_on_rho
             write(log_output_unit, "(A)"         ) 'Energy (kinetic) / rho [i.e. integral of (1/2 depth * speed^2) ]: '
-            write(log_output_unit, "(A, ES25.12)") '        ', energy_kinetic_on_rho
+            write(log_output_unit, "(A, ES25.12E3)") '        ', energy_kinetic_on_rho
             write(log_output_unit, "(A)"         ) 'Energy (total) / rho: '
-            write(log_output_unit, "(A, ES25.12)") '        ', energy_total_on_rho
+            write(log_output_unit, "(A, ES25.12E3)") '        ', energy_total_on_rho
             write(log_output_unit, "(A)"         ) 'Negative_depth_clip_counter: '
             write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%negative_depth_fix_counter
 
@@ -2015,7 +2015,7 @@ module multidomain_mod
         ! Even if reporting global stats only, we'll still want to know the time
         if(only_global_stats) then
             write(log_output_unit, "(A)"         ) 'Time: '
-            write(log_output_unit, "(A, ES25.12)") '        ', md%domains(1)%time
+            write(log_output_unit, "(A, ES25.12E3)") '        ', md%domains(1)%time
         end if
 
 #ifdef COARRAY
@@ -2031,19 +2031,19 @@ module multidomain_mod
         write(log_output_unit, "(A)"         ) ''
         write(log_output_unit, "(A)"         ) '-----------'
         write(log_output_unit, "(A)"         ) 'Global stage range (over all domains and images): '
-        write(log_output_unit, "(A, ES25.12)") '        ', global_max_stage
-        write(log_output_unit, "(A, ES25.12)") '        ', global_min_stage
+        write(log_output_unit, "(A, ES25.12E3)") '        ', global_max_stage
+        write(log_output_unit, "(A, ES25.12E3)") '        ', global_min_stage
         write(log_output_unit, "(2A)"        ) 'Global speed range (over all domains and images): '
-        write(log_output_unit, "(A, ES25.12)") '        ', global_max_speed
-        write(log_output_unit, "(A, ES25.12)") '        ', global_min_speed
+        write(log_output_unit, "(A, ES25.12E3)") '        ', global_max_speed
+        write(log_output_unit, "(A, ES25.12E3)") '        ', global_min_speed
         write(log_output_unit, "(2A)"        ) &
             'Global energy-potential / rho (over all domains and images), zero when stage=domain%msl_linear: '
-        write(log_output_unit, "(A, ES25.12)") '        ', global_energy_potential_on_rho
+        write(log_output_unit, "(A, ES25.12E3)") '        ', global_energy_potential_on_rho
         write(log_output_unit, "(2A)"        ) 'Global energy-kinetic / rho (over all domains and images): '
-        write(log_output_unit, "(A, ES25.12)") '        ', global_energy_kinetic_on_rho
+        write(log_output_unit, "(A, ES25.12E3)") '        ', global_energy_kinetic_on_rho
         write(log_output_unit, "(2A)"        ) &
             'Global energy-total / rho (over all domains and images): '
-        write(log_output_unit, "(A, ES25.12)") '        ', global_energy_total_on_rho
+        write(log_output_unit, "(A, ES25.12E3)") '        ', global_energy_total_on_rho
         write(log_output_unit, "(A)") '-----------'
         call md%report_mass_conservation_statistics()
 

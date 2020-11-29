@@ -548,10 +548,10 @@ TIMER_START('printing_stats')
         write(domain%logfile_unit, *) 'Speed: '
         write(domain%logfile_unit, *) '        ', maxspeed
         write(domain%logfile_unit, *) '        ', minspeed
-        write(domain%logfile_unit, "(A, ES25.12)") 'Energy Potential / rho (zero when stage=domain%msl_linear): ', &
+        write(domain%logfile_unit, "(A, ES25.12E3)") 'Energy Potential / rho (zero when stage=domain%msl_linear): ', &
                                       energy_potential_on_rho
-        write(domain%logfile_unit, "(A, ES25.12)") 'Energy Kinetic / rho: ', energy_kinetic_on_rho
-        write(domain%logfile_unit, "(A, ES25.12)") 'Energy Total / rho: ', energy_total_on_rho
+        write(domain%logfile_unit, "(A, ES25.12E3)") 'Energy Kinetic / rho: ', energy_kinetic_on_rho
+        write(domain%logfile_unit, "(A, ES25.12E3)") 'Energy Total / rho: ', energy_total_on_rho
         ! Mass conservation check
         write(domain%logfile_unit, *) 'Mass Balance (domain interior): ', domain%mass_balance_interior()
 
