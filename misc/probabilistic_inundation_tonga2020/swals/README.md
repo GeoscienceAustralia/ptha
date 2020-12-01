@@ -83,4 +83,12 @@ for i in run_ptha18_random*.sh; do echo $i; qsub $i; mv $i submitted_qsub_files;
 # on the machine -- both values are appropriate for what I did, but might need updating.
 Rscript create_all_depth_rasters.R
 
+## Workaround for an unstable run.
+# Out of the 1101 x 3 runs, one went unstable (an extreme Mw 9.5 with MSL=0.8). 
+# To workaround this I recompiled the model, without including the 
+# option -DLOCAL_TIMESTEP_PARTITIONED_DOMAIN, and then ran the code
+# with the following script -- under these conditions it ran successfully. 
+qsub run_failed_after_recompiling_without_local_timestepping.sh
+# I then deleted the failed model run, and generated the depth rasters for the new run.
+
 ```
