@@ -1,6 +1,10 @@
-This folder contains several tide-gauge records from Nuku'alofa, as well as
-code to de-tide them and a function for use in our other plotting scripts, which
-converts the data to a consistent format.
+This folder contains several de-tided tide-gauge records from Nuku'alofa, as
+well as code to create them from the original data (original data not included
+to keep file-sizes down, but is available from the National Tidal Unit of the
+Australian Bureau of Meterorology, tides@bom.gov.au). It also contains a
+function for use in our other plotting scripts, which converts the data to a
+consistent format.
+
 
 Key codes are:
 * [./get_gauge_data_for_event.R](./get_gauge_data_for_event.R) provides a consistent interface to the data for our plotting codes in [../../swals/plots/](../../swals/plots).
