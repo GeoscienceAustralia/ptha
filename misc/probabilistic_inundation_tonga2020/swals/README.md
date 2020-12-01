@@ -15,6 +15,8 @@ This folder contains code to run the tsunami models for all scenarios, and do so
 ### Running models
 
 * [create_random_ptha_qsub_scripts.R](create_random_ptha_qsub_scripts.R) is used to make qsub files for every random PTHA18 scenario, in batches. I manually edited this file a couple of times during the course of the project, to create jobs with `msl=0` and `msl=0.8`, and also to run jobs with coarser resolution (the latter also required recompiling the model.f90 with `mesh_refine=2_ip`). For the current project the command `Rscript create_random_ptha_qsub_scripts.R` will create 74 qsub files each time it is run. Individually they can be submitted on NCI, and moved to `submitted_qsub_files`, with the following command: `for i in run_ptha18_random*.sh; do echo $i; qsub $i; mv $i submitted_qsub_files; done`. When editing the R code to make another batch of jobs, I would edit the `ambient_sea_level` and the start of the `output_qsub_filename` and also the `PBS_WALLTIME` (the latter when running coarse-res models).
+* [create_random_ptha_qsub_scripts_msl0.8.R](create_random_ptha_qsub_scripts_msl0.8.R) is just like above, but uses a higher sea level (0.8m)
+* [create_random_ptha_qsub_scripts_meshrefine2_msl0.R](create_random_ptha_qsub_scripts_meshrefine2_msl0.R) is just like above, but was used to run a coarser model. To do this I manually changed `model.f90` to have `mesh_refine=2_ip`, and recompiled, before running these jobs.
 * A number of qsub scripts to submit jobs for comparison with historical observations:
     - For Chile 2010 Mw 8.8, see [run_validation_Chile2010.sh](run_validation_Chile2010.sh) 
     - For Chile 2015 Mw 8.3, see [run_validation_Chile2015.sh](run_validation_Chile2015.sh) 
