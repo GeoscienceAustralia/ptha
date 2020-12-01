@@ -11,7 +11,7 @@ The sample of scenarios is checked by plotting the max-stage exceedance-rates im
 
 ## Key codes:
 
-* [./select_random_scenarios.R](./select_random_scenarios.R) - This samples the scenarios (with importance sampling based on the max-stage at a site near Tongatapu), and assigns them nominal rates to achieve consistency with PTHA18. The scenarios and their rates are written to file. We also make plots comparing the max-stage vs exceedance-rates implied by the sample of scenarios, and the original PTHA18.
+* [./select_random_scenarios.R](./select_random_scenarios.R) - This samples the scenarios (with importance sampling based on the max-stage at a site near Tongatapu), and assigns them nominal rates to achieve consistency with PTHA18. The scenarios and their rates are written to csv files. We also make plots comparing the max-stage vs exceedance-rates implied by the sample of scenarios, and the original PTHA18.
 
 * [./generate_initial_conditions.R](./generate_initial_conditions.R) - This can be run after running [select_random_scenarios.R](select_random_scenarios.R), in order to make rasters with the vertical deformation associated with each randomly selected scenario.
 
