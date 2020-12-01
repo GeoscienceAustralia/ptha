@@ -16,6 +16,6 @@ See README documentation within these folders for more information.
 * [./sources](./sources) - Earthquake-tsunami initial conditions for the model. This includes both: A) sources similar to historic events [for model testing], and; B) code to generate random tsunami scenarios for the probabilistic hazard assessment.
 * [./swals](./swals) - Hydrodynamic model code, and basic post-processing code (e.g. creation of max-depth rasters; code to plot model-vs-observations at gauges; etc.)
 
-As part of this study we compared the model with historical observations at Nuku'alofa tide-gauge. Here is one example, for a small tsunami following a local earthquake in 2006; other examples for tsunamis originating in Japan and Chile are available [at the bottom of this page](./swals/).
+As part of this study we compared the model with historical observations at Nuku'alofa tide-gauge. Here is one example, for a small tsunami following a local earthquake in 2006; the scenario is from PTHA18 but was previously found to show broad agreement with DART buoy results for this tsunami. Other examples, for tsunamis originating in Japan and Chile, are available [at the bottom of this page](./swals/).
 
 ![Model-vs-data plot for the Tonga 2006 earthquake-tsunami](swals/plots/historic_events_time_series_plots/Tonga2006/nukualofa_gauge_modelVdata_Tonga2006_validation_PTHA18_VAUS_26849_load_balance-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20201130_172740871.png)
