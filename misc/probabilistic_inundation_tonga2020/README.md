@@ -6,7 +6,7 @@ initially developed in November 2020.
 
 The codes were setup to be run on NCI's Gadi machine, and while they can certainly
 be adapted to run elsewhere, some parts of the code include hard-coded links to
-other files (e.g. the location of the ptha repository on Gadi).
+other files (e.g. the location of the ptha repository on Gadi) that would need to be updated.
 
 See README documentation within these folders for more information.
 
