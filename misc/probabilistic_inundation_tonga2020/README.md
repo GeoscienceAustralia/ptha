@@ -4,6 +4,10 @@
 This folder contains code and data for an inundation PTHA for Tonga that was
 initially developed in November 2020.
 
+The codes were setup to be run on NCI's Gadi machine, and while they can certainly
+be adapted to run elsewhere, some parts of the code include hard-coded links to
+other files (e.g. the location of the ptha repository on Gadi).
+
 See README documentation within these folders for more information.
 
 * [./analysis](./analysis) - Complex post-procressing of many-scenario hydrodynamic model outputs (e.g. probabilistic inundation calculations)
