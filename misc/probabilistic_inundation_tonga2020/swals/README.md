@@ -91,6 +91,7 @@ Rscript create_all_depth_rasters.R
 # option -DLOCAL_TIMESTEP_PARTITIONED_DOMAIN, and then ran the code
 # with the following script -- under these conditions it ran successfully. 
 qsub run_failed_after_recompiling_without_local_timestepping.sh
-# I then deleted the failed model run, and generated the depth rasters for the new run.
+# I then deleted the failed model run, and generated the depth rasters for the new run
+# using make_rasters.R
 
 ```
