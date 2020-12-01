@@ -11,7 +11,6 @@ We burn walls into the DEM to represent:
 
 The code and data here is used to create XYZ files with the max-elevation along these linear features. The max-elevation is defined by searching the elevation around each point, in a specified buffer distance (see the code for details).
 
-Run the code with
-    Rscript make_breakwalls.R
+Run the code with `Rscript make_breakwalls.R`
 
 
