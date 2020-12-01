@@ -213,25 +213,29 @@ stopifnot(all(all_checks$ic_name[1:1101] == all_checks$ic_name[1102:(1102+1100)]
 
 # One of the runs with MSL=0.8 died -- all the others finished.
 summary(all_checks$run_finished)
-#   Mode   FALSE    TRUE 
-#logical       1    2201 
-# Here is the failed-run's logfile name
-all_checks$log_file[!all_checks$run_finished]
-# [1] "../../swals/OUTPUTS/ptha18_tonga_MSL0.8/ptha18_random_scenarios_kermadectonga2_row_0043831_Mw_95_HS-risetime_0-ambientsealevel_0.8-full-linear_with_manning-0.035-highres_tonga/RUN_20201122_121533834/multidomain_log_image_00000000000000000001.log"
-# From inspection this results in a depth raster that is NA everywhere.
-# That means it gets treated as having a zero depth in the raster based analysis. The event is very extreme and will have a very small part of the rate, so the effects are small.
+#   Mode    TRUE 
+#logical    2202 
+
+## First time, we got a failure.
+## Here is the failed-run's logfile name
+#all_checks$log_file[!all_checks$run_finished]
+## [1] "../../swals/OUTPUTS/ptha18_tonga_MSL0.8/ptha18_random_scenarios_kermadectonga2_row_0043831_Mw_95_HS-risetime_0-ambientsealevel_0.8-full-linear_with_manning-0.035-highres_tonga/RUN_20201122_121533834/multidomain_log_image_00000000000000000001.log"
+## From inspection this results in a depth raster that is NA everywhere.
+## That means it gets treated as having a zero depth in the raster based analysis. The event is very extreme and will have a very small part of the rate, so the effects are small.
 
 # The mass conservation errors are very small and consistent with
 # double-precision round-off error (noting the full domain has a volume around
 # 2.18e+17),
 summary(all_checks$mass_error)
-#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#  14.68   24.15   27.65   63.84   32.04  681.27       1 
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+#  14.68   24.15   27.66   64.05   32.04  681.27 
 
-# Before the boundary fluxes begin, any energy increases are tiny
+# Before the boundary fluxes begin, any energy increases are tiny. It is common to see 'very slightly'
+# higher energy just after the start of the simulation, which I think just reflects that the algorithms
+# used herein are not precisely energy conservative.
 summary((all_checks$energy_max_while_closed - all_checks$energy_start)/all_checks$energy_start)
-#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max.      NA's 
-#0.0000000 0.0000000 0.0000068 0.0001388 0.0001306 0.0031322         1 
+#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
+#0.000e+00 0.000e+00 6.516e-06 1.387e-04 1.305e-04 3.132e-03 
 
 
 # After the boundary fluxes begin it is less straightforward to interpret the potential energy and
