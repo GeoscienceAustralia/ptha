@@ -100,7 +100,7 @@ qsub run_failed_after_recompiling_without_local_timestepping.sh
 
 Here we include a few figures comparing de-tided tsunami observations at Nuku'alofa with the model. The model was run using initial conditions that aim to be similar to the historic event, but undoubtedly will not be identical. The model also ignores tides and assumes an ambient sea-level of 0m, which is expected to have some impact following the leading wave. 
 
-In the figures below the horizontal scale is either 5 hours (for the Tonga 2006 event) or 24 hours (for all other events). The vertical scale varies case-by-case, but the dotted horizontal lines denote 10cm intervals.
+In the figures below the horizontal scale is either 5 hours (for the Tonga 2006 event) or 24 hours (for all other events). The vertical scale varies case-by-case, but the dotted horizontal lines denote 10cm intervals, and help make clear that the event size varies considerably.
  
 ![plot for the Tonga 2006 earthquake-tsunami](plots/historic_events_time_series_plots/Tonga2006/nukualofa_gauge_modelVdata_Tonga2006_validation_PTHA18_VAUS_26849_load_balance-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20201130_172740871.png)
 
