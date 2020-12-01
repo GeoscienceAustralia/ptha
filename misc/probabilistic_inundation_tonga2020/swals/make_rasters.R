@@ -38,11 +38,11 @@ for(i in all_domain_inds){
     output_file = paste0(multidomain_dir, 'depth_as_max_stage_minus_elevation0_domain_', i, '.tif')
     writeRaster(max_stg_less_elev, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
 
-    # As above subtracting 0.7
-    max_stg_less_elev = ms - r1 - 0.7
-    max_stg_less_elev[max_stg_less_elev < 1.0e-03] = NA
-    output_file = paste0(multidomain_dir, 'depth_as_max_stage_minus_elevation0_minus70cm_domain_', i, '.tif')
-    writeRaster(max_stg_less_elev, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
+    ## As above subtracting 0.7
+    #max_stg_less_elev = ms - r1 - 0.7
+    #max_stg_less_elev[max_stg_less_elev < 1.0e-03] = NA
+    #output_file = paste0(multidomain_dir, 'depth_as_max_stage_minus_elevation0_minus70cm_domain_', i, '.tif')
+    #writeRaster(max_stg_less_elev, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
 
     rm(r1, ms, max_stg_less_elev)
 
