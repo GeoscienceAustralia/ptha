@@ -95,3 +95,15 @@ qsub run_failed_after_recompiling_without_local_timestepping.sh
 # using make_rasters.R
 
 ```
+
+# Figures comparing observations with model runs
+
+Here we include a few figures comparing de-tided tsunami observations at Nuku'alofa with the model. The model was run using initial conditions that aim to be similar to the historic event, but undoubtedly will not be identical. The model also ignores tides and assumes an ambient sea-level of 0m, which is expected to have some impact following the leading wave. 
+ 
+![plot for the Tonga 2006 earthquake-tsunami](plots/historic_events_time_series_plots/Tonga2006/nukualofa_gauge_modelVdata_Tonga2006_validation_PTHA18_VAUS_26849_load_balance-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20201130_172740871.png)
+
+![plot for the Chile 2010 earthquake-tsunami](plots/historic_events_time_series_plots/Chile2010/nukualofa_gauge_modelVdata_Chile2010_validation_PTHA18_HS_128607_source-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20201130_172631113.png)
+
+![plot for the Tohoku 2011 earthquake-tsunami](plots/historic_events_time_series_plots/Tohoku2011/nukualofa_gauge_modelVdata_Tohoku2011_validation_PTHA18_HS_46994-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20201130_172740486.png)
+
+![plot for the Chile 2015 earthquake-tsunami](plots/historic_events_time_series_plots/Chile2015/nukualofa_gauge_modelVdata_Chile2015_validation_Williamson_source_inversion-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20201130_172630123.png)
