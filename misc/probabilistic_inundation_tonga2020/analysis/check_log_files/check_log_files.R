@@ -31,7 +31,7 @@
 # In SWALS we compute potential energy as:
 #    SWALS_potential_energy_on_rho = g/2 * integral{ stage^2 - elev^2 } - CONSTANT
 # where:
-#    CONSTANT = g/2 * integral_where_stage_less_than_MSL_LINEAR { MSL_LINEAR^2 - elev^2 }
+#    CONSTANT = g/2 * integral_where_elevation_less_than_MSL_LINEAR { MSL_LINEAR^2 - elev^2 }
 # is designed to make the potential energy zero when the wet-stage is equal to MSL_LINEAR everywhere.
 #
 # How does this compare with the classical equation for "available potential energy" which
