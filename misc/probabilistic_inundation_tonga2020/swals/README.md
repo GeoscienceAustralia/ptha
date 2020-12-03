@@ -7,7 +7,7 @@ This folder contains code to run the tsunami models for all scenarios, and do so
 
 ### Model code and compilation
 
-* [model.f90](model.f90) and [model_local_routines.f90](model_local_routines.f90) contains code to run the SWALS model for Tongatapu. See comments in the code for documentation. In the course of running the simulations, I usually had the line `integer(ip), parameter mesh_refine=4_ip` in `model.f90`. However, to run coarser resolution convergence tests, I manually edited it to set `mesh_refine=2_ip` and recompiled. 
+* [model.f90](model.f90) and [model_local_routines.f90](model_local_routines.f90) contains code to run the SWALS model for Tongatapu. See comments in the code for documentation. In the course of running the simulations, I usually had the line `integer(ip), parameter :: mesh_refine=4_ip` in `model.f90`. However, to run coarser resolution convergence tests, I manually edited it to set `mesh_refine=2_ip` and recompiled. 
 * [SWALS_ifort_modules.sh](SWALS_ifort_modules.sh) is a script to load the modules required to compile the code on NCI. Call it like `source SWALS_ifort_modules.sh`.
 * [make_model_ifort](make_model_ifort) is the makefile used to compile the model. The command `make -B -f make_model_ifort` will compile on NCI (after loading the required modules with `source SWALS_ifort_modules.sh`).
 * [load_balance_partition.txt](load_balance_partition.txt) is a SWALS load-balance file that works quite well when the models herein are spread over 4 MPI processes.
