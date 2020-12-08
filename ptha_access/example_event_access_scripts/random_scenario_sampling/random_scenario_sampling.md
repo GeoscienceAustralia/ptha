@@ -31,7 +31,7 @@ Our simplest random scenario sampling algorithm proceeds as follows
 * Group the scenarios by magnitude
 * For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability.
 
-The function which does this only requires knowledge of the scenario magnitudes, and the scenario rates. We also need to specify the number of scenarios to sample for each magnitude - herein a constant (12) is used, although in general it can vary with magnitude.
+The function which does this only requires knowledge of the scenario magnitudes, and the scenario rates. From these variables the function will internally compute scenario conditional probability for each unique magnitude value (which ranges from 7.2, 7.3, ... 9.6, 9.7, 9.8 in PTHA18). We also need to specify the number of scenarios to sample for each magnitude - herein a constant (12) is used, although in general it can vary with magnitude.
 
 ```r
 # Convenient shorthand for the magnitudes and rates in the event table
@@ -42,8 +42,9 @@ event_rates = kt2_scenarios$events$rate_annual
 random_scenarios_simple = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     event_rates=event_rates,
     event_Mw=event_Mw,
-    samples_per_Mw=function(Mw){ 12 },
-    mw_limits=c(7.15, 9.85))
+    samples_per_Mw=function(Mw){ 12 }, # Number of samples for each Mw
+    mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
+    )
 ```
 
 The result is a `data.frame` containing the indices of the random scenarios `inds`,
@@ -58,12 +59,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1 1795 7.2        0.05704921                        0.004754101
-## 2 2671 7.2        0.05704921                        0.004754101
-## 3 1537 7.2        0.05704921                        0.004754101
-## 4 1586 7.2        0.05704921                        0.004754101
-## 5 1321 7.2        0.05704921                        0.004754101
-## 6   10 7.2        0.05704921                        0.004754101
+## 1 1936 7.2        0.05704921                        0.004754101
+## 2 2885 7.2        0.05704921                        0.004754101
+## 3  366 7.2        0.05704921                        0.004754101
+## 4  808 7.2        0.05704921                        0.004754101
+## 5 1078 7.2        0.05704921                        0.004754101
+## 6 1333 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -108,10 +109,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44107 9.6      5.323646e-05                       4.436371e-06
-## 298 44088 9.6      5.323646e-05                       4.436371e-06
-## 299 44265 9.6      5.323646e-05                       4.436371e-06
-## 300 44103 9.6      5.323646e-05                       4.436371e-06
+## 297 44104 9.6      5.323646e-05                       4.436371e-06
+## 298 44099 9.6      5.323646e-05                       4.436371e-06
+## 299 44249 9.6      5.323646e-05                       4.436371e-06
+## 300 44094 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised
