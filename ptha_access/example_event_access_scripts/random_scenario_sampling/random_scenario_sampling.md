@@ -5,12 +5,13 @@ The PTHA18 often includes thousands or tens-of-thousands of scenarios on a
 source-zone. For some applications it is impractical to work with all
 scenarios, but may be practical to work with a random sample of scenarios.
 
-This tutorial shows how to randomly sample scenarios from a given source-zone in
-a manner that respects the PTHA18 scenario conditional probabilities and earthquake
-magnitude-frequency modelling. 
+This tutorial shows how to randomly sample scenarios from a given source-zone
+in a manner that is statistically consistent with the PTHA18 (i.e. respects the
+PTHA18 scenario conditional probabilities and earthquake magnitude-frequency
+modelling).  
 
-## Get the source-zone event data
----------------------------------
+## Get the source-zone event data, and some maximum-stage data.
+---------------------------------------------------------------
 
 The first step is to get the scenario data for the source-zone of interest.
 Here we choose to work with heterogeneous-slip scenarios from the
@@ -21,7 +22,29 @@ Here we choose to work with heterogeneous-slip scenarios from the
 ptha18 = new.env()
 source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
 # Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in PTHA18)
-kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
+source_zone = 'kermadectonga2'
+kt2_scenarios = ptha18$get_source_zone_events_data(source_zone,  slip_type='stochastic')
+```
+
+To illustrate how we can use the random scenarios, it is useful to have the corresponding
+tsunami maximum-stage data at a point of interest. Herein we choose a point just east of Tonga,
+which is over the `kermadectonga2` source-zone.
+
+
+```r
+event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
+    target_point = c(185.1239, -21.0888), # Known location of PTHA18 hazard point
+    slip_type='stochastic',
+    all_source_names=source_zone)
+```
+
+```
+## [1] "kermadectonga2"
+```
+
+```r
+# Convenient shorthand
+event_peak_stage = event_peak_stage_at_refpoint$kermadectonga2$max_stage
 ```
 
 ## Random scenario sampling, stratified by magnitude
@@ -37,6 +60,10 @@ The function which does this only requires knowledge of the scenario magnitudes,
 # Convenient shorthand for the magnitudes and rates in the event table
 event_Mw = kt2_scenarios$events$Mw
 event_rates = kt2_scenarios$events$rate_annual
+
+# Make a reproducible random seed to make the code reproducible (this is
+# optional)
+set.seed(123)
 
 # Make the random scenarios
 random_scenarios_simple = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
@@ -59,12 +86,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1 2491 7.2        0.05704921                        0.004754101
-## 2  169 7.2        0.05704921                        0.004754101
-## 3 2828 7.2        0.05704921                        0.004754101
-## 4 2132 7.2        0.05704921                        0.004754101
-## 5 1089 7.2        0.05704921                        0.004754101
-## 6 1354 7.2        0.05704921                        0.004754101
+## 1  550 7.2        0.05704921                        0.004754101
+## 2 1088 7.2        0.05704921                        0.004754101
+## 3  195 7.2        0.05704921                        0.004754101
+## 4 1302 7.2        0.05704921                        0.004754101
+## 5   28 7.2        0.05704921                        0.004754101
+## 6 1038 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -90,12 +117,11 @@ head(random_scenarios_simple)
 The columns are
 * `inds` is the indices of the randomly selected scenarios. This corresponds to indices in the `event_Mw` and `event_rates` variables. Because herein these are simply columns of the event table, `inds` also also correspond to rows in `kt2_scenarios$events`.
 * `mw` is the scenario magnitude. This is the same as `event_Mw[random_scenarios_simple$inds]`
-* `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. This is the same as `event_rates[random_scenarios_simple$inds]`. Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
+* `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. This is the sum of `event_rates` for scenarios with the corresponding magnitude. Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
 * `importance_sampling_scenario_rates` is a nominal rate for each scenario, defined so as to retain statistical consistency with the PTHA18. In this particular case it is equal to the `rate_with_this_mw` divided by the number of scenarios with that same magnitude (12 in this case). In more complex applications we can specify an `event_importance` to bias the sampling toward scenarios of interest, and in that case its definition is more complicated, but the interpretation is similar.
 * `importance_sampling_scenario_rates_self_normalised` is another nominal rate for each scenario. In this case it is identical to the previous variable. However later we will consider more complex sampling methods, using importance sampling, where it may be somewhat different (basically it can be considered as an alternative statistical estimator of the same thing).
 * `importance_sampling_scenario_weights` is equal to `importance_sampling_scenario_rates` divided by `rate_with_this_mw`. Later when we do importance sampling, this corresponds to the regular importance sampling weights. 
 * `importance_sampling_scenario_weights_self_normalised` is equal to `importance_sampling_scenario_rates_self_normalised` divided by `rate_with_this_mw`. Later when we do importance sampling, this corresponds to the self-normalised importance sampling weights. 
-
 
 In PTHA18 some earthquake magnitudes are impossible. In this case the scenario index will
 take an `NA` value, as will various other variables. We see this at the end of the current
@@ -109,10 +135,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44105 9.6      5.323646e-05                       4.436371e-06
-## 298 44206 9.6      5.323646e-05                       4.436371e-06
-## 299 44107 9.6      5.323646e-05                       4.436371e-06
-## 300 44202 9.6      5.323646e-05                       4.436371e-06
+## 297 44088 9.6      5.323646e-05                       4.436371e-06
+## 298 44208 9.6      5.323646e-05                       4.436371e-06
+## 299 44261 9.6      5.323646e-05                       4.436371e-06
+## 300 44171 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised
@@ -151,3 +177,37 @@ table(random_scenarios_simple$mw)
 ## 9.2 9.3 9.4 9.5 9.6 9.7 9.8 
 ##  12  12  12  12  12   1   1
 ```
+
+## Inferring tsunami exceedance-rates from the random scenario subset
+----------------------------------------------------------------------
+
+What do we mean by saying the random scenarios are statistically consistent
+with the PTHA18? Here we explain this by considering the tsunami max-stage
+exceedance-rates at the point offshore of Tonga.
+
+In the full PTHA, we can compute the max-stage exceedance rates at this
+point using:
+
+```r
+stage_seq = seq(0.1, 20, by=0.1)
+stage_exrates_ptha18 = sapply(stage_seq, f<-function(x) sum(event_rates*(event_peak_stage > x)))
+
+# Plot it
+# plot(stage_seq, stage_exrates_ptha18, log='xy', t='o'); grid(col='orange')
+```
+
+We can do a similar calculation, using only the random sample.
+
+```r
+random_scenarios_peak_stage = event_peak_stage[ random_scenarios_simple$inds ]
+random_scenarios_rates = random_scenarios_simple$importance_sampling_scenario_rates
+stage_exrates_random_scenarios_simple = sapply(stage_seq, 
+    f<-function(x) sum(random_scenarios_rates * (random_scenarios_peak_stage > x), na.rm=TRUE))
+
+# points(stage_seq, stage_exrates_random_scenarios_simple, t='l', col='red')
+```
+
+
+## Random scenario sampling, with more scenarios at magnitudes of interest
+--------------------------------------------------------------------------
+
