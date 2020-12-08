@@ -24,35 +24,6 @@ source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
 kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
 ```
 
-For our purposes an important variable is `Mw`, the scenario moment
-magnitude. The scenario moment magnitudes are binned and take values in 7.2, 7.3, ...,
-9.8. Beware that some of the higher magnitudes will be impossible according to PTHA18, and
-these are assigned a rate of zero. The PTHA18 maximum-magnitude varies
-depending on the source-zone, but is never greater than 9.6.
-
-```r
-# Print all unique Mw values -- beware not all of these will be "possible" according
-# to PTHA18, as some will have zero probability of occurring.
-unique(kt2_scenarios$events$Mw)
-```
-
-```
-##  [1] 7.2 7.3 7.4 7.5 7.6 7.7 7.8 7.9 8.0 8.1 8.2 8.3 8.4 8.5 8.6 8.7 8.8 8.9 9.0
-## [20] 9.1 9.2 9.3 9.4 9.5 9.6 9.7 9.8
-```
-For the purpose of random scenario sampling, an important variable is
-`rate_annual`. In general this varies for each scenario, and is equal to the scenario
-conditional probability (conditional on the occurrence of an earthquake with
-the same magnitude) multiplied by the logic-tree-mean-rate of scenarios with
-that magnitude (events/year). 
-
-Recall that PTHA18 uses variations in the scenario conditional probability to
-account for spatial variations in tectonic convergence, to limit the scenario
-peak-slip, and to adjust for bias in the earthquake-source models (although
-this is more prominent for variable-area-uniform-slip scenarios than for
-heterogeneous-slip scenarios). See 
-[this paper](https://doi.org/10.1007/s00024-019-02299-w) for further information.
-
 ## Random scenario sampling, stratified by magnitude
 ----------------------------------------------------
 
@@ -60,7 +31,7 @@ Our simplest random scenario sampling algorithm proceeds as follows
 * Group the scenarios by magnitude
 * For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability.
 
-This can be implemented as follows (herein we select 12 scenarios for each magnitude)
+The function which does this only requires knowledge of the scenario magnitudes, and the scenario rates. We also need to specify the number of scenarios to sample for each magnitude - herein a constant (12) is used, although in general it can vary with magnitude.
 
 ```r
 # Convenient shorthand for the magnitudes and rates in the event table
@@ -87,12 +58,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1 2623 7.2        0.05704921                        0.004754101
-## 2 1135 7.2        0.05704921                        0.004754101
-## 3 1563 7.2        0.05704921                        0.004754101
-## 4 2234 7.2        0.05704921                        0.004754101
-## 5 2181 7.2        0.05704921                        0.004754101
-## 6 1367 7.2        0.05704921                        0.004754101
+## 1 1795 7.2        0.05704921                        0.004754101
+## 2 2671 7.2        0.05704921                        0.004754101
+## 3 1537 7.2        0.05704921                        0.004754101
+## 4 1586 7.2        0.05704921                        0.004754101
+## 5 1321 7.2        0.05704921                        0.004754101
+## 6   10 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -137,10 +108,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44285 9.6      5.323646e-05                       4.436371e-06
-## 298 44226 9.6      5.323646e-05                       4.436371e-06
-## 299 44104 9.6      5.323646e-05                       4.436371e-06
-## 300 44104 9.6      5.323646e-05                       4.436371e-06
+## 297 44107 9.6      5.323646e-05                       4.436371e-06
+## 298 44088 9.6      5.323646e-05                       4.436371e-06
+## 299 44265 9.6      5.323646e-05                       4.436371e-06
+## 300 44103 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised

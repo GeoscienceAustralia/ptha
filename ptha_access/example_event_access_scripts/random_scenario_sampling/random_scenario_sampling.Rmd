@@ -23,28 +23,6 @@ source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
 kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
 ```
 
-For our purposes an important variable is `Mw`, the scenario moment
-magnitude. The scenario moment magnitudes are binned and take values in 7.2, 7.3, ...,
-9.8. Beware that some of the higher magnitudes will be impossible according to PTHA18, and
-these are assigned a rate of zero. The PTHA18 maximum-magnitude varies
-depending on the source-zone, but is never greater than 9.6.
-```{r mwunique}
-# Print all unique Mw values -- beware not all of these will be "possible" according
-# to PTHA18, as some will have zero probability of occurring.
-unique(kt2_scenarios$events$Mw)
-```
-Another important variable is `rate_annual`. In general this varies for each
-scenario, and is equal to the scenario conditional probability (conditional on
-the occurrence of an earthquake with the same magnitude) multiplied by the
-logic-tree-mean-rate of scenarios with that magnitude (events/year). 
-
-Recall that PTHA18 uses variations in the scenario conditional probability to
-account for spatial variations in tectonic convergence, to limit the scenario
-peak-slip, and to adjust for bias in the earthquake-source models (although
-this is more prominent for variable-area-uniform-slip scenarios than for
-heterogeneous-slip scenarios). See 
-[this paper](https://doi.org/10.1007/s00024-019-02299-w) for further information.
-
 ## Random scenario sampling, stratified by magnitude
 ----------------------------------------------------
 
@@ -52,7 +30,7 @@ Our simplest random scenario sampling algorithm proceeds as follows
 * Group the scenarios by magnitude
 * For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability.
 
-This can be implemented as follows (herein we select 12 scenarios for each magnitude)
+The function which does this only requires knowledge of the scenario magnitudes, and the scenario rates. We also need to specify the number of scenarios to sample for each magnitude - herein a constant (12) is used, although in general it can vary with magnitude.
 ```{r randomSampling1}
 # Convenient shorthand for the magnitudes and rates in the event table
 event_Mw = kt2_scenarios$events$Mw
