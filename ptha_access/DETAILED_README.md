@@ -135,10 +135,14 @@ server is running (occasionally it goes down for maintenance or technical
 problems).
 
 If you see fewer 'PASS' statements than above, but without obvious failures,
-the most likely reason is that you never worked with the script
+then most likely there is no problem, but you probably never sourced the script
 [get_detailed_PTHA18_source_zone_info.R](get_detailed_PTHA18_source_zone_info.R).
 That script needs to do a one-off large download of some data to your
- machine, and here, the tests for that script only run if the data already exists.
+machine. Here we only run the tests for that script if the data is found on your
+machine. If you open R and do `source('get_detailed_PTHA18_source_zone_info.R')`
+then the data will be downloaded. Once that is done the associated tests will
+be run.
+
 
 ### ***Obtaining hazard curves at a particular hazard point***
 
