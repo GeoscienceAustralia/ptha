@@ -224,7 +224,8 @@ sense the random sample is statistically consistent with the PTHA18.
 ```r
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)', 
+     main='PTHA18 stage-exrate curve vs random sample of scenarios')
 ```
 
 ```
@@ -261,7 +262,8 @@ stage_exrates_rs_simple_many = sapply(stage_seq,
     })
 
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
+     main='Demonstration that using more random scenarios improves the accuracy')
 ```
 
 ```
@@ -323,7 +325,8 @@ values.
 ```r
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
+     main='PTHA18 stage-exrate curve vs random sample with more scenarios at higher magnitudes')
 ```
 
 ```
@@ -367,7 +370,8 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
 ```r
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
+     main='PTHA18 stage-exrate curve vs random sample with max-stage importance-sampling')
 ```
 
 ```
@@ -396,7 +400,8 @@ and randomisation tests.
 ```r
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
+     main='Comparison of all approaches above')
 ```
 
 ```

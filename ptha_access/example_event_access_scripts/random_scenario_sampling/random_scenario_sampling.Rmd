@@ -140,7 +140,8 @@ sense the random sample is statistically consistent with the PTHA18.
 ```{r ptha18_tonga_point_plot1, fig.width=7, fig.height=5}
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)', 
+     main='PTHA18 stage-exrate curve vs random sample of scenarios')
 points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
 grid(col='orange')
 legend('bottomleft', c('Original PTHA18 [desired result]', 'Random scenarios (simple)'),
@@ -166,7 +167,8 @@ stage_exrates_rs_simple_many = sapply(stage_seq,
     })
 
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
+     main='Demonstration that using more random scenarios improves the accuracy')
 points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
 points(stage_seq, stage_exrates_rs_simple_many, t='l', col='green')
 grid(col='orange')
@@ -217,7 +219,8 @@ values.
 ```{r ptha18_tonga_point_plot2, fig.width=7, fig.height=5}
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
+     main='PTHA18 stage-exrate curve vs random sample with more scenarios at higher magnitudes')
 points(stage_seq, stage_exrates_rs_mw_weighted, t='l', col='blue')
 grid(col='orange')
 legend('bottomleft', c('Original PTHA18 [desired result]', 'More scenarios at higher Mw'),
@@ -250,7 +253,9 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
 ```{r ptha18_tonga_point_plot3, fig.width=7, fig.height=5}
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
+     main='PTHA18 stage-exrate curve vs random sample with max-stage importance-sampling')
+
 points(stage_seq, stage_exrates_rs_stage_mw_weighted, t='l', col='purple')
 grid(col='orange')
 legend('bottomleft', c('Original PTHA18 [desired result]', 'Importance based on event_peak_stage'),
@@ -268,7 +273,8 @@ and randomisation tests.
 ```{r compareAllApproaches, fig.width=7, fig.height=5}
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
+     main='Comparison of all approaches above')
 points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
 points(stage_seq, stage_exrates_rs_mw_weighted, t='l', col='blue')
 points(stage_seq, stage_exrates_rs_stage_mw_weighted, t='l', col='purple')
