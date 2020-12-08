@@ -856,3 +856,175 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
     return(potential_energy_data)
 
 }
+
+#' Randomly sample scenarios given their magnitudes and rates
+#'
+#' Generate a random sample of PTHA18 scenarios from a source-zone, with
+#' sampling stratified by magnitude. Within each magnitude, the chance of each
+#' event being sampled is proportional to the event_rate, optionally multiplied
+#' by a user-specified event_importance (defaults to 1). 
+#'
+#' @param event_rates vector of PTHA18 scenario rates (one for each scenario)
+#' @param event_Mw vector of PTHA18 scenario magnitudes (one for each scenario) 
+#' The values must be in 7.2, 7.3, ...9.6, 9.7, 9.8 as for PTHA18.
+#' @param event_importance if not NULL, then a vector of non-negative numbers
+#' (one for each scenario) giving the "importance" of each scenario. By default
+#' this is treated as a constant (=1). For each magnitude, the probability of
+#' sampling the scenario is proportional to "event_rates * event_importance",
+#' so events with higher importance are more likely to be sampled than they
+#' otherwise would be. The output scenario rates are adjusted to account for
+#' this, so the resulting set of scenarios and rates can still be treated as a
+#' random sample from the source-zone. But this sample will better resolve
+#' scenarios with higher importance, and more poorly resolve scenarios with
+#' lower importance.
+#' @param samples_per_Mw a function returning the number of scenarios to sample
+#' for each magnitude.
+#' @param mw_limits only sample from magnitudes greater than mw_limits[1], and
+#' less than mw_limits[2]
+#' @return a list of lists (one per magnitude). Each contains the overall rate
+#' of scenarios with the given magnitude (rate_with_this_mw), the magnitude
+#' (mw), the random scenario indices corresponding to event_rates and event_Mw
+#' (inds), the product of the rate_with_this_mw and the standard importance
+#' sampling weights for each scenario (importance_sampling_scenario_rates), the
+#' product of the rate_with_this_mw and the self-normalised importance sampling
+#' weights for each scenario
+#' (importance_sampling_scenario_rates_self_normalised), the standard
+#' importance sampling weights for each scenario, which may not sum to 1, but
+#' do so on average, and lead to unbiased integral estimates
+#' (importance_sampling_scenario_weights), and the self-normalised importance
+#' sampling weights for each scenario, which will sum to 1, but lead to
+#' integral estimates that can be biased (but are asymptotically unbiased).
+#' @details The function returns a list of lists (one per unique magnitude)
+#' containing the random scenario indices, and associated rates that can be
+#' assigned to each scenario for consistency with the PTHA18. The rates are
+#' computed with importance sampling, and provide statistical consistency with
+#' the PTHA18 even if a non-uniform event_importance is specified. Two
+#' alternative importance-sampling based rates are provided. These only differ
+#' when the event_importance is specified and non-uniform within a magnitude.
+#' One partitions the rate using "standard importance sampling weights":
+#'     (1/number_of_random_scenarios) * [ 
+#'       ( PTHA18 conditional probability for the magnitude ) / 
+#'       ( (event_rates * event_importance) for the magnitude, normalised to a density)
+#'         ]  
+#' where the terms in [ ] are evaluated at the randomly selected scenarios. The
+#' other uses "self-normalised importance sampling weights":
+#'     [ (1/event_importance_for_the_randomly_selected_scenarios )/
+#'     sum( 1/event_importance_for_the_randomly_selected_scenarios) ]
+#' To partition the rates among scenarios for each Mw, we multiply these by the
+#' rate of scenarios with the given Mw. Each method has different strengths and
+#' weaknesses. The former importance sampling based rates can be used to
+#' compute unbiased estimates of integrals, whereas the latter is only
+#' asymptotically unbiased as the number of scenarios approaches infinity.
+#' However the standard importance sampling weights do not necessarily sum to
+#' 1, so lead to inconsistencies with the PTHA18 rates for each magnitude,
+#' whereas the self-normalised importance sampling weights retain consistency
+#' with the PTHA18 rates for each magnitude. Depending on the application, one
+#' may prefer one or the other.
+#' 
+randomly_sample_scenarios_by_Mw_and_rate<-function(
+    event_rates,
+    event_Mw,
+    event_importance = NULL,
+    samples_per_Mw=function(Mw){round(50 + 0*Mw)},
+    mw_limits=c(7.15, 9.85)){
+
+    unique_Mw = sort(unique(event_Mw))
+
+    diff_unique_Mw = diff(unique_Mw)
+
+    # Confirm that our expectations of PTHA18 scenarios are met.
+    if(any(abs(diff_unique_Mw - diff_unique_Mw[1]) > 1.0e-06) ){
+        stop('event_Mw is not evenly spaced')
+    }
+
+    # Ignore small scenarios, and scenarios exceeding Mw-max
+    unique_Mw = unique_Mw[(unique_Mw > mw_limits[1] & unique_Mw < mw_limits[2])] 
+
+    # By default give all scenarios equal importance.
+    if(is.null(event_importance)) event_importance = event_Mw * 0 + 1
+
+    # Sanity check on inputs
+    if( any( (event_rates < 0) | (event_importance < 0)) ){
+        stop('event_rates and event_importance must be nonnegative')
+    }
+
+    random_scenario_info = lapply(unique_Mw,
+        f<-function(mw){
+            # Match Mw [careful with real numbers]
+            k = which(abs(event_Mw - mw) < 1.0e-03)
+            if(length(k) <= 1){
+                stop('error: Only one scenario -- need to be careful using sample below')
+            }
+
+            # Get the rate of any event with this mw
+            rate_with_this_mw = sum(event_rates[k])
+
+            if(sum(event_rates[k] * event_importance[k]) > 0){
+
+                nsam = samples_per_Mw(mw)
+                local_sample = sample(1:length(k), size=nsam, 
+                    prob=event_rates[k]*event_importance[k], 
+                    replace=TRUE)
+                sample_of_k = k[local_sample]
+
+                # The original scenario conditional probability distribution
+                dist_f = event_rates[k]/sum(event_rates[k])
+                # The distribution we sampled from above
+                dist_g = (event_rates[k]*event_importance[k]) / 
+                      sum(event_rates[k]*event_importance[k])
+                # The exact importance-sampling correction -- while these
+                  # weights do not sum to 1, they make the estimators unbiased
+                alternate_weights = (1/length(local_sample)) *
+                    (dist_f[local_sample] / dist_g[local_sample])
+
+                # Importance sampling correction -- this is the
+                # 'self-normalised' approach.
+                # Estimate a rate for each individual scenario such that the
+                # sampled scenario weights add to the target weight, and
+                # reflect the original distribution
+                # Their chance of being sampled was inflated by
+                # 'event_importance', so we deflate by 'event_importance' here.
+                random_scenario_rates = rate_with_this_mw * 
+                    (1/event_importance[sample_of_k]) / 
+                    sum((1/event_importance[sample_of_k]))
+
+                # Importance sampling correction -- although "alternate_weights"
+                # does not sum to 1, the self normalised importance sampling
+                # leads to some finite-sample-bias in integral estimates,
+                # whereas this approach is unbiased even in finite samples.
+                alternate_random_scenario_rates = 
+                    rate_with_this_mw * alternate_weights
+
+                return(list(
+                    rate_with_this_mw = rate_with_this_mw,
+                    mw = mw,
+                    inds = sample_of_k, 
+                    # Regular importance sampling
+                    importance_sampling_scenario_rates = 
+                        alternate_random_scenario_rates, 
+                    # Self-normalised importance sampling
+                    importance_sampling_scenario_rates_self_normalised = 
+                        random_scenario_rates, 
+                    importance_sampling_scenario_weights = alternate_weights,
+                    importance_sampling_scenario_weights_self_normalised = 
+                        random_scenario_rates/rate_with_this_mw 
+                    ))
+            }else{
+                # Case with all rates=0
+                return(list(
+                    rate_with_this_mw = rate_with_this_mw,
+                    mw = mw,
+                    inds = NA, 
+                    importance_sampling_scenario_rates = NA, 
+                    importance_sampling_scenario_rates_self_normalised = NA,
+                    importance_sampling_scenario_weights = NA,
+                    importance_sampling_scenario_weights_self_normalised = NA
+                    ))
+            }
+        })
+
+    names(random_scenario_info) = as.character(unique_Mw)
+
+    return(random_scenario_info)
+}
+
