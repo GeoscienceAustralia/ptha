@@ -118,9 +118,9 @@ then most likely there is no problem, but you probably never sourced the script
 [get_detailed_PTHA18_source_zone_info.R](get_detailed_PTHA18_source_zone_info.R).
 That script needs to do a one-off large download of some data to your
 machine. Here we only run the tests for that script if the data is found on your
-machine. If you open R and do `source('get_detailed_PTHA18_source_zone_info.R')`
-then the data will be downloaded. Once that is done the associated tests will
-be run.
+machine. Althought it is not necessary, in case you want to force that you can
+open R in this directory and do `source('get_detailed_PTHA18_source_zone_info.R')` 
+which will download the data. Then the associated tests can be run.
 
 
 ### ***Obtaining hazard curves at a particular hazard point***
