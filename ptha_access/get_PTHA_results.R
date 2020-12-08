@@ -881,20 +881,21 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
 #' for each magnitude.
 #' @param mw_limits only sample from magnitudes greater than mw_limits[1], and
 #' less than mw_limits[2]
-#' @return a list of lists (one per magnitude). Each contains the overall rate
-#' of scenarios with the given magnitude (rate_with_this_mw), the magnitude
-#' (mw), the random scenario indices corresponding to event_rates and event_Mw
-#' (inds), the product of the rate_with_this_mw and the standard importance
-#' sampling weights for each scenario (importance_sampling_scenario_rates), the
-#' product of the rate_with_this_mw and the self-normalised importance sampling
-#' weights for each scenario
-#' (importance_sampling_scenario_rates_self_normalised), the standard
-#' importance sampling weights for each scenario, which may not sum to 1, but
-#' do so on average, and lead to unbiased integral estimates
+#' @param return_as_table convert the output to a data.frame, rather than a list of lists.
+#' @return a data.frame (if return_as_table=TRUE) or a list of lists (one per magnitude). 
+#' Each contains the overall rate of scenarios with the given magnitude
+#' (rate_with_this_mw), the magnitude (mw), the random scenario indices
+#' corresponding to event_rates and event_Mw (inds), the product of the
+#' rate_with_this_mw and the standard importance sampling weights for each
+#' scenario (importance_sampling_scenario_rates), the product of the
+#' rate_with_this_mw and the self-normalised importance sampling weights for
+#' each scenario (importance_sampling_scenario_rates_self_normalised), the
+#' standard importance sampling weights for each scenario, which may not sum to
+#' 1, but do so on average, and lead to unbiased integral estimates
 #' (importance_sampling_scenario_weights), and the self-normalised importance
 #' sampling weights for each scenario, which will sum to 1, but lead to
 #' integral estimates that can be biased (but are asymptotically unbiased).
-#' @details The function returns a list of lists (one per unique magnitude)
+#' @details The function returns either a data.frame or a list of lists (one per unique magnitude)
 #' containing the random scenario indices, and associated rates that can be
 #' assigned to each scenario for consistency with the PTHA18. The rates are
 #' computed with importance sampling, and provide statistical consistency with
@@ -926,7 +927,8 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
     event_Mw,
     event_importance = NULL,
     samples_per_Mw=function(Mw){round(50 + 0*Mw)},
-    mw_limits=c(7.15, 9.85)){
+    mw_limits=c(7.15, 9.85),
+    return_as_table=TRUE){
 
     unique_Mw = sort(unique(event_Mw))
 
@@ -959,10 +961,10 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 
             # Get the rate of any event with this mw
             rate_with_this_mw = sum(event_rates[k])
+            nsam = round(samples_per_Mw(mw))
 
-            if(sum(event_rates[k] * event_importance[k]) > 0){
+            if((nsam > 0) & sum(event_rates[k] * event_importance[k]) > 0){
 
-                nsam = samples_per_Mw(mw)
                 local_sample = sample(1:length(k), size=nsam, 
                     prob=event_rates[k]*event_importance[k], 
                     replace=TRUE)
@@ -996,10 +998,10 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                 alternate_random_scenario_rates = 
                     rate_with_this_mw * alternate_weights
 
-                return(list(
-                    rate_with_this_mw = rate_with_this_mw,
-                    mw = mw,
+                return(data.frame(
                     inds = sample_of_k, 
+                    mw = rep(mw, nsam),
+                    rate_with_this_mw = rep(rate_with_this_mw, nsam),
                     # Regular importance sampling
                     importance_sampling_scenario_rates = 
                         alternate_random_scenario_rates, 
@@ -1012,10 +1014,10 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                     ))
             }else{
                 # Case with all rates=0
-                return(list(
-                    rate_with_this_mw = rate_with_this_mw,
-                    mw = mw,
+                return(data.frame(
                     inds = NA, 
+                    mw = mw,
+                    rate_with_this_mw = rate_with_this_mw,
                     importance_sampling_scenario_rates = NA, 
                     importance_sampling_scenario_rates_self_normalised = NA,
                     importance_sampling_scenario_weights = NA,
@@ -1024,7 +1026,10 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
             }
         })
 
-    names(random_scenario_info) = as.character(unique_Mw)
+    if(return_as_table){
+        #names(random_scenario_info) = as.character(unique_Mw)
+        random_scenario_info = do.call(rbind, random_scenario_info)
+    }
 
     return(random_scenario_info)
 }
