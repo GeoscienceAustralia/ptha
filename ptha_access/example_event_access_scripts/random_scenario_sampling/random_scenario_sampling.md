@@ -226,14 +226,6 @@ sense the random sample is statistically consistent with the PTHA18.
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
      xlab='Max-stage (m)', ylab='Exceedance rate (events/year)', 
      main='PTHA18 stage-exrate curve vs random sample of scenarios')
-```
-
-```
-## Warning in xy.coords(x, y, xlabel, ylabel, log): 4 y values <= 0 omitted from
-## logarithmic plot
-```
-
-```r
 points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
 grid(col='orange')
 legend('bottomleft', c('Original PTHA18 [desired result]', 'Random scenarios (simple)'),
@@ -263,15 +255,7 @@ stage_exrates_rs_simple_many = sapply(stage_seq,
 
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
      xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='Demonstration that using more random scenarios improves the accuracy')
-```
-
-```
-## Warning in xy.coords(x, y, xlabel, ylabel, log): 4 y values <= 0 omitted from
-## logarithmic plot
-```
-
-```r
+     main='Demonstration that using more random scenarios \n improves the accuracy')
 points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
 points(stage_seq, stage_exrates_rs_simple_many, t='l', col='green')
 grid(col='orange')
@@ -298,8 +282,24 @@ scenarios are sampled).
 --------------------------------------------------------------------------
 
 The simple random sample has many scenario with low maximum-stage values, which
-are not of particular interest for this study. (DEMONSTRATE WITH A HIST)
+are not of particular interest for this study. For instance half of all the scenarios
+are less than NA. 
 
+```r
+quantile(event_peak_stage[random_scenarios_simple$inds], seq(0, 1, len=5))
+```
+
+```
+## Error in quantile.default(event_peak_stage[random_scenarios_simple$inds], : missing values and NaN's not allowed if 'na.rm' is FALSE
+```
+In practice we will be interested in larger waves, and it seems inefficient to sample
+smaller waves so heavily.
+
+A potentially improved strategy is to sample more scenarios at higher
+magnitudes, which are more likely to generate larger waves. We can do this by
+adjusting `samples_per_Mw`. Many approaches could be tried - here we linearly
+vary the number of scenarios from 6 at Mw 7.2, up to 18 at Mw 9.6. Note that on
+average this leads to the same number of scenarios as the previous approach.
 
 ```r
 # Make the random scenarios
@@ -318,26 +318,22 @@ stage_exrates_rs_mw_weighted = sapply(stage_seq,
     })
 ```
 
-This one is not that much better in terms of the concentration at higher max-stage
-values.
+In this particular case the result is not greatly improved, although it
+arguably looks better at rarer exceedance-rates (as compared with the case with
+12 scenarios for each magnitude bin). The benefit of putting more sampling
+effort into higher magnitudes will vary case-by-case; it is most useful when
+you have strong reason to think that low magnitudes are unimportant for your
+study.
 
 
 ```r
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
      xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='PTHA18 stage-exrate curve vs random sample with more scenarios at higher magnitudes')
-```
-
-```
-## Warning in xy.coords(x, y, xlabel, ylabel, log): 4 y values <= 0 omitted from
-## logarithmic plot
-```
-
-```r
+     main='PTHA18 stage-exrate curve vs random sample \n with sampling concentrated at higher Mw')
 points(stage_seq, stage_exrates_rs_mw_weighted, t='l', col='blue')
 grid(col='orange')
-legend('bottomleft', c('Original PTHA18 [desired result]', 'More scenarios at higher Mw'),
+legend('bottomleft', c('Original PTHA18 [desired result]', 'Sampling concentrated at higher Mw'),
        col=c('black', 'blue'), lty=c(1, 1), pch=c(1, NA))
 ```
 
@@ -371,15 +367,8 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
      xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='PTHA18 stage-exrate curve vs random sample with max-stage importance-sampling')
-```
+     main='PTHA18 stage-exrate curve vs random sample with max-stage \n importance-sampling AND sampling concentrated at high Mw')
 
-```
-## Warning in xy.coords(x, y, xlabel, ylabel, log): 4 y values <= 0 omitted from
-## logarithmic plot
-```
-
-```r
 points(stage_seq, stage_exrates_rs_stage_mw_weighted, t='l', col='purple')
 grid(col='orange')
 legend('bottomleft', c('Original PTHA18 [desired result]', 'Importance based on event_peak_stage'),
@@ -401,21 +390,13 @@ and randomisation tests.
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
      xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='Comparison of all approaches above')
-```
-
-```
-## Warning in xy.coords(x, y, xlabel, ylabel, log): 4 y values <= 0 omitted from
-## logarithmic plot
-```
-
-```r
+     main='Comparison of all approaches')
 points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
 points(stage_seq, stage_exrates_rs_mw_weighted, t='l', col='blue')
 points(stage_seq, stage_exrates_rs_stage_mw_weighted, t='l', col='purple')
 grid(col='orange')
 legend('bottomleft', c('Original PTHA [best result]', 'Simple random sampling (12 per Mw)', 
-    'More scenarios at higher Mw', 'Importance based on event_peak_stage'), 
+    'Sampling concentrated at higher Mw', 'Importance based on event_peak_stage'), 
     bty='n',  col=c('black', 'red', 'blue', 'purple'), lwd = c(2, 1, 1, 1))
 ```
 
