@@ -16,20 +16,12 @@ The first step is to get the scenario data for the source-zone of interest.
 Here we choose to work with heterogeneous-slip scenarios from the
 `kermadectonga2` source-zone. 
 
-Firstly we source the scripts to work with the PTHA18 data.
-
 ```r
 # Get the scripts to access the PTHA18
 ptha18 = new.env()
 source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
 # Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in PTHA18)
 kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
-names(kt2_scenarios)
-```
-
-```
-## [1] "events"                 "unit_source_statistics" "gauge_netcdf_files"    
-## [4] "events_file"            "unit_source_file"       "tsunami_events_file"
 ```
 
 ## (Optional) A quick look at the scenarios data structure
@@ -119,12 +111,13 @@ names(kt2_scenarios$events)
 ## [25] "rate_annual_84pc"                    
 ## [26] "rate_annual_median"
 ```
-For a detailed discussion of these variables, see [../../DETAILED_README.md](../../DETAILED_README.md).
+For further discussion, see [../../DETAILED_README.md](../../DETAILED_README.md).
 
-For our purposes, one important variable is `Mw`, the scenario moment
-magnitude.  The moment magnitudes are binned and cover the range 7.2, 7.3, ...,
-9.8 although the higher magnitudes may be impossible according to PTHA18 (i.e.
-assigned a rate of 0).
+For our purposes an important variable is `Mw`, the scenario moment
+magnitude. The scenario moment magnitudes are binned and take values in 7.2, 7.3, ...,
+9.8. Beware that some of the higher magnitudes will be impossible according to PTHA18, and
+these are assigned a rate of zero. The PTHA18 maximum-magnitude varies
+depending on the source-zone, but is never greater than 9.6.
 
 ```r
 # Print all unique Mw values -- beware not all of these will be "possible" according
@@ -136,17 +129,17 @@ unique(kt2_scenarios$events$Mw)
 ##  [1] 7.2 7.3 7.4 7.5 7.6 7.7 7.8 7.9 8.0 8.1 8.2 8.3 8.4 8.5 8.6 8.7 8.8 8.9 9.0
 ## [20] 9.1 9.2 9.3 9.4 9.5 9.6 9.7 9.8
 ```
-In this tutorial another important variable is the `rate_annual`, which varies for
-each scenario. This is equal to the scenario conditional probability (conditional on
-the occurrence of an earthquake with the same magnitude) multiplied by the
-logic-tree-mean-rate of scenarios with that magnitude (events/year), according
-to the PTHA18. 
+For the purpose of random scenario sampling, an important variable is
+`rate_annual`. In general this varies for each scenario, and is equal to the scenario
+conditional probability (conditional on the occurrence of an earthquake with
+the same magnitude) multiplied by the logic-tree-mean-rate of scenarios with
+that magnitude (events/year). 
 
-Recall that the scenario conditional probability varies between scenarios, and
-is used to account for spatial variations in tectonic convergence, to limit the
-scenario peak-slip, and to adjust for bias in the earthquake-source models
-(although this is more prominent for variable-area-uniform-slip scenarios than
-for heterogeneous-slip scenarios).  See 
+Recall that PTHA18 uses variations in the scenario conditional probability to
+account for spatial variations in tectonic convergence, to limit the scenario
+peak-slip, and to adjust for bias in the earthquake-source models (although
+this is more prominent for variable-area-uniform-slip scenarios than for
+heterogeneous-slip scenarios). See 
 [this paper](https://doi.org/10.1007/s00024-019-02299-w) for further information.
 
 ## Random scenario sampling, stratified by magnitude
@@ -183,12 +176,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1  198 7.2        0.05704921                        0.004754101
-## 2 2752 7.2        0.05704921                        0.004754101
-## 3 2438 7.2        0.05704921                        0.004754101
-## 4 1675 7.2        0.05704921                        0.004754101
-## 5 1199 7.2        0.05704921                        0.004754101
-## 6  548 7.2        0.05704921                        0.004754101
+## 1 2686 7.2        0.05704921                        0.004754101
+## 2  603 7.2        0.05704921                        0.004754101
+## 3  705 7.2        0.05704921                        0.004754101
+## 4 2165 7.2        0.05704921                        0.004754101
+## 5  989 7.2        0.05704921                        0.004754101
+## 6 1640 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -211,9 +204,14 @@ head(random_scenarios_simple)
 ## 5                                           0.08333333
 ## 6                                           0.08333333
 ```
-Here `inds` corresponds to indices in the `event_Mw` and `event_rates`
-variables. Because these were created directly from the event table, the event
-indices also correspond to rows in `kt2_scenarios$events`.
+The columns are
+* `inds` is the indices of the randomly selected scenarios. This corresponds to indices in the `event_Mw` and `event_rates` variables. Because herein these are simply columns of the event table, `inds` also also correspond to rows in `kt2_scenarios$events`.
+* `mw` is the scenario magnitude. This is the same as `event_Mw[random_scenarios_simple$inds]`
+* `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
+* `importance_sampling_scenario_rates` is a nominal rate for each scenario which retains statistical consistency with the PTHA18. In this particular case it is simply equal to the `rate_with_this_mw` divided by the number of scenarios with that same magnitude (12 in this case). 
+* `importance_sampling_scenario_rates_self_normalised` is another nominal rate for each scenario. In this case it is identical to the previous variable. However later we will consider more complex sampling methods, using importance sampling, where it may be somewhat different (basically it uses an alternative statistical estimate of the nominal scenario rate).
+* `importance_sampling_scenario_weights` is equal to `importance_sampling_scenario_rates` divided by `rate_with_this_mw`. Later when we do importance sampling, this corresponds to the regular importance sampling weights. 
+* `importance_sampling_scenario_weights_self_normalised` is equal to `importance_sampling_scenario_rates_self_normalised` divided by `rate_with_this_mw`. Later when we do importance sampling, this corresponds to the self-normalised importance sampling weights. 
 
 
 In PTHA18 some earthquake magnitudes are impossible. In this case the scenario index will
@@ -228,10 +226,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44104 9.6      5.323646e-05                       4.436371e-06
-## 298 44283 9.6      5.323646e-05                       4.436371e-06
-## 299 44274 9.6      5.323646e-05                       4.436371e-06
-## 300 44108 9.6      5.323646e-05                       4.436371e-06
+## 297 44091 9.6      5.323646e-05                       4.436371e-06
+## 298 44268 9.6      5.323646e-05                       4.436371e-06
+## 299 44267 9.6      5.323646e-05                       4.436371e-06
+## 300 44190 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised
