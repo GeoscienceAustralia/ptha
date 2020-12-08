@@ -1,0 +1,116 @@
+# Randomly sample PTHA18 scenarios on a source-zone
+-------------------------------------------------
+
+The PTHA18 often includes thousands or tens-of-thousands of scenarios on a
+source-zone. For some applications it is impractical to work with all
+scenarios, but may be practical to work with a random sample of scenarios.
+
+This tutorial shows how to randomly sample scenarios from a given source-zone in
+a manner that respects the PTHA18 scenario conditional probabilities and earthquake
+magnitude-frequency modelling. 
+
+## Get the source-zone event data
+---------------------------------
+
+Here we choose to work with heterogeneous-slip scenarios from the
+`kermadectonga2` source-zone. 
+
+Firstly we source the scripts to work with the PTHA18 data.
+```{r startup}
+# Get the scripts to access the PTHA18
+ptha18 = new.env()
+source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
+```
+
+Next we read all scenarios on the kermadectonga2 source-zone.
+Here `kt2_scenarios` is a list containing the event table, 
+the unit-source-statistics table, and the names of various files
+holding data for the source-zone
+```{r readScenarios}
+# Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in
+# PTHA18)
+kt2_scenarios = ptha18$get_source_zone_events_data(
+    'kermadectonga2', 
+    slip_type='stochastic')
+names(kt2_scenarios)
+```
+
+There are over 44-thousand scenarios in the database, with one
+row per scenario in the event table
+```{r numscenarios}
+# How many rows in the scenario events table?
+nrow(kt2_scenarios$events)
+# What are the column-names of the event table?
+names(kt2_scenarios$events)
+```
+
+For our purposes, one important variable is `Mw` (scenario moment magnitude).
+The moment magnitudes are binned and cover the range 7.2, 7.3, ..., 9.8
+although the higher magnitudes may be impossible (in which case all scenarios
+are assigned a rate of 0).
+```{r mwunique}
+# Print all unique Mw values -- beware not all of these will be "possible" according
+# to PTHA18, as some will have zero probability of occurring.
+unique(kt2_scenarios$events$Mw)
+```
+In this tutorial another important variable is the `rate_annual`, which varies for
+each scenario. This is equal to the scenario conditional probability (conditional on
+the occurrance of an earthquake with the same magnitude) multiplied by the
+logic-tree-mean-rate of scenarios with that magnitude (events/year), according
+to the PTHA18. 
+
+Recall that the scenario conditional probability varies between scenarios, and
+is used to account for spatial variations in tectonic convergence, to limit the
+scenraio peak-slip, and to adjust for bias in the earthquake-source models
+(although this is more prominent for variable-area-uniform-slip scenarios than
+for heterogeneous-slip scenarios).  See 
+[this paper](https://doi.org/10.1007/s00024-019-02299-w) for further information.
+
+## Random scenario sampling, stratified by magnitude
+----------------------------------------------------
+
+Our simplest random scenario sampling algorithm proceeds as follows
+* Group the scenarios by magnitude
+* For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability.
+
+This can be implemented as follows (herein we select 12 scenarios for each magnitude)
+```{r randomSampling1}
+# Convenient shorthand for the magnitudes and rates in the event table
+event_Mw = kt2_scenarios$events$Mw
+event_rates = kt2_scenarios$events$rate_annual
+
+# Make the random scenarios
+random_scenarios_simple = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+    event_rates=event_rates,
+    event_Mw=event_Mw,
+    samples_per_Mw=function(Mw){ 12 },
+    mw_limits=c(7.15, 9.85))
+
+```
+
+The result is a `data.frame` containing the indices of the random scenarios `inds`,
+their magnitudes, `mw`, as well as information on the scenario rates that will be discussed
+further below.
+
+```{r randomSampling1_B}
+# Look at the first few rows
+head(random_scenarios_simple)
+```
+Here `inds` corresponds to indices in the `event_Mw` and `event_rates`
+variables. Because these were created directly from the event table, the event
+indices also correspond to rows in `kt2_scenarios$events`.
+
+
+In PTHA18 some earthquake magnitudes are impossible. In this case the scenario index will
+take an `NA` value, as will various other variables. We see this at the end of the current
+table, for magnitudes `9.7` and `9.8`.
+
+```{r randomSampling1_C}
+# Look at the last few rows
+tail(random_scenarios_simple)
+```
+
+Aside from the impossible magnitudes, we can confirm that we have 12 scenarios per magnitude, as requested.
+```{r randomSampling1_nsam}
+table(random_scenarios_simple$mw)
+```
