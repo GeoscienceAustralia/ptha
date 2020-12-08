@@ -207,6 +207,16 @@ stage_exrates_random_scenarios_simple = sapply(stage_seq,
 # points(stage_seq, stage_exrates_random_scenarios_simple, t='l', col='red')
 ```
 
+While not identical, the results are obviously quite similar. If we increased
+the number of random scenarios per magnitude from 12 to something larger, the
+accuracy would improve. 
+
+Although in this case we could just use the full PTHA18 results, in other
+situations we might be interested in the tsunami behaviour away from PTHA18
+output points - for instance at an onshore site of interest. In that case we need to
+re-simulate the tsunami for every scenario with a relatively costly inundation
+model. While this is likely computationally prohibitive for the full set of
+PTHA18 scenarios, it may be feasible for a random subset of scenarios.
 
 ## Random scenario sampling, with more scenarios at magnitudes of interest
 --------------------------------------------------------------------------
