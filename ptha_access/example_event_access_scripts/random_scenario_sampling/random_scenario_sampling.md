@@ -59,12 +59,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1 1936 7.2        0.05704921                        0.004754101
-## 2 2885 7.2        0.05704921                        0.004754101
-## 3  366 7.2        0.05704921                        0.004754101
-## 4  808 7.2        0.05704921                        0.004754101
-## 5 1078 7.2        0.05704921                        0.004754101
-## 6 1333 7.2        0.05704921                        0.004754101
+## 1 2491 7.2        0.05704921                        0.004754101
+## 2  169 7.2        0.05704921                        0.004754101
+## 3 2828 7.2        0.05704921                        0.004754101
+## 4 2132 7.2        0.05704921                        0.004754101
+## 5 1089 7.2        0.05704921                        0.004754101
+## 6 1354 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -90,9 +90,9 @@ head(random_scenarios_simple)
 The columns are
 * `inds` is the indices of the randomly selected scenarios. This corresponds to indices in the `event_Mw` and `event_rates` variables. Because herein these are simply columns of the event table, `inds` also also correspond to rows in `kt2_scenarios$events`.
 * `mw` is the scenario magnitude. This is the same as `event_Mw[random_scenarios_simple$inds]`
-* `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
-* `importance_sampling_scenario_rates` is a nominal rate for each scenario which retains statistical consistency with the PTHA18. In this particular case it is simply equal to the `rate_with_this_mw` divided by the number of scenarios with that same magnitude (12 in this case). 
-* `importance_sampling_scenario_rates_self_normalised` is another nominal rate for each scenario. In this case it is identical to the previous variable. However later we will consider more complex sampling methods, using importance sampling, where it may be somewhat different (basically it uses an alternative statistical estimate of the nominal scenario rate).
+* `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. This is the same as `event_rates[random_scenarios_simple$inds]`. Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
+* `importance_sampling_scenario_rates` is a nominal rate for each scenario, defined so as to retain statistical consistency with the PTHA18. In this particular case it is equal to the `rate_with_this_mw` divided by the number of scenarios with that same magnitude (12 in this case). In more complex applications we can specify an `event_importance` to bias the sampling toward scenarios of interest, and in that case its definition is more complicated, but the interpretation is similar.
+* `importance_sampling_scenario_rates_self_normalised` is another nominal rate for each scenario. In this case it is identical to the previous variable. However later we will consider more complex sampling methods, using importance sampling, where it may be somewhat different (basically it can be considered as an alternative statistical estimator of the same thing).
 * `importance_sampling_scenario_weights` is equal to `importance_sampling_scenario_rates` divided by `rate_with_this_mw`. Later when we do importance sampling, this corresponds to the regular importance sampling weights. 
 * `importance_sampling_scenario_weights_self_normalised` is equal to `importance_sampling_scenario_rates_self_normalised` divided by `rate_with_this_mw`. Later when we do importance sampling, this corresponds to the self-normalised importance sampling weights. 
 
@@ -109,10 +109,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44104 9.6      5.323646e-05                       4.436371e-06
-## 298 44099 9.6      5.323646e-05                       4.436371e-06
-## 299 44249 9.6      5.323646e-05                       4.436371e-06
-## 300 44094 9.6      5.323646e-05                       4.436371e-06
+## 297 44105 9.6      5.323646e-05                       4.436371e-06
+## 298 44206 9.6      5.323646e-05                       4.436371e-06
+## 299 44107 9.6      5.323646e-05                       4.436371e-06
+## 300 44202 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised
