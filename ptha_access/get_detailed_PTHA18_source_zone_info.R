@@ -150,50 +150,6 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
     VAUS_event_rates = VAUS_data$child_conditional_prob * 
         FAUS_event_rates[VAUS_data$uniform_event_row]
 
-    ## These should either be '1' (or '0' for impossible magnitudes).
-    # aggregate(HS_prob_given_Mw, by=list(HS_data$Mw), sum)
-    # aggregate(VAUS_prob_given_Mw, by=list(VAUS_data$Mw), sum)
-
-    # Below are some plots used for ad-hoc check of the code [should ONLY work
-    # for TOTALLY UNSEGMENTED source-zones]. It will not work where PTHA18 puts
-    # partial weight on segmentation.
-    if(FALSE){
-
-        # For a totally UNSEGMENTED source-zone [e.g. puysegur2, newguinea2 ],
-        # the following should plot on the 1:1 line. I confirmed it does for
-        # "puysegur2" and "newguinea2".
-        plot(HS_data$parent_uniform_scenario_rate, 
-             FAUS_event_rates[HS_data$uniform_event_row])
-        grid(); abline(0, 1, col='red')
-        # If the source-zone includes partial weight on a segmented
-        # interpretation (e.g. as do most of our large source-zones), then it
-        # won't plot on the 1:1 line in general, because the "file-values" read
-        # above represent a mixture of the different segment interpretations
-
-        # Absolute error -- should be within round-off on totally UNSEGMENTED
-        # source-zones. I confirmed this holds for puysegur2 and newguinea2
-        plot((HS_data$parent_uniform_scenario_rate - 
-              FAUS_event_rates[HS_data$uniform_event_row]))
-
-        ## Relative error -- should be consistent with round-off on totally
-        ## UNSEGMENTED source-zones, beware near-zero division.
-        ## I confirmed this holds for puysegur2 and newguinea2
-        plot((HS_data$parent_uniform_scenario_rate - 
-              FAUS_event_rates[HS_data$uniform_event_row])/
-             HS_data$parent_uniform_scenario_rate)
-
-        # Plots as above, for VAUS
-        plot(VAUS_data$parent_uniform_scenario_rate, 
-             FAUS_event_rates[VAUS_data$uniform_event_row])
-        grid(); abline(0, 1, col='red')
-
-        plot((VAUS_data$parent_uniform_scenario_rate - 
-              FAUS_event_rates[VAUS_data$uniform_event_row]))
-        plot((VAUS_data$parent_uniform_scenario_rate - 
-              FAUS_event_rates[VAUS_data$uniform_event_row])/
-             VAUS_data$parent_uniform_scenario_rate)
-    }
-
     output = list(FAUS_prob_given_Mw = FAUS_conditional_probabilities,
                   FAUS_event_rates = FAUS_event_rates,
                   FAUS_mw = FAUS_mw,
@@ -208,4 +164,91 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
 
     return(output)
 
+}
+
+
+.test_kermadectonga2<-function(){
+
+    # Read unsegmented and segmented sources from PTHA18 kermadectonga2 source
+    source_zone = 'kermadectonga2'
+    kt_full      = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, '')
+    kt_tonga     = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'tonga')
+    kt_kermadec  = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'kermadec')
+    kt_hikurangi = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'hikurangi')
+
+    # Double check consistency with PTHA18 files.
+
+    # Weighted sum of 'unsegmented' and 'union of segments' rates as used in PTHA18
+    back_calculated_HS_rates_combination = 
+        0.5*(kt_full$HS_event_rates) + 
+        0.5*(kt_tonga$HS_event_rates + 
+             kt_kermadec$HS_event_rates + 
+             kt_hikurangi$HS_event_rates)
+
+    # Compare with PTHA18 file scenaro rates -- it should be the same to within floating
+    # point 
+    nc_file  = paste0(ptha18$config_env$.GDATA_OPENDAP_BASE_LOCATION,
+        'SOURCE_ZONES/', source_zone, '/TSUNAMI_EVENTS/all_', 'stochastic',
+        '_slip_earthquake_events_', source_zone, '.nc')
+    fid = nc_open(nc_file, readunlim=FALSE)
+    rates_full_source = ncvar_get(fid, 'rate_annual')
+    nc_close(fid)
+
+    err = back_calculated_HS_rates_combination-rates_full_source
+    if(all(abs(err) < 1.0e-16)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+    return(invisible(0))
+}
+
+.test_unsegmented_source<-function(){
+
+    # Read unsegmented and segmented sources from PTHA18 kermadectonga2 source
+    source_zone = 'puysegur2'
+    sz_full = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, '')
+
+    # The conditional probability of a given magnitude should either sum to
+    # '1', or '0' for impossible magnitudes, up to floating point
+    t1 = aggregate(sz_full$HS_prob_given_Mw, by=list(sz_full$HS_mw), sum)
+    tester = (t1$x == 0) | (abs(t1$x - 1) < 1.0e-14)
+    if(all(tester)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+    # As above for VAUS scenarios
+    t2 = aggregate(sz_full$VAUS_prob_given_Mw, by=list(sz_full$VAUS_mw), sum)
+    tester = (t2$x == 0) | (abs(t2$x - 1) < 1.0e-14)
+    if(all( tester )){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+
+    # Consistent HS and FAUS rates
+    t1 = aggregate(sz_full$HS_event_rates, by=list(sz_full$HS_uniform_event_row), sum)
+    t2 = sz_full$FAUS_event_rates[t1[,1]]
+    err = abs(t1$x - t2)
+    if(all(err < 1.0e-16)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+
+    # Consistent VAUS and FAUS rates
+    t1 = aggregate(sz_full$VAUS_event_rates, by=list(sz_full$VAUS_uniform_event_row), sum)
+    t2 = sz_full$FAUS_event_rates[t1[,1]]
+    err = abs(t1$x - t2)
+    if(all(err < 1.0e-16)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+}
+
+test_get_detailed_PTHA18_source_zone_info<-function(){
+    .test_kermadectonga2()
+    .test_unsegmented_source()
 }

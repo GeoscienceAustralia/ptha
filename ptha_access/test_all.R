@@ -156,4 +156,12 @@ test_large_event_read<-function(){
 
 test_large_event_read()
 
+
+# Test that we can work with the detailed scenario information. ONLY do it if
+# compute_rates_all_sources_session.RData exists locally [since otherwise the
+# download will be slow]
+detailed_ptha18 = new.env()
+source('get_detailed_PTHA18_source_zone_info.R', local=detailed_ptha18)
+detailed_ptha18$test_get_detailed_PTHA18_source_zone_info()
+
 Rprof(NULL)

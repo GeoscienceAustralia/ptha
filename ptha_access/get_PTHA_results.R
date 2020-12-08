@@ -938,7 +938,8 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
     }
 
     # Ignore small scenarios, and scenarios exceeding Mw-max
-    unique_Mw = unique_Mw[(unique_Mw > mw_limits[1] & unique_Mw < mw_limits[2])] 
+    unique_Mw = unique_Mw[ ((unique_Mw > mw_limits[1]) & 
+                            (unique_Mw < mw_limits[2])) ] 
 
     # By default give all scenarios equal importance.
     if(is.null(event_importance)) event_importance = event_Mw * 0 + 1
