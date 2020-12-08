@@ -23,30 +23,6 @@ source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
 kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
 ```
 
-## (Optional) A quick look at the scenarios data structure
-
-Recall that the scenario data is stored in a list, containing an `events` table,
-a `unit_source_statistics` data.frame, and various filenames relevant to the source-zone.
-Herein we provide a quick overview; for further discussion see [../../DETAILED_README.md](../../DETAILED_README.md).
-```{r datastructure}
-# Names of variables in scenario data
-names(kt2_scenarios)
-
-# Get the class of each variable
-lapply(kt2_scenarios, class)
-```
-
-There are over 44-thousand scenarios in the database, with one row per scenario in the event table
-```{r numscenarios}
-# How many rows in the scenario events table?
-nrow(kt2_scenarios$events)
-```
-
-What variables are stored in the event table? Use the `names` function to see the column names. 
-```{r columnNames}
-names(kt2_scenarios$events)
-```
-
 For our purposes an important variable is `Mw`, the scenario moment
 magnitude. The scenario moment magnitudes are binned and take values in 7.2, 7.3, ...,
 9.8. Beware that some of the higher magnitudes will be impossible according to PTHA18, and
@@ -57,11 +33,10 @@ depending on the source-zone, but is never greater than 9.6.
 # to PTHA18, as some will have zero probability of occurring.
 unique(kt2_scenarios$events$Mw)
 ```
-For the purpose of random scenario sampling, an important variable is
-`rate_annual`. In general this varies for each scenario, and is equal to the scenario
-conditional probability (conditional on the occurrence of an earthquake with
-the same magnitude) multiplied by the logic-tree-mean-rate of scenarios with
-that magnitude (events/year). 
+Another important variable is `rate_annual`. In general this varies for each
+scenario, and is equal to the scenario conditional probability (conditional on
+the occurrence of an earthquake with the same magnitude) multiplied by the
+logic-tree-mean-rate of scenarios with that magnitude (events/year). 
 
 Recall that PTHA18 uses variations in the scenario conditional probability to
 account for spatial variations in tectonic convergence, to limit the scenario

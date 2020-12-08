@@ -24,93 +24,6 @@ source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
 kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
 ```
 
-## (Optional) A quick look at the scenarios data structure
-
-Recall that the scenario data is stored in a list, containing an `events` table,
-a `unit_source_statistics` data.frame, and various filenames relevant to the source-zone.
-Herein we provide a quick overview; for further discussion see [../../DETAILED_README.md](../../DETAILED_README.md).
-
-```r
-# Names of variables in scenario data
-names(kt2_scenarios)
-```
-
-```
-## [1] "events"                 "unit_source_statistics" "gauge_netcdf_files"    
-## [4] "events_file"            "unit_source_file"       "tsunami_events_file"
-```
-
-```r
-# Get the class of each variable
-lapply(kt2_scenarios, class)
-```
-
-```
-## $events
-## [1] "data.frame"
-## 
-## $unit_source_statistics
-## [1] "data.frame"
-## 
-## $gauge_netcdf_files
-## [1] "character"
-## 
-## $events_file
-## [1] "character"
-## 
-## $unit_source_file
-## [1] "character"
-## 
-## $tsunami_events_file
-## [1] "character"
-```
-
-There are over 44-thousand scenarios in the database, with one row per scenario in the event table
-
-```r
-# How many rows in the scenario events table?
-nrow(kt2_scenarios$events)
-```
-
-```
-## [1] 44685
-```
-
-What variables are stored in the event table? Use the `names` function to see the column names. 
-
-```r
-names(kt2_scenarios$events)
-```
-
-```
-##  [1] "event_index_string"                  
-##  [2] "event_slip_string"                   
-##  [3] "Mw"                                  
-##  [4] "target_lon"                          
-##  [5] "target_lat"                          
-##  [6] "peak_slip_downdip_ind"               
-##  [7] "peak_slip_alongstrike_ind"           
-##  [8] "physical_corner_wavenumber_x"        
-##  [9] "physical_corner_wavenumber_y"        
-## [10] "sourcename"                          
-## [11] "uniform_event_row"                   
-## [12] "rate_annual"                         
-## [13] "rate_annual_lower_ci"                
-## [14] "rate_annual_upper_ci"                
-## [15] "variable_mu_Mw"                      
-## [16] "variable_mu_rate_annual"             
-## [17] "variable_mu_rate_annual_lower_ci"    
-## [18] "variable_mu_rate_annual_upper_ci"    
-## [19] "variable_mu_rate_annual_median"      
-## [20] "variable_mu_rate_annual_16pc"        
-## [21] "variable_mu_rate_annual_84pc"        
-## [22] "variable_mu_weight_with_nonzero_rate"
-## [23] "weight_with_nonzero_rate"            
-## [24] "rate_annual_16pc"                    
-## [25] "rate_annual_84pc"                    
-## [26] "rate_annual_median"
-```
-
 For our purposes an important variable is `Mw`, the scenario moment
 magnitude. The scenario moment magnitudes are binned and take values in 7.2, 7.3, ...,
 9.8. Beware that some of the higher magnitudes will be impossible according to PTHA18, and
@@ -174,12 +87,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1  387 7.2        0.05704921                        0.004754101
-## 2 1762 7.2        0.05704921                        0.004754101
-## 3 3003 7.2        0.05704921                        0.004754101
-## 4 1797 7.2        0.05704921                        0.004754101
-## 5 1255 7.2        0.05704921                        0.004754101
-## 6  394 7.2        0.05704921                        0.004754101
+## 1 2623 7.2        0.05704921                        0.004754101
+## 2 1135 7.2        0.05704921                        0.004754101
+## 3 1563 7.2        0.05704921                        0.004754101
+## 4 2234 7.2        0.05704921                        0.004754101
+## 5 2181 7.2        0.05704921                        0.004754101
+## 6 1367 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -224,10 +137,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44264 9.6      5.323646e-05                       4.436371e-06
-## 298 44265 9.6      5.323646e-05                       4.436371e-06
-## 299 44283 9.6      5.323646e-05                       4.436371e-06
-## 300 44097 9.6      5.323646e-05                       4.436371e-06
+## 297 44285 9.6      5.323646e-05                       4.436371e-06
+## 298 44226 9.6      5.323646e-05                       4.436371e-06
+## 299 44104 9.6      5.323646e-05                       4.436371e-06
+## 300 44104 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised
