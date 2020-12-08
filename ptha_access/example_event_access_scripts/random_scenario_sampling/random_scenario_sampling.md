@@ -28,6 +28,7 @@ kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type=
 
 Recall that the scenario data is stored in a list, containing an `events` table,
 a `unit_source_statistics` data.frame, and various filenames relevant to the source-zone.
+Herein we provide a quick overview; for further discussion see [../../DETAILED_README.md](../../DETAILED_README.md).
 
 ```r
 # Names of variables in scenario data
@@ -64,8 +65,7 @@ lapply(kt2_scenarios, class)
 ## [1] "character"
 ```
 
-There are over 44-thousand scenarios in the database, with one
-row per scenario in the event table
+There are over 44-thousand scenarios in the database, with one row per scenario in the event table
 
 ```r
 # How many rows in the scenario events table?
@@ -76,8 +76,7 @@ nrow(kt2_scenarios$events)
 ## [1] 44685
 ```
 
-What variables are stored in the event table? Use the `names` function to see
-the column names. 
+What variables are stored in the event table? Use the `names` function to see the column names. 
 
 ```r
 names(kt2_scenarios$events)
@@ -111,7 +110,6 @@ names(kt2_scenarios$events)
 ## [25] "rate_annual_84pc"                    
 ## [26] "rate_annual_median"
 ```
-For further discussion, see [../../DETAILED_README.md](../../DETAILED_README.md).
 
 For our purposes an important variable is `Mw`, the scenario moment
 magnitude. The scenario moment magnitudes are binned and take values in 7.2, 7.3, ...,
@@ -176,12 +174,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1 2686 7.2        0.05704921                        0.004754101
-## 2  603 7.2        0.05704921                        0.004754101
-## 3  705 7.2        0.05704921                        0.004754101
-## 4 2165 7.2        0.05704921                        0.004754101
-## 5  989 7.2        0.05704921                        0.004754101
-## 6 1640 7.2        0.05704921                        0.004754101
+## 1  387 7.2        0.05704921                        0.004754101
+## 2 1762 7.2        0.05704921                        0.004754101
+## 3 3003 7.2        0.05704921                        0.004754101
+## 4 1797 7.2        0.05704921                        0.004754101
+## 5 1255 7.2        0.05704921                        0.004754101
+## 6  394 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -226,10 +224,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44091 9.6      5.323646e-05                       4.436371e-06
-## 298 44268 9.6      5.323646e-05                       4.436371e-06
-## 299 44267 9.6      5.323646e-05                       4.436371e-06
-## 300 44190 9.6      5.323646e-05                       4.436371e-06
+## 297 44264 9.6      5.323646e-05                       4.436371e-06
+## 298 44265 9.6      5.323646e-05                       4.436371e-06
+## 299 44283 9.6      5.323646e-05                       4.436371e-06
+## 300 44097 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised

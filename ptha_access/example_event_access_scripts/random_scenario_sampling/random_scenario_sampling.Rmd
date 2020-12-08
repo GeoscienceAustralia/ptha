@@ -27,6 +27,7 @@ kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type=
 
 Recall that the scenario data is stored in a list, containing an `events` table,
 a `unit_source_statistics` data.frame, and various filenames relevant to the source-zone.
+Herein we provide a quick overview; for further discussion see [../../DETAILED_README.md](../../DETAILED_README.md).
 ```{r datastructure}
 # Names of variables in scenario data
 names(kt2_scenarios)
@@ -35,19 +36,16 @@ names(kt2_scenarios)
 lapply(kt2_scenarios, class)
 ```
 
-There are over 44-thousand scenarios in the database, with one
-row per scenario in the event table
+There are over 44-thousand scenarios in the database, with one row per scenario in the event table
 ```{r numscenarios}
 # How many rows in the scenario events table?
 nrow(kt2_scenarios$events)
 ```
 
-What variables are stored in the event table? Use the `names` function to see
-the column names. 
+What variables are stored in the event table? Use the `names` function to see the column names. 
 ```{r columnNames}
 names(kt2_scenarios$events)
 ```
-For further discussion, see [../../DETAILED_README.md](../../DETAILED_README.md).
 
 For our purposes an important variable is `Mw`, the scenario moment
 magnitude. The scenario moment magnitudes are binned and take values in 7.2, 7.3, ...,
