@@ -1,4 +1,15 @@
 #
+# The code here works with the PTHA18 "compute_rates_all_sources_session.RData"
+# R session, and so one can interrogate details of the source-zone rate models
+# that are unavailable via the netcdf files.
+#
+# It looks for a local copy of "compute_rates_all_sources_session.RData" and
+# downloads it if it is unavailable. Hence the first time you use it, it may
+# take some time to source().
+#
+
+
+#
 # Get the PTHA18 access codes, needed for functions below
 #
 get_ptha_script = './get_PTHA_results.R'
@@ -6,39 +17,45 @@ ptha18 = new.env()
 source(get_ptha_script, local=ptha18, chdir=TRUE)
 
 #
-# Get the R session resulting from "compute_rates_all_sources.R", needed for functions below
+# Get the R session resulting from "compute_rates_all_sources.R", needed for
+# functions below
 #
 
-# Get the saved R-session associated with the source-zone event-rate computation from PTHA18. 
+# Get the saved R-session associated with the source-zone event-rate
+# computation from PTHA18. 
 compute_rates_session = './compute_rates_all_sources_session.RData'
 if(!file.exists(compute_rates_session)){
     # If we are on NCI we might be able to get a copy from here
-    compute_rates_session_NCI = '/g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/compute_rates_all_sources_session.RData'
+    compute_rates_session_NCI = paste0('/g/data/fj6/PTHA/AustPTHA_1/', 
+        'EVENT_RATES/compute_rates_all_sources_session.RData')
     if(file.exists(compute_rates_session_NCI)){
         file.copy(compute_rates_session_NCI, compute_rates_session)
     }
 }
 if(!file.exists(compute_rates_session)){
     # If the file wasn't found in the above locations, then download it locally
-    compute_rates_session_download = 
-        'http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/compute_rates_all_sources_session.RData'
+    compute_rates_session_download = paste0('http://dapds00.nci.org.au/',
+        'thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/',
+        'compute_rates_all_sources_session.RData')
     download.file(compute_rates_session_download, compute_rates_session)
 }
 crs_data = new.env()
 load(compute_rates_session, envir=crs_data)
 
-
-#' For a given source-zone and segment, get the PTHA18 scenario rates and their conditional
-#' probabilities [conditional on Mw]. Note in regular ptha_access outputs we provide a mixture
-#' of segmented and unsegmented treatments, whereas this function can isolate each segment, as 
-#' well as the unsegmented branch
+#' PTHA18 rates and conditional probabilities on a segment-by-segment basis
+#'
+#' For a given source-zone and segment, get the PTHA18 scenario rates and their
+#' conditional probabilities [conditional on Mw]. Note in regular ptha_access
+#' outputs we provide a mixture of segmented and unsegmented treatments,
+#' whereas this function can isolate each segment, as well as the unsegmented
+#' branch
 #'
 #' @param source_zone name of source-zone in PTHA18
-#' @param segment the name of a segment associated with the source-zone, or '' if referring to the unsegmented source.
+#' @param segment the name of a segment associated with the source-zone, or ''
+#' if referring to the unsegmented source.
 #'
-#' Note that in PTHA18, the 'full' source is often combination of segmented and
-#' unsegmented branches -- whereas here we separate them.
-get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(source_zone, segment=''){
+get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
+    source_zone, segment=''){
 
     if(segment != ''){
         source_zone_segment = paste0(source_zone, '_', segment)
@@ -46,15 +63,18 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(sourc
         source_zone_segment = source_zone
     }
 
-    # Convenient shorthand to refer to the environment with the target source-zones data
+    # Convenient shorthand to refer to the environment with the target
+    # source-zones data
     sz = crs_data$source_envs[[source_zone_segment]]
 
     # Get available Mw values [constant rigidity case]. Should be
     #     7.2, 7.3, ...., 9.6, 9.7, 9.8 
     # but not all of these will have a non-zero rate.
     mws = sort(unique(sz$event_table$Mw))
-    if(!all(abs(diff(mws) - 0.1) < 1.0e-06)) stop('discretization of mws are not as expected')
-    if(!all(abs(range(mws) - c(7.2, 9.8)) < 1.0e-06)) stop('range of mws not as expected')
+    if(!all(abs(diff(mws) - 0.1) < 1.0e-06))
+        stop('discretization of mws are not as expected')
+    if(!all(abs(range(mws) - c(7.2, 9.8)) < 1.0e-06)) 
+        stop('range of mws not as expected')
 
 
     # Get the 'uniform slip' scenario probabilities conditional on Mw.
@@ -99,9 +119,11 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(sourc
         parent_uniform_scenario_rate = rates_full_source*0
         for(i in 1:length(unique_uniform_event_row)){
             k = which(uniform_event_row == unique_uniform_event_row[i])
-            parent_uniform_scenario_rate[k] = sum(rates_full_source[k]) # Deliberately all the same
+            parent_uniform_scenario_rate[k] = 
+                sum(rates_full_source[k]) # Deliberately all the same
             if(parent_uniform_scenario_rate[k[1]] > 0){
-                child_conditional_prob[k] = rates_full_source[k]/parent_uniform_scenario_rate[k]
+                child_conditional_prob[k] = 
+                    rates_full_source[k]/parent_uniform_scenario_rate[k]
             }
         }
 
@@ -140,29 +162,35 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(sourc
         # For a totally UNSEGMENTED source-zone [e.g. puysegur2, newguinea2 ],
         # the following should plot on the 1:1 line. I confirmed it does for
         # "puysegur2" and "newguinea2".
-        plot(HS_data$parent_uniform_scenario_rate, FAUS_event_rates[HS_data$uniform_event_row])
+        plot(HS_data$parent_uniform_scenario_rate, 
+             FAUS_event_rates[HS_data$uniform_event_row])
         grid(); abline(0, 1, col='red')
         # If the source-zone includes partial weight on a segmented
         # interpretation (e.g. as do most of our large source-zones), then it
         # won't plot on the 1:1 line in general, because the "file-values" read
         # above represent a mixture of the different segment interpretations
 
-        # Absolute error -- should be within round-off on totally UNSEGMENTED source-zones
-        # I confirmed this holds for puysegur2 and newguinea2
-        plot((HS_data$parent_uniform_scenario_rate - FAUS_event_rates[HS_data$uniform_event_row]))
+        # Absolute error -- should be within round-off on totally UNSEGMENTED
+        # source-zones. I confirmed this holds for puysegur2 and newguinea2
+        plot((HS_data$parent_uniform_scenario_rate - 
+              FAUS_event_rates[HS_data$uniform_event_row]))
 
         ## Relative error -- should be consistent with round-off on totally
         ## UNSEGMENTED source-zones, beware near-zero division.
         ## I confirmed this holds for puysegur2 and newguinea2
-        plot((HS_data$parent_uniform_scenario_rate - FAUS_event_rates[HS_data$uniform_event_row])/
+        plot((HS_data$parent_uniform_scenario_rate - 
+              FAUS_event_rates[HS_data$uniform_event_row])/
              HS_data$parent_uniform_scenario_rate)
 
         # Plots as above, for VAUS
-        plot(VAUS_data$parent_uniform_scenario_rate, FAUS_event_rates[VAUS_data$uniform_event_row])
+        plot(VAUS_data$parent_uniform_scenario_rate, 
+             FAUS_event_rates[VAUS_data$uniform_event_row])
         grid(); abline(0, 1, col='red')
 
-        plot((VAUS_data$parent_uniform_scenario_rate - FAUS_event_rates[VAUS_data$uniform_event_row]))
-        plot((VAUS_data$parent_uniform_scenario_rate - FAUS_event_rates[VAUS_data$uniform_event_row])/
+        plot((VAUS_data$parent_uniform_scenario_rate - 
+              FAUS_event_rates[VAUS_data$uniform_event_row]))
+        plot((VAUS_data$parent_uniform_scenario_rate - 
+              FAUS_event_rates[VAUS_data$uniform_event_row])/
              VAUS_data$parent_uniform_scenario_rate)
     }
 
@@ -181,5 +209,3 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(sourc
     return(output)
 
 }
-
-
