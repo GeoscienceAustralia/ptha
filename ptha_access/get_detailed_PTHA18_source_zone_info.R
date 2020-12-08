@@ -205,7 +205,7 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
 
 .test_unsegmented_source<-function(){
 
-    # Read unsegmented and segmented sources from PTHA18 kermadectonga2 source
+    # Read unsegmented sources from PTHA18 kermadectonga2 source
     source_zone = 'puysegur2'
     sz_full = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, '')
 

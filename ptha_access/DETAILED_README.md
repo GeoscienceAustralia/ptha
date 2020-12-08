@@ -111,6 +111,11 @@ source('test_all.R')
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
 ```
 **If the above script fails even after repeated trials, you need to troubleshoot
 your installation before proceeding**. [See here](INSTALL.md).
@@ -129,6 +134,11 @@ then check if your internet is working. Also check whether the NCI THREDDS
 server is running (occasionally it goes down for maintenance or technical
 problems).
 
+If you see fewer 'PASS' statements than above, but without obvious failures,
+the most likely reason is that you never worked with the script
+[get_detailed_PTHA18_source_zone_info.R](get_detailed_PTHA18_source_zone_info.R).
+That script needs to do a one-off large download of some data to your
+ machine, and here, the tests for that script only run if the data already exists.
 
 ### ***Obtaining hazard curves at a particular hazard point***
 
