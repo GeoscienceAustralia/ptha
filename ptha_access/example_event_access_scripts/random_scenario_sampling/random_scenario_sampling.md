@@ -22,14 +22,6 @@ Firstly we source the scripts to work with the PTHA18 data.
 # Get the scripts to access the PTHA18
 ptha18 = new.env()
 source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
-```
-
-Next we read all scenarios on the kermadectonga2 source-zone.
-Here `kt2_scenarios` is a list containing the event table, 
-the unit-source-statistics table, and the names of various files
-holding data for the source-zone
-
-```r
 # Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in PTHA18)
 kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
 names(kt2_scenarios)
@@ -40,7 +32,45 @@ names(kt2_scenarios)
 ## [4] "events_file"            "unit_source_file"       "tsunami_events_file"
 ```
 
-## (Optional) A quick look at the event table 
+## (Optional) A quick look at the scenarios data structure
+
+Recall that the scenario data is stored in a list, containing an `events` table,
+a `unit_source_statistics` data.frame, and various filenames relevant to the source-zone.
+
+```r
+# Names of variables in scenario data
+names(kt2_scenarios)
+```
+
+```
+## [1] "events"                 "unit_source_statistics" "gauge_netcdf_files"    
+## [4] "events_file"            "unit_source_file"       "tsunami_events_file"
+```
+
+```r
+# Get the class of each variable
+lapply(kt2_scenarios, class)
+```
+
+```
+## $events
+## [1] "data.frame"
+## 
+## $unit_source_statistics
+## [1] "data.frame"
+## 
+## $gauge_netcdf_files
+## [1] "character"
+## 
+## $events_file
+## [1] "character"
+## 
+## $unit_source_file
+## [1] "character"
+## 
+## $tsunami_events_file
+## [1] "character"
+```
 
 There are over 44-thousand scenarios in the database, with one
 row per scenario in the event table
@@ -153,12 +183,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1  727 7.2        0.05704921                        0.004754101
-## 2  386 7.2        0.05704921                        0.004754101
-## 3  459 7.2        0.05704921                        0.004754101
-## 4   27 7.2        0.05704921                        0.004754101
-## 5  753 7.2        0.05704921                        0.004754101
-## 6   32 7.2        0.05704921                        0.004754101
+## 1  198 7.2        0.05704921                        0.004754101
+## 2 2752 7.2        0.05704921                        0.004754101
+## 3 2438 7.2        0.05704921                        0.004754101
+## 4 1675 7.2        0.05704921                        0.004754101
+## 5 1199 7.2        0.05704921                        0.004754101
+## 6  548 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -198,10 +228,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44165 9.6      5.323646e-05                       4.436371e-06
-## 298 44261 9.6      5.323646e-05                       4.436371e-06
-## 299 44098 9.6      5.323646e-05                       4.436371e-06
-## 300 44094 9.6      5.323646e-05                       4.436371e-06
+## 297 44104 9.6      5.323646e-05                       4.436371e-06
+## 298 44283 9.6      5.323646e-05                       4.436371e-06
+## 299 44274 9.6      5.323646e-05                       4.436371e-06
+## 300 44108 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised

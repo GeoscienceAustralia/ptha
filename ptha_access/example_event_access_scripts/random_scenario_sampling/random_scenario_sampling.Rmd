@@ -21,19 +21,22 @@ Firstly we source the scripts to work with the PTHA18 data.
 # Get the scripts to access the PTHA18
 ptha18 = new.env()
 source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
-```
-
-Next we read all scenarios on the kermadectonga2 source-zone.
-Here `kt2_scenarios` is a list containing the event table, 
-the unit-source-statistics table, and the names of various files
-holding data for the source-zone
-```{r readScenarios}
 # Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in PTHA18)
 kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
 names(kt2_scenarios)
 ```
 
-## (Optional) A quick look at the event table 
+## (Optional) A quick look at the scenarios data structure
+
+Recall that the scenario data is stored in a list, containing an `events` table,
+a `unit_source_statistics` data.frame, and various filenames relevant to the source-zone.
+```{r datastructure}
+# Names of variables in scenario data
+names(kt2_scenarios)
+
+# Get the class of each variable
+lapply(kt2_scenarios, class)
+```
 
 There are over 44-thousand scenarios in the database, with one
 row per scenario in the event table
