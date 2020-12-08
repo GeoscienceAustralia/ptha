@@ -15,3 +15,7 @@ See [extract_a_few_events_adhoc_approach](extract_a_few_events_adhoc_approach)
 ## Initial conditions for scenarios that are similar to historic tsunamis
 
 See [./scenarios_similar_to_historical/](./scenarios_similar_to_historical/)
+
+## Random sampling of scenarios
+
+See [./random_scenario_sampling](./random_scenario_sampling)

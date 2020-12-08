@@ -1,14 +1,23 @@
 # Randomly sample PTHA18 scenarios on a source-zone
--------------------------------------------------
+---------------------------------------------------
 
 The PTHA18 often includes thousands or tens-of-thousands of scenarios on a
 source-zone. For some applications it is impractical to work with all
-scenarios, but may be practical to work with a random sample of scenarios.
+scenarios, but may be practical to work with a random sample of scenarios that
+have similar statistical properties. 
+
+For example, suppose we wish to conduct a probabilistic tsunami inundation
+hazard assessment, which will require running computationally expensive
+inundation models for every scenario. It may be impractical to do this for
+every PTHA18 scenario, but feasible with a random sample containing hundreds or
+thousands of scenarios. 
 
 This tutorial shows how to randomly sample scenarios from a given source-zone
-in a manner that is statistically consistent with the PTHA18 (i.e. respects the
-PTHA18 scenario conditional probabilities and earthquake magnitude-frequency
-modelling).  
+in a manner that is statistically consistent with the PTHA18. This means that
+one can derive quantities of interest (such as the maximum-stage
+exceedance-rate at a hazard point) from the random scenarios, and the result
+will be arbitrarily close to the PTHA18 values IF the random sample is
+sufficiently large. 
 
 ## Get the source-zone event data, and some maximum-stage data.
 ---------------------------------------------------------------
@@ -186,30 +195,41 @@ with the PTHA18? Here we explain this by considering the tsunami max-stage
 exceedance-rates at the point offshore of Tonga.
 
 In the full PTHA, we can compute the max-stage exceedance rates at this
-point using:
+point as follows:
 
 ```r
 stage_seq = seq(0.1, 20, by=0.1)
 stage_exrates_ptha18 = sapply(stage_seq, f<-function(x) sum(event_rates*(event_peak_stage > x)))
-
-# Plot it
-# plot(stage_seq, stage_exrates_ptha18, log='xy', t='o'); grid(col='orange')
 ```
 
-We can do a similar calculation, using only the random sample.
+The analogous calculation using only the random sample is:
 
 ```r
 random_scenarios_peak_stage = event_peak_stage[ random_scenarios_simple$inds ]
 random_scenarios_rates = random_scenarios_simple$importance_sampling_scenario_rates
 stage_exrates_random_scenarios_simple = sapply(stage_seq, 
     f<-function(x) sum(random_scenarios_rates * (random_scenarios_peak_stage > x), na.rm=TRUE))
-
-# points(stage_seq, stage_exrates_random_scenarios_simple, t='l', col='red')
 ```
 
-While not identical, the results are obviously quite similar. If we increased
-the number of random scenarios per magnitude from 12 to something larger, the
-accuracy would improve. 
+While not identical, the results are quite similar at common exceedance-rates.
+If we increased the number of random scenarios per magnitude from 12 to
+something larger, the accuracy would improve. 
+
+```r
+# Plot it
+plot(stage_seq, stage_exrates_ptha18, log='xy', t='o'); grid(col='orange')
+```
+
+```
+## Warning in xy.coords(x, y, xlabel, ylabel, log): 4 y values <= 0 omitted from
+## logarithmic plot
+```
+
+```r
+points(stage_seq, stage_exrates_random_scenarios_simple, t='l', col='red')
+```
+
+![plot of chunk ptha18_tonga_point_plot1](figure/ptha18_tonga_point_plot1-1.png)
 
 Although in this case we could just use the full PTHA18 results, in other
 situations we might be interested in the tsunami behaviour away from PTHA18
@@ -221,3 +241,79 @@ PTHA18 scenarios, it may be feasible for a random subset of scenarios.
 ## Random scenario sampling, with more scenarios at magnitudes of interest
 --------------------------------------------------------------------------
 
+The simple random sample has many scenario with low maximum-stage values, which
+are not of particular interest for this study. (DEMONSTRATE WITH A HIST)
+
+
+```r
+# Make the random scenarios
+random_scenarios_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+    event_rates=event_rates,
+    event_Mw=event_Mw,
+    samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) }, # Number of samples for each Mw
+    mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
+    )
+
+# Compute the max-stage exceedance-rates
+stage_exrates_random_scenarios_mw_weighted = sapply(stage_seq, 
+    f<-function(x){
+        sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates * 
+            (event_peak_stage[random_scenarios_mw_weighted$inds] > x), na.rm=TRUE)
+    })
+```
+
+This one is not that much better in terms of the concentration at higher max-stage
+values.
+
+## Random scenario sampling, using importance sampling to emphasise higher max-stages
+-------------------------------------------------------------------------------------
+
+
+```r
+# Make the random scenarios
+POW = 1 # 1.5 is quite good?
+random_scenarios_stage_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+    event_rates=event_rates,
+    event_Mw=event_Mw,
+    event_importance = event_peak_stage**POW,
+    samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) }, # Number of samples for each Mw
+    mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
+    )
+
+# Compute the max-stage exceedance-rates
+stage_exrates_random_scenarios_stage_mw_weighted = sapply(stage_seq, 
+    f<-function(x){
+        sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates * 
+            (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
+    })
+
+# As above, using the self-normalised importance sampling approach
+stage_exrates_random_scenarios_stage_mw_weighted_B = sapply(stage_seq, 
+    f<-function(x){
+        sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_self_normalised * 
+            (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
+    })
+```
+
+## Comparison of all approaches
+-------------------------------
+
+Emphasise that increasing the sample size is a good idea. Also tests, like
+checking generality at nearby points, and splitting scenarios into groups (more complex?), 
+and randomisation tests.
+
+
+```r
+## Plot it
+#plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, 
+#     xlim=c(0.1, 10), ylim=c(1e-04, 1e-01)) 
+#points(stage_seq, stage_exrates_random_scenarios_simple, t='l', col='red')
+#points(stage_seq, stage_exrates_random_scenarios_mw_weighted, t='l', col='blue')
+#points(stage_seq, stage_exrates_random_scenarios_stage_mw_weighted, t='l', col='purple')
+#points(stage_seq, stage_exrates_random_scenarios_stage_mw_weighted_B, t='l', col='brown')
+#grid(col='orange')
+#legend('bottomleft',
+#    c('Original PTHA [best result]', 'Simple random sampling (12 per Mw)', 'More scenarios at higher Mw',
+#      'Importance based on event_peak_stage', 'Importance based on event_peak_stage (self normalised)'),
+#    col=c('black', 'red', 'blue', 'purple', 'brown'), lwd = c(2, 1, 1, 1, 1), bg='white')
+```
