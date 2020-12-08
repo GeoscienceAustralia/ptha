@@ -194,8 +194,7 @@ What do we mean by saying the random scenarios are statistically consistent
 with the PTHA18? Here we explain this by considering the tsunami max-stage
 exceedance-rates at the point offshore of Tonga.
 
-In the full PTHA, we can compute the max-stage exceedance rates at this
-point as follows:
+In the full PTHA, we can compute the max-stage exceedance rates at this point as:
 
 ```r
 stage_seq = seq(0.1, 20, by=0.1)
@@ -205,19 +204,22 @@ stage_exrates_ptha18 = sapply(stage_seq, f<-function(x) sum(event_rates*(event_p
 The analogous calculation using only the random sample is:
 
 ```r
-random_scenarios_peak_stage = event_peak_stage[ random_scenarios_simple$inds ]
-random_scenarios_rates = random_scenarios_simple$importance_sampling_scenario_rates
 stage_exrates_random_scenarios_simple = sapply(stage_seq, 
-    f<-function(x) sum(random_scenarios_rates * (random_scenarios_peak_stage > x), na.rm=TRUE))
+    f<-function(x){
+        sum(random_scenarios_simple$importance_sampling_scenario_rates * 
+            (event_peak_stage[random_scenarios_simple$inds] > x), na.rm=TRUE)
+    })
 ```
 
-While not identical, the results are quite similar at common exceedance-rates.
-If we increased the number of random scenarios per magnitude from 12 to
-something larger, the accuracy would improve. 
+The max-stage exceedance-rate curve derived from the random scenarios is
+similar to the PTHA18 result, but there is some error due to the limited number of
+samples. If we increased the number of random scenarios per magnitude from 12
+to something larger, the accuracy would improve. 
 
 ```r
 # Plot it
-plot(stage_seq, stage_exrates_ptha18, log='xy', t='o'); grid(col='orange')
+plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
+     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)')
 ```
 
 ```
@@ -227,6 +229,9 @@ plot(stage_seq, stage_exrates_ptha18, log='xy', t='o'); grid(col='orange')
 
 ```r
 points(stage_seq, stage_exrates_random_scenarios_simple, t='l', col='red')
+grid(col='orange')
+legend('bottomleft', c('Original PTHA18 [desired result]', 'Random scenarios (simple)'),
+       col=c('black', 'red'), lty=c(1, 1), pch=c(1, NA))
 ```
 
 ![plot of chunk ptha18_tonga_point_plot1](figure/ptha18_tonga_point_plot1-1.png)
@@ -271,12 +276,12 @@ values.
 
 ```r
 # Make the random scenarios
-POW = 1 # 1.5 is quite good?
+POW = 1 # Optional power-law transformation to event_peak_stage
 random_scenarios_stage_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     event_rates=event_rates,
     event_Mw=event_Mw,
     event_importance = event_peak_stage**POW,
-    samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) }, # Number of samples for each Mw
+    samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) },
     mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
     )
 
@@ -287,7 +292,8 @@ stage_exrates_random_scenarios_stage_mw_weighted = sapply(stage_seq,
             (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
     })
 
-# As above, using the self-normalised importance sampling approach
+# As above, using the "self-normalised" importance sampling rates, which are now
+# different to the regular importance-sampling rates
 stage_exrates_random_scenarios_stage_mw_weighted_B = sapply(stage_seq, 
     f<-function(x){
         sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_self_normalised * 
@@ -304,16 +310,25 @@ and randomisation tests.
 
 
 ```r
-## Plot it
-#plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, 
-#     xlim=c(0.1, 10), ylim=c(1e-04, 1e-01)) 
-#points(stage_seq, stage_exrates_random_scenarios_simple, t='l', col='red')
-#points(stage_seq, stage_exrates_random_scenarios_mw_weighted, t='l', col='blue')
-#points(stage_seq, stage_exrates_random_scenarios_stage_mw_weighted, t='l', col='purple')
-#points(stage_seq, stage_exrates_random_scenarios_stage_mw_weighted_B, t='l', col='brown')
-#grid(col='orange')
-#legend('bottomleft',
-#    c('Original PTHA [best result]', 'Simple random sampling (12 per Mw)', 'More scenarios at higher Mw',
-#      'Importance based on event_peak_stage', 'Importance based on event_peak_stage (self normalised)'),
-#    col=c('black', 'red', 'blue', 'purple', 'brown'), lwd = c(2, 1, 1, 1, 1), bg='white')
+# Plot it
+plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, xlim=c(0.1, 10), ylim=c(1e-04, 1e-01)) 
 ```
+
+```
+## Warning in xy.coords(x, y, xlabel, ylabel, log): 4 y values <= 0 omitted from
+## logarithmic plot
+```
+
+```r
+points(stage_seq, stage_exrates_random_scenarios_simple, t='l', col='red')
+points(stage_seq, stage_exrates_random_scenarios_mw_weighted, t='l', col='blue')
+points(stage_seq, stage_exrates_random_scenarios_stage_mw_weighted, t='l', col='purple')
+points(stage_seq, stage_exrates_random_scenarios_stage_mw_weighted_B, t='l', col='brown')
+grid(col='orange')
+legend('bottomleft', c('Original PTHA [best result]', 'Simple random sampling (12 per Mw)', 
+    'More scenarios at higher Mw', 'Importance based on event_peak_stage', 
+    'Importance based on event_peak_stage (self normalised)'), bty='n', 
+    col=c('black', 'red', 'blue', 'purple', 'brown'), lwd = c(2, 1, 1, 1, 1))
+```
+
+![plot of chunk compareAllApproaches](figure/compareAllApproaches-1.png)
