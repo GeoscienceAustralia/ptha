@@ -12,6 +12,7 @@ magnitude-frequency modelling.
 ## Get the source-zone event data
 ---------------------------------
 
+The first step is to get the scenario data for the source-zone of interest.
 Here we choose to work with heterogeneous-slip scenarios from the
 `kermadectonga2` source-zone. 
 
@@ -29,11 +30,8 @@ the unit-source-statistics table, and the names of various files
 holding data for the source-zone
 
 ```r
-# Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in
-# PTHA18)
-kt2_scenarios = ptha18$get_source_zone_events_data(
-    'kermadectonga2', 
-    slip_type='stochastic')
+# Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in PTHA18)
+kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
 names(kt2_scenarios)
 ```
 
@@ -41,6 +39,8 @@ names(kt2_scenarios)
 ## [1] "events"                 "unit_source_statistics" "gauge_netcdf_files"    
 ## [4] "events_file"            "unit_source_file"       "tsunami_events_file"
 ```
+
+## (Optional) A quick look at the event table 
 
 There are over 44-thousand scenarios in the database, with one
 row per scenario in the event table
@@ -54,8 +54,10 @@ nrow(kt2_scenarios$events)
 ## [1] 44685
 ```
 
+What variables are stored in the event table? Use the `names` function to see
+the column names. 
+
 ```r
-# What are the column-names of the event table?
 names(kt2_scenarios$events)
 ```
 
@@ -87,11 +89,12 @@ names(kt2_scenarios$events)
 ## [25] "rate_annual_84pc"                    
 ## [26] "rate_annual_median"
 ```
+For a detailed discussion of these variables, see [../../DETAILED_README.md](../../DETAILED_README.md).
 
-For our purposes, one important variable is `Mw` (scenario moment magnitude).
-The moment magnitudes are binned and cover the range 7.2, 7.3, ..., 9.8
-although the higher magnitudes may be impossible (in which case all scenarios
-are assigned a rate of 0).
+For our purposes, one important variable is `Mw`, the scenario moment
+magnitude.  The moment magnitudes are binned and cover the range 7.2, 7.3, ...,
+9.8 although the higher magnitudes may be impossible according to PTHA18 (i.e.
+assigned a rate of 0).
 
 ```r
 # Print all unique Mw values -- beware not all of these will be "possible" according
@@ -105,13 +108,13 @@ unique(kt2_scenarios$events$Mw)
 ```
 In this tutorial another important variable is the `rate_annual`, which varies for
 each scenario. This is equal to the scenario conditional probability (conditional on
-the occurrance of an earthquake with the same magnitude) multiplied by the
+the occurrence of an earthquake with the same magnitude) multiplied by the
 logic-tree-mean-rate of scenarios with that magnitude (events/year), according
 to the PTHA18. 
 
 Recall that the scenario conditional probability varies between scenarios, and
 is used to account for spatial variations in tectonic convergence, to limit the
-scenraio peak-slip, and to adjust for bias in the earthquake-source models
+scenario peak-slip, and to adjust for bias in the earthquake-source models
 (although this is more prominent for variable-area-uniform-slip scenarios than
 for heterogeneous-slip scenarios).  See 
 [this paper](https://doi.org/10.1007/s00024-019-02299-w) for further information.
@@ -150,12 +153,12 @@ head(random_scenarios_simple)
 
 ```
 ##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1  651 7.2        0.05704921                        0.004754101
-## 2  504 7.2        0.05704921                        0.004754101
-## 3  413 7.2        0.05704921                        0.004754101
-## 4  972 7.2        0.05704921                        0.004754101
-## 5 1464 7.2        0.05704921                        0.004754101
-## 6  235 7.2        0.05704921                        0.004754101
+## 1  727 7.2        0.05704921                        0.004754101
+## 2  386 7.2        0.05704921                        0.004754101
+## 3  459 7.2        0.05704921                        0.004754101
+## 4   27 7.2        0.05704921                        0.004754101
+## 5  753 7.2        0.05704921                        0.004754101
+## 6   32 7.2        0.05704921                        0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -195,10 +198,10 @@ tail(random_scenarios_simple)
 
 ```
 ##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44105 9.6      5.323646e-05                       4.436371e-06
-## 298 44268 9.6      5.323646e-05                       4.436371e-06
-## 299 44100 9.6      5.323646e-05                       4.436371e-06
-## 300 44138 9.6      5.323646e-05                       4.436371e-06
+## 297 44165 9.6      5.323646e-05                       4.436371e-06
+## 298 44261 9.6      5.323646e-05                       4.436371e-06
+## 299 44098 9.6      5.323646e-05                       4.436371e-06
+## 300 44094 9.6      5.323646e-05                       4.436371e-06
 ## 301    NA 9.7      0.000000e+00                                 NA
 ## 302    NA 9.8      0.000000e+00                                 NA
 ##     importance_sampling_scenario_rates_self_normalised

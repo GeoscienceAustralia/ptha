@@ -12,6 +12,7 @@ magnitude-frequency modelling.
 ## Get the source-zone event data
 ---------------------------------
 
+The first step is to get the scenario data for the source-zone of interest.
 Here we choose to work with heterogeneous-slip scenarios from the
 `kermadectonga2` source-zone. 
 
@@ -27,27 +28,31 @@ Here `kt2_scenarios` is a list containing the event table,
 the unit-source-statistics table, and the names of various files
 holding data for the source-zone
 ```{r readScenarios}
-# Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in
-# PTHA18)
-kt2_scenarios = ptha18$get_source_zone_events_data(
-    'kermadectonga2', 
-    slip_type='stochastic')
+# Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in PTHA18)
+kt2_scenarios = ptha18$get_source_zone_events_data('kermadectonga2',  slip_type='stochastic')
 names(kt2_scenarios)
 ```
+
+## (Optional) A quick look at the event table 
 
 There are over 44-thousand scenarios in the database, with one
 row per scenario in the event table
 ```{r numscenarios}
 # How many rows in the scenario events table?
 nrow(kt2_scenarios$events)
-# What are the column-names of the event table?
-names(kt2_scenarios$events)
 ```
 
-For our purposes, one important variable is `Mw` (scenario moment magnitude).
-The moment magnitudes are binned and cover the range 7.2, 7.3, ..., 9.8
-although the higher magnitudes may be impossible (in which case all scenarios
-are assigned a rate of 0).
+What variables are stored in the event table? Use the `names` function to see
+the column names. 
+```{r columnNames}
+names(kt2_scenarios$events)
+```
+For a detailed discussion of these variables, see [../../DETAILED_README.md](../../DETAILED_README.md).
+
+For our purposes, one important variable is `Mw`, the scenario moment
+magnitude.  The moment magnitudes are binned and cover the range 7.2, 7.3, ...,
+9.8 although the higher magnitudes may be impossible according to PTHA18 (i.e.
+assigned a rate of 0).
 ```{r mwunique}
 # Print all unique Mw values -- beware not all of these will be "possible" according
 # to PTHA18, as some will have zero probability of occurring.
@@ -55,13 +60,13 @@ unique(kt2_scenarios$events$Mw)
 ```
 In this tutorial another important variable is the `rate_annual`, which varies for
 each scenario. This is equal to the scenario conditional probability (conditional on
-the occurrance of an earthquake with the same magnitude) multiplied by the
+the occurrence of an earthquake with the same magnitude) multiplied by the
 logic-tree-mean-rate of scenarios with that magnitude (events/year), according
 to the PTHA18. 
 
 Recall that the scenario conditional probability varies between scenarios, and
 is used to account for spatial variations in tectonic convergence, to limit the
-scenraio peak-slip, and to adjust for bias in the earthquake-source models
+scenario peak-slip, and to adjust for bias in the earthquake-source models
 (although this is more prominent for variable-area-uniform-slip scenarios than
 for heterogeneous-slip scenarios).  See 
 [this paper](https://doi.org/10.1007/s00024-019-02299-w) for further information.
