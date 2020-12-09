@@ -388,7 +388,7 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
 
 ![plot of chunk ptha18_tonga_point_plot3](figure/ptha18_tonga_point_plot3-1.png)
 
-In comparison to the previous approaches, we have more scenarios with high max-stage values.
+In comparison to the previous approaches, we have more scenarios with high max-stage values at our Tonga site, as expected because the latter was used to define the `event_importance`.
 
 ```r
 quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)

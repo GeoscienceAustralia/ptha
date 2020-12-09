@@ -330,7 +330,7 @@ legend('bottomleft', c('Original PTHA18 [desired result]', 'Importance based on 
        col=c('black', 'purple'), lty=c(1, 1), pch=c(1, NA))
 ```
 
-In comparison to the previous approaches, we have more scenarios with high max-stage values.
+In comparison to the previous approaches, we have more scenarios with high max-stage values at our Tonga site, as expected because the latter was used to define the `event_importance`.
 ```{r quantorig3}
 quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
 ```
