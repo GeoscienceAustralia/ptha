@@ -37,9 +37,11 @@ source_zone = 'kermadectonga2'
 kt2_scenarios = ptha18$get_source_zone_events_data(source_zone,  slip_type='stochastic')
 ```
 
-To illustrate how we can use the random scenarios, it is useful to have the corresponding
-tsunami maximum-stage data at a point of interest. Herein we choose a point just east of Tonga,
-which is over the `kermadectonga2` source-zone.
+To illustrate how we can use the random scenarios, it is useful to have the
+corresponding tsunami maximum-stage data at a point of interest. Herein we
+choose a point just east of Tonga, which is over the `kermadectonga2`
+source-zone (the calculations below could be equally applied to any other
+point).
 
 ```{r peakStageTonga}
 event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
@@ -102,7 +104,8 @@ take an `NA` value, as will various other variables. We see this at the end of t
 table, for magnitudes `9.7` and `9.8`.
 
 ```{r randomSampling1_C}
-# Look at the last few rows
+# Look at the last few rows - NA values for magnitudes that are "impossible"
+# according to PTHA18 (rate_annual=0)
 tail(random_scenarios_simple)
 ```
 
@@ -119,13 +122,15 @@ PTHA18.
 ----------------------------------------------------------------------------------
 
 What do we mean by saying the random scenarios are statistically consistent
-with the PTHA18? To demonstrate this we consider the tsunami max-stage
-exceedance-rates at the point offshore of Tonga. Any other location could
-similarly be chosen. The key point is that we can approximate the PTHA18
+with the PTHA18? The key point is that we can approximate the PTHA18
 results using a randomly chosen subset scenarios, which in some cases may
 contain many fewer scenarios that the full PTHA18. This can be advantageous,
 for example if we need to run new tsunami simulations for all the scenarios to get
 information at our site of interest.
+
+To demonstrate this we consider the tsunami max-stage exceedance-rates at the
+aforementioned point offshore of Tonga. Any other location could similarly be
+chosen. 
 
 In the full PTHA, we can compute the max-stage exceedance rates at this point as:
 ```{r ptha18_tonga_point_exrates}
@@ -175,7 +180,7 @@ random_scenarios_simple_many = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
     )
 
-# Compute the max-stage exceedance-rates and make a plot
+# Compute the max-stage exceedance-rates
 stage_exrates_rs_simple_many = sapply(stage_seq, 
     f<-function(x){
         sum(random_scenarios_simple_many$importance_sampling_scenario_rates * 
@@ -219,7 +224,7 @@ accuracy improvement on-average.
 ## Random scenario sampling, with more scenarios at magnitudes of interest
 --------------------------------------------------------------------------
 
-The simple random sample has many scenario with low maximum-stage values, which
+The simple random sample that was defined above has many scenario with low maximum-stage values, which
 are not of particular interest for this study. For instance half of all the scenarios
 have max-stage less than `r round(median(event_peak_stage[random_scenarios_simple$inds], na.rm=TRUE), 3)` m, 
 which seems too small to be of much interest in most tsunami hazard studies. 
@@ -279,18 +284,19 @@ The reason we still have many small max-stage values is that the
 `kermadectonga2` source-zone is very large, and the particular site of interest
 (offshore of Tonga) is mainly affected by a small part of the source-zone. If
 we are mostly interested in larger waves, then this seems like an inefficient
-sampling approach.
+sampling approach for our site.
 
 ## Random scenario sampling, using importance sampling to emphasise higher max-stages
 -------------------------------------------------------------------------------------
 
 Here we show how the theory of importance-sampling can be used to more strongly
-concentrate our random sample on scenarios that have higher maximum-stage values.
+concentrate our random sample on scenarios that have higher maximum-stage
+values. The sampling algorithm is:
 * Group the scenarios by magnitude
 * For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability **multiplied by a user-defined positive event-importance factor**. The latter step is where this method differs from regular sampling.
 * The theory of importance sampling provides a means to adjust the random scenario weights to correct for this preferential sampling. There are many statistical texts which cover importance sampling, [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
 
-In the example below we set the `event_importance` equal to the scenario's maximum-stage, which means we prefer scenarios with higher max-stage, all else being equal. Many other choices could be made depending on what you know about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve. Note we are still only using an average of 12 samples per magnitude bin.
+In the example below we set the `event_importance` equal to the scenario's maximum-stage, which means we prefer scenarios with higher max-stage, all else being equal. Many other choices could be made depending on what you know about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve, while still only using an average of 12 samples per magnitude bin.
 
 ```{r scenarios_stage_biased}
 # Make the random scenarios
