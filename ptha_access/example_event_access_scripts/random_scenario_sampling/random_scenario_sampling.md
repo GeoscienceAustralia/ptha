@@ -324,13 +324,15 @@ stage_exrates_rs_mw_weighted = sapply(stage_seq,
     })
 ```
 
-In this particular case the result is not greatly improved, although it
-arguably looks better at rarer exceedance-rates (compared with using 12
-scenarios for each magnitude bin). The benefit of putting more sampling effort
-into higher magnitudes will vary case-by-case; it is most useful when you have
-strong reason to think that low magnitudes are unimportant for your study. A poor
-decision could decrease the accuracy - for instance if lower magnitudes were actually 
-important to the hazard and were insufficiently sampled.
+In this particular case we do not really see improved agreement with the
+max-stage vs exceedance-rate curve (compared with using 12 scenarios for each
+magnitude bin). This could reflect that our magnitude-sampling method is not very
+beneficial for this problem (at the end of this tutorial we check this). The
+benefit of putting more sampling effort into higher magnitudes will vary
+case-by-case; it is most useful when you have strong reason to think that low
+magnitudes are unimportant for your study. A poor decision could decrease the
+accuracy - for instance if lower magnitudes were actually important to the
+hazard and were insufficiently sampled.
 
 ![plot of chunk ptha18_tonga_point_plot2](figure/ptha18_tonga_point_plot2-1.png)
 
@@ -364,7 +366,7 @@ values. The sampling algorithm is:
 * For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability **multiplied by a user-defined positive event-importance factor**. The latter step is where this method differs from regular sampling.
 * The theory of importance sampling provides a means to adjust the random scenario weights to correct for this preferential sampling. There are many statistical texts which cover importance sampling, [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
 
-In the example below we set the `event_importance` equal to the scenario's maximum-stage at our site offshore of Tonga. This means we prefer scenarios with higher max-stage at that site, all else being equal. This might be a a good choice if were studying tsunami hazards nearby (e.g. in Tonga), but probably not if we were studying the hazard far away (e.g. New Zealand). Many other choices could be made depending on what you know about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve, while still only using an average of 12 samples per magnitude bin.
+In the example below we set the `event_importance` equal to the scenario's maximum-stage at our site offshore of Tonga. This means we prefer scenarios with higher max-stage at that site, all else being equal. This might be a a good choice if were studying tsunami hazards nearby (e.g. in Tonga), but probably not if we were studying the hazard far away (e.g. New Zealand). Many other choices could be made depending on what is known about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve at our hazard, while still only using an average of 12 samples per magnitude bin.
 
 
 ```r
@@ -420,3 +422,151 @@ legend('bottomleft', c('Original PTHA [best result]', 'Simple random sampling (1
 ```
 
 ![plot of chunk compareAllApproaches](figure/compareAllApproaches-1.png)
+
+## Performance of each method under repeated sampling
+-----------------------------------------------------
+
+The results above are affected by randomness (i.e. the curves would vary with
+different random seed values). To understand the robustness of the sampling
+techniques it is useful study their performance over many random samples. While
+all techniques will show variability compared with the PTHA18 values, good
+techniques will show less variability, and little bias.
+
+As an example of the kind of testing that can be undertaken, below we consider
+how the max-stage with a 1/1000 exceedance-rate would vary under repeated
+sampling with each of the sampling schemes above.
+
+
+```r
+target_exrate = 1/1000 # Look at the max-stage at this exceedance-rate
+Nrep = 500 # Repeat the sampling this many times
+
+# Get the PTHA18 max-stage at the target_exrate
+stage_at_target_exrate_ptha18 = approx(stage_exrates_ptha18, stage_seq, 
+    xout=target_exrate, ties='min')$y
+
+# Create vectors to store the results for each random sample of scenarios
+stage_at_target_exrate_simple = rep(NA, length=Nrep)
+stage_at_target_exrate_mw_weighted = rep(NA, length=Nrep)
+stage_at_target_exrate_stage_mw_weighted = rep(NA, length=Nrep)
+
+# Generate random datasets Nrep times, and store the max-stage at the targer
+# exrate in each case
+for(i in 1:Nrep){
+    #
+    # Simple random sampling -- generate samples
+    #
+    random_scenarios_simple = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=event_rates,
+        event_Mw=event_Mw,
+        samples_per_Mw=function(Mw){ 12 }, 
+        mw_limits=c(7.15, 9.85) 
+        )
+    # Simple random sampling -- compute the stage-vs-exrate curve 
+    stage_exrates_rs_simple = sapply(stage_seq, 
+        f<-function(x){
+            sum(random_scenarios_simple$importance_sampling_scenario_rates * 
+                (event_peak_stage[random_scenarios_simple$inds] > x), na.rm=TRUE)
+        })
+    stage_at_target_exrate_simple[i] = 
+        approx(stage_exrates_rs_simple, stage_seq, xout=target_exrate, ties='min')$y
+
+    #
+    # More scenarios at higher magnitudes -- generate random samples
+    #
+    random_scenarios_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=event_rates,
+        event_Mw=event_Mw,
+        samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) }, 
+        mw_limits=c(7.15, 9.85) 
+        )
+    # More scenarios at higher magnitudes -- compute the stage-vs-exrate curve 
+    stage_exrates_rs_mw_weighted = sapply(stage_seq, 
+        f<-function(x){
+            sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates * 
+                (event_peak_stage[random_scenarios_mw_weighted$inds] > x), na.rm=TRUE)
+        })
+    stage_at_target_exrate_mw_weighted[i] = 
+        approx(stage_exrates_rs_mw_weighted, stage_seq, xout=target_exrate, ties='min')$y
+
+    #
+    # Importance sampling according to the peak-stage at our site -- generate random samples
+    #
+    random_scenarios_stage_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=event_rates,
+        event_Mw=event_Mw,
+        event_importance = event_peak_stage,
+        samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) },
+        mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
+        )
+    # Importance sampling -- compute the stage-vs-exrate curve 
+    stage_exrates_rs_stage_mw_weighted = sapply(stage_seq, 
+        f<-function(x){
+            sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates * 
+                (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
+        })
+    stage_at_target_exrate_stage_mw_weighted[i] = 
+        approx(stage_exrates_rs_stage_mw_weighted, stage_seq, xout=target_exrate, ties='min')$y
+
+}
+```
+
+Here we plot the empirical cumulative distribution function (ecdf) of max-stage
+values at the 1/1000 exceedance rate for each sampling strategy. The vertical
+line shows the full PTHA18 value, which is what we'd like to reproduce (and
+what all methods would converge on with a sufficiently large number of
+samples). 
+
+![plot of chunk plotecdf](figure/plotecdf-1.png)
+It is clear that the importance-sampling method leads to greater
+concentration of 1/1000 max-stage values around the PTHA18 value. This indicates that
+it is less variable than the other techniques - in other words, it is better, at least
+for this exceedance-rate.  The results using simple random sampling (12
+scenarios per Mw bin) are quite similar to those using more scenarios at higher
+magnitudes, which indicates that at this site, there is little benefit to the
+latter strategy for this exceedance-rate. We emphasise that at other sites, or
+for other exceedance-rates, the same technique may have more benefit - the
+important thing is to understand its performance for your application of
+interest.
+
+To complement the above results we can look at a basic summary of each
+distribution. While the variability of each sampling method is different, in
+all cases the mean is quite close to the PTHA18 value
+(`stage_at_target_exrate_ptha18=` 2.328).
+This is expected if the sampling is approximately unbiased. 
+
+
+```r
+# Simple random sampling
+summary(stage_at_target_exrate_simple)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   1.382   1.983   2.267   2.313   2.586   3.916
+```
+
+```r
+# Mw-weighted random sampling
+summary(stage_at_target_exrate_mw_weighted)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   1.451   1.961   2.216   2.275   2.533   3.857
+```
+
+```r
+# Importance sampling based on the event_peak_stage 
+summary(stage_at_target_exrate_stage_mw_weighted)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   1.816   2.174   2.328   2.305   2.427   2.834
+```
+
+Keep in mind that the most straightforward way to reduce the variability is to
+increase the number of samples. These cases all have an average of 12 per Mw
+bin, and as the sample size is increased the results should more closely mimic
+the PTHA18.
