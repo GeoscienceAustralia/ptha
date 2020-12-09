@@ -194,7 +194,7 @@ table(random_scenarios_simple$mw)
 ----------------------------------------------------------------------
 
 What do we mean by saying the random scenarios are statistically consistent
-with the PTHA18? To demonstrate this we considering the tsunami max-stage
+with the PTHA18? To demonstrate this we consider the tsunami max-stage
 exceedance-rates at the point offshore of Tonga (any other location could
 similarly be chosen).
 
@@ -220,22 +220,10 @@ similar to the PTHA18 result, but there is some error due to the limited number
 of samples. As we increase the number of random scenarios per magnitude, the
 accuracy will improve (on average) until the difference is negligible. In this
 sense the random sample is statistically consistent with the PTHA18.
-
-```r
-# Plot it
-plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)', 
-     main='PTHA18 stage-exrate curve vs random sample of scenarios')
-points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
-grid(col='orange')
-legend('bottomleft', c('Original PTHA18 [desired result]', 'Random scenarios (simple)'),
-       col=c('black', 'red'), lty=c(1, 1), pch=c(1, NA))
-```
-
 ![plot of chunk ptha18_tonga_point_plot1](figure/ptha18_tonga_point_plot1-1.png)
 
-Below we demonstrate that with more samples, the agreement between the curves
-improves. 
+Below we do a similar computation with more random scenario samples. Clearly
+this leads to improved agreement with the PTHA18 exceedance-rates, as expected. 
 
 ```r
 # Make the random scenarios -- use 120 per magnitude, instead of 12
@@ -252,16 +240,6 @@ stage_exrates_rs_simple_many = sapply(stage_seq,
         sum(random_scenarios_simple_many$importance_sampling_scenario_rates * 
             (event_peak_stage[random_scenarios_simple_many$inds] > x), na.rm=TRUE)
     })
-
-plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='Demonstration that using more random scenarios \n improves the accuracy')
-points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
-points(stage_seq, stage_exrates_rs_simple_many, t='l', col='green')
-grid(col='orange')
-legend('bottomleft', c('Original PTHA18 [desired result]', 'Random scenarios (simple)',
-       'Random scenarios (simple, 120 per Mw)'),
-       col=c('black', 'red', 'green'), lty=c(1, 1, 1), pch=c(1, NA, NA))
 ```
 
 ![plot of chunk ptha18_tonga_point_plot1_moresam](figure/ptha18_tonga_point_plot1_moresam-1.png)
@@ -325,18 +303,6 @@ effort into higher magnitudes will vary case-by-case; it is most useful when
 you have strong reason to think that low magnitudes are unimportant for your
 study.
 
-
-```r
-# Plot it
-plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='PTHA18 stage-exrate curve vs random sample \n with sampling concentrated at higher Mw')
-points(stage_seq, stage_exrates_rs_mw_weighted, t='l', col='blue')
-grid(col='orange')
-legend('bottomleft', c('Original PTHA18 [desired result]', 'Sampling concentrated at higher Mw'),
-       col=c('black', 'blue'), lty=c(1, 1), pch=c(1, NA))
-```
-
 ![plot of chunk ptha18_tonga_point_plot2](figure/ptha18_tonga_point_plot2-1.png)
 
 ## Random scenario sampling, using importance sampling to emphasise higher max-stages
@@ -360,19 +326,6 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
         sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates * 
             (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
     })
-```
-
-
-```r
-# Plot it
-plot(stage_seq, stage_exrates_ptha18, log='xy', t='o', xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
-     xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='PTHA18 stage-exrate curve vs random sample with max-stage \n importance-sampling AND sampling concentrated at high Mw')
-
-points(stage_seq, stage_exrates_rs_stage_mw_weighted, t='l', col='purple')
-grid(col='orange')
-legend('bottomleft', c('Original PTHA18 [desired result]', 'Importance based on event_peak_stage'),
-       col=c('black', 'purple'), lty=c(1, 1), pch=c(1, NA))
 ```
 
 ![plot of chunk ptha18_tonga_point_plot3](figure/ptha18_tonga_point_plot3-1.png)
