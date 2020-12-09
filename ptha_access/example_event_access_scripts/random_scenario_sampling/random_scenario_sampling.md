@@ -406,6 +406,10 @@ Beware importance sampling can backfire if the choice of `event_importance` is p
 ## Comparison of all approaches
 -------------------------------
 
+Here we overplot all the curves above (ignoring the one with 120 random
+scenarios per Mw bin).  The curves are affected by randomness, so if we ran the
+code again with a different random seed, the results would differ. 
+
 
 ```r
 # Plot it
@@ -422,6 +426,12 @@ legend('bottomleft', c('Original PTHA [best result]', 'Simple random sampling (1
 ```
 
 ![plot of chunk compareAllApproaches](figure/compareAllApproaches-1.png)
+
+Because the results are affected by random variations, some of our results
+might be fortuitousy good, or fortuitously bad. To better understand the
+performance of different methods, one can study their variability under
+repeated sampling. This is explored in the next section.
+
 
 ## Performance of each method under repeated sampling
 -----------------------------------------------------

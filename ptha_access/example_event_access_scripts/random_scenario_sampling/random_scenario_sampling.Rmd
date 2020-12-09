@@ -342,6 +342,10 @@ Beware importance sampling can backfire if the choice of `event_importance` is p
 ## Comparison of all approaches
 -------------------------------
 
+Here we overplot all the curves above (ignoring the one with 120 random
+scenarios per Mw bin).  The curves are affected by randomness, so if we ran the
+code again with a different random seed, the results would differ. 
+
 ```{r compareAllApproaches, fig.width=7, fig.height=5, warning=FALSE}
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
@@ -355,6 +359,12 @@ legend('bottomleft', c('Original PTHA [best result]', 'Simple random sampling (1
     'Sampling concentrated at higher Mw', 'Importance based on event_peak_stage'), 
     bty='n',  col=c('black', 'red', 'blue', 'purple'), lwd = c(2, 1, 1, 1))
 ```
+
+Because the results are affected by random variations, some of our results
+might be fortuitousy good, or fortuitously bad. To better understand the
+performance of different methods, one can study their variability under
+repeated sampling. This is explored in the next section.
+
 
 ## Performance of each method under repeated sampling
 -----------------------------------------------------
@@ -450,8 +460,9 @@ line shows the full PTHA18 value, which is what we'd like to reproduce (and
 what all methods would converge on with a sufficiently large number of
 samples). 
 
-```{r plotecdf, fig.width=7, fig.height=5, warning=FALSE, echo=FALSE}
-plot(ecdf(stage_at_target_exrate_simple), col='red', cex=0.2)
+```{r plotecdf, fig.width=8, fig.height=5, warning=FALSE, echo=FALSE}
+plot(ecdf(stage_at_target_exrate_simple), col='red', cex=0.2, 
+     main='Empirical cumulative distribution function of the max-stage \n at the target_rate, under repeated sampling')
 plot(ecdf(stage_at_target_exrate_mw_weighted), add=TRUE, col='blue', cex=0.2)
 plot(ecdf(stage_at_target_exrate_stage_mw_weighted), add=TRUE, col='purple', cex=0.2)
 abline(v=stage_at_target_exrate_ptha18, lwd=2)
