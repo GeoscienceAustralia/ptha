@@ -99,8 +99,17 @@ DOMAIN_INDEX = domain_info$domain_index
 # TARGET_GAUGE, using the Gauges_data_ID*.nc file.
 get_max_depth_at_gauge<-function(md_dir){
 
+    # Workaround for a case where, to make the model stable, I did fewer parallel partitions.
+    troublesome_md_dir = 'ptha18_random_scenarios_kermadectonga2_row_0043831_Mw_95_HS-risetime_0-ambientsealevel_0.8-full-linear_with_manning-0.035-highres_tonga'
+    if(basename(dirname(md_dir)) == troublesome_md_dir){
+        # Need to compute new DOMAIN_INDEX for this case
+        domain_info = swals$find_domain_containing_point(TARGET_GAUGE, multidomain_dir=md_dir) 
+        local_domain_index = domain_info$domain_index
+    }else{
+        local_domain_index = DOMAIN_INDEX
+    }
     all_domains = Sys.glob(paste0(md_dir, '/RUN*'))
-    gauge_file = Sys.glob(paste0(all_domains[DOMAIN_INDEX], '/Gauges_data_ID*.nc'))
+    gauge_file = Sys.glob(paste0(all_domains[local_domain_index], '/Gauges_data_ID*.nc'))
     if(length(gauge_file) != 1) stop(paste0('did not find a unique gauge_file for ', md_dir))
 
     # The file will probably contain data for more than one gauge. Read it all here.
@@ -161,26 +170,31 @@ for(sd_names in names_scenarios_databases){
     # Populate scenario_rates based on the rates assigned to random scenarios
     # in the scenarios_databases 
     scenario_rates = rep(0, length=length(md_dirs))
+    alternate_scenario_rates = rep(0, length=length(md_dirs))
     local_scenarios = scenarios_databases[[sd_names]]
 
     matching_inds = match(local_scenarios$md_dir, md_dirs)
     for(i in 1:length(matching_inds)){
         scenario_rates[matching_inds[i]] = scenario_rates[matching_inds[i]] + 
             local_scenarios$scenario_rates[i]
+        alternate_scenario_rates[matching_inds[i]] = alternate_scenario_rates[matching_inds[i]] + 
+            local_scenarios$alternate_scenario_rates[i]
     }
 
     # Depth vs exceedance-rate
     max_depths = results_df$max_stage - results_df$elev
     chosen_depths = c(0.001, seq(0.05, 20, by=0.05))
     exrate_of_chosen_depths = sapply(chosen_depths, f<-function(x) sum(scenario_rates * (max_depths > x)))
+    alternate_exrate_of_chosen_depths = sapply(chosen_depths, f<-function(x) sum(alternate_scenario_rates * (max_depths > x)))
 
     # Stage vs exceedance-rate
     chosen_stages = chosen_depths
     exrate_of_chosen_stages = sapply(chosen_stages, f<-function(x) sum(scenario_rates * (results_df$max_stage > x)))
+    alternate_exrate_of_chosen_stages = sapply(chosen_stages, f<-function(x) sum(alternate_scenario_rates * (results_df$max_stage > x)))
 
     stage_exrate_curves[[sd_names]] = list(
-        depth=chosen_depths, exrate_depth=exrate_of_chosen_depths, 
-        stage=chosen_stages, exrate_stage=exrate_of_chosen_stages,
+        depth=chosen_depths, exrate_depth=exrate_of_chosen_depths, alternate_exrate_depth=alternate_exrate_of_chosen_depths,
+        stage=chosen_stages, exrate_stage=exrate_of_chosen_stages, alternate_exrate_stage=alternate_exrate_of_chosen_stages,
         source_name=sd_names, target_point=TARGET_GAUGE, 
         output_point = c(results_df$lon[1], results_df$lat[1]))
 }

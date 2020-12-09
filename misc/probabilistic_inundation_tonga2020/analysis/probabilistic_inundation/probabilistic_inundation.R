@@ -75,6 +75,8 @@ find_matching_md_dir<-function(row_indices, md_dirs){
 # END INPUTS
 #
 
+# Also do calculations with the 'not-self-normalised' importance sampling weights
+alternate_run_series_name = paste0('alternate_', run_series_name)
 
 # Get all the csv data in a list with good names
 scenario_databases = lapply(scenario_data, read.csv)
@@ -137,7 +139,10 @@ clusterExport(local_cluster, varlist=ls(all=TRUE))
 # Useful to have one of the rasters ready as a template [to help with data export] 
 raster_template = raster(raster_files_one_domain[1])
 
+# Make space for the outputs
 dir.create(run_series_name, showWarnings=FALSE)
+dir.create(alternate_run_series_name, showWarnings=FALSE)
+
 # For each scenario database, compute exceedance_rate rasters for a range of
 # depth_thresholds
 for(scenarios_name in names(scenario_databases)){
@@ -146,46 +151,84 @@ for(scenarios_name in names(scenario_databases)){
     ind = match(scenario_databases[[scenarios_name]]$md_dir, dirname(raster_files_one_domain) )
     # Make rates for each raster.
     scenario_rates = rep(0, length(raster_files_one_domain))
+    alternate_scenario_rates = rep(0, length(raster_files_one_domain))
     for(i in 1:length(ind)){
         # Here we loop over the scenario_database, and add the rate from the table to scenario_rates.
         # Notice this automatically treats double counts, etc.
         scenario_rates[ind[i]] = scenario_rates[ind[i]] + 
             scenario_databases[[scenarios_name]]$scenario_rates[i]
+        # Here we use the 'not-self-normalised' importance sampling based rates
+        alternate_scenario_rates[ind[i]] = alternate_scenario_rates[ind[i]] + 
+            scenario_databases[[scenarios_name]]$alternate_scenario_rates[i]
     }
 
     # For each depth-threshold, make the exceedance-rate raster
     for(depth_threshold in depth_thresholds_for_exceedance_rate_calculations){
+
+        # Compute rasters with both 'self-normalised' importance sampling rates, and
+        # also 'alternate' weights that are not self-normalised (actually they are regular
+        # importance sampling weights).
+        for(exrates_type in c('selfNormalised', 'alternate')){
         
-        # Compute the exceedance rates in parallel.  
-        exrates_parallel = parLapply(cl=local_cluster, 
-            # Each process in the cluster operates on its own set of the scenarios
-            # We sum the results below 
-            X = splitIndices(length(scenario_rates), MC_CORES),
-            fun=get_exceedance_rate_at_threshold_depth,
-            # The following arguments are not split -- the full vector is
-            # passed to every process in the cluster
-            max_depth_files=raster_files_one_domain, 
-            scenario_rates=scenario_rates, 
-            depth_threshold=depth_threshold)
+            if(exrates_type == 'selfNormalised'){ 
 
-        # Sum the exceedance rates from each cluster process
-        combined_values = exrates_parallel[[1]]*0
-        for(i in 1:length(exrates_parallel)) combined_values = combined_values + exrates_parallel[[i]]
+                # Compute the exceedance rates in parallel.  
+                # Case with self-normalised importance sampling weights
+                exrates_parallel = parLapply(cl=local_cluster, 
+                    # Each process in the cluster operates on its own set of the scenarios
+                    # We sum the results below 
+                    X = splitIndices(length(scenario_rates), MC_CORES),
+                    fun=get_exceedance_rate_at_threshold_depth,
+                    # The following arguments are not split -- the full vector is
+                    # passed to every process in the cluster
+                    max_depth_files=raster_files_one_domain, 
+                    scenario_rates=scenario_rates, 
+                    depth_threshold=depth_threshold)
 
-        # For the raster output, it is nice to set regions that are never inundated to NA
-        # (genuinely NA regions that are not priority domain will also be NA)
-        combined_values[combined_values == 0] = NA
+            }else if(exrates_type == 'alternate'){
 
-        # Convert to a raster and write to file
-        exrates_rast = setValues(raster_template, combined_values)
+                # Compute the exceedance rates in parallel.  
+                # Case with regular importance sampling weights (not self normalised),
+                # which can have less bias, but can also change the exceedance-rate for a given
+                # magnitude.
+                exrates_parallel = parLapply(cl=local_cluster, 
+                    # Each process in the cluster operates on its own set of the scenarios
+                    # We sum the results below 
+                    X = splitIndices(length(scenario_rates), MC_CORES),
+                    fun=get_exceedance_rate_at_threshold_depth,
+                    # The following arguments are not split -- the full vector is
+                    # passed to every process in the cluster
+                    max_depth_files=raster_files_one_domain, 
+                    scenario_rates=alternate_scenario_rates, 
+                    depth_threshold=depth_threshold)
+            }
 
-        raster_output_file = paste0(run_series_name, '/', scenarios_name, 
-            '_', output_raster_name_tag, '_exceedance_rate_with_threshold_', 
-            depth_threshold, '.tif')
-        writeRaster(exrates_rast, raster_output_file, options=c('COMPRESS=DEFLATE'), 
-                    overwrite=TRUE)
-        rm(exrates_rast, combined_values, exrates_parallel)
-        gc()
+            # Sum the exceedance rates from each cluster process
+            combined_values = exrates_parallel[[1]]*0
+            for(i in 1:length(exrates_parallel)) combined_values = combined_values + exrates_parallel[[i]]
+
+            # For the raster output, it is nice to set regions that are never inundated to NA
+            # (genuinely NA regions that are not priority domain will also be NA)
+            combined_values[combined_values == 0] = NA
+
+            # Convert to a raster and write to file
+            exrates_rast = setValues(raster_template, combined_values)
+
+            if(exrates_type == 'selfNormalised'){
+                raster_output_file = paste0(run_series_name, '/', scenarios_name, 
+                    '_', output_raster_name_tag, '_exceedance_rate_with_threshold_', 
+                    depth_threshold, '.tif')
+            }else if(exrates_type == 'alternate'){
+                raster_output_file = paste0(alternate_run_series_name, '/', scenarios_name, 
+                    '_', output_raster_name_tag, '_exceedance_rate_with_threshold_', 
+                    depth_threshold, '.tif')
+            }
+
+            writeRaster(exrates_rast, raster_output_file, options=c('COMPRESS=DEFLATE'), 
+                        overwrite=TRUE)
+            rm(exrates_rast, combined_values, exrates_parallel)
+            gc()
+        }
     }
 }
 

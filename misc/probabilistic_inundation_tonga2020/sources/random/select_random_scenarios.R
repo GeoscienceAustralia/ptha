@@ -243,14 +243,23 @@ randomly_sample_scenarios_by_Mw_and_size<-function(
             #sample_of_k = sample(k, size=150, prob=event_rates[k], replace=TRUE)
 
             nsam = samples_per_Mw(mw)
-            sample_of_k = sample(k, size=nsam, 
+            local_sample = sample(1:length(k), size=nsam, 
                 prob=event_rates[k]*event_size_indicator[k], 
                 replace=TRUE)
+            sample_of_k = k[local_sample]
+
+            # The original scenario conditional probability distribution
+            dist_f = event_rates[k]/sum(event_rates[k])
+            # The distribution we sampled from above
+            dist_g = (event_rates[k]*event_size_indicator[k])/sum(event_rates[k]*event_size_indicator[k])
+            # The exact importance-sampling correction -- while these weights do not sum to 1, they
+            # make the estimators unbiased
+            alternate_weights = (dist_f[local_sample]/dist_g[local_sample])/length(local_sample)
 
             # Get the rate of any event with this mw
             rate_with_this_mw = sum(event_rates[k])
 
-            # Importance sampling correction.
+            # Importance sampling correction -- this is the 'self-normalised' approach
             # Estimate a rate for each individual scenario such that the sampled
             # scenario weights add to the target weight, and reflect the original distribution
             # Their chance of being sampled was inflated by 'event_size_indicator', so we deflate
@@ -258,10 +267,16 @@ randomly_sample_scenarios_by_Mw_and_size<-function(
             random_scenario_rates = rate_with_this_mw * (1/event_size_indicator[sample_of_k]) / 
                 sum((1/event_size_indicator[sample_of_k]))
 
+            # Importance sampling correction -- although "alternate_weights" does not sum to 1,
+            # the self normalised importance sampling leads to some bias, whereas this approach is
+            # unbiased.
+            alternate_random_scenario_rates = rate_with_this_mw * alternate_weights
+
             return(list(
                 inds=sample_of_k, 
                 weight_inflation=event_size_indicator[sample_of_k], 
                 random_scenario_rates = random_scenario_rates,
+                alternate_random_scenario_rates = alternate_random_scenario_rates,
                 rate_with_this_mw = rate_with_this_mw,
                 mw = mw))
         })
@@ -379,6 +394,7 @@ plot_scenario_stages_with_different_scenario_size_weightings<-function(
         # Look at the stage values at the gauge offshore of Tongatapu.
         random_scenario_stages = lapply(random_scenario_info, f<-function(x) event_peak_stage[x$inds])
         random_scenario_rates = lapply(random_scenario_info, f<-function(x) x$random_scenario_rates)
+        alternate_random_scenario_rates = lapply(random_scenario_info, f<-function(x) x$alternate_random_scenario_rates)
         random_scenario_Mws = lapply(random_scenario_info, f<-function(x) x$inds * 0 + x$mw)
 
         # Plot the distribution of max-stage for each Mw
@@ -426,22 +442,30 @@ plot_scenario_stages_with_different_scenario_size_weightings<-function(
                                 length(unique(unlist(random_scenario_inds)))))
         exrate_plot(unlist(random_scenario_stages), unlist(random_scenario_rates), 
                     add=TRUE, col='green', t='l')
+        exrate_plot(unlist(random_scenario_stages), unlist(alternate_random_scenario_rates), 
+                    add=TRUE, col='blue', t='l')
 
         # Check a nearby site.
         random_scenario_stages_alt1 = lapply(random_scenario_inds, f<-function(x) event_peak_stage_alt1[x])
         exrate_plot(event_peak_stage_alt1, event_rates, t='l', main='Alternative 1')
         exrate_plot(unlist(random_scenario_stages_alt1), unlist(random_scenario_rates), 
                     add=TRUE, col='green', t='l')
+        exrate_plot(unlist(random_scenario_stages_alt1), unlist(alternate_random_scenario_rates), 
+                    add=TRUE, col='blue', t='l')
         # An another nearby site
         random_scenario_stages_alt2 = lapply(random_scenario_inds, f<-function(x) event_peak_stage_alt2[x])
         exrate_plot(event_peak_stage_alt2, event_rates, t='l', main='Alternative 2')
         exrate_plot(unlist(random_scenario_stages_alt2), unlist(random_scenario_rates), 
                     add=TRUE, col='green', t='l')
+        exrate_plot(unlist(random_scenario_stages_alt2), unlist(alternate_random_scenario_rates), 
+                    add=TRUE, col='blue', t='l')
         # An another nearby site
         random_scenario_stages_alt3 = lapply(random_scenario_inds, f<-function(x) event_peak_stage_alt3[x])
         exrate_plot(event_peak_stage_alt3, event_rates, t='l', main='Alternative 3')
         exrate_plot(unlist(random_scenario_stages_alt3), unlist(random_scenario_rates), 
                     add=TRUE, col='green', t='l')
+        exrate_plot(unlist(random_scenario_stages_alt3), unlist(alternate_random_scenario_rates), 
+                    add=TRUE, col='blue', t='l')
 
         par(mfrow=c(2,2))
         stages = c(1, 2, 5, 10)
@@ -560,11 +584,15 @@ write_scenario_info<-function(random_scenario_info, filename){
     # The scenario rates that should be used for calculations [corrected for
     # importance sampling, non-uniform conditional probs, etc]
     scenario_rates = unlist(lapply(random_scenario_info, f<-function(x) x$random_scenario_rates))        
+    # Here are the 'unbiased' variants of the scenario_rates. They are not always exactly consistent
+    # with the standard scenario rates [e.g. sum_of_rate_for_a_given_Mw is not exactly consistent with the PTHA18]
+    # but this has the benefit of unbiased-ness when using them to estimate probability integrals.
+    alternate_scenario_rates = unlist(lapply(random_scenario_info, f<-function(x) x$alternate_random_scenario_rates))        
     # The magnitudes
     mw = unlist(lapply(random_scenario_info, f<-function(x) x$inds*0 + x$mw)) 
 
     output = cbind(scenario_row=inds, mw=mw, scenario_rates=scenario_rates, 
-                   weight_inflation=weight_inflation)
+                   weight_inflation=weight_inflation, alternate_scenario_rates=alternate_scenario_rates)
 
     write.csv(output, filename, row.names=FALSE)
 }
