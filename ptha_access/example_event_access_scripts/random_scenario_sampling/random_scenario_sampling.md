@@ -12,12 +12,15 @@ inundation models for every scenario. It may be impractical to do this for
 every PTHA18 scenario, but feasible with a random sample containing hundreds or
 thousands of scenarios. 
 
-This tutorial shows how to randomly sample scenarios from a given source-zone
-in a manner that is statistically consistent with the PTHA18. This means that
-one can derive quantities of interest (such as the maximum-stage
-exceedance-rate at a hazard point) from the random scenarios, and the result
-will be arbitrarily close to the PTHA18 values IF the random sample is
-sufficiently large. 
+This tutorial examines a few approaches to randomly sample scenarios from a
+given source-zone in a manner that is statistically consistent with the PTHA18.
+This means that one can derive quantities of interest (such as the
+maximum-stage exceedance-rate at a hazard point) from the random scenarios, and
+the result will be arbitrarily close to the PTHA18 values IF the random sample
+is sufficiently large. In all cases it is the users reponsibility to determine
+**how large is large enough**, and that the sampling strategy gives stable
+results for their application. In general the adequacy of different methods and
+sample-sizes will vary case-by-case.
 
 ## Get the source-zone event data, and some maximum-stage data.
 ---------------------------------------------------------------
@@ -190,13 +193,17 @@ table(random_scenarios_simple$mw)
 ##  12  12  12  12  12   1   1
 ```
 
-## Inferring tsunami exceedance-rates from the random scenario subset
-----------------------------------------------------------------------
+## Approximating PTHA18 max-stage exceedance-rates with the random scenario subset
+----------------------------------------------------------------------------------
 
 What do we mean by saying the random scenarios are statistically consistent
 with the PTHA18? To demonstrate this we consider the tsunami max-stage
-exceedance-rates at the point offshore of Tonga (any other location could
-similarly be chosen).
+exceedance-rates at the point offshore of Tonga. Any other location could
+similarly be chosen. The key point is that we can approximate the PTHA18
+results using a randomly chosen subset scenarios, which in some cases may
+contain many fewer scenarios that the full PTHA18. This can be advantageous,
+for example if we need to run new tsunami simulations for all the scenarios to get
+information at our site of interest.
 
 In the full PTHA, we can compute the max-stage exceedance rates at this point as:
 
@@ -221,12 +228,14 @@ of samples. As we increase the number of random scenarios per magnitude, the
 accuracy will improve (on average) until the difference is negligible. In this
 sense the random sample is statistically consistent with the PTHA18.
 ![plot of chunk ptha18_tonga_point_plot1](figure/ptha18_tonga_point_plot1-1.png)
-*Note: Here we have suppressed the plotting code for readability. We also do
-this below. The plotting code can be seen in the file
+
+*Note: Here and below we suppress the plotting code for readability. It can be found in the file
 random_scenario_sampling.Rmd that was used to create this document.*
 
-Below we do a similar computation with more random scenario samples. Clearly
-this leads to improved agreement with the PTHA18 exceedance-rates, as expected. 
+Below we do the same computation, but with more random scenario samples (120
+per Mw, instead of 12). Clearly this leads to improved agreement with the
+PTHA18 exceedance-rates, as expected. On average we expect the accuracy to improve 
+with an increase in the sample size.
 
 ```r
 # Make the random scenarios -- use 120 per magnitude, instead of 12
@@ -247,16 +256,23 @@ stage_exrates_rs_simple_many = sapply(stage_seq,
 
 ![plot of chunk ptha18_tonga_point_plot1_moresam](figure/ptha18_tonga_point_plot1_moresam-1.png)
 
-Here we are considering the max-stage exceedance-rates at a hazard point, and
-can easily use the full PTHA18 results, so there is no reason to use random
-sampling of scenarios. However in other situations we might be interested in
-the tsunami behaviour away from PTHA18 output points. For instance we might
-have an onshore site of interest, so we need to re-simulate the tsunami for
-every scenario with a relatively costly inundation model. While this is likely
-computationally prohibitive for the full set of PTHA18 scenarios, it may be
-feasible for a random subset of scenarios (so long as sufficiently many
-scenarios are sampled).
+In this example we are considering the max-stage exceedance-rates at a hazard
+point, where we can easily use the full PTHA18 results. So for this example
+there is no reason to use random sampling of scenarios. Why might we want to
+use random scenarios? Suppose we were interested in the tsunami
+inundation-depth exceedance rates at a nearby point. The PTHA18 does not
+simulate inundation, and so we would need to run an inundation model for every
+scenario. This is likely computationally prohibitive for the full set of PTHA18
+scenarios, but it may be feasible for a random subset of scenarios. So long as
+sufficiently many scenarios are sampled, it will also be accurate. 
 
+There are also other techniques that may improve the accuracy of the results in
+particular cases, without increasing the number of random scenarios used. The
+idea is to use case-specific knowledge to biasing the sampling toward scenarios
+of interest, while accounting for this in the scenario rate calculation. Some
+of these techniques are explored below. Beware their use requires judgement,
+and poor decisions may increase the error. In contrast, simply increasing the
+number of scenarios will always lead to an accuracy improvement on-average.
 
 
 ## Random scenario sampling, with more scenarios at magnitudes of interest
@@ -279,8 +295,8 @@ smaller waves so heavily.
 A potentially improved strategy is to sample more scenarios at higher
 magnitudes, which are more likely to generate larger waves. We can do this by
 adjusting `samples_per_Mw`. Many approaches could be tried - here we linearly
-vary the number of scenarios from 6 at Mw 7.2, up to 18 at Mw 9.6. Note that on
-average this leads to the same number of scenarios as the previous approach.
+vary the number of scenarios from 6 at Mw 7.2, up to 18 at Mw 9.6. On average
+this leads to the same number of scenarios as the previous approach.
 
 ```r
 # Make the random scenarios
@@ -303,7 +319,9 @@ In this particular case the result is not greatly improved, although it
 arguably looks better at rarer exceedance-rates (compared with using 12
 scenarios for each magnitude bin). The benefit of putting more sampling effort
 into higher magnitudes will vary case-by-case; it is most useful when you have
-strong reason to think that low magnitudes are unimportant for your study.
+strong reason to think that low magnitudes are unimportant for your study. A poor
+decision could decrease the accuracy - for instance if lower magnitudes were actually 
+important to the hazard and were insufficiently sampled.
 
 ![plot of chunk ptha18_tonga_point_plot2](figure/ptha18_tonga_point_plot2-1.png)
 
