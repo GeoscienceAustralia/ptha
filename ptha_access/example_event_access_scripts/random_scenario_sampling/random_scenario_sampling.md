@@ -68,7 +68,7 @@ Our simplest random scenario sampling algorithm proceeds as follows
 * Group the scenarios by magnitude
 * For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability.
 
-The function which does this only requires knowledge of the scenario magnitudes, and the scenario rates. From these variables the function will internally compute scenario conditional probability for each unique magnitude value (which ranges from 7.2, 7.3, ... 9.6, 9.7, 9.8 in PTHA18). 
+The function which does this only requires knowledge of the scenario magnitudes, and the scenario rates. From these variables the function will internally compute the scenario conditional probability for each unique magnitude value (which ranges from 7.2, 7.3, ... 9.6, 9.7, 9.8 in PTHA18). 
 
 We also need to specify the number of scenarios to sample for each magnitude - herein a constant (12) is used, although in general it can vary with magnitude.
 
