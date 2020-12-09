@@ -18,9 +18,9 @@ This means that one can derive quantities of interest (such as the
 maximum-stage exceedance-rate at a hazard point) from the random scenarios, and
 the result will be arbitrarily close to the PTHA18 values IF the random sample
 is sufficiently large. In all cases it is the users reponsibility to determine
-**how large is large enough**, and that the sampling strategy gives stable
-results for their application. In general the adequacy of different methods and
-sample-sizes will vary case-by-case.
+a sample size sufficient for accurate results, and that the sampling strategy
+gives stable results for their application. In general the adequacy of
+different methods and sample-sizes will vary case-by-case.
 
 ## Get the source-zone event data, and some maximum-stage data.
 ---------------------------------------------------------------
@@ -76,8 +76,7 @@ We also need to specify the number of scenarios to sample for each magnitude - h
 event_Mw = kt2_scenarios$events$Mw
 event_rates = kt2_scenarios$events$rate_annual
 
-# Make a reproducible random seed to make the code reproducible (this is
-# optional)
+# Make a reproducible random seed to make the code reproducible (this is optional)
 set.seed(123)
 
 # Make the random scenarios
@@ -224,18 +223,19 @@ stage_exrates_rs_simple = sapply(stage_seq,
 
 The max-stage exceedance-rate curve derived from the random scenarios is
 similar to the PTHA18 result, but there is some error due to the limited number
-of samples. As we increase the number of random scenarios per magnitude, the
-accuracy will improve (on average) until the difference is negligible. In this
-sense the random sample is statistically consistent with the PTHA18.
+of samples (see figure below). As we increase the number of random scenarios
+per magnitude, the accuracy will improve (on average) until the difference is
+negligible. In this sense the random sample is statistically consistent with
+the PTHA18.
 ![plot of chunk ptha18_tonga_point_plot1](figure/ptha18_tonga_point_plot1-1.png)
 
 *Note: Here and below we suppress the plotting code for readability. It can be found in the file
 random_scenario_sampling.Rmd that was used to create this document.*
 
 Below we do the same computation, but with more random scenario samples (120
-per Mw, instead of 12). Clearly this leads to improved agreement with the
-PTHA18 exceedance-rates, as expected. On average we expect the accuracy to improve 
-with an increase in the sample size.
+per Mw, instead of 12). The figure shows this leads to improved agreement with
+the PTHA18 exceedance-rates, as expected. On average the accuracy will improve
+as the sample size is increased.
 
 ```r
 # Make the random scenarios -- use 120 per magnitude, instead of 12
@@ -268,11 +268,12 @@ sufficiently many scenarios are sampled, it will also be accurate.
 
 There are also other techniques that may improve the accuracy of the results in
 particular cases, without increasing the number of random scenarios used. The
-idea is to use case-specific knowledge to biasing the sampling toward scenarios
-of interest, while accounting for this in the scenario rate calculation. Some
-of these techniques are explored below. Beware their use requires judgement,
-and poor decisions may increase the error. In contrast, simply increasing the
-number of scenarios will always lead to an accuracy improvement on-average.
+idea is to use case-specific knowledge to bias the sampling toward scenarios of
+interest, while accounting for this in the scenario rate calculation (to retain
+consistency with PTHA18). Some of these techniques are explored below. Beware
+their use requires judgement, and poor decisions may increase the error. In
+contrast, simply increasing the number of scenarios will always lead to an
+accuracy improvement on-average.
 
 
 ## Random scenario sampling, with more scenarios at magnitudes of interest
@@ -280,23 +281,23 @@ number of scenarios will always lead to an accuracy improvement on-average.
 
 The simple random sample has many scenario with low maximum-stage values, which
 are not of particular interest for this study. For instance half of all the scenarios
-are less than 0.16. 
+have max-stage less than 0.16 m, 
+which seems too small to be of much interest in most tsunami hazard studies. 
 
 ```r
-quantile(event_peak_stage[random_scenarios_simple$inds], seq(0, 1, len=5))
+quantile(event_peak_stage[random_scenarios_simple$inds], seq(0, 1, len=5), na.rm=TRUE)
 ```
 
 ```
-## Error in quantile.default(event_peak_stage[random_scenarios_simple$inds], : missing values and NaN's not allowed if 'na.rm' is FALSE
+##           0%          25%          50%          75%         100% 
+## 8.779819e-04 3.515445e-02 1.572768e-01 8.922567e-01 1.611099e+01
 ```
-In practice we will be interested in larger waves, and it seems inefficient to sample
-smaller waves so heavily.
-
-A potentially improved strategy is to sample more scenarios at higher
-magnitudes, which are more likely to generate larger waves. We can do this by
-adjusting `samples_per_Mw`. Many approaches could be tried - here we linearly
-vary the number of scenarios from 6 at Mw 7.2, up to 18 at Mw 9.6. On average
-this leads to the same number of scenarios as the previous approach.
+In practice we will be interested in larger waves. A potentially improved
+strategy is to sample more scenarios at higher magnitudes, which are more
+likely to generate larger waves. We can do this by adjusting `samples_per_Mw`.
+Many approaches could be tried - here we chose to linearly vary the number of
+scenarios from 6 at Mw 7.2, up to 18 at Mw 9.6. On average this leads to the
+same number of scenarios as the previous approach.
 
 ```r
 # Make the random scenarios
@@ -330,11 +331,12 @@ being somewhat more common, as compared with the previous approach. However we s
 many scenarios with low max-stage values.
 
 ```r
-quantile(event_peak_stage[random_scenarios_mw_weighted$inds], seq(0, 1, len=5))
+quantile(event_peak_stage[random_scenarios_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
 ```
 
 ```
-## Error in quantile.default(event_peak_stage[random_scenarios_mw_weighted$inds], : missing values and NaN's not allowed if 'na.rm' is FALSE
+##           0%          25%          50%          75%         100% 
+## 5.102007e-04 5.528670e-02 2.542621e-01 1.005511e+00 1.402381e+01
 ```
 
 The reason we still have many small max-stage values is that the
