@@ -221,6 +221,9 @@ of samples. As we increase the number of random scenarios per magnitude, the
 accuracy will improve (on average) until the difference is negligible. In this
 sense the random sample is statistically consistent with the PTHA18.
 ![plot of chunk ptha18_tonga_point_plot1](figure/ptha18_tonga_point_plot1-1.png)
+*Note: Here we have suppressed the plotting code for readability. We also do
+this below. The plotting code can be seen in the file
+random_scenario_sampling.Rmd that was used to create this document.*
 
 Below we do a similar computation with more random scenario samples. Clearly
 this leads to improved agreement with the PTHA18 exceedance-rates, as expected. 
@@ -261,7 +264,7 @@ scenarios are sampled).
 
 The simple random sample has many scenario with low maximum-stage values, which
 are not of particular interest for this study. For instance half of all the scenarios
-are less than NA. 
+are less than 0.16. 
 
 ```r
 quantile(event_peak_stage[random_scenarios_simple$inds], seq(0, 1, len=5))
@@ -297,21 +300,46 @@ stage_exrates_rs_mw_weighted = sapply(stage_seq,
 ```
 
 In this particular case the result is not greatly improved, although it
-arguably looks better at rarer exceedance-rates (as compared with the case with
-12 scenarios for each magnitude bin). The benefit of putting more sampling
-effort into higher magnitudes will vary case-by-case; it is most useful when
-you have strong reason to think that low magnitudes are unimportant for your
-study.
+arguably looks better at rarer exceedance-rates (compared with using 12
+scenarios for each magnitude bin). The benefit of putting more sampling effort
+into higher magnitudes will vary case-by-case; it is most useful when you have
+strong reason to think that low magnitudes are unimportant for your study.
 
 ![plot of chunk ptha18_tonga_point_plot2](figure/ptha18_tonga_point_plot2-1.png)
+
+The concentration of sampling at higher magnitudes has result in larger max-stage values
+being somewhat more common, as compared with the previous approach. However we still have
+many scenarios with low max-stage values.
+
+```r
+quantile(event_peak_stage[random_scenarios_mw_weighted$inds], seq(0, 1, len=5))
+```
+
+```
+## Error in quantile.default(event_peak_stage[random_scenarios_mw_weighted$inds], : missing values and NaN's not allowed if 'na.rm' is FALSE
+```
+
+The reason we still have many small max-stage values is that the
+`kermadectonga2` source-zone is very large, and the particular site of interest
+(offshore of Tonga) is mainly affected by a small part of the source-zone. If
+we are mostly interested in larger waves, then this seems like an inefficient
+sampling approach.
 
 ## Random scenario sampling, using importance sampling to emphasise higher max-stages
 -------------------------------------------------------------------------------------
 
+Here we show how the theory of importance-sampling can be used to more strongly
+concentrate our random sample on scenarios that have higher maximum-stage values.
+* Group the scenarios by magnitude
+* For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability **multiplied by a user-defined positive event-importance factor**. The latter step is where this method differs from regular sampling.
+* The theory of importance sampling provides a means to adjust the random scenario weights to correct for this preferential sampling. There are many statistical texts which cover importance sampling, [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
+
+In the example below we set the `event_importance` equal to the scenario's maximum-stage, which means we prefer scenarios with higher max-stage, all else being equal. Many other choices could be made depending on what you know about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve. Note we are still only using an average of 12 samples per magnitude bin.
+
 
 ```r
 # Make the random scenarios
-POW = 1 # Optional power-law transformation to event_peak_stage
+POW = 1 # Optional power-law transformation to convert event_peak_stage to event_importance
 random_scenarios_stage_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     event_rates=event_rates,
     event_Mw=event_Mw,
@@ -330,13 +358,10 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
 
 ![plot of chunk ptha18_tonga_point_plot3](figure/ptha18_tonga_point_plot3-1.png)
 
+Importance sampling can backfire if the choice of `event_importance` is poor. We do not have a foolproof method to set it. We suggest that users study the performance of their choice under repeated sampling (at PTHA18 points) - a poor choice will lead to erratic behaviour for some random samples.
 
 ## Comparison of all approaches
 -------------------------------
-
-Emphasise that increasing the sample size is a good idea. Also tests, like
-checking generality at nearby points, and splitting scenarios into groups (more complex?), 
-and randomisation tests.
 
 
 ```r
