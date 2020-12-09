@@ -4,7 +4,8 @@ library(cptcity)
 # Name of folder in '../../swals/OUTPUTS/' where the random models are stored.
 run_series_name = commandArgs(trailingOnly=TRUE)[1] #'ptha18_tonga_MSL0'
 
-# Exceedance-rate with 2\% chance in 50 years
+# Exceedance-rate with 2\% chance in 50 years. This is approximately 1/2475, and
+# is often used as a reference exceedance-rate for risk-management purposes.
 target_exrate = uniroot(f<-function(x){(1 - exp(-50*x)) - 0.02}, 
     lower=0, upper=10, tol=1e-12)$root
 
