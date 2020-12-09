@@ -192,6 +192,10 @@ table(random_scenarios_simple$mw)
 ##  12  12  12  12  12   1   1
 ```
 
+Some of the scenarios may be repeated - because we need to use random sampling
+with replacement to get results that are statistically consistent with the
+PTHA18.
+
 ## Approximating PTHA18 max-stage exceedance-rates with the random scenario subset
 ----------------------------------------------------------------------------------
 
