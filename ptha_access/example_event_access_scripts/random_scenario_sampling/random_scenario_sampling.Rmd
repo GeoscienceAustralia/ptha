@@ -334,7 +334,7 @@ Beware importance sampling can backfire if the choice of `event_importance` is p
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
      xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='Comparison of all approaches with an average of 12 samples per Mw bin')
+     main='Comparison of all approaches which \n have an average of 12 samples per Mw bin')
 points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
 points(stage_seq, stage_exrates_rs_mw_weighted, t='l', col='blue')
 points(stage_seq, stage_exrates_rs_stage_mw_weighted, t='l', col='purple')
