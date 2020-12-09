@@ -298,7 +298,7 @@ values. The sampling algorithm is:
 * For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability **multiplied by a user-defined positive event-importance factor**. The latter step is where this method differs from regular sampling.
 * The theory of importance sampling provides a means to adjust the random scenario weights to correct for this preferential sampling. There are many statistical texts which cover importance sampling, [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
 
-In the example below we set the `event_importance` equal to the scenario's maximum-stage at our site offshore of Tonga. This means we prefer scenarios with higher max-stage at that site, all else being equal. This might be a a good choice if were studying tsunami hazards nearby (e.g. in Tonga), but probably not if we were studying the hazard far away (e.g. New Zealand). Many other choices could be made depending on what is known about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve at our hazard, while still only using an average of 12 samples per magnitude bin.
+In the example below we set the `event_importance` equal to the scenario's maximum-stage at our site offshore of Tonga. This means we prefer scenarios with higher max-stage at that site, all else being equal. This might be a a good choice if were studying tsunami hazards nearby (e.g. in Tonga), but probably not if we were studying the hazard far away (e.g. New Zealand). Many other choices could be made depending on what is known about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve at our site, while still only using an average of 12 samples per magnitude bin.
 
 ```{r scenarios_stage_biased}
 # Make the random scenarios
@@ -337,14 +337,14 @@ In comparison to the previous approaches, we have more scenarios with high max-s
 quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
 ```
 
-Beware importance sampling can backfire if the choice of `event_importance` is poor. We do not have a foolproof method to set it. We suggest that users study the performance of their choice under repeated sampling (at PTHA18 points) - a poor choice will lead to erratic behaviour for some random samples.
+Beware importance sampling can backfire if the choice of `event_importance` is poor. We do not have a foolproof method to set it. We suggest that users study the performance of their choice under repeated sampling (at PTHA18 points) - a poor choice will lead to erratic behaviour, as compared to simpler approaches.
 
 ## Comparison of all approaches
 -------------------------------
 
 Here we overplot all the curves above (ignoring the one with 120 random
 scenarios per Mw bin).  The curves are affected by randomness, so if we ran the
-code again with a different random seed, the results would differ. 
+code again with a different random seed, the results would change. 
 
 ```{r compareAllApproaches, fig.width=7, fig.height=5, warning=FALSE}
 # Plot it
@@ -381,7 +381,7 @@ sampling with each of the sampling schemes above.
 
 ```{r stochasticComparison}
 target_exrate = 1/1000 # Look at the max-stage at this exceedance-rate
-Nrep = 500 # Repeat the sampling this many times
+Nrep = 500 # Repeat the sampling this many times to study the variation
 
 # Get the PTHA18 max-stage at the target_exrate
 stage_at_target_exrate_ptha18 = approx(stage_exrates_ptha18, stage_seq, 
@@ -471,10 +471,11 @@ legend('bottomright', c('Original PTHA [best result]', 'Simple random sampling (
     bty='n',  col=c('black', 'red', 'blue', 'purple'), lwd = c(2, 1, 1, 1))
 
 ```
-It is clear that the importance-sampling method leads to greater
-concentration of 1/1000 max-stage values around the PTHA18 value. This indicates that
-it is less variable than the other techniques - in other words, it is better, at least
-for this exceedance-rate.  The results using simple random sampling (12
+
+It is clear that the importance-sampling method leads to greater concentration
+of 1/1000 max-stage values around the PTHA18 value. This indicates that it is
+less variable than the other techniques - in other words, it is better, at
+least for this exceedance-rate. The results using simple random sampling (12
 scenarios per Mw bin) are quite similar to those using more scenarios at higher
 magnitudes, which indicates that at this site, there is little benefit to the
 latter strategy for this exceedance-rate. We emphasise that at other sites, or
