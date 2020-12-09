@@ -211,7 +211,9 @@ all_checks$ic_name = substring(basename(dirname(dirname(all_log_files))), 1, 59)
 # Confirm the runs with different MSL line-up OK
 stopifnot(all(all_checks$ic_name[1:1101] == all_checks$ic_name[1102:(1102+1100)]))
 
-# One of the runs with MSL=0.8 died -- all the others finished.
+# Initially one of the runs with MSL=0.8 died -- all the others finished.
+# The problematic run was sorted out as discussed in ../../swals/README.md,
+# so we end up with no unfinished runs.
 summary(all_checks$run_finished)
 #   Mode    TRUE 
 #logical    2202 
