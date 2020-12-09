@@ -281,7 +281,7 @@ accuracy improvement on-average.
 
 The simple random sample has many scenario with low maximum-stage values, which
 are not of particular interest for this study. For instance half of all the scenarios
-have max-stage less than 0.16 m, 
+have max-stage less than 0.157 m, 
 which seems too small to be of much interest in most tsunami hazard studies. 
 
 ```r
@@ -378,7 +378,18 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
 
 ![plot of chunk ptha18_tonga_point_plot3](figure/ptha18_tonga_point_plot3-1.png)
 
-Importance sampling can backfire if the choice of `event_importance` is poor. We do not have a foolproof method to set it. We suggest that users study the performance of their choice under repeated sampling (at PTHA18 points) - a poor choice will lead to erratic behaviour for some random samples.
+In comparison to the previous approaches, we have more scenarios with high max-stage values.
+
+```r
+quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
+```
+
+```
+##           0%          25%          50%          75%         100% 
+##  0.004781944  0.189168606  0.792112708  3.175440550 19.648012161
+```
+
+Beware importance sampling can backfire if the choice of `event_importance` is poor. We do not have a foolproof method to set it. We suggest that users study the performance of their choice under repeated sampling (at PTHA18 points) - a poor choice will lead to erratic behaviour for some random samples.
 
 ## Comparison of all approaches
 -------------------------------
@@ -388,7 +399,7 @@ Importance sampling can backfire if the choice of `event_importance` is poor. We
 # Plot it
 plot(stage_seq, stage_exrates_ptha18, log='xy', t='l', lwd=2, xlim=c(0.1, 10), ylim=c(1e-04, 1e-01),
      xlab='Max-stage (m)', ylab='Exceedance rate (events/year)',
-     main='Comparison of all approaches')
+     main='Comparison of all approaches with an average of 12 samples per Mw bin')
 points(stage_seq, stage_exrates_rs_simple, t='l', col='red')
 points(stage_seq, stage_exrates_rs_mw_weighted, t='l', col='blue')
 points(stage_seq, stage_exrates_rs_stage_mw_weighted, t='l', col='purple')
