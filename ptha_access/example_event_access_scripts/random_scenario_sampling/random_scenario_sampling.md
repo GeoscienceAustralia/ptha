@@ -145,8 +145,7 @@ table, for magnitudes `9.7` and `9.8`.
 
 
 ```r
-# Look at the last few rows - NA values for magnitudes that are "impossible"
-# according to PTHA18 (rate_annual=0)
+# Look at the last few rows - NA values for magnitudes that are "impossible" according to PTHA18 (rate_annual=0)
 tail(random_scenarios_simple)
 ```
 
@@ -335,9 +334,10 @@ important to the hazard and were insufficiently sampled.
 
 ![plot of chunk ptha18_tonga_point_plot2](figure/ptha18_tonga_point_plot2-1.png)
 
-The concentration of sampling at higher magnitudes has result in larger max-stage values
-being somewhat more common, as compared with the previous approach. However we still have
-many scenarios with low max-stage values.
+By concentrating sampling at higher magnitudes we sample larger max-stage
+scenarios more often, as compared with the previous approach. However the
+effect is not particularly strong, and there are still many scenarios with low
+max-stage values.
 
 ```r
 quantile(event_peak_stage[random_scenarios_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
@@ -348,7 +348,7 @@ quantile(event_peak_stage[random_scenarios_mw_weighted$inds], seq(0, 1, len=5), 
 ## 5.102007e-04 5.528670e-02 2.542621e-01 1.005511e+00 1.402381e+01
 ```
 
-The reason we still have many small max-stage values is that the
+The reason we still have many small max-stage scenarios is that the
 `kermadectonga2` source-zone is very large, and the particular site of interest
 (offshore of Tonga) is mainly affected by a small part of the source-zone. If
 we are mostly interested in larger waves, then this seems like an inefficient
@@ -364,7 +364,7 @@ values. The sampling algorithm is:
 * For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability **multiplied by a user-defined positive event-importance factor**. The latter step is where this method differs from regular sampling.
 * The theory of importance sampling provides a means to adjust the random scenario weights to correct for this preferential sampling. There are many statistical texts which cover importance sampling, [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
 
-In the example below we set the `event_importance` equal to the scenario's maximum-stage, which means we prefer scenarios with higher max-stage, all else being equal. Many other choices could be made depending on what you know about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve, while still only using an average of 12 samples per magnitude bin.
+In the example below we set the `event_importance` equal to the scenario's maximum-stage at our site offshore of Tonga. This means we prefer scenarios with higher max-stage at that site, all else being equal. This might be a a good choice if were studying tsunami hazards nearby (e.g. in Tonga), but probably not if we were studying the hazard far away (e.g. New Zealand). Many other choices could be made depending on what you know about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve, while still only using an average of 12 samples per magnitude bin.
 
 
 ```r
