@@ -43,18 +43,18 @@
 #
 # How does this compare with the classical equation for "available potential energy" which
 # ignores wetting and drying?:
-#    available_potential_energy_on_rho = g/2 * integral { (stage - MSL_LINEAR)^2 }
+#    available_potential_energy_on_rho = g/2 * integral_in_wet_areas{ (stage - MSL_LINEAR)^2 }
 # 
 # Supposing there is no wetting and drying, we can expand the SWALS potential energy as:
-#     SWALS_potential_energy_on_rho = g/2 * integral{ stage^2 - MSL_LINEAR^2}
+#     SWALS_potential_energy_on_rho = g/2 * integral_in_wet_areas{ stage^2 - MSL_LINEAR^2}
 # whereas the classical equation expands as.
-#     available_potential_energy_on_rho = g/2 * integral{ stage^2 - 2*stage * MSL_LINEAR + MSL_LINEAR^2}
+#     available_potential_energy_on_rho = g/2 * integral_in_wet_areas{ stage^2 - 2*stage * MSL_LINEAR + MSL_LINEAR^2}
 # If we suppose the mean_stage REALLY is MSL_LINEAR, i.e.
-#    integral{stage} == integral{MSL_LINEAR}
+#    integral_in_wet_areas{stage} == integral_in_wet_areas{MSL_LINEAR}
 # then 
-#    integral{ -2*stage*MSL_LINEAR } = integral{ -2 * MSL_LINEAR^2 }
+#    integral_in_wet_areas{ -2*stage*MSL_LINEAR } = integral_in_wet_areas{ -2 * MSL_LINEAR^2 }
 # so we can rearrange the classical equation as 
-#     available_potential_energy_on_rho = g/2 * integral{ stage^2 - MSL_LINEAR^2} = SWALS_potential_energy_on_rho
+#     available_potential_energy_on_rho = g/2 * integral_in_wet_areas{ stage^2 - MSL_LINEAR^2} = SWALS_potential_energy_on_rho
 # In summary, the SWALS calculation is the same as the classical available potential energy if there
 # is no wetting and drying, and the mean-wet-stage == MSL_LINEAR.
 #
@@ -62,7 +62,7 @@
 # model with an Okada initial condition that has non-zero volume, the
 # mean-wet-stage will no longer be equal to the models MSL]. In that case, if
 # there is no wetting and drying, then [KEY EQUATION]:
-#     available_potential_energy_on_rho = SWALS_potential_energy_on_rho + g/2 * 2 * MSL_LINEAR*integral{ (MSL_LINEAR - stage) }
+#     available_potential_energy_on_rho = SWALS_potential_energy_on_rho + g/2 * 2 * MSL_LINEAR*integral_in_wet_areas{ (MSL_LINEAR - stage) }
 # Notice that the time-variation of the latter integral is related to the
 # volume of water in the domain, which is something our volume conservation
 # analysis keeps track of. Also, the latter term vanishes if MSL_LINEAR=0,
