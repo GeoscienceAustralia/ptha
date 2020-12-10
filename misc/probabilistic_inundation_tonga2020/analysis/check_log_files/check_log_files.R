@@ -277,7 +277,7 @@ summary((all_checks$energy_max_while_closed - all_checks$energy_start)/all_check
 # When there are fluxes in and out of the domain, we lose the typical energy
 # conservation relation.  But given we have a radiation boundary condition, it
 # seems reasonable that the available potential energy should decrease when the
-# boundary is radiating. When MSL=0, the SWALS energy is the same as the
+# boundary is radiating. When MSL=0, the SWALS potential energy is the same as the
 # available potential energy if wetting and drying is unimportant (this is not 
 # true for runs with nonzero MSL, as it also depends on the volume change over
 # time). So here we check whether the energy decreases for the msl0 cases, once
