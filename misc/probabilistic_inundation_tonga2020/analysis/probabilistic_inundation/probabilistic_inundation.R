@@ -547,9 +547,15 @@ for(target_exrate in exceedance_rate_thresholds_for_depth_calculations){
 
         # Save it
         output_rast = setValues(raster_template, output_mat)
-        raster_output_file = paste0(run_series_name, 
-            '/depth_at_exceedance_rate_1_in_', round(1/target_exrate), '_', 
-            exrate_type, '_domain_',  domain_index, '.tif')
+        if(exrate_type == 'alternate'){
+            raster_output_file = paste0(alternate_run_series_name, 
+                '/depth_at_exceedance_rate_1_in_', round(1/target_exrate), 
+                 '_domain_',  domain_index, '.tif')
+        }else{
+            raster_output_file = paste0(run_series_name, 
+                '/depth_at_exceedance_rate_1_in_', round(1/target_exrate), 
+                 '_domain_',  domain_index, '.tif')
+        }
         writeRaster(output_rast, raster_output_file, 
             options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
     }
