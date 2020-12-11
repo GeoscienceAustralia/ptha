@@ -19,7 +19,8 @@ tonga_coast = readOGR('../../elevation/Tonga_coast/Tonga_coast_nearlon180.shp',
 make_combined_segunseg_tifs<-function(){
     # All the rasters with exceedance-rate [given depth-threshold and domain]
     # for this run_series
-    all_rast_files = Sys.glob(paste0(run_series_name, '/*.tif'))
+    all_rast_files = Sys.glob(paste0(run_series_name, 
+        '/*_exceedance_rate_with_threshold*.tif'))
 
     # Extract key information from the filename
     all_rasts_domain_index_and_threshold = unlist(lapply(
