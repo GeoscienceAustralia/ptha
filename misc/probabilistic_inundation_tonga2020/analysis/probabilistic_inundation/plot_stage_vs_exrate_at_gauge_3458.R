@@ -35,7 +35,7 @@ ptha18_curve = cbind(target_stages, sapply(target_stages, f<-function(x) sum(rat
 #
 # Get data from this study out of the RDS file
 #
-ptha18_3458_point_data = readRDS(paste0(run_series_name, 'depth_and_stage_exrate_curve_at_ptha18_point_3458.3.RDS'))
+ptha18_3458_point_data = readRDS(paste0(run_series_name, '_depth_and_stage_exrate_curve_at_ptha18_point_3458.3.RDS'))
 x = ptha18_3458_point_data$stage_exrate_curves
 
 # Note stages will be the same for all entries of the list
@@ -43,6 +43,10 @@ stages = x[[4]]$stage
 # Here we get the combined 'unsegmented + union-of-segments' exceedance-rate
 exrates = 0.5*x[[4]]$exrate_stage + 
           0.5*(x[[1]]$exrate_stage + x[[2]]$exrate_stage + x[[3]]$exrate_stage)
+# Here we use the importance-sampling weights, that do not precisely conserve the
+# exceedance rates, but in theory have less bias.      
+alternate_exrates = 0.5*x[[4]]$alternate_exrate_stage + 
+          0.5*(x[[1]]$alternate_exrate_stage + x[[2]]$alternate_exrate_stage + x[[3]]$alternate_exrate_stage)
 
 # Here is the PTHA18 mean-rate curve [all source-zones]
 # This was manually copied from a PTHA18 shapefile output.
@@ -62,7 +66,7 @@ ptha18_values = matrix(
 # Plot comparing the results
 
 png('Stage_vs_rate_validation_at_ptha18_point_3458.png', width=8, height=6, units='in', res=300)
-plot(stages, exrates, log='y', t='o', 
+plot(stages, alternate_exrates, log='y', t='o', 
      xlab='Max-stage (m)', ylab='exceedance-rate (events/year)',
      main=paste0('Max-stage vs exceedance-rate at PTHA18 point 3458: PTHA18 vs Tonga study\n',
          'Tonga study includes a subset of kermadectonga2 scenarios with a 5 hour model. \n ',
@@ -70,6 +74,7 @@ plot(stages, exrates, log='y', t='o',
      cex.main=1.0, xlim=c(0, 10), ylim=c(1e-05, 1))
 points(ptha18_values, col='red', pch=19, t='o') # Straight out of PTHA18, all source-zones
 points(ptha18_curve, t='l', col='green', lwd=2) # Straight out of PTHA18, kermadectonga2 only
+#points(stages, exrates, t='l', col='purple')
 abline(v=seq(0, 20), col='orange', lty='dotted')
 abline(h=10**seq(-6, 0), col='orange', lty='dotted')
 legend('topright', 
