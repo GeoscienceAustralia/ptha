@@ -67,7 +67,7 @@ ptha18_values = matrix(
 
 png('Stage_vs_rate_validation_at_ptha18_point_3458.png', width=8, height=6, units='in', res=300)
 plot(stages, alternate_exrates, log='y', t='o', 
-     xlab='Max-stage (m)', ylab='exceedance-rate (events/year)',
+     xlab='Max-stage (m)', ylab='Exceedance-rate (events/year)',
      main=paste0('Max-stage vs exceedance-rate at PTHA18 point 3458: PTHA18 vs Tonga study\n',
          'Tonga study includes a subset of kermadectonga2 scenarios with a 5 hour model. \n ',
          'The PTHA18 uses a 36 hour model, optionally with additional source-zones.'),
@@ -77,6 +77,7 @@ points(ptha18_curve, t='l', col='green', lwd=2) # Straight out of PTHA18, kermad
 #points(stages, exrates, t='l', col='purple')
 abline(v=seq(0, 20), col='orange', lty='dotted')
 abline(h=10**seq(-6, 0), col='orange', lty='dotted')
+add_log_axis_ticks(side=2)
 legend('topright', 
        c('Tonga inundation study [only scenarios from "kermadectonga2"]', 
          'PTHA18 [all source-zones]', 'PTHA18 [kermadectonga2 only]'),
