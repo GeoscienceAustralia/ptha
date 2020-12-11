@@ -33,6 +33,8 @@ Rscript plot_stage_vs_exrate_at_gauge_3458.R ptha18_tonga_MSL0
 
 ```
 
-## Comparison with PTHA18 at the deep-water site (hazard point gaugeID 3458)
+## Comparison with PTHA18 at the deep-water site
+
+Here we compare the max-stage vs exceedance-rate curve derived with our probabilistic inundation model, vs the PTHA18, at an offshore PTHA18 point to the east of Tonga (gaugeID 3458). We see good agreement with results that only use the `kermaedectonga2` source-zone, as expected if everything is working well. Some differences are expected due to the random sampling of scenarios in this study [further background in this tutorial](../../../../ptha_access/example_event_access_scripts/random_scenario_sampling/random_scenario_sampling.md), as well as the different hydrodynamic model used in this study (higher resolution, nonlinear, better elevation data, shorter model duration). 
 
 ![Comparison_PTHA18_offshore_point](Stage_vs_rate_validation_at_ptha18_point_3458.png)
