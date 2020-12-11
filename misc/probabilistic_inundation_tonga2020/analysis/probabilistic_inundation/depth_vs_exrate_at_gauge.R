@@ -33,7 +33,7 @@ if(file.exists(file_nci)){
 
 # Name of the folder inside ../../swals/OUTPUTS/ where the 'batch' of tsunami
 # model runs is stored. 
-run_series_name = 'ptha18_tonga_MSL0'
+run_series_name = commandArgs(trailingOnly=TRUE)[2] #'ptha18_tonga_MSL0'
 
 # Vector with all model run directories [one per multidomain]
 md_dirs = Sys.glob(paste0('../../swals/OUTPUTS/', run_series_name, '/ptha18_random_scenarios_kermadectonga2_row_*/RUN*'))
@@ -183,7 +183,8 @@ for(sd_names in names_scenarios_databases){
 
     # Depth vs exceedance-rate
     max_depths = results_df$max_stage - results_df$elev
-    chosen_depths = c(0.001, seq(0.05, 20, by=0.05))
+    #chosen_depths = c(0.001, seq(0.05, 20, by=0.05))
+    chosen_depths = seq(0.001, 20, by=0.001)
     exrate_of_chosen_depths = sapply(chosen_depths, f<-function(x) sum(scenario_rates * (max_depths > x)))
     alternate_exrate_of_chosen_depths = sapply(chosen_depths, f<-function(x) sum(alternate_scenario_rates * (max_depths > x)))
 

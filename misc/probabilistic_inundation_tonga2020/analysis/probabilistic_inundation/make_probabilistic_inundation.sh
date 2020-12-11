@@ -20,5 +20,9 @@ Rscript probabilistic_inundation.R ptha18_tonga_MSL0.8 6
 Rscript probabilistic_inundation.R ptha18_tonga_MSL0.8 7
 
 # Site-specific curves at gauges
-Rscript depth_vs_exrate_at_gauge.R "parliament"
-Rscript depth_vs_exrate_at_gauge.R "ptha18_point_3458.3"
+Rscript depth_vs_exrate_at_gauge.R "parliament" ptha18_tonga_MSL0
+Rscript depth_vs_exrate_at_gauge.R "parliament" ptha18_tonga_MSL0_meshrefine2
+Rscript depth_vs_exrate_at_gauge.R "parliament" ptha18_tonga_MSL0.8
+Rscript depth_vs_exrate_at_gauge.R "ptha18_point_3458.3" ptha18_tonga_MSL0
+Rscript depth_vs_exrate_at_gauge.R "ptha18_point_3458.3" ptha18_tonga_MSL0_meshrefine2
+Rscript depth_vs_exrate_at_gauge.R "ptha18_point_3458.3" ptha18_tonga_MSL0.8
