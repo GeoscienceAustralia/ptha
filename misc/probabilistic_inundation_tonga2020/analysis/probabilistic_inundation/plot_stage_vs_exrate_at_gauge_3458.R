@@ -3,6 +3,8 @@
 #
 library(rptha)
 
+run_series_name = commandArgs(trailingOnly=TRUE)[1]
+
 #
 # Get the PTHA18 access codes, needed for functions below
 #
@@ -33,7 +35,7 @@ ptha18_curve = cbind(target_stages, sapply(target_stages, f<-function(x) sum(rat
 #
 # Get data from this study out of the RDS file
 #
-ptha18_3458_point_data = readRDS('ptha18_tonga_MSL0_depth_and_stage_exrate_curve_at_ptha18_point_3458.3.RDS')
+ptha18_3458_point_data = readRDS(paste0(run_series_name, 'depth_and_stage_exrate_curve_at_ptha18_point_3458.3.RDS'))
 x = ptha18_3458_point_data$stage_exrate_curves
 
 # Note stages will be the same for all entries of the list

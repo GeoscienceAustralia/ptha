@@ -1,8 +1,11 @@
 library(rptha)
 
-rds_name = 'ptha18_tonga_MSL0_depth_and_stage_exrate_curve_at_parliament.RDS'
+run_series_name = commandArgs(trailingOnly=TRUE)[1]
+
+#rds_name = 'ptha18_tonga_MSL0_depth_and_stage_exrate_curve_at_parliament.RDS'
 #rds_name = 'ptha18_tonga_MSL0_meshrefine2_depth_and_stage_exrate_curve_at_parliament.RDS'
 #rds_name = 'ptha18_tonga_MSL0.8_depth_and_stage_exrate_curve_at_parliament.RDS'
+rds_name = paste0(run_series_name, '_depth_and_stage_exrate_curve_at_parliament.RDS')
 
 parliament_data = readRDS(rds_name)
 x = parliament_data$stage_exrate_curves

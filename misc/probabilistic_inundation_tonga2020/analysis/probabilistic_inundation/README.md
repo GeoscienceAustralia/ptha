@@ -26,9 +26,9 @@ source make_probabilistic_inundation.R
 Rscript raster_plots.R 'ptha18_tonga_MSL0'
 
 # Make depth-vs-exceedance-rate plots at parliament
-Rscript plot_depth_vs_exrate_at_parliament.R
+Rscript plot_depth_vs_exrate_at_parliament.R ptha18_tonga_MSL0
 
 # Make stage-vs-exceedance-rate plots at parliament
-Rscript plot_stage_vs_exrate_at_gauge_3458.R
+Rscript plot_stage_vs_exrate_at_gauge_3458.R ptha18_tonga_MSL0
 
 ```
