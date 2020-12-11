@@ -72,7 +72,7 @@ points(c(target_depth, target_depth), c(1.0e-10, target_exrate), col='red', t='l
 dev.off()
 
 # Some useful stats
-depth_at_target_exrate = approx(alternate_mean_vals[,2], mean_vals[,1], xout=target_exrate, ties='min')$y
+depth_at_target_exrate = approx(mean_vals[,2], mean_vals[,1], xout=target_exrate, ties='min')$y
 print(c('depth-at-target-exrate (self-normalised importance-sampling): ', depth_at_target_exrate))
 depth_at_target_exrate = approx(alternate_mean_vals[,2], alternate_mean_vals[,1], xout=target_exrate, ties='min')$y
 print(c('depth-at-target-alternate_exrate (regular importance sampling): ', depth_at_target_exrate))
