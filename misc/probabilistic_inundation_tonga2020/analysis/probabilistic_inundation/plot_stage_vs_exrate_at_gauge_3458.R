@@ -65,7 +65,7 @@ ptha18_values = matrix(
 
 # Plot comparing the results
 
-png('Stage_vs_rate_validation_at_ptha18_point_3458.png', width=8, height=6, units='in', res=300)
+png(paste0(run_series_name, '_stage_vs_rate_validation_at_ptha18_point_3458.png'), width=8, height=6, units='in', res=300)
 plot(stages, alternate_exrates, log='y', t='o', 
      xlab='Max-stage (m)', ylab='Exceedance-rate (events/year)',
      main=paste0('Max-stage vs exceedance-rate at PTHA18 point 3458: PTHA18 vs Tonga study\n',
