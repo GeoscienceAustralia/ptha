@@ -39,4 +39,4 @@ Here we compare the max-stage vs exceedance-rate curve derived with our probabil
 
 There is good agreement with the model herein, and the PTHA18 results that only use the `kermaedectonga2` source-zone. This is exactly what we expect if everything is working well. Some differences are expected due to the random sampling of scenarios in this study ([further background in this tutorial](../../../../ptha_access/example_event_access_scripts/random_scenario_sampling/random_scenario_sampling.md) ), as well as the different hydrodynamic model used in this study (higher resolution, nonlinear, better elevation data, shorter model duration). 
 
-![Comparison_PTHA18_offshore_point](Stage_vs_rate_validation_at_ptha18_point_3458.png)
+![Comparison_PTHA18_offshore_point](ptha18_tonga_MSL0_stage_vs_rate_validation_at_ptha18_point_3458.png)
