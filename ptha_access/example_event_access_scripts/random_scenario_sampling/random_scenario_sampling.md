@@ -600,17 +600,10 @@ Earlier we noted that the random scenarios are assigned weights in two ways,
 which will differ somewhat when a nontrivial `event_importance` is specified.
 
 The *regular* importance sampling weights, as employed above, can be used to compute
-unbiased estimates of the max-stage exceedance-rates. This unbiasedness is
-desirable. But a downside of this approach is that for a given magnitude bin,
-the weights do not sum to 1 exactly (although they do so on average). Thus if
-we add the `importance_sampling_scenario_rates` within a magnitude bin, the
-result will not agree exactly with the corresponding `rate_with_this_mw`
-(although it will tend to be close). This means care is required in using the
- scenario rates for Mw-frequency calculations.
+unbiased estimates of the max-stage exceedance-rates. 
 
 
 ```r
-# The stage at a given exceedance-rate is unbiased irrespective of sample size.
 summary(stage_at_target_exrate_stage_mw_weighted)
 ```
 
@@ -627,11 +620,15 @@ stage_at_target_exrate_ptha18
 ```
 ## [1] 2.327745
 ```
+This unbiasedness is desirable. But a downside of this approach is that for a
+given magnitude bin, the weights do not sum to 1 exactly (although they do so
+on average). Thus if we add the `importance_sampling_scenario_rates` within a
+magnitude bin, the result will not agree exactly with the corresponding
+`rate_with_this_mw` (although it will tend to be close). This means care is
+required in using the scenario rates for Mw-frequency calculations.
+
 
 ```r
-# Despite the good behaviour above, the sum of weights in each Mw-bin is not exactly 1.0.
-# However the variability would reduce as we increase the number of samples per Mw bin.
-# Note here the variability is less at higer Mw because we sampled them more heavily.
 aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weights, 
           by=list(random_scenarios_stage_mw_weighted$mw), sum)
 ```
@@ -670,16 +667,10 @@ aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weight
 Alternatively one may use the *self-normalised* importance sampling weights.
 Exceedance-rates estimated with this method are asymptotically unbiased (i.e.
 the bias shrinks to zero as we increase the number of samples per magnitude),
-but have some bias with finite sample sizes. On the other hand, a benefit of
-this approach compared with regular importance sampling is that if we add the
-`importance_sampling_scenario_rates_self_normalised` within a magnitude bin,
-the result will agree exactly with the corresponding `rate_with_this_mw`. 
+but have some bias with finite sample sizes.
 
 
 ```r
-# The stage at a given exceedance-rate has a finite bias, so tends to be less
-# accurate than the previous approach (although the bias reduces with more
-# samples per Mw bin) 
 summary(stage_at_target_exrate_stage_mw_weighted_self_normalised)
 ```
 
@@ -697,8 +688,12 @@ stage_at_target_exrate_ptha18
 ## [1] 2.327745
 ```
 
+On the other hand, a benefit of the self-normalised approach is that if we add
+the `importance_sampling_scenario_rates_self_normalised` within a magnitude
+bin, the result will agree exactly with the corresponding `rate_with_this_mw`. 
+
+
 ```r
-# The sum of weights in each Mw-bin is exactly 1.0 (unlike in the previous approach).
 aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weights_self_normalised, 
           by=list(random_scenarios_stage_mw_weighted$mw), sum)
 ```
@@ -735,5 +730,5 @@ aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weight
 ```
 
 One may prefer to use one or the other depending on the application, noting the
-above strengths and weaknesses of each estimator. The differences become less important
-with using larger sample sizes.
+above strengths and weaknesses of each estimator. In any case the differences
+become less important with using larger sample sizes.
