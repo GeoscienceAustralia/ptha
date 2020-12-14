@@ -611,19 +611,12 @@ result will not agree exactly with the corresponding `rate_with_this_mw`
 
 ```r
 # The stage at a given exceedance-rate is unbiased irrespective of sample size.
-mean(stage_at_target_exrate_stage_mw_weighted)
+summary(stage_at_target_exrate_stage_mw_weighted)
 ```
 
 ```
-## [1] 2.30487
-```
-
-```r
-median(stage_at_target_exrate_stage_mw_weighted)
-```
-
-```
-## [1] 2.327626
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   1.816   2.174   2.328   2.305   2.427   2.834
 ```
 
 ```r
@@ -687,19 +680,12 @@ the result will agree exactly with the corresponding `rate_with_this_mw`.
 # The stage at a given exceedance-rate has a finite bias, so tends to be less
 # accurate than the previous approach (although the bias reduces with more
 # samples per Mw bin) 
-mean(stage_at_target_exrate_stage_mw_weighted_self_normalised)
+summary(stage_at_target_exrate_stage_mw_weighted_self_normalised)
 ```
 
 ```
-## [1] 2.516974
-```
-
-```r
-median(stage_at_target_exrate_stage_mw_weighted_self_normalised)
-```
-
-```
-## [1] 2.506896
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   1.742   2.343   2.507   2.517   2.714   3.470
 ```
 
 ```r
@@ -747,3 +733,6 @@ aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weight
 ## 26     9.7 NA
 ## 27     9.8 NA
 ```
+
+One may prefer to use one or the other depending on the application, noting the
+above strengths and weaknesses of each estimator.

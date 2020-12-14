@@ -533,8 +533,7 @@ result will not agree exactly with the corresponding `rate_with_this_mw`
 
 ```{r bias_importance_sampling_weights_1}
 # The stage at a given exceedance-rate is unbiased irrespective of sample size.
-mean(stage_at_target_exrate_stage_mw_weighted)
-median(stage_at_target_exrate_stage_mw_weighted)
+summary(stage_at_target_exrate_stage_mw_weighted)
 # The correct value is:
 stage_at_target_exrate_ptha18
 
@@ -558,8 +557,7 @@ the result will agree exactly with the corresponding `rate_with_this_mw`.
 # The stage at a given exceedance-rate has a finite bias, so tends to be less
 # accurate than the previous approach (although the bias reduces with more
 # samples per Mw bin) 
-mean(stage_at_target_exrate_stage_mw_weighted_self_normalised)
-median(stage_at_target_exrate_stage_mw_weighted_self_normalised)
+summary(stage_at_target_exrate_stage_mw_weighted_self_normalised)
 # The correct value is:
 stage_at_target_exrate_ptha18
 
@@ -568,3 +566,6 @@ aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weight
           by=list(random_scenarios_stage_mw_weighted$mw), sum)
 
 ```
+
+One may prefer to use one or the other depending on the application, noting the
+above strengths and weaknesses of each estimator.
