@@ -26,3 +26,12 @@ Rscript depth_vs_exrate_at_gauge.R "parliament" ptha18_tonga_MSL0.8
 Rscript depth_vs_exrate_at_gauge.R "ptha18_point_3458.3" ptha18_tonga_MSL0
 Rscript depth_vs_exrate_at_gauge.R "ptha18_point_3458.3" ptha18_tonga_MSL0_meshrefine2
 Rscript depth_vs_exrate_at_gauge.R "ptha18_point_3458.3" ptha18_tonga_MSL0.8
+
+# Combined rasters giving exrate at given depths
+Rscript raster_plots.R ptha18_tonga_MSL0
+Rscript raster_plots.R ptha18_tonga_MSL0_meshrefine2
+Rscript raster_plots.R ptha18_tonga_MSL0.8
+Rscript raster_plots.R alternate_ptha18_tonga_MSL0
+Rscript raster_plots.R alternate_ptha18_tonga_MSL0_meshrefine2
+Rscript raster_plots.R alternate_ptha18_tonga_MSL0.8
+
