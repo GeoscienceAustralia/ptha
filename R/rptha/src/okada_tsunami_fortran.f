@@ -31,7 +31,8 @@ c Initialize displacements to zero
       do 50 j=1,m
          ndsp(j) = 0.0D0
          edsp(j) = 0.0D0
- 50      zdsp(j) = 0.0D0
+         zdsp(j) = 0.0D0
+ 50   continue
 
 c Loop over faults
       do 200 i=1,n
@@ -283,7 +284,8 @@ C-----                                                                  02160000
       P = Y*CD + DEP*SD                                                 02170000
       Q = Y*SD - DEP*CD                                                 02180000
       DO 1111  I=1,9                                                    02190000
- 1111 U(I)=F0                                                           02200000
+      U(I)=F0                                                           02200000
+ 1111 continue
 C-----                                                                  02210000
       DO 5555  K=1,2                                                    02220000
        IF(K.EQ.1)  ET=P-AW1                                             02230000
