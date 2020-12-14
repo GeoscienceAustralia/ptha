@@ -22,15 +22,6 @@ Assuming all the hydrodynamic model results have been run, and all the dependenc
 # Create the exceedance-rate rasters, and depth-vs-exceedance-rate curve information at a couple of key points.
 source make_probabilistic_inundation.R
 
-# Create the combined segmented/unsegmented exceedance-rate rasters and make a basic plot, for the run series ptha18_tonga_MSL0
-Rscript raster_plots.R 'ptha18_tonga_MSL0'
-
-# Make depth-vs-exceedance-rate plots at parliament
-Rscript plot_depth_vs_exrate_at_parliament.R ptha18_tonga_MSL0
-
-# Make stage-vs-exceedance-rate plots at parliament
-Rscript plot_stage_vs_exrate_at_gauge_3458.R ptha18_tonga_MSL0
-
 ```
 
 ## Comparison with PTHA18 at the deep-water site
