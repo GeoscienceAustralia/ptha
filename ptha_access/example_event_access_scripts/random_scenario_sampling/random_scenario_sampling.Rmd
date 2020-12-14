@@ -568,4 +568,5 @@ aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weight
 ```
 
 One may prefer to use one or the other depending on the application, noting the
-above strengths and weaknesses of each estimator.
+above strengths and weaknesses of each estimator. The differences become less important
+with using larger sample sizes.
