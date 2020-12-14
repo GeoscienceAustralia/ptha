@@ -35,3 +35,7 @@ Rscript raster_plots.R alternate_ptha18_tonga_MSL0
 Rscript raster_plots.R alternate_ptha18_tonga_MSL0_meshrefine2
 Rscript raster_plots.R alternate_ptha18_tonga_MSL0.8
 
+# Plots
+Rscript plot_depth_vs_exrate_at_parliament.R ptha18_tonga_MSL0
+Rscript plot_depth_vs_exrate_at_parliament.R ptha18_tonga_MSL0.8
+Rscript plot_depth_vs_exrate_at_parliament.R ptha18_tonga_MSL0_meshrefine2
