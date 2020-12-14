@@ -459,6 +459,8 @@ stage_at_target_exrate_ptha18 = approx(stage_exrates_ptha18, stage_seq,
 stage_at_target_exrate_simple = rep(NA, length=Nrep)
 stage_at_target_exrate_mw_weighted = rep(NA, length=Nrep)
 stage_at_target_exrate_stage_mw_weighted = rep(NA, length=Nrep)
+# For the importance sampling case, also store the self-normalised variant
+stage_at_target_exrate_stage_mw_weighted_self_normalised = rep(NA, length=Nrep)
 
 # Generate random datasets Nrep times, and store the max-stage at the targer
 # exrate in each case
@@ -518,6 +520,15 @@ for(i in 1:Nrep){
     stage_at_target_exrate_stage_mw_weighted[i] = 
         approx(stage_exrates_rs_stage_mw_weighted, stage_seq, xout=target_exrate, ties='min')$y
 
+    # Here we do the importance-sampling computation using the self-normalised
+    # importance sampling weights
+    stage_exrates_rs_stage_mw_weighted_self_normalised = sapply(stage_seq, 
+        f<-function(x){
+            sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_self_normalised * 
+                (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
+        })
+    stage_at_target_exrate_stage_mw_weighted_self_normalised[i] = 
+        approx(stage_exrates_rs_stage_mw_weighted_self_normalised, stage_seq, xout=target_exrate, ties='min')$y
 }
 ```
 
@@ -581,3 +592,157 @@ Keep in mind that the most straightforward way to reduce the variability is to
 increase the number of samples. These cases all have an average of 12 per Mw
 bin, and as the sample size is increased the results should more closely mimic
 the PTHA18.
+
+## Comparing the two different importance-sampling estimators
+-------------------------------------------------------------
+
+Earlier we noted that the random scenarios are assigned weights in two ways,
+which will differ somewhat when a nontrivial `event_importance` is specified.
+
+The *regular* importance sampling weights employed above can be used to compute
+unbiased estimates of the max-stage exceedance-rates. This unbiasedness is
+desirable. But a negative feature of this approach is that for a given
+magnitude bin, the weights do not sum to 1 exactly (although they do so on
+average). Thus if we add the `importance_sampling_scenario_rates` within a
+magnitude bin, the result will not agree exactly with the corresponding
+`rate_with_this_mw` (although it will tend to be close). 
+
+
+```r
+# The stage at a given exceedance-rate is unbiased irrespective of sample size.
+mean(stage_at_target_exrate_stage_mw_weighted)
+```
+
+```
+## [1] 2.30487
+```
+
+```r
+median(stage_at_target_exrate_stage_mw_weighted)
+```
+
+```
+## [1] 2.327626
+```
+
+```r
+# The correct value is:
+stage_at_target_exrate_ptha18
+```
+
+```
+## [1] 2.327745
+```
+
+```r
+# Despite the good behaviour above, the sum of weights in each Mw-bin is not exactly 1.0.
+# However the variability would reduce as we increase the number of samples per Mw bin.
+# Here the variability is less at higer Mw because we sampled them more heavily.
+aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weights, 
+          by=list(random_scenarios_stage_mw_weighted$mw), sum)
+```
+
+```
+##    Group.1         x
+## 1      7.2 0.8806186
+## 2      7.3 0.7411052
+## 3      7.4 0.3560989
+## 4      7.5 0.8228214
+## 5      7.6 0.5699723
+## 6      7.7 0.7113231
+## 7      7.8 0.8659607
+## 8      7.9 0.4246285
+## 9      8.0 0.4358386
+## 10     8.1 1.6797527
+## 11     8.2 1.0871237
+## 12     8.3 1.3958753
+## 13     8.4 0.5599649
+## 14     8.5 1.2572148
+## 15     8.6 0.5809140
+## 16     8.7 0.9863302
+## 17     8.8 1.0543017
+## 18     8.9 1.2779924
+## 19     9.0 1.2562370
+## 20     9.1 1.2324092
+## 21     9.2 0.8849575
+## 22     9.3 0.7939052
+## 23     9.4 0.9362269
+## 24     9.5 0.6793685
+## 25     9.6 1.0712729
+## 26     9.7        NA
+## 27     9.8        NA
+```
+
+Alternatively one may use the *self-normalised* importance sampling weights.
+Exceedance-rates estimated with this method are asymptotically unbiased (i.e.
+the bias shrinks to zero as we increase the number of samples per magnitude),
+but have some bias with finite sample sizes. However, with this method the
+weights do sum to 1 exactly, so if we add the
+`importance_sampling_scenario_rates_self_normalised` within a magnitude bin,
+the result will agree exactly with the corresponding `rate_with_this_mw`. 
+
+
+```r
+# The stage at a given exceedance-rate has a finite bias, so tends to be less
+# accurate than the previous approach, although the bias reduces with more
+# samples per Mw bin 
+mean(stage_at_target_exrate_stage_mw_weighted_self_normalised)
+```
+
+```
+## [1] 2.516974
+```
+
+```r
+median(stage_at_target_exrate_stage_mw_weighted_self_normalised)
+```
+
+```
+## [1] 2.506896
+```
+
+```r
+# The correct value is:
+stage_at_target_exrate_ptha18
+```
+
+```
+## [1] 2.327745
+```
+
+```r
+# But here the sum of weights in each Mw-bin is exactly 1.0 (unlike in the previous approach).
+aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weights_self_normalised, 
+          by=list(random_scenarios_stage_mw_weighted$mw), sum)
+```
+
+```
+##    Group.1  x
+## 1      7.2  1
+## 2      7.3  1
+## 3      7.4  1
+## 4      7.5  1
+## 5      7.6  1
+## 6      7.7  1
+## 7      7.8  1
+## 8      7.9  1
+## 9      8.0  1
+## 10     8.1  1
+## 11     8.2  1
+## 12     8.3  1
+## 13     8.4  1
+## 14     8.5  1
+## 15     8.6  1
+## 16     8.7  1
+## 17     8.8  1
+## 18     8.9  1
+## 19     9.0  1
+## 20     9.1  1
+## 21     9.2  1
+## 22     9.3  1
+## 23     9.4  1
+## 24     9.5  1
+## 25     9.6  1
+## 26     9.7 NA
+## 27     9.8 NA
+```
