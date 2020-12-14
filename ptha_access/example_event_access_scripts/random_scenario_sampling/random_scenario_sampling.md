@@ -613,7 +613,7 @@ summary(stage_at_target_exrate_stage_mw_weighted)
 ```
 
 ```r
-# The correct value is:
+# On average the above is very close to the correct value:
 stage_at_target_exrate_ptha18
 ```
 
@@ -629,6 +629,7 @@ required in using the scenario rates for Mw-frequency calculations.
 
 
 ```r
+# Summed weights in each Mw-bin are not exactly 1
 aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weights, 
           by=list(random_scenarios_stage_mw_weighted$mw), sum)
 ```
@@ -680,7 +681,7 @@ summary(stage_at_target_exrate_stage_mw_weighted_self_normalised)
 ```
 
 ```r
-# The correct value is:
+# On average the above shows some bias, compared with the correct value:
 stage_at_target_exrate_ptha18
 ```
 
@@ -694,6 +695,7 @@ bin, the result will agree exactly with the corresponding `rate_with_this_mw`.
 
 
 ```r
+# Summed weights in each Mw-bin are exactly 1
 aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weights_self_normalised, 
           by=list(random_scenarios_stage_mw_weighted$mw), sum)
 ```
