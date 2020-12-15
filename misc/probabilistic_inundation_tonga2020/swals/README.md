@@ -37,6 +37,8 @@ This folder contains code to run the tsunami models for all scenarios, and do so
 
 Below we show the linux commands to run everything. This does not reflect exactly the process I went through; it is far cleaner, avoids the iterative process of model debugging and some associated checks, etc.
 
+Also, while working on this project I had to migrate files to `/scratch/n74/Tonga_2020_scratch_space/Tonga_2020` to work-around some emegency maintainence with the `gdata` file-system. This has some effect on the files. For instance you may find that some of the qsub scripts avoid accessing `gdata`, while others do not. 
+
 ```
 # Get the modules
 source SWALS_ifort_modules.sh
