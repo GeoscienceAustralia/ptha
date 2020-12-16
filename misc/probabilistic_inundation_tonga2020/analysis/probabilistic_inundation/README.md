@@ -3,7 +3,7 @@ Probabilistic inundation calculations
 
 This folder contains various scripts to do probabilistic inundation computations.
 
-Rasters depicting the tsunami inundation depth around Tongatpu with a 10% and 2% chance of exceedance in 50 years are provided for download. We provide the [results using a background sea-level of 0m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.zip), as well as the same [results using a more conservative background sea-level of 0.8m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.8.zip). 
+Among the outputs, we provide a separate download of sasters depicting the tsunami inundation depth around Tongatpu with a 10% and 2% chance of exceedance in 50 years. We provide the [results using a background sea-level of 0m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.zip), as well as the same [results using a more conservative background sea-level of 0.8m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.8.zip). These correspond to the results using regular importance sampling, as opposed to self-normalised importance sampling. The codes herein to the computations for both cases, and while both cases give similar results we suggest to preference the regular importance sampling results when computing depth exceedance-rates (see discussion of each estimator at the end of the [scenario sampling tutorial](../../../../ptha_access/example_event_access_scripts/random_scenario_sampling/random_scenario_sampling.md)).
 
 ## Key files
 
