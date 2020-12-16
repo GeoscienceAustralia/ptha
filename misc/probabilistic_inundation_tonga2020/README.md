@@ -4,7 +4,7 @@
 This folder contains code and data for an inundation PTHA for Tonga that was
 initially developed in November 2020.
 
-Rasters depicting the tsunami inundation depth around Tongatpu with a 10% and 2% chance of exceedance in 50 years are provided for download. We provide the [results using a background sea-level of 0m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.zip), as well as the same [results using a more conservative background sea-level of 0.8m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.8.zip). 
+Rasters depicting the tsunami inundation depth around Tongatpu with a 10% and 2% chance of exceedance in 50 years are provided for download. We provide the [results using a background sea-level of 0m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.zip), as well as the same [results using a more conservative background sea-level of 0.8m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.8.zip). Some additional information is provided in the [probabilistic_inundation](./analysis/probabilistic_inundation) code and documentation.
 
 The codes were setup to be run on NCI's Gadi machine, and while they can certainly
 be adapted to run elsewhere, some parts of the code include hard-coded links to
