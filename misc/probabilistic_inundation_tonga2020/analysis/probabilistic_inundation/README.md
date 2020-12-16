@@ -3,6 +3,8 @@ Probabilistic inundation calculations
 
 This folder contains various scripts to do probabilistic inundation computations.
 
+Rasters depicting the tsunami inundation depth around Tongatpu with a 10% and 2% chance of exceedance in 50 years are provided for download. We provide the [results using a background sea-level of 0m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.zip), as well as the same [results using a more conservative background sea-level of 0.8m MSL](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_2020/alternate_ptha18_tonga_MSL0.8.zip). 
+
 ## Key files
 
 * [make_probabilistic_inundation.sh](make_probabilistic_inundation.sh) creates rasters with max-depth exceedance-rates for various threshold depths. The rasters are created for domains 3,4,5,6,7 around Tongatapu, with a separate raster being created for the unsegmented kermadectonga2 model and each of the three segmented models (as this is how the kermadectonga2 source-zone is represented in PTHA18).
