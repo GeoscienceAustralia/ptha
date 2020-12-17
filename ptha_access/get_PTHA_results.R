@@ -934,9 +934,12 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 
     diff_unique_Mw = diff(unique_Mw)
 
-    # Confirm that our expectations of PTHA18 scenarios are met.
-    if(any(abs(diff_unique_Mw - diff_unique_Mw[1]) > 1.0e-06) ){
-        stop('event_Mw is not evenly spaced')
+    if(length(diff_unique_Mw) > 1){
+
+        # Confirm that our expectations of PTHA18 scenarios are met.
+        if(any(abs(diff_unique_Mw - diff_unique_Mw[1]) > 1.0e-06) ){
+            stop('event_Mw is not evenly spaced')
+        }
     }
 
     # Ignore small scenarios, and scenarios exceeding Mw-max
@@ -1027,8 +1030,9 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
         })
 
     if(return_as_table){
-        #names(random_scenario_info) = as.character(unique_Mw)
-        random_scenario_info = do.call(rbind, random_scenario_info)
+        if(length(random_scenario_info) > 1){
+            random_scenario_info = do.call(rbind, random_scenario_info)
+        }
     }
 
     return(random_scenario_info)
