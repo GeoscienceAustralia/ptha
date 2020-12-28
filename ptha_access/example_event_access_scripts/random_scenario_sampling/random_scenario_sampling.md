@@ -75,7 +75,7 @@ We also need to specify the number of scenarios to sample for each magnitude - h
 
 ```r
 # Convenient shorthand for the magnitudes and rates in the event table
-event_Mw = kt2_scenarios$events$Mw
+event_Mw = kt2_scenarios$events$Mw 
 event_rates = kt2_scenarios$events$rate_annual
 
 # Make a reproducible random seed to make the code reproducible (this is optional)
