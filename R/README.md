@@ -108,13 +108,11 @@ the package dependencies installed).
 
 ### Windows 
 
-On Windows, building R packages is more challenging, and the developer does not 
-generally build the package on Windows machines. Users attempting to do this
-should first seriously consider installing a linux virtual machine instead. If 
-you still wish to attempt a windows build, then familiarise yourself with the
-general issues in building R packages for windows
-(http://cran.us.r-project.org/bin/windows/Rtools/), and proceed along the above
-lines once appropriate dependencies are installed.
+On Windows, building R packages is more challenging, and the developer has
+never built a native Windows install. Instead we suggest that Windows users run the
+code on a Windows machine by using a linux virtual machine (e.g. using
+[virtualbox](https://www.virtualbox.org/) to run a linux operating system
+inside your Windows machine). 
 
 ### Install on NCI
 
