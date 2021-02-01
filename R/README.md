@@ -25,18 +25,18 @@ combined with Kajiura filtering. This produces a (static) tsunami initial
 condition for each unit-source. See [source_contours_2_unit_sources](examples/source_contours_2_unit_sources).
 
 * Create a synthetic catalogue of earthquake events from linear
-combinations of the unit sources. Currently rptha supports uniform slip
-earthquakes with dimensions determined to (approximately) agree with the
-scaling relations of Strasser et al. (2010). See the function
-`get_all_earthquake_events` in the rptha package. Modifications are required to
-treat non-uniform slip earthquakes. For an example of making tsunami
-initial conditions for complex earthquake scenarios, see
+combinations of the unit sources. rptha supports uniform slip
+earthquakes with a range of scaling relations (see the function
+`get_all_earthquake_events` in the rptha package), as well as non-uniform slip earthquakes. 
+For an example of making tsunami initial conditions for complex earthquake
+scenarios, see
 [here](examples/combine_tsunami_sources/combine_tsunami_sources.R). In the
-[2018 Australian PTHA](http://dx.doi.org/10.11636/Record.2018.041) we treated non-uniform slip
-earthquakes by associating a set of them with a `parent' uniform-slip
-earthquake; see codes associated with that project [here](examples/austptha_template) and
-papers on the approach [here](https://link.springer.com/article/10.1007/s00024-019-02299-w) 
-and [here](https://doi.org/10.1093/gji/ggz260)
+[2018 Australian PTHA](http://dx.doi.org/10.11636/Record.2018.041) we treated
+non-uniform slip earthquakes by associating a set of them with a `parent'
+uniform-slip earthquake; see codes associated with that project
+[here](examples/austptha_template) and papers on the approach
+[here](https://link.springer.com/article/10.1007/s00024-019-02299-w) and
+[here](https://doi.org/10.1093/gji/ggz260).
 
 * Compute the tsunami associated with each earthquake event. In
 realistic PTHA applications this is the most computationally demanding part of
