@@ -80,13 +80,13 @@ stopifnot(abs(fitted_sffm_parB$par - fitted_sffm_par$par)/fitted_sffm_par$par < 
 # # and the following code takes a few minutes
 # mc_cores = detectCores() 
 # RNGkind("L'Ecuyer-CMRG") # ensure parallel random number generation
-# random_slips = mclapply(1:nfits, f<-function(x) sffm_simulate(reg_par, tg_mat), 
+# random_slips = mclapply(1:nfits, function(x) sffm_simulate(reg_par, tg_mat), 
 #     mc.cores = mc_cores)
-# random_slip_fits = mclapply(random_slips, f<-function(x) sffm_fit_parameters(x), 
+# random_slip_fits = mclapply(random_slips, function(x) sffm_fit_parameters(x), 
 #     mc.cores = mc_cores)
 # 
 # # Convert all the fitted parameters to a 2 column matrix
-# all_fitted_par = matrix( unlist(lapply(random_slip_fits, f<-function(x) x$par)), 
+# all_fitted_par = matrix( unlist(lapply(random_slip_fits, function(x) x$par)), 
 #     ncol=2, byrow=TRUE)
 # par(mfrow=c(1,2))
 # hist(all_fitted_par[,1] / dx, main = 'Fitted kcx')

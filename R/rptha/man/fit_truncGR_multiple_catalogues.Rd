@@ -145,10 +145,10 @@ for(jj in 1:Nreps){
     # Compare with 'b' estimator from Kijko and Smit (2012)
     # Note this requires mw_max = Infinity, whereas the other 2 approaches
     # don't need that.
-    ns = unlist(lapply(catalogue_lists, f<-function(x) length(x$mw)))
-    bs = unlist(lapply(catalogue_lists, f<-function(x) 1/(log(10) * ( mean(x$mw) - x$mw_min)) ))
+    ns = unlist(lapply(catalogue_lists, function(x) length(x$mw)))
+    bs = unlist(lapply(catalogue_lists, function(x) 1/(log(10) * ( mean(x$mw) - x$mw_min)) ))
     # If a catalogue has no data, remove it
-    not_missing = unlist(lapply(catalogue_lists, f<-function(x) !all(is.na(x$mw))))
+    not_missing = unlist(lapply(catalogue_lists, function(x) !all(is.na(x$mw))))
     bs = bs[which(not_missing)]
     ns = ns[which(not_missing)]
     store_ks_b[jj] = 1/( sum(ns/sum(ns) * 1/bs))
