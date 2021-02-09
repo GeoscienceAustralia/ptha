@@ -602,13 +602,13 @@ sffm_slip_goodness_of_fit<-function(
 #' # # and the following code takes a few minutes
 #' # mc_cores = detectCores() 
 #' # RNGkind("L'Ecuyer-CMRG") # ensure parallel random number generation
-#' # random_slips = mclapply(1:nfits, f<-function(x) sffm_simulate(reg_par, tg_mat), 
+#' # random_slips = mclapply(1:nfits, function(x) sffm_simulate(reg_par, tg_mat), 
 #' #     mc.cores = mc_cores)
-#' # random_slip_fits = mclapply(random_slips, f<-function(x) sffm_fit_parameters(x), 
+#' # random_slip_fits = mclapply(random_slips, function(x) sffm_fit_parameters(x), 
 #' #     mc.cores = mc_cores)
 #' # 
 #' # # Convert all the fitted parameters to a 2 column matrix
-#' # all_fitted_par = matrix( unlist(lapply(random_slip_fits, f<-function(x) x$par)), 
+#' # all_fitted_par = matrix( unlist(lapply(random_slip_fits, function(x) x$par)), 
 #' #     ncol=2, byrow=TRUE)
 #' # par(mfrow=c(1,2))
 #' # hist(all_fitted_par[,1] / dx, main = 'Fitted kcx')
@@ -743,8 +743,8 @@ sffm_make_random_lwkc_function<-function(
         # of 7.5 for Mw is arbitrary
         AWL_sigmas = Mw_2_rupture_size(7.5, relation=relation, detailed=TRUE)$log10_sigmas
 
-        L_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x, relation=relation)['length'])
-        W_Mw = sapply(Mw, f<-function(x) Mw_2_rupture_size(x, relation=relation)['width'])
+        L_Mw = sapply(Mw, function(x) Mw_2_rupture_size(x, relation=relation)['length'])
+        W_Mw = sapply(Mw, function(x) Mw_2_rupture_size(x, relation=relation)['width'])
 
         N = length(Mw)
 
@@ -1458,7 +1458,7 @@ sffm_events_to_table<-function(all_sffm_events, slip_significant_figures=NULL){
     # This is a clumsy way of integrating an array with irregular length into
     # each row of a data.frame
     event_index_string = unlist(lapply(all_sffm_events, 
-        f<-function(x) paste0(which(c(x$slip_matrix) > 0), "-", collapse="")))
+        function(x) paste0(which(c(x$slip_matrix) > 0), "-", collapse="")))
 
     # Collapse the slip on unit sources with non-zero slip to a character, possibly
     # with a reduction in the number of significant figures
@@ -1469,13 +1469,13 @@ sffm_events_to_table<-function(all_sffm_events, slip_significant_figures=NULL){
     # each row of a data.frame
     if(is.null(slip_significant_figures)){
         event_slip_string = unlist(lapply(all_sffm_events, 
-            f<-function(x){
+            function(x){
                 paste0(c(x$slip_matrix[x$slip_matrix > 0]), "_", collapse="")
             }
         ))
     }else{
         event_slip_string = unlist(lapply(all_sffm_events, 
-            f<-function(x){
+            function(x){
                 paste0(c(signif(x$slip_matrix[x$slip_matrix > 0],slip_significant_figures)), 
                     "_", collapse="")
             }))
@@ -1485,14 +1485,14 @@ sffm_events_to_table<-function(all_sffm_events, slip_significant_figures=NULL){
     output_data = data.frame(
         event_index_string = event_index_string, 
         event_slip_string = event_slip_string, 
-        Mw = unlist(lapply(all_sffm_events, f<-function(x) x$target_event_mw)),
-        target_lon = unlist(lapply(all_sffm_events, f<-function(x) x$target_location[1])),
-        target_lat = unlist(lapply(all_sffm_events, f<-function(x) x$target_location[2])),
-        peak_slip_downdip_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[1])),
-        peak_slip_alongstrike_ind = unlist(lapply(all_sffm_events, f<-function(x) x$peak_slip_ind[2])),
-        physical_corner_wavenumber_x= unlist(lapply(all_sffm_events, f<-function(x) x$physical_corner_wavenumbers[1])),
-        physical_corner_wavenumber_y= unlist(lapply(all_sffm_events, f<-function(x) x$physical_corner_wavenumbers[2])),
-        sourcename = unlist(lapply(all_sffm_events, f<-function(x) x$sourcename)),
+        Mw = unlist(lapply(all_sffm_events, function(x) x$target_event_mw)),
+        target_lon = unlist(lapply(all_sffm_events, function(x) x$target_location[1])),
+        target_lat = unlist(lapply(all_sffm_events, function(x) x$target_location[2])),
+        peak_slip_downdip_ind = unlist(lapply(all_sffm_events, function(x) x$peak_slip_ind[1])),
+        peak_slip_alongstrike_ind = unlist(lapply(all_sffm_events, function(x) x$peak_slip_ind[2])),
+        physical_corner_wavenumber_x= unlist(lapply(all_sffm_events, function(x) x$physical_corner_wavenumbers[1])),
+        physical_corner_wavenumber_y= unlist(lapply(all_sffm_events, function(x) x$physical_corner_wavenumbers[2])),
+        sourcename = unlist(lapply(all_sffm_events, function(x) x$sourcename)),
         stringsAsFactors=FALSE)
 
     return(output_data)

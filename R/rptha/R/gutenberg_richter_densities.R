@@ -470,10 +470,10 @@ rtruncGR<-function(n, b, mw_min, mw_max=Inf){
 #'     # Compare with 'b' estimator from Kijko and Smit (2012)
 #'     # Note this requires mw_max = Infinity, whereas the other 2 approaches
 #'     # don't need that.
-#'     ns = unlist(lapply(catalogue_lists, f<-function(x) length(x$mw)))
-#'     bs = unlist(lapply(catalogue_lists, f<-function(x) 1/(log(10) * ( mean(x$mw) - x$mw_min)) ))
+#'     ns = unlist(lapply(catalogue_lists, function(x) length(x$mw)))
+#'     bs = unlist(lapply(catalogue_lists, function(x) 1/(log(10) * ( mean(x$mw) - x$mw_min)) ))
 #'     # If a catalogue has no data, remove it
-#'     not_missing = unlist(lapply(catalogue_lists, f<-function(x) !all(is.na(x$mw))))
+#'     not_missing = unlist(lapply(catalogue_lists, function(x) !all(is.na(x$mw))))
 #'     bs = bs[which(not_missing)]
 #'     ns = ns[which(not_missing)]
 #'     store_ks_b[jj] = 1/( sum(ns/sum(ns) * 1/bs))
@@ -509,14 +509,14 @@ fit_truncGR_multiple_catalogues<-function(catalogue_lists, start_par,
 
     # Parse catalogues
     ncat = length(catalogue_lists)
-    mw_mins = unlist(lapply(catalogue_lists, f<-function(x) x$mw_min))
-    durations = unlist(lapply(catalogue_lists, f<-function(x) x$duration))
+    mw_mins = unlist(lapply(catalogue_lists, function(x) x$mw_min))
+    durations = unlist(lapply(catalogue_lists, function(x) x$duration))
 
     if(any(durations <= 0)) stop('Error: Duration must be positive')
 
     # Record catalogues with no observations 
     no_obs = unlist(lapply(catalogue_lists, 
-        f<-function(x) (length(x$mw) == 1 & is.na(x$mw[1]))))
+        function(x) (length(x$mw) == 1 & is.na(x$mw[1]))))
 
     # Check all mw are consistent with mw_min
     for(i in 1:ncat){

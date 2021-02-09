@@ -159,7 +159,7 @@ write_table_to_netcdf<-function(dataframe, filename, global_attributes_list=NULL
 read_table_from_netcdf<-function(filename, desired_rows = NULL, chunk_size=100, varnames=NULL){
 
     fid = nc_open(filename)
-    nc_var_names = unlist(lapply(fid$var, f<-function(x) x$name))
+    nc_var_names = unlist(lapply(fid$var, function(x) x$name))
 
     var_list = list()
     for(i in 1:length(nc_var_names)){

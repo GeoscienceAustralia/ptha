@@ -656,7 +656,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
             # The median occurs when the cumulative probability >= 0.5
             ind = min(which(cumulative_sorted_prob >= p))
         }else{
-            ind = sapply(p, f<-function(x) min(which(cumulative_sorted_prob >= x)))
+            ind = sapply(p, function(x) min(which(cumulative_sorted_prob >= x)))
         }
         return(sorted_rates$x[ind])
     }
@@ -664,10 +664,10 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
 
     # Compute the 50th percentile
     median_rate = apply(all_rate_matrix, 2, 
-        f<-function(rates) inverse_quantile_rate_fun(rates, p=0.5)
+        function(rates) inverse_quantile_rate_fun(rates, p=0.5)
         )
     median_rate_with_Mw_error = apply(all_rate_matrix, 2, 
-        f<-function(rates) inverse_quantile_rate_fun(rates, p=0.5, with_mw_error=TRUE)
+        function(rates) inverse_quantile_rate_fun(rates, p=0.5, with_mw_error=TRUE)
         )
 
 
@@ -834,7 +834,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                 # Although it is memory conservative
                 #
                 #quantile_rate = apply(all_rate_matrix, 2, 
-                #    f<-function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i], 
+                #    function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i], 
                 #        account_for_mw_obs_error))
                 # 
                 # This approach uses chunking so is more efficient 
@@ -846,7 +846,7 @@ rate_of_earthquakes_greater_than_Mw_function<-function(
                     # Only update quantile_rate every so often
                     il = min(len_q, i+chunk_size-1)
                     quantile_rate = apply(all_rate_matrix, 2,
-                        f<-function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i:il], 
+                        function(rate) inverse_quantile_rate_fun(rate, p=quantiles[i:il], 
                             account_for_mw_obs_error))
                     # Ensure it is a matrix
                     dim(quantile_rate) = c(il-i+1, ncol(all_rate_matrix))
@@ -1147,13 +1147,13 @@ compute_updated_logic_tree_weights<-function(Mw_seq, all_par_combo,
                 eps = integration_dy # For numerical differentiation
                 # Compute the density in a few steps:
                 # density = -1/(gr_mwmin*2*eps) ( rate_plus_eps - rate_minus_eps)
-                rate_plus_eps = sapply(Mw_obs_data$Mw + eps, f<-function(x){
+                rate_plus_eps = sapply(Mw_obs_data$Mw + eps, function(x){
                     exceedance_rate_of_observed(Mfd_local,
                         cdf_mw_observation_error, x, 
                         true_value_range_with_nontrivial_cdf_value=(x+c(-1, 1)*max_obs_mw_error),
                         integration_dy = integration_dy)
                 })
-                rate_minus_eps = sapply(Mw_obs_data$Mw - eps, f<-function(x){
+                rate_minus_eps = sapply(Mw_obs_data$Mw - eps, function(x){
                     exceedance_rate_of_observed(Mfd_local,
                         cdf_mw_observation_error, x, 
                         true_value_range_with_nontrivial_cdf_value=(x+c(-1, 1)*max_obs_mw_error),

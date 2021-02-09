@@ -346,7 +346,7 @@ read_mux2_data_alternative<-function(mux2file, inds=NULL){
     for(i in 1:16){
         id[,i] = readBin(table_binary_stream[bigMat[,1] + 60 + i-1], what = 'char', n=nsta, size=1)
     }
-    id = apply(id, 1, f<-function(x) paste(x, sep="", collapse=""))
+    id = apply(id, 1, function(x) paste(x, sep="", collapse=""))
 
     # Find points inside the grids
     in_grids = (ig >= 0)

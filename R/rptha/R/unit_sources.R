@@ -203,7 +203,7 @@ discretized_source_from_source_contours<-function(
 
     # Find the lengths of the dip cut lines in the down-dip direction
     dip_cut_lengths = unlist(lapply(mid_line_with_cutpoints, 
-        f<-function(x) {
+        function(x) {
             total_distance = 0
             for(i in 1:(length(x[,1])-1)){
                 total_distance = total_distance + 
@@ -263,7 +263,7 @@ discretized_source_from_source_contours<-function(
     if(make_plot){
         for(i in 1:length(interpolated_midline[,1])){
             # Get lines along-strike
-            line2plot = matrix( unlist(lapply(strike_cuts, f<-function(x) x[i,])), 
+            line2plot = matrix( unlist(lapply(strike_cuts, function(x) x[i,])), 
                 ncol = 3, byrow = TRUE)
             # Interpolate them along a great circle with the 3D line interpolation
             # routine
@@ -464,8 +464,8 @@ discretized_source_approximate_summary_statistics<-function(
 
     if(make_plot){
 
-        plot_ylim = range( unlist( lapply(source_coordinates, f<-function(x) x[,2])))
-        plot_xlim = range( unlist( lapply(source_coordinates, f<-function(x) x[,1])))
+        plot_ylim = range( unlist( lapply(source_coordinates, function(x) x[,2])))
+        plot_xlim = range( unlist( lapply(source_coordinates, function(x) x[,1])))
 
         plot(lon_c, lat_c, asp=1, col='purple', pch=19, xlim=plot_xlim, ylim=plot_ylim)
 
@@ -1194,8 +1194,8 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     stopifnot(is(p_intersect, 'SpatialPolygons'))
 
     areas = unlist(lapply(p_intersect@polygons, 
-        f<-function(x) x@Polygons[[1]]@area))
-    indices = unlist(lapply(p_intersect@polygons, f<-function(x) x@ID))
+        function(x) x@Polygons[[1]]@area))
+    indices = unlist(lapply(p_intersect@polygons, function(x) x@ID))
     indices = as.numeric(gsub('P', '', indices))
 
     centroids = coordinates(p_intersect)
@@ -1203,7 +1203,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     stopifnot(length(areas) == length(indices))
 
     areas_buffer = unlist(lapply(p_intersect_buf@polygons, 
-        f<-function(x) x@Polygons[[1]]@area))
+        function(x) x@Polygons[[1]]@area))
 
     # Find fraction of each 'buffer' point area that is inside the original
     # unit source region
