@@ -1,4 +1,7 @@
 module date_to_numeric_mod
+    !!
+    !! Convert dates and times to/from Julian days
+    !!
 
     use global_mod, only: ip
     use logging_mod, only: log_output_unit
