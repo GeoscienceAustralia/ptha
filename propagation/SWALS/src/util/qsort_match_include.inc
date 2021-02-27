@@ -1,5 +1,5 @@
         ! Generic code for 'match'
-        ! This works irrespective of the kind of 'arary1', but due to limitations of Fortran
+        ! This works irrespective of the kind of 'array1', but due to limitations of Fortran
         ! we need to make a separate one for each kind. 
         !
         if(size(array1) /= size(matches)) then

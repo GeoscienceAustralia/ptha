@@ -5,43 +5,95 @@ module qsort_mod
     !! Module for sorting.
     !!
     !! Contains a generic interface
-    !!   sort(x, size(x))
-    !! which changes x to be in sorted order. 
+    !!   `sort(x, size(x))`
+    !! which changes array `x` to be in sorted order. 
     !!
     !! It also contains a generic interface
-    !!   sort_index(inds, x, size(x))
-    !! which puts indices in 'inds' such that x(inds) is sorted. Here it is required
-    !! that "size(inds) == size(x)"
+    !!   `sort_index(inds, x, size(x))`
+    !! which puts integer indices in `inds` such that `x(inds)` is sorted. Here 
+    !! it is required that `size(inds) == size(x)`
     !!
     !! It also contains a generic match interface
-    !!   match(x1, x2, matches)
-    !! which puts indices in matches such that x1(i) == x2(matches(i)), or else
-    !! matches(i) == -1. 
+    !!   `match(x1, x2, matches)`
+    !! which puts indices in the integer array `matches` such that 
+    !!    `x1(i) == x2(matches(i))`
+    !! , or else
+    !!    `matches(i) == -1` .
     !!
-    !! The routines work with 'x' being c_int, c_float, c_double, or character(len=*)
+    !! The routines work with `x` being `c_int`, `c_float`, `c_double`, or 
+    !! `character(len=*)`
     !!
-    !! There is also an iso_c_binding interface to C's qsort, which allows sorting anything with a user-defined compare function.
-    !! Originally the sorting routines were based on this, using locally defined compare functions (generally contained inside the
-    !! subroutine that called qsort). However this approach was not supported with PGI the compiler, so was changed.
+    !! There is also an iso_c_binding interface to C's qsort (`qsort_C`), which 
+    !! allows sorting anything with a user-defined compare function. Originally 
+    !! the sorting routines were based on this, using locally defined compare 
+    !! functions (generally contained inside the subroutine that called `qsort_C`). 
+    !! However this approach was not supported with PGI the compiler, so was 
+    !! changed. 
+    !! Calling `qsort_C` is unusual by Fortran standards, because one needs to
+    !! provide pointers. An example of using `qsort_C` is below.
+    !!
+    !!    subroutine sort_index_cint(inds, array, n)
+    !!        ! Example of using qsort_C
+    !!        ! The subroutine returns inds(n) such that array(inds) is sorted
+    !!        use iso_c_binding
+    !!        use qsort_mod, only : qsort_C ! From the current module
+    !!        integer(c_int), intent(in) :: n 
+    !!        integer(c_int), intent(in) :: array(n)
+    !!        integer(c_int), intent(inout), target :: inds(n)
+    !!
+    !!        integer(c_size_t) :: elem_count, elem_size ! kind MUST be c_size_t
+    !!        integer(c_int) :: i
+    !!    
+    !!        inds = (/ (i, i=1, n) /)
+    !!
+    !!        elem_count = int(n, c_size_t)
+    !!        elem_size = int( storage_size(inds(1))/8, c_size_t)
+    !!      
+    !!        ! Note how we have to call qsort_C here -- explicitly using pointers
+    !!        call qsort_C(c_loc(inds(1)), elem_count, elem_size, c_funloc(compar3))
+    !!    
+    !!        contains
+    !!            ! Comparison function, uses 'array(n)' by host association
+    !!            integer(c_int) function compar3(i1, i2) bind(C)
+    !!                integer(c_int) :: i1, i2
+    !!        
+    !!                if(array(i1) > array(i2)) compar3 = 1_c_int
+    !!                if(array(i1) == array(i2)) compar3 = 0_c_int
+    !!                if(array(i1) < array(i2)) compar3 = -1_c_int
+    !!
+    !!            end function
+    !!
+    !!    end subroutine 
+    !!
+    !! 
     use iso_c_binding
 
     implicit none
 
     private
-    public :: sort, test_qsort_mod, sort_index, match
+    public :: sort, test_qsort_mod, sort_index, match, qsort_C
 
     interface
 
-        ! Call qsort from C -- this gave me trouble with PGI compiler when used with 
-        ! functions defined in contains blocks of other subroutines, so is not used below, 
-        ! but is useful as one can pass arbitrary types and "compare" functions to it.
-        subroutine qsort(array,elem_count,elem_size,compare) bind(C,name="qsort")
-          import c_ptr, c_size_t, c_funptr
+        subroutine qsort_C(array, elem_count, elem_size, compare) bind(C,name="qsort")
+          !! Call qsort from C. 
+          !! This gave me trouble with PGI compiler when used with functions 
+          !! defined in contains blocks of other subroutines. It is useful as 
+          !! one can pass arbitrary types and "compare" functions to it.
+          use iso_c_binding, only: c_ptr, c_size_t, c_funptr
+          implicit none
           type(c_ptr), value       :: array
+              !! When called this should be c_loc(array(1))
           integer(c_size_t), value :: elem_count
+              !! When called this is int(size(array), c_size_t)
           integer(c_size_t), value :: elem_size
-          type(c_funptr), value    :: compare !int(*compare)(const void *, const void *)
-        end subroutine qsort !standard C library qsort
+              !! When called this is int(storage_size(array(1))/8, c_size_t)
+          type(c_funptr), value    :: compare 
+              !! When called this should be c_funloc(comparison_function) where
+              !! comparison_function(array(i), array(j)) will return 
+              !! -1_c_int, 0_c_int, or 1_c_int, if array(i) is less than, equal, 
+              !! or greater than array(j) respectively.
+        end subroutine qsort_C !standard C library qsort
 
     end interface
 
@@ -222,6 +274,43 @@ module qsort_mod
 #include "qsort_match_include.inc"
 
     end subroutine
+
+    function test_integer_compare(i1, i2) result(sgn)
+        ! This is only used for testing of qsort_C
+        integer, intent(in) :: i1, i2
+        integer(c_int) :: sgn
+
+        if(i1 < i2) sgn = -1_c_int
+        if(i1 == i2) sgn = 0_c_int
+        if(i1 > i2) sgn = 1_c_int
+    end function
+
+    subroutine test_qsort_C
+        ! A unit-test for qsort_C -- called in test_qsort_mod below.
+        integer, target :: array(5)
+   
+        ! To be sorted
+        array = [4, 3, 5, 1, 2]
+   
+        ! In-place sort of the array
+        call qsort_C( &
+            c_loc(array(1)), & ! Need to pass the c
+            size(array, kind=c_size_t), &
+            c_sizeof(array(1)), &
+            c_funloc(test_integer_compare) )
+        ! The above is relatively complex.
+        ! Can we make make an interface such that 
+        !    call qsort(array, array_element_compare)
+        ! works for arrays of every type, 
+   
+        if(all(array == [1, 2, 3, 4, 5])) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+   
+    end subroutine
+
 
     !
     ! Unit test
@@ -463,6 +552,8 @@ module qsort_mod
         else
             print*, 'FAIL'
         endif
+
+        call test_qsort_C
 
     end subroutine
 end module
