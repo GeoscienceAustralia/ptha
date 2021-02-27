@@ -8,8 +8,15 @@ module spherical_mod
 
     real(dp), parameter :: DEG2RAD = pi /180.0_dp
     !! Convert degrees to radians
+#ifdef LEGACY_CORIOLIS_PARAMETER
     real(dp), parameter :: EARTH_ANGULAR_FREQ = 2.0_dp * pi / (3600.0_dp * 24.0_dp)
-    !! Radians/second of earth rotation
+    !! Radians/second of earth rotation -- this assumes one rotation per day, 
+    !! which is very slightly incorrect, but matches JAGURS and COMCOT. 
+#else
+    real(dp), parameter :: EARTH_ANGULAR_FREQ = 7.292115e-05_dp
+    !! Radians/second of earth rotation, with slightly more than one rotation per day 
+    !! (which is correct). 
+#endif
 
     contains
 
