@@ -258,9 +258,12 @@ module coarray_point2point_comms_mod
     ! Variables required for MPI_ISEND and MPI_IRECV. This is an alternative to using alltoallv.
     integer, allocatable :: mpi_recv_requests(:), mpi_send_requests(:)
 
+    ! The inner mpi communication can either use mpi_alltoallv, or mpi_isend/irecv
+#ifdef COARRAY_USE_MPI_ALLTOALLV
+    logical, parameter :: mpi_timestep_loop_use_alltoallv = .true.
+#else
     logical, parameter :: mpi_timestep_loop_use_alltoallv = .false.
-        ! If TRUE then use mpi_alltoallv in the inner communication loop
-        ! Otherwise use mpi_isend/irecv
+#endif
 
 #ifdef REALFLOAT
     integer :: mympi_dp = MPI_REAL

@@ -229,6 +229,7 @@ Other options that are less often useful include:
 - `-DNOFRICTION` Do not use friction terms in the nonlinear shallow water equations. This can improve the speed for frictionless cases.
 - `-DNOOPENMP` Do not use the openmp library, not even for timing the code. In this case the code will run on a single core (or a single core per-MPI process), and an alternative timer is used which measures time somewhat differently. This can occasionally be useful if you must avoid using an openmp library (e.g. in some debugging contexts). Note this is NOT required to run the code single-threaded; in that case just set `OMP_NUM_THREADS=1`.
 - `-DNONETCDF` Do not use netcdf for model outputs. This is occasionally useful if you cannot build with netcdf for some reason and want to test something else; however the output format is poorly supported and the validation tests will not pass. While occasionally useful this is NOT a sustainable way to use the code.
+- `-DCOARRAY_MPI_USE_ALLTOALLV` This has an effect if used in conjunction with `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS`. It makes the code use Mpi_AlltoAllv to do communication in the main timestepping routine, instead of point-to-point Mpi_isend/Mpi_ireceive calls. Typically this is slower, but I have seen some problems where it was faster.
 
 ## Source-code html documentation
 -------------------------
