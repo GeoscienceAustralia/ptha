@@ -14,3 +14,4 @@ Here the main codes are:
 
     - spherical_mod.f90 defines helps with working in spherical coordinates.
 
+    - forcing_mod.f90 defines a type to help with applying forcings (e.g. time-varying free-surface perturbation; rainfall; etc) over subsets of a domain.
