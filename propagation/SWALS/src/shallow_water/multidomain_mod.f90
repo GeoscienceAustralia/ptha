@@ -162,8 +162,9 @@ module multidomain_mod
     type :: multidomain_type
         !! Type to hold nested-grids that communicate with each other.
         !! Each nested grid is a domain_type. 
-        ! Idea is for the multidomain_type to have methods matching the domain type as much as possible, for easy translation of
-        ! existing scripts which use single-grid domains to multidomains.
+        ! Idea is for the multidomain_type to have methods matching the domain type as much 
+        ! as possible, for easy translation of existing scripts which use single-grid 
+        ! domains to multidomains.
 
         type(domain_type), allocatable :: domains(:)
             !! Array of domains in the multidomain
@@ -202,10 +203,10 @@ module multidomain_mod
             !! which may reduce nesting artefacts in some situations.
 
         real(dp), allocatable :: all_dx_md(:,:,:)
-            !! Store all_dx (i.e. dx values of all domains) in the multidomain
+            !! Store all_dx (i.e. dx values of all domains) on (x-and-y-dims, all domains, all images)
 
         integer(ip), allocatable :: all_timestepping_methods_md(:,:)
-            !! Store 'all_timestepping_methods' in the multidomain
+            !! Store 'all_timestepping_methods' in the multidomain (all domains, all images)
 
         integer(ip) :: writeout_counter = 0
         real(dp) :: last_write_time = -HUGE(1.0_dp)

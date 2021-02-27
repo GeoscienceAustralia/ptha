@@ -856,7 +856,7 @@ TIMER_STOP('printing_stats')
                 if(domain%partitioned_comms%neighbour_images(i) > 0) domain%boundary_exterior(i) = .FALSE.
             end do
         else
-            ! Not using coarrays (simple case)
+            ! Not using partitioned_comms (simple case)
             domain%lw = global_lw
             domain%nx = global_nx
             domain%lower_left = global_ll
