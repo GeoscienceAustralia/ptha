@@ -27,8 +27,8 @@ The code includes various test suits that [can be run automatically](#compiling-
 on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp) 
 (which are well known in the tsunami community) and [here](./examples) for other problems.
 
-A paper using SWALS to model historic tsunamis in Australia is available
-[here](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) -
+A paper using SWALS to model historic tsunamis in Australia is [available
+here](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) -
 this includes discussion of the range of equations that are solved, and the energy
 conservation properties of different solvers. The linear solver in SWALS was
 also used extensively for the 
@@ -202,10 +202,14 @@ The validation tests  in [./examples/](./examples) provide templates for develop
 * [./examples/nthmp/BP09/](./examples/nthmp/BP09) which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
 * [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Tauranga_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
 * [./examples/periodic_multidomain/](./examples/periodic_multidomain) which illustrates a global multidomain with periodic east-west boundaries. This also optionally permits a rise-time to be used in the earthquake co-seismic deformation.
+* The model code used in [this study modelling historic tsunamis in Australia](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) can be [found here](../../misc/nearshore_testing_2020/). It implements a global-to-local scale model with an initial earthquake forcing.
 
-The above models can be run with OpenMP and/or MPI (or coarrays), and illustrate use of the multidomain class. Another useful example is:
+The above models can be run with OpenMP and/or MPI (or coarrays), and illustrate use of the multidomain class. 
+
+Another useful example is:
 
 * [./examples/generic_model/](./examples/generic_model) which can run basic single-grid spherical coordinate models, e.g. for oceanic-scale tsunami modelling. It permits a rise-time to be applied to the initial co-seismic deformation. This supports OpenMP but not MPI/coarray (for a broadly similar model with distributed memory support, see [./examples/periodic_multidomain/](./examples/periodic_multidomain)). 
+
 
 ## Advanced compilation
 
