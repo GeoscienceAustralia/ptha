@@ -3,6 +3,8 @@ Testing various alternative tsunami modelling approaches at Australian tidal gau
 
 This folder contains code and links to data required for a study comparing models and observations of nearshore tsunamis in Australia. The work was published in this paper: [Davies, G. et al. (2020) Global dissipation models for simulating tsunamis at far-field coasts up to 60 hours post-earthquake: Multi-site tests in Australia.](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full).
 
+From time-to-time we may update the code here (e.g. to fix bugs or give better documentation). For reproducibility, a snapshot of the code as used for the paper is [provided in this release](https://github.com/GeoscienceAustralia/ptha/releases/tag/nearshore_testing_sept2020). 
+
 The sub-folders contain code, and instructions to download zipped-versions of the folders with datasets (model input / model output / test data). The latter are too large to version control. The folders are:
 
 * [./breakwalls](./breakwalls) Make the breakwalls that we burn into our elevation model.

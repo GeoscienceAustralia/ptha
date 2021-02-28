@@ -502,6 +502,26 @@ module local_routines
         k1 = STG
 
         if(i0 <= i1 .and. j0 <= j1) then
+
+            if( any(domain%timestepping_method == [character(len=charlen) :: &
+                    'rk2', 'rk2n']) ) then
+                ! Do not start the forcing at start_time=0. Why not? 
+                ! For 'rk2', it will mean the full forcing is not applied. This
+                ! is because of rk2's approach 
+                !    [start, advance 2-time-steps to end, then-average(start,end)].
+                ! If we don't have timestepping before the forcing start_time, we 
+                ! miss out on part of of the forcing that should have been obtained 
+                ! (hypothetically if we evolved from time=-dt to time=0, we would 
+                ! have included some of the forcing -- this is the part we miss).
+                write(log_output_unit, *) 'This code applies the forcing with start_time=0 - a bad idea for rk2 and rk2n.'
+                write(log_output_unit, *) 'Their timestepping algorithms will not ensure the full volume of forcing is applied.'
+                write(log_output_unit, *) 'A work-around is to begin forcing AFTER the first full time-step, e.g. set '
+                write(log_output_unit, *) '    start_time=(0.0_dp+global_dt) and end_time=(rise_time + global_dt)'
+                write(log_output_unit, *) 'in the call below to forcing_context%setup. Then it will also work for rk2 and rk2n'
+                flush(log_output_unit)
+                call generic_stop
+            end if
+
             allocate(forcing_context)
             call forcing_context%setup(&
                 start_time = 0.0_dp, end_time = rise_time, &
