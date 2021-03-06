@@ -38,21 +38,27 @@ M0_2_Mw<-function(M0, inverse=FALSE, constant=9.05){
 #' Output units are km and km^2
 #'
 #' @param Mw Moment Magnitude (must have length(Mw) == 1)
-#' @param relation Name for the scaling relation. 'Strasser' (default) uses the subduction
-#' interface event relation for Strasser et al 2010; 'Strasser-intraslab' uses the
-#' subduction intraslab relations of Strasser et al 2010 [for this case, 
-#' Strasser et al 2010 suggest the width sigma might be too small, but we make
-#' no effort to correct that]; 'AllenHayes' uses the interface relations of
-#' Allen and Hayes (2017, Table 2), with sigma for prediction based on the sigma value
-#' for the log10(L / or W / or A) of the orthogonal regression. Note this case 
-#' has Area and Width being multi-segment linear, and we slightly modify the mw thresholds
-#' in the paper to exactly agree with the line segment intersections; 'AllenHayes-inslab' gives the 
-#' inslab relations of Allen and Hayes (2017, Table 5); 'AllenHayes-outer-rise' gives the outer-rise
-#' relations of Allen and Hayes (2017, Table 5); 'Blaser-normal' gives the normal relations of Blaser
-#' et al (2010). Note these authors didn't give area relations, so herein the area coefficients are
-#' derived assuming area = length x width, and zero correlation of the length and width residuals.; 
-#' 'Thingbaijam-subduction' gives the subduction relations of Thingbaijam et al. (2017); 'Thingbaijam-normal'
-#' gives the normal fault scaling relations from Thingbaijam et al. (2017);
+#' @param relation Name for the scaling relation. 'Strasser' (default) uses the
+#' subduction interface event relation for Strasser et al 2010;
+#' 'Strasser-intraslab' uses the subduction intraslab relations of Strasser et
+#' al 2010 [for this case, Strasser et al 2010 suggest the width sigma might be
+#' too small, but we make no effort to correct that]; 'AllenHayes' uses the
+#' interface relations of Allen and Hayes (2017, Table 2), with sigma for
+#' prediction based on the sigma value for the log10(L / or W / or A) of the
+#' orthogonal regression. Note this case has Area and Width being multi-segment
+#' linear, and we slightly modify the mw thresholds in the paper to exactly
+#' agree with the line segment intersections; 'AllenHayes-inslab' gives the
+#' inslab relations of Allen and Hayes (2017, Table 5); 'AllenHayes-outer-rise'
+#' gives the outer-rise relations of Allen and Hayes (2017, Table 5);
+#' 'Blaser-reverse' gives the reverse relations of Blaser et al., (2010), while
+#' 'Blaser-normal' gives the normal relations from the same paper.  Note Blaser
+#' et al (2010) didn't give area relations, so herein the area coefficients are
+#' derived assuming area = length x width, and zero correlation of the length
+#' and width residuals. Furthermore we use their relationships derived from
+#' ordinary least squares, not orthogonal regression, as our purpose is
+#' prediction; 'Thingbaijam-subduction' gives the subduction relations of
+#' Thingbaijam et al. (2017); 'Thingbaijam-normal' gives the normal fault
+#' scaling relations from Thingbaijam et al. (2017);
 #' @param detailed logical. If False return a vector with area/width/length,
 #' otherwise provide a list with the latter as well as information on
 #' log10-standard-deviations
@@ -140,6 +146,16 @@ Mw_2_rupture_size<-function(Mw, relation='Strasser', detailed=FALSE,
         width_absigma = c(-1.18, 0.35, 0.08)
         area_absigma = c(-3.89, 0.96, 0.11)
 
+    }else if(relation == 'Blaser-reverse'){
+
+        length_absigma = c(-2.28, 0.55, 0.18)
+        width_absigma =  c(-1.80, 0.45, 0.17)
+        # Blaser do not provide area, but if Area = length*width then
+        # this follows directly IF WE SUPPOSE ZERO CORRELATION BETWEEN 'length'
+        # and 'width' residuals (which is a good approximation based on their data,
+        # provided as a supplement to the paper).
+        area_absigma = c(length_absigma[1:2] + width_absigma[1:2],
+                        sqrt(length_absigma[3]**2 + width_absigma[3]**2))
     }else if(relation == 'Blaser-normal'){
 
         length_absigma = c(-1.61, 0.46, 0.17)
