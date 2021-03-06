@@ -10,21 +10,27 @@ Mw_2_rupture_size(Mw, relation = "Strasser", detailed = FALSE, CI_sd = 1)
 \arguments{
 \item{Mw}{Moment Magnitude (must have length(Mw) == 1)}
 
-\item{relation}{Name for the scaling relation. 'Strasser' (default) uses the subduction
-interface event relation for Strasser et al 2010; 'Strasser-intraslab' uses the
-subduction intraslab relations of Strasser et al 2010 [for this case, 
-Strasser et al 2010 suggest the width sigma might be too small, but we make
-no effort to correct that]; 'AllenHayes' uses the interface relations of
-Allen and Hayes (2017, Table 2), with sigma for prediction based on the sigma value
-for the log10(L / or W / or A) of the orthogonal regression. Note this case 
-has Area and Width being multi-segment linear, and we slightly modify the mw thresholds
-in the paper to exactly agree with the line segment intersections; 'AllenHayes-inslab' gives the 
-inslab relations of Allen and Hayes (2017, Table 5); 'AllenHayes-outer-rise' gives the outer-rise
-relations of Allen and Hayes (2017, Table 5); 'Blaser-normal' gives the normal relations of Blaser
-et al (2010). Note these authors didn't give area relations, so herein the area coefficients are
-derived assuming area = length x width, and zero correlation of the length and width residuals.; 
-'Thingbaijam-subduction' gives the subduction relations of Thingbaijam et al. (2017); 'Thingbaijam-normal'
-gives the normal fault scaling relations from Thingbaijam et al. (2017);}
+\item{relation}{Name for the scaling relation. 'Strasser' (default) uses the
+subduction interface event relation for Strasser et al 2010;
+'Strasser-intraslab' uses the subduction intraslab relations of Strasser et
+al 2010 [for this case, Strasser et al 2010 suggest the width sigma might be
+too small, but we make no effort to correct that]; 'AllenHayes' uses the
+interface relations of Allen and Hayes (2017, Table 2), with sigma for
+prediction based on the sigma value for the log10(L / or W / or A) of the
+orthogonal regression. Note this case has Area and Width being multi-segment
+linear, and we slightly modify the mw thresholds in the paper to exactly
+agree with the line segment intersections; 'AllenHayes-inslab' gives the
+inslab relations of Allen and Hayes (2017, Table 5); 'AllenHayes-outer-rise'
+gives the outer-rise relations of Allen and Hayes (2017, Table 5);
+'Blaser-reverse' gives the reverse relations of Blaser et al., (2010), while
+'Blaser-normal' gives the normal relations from the same paper.  Note Blaser
+et al (2010) didn't give area relations, so herein the area coefficients are
+derived assuming area = length x width, and zero correlation of the length
+and width residuals. Furthermore we use their relationships derived from
+ordinary least squares, not orthogonal regression, as our purpose is
+prediction; 'Thingbaijam-subduction' gives the subduction relations of
+Thingbaijam et al. (2017); 'Thingbaijam-normal' gives the normal fault
+scaling relations from Thingbaijam et al. (2017);}
 
 \item{detailed}{logical. If False return a vector with area/width/length,
 otherwise provide a list with the latter as well as information on
