@@ -1474,7 +1474,15 @@ get_domain_indices_in_multidomain<-function(multidomain_dir){
 # partitioning), and in a parallel partition
 #
 # @param multidomain_dir the directory with the multidomain
-get_domain_interior_bbox_in_multidomain<-function(multidomain_dir){
+# @param include_SpatialPolygonsDataFrame If TRUE then make
+# SpatialPolygonsDataFrames showing the merged and unmerged model extents.
+# @param spdf_proj4string The proj4string for the SpatialPolygonsDataFrames
+# (not used unless the previous argument is TRUE)
+#
+get_domain_interior_bbox_in_multidomain<-function(multidomain_dir, 
+    include_SpatialPolygonsDataFrame=FALSE, 
+    spdf_proj4string="+init=epsg:4326"){
+
     library(ncdf4)
 
     all_domain_run_folders = Sys.glob(paste0(multidomain_dir, '/RUN_ID*')) 
@@ -1524,6 +1532,60 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir){
     }
     names(merged_domain_ibb) = as.character(merged_domain_indices)
 
+    if(include_SpatialPolygonsDataFrame){
+        library(rgdal)
+        library(sp)
+        #
+        # Convert merged domain extents to a spatial polygons data frame
+        #
+        domain_boxes = merged_domain_ibb
+        domain_inds = merged_domain_indices
+        domain_dx = merged_domain_dx
+
+        polygons_list = vector(mode='list', length=length(domain_boxes))
+        for(i in 1:length(domain_boxes)){
+            polygons_list[[i]] = Polygons(list(Polygon(domain_boxes[[i]])), ID=domain_inds[i])
+        }
+
+        merged_domain_spdf = SpatialPolygonsDataFrame(
+            SpatialPolygons(polygons_list, proj4string=CRS(spdf_proj4string)),
+            data=data.frame(ID=paste0('domain_', round(domain_inds)), dx=domain_dx[,1]))
+
+        #
+        # Convert partitioned domain extents to a spatial polygons data frame
+        #
+
+        domain_boxes = all_domain_ibb
+        domain_inds = all_domain_indices
+        domain_dx = all_domain_dx
+
+        # Make a unique domain_ID, accounting for the fact that we have multiple pieces of the same domain
+        poly_counter = rep("1", length=length(domain_boxes))
+        for(i in 1:length(domain_boxes)){
+            if(i > 1){
+                poly_counter[i] = paste0(domain_inds[i], '.', 
+                    sum(domain_inds[1:(i-1)] == domain_inds[i]) + 1)
+            }
+        }
+
+        polygons_list = vector(mode='list', length=length(domain_boxes))
+        for(i in 1:length(domain_boxes)){
+            # -- note here, we have to hack the ID variable to make it unique
+            polygons_list[[i]] = Polygons(list(Polygon(domain_boxes[[i]])), ID=poly_counter[i])
+        }
+        # -- note here, we have to hack the 'dx' variable, and prevent ID matching
+        all_domain_spdf = SpatialPolygonsDataFrame(
+            SpatialPolygons(polygons_list, proj4string=CRS(spdf_proj4string)),
+            data=data.frame(ID=paste0('domain_', poly_counter), 
+                            dx=do.call(rbind, domain_dx)[,1]), 
+            match.ID=FALSE)
+
+    }else{
+        # Empty values
+        merged_domain_spdf = NULL
+        all_domain_spdf = NULL
+    }
+
     outputs = list(domain_folders = all_domain_run_folders, 
                    domain_interior_bbox = all_domain_ibb,
                    domain_indices = all_domain_indices,
@@ -1533,7 +1595,11 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir){
                    multidomain_ylim = multidomain_ylim,
                    merged_domain_indices = merged_domain_indices,
                    merged_domain_interior_bbox = merged_domain_ibb,
-                   merged_domain_dx = merged_domain_dx)
+                   merged_domain_dx = merged_domain_dx,
+                   merged_domain_spdf = merged_domain_spdf,
+                   all_domain_spdf = all_domain_spdf)
+
+    return(outputs)
 }
 
 
