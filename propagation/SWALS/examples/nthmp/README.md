@@ -1,7 +1,7 @@
 Benchmark problems from the National Tsunami Hazard Mitigation Program (NTHMP) test suite
 -----------------------------------------------------------------------------------------
 
-Most of the test problems here were set-up based on problem descriptions in this [NTHMP benchmarking repository](https://github.com/rjleveque/nthmp-benchmark-problems). However there are other sources for the [Tauranga Harbour problem](http://coastal.usc.edu/currents_workshop/problems/prob3.html) and the [Hilo Harbour problem](http://coastal.usc.edu/currents_workshop/problems/prob2.html). Please consult these sources for detailed problem descriptions and data.
+Most of the test problems here were set-up based on problem descriptions in this [NTHMP benchmarking repository](https://github.com/rjleveque/nthmp-benchmark-problems) and the [NTHMP tsunami currents benchmarking problems website](http://coastal.usc.edu/currents_workshop/index.html). Please consult these sources for detailed problem descriptions and data.
 
 The problems are:
 
