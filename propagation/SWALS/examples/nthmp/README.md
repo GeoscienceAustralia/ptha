@@ -20,3 +20,5 @@ The problems are:
 * Hilo_Tohoku_Tsunami -- This implements a semi-idealised model of the Tohoku tsunami in Hilo, Hawaii, following [this description](http://coastal.usc.edu/currents_workshop/problems/prob2.html). The `run_model.sh` script runs two versions of the code (openmp and mixed openmp/MPI -- here both use the same domain partitioning and so give identical results) and compares both with data (waves and currents), and with each other.
 
 * Tauranga_harbour_Tohoku_Tsunami -- This models the Tohoku tsunami in Tauranga Harbour, New Zealand, following [this description](http://coastal.usc.edu/currents_workshop/problems/prob3.html). The `run_model.sh` script runs two versions of the code (openmp and mixed openmp/MPI with default domain partitioning) and compares both with data (waves and currents), and with each other.
+
+* Seaside_OSU_model -- This models a wave-tank experiment where a wave propagates up a sloping beach and inundates a city, following [this description](http://coastal.usc.edu/currents_workshop/problems/prob4.html). 
