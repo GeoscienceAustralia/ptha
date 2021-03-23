@@ -37,7 +37,7 @@ module local_routines
 
 
     !
-    ! Hold some data for the forcing [unused if use_initial_condition_forcing]
+    ! Hold some data for the forcing
     !
     type :: boundary_information_type
 
