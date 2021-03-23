@@ -59,10 +59,9 @@ module local_routines
         boundary_information%boundary_data(nr - skip + extra,2) = &
             boundary_information%boundary_data(nr - skip + extra - 1, 2)
 
-        !print*, 'ZEROING STAGE '
-        !boundary_information$boundary_data(:,2) = 0.0_dp
         call boundary_information%gauge4_ts_function%initialise(&
-                boundary_information%boundary_data(:,1), boundary_information%boundary_data(:,2))
+                boundary_information%boundary_data(:,1), &
+                boundary_information%boundary_data(:,2))
         boundary_information%t0 = boundary_information%boundary_data(1,1)
 
     end subroutine
@@ -77,11 +76,13 @@ module local_routines
         real(dp) :: local_elev, dhdt(1), dt, next_h(1)
 
         ! Set the stage
-        call boundary_information%gauge4_ts_function%eval([t + boundary_information%t0], stage_uh_vh_elev(1:1))
+        call boundary_information%gauge4_ts_function%eval(&
+            [t + boundary_information%t0], stage_uh_vh_elev(1:1))
       
         ! Get the time-derivative of stage. Useful for some approaches
         dt = 1.0e-06
-        call boundary_information%gauge4_ts_function%eval([t + boundary_information%t0 + dt], next_h)
+        call boundary_information%gauge4_ts_function%eval(&
+            [t + boundary_information%t0 + dt], next_h)
         dhdt = (next_h(1)/dt - stage_uh_vh_elev(1)/dt)
        
         ! Set the elevation 
@@ -94,7 +95,6 @@ module local_routines
             stage_uh_vh_elev(2:3) = 0.0_dp
         else
 
-
             select case(boundary_type)
 
             case('boundary_stage_radiation_momentum') 
@@ -105,8 +105,9 @@ module local_routines
                 ! Approach 4: Flat-free-surface continuity
                 if(j == domain%nx(2)) then
                     stage_uh_vh_elev(2) = 0.0_dp
-                    ! Assume flat free surface from offshore to the coast + estuary volume. 
-                    ! That gives a rough estimate of -VH. However, in practice the factor needs tuning.
+                    ! Assume flat free surface from offshore to the coast + 
+                    ! estuary volume. That gives a rough estimate of -VH. 
+                    ! However, in practice the factor needs tuning.
                     stage_uh_vh_elev(3) = 0.0_dp -dhdt(1) * 3800.0_dp
                 else
                     stage_uh_vh_elev(2:3) = 0.0_dp
@@ -124,53 +125,41 @@ module local_routines
     ! Main setup routine
     subroutine set_initial_conditions(domain)
         class(domain_type), target, intent(inout):: domain
-        integer(ip):: i, j
+        integer(ip):: j
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)
-        logical, allocatable:: is_inside(:)
         type(multi_raster_type):: elevation_data
-        real(dp) :: wall, w
-        real(dp) :: gauge_xy(3,6)
-        real(dp) :: pol1(4,2), pol2(4,2)
-        logical :: flatten_bathymetry_near_boundary
+        real(dp) :: wall
 
         ! Stage
-        domain%U(:,:,STG) = 0.0_dp !Same as first tide gauge value -- for this benchmark we normalise the input to 0
+        domain%U(:,:,STG) = 0.0_dp
 
         ! Set elevation with the raster
         input_elevation = './bathymetry/hilo_grid_1_3_arsec.tif' 
+        call elevation_data%initialise([input_elevation])
 
         ! Make space for x/y coordinates, at which we will look-up the rasters
-        allocate(x(domain%nx(1)), y(domain%nx(1)), is_inside(domain%nx(1)))
+        allocate(x(domain%nx(1)), y(domain%nx(1)))
         x = domain%x
-        call elevation_data%initialise([input_elevation])
 
         do j = 1, domain%nx(2)
             y = domain%y(j)
             call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), &
                 bilinear=1_ip)
-
-            flatten_bathymetry_near_boundary = .true.
-
         end do
+        deallocate(x,y)
 
         if(domain%timestepping_method == 'cliffs') then
             domain%cliffs_minimum_allowed_depth = 0.1_dp
             call domain%smooth_elevation(smooth_method='cliffs')
         end if
 
-        !call domain%smooth_elevation(smooth_method='9pt_average')
+        print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), &
+            maxval(domain%U(:,:,ELV))
 
-        deallocate(x,y, is_inside)
-
-        print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
-
-        ! Wall boundaries (without boundary conditions)
-        ! In interior domains these will be overwritten
+        ! A bit unclear how this boundary should be treated -- but works ok
         wall = 20._dp
-        !domain%U(:,1,ELV) = wall
-        domain%U((domain%nx(1)-1):domain%nx(1),:,ELV) = wall ! A bit unclear how this boundary should be treated -- but works ok
-        !domain%U(1,:,ELV) = wall
+        domain%U((domain%nx(1)-1):domain%nx(1),:,ELV) = wall
 
         ! Friction 
         if(domain%timestepping_method /= 'linear') then
@@ -191,9 +180,10 @@ program Hilo_harbour_Tohoku
     !! NTHMP currents test problem -- Tohoku tsunami at Hilo Harbour with an artificial forcing.
     !!
 
-    use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
+    use global_mod, only: ip, dp, minimum_allowed_depth, &
+        default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
+    use multidomain_mod, only: multidomain_type, setup_multidomain
     use boundary_mod, only: flather_boundary, boundary_stage_radiation_momentum
     use local_routines
     use timer_mod
@@ -209,31 +199,27 @@ program Hilo_harbour_Tohoku
 
     type(timer_type) :: program_timer
 
-    ! Increase resolution by this amount.  {e.g. 1.0 = 1/3 arcsec, 2.0 = 1/6 arcsec, etc}
-    real(dp), parameter :: mesh_refine = 0.5_dp ! 1.0_dp !
+    ! Increase resolution by this amount, e.g. 1.0 = 1/3 arcsec, 2.0 = 1/6 arcsec
+    real(dp), parameter :: mesh_refine = 0.5_dp 
     
     real(dp) ::  global_dt = 0.27_dp / mesh_refine
-    real(dp), parameter :: final_time = 23370.0_dp !60.0_dp !23370.0_dp 
+    real(dp), parameter :: final_time = 23370.0_dp 
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 30.0_dp
-    integer(ip), parameter :: only_write_grids_every_nth_output_step = 1_ip ! Write grids less often than gauges
+    integer(ip), parameter :: only_write_grids_every_nth_output_step = 1_ip
 
     character(len=charlen) ::  bc_file = './boundary/se_dat_converted.csv'
     real(dp) :: bc_elev
 
-    ! The domain has resolution = 1/3 arc-sec. We need to make sure our model is inside this
-    real(dp), parameter :: onethird_arcsec = 1.0_dp / (60.0_dp * 60.0_dp) * (1.0_dp / 3.0_dp)
+    ! The domain has resolution = 1/3 arc-sec. Make sure our model is inside this
+    real(dp), parameter :: onethird_arcsec = 1.0_dp / (3.0_dp * (60.0_dp**2) )
     ! Length/width
-    !real(dp), dimension(2), parameter :: global_lw = [0.065_dp, 0.064_dp] - (4 * onethird_arcsec) 
-    real(dp), dimension(2), parameter :: global_lw = [0.065_dp, 0.05_dp] - (4 * onethird_arcsec) 
-    ! Length/width such that the top of the domain is near the 'reference boundary point' -- simplify the boundary forcing.
-    !real(dp), dimension(2), parameter :: global_lw = [0.065_dp, 0.04765_dp] - [4, 0] * onethird_arcsec
+    real(dp), parameter :: global_lw(2) = [0.065_dp, 0.05_dp] - (4 * onethird_arcsec) 
     ! Lower-left corner coordinate
-    real(dp), dimension(2), parameter :: global_ll = [204.9_dp, 19.71_dp] + 2*onethird_arcsec
+    real(dp), parameter :: global_ll(2) = [204.9_dp, 19.71_dp] + 2*onethird_arcsec
     ! grid size (number of x/y cells)
-    integer(ip), dimension(2), parameter :: global_nx = nint(global_lw/onethird_arcsec * mesh_refine) 
-    integer(ip), parameter :: boundary_domain_thickness = 0_ip
+    integer(ip), parameter :: global_nx(2) = nint(global_lw/onethird_arcsec * mesh_refine) 
 
     call swals_mpi_init
     call program_timer%timer_start('setup')
@@ -247,33 +233,26 @@ program Hilo_harbour_Tohoku
     ! Setup basic metadata
     !
 
-    ! Main domain, with the northern-end optionally shorn off and replaced with a
-    ! boundary_domain
     md%domains(1)%lower_left = global_ll
-    md%domains(1)%nx = global_nx - [0_ip, boundary_domain_thickness]
+    md%domains(1)%nx = global_nx
     md%domains(1)%lw = global_lw * ( ( 1.0_dp * md%domains(1)%nx ) / (1.0_dp * global_nx) )
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
-    md%domains(1)%timestepping_refinement_factor = 1_ip
-    md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'cliffs' !'midpoint' !'rk2'
-    !md%domains(1)%theta = 4.0_dp
-    !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
-    !md%domains(1)%linear_solver_is_truely_linear = .false.
-    md%domains(1)%nc_grid_output%spatial_stride = 1
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
     md%domains(1)%static_before_time = 1920.0_dp
 
-    print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
-        ' nx: ', md%domains(1)%nx
+    print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, &
+        ' dx: ', md%domains(1)%dx, ' nx: ', md%domains(1)%nx
 
     ! Allocate domains and prepare comms
     call md%setup()
 
     if(md%domains(1)%is_staggered_grid) then
-        ! The 'boundary_stage_radiation_momentum' boundary is insufficiently radiative with the leapfrog solvers
-        ! This bc is still not great, but better.
+        ! The 'boundary_stage_radiation_momentum' boundary is insufficiently 
+        ! radiative with the leapfrog solvers. This bc is still not great, but better.
         boundary_type = 'flather_with_vh_from_continuity'
     else
-        ! Good for rk2 and related type solvers -- but poor for leapfrog_nonlinear, and not so good for cliffs.
+        ! Good for rk2 and related type solvers -- but poor for 
+        ! leapfrog_nonlinear, and not so good for cliffs.
         boundary_type = 'boundary_stage_radiation_momentum'
     end if
 
@@ -282,8 +261,6 @@ program Hilo_harbour_Tohoku
         call set_initial_conditions(md%domains(j))
     end do
     call md%make_initial_conditions_consistent 
-    ! NOTE: For stability in 'null' regions, we set them to 'high land' that
-    ! should be inactive. 
     call md%set_null_regions_to_dry()
 
     bc_elev = HUGE(1.0_dp)
@@ -321,8 +298,6 @@ program Hilo_harbour_Tohoku
     ! Evolve the code
     do while (.true.)
        
-        ! Write gauges and print after 'approximate_writeout_frequency' time has passed 
-        ! Don't write gauges every time
         call program_timer%timer_start('IO')
         call md%write_outputs_and_print_statistics(&
             approximate_writeout_frequency=approximate_writeout_frequency, &
