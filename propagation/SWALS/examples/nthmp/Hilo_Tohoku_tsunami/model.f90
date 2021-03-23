@@ -20,10 +20,7 @@ module local_routines
         real(dp):: t0 = 0.0_dp
     end type
 
-    !
     ! Parameter controlling the northern boundary treatment
-    ! Depending on the solver, it is nontrivial to get a good boundary forcing for this problem, that is sufficiently radiative
-    ! without overly distorting the tsunami.
     character(len=charlen) :: boundary_type = 'boundary_stage_radiation_momentum'
 
     ! This will hold the information -- is seen by other parts of the module
@@ -97,28 +94,11 @@ module local_routines
             stage_uh_vh_elev(2:3) = 0.0_dp
         else
 
-            ! Much experimentation was conducted here. This problem is sensitive to
-            ! imperfections in our semi-transmissive boundary conditions which allow a 
-            ! stage forcing. (Not too surprising, because the boundary is quite close to the
-            ! coast, in 'not very deep' water).
 
             select case(boundary_type)
 
-            case('boundary_stage_transmissive_normal_momentum')
-                ! Do nothing, because we do not need uh/vh.
-                stage_uh_vh_elev(2:3) = 0.0_dp 
-
-            case('boundary_stage_transmissive_momentum')
-                ! Do nothing, because we do not need uh/vh.
-                stage_uh_vh_elev(2:3) = 0.0_dp 
-
             case('boundary_stage_radiation_momentum') 
                 ! These will never be used for this boundary
-                stage_uh_vh_elev(2:3) = 0.0_dp
-
-            case('flather_with_vh_equal_zero') 
-                ! This absorbs, but also distorts the stage at the boundary too much when
-                ! wave frequencies are lower
                 stage_uh_vh_elev(2:3) = 0.0_dp
 
             case('flather_with_vh_from_continuity')
@@ -170,9 +150,7 @@ module local_routines
             call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), &
                 bilinear=1_ip)
 
-            flatten_bathymetry_near_boundary = (.not.(&
-                boundary_type == 'boundary_stage_transmissive_normal_momentum' .or. &
-                boundary_type == 'boundary_stage_transmissive_momentum'))
+            flatten_bathymetry_near_boundary = .true.
 
         end do
 
@@ -216,8 +194,7 @@ program Hilo_harbour_Tohoku
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
-    use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary, &
-        boundary_stage_transmissive_momentum, boundary_stage_radiation_momentum
+    use boundary_mod, only: flather_boundary, boundary_stage_radiation_momentum
     use local_routines
     use timer_mod
     use logging_mod, only: log_output_unit
@@ -320,17 +297,8 @@ program Hilo_harbour_Tohoku
     call md%set_point_gauges_from_csv("point_gauges.csv", skip_header=1_ip)
    
     do j = 1, size(md%domains) 
-        ! Boundary. Care is required in this problem, because the boundary is so close to the
-        ! coast -- reflections can be a problem. A number of approaches can be tested by 
-        ! changing 'boundary_type' in the local_routines module
         select case(boundary_type)
-        case('boundary_stage_transmissive_normal_momentum')
-            md%domains(j)%boundary_subroutine => boundary_stage_transmissive_normal_momentum
-        case('boundary_stage_transmissive_momentum')
-            md%domains(j)%boundary_subroutine => boundary_stage_transmissive_momentum
         case('flather_with_vh_from_continuity')
-            md%domains(j)%boundary_subroutine => flather_boundary
-        case('flather_with_vh_equal_zero')
             md%domains(j)%boundary_subroutine => flather_boundary
         case('boundary_stage_radiation_momentum')
             md%domains(j)%boundary_subroutine => boundary_stage_radiation_momentum
