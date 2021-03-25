@@ -2054,7 +2054,10 @@ get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE,
     for(i in 1:length(unique_gauge_domains)){
                                     
         gauges = get_gauges(unique_gauge_domains[i])
-        if(is(gauges, 'try-error')) stop('gauges were not stored in this multidomain')
+        if(is(gauges, 'try-error')){
+            print(paste0('Trouble reading gauges in ', unique_gauge_domains[i]))
+            stop('Possible input error, or gauges were not stored in this multidomain')
+        }
 
         k = which(target_gauge_domains$domain_dir == unique_gauge_domains[i])
 
