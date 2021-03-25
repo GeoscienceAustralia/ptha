@@ -2018,12 +2018,17 @@ get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
 # correspond to gauges that were stored.
 # @param lonlat_coords if TRUE compute distances with distHaversine. Otherwise
 # use euclidean distances.
+# @param verbose If TRUE, report the max distance between the requested sites
+# and the available sites. This can help to catch cases where there is no
+# nearby gauge (or where the requested gauge is in a different domain to the
+# nearest one).
 # @return An object that is similar to the gauges list -- however it also
 # contains a 'points_requested' field giving the xy-sites ordered as with
 # gauges$gaugeID, and a 'distance_from_requested_point' field giving the
 # distance in metres between the requested site and the model output site.
 #
-get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE){
+get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE, 
+                             verbose=FALSE){
     library(rptha)
 
     # Make sure the input is a matrix. The code below will convert the
@@ -2134,6 +2139,17 @@ get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE){
             # NA value
             if(all(is.na(output[[var]][[nm]]))) output[[var]][[nm]] = NA
         }
+    }
+
+    if(verbose){
+        cat(paste0(
+            'The maximum distance between the requested gauges and their ',
+            'corresponding model gauges is ', 
+            max(output$distance_from_requested_point, na.rm=TRUE), 
+            ' meters. \n Surprisingly high values suggest an input error,',
+            ' or perhaps the input gauge is on a different domain to the ',
+            ' desired gauge \n (e.g. due to a small perturbation that',
+            ' crosses the domain interior boundary)\n'))
     }
 
     return(output)
