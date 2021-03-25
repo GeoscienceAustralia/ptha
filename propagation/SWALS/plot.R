@@ -14,7 +14,8 @@
 #
 
 
-#' Get name of folder most recently written to OUTPUTS (according to timestamp in name)
+#' Get name of folder most recently written to OUTPUTS (according to timestamp
+#' in name)
 get_recent_output_folder<-function(){
     outputs = dir('OUTPUTS', pattern='RUN_')
     output_folder = sort(outputs, decreasing=TRUE)[1]
@@ -24,45 +25,55 @@ get_recent_output_folder<-function(){
 
 #' Get times at which grid output is written
 get_time<-function(output_folder){
-    model_time = try(scan(Sys.glob(paste0(output_folder, '/', 'Time_*'))[1], quiet=TRUE), silent=TRUE)
+    model_time = try(
+        scan(Sys.glob(paste0(output_folder, '/', 'Time_*'))[1], quiet=TRUE), 
+        silent=TRUE)
     return(model_time)
 }
 
 #' Get the model dimensions
 get_model_dim<-function(output_folder){
-    file_metadata = readLines(Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
+    file_metadata = readLines(Sys.glob(
+        paste0(output_folder, '/', 'Domain_info*'))[1])
 
     # Get the model dimensions
     model_dim_line = grep('nx :', file_metadata)
-    model_dim = as.numeric(scan(text=file_metadata[model_dim_line], what='character', quiet=TRUE)[3:4])
+    model_dim = as.numeric(scan(text=file_metadata[model_dim_line], 
+                                what='character', quiet=TRUE)[3:4])
     return(model_dim)
 }
 
 #' Get the model cell size
 get_dx<-function(output_folder){
-    file_metadata = readLines(Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
+    file_metadata = readLines(
+        Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
 
     # Get the model cell size
     model_dim_line = grep('dx :', file_metadata)
-    model_dx = as.numeric(scan(text=file_metadata[model_dim_line], what='character', quiet=TRUE)[3:4])
+    model_dx = as.numeric(scan(text=file_metadata[model_dim_line], 
+                               what='character', quiet=TRUE)[3:4])
     return(model_dx)
 }
 
 #' Get the domain lower-left corner
 get_lower_left_corner<-function(output_folder){
-    file_metadata = readLines(Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
+    file_metadata = readLines(
+        Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
 
     # Get the model dimensions
     model_dim_line = grep('lower_left_corner:', file_metadata)
-    model_dim = as.numeric(scan(text=file_metadata[model_dim_line], what='character', quiet=TRUE)[2:3])
+    model_dim = as.numeric(scan(text=file_metadata[model_dim_line], 
+                                what='character', quiet=TRUE)[2:3])
     return(model_dim)
 }
 
 #' Get the domain output precision
 get_model_output_precision<-function(output_folder){
-    file_metadata = readLines(Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
+    file_metadata = readLines(
+        Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
     model_dim_line = grep('output_precision', file_metadata)
-    dp = as.numeric(scan(text=file_metadata[model_dim_line], what='character', quiet=TRUE)[2])
+    dp = as.numeric(scan(text=file_metadata[model_dim_line], what='character', 
+                         quiet=TRUE)[2])
     return(dp)
 }
 
@@ -78,7 +89,8 @@ get_gauges_mixed_binary_format<-function(output_folder){
 
     real_precision = get_model_output_precision(output_folder)
 
-    gauge_metadata = readLines(Sys.glob(paste0(output_folder, '/', 'Gauges_*nc_metadata')))
+    gauge_metadata = readLines(
+        Sys.glob(paste0(output_folder, '/', 'Gauges_*nc_metadata')))
     times = get_time(output_folder)
 
     # If we didn't save times, guess a large number
@@ -86,8 +98,10 @@ get_gauges_mixed_binary_format<-function(output_folder){
 
     # Get static variables (coordinates, elevation, ids, and maybe other things)
     static_var_line = grep('static_var:', gauge_metadata)
-    nstatic_var = length(scan(text = gauge_metadata[static_var_line], what='character', quiet=TRUE)[-1]) + 3
-    static_var_ids = as.numeric(scan(text = gauge_metadata[static_var_line], what='character', quiet=TRUE)[-1])
+    nstatic_var = length(scan(text = gauge_metadata[static_var_line], 
+                              what='character', quiet=TRUE)[-1]) + 3
+    static_var_ids = as.numeric(scan(text = gauge_metadata[static_var_line], 
+                                     what='character', quiet=TRUE)[-1])
     static_var_possible_names = c('stage0', 'uh0', 'vh0', 'elevation0')
 
     static_var_file = Sys.glob(paste0(output_folder, '/', 'Gauges*nc_static'))[1]
@@ -98,11 +112,15 @@ get_gauges_mixed_binary_format<-function(output_folder){
 
     # Get time-series
     time_series_var_line = grep('time_series_var:', gauge_metadata)
-    ntime_series_var = length(scan(text = gauge_metadata[time_series_var_line], what='character', quiet=TRUE)[-1])
-    time_series_var_ids = as.numeric(scan(text = gauge_metadata[time_series_var_line], what='character', quiet=TRUE)[-1])
+    ntime_series_var = length(scan(text = gauge_metadata[time_series_var_line], 
+                                   what='character', quiet=TRUE)[-1])
+    time_series_var_ids = as.numeric(scan(
+        text = gauge_metadata[time_series_var_line], what='character', 
+        quiet=TRUE)[-1])
     time_series_var_possible_names = c('stage', 'uh', 'vh', 'elevation')
 
-    time_series_var_file = Sys.glob(paste0(output_folder, '/', 'Gauges*nc_timeseries'))[1]
+    time_series_var_file = Sys.glob(
+        paste0(output_folder, '/', 'Gauges*nc_timeseries'))[1]
     time_series_var = readBin(time_series_var_file, size = real_precision, 
         n = ntime_series_var * lt * length(static_var[,1]), what='numeric')
     lt = length(time_series_var)/(ntime_series_var * length(static_var[,1]))
@@ -146,8 +164,8 @@ get_gauges_mixed_binary_format<-function(output_folder){
 
 #' Read domain gauges from netcdf file. 
 #'
-#' In general this is the output format we actually use -- the alternative 'home-brew binary format'
-#' is not comprehensively supported.
+#' In general this is the output format we actually use -- the alternative
+#' 'home-brew binary format' is not comprehensively supported.
 #'
 #' @param output_folder The domain's output folder
 #' 
@@ -155,7 +173,8 @@ get_gauges_netcdf_format<-function(output_folder){
     library('ncdf4')
 
     gauge_fid = try(
-        nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1], readunlim=FALSE),
+        nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1], 
+                readunlim=FALSE),
         silent=TRUE)
     if(is(gauge_fid,'try-error')){
         return(gauge_fid)        
@@ -204,8 +223,9 @@ get_gauges_netcdf_format<-function(output_folder){
     }
 
     # Check for the 'priority_gauges_only' variable -- this tells us if all the
-    # stored gauges are inside the priority domain. If TRUE, that's convenient, because
-    # we don't need to worry about throwing away non-priority-domain gauges.
+    # stored gauges are inside the priority domain. If TRUE, that's convenient,
+    # because we don't need to worry about throwing away non-priority-domain
+    # gauges.
     x = ncatt_get(gauge_fid, varid=0, 'priority_gauges_only')
     priority_gauges_only = FALSE
     if(x$hasatt){
@@ -239,7 +259,8 @@ get_gauges<-function(output_folder){
 #' opens,reads, and closes the file) or an existing file-handle (in which case
 #' the function only reads the attribute)
 #'
-#' @param nc_file netcdf file name, or file object created by a call to 'ncdf4::nc_open'
+#' @param nc_file netcdf file name, or file object created by a call to
+#' 'ncdf4::nc_open'
 #' @param attname name of global attribute in the file
 #
 get_nc_global_attribute<-function(nc_file, attname){
@@ -256,7 +277,8 @@ get_nc_global_attribute<-function(nc_file, attname){
 #' Quickly read domain gridded outputs
 #'
 #' This function probably should not be called directly -- but it is called by
-#' get_all_recent_results etc. FIXME: It should probably be re-written to use more sensible names. 
+#' get_all_recent_results etc. FIXME: It should probably be re-written to use
+#' more sensible names. 
 #'
 #' @param var A variable name -- beware the names are archaic (derived from the
 #'        old home-brew binary file format). The accepted variable names are denoted 
@@ -271,7 +293,8 @@ get_nc_global_attribute<-function(nc_file, attname){
 #'            Max_quantities = 'max_stage'
 #'            elev0 = 'elevation0'
 #'            is_priority_domain='is_priority_domain'
-#' @param output_folder folder containing the domain output files. If NULL, read the most recent one
+#' @param output_folder folder containing the domain output files. If NULL,
+#' read the most recent one
 #' @return The variable as a 3d array 
 #'
 get_gridded_variable<-function(var = 'Var_1', output_folder = NULL){
@@ -296,10 +319,12 @@ get_gridded_variable<-function(var = 'Var_1', output_folder = NULL){
 
         real_precision = get_model_output_precision(output_folder)
         output_stage_scan = c()
-        new_output_stage_scan = readBin(file_connection, what='numeric', n = prod(model_dim), size=real_precision)
+        new_output_stage_scan = readBin(file_connection, what='numeric', 
+            n = prod(model_dim), size=real_precision)
         while(length(new_output_stage_scan)>0){
             output_stage_scan = c(output_stage_scan, new_output_stage_scan)
-            new_output_stage_scan = readBin(file_connection, what='numeric', n = prod(model_dim), size=real_precision)
+            new_output_stage_scan = readBin(file_connection, what='numeric', 
+                n = prod(model_dim), size=real_precision)
         }
         close(file_connection)
 
@@ -309,10 +334,12 @@ get_gridded_variable<-function(var = 'Var_1', output_folder = NULL){
 
     }else{
 
-        # Netcdf output -- this is the usual approach. Here the naming convention is inherited from
-        # the hacky old binary format.
-        var_list = list(Var_1 = 'stage', Var_2 = 'uh', Var_3 = 'vh', Var_4 = 'elev', x = 'x', y = 'y',
-            Max_quantities = 'max_stage', elev0 = 'elevation0', is_priority_domain='is_priority_domain')
+        # Netcdf output -- this is the usual approach. Here the naming
+        # convention is inherited from the hacky old binary format.
+        var_list = list(Var_1 = 'stage', Var_2 = 'uh', Var_3 = 'vh', 
+            Var_4 = 'elev', x = 'x', y = 'y',
+            Max_quantities = 'max_stage', elev0 = 'elevation0', 
+            is_priority_domain='is_priority_domain')
         library('ncdf4')
         fid = nc_open(nc_file, readunlim=FALSE)
         var_name = var_list[[var]]
@@ -325,32 +352,43 @@ get_gridded_variable<-function(var = 'Var_1', output_folder = NULL){
     return(output_stage_scan) 
 }
 
-#' Convenient function to read in pretty much all of the results in a SINGLE DOMAIN.
+#' Convenient function to read in pretty much all of the results in a SINGLE
+#' DOMAIN.
 #'
-#' For multidomains, see 'get_multidomain' (or just manually loop over all domains).
-#' The default options in this function can sometimes be prohibitive due to memory issues, so
-#' there are options to skip reading grids and gauges (i.e. to obtain minimal domain metadata,
-#' which can later be used for more efficient reading of data subsets).
+#' For multidomains, see 'get_multidomain' (or just manually loop over all
+#' domains). The default options in this function can sometimes be prohibitive
+#' due to memory issues, so there are options to skip reading grids and gauges
+#' (i.e. to obtain minimal domain metadata, which can later be used for more
+#' efficient reading of data subsets).
 #' 
 #' @param output_folder the domain output folder
-#' @param read_grids Should we read the stage/uh/vh/elev grids? These can require large memory.
+#' @param read_grids Should we read the stage/uh/vh/elev grids? These can
+#' require large memory.
 #' @param read_gauges Should we read the gauge outputs?
-#' @param read_time_and_geometry Should we read the grid output time and geometry information?
-#' @param always_read_priority_domain Only matters if read_grids=FALSE. In that case, setting this
-#'        to TRUE ensures the priority domain information is read. By default, it is always read.
-#' @param always_read_xy Only matters if read_grids=FALSE. In that case, setting this to TRUE ensures
-#'        the x/y grid coordinates are read. Otherwise they are always read. 
-#' @param quiet Try to minimise printed output. Note we cannot completely control this due to the ncdf4
-#'        package (which reports errors in a manner that we can't seem to suppress).
-#' @param always_read_max_grids Only matters if read_grids=FALSE. In that case, setting this to TRUE ensures
-#'        the max_stage and elevation are read. Otherwise they are always read. 
+#' @param read_time_and_geometry Should we read the grid output time and
+#' geometry information?
+#' @param always_read_priority_domain Only matters if read_grids=FALSE. In that
+#' case, setting this to TRUE ensures the priority domain information is read.
+#' By default, it is always read.
+#' @param always_read_xy Only matters if read_grids=FALSE. In that case,
+#' setting this to TRUE ensures the x/y grid coordinates are read. Otherwise
+#' they are always read. 
+#' @param quiet Try to minimise printed output. Note we cannot completely
+#' control this due to the ncdf4 package (which reports errors in a manner that
+#' we can't seem to suppress).
+#' @param always_read_max_grids Only matters if read_grids=FALSE. In that case,
+#' setting this to TRUE ensures the max_stage and elevation are read. Otherwise
+#' they are always read. 
 #' @return A list with all the domain data.
-get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauges=TRUE, 
-                                 read_time_and_geometry = TRUE, 
-                                 always_read_priority_domain=FALSE, 
-                                 always_read_xy = read_time_and_geometry,
-                                 quiet=FALSE, 
-                                 always_read_max_grids=FALSE){
+get_all_recent_results<-function(
+    output_folder=NULL, 
+    read_grids=TRUE, 
+    read_gauges=TRUE, 
+    read_time_and_geometry = TRUE, 
+    always_read_priority_domain=FALSE, 
+    always_read_xy = read_time_and_geometry,
+    quiet=FALSE, 
+    always_read_max_grids=FALSE){
 
     if(quiet) sink(tempfile())
 
@@ -359,14 +397,21 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
     }
 
     if(read_grids){
-        stage = try(get_gridded_variable(var='Var_1', output_folder=output_folder), silent=TRUE)
-        ud = try(get_gridded_variable(var='Var_2', output_folder=output_folder), silent=TRUE)
-        vd = try(get_gridded_variable(var='Var_3', output_folder=output_folder), silent=TRUE)
-        elev = try(get_gridded_variable(var='Var_4', output_folder=output_folder), silent=TRUE)
+        stage = try(get_gridded_variable(var='Var_1', 
+            output_folder=output_folder), silent=TRUE)
+        ud = try(get_gridded_variable(var='Var_2', 
+            output_folder=output_folder), silent=TRUE)
+        vd = try(get_gridded_variable(var='Var_3', 
+            output_folder=output_folder), silent=TRUE)
+        elev = try(get_gridded_variable(var='Var_4', 
+            output_folder=output_folder), silent=TRUE)
         # maxQ might not exist if the simulation has not finished
-        maxQ = try(get_gridded_variable(var='Max_quantities', output_folder=output_folder), silent=TRUE)
-        elev0 = try(get_gridded_variable(var='elev0', output_folder=output_folder), silent=TRUE)
-        is_priority_domain = try(get_gridded_variable(var='is_priority_domain', output_folder=output_folder), silent=TRUE)
+        maxQ = try(get_gridded_variable(var='Max_quantities', 
+            output_folder=output_folder), silent=TRUE)
+        elev0 = try(get_gridded_variable(var='elev0', 
+            output_folder=output_folder), silent=TRUE)
+        is_priority_domain = try(get_gridded_variable(var='is_priority_domain',
+            output_folder=output_folder), silent=TRUE)
     }else{
         stage = NULL
         ud = NULL
@@ -376,13 +421,16 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
         elev0 = NULL
         is_priority_domain = NULL
         if(always_read_max_grids){
-            maxQ = try(get_gridded_variable(var='Max_quantities', output_folder=output_folder), silent=TRUE)
-            elev0 = try(get_gridded_variable(var='elev0', output_folder=output_folder), silent=TRUE)
+            maxQ = try(get_gridded_variable(var='Max_quantities', 
+                output_folder=output_folder), silent=TRUE)
+            elev0 = try(get_gridded_variable(var='elev0', 
+                output_folder=output_folder), silent=TRUE)
         }
     }
 
     if(always_read_priority_domain & !read_grids){
-        is_priority_domain = try(get_gridded_variable(var='is_priority_domain', output_folder=output_folder), silent=TRUE)
+        is_priority_domain = try(get_gridded_variable(var='is_priority_domain',
+            output_folder=output_folder), silent=TRUE)
     }
 
     if(read_time_and_geometry){
@@ -390,7 +438,8 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
         time = try(get_time(output_folder), silent=TRUE) 
         nx = try(get_model_dim(output_folder), silent=TRUE)
         dx = try(get_dx(output_folder), silent=TRUE)
-        lower_left_corner = try(get_lower_left_corner(output_folder), silent=TRUE)
+        lower_left_corner = try(get_lower_left_corner(output_folder), 
+                                silent=TRUE)
     }else{
         time = NULL
         nx = NULL
@@ -400,9 +449,11 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
 
     if(always_read_xy){
         # x and y --  get from netcdf if we can
-        xs = try(get_gridded_variable(var='x', output_folder=output_folder), silent=TRUE)
+        xs = try(get_gridded_variable(var='x', output_folder=output_folder), 
+                 silent=TRUE)
         if(!is(xs, 'try_error')){
-            ys = try(get_gridded_variable(var='y', output_folder=output_folder), silent=TRUE)
+            ys = try(get_gridded_variable(var='y', output_folder=output_folder),
+                     silent=TRUE)
         }else{
             # Old-style, beware this does not work with decimated output
             xs = lower_left_corner[1] + ((1:nx[1]) - 0.5) * dx[1]
@@ -429,15 +480,17 @@ get_all_recent_results<-function(output_folder=NULL, read_grids=TRUE, read_gauge
 
 #' Read all domains in a multidomain directory into a list.
 #'
-#' This just applies get_all_recent_results to all domain output folders in a multidomain.
+#' This just applies get_all_recent_results to all domain output folders in a
+#' multidomain.
 #'
 #' @param multidomain_dir the directory with the results
 #' @param ... Further arguments to get_all_recent_results
-#' @return A list with one entry per domain, containing the result of get_all_recent_results
+#' @return A list with one entry per domain, containing the result of
+#' get_all_recent_results
 get_multidomain<-function(multidomain_dir, ...){
 
     all_domain_files = Sys.glob(paste0(multidomain_dir, '/RUN_*'))
-    md = lapply(all_domain_files, f<-function(x) get_all_recent_results(x, ...))
+    md = lapply(all_domain_files, function(x) get_all_recent_results(x, ...))
     return(md)
 }
 
@@ -458,16 +511,20 @@ get_multidomain_output_times<-function(multidomain_dir, output_type='grids'){
 
     # Find the netcdf grid or gauges files, depending 
     if(output_type =='grids'){
-        target_files = Sys.glob(paste0(multidomain_dir, '/RUN_*/Grid_output_*.nc'))
+        target_files = Sys.glob(
+            paste0(multidomain_dir, '/RUN_*/Grid_output_*.nc'))
     }else if(output_type == 'gauges'){
-        target_files = Sys.glob(paste0(multidomain_dir, '/RUN_*/Gauges_data_*.nc'))
+        target_files = Sys.glob(
+            paste0(multidomain_dir, '/RUN_*/Gauges_data_*.nc'))
     }else{
-        stop(paste0('output_type should be "grids" or "gauges", but I got: ', output_type))
+        stop(paste0('output_type should be "grids" or "gauges", but I got: ', 
+                    output_type))
     }
 
 
     if(length(target_files) < 1){
-        stop(paste0('Could not find any files holding ', output_type, ' in multidomain ', multidomain_dir))
+        stop(paste0('Could not find any files holding ', output_type, 
+                    ' in multidomain ', multidomain_dir))
     }
 
     fid = nc_open(target_files[1], readunlim=FALSE)
@@ -479,21 +536,26 @@ get_multidomain_output_times<-function(multidomain_dir, output_type='grids'){
 
 #' Convert peak stage output to raster using the domain object.
 #'
-#' Instead consider using 'merge_domains_nc_grids' which will combine partitioned domains, and
-#' can output rasters. OR if you just want to make a plot, consider 'multidomain_image', which
-#' works for the full multidomain.
+#' Instead consider using 'merge_domains_nc_grids' which will combine
+#' partitioned domains, and can output rasters. OR if you just want to make a
+#' plot, consider 'multidomain_image', which works for the full multidomain.
 #'
 #' @param swals_out result of get_all_recent_results
 #' @param proj4string
-#' @param na_above_zero logical. If TRUE, then when elevation is > 0, set all stages to NA
-#' @param return_elevation logical. If TRUE, return a list with max_stage AND elevation as rasters
-#' @param na_outside_priority_domain If TRUE, set the raster to NA in non-priority-domain regions. 
-#'        This is a good idea to simplify interpretation.
-#' @return Either the max_stage_raster (if return_elevation=FALSE), or a list with both the max_stage
-#'        and elevation rasters.
-make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_above_zero=FALSE, 
-                                return_elevation=FALSE, na_outside_priority_domain=FALSE){
-    library('raster')
+#' @param na_above_zero logical. If TRUE, then when elevation is > 0, set all
+#' stages to NA
+#' @param return_elevation logical. If TRUE, return a list with max_stage AND
+#' elevation as rasters
+#' @param na_outside_priority_domain If TRUE, set the raster to NA in
+#' non-priority-domain regions. This is a good idea to simplify
+#' interpretation.
+#' @return Either the max_stage_raster (if return_elevation=FALSE), or a list
+#' with both the max_stage and elevation rasters.
+make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', 
+    na_above_zero=FALSE, return_elevation=FALSE, 
+    na_outside_priority_domain=FALSE){
+
+    library(raster)
 
     if(length(dim(swals_out$maxQ)) == 3){
         # Using old binary format
@@ -543,31 +605,42 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', na_abo
 
 #' Make an image plot for a multidomain
 #'
-#' This function will read the required output data from all domains in the multidomain,
-#' and combine into a single plot. It generally doesn't need to use much memory, and is
-#' particularly useful in cases where reading all the multidomain data would be prohibitive.
+#' This function will read the required output data from all domains in the
+#' multidomain, and combine into a single plot. It generally doesn't need to
+#' use much memory, and is particularly useful in cases where reading all the
+#' multidomain data would be prohibitive.
 #'
 #' @param multidomain_dir directory where all multidomain outputs live
-#' @param variable 'max_stage' or 'stage' or any other variable in the netcdf file
-#' @param time_index if the variable has a time dimension, the index which we plot
+#' @param variable 'max_stage' or 'stage' or any other variable in the netcdf
+#' file
+#' @param time_index if the variable has a time dimension, the index which we
+#' plot
 #' @param xlim xlimit for image
 #' @param ylim ylimit for image
 #' @param zlim z limits for variable in image plot
 #' @param col colourscheme for variable in image plot
 #' @param add if TRUE, add to an existing plot
-#' @param var_transform_function if not NULL, a function that is used to transform the variable before plotting
-#' @param NA_if_stage_not_above_elev logical. If TRUE, the set regions with stage <= (elev + 1e-03) to NA
-#' @param use_fields logical. If TRUE, use image.plot from the fields package. Otherwise use graphics::image
-#' @param clip_to_zlim logical. If TRUE, clip the variable limits to be within zlim before plotting.
-#' @param buffer_is_priority_domain. If TRUE, replace "is_priority_domain" with a version that is TRUE
-#' even if the neighbouring cell is a priority domain. This is an attempt to remove gaps in the image that
-#' can occur if we use a spatial_stride != 1 
+#' @param var_transform_function if not NULL, a function that is used to
+#' transform the variable before plotting
+#' @param NA_if_stage_not_above_elev logical. If TRUE, the set regions with
+#' stage <= (elev + 1e-03) to NA
+#' @param use_fields logical. If TRUE, use image.plot from the fields package.
+#' Otherwise use graphics::image
+#' @param clip_to_zlim logical. If TRUE, clip the variable limits to be within
+#' zlim before plotting.
+#' @param buffer_is_priority_domain. If TRUE, replace "is_priority_domain" with
+#' a version that is TRUE even if the neighbouring cell is a priority domain.
+#' This is an attempt to remove gaps in the image that can occur if we use a
+#' spatial_stride != 1 
 #' @param asp plot x-y aspect ratio
-#' @param fields_axis_args If use_fields=TRUE, then this list is passed to image.plot(..., axis.args=fields_axis_args).
-#' It can be used to control the labels on the colourbar.
+#' @param fields_axis_args If use_fields=TRUE, then this list is passed to
+#' image.plot(..., axis.args=fields_axis_args).  It can be used to control the
+#' labels on the colourbar.
 #' @return Nothing, but make the plot.
-multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, zlim, cols, add=FALSE,
-    var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, use_fields=FALSE, clip_to_zlim=FALSE,
+multidomain_image<-function(multidomain_dir, variable, time_index, 
+    xlim, ylim, zlim, cols, add=FALSE,
+    var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, 
+    use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list()){
 
     library('ncdf4')
@@ -577,10 +650,13 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
 
     # Start a new plot
     if(use_fields){
-        if(!add) image.plot(matrix(0, ncol=2, nrow=2), asp=asp, xlim=xlim, ylim=ylim, zlim=zlim, 
-                            col=cols, nlevel=length(cols)+1, axis.args=fields_axis_args)
+        if(!add) image.plot(matrix(0, ncol=2, nrow=2), asp=asp, 
+                            xlim=xlim, ylim=ylim, zlim=zlim, 
+                            col=cols, nlevel=length(cols)+1, 
+                            axis.args=fields_axis_args)
     }else{
-        if(!add) image(matrix(0, ncol=2, nrow=2), asp=asp, col='white', xlim=xlim, ylim=ylim, zlim=zlim)
+        if(!add) image(matrix(0, ncol=2, nrow=2), asp=asp, col='white', 
+                       xlim=xlim, ylim=ylim, zlim=zlim)
     }
 
     # Loop over all domains, and add them to the image
@@ -595,7 +671,8 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
       
         # Get the variable of interest 
         if(fid$var[[variable]]$ndim > 2){
-            var = ncvar_get(fid, variable, start=c(1,1, time_index), count=c(-1,-1,1))
+            var = ncvar_get(fid, variable, start=c(1,1, time_index), 
+                            count=c(-1,-1,1))
         }else{
             var = ncvar_get(fid, variable)
         }
@@ -625,12 +702,15 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
             if(variable %in% c('max_stage', 'stage')){
                 stage = var
             }else{
-                stage = ncvar_get(fid, 'stage', start=c(1,1, time_index), count=c(-1,-1,1))
+                stage = ncvar_get(fid, 'stage', start=c(1,1, time_index), 
+                                  count=c(-1,-1,1))
             }
             if('elev' %in% names(fid$var)){
-                elevation = ncvar_get(fid, 'elev', start=c(1,1, time_index), count=c(-1,-1,1))
+                elevation = ncvar_get(fid, 'elev', start=c(1,1, time_index), 
+                                      count=c(-1,-1,1))
             }else{
-                elevation = ncvar_get(fid, 'elevation0', start=c(1,1), count=c(-1,-1))
+                elevation = ncvar_get(fid, 'elevation0', start=c(1,1), 
+                                      count=c(-1,-1))
             }
 
             var[stage < elevation + 1.0e-03] = NA
@@ -644,8 +724,6 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
         # Try giving the 'boundary' points to image
         dx = (xs[length(xs)] - xs[1])/(length(xs)-1)
         dy = (ys[length(ys)] - ys[1])/(length(ys)-1)
-        #xs2 = c(xs - dx/2, xs[length(xs)] +dx/2)
-        #ys2 = c(ys - dy/2, ys[length(ys)] +dy/2)
         xs2 = seq(xs[1] - dx/2, xs[length(xs)] + dx/2, len=length(xs)+1)
         ys2 = seq(ys[1] - dy/2, ys[length(ys)] + dy/2, len=length(ys)+1)
 
@@ -654,11 +732,7 @@ multidomain_image<-function(multidomain_dir, variable, time_index, xlim, ylim, z
             var = pmin(var, zlim[2])
         }
 
-        #if(use_fields){
-        #    image.plot(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
-        #}else{
-            image(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
-        #}
+        image(xs2, ys2, var, zlim=zlim, col=cols, add=TRUE, useRaster=TRUE)
     }
 
 }
@@ -670,11 +744,14 @@ is_on_priority_domain<-function(x, y, domain){
 
     # Get indices of xi/yi on the domain (if x/y are not on the domain, this
     # may lead to indices outside the domain)
-    x_int = ceiling( (x-domain$lower_left_corner[1])/(domain$lw[1] ) * length(domain$xs))
-    y_int = ceiling( (y-domain$lower_left_corner[2])/(domain$lw[1] ) * length(domain$ys))
+    x_int = ceiling( 
+        (x-domain$lower_left_corner[1])/(domain$lw[1] ) * length(domain$xs))
+    y_int = ceiling( 
+        (y-domain$lower_left_corner[2])/(domain$lw[1] ) * length(domain$ys))
 
     is_on = rep(FALSE, length(x_int))
-    nx = dim(domain$is_priority_domain) # NOTE: If the netcdf output is decimated, then possibly nx != domain$nx
+    # NOTE: If the netcdf output is decimated, then possibly nx != domain$nx
+    nx = dim(domain$is_priority_domain) 
     for(i in 1:length(is_on)){
         xi = x_int[i]
         yi = y_int[i]
@@ -690,8 +767,8 @@ is_on_priority_domain<-function(x, y, domain){
 }
 
 
-# Given a domain object (i.e. output from 'get_all_recent_results'), find the index and
-# distance of the point (grid-cell) nearest to 'x', 'y'
+# Given a domain object (i.e. output from 'get_all_recent_results'), find the
+# index and distance of the point (grid-cell) nearest to 'x', 'y'
 nearest_point_in_domain<-function(x, y, domain){
 
     kx = which.min(abs(x-domain$xs))
@@ -717,26 +794,26 @@ nearest_point_in_domain<-function(x, y, domain){
 # multidomain
 multidomain_range<-function(md){
 
-    all_ranges = lapply(md, f<-function(x) rbind(range(x$xs), range(x$ys)))
+    all_ranges = lapply(md, function(x) rbind(range(x$xs), range(x$ys)))
 
-    min_x = min(unlist(lapply(all_ranges, f<-function(x) x[1,1])))
-    min_y = min(unlist(lapply(all_ranges, f<-function(x) x[2,1])))
-    max_x = min(unlist(lapply(all_ranges, f<-function(x) x[1,2])))
-    max_y = min(unlist(lapply(all_ranges, f<-function(x) x[2,2])))
+    min_x = min(unlist(lapply(all_ranges, function(x) x[1,1])))
+    min_y = min(unlist(lapply(all_ranges, function(x) x[2,1])))
+    max_x = min(unlist(lapply(all_ranges, function(x) x[1,2])))
+    max_y = min(unlist(lapply(all_ranges, function(x) x[2,2])))
 
     out = rbind(c(min_x, max_x), c(min_y, max_y))
     return(out)
 }
 
-# Find the cell in a multidomain that is nearest to 'x,y'. It will return
-# the xindex, yindex, distance, and index of the domain in md.
-# Here 'md' is a list of domain objects (e.g. output of
-# "get_all_recent_results"), which collectively make the multidomain
+# Find the cell in a multidomain that is nearest to 'x,y'. It will return the
+# xindex, yindex, distance, and index of the domain in md.  Here 'md' is a list
+# of domain objects (e.g. output of "get_all_recent_results"), which
+# collectively make the multidomain
 nearest_point_in_multidomain<-function(x, y, md){
 
-    md_nearest = lapply(md, f<-function(z) nearest_point_in_domain(x, y, z))
+    md_nearest = lapply(md, function(z) nearest_point_in_domain(x, y, z))
 
-    md_nearest_distances = unlist(lapply(md_nearest, f<-function(x) x$dist))
+    md_nearest_distances = unlist(lapply(md_nearest, function(x) x$dist))
 
     if(all(is.na(md_nearest_distances))){
         # The point is not in any domain. This can happen e.g. when we ask for
@@ -760,12 +837,15 @@ nearest_point_in_multidomain<-function(x, y, md){
 #    1) Provide 'nc_grid_files', OR 
 #    2) Provide both 'multidomain_dir' and 'domain_index'
 #
-# @param nc_grid_files vector with all nc_grid files that together make up the domain
+# @param nc_grid_files vector with all nc_grid files that together make up the
+# domain
 # @param multidomain_dir directory with multidomain
 # @param domain_index index of the domain of interest
 # @param desired_var name of variable in the netcdf file
-# @param desired_time_index time slice of variable in the netcdf file (or NA for non-time variables)
-# @param return_raster If FALSE, return a list with xs, ys, grid. Otherwise return a raster
+# @param desired_time_index time slice of variable in the netcdf file (or NA
+# for non-time variables)
+# @param return_raster If FALSE, return a list with xs, ys, grid. Otherwise
+# return a raster
 # @param proj4string projection info for the raster if return_raster=TRUE
 #
 # ## Example 1 -- provide vector of file names
@@ -775,16 +855,17 @@ nearest_point_in_multidomain<-function(x, y, md){
 # ## Example 2 -- nicer -- provide multidomain directory, and domain index
 # p1 = merge_domains_nc_grids(multidomain_dir='.', domain_index=3)
 #
-merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, domain_index = NA,
-                                 desired_var = 'max_stage', desired_time_index = NA,
-                                 return_raster=FALSE, proj4string="+init=epsg:4326"){
+merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, 
+    domain_index = NA, desired_var = 'max_stage', desired_time_index = NA,
+    return_raster=FALSE, proj4string="+init=epsg:4326"){
     library('ncdf4')
     library('raster')
     library('sp')
     library('rgdal')
 
     # Check input makes sense
-    if(all(is.null(nc_grid_files)) & (is.na(multidomain_dir) | is.na(domain_index))){
+    if(all(is.null(nc_grid_files)) & 
+       (is.na(multidomain_dir) | is.na(domain_index))){
         stop('Must provide EITHER nc_grid_files OR domain_index and multidomain_dir')
     }
 
@@ -795,17 +876,19 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
         # if we have enough domains. For instance, if we have 10001 domains,
         # then domains '1' and '10001' would both match together, which
         # would be wrong. Some way off however!
-        nc_grid_files = Sys.glob(paste0(multidomain_dir, '/RUN_ID0*000', domain_index, 
-                                        '_*/Grid*000', domain_index, '.nc'))
+        nc_grid_files = Sys.glob(
+            paste0(multidomain_dir, '/RUN_ID0*000', domain_index, 
+                   '_*/Grid*000', domain_index, '.nc'))
     }
     
     # Open all the files 
-    fids = sapply(nc_grid_files, f<-function(x){nc_open(x, readunlim=FALSE)}, simplify=FALSE)
+    fids = sapply(nc_grid_files, function(x){nc_open(x, readunlim=FALSE)}, 
+                  simplify=FALSE)
 
     # Get the 'x' and 'y' and 'time' dimension variables
-    xs = lapply(fids, f<-function(x) ncvar_get(x, 'x'))
-    ys = lapply(fids, f<-function(x) ncvar_get(x, 'y'))
-    ts = lapply(fids, f<-function(x) ncvar_get(x, 'time'))
+    xs = lapply(fids, function(x) ncvar_get(x, 'x'))
+    ys = lapply(fids, function(x) ncvar_get(x, 'y'))
+    ts = lapply(fids, function(x) ncvar_get(x, 'time'))
 
     # Check that times are compatible in all files
     if(length(ts) > 1){
@@ -814,7 +897,8 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
         for(i in 2:length(ts)){
             if(!all(abs(ts[[i]] - ts[[1]]) <= dts/1000)){
                 print(paste0('Times in file ', i, ': ', nc_grid_files[i],
-                            ' are incompatible with times in file 1: ', nc_grid_files[1]))
+                    ' are incompatible with times in file 1: ', 
+                    nc_grid_files[1]))
                 print(cbind(ts[[i]], ts[[1]]))
                 stop('Times are incompatible')
             }
@@ -823,8 +907,8 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
   
     # Check that the x/y spacings are compatible  
 
-    dxs = unlist(lapply(xs, f<-function(x) mean(diff(x))))
-    dys = unlist(lapply(ys, f<-function(x) mean(diff(x))))
+    dxs = unlist(lapply(xs, function(x) mean(diff(x))))
+    dys = unlist(lapply(ys, function(x) mean(diff(x))))
 
     mean_dx = mean(dxs)
     mean_dy = mean(dys)
@@ -859,8 +943,8 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
         if(is.na(desired_time_index)){
             local_var = ncvar_get(fids[[i]], desired_var)
         }else{
-            local_var = ncvar_get(fids[[i]], desired_var, start=c(1, 1, desired_time_index), 
-                                  count=c(-1, -1, 1))
+            local_var = ncvar_get(fids[[i]], desired_var, 
+                start=c(1, 1, desired_time_index), count=c(-1, -1, 1))
         }
         # Set 'non-priority-domain' regions to NA
         if(any(ipd == 0)){
@@ -870,7 +954,8 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
         xi = which.min(abs(full_grid_xs - xs[[i]][1]))
         yi = which.min(abs(full_grid_ys - ys[[i]][1]))
         # Set only regions where ipd == 1
-        output_full[xi:(xi+dim(local_var)[1]-1), yi:(yi+dim(local_var)[2]-1)][ipd == 1] = local_var[ipd == 1]
+        output_full[xi:(xi+dim(local_var)[1]-1), yi:(yi+dim(local_var)[2]-1)][ipd == 1] = 
+            local_var[ipd == 1]
     }
 
     # Close the netcdf files
@@ -901,14 +986,19 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, doma
     }
 }
 
-#' Merge gauges from a multidomain, discarding those that are not in priority domains
+#' Merge gauges from a multidomain, discarding those that are not in priority
+#' domains
 #'
 #' @param md list with the multidomain info.
-#' @param multidomain_dir the directory containing all the multdomain outputs. 
-#' If this is provided then md should be NA, and the code will read the necessary information
-#' @param assume_all_gauges_are_priority If TRUE this assumes 
+#' @param multidomain_dir the directory containing all the multdomain outputs.
+#' If this is provided then md should be NA, and the code will read the
+#' necessary information
+#' @param assume_all_gauges_are_priority If TRUE this assumes all gauges are
+#' priority gauges (i.e. we are not storing gauges from non-priority domain
+#  regions). This is always TRUE in newer SWALS, but was not true early on.
 #'
-merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauges_are_priority=TRUE){
+merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, 
+                                   assume_all_gauges_are_priority=TRUE){
    
     # For all gauges, figure out if they are in the priority domain
     clean_gauges = list()
@@ -928,13 +1018,15 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
 
         # Redefine md
         md_domains = Sys.glob(paste0(multidomain_dir, '/RUN_ID*'))
-        if(length(md_domains) == 0) stop(paste0('Could not find any domains in multidomain_dir ', multidomain_dir))
+        if(length(md_domains) == 0) stop(
+            paste0('Could not find any domains in multidomain_dir ', 
+                   multidomain_dir))
 
         # Read the multidomain info
         # We can avoid most variables except the gauges
-        md = lapply(md_domains, 
-                    f<-function(x) get_all_recent_results(x, read_grids=FALSE, always_read_priority_domain=FALSE,
-                                                          read_time_and_geometry=(!assume_all_gauges_are_priority)) )
+        md = lapply(md_domains, function(x) get_all_recent_results(x, 
+            read_grids=FALSE, always_read_priority_domain=FALSE,
+            read_time_and_geometry=(!assume_all_gauges_are_priority)) )
 
         # Check if the gauges are all in their priority domain. If so, we can
         # avoid an expensive computation to derive this info
@@ -942,7 +1034,9 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
             out = FALSE
             if(length(x) <= 1){
                 # No md output -- something is wrong
-                stop('Error in merge_multidomain_gauges: There is an empty NULL domain in the md list')
+                msg = paste0('Error in merge_multidomain_gauges: There is an ',
+                             'empty NULL domain in the md list')
+                stop(msg)
             }else{
                 if( (length(x$gauges) == 0 ) | (is(x$gauges, 'try-error'))){
                     # No gauges -- no problem
@@ -954,7 +1048,8 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
             }
             return(out)
         }
-        all_gauges_are_priority = all(unlist(lapply(md, all_domain_gauges_are_priority)))
+        all_gauges_are_priority = all(
+            unlist(lapply(md, all_domain_gauges_are_priority)))
 
         if(!all_gauges_are_priority){
             # In this case, we will need to use the is_priority_domain data to
@@ -963,8 +1058,8 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
             # not record whether all gauges were priority (and in general they
             # were not).
             for(j in 1:length(md)){
-                md[[j]]$is_priority_domain = try(
-                    get_gridded_variable(var='is_priority_domain', output_folder=md[[j]]$output_folder), 
+                md[[j]]$is_priority_domain = try(get_gridded_variable(
+                    var='is_priority_domain', output_folder=md[[j]]$output_folder), 
                     silent=TRUE)
             }
         }
@@ -973,11 +1068,15 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
         # In this case we passed an existing md list to the function
         #
         if(!is(md, 'list')){
-            stop('Must provide named arguments with either "multidomain_dir" giving the multidomain directory, or a list "md" containing the output from get_all_recent_results for each domain in the multidomain')
+            msg = paste0('Must provide named arguments with either ',
+                '"multidomain_dir" giving the multidomain directory, or a ',
+                'list "md" containing the output from get_all_recent_results',
+                ' for each domain in the multidomain')
+            stop(msg)
         }
 
         # Useful to have these variables
-        md_domains = lapply(md, f<-function(x) x$output_folder)
+        md_domains = lapply(md, function(x) x$output_folder)
         multidomain_dir = dirname(md[[1]]$output_folder)
     }
 
@@ -996,7 +1095,7 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
         }else{
             # Search for the priority gauges
             # This can be slow, but for older files it was necessary
-            nearest_d = sapply(1:length(lons), f<-function(x){
+            nearest_d = sapply(1:length(lons), function(x){
                 nearest_point_in_multidomain(lons[x], lats[x], md)$closest_domain})
             keep = which(nearest_d == j)
         }
@@ -1008,31 +1107,37 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
 
         clean_gauges[[counter]] = md[[j]]$gauges
 
-        # Get the "keep" subset of variables, corresponding to gauges in priority domain
+        # Get the "keep" subset of variables, corresponding to gauges in
+        # priority domain.
         # Loop over 1-d variables lon/lat/ etc, and subset in space
         for(i in 1:length(clean_gauges[[counter]])){
             # Only work on arrays
             if(!is(clean_gauges[[counter]][[i]], 'array')) next
             # Do not subset time! 
             if(names(clean_gauges[[counter]])[i] == 'time') next
-            clean_gauges[[counter]][[i]] = as.numeric(clean_gauges[[counter]][[i]][keep])
+            clean_gauges[[counter]][[i]] = 
+                as.numeric(clean_gauges[[counter]][[i]][keep])
         }
         # Subset the time variables
         for(i in 1:length(clean_gauges[[counter]]$time_var)){
 
             # Non arrays are e.g. missing data -- ignore.
-            if(!any(class(clean_gauges[[counter]]$time_var[[i]]) %in% c('matrix', 'array'))) next
+            if(!any(class(clean_gauges[[counter]]$time_var[[i]]) %in% 
+                    c('matrix', 'array'))) next
 
             dd = dim(clean_gauges[[counter]]$time_var[[i]])
             if(is.null(dd) | length(dd) == 1){
-                # There is only one gauge in the whole thing. Since length(keep) > 0, this must be it
-                dim(clean_gauges[[counter]]$time_var[[i]]) = c(1, length(clean_gauges[[counter]]$time_var[[i]])) 
+                # There is only one gauge in the whole thing. Since
+                # length(keep) > 0, this must be it
+                dim(clean_gauges[[counter]]$time_var[[i]]) = c(1, 
+                    length(clean_gauges[[counter]]$time_var[[i]])) 
             }else{
                 # There is more than one gauge. If we have
                 # priority_gauges_only, then keep includes all rows and we can
                 # do nothing
                 if(!clean_gauges[[counter]]$priority_gauges_only){
-                    clean_gauges[[counter]]$time_var[[i]] = clean_gauges[[counter]]$time_var[[i]][keep,,drop=FALSE] 
+                    clean_gauges[[counter]]$time_var[[i]] = 
+                        clean_gauges[[counter]]$time_var[[i]][keep,,drop=FALSE] 
                 }
             }
         }
@@ -1040,9 +1145,11 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
         for(i in 1:length(clean_gauges[[counter]]$static_var)){
 
             # Non arrays are e.g. missing data -- ignore?
-            if(!any(class(clean_gauges[[counter]]$static_var[[i]]) %in% c('matrix', 'array'))) next
+            if(!any(class(clean_gauges[[counter]]$static_var[[i]]) %in% 
+                    c('matrix', 'array'))) next
             # There is more than one gauge
-            clean_gauges[[counter]]$static_var[[i]] = as.numeric(clean_gauges[[counter]]$static_var[[i]][keep])
+            clean_gauges[[counter]]$static_var[[i]] = 
+                as.numeric(clean_gauges[[counter]]$static_var[[i]][keep])
 
         }
 
@@ -1061,23 +1168,27 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
                 if(is(merged_gauges[[var]], 'list')) next
 
                 if(names(clean_gauges[[counter]])[var] == 'time'){
-                    # Treat time separately. But test that all times are the same
+                    # Treat time separately. But test that all times are the
+                    # same
                     if(!all(clean_gauges[[counter]]$time == merged_gauges$time)){
                         stop('GAUGE TIMES DIFFER IN DIFFERENT DOMAINS')
                     }
                 }else{
                     # Merge the variables
-                    merged_gauges[[var]] = c(merged_gauges[[var]], clean_gauges[[counter]][[var]])
+                    merged_gauges[[var]] = c(merged_gauges[[var]], 
+                        clean_gauges[[counter]][[var]])
                 }
             }
         }
 
         # Time variables are 2D -- so rbind should merge properly
-        # Should be faster to use do.call than repeated rbind's, due to memory allocation
+        # Should be faster to use do.call than repeated rbind's, due to memory
+        # allocation
         for(var in 1:length(merged_gauges$time_var)){
             tmp_list = vector(mode='list', length=length(clean_gauges))
             for(counter in 1:length(clean_gauges)){
-                stopifnot(ncol(merged_gauges$time_var[[var]]) == ncol( clean_gauges[[counter]]$time_var[[var]] ))
+                stopifnot(ncol(merged_gauges$time_var[[var]]) == 
+                          ncol( clean_gauges[[counter]]$time_var[[var]] ))
                 tmp_list[[counter]] = clean_gauges[[counter]]$time_var[[var]]
             }
             merged_gauges$time_var[[var]] = do.call(rbind, tmp_list)
@@ -1094,12 +1205,17 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
         rm(tmp_list)
     }
 
-    # Bit of cleaning up. For missing variables, replace possibly multiple NAs with a single NA
+    # Bit of cleaning up. For missing variables, replace possibly multiple NAs
+    # with a single NA
     for(i in 1:length(merged_gauges$static_var)){
-        if(all(is.na(merged_gauges$static_var[[i]]))) merged_gauges$static_var[[i]] = NA
+        if(all(is.na(merged_gauges$static_var[[i]]))){
+            merged_gauges$static_var[[i]] = NA
+        }
     }
     for(i in 1:length(merged_gauges$time_var)){
-        if(all(is.na(merged_gauges$time_var[[i]]))) merged_gauges$time_var[[i]] = NA
+        if(all(is.na(merged_gauges$time_var[[i]]))){ 
+            merged_gauges$time_var[[i]] = NA
+        }
     }
 
     merged_gauges$multidomain_dir = multidomain_dir
@@ -1108,8 +1224,8 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, assume_all_gauge
 }
 
 
-# Partition a set into 'k' groups with roughly equal sum
-# This uses the naive algorithm.
+# Partition a set into 'k' groups with roughly equal sum. Useful for load
+# balance routine. This uses the naive algorithm.
 partition_into_k<-function(vals, k){
 
     sums = rep(0, k)
@@ -1127,7 +1243,8 @@ partition_into_k<-function(vals, k){
 
 # A workhorse routine for partitioning with groups. See documentation below on
 # the interface routine.
-partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups, random_ties=FALSE){
+partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups, 
+    random_ties=FALSE){
 
     cumulative_sum_vals_in_group = rep(0, k)
     inds_in_group = vector(mode='list', length=k)
@@ -1148,22 +1265,25 @@ partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups, random_ties=
         vals_p = sorted_vals$x[p]
         # Split group values into k
         local_split = partition_into_k(vals_p, k)
-        local_split[[1]] = lapply(local_split[[1]], f<-function(x) inds_p[x])
+        local_split[[1]] = lapply(local_split[[1]], function(x) inds_p[x])
         counter = counter+1
         tmp[[counter]] = local_split
     }
 
     # Now loop over each group, ordered according to which has the largest value
     if(random_ties){
-        between_group_order = rank(unlist(lapply(tmp, f<-function(x) max(x[[2]]))), ties='random')
+        between_group_order = 
+            rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='random')
     }else{
-        between_group_order = rank(unlist(lapply(tmp, f<-function(x) max(x[[2]]))), ties='first')
+        between_group_order = 
+            rank(unlist(lapply(tmp, function(x) max(x[[2]]))), ties='first')
     }
     # Flip
     between_group_order = max(between_group_order) + 1 - between_group_order
 
     for(g in between_group_order){
-        # Within the groups, the 'vals' are already ordered into k groups, longest-time first
+        # Within the groups, the 'vals' are already ordered into k groups,
+        # longest-time first
         within_group_inds = tmp[[g]][[1]]
         within_group_vals = tmp[[g]][[2]]
         # Here "ties='first'" would cause the test to fail
@@ -1171,8 +1291,10 @@ partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups, random_ties=
         assign_to_order = rank(cumulative_sum_vals_in_group, ties='last')  
         for(i in 1:length(assign_to_order)){
             partition_ind = assign_to_order[i]
-            inds_in_group[[partition_ind]] = c(inds_in_group[[partition_ind]], within_group_inds[[i]])
-            cumulative_sum_vals_in_group[partition_ind] = cumulative_sum_vals_in_group[partition_ind] + 
+            inds_in_group[[partition_ind]] = 
+                c(inds_in_group[[partition_ind]], within_group_inds[[i]])
+            cumulative_sum_vals_in_group[partition_ind] = 
+                cumulative_sum_vals_in_group[partition_ind] + 
                 within_group_vals[i]
         }
     }
@@ -1207,7 +1329,8 @@ partition_into_k_with_grouping<-function(vals, k, vals_groups, ntries=1){
     if(ntries > 1){
         # Try to do better than deterministic case -- in some cases it works well
         for(i in 2:ntries){
-            test = partition_into_k_with_grouping_WORK(vals, k, vals_groups, random_ties=TRUE)
+            test = partition_into_k_with_grouping_WORK(vals, k, vals_groups, 
+                                                       random_ties=TRUE)
             if(max(test[[2]]) < max(best_try[[2]])) best_try = test
         }
     }
@@ -1217,10 +1340,12 @@ partition_into_k_with_grouping<-function(vals, k, vals_groups, ntries=1){
 # Basic test of partitioning
 test_partition_into_k_with_grouping<-function(){
 
-    # Example -- "nd" domains, each split into 32, each taking "time" ranging from 1:32.
+    # Example -- "nd" domains, each split into 32, each taking "time" ranging
+    # from 1:32.
     # 
-    # By inspection, for this particular case we should be able to split the domains equally,
-    # except for one domain which will have an extra unit of work
+    # By inspection, for this particular case we should be able to split the
+    # domains equally, except for one domain which will have an extra unit of
+    # work
 
     nd = 8
     nsplit = 32
@@ -1255,8 +1380,9 @@ test_partition_into_k_with_grouping<-function(){
     # But this naive algorithm does not achieve that.
     vals[145] = vals[145] + 1 
     testA = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds)
-    test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds, ntries=1000)
-    # At least we check that the random tries led to improvement, which it seems to
+    test = partition_into_k_with_grouping(vals, k=nsplit, vals_groups=group_inds, 
+                                          ntries=1000)
+    # Check that the random tries led to improvement
     if(max(test[[2]]) < max(testA[[2]])){
         print('PASS')
     }else{
@@ -1267,21 +1393,25 @@ test_partition_into_k_with_grouping<-function(){
 
 #' Make a load_balance_partition.txt file
 #'
-#' Suppose we have results from an existing multidomain model run, compiled with -DTIMER
-#' so that the output files contain timing information for each domain. This function
-#  can use those results to figure out a more balanced partitioning of the domains among images.
-#' It makes a load balance partition file, using a 'greedy' approach to distribute
-#' domains to images. 
+#' Suppose we have results from an existing multidomain model run, compiled
+#' with -DTIMER so that the output files contain timing information for each
+#' domain. This function can use those results to figure out a more balanced
+#' partitioning of the domains among images.  It makes a load balance partition
+#' file, using a 'greedy' approach to distribute domains to images. 
 #'
 #' @param multidomain_dir directory containing the multidomain outputs
 #' @param verbose if FALSE, suppress printing
-#' @param domain_index_groups either an empty list, or a list with 2 or more vectors, each defining a group of domain indices.
-#' In the latter case, the partition tries to be approximately equal WITHIN each group first, and then to combine the results
-#' in a good way. This will generally be less efficient than not using groups, unless you have some other information
-#' that tells you that the partition should be done in this way.
-#' @return the function environment invisibly (so you have to use assignment to capture it)
+#' @param domain_index_groups either an empty list, or a list with 2 or more
+#' vectors, each defining a group of domain indices.  In the latter case, the
+#' partition tries to be approximately equal WITHIN each group first, and then
+#' to combine the results in a good way. This will generally be less efficient
+#' than not using groups, unless you have some other information that tells you
+#' that the partition should be done in this way.
+#' @return the function environment invisibly (so you have to use assignment to
+#' capture it)
 #'
-make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_index_groups = list()){
+make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, 
+                                      domain_index_groups = list()){
 
     if(is.na(multidomain_dir)){
         multidomain_dir = rev(sort(Sys.glob('./OUTPUTS/RUN*')))[1]
@@ -1289,7 +1419,8 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
 
     if(verbose){
         cat('############ \n')
-        cat(paste0('Generating load_balance_partition.txt file in ', multidomain_dir, '\n'))
+        cat(paste0('Generating load_balance_partition.txt file in ', 
+                   multidomain_dir, '\n'))
         cat('    Future jobs which use this file should have the same number of images and threads \n')
         cat('\n')
     }
@@ -1307,25 +1438,28 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
         # Get the wallclock time as numeric
         nd = length(domain_timer_starts)
         total_wallclock = sapply(md_lines[total_wallclock_lines[1:nd]], 
-            f<-function(x) as.numeric(strsplit(x, ':', fixed=TRUE)[[1]][2]))
+            function(x) as.numeric(strsplit(x, ':', fixed=TRUE)[[1]][2]))
 
         # Get the domain index and local index
         domain_index_and_local_index = sapply(md_lines[domain_timer_starts + 2], 
-            f<-function(x) as.numeric(read.table(text=x)),
+            function(x) as.numeric(read.table(text=x)),
             simplify=FALSE)
-        names(domain_index_and_local_index) = rep("", length(domain_index_and_local_index))
-        domain_index_and_local_index = matrix(unlist(domain_index_and_local_index), ncol=2, byrow=TRUE)
+        names(domain_index_and_local_index) = rep("", 
+            length(domain_index_and_local_index))
+        domain_index_and_local_index = matrix(
+            unlist(domain_index_and_local_index), ncol=2, byrow=TRUE)
     
         output = list(total_wallclock = as.numeric(total_wallclock), 
                       domain_index_and_local_index = domain_index_and_local_index) 
-        #return(as.numeric(total_wallclock))
         return(output)
     }
     md_timer_data = sapply(md_files, md_runtime, simplify=FALSE)
 
-    md_times = lapply(md_timer_data, f<-function(x) x$total_wallclock)
-    md_domain_indices = lapply(md_timer_data, f<-function(x) x$domain_index_and_local_index[,1])
-    md_local_indices = lapply(md_timer_data, f<-function(x) x$domain_index_and_local_index[,2])
+    md_times = lapply(md_timer_data, function(x) x$total_wallclock)
+    md_domain_indices = lapply(md_timer_data, 
+                               function(x) x$domain_index_and_local_index[,1])
+    md_local_indices = lapply(md_timer_data, 
+                              function(x) x$domain_index_and_local_index[,2])
 
     num_images = length(md_times)
 
@@ -1334,12 +1468,13 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
     md_local_indices_vec = unlist(md_local_indices)
 
     if(length(domain_index_groups) == 0){
-        # Make a partition of md_times_vec into num_images groups, with roughly equal sums
+        # Make a partition of md_times_vec into num_images groups, with roughly
+        # equal sums
         new_times_and_grouping = partition_into_k(md_times_vec, num_images)
     }else{
-        # Make a partition of md_times_vec into num_images groups, with roughly equal sums.
-        # Further, ensure the sums are also rougly equal for images within the
-        # same domain_index_group. 
+        # Make a partition of md_times_vec into num_images groups, with roughly
+        # equal sums. Further, ensure the sums are also rougly equal for images
+        # within the same domain_index_group. 
         stopifnot(is.list(domain_index_groups))
         # Ensure there are no repeated domain indices
         tmp = unlist(domain_index_groups)
@@ -1351,26 +1486,32 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
             groups[k] = j
         }
 
-        new_times_and_grouping = partition_into_k_with_grouping(md_times_vec, num_images, groups)
+        new_times_and_grouping = partition_into_k_with_grouping(md_times_vec, 
+            num_images, groups)
     }
 
     range_new = range(new_times_and_grouping[[2]])
     dsplit = diff(range_new)
     if(verbose){
-        cat(paste0('Range of partition total times: ', signif(range_new[1], 4), '-to-', signif(range_new[2], 4),  's \n'))
-        cat(paste0('                  (difference): ', signif(dsplit, 4), 's \n'))
-        cat(paste0('             (as a percentage): ', signif(dsplit/mean(new_times_and_grouping[[2]])*100, 4), '%\n'))
+        cat(paste0('Range of partition total times: ', 
+            signif(range_new[1], 4), '-to-', signif(range_new[2], 4),  's \n'))
+        cat(paste0('                  (difference): ', 
+            signif(dsplit, 4), 's \n'))
+        cat(paste0('             (as a percentage): ', 
+            signif(dsplit/mean(new_times_and_grouping[[2]])*100, 4), '%\n'))
     }
     range_old = range(unlist(lapply(md_times, sum)))
     old_range = diff(range_old)
     if(verbose){
-        cat(paste0('Previous time range: ', signif(range_old[1], 4), '-to-', signif(range_old[2], 4),  's \n'))
+        cat(paste0('Previous time range: ', signif(range_old[1], 4), '-to-', 
+                   signif(range_old[2], 4),  's \n'))
         cat(paste0('      (difference) : ', signif(old_range, 4), '\n'))
-        cat(paste0('Potential run-time reduction (difference in max times):', signif(range_old[2] - range_new[2], 4), 's\n'))
+        cat(paste0('Potential run-time reduction (difference in max times):', 
+                   signif(range_old[2] - range_new[2], 4), 's\n'))
         cat(paste0('      Potential run-time reduction (% of old max time):', 
-                     signif((range_old[2] - range_new[2])/range_old[2] * 100, 4), '%\n'))
+            signif((range_old[2] - range_new[2])/range_old[2] * 100, 4), '%\n'))
     }
-    # 
+      
     unique_domains = sort(unique(md_domain_indices_vec))
     if(! all(unique_domains == seq(1, max(unique_domains)))){
         stop('unique_domains is not a sequence of the form from 1, 2, ... max')
@@ -1385,9 +1526,10 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, domain_i
         for(j in 1:max(local_inds)){
             n = which(local_inds == j)
             kn = k[n]
-            # kn will only be in one entry of new_times_and_grouping[[1]] (the list of
-            # indices on each images). Find it 
-            target_domain = which(unlist(lapply(new_times_and_grouping[[1]], f<-function(x) kn%in%x)))
+            # kn will only be in one entry of new_times_and_grouping[[1]] (the
+            # list of indices on each images). Find it 
+            target_domain = which(
+                unlist(lapply(new_times_and_grouping[[1]], function(x) kn%in%x)))
             load_balance_data[[i]] = c(load_balance_data[[i]], target_domain)
         }
     }
@@ -1463,7 +1605,8 @@ domain_image_from_folder<-function(folder_name){
 #
 get_domain_indices_in_multidomain<-function(multidomain_dir){
     all_domain_run_folders = Sys.glob(paste0(multidomain_dir, '/RUN_ID*'))
-    all_domain_indices = sapply(basename(all_domain_run_folders), domain_index_from_folder)
+    all_domain_indices = sapply(basename(all_domain_run_folders), 
+                                domain_index_from_folder)
     return(unique(all_domain_indices))
 }
 
@@ -1496,15 +1639,18 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
         nc_file = Sys.glob(paste0(all_domain_run_folders[i], '/Grid*.nc'))
         fid = nc_open(nc_file, readunlim=FALSE)
         all_att = ncatt_get(fid, varid=0)
-        ibb = as.numeric(scan(text=(all_att$interior_bounding_box)[[1]], quiet=TRUE))
+        ibb = as.numeric(scan(text=(all_att$interior_bounding_box)[[1]], 
+                              quiet=TRUE))
         nc_close(fid)
         dim(ibb) = c(4,2) 
         all_domain_ibb[[i]] = ibb
     }
 
     # Unsplit domain indices
-    all_domain_indices = sapply(basename(all_domain_run_folders), domain_index_from_folder)
-    all_domain_images = sapply(basename(all_domain_run_folders), domain_image_from_folder)
+    all_domain_indices = sapply(basename(all_domain_run_folders), 
+                                domain_index_from_folder)
+    all_domain_images = sapply(basename(all_domain_run_folders), 
+                               domain_image_from_folder)
 
     # Unsplit domain bounding box
     split_domain_ibb = do.call(rbind, lapply(all_domain_ibb, c))
@@ -1518,8 +1664,10 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
 
     # Domain dx
     split_domain_dx = do.call(rbind, all_domain_dx)
-    merged_domain_dx_1 = aggregate(split_domain_dx[,1], by=list(all_domain_indices), mean)
-    merged_domain_dx_2 = aggregate(split_domain_dx[,1], by=list(all_domain_indices), mean)
+    merged_domain_dx_1 = aggregate(split_domain_dx[,1], 
+        by=list(all_domain_indices), mean)
+    merged_domain_dx_2 = aggregate(split_domain_dx[,1],
+        by=list(all_domain_indices), mean)
     merged_domain_dx = cbind(merged_domain_dx_1$x, merged_domain_dx_2$x)
 
     # Useful to know the extent of the multidomain
@@ -1544,12 +1692,14 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
 
         polygons_list = vector(mode='list', length=length(domain_boxes))
         for(i in 1:length(domain_boxes)){
-            polygons_list[[i]] = Polygons(list(Polygon(domain_boxes[[i]])), ID=domain_inds[i])
+            polygons_list[[i]] = Polygons(list(Polygon(domain_boxes[[i]])),
+                                          ID=domain_inds[i])
         }
 
         merged_domain_spdf = SpatialPolygonsDataFrame(
             SpatialPolygons(polygons_list, proj4string=CRS(spdf_proj4string)),
-            data=data.frame(ID=paste0('domain_', round(domain_inds)), dx=domain_dx[,1]))
+            data=data.frame(ID=paste0('domain_', round(domain_inds)), 
+                            dx=domain_dx[,1]))
 
         #
         # Convert partitioned domain extents to a spatial polygons data frame
@@ -1559,7 +1709,8 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
         domain_inds = all_domain_indices
         domain_dx = all_domain_dx
 
-        # Make a unique domain_ID, accounting for the fact that we have multiple pieces of the same domain
+        # Make a unique domain_ID, accounting for the fact that we have
+        # multiple pieces of the same domain
         poly_counter = rep("1", length=length(domain_boxes))
         for(i in 1:length(domain_boxes)){
             if(i > 1){
@@ -1571,7 +1722,8 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
         polygons_list = vector(mode='list', length=length(domain_boxes))
         for(i in 1:length(domain_boxes)){
             # -- note here, we have to hack the ID variable to make it unique
-            polygons_list[[i]] = Polygons(list(Polygon(domain_boxes[[i]])), ID=poly_counter[i])
+            polygons_list[[i]] = Polygons(list(Polygon(domain_boxes[[i]])), 
+                                          ID=poly_counter[i])
         }
         # -- note here, we have to hack the 'dx' variable, and prevent ID matching
         all_domain_spdf = SpatialPolygonsDataFrame(
@@ -1603,22 +1755,27 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
 }
 
 
-#'
 #' Convenience function to get the timer-total-wallclock times for each
 #' individual domain, as recorded in the md log file
 #'
 #' @param md_log_file filename
-#' @param wallclock_time_line_spacing Number of lines after the RUN_ID00 filename that the wallclock-time line appears
-#' @param a data.frame containing the domain ID info, the wallclock time, and the domain index according to the model setup
-get_domain_wallclock_times_in_log<-function(md_log_file, wallclock_time_line_spacing = 15){
+#' @param wallclock_time_line_spacing Number of lines after the RUN_ID00
+#' filename that the wallclock-time line appears
+#' @param a data.frame containing the domain ID info, the wallclock time, and
+#' the domain index according to the model setup
+get_domain_wallclock_times_in_log<-function(md_log_file, 
+    wallclock_time_line_spacing = 15){
+
     x = readLines(md_log_file)
-    # The timer information is preceeded by statement of the output directory, which will match this
+    # The timer information is preceeded by statement of the output directory,
+    # which will match this
     inds = grep('RUN_ID00', x)
     # Get the domain information
     domains = basename(x[inds])
-    domains = unlist(lapply(strsplit(domains, '_'), f<-function(x) x[2]))
+    domains = unlist(lapply(strsplit(domains, '_'), function(x) x[2]))
     # Get the time
-    times = as.numeric(gsub('Total WALLCLOCK time: ', '', x[inds+wallclock_time_line_spacing]))
+    times = as.numeric(gsub('Total WALLCLOCK time: ', '', 
+                            x[inds+wallclock_time_line_spacing]))
     # Get the domain number corresponding to the original
     domain_number = as.numeric(gsub('ID', '', domains))%%100000
 
@@ -1643,18 +1800,19 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
             read_time_and_geometry=FALSE, always_read_xy=TRUE, quiet=TRUE)
     }
     
-    # "xy_mat" should be a matrix -- but if it is a vector of length(2), then assume
-    # this gives the xy coordinates of a single point, and coerce to a matrix
+    # "xy_mat" should be a matrix -- but if it is a vector of length(2), then
+    # assume this gives the xy coordinates of a single point, and coerce to a
+    # matrix
     if(length(dim(xy_mat)) == 0){
         if(length(xy_mat) == 2){
             dim(xy_mat) = c(1, 2)
         }
     }
 
-    # Find dx/dy for each domain, and take the product as the 'cell area', with finer
-    # cell-areas having higher priority domains
-    md_cell_dx = unlist(lapply(md, f<-function(x) x$xs[2] - x$xs[1])) 
-    md_cell_dy = unlist(lapply(md, f<-function(x) x$ys[2] - x$ys[1]))
+    # Find dx/dy for each domain, and take the product as the 'cell area', with
+    # finer cell-areas having higher priority domains
+    md_cell_dx = unlist(lapply(md, function(x) x$xs[2] - x$xs[1])) 
+    md_cell_dy = unlist(lapply(md, function(x) x$ys[2] - x$ys[1]))
     md_cell_areas = md_cell_dx * md_cell_dy 
     
     # Get the "interior bounding box" of each domain    
@@ -1662,14 +1820,15 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
     for(i in 1:length(md)){
         nc_file = Sys.glob(paste0(md[[i]]$output_folder, '/Grid_output_*.nc'))
         tmp_text = get_nc_global_attribute(nc_file, 'interior_bounding_box')
-        md_bboxes[[i]] = matrix(as.numeric(scan(text=tmp_text$value, quiet=TRUE)), ncol=2)
+        md_bboxes[[i]] = matrix(
+            as.numeric(scan(text=tmp_text$value, quiet=TRUE)), ncol=2)
     }
 
 
-    md_cell_xmin = unlist(lapply(md_bboxes, f<-function(x) min(x[,1])))
-    md_cell_xmax = unlist(lapply(md_bboxes, f<-function(x) max(x[,1])))
-    md_cell_ymin = unlist(lapply(md_bboxes, f<-function(x) min(x[,2])))
-    md_cell_ymax = unlist(lapply(md_bboxes, f<-function(x) max(x[,2])))
+    md_cell_xmin = unlist(lapply(md_bboxes, function(x) min(x[,1])))
+    md_cell_xmax = unlist(lapply(md_bboxes, function(x) max(x[,1])))
+    md_cell_ymin = unlist(lapply(md_bboxes, function(x) min(x[,2])))
+    md_cell_ymax = unlist(lapply(md_bboxes, function(x) max(x[,2])))
 
     # For each point, find which domain(s) it is in
     point_domain = rep(NA, nrow(xy_mat))
@@ -1691,16 +1850,19 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
         }
     }
 
-    output = list(points = xy_mat, domain_index=point_domain, domain_dir=point_dir)
+    output = list(points = xy_mat, domain_index=point_domain, 
+                  domain_dir=point_dir)
 
     return(output)
 
 }
 
-#' Energy-type computations for leapfrog-type solvers that have "domain%linear_solver_is_truely_linear=.TRUE."
+#' Energy-type computations for leapfrog-type solvers that have
+#' "domain%linear_solver_is_truely_linear=.TRUE."
 #'
-#' FIXME: Update this to treat cases other than the linear shallow water equations. However there might not
-#' be any point now that the logfiles output this information.
+#' FIXME: Update this to treat cases other than the linear shallow water
+#' equations. However there might not be any point now that the logfiles output
+#' this information.
 #'
 #' @param domain_dir the domain directory
 #' @param spherical Is the domain spherical?
@@ -1709,21 +1871,27 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
 #' @param msl the mean-sea-level for the truely linear solver
 #' @param dry_depth the depth at which velocities are set to zero
 #' @param water_density density of (sea) water in kg/m^3
-#' @param time_indices optional vector of time indices at which energy should be computed. By default compute all times.
+#' @param time_indices optional vector of time indices at which energy should
+#' be computed. By default compute all times.
 #' @return List with the 'available energy' - including:
 #'             potential energy (1/2 integral (h-msl)**2)
 #'             kinetic energy   (1/2 integral (u^2 + v^2)*depth) 
 #'             total energy (potential + kinetic)
-#'        We use the 'available energy' (i.e. so a still ocean with stage=msl has energy = 0)
+#' We use the 'available energy' (i.e. so a still ocean with stage=msl has
+#' energy = 0)
 #
-get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, radius_earth=6371e+03, 
-    gravity=9.8, msl=0.0, dry_depth=1.0e-05, water_density = 1024, time_indices=NULL){
+get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, 
+    radius_earth=6371e+03, gravity=9.8, msl=0.0, dry_depth=1.0e-05, 
+    water_density = 1024, time_indices=NULL){
 
     deg2rad = pi/180
 
     library(ncdf4)
     target_file = Sys.glob(paste0(domain_dir, "/Grid_output_ID*.nc"))
-    if(length(target_file) != 1) stop(paste0('Did not find exactly one Grid_output_ID*.nc file in ', domain_dir))
+    if(length(target_file) != 1){
+        stop(paste0('Did not find exactly one Grid_output_ID*.nc file in ', 
+                    domain_dir))
+    }
     fid = nc_open(target_file)
     elev = ncvar_get(fid, 'elevation0')
     ys = ncvar_get(fid, 'y')
@@ -1755,7 +1923,8 @@ get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, radius_ear
     for(i in 1:ncol(cell_area)){
         if(spherical){
             # Spherical area
-            cell_area[,i] = radius_earth**2 * cos(ys[i]*deg2rad) * dy * deg2rad * dx * deg2rad
+            cell_area[,i] = radius_earth**2 * cos(ys[i]*deg2rad) * dy * 
+                deg2rad * dx * deg2rad
         }else{
             cell_area[,i] = dx*dy
         }
@@ -1765,7 +1934,8 @@ get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, radius_ear
     cell_area_ip = cell_area
     # Cell area at j+1/2
     cell_area_jp = cell_area
-    cell_area_jp[, 1:(nx[2]-1)] = 0.5 * (cell_area[,2:nx[2]] + cell_area[,1:(nx[2]-1)])
+    cell_area_jp[, 1:(nx[2]-1)] = 0.5 * 
+        (cell_area[,2:nx[2]] + cell_area[,1:(nx[2]-1)])
 
     #
     depth_ip = depth
@@ -1789,9 +1959,12 @@ get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, radius_ear
         uh = ncvar_get(fid, 'uh', start=c(1, 1, i), count=c(nx[1], nx[2], 1))
         vh = ncvar_get(fid, 'vh', start=c(1, 1, i), count=c(nx[1], nx[2], 1))
 
-        energy_pot_on_rho[i] = 0.5 * gravity * sum( (stg[,]*is_wet)**2 * cell_area * is_priority_domain)
-        energy_kin_on_rho[i] = 0.5 * 
-            sum( ((uh[,]**2/depth_ip)*cell_area + (vh[,]**2/depth_jp)* cell_area_jp) * is_priority_domain)
+        energy_pot_on_rho[i] = 0.5 * gravity * sum( (stg[,]*is_wet)**2 * 
+            cell_area * is_priority_domain)
+        energy_kin_on_rho[i] = 0.5 * sum( 
+            ((uh[,]**2/depth_ip)*cell_area + 
+             (vh[,]**2/depth_jp)* cell_area_jp) * 
+            is_priority_domain)
     }
 
     nc_close(fid)
@@ -1806,22 +1979,162 @@ get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, radius_ear
 
 #
 # Apply get_energy_truely_linear_domain to a multidomain
-# FIXME: Update this to cases other than linear
+# NOTE: Instead of using this, it is better to look at the "Global
+# energy-total" in the output log file.
 #
 get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
 
     all_domain_dirs = Sys.glob(paste0(multidomain_dir, '/RUN*'))
 
     if(length(all_domain_dirs) < 1){
-        stop(paste0('Could not find any domain directories beginning with RUN* in ', multidomain_dir))
+        stop(paste0(
+            'Could not find any domain directories beginning with RUN* in ', 
+            multidomain_dir))
     }
 
     library(parallel)
 
-    all_energies = mclapply(all_domain_dirs, get_energy_truely_linear_domain, mc.preschedule=FALSE, mc.cores=24)
+    all_energies = mclapply(all_domain_dirs, get_energy_truely_linear_domain, 
+                            mc.preschedule=FALSE, mc.cores=24)
     all_energy = all_energies[[1]]$energy_total
-    for(i in 2:length(all_energies)) all_energy = all_energy + all_energies[[i]]$energy_total
+    for(i in 2:length(all_energies)) all_energy = all_energy + 
+        all_energies[[i]]$energy_total
 
-    output = list(time = all_energies[[1]]$time, energy_total = all_energy, all_domain_energies=all_energies)
+    output = list(time = all_energies[[1]]$time, energy_total = all_energy, 
+                  all_domain_energies=all_energies)
+    return(output)
+}
+
+# Given a set of xy-points and a multidomain directory, find the domains
+# containing each xy-point; for each, return model output data from the gauge
+# in that domain that is closest.
+#
+# The output also records the distance between the requested site and the
+# available site. This can help to catch cases where there is no nearby gauge
+# (or where the requested gauge is in a different domain to the nearest one).
+#
+# @param multidomain_dir the multidomain directory
+# @param xy_sites matrix with desired output sites, which really should
+# correspond to gauges that were stored.
+# @param lonlat_coords if TRUE compute distances with distHaversine. Otherwise
+# use euclidean distances.
+# @return An object that is similar to the gauges list -- however it also
+# contains a 'points_requested' field giving the xy-sites ordered as with
+# gauges$gaugeID, and a 'distance_from_requested_point' field giving the
+# distance in metres between the requested site and the model output site.
+#
+get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE){
+    library(rptha)
+
+    # Make sure the input is a matrix. The code below will convert the
+    # single-gauge case ( xy_sites=c(lon, lat) )
+    stopifnot(length(xy_sites)%%2 == 0)
+    if(!is(xy_sites, 'matrix')){
+        dim(xy_sites) = c(length(xy_sites)/2, 2)
+        xy_sites = as.matrix(xy_sites)
+    }
+    stopifnot(ncol(xy_sites) >= 2)
+
+    target_gauge_domains = find_domain_containing_point(xy_sites[,1:2], md=NULL, 
+        multidomain_dir=multidomain_dir)
+
+    unique_gauge_domains = na.omit(unique(target_gauge_domains$domain_dir))
+    if(length(unique_gauge_domains) == 0) stop('No gauges are in the multidomain')
+
+    # For each domain that contains gauges of interest, read the gauges and
+    # extract the ones we want. On iteration '1' we will also build the data
+    # structure.
+    gauges_store   = vector(mode='list', length=length(unique_gauge_domains))
+    local_xy_store = vector(mode='list', length=length(unique_gauge_domains)) 
+    for(i in 1:length(unique_gauge_domains)){
+                                    
+        gauges = get_gauges(unique_gauge_domains[i])
+        if(is(gauges, 'try-error')) stop('gauges were not stored in this multidomain')
+
+        k = which(target_gauge_domains$domain_dir == unique_gauge_domains[i])
+
+        local_xy = xy_sites[k,,drop=FALSE]
+        local_xy_store[[i]] = local_xy
+
+        # Find index nearest to the target gauge
+        if(lonlat_coords){
+            gi = lonlat_nearest_neighbours(local_xy, 
+                                           cbind(gauges$lon, gauges$lat), k=1)
+        }else{
+            gi = knnx.index(data = cbind(gauges$lon, gauges$lat), 
+                            query = local_xy, k = 1, 
+                            algorithm = "kd_tree")[,1]
+        }
+        
+        gauges$lon = gauges$lon[gi]
+        gauges$lat = gauges$lat[gi]
+        gauges$gaugeID = gauges$gaugeID[gi]
+
+        if(lonlat_coords){
+            gauges$distance_from_requested_point = distHaversine(
+                cbind(gauges$lon, gauges$lat), local_xy)
+        }else{
+            gauges$distance_from_requested_point = sqrt(rowSums( 
+               (cbind(gauges$lon, gauges$lat) - local_xy[,1:2])^2))
+        }
+
+        # Subset the static_var and time_var 
+        for(var in c('static_var', 'time_var')){
+            for(nm in names(gauges[[var]])){
+                ndim = length(dim(gauges[[var]][[nm]]))
+                if(ndim == 2){
+                    gauges[[var]][[nm]] = gauges[[var]][[nm]][gi,,drop=FALSE]
+                }else if(ndim %in% c(0,1)){ 
+                    gauges[[var]][[nm]] = gauges[[var]][[nm]][gi]
+                }else{
+                    stop(paste0('error in get_gauges_near_xy -- cannot extract from ', 
+                                var, ' ', nm))
+                }
+            }
+        }
+
+        gauges_store[[i]] = gauges
+
+        # Check times are the same in all files
+        if(i > 1){
+            if(! all(gauges$time == gauges_store[[1]]$time) ){
+                stop('Error: times differ in gauge files')
+            }
+        }
+    }
+
+    # Pack the output into a single data structure
+    output = list()
+    output$lon = unlist(lapply(gauges_store, function(x) x$lon))
+    output$lat = unlist(lapply(gauges_store, function(x) x$lat))
+    output$gaugeID = unlist(lapply(gauges_store, function(x) x$gaugeID))
+    output$time = gauges_store[[1]]$time
+    output$priority_gauges_only = 
+        unlist(lapply(gauges_store, function(x) x$priority_gauges_only))
+    output$points_requested = do.call(rbind, local_xy_store)
+    output$distance_from_requested_point = 
+        unlist(lapply(gauges_store, function(x) x$distance_from_requested_point))
+
+    for(var in c('static_var', 'time_var')){
+        output[[var]] = list()
+        for(nm in names(gauges_store[[1]][[var]])){
+            ndim = length(dim(gauges_store[[1]][[var]][[nm]]))
+            if(ndim == 2){
+                output[[var]][[nm]] = do.call(rbind, 
+                    lapply(gauges_store, function(x) x[[var]][[nm]]))
+            }else if(ndim %in% c(0,1)){
+                output[[var]][[nm]] = unlist(
+                    lapply(gauges_store, function(x) x[[var]][[nm]]))
+            }else{
+                stop(paste0('error in get_gauges_near_xy -- cannot repack ', 
+                            var, ' ', nm))
+            }
+
+            # Clean up variables that are totally NA -- collapse to a single
+            # NA value
+            if(all(is.na(output[[var]][[nm]]))) output[[var]][[nm]] = NA
+        }
+    }
+
     return(output)
 }
