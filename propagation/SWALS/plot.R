@@ -309,7 +309,7 @@ get_gridded_variable<-function(var = 'Var_1', output_folder = NULL){
     if(length(nc_file) != 1){
         # Home-brew binary -- not really well supported, avoid this.
     
-        # FIXME: Update for parallel
+        # FIXME: Update for parallel.
         file_to_read = Sys.glob(paste0(output_folder, '/', var, '*'))[1]
 
         model_dim = get_model_dim(output_folder)
@@ -737,9 +737,19 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
 
 }
 
-#
-# Determine whether coordinates x,y are on the priority domain of "domain"
-#
+#' Are coordinates x,y are on the priority domain of "domain"?
+#'
+#' The priority_domain is the region where the domain has the 
+#' flow solution that should be use. Other regions are halos (where
+#' the domain receives from other domains) and null-regions (which
+#' are isolated (by halo exchanges) from the solution that should be 
+#' used).
+#'
+#' @param x vector of x coordinates
+#' @param y vector of y coordinates cooresponding to the x coordinates
+#' @param domain result of get_all_recent_results( )
+#' @return logical vector with TRUE where x,y is in the priority domain of
+#' "domain", and FALSE otherwise
 is_on_priority_domain<-function(x, y, domain){
 
     # Get indices of xi/yi on the domain (if x/y are not on the domain, this
@@ -763,12 +773,18 @@ is_on_priority_domain<-function(x, y, domain){
     }
 
     return(is_on)
-
 }
 
-
-# Given a domain object (i.e. output from 'get_all_recent_results'), find the
-# index and distance of the point (grid-cell) nearest to 'x', 'y'
+#' Find the cell in a domain that is nearest a specified point
+#'
+#' Given a domain object (i.e. output from 'get_all_recent_results'), find the
+#' index and distance of the point (grid-cell) nearest to 'x', 'y'
+#'
+#' @param x vector of x coordinates
+#' @param y vector of y coordinates cooresponding to the x coordinates
+#' @param domain result of get_all_recent_results( )
+#' @return a list with xind/yind (2D indices of cells containing x/y), and 
+#' dist (the distance of x/y to the nearest cell x/y coordinates)
 nearest_point_in_domain<-function(x, y, domain){
 
     kx = which.min(abs(x-domain$xs))
@@ -789,9 +805,11 @@ nearest_point_in_domain<-function(x, y, domain){
     return(out)
 }
 
-# Find the x/y range of a multidomain. Here 'md' is a list of domain objects
-# (e.g. output of "get_all_recent_results"), which collectively make the
-# multidomain
+#' Find the x/y range of a coordinates in multidomain. 
+#' 
+#' @param md a list of domain objects (e.g. output of
+#' "get_all_recent_results"), which collectively make the multidomain
+#' @return the x-range (min_x, max_x) and y-range (min_y, max_y)
 multidomain_range<-function(md){
 
     all_ranges = lapply(md, function(x) rbind(range(x$xs), range(x$ys)))
@@ -805,10 +823,17 @@ multidomain_range<-function(md){
     return(out)
 }
 
-# Find the cell in a multidomain that is nearest to 'x,y'. It will return the
-# xindex, yindex, distance, and index of the domain in md.  Here 'md' is a list
-# of domain objects (e.g. output of "get_all_recent_results"), which
-# collectively make the multidomain
+#' Find the cell in a multidomain that is nearest to 'x,y'. 
+#' 
+#' It will return the xindex, yindex, distance, and index of the domain in md.
+#'
+#' @param x vector of x coordinates
+#' @param y vector of y coordinates cooresponding to the x coordinates
+#' @param md is a list of domain objects (e.g. output of
+#' "get_all_recent_results"), which collectively make the multidomain
+#' @return a list with xind/yind (2D indices of cells containing x/y), and 
+#' dist (the distance of x/y to the nearest cell x/y coordinates), and the
+#' closest_domain (as in index in the list md)
 nearest_point_in_multidomain<-function(x, y, md){
 
     md_nearest = lapply(md, function(z) nearest_point_in_domain(x, y, z))
@@ -828,33 +853,34 @@ nearest_point_in_multidomain<-function(x, y, md){
     return(out)
 }
 
-# Given a collection of netcdf grid files which partition A SINGLE DOMAIN,
-# merge them. This can provide a method for working with
-# distributed-memory-parallel multidomains, by first combining each domain into
-# a single output.
-#
-# There are 2 ways to select the netcdf files to merge: 
-#    1) Provide 'nc_grid_files', OR 
-#    2) Provide both 'multidomain_dir' and 'domain_index'
-#
-# @param nc_grid_files vector with all nc_grid files that together make up the
-# domain
-# @param multidomain_dir directory with multidomain
-# @param domain_index index of the domain of interest
-# @param desired_var name of variable in the netcdf file
-# @param desired_time_index time slice of variable in the netcdf file (or NA
-# for non-time variables)
-# @param return_raster If FALSE, return a list with xs, ys, grid. Otherwise
-# return a raster
-# @param proj4string projection info for the raster if return_raster=TRUE
-#
-# ## Example 1 -- provide vector of file names
-# all_nc = Sys.glob('RUN_ID000000000*00001_0*/Grid*.nc')
-# p1 = merge_domains_nc_grids(nc_grid_files = all_nc)
-# 
-# ## Example 2 -- nicer -- provide multidomain directory, and domain index
-# p1 = merge_domains_nc_grids(multidomain_dir='.', domain_index=3)
-#
+#' Merge netcdf files which partition a single domain
+#'
+#' Given a collection of netcdf grid files which partition A SINGLE DOMAIN,
+#' merge them. This can provide a method for working with
+#' distributed-memory-parallel multidomains, by first combining each domain into
+#' a single output.
+#' There are 2 ways to select the netcdf files to merge: 
+#'    1) Provide 'nc_grid_files', OR 
+#'   2) Provide both 'multidomain_dir' and 'domain_index'
+#'
+#' @param nc_grid_files vector with all nc_grid files that together make up the
+#' domain
+#' @param multidomain_dir directory with multidomain
+#' @param domain_index index of the domain of interest
+#' @param desired_var name of variable in the netcdf file
+#' @param desired_time_index time slice of variable in the netcdf file (or NA
+#' for non-time variables)
+#' @param return_raster If FALSE, return a list with xs, ys, grid. Otherwise
+#' return a raster
+#' @param proj4string projection info for the raster if return_raster=TRUE
+#'
+#' ## Example 1 -- provide vector of file names
+#' all_nc = Sys.glob('RUN_ID000000000*00001_0*/Grid*.nc')
+#' p1 = merge_domains_nc_grids(nc_grid_files = all_nc)
+#' 
+#' ## Example 2 -- nicer -- provide multidomain directory, and domain index
+#' p1 = merge_domains_nc_grids(multidomain_dir='.', domain_index=3)
+#'
 merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, 
     domain_index = NA, desired_var = 'max_stage', desired_time_index = NA,
     return_raster=FALSE, proj4string="+init=epsg:4326"){
@@ -986,8 +1012,10 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA,
     }
 }
 
-#' Merge gauges from a multidomain, discarding those that are not in priority
-#' domains
+#' Merge gauges from a multidomain
+#'
+#' We combine gauges on all domains in a multidomain, while discarding those
+#' that are not in priority domains
 #'
 #' @param md list with the multidomain info.
 #' @param multidomain_dir the directory containing all the multdomain outputs.
@@ -995,8 +1023,9 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA,
 #' necessary information
 #' @param assume_all_gauges_are_priority If TRUE this assumes all gauges are
 #' priority gauges (i.e. we are not storing gauges from non-priority domain
-#  regions). This is always TRUE in newer SWALS, but was not true early on.
-#'
+#' regions). This is always TRUE in newer SWALS, but was not true early on.
+#' @return a nested list similar to the result of get_gauges( ), which contains
+#' all the gauges on the multidomain.
 merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA, 
                                    assume_all_gauges_are_priority=TRUE){
    
@@ -1224,8 +1253,14 @@ merge_multidomain_gauges<-function(md = NA, multidomain_dir=NA,
 }
 
 
-# Partition a set into 'k' groups with roughly equal sum. Useful for load
-# balance routine. This uses the naive algorithm.
+#' Partition a set into 'k' groups with roughly equal sum. 
+#'
+#' This is useful for the load balance routine. It uses a naive greedy algorithm
+#' do partition the set.
+#'
+#' @param vals The set of numbers that we partition into groups with roughly equal sum
+#' @param k How many groups
+#' @return a list with the indices of each group (a list of vectors), and their sums
 partition_into_k<-function(vals, k){
 
     sums = rep(0, k)
@@ -1241,8 +1276,18 @@ partition_into_k<-function(vals, k){
     return(list(inds, sums))
 }
 
-# A workhorse routine for partitioning with groups. See documentation below on
-# the interface routine.
+#' Partition a set into 'k' groups with roughly equal sum, separately for
+#' each of the vals_groups.
+#'
+#' This is a workhorse routine for partitioning with groups. See documentation
+#' below on the interface routine.
+#'
+#' @param vals vector of numbers (we will partition these into groups with roughly equal sum)
+#' @param k How many groups to split into?
+#' @param vals_groups integer vector, same length as vals, defining the vals groups. We do the
+#' partitioning for each group separately.
+#' @param random_ties If TRUE there is potentially randomness in partitioning method (so results
+#' might vary from run to run). Occasionally this is good, but generally we want it FALSE.
 partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups, 
     random_ties=FALSE){
 
@@ -1304,24 +1349,30 @@ partition_into_k_with_grouping_WORK<-function(vals, k, vals_groups,
 
 
 
-# Partition a set of values 'vals' into 'k' separate groups with roughly equal
-# sum. Furthermore we assume the 'vals' are each associated with some
-# 'vals_group', and the partitioning should make the sums rougly equal also
-# within the vals_groups. 
-#
-# To make it concrete: suppose our 'vals' give model run-times for a
-# partitioned multi-domain.  The 'vals_groups' might be chosen to give the
-# "domain_index" of each, in which case all of the 'k' groups would have
-# approximately equal values of 'vals' WITHIN each domain_index. 
-#
-# A practical situation where we might want to do this is for a model
-# where some domains are only evolved for a fraction of the whole runtime,
-# and we want to achieve good load-balancing for the entire model run.
-#
-# This basic method uses a naive partitioning algorithm. In some cases better
-# performance can be obtained using random tie-breaking. The general interface
-# (below) does this.
-#
+#' Partition a set of values 'vals' into 'k' separate groups with roughly equal
+#' sum. Furthermore we assume the 'vals' are each associated with some
+#' 'vals_group', and the partitioning should make the sums rougly equal also
+#' within the vals_groups. 
+#'
+#' To make it concrete: suppose our 'vals' give model run-times for a
+#' partitioned multi-domain.  The 'vals_groups' might be chosen to give the
+#' "domain_index" of each, in which case all of the 'k' groups would have
+#' approximately equal values of 'vals' WITHIN each domain_index. 
+#'
+#' A practical situation where we might want to do this is for a model
+#' where some domains are only evolved for a fraction of the whole runtime,
+#' and we want to achieve good load-balancing for the entire model run.
+#'
+#' This basic method uses a naive partitioning algorithm. In some cases better
+#' performance can be obtained using random tie-breaking. The general interface
+#' (below) does this.
+#'
+#' @param vals vector of numbers (we will partition these into groups with roughly equal sum)
+#' @param k How many groups to split into?
+#' @param vals_groups integer vector, same length as vals, defining the vals groups. We do the
+#' partitioning for each group separately.
+#' @param ntries if this is greater than 1, then tries 2 and above will use random_ties, and
+#' the best among all these tries will be used.
 partition_into_k_with_grouping<-function(vals, k, vals_groups, ntries=1){
 
     # Deterministic case first -- so we never do worse than deterministic   
@@ -1557,16 +1608,18 @@ make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE,
 }
 
 
-# Extract the domain_index from its folder name
-#
-# Domain folders from multidomains have names like here:
-#    RUN_ID00000000590000000002_00070_20190529_094228.898
-# Where the ID00... has first 10 digits being the image index (59 here),
-# and the next 10 digits being the domain_index (2 here).
-#
-#
-#stopifnot(domain_index_from_folder('RUN_ID00000000590000000002_00070_20190529_094228.898') == 2)
-# 
+#' Extract the domain_index from its folder name
+#'
+#' Domain folders from multidomains have names like here:
+#'    RUN_ID00000000590000000002_00070_20190529_094228.898
+#' Where the ID00... has first 10 digits being the image index (59 here),
+#' and the next 10 digits being the domain_index (2 here).
+#'
+#' @param folder_name The domain folder name
+#' @return the integer domain index
+#' @examples
+#' stopifnot(domain_index_from_folder('RUN_ID00000000590000000002_00070_20190529_094228.898') == 2)
+#' 
 domain_index_from_folder<-function(folder_name){
     
     ID_term = gsub("ID", "", as.character(strsplit(folder_name, '_')[[1]][2]))
@@ -1578,16 +1631,18 @@ domain_index_from_folder<-function(folder_name){
     return(as.numeric(index_ID))
 }
 
-# Extract the domain_image from its folder name
-#
-# Domain folders from multidomains have names like here:
-#    RUN_ID00000000590000000002_00070_20190529_094228.898
-# Where the ID00... has first 10 digits being the image index (59 here),
-# and the next 10 digits being the domain_index (2 here).
-#
-#
-#stopifnot(domain_image_from_folder('RUN_ID00000000590000000002_00070_20190529_094228.898') == 59)
-# 
+#' Extract the domain_image from its folder name
+#'
+#' Domain folders from multidomains have names like here:
+#'    RUN_ID00000000590000000002_00070_20190529_094228.898
+#' Where the ID00... has first 10 digits being the image index (59 here),
+#' and the next 10 digits being the domain_index (2 here).
+#'
+#' @param folder_name The domain folder name
+#' @return the integer domain image
+#' @examples
+#' stopifnot(domain_image_from_folder('RUN_ID00000000590000000002_00070_20190529_094228.898') == 59)
+#' 
 domain_image_from_folder<-function(folder_name){
 
     ID_term = gsub("ID", "", as.character(strsplit(folder_name, '_')[[1]][2]))
@@ -1599,10 +1654,13 @@ domain_image_from_folder<-function(folder_name){
     return(as.numeric(image_ID))
 }
 
-# Get the indices of all domains in a multidomain, using the folder name
-#
-# This can be used to avoid hard-coding the number of domains in scripts.
-#
+#' Get the indices of all domains in a multidomain, using the folder name
+#'
+#' This can be used to avoid hard-coding the number of domains in scripts.
+#'
+#' @param multidomain_dir The multidomain directory
+#' @return the indices of all domains in the multidomain
+#'
 get_domain_indices_in_multidomain<-function(multidomain_dir){
     all_domain_run_folders = Sys.glob(paste0(multidomain_dir, '/RUN_ID*'))
     all_domain_indices = sapply(basename(all_domain_run_folders), 
@@ -1610,18 +1668,18 @@ get_domain_indices_in_multidomain<-function(multidomain_dir){
     return(unique(all_domain_indices))
 }
 
-# Get the interior bounding box (i.e. the domain box prior to halo padding) for
-# each domain in a multidomain. 
-#
-# It is reported in both a 'merged form' (i.e. ignoring any parallel
-# partitioning), and in a parallel partition
-#
-# @param multidomain_dir the directory with the multidomain
-# @param include_SpatialPolygonsDataFrame If TRUE then make
-# SpatialPolygonsDataFrames showing the merged and unmerged model extents.
-# @param spdf_proj4string The proj4string for the SpatialPolygonsDataFrames
-# (not used unless the previous argument is TRUE)
-#
+#' Get the interior bounding box (i.e. the domain box prior to halo padding) for
+#' each domain in a multidomain. 
+#'
+#' It is reported in both a 'merged form' (i.e. ignoring any parallel
+#' partitioning), and in a parallel partition
+#'
+#' @param multidomain_dir the directory with the multidomain
+#' @param include_SpatialPolygonsDataFrame If TRUE then make
+#' SpatialPolygonsDataFrames showing the merged and unmerged model extents.
+#' @param spdf_proj4string The proj4string for the SpatialPolygonsDataFrames
+#' (not used unless the previous argument is TRUE)
+#'
 get_domain_interior_bbox_in_multidomain<-function(multidomain_dir, 
     include_SpatialPolygonsDataFrame=FALSE, 
     spdf_proj4string="+init=epsg:4326"){
@@ -1861,8 +1919,8 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
 #' "domain%linear_solver_is_truely_linear=.TRUE."
 #'
 #' FIXME: Update this to treat cases other than the linear shallow water
-#' equations. However there might not be any point now that the logfiles output
-#' this information.
+#' equations. However there might NOT BE ANY POINT now that the logfiles output
+#' this information. Use the logfiles instead.
 #'
 #' @param domain_dir the domain directory
 #' @param spherical Is the domain spherical?
@@ -1879,7 +1937,7 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
 #'             total energy (potential + kinetic)
 #' We use the 'available energy' (i.e. so a still ocean with stage=msl has
 #' energy = 0)
-#
+#'
 get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE, 
     radius_earth=6371e+03, gravity=9.8, msl=0.0, dry_depth=1.0e-05, 
     water_density = 1024, time_indices=NULL){
@@ -1977,11 +2035,13 @@ get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE,
     return(output)
 }
 
-#
-# Apply get_energy_truely_linear_domain to a multidomain
-# NOTE: Instead of using this, it is better to look at the "Global
-# energy-total" in the output log file.
-#
+#' Apply get_energy_truely_linear_domain to a multidomain
+#'
+#' NOTE: Instead of using this, it is better to look at the "Global
+#' energy-total" in the output log file.
+#'
+#' @param multidomain_dir The multidomain directory
+#' @param mc_cores run in parallel on this many cores
 get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
 
     all_domain_dirs = Sys.glob(paste0(multidomain_dir, '/RUN*'))
@@ -2005,28 +2065,28 @@ get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
     return(output)
 }
 
-# Given a set of xy-points and a multidomain directory, find the domains
-# containing each xy-point; for each, return model output data from the gauge
-# in that domain that is closest.
-#
-# The output also records the distance between the requested site and the
-# available site. This can help to catch cases where there is no nearby gauge
-# (or where the requested gauge is in a different domain to the nearest one).
-#
-# @param multidomain_dir the multidomain directory
-# @param xy_sites matrix with desired output sites, which really should
-# correspond to gauges that were stored.
-# @param lonlat_coords if TRUE compute distances with distHaversine. Otherwise
-# use euclidean distances.
-# @param verbose If TRUE, report the max distance between the requested sites
-# and the available sites. This can help to catch cases where there is no
-# nearby gauge (or where the requested gauge is in a different domain to the
-# nearest one).
-# @return An object that is similar to the gauges list -- however it also
-# contains a 'points_requested' field giving the xy-sites ordered as with
-# gauges$gaugeID, and a 'distance_from_requested_point' field giving the
-# distance in metres between the requested site and the model output site.
-#
+#' Given a set of xy-points and a multidomain directory, find the domains
+#' containing each xy-point; for each, return model output data from the gauge
+#' in that domain that is closest.
+#'
+#' The output also records the distance between the requested site and the
+#' available site. This can help to catch cases where there is no nearby gauge
+#' (or where the requested gauge is in a different domain to the nearest one).
+#'
+#' @param multidomain_dir the multidomain directory
+#' @param xy_sites matrix with desired output sites, which really should
+#' correspond to gauges that were stored.
+#' @param lonlat_coords if TRUE compute distances with distHaversine. Otherwise
+#' use euclidean distances.
+#' @param verbose If TRUE, report the max distance between the requested sites
+#' and the available sites. This can help to catch cases where there is no
+#' nearby gauge (or where the requested gauge is in a different domain to the
+#' nearest one).
+#' @return An object that is similar to the gauges list -- however it also
+#' contains a 'points_requested' field giving the xy-sites ordered as with
+#' gauges$gaugeID, and a 'distance_from_requested_point' field giving the
+#' distance in metres between the requested site and the model output site.
+#'
 get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE, 
                              verbose=FALSE){
     library(rptha)
