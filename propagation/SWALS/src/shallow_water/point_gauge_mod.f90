@@ -102,9 +102,11 @@ module point_gauge_mod
     !  wish to store once. e.g. [ELV], or [UH, VH, ELV]
     ! @param gauge_ids real array of size n_gauges giving an ID for each
     !  gauge. Make it REAL to avoid truncation issues for large IDs
-    ! @param bounding_box If provided, only keep gauges inside a given bounding box
-    ! @param priority_gauges If provided, a logical array with one entry per gauge. Gauges with .TRUE. are retained, others are
-    ! removed.
+    ! @param bounding_box If provided, only keep gauges inside a given bounding 
+    ! box
+    ! @param priority_gauges If provided, a logical array with one entry per 
+    ! gauge. 
+    ! Gauges with .TRUE. are retained, others are removed.
     !
     subroutine allocate_gauges(point_gauges, xy_coordinates, &
         time_series_var_indices, static_var_indices, gauge_ids, &
@@ -128,14 +130,14 @@ module point_gauge_mod
                 flush(log_output_unit)
             end if
 
-            ! Make space for all gauges. Depending on optional arguments passed, this
-            ! may be updated again below
+            ! Make space for all gauges. Depending on optional arguments 
+            ! passed, this may be updated again below
             all_gauges = .TRUE.
             n_gauges = size(xy_coordinates, 2, kind=ip)
 
             if(present(bounding_box) .or. present(priority_gauges)) then
-                ! It is possible that not all the gauges will be in the bounding box
-                ! Identify those which are inside
+                ! It is possible that not all the gauges will be in the 
+                ! bounding box. Identify those which are inside
                 all_gauges = .FALSE.
 
                 allocate(points_inside(size(xy_coordinates, 2, kind=ip)))
@@ -210,8 +212,10 @@ module point_gauge_mod
     ! point_gauges%time_series_values
     !
     ! @param point_gauges point_gauge_type
-    ! @param time_series_values array with size [n_gauges, size(var_inds)] that holds the time series data
-    ! @param var_inds Array giving indices in the 3rd dimension of domain_U that we write out. e.g. [STG, UH, VH], or [STG]
+    ! @param time_series_values array with size [n_gauges, size(var_inds)] 
+    ! that holds the time series data
+    ! @param var_inds Array giving indices in the 3rd dimension of domain_U 
+    ! that we write out. e.g. [STG, UH, VH], or [STG]
     !
     subroutine update_gauge_var(point_gauges, time_series_values, domain_U, &
         var_inds)
@@ -296,10 +300,13 @@ module point_gauge_mod
     ! @param point_gauges variable of type point_gauge_type
     ! @param domain_dx cell size [dx,dy] in the domain
     ! @param domain_nx number of cells [nx,ny] in the domain
-    ! @param domain_U the array with dimensions [nx, ny, :] in which we look up values at the gauges
+    ! @param domain_U the array with dimensions [nx, ny, :] in which we look 
+    ! up values at the gauges
     ! @param netcdf_gauge_output_file name of output file
-    ! @param attribute_names character vector of names for additional attributes to add to the netcdf file
-    ! @param attribute_values character vector of values for the additional attributes in the netcdf file
+    ! @param attribute_names character vector of names for additional 
+    ! attributes to add to the netcdf file
+    ! @param attribute_values character vector of values for the additional 
+    ! attributes in the netcdf file
     !
     subroutine initialise_gauges(point_gauges, domain_lower_left, domain_dx, &
         domain_nx, domain_U,&
@@ -311,7 +318,8 @@ module point_gauge_mod
         real(dp), intent(in):: domain_lower_left(:), domain_dx(:)
         integer(ip), intent(in):: domain_nx(:)
         real(dp), intent(in):: domain_U(:,:,:)
-        character(charlen), optional, intent(in):: attribute_names(:), attribute_values(:)
+        character(charlen), optional, intent(in):: attribute_names(:), &
+            attribute_values(:)
 
         integer(ip):: n_gauges, i
 
@@ -323,8 +331,9 @@ module point_gauge_mod
    
         ! Get indices of gauges on domain        
         do i = 1, n_gauges
-            ! Map to [i,j] index. Note the 'min' operation deals with the corner case where
-            ! the coordinate has x = max_domain_x or y = max_domain_y
+            ! Map to [i,j] index. Note the 'min' operation deals with the 
+            ! corner case where the coordinate has x = max_domain_x or 
+            ! y = max_domain_y
             point_gauges%site_index(:,i) = 1_ip + &
                 min(floor((point_gauges%xy(:,i) - domain_lower_left)/domain_dx), &
                     domain_nx-1_ip)
@@ -359,13 +368,15 @@ module point_gauge_mod
         ! Setup home-brew binary output
         !
         ! For simplicity, this routine only includes a netcdf filename as argument.
-        ! If we are writing to a home-brew binary format, then we make file names from the 'netcdf' name
+        ! If we are writing to a home-brew binary format, then we make file 
+        ! names from the 'netcdf' name
         point_gauges%static_output_file = trim(netcdf_gauge_output_file) // '_static' 
         point_gauges%time_series_output_file = trim(netcdf_gauge_output_file) // '_timeseries' 
         point_gauges%gauge_metadata_file = trim(netcdf_gauge_output_file) // '_metadata' 
 
         ! Save 'static' variables to home-brew binary
-        open(newunit=point_gauges%static_output_unit, file=point_gauges%static_output_file, &
+        open(newunit=point_gauges%static_output_unit, &
+            file=point_gauges%static_output_file, &
             access='stream', form='unformatted')
         do i = 1, n_gauges
             write(point_gauges%static_output_unit) &
@@ -376,7 +387,8 @@ module point_gauge_mod
         close(point_gauges%static_output_unit)
 
         ! Initialise time-varying output files
-        open(newunit=point_gauges%time_series_output_unit, file=point_gauges%time_series_output_file, &
+        open(newunit=point_gauges%time_series_output_unit, &
+            file=point_gauges%time_series_output_file, &
             access='stream', form='unformatted')
 
         ! Initialise gauge metadata file
