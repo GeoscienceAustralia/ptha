@@ -1,3 +1,6 @@
+#'
+#' @param output_folder the output folder for a domain (not a multidomain)
+#' @return a list with informative names, containing the gauge data
 #
 # Scripts to work with SWALS output files. 
 #
@@ -24,6 +27,9 @@ get_recent_output_folder<-function(){
 }
 
 #' Get times at which grid output is written
+#'
+#' @param output_folder the output folder for a domain (not a multidomain)
+#' @return the times
 get_time<-function(output_folder){
     model_time = try(
         scan(Sys.glob(paste0(output_folder, '/', 'Time_*'))[1], quiet=TRUE), 
@@ -31,7 +37,12 @@ get_time<-function(output_folder){
     return(model_time)
 }
 
-#' Get the model dimensions
+#' Get the domain dimensions
+#'
+#' This includes any halo regions
+#'
+#' @param output_folder the output folder for a domain (not a multidomain)
+#' @return the number of cells in the x and y directions
 get_model_dim<-function(output_folder){
     file_metadata = readLines(Sys.glob(
         paste0(output_folder, '/', 'Domain_info*'))[1])
@@ -43,7 +54,10 @@ get_model_dim<-function(output_folder){
     return(model_dim)
 }
 
-#' Get the model cell size
+#' Get the domain cell size in the x and y directions
+#'
+#' @param output_folder the output folder for a domain (not a multidomain)
+#' @return the cell-size in the x and y directions
 get_dx<-function(output_folder){
     file_metadata = readLines(
         Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
@@ -56,6 +70,11 @@ get_dx<-function(output_folder){
 }
 
 #' Get the domain lower-left corner
+#'
+#' This includes any halo regions
+#'
+#' @param output_folder the output folder for a domain (not a multidomain)
+#' @return the lower-left corner of the domain, including halo regions.
 get_lower_left_corner<-function(output_folder){
     file_metadata = readLines(
         Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
@@ -68,6 +87,11 @@ get_lower_left_corner<-function(output_folder){
 }
 
 #' Get the domain output precision
+#'
+#' This is an integer that is typically '4' for single precision and '8' for double precision
+#'
+#' @param output_folder the output folder for a domain (not a multidomain)
+#' @return an integer
 get_model_output_precision<-function(output_folder){
     file_metadata = readLines(
         Sys.glob(paste0(output_folder, '/', 'Domain_info*'))[1])
@@ -84,6 +108,8 @@ get_model_output_precision<-function(output_folder){
 #' the functionality is supported with this file format, so it isn't a general
 #' solution to netcdf problems.
 #'
+#' @param output_folder the output folder for a domain (not a multidomain)
+#' @return a list with informative names, containing the gauge data
 get_gauges_mixed_binary_format<-function(output_folder){
     # Read the gauge data, which is in a mixture of ascii and binary
 
@@ -168,7 +194,7 @@ get_gauges_mixed_binary_format<-function(output_folder){
 #' 'home-brew binary format' is not comprehensively supported.
 #'
 #' @param output_folder The domain's output folder
-#' 
+#' @return a list with informative names, containing the gauge data
 get_gauges_netcdf_format<-function(output_folder){
     library('ncdf4')
 
@@ -242,6 +268,12 @@ get_gauges_netcdf_format<-function(output_folder){
 
 #' Read EITHER the netcdf gauges OR the DEFUNCT mixed binary format
 #'
+#' This is a convenient interface to get the gauges -- it will try to use the
+#' netcdf format, and if that doesn't work, will try the ad-hoc binary format.
+#'
+#' @param output_folder The domain's output folder
+#' @return a list with informative names, containing the gauge data, or an
+#' object of class 'try-error' if there are no gauges.
 get_gauges<-function(output_folder){
 
     outputs = try(get_gauges_netcdf_format(output_folder), silent=TRUE)
@@ -262,7 +294,7 @@ get_gauges<-function(output_folder){
 #' @param nc_file netcdf file name, or file object created by a call to
 #' 'ncdf4::nc_open'
 #' @param attname name of global attribute in the file
-#
+#' @return The attribute
 get_nc_global_attribute<-function(nc_file, attname){
     if(is(nc_file, 'character')){
         fid = nc_open(nc_file, readunlim=FALSE)
