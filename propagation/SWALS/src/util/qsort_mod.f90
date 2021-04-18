@@ -275,10 +275,14 @@ module qsort_mod
 
     end subroutine
 
-    function test_integer_compare(i1, i2) result(sgn)
+    function test_integer_compare(i1ptr, i2ptr) result(sgn)
         ! This is only used for testing of qsort_C
-        integer, intent(in) :: i1, i2
+        type(c_ptr), value, intent(in) :: i1ptr, i2ptr
+        integer, pointer :: i1, i2
         integer(c_int) :: sgn
+
+        call c_f_pointer(i1ptr, i1)
+        call c_f_pointer(i2ptr, i2)
 
         if(i1 < i2) sgn = -1_c_int
         if(i1 == i2) sgn = 0_c_int
