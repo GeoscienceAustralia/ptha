@@ -5,6 +5,7 @@ module netcdf_util
 
     use global_mod, only: charlen, ip, dp
     use stop_mod, only: generic_stop
+    use logging_mod, only: log_output_unit
     use iso_c_binding, only: C_DOUBLE
     use iso_fortran_env
 
@@ -169,6 +170,18 @@ module netcdf_util
 
         spatial_stride = nc_grid_output%spatial_stride
         spatial_start = nc_grid_output%spatial_start
+
+        if(spatial_stride > minval([nx, ny])) then
+            write(log_output_unit,*) ''
+            write(log_output_unit,*) 'Error in nc_grid_output initialisation for filename: '
+            write(log_output_unit,*) '    ', trim(filename)
+            write(log_output_unit,*) '  Cannot have spatial_stride > minval(domain%nx)'
+            write(log_output_unit,*) '    spatial_stride: ', spatial_stride, &
+                '; minval(domain%nx): ', minval([nx, ny])
+            flush(log_output_unit)
+            call generic_stop()
+        end if
+
         nc_grid_output%spatial_count = [ &
             size(xs(spatial_start(1):nx:spatial_stride)), &
             size(ys(spatial_start(2):ny:spatial_stride))]
