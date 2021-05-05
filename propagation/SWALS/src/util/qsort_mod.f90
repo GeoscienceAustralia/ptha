@@ -275,7 +275,7 @@ module qsort_mod
 
     end subroutine
 
-    function test_integer_compare(i1ptr, i2ptr) result(sgn)
+    function test_integer_compare(i1ptr, i2ptr) result(sgn) bind(C)
         ! This is only used for testing of qsort_C
         type(c_ptr), value, intent(in) :: i1ptr, i2ptr
         integer, pointer :: i1, i2
