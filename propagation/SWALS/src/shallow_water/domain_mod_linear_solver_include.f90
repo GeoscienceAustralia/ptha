@@ -78,7 +78,7 @@
         
 
 
-        !TIMER_START('LF_update')
+EVOLVE_TIMER_START('LF_update_stage')
 
         nx = domain%nx(1)
         ny = domain%nx(2)
@@ -115,15 +115,14 @@
         !$OMP END PARALLEL
 
         domain%time = domain%time + dt * HALF_dp
+EVOLVE_TIMER_STOP('LF_update_stage')
+
         call domain%update_boundary()
         call domain%apply_forcing(dt)
-        !TIMER_STOP('LF_update')
 
-        !TIMER_START('partitioned_comms')
         if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
-        !TIMER_STOP('partitioned_comms')
 
-        !TIMER_START('LF_update')
+EVOLVE_TIMER_START('LF_boundary_flux_integration')
         !! Boundary flux integration
         ! note : U(i, j, UH) = UH_{i+1/2, j}
         !      : U(i, j, VH) = VH_{i, j+1/2}
@@ -202,11 +201,13 @@
 
         domain%boundary_flux_evolve_integral_exterior = &
             sum(domain%boundary_flux_store_exterior, mask=domain%boundary_exterior) * dt
+EVOLVE_TIMER_STOP('LF_boundary_flux_integration')
 
 
         !
         ! Update uh, vh
         !
+EVOLVE_TIMER_START('LF_update_UHVH')
 
 #if defined(LINEAR_PLUS_NONLINEAR_FRICTION)
         ! Compute some expensive parts of the friction term
@@ -566,7 +567,7 @@
         !$OMP END PARALLEL
         domain%time = domain%time + HALF_dp*dt
 
-        !TIMER_STOP('LF_update')
+EVOLVE_TIMER_STOP('LF_update_UHVH')
   
 
     contains

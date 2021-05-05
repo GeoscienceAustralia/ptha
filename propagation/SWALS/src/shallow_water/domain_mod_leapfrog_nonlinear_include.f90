@@ -61,6 +61,7 @@
         integer(ip), parameter :: DEPTH_LAG = 1, UUH = 2, UVH = 3, VUH = 4, VVH = 5
         real(dp) :: depth_local, inv_depth_local
 
+EVOLVE_TIMER_START('LF_nonlinear_update')
         domain%dt_last_update = dt
 
 
@@ -806,6 +807,7 @@
         !$OMP END PARALLEL
         domain%time = domain%time + HALF_dp*dt
 
+EVOLVE_TIMER_STOP('LF_nonlinear_update')
 
 contains
 

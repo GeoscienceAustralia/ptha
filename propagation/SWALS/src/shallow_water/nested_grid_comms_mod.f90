@@ -290,8 +290,8 @@ module nested_grid_comms_mod
     ! @param send_only logical. Only send data, do not receive any data [so ijk_to_recv is not used]
     ! @param recv_only logical. Only receive data, do not send any data [so ijk_to_send is not used]
     ! @param use_wetdry_limiting logical Limit extrapolation gradients near wet-dry boundaries if doing coarse-to-fine sends
-    ! @param neighbour_domain_staggered_grid -- integer flag, 1 means neighbour domain has a staggered grid, 0 otherwise
-    ! @param my_domain_staggered_grid -- integer flag, 1 means neighbour domain has a staggered grid, 0 otherwise
+    ! @param neighbour_domain_staggered_grid -- integer flag, 1 means neighbour_domain has a staggered grid, 0 otherwise
+    ! @param my_domain_staggered_grid -- integer flag, 1 means my_domain has a staggered grid, 0 otherwise
     !
     subroutine initialise_two_way_nesting_comms(&
         two_way_nesting_comms, &

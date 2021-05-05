@@ -31,11 +31,7 @@
         end if
             
 
-        !TIMER_START('flux')
         call domain%compute_fluxes(ts)
-        !TIMER_STOP('flux')
-
-        !TIMER_START('update')
 
         ! Store the internally computed max timestep
         domain%max_dt = ts
@@ -53,8 +49,6 @@
         domain%boundary_flux_evolve_integral_exterior = domain%boundary_flux_evolve_integral_exterior + &
             ts * sum(domain%boundary_flux_store_exterior, mask=domain%boundary_exterior)
 
-        !TIMER_STOP('update')
-
         if(nesting_bf) then 
             ! Update the nesting boundary flux
             call domain%nesting_boundary_flux_integral_tstep(&
@@ -66,9 +60,7 @@
         end if
 
         ! Coarray communication, if required (this has been superceeded by the multidomain approach)
-        !TIMER_START('partitioned_comms')
         if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
-        !TIMER_STOP('partitioned_comms')
 
     end subroutine
 
@@ -129,7 +121,7 @@
             flux_already_multiplied_by_dx=.TRUE.)
 
 
-        !TIMER_START('average')
+EVOLVE_TIMER_START('rk2_average')
 
         ! Take average (but allow for openmp)
         !
@@ -152,7 +144,7 @@
         ! We want the CFL timestep that is reported to always be based on the first step -- so force that here
         domain%max_dt = max_dt_store
 
-        !TIMER_STOP('average')
+EVOLVE_TIMER_STOP('rk2_average')
 
     end subroutine
     
@@ -163,8 +155,7 @@
         !! This involves less flux calls per timestep advance than rk2.
         !! Argument timestep is optional, but if provided, (timestep/4.0) should satisfy the CFL condition
         !! (because this routine takes (n-1)=4 repeated time-steps of that size, where n=5).
-        !! FIXME: Still need to implement nesting boundary flux integral timestepping, if we
-        !! want to use this inside a multidomain
+        !!
         type(domain_type), intent(inout):: domain
         real(dp), optional, intent(in):: timestep !! The timestep. Need to have (timestep/4.0) satisfying the CFL condition
 
@@ -218,7 +209,7 @@
 
         ! Store 1/n * (original_u - u), which will later be added to the solution [like subtracting 1/n of the
         ! evolved flow for the last (n-1) steps]
-
+EVOLVE_TIMER_START('rk2n_sum_step')
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         do k = 1, size(domain%backup_U, 3)
             !$OMP DO SCHEDULE(STATIC)
@@ -232,6 +223,7 @@
         ! Later when we add backup_U, the effect on the boundary_flux_integral is like subtracting( 1/n*flux_at_this_point)
         domain%boundary_flux_evolve_integral = domain%boundary_flux_evolve_integral*(n-1.0_dp)*n_inverse
         domain%boundary_flux_evolve_integral_exterior = domain%boundary_flux_evolve_integral_exterior*(n-1.0_dp)*n_inverse
+EVOLVE_TIMER_STOP('rk2n_sum_step')
 
         ! Now take one step of duration (n-1)/n * dt.
         ! For this step we flux-track as normal
@@ -239,7 +231,7 @@
         call one_euler_step(domain, reduced_dt, &
             update_nesting_boundary_flux_integral=.TRUE.)
         
-        !TIMER_START('final_update')
+EVOLVE_TIMER_START('rk2n_final_update')
 
         ! Final update
         ! domain%U = domain%U + domain%backup_U
@@ -260,7 +252,7 @@
         ! what is required for stability, even though at later sub-steps the max_dt might reduce)
         domain%max_dt = max_dt_store
 
-        !TIMER_STOP('final_update')
+EVOLVE_TIMER_STOP('rk2n_final_update')
 
     end subroutine
 
@@ -280,13 +272,10 @@
         backup_time = domain%time
         call domain%backup_quantities()
         
-        !TIMER_START('flux')
         call domain%compute_fluxes(dt_first_step)
-        !TIMER_STOP('flux')
 
         domain%max_dt = dt_first_step
 
-        !TIMER_START('update')
         ! First euler sub-step
         if(present(timestep)) then
 
@@ -296,17 +285,13 @@
             ! First euler sub-step
             call domain%update_U(dt_first_step*HALF_dp)
         end if
-        !TIMER_STOP('update')
 
-        !TIMER_START('partitioned_comms')
         if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
-        !TIMER_STOP('partitioned_comms')
 
         ! Compute fluxes 
-        !TIMER_START('flux')
         call domain%compute_fluxes()
-        !TIMER_STOP('flux')
 
+EVOLVE_TIMER_START('midpoint_U_from_backup')
         ! Set U back to backup_U
         !
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
@@ -321,11 +306,10 @@
 
         ! Fix time
         domain%time = backup_time
+EVOLVE_TIMER_STOP('midpoint_U_from_backup')
 
         ! Update U
-        !TIMER_START('update')
         call domain%update_U(dt_first_step)
-        !TIMER_STOP('update')
 
         ! Update the nesting boundary flux
         call domain%nesting_boundary_flux_integral_tstep(&
@@ -336,9 +320,7 @@
             flux_already_multiplied_by_dx=.TRUE.)
 
 
-        !TIMER_START('partitioned_comms')
         if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
-        !TIMER_STOP('partitioned_comms')
 
         domain%boundary_flux_evolve_integral = sum(domain%boundary_flux_store)*&
             dt_first_step
@@ -481,14 +463,17 @@
 
             ! Compute depth and velocity
             call domain%compute_depth_and_velocity(domain%cliffs_minimum_allowed_depth)
+EVOLVE_TIMER_START('cliffs_celerity')
             ! Compute celerity -- stored in backup_U(:,:,1)
             !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain)
             do j = 1, domain%nx(2)
                 domain%backup_U(:,j,1) = sqrt(gravity * domain%depth(:,j))
             end do
             !$OMP END PARALLEL DO
+EVOLVE_TIMER_STOP('cliffs_celerity')
         end if
 
+EVOLVE_TIMER_START('cliffs_update')
         ! Loop over the y coordinate
         !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain, zeta, dt)
         do j = 2, (domain%nx(2) - 1)
@@ -522,7 +507,9 @@
                 zeta, domain%manning_squared, domain%linear_friction_coeff)
         end do
         !$OMP END PARALLEL DO
+EVOLVE_TIMER_STOP('cliffs_update')
 
+EVOLVE_TIMER_START('cliffs_transformation')
         ! Update domain%U -- in principle part of this could be skipped if we 
         ! were to immediately were to take another step, except
         ! for some required boundary updates
@@ -536,6 +523,7 @@
                 merge(1, 0, domain%depth(:,j) >= domain%cliffs_minimum_allowed_depth)
         end do
         !$OMP END PARALLEL DO
+EVOLVE_TIMER_STOP('cliffs_transformation')
 
         domain%time = domain%time + dt
 

@@ -3241,7 +3241,8 @@ module multidomain_mod
     subroutine finalise_and_print_timers(md)
         class(multidomain_type), intent(inout) :: md
 
-        integer(ip) :: i
+        integer(ip) :: i, evolve_timer_file_unit
+        character(len=charlen) :: timer_log_filename
 
         ! Make the max_U values in each domain consistent across halos
         call md%communicate_max_U
@@ -3262,6 +3263,16 @@ module multidomain_mod
         write(log_output_unit, "(A)") 'Multidomain timer'
         write(log_output_unit, "(A)") ''
         call md%timer%print(log_output_unit)
+
+#ifdef EVOLVE_TIMER                
+        do i = 1, size(md%domains)
+            ! Output the evolve timer data to a separate file, in the domain folder.
+            timer_log_filename = trim(md%domains(i)%output_folder_name) // '/Evolve_timer_details.txt'
+            open(newunit=evolve_timer_file_unit, file=timer_log_filename)
+            call md%domains(i)%evolve_timer%print(evolve_timer_file_unit)
+            close(evolve_timer_file_unit)
+        end do
+#endif
 
     end subroutine
 

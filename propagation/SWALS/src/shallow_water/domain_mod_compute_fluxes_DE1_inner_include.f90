@@ -64,9 +64,6 @@
 
     real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1)), explicit_source_im1_work(domain%nx(1))
 
-    ! WORKAROUND FOR IFORT2019 OMP REDUCTION BUG -- emulate a MAX reduction
-    real(dp) :: scratch_omp(60)
-
     half_cfl = HALF_dp * domain%cfl
     ny = domain%nx(2)
     nx = domain%nx(1)
@@ -78,20 +75,12 @@
     ! By computing the inverse we avoid division in the loop
     max_dt_inv = ONE_dp/max_dt
 
-    ! WORKAROUND FOR IFORT2019 OMP REDUCTION BUG -- emulate a MAX reduction
-    scratch_omp = ZERO_dp
-
-    ! NOTE: Here we manually determine the openmp loop indices, because
+    ! NOTE: Below we manually determine the openmp loop indices, because
     ! some efficiency can be gained by moving through a contiguous chunk
-    !
-    !
 
-    !@ This openmp REDUCTION is buggy in ifort2019, so we work-around it below
-    !@!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, half_cfl, nx, ny, loop_work_count, max_dt), &
-    !@!$OMP REDUCTION(MAX:max_dt_inv)
-
-    ! WORKAROUND FOR IFORT2019 OMP REDUCTION BUG -- emulate a MAX reduction
-    !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, half_cfl, nx, ny, loop_work_count, max_dt, log_output_unit, scratch_omp)
+    ! This openmp REDUCTION was buggy in ifort2019 (was worked-around by introducing a scratch array)
+    !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, half_cfl, nx, ny, loop_work_count, max_dt), &
+    !$OMP REDUCTION(MAX:max_dt_inv)
 
     max_dt_inv_work = ONE_dp/max_dt
 #ifdef NOOPENMP
@@ -121,12 +110,6 @@
     ! j_high = upper loop index of the thread my_omp_id
     j_high = nint(loop_work_count * (my_omp_id + 1) * ONE_dp / n_omp_threads) + 2 - 1
 
-    ! WORKAROUND FOR IFORT2019 OMP REDUCTION BUG -- emulate a MAX reduction
-    if(n_omp_threads > size(scratch_omp)) then
-        write(log_output_unit, *) 'Need to increase size of scratch_omp to at-least OMP_NUM_THREADS' 
-        write(log_output_unit, *) 'scratch_omp is used to emulate a MAX reduction, working around a bug in ifort 2019' 
-        call generic_stop
-    end if
 #endif
 
     ! Pre-fetch the flow values at the NS edge from 'j-1'
@@ -486,7 +469,7 @@
                     (depth_neg + depth_neg_c)*(z_neg - domain%U(i-1 , j, ELV)))
 
                 ! To make this section OMP SIMD, we cannot update domain%explicit_source(i-1,j)
-                ! Thus we introduce a term to store its value, which is added outside the SIMD loop
+                ! Thus we introduce a term to store its value, which is added outside the loop
                 explicit_source_im1_work(i-1) =  &
                     bed_slope_pressure_e * domain%distance_left_edge(i) - half_g_hh_edge
 
@@ -562,15 +545,11 @@
 
         end do
 
-        ! Apply the explicit source update that could not be done in the SIMD loop
+        ! Apply the explicit source update that would break vectorization potential of the above loop
         domain%explicit_source(:,j,UH) = domain%explicit_source(:,j,UH) + explicit_source_im1_work
     end do
     max_dt_inv = maxval(max_dt_inv_work)
-    ! WORKAROUND FOR IFORT2019 REDUCTION BUG  -- emulate a MAX reduction
-    scratch_omp(my_omp_id + 1) = max_dt_inv
     !$OMP END PARALLEL
-    ! WORKAROUND FOR IFORT2019 REDUCTION BUG -- emulate a MAX reduction
-    max_dt_inv = maxval(scratch_omp) 
 
     max_dt = ONE_dp/max_dt_inv
     max_dt_out = max_dt

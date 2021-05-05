@@ -101,6 +101,7 @@ module extrapolation_limiting_mod
 
         else if(limiter_type == "Minmod2") then
             ! Same as 'MC' (!!!)
+
             !$OMP SIMD
             do i = 1, n
 

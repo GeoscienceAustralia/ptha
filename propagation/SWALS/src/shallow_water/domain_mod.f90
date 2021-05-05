@@ -7,6 +7,14 @@
 #   define TIMER_STOP(tname)
 #endif
 
+#ifdef EVOLVE_TIMER
+#   define EVOLVE_TIMER_START(tname) call domain%evolve_timer%timer_start(tname)
+#   define EVOLVE_TIMER_STOP(tname)  call domain%evolve_timer%timer_end(tname)
+#else
+#   define EVOLVE_TIMER_START(tname)
+#   define EVOLVE_TIMER_STOP(tname)
+#endif
+
 module domain_mod
     !!
     !! Contains type 'domain_type', which is the main type for solving the
@@ -326,8 +334,8 @@ module domain_mod
         type(nc_grid_output_type) :: nc_grid_output
             !! Type to manage netcdf grid outputs
 
-        type(timer_type):: timer
-            !! Type to record CPU timings
+        type(timer_type):: timer, evolve_timer
+            !! Types to record CPU timings
 
         type(partitioned_domain_nesw_comms_type):: partitioned_comms
             !! Type to do single-grid coarray communication. This has been superceeded by multidomain. 
@@ -1214,7 +1222,7 @@ TIMER_STOP("compute_statistics")
 
         real(dp) :: depth_inv, min_depth_local
         integer(ip) :: i, j, masscon_error
-
+EVOLVE_TIMER_START('compute_depth_and_velocity')
         ! Recompute depth and velocity
         ! Must be updated before the main loop when done in parallel
 
@@ -1261,6 +1269,7 @@ TIMER_STOP("compute_statistics")
 
         domain%negative_depth_fix_counter = domain%negative_depth_fix_counter + masscon_error
 
+EVOLVE_TIMER_STOP('compute_depth_and_velocity')
     end subroutine
 
 ! Get details of the compute_fluxes routines here 
@@ -1285,6 +1294,7 @@ TIMER_STOP("compute_statistics")
         ! Need to have depth/velocity up-to-date for flux computation
         call domain%compute_depth_and_velocity()
 
+EVOLVE_TIMER_START('compute_fluxes')
         !
         ! Flux computation -- optionally use a few different methods
         !
@@ -1377,6 +1387,7 @@ TIMER_STOP("compute_statistics")
             domain%boundary_flux_store_exterior = domain%boundary_flux_store
         end if
 
+EVOLVE_TIMER_STOP('compute_fluxes')
     end subroutine
 
 ! Get details of the update_U routine here
@@ -1389,11 +1400,13 @@ TIMER_STOP("compute_statistics")
         class(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt !! Timestep to advance
 
+EVOLVE_TIMER_START('update_U')
         if(domain%friction_type == 'manning') then
             call update_U_manning(domain, dt)
         else if(domain%friction_type == 'chezy') then
             call update_U_chezy(domain, dt)
         end if
+EVOLVE_TIMER_STOP('update_U')
 
         call domain%update_boundary()
         call domain%apply_forcing(dt)
@@ -1406,13 +1419,13 @@ TIMER_STOP("compute_statistics")
         !!
         class(domain_type), intent(inout):: domain 
 
-        !TIMER_START('boundary_update')
+EVOLVE_TIMER_START('boundary_update')
 
         if(associated(domain%boundary_subroutine)) then
             CALL domain%boundary_subroutine(domain)
         end if
 
-        !TIMER_STOP('boundary_update')
+EVOLVE_TIMER_STOP('boundary_update')
 
     end subroutine
 
@@ -1424,9 +1437,13 @@ TIMER_STOP("compute_statistics")
         class(domain_type), intent(inout):: domain 
         real(dp), intent(in) :: dt
 
+EVOLVE_TIMER_START('apply_forcing')
+
         if(associated(domain%forcing_subroutine)) then
             call domain%forcing_subroutine(domain, dt)
         end if
+
+EVOLVE_TIMER_STOP('apply_forcing')
 
     end subroutine
 
@@ -1438,7 +1455,7 @@ TIMER_STOP("compute_statistics")
         class(domain_type), intent(inout):: domain
         integer(ip):: j, k
 
-        !TIMER_START('backup')
+EVOLVE_TIMER_START('backup')
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         do k = STG, size(domain%backup_U, 3)
@@ -1450,7 +1467,7 @@ TIMER_STOP("compute_statistics")
         end do
         !$OMP END PARALLEL
 
-        !TIMER_STOP('backup')
+EVOLVE_TIMER_STOP('backup')
 
     end subroutine
 
@@ -2014,7 +2031,7 @@ TIMER_STOP('fileIO')
         integer(ip):: j, k, i
 
         if(domain%record_max_U) then
-            !TIMER_START('update_max_quantities')
+EVOLVE_TIMER_START('update_max_quantities')
 
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
 
@@ -2035,7 +2052,7 @@ TIMER_STOP('fileIO')
             !$OMP END DO
             !$OMP END PARALLEL
             
-            !TIMER_STOP('update_max_quantities')
+EVOLVE_TIMER_STOP('update_max_quantities')
         end if
 
     end subroutine update_max_quantities
@@ -2356,7 +2373,7 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
 
         integer(ip) :: i
 
-!TIMER_START('nesting_boundary_flux_integral_tstep')
+EVOLVE_TIMER_START('nesting_boundary_flux_integral_tstep')
 
         ! Apply to both the send and recv comms. This means that after
         ! communication, we can compare fluxes that were computed with
@@ -2381,7 +2398,7 @@ TIMER_STOP('nesting_boundary_flux_integral_multiply')
                     var_indices, flux_already_multiplied_by_dx)
             end do
         end if
-!TIMER_STOP('nesting_boundary_flux_integral_tstep')
+EVOLVE_TIMER_STOP('nesting_boundary_flux_integral_tstep')
 
     end subroutine
 
