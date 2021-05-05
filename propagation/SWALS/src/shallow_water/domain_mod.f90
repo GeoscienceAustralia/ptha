@@ -3454,7 +3454,10 @@ TIMER_STOP('receive_halos')
         !!
         class(domain_type), intent(inout) :: domain
         logical, intent(in) :: send_to_recv_buffer 
-            !! If .TRUE., then do parallel communication. If FALSE., then only copy data to the send buffer.
+            !! If .TRUE., then do parallel communication. If .FALSE., then only copy data 
+            !! to the send buffer (in that case, one can later call "communicate_p2p" 
+            !! to do all communications at once, which can be faster as it enables 
+            !! multiple sends between the same images to be collapsed into a single send).
 
         integer(ip) :: i
 
