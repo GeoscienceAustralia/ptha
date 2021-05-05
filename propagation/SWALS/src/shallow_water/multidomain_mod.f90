@@ -45,7 +45,6 @@ module multidomain_mod
     use ragged_array_mod, only: ragged_array_2d_dp_type, ragged_array_2d_ip_type
     use which_mod, only: which, rle_ip, bind_arrays_ip, remove_rows_ip, cumsum_ip
     use qsort_mod, only: match
-    use nested_grid_comms_mod, only: process_received_data 
     use coarray_point2point_comms_mod, only: allocate_p2p_comms, deallocate_p2p_comms, &
         linked_p2p_images, communicate_p2p, size_of_send_recv_buffers 
     use iso_fortran_env, only: int64
@@ -175,10 +174,6 @@ module multidomain_mod
 
         real(force_double), allocatable :: volume_initial(:), volume(:)
             !! Domain volume tracking
-
-        real(force_double), allocatable :: volume_work(:)
-            !! Work array which permits an openmp-reproducible volume summation
-            !! (since for standard REDUCE(+: variable), the summation order may change).
 
         character(len=charlen) :: output_basedir = default_output_folder
             !! Output directory
@@ -1037,7 +1032,7 @@ module multidomain_mod
                 ! "big domain". In combination with load balancing, we can get large speedups.
                 !
                 ! NOTE: This will lead to different timestepping with different domain partitions,
-                ! so the results should depend on the number of cores unless we specity the partition
+                ! so the results should depend on the number of cores unless we specify the partition
                 ! via a load_balance_file.
                 if(md%domains(j)%max_dt > 0.0_dp) then
                     nt = max(1, min(nt, ceiling(dt/(md%domains(j)%local_timestepping_scale * md%domains(j)%max_dt) )))
@@ -1458,8 +1453,7 @@ module multidomain_mod
         real(force_double), intent(inout) :: vol
         integer(ip), intent(in), optional :: domain_index
 
-        integer(ip) :: i, j, k, n_ext, ny, nx, kstart, kend
-        real(force_double) :: vol_k, local_sum
+        integer(ip) :: k, kstart, kend
 
         ! If domain_index is provided, then only get volume in that domain
         if(present(domain_index)) then
@@ -1470,49 +1464,11 @@ module multidomain_mod
             kend = size(md%domains, kind=ip)
         end if
 
-        ! Allocate the volume_work variable if it is not already allocated.
-        ! Ensure its length = maximum of domain%nx(2) over all domains
-        ! Note this loop will do nontrivial work only once
-        do k = kstart, kend
-
-            ! Quick exit
-            if(allocated(md%volume_work)) then
-                if(size(md%volume_work, kind=ip) > md%domains(k)%nx(2)) cycle
-            end if
-
-            ! Either the variable is unallocated, or it is too small
-            if(allocated(md%volume_work)) deallocate(md%volume_work)
-            allocate(md%volume_work(md%domains(k)%nx(2)))
-        end do
-
-
         vol = 0.0_force_double
 
         do k = kstart, kend 
-   
-            md%volume_work = 0.0_force_long_double
-
-            n_ext = md%domains(k)%exterior_cells_width
-            ny = md%domains(k)%nx(2)
-            nx = md%domains(k)%nx(1)
-            ! Integrate over the area with this domain = priority domain, which is not in periodic regions.
-            ! Be careful about precision ( see calls to real(...., force_double) )
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, n_ext, nx, ny, ti, k)
-            !$OMP DO SCHEDULE(STATIC)
-            do j = (n_ext+1), ny - n_ext
-                local_sum = sum(&
-                        real(md%domains(k)%U( (n_ext+1):(nx-n_ext) ,j ,STG), force_long_double) - &
-                        real(md%domains(k)%U( (n_ext+1):(nx-n_ext) ,j ,ELV), force_long_double ), &
-                    mask=(md%domains(k)%nesting%is_priority_domain_not_periodic( (n_ext+1):(nx-n_ext) ,j) == 1_ip) )
-                md%volume_work(j) = real(md%domains(k)%area_cell_y(j) * local_sum, force_long_double)
-            end do 
-            !$OMP END DO
-            !$OMP END PARALLEL
-
-            vol_k = sum(md%volume_work)
-            md%volume(k) = vol_k
-            vol = vol + vol_k
-
+            call md%domains(k)%volume_in_priority_domain(md%volume(k))
+            vol = vol + md%volume(k)
         end do
 
     end subroutine
@@ -2074,7 +2030,7 @@ module multidomain_mod
         class(multidomain_type), intent(inout) :: md
         logical, optional, intent(in) :: sync_before, sync_after
 
-        integer(ip) :: i, j, ii, jj, iL, iU, jL, jU, ip1, jp1, nbr_j, nbr_ti
+        integer(ip) :: j
         real(dp) :: elev_lim
         logical :: sync_before_local, sync_after_local
 
@@ -2109,159 +2065,8 @@ module multidomain_mod
         !!!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md)
         !!!$OMP DO SCHEDULE(DYNAMIC)
         do j = 1, size(md%domains, kind=ip)
-#ifdef TIMER
-            call md%domains(j)%timer%timer_start('receive_halos')
-#endif
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, j)
-            !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(md%domains(j)%nesting%recv_comms, kind=ip)
-
-                !! Avoid use of type-bound-procedure in openmp region
-                !call md%domains(j)%nesting%recv_comms(i)%process_received_data(md%domains(j)%U)
-                call process_received_data(md%domains(j)%nesting%recv_comms(i), md%domains(j)%U)
-            end do
-
-            !$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(md%domains(j)%nesting%recv_comms, kind=ip)
-                !
-                ! Need some more processing of staggered-grid receive regions to deal with potential wetting/drying issues.
-                ! This cannot be included in the loop above because for some solvers, we refer to stage values outside
-                ! the receive region (extreme values of indices ip1, jp1), which could lead to a race condition. 
-                ! However one could restructure the code to put much of this content inside the loop above (truely linear solvers,
-                ! updates of non-boundary cells).
-                !
-                if( (.not. md%domains(j)%is_staggered_grid) .or. &
-                    (.not. md%domains(j)%nesting%recv_comms(i)%recv_active) &
-                  ) cycle
-                ! Below here we are definitely using a leapfrog-type solver.
-
-                !! If we are receiving from a domain with the same solver type and grid size, there will never be any issues.
-                !! Actually this is not true -- counter example: suppose they differ in domain%linear_solver_is_truely_linear
-                !nbr_ti = md%domains(j)%nesting%recv_comms(i)%neighbour_domain_image_index
-                !nbr_j = md%domains(j)%nesting%recv_comms(i)%neighbour_domain_index
-                !if( md%domains(j)%nesting%recv_comms(i)%equal_cell_ratios .and. &
-                !   (md%timestepping_methods(j, ti) == md%timestepping_methods(nbr_j, nbr_ti)) &
-                !   ) cycle
-
-                ! Need to avoid receiving non-zero UH/VH at wet/dry boundaries, in a way that would violate
-                ! the solver logic
-
-                ! Indices of the region that received data
-                iL = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,1)
-                iU = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,1)
-                jL = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,2)
-                jU = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,2)
-
-                ! Depending on the numerical method, we need to treat the wet/dry issues differently
-                if( any( md%domains(j)%timestepping_method == [character(len=charlen) :: &
-                        'linear', 'leapfrog_linear_plus_nonlinear_friction'] ) .and. &
-                    md%domains(j)%linear_solver_is_truely_linear) then
-                    ! Here we treat the 'truely linear' solvers where all cells 
-                    ! above (domain%msl_linear - minimum_allowed_depth)
-                    ! are dry. Flux is zero if either neighbouring elevation is dry
-
-                    ! Elevation above which flux = 0 for truely-linear domain
-                    elev_lim = (md%domains(j)%msl_linear - minimum_allowed_depth)
-
-                    ! Loop over the received region, and ensure UH/VH on wet-dry boundaries are 0
-                    do jj = jL, jU
-
-                        ! jj+1, avoiding out-of-bounds
-                        jp1 = min(jj+1, size(md%domains(j)%U, 2, kind=ip))
-
-                        do ii = iL, iU
-
-                            ! ii+1, avoiding out-of-bounds
-                            ip1 = min(ii+1, size(md%domains(j)%U, 1, kind=ip))
-
-                            ! Condition for zero EW flux on staggered grid
-                            if( (md%domains(j)%U(ii,jj,ELV) >= elev_lim) .or. &
-                                (md%domains(j)%U(ip1,jj,ELV) >= elev_lim) ) then
-                                md%domains(j)%U(ii,jj,UH) = 0.0_dp
-                            end if
-
-                            ! Condition for zero NS flux on staggered grid
-                            if( (md%domains(j)%U(ii,jj,ELV) >= elev_lim) .or. &
-                                (md%domains(j)%U(ii,jp1,ELV) >= elev_lim) ) then
-                                md%domains(j)%U(ii,jj,VH) = 0.0_dp
-                            end if
-                            
-                        end do
-                    end do
-
-                else if(md%domains(j)%timestepping_method /= 'leapfrog_nonlinear') then
-                    ! This treats 'not-truely-linear' staggered grid solvers, which are not fully nonlinear.
-                    ! In this case the UH/VH terms should be zero if either neighbouring cell has
-                    ! ( stage <= (elev + minimum_allowed_depth) )
-
-                    ! Loop over the received region, and ensure UH/VH on
-                    ! wet-dry boundaries are 0
-                    do jj = jL, jU
-
-                        ! jj+1, avoiding out-of-bounds
-                        jp1 = min(jj+1, size(md%domains(j)%U, 2, kind=ip))
-
-                        do ii = iL, iU
-
-                            ! ii+1, avoiding out-of-bounds
-                            ip1 = min(ii+1, size(md%domains(j)%U, 1, kind=ip))
-
-                            ! No EW flux if either neighbouring cell is dry
-                            if( (md%domains(j)%U(ii,jj,STG)  - md%domains(j)%U(ii,jj,ELV)  <= minimum_allowed_depth) .or. &
-                                (md%domains(j)%U(ip1,jj,STG) - md%domains(j)%U(ip1,jj,ELV) <= minimum_allowed_depth) ) then
-                                md%domains(j)%U(ii,jj,UH) = 0.0_dp
-                            end if
-
-                            ! No NS flux if either neighbouring cell is dry
-                            if( (md%domains(j)%U(ii,jj,STG)  - md%domains(j)%U(ii,jj,ELV)  <= minimum_allowed_depth) .or. &
-                                (md%domains(j)%U(ii,jp1,STG) - md%domains(j)%U(ii,jp1,ELV) <= minimum_allowed_depth) ) then
-                                md%domains(j)%U(ii,jj,VH) = 0.0_dp
-                            end if
-                            
-                        end do
-                    end do
-
-                else if(md%domains(j)%timestepping_method == 'leapfrog_nonlinear') then
-                    ! For the fully nonlinear staggered-grid solver, we just need to ensure there is no outflow from dry cells
-                    do jj = jL, jU
-
-                        ! jj+1, avoiding out-of-bounds
-                        jp1 = min(jj+1, size(md%domains(j)%U, 2, kind=ip))
-
-                        do ii = iL, iU
-
-                            ! ii+1, avoiding out-of-bounds
-                            ip1 = min(ii+1, size(md%domains(j)%U, 1, kind=ip))
-
-                            ! No easterly outflow from dry cell
-                            if( (md%domains(j)%U(ii,jj,STG)  - md%domains(j)%U(ii,jj,ELV)  <= minimum_allowed_depth) .and. &
-                                (md%domains(j)%U(ii,jj, UH) > 0.0_dp) ) md%domains(j)%U(ii,jj,UH) = 0.0_dp 
-                            
-                            ! No westerly outflow from dry cell -- not applicable if ii+1 extends outside eastern boundary
-                            if( (ip1 == ii + 1) .and. &
-                                (md%domains(j)%U(ip1,jj,STG) - md%domains(j)%U(ip1,jj,ELV) <= minimum_allowed_depth) .and. & 
-                                (md%domains(j)%U(ii,jj, UH) < 0.0_dp) ) md%domains(j)%U(ii,jj,UH) = 0.0_dp 
-
-                            ! No northerly outflow from dry cell
-                            if( (md%domains(j)%U(ii,jj,STG)  - md%domains(j)%U(ii,jj,ELV)  <= minimum_allowed_depth) .and. &
-                                (md%domains(j)%U(ii,jj,VH) > 0.0_dp ) ) md%domains(j)%U(ii,jj,VH) = 0.0_dp
-                           
-                            ! No southerly outflow from dry cell -- not applicable if jj+1 extends outside northern boundary
-                            if( (jp1 == jj + 1) .and. &
-                                (md%domains(j)%U(ii,jp1,STG) - md%domains(j)%U(ii,jp1,ELV) <= minimum_allowed_depth) .and. &
-                                (md%domains(j)%U(ii,jj,VH) < 0.0_dp ) ) md%domains(j)%U(ii,jj,VH) = 0.0_dp
-                            
-                        end do
-                    end do
-                end if
-            end do ! End of loop over nesting receive comms
-            !$OMP END DO
-            !$OMP END PARALLEL
-
-#ifdef TIMER            
-            call md%domains(j)%timer%timer_end('receive_halos')
-#endif
-        end do ! End of loop over domains
+            call md%domains(j)%receive_halos()
+        end do
         !!$OMP END DO
         !!$OMP END PARALLEL
 
@@ -2334,24 +2139,7 @@ module multidomain_mod
 #endif
 
         do j = jmn, jmx
-#ifdef TIMER
-            call md%domains(j)%timer%timer_start('send_halos')
-#endif
-            !!! Seems faster to do the openmp inside "process_data_to_send"?
-            !!! So comment out openmp here. Also, ifort19 seg-faulted when I used openmp here, at least with -heap-arrays
-            !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, j, send_to_recv_buffer_local)
-            !!$OMP DO SCHEDULE(DYNAMIC)
-            do i = 1, size(md%domains(j)%nesting%send_comms, kind=ip)
-
-                call md%domains(j)%nesting%send_comms(i)%process_data_to_send(md%domains(j)%U)
-                call md%domains(j)%nesting%send_comms(i)%send_data(send_to_recv_buffer=send_to_recv_buffer_local)
-            end do
-            !!$OMP END DO
-            !!$OMP END PARALLEL
-
-#ifdef TIMER
-            call md%domains(j)%timer%timer_end('send_halos')
-#endif
+            call md%domains(j)%send_halos(send_to_recv_buffer=send_to_recv_buffer_local)
         end do
 
         TIMER_STOP('send_multidomain_halos')

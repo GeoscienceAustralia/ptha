@@ -27,7 +27,7 @@ module domain_mod
         setup_timestepping_metadata, timestepping_method_index
     use point_gauge_mod, only: point_gauge_type
     use coarray_utilities_mod, only: partitioned_domain_nesw_comms_type
-    use nested_grid_comms_mod, only: domain_nesting_type
+    use nested_grid_comms_mod, only: domain_nesting_type, process_received_data 
     use stop_mod, only: generic_stop
     use iso_fortran_env, only: output_unit, int32, int64
     use iso_c_binding, only: c_ptr, c_null_ptr
@@ -359,6 +359,10 @@ module domain_mod
         type(domain_nesting_type) :: nesting
             !! Type to manage nesting communication. This is required for nesting, and is the standard
             !! approach for distributed-memory parallel runs.
+
+        real(force_double), allocatable :: volume_work(:), energy_potential_on_rho_work(:), energy_kinetic_on_rho_work(:)
+            !! Work arrays which permit an openmp-reproducible summation
+            !! (since for standard REDUCE(+: variable), the summation order may change).
  
 
         ! Big arrays to hold the domain variables
@@ -434,6 +438,7 @@ module domain_mod
         ! Mass conservation and other reporting
         procedure:: mass_balance_interior => mass_balance_interior
         procedure:: volume_interior => volume_interior
+        procedure:: volume_in_priority_domain => volume_in_priority_domain
         procedure:: compute_domain_statistics => compute_domain_statistics_new
 
         ! Functions to estimate gravity-wave time-step (often useful to call at the start of a model run). These are not used
@@ -451,6 +456,10 @@ module domain_mod
 
         ! Smoothing of elevation. Not recommended in general, but with poor elevation data it might reduce artefacts.
         procedure :: smooth_elevation => smooth_elevation
+
+        ! Sending and receiving halos
+        procedure :: send_halos => send_halos
+        procedure :: receive_halos => receive_halos
 
         ! Nesting.
         ! -- Keep track of fluxes for mass-conservation tracking
@@ -565,7 +574,7 @@ TIMER_STOP('printing_stats')
         !! Compute various statistics in the domain. If nesting is occurring, then only consider
         !! priority_domain cells. Never include cells within 'exterior_cells_width' from the boundary.
         !!
-        class(domain_type), intent(in) :: domain
+        class(domain_type), intent(inout) :: domain
             !! The domain for which we compute statistics
         real(dp), intent(out) :: maxstage, maxspeed, minstage, minspeed
             !! Stage and speed statistics in wet areas
@@ -581,10 +590,10 @@ TIMER_STOP('printing_stats')
         integer(ip) :: ecw, i, j
         real(dp) :: depth_C, depth_N, depth_E, depth_N_inv, depth_E_inv, speed_sq
         ! Ensure the energy accumulation uses high precision, easy to lose precision here.
-        integer(ip), parameter :: e_prec = force_double ! force_long_double
-        real(e_prec) :: e_potential_on_rho, e_kinetic_on_rho, e_total_on_rho, e_flow, e_constant, w0, d1, w2, d3
+        real(force_double) :: e_flow, e_constant, w0, d1, w2, d3
 
-        !print*, "e_prec: ", e_prec
+TIMER_START("compute_statistics")
+        !print*, "force_double: ", force_double
         !print*, "domain%msl_linear: ", domain%msl_linear
 
         ! If nesting is occurring, the above stats are only computed
@@ -596,24 +605,23 @@ TIMER_STOP('printing_stats')
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
         minspeed = 0.0_dp ! speed is always > 0
-        e_potential_on_rho = 0.0_e_prec
-        e_kinetic_on_rho = 0.0_e_prec
 
         ecw = domain%exterior_cells_width
+
+        ! Use these arrays to store the row-wise sums of potential and kinetic energy.
+        domain%energy_potential_on_rho_work = 0.0_force_double
+        domain%energy_kinetic_on_rho_work = 0.0_force_double
 
         ! Compute stats of interest in parallel
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(is_nesting, domain, ecw), &
         !$OMP REDUCTION(max: maxspeed) REDUCTION(min: minspeed), &
-        !$OMP REDUCTION(max: maxstage) REDUCTION(min: minstage), &
-        !$OMP REDUCTION(+: e_potential_on_rho) REDUCTION(+: e_kinetic_on_rho)
+        !$OMP REDUCTION(max: maxstage) REDUCTION(min: minstage)
 
         ! Reset stats of interest
         maxstage = -HUGE(1.0_dp)
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
         minspeed = 0.0_dp ! speed is always > 0
-        e_potential_on_rho = 0.0_e_prec
-        e_kinetic_on_rho = 0.0_e_prec
 
         ! If we are using a 'truely-linear' solver then the depth is always recorded from MSL for certain
         ! calculations (pressure gradient term, and wetting/drying)
@@ -644,25 +652,25 @@ TIMER_STOP('printing_stats')
                 ! This can be rearranged noting (depth = stage - elev) to give
                 !     Integral of [ (g/2 stage^2 - g/2 elev^2) ] 
                 ! ('difference of 2 squares')
-                w0 = real(domain%U(i,j,STG), e_prec) + real(domain%U(i,j,ELV), e_prec)
-                d1 = real(domain%U(i,j,STG), e_prec) - real(domain%U(i,j,ELV), e_prec)
-                e_flow = merge( w0*d1, 0.0_e_prec, is_wet)
+                w0 = real(domain%U(i,j,STG), force_double) + real(domain%U(i,j,ELV), force_double)
+                d1 = real(domain%U(i,j,STG), force_double) - real(domain%U(i,j,ELV), force_double)
+                e_flow = merge( w0*d1, 0.0_force_double, is_wet)
                 ! Once integrated the g/2 elev^2 term will be a constant if the bathymetry is fixed and there is no wetting and
                 ! drying. We are only interested in changes in integrated energy, and subtracting that constant recovers the
                 ! (g/2 stage^2) formulation of potential energy, which is typically used for the linear shallow water equations in
                 ! deep ocean tsunami type cases.
-                w2 = real(domain%msl_linear, e_prec) + real(domain%U(i,j,ELV), e_prec)
-                d3 = real(domain%msl_linear, e_prec) - real(domain%U(i,j,ELV), e_prec)
-                e_constant = merge( w2*d3, 0.0_e_prec, domain%msl_linear > domain%U(i,j,ELV) + minimum_allowed_depth)
+                w2 = real(domain%msl_linear, force_double) + real(domain%U(i,j,ELV), force_double)
+                d3 = real(domain%msl_linear, force_double) - real(domain%U(i,j,ELV), force_double)
+                e_constant = merge( w2*d3, 0.0_force_double, domain%msl_linear > domain%U(i,j,ELV) + minimum_allowed_depth)
                     ! e_constant must be COMPLETELY UNAFFECTED by changes in the flow - it is a constant offset.
 
                 ! ! Here is the classical form of available potential energy (which works without wetting/drying)
-                !w0 = (real(domain%U(i,j,STG), e_prec) - real(domain%msl_linear, e_prec))**2
-                !e_flow = merge(w0, 0.0_e_prec, is_wet)
-                !e_constant = 0.0_e_prec
+                !w0 = (real(domain%U(i,j,STG), force_double) - real(domain%msl_linear, force_double))**2
+                !e_flow = merge(w0, 0.0_force_double, is_wet)
+                !e_constant = 0.0_force_double
 
-                e_potential_on_rho = e_potential_on_rho + &
-                    real(domain%area_cell_y(j) * gravity * 0.5_dp, e_prec) * (e_flow - e_constant)
+                domain%energy_potential_on_rho_work(j) = domain%energy_potential_on_rho_work(j) + &
+                    real(domain%area_cell_y(j) * gravity * 0.5_dp, force_double) * (e_flow - e_constant)
 
                 if(is_wet) then
 
@@ -705,11 +713,11 @@ TIMER_STOP('printing_stats')
                                    domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv**2
 
                         ! The kinetic energy is integral of ( 1/2 depth speed^2)
-                        e_kinetic_on_rho = e_kinetic_on_rho + real(0.5_dp * &
+                        domain%energy_kinetic_on_rho_work(j) = domain%energy_kinetic_on_rho_work(j) + real(0.5_dp * &
                             (domain%area_cell_y(j) * domain%U(i,j,UH) * domain%U(i,j,UH) * depth_E_inv + &
                             0.5_dp * (domain%area_cell_y(j) + domain%area_cell_y(j+1)) * &
                                 domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv  ), &
-                            e_prec)
+                            force_double)
  
                     else
                         ! Co-loated grid
@@ -718,8 +726,8 @@ TIMER_STOP('printing_stats')
                                     (depth_C*depth_C)
 
                         ! The kinetic energy is integral of ( 1/2 depth speed^2)
-                        e_kinetic_on_rho = e_kinetic_on_rho + real(domain%area_cell_y(j) * &
-                            0.5_dp * depth_C * speed_sq, e_prec)
+                        domain%energy_kinetic_on_rho_work(j) = domain%energy_kinetic_on_rho_work(j) + &
+                            real(domain%area_cell_y(j) * 0.5_dp * depth_C * speed_sq, force_double)
                      end if
 
                     maxspeed = max(maxspeed, speed_sq) ! Will undo the sqrt later.
@@ -734,13 +742,12 @@ TIMER_STOP('printing_stats')
         ! Convert 'speed**2' to 'speed'
         maxspeed = sqrt(maxspeed)
         minspeed = sqrt(minspeed)
-        ! Copy energies (in e_prec) precision back to possibly lower precision input var
-        energy_kinetic_on_rho = e_kinetic_on_rho
-        energy_potential_on_rho = e_potential_on_rho
-        energy_total_on_rho = e_potential_on_rho + e_kinetic_on_rho
+        ! Copy energies (in force_double) precision back to possibly lower precision input var
+        energy_kinetic_on_rho = sum(domain%energy_kinetic_on_rho_work)
+        energy_potential_on_rho = sum(domain%energy_potential_on_rho_work)
+        energy_total_on_rho = energy_kinetic_on_rho + energy_potential_on_rho
 
-        !print*, "energies: ", e_potential_on_rho + e_kinetic_on_rho, e_potential_on_rho, e_kinetic_on_rho
-
+TIMER_STOP("compute_statistics")
     end subroutine
 
 
@@ -953,6 +960,11 @@ TIMER_STOP('printing_stats')
 #else
         domain%area_cell_y = product(domain%dx)
 #endif
+
+        ! Work-space to do volume calculations
+        allocate(domain%volume_work(ny))
+        allocate(domain%energy_potential_on_rho_work(ny))
+        allocate(domain%energy_kinetic_on_rho_work(ny))
 
         !
         ! Below we allocate the main arrays, using loops to promote openmp memory affinity (based on the first-touch principle).
@@ -1606,6 +1618,46 @@ TIMER_STOP('evolve_one_step')
         !!TIMER_STOP('volume_interior')
 
     end function
+
+    subroutine volume_in_priority_domain(domain, domain_volume)
+        !!
+        !! Compute the volume of water in "priority domain" cells in the domain, ignoring
+        !! parts of the domain that are within the domain%exterior_cells_width boundary (in
+        !! general those regions are boundary condition sites). 
+        !! Control the summation order in a way that is reproducible even with openmp.
+        !!
+        class(domain_type), intent(inout):: domain
+        real(force_double), intent(inout) :: domain_volume
+        integer(ip) :: n_ext, ny, nx, j
+        real(dp) :: local_sum
+
+TIMER_START('compute_volume_in_priority_domain')
+   
+            domain%volume_work = 0.0_force_long_double
+
+            n_ext = domain%exterior_cells_width
+            ny = domain%nx(2)
+            nx = domain%nx(1)
+            ! Integrate over the area with this domain = priority domain, which is not in periodic regions.
+            ! Be careful about precision ( see calls to real(...., force_double) ). 
+            ! Use domain%volume_work (rather than a reduction) for reproducibility of the sum in parallel. 
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, n_ext, nx, ny)
+            !$OMP DO SCHEDULE(STATIC)
+            do j = (n_ext+1), ny - n_ext
+                local_sum = sum(&
+                        real(domain%U( (n_ext+1):(nx-n_ext) ,j ,STG), force_long_double) - &
+                        real(domain%U( (n_ext+1):(nx-n_ext) ,j ,ELV), force_long_double ), &
+                    mask=(domain%nesting%is_priority_domain_not_periodic( (n_ext+1):(nx-n_ext) ,j) == 1_ip) )
+                domain%volume_work(j) = real(domain%area_cell_y(j) * local_sum, force_long_double)
+            end do 
+            !$OMP END DO
+            !$OMP END PARALLEL
+
+            domain_volume = sum(domain%volume_work)
+
+TIMER_STOP('compute_volume_in_priority_domain')
+
+    end subroutine
 
     function mass_balance_interior(domain) result(mass_balance)
         !!
@@ -3241,6 +3293,184 @@ TIMER_STOP('nesting_flux_correction')
             domain%dx_refinement_factor = real(dx_refinement_factor, dp)
             domain%dx_refinement_factor_of_parent_domain = ONE_dp
         end if
+
+    end subroutine
+
+    subroutine receive_halos(domain)
+        !!
+        !! Loop over domain%nesting%receive_comms, and receive the halo data
+        !!
+        class(domain_type), intent(inout) :: domain
+
+        integer(ip) :: i, j, ii, jj, iL, iU, jL, jU, ip1, jp1, nbr_j, nbr_ti
+        real(dp) :: elev_lim
+
+TIMER_START('receive_halos')
+
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+        !$OMP DO SCHEDULE(DYNAMIC)
+        do i = 1, size(domain%nesting%recv_comms, kind=ip)
+
+            !! Avoid use of type-bound-procedure in openmp region
+            !call domain%nesting%recv_comms(i)%process_received_data(domain%U)
+            call process_received_data(domain%nesting%recv_comms(i), domain%U)
+        end do
+
+        !$OMP DO SCHEDULE(DYNAMIC)
+        do i = 1, size(domain%nesting%recv_comms, kind=ip)
+            !
+            ! Need some more processing of staggered-grid receive regions to deal with potential wetting/drying issues.
+            ! This cannot be included in the loop above because for some solvers, we refer to stage values outside
+            ! the receive region (extreme values of indices ip1, jp1), which could lead to a race condition. 
+            ! However one could restructure the code to put much of this content inside the loop above (truely linear solvers,
+            ! updates of non-boundary cells).
+            !
+            if( (.not. domain%is_staggered_grid) .or. (.not. domain%nesting%recv_comms(i)%recv_active) ) cycle
+            ! Below here we are definitely using a leapfrog-type solver.
+
+            ! Need to avoid receiving non-zero UH/VH at wet/dry boundaries, in a way that would violate
+            ! the solver logic
+
+            ! Indices of the region that received data
+            iL = domain%nesting%recv_comms(i)%recv_inds(1,1)
+            iU = domain%nesting%recv_comms(i)%recv_inds(2,1)
+            jL = domain%nesting%recv_comms(i)%recv_inds(1,2)
+            jU = domain%nesting%recv_comms(i)%recv_inds(2,2)
+
+            ! Depending on the numerical method, we need to treat the wet/dry issues differently
+            if( any( domain%timestepping_method == [character(len=charlen) :: &
+                    'linear', 'leapfrog_linear_plus_nonlinear_friction'] ) .and. &
+                domain%linear_solver_is_truely_linear) then
+                ! Here we treat the 'truely linear' solvers where all cells above 
+                !     (domain%msl_linear - minimum_allowed_depth)
+                ! are dry. Flux is zero if either neighbouring elevation is dry
+
+                ! Elevation above which flux = 0 for truely-linear domain
+                elev_lim = (domain%msl_linear - minimum_allowed_depth)
+
+                ! Loop over the received region, and ensure UH/VH on wet-dry boundaries are 0
+                do jj = jL, jU
+
+                    ! jj+1, avoiding out-of-bounds
+                    jp1 = min(jj+1, size(domain%U, 2, kind=ip))
+
+                    do ii = iL, iU
+
+                        ! ii+1, avoiding out-of-bounds
+                        ip1 = min(ii+1, size(domain%U, 1, kind=ip))
+
+                        ! Condition for zero EW flux on staggered grid
+                        if( (domain%U(ii,jj,ELV) >= elev_lim) .or. &
+                            (domain%U(ip1,jj,ELV) >= elev_lim) ) then
+                            domain%U(ii,jj,UH) = 0.0_dp
+                        end if
+
+                        ! Condition for zero NS flux on staggered grid
+                        if( (domain%U(ii,jj,ELV) >= elev_lim) .or. &
+                            (domain%U(ii,jp1,ELV) >= elev_lim) ) then
+                            domain%U(ii,jj,VH) = 0.0_dp
+                        end if
+                        
+                    end do
+                end do
+
+            else if(domain%timestepping_method /= 'leapfrog_nonlinear') then
+                ! This treats 'not-truely-linear' staggered grid solvers, which are not fully nonlinear.
+                ! In this case the UH/VH terms should be zero if either neighbouring cell has
+                ! ( stage <= (elev + minimum_allowed_depth) )
+
+                ! Loop over the received region, and ensure UH/VH on
+                ! wet-dry boundaries are 0
+                do jj = jL, jU
+
+                    ! jj+1, avoiding out-of-bounds
+                    jp1 = min(jj+1, size(domain%U, 2, kind=ip))
+
+                    do ii = iL, iU
+
+                        ! ii+1, avoiding out-of-bounds
+                        ip1 = min(ii+1, size(domain%U, 1, kind=ip))
+
+                        ! No EW flux if either neighbouring cell is dry
+                        if( (domain%U(ii,jj,STG)  - domain%U(ii,jj,ELV)  <= minimum_allowed_depth) .or. &
+                            (domain%U(ip1,jj,STG) - domain%U(ip1,jj,ELV) <= minimum_allowed_depth) ) then
+                            domain%U(ii,jj,UH) = 0.0_dp
+                        end if
+
+                        ! No NS flux if either neighbouring cell is dry
+                        if( (domain%U(ii,jj,STG)  - domain%U(ii,jj,ELV)  <= minimum_allowed_depth) .or. &
+                            (domain%U(ii,jp1,STG) - domain%U(ii,jp1,ELV) <= minimum_allowed_depth) ) then
+                            domain%U(ii,jj,VH) = 0.0_dp
+                        end if
+                        
+                    end do
+                end do
+
+            else if(domain%timestepping_method == 'leapfrog_nonlinear') then
+                ! For the fully nonlinear staggered-grid solver, we just need to ensure there is no outflow 
+                ! from dry cells
+                do jj = jL, jU
+
+                    ! jj+1, avoiding out-of-bounds
+                    jp1 = min(jj+1, size(domain%U, 2, kind=ip))
+
+                    do ii = iL, iU
+
+                        ! ii+1, avoiding out-of-bounds
+                        ip1 = min(ii+1, size(domain%U, 1, kind=ip))
+
+                        ! No easterly outflow from dry cell
+                        if( (domain%U(ii,jj,STG)  - domain%U(ii,jj,ELV)  <= minimum_allowed_depth) .and. &
+                            (domain%U(ii,jj, UH) > 0.0_dp) ) domain%U(ii,jj,UH) = 0.0_dp 
+                        
+                        ! No westerly outflow from dry cell -- not applicable if ii+1 extends outside eastern boundary
+                        if( (ip1 == ii + 1) .and. &
+                            (domain%U(ip1,jj,STG) - domain%U(ip1,jj,ELV) <= minimum_allowed_depth) .and. & 
+                            (domain%U(ii,jj, UH) < 0.0_dp) ) domain%U(ii,jj,UH) = 0.0_dp 
+
+                        ! No northerly outflow from dry cell
+                        if( (domain%U(ii,jj,STG)  - domain%U(ii,jj,ELV)  <= minimum_allowed_depth) .and. &
+                            (domain%U(ii,jj,VH) > 0.0_dp ) ) domain%U(ii,jj,VH) = 0.0_dp
+                       
+                        ! No southerly outflow from dry cell -- not applicable if jj+1 extends outside northern boundary
+                        if( (jp1 == jj + 1) .and. &
+                            (domain%U(ii,jp1,STG) - domain%U(ii,jp1,ELV) <= minimum_allowed_depth) .and. &
+                            (domain%U(ii,jj,VH) < 0.0_dp ) ) domain%U(ii,jj,VH) = 0.0_dp
+                        
+                    end do
+                end do
+            end if
+        end do ! End of loop over nesting receive comms
+        !$OMP END DO
+        !$OMP END PARALLEL
+
+TIMER_STOP('receive_halos')
+
+    end subroutine
+
+    subroutine send_halos(domain, send_to_recv_buffer)
+        !!
+        !! Loop over domain%nesting%send_comms, and send the halo data
+        !!
+        class(domain_type), intent(inout) :: domain
+        logical, intent(in) :: send_to_recv_buffer 
+            !! If .TRUE., then do parallel communication. If FALSE., then only copy data to the send buffer.
+
+        integer(ip) :: i
+
+TIMER_START('send_halos')
+            !! Seems faster to do the openmp inside "process_data_to_send"?
+            !! So comment out openmp here. Also, ifort19 seg-faulted when I used openmp here.
+            !!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, send_to_recv_buffer_local)
+            !!$OMP DO SCHEDULE(DYNAMIC)
+            do i = 1, size(domain%nesting%send_comms, kind=ip)
+
+                call domain%nesting%send_comms(i)%process_data_to_send(domain%U)
+                call domain%nesting%send_comms(i)%send_data(send_to_recv_buffer=send_to_recv_buffer)
+            end do
+            !!$OMP END DO
+            !!$OMP END PARALLEL
+TIMER_STOP('send_halos')
 
     end subroutine
 
