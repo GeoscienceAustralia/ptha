@@ -5,7 +5,9 @@
 #
 
 #SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../.git describe --abbrev=50 --always --tags)
-SWALS_SRC_GIT_VERSION := $(shell git log -n1 | head -n1 | tail -c41)
+#SWALS_SRC_GIT_VERSION := $(shell git log -n1 | head -n1 | tail -c41)
+## This will find the git log commit reference associated with the ptha repository
+SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../../../.git log -n1 | head -n1 | tail -c41)
 
 
 #
