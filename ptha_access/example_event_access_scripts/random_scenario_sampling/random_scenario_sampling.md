@@ -101,13 +101,13 @@ head(random_scenarios_simple)
 ```
 
 ```
-##   inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 1  550 7.2        0.05704921                        0.004754101
-## 2 1088 7.2        0.05704921                        0.004754101
-## 3  195 7.2        0.05704921                        0.004754101
-## 4 1302 7.2        0.05704921                        0.004754101
-## 5   28 7.2        0.05704921                        0.004754101
-## 6 1038 7.2        0.05704921                        0.004754101
+##   inds  mw rate_with_this_mw importance_sampling_scenario_rates_basic
+## 1  550 7.2        0.05704921                              0.004754101
+## 2 1088 7.2        0.05704921                              0.004754101
+## 3  195 7.2        0.05704921                              0.004754101
+## 4 1302 7.2        0.05704921                              0.004754101
+## 5   28 7.2        0.05704921                              0.004754101
+## 6 1038 7.2        0.05704921                              0.004754101
 ##   importance_sampling_scenario_rates_self_normalised
 ## 1                                        0.004754101
 ## 2                                        0.004754101
@@ -115,13 +115,13 @@ head(random_scenarios_simple)
 ## 4                                        0.004754101
 ## 5                                        0.004754101
 ## 6                                        0.004754101
-##   importance_sampling_scenario_weights
-## 1                           0.08333333
-## 2                           0.08333333
-## 3                           0.08333333
-## 4                           0.08333333
-## 5                           0.08333333
-## 6                           0.08333333
+##   importance_sampling_scenario_weights_basic
+## 1                                 0.08333333
+## 2                                 0.08333333
+## 3                                 0.08333333
+## 4                                 0.08333333
+## 5                                 0.08333333
+## 6                                 0.08333333
 ##   importance_sampling_scenario_weights_self_normalised
 ## 1                                           0.08333333
 ## 2                                           0.08333333
@@ -134,10 +134,10 @@ The columns are
 * `inds` is the indices of the randomly selected scenarios. This corresponds to indices in the `event_Mw` and `event_rates` variables. Because herein these are simply columns of the event table, `inds` also also correspond to rows in `kt2_scenarios$events`.
 * `mw` is the scenario magnitude. This is the same as `event_Mw[random_scenarios_simple$inds]`
 * `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. This is the sum of `event_rates` for scenarios with the corresponding magnitude. Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
-* `importance_sampling_scenario_rates` is a nominal rate for each scenario, defined so as to retain statistical consistency with the PTHA18. In this particular case it is equal to the `rate_with_this_mw` divided by the number of scenarios with that same magnitude (12 in this case). In more complex applications we can specify an `event_importance` to bias the sampling toward scenarios of interest, and in that case its definition is more complicated, but the interpretation is similar.
-* `importance_sampling_scenario_rates_self_normalised` is another nominal rate for each scenario. In this case it is identical to the previous variable. However later we will consider more complex sampling methods, using importance sampling, where it may be somewhat different (basically it can be considered as an alternative statistical estimator of the same thing).
-* `importance_sampling_scenario_weights` is equal to `importance_sampling_scenario_rates` divided by `rate_with_this_mw`. Later when we do importance sampling, this corresponds to the regular importance sampling weights. 
-* `importance_sampling_scenario_weights_self_normalised` is equal to `importance_sampling_scenario_rates_self_normalised` divided by `rate_with_this_mw`. Later when we do importance sampling, this corresponds to the self-normalised importance sampling weights. 
+* `importance_sampling_scenario_rates_basic` is a nominal rate for each scenario, defined so as to retain statistical consistency with the PTHA18. In this particular case it is equal to the `rate_with_this_mw` divided by the number of scenarios with that same magnitude (12 in this case). In more complex applications we can specify an `event_importance` to bias the sampling toward scenarios of interest, and in that case its definition is more complicated, but the interpretation is similar.
+* `importance_sampling_scenario_rates_self_normalised` is another nominal rate for each scenario. In this case it is identical `importance_sampling_scenario_rates_basic`. However later we will consider more complex sampling methods (using importance-sampling), where it may be somewhat different, although it can be considered as an alternative statistical estimator of the same thing.
+* `importance_sampling_scenario_weights_basic` is equal to `importance_sampling_scenario_rates_basic` divided by `rate_with_this_mw`. Later when we do importance-sampling, this corresponds to the basic importance-sampling weights. 
+* `importance_sampling_scenario_weights_self_normalised` is equal to `importance_sampling_scenario_rates_self_normalised` divided by `rate_with_this_mw`. Later when we do importance-sampling, this corresponds to the self-normalised importance-sampling weights. 
 
 In PTHA18 some earthquake magnitudes are impossible. In this case the scenario index will
 take an `NA` value, as will various other variables. We see this at the end of the current
@@ -150,13 +150,13 @@ tail(random_scenarios_simple)
 ```
 
 ```
-##      inds  mw rate_with_this_mw importance_sampling_scenario_rates
-## 297 44088 9.6      5.323646e-05                       4.436371e-06
-## 298 44208 9.6      5.323646e-05                       4.436371e-06
-## 299 44261 9.6      5.323646e-05                       4.436371e-06
-## 300 44171 9.6      5.323646e-05                       4.436371e-06
-## 301    NA 9.7      0.000000e+00                                 NA
-## 302    NA 9.8      0.000000e+00                                 NA
+##      inds  mw rate_with_this_mw importance_sampling_scenario_rates_basic
+## 297 44088 9.6      5.323646e-05                             4.436371e-06
+## 298 44208 9.6      5.323646e-05                             4.436371e-06
+## 299 44261 9.6      5.323646e-05                             4.436371e-06
+## 300 44171 9.6      5.323646e-05                             4.436371e-06
+## 301    NA 9.7      0.000000e+00                                       NA
+## 302    NA 9.8      0.000000e+00                                       NA
 ##     importance_sampling_scenario_rates_self_normalised
 ## 297                                       4.436371e-06
 ## 298                                       4.436371e-06
@@ -164,13 +164,13 @@ tail(random_scenarios_simple)
 ## 300                                       4.436371e-06
 ## 301                                                 NA
 ## 302                                                 NA
-##     importance_sampling_scenario_weights
-## 297                           0.08333333
-## 298                           0.08333333
-## 299                           0.08333333
-## 300                           0.08333333
-## 301                                   NA
-## 302                                   NA
+##     importance_sampling_scenario_weights_basic
+## 297                                 0.08333333
+## 298                                 0.08333333
+## 299                                 0.08333333
+## 300                                 0.08333333
+## 301                                         NA
+## 302                                         NA
 ##     importance_sampling_scenario_weights_self_normalised
 ## 297                                           0.08333333
 ## 298                                           0.08333333
@@ -224,7 +224,7 @@ The analogous calculation using only the random sample is:
 ```r
 stage_exrates_rs_simple = sapply(stage_seq, 
     f<-function(x){
-        sum(random_scenarios_simple$importance_sampling_scenario_rates * 
+        sum(random_scenarios_simple$importance_sampling_scenario_rates_basic * 
             (event_peak_stage[random_scenarios_simple$inds] > x), na.rm=TRUE)
     })
 ```
@@ -257,7 +257,7 @@ random_scenarios_simple_many = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
 # Compute the max-stage exceedance-rates
 stage_exrates_rs_simple_many = sapply(stage_seq, 
     f<-function(x){
-        sum(random_scenarios_simple_many$importance_sampling_scenario_rates * 
+        sum(random_scenarios_simple_many$importance_sampling_scenario_rates_basic * 
             (event_peak_stage[random_scenarios_simple_many$inds] > x), na.rm=TRUE)
     })
 ```
@@ -319,7 +319,7 @@ random_scenarios_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
 # Compute the max-stage exceedance-rates
 stage_exrates_rs_mw_weighted = sapply(stage_seq, 
     f<-function(x){
-        sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates * 
+        sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates_basic * 
             (event_peak_stage[random_scenarios_mw_weighted$inds] > x), na.rm=TRUE)
     })
 ```
@@ -356,17 +356,31 @@ The reason we still have many small max-stage scenarios is that the
 we are mostly interested in larger waves, then this seems like an inefficient
 sampling approach for our site.
 
-## Random scenario sampling, using importance sampling to emphasise higher max-stages
+## Random scenario sampling, using importance-sampling to emphasise higher max-stages
 -------------------------------------------------------------------------------------
 
 Here we show how the theory of importance-sampling can be used to more strongly
 concentrate our random sample on scenarios that have higher maximum-stage
 values. The sampling algorithm is:
 * Group the scenarios by magnitude
-* For each magnitude, sample a given number of scenarios with replacement, with the chance of sampling each scenario proportional to its conditional probability **multiplied by a user-defined positive event-importance factor**. The latter step is where this method differs from regular sampling.
-* The theory of importance sampling provides a means to adjust the random scenario weights to correct for this preferential sampling. There are many statistical texts which cover importance sampling, [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
+* For each magnitude, sample a given number of scenarios with replacement, with
+  the chance of sampling each scenario proportional to its conditional
+  probability **multiplied by a user-defined positive event-importance
+  factor**. The latter step is where this method differs from regular sampling.
+* The theory of importance-sampling provides a means to adjust the random
+  scenario weights to correct for this preferential sampling. There are many
+  statistical texts which cover importance-sampling, 
+  [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
 
-In the example below we set the `event_importance` equal to the scenario's maximum-stage at our site offshore of Tonga. This means we prefer scenarios with higher max-stage at that site, all else being equal. This might be a a good choice if were studying tsunami hazards nearby (e.g. in Tonga), but probably not if we were studying the hazard far away (e.g. New Zealand). Many other choices could be made depending on what is known about scenarios that are likely to be important for your application. In this particular case we get much better agreement with the PTHA18 max-stage exceedance-rate curve at our site, while still only using an average of 12 samples per magnitude bin.
+In the example below we set the `event_importance` equal to the scenario's
+maximum-stage at our site offshore of Tonga. This means we prefer scenarios
+with higher max-stage at that site, all else being equal. This might be a a
+good choice if were studying tsunami hazards nearby (e.g. in Tonga), but
+probably not if we were studying the hazard far away (e.g. New Zealand). Many
+other choices could be made depending on what is known about scenarios that are
+likely to be important for your application. In this particular case we get
+much better agreement with the PTHA18 max-stage exceedance-rate curve at our
+site, while still only using an average of 12 samples per magnitude bin.
 
 
 ```r
@@ -383,14 +397,16 @@ random_scenarios_stage_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_
 # Compute the max-stage exceedance-rates
 stage_exrates_rs_stage_mw_weighted = sapply(stage_seq, 
     f<-function(x){
-        sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates * 
+        sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_basic * 
             (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
     })
 ```
 
 ![plot of chunk ptha18_tonga_point_plot3](figure/ptha18_tonga_point_plot3-1.png)
 
-In comparison to the previous approaches, we have more scenarios with high max-stage values at our Tonga site, as expected because the latter was used to define the `event_importance`.
+In comparison to the previous approaches, we have more scenarios with high
+max-stage values at our Tonga site, as expected because the latter was used to
+define the `event_importance`.
 
 ```r
 quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
@@ -401,7 +417,11 @@ quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, le
 ##  0.004781944  0.189168606  0.792112708  3.175440550 19.648012161
 ```
 
-Beware importance sampling can backfire if the choice of `event_importance` is poor. We do not have a foolproof method to set it. We suggest that users study the performance of their choice under repeated sampling (at PTHA18 points) - a poor choice will lead to erratic behaviour, as compared to simpler approaches.
+Beware importance sampling can backfire if the choice of `event_importance` is
+poor. We do not have a foolproof method to set it. However users can check for
+any problems by studying the performance of their choice under repeated
+sampling (at PTHA18 points) - a poor choice will lead to erratic behaviour, as
+compared to simpler approaches.
 
 ## Comparison of all approaches
 -------------------------------
@@ -459,7 +479,7 @@ stage_at_target_exrate_ptha18 = approx(stage_exrates_ptha18, stage_seq,
 stage_at_target_exrate_simple = rep(NA, length=Nrep)
 stage_at_target_exrate_mw_weighted = rep(NA, length=Nrep)
 stage_at_target_exrate_stage_mw_weighted = rep(NA, length=Nrep)
-# For the importance sampling case, also store the self-normalised variant
+# For the importance-sampling case, also store the self-normalised variant
 stage_at_target_exrate_stage_mw_weighted_self_normalised = rep(NA, length=Nrep)
 
 # Generate random datasets Nrep times, and store the max-stage at the targer
@@ -477,7 +497,7 @@ for(i in 1:Nrep){
     # Simple random sampling -- compute the stage-vs-exrate curve 
     stage_exrates_rs_simple = sapply(stage_seq, 
         f<-function(x){
-            sum(random_scenarios_simple$importance_sampling_scenario_rates * 
+            sum(random_scenarios_simple$importance_sampling_scenario_rates_basic * 
                 (event_peak_stage[random_scenarios_simple$inds] > x), na.rm=TRUE)
         })
     stage_at_target_exrate_simple[i] = 
@@ -495,7 +515,7 @@ for(i in 1:Nrep){
     # More scenarios at higher magnitudes -- compute the stage-vs-exrate curve 
     stage_exrates_rs_mw_weighted = sapply(stage_seq, 
         f<-function(x){
-            sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates * 
+            sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates_basic * 
                 (event_peak_stage[random_scenarios_mw_weighted$inds] > x), na.rm=TRUE)
         })
     stage_at_target_exrate_mw_weighted[i] = 
@@ -514,7 +534,7 @@ for(i in 1:Nrep){
     # Importance sampling -- compute the stage-vs-exrate curve 
     stage_exrates_rs_stage_mw_weighted = sapply(stage_seq, 
         f<-function(x){
-            sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates * 
+            sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_basic * 
                 (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
         })
     stage_at_target_exrate_stage_mw_weighted[i] = 
@@ -546,10 +566,10 @@ less variable than the other techniques - in other words, it is better, at
 least for this exceedance-rate. The results using simple random sampling (12
 scenarios per Mw bin) are quite similar to those using more scenarios at higher
 magnitudes, which indicates that at this site, there is little benefit to the
-latter strategy for this exceedance-rate. We emphasise that at other sites, or
-for other exceedance-rates, the same technique may have more benefit - the
-important thing is to understand its performance for your application of
-interest.
+chosen magnitude-sampling strategy for this exceedance-rate. However we
+emphasise that at other sites, or for other exceedance-rates, the same
+technique may have more benefit - the important thing is to understand its
+performance for your application of interest.
 
 To complement the above results we can look at a basic summary of each
 distribution. While the variability of each sampling method is different, in
@@ -599,7 +619,7 @@ the PTHA18.
 Earlier we noted that the random scenarios are assigned weights in two ways,
 which will differ somewhat when a nontrivial `event_importance` is specified.
 
-The *regular* importance sampling weights, as employed above, can be used to compute
+The *basic* importance-sampling weights, as employed above, can be used to compute
 unbiased estimates of the max-stage exceedance-rates. 
 
 
@@ -622,15 +642,15 @@ stage_at_target_exrate_ptha18
 ```
 This unbiasedness is desirable. But a downside of this approach is that for a
 given magnitude bin, the weights do not sum to 1 exactly (although they do so
-on average). Thus if we add the `importance_sampling_scenario_rates` within a
+on average). Thus if we add the `importance_sampling_scenario_rates_basic` within a
 magnitude bin, the result will not agree exactly with the corresponding
 `rate_with_this_mw` (although it will tend to be close). This means care is
 required in using the scenario rates for Mw-frequency calculations.
 
 
 ```r
-# Summed weights in each Mw-bin are not exactly 1
-aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weights, 
+# Basic importance-sampling: Summed weights in each Mw-bin are not exactly 1
+aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weights_basic, 
           by=list(random_scenarios_stage_mw_weighted$mw), sum)
 ```
 
@@ -665,7 +685,7 @@ aggregate(random_scenarios_stage_mw_weighted$importance_sampling_scenario_weight
 ## 27     9.8        NA
 ```
 
-Alternatively one may use the *self-normalised* importance sampling weights.
+Alternatively one may use the *self-normalised* importance-sampling weights.
 Exceedance-rates estimated with this method are asymptotically unbiased (i.e.
 the bias shrinks to zero as we increase the number of samples per magnitude),
 but have some bias with finite sample sizes.
