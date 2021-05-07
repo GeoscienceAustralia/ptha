@@ -1113,8 +1113,10 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                 linear_fit = lm(fvals * wts ~ I(wts - 1))
                 prop_exceed_est = coef(linear_fit)[1]
                 # Use (standard-error of intercept from linear)^2 fit to get the variance.
+                # Here we multiply by (N-1)/N to scale the variance in the same way as the other
+                # estimators (which do not lose degrees-of-freedom from linear regression).
                 linear_fit_summary = summary(linear_fit)
-                var_prop_exceed_est = linear_fit_summary$coefficients[1,2]**2
+                var_prop_exceed_est = linear_fit_summary$coefficients[1,2]**2 * (length(fvals)-1)/length(fvals)
             }
 
         }else{

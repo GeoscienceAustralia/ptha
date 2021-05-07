@@ -246,7 +246,7 @@ test_random_scenario_sampling<-function(){
     }
 
 
-    # For simple random sampling, and mw-stratified-sampling, the 3 techniques should all be identical
+    # For simple random sampling, and mw-stratified-sampling, the 3 techniques should all be identical.
     for(sampling_type in c('simple', 'mw_stratified')){
         for(ist in importance_sampling_types[2:3]){
             the_test = isTRUE(all.equal(
