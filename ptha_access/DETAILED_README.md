@@ -101,6 +101,31 @@ source('test_all.R')
 
 ```
 ## [1] "PASS"
+```
+
+```
+## Warning in proj4string(region_poly): CRS object has comment, which is lost in
+## output
+```
+
+```
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "PASS"
+## [1] "kermadectonga2"
+## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
