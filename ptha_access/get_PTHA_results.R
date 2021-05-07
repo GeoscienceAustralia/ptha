@@ -1001,8 +1001,8 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                 # 'event_importance', so we deflate by 'event_importance' here.
                 self_normalised_weights = (1/event_importance[sample_of_k]) / 
                     sum((1/event_importance[sample_of_k]))
-                self_normalised_random_scenario_rates = rate_with_this_mw * self_normalised_weights
-
+                self_normalised_random_scenario_rates = 
+                    rate_with_this_mw * self_normalised_weights
 
                 return(data.frame(
                     inds = sample_of_k, 
