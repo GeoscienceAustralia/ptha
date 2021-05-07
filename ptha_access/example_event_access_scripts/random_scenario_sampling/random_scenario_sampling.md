@@ -478,7 +478,7 @@ stage_at_target_exrate_ptha18 = approx(stage_exrates_ptha18, stage_seq,
 # Create vectors to store the results for each random sample of scenarios
 stage_at_target_exrate_simple = rep(NA, length=Nrep)
 stage_at_target_exrate_mw_weighted = rep(NA, length=Nrep)
-stage_at_target_exrate_stage_mw_weighted = rep(NA, length=Nrep)
+stage_at_target_exrate_stage_mw_weighted_basic = rep(NA, length=Nrep)
 # For the importance-sampling case, also store the self-normalised variant
 stage_at_target_exrate_stage_mw_weighted_self_normalised = rep(NA, length=Nrep)
 
@@ -532,13 +532,13 @@ for(i in 1:Nrep){
         mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
         )
     # Importance sampling -- compute the stage-vs-exrate curve 
-    stage_exrates_rs_stage_mw_weighted = sapply(stage_seq, 
+    stage_exrates_rs_stage_mw_weighted_basic = sapply(stage_seq, 
         f<-function(x){
             sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_basic * 
                 (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
         })
-    stage_at_target_exrate_stage_mw_weighted[i] = 
-        approx(stage_exrates_rs_stage_mw_weighted, stage_seq, xout=target_exrate, ties='min')$y
+    stage_at_target_exrate_stage_mw_weighted_basic[i] = 
+        approx(stage_exrates_rs_stage_mw_weighted_basic, stage_seq, xout=target_exrate, ties='min')$y
 
     # Here we do the importance-sampling computation using the self-normalised
     # importance sampling weights
@@ -600,7 +600,7 @@ summary(stage_at_target_exrate_mw_weighted)
 
 ```r
 # Importance sampling based on the event_peak_stage 
-summary(stage_at_target_exrate_stage_mw_weighted)
+summary(stage_at_target_exrate_stage_mw_weighted_basic)
 ```
 
 ```
@@ -624,7 +624,7 @@ unbiased estimates of the max-stage exceedance-rates.
 
 
 ```r
-summary(stage_at_target_exrate_stage_mw_weighted)
+summary(stage_at_target_exrate_stage_mw_weighted_basic)
 ```
 
 ```
