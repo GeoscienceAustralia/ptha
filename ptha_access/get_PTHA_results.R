@@ -986,21 +986,25 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                 basic_weights = (1/length(local_sample)) *
                     (dist_f[local_sample] / dist_g[local_sample])
 
-                # Basic importance-sampling correction -- although "basic_weights"
-                # does not sum to 1, the self normalised importance sampling
-                # leads to some finite-sample-bias in integral estimates,
-                # whereas this approach is unbiased even in finite samples.
+                # Basic importance-sampling correction.
+                # Although "basic_weights" does not sum to 1 (it only does so
+                # "on average"), the weights can be used to compute unbiased
+                # estimates of integrals. 
                 basic_random_scenario_rates = 
                     rate_with_this_mw * basic_weights
 
                 # Self-normalised importance sampling correction.
-                # Estimate a rate for each individual scenario such that the
-                # sampled scenario weights add to the target weight, and
-                # reflect the original distribution
-                # Their chance of being sampled was inflated by
-                # 'event_importance', so we deflate by 'event_importance' here.
-                self_normalised_weights = (1/event_importance[sample_of_k]) / 
-                    sum((1/event_importance[sample_of_k]))
+                # By construction these sum to 1, although the downside is that
+                # when used to evaluate integrals they are asymptotically unbiased
+                # (but have bias with finite samples)
+                dist_f_unnormalised = event_rates[k]
+                dist_g_unnormalised = event_rates[k]*event_importance[k]
+
+                #self_normalised_weights = (1/event_importance[sample_of_k]) / 
+                #    sum((1/event_importance[sample_of_k]))
+                self_normalised_weights = dist_f_unnormalised[local_sample]/dist_g_unnormalised[local_sample]
+                self_normalised_weights = self_normalised_weights/sum(self_normalised_weights)
+
                 self_normalised_random_scenario_rates = 
                     rate_with_this_mw * self_normalised_weights
 
@@ -1008,10 +1012,8 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                     inds = sample_of_k, 
                     mw = rep(mw, nsam),
                     rate_with_this_mw = rep(rate_with_this_mw, nsam),
-                    # Regular importance sampling
                     importance_sampling_scenario_rates_basic = 
                         basic_random_scenario_rates, 
-                    # Self-normalised importance sampling
                     importance_sampling_scenario_rates_self_normalised = 
                         self_normalised_random_scenario_rates, 
                     importance_sampling_scenario_weights_basic = basic_weights,
@@ -1040,4 +1042,136 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 
     return(random_scenario_info)
 }
+
+#' Workhorse function to be used inside "get_exrate_uncertainty_at_stage"
+#'
+.get_mean_and_variance_of_exrate_in_mw_bin_from_random_scenarios<-function(mw, random_scenarios, event_peak_stage, 
+    threshold_stage, importance_sampling_type = 'basic'){
+
+    # Find scenarios with this mw
+    k = which(abs(random_scenarios$mw - mw) < 1.0e-03)
+   
+    mw_rate = random_scenarios$rate_with_this_mw[k[1]]
+    if(mw_rate == 0){
+        output = c(0, 0)
+    }else{
+
+        # Compute mean/variance for the proportion of scenarios that exceed the threshold.
+        stages = event_peak_stage[random_scenarios$inds[k]]
+        fvals = (stages > threshold_stage) * 1.0
+
+        if(importance_sampling_type == 'basic'){
+            # Estimators for 'basic importance sampling' from Art Owen's book, section 9.1
+            #     Note Owen works with a definition of the weights that is a factor
+            #     of (length(k)) larger than mine
+            wts = random_scenarios$importance_sampling_scenario_weights_basic[k] * length(k)
+            prop_exceed_est = mean(fvals * wts)
+            # Equation 9.5, divided by 'n' to convert to a variance of the
+            # estimator, as explained in the sentence following eqn 9.5
+            var_prop_exceed_est = mean( (wts*fvals - prop_exceed_est)^2 ) / length(k)
+
+        }else if(importance_sampling_type == 'self_normalised'){
+            # Estimators for 'self-normalised importance sampling' from Art Owen's book, section 9.2
+
+            wts = random_scenarios$importance_sampling_scenario_weights_self_normalised[k]
+            prop_exceed_est = sum(fvals * wts)
+            # Eqn 9.9 can be used to estimate the variance of prop_exceed_est
+            var_prop_exceed_est = sum( wts^2 * (fvals - prop_exceed_est)^2 )
+
+        }else if(importance_sampling_type == 'control_variate'){
+            # Estimators for the control-variate approach from Art Owen's book, section 9.2 (eqn 9.11)
+
+            wts = random_scenarios$importance_sampling_scenario_weights_basic[k] * length(k)
+            wbar = mean(wts)
+
+            if(isTRUE(all.equal(wbar, wts)) | all(fvals == fvals[1])){
+                # Special cases.
+                #
+                # Here we cannot do the regression because all the 'predictor'
+                # values would be identical (if all wts are equal), or because
+                # the linear-fit is between two colinear variables (if all
+                # "fvals" are equal).
+                
+                # Try the basic importance sampling estimators
+                prop_exceed_est = mean(fvals * wts)
+                var_prop_exceed_est = mean( (wts*fvals - prop_exceed_est)^2 ) / length(k)
+
+                ## Try the self-normalised estimators
+                #wts = random_scenarios$importance_sampling_scenario_weights_self_normalised[k]
+                #prop_exceed_est = sum(fvals * wts)
+                #var_prop_exceed_est = sum( wts^2 * (fvals - prop_exceed_est)^2 )
+
+            }else{
+                # Estimators for the control-variate approach from Art Owen's book, section 9.2 (eqn 9.11)
+
+                # beta_hat = sum( (wts - wbar) * fvals * wts ) / sum( (wts - wbar)^2 ) 
+                # prop_exceed_est = mean( fvals * wts - beta_hat * (wts - 1))
+
+                # Note -- if all wts were the same, then this regression
+                # (y~x) would be problematic because all the 'x' values would
+                # be the same.
+                linear_fit = lm(fvals * wts ~ I(wts - 1))
+                prop_exceed_est = coef(linear_fit)[1]
+                # Use (standard-error of intercept from linear)^2 fit to get the variance.
+                linear_fit_summary = summary(linear_fit)
+                var_prop_exceed_est = linear_fit_summary$coefficients[1,2]**2
+            }
+
+        }else{
+            stop('unknown importance_sampling_type - it should be either "basic" or "self_normalised" or "control_variate"')
+        }
+
+        # Return a mean and a "variance of the mean" for the rate of exceedance from this mw bin
+        output = c(mw_rate * prop_exceed_est, 
+                   mw_rate**2 * var_prop_exceed_est)
+    }
+
+    return(output)
+}
+
+
+#' Estimate the 'mean' and the 'variance' of the proportion of scenarios that exceed
+#' the threshold_stage in each Mw bin. 
+#'
+#' Since the scenarios in different Mw bins are sampled independently,
+#' we note the mean of the sum is the sum of the means, and the variance of the sum is the sum of the variances.
+#' It is not exact because we only have 'sample estimates' of the means and variances in each bin.
+#'
+#' @param random_scenarios result of function randomly_sample_scenarios_by_Mw_and_rate
+#' @param event_peak_stage the peak-stage (or other quantity of interest) for ALL scenarios (not just the
+#' random_scenarios). The values for the random_scenarios should be event_peak_stage[random_scenarios$inds]
+#' @param threshold_stage estimate the exceedance-rate of this threshold value
+#' @param importance_sampling_type either 'basic' or 'self_normalised' or 'control_variate'. These produce
+#'  different estimates of the exceedance-rate and its variance.
+#' @param return_per_Mw_bin If TRUE then return the results by Mw bin, rather than summed over bins
+#' @return if(return_per_Mw_bin == FALSE), then return a vector of length 2 containing an estimate of 
+#' the exceedance-rate and its variance (take sqrt to get standard error). Otherwise, return a data.frame
+#' containing that information for each individual magnitude bin.
+#' 
+get_exrate_uncertainty_at_stage<-function(random_scenarios, event_peak_stage, threshold_stage, 
+    importance_sampling_type = 'basic', return_per_Mw_bin=FALSE){ 
+    
+    unique_Mw = unique(round(random_scenarios$mw, 3))
+
+    local_fun<-function(mw){ 
+        .get_mean_and_variance_of_exrate_in_mw_bin_from_random_scenarios(mw, random_scenarios, 
+            event_peak_stage, threshold_stage, importance_sampling_type)}
+
+    all_results = lapply(unique_Mw, f<-function(x) local_fun(x))
+
+    if(return_per_Mw_bin){
+        output = data.frame(Mw = unique_Mw, 
+            exrate = unlist(lapply(all_results, function(x) x[1])), 
+            exrate_variance = unlist(lapply(all_results, function(x) x[2])))
+        return(output)
+    }else{
+        # Mean is sum of means, variance is sum of variances.
+        mean_est = sum(unlist(lapply(all_results, function(x) x[1])))
+        var_est = sum(unlist(lapply(all_results, function(x) x[2])))
+
+        return(c(mean_est, var_est))
+
+    }
+}
+
 

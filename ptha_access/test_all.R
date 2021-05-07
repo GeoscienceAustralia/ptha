@@ -166,4 +166,242 @@ if(file.exists('compute_rates_all_sources_session.RData')){
     detailed_ptha18$test_get_detailed_PTHA18_source_zone_info()
 }
 
+
+test_random_scenario_sampling<-function(){
+    #
+    # Check various functions for random scenario sampling (including importance sampling)
+    #
+
+    ptha18 = new.env()
+    source('./get_PTHA_results.R', local=ptha18, chdir=TRUE)
+
+    # Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in PTHA18)
+    source_zone = 'kermadectonga2'
+    kt2_scenarios = ptha18$get_source_zone_events_data(source_zone,  slip_type='stochastic')
+
+    # Convenient shorthand for the magnitudes and rates in the event table
+    event_Mw = kt2_scenarios$events$Mw 
+    event_rates = kt2_scenarios$events$rate_annual
+    event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
+        target_point = c(185.1239, -21.0888), # Known location of PTHA18 hazard point
+        slip_type='stochastic',
+        all_source_names=source_zone)
+    # Convenient shorthand
+    event_peak_stage = event_peak_stage_at_refpoint$kermadectonga2$max_stage
+
+
+    # Make a reproducible random seed to make the code reproducible (this is optional)
+    set.seed(123)
+
+    random_scenarios = vector(mode='list', length=3)
+    names(random_scenarios) = c('simple', 'mw_stratified', 'stage_mw_weighted')
+    # Make the random scenarios
+    # -- simple random sampling
+    random_scenarios[['simple']] = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=event_rates,
+        event_Mw=event_Mw,
+        samples_per_Mw=function(Mw){ 12 }, 
+        mw_limits=c(7.15, 9.85)
+        )
+    # -- stratified sampling, with more samples at large magnitudes
+    random_scenarios[['mw_stratified']] = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=event_rates,
+        event_Mw=event_Mw,
+        samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) },
+        mw_limits=c(7.15, 9.85)
+        )
+    # -- combined importance-sampling + stratified sampling, with more samples at large magnitudes
+    POW = 1
+    random_scenarios[['stage_mw_weighted']] = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=event_rates,
+        event_Mw=event_Mw,
+        event_importance = event_peak_stage**POW,
+        samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) },
+        mw_limits=c(7.15, 9.85)
+        )
+
+    #
+    # Test of mean/variance estimators of exceedance-rates, for different importance-sampling types
+    #
+    importance_sampling_types = c('basic', 'self_normalised', 'control_variate')
+
+    # Make empty data-structure with results for each sampling-type and importance-sampling-type
+    exrate_uncertainty = vector(mode='list', length=length(random_scenarios))
+    names(exrate_uncertainty) = names(random_scenarios)
+    for(rsn in names(random_scenarios)){
+        exrate_uncertainty[[rsn]] = vector(mode='list', length=length(importance_sampling_types))
+        names(exrate_uncertainty[[rsn]]) = importance_sampling_types
+    }
+
+    threshold_stage = 2.3
+    # Make estimates of the mean/variance of threshold_stage exceedances for
+    # each Mw-bin, for each sampling-type and importance-sampling-type
+    for(rsn in names(random_scenarios)){
+        for(ist in importance_sampling_types){
+
+            exrate_uncertainty[[rsn]][[ist]] = ptha18$get_exrate_uncertainty_at_stage(
+                random_scenarios[[rsn]], event_peak_stage, threshold_stage, 
+                importance_sampling_type=ist, return_per_Mw_bin=TRUE)
+        }
+    }
+
+
+    # For simple random sampling, and mw-stratified-sampling, the 3 techniques should all be identical
+    for(sampling_type in c('simple', 'mw_stratified')){
+        for(ist in importance_sampling_types[2:3]){
+            the_test = isTRUE(all.equal(
+                exrate_uncertainty[[sampling_type]][[ist]], 
+                exrate_uncertainty[[sampling_type]][['basic']]))
+            if(the_test){
+                print('PASS')
+            }else{
+                print(paste0('FAIL -- all exrate estimators should be the same for ', sampling_type, ' random sampling'))
+            }
+        }
+    }
+    
+    # For simple random sampling, and mw-stratified random sampling, the
+    # mean/variance of each technique should be equal to the naive estimates 
+    for(sampling_type in c('simple', 'mw_stratified')){
+
+        rate_with_this_mw = aggregate(random_scenarios[[sampling_type]]$rate_with_this_mw, 
+            by=list(random_scenarios[[sampling_type]]$mw), function(x) x[1])
+        inv_count_with_this_mw = aggregate(random_scenarios[[sampling_type]]$rate_with_this_mw, 
+            by=list(random_scenarios[[sampling_type]]$mw), function(x) 1/length(x))
+        pb = aggregate(event_peak_stage[random_scenarios[[sampling_type]]$inds] > threshold_stage, 
+            by=list(random_scenarios[[sampling_type]]$mw), mean)
+
+        # Naive-estimate of mean/variance
+        naive_rate_estimate = rate_with_this_mw$x * pb$x 
+        naive_rate_variance_estimate = rate_with_this_mw$x^2 * pb$x * (1-pb$x) * inv_count_with_this_mw$x
+
+        # The trailing NA's can be replaced with 0 (they occur because mw 9.7, 9.8 are impossible)
+        n = length(naive_rate_estimate)
+        naive_rate_estimate[(n-1):n] = 0
+        naive_rate_variance_estimate[(n-1):n] = 0
+        
+        # Make a data.frame matching the form of the data in exrate_uncertainty[[sampling_type]][[ist]]
+        naive_estimates = exrate_uncertainty[[sampling_type]][[1]]
+        naive_estimates$exrate = naive_rate_estimate
+        naive_estimates$exrate_variance = naive_rate_variance_estimate
+
+        for(ist in importance_sampling_types[1:3]){
+            if(isTRUE(all.equal(exrate_uncertainty[[sampling_type]][[ist]], naive_estimates))){
+                print('PASS')
+            }else{
+                print('FAIL -- in this situation all exrate estimators should match the naive estimate')
+            }
+        }
+    }
+
+    #
+    # Test the coverage of approximate confidence intervals derived from the
+    # importance-sampling variance estimators. Unlike the tests above, here we
+    # are considering 'real' importance sampling
+    #
+    true_exrate = sum(event_rates * (event_peak_stage > threshold_stage))
+    Nsam = 1000
+
+    # Store the coverage of naive confidence intervals
+    does_interval_cover_normal = vector(mode='list', length=3)
+    names(does_interval_cover_normal) = importance_sampling_types
+    for(i in 1:3) does_interval_cover_normal[[i]] = rep(NA, Nsam)
+    does_interval_cover_beta = does_interval_cover_normal
+
+    # Store the parameter estimates for later analysis
+    est_sd_store = vector(mode='list', length=3)
+    names(est_sd_store) = importance_sampling_types
+    for(i in 1:3) est_sd_store[[i]] = matrix(NA, ncol=2, nrow=Nsam)
+
+    for(i in 1:Nsam){
+
+        random_scenarios = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+            event_rates=event_rates,
+            event_Mw=event_Mw,
+            event_importance = event_peak_stage**POW,
+            samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) },
+            mw_limits=c(7.15, 9.85)
+            )
+
+        # Get approximate confidence intervals for each sampling type
+        for(is_type in importance_sampling_types){
+
+            exrate_uncertainty = ptha18$get_exrate_uncertainty_at_stage(
+                random_scenarios, event_peak_stage, threshold_stage, 
+                importance_sampling_type=is_type)
+
+            est = exrate_uncertainty[1]
+            sd_est = sqrt(exrate_uncertainty[2])
+
+            est_sd_store[[is_type]][i,1] = est
+            est_sd_store[[is_type]][i,2] = sd_est
+
+            # 95% confidence interval (normal approximation).
+            # (-1 -- under-estimate)
+            # ( 0 --> covered )
+            # (+1 --> over-estimate)
+            normal_limits = qnorm(c(0.025, 0.975), mean=est, sd=sd_est)
+            does_interval_cover_normal[[is_type]][i] = # 95% 2-sided interval (2.5% above, 2.5% below)
+                -1*( true_exrate < normal_limits[1]) +
+                 1*( true_exrate > normal_limits[2])
+
+            # 95% confidence interval (beta approximation, scaled to span from [0, rate_of_any_event] rather than [0,1]).
+            # (-1 -- under-estimate)
+            # ( 0 --> covered )
+            # (+1 --> over-estimate)
+            #
+            # Get the 'true' rate of any event (use the self-normalised
+            # rates, because they are forced to match the true rate)
+            rate_of_any_event = sum(random_scenarios$importance_sampling_scenario_rates_self_normalised, na.rm=TRUE)
+                
+            estBetaParams <- function(mu, var) {
+                alpha = ((1 - mu) / var - 1 / mu) * mu ^ 2
+                beta = alpha * (1 / mu - 1)
+                params = list(alpha = alpha, beta = beta)
+                return(params)
+                }
+    
+            beta_par = estBetaParams(est/rate_of_any_event, (sd_est/rate_of_any_event)^2)
+            beta_limits =  rate_of_any_event * qbeta(c(0.025, 0.975), shape1=beta_par$alpha, shape2=beta_par$beta)
+            does_interval_cover_beta[[is_type]][i] = # 95% 2-sided confidence-interval
+                -1*( true_exrate < beta_limits[1]) +
+                 1*( true_exrate > beta_limits[2])
+
+        }
+    }
+
+    # Tests of the estimates -- the thresholds for 'basic' importance sampling
+    # are more stringent because that method seems to work better.
+    error_thresholds = list()
+    # Store the thresholds as tolerances for 
+    #    c(median_relative_error, sd(relative_error), 
+    #      empirical_coverage_of_normal_95%_interval, 
+    #      empirical_coverage_of_beta_95%_interval)
+    error_thresholds$basic = c(1.0e-02, 0.15, 0.9, 0.9) 
+    error_thresholds$self_normalised = c(0.15, 0.25, 0.8, 0.8)
+    error_thresholds$control_variate = c(0.15, 0.25, 0.8, 0.8)
+
+    for(is_type in importance_sampling_types){
+
+        # Bias of the estimator
+        is_errors = (est_sd_store[[is_type]][,1] - true_exrate)/true_exrate
+        if( (abs(median(is_errors)) < error_thresholds[[is_type]][1]) & 
+            (sd(is_errors)          < error_thresholds[[is_type]][2])){
+            print('PASS')
+        }else{
+            print(paste0('FAIL -- ', is_type, ' importance sampling estimate'))
+        }
+
+        # 95% confidence interval coverage
+        if((mean(does_interval_cover_normal[[is_type]] == 0) > error_thresholds[[is_type]][3]) &
+           (mean(does_interval_cover_beta[[is_type]]   == 0) > error_thresholds[[is_type]][4])){
+            print('PASS')
+        }else{
+            print(paste0('FAIL -- confidence interval for ', is_type, ' importance sampling'))
+        }
+    }
+
+}
+test_random_scenario_sampling()
+
 Rprof(NULL)
