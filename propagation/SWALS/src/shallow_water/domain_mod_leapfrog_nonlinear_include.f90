@@ -133,8 +133,6 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         call domain%update_boundary()
         call domain%apply_forcing(dt)
 
-        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
-
 
         ! Boundary flux integration (relevant to single-domain case)
         ! note : U(i, j, UH) = UH_{i+1/2, j}

@@ -34,7 +34,6 @@ module domain_mod
     use timestepping_metadata_mod, only: timestepping_metadata, &
         setup_timestepping_metadata, timestepping_method_index
     use point_gauge_mod, only: point_gauge_type
-    use coarray_utilities_mod, only: partitioned_domain_nesw_comms_type
     use nested_grid_comms_mod, only: domain_nesting_type, process_received_data 
     use stop_mod, only: generic_stop
     use iso_fortran_env, only: output_unit, int32, int64
@@ -336,12 +335,6 @@ module domain_mod
 
         type(timer_type):: timer, evolve_timer
             !! Types to record CPU timings
-
-        type(partitioned_domain_nesw_comms_type):: partitioned_comms
-            !! Type to do single-grid coarray communication. This has been superceeded by multidomain. 
-        logical :: use_partitioned_comms = .false. 
-            !! Determine whether we call domain%partitioned_comms%communicate. It would be better
-            !! to hide this inside the partitioned_comms class, but ifort 2019 segfaults when that is done.
 
         ! Variables controlling the storage of maximum-stage.
         logical:: record_max_U = .true.
@@ -759,8 +752,7 @@ TIMER_STOP("compute_statistics")
     end subroutine
 
 
-    subroutine allocate_quantities(domain, global_lw, global_nx, global_ll, create_output_files,&
-        co_size_xy, ew_periodic, ns_periodic, verbose)
+    subroutine allocate_quantities(domain, global_lw, global_nx, global_ll, create_output_files, verbose)
         !! 
         !! Set up the full domain, allocate arrays, etc
         !!
@@ -769,17 +761,11 @@ TIMER_STOP("compute_statistics")
         real(dp), intent(in):: global_ll(2) !! lower-left x/y coordinates of domain (at corner of the lower-left cell)
         integer(ip), intent(in):: global_nx(2) !! Number of cells in x/y directions
         logical, optional, intent(in) :: create_output_files !! If .TRUE. or not provided, then make output files
-        integer(ip), optional, intent(in):: co_size_xy(2)
-            !! Split up domain into sub-tiles of this dimension [coarray only -- note this
-            !! is a simple "single domain decomposition", not used with the multidomain approach]
-        logical, optional, intent(in) :: ew_periodic, ns_periodic
-            !! Use EW periodic or NS periodic boundaries [coarray only -- note this is a simple "single domain decomposition", not
-            !! used with the multidomain approach]
         logical, optional, intent(in) :: verbose !! Print info about the domain
 
         integer(ip) :: nx, ny, nvar
         integer(ip) :: i, j, k, tsi
-        logical :: create_output, use_partitioned_comms, ew_periodic_, ns_periodic_, verbose_
+        logical :: create_output, verbose_
         real(dp):: local_lw(2), local_ll(2)
         integer(ip):: local_nx(2)
 
@@ -797,32 +783,6 @@ TIMER_STOP("compute_statistics")
         else
             verbose_ = .true.
         end if
-
-        ! Only split the domain if we provided a co_size with > 1 image
-        if (present(co_size_xy)) then
-            if(maxval(co_size_xy) > 1) then
-                use_partitioned_comms = .TRUE.
-                domain%use_partitioned_comms = .TRUE.
-
-                ! In parallel, we need to tell the code whether the domain is periodic or not
-                if(present(ew_periodic)) then
-                    ew_periodic_ = ew_periodic
-                else
-                    ew_periodic_ = .FALSE.
-                end if
-
-                if(present(ns_periodic)) then
-                    ns_periodic_ = ns_periodic
-                else
-                    ns_periodic_ = .FALSE.
-                end if
-
-            else
-                use_partitioned_comms = .FALSE.
-            endif
-        else
-            use_partitioned_comms = .FALSE.
-        endif
 
         ! Set default parameters for different timestepping methods
         ! First get the index corresponding to domain%timestepping_method in the timestepping_metadata
@@ -852,30 +812,9 @@ TIMER_STOP("compute_statistics")
         end if
 
 
-        if(use_partitioned_comms) then
-            ! Note that this only supports a single grid, and has largely been replaced by the "multidomain"
-            ! parallel infrastructure.
-
-            ! Compute the ll/lw/nx for this sub-domain
-            call domain%partitioned_comms%initialise(co_size_xy, global_ll, global_lw, global_nx, &
-                local_ll, local_lw, local_nx, &
-                ew_periodic=ew_periodic_, ns_periodic=ns_periodic_)
-            domain%lower_left = local_ll
-            domain%lw = local_lw 
-            domain%nx = local_nx
-
-            call domain%partitioned_comms%print()
-        
-            ! Make sure that communication boundaries are not numerical boundaries
-            do i = 1,4
-                if(domain%partitioned_comms%neighbour_images(i) > 0) domain%boundary_exterior(i) = .FALSE.
-            end do
-        else
-            ! Not using partitioned_comms (simple case)
-            domain%lw = global_lw
-            domain%nx = global_nx
-            domain%lower_left = global_ll
-        end if
+        domain%lw = global_lw
+        domain%nx = global_nx
+        domain%lower_left = global_ll
 
         ! For the linear solver, these variables can be modified to evolve domain%U only in the region domain%U(xL:xU, yL:yU). This
         ! can speed up some simulations (but the user must adaptively change the variables).

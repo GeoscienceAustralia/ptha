@@ -38,6 +38,66 @@ module coarray_intrinsic_alternatives
 #endif
 
     contains
+
+    subroutine sync_all_generic
+        !! Alternative to "sync all" which uses mpi directly if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined
+        integer :: ierr
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call mpi_barrier(MPI_COMM_WORLD, ierr)
+#elif defined(COARRAY)
+        sync all
+#endif
+
+    end subroutine
+
+    integer function this_image2()
+        !! Alternative to this_image() which uses mpi directly if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined
+        integer :: ierr
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call mpi_comm_rank(MPI_COMM_WORLD, this_image2, ierr)
+        this_image2 = this_image2 + 1
+#elif defined(COARRAY)
+        this_image2 = this_image()
+#else
+        this_image2 = 1
+#endif
+    end function
+
+
+    integer function num_images2()
+        !! Alternative to num_images() which uses mpi directly if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined
+        integer :: ierr
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call mpi_comm_size(MPI_COMM_WORLD, num_images2, ierr)
+#elif defined(COARRAY)
+        num_images2 = num_images()
+#else
+        num_images2 = 1
+#endif
+    end function
+
+    subroutine swals_mpi_init()
+        !! Calls mpi_init(ierr) if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined, and mpi is not initialised. Otherwise do nothing
+        integer :: ierr
+        logical :: flag
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call mpi_initialized(flag, ierr)
+        if(.not. flag) call mpi_init(ierr)
+#endif
+    end subroutine
+
+    subroutine swals_mpi_finalize()
+        !! Calls mpi_finalize(ierr) if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined. Otherwise do nothing
+        integer :: ierr
+        logical :: flag
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+        call mpi_finalized(flag, ierr)
+        if (.not. flag) call mpi_finalize(ierr)
+#endif
+    end subroutine
+
+
+
 #ifdef COARRAY_PROVIDE_CO_ROUTINES
 
     !
@@ -247,62 +307,5 @@ module coarray_intrinsic_alternatives
     end subroutine
 
 #endif
-
-    subroutine sync_all_generic
-        !! Alternative to "sync all" which uses mpi directly if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined
-        integer :: ierr
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_barrier(MPI_COMM_WORLD, ierr)
-#elif defined(COARRAY)
-        sync all
-#endif
-
-    end subroutine
-
-    integer function this_image2()
-        !! Alternative to this_image() which uses mpi directly if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined
-        integer :: ierr
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_comm_rank(MPI_COMM_WORLD, this_image2, ierr)
-        this_image2 = this_image2 + 1
-#elif defined(COARRAY)
-        this_image2 = this_image()
-#else
-        this_image2 = 1
-#endif
-    end function
-
-
-    integer function num_images2()
-        !! Alternative to num_images() which uses mpi directly if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined
-        integer :: ierr
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_comm_size(MPI_COMM_WORLD, num_images2, ierr)
-#elif defined(COARRAY)
-        num_images2 = num_images()
-#else
-        num_images2 = 1
-#endif
-    end function
-
-    subroutine swals_mpi_init()
-        !! Calls mpi_init(ierr) if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined, and mpi is not initialised. Otherwise do nothing
-        integer :: ierr
-        logical :: flag
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_initialized(flag, ierr)
-        if(.not. flag) call mpi_init(ierr)
-#endif
-    end subroutine
-
-    subroutine swals_mpi_finalize()
-        !! Calls mpi_finalize(ierr) if COARRAY_USE_MPI_FOR_INTENSIVE_COMMS is defined. Otherwise do nothing
-        integer :: ierr
-        logical :: flag
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call mpi_finalized(flag, ierr)
-        if (.not. flag) call mpi_finalize(ierr)
-#endif
-    end subroutine
 
 end module

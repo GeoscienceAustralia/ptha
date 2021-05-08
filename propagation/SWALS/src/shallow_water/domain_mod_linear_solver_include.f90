@@ -120,7 +120,6 @@ EVOLVE_TIMER_STOP('LF_update_stage')
         call domain%update_boundary()
         call domain%apply_forcing(dt)
 
-        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
 
 EVOLVE_TIMER_START('LF_boundary_flux_integration')
         !! Boundary flux integration

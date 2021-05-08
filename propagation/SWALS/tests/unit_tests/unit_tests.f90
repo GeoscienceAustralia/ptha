@@ -9,7 +9,6 @@ program unit_tests
     use point_gauge_mod, only: test_point_gauge_mod
     use linear_interpolator_mod, only: test_linear_interpolator_mod
     use grid_spacetime_interpolator_mod, only: test_grid_spacetime_interpolator_mod
-    use coarray_utilities_mod, only: test_coarray_utilities_mod
     use nested_grid_comms_mod, only: test_nested_grid_comms_mod
     use coarray_point2point_comms_mod, only: test_coarray_point2point_comms_mod
     use reshape_array_mod, only: test_reshape_array_mod
@@ -58,9 +57,6 @@ program unit_tests
 
     print*, 'Testing coarray_point2point_comms_mod'
     call test_coarray_point2point_comms_mod()
-
-    print*, 'Testing coarray_utilities_mod'
-    call test_coarray_utilities_mod()
 
     print*, 'Testing nested_grid_comms_mod'
     call test_nested_grid_comms_mod()

@@ -59,9 +59,6 @@
                 flux_already_multiplied_by_dx=.TRUE.)
         end if
 
-        ! Coarray communication, if required (this has been superceeded by the multidomain approach)
-        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
-
     end subroutine
 
     subroutine one_rk2_step(domain, timestep)
@@ -286,8 +283,6 @@ EVOLVE_TIMER_STOP('rk2n_final_update')
             call domain%update_U(dt_first_step*HALF_dp)
         end if
 
-        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
-
         ! Compute fluxes 
         call domain%compute_fluxes()
 
@@ -319,8 +314,6 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
             var_indices=[STG, VH],&
             flux_already_multiplied_by_dx=.TRUE.)
 
-
-        if(domain%use_partitioned_comms) call domain%partitioned_comms%communicate(domain%U)
 
         domain%boundary_flux_evolve_integral = sum(domain%boundary_flux_store)*&
             dt_first_step
