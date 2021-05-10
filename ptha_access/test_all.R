@@ -374,7 +374,8 @@ test_random_scenario_sampling<-function(){
     # are more stringent because that method seems to work better.
     error_thresholds = list()
     # Store the thresholds as tolerances for 
-    #    c(median_relative_error, sd(relative_error), 
+    #    c(median_relative_error, 
+    #      sd(relative_error), 
     #      empirical_coverage_of_normal_95%_interval, 
     #      empirical_coverage_of_beta_95%_interval)
     error_thresholds$basic = c(1.0e-02, 0.15, 0.9, 0.9) 
