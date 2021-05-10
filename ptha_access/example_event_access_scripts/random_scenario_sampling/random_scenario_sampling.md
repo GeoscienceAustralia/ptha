@@ -101,27 +101,13 @@ head(random_scenarios_simple)
 ```
 
 ```
-##   inds  mw rate_with_this_mw importance_sampling_scenario_rates_basic
-## 1  550 7.2        0.05704921                              0.004754101
-## 2 1088 7.2        0.05704921                              0.004754101
-## 3  195 7.2        0.05704921                              0.004754101
-## 4 1302 7.2        0.05704921                              0.004754101
-## 5   28 7.2        0.05704921                              0.004754101
-## 6 1038 7.2        0.05704921                              0.004754101
-##   importance_sampling_scenario_rates_self_normalised
-## 1                                        0.004754101
-## 2                                        0.004754101
-## 3                                        0.004754101
-## 4                                        0.004754101
-## 5                                        0.004754101
-## 6                                        0.004754101
-##   importance_sampling_scenario_weights_basic
-## 1                                 0.08333333
-## 2                                 0.08333333
-## 3                                 0.08333333
-## 4                                 0.08333333
-## 5                                 0.08333333
-## 6                                 0.08333333
+##   inds  mw rate_with_this_mw importance_sampling_scenario_weights_basic
+## 1  550 7.2        0.05704921                                 0.08333333
+## 2 1088 7.2        0.05704921                                 0.08333333
+## 3  195 7.2        0.05704921                                 0.08333333
+## 4 1302 7.2        0.05704921                                 0.08333333
+## 5   28 7.2        0.05704921                                 0.08333333
+## 6 1038 7.2        0.05704921                                 0.08333333
 ##   importance_sampling_scenario_weights_self_normalised
 ## 1                                           0.08333333
 ## 2                                           0.08333333
@@ -129,15 +115,29 @@ head(random_scenarios_simple)
 ## 4                                           0.08333333
 ## 5                                           0.08333333
 ## 6                                           0.08333333
+##   importance_sampling_scenario_rates_basic
+## 1                              0.004754101
+## 2                              0.004754101
+## 3                              0.004754101
+## 4                              0.004754101
+## 5                              0.004754101
+## 6                              0.004754101
+##   importance_sampling_scenario_rates_self_normalised
+## 1                                        0.004754101
+## 2                                        0.004754101
+## 3                                        0.004754101
+## 4                                        0.004754101
+## 5                                        0.004754101
+## 6                                        0.004754101
 ```
 The columns are
 * `inds` is the indices of the randomly selected scenarios. This corresponds to indices in the `event_Mw` and `event_rates` variables. Because herein these are simply columns of the event table, `inds` also also correspond to rows in `kt2_scenarios$events`.
 * `mw` is the scenario magnitude. This is the same as `event_Mw[random_scenarios_simple$inds]`
 * `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. This is the sum of `event_rates` for scenarios with the corresponding magnitude. Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
-* `importance_sampling_scenario_rates_basic` is a nominal rate for each scenario, defined so as to retain statistical consistency with the PTHA18. In this particular case it is equal to the `rate_with_this_mw` divided by the number of scenarios with that same magnitude (12 in this case). In more complex applications we can specify an `event_importance` to bias the sampling toward scenarios of interest, and in that case its definition is more complicated, but the interpretation is similar.
-* `importance_sampling_scenario_rates_self_normalised` is another nominal rate for each scenario. In this case it is identical `importance_sampling_scenario_rates_basic`. However later we will consider more complex sampling methods (using importance-sampling), where it may be somewhat different, although it can be considered as an alternative statistical estimator of the same thing.
-* `importance_sampling_scenario_weights_basic` is equal to `importance_sampling_scenario_rates_basic` divided by `rate_with_this_mw`. Later when we do importance-sampling, this corresponds to the basic importance-sampling weights. 
-* `importance_sampling_scenario_weights_self_normalised` is equal to `importance_sampling_scenario_rates_self_normalised` divided by `rate_with_this_mw`. Later when we do importance-sampling, this corresponds to the self-normalised importance-sampling weights. 
+* `importance_sampling_scenario_weights_basic` gives the scenarios weights determined by basic importance sampling. In this simple example they are constant in each magnitude bin, but later on when define the `event_importance` to bias the sampling toward scenarios of interest, the weights will be more complicated.
+* `importance_sampling_scenario_weights_self_normalised` gives the scenarios weights determined by self-normalised importance sampling, which is an alternative to basic importance sampling. 
+* `importance_sampling_scenario_rates_basic` gives a nominal rate for each scenario, and is defined as `rate_with_this_mw` multiplied by `importance_sampling_scenario_weights_basic`. 
+* `importance_sampling_scenario_rates_self_normalised` is another nominal rate for each scenario, defined as `rate_with_this_mw` multiplied by `importance_sampling_scenario_weights_self_normalised`.
 
 In PTHA18 some earthquake magnitudes are impossible. In this case the scenario index will
 take an `NA` value, as will various other variables. We see this at the end of the current
@@ -150,27 +150,13 @@ tail(random_scenarios_simple)
 ```
 
 ```
-##      inds  mw rate_with_this_mw importance_sampling_scenario_rates_basic
-## 297 44088 9.6      5.323646e-05                             4.436371e-06
-## 298 44208 9.6      5.323646e-05                             4.436371e-06
-## 299 44261 9.6      5.323646e-05                             4.436371e-06
-## 300 44171 9.6      5.323646e-05                             4.436371e-06
-## 301    NA 9.7      0.000000e+00                                       NA
-## 302    NA 9.8      0.000000e+00                                       NA
-##     importance_sampling_scenario_rates_self_normalised
-## 297                                       4.436371e-06
-## 298                                       4.436371e-06
-## 299                                       4.436371e-06
-## 300                                       4.436371e-06
-## 301                                                 NA
-## 302                                                 NA
-##     importance_sampling_scenario_weights_basic
-## 297                                 0.08333333
-## 298                                 0.08333333
-## 299                                 0.08333333
-## 300                                 0.08333333
-## 301                                         NA
-## 302                                         NA
+##      inds  mw rate_with_this_mw importance_sampling_scenario_weights_basic
+## 297 44088 9.6      5.323646e-05                                 0.08333333
+## 298 44208 9.6      5.323646e-05                                 0.08333333
+## 299 44261 9.6      5.323646e-05                                 0.08333333
+## 300 44171 9.6      5.323646e-05                                 0.08333333
+## 301    NA 9.7      0.000000e+00                                         NA
+## 302    NA 9.8      0.000000e+00                                         NA
 ##     importance_sampling_scenario_weights_self_normalised
 ## 297                                           0.08333333
 ## 298                                           0.08333333
@@ -178,6 +164,20 @@ tail(random_scenarios_simple)
 ## 300                                           0.08333333
 ## 301                                                   NA
 ## 302                                                   NA
+##     importance_sampling_scenario_rates_basic
+## 297                             4.436371e-06
+## 298                             4.436371e-06
+## 299                             4.436371e-06
+## 300                             4.436371e-06
+## 301                                       NA
+## 302                                       NA
+##     importance_sampling_scenario_rates_self_normalised
+## 297                                       4.436371e-06
+## 298                                       4.436371e-06
+## 299                                       4.436371e-06
+## 300                                       4.436371e-06
+## 301                                                 NA
+## 302                                                 NA
 ```
 
 Aside from the impossible magnitudes, we can confirm that we have 12 scenarios per magnitude, as requested.
@@ -216,14 +216,14 @@ In the full PTHA, we can compute the max-stage exceedance rates at this point as
 
 ```r
 stage_seq = seq(0.1, 20, by=0.1)
-stage_exrates_ptha18 = sapply(stage_seq, f<-function(x) sum(event_rates*(event_peak_stage > x)))
+stage_exrates_ptha18 = sapply(stage_seq, function(x) sum(event_rates*(event_peak_stage > x)))
 ```
 
 The analogous calculation using only the random sample is:
 
 ```r
 stage_exrates_rs_simple = sapply(stage_seq, 
-    f<-function(x){
+    function(x){
         sum(random_scenarios_simple$importance_sampling_scenario_rates_basic * 
             (event_peak_stage[random_scenarios_simple$inds] > x), na.rm=TRUE)
     })
@@ -256,7 +256,7 @@ random_scenarios_simple_many = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
 
 # Compute the max-stage exceedance-rates
 stage_exrates_rs_simple_many = sapply(stage_seq, 
-    f<-function(x){
+    function(x){
         sum(random_scenarios_simple_many$importance_sampling_scenario_rates_basic * 
             (event_peak_stage[random_scenarios_simple_many$inds] > x), na.rm=TRUE)
     })
@@ -318,7 +318,7 @@ random_scenarios_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
 
 # Compute the max-stage exceedance-rates
 stage_exrates_rs_mw_weighted = sapply(stage_seq, 
-    f<-function(x){
+    function(x){
         sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates_basic * 
             (event_peak_stage[random_scenarios_mw_weighted$inds] > x), na.rm=TRUE)
     })
@@ -396,7 +396,7 @@ random_scenarios_stage_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_
 
 # Compute the max-stage exceedance-rates
 stage_exrates_rs_stage_mw_weighted = sapply(stage_seq, 
-    f<-function(x){
+    function(x){
         sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_basic * 
             (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
     })
@@ -496,7 +496,7 @@ for(i in 1:Nrep){
         )
     # Simple random sampling -- compute the stage-vs-exrate curve 
     stage_exrates_rs_simple = sapply(stage_seq, 
-        f<-function(x){
+        function(x){
             sum(random_scenarios_simple$importance_sampling_scenario_rates_basic * 
                 (event_peak_stage[random_scenarios_simple$inds] > x), na.rm=TRUE)
         })
@@ -514,7 +514,7 @@ for(i in 1:Nrep){
         )
     # More scenarios at higher magnitudes -- compute the stage-vs-exrate curve 
     stage_exrates_rs_mw_weighted = sapply(stage_seq, 
-        f<-function(x){
+        function(x){
             sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates_basic * 
                 (event_peak_stage[random_scenarios_mw_weighted$inds] > x), na.rm=TRUE)
         })
@@ -533,7 +533,7 @@ for(i in 1:Nrep){
         )
     # Importance sampling -- compute the stage-vs-exrate curve 
     stage_exrates_rs_stage_mw_weighted_basic = sapply(stage_seq, 
-        f<-function(x){
+        function(x){
             sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_basic * 
                 (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
         })
@@ -543,7 +543,7 @@ for(i in 1:Nrep){
     # Here we do the importance-sampling computation using the self-normalised
     # importance sampling weights
     stage_exrates_rs_stage_mw_weighted_self_normalised = sapply(stage_seq, 
-        f<-function(x){
+        function(x){
             sum(random_scenarios_stage_mw_weighted$importance_sampling_scenario_rates_self_normalised * 
                 (event_peak_stage[random_scenarios_stage_mw_weighted$inds] > x), na.rm=TRUE)
         })
