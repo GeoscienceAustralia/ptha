@@ -1015,13 +1015,13 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                     inds = sample_of_k, 
                     mw = rep(mw, nsam),
                     rate_with_this_mw = rep(rate_with_this_mw, nsam),
+                    importance_sampling_scenario_weights_basic = basic_weights,
+                    importance_sampling_scenario_weights_self_normalised = 
+                        self_normalised_weights,
                     importance_sampling_scenario_rates_basic = 
                         basic_random_scenario_rates, 
                     importance_sampling_scenario_rates_self_normalised = 
-                        self_normalised_random_scenario_rates, 
-                    importance_sampling_scenario_weights_basic = basic_weights,
-                    importance_sampling_scenario_weights_self_normalised = 
-                        self_normalised_weights
+                        self_normalised_random_scenario_rates
                     ))
             }else{
                 # Case with all rates=0
@@ -1029,10 +1029,10 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                     inds = NA, 
                     mw = mw,
                     rate_with_this_mw = rate_with_this_mw,
-                    importance_sampling_scenario_rates_basic = NA, 
-                    importance_sampling_scenario_rates_self_normalised = NA,
                     importance_sampling_scenario_weights_basic = NA,
-                    importance_sampling_scenario_weights_self_normalised = NA
+                    importance_sampling_scenario_weights_self_normalised = NA,
+                    importance_sampling_scenario_rates_basic = NA, 
+                    importance_sampling_scenario_rates_self_normalised = NA
                     ))
             }
         })
