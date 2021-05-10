@@ -881,11 +881,12 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
 #' for each magnitude.
 #' @param mw_limits only sample from magnitudes greater than mw_limits[1], and
 #' less than mw_limits[2]
-#' @param return_as_table convert the output to a data.frame, rather than a list of lists.
-#' @return a data.frame (if return_as_table=TRUE) or a list of lists (one per magnitude). 
-#' Each contains the overall rate of scenarios with the given magnitude
-#' (rate_with_this_mw), the magnitude (mw), the random scenario indices
-#' corresponding to event_rates and event_Mw (inds), the product of the
+#' @param return_as_table logical - convert the output to a data.frame (if
+#' TRUE), or a list of lists (if FALSE).
+#' @return a data.frame (if return_as_table=TRUE) or a list of lists (one per
+#' magnitude).  Each contains the overall rate of scenarios with the given
+#' magnitude (rate_with_this_mw), the magnitude (mw), the random scenario
+#' indices corresponding to event_rates and event_Mw (inds), the product of the
 #' rate_with_this_mw and the basic importance sampling weights for each
 #' scenario (importance_sampling_scenario_rates_basic), the product of the
 #' rate_with_this_mw and the self-normalised importance sampling weights for
@@ -897,14 +898,15 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
 #' (importance_sampling_scenario_weights_self_normalised), which will sum to 1,
 #' but lead to integral estimates that can be biased (but are asymptotically
 #' unbiased).
-#' @details The function returns either a data.frame or a list of lists (one per unique magnitude)
-#' containing the random scenario indices, and associated rates that can be
-#' assigned to each scenario for consistency with the PTHA18. The rates are
-#' computed with importance sampling, and provide statistical consistency with
-#' the PTHA18 even if a non-uniform event_importance is specified. Two
-#' alternative importance-sampling based rates are provided. These only differ
-#' when the event_importance is specified and non-uniform within a magnitude.
-#' One partitions the rate using "basic importance sampling weights":
+#' @details The function returns either a data.frame or a list of lists (one
+#' per unique magnitude) containing the random scenario indices, and associated
+#' rates that can be assigned to each scenario for consistency with the PTHA18.
+#' The rates are computed with importance sampling, and provide statistical
+#' consistency with the PTHA18 even if a non-uniform event_importance is
+#' specified. Two alternative importance-sampling based rates are provided.
+#' These only differ when the event_importance is specified and non-uniform
+#' within a magnitude. One partitions the rate using "basic importance
+#' sampling weights":
 #'     (1/number_of_random_scenarios) * [ 
 #'       ( PTHA18 conditional probability for the magnitude ) / 
 #'       ( (event_rates * event_importance) for the magnitude, normalised to a density)
