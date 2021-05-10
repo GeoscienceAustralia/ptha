@@ -202,7 +202,7 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
     # Figure out the raster names on this machine
     event_rasters_base = unlist(lapply(
         as.list(event_rasters), 
-        f<-function(x) strsplit(x, split='SOURCE_ZONES')[[1]][2]))
+        function(x) strsplit(x, split='SOURCE_ZONES')[[1]][2]))
     event_rasters_base = paste0('SOURCE_ZONES', event_rasters_base)
 
     if(!file.exists(event_rasters_base[1])){
@@ -730,18 +730,18 @@ summarise_events<-function(events_near_desired_stage){
     mws = ends$events$Mw
     rates = ends$events$rate_annual
     peak_slip = sapply(ends$events$event_slip_string, 
-        f<-function(x) max(as.numeric(strsplit(x, '_')[[1]])),
+        function(x) max(as.numeric(strsplit(x, '_')[[1]])),
         USE.NAMES=FALSE)
     mean_slip = sapply(ends$events$event_slip_string, 
-        f<-function(x) mean(as.numeric(strsplit(x, '_')[[1]])),
+        function(x) mean(as.numeric(strsplit(x, '_')[[1]])),
         USE.NAMES=FALSE)
     nsources = sapply(ends$events$event_slip_string, 
-        f<-function(x) length(as.numeric(strsplit(x, '_')[[1]])),
+        function(x) length(as.numeric(strsplit(x, '_')[[1]])),
         USE.NAMES=FALSE)
     peak_slip_alongstrike = ends$events$peak_slip_alongstrike_ind 
 
-    magnitude_prop_le = sapply(mws, f<-function(x) sum(rates * (mws <= x)))/sum(rates)
-    magnitude_prop_lt = sapply(mws, f<-function(x) sum(rates * (mws < x)))/sum(rates)
+    magnitude_prop_le = sapply(mws, function(x) sum(rates * (mws <= x)))/sum(rates)
+    magnitude_prop_lt = sapply(mws, function(x) sum(rates * (mws < x)))/sum(rates)
 
     magnitude_prop_mid = 0.5*(magnitude_prop_le + magnitude_prop_lt)
 
@@ -757,7 +757,7 @@ summarise_events<-function(events_near_desired_stage){
     obs = cbind(jitter(magnitude_prop_mid, 0.0001), peak_slip, mean_slip, nsources, peak_slip_alongstrike)
     if(nrow(obs) > 1){
         # We can do a mahalanobis distance calculation
-        obs = apply(obs, 2, f<-function(x) qnorm(rank(x)/(length(x)+1)))
+        obs = apply(obs, 2, function(x) qnorm(rank(x)/(length(x)+1)))
         mh_distance = try(mahalanobis(obs, center=mean(obs), cov=cov(obs)), silent=TRUE)
         #if(class(mh_distance) == 'try-error'){
         if(is(mh_distance, 'try-error')){
@@ -960,7 +960,7 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
     }
 
     random_scenario_info = lapply(unique_Mw,
-        f<-function(mw){
+        function(mw){
             # Match Mw [careful with real numbers]
             k = which(abs(event_Mw - mw) < 1.0e-03)
             if(length(k) <= 1){
@@ -1162,7 +1162,7 @@ get_exrate_uncertainty_at_stage<-function(random_scenarios, event_peak_stage, th
         .get_mean_and_variance_of_exrate_in_mw_bin_from_random_scenarios(mw, random_scenarios, 
             event_peak_stage, threshold_stage, importance_sampling_type)}
 
-    all_results = lapply(unique_Mw, f<-function(x) local_fun(x))
+    all_results = lapply(unique_Mw, function(x) local_fun(x))
 
     if(return_per_Mw_bin){
         output = data.frame(Mw = unique_Mw, 
