@@ -890,12 +890,13 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
 #' scenario (importance_sampling_scenario_rates_basic), the product of the
 #' rate_with_this_mw and the self-normalised importance sampling weights for
 #' each scenario (importance_sampling_scenario_rates_self_normalised), the
-#' basic importance sampling weights for each scenario, which may not sum to
-#' 1, but do so on average, and lead to unbiased integral estimates
-#' (importance_sampling_scenario_weights_basic), and the self-normalised importance
-#' sampling weights for each scenario (importance_sampling_scenario_weights_self_normalised), 
-#' which will sum to 1, but lead to integral estimates that can be biased (but are 
-#' asymptotically unbiased).
+#' basic importance sampling weights for each scenario
+#' (importance_sampling_scenario_weights_basic), which may not sum to 1, but do
+#' so on average, and lead to unbiased integral estimates , and the
+#' self-normalised importance sampling weights for each scenario
+#' (importance_sampling_scenario_weights_self_normalised), which will sum to 1,
+#' but lead to integral estimates that can be biased (but are asymptotically
+#' unbiased).
 #' @details The function returns either a data.frame or a list of lists (one per unique magnitude)
 #' containing the random scenario indices, and associated rates that can be
 #' assigned to each scenario for consistency with the PTHA18. The rates are
