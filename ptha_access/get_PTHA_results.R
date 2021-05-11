@@ -1113,7 +1113,7 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                 # Note -- if all wts were the same, then this regression
                 # (y~x) would be problematic because all the 'x' values would
                 # be the same.
-                linear_fit = lm(fvals * wts ~ I(wts - 1))
+                linear_fit = lm(I(fvals * wts) ~ I(wts - 1))
                 prop_exceed_est = coef(linear_fit)[1]
                 # Use (standard-error of intercept from linear)^2 fit to get the variance.
                 # Here we multiply by (N-1)/N to scale the variance in the same way as the other
