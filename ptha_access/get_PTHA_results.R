@@ -857,7 +857,8 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
 
 }
 
-#' Randomly sample scenarios given their magnitudes and rates
+#' Randomly sample a subset of scenarios given their magnitudes, rates, and
+#' (optionally) importance
 #'
 #' Generate a random sample of PTHA18 scenarios from a source-zone, with
 #' sampling stratified by magnitude. Within each magnitude, the chance of each
@@ -1135,23 +1136,29 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 }
 
 
-#' Estimate the 'mean' and the 'variance' of the proportion of scenarios that exceed
-#' the threshold_stage in each Mw bin. 
+#' Estimate the 'mean' and the 'variance' of the proportion of random scenarios
+#' that exceed the threshold_stage in each Mw bin. 
 #'
-#' Since the scenarios in different Mw bins are sampled independently,
-#' we note the mean of the sum is the sum of the means, and the variance of the sum is the sum of the variances.
-#' It is not exact because we only have 'sample estimates' of the means and variances in each bin.
+#' Since the scenarios in different Mw bins are sampled independently, we note
+#' the mean of the sum is the sum of the means, and the variance of the sum is
+#' the sum of the variances.  It is not exact because we only have 'sample
+#' estimates' of the means and variances in each bin.
 #'
-#' @param random_scenarios result of function randomly_sample_scenarios_by_Mw_and_rate
-#' @param event_peak_stage the peak-stage (or other quantity of interest) for ALL scenarios (not just the
-#' random_scenarios). The values for the random_scenarios should be event_peak_stage[random_scenarios$inds]
+#' @param random_scenarios result of function
+#' randomly_sample_scenarios_by_Mw_and_rate
+#' @param event_peak_stage the peak-stage (or other quantity of interest) for
+#' ALL scenarios (not just the random_scenarios). The values for the
+#' random_scenarios should be event_peak_stage[random_scenarios$inds]
 #' @param threshold_stage estimate the exceedance-rate of this threshold value
-#' @param importance_sampling_type either 'basic' or 'self_normalised' or 'control_variate'. These produce
-#'  different estimates of the exceedance-rate and its variance.
-#' @param return_per_Mw_bin If TRUE then return the results by Mw bin, rather than summed over bins
-#' @return if(return_per_Mw_bin == FALSE), then return a vector of length 2 containing an estimate of 
-#' the exceedance-rate and its variance (take sqrt to get standard error). Otherwise, return a data.frame
-#' containing that information for each individual magnitude bin.
+#' @param importance_sampling_type either 'basic' or 'self_normalised' or
+#' 'control_variate'. These produce different estimates of the exceedance-rate
+#' and its variance.
+#' @param return_per_Mw_bin If TRUE then return the results by Mw bin, rather
+#' than summed over bins
+#' @return if(return_per_Mw_bin == FALSE), then return a vector of length 2
+#' containing an estimate of the exceedance-rate and its variance (take sqrt to
+#' get standard error). Otherwise, return a data.frame containing that
+#' information for each individual magnitude bin.
 #' 
 get_exrate_uncertainty_at_stage<-function(random_scenarios, event_peak_stage, threshold_stage, 
     importance_sampling_type = 'basic', return_per_Mw_bin=FALSE){ 
@@ -1179,4 +1186,109 @@ get_exrate_uncertainty_at_stage<-function(random_scenarios, event_peak_stage, th
     }
 }
 
+#' Determine the optimal number of samples per-magnitude-bin on a source-zone.
+#'
+#' Suppose we wish to draw a random sample of scenarios from the PTHA on one
+#' source-zone, with sampling stratified by magnitude (and optionally weighted
+#' within magnitude-bins by the event_importance). For computational reasons we
+#' are constrained to a maximum total number of samples (typically because we
+#' want to simulate all sampled scenarios through to inundation). What is the
+#' best sampling effort in each magnitude bin? In general the answer is will
+#' vary depending on the site of interest, its peak-stage values, and the
+#' threshold peak-stage values interest; further the solution cannot be
+#' computed unless we know the rates and peak-stage values for all scenarios
+#' (which won't be known at onshore sites).  However given a coastal site of
+#' interest, we CAN solve the problem at a NEARBY OFFSHORE SITE where the PTHA
+#' provides valid wave time-series. In particular we determine the per-bin
+#' sampling effort that will minimise the variance of the stage_threshold
+#' exceedance-rate determined from the random scenarios. If the chosen
+#' stage-threshold for the offshore site is also indicative of impacts at our
+#' coastal site too, then the result is likely to give a good (albeit perhaps
+#' not optimal) sampling effort for our site. Note the sampling efforts are
+#' returned as real numbers, not integers, because the optimization problem is
+#' solved in the continuous case. However these numbers can be rounded-up (or
+#' just rounded) and the approximation is generally almost as good.
+#'
+#' @param event_Mw all scenario magnitudes on the source-zone
+#' @param event_rates all scenario rates on the source-zone
+#' @param event_peak_stage all scenario peak-stage values at a site of interest
+#' @param stage_threshold determine the sampling effort that will minimise the
+#' variance of exceedance_rate(event_peak_stage > stage_threshold) as computed from
+#' the randomly sampled scenarios.
+#' @param total_samples How many scenarios can be computed in total?
+#' @param event_importance an optional event importance for each scenario; in
+#' this case we assume the exceedance-rates are computed using basic
+#' importance-sampling, where the sampling distribution within each magnitude
+#' bin is proportional to (event_rate*event_importance).
+#' @param TOL A numerical tolerance used for checking if magnitude-bins are
+#' equally spaced. It should be much smaller than the magnitude-bin size (0.1
+#' in PTHA18), but allow for minor floating-point variations in event_Mw.
+#' @return A list with the unique Mw values (one per bin), the optimal number of
+#' samples in that bin (sum over all bins = total_samples; the results are not integers
+#' and should be rounded for usage), and the variance_numerator (so that the variance
+#' in each magnitude bin is variance_numerator/number_of_samples_in_bin).
+#'
+get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates, 
+    event_peak_stage, stage_threshold, total_samples, event_importance=NULL, 
+    TOL= 1.0e-04){
 
+    unique_event_Mw = sort(unique(event_Mw))
+    bin_size = unique_event_Mw[2]-unique_event_Mw[1]
+    if(!all(abs(diff(unique_event_Mw) - bin_size) < TOL)){
+        stop('event_Mw needs to be sorted and contain discrete Mw values that differ by a fixed magnitude-bin size')
+    }
+
+    # Solution of the problem "minimise sum(a/x) subject to the constraint sum(x):=sum_x".
+    minimise_sum_a_on_x<-function(a, sum_x){
+        lambda = (sum(sqrt(a))/sum_x)^2
+        x = sqrt(a/lambda)
+        return(x)
+    }
+
+    if(length(event_importance) == 0){
+        # If we are not using importance-sampling, then set all the importances to a constant
+        event_importance = rep(1, length(event_rates))
+    }
+
+    stopifnot(length(event_importance) == length(event_rates))
+
+    variance_numerator = unique_event_Mw * NA
+
+    for(i in 1:length(unique_event_Mw)){
+        # Compute the numerator in the variance for each magnitude    
+
+        k = which(abs(event_Mw - unique_event_Mw[i]) < TOL)
+
+        if(sum(event_rates[k]) == 0){
+
+            variance_numerator[i] = 0
+
+        }else{
+
+            # Bin-specific weights with standard stratified sampling
+            scenario_wts_no_importance = event_rates[k] / sum(event_rates[k])
+            # Bin-specific weights with importance-sampling
+            scenario_wts_importance = event_importance[k] * event_rates[k] / 
+                sum(event_importance[k] * event_rates[k])
+            # Basic-importance sampling weighting approach
+            basic_importance_sampling_weights = scenario_wts_no_importance / scenario_wts_importance
+            # Deal with division by zero issues that arise from impossible scenarios
+            tozero = which(scenario_wts_importance == 0)
+            basic_importance_sampling_weights[tozero] = 0
+            
+            rate_of_Mw = sum(event_rates[k])
+            true_exceedance_rate = sum(event_rates[k] * (event_peak_stage[k] > stage_threshold))
+
+            # Numerator in 'basic-importance-sampling' variance. For the case with constant event_importance,
+            # this gives the same result as regular stratified sampling.
+            variance_numerator[i] = sum( scenario_wts_importance * 
+                (rate_of_Mw * (event_peak_stage[k] > stage_threshold) * basic_importance_sampling_weights -
+                 true_exceedance_rate)**2 )
+        }
+    }
+
+    optimal_sampling = minimise_sum_a_on_x(variance_numerator, total_samples)
+
+    return(data.frame(Mw = unique_event_Mw, Nsamples = optimal_sampling, 
+                      variance_numerator=variance_numerator))
+}
