@@ -902,16 +902,20 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
 #' Two alternative importance-sampling based rates are provided; these only
 #' differ when the event_importance_weighted_sampling_probs is specified and
 #' is not directly proportional to event_rates within each magnitude-bin. The "basic importance sampling
-#' weights" are:
-#'     (1/number_of_random_scenarios) * [ 
+#' weights" are reported as:
+#'     (1/number_of_random_scenarios_in_Mw_bin) * [ 
 #'       ( event_rates for the magnitude, normalised to a probability mass function ) / 
 #'       ( event_importance_weighted_sampling_probs for the magnitude, normalised to a probability mass function)
 #'         ]
 #' where the terms in [ ] are evaluated at the randomly selected scenarios (but
-#' the normalisation considers ALL scenarios). The other uses "self-normalised
+#' the normalisation considers ALL scenarios in the magnitude bin). The other uses "self-normalised
 #' importance sampling weights":
 #'     [ (basic importance sampling weights) /
 #'     sum( basic importance sampling weights ) ]
+#' Note that these weightes are a factor of
+#' (1/number_of_random_scenarios_in_Mw_bin) smaller than the importance
+#' sampling weights as defined in some other literature (but it is
+#' straightforward to convert between the definitions).
 #' To determine the associated "rates" for each scenarios, we multiply these
 #' weights by the rate of scenarios with the given Mw. Each method has
 #' different strengths and weaknesses. The "basic importance sampling" based
