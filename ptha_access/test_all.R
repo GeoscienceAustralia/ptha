@@ -218,7 +218,7 @@ test_random_scenario_sampling<-function(){
     random_scenarios[['stage_mw_weighted']] = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
         event_rates=event_rates,
         event_Mw=event_Mw,
-        event_importance = event_peak_stage,
+        event_importance_weighted_sampling_probs = (event_peak_stage*event_rates),
         samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) },
         mw_limits=c(7.15, 9.85)
         )
@@ -325,7 +325,7 @@ test_random_scenario_sampling<-function(){
         random_scenarios_repeated = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
             event_rates=event_rates,
             event_Mw=event_Mw,
-            event_importance = event_peak_stage,
+            event_importance_weighted_sampling_probs = (event_peak_stage*event_rates),
             samples_per_Mw=function(Mw){ round( 6 + 12 * (Mw - 7.15)/(9.65 - 7.15) ) },
             mw_limits=c(7.15, 9.85)
             )
@@ -446,7 +446,7 @@ test_random_scenario_sampling<-function(){
     #
     t0 = ptha18$get_optimal_number_of_samples_per_Mw(event_Mw, event_rates, event_peak_stage,
         stage_threshold=threshold_stage, total_samples=nrow(random_scenarios_repeated),
-        event_importance=event_peak_stage)
+        event_importance_weighted_sampling_probs=(event_peak_stage*event_rates))
     repeated_random_scenario_counts = as.numeric(table(random_scenarios_repeated$mw))
     expected_variance = sum(t0$variance_numerator/repeated_random_scenario_counts)
     empirical_variance = var(est_sd_store[['basic']][,1])

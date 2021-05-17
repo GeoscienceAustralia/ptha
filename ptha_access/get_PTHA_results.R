@@ -862,22 +862,19 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
 #'
 #' Generate a random sample of PTHA18 scenarios from a source-zone, with
 #' sampling stratified by magnitude. Within each magnitude, the chance of each
-#' event being sampled is proportional to the event_rate, optionally multiplied
-#' by a user-specified event_importance (defaults to 1). 
+#' event being sampled is proportional to the event_rate, or a user-specified
+#' event_importance_weighted_sampling_probs (defaults to event_rates). 
 #'
 #' @param event_rates vector of PTHA18 scenario rates (one for each scenario)
 #' @param event_Mw vector of PTHA18 scenario magnitudes (one for each scenario) 
 #' The values must be in 7.2, 7.3, ...9.6, 9.7, 9.8 as for PTHA18.
-#' @param event_importance if not NULL, then a vector of non-negative numbers
-#' (one for each scenario) giving the "importance" of each scenario. By default
-#' this is treated as a constant (=1). For each magnitude, the probability of
-#' sampling the scenario is proportional to "event_rates * event_importance",
-#' so events with higher importance are more likely to be sampled than they
-#' otherwise would be. The output scenario rates are adjusted to account for
-#' this, so the resulting set of scenarios and rates can still be treated as a
-#' random sample from the source-zone. But this sample will better resolve
-#' scenarios with higher importance, and more poorly resolve scenarios with
-#' lower importance.
+#' @param event_importance_weighted_sampling_probs if not NULL, then a vector of 
+#' non-negative numbers (one for each scenario) that determines the conditional
+#' probability of sampling each scenario (with its magnitude bin). 
+#' By default this is equal to "event_rates". The output scenario rates are adjusted
+#' to account for this (with both basic importance sampling, and
+#' self-normalised importance sampling), so the resulting set of scenarios and
+#' rates can still be treated as a random sample from the source-zone. 
 #' @param samples_per_Mw a function returning the number of scenarios to sample
 #' for each magnitude.
 #' @param mw_limits only sample from magnitudes greater than mw_limits[1], and
@@ -902,36 +899,35 @@ get_source_zone_events_potential_energy<-function(source_zone, slip_type='stocha
 #' @details The function returns either a data.frame or a list of lists (one
 #' per unique magnitude) containing the random scenario indices, and associated
 #' rates that can be assigned to each scenario for consistency with the PTHA18.
-#' The rates are computed with importance sampling, and provide statistical
-#' consistency with the PTHA18 even if a non-uniform event_importance is
-#' specified. Two alternative importance-sampling based rates are provided.
-#' These only differ when the event_importance is specified and non-uniform
-#' within a magnitude. One partitions the rate using "basic importance
-#' sampling weights":
+#' Two alternative importance-sampling based rates are provided; these only
+#' differ when the event_importance_weighted_sampling_probs is specified and
+#' is not directly proportional to event_rates within each magnitude-bin. The "basic importance sampling
+#' weights" are:
 #'     (1/number_of_random_scenarios) * [ 
-#'       ( PTHA18 conditional probability for the magnitude ) / 
-#'       ( (event_rates * event_importance) for the magnitude, normalised to a density)
-#'         ]  
-#' where the terms in [ ] are evaluated at the randomly selected scenarios. The
-#' other uses "self-normalised importance sampling weights":
-#'     [ (1/event_importance_for_the_randomly_selected_scenarios )/
-#'     sum( 1/event_importance_for_the_randomly_selected_scenarios) ]
-#' To partition the rates among scenarios for each Mw, we multiply these by the
-#' rate of scenarios with the given Mw. Each method has different strengths and
-#' weaknesses. The "basic importance sampling" based rates can be used to
-#' compute unbiased estimates of integrals, whereas the "self-normalised" based rates 
-#' lead to integral estimates that are asymptotically unbiased as the number of scenarios 
-#' approaches infinity, but have some bias in finite samples.
-#' The basic importance sampling weights do not necessarily sum to
-#' 1, so lead to inconsistencies with the PTHA18 rates for each magnitude,
-#' whereas the self-normalised importance sampling weights retain consistency
-#' with the PTHA18 rates for each magnitude. Depending on the application, one
-#' may prefer one or the other.
+#'       ( event_rates for the magnitude, normalised to a probability mass function ) / 
+#'       ( event_importance_weighted_sampling_probs for the magnitude, normalised to a probability mass function)
+#'         ]
+#' where the terms in [ ] are evaluated at the randomly selected scenarios (but
+#' the normalisation considers ALL scenarios). The other uses "self-normalised
+#' importance sampling weights":
+#'     [ (basic importance sampling weights) /
+#'     sum( basic importance sampling weights ) ]
+#' To determine the associated "rates" for each scenarios, we multiply these
+#' weights by the rate of scenarios with the given Mw. Each method has
+#' different strengths and weaknesses. The "basic importance sampling" based
+#' rates can be used to compute unbiased estimates of integrals, whereas the
+#' "self-normalised" based rates lead to integral estimates that are
+#' asymptotically unbiased as the number of scenarios approaches infinity, but
+#' have some bias in finite samples. However the basic importance sampling
+#' weights do not necessarily sum to 1, so lead to inconsistencies with the
+#' PTHA18 rates for each magnitude, whereas the self-normalised importance
+#' sampling weights retain consistency with the PTHA18 rates for each
+#' magnitude. Depending on the application, one may prefer one or the other.
 #' 
 randomly_sample_scenarios_by_Mw_and_rate<-function(
     event_rates,
     event_Mw,
-    event_importance = NULL,
+    event_importance_weighted_sampling_probs = event_rates,
     samples_per_Mw=function(Mw){round(50 + 0*Mw)},
     mw_limits=c(7.15, 9.85),
     return_as_table=TRUE){
@@ -952,12 +948,9 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
     unique_Mw = unique_Mw[ ((unique_Mw > mw_limits[1]) & 
                             (unique_Mw < mw_limits[2])) ] 
 
-    # By default give all scenarios equal importance.
-    if(is.null(event_importance)) event_importance = event_Mw * 0 + 1
-
     # Sanity check on inputs
-    if( any( (event_rates < 0) | (event_importance < 0)) ){
-        stop('event_rates and event_importance must be nonnegative')
+    if( any( (event_rates < 0) | (event_importance_weighted_sampling_probs < 0)) ){
+        stop('event_rates and event_importance_weighted_sampling_probs must be nonnegative')
     }
 
     random_scenario_info = lapply(unique_Mw,
@@ -972,18 +965,18 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
             rate_with_this_mw = sum(event_rates[k])
             nsam = round(samples_per_Mw(mw))
 
-            if((nsam > 0) & sum(event_rates[k] * event_importance[k]) > 0){
+            if((nsam > 0) & sum(event_importance_weighted_sampling_probs[k]) > 0){
 
                 local_sample = sample(1:length(k), size=nsam, 
-                    prob=event_rates[k]*event_importance[k], 
+                    prob=event_importance_weighted_sampling_probs[k], 
                     replace=TRUE)
                 sample_of_k = k[local_sample]
 
                 # The original scenario conditional probability distribution
                 dist_f = event_rates[k]/sum(event_rates[k])
                 # The distribution we sampled from above
-                dist_g = (event_rates[k]*event_importance[k]) / 
-                      sum(event_rates[k]*event_importance[k])
+                dist_g = (event_importance_weighted_sampling_probs[k]) / 
+                      sum(event_importance_weighted_sampling_probs[k])
 
                 # The basic importance-sampling weights -- while these
                 # weights do not sum to 1, they make the estimators unbiased
@@ -1002,10 +995,8 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                 # when used to evaluate integrals they are asymptotically unbiased
                 # (but have bias with finite samples)
                 dist_f_unnormalised = event_rates[k]
-                dist_g_unnormalised = event_rates[k]*event_importance[k]
+                dist_g_unnormalised = event_importance_weighted_sampling_probs[k]
 
-                #self_normalised_weights = (1/event_importance[sample_of_k]) / 
-                #    sum((1/event_importance[sample_of_k]))
                 self_normalised_weights = dist_f_unnormalised[local_sample]/dist_g_unnormalised[local_sample]
                 self_normalised_weights = self_normalised_weights/sum(self_normalised_weights)
 
@@ -1189,25 +1180,26 @@ get_exrate_uncertainty_at_stage<-function(random_scenarios, event_peak_stage, th
 #' Determine the optimal number of samples per-magnitude-bin on a source-zone.
 #'
 #' Suppose we wish to draw a random sample of scenarios from the PTHA on one
-#' source-zone, with sampling stratified by magnitude (and optionally weighted
-#' within magnitude-bins by the event_importance). For computational reasons we
-#' are constrained to a maximum total number of samples (typically because we
-#' want to simulate all sampled scenarios through to inundation). What is the
-#' best sampling effort in each magnitude bin? In general the answer is will
-#' vary depending on the site of interest, its peak-stage values, and the
-#' threshold peak-stage values interest; further the solution cannot be
-#' computed unless we know the rates and peak-stage values for all scenarios
-#' (which won't be known at onshore sites).  However given a coastal site of
-#' interest, we CAN solve the problem at a NEARBY OFFSHORE SITE where the PTHA
-#' provides valid wave time-series. In particular we determine the per-bin
-#' sampling effort that will minimise the variance of the stage_threshold
-#' exceedance-rate determined from the random scenarios. If the chosen
-#' stage-threshold for the offshore site is also indicative of impacts at our
-#' coastal site too, then the result is likely to give a good (albeit perhaps
-#' not optimal) sampling effort for our site. Note the sampling efforts are
-#' returned as real numbers, not integers, because the optimization problem is
-#' solved in the continuous case. However these numbers can be rounded-up (or
-#' just rounded) and the approximation is generally almost as good.
+#' source-zone, with sampling stratified by magnitude (and optionally sampling
+#' within magnitude-bins using a user-specified conditional probability
+#' combined with basic importance sampling). For computational reasons we are
+#' constrained to a maximum total number of samples (typically because we want
+#' to simulate all sampled scenarios through to inundation). What is the best
+#' sampling effort in each magnitude bin? In general the answer is will vary
+#' depending on the site of interest, its peak-stage values, and the threshold
+#' peak-stage values interest; further the solution cannot be computed unless
+#' we know the rates and peak-stage values for all scenarios (which won't be
+#' known at onshore sites).  However given a coastal site of interest, we CAN
+#' solve the problem at a NEARBY OFFSHORE SITE where the PTHA provides valid
+#' wave time-series. In particular we determine the per-bin sampling effort
+#' that will minimise the variance of the stage_threshold exceedance-rate
+#' determined from the random scenarios. If the chosen stage-threshold for the
+#' offshore site is also indicative of impacts at our coastal site too, then
+#' the result is likely to give a good (albeit perhaps not optimal) sampling
+#' effort for our site. Note the sampling efforts are returned as real numbers,
+#' not integers, because the optimization problem is solved in the continuous
+#' case. However these numbers can be rounded-up (or just rounded) and the
+#' approximation is generally almost as good.
 #'
 #' @param event_Mw all scenario magnitudes on the source-zone
 #' @param event_rates all scenario rates on the source-zone
@@ -1216,10 +1208,11 @@ get_exrate_uncertainty_at_stage<-function(random_scenarios, event_peak_stage, th
 #' variance of exceedance_rate(event_peak_stage > stage_threshold) as computed from
 #' the randomly sampled scenarios.
 #' @param total_samples How many scenarios can be computed in total?
-#' @param event_importance an optional event importance for each scenario; in
-#' this case we assume the exceedance-rates are computed using basic
-#' importance-sampling, where the sampling distribution within each magnitude
-#' bin is proportional to (event_rate*event_importance).
+#' @param event_importance_weighted_sampling_probs If this is not provided then the 
+#' conditional probability of sampling each scenario (within its magnitude-bin)
+#' is proportional to event_rates. If provided then this gives the conditional
+#' probability, and we compute the variance assuming that basic importance
+#' sampling is used to re-weight the scenarios.
 #' @param TOL A numerical tolerance used for checking if magnitude-bins are
 #' equally spaced. It should be much smaller than the magnitude-bin size (0.1
 #' in PTHA18), but allow for minor floating-point variations in event_Mw.
@@ -1229,7 +1222,8 @@ get_exrate_uncertainty_at_stage<-function(random_scenarios, event_peak_stage, th
 #' in each magnitude bin is variance_numerator/number_of_samples_in_bin).
 #'
 get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates, 
-    event_peak_stage, stage_threshold, total_samples, event_importance=NULL, 
+    event_peak_stage, stage_threshold, total_samples, 
+    event_importance_weighted_sampling_probs=event_rates, 
     TOL= 1.0e-04){
 
     unique_event_Mw = sort(unique(event_Mw))
@@ -1245,12 +1239,7 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
         return(x)
     }
 
-    if(length(event_importance) == 0){
-        # If we are not using importance-sampling, then set all the importances to a constant
-        event_importance = rep(1, length(event_rates))
-    }
-
-    stopifnot(length(event_importance) == length(event_rates))
+    stopifnot(length(event_importance_weighted_sampling_probs) == length(event_rates))
 
     variance_numerator = unique_event_Mw * NA
 
@@ -1268,8 +1257,8 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
             # Bin-specific weights with standard stratified sampling
             scenario_wts_no_importance = event_rates[k] / sum(event_rates[k])
             # Bin-specific weights with importance-sampling
-            scenario_wts_importance = event_importance[k] * event_rates[k] / 
-                sum(event_importance[k] * event_rates[k])
+            scenario_wts_importance = event_importance_weighted_sampling_probs[k] / 
+                sum(event_importance_weighted_sampling_probs[k])
             # Basic-importance sampling weighting approach
             basic_importance_sampling_weights = scenario_wts_no_importance / scenario_wts_importance
             # Deal with division by zero issues that arise from impossible scenarios
@@ -1279,7 +1268,8 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
             rate_of_Mw = sum(event_rates[k])
             true_exceedance_rate = sum(event_rates[k] * (event_peak_stage[k] > stage_threshold))
 
-            # Numerator in 'basic-importance-sampling' variance. For the case with constant event_importance,
+            # Numerator in 'basic-importance-sampling' variance. For the case with:
+            #     event_importance_weighted_sampling_probs = event_rates
             # this gives the same result as regular stratified sampling.
             variance_numerator[i] = sum( scenario_wts_importance * 
                 (rate_of_Mw * (event_peak_stage[k] > stage_threshold) * basic_importance_sampling_weights -
