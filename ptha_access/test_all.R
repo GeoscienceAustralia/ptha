@@ -333,7 +333,7 @@ test_random_scenario_sampling<-function(){
         # Get approximate confidence intervals for each sampling type
         for(is_type in importance_sampling_types){
 
-            exrate_uncertainty_repeated = ptha18$get_exrate_uncertainty_at_stage(
+            exrate_uncertainty_repeated = ptha18$estimate_exrate_uncertainty(
                 random_scenarios_repeated, event_peak_stage, threshold_stage, 
                 importance_sampling_type=is_type)
 
