@@ -1162,7 +1162,8 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 
     local_fun<-function(mw){ 
         .get_mean_and_variance_of_exrate_in_mw_bin_from_random_scenarios(mw, random_scenarios, 
-            event_peak_stage, threshold_stage, importance_sampling_type)}
+            event_peak_stage, threshold_stage, importance_sampling_type)
+    }
 
     all_results = lapply(unique_Mw, function(x) local_fun(x))
 
@@ -1216,7 +1217,7 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #' conditional probability of sampling each scenario (within its magnitude-bin)
 #' is proportional to event_rates. If provided then this gives the conditional
 #' probability, and we compute the variance assuming that basic importance
-#' sampling is used to re-weight the scenarios.
+#' sampling is used to re-weight the scenarios, using the asymptotic variance formula.
 #' @param TOL A numerical tolerance used for checking if magnitude-bins are
 #' equally spaced. It should be much smaller than the magnitude-bin size (0.1
 #' in PTHA18), but allow for minor floating-point variations in event_Mw.
@@ -1252,11 +1253,15 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
 
         k = which(abs(event_Mw - unique_event_Mw[i]) < TOL)
 
-        if(sum(event_rates[k]) == 0){
+        if(sum(event_rates[k]) == 0 | sum(event_importance_weighted_sampling_probs[k]) == 0){
 
             variance_numerator[i] = 0
 
         }else{
+            # 'Basic-importance-sampling' variance. For the case with:
+            #     event_importance_weighted_sampling_probs = event_rates
+            # this gives the same result as regular stratified sampling, so
+            # we do not add a separate implementation.
 
             # Bin-specific weights with standard stratified sampling
             scenario_wts_no_importance = event_rates[k] / sum(event_rates[k])
@@ -1278,6 +1283,10 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
             variance_numerator[i] = sum( scenario_wts_importance * 
                 (rate_of_Mw * (event_peak_stage[k] > stage_threshold) * basic_importance_sampling_weights -
                  true_exceedance_rate)**2 )
+            #variance_numerator[i] = sum( scenario_wts_importance * 
+            #    (rate_of_Mw * (event_peak_stage[k] > stage_threshold) * basic_importance_sampling_weights)^2) -
+            #     true_exceedance_rate^2
+
         }
     }
 

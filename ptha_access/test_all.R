@@ -421,10 +421,10 @@ test_random_scenario_sampling<-function(){
     #
     # Test our estimates of the optimal number of scenarios to sample in each Mw bin
     #
-
+    nrand_samples = sum(!is.na(random_scenarios_repeated$inds))
     # Simple check of variance_numerator by back-calculation
     t0 = ptha18$get_optimal_number_of_samples_per_Mw(event_Mw, event_rates, event_peak_stage,
-        stage_threshold=threshold_stage, total_samples=nrow(random_scenarios_repeated))
+        stage_threshold=threshold_stage, total_samples=nrand_samples)
     rate_with_this_Mw = aggregate(event_rates, by=list(event_Mw), sum)$x
     rate_exceeding_with_this_Mw = aggregate(event_rates * (event_peak_stage > threshold_stage), 
         by=list(event_Mw), sum)$x
@@ -442,15 +442,17 @@ test_random_scenario_sampling<-function(){
     # Check that the theoretical variance (assuming we sample per Mw-bin like
     # in random_scenarios_repeated) is close to the empirical variances (from
     # the above repeated random sampling). This exercises importance-sampling as well
-    # as unequal magnitude stratification.
+    # as unequal magnitude stratification. Note that for importance-sampling the variance
+    # is asymptotic (so it is not exact in finite samples)
     #
     t0 = ptha18$get_optimal_number_of_samples_per_Mw(event_Mw, event_rates, event_peak_stage,
-        stage_threshold=threshold_stage, total_samples=nrow(random_scenarios_repeated),
+        stage_threshold=threshold_stage, total_samples=nrand_samples,
         event_importance_weighted_sampling_probs=(event_peak_stage*event_rates))
-    repeated_random_scenario_counts = as.numeric(table(random_scenarios_repeated$mw))
-    expected_variance = sum(t0$variance_numerator/repeated_random_scenario_counts)
+    repeated_random_scenario_counts = aggregate(!is.na(random_scenarios_repeated$inds), 
+        by=list(random_scenarios_repeated$mw), sum)$x
+    expected_variance = sum(t0$variance_numerator/repeated_random_scenario_counts, na.rm=TRUE)
     empirical_variance = var(est_sd_store[['basic']][,1])
-    # Check they agree within a few percent
+    # Check they agree within a few percent (the estimate is not exact in finite-samples)
     if(abs(empirical_variance - expected_variance) < 0.03*expected_variance){
         print('PASS')
     }else{
@@ -458,6 +460,7 @@ test_random_scenario_sampling<-function(){
     }
 
     # Check that the typical 'sample-sd-estimate' is reasonably close to the expected value
+    # (again note the estimate is not exact in finite samples)
     typical_sd_estimate = median(est_sd_store[['basic']][,2])
     expected_sd = sqrt(expected_variance)
     if( abs(typical_sd_estimate - expected_sd) < 0.05*expected_sd ){
