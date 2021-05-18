@@ -1155,7 +1155,7 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 #' get standard error). Otherwise, return a data.frame containing that
 #' information for each individual magnitude bin.
 #' 
-get_exrate_uncertainty_at_stage<-function(random_scenarios, event_peak_stage, threshold_stage, 
+estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, threshold_stage, 
     importance_sampling_type = 'basic', return_per_Mw_bin=FALSE){ 
     
     unique_Mw = unique(round(random_scenarios$mw, 3))

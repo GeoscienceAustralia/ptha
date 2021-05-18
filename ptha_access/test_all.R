@@ -242,7 +242,7 @@ test_random_scenario_sampling<-function(){
     for(rsn in names(random_scenarios)){
         for(ist in importance_sampling_types){
 
-            exrate_uncertainty[[rsn]][[ist]] = ptha18$get_exrate_uncertainty_at_stage(
+            exrate_uncertainty[[rsn]][[ist]] = ptha18$estimate_exrate_uncertainty(
                 random_scenarios[[rsn]], event_peak_stage, threshold_stage, 
                 importance_sampling_type=ist, return_per_Mw_bin=TRUE)
         }
