@@ -1034,15 +1034,26 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 }
 
 #' Workhorse function to be used inside "get_exrate_uncertainty_at_stage"
-#'
+#' @param mw a single magnitude
+#' @param random_scenarios a data.frame with randomly sampled scenarios
+#' @param event_peak_stage the event_peak_stage from the ORIGINAL scenarios from which
+#' the random sample was drawn -- the ones for the random scenarios are
+#' event_peak_stage[random_scenarios$inds]
+#' @param threshold_stage a single threshold value (stage exceedance)
 .get_mean_and_variance_of_exrate_in_mw_bin_from_random_scenarios<-function(mw, random_scenarios, event_peak_stage, 
     threshold_stage, importance_sampling_type = 'basic'){
+
+    stopifnot((length(mw) == 1) & (length(threshold_stage) == 1))
 
     # Find scenarios with this mw
     k = which(random_scenarios$mw == mw)
    
-    mw_rate = random_scenarios$rate_with_this_mw[k[1]]
+    # Rate of scenarios with magnitude mw (this is repeated in the
+    # "random_scenarios" data.frame)
+    mw_rate = random_scenarios$rate_with_this_mw[k[1]] 
+
     if(mw_rate == 0){
+        # Mean, variance = 0
         output = c(0, 0)
     }else{
 
@@ -1191,11 +1202,10 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
         var_est = sum(unlist(lapply(all_results, function(x) x[2])))
 
         return(c(mean_est, var_est))
-
     }
 }
 
-# Solution of the problem "minimise sum(a/x) subject to the constraint sum(x):=sum_x".
+# Solution of the problem "find x to minimise sum(a/x), subject to the constraint sum(x):=sum_x".
 .minimise_sum_a_on_x<-function(a, sum_x){
     lambda = (sum(sqrt(a))/sum_x)^2
     x = sqrt(a/lambda)
@@ -1218,21 +1228,21 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #' known at onshore sites).  However given a coastal site of interest, we CAN
 #' solve the problem at a NEARBY OFFSHORE SITE where the PTHA provides valid
 #' wave time-series. In particular we determine the per-bin sampling effort
-#' that will minimise the variance of the stage_threshold exceedance-rate
-#' determined from the random scenarios. If the chosen stage-threshold for the
-#' offshore site is also indicative of impacts at our coastal site too, then
-#' the result is likely to give a good (albeit perhaps not optimal) sampling
-#' effort for our site. Note the sampling efforts are returned as real numbers,
-#' not integers, because the optimization problem is solved in the continuous
-#' case. However these numbers can be rounded-up (or just rounded) and the
-#' approximation is generally almost as good.
+#' that will minimise the (analytically determined) variance of the
+#' stage_threshold exceedance-rate determined from the random scenarios. If the
+#' chosen stage-threshold for the offshore site is also indicative of impacts
+#' at our coastal site too, then the result is likely to give a good (albeit
+#' perhaps not optimal) sampling effort for our site. Note the sampling efforts
+#' are returned as real numbers, not integers, because the optimization problem
+#' is solved in the continuous case. However these numbers can be rounded-up
+#' (or just rounded) and the approximation is generally almost as good.
 #'
 #' @param event_Mw all scenario magnitudes on the source-zone
 #' @param event_rates all scenario rates on the source-zone
 #' @param event_peak_stage all scenario peak-stage values at a site of interest
-#' @param stage_threshold determine the sampling effort that will minimise the
-#' variance of exceedance_rate(event_peak_stage > stage_threshold) as computed from
-#' the randomly sampled scenarios.
+#' @param stage_threshold we will minimise the variance of
+#' exceedance_rate(event_peak_stage > stage_threshold) when computed from 
+#' randomly sampled scenarios (which can be computed without Monte-Carlo sampling).
 #' @param total_samples How many scenarios can be computed in total?
 #' @param event_importance_weighted_sampling_probs If this is not provided then the 
 #' conditional probability of sampling each scenario (within its magnitude-bin)
