@@ -936,17 +936,7 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
     mw_limits=c(7.15, 9.85),
     return_as_table=TRUE){
 
-    unique_Mw = sort(unique(event_Mw))
-
-    diff_unique_Mw = diff(unique_Mw)
-
-    if(length(diff_unique_Mw) > 1){
-
-        # Confirm that our expectations of PTHA18 scenarios are met.
-        if(any(abs(diff_unique_Mw - diff_unique_Mw[1]) > 1.0e-06) ){
-            stop('event_Mw is not evenly spaced')
-        }
-    }
+    unique_Mw = .unique_sorted_with_check_for_even_spacing(event_Mw)
 
     # Ignore small scenarios, and scenarios exceeding Mw-max
     unique_Mw = unique_Mw[ ((unique_Mw > mw_limits[1]) & 
@@ -959,8 +949,9 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 
     random_scenario_info = lapply(unique_Mw,
         function(mw){
-            # Match Mw [careful with real numbers]
-            k = which(abs(event_Mw - mw) < 1.0e-03)
+
+            # Match Mw 
+            k = which(event_Mw == mw)
             if(length(k) <= 1){
                 stop('error: Only one scenario -- need to be careful using sample below')
             }
@@ -1048,7 +1039,7 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
     threshold_stage, importance_sampling_type = 'basic'){
 
     # Find scenarios with this mw
-    k = which(abs(random_scenarios$mw - mw) < 1.0e-03)
+    k = which(random_scenarios$mw == mw)
    
     mw_rate = random_scenarios$rate_with_this_mw[k[1]]
     if(mw_rate == 0){
@@ -1057,7 +1048,7 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 
         # Compute mean/variance for the proportion of scenarios that exceed the threshold.
         stages = event_peak_stage[random_scenarios$inds[k]]
-        fvals = (stages > threshold_stage) * 1.0
+        fvals = (stages > threshold_stage) * 1.0 
 
         if(importance_sampling_type == 'basic'){
             # Estimators for 'basic importance sampling' from Art Owen's book, section 9.1
@@ -1130,6 +1121,28 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
     return(output)
 }
 
+# Get unique values of a vector (often binned earthquake magnitudes), sorted. 
+# Also check that the unique values are evenly spaced (to within a close tolerance). 
+# There are some algorithms here where we check for magnitude equality, which can fail
+# if there are tiny round-off-level difference in magnitudes (e.g. 7.2 vs 7.200000000003)
+# which can plausibly occur due to calculations or file-storage imperfections.
+.unique_sorted_with_check_for_even_spacing<-function(event_Mw, reltol=1.0e-03){
+
+    unique_Mw = sort(unique(event_Mw))
+
+    # Check that event_Mw contains discrete values, with unique values evenly spaced
+    diff_unique_Mw = diff(unique_Mw)
+    if(length(diff_unique_Mw) > 0){
+        if(any(abs(diff_unique_Mw - diff_unique_Mw[1]) > reltol*diff_unique_Mw[1]) ){
+            msg = paste0(c('event_Mw is not evenly spaced. PTHA18 scenarios should be.',
+                         'Tiny round-off-level variation in event_Mw trigger this error ',
+                         '(e.g. due to file-storage imperfection or inexact floating point calculations)'))
+            stop(msg)
+        }
+    }
+
+    return(unique_Mw)
+}
 
 #' Estimate the 'mean' and the 'variance' of the proportion of random scenarios
 #' that exceed the threshold_stage in each Mw bin. 
@@ -1157,8 +1170,8 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 #' 
 estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, threshold_stage, 
     importance_sampling_type = 'basic', return_per_Mw_bin=FALSE){ 
-    
-    unique_Mw = unique(round(random_scenarios$mw, 3))
+
+    unique_Mw = .unique_sorted_with_check_for_even_spacing(random_scenarios$mw)
 
     local_fun<-function(mw){ 
         .get_mean_and_variance_of_exrate_in_mw_bin_from_random_scenarios(mw, random_scenarios, 
@@ -1181,6 +1194,14 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 
     }
 }
+
+# Solution of the problem "minimise sum(a/x) subject to the constraint sum(x):=sum_x".
+.minimise_sum_a_on_x<-function(a, sum_x){
+    lambda = (sum(sqrt(a))/sum_x)^2
+    x = sqrt(a/lambda)
+    return(x)
+}
+
 
 #' Determine the optimal number of samples per-magnitude-bin on a source-zone.
 #'
@@ -1218,9 +1239,6 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #' is proportional to event_rates. If provided then this gives the conditional
 #' probability, and we compute the variance assuming that basic importance
 #' sampling is used to re-weight the scenarios, using the asymptotic variance formula.
-#' @param TOL A numerical tolerance used for checking if magnitude-bins are
-#' equally spaced. It should be much smaller than the magnitude-bin size (0.1
-#' in PTHA18), but allow for minor floating-point variations in event_Mw.
 #' @return A list with the unique Mw values (one per bin), the optimal number of
 #' samples in that bin (sum over all bins = total_samples; the results are not integers
 #' and should be rounded for usage), and the variance_numerator (so that the variance
@@ -1228,21 +1246,9 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #'
 get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates, 
     event_peak_stage, stage_threshold, total_samples, 
-    event_importance_weighted_sampling_probs=event_rates, 
-    TOL= 1.0e-04){
+    event_importance_weighted_sampling_probs=event_rates){
 
-    unique_event_Mw = sort(unique(event_Mw))
-    bin_size = unique_event_Mw[2]-unique_event_Mw[1]
-    if(!all(abs(diff(unique_event_Mw) - bin_size) < TOL)){
-        stop('event_Mw needs to be sorted and contain discrete Mw values that differ by a fixed magnitude-bin size')
-    }
-
-    # Solution of the problem "minimise sum(a/x) subject to the constraint sum(x):=sum_x".
-    minimise_sum_a_on_x<-function(a, sum_x){
-        lambda = (sum(sqrt(a))/sum_x)^2
-        x = sqrt(a/lambda)
-        return(x)
-    }
+    unique_event_Mw = .unique_sorted_with_check_for_even_spacing(event_Mw)
 
     stopifnot(length(event_importance_weighted_sampling_probs) == length(event_rates))
 
@@ -1251,7 +1257,7 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
     for(i in 1:length(unique_event_Mw)){
         # Compute the numerator in the variance for each magnitude    
 
-        k = which(abs(event_Mw - unique_event_Mw[i]) < TOL)
+        k = which(event_Mw == unique_event_Mw[i])
 
         if(sum(event_rates[k]) == 0 | sum(event_importance_weighted_sampling_probs[k]) == 0){
 
@@ -1271,8 +1277,7 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
             # Basic-importance sampling weighting approach
             basic_importance_sampling_weights = scenario_wts_no_importance / scenario_wts_importance
             # Deal with division by zero issues that arise from impossible scenarios
-            tozero = which(scenario_wts_importance == 0)
-            basic_importance_sampling_weights[tozero] = 0
+            basic_importance_sampling_weights[scenario_wts_importance == 0] = 0
             
             rate_of_Mw = sum(event_rates[k])
             true_exceedance_rate = sum(event_rates[k] * (event_peak_stage[k] > stage_threshold))
@@ -1290,7 +1295,7 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
         }
     }
 
-    optimal_sampling = minimise_sum_a_on_x(variance_numerator, total_samples)
+    optimal_sampling = .minimise_sum_a_on_x(variance_numerator, total_samples)
 
     return(data.frame(Mw = unique_event_Mw, Nsamples = optimal_sampling, 
                       variance_numerator=variance_numerator))
