@@ -1161,7 +1161,8 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 #' Since the scenarios in different Mw bins are sampled independently, we note
 #' the mean of the sum is the sum of the means, and the variance of the sum is
 #' the sum of the variances.  It is not exact because we only have 'sample
-#' estimates' of the means and variances in each bin.
+#' estimates' of the means and variances in each bin. If instead you want the exact
+#' mean and variance, use the function analytical_Monte_Carlo_exrate_uncertainty
 #'
 #' @param random_scenarios result of function
 #' randomly_sample_scenarios_by_Mw_and_rate
@@ -1216,26 +1217,27 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #' Determine the optimal number of samples per-magnitude-bin on a source-zone.
 #'
 #' Suppose we wish to draw a random sample of scenarios from the PTHA on one
-#' source-zone, with sampling stratified by magnitude (and optionally sampling
-#' within magnitude-bins using a user-specified conditional probability
-#' combined with basic importance sampling). For computational reasons we are
-#' constrained to a maximum total number of samples (typically because we want
-#' to simulate all sampled scenarios through to inundation). What is the best
-#' sampling effort in each magnitude bin? In general the answer is will vary
-#' depending on the site of interest, its peak-stage values, and the threshold
-#' peak-stage values interest; further the solution cannot be computed unless
-#' we know the rates and peak-stage values for all scenarios (which won't be
-#' known at onshore sites).  However given a coastal site of interest, we CAN
-#' solve the problem at a NEARBY OFFSHORE SITE where the PTHA provides valid
-#' wave time-series. In particular we determine the per-bin sampling effort
-#' that will minimise the (analytically determined) variance of the
-#' stage_threshold exceedance-rate determined from the random scenarios. If the
-#' chosen stage-threshold for the offshore site is also indicative of impacts
-#' at our coastal site too, then the result is likely to give a good (albeit
-#' perhaps not optimal) sampling effort for our site. Note the sampling efforts
-#' are returned as real numbers, not integers, because the optimization problem
-#' is solved in the continuous case. However these numbers can be rounded-up
-#' (or just rounded) and the approximation is generally almost as good.
+#' source-zone, with sampling stratified by magnitude (and optionally
+#' stratified+importance sampling, where sampling within magnitude-bins uses a
+#' user-specified conditional probability combined with basic importance
+#' sampling). For computational reasons we are constrained to a maximum total
+#' number of samples (typically because we want to simulate all sampled
+#' scenarios through to inundation). What is the best sampling effort in each
+#' magnitude bin? In general the answer is will vary depending on the site of
+#' interest, its peak-stage values, and the threshold peak-stage values
+#' interest; further the solution cannot be computed unless we know the rates
+#' and peak-stage values for all scenarios (which won't be known at onshore
+#' sites).  However given a coastal site of interest, we CAN solve the problem
+#' at a NEARBY OFFSHORE SITE where the PTHA provides valid wave time-series. In
+#' particular we determine the per-bin sampling effort that will minimise the
+#' (analytically determined) variance of the stage_threshold exceedance-rate
+#' determined from the random scenarios. If the chosen stage-threshold for the
+#' offshore site is also indicative of impacts at our coastal site too, then
+#' the result is likely to give a good (albeit perhaps not optimal) sampling
+#' effort for our site. Note the sampling efforts are returned as real numbers,
+#' not integers, because the optimization problem is solved in the continuous
+#' case. However these numbers can be rounded-up (or just rounded) and the
+#' approximation is generally almost as good.
 #'
 #' @param event_Mw all scenario magnitudes on the source-zone
 #' @param event_rates all scenario rates on the source-zone
@@ -1247,8 +1249,8 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #' @param event_importance_weighted_sampling_probs If this is not provided then the 
 #' conditional probability of sampling each scenario (within its magnitude-bin)
 #' is proportional to event_rates. If provided then this gives the conditional
-#' probability, and we compute the variance assuming that basic importance
-#' sampling is used to re-weight the scenarios, using the asymptotic variance formula.
+#' probability, and we compute the variance ASSUMING THAT BASIC IMPORTANCE
+#' SAMPLING IS USED to re-weight the scenarios, using the asymptotic variance formula.
 #' @return A list with the unique Mw values (one per bin), the optimal number of
 #' samples in that bin (sum over all bins = total_samples; the results are not integers
 #' and should be rounded for usage), and the variance_numerator (so that the variance
@@ -1309,4 +1311,62 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
 
     return(data.frame(Mw = unique_event_Mw, Nsamples = optimal_sampling, 
                       variance_numerator=variance_numerator))
+}
+
+#' Compute the Monte-Carlo exceedance-rate mean and variance with analytical formulae,
+#' for stratified sampling or stratified+importance sampling.
+#'
+#' This function computes the mean and variance expected of Monte-Carlo
+#' exceedance-rate estimates for the given stage_threshold, using analytical
+#' formulae for stratified-sampling (by magnitude) or stratified+importance
+#' sampling (in that case, basic importance sampling is assumed within each
+#' magnitude-bin). It takes ALL PTHA scenarios as input, along with optional
+#' importance sampling weights, and the sampling effort in each magnitude-bin.
+#' It can be used to estimate the reliability of Monte-Carlo exceedance-rate
+#' estimates BEFORE Monte-Carlo sampling is undertaken. If instead you have a
+#' single Monte-Carlo sample and want to estimate the uncertainty in an
+#' exceedance-rate, use the function estimate_exrate_uncertainty.
+#' 
+#' @param event_Mw all scenario magnitudes on the source-zone
+#' @param event_rates all scenario rates on the source-zone
+#' @param event_peak_stage all scenario peak-stage values at a site of interest
+#' @param stage_threshold we will compute the mean/variance of Monte-Carlo
+#' exceedance_rate(event_peak_stage > stage_threshold) when computed from 
+#' randomly sampled scenarios. Note this can be computed without actually doing Monte-Carlo sampling.
+#' @param samples_per_Mw function(Mw) giving the number of samples in each magnitude bin.
+#' @param event_importance_weighted_sampling_probs If this is not provided then the 
+#' conditional probability of sampling each scenario (within its magnitude-bin)
+#' is proportional to event_rates. If provided then this gives the conditional
+#' probability, and we compute the variance ASSUMING THAT BASIC IMPORTANCE
+#' SAMPLING IS USED to re-weight the scenarios, using the asymptotic variance formula.
+#' @return a vector of length 2 with the mean and variance
+#'
+analytical_Monte_Carlo_exrate_uncertainty<-function(event_Mw, event_rates, 
+    event_peak_stage, stage_threshold, samples_per_Mw,
+    event_importance_weighted_sampling_probs=event_rates){
+
+    stopifnot(length(event_Mw) == length(event_rates))
+    stopifnot(length(event_peak_stage) == length(event_rates))
+    stopifnot(length(stage_threshold) == 1)
+    stopifnot(length(event_importance_weighted_sampling_probs) == length(event_rates))
+    stopifnot(is.function(samples_per_Mw))
+    
+    unique_Mw = .unique_sorted_with_check_for_even_spacing(event_Mw)
+    my_sampling_effort = samples_per_Mw(unique_Mw)
+
+    # Get the numerator of the variance formulae -- one way to do this is to use
+    # the function for determining optimal sampling strategies (we are not interested
+    # in optimal sampling, but the latter function also computes the numerator we do want)
+
+    optimal_samples_ts = ptha18$get_optimal_number_of_samples_per_Mw(
+        event_Mw, event_rates, event_peak_stage, stage_threshold=stage_threshold,
+        total_samples=sum(my_sampling_effort),
+        event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs)
+
+    # Variance of Monte-Carlo exceedance-rates with our sampling strategy
+    var_analytical = sum(optimal_samples_ts$variance_numerator/my_sampling_effort, na.rm=TRUE)
+    # Mean of Monte-Carlo exceedance-rates with our sampling strategy
+    mean_analytical = sum(event_rates * (event_peak_stage > stage_threshold))
+
+    return(c(mean_analytical, var_analytical))
 }

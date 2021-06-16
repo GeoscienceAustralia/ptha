@@ -448,8 +448,10 @@ test_random_scenario_sampling<-function(){
     t0 = ptha18$get_optimal_number_of_samples_per_Mw(event_Mw, event_rates, event_peak_stage,
         stage_threshold=threshold_stage, total_samples=nrand_samples,
         event_importance_weighted_sampling_probs=(event_peak_stage*event_rates))
-    repeated_random_scenario_counts = aggregate(!is.na(random_scenarios_repeated$inds), 
-        by=list(random_scenarios_repeated$mw), sum)$x
+    repeated_random_scenario_counts_mw = aggregate(!is.na(random_scenarios_repeated$inds), 
+        by=list(random_scenarios_repeated$mw), sum)
+    repeated_random_scenario_counts = repeated_random_scenario_counts_mw$x
+    repeated_random_scenario_mw = repeated_random_scenario_counts_mw[,1]
     expected_variance = sum(t0$variance_numerator/repeated_random_scenario_counts, na.rm=TRUE)
     empirical_variance = var(est_sd_store[['basic']][,1])
     # Check they agree within a few percent (the estimate is not exact in finite-samples)
@@ -467,6 +469,27 @@ test_random_scenario_sampling<-function(){
         print('PASS')
     }else{
         print('FAIL -- the typical estimate of the sd is not close enough to the theoretical sd')
+    }
+
+    #
+    # Cross-check a separate calculation of the analytical mean and variance
+    #
+    samples_per_Mw = approxfun(repeated_random_scenario_mw, repeated_random_scenario_counts, method='constant')
+    analytical_mean_variance = ptha18$analytical_Monte_Carlo_exrate_uncertainty(
+        event_Mw, event_rates, event_peak_stage, stage_threshold=threshold_stage,
+        samples_per_Mw = samples_per_Mw, 
+        event_importance_weighted_sampling_probs=(event_peak_stage*event_rates))
+
+    expected_mean = sum(event_rates * (event_peak_stage > threshold_stage))
+    if(abs(analytical_mean_variance[1] - expected_mean) < 1.0e-06*expected_mean){
+        print('PASS')
+    }else{
+        print('FAIL -- issue with analytical_MonteCarlo_exrate_uncertainty, mean')
+    }
+    if(abs(analytical_mean_variance[2] - expected_sd**2) < 1.0e-06*expected_sd**2){
+        print('PASS')
+    }else{
+        print('FAIL -- issue with analytical_MonteCarlo_exrate_uncertainty, variance')
     }
 
     # Check the optimality of the variance estimate in a range of cases. For
