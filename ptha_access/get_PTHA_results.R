@@ -1251,6 +1251,10 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #' is proportional to event_rates. If provided then this gives the conditional
 #' probability, and we compute the variance ASSUMING THAT BASIC IMPORTANCE
 #' SAMPLING IS USED to re-weight the scenarios, using the asymptotic variance formula.
+#' @param unique_event_Mw_sorted optional vector giving the result of calling 
+#' .unique_sorted_with_check_for_event_spacing(event_Mw) -- this is computed if not
+#' provided here. If the routine is called many times with the same event_Mw then it
+#' may be more efficient to provide it.
 #' @return A list with the unique Mw values (one per bin), the optimal number of
 #' samples in that bin (sum over all bins = total_samples; the results are not integers
 #' and should be rounded for usage), and the variance_numerator (so that the variance
@@ -1258,9 +1262,14 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #'
 get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates, 
     event_peak_stage, stage_threshold, total_samples, 
-    event_importance_weighted_sampling_probs=event_rates){
+    event_importance_weighted_sampling_probs=event_rates,
+    unique_event_Mw_sorted = NULL){
 
-    unique_event_Mw = .unique_sorted_with_check_for_even_spacing(event_Mw)
+    if(is.null(unique_event_Mw_sorted)){
+        unique_event_Mw = .unique_sorted_with_check_for_even_spacing(event_Mw)
+    }else{
+        unique_event_Mw = unique_event_Mw_sorted
+    }
 
     stopifnot(length(event_importance_weighted_sampling_probs) == length(event_rates))
 
@@ -1361,7 +1370,8 @@ analytical_Monte_Carlo_exrate_uncertainty<-function(event_Mw, event_rates,
     optimal_samples_ts = ptha18$get_optimal_number_of_samples_per_Mw(
         event_Mw, event_rates, event_peak_stage, stage_threshold=stage_threshold,
         total_samples=sum(my_sampling_effort),
-        event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs)
+        event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs,
+        unique_event_Mw_sorted=unique_Mw)
 
     # Variance of Monte-Carlo exceedance-rates with our sampling strategy
     var_analytical = sum(optimal_samples_ts$variance_numerator/my_sampling_effort, na.rm=TRUE)
