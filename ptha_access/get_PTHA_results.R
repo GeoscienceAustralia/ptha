@@ -969,6 +969,12 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 
                 # The original scenario conditional probability distribution
                 dist_f = event_rates[k]/sum(event_rates[k])
+                
+                # Corner case: impossible events have non-zero weight.
+                # This can occur e.g. if the rates are specified with a logic-tree branch having low mw-max,
+                # but the weights are determined using other rates that can allow for higher mw events.
+                if(sum(event_rates[k]) == 0) dist_f = rep(0, length(k))
+
                 # The distribution we sampled from above
                 dist_g = (event_importance_weighted_sampling_probs[k]) / 
                       sum(event_importance_weighted_sampling_probs[k])
@@ -993,7 +999,13 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
                 dist_g_unnormalised = event_importance_weighted_sampling_probs[k]
 
                 self_normalised_weights = dist_f_unnormalised[local_sample]/dist_g_unnormalised[local_sample]
-                self_normalised_weights = self_normalised_weights/sum(self_normalised_weights)
+                if(sum(self_normalised_weights) > 0){
+                    self_normalised_weights = self_normalised_weights/sum(self_normalised_weights)
+                }else{
+                    # Corner case: impossible events have non-zero weight.
+                    self_normalised_weights = self_normalised_weights*0
+                }
+
 
                 self_normalised_random_scenario_rates = 
                     rate_with_this_mw * self_normalised_weights
