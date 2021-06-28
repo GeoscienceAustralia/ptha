@@ -8,7 +8,7 @@
 #' @param x the lower limit on the integral in the definition
 #' @importFrom stats pgamma
 #' @export
-.incomplete_gamma<-function(a, x) exp( pgamma(x, a, lower=FALSE, log.p=TRUE) + lgamma(a) )
+.incomplete_gamma<-function(a, x) exp( pgamma(x, a, lower.tail=FALSE, log.p=TRUE) + lgamma(a) )
 
 #' Tapered Gutenberg Richter exceedance-rate
 #'
