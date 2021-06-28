@@ -6,6 +6,7 @@
 #'
 #' @param a the shape parameter
 #' @param x the lower limit on the integral in the definition
+#' @importFrom stats pgamma lgamma
 #' @export
 .incomplete_gamma<-function(a, x) exp( pgamma(x, a, lower=FALSE, log.p=TRUE) + lgamma(a) )
 
@@ -133,6 +134,7 @@ taperedGR_moment_release_rate<-function(N_Mt, Mt, Mc, beta){
 #' which is simple and inexact, but quite accurate when Mt << Mc. If FALSE
 #' then solve for Mc using root finding
 #' @return corner moment
+#' @importFrom stats uniroot
 #' @export
 #' @examples
 #'    # Threshold moment
