@@ -6,7 +6,7 @@
 #'
 #' @param a the shape parameter
 #' @param x the lower limit on the integral in the definition
-#' @importFrom stats pgamma lgamma
+#' @importFrom stats pgamma
 #' @export
 .incomplete_gamma<-function(a, x) exp( pgamma(x, a, lower=FALSE, log.p=TRUE) + lgamma(a) )
 
