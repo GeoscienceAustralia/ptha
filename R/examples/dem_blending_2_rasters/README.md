@@ -6,6 +6,6 @@ The idea is that where the high-resolution data exists, we use that. Away from t
 
 How should the transition be determined? This script does it by creating contour lines on the coarse-resolution dataset, with line-depths defined manually to be denser in shallow water, and coarser in deep water. We then calculate the "error" of the coarse-resolution data (i.e. difference with the fine-resolution data) at points spaced along these contour lines. Where the fine-resolution data does not exist, we interpolate the error along the contour lines, but assume the error transitions to zero at sufficiently long distances from known error points. Finally we interpolate the "error surface" using the points defined above, with triangulation, and use this to correct the coarse-resolution data. 
 
-In general the scripts parameters will need case-specific adjustment for new applications. Also the data is not provided. While it may be useful the script is purely for demonstration purposes, and there is no guarentee it will work well in your application!
+In general the script parameters will need case-specific adjustment for new applications. Also the data is not provided. While the author has found approaches like this useful in various applications, there is no guarentee it will work well in your application, especially not without adjustment!
 
 The script assumes you can run `gdalwarp` via a call to `system` (which is true when gdal is installed on a linux system), and also that you've installed rptha as [described here](../../README.md). 
