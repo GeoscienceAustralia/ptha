@@ -166,6 +166,155 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
 
 }
 
+#' Random scenario exceedance-rates over all logic-tree branches.
+#'
+#' Given random scenarios and their stage values on a source-zone/segment,
+#' compute the exceedance-rates for all logic tree branches, given at set of
+#' threshold stage values. This can be done relatively efficiently by noting
+#' that within a magnitude bin, the PTHA18 scenario conditional probabilities do not
+#' vary between logic tree branches. (That fact enables the math to be simplified, and
+#' is exploited below).
+#'
+#' @param source_zone name of the source zone (e.g. "kermadectonga2")
+#' @param segment name of the segment (e.g. "tonga"). This should be "" for unsegmented sources.
+#' @param random_scenarios The random scenarios that result from ptha18$randomly_sample_scenarios_by_Mw_and_rate,
+#' (applied to the current source_zone). It is ESSENTIAL that random_scenarios$rate_with_this_mw is consistent 
+#' with the PTHA18 results for this source-zone and segment, so we check that herein. 
+#' @param random_scenario_stage
+#' @param threshold_stages
+#' @return a list with the 
+#' source_segment_name (combined source_zone + segment name, which is in names(crs$source_envs)), 
+#  unique_mw (magnitude values found in random_scenarios), 
+#  threshold_stages (same as input), 
+#' logic_tree_branch_exceedance_rates (matrix with an exceedance rate for each threshold stage and logic-tree branch),
+#' logic_tree_mean_exceedance_rates (vector with the "weighted mean over all logic-tree branches" of the exceedance-rates).
+#' logic_tree_branch_mw_bin_rates (matrix with the rate of events in each mw_bin, for each logic-tree branch),
+#' logic_tree_branch_posterior_prob (vector with the PTHA18 posterior probabilities or weights for each logic-tree branch)
+#' conditional_prob_exceed_stage_mw (matrix with the conditional probability of exceeding each threshold stage, given the mw-bin)
+#' 
+random_scenario_exceedance_rates_all_logic_tree_branches<-function(
+    source_zone, 
+    segment,
+    random_scenarios,
+    random_scenario_stage,
+    threshold_stages){
+
+    if(segment == ''){
+        source_segment_name = source_zone
+    }else{
+        source_segment_name = paste0(source_zone, '_', segment)
+    }
+
+    # Check that the source_segment_name is valid
+    if(!(source_segment_name %in% names(crs_data$source_envs))){
+        msg = paste0('Cannot find this source_zone and segment in the PTHA18 source-zone data: ',
+                     '"', source_segment_name, '" .',
+                     'Likely there is an error in "source_zone" and/or "segment". Note that for ',
+                     'unsegmented results, segment should be "" (i.e. the length=0 character) ')
+        stop(msg)
+    }
+
+    # Get mw-exceedance-rate information for all logic tree branches in the PTHA18
+    all_branches = crs_data$source_envs[[source_segment_name]]$mw_rate_function(NA, 
+        return_all_logic_tree_branches=TRUE)
+
+    # Unique magnitudes that we have random scenarios for, and the magnitude-bin boundaries
+    unique_mw = ptha18$unique_sorted_with_check_for_even_spacing(random_scenarios$mw)
+    dMw = (unique_mw[2] - unique_mw[1])
+    unique_mw_bin_boundaries = c(unique_mw - (dMw/2), max(unique_mw) + dMw/2)
+
+    # Get the logic-tree-mean rates within each magnitude bin (conveniently stored in the random_scenarios)
+    unique_mw_rates_source = random_scenarios$rate_with_this_mw[match(unique_mw, random_scenarios$mw)]
+
+    # Check it is consistent with the PTHA18 results in all_branches
+    unique_mw_rates_source_check = -diff(crs_data$source_envs[[source_segment_name]]$mw_rate_function(unique_mw_bin_boundaries))
+    if(any(abs( unique_mw_rates_source_check - unique_mw_rates_source) > 1.0e-05*unique_mw_rates_source)){
+        stop('inconsistency between random_scenarios$rate_with_this_mw and the PTHA18 logic-tree mean mw-bin rates')
+    }
+
+    inv_unique_mw_rates_source = 1/unique_mw_rates_source
+    inv_unique_mw_rates_source[unique_mw_rates_source == 0] = 0 # Avoid zero-division
+
+    # Compute the conditional probability of exceeding each threshold_stage, given the magnitude bin
+    # IN PTHA18 THIS IS INDEPENDENT OF THE LOGIC-TREE-BRANCH
+    conditional_prob_exceed_stage_mw = matrix(NA, ncol=length(unique_mw), nrow=length(threshold_stages))
+    for(i in 1:length(threshold_stages)){
+
+        exrate_by_mw_bin = ptha18$estimate_exrate_uncertainty(
+            random_scenarios, 
+            random_scenario_stage,
+            threshold_stage = threshold_stages[i], 
+            return_per_Mw_bin=TRUE)
+
+        conditional_prob_exceed_stage_mw[i,] = 
+            exrate_by_mw_bin$exrate*inv_unique_mw_rates_source
+    }
+
+    # For each logic-tree branch, make a matrix to store the rates in each mw bin.
+    # - columns correspond to different logic-tree branches,
+    # - rows correspond to unique_mw
+    num_logictree_branches = length(all_branches$all_par_prob)
+    logic_tree_branch_mw_bin_rates = matrix(NA, 
+        ncol=num_logictree_branches, nrow=length(unique_mw_rates_source))
+
+    for(i in 1:num_logictree_branches){
+        # Interpolate the exceedance-rate curve the magnitude-bin boundaries
+        # (typically 7.15, 7.25, .... 9.55, 9.65)
+        exrates_tmp = approx(all_branches$Mw_seq, all_branches$all_rate_matrix[i,], 
+            xout=unique_mw_bin_boundaries, rule=1)$y
+
+        # The above interpolation will be NA if any Mw value exceeds
+        # all_branches$Mw_seq. The latter has a varying range depending on the
+        # source representation. But we know the exceedance-rate is zero is
+        # this case
+        k = is.na(exrates_tmp)
+        if(any(k)) exrates_tmp[k] = 0
+        # Store the individual bin rates
+        logic_tree_branch_mw_bin_rates[,i] = -diff(exrates_tmp)
+    }
+
+
+    logic_tree_branch_exceedance_rates = conditional_prob_exceed_stage_mw%*%logic_tree_branch_mw_bin_rates
+
+
+    #
+    # Quick checks
+    #
+    logic_tree_rates_of_any_event = colSums(logic_tree_branch_mw_bin_rates)  
+    mean_rate_any_event = sum(logic_tree_rates_of_any_event * all_branches$all_par_prob)
+    # This should be the same (up to floating point) as 
+    expected_val = (
+        crs_data$source_envs[[source_segment_name]]$mw_rate_function(min(unique_mw_bin_boundaries)) -
+        crs_data$source_envs[[source_segment_name]]$mw_rate_function(max(unique_mw_bin_boundaries)) )
+
+    stopifnot(abs(mean_rate_any_event - expected_val) <= 1.0e-06*expected_val)
+
+    # For testing it is useful to compute the mean-curve implied by the logic-tree branches.
+    # This should be the same as previous results (but errors in interpolation
+    # and so on lead to differences -- this helped catch some errors while writing the code)
+    back_computed_mean_curve = apply(logic_tree_branch_exceedance_rates, 1, 
+        function(x) weighted.mean(x,w=all_branches$all_par_prob) )
+
+
+    outputs = list(source_segment_name = source_segment_name,
+                   unique_mw = unique_mw,
+                   threshold_stages = threshold_stages,
+                   logic_tree_branch_exceedance_rates = logic_tree_branch_exceedance_rates,
+                   logic_tree_mean_exceedance_rates = back_computed_mean_curve,
+                   logic_tree_branch_mw_bin_rates = logic_tree_branch_mw_bin_rates,
+                   logic_tree_branch_posterior_prob = all_branches$all_par_prob,
+                   conditional_prob_exceed_stage_mw = conditional_prob_exceed_stage_mw
+                   )
+
+    # Explicitly remove the large variables defined above (which in practice
+    # can help R manage memory, even though documentation suggests we shouldn't need to)
+    rm(logic_tree_branch_exceedance_rates, logic_tree_branch_mw_bin_rates, 
+       all_branches, conditional_prob_exceed_stage_mw)
+    gc()
+
+    return(outputs)
+}
+
 
 .test_kermadectonga2<-function(){
 
