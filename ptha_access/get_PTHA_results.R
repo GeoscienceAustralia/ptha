@@ -936,7 +936,7 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
     mw_limits=c(7.15, 9.85),
     return_as_table=TRUE){
 
-    unique_Mw = .unique_sorted_with_check_for_even_spacing(event_Mw)
+    unique_Mw = unique_sorted_with_check_for_even_spacing(event_Mw)
 
     # Ignore small scenarios, and scenarios exceeding Mw-max
     unique_Mw = unique_Mw[ ((unique_Mw > mw_limits[1]) & 
@@ -1149,7 +1149,7 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 # There are some algorithms here where we check for magnitude equality, which can fail
 # if there are tiny round-off-level difference in magnitudes (e.g. 7.2 vs 7.200000000003)
 # which can plausibly occur due to calculations or file-storage imperfections.
-.unique_sorted_with_check_for_even_spacing<-function(event_Mw, reltol=1.0e-03){
+unique_sorted_with_check_for_even_spacing<-function(event_Mw, reltol=1.0e-03){
 
     unique_Mw = sort(unique(event_Mw))
 
@@ -1195,7 +1195,20 @@ randomly_sample_scenarios_by_Mw_and_rate<-function(
 estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, threshold_stage, 
     importance_sampling_type = 'basic', return_per_Mw_bin=FALSE){ 
 
-    unique_Mw = .unique_sorted_with_check_for_even_spacing(random_scenarios$mw)
+    unique_Mw = unique_sorted_with_check_for_even_spacing(random_scenarios$mw)
+
+    # The event_peak_stage is a vector with 
+    #    length = (number of scenarios that could possibly have been sampled)
+    # This interface has the potential to be confusing (e.g. people might pass in the random scenario stages). 
+    # Check that here.
+    if(length(event_peak_stage) < max(random_scenarios$inds, na.rm=TRUE)){
+        msg = paste0('event_peak_stage should include ALL the PTHA18 scenarios from which the ',
+                     'random_scenarios were sampled, with event_peak_stage[random_scenarios$inds] ',
+                     'giving the values for the random scenarios. If the event_peak_stage values ',
+                     'are unknown for non-sampled scenarios, those cases can be set to NA without ',
+                     'any problems.')
+        stop(msg)
+    }
 
     local_fun<-function(mw){ 
         .get_mean_and_variance_of_exrate_in_mw_bin_from_random_scenarios(mw, random_scenarios, 
@@ -1264,7 +1277,7 @@ estimate_exrate_uncertainty<-function(random_scenarios, event_peak_stage, thresh
 #' probability, and we compute the variance ASSUMING THAT BASIC IMPORTANCE
 #' SAMPLING IS USED to re-weight the scenarios, using the asymptotic variance formula.
 #' @param unique_event_Mw_sorted optional vector giving the result of calling 
-#' .unique_sorted_with_check_for_event_spacing(event_Mw) -- this is computed if not
+#' unique_sorted_with_check_for_event_spacing(event_Mw) -- this is computed if not
 #' provided here. If the routine is called many times with the same event_Mw then it
 #' may be more efficient to provide it.
 #' @return A list with the unique Mw values (one per bin), the optimal number of
@@ -1278,7 +1291,7 @@ get_optimal_number_of_samples_per_Mw<-function(event_Mw, event_rates,
     unique_event_Mw_sorted = NULL){
 
     if(is.null(unique_event_Mw_sorted)){
-        unique_event_Mw = .unique_sorted_with_check_for_even_spacing(event_Mw)
+        unique_event_Mw = unique_sorted_with_check_for_even_spacing(event_Mw)
     }else{
         unique_event_Mw = unique_event_Mw_sorted
     }
@@ -1372,7 +1385,7 @@ analytical_Monte_Carlo_exrate_uncertainty<-function(event_Mw, event_rates,
     stopifnot(length(event_importance_weighted_sampling_probs) == length(event_rates))
     stopifnot(is.function(samples_per_Mw))
     
-    unique_Mw = .unique_sorted_with_check_for_even_spacing(event_Mw)
+    unique_Mw = unique_sorted_with_check_for_even_spacing(event_Mw)
     my_sampling_effort = samples_per_Mw(unique_Mw)
 
     # Get the numerator of the variance formulae -- one way to do this is to use
