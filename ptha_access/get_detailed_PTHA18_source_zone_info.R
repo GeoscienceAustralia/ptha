@@ -176,14 +176,22 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
 #' is exploited below).
 #'
 #' @param source_zone name of the source zone (e.g. "kermadectonga2")
-#' @param segment name of the segment (e.g. "tonga"). This should be "" for unsegmented sources.
-#' @param random_scenarios The random scenarios that result from ptha18$randomly_sample_scenarios_by_Mw_and_rate,
-#' (applied to the current source_zone). 
-#' @param random_scenario_stage
-#' @param threshold_stages
-#' @param check_consistency_random_scenarios_rate_and_PTHA18_rates logical if TRUE we check that random_scenars$rate_with_this_mw
-#' is consistent with the PTHA18 results on this source-zone and segment. While it is possible to use this routine in a valid way
-#' for which that would not be true, in general we use it in a way such that this should hold, so it is good to check.
+#' @param segment name of the segment (e.g. "tonga"). This should be "" for
+#' unsegmented sources.
+#' @param random_scenarios The random scenarios that result from
+#' ptha18$randomly_sample_scenarios_by_Mw_and_rate, (applied to the current
+#' source_zone). 
+#' @param all_scenario_stage The stage values for ALL SCENARIOS THAT COULD HAVE
+#' BEEN SAMPLED, such that all_scenario_stage[random_scenarios$inds] gives the
+#' stage values for the randomly sampled scenarios. If the stage-values for
+#' non-sampled scenarios are not known, they can be set to NA without a
+#' problem.
+#' @param threshold_stages A vector of stage values for which we compute exceedance-rates
+#' @param check_consistency_random_scenarios_rate_and_PTHA18_rates logical if
+#' TRUE we check that random_scenars$rate_with_this_mw is consistent with the
+#' PTHA18 results on this source-zone and segment. While it is possible to use
+#' this routine in a valid way for which that would not be true, in general we
+#' use it in a way such that this should hold, so it is good to check.
 #' @return a list with the 
 #' source_segment_name (combined source_zone + segment name, which is in names(crs$source_envs)), 
 #  unique_mw (magnitude values found in random_scenarios), 
@@ -198,7 +206,7 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     source_zone, 
     segment,
     random_scenarios,
-    random_scenario_stage,
+    all_scenario_stage,
     threshold_stages,
     check_consistency_random_scenarios_rate_and_PTHA18_rates=TRUE){
 
@@ -247,7 +255,7 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
 
         exrate_by_mw_bin = ptha18$estimate_exrate_uncertainty(
             random_scenarios, 
-            random_scenario_stage,
+            all_scenario_stage,
             threshold_stage = threshold_stages[i], 
             return_per_Mw_bin=TRUE)
 
@@ -278,9 +286,7 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
         logic_tree_branch_mw_bin_rates[,i] = -diff(exrates_tmp)
     }
 
-
     logic_tree_branch_exceedance_rates = conditional_prob_exceed_stage_mw%*%logic_tree_branch_mw_bin_rates
-
 
     #
     # Quick checks
@@ -299,7 +305,6 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     # and so on lead to differences -- this helped catch some errors while writing the code)
     back_computed_mean_curve = apply(logic_tree_branch_exceedance_rates, 1, 
         function(x) weighted.mean(x,w=all_branches$all_par_prob) )
-
 
     outputs = list(source_segment_name = source_segment_name,
                    unique_mw = unique_mw,
@@ -320,6 +325,161 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     return(outputs)
 }
 
+#' Percentile uncertainties of exceedance-rate curves
+#'
+#' Calculate percentile uncertainties of exceedance-rate curves with a
+#' random-sampling technique.
+#'
+#' @param unsegmented_stage_exrates_all_logic_tree_branches Result of calling
+#' random_scenario_exceedance_rates_all_logic_tree_branches for the unsegmented
+#' source-zone representation
+#' @param segmented_stage_exrates_all_logic_tree_branches A list with one
+#' entry for each segment, with the result of calling
+#' random_scenario_exceedance_rates_all_logic_tree_branches for each segment on
+#' the source-zone
+#' @param N Number of random samples used for numerical computation of
+#' percentiles
+#' @param unsegmented_wt The weight assigned to the unsegmented branch
+#' @param union_of_segments_wt The weight assigned to the union-of-segments
+#' branch
+#' @param segments_copula_type Either 'comonotonic' or 'independent'. This
+#' denotes where the percentile uncertainties within the segments should be
+#' treated as comonotonic, or independent.
+#' @param percentile_probs Probability values for the percentile curves, e.g.
+#' c(0.16, 0.5, 0.84) will compute the median and the 16th/84th percentile
+#' curves.
+#' @param numerical_probs To do the calculation we approximate the
+#' exceedance-rate ECDF at these probabilities, and then get interpolated
+#' exceedance-rates from this curve, at N uniformly distributed random
+#' percentiles. While this often won't need to be changed it allows some
+#' numerical tuning of the calculation.
+#' @param print_progress_every_nth_threshold These calculations can be slow, and to 
+#' this enables the progress to be printed on every nth threshold calculation
+#' @return A list with 
+#' - threshold_stages Vector of stage_thresholds (same as
+#' unsegmented_stage_exrates_all_logic_tree_branches$threshold_stages)
+#' - mean_exrate vector of logic-tree mean exceedance-rates for each
+#' threshold_stage
+#' - percentile_probs - same as the input percentile_probs argument
+#' - percentile_exrate - a matrix with the percentile exceedance-rates (one row
+#' for each percentile, one column for each threshold_stage)
+#'
+compute_exceedance_rate_percentiles_with_random_sampling<-function(
+    unsegmented_stage_exrates_all_logic_tree_branches,
+    segmented_stage_exrates_all_logic_tree_branches,
+    N=4e+04,
+    unsegmented_wt=0.5,
+    union_of_segments_wt=0.5,
+    segments_copula_type='comonotonic',
+    percentile_probs=c(0.025, 0.16, 0.5, 0.84, 0.975),
+    numerical_probs = (0.5*( 1 + sin(seq(-pi/2, pi/2, len=1000))) ),
+    print_progress_every_nth_threshold=50){
+
+    stopifnot(abs(unsegmented_wt + union_of_segments_wt - 1) < 0.1/N)
+
+    # Ensure all the threshold_stage values are identical.
+    Nseg = length(segmented_stage_exrates_all_logic_tree_branches)
+
+    for(i in 1:Nseg){
+        stopifnot(all(unsegmented_stage_exrates_all_logic_tree_branches$threshold_stages ==
+                      segmented_stage_exrates_all_logic_tree_branches[[i]]$threshold_stages))
+    }
+
+    # How many samples on unsegmented/segmented respectively?
+    Nu = round(N * unsegmented_wt)
+    Ns = N - Nu
+
+    # Random percentiles [0-1] -- we will look up the inverse CDF of the
+    # unsegmented exceedance-rates at these values to generate a random sample
+    # from the exceedance-rate distribution 
+    random_unsegmented = runif(Nu)
+
+    random_segments = vector(mode='list', length=Nseg)
+    random_segments[[1]] = runif(Ns) 
+    if(Nseg > 1){
+        if(segments_copula_type == 'comonotonic'){
+            # Perfectly correlated percentiles on segments
+            for(i in 2:Nseg){
+                random_segments[[i]] = random_segments[[1]]
+            }
+        }else if(segments_copula_type == 'independent'){
+            # Uncorrelated percentiles on segments
+            for(i in 2:Nseg){
+                random_segments[[i]] = runif(Ns)
+            }
+        }else{
+            stop('unknown copula type')
+        }
+    }else{
+        stop('Only one segment: This is not how PTHA18 works, so suggests an input error')
+    }
+
+    # Number of stage thresholds
+    Nst = nrow(unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates)
+    mean_exrate = rep(NA, Nst)
+    percentile_exrate = matrix(NA, nrow=length(percentile_probs), ncol=Nst)
+
+    # Do the calculation for each stage threshold
+    for(i in 1:Nst){
+        # Empirically compute the exceedance-rate CDF for the i'th depth threshold
+        if(i%%print_progress_every_nth_threshold == 0) print(i)
+
+        # Unsegmented branch
+        if(Nu > 0){
+            # Make an unsegmented ecdf of the exceedance-rates for this depth, and look it up
+            # at the random_unsegmented values (uniformly distributed in [0-1])
+            exrate_quantiles_unsegmented = weighted_percentile(
+                unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
+                unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_posterior_prob,
+                p=numerical_probs)
+            random_unsegmented_exrates = approx(numerical_probs, exrate_quantiles_unsegmented,
+                xout=random_unsegmented)$y
+        }else{
+            random_unsegmented_exrates = c()
+        }
+
+        # Segmented branch
+        if(Ns > 0){
+            random_segmented_exrates = rep(0, Ns)
+            for(j in 1:Nseg){
+
+                exrate_quantiles_seg = weighted_percentile(
+                    segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],
+                    segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_posterior_prob,
+                    p=numerical_probs)
+
+                # The 'full' exceedance-rate is the sum of the exceedance-rates
+                # on each segment.
+                # Here if all values of random_segments[[j]] are identical we
+                # have the co-monotonic solution, while if they are
+                # independent, we have the independent solution
+                random_segmented_exrates = random_segmented_exrates + 
+                    approx(numerical_probs, exrate_quantiles_seg, xout=random_segments[[j]])$y
+            }
+        }else{
+            random_segmented_exrates = c()
+        }
+
+        # Check that caught a bug while I was writing
+        stopifnot(length(random_segmented_exrates) == Ns)
+        stopifnot(length(random_unsegmented_exrates) == Nu)
+
+        # One sample, drawn from both the segmented and unsegmented curves, in the desired
+        # proportions
+        stage_exceedances_samples = c(random_unsegmented_exrates, random_segmented_exrates)
+
+        mean_exrate[i] = mean(stage_exceedances_samples)
+        percentile_exrate[,i] = quantile(stage_exceedances_samples, probs=percentile_probs, type=6)
+    }
+
+    output = list(
+        threshold_stages = unsegmented_stage_exrates_all_logic_tree_branches$threshold_stages,
+        mean_exrate = mean_exrate,
+        percentile_probs = percentile_probs,
+        percentile_exrate = percentile_exrate)
+
+    return(output)
+}
 
 .test_kermadectonga2<-function(){
 
@@ -401,6 +561,143 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
         print('FAIL')
     }
 }
+
+.test_random_scenario_exceedance_rate_percentile_calculation<-function(){
+    #
+    # Test the random scenario percentile uncertainty calculation code
+    # We compute the stage-vs-exceedance-rate curve at a specified point, using
+    # random scenarios, and compare with the PTHA18 results (separately calculated)
+    #
+
+    source_zone = 'kermadectonga2'
+    target_point = c(185.1239, -21.0888) # Known location of PTHA18 hazard point 
+
+    kt2_scenarios = ptha18$get_source_zone_events_data(source_zone=source_zone, slip_type='stochastic') 
+    # Convenient shorthand for the magnitudes and rates in the event table
+    event_Mw = kt2_scenarios$events$Mw 
+    event_rates = kt2_scenarios$events$rate_annual
+
+    # Get the exceedance-rate info for the unsegmented + segmented branches
+    segment_names = c('', '_tonga', '_kermadec', '_hikurangi')
+    source_segment_names = paste0(source_zone, segment_names)
+    kt_full      = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, '')
+    kt_tonga     = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'tonga')
+    kt_kermadec  = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'kermadec')
+    kt_hikurangi = get_PTHA18_scenario_conditional_probability_and_rates_on_segment(source_zone, 'hikurangi')
+
+    # Get the event peak stage at the target point
+    event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
+        target_point = target_point, 
+        slip_type='stochastic',
+        all_source_names=source_zone)
+    # Convenient shorthand
+    event_peak_stage = event_peak_stage_at_refpoint[[source_zone]]$max_stage
+
+    # Get the PTHA18 stage exceedance-rate curve, for this source zone only, at the target point
+    # This contains percentile information.
+    stage_exrate_curve = ptha18$get_stage_exceedance_rate_curve_at_hazard_point(
+        target_index=event_peak_stage_at_refpoint[[source_zone]]$target_index,
+        source_name=source_zone)
+
+
+    # Compute random scenarios for each source representation
+    event_importance_weighted_sampling_probs = event_rates * event_peak_stage
+    samples_per_Mw = function(Mw){ 4000 }
+    mw_limits = c(7.15, 9.65)
+
+    set.seed(1234) # Same scenarios for all cases (keep resetting this)
+    # Unsegmented (same event_importance_weighted_sampling_probs for all cases)
+    unsegmented_random_scenarios = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=kt_full$HS_event_rates,
+        event_Mw = event_Mw,
+        event_importance_weighted_sampling_probs = event_importance_weighted_sampling_probs,
+        samples_per_Mw = samples_per_Mw,
+        mw_limits = mw_limits
+    )
+
+    set.seed(1234) # Same scenarios for all cases
+    tonga_segment_random_scenarios = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=kt_tonga$HS_event_rates,
+        event_Mw = event_Mw,
+        event_importance_weighted_sampling_probs = event_importance_weighted_sampling_probs,
+        samples_per_Mw = samples_per_Mw,
+        mw_limits = mw_limits
+    )
+    set.seed(1234) # Same scenarios for all cases
+    kermadec_segment_random_scenarios = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=kt_kermadec$HS_event_rates,
+        event_Mw = event_Mw,
+        event_importance_weighted_sampling_probs = event_importance_weighted_sampling_probs,
+        samples_per_Mw = samples_per_Mw,
+        mw_limits = mw_limits
+    )
+    set.seed(1234) # Same scenarios for all cases
+    hikurangi_segment_random_scenarios = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+        event_rates=kt_hikurangi$HS_event_rates,
+        event_Mw = event_Mw,
+        event_importance_weighted_sampling_probs = event_importance_weighted_sampling_probs,
+        samples_per_Mw = samples_per_Mw,
+        mw_limits = mw_limits
+    )
+
+    threshold_stage_values = stage_exrate_curve$stage
+
+    unsegmented_scenario_exrates_logic_tree = random_scenario_exceedance_rates_all_logic_tree_branches(
+        source_zone=source_zone,
+        segment='',
+        random_scenarios = unsegmented_random_scenarios,
+        all_scenario_stage = event_peak_stage, 
+        threshold_stages = threshold_stage_values)
+
+    segmented_scenario_exrates_logic_tree = vector(mode='list', length=3)
+    # Tonga
+    segmented_scenario_exrates_logic_tree[[1]] = random_scenario_exceedance_rates_all_logic_tree_branches(
+        source_zone=source_zone,
+        segment='tonga',
+        random_scenarios = tonga_segment_random_scenarios,
+        all_scenario_stage = event_peak_stage, 
+        threshold_stages = threshold_stage_values)
+    # Kermadec
+    segmented_scenario_exrates_logic_tree[[2]] = random_scenario_exceedance_rates_all_logic_tree_branches(
+        source_zone=source_zone,
+        segment='kermadec',
+        random_scenarios = kermadec_segment_random_scenarios,
+        all_scenario_stage = event_peak_stage, 
+        threshold_stages = threshold_stage_values)
+    # Hikurangi
+    segmented_scenario_exrates_logic_tree[[3]] = random_scenario_exceedance_rates_all_logic_tree_branches(
+        source_zone=source_zone,
+        segment='hikurangi',
+        random_scenarios = hikurangi_segment_random_scenarios,
+        all_scenario_stage = event_peak_stage, 
+        threshold_stages = threshold_stage_values)
+
+    percentile_uncertainty_results = compute_exceedance_rate_percentiles_with_random_sampling(
+        unsegmented_scenario_exrates_logic_tree,
+        segmented_scenario_exrates_logic_tree,
+        N = 1e+06,
+        unsegmented_wt=0.5,
+        union_of_segments_wt=0.5,
+        segments_copula_type = 'comonotonic',
+        print_progress_every_nth_threshold=1)
+
+    # FIXME: Convert this to a test and add to test-suite
+    plot(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$mean_exrate, t='p', log='y')
+    points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate, t='l', col='red')
+
+    points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate_84pc, t='l', col='blue')
+    points(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$percentile_exrate[4,], col='blue')
+
+    points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate_16pc, t='l', col='blue')
+    points(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$percentile_exrate[2,], col='blue')
+
+    points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate_upper_ci, t='l', col='brown')
+    points(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$percentile_exrate[5,], col='brown')
+
+    points(stage_exrate_curve$stage, stage_exrate_curve$stochastic_slip_rate_lower_ci, t='l', col='brown')
+    points(percentile_uncertainty_results$threshold_stages, percentile_uncertainty_results$percentile_exrate[1,], col='brown')
+}
+
 
 test_get_detailed_PTHA18_source_zone_info<-function(){
     .test_kermadectonga2()
