@@ -178,10 +178,12 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
 #' @param source_zone name of the source zone (e.g. "kermadectonga2")
 #' @param segment name of the segment (e.g. "tonga"). This should be "" for unsegmented sources.
 #' @param random_scenarios The random scenarios that result from ptha18$randomly_sample_scenarios_by_Mw_and_rate,
-#' (applied to the current source_zone). It is ESSENTIAL that random_scenarios$rate_with_this_mw is consistent 
-#' with the PTHA18 results for this source-zone and segment, so we check that herein. 
+#' (applied to the current source_zone). 
 #' @param random_scenario_stage
 #' @param threshold_stages
+#' @param check_consistency_random_scenarios_rate_and_PTHA18_rates logical if TRUE we check that random_scenars$rate_with_this_mw
+#' is consistent with the PTHA18 results on this source-zone and segment. While it is possible to use this routine in a valid way
+#' for which that would not be true, in general we use it in a way such that this should hold, so it is good to check.
 #' @return a list with the 
 #' source_segment_name (combined source_zone + segment name, which is in names(crs$source_envs)), 
 #  unique_mw (magnitude values found in random_scenarios), 
@@ -197,7 +199,8 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     segment,
     random_scenarios,
     random_scenario_stage,
-    threshold_stages){
+    threshold_stages,
+    check_consistency_random_scenarios_rate_and_PTHA18_rates=TRUE){
 
     if(segment == ''){
         source_segment_name = source_zone
@@ -226,10 +229,12 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
     # Get the logic-tree-mean rates within each magnitude bin (conveniently stored in the random_scenarios)
     unique_mw_rates_source = random_scenarios$rate_with_this_mw[match(unique_mw, random_scenarios$mw)]
 
-    # Check it is consistent with the PTHA18 results in all_branches
-    unique_mw_rates_source_check = -diff(crs_data$source_envs[[source_segment_name]]$mw_rate_function(unique_mw_bin_boundaries))
-    if(any(abs( unique_mw_rates_source_check - unique_mw_rates_source) > 1.0e-05*unique_mw_rates_source)){
-        stop('inconsistency between random_scenarios$rate_with_this_mw and the PTHA18 logic-tree mean mw-bin rates')
+    if(check_consistency_random_scenarios_rate_and_PTHA18_rates){
+        # Check it is consistent with the PTHA18 results in all_branches
+        unique_mw_rates_source_check = -diff(crs_data$source_envs[[source_segment_name]]$mw_rate_function(unique_mw_bin_boundaries))
+        if(any(abs( unique_mw_rates_source_check - unique_mw_rates_source) > 1.0e-05*unique_mw_rates_source)){
+            stop('inconsistency between random_scenarios$rate_with_this_mw and the PTHA18 logic-tree mean mw-bin rates')
+        }
     }
 
     inv_unique_mw_rates_source = 1/unique_mw_rates_source
