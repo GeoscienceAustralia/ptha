@@ -50,13 +50,7 @@ event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
     target_point = c(185.1239, -21.0888), # Known location of PTHA18 hazard point
     slip_type='stochastic',
     all_source_names=source_zone)
-```
 
-```
-## [1] "kermadectonga2"
-```
-
-```r
 # Convenient shorthand
 event_peak_stage = event_peak_stage_at_refpoint$kermadectonga2$max_stage
 ```

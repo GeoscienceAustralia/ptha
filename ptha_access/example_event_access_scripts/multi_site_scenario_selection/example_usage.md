@@ -115,20 +115,6 @@ kermadec_source_data = get_hazard_curves_and_peak_stages(
     site_gauge_inds, site_gauges, source_zone, slip_type)
 ```
 
-```
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-## [1] "kermadectonga2"
-```
-
 ## Step 3: Define the properties of scenarios of interest
 
 Next we specify properties of the scenarios of interest. The rough idea is that
@@ -205,7 +191,7 @@ names(kermadectonga_events_2500)
 ##  [4] "desired_event_rows"     "events_file"            "unit_source_file"      
 ##  [7] "tsunami_events_file"    "peak_stages"            "peak_stages_within_tol"
 ## [10] "peak_slip"              "slip_from_Mw_function"  "peak_slip_ratio"       
-## [13] "max_stage_at_exrate"
+## [13] "max_stage_at_exrate"    "scenario_match"
 ```
 
 The function `summarise_scenarios` can be used to plot summary information on
