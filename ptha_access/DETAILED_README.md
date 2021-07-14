@@ -124,13 +124,11 @@ source('test_all.R')
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
-## [1] "kermadectonga2"
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
-## [1] "kermadectonga2"
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
@@ -1041,14 +1039,6 @@ ps = get_peak_stage_at_point_for_each_event(
     hazard_point_gaugeID=point_id, 
     all_source_names=list(source_zone_name), 
     include_earthquake_data=FALSE)
-```
-
-```
-## [[1]]
-## [1] "kermadectonga2"
-```
-
-```r
 # Here ps is a list, with one entry for each source-zone in all_source_names,
 # containing the peak-stage for every event.
 

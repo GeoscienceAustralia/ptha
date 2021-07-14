@@ -581,7 +581,7 @@ get_stage_exceedance_rate_curves_all_sources<-function(
 #'
 get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL, 
     target_point=NULL, target_index = NULL, all_source_names = NULL,
-    slip_type = 'stochastic', include_earthquake_data=TRUE, max_tries=20){
+    slip_type = 'stochastic', include_earthquake_data=TRUE, max_tries=20, verbose=FALSE){
 
 
     # Here it doesn't matter whether we use the revised1_XXXX file, or the original file
@@ -615,7 +615,7 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
     for(i in 1:length(all_source_names)){
     
         nm = all_source_names[i]
-        print(nm)
+        if(verbose) print(nm)
         try_again = TRUE
 
         # Allow for the download to fail up to 'max_tries' times
@@ -701,11 +701,12 @@ get_peak_stage_at_point_for_each_event<-function(hazard_point_gaugeID = NULL,
 
                 if(counter <= max_tries){
                     try_again = TRUE
-                    print('remote read failed, trying again')
+                    if(verbose) print('remote read failed, trying again')
                 }
 
                 if(counter > max_tries){
                     try_again = FALSE
+                    # Always print this one as it indicates real problems
                     print('remote read failed too many times, skipping')
                 }
             }else{
