@@ -112,6 +112,8 @@ get_source_zone_events_data<-function(source_zone=NULL, slip_type='stochastic', 
         t3 = all(abs(events_data$weight_with_nonzero_rate - potential_energy_data$weight_with_nonzero_rate) <=
                  1.0e-04*events_data$weight_with_nonzero_rate)
 
+        #browser()
+
         if(!(t1 & t2 & t3)){
             stop('Error reading potential energy -- rows may not be aligned')
         }
