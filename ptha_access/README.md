@@ -1,5 +1,7 @@
 # **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment (PTHA18) results**
 
+**Note to users -- a security update to the NCI THREDDS Server around 16/07/21 broke the codes here and caused the tests to fail. On 21/07/21 we implemented changes suggested by NCI to work-around the issues. Users will need to update their copy of the codes here in order to use the database.**
+
 This guide explains how to access basic tsunami hazard information in easy-to-use csv and
 shapefile formats. 
 
