@@ -69,10 +69,10 @@ if(file.exists('/g/data/fj6/PTHA/AustPTHA_1')){
     max_stringlength = '[stringlength=4096]'
     #
     .GDATA_OPENDAP_BASE_LOCATION = paste0(max_stringlength, 
-        'http://dapds00.nci.org.au/thredds/dodsC/fj6/PTHA/AustPTHA_1/')
+        'https://dapds00.nci.org.au/thredds/dodsC/fj6/PTHA/AustPTHA_1/')
     #
     # Non-netcdf data -- this location only allows download
-    .GDATA_HTTP_BASE_LOCATION = 'http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/'
+    .GDATA_HTTP_BASE_LOCATION = 'https://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/'
 }
 
 #'
