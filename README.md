@@ -1,9 +1,11 @@
 # ptha
 Codes for probabilistic tsunami hazard assessment. 
 
-The main codes and README information reside in the folder [R](R). This
-includes the R package [rptha](R/rptha), and various tutorials and template
-scripts (including project-specific scripts used for the 2018 Australian PTHA).
+The folder [R](R) includes the R package [rptha](R/rptha) along with
+[installation instructions](R/README.md). It also contains various 
+[tutorials and template scripts](R/examples) that use
+rptha, (including 
+[project-specific scripts used for the 2018 Australian PTHA](R/examples/austptha_template/) ).
 
 The folder [propagation](propagation) contains a shallow water equations solver.
 
