@@ -1,5 +1,7 @@
 # **Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and tsunami time-series**
 
+**Note to users -- a security update to the NCI THREDDS Server broke the codes here, and caused the tests to fail. On 21/07/2021 we implemented changes suggested by NCI to work-around the issues. Users will need to update their copy of the codes here in order to use the database.**
+
 For every PTHA18 scenario we provide earthquake information, tsunami
 initial conditions, and tsunami time-series at every hazard point. Combined with
 the exceedance-rate modelling, such inputs can be used to drive local scale
