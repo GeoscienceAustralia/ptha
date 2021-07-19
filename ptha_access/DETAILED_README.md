@@ -1,6 +1,6 @@
 # **Obtaining detailed information on earthquake scenarios, tsunami initial conditions, and tsunami time-series**
 
-**Note to users -- a security update to the NCI THREDDS Server broke the codes here, and caused the tests to fail. On 21/07/2021 we implemented changes suggested by NCI to work-around the issues. Users will need to update their copy of the codes here in order to use the database.**
+**Note to users -- a security update to the NCI THREDDS Server on 16/07/21 broke the codes here, and caused the tests to fail. On 21/07/21 we implemented changes suggested by NCI to work-around the issues. Users will need to update their copy of the codes here in order to use the database.**
 
 For every PTHA18 scenario we provide earthquake information, tsunami
 initial conditions, and tsunami time-series at every hazard point. Combined with
@@ -88,6 +88,8 @@ of any application. In particular note that:
   please contact the maintainer (described above).
 
 ## **Usage**
+
+**Note to users -- a security update to the NCI THREDDS Server on 16/07/21 broke the codes here, and caused the tests to fail. On 21/07/21 we implemented changes suggested by NCI to work-around the issues. Users will need to update their copy of the codes here in order to use the database.**
 
 Make sure you have successfully installed the software [as described
 here](INSTALL.md).  Please confirm that everything installed correctly by

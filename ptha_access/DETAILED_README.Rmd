@@ -89,6 +89,8 @@ of any application. In particular note that:
 
 ## **Usage**
 
+**Note to users -- a security update to the NCI THREDDS Server on 16/07/21 broke the codes here, and caused the tests to fail. On 21/07/21 we implemented changes suggested by NCI to work-around the issues. Users will need to update their copy of the codes here in order to use the database.**
+
 Make sure you have successfully installed the software [as described
 here](INSTALL.md).  Please confirm that everything installed correctly by
 running the [test_all.R](test_all.R) script.  You need to start R in the
