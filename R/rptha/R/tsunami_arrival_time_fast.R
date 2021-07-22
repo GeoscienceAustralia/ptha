@@ -57,7 +57,7 @@ tsunami_maxima_and_arrival_time<-function(
 #' @param tsunami_maxima_in_output vector giving the tsunami maxima values for which we will compute exceedance-rates
 #' @param arrival_times_in_output vector giving tsunami arrival times for which we will compute non-exceedance-rates
 #' @return a matrix one row for each tsunami_maxima_in_output, and one column for each arrival_times_in_output. The
-#' entries give the rate of tsunamis with maxima exceeding tsunami_maxima_in_output, and arrival time before arrival_times_in_output.
+#' [i,j] entries give the rate of tsunamis with maxima >= tsunami_maxima_in_output[i], and arrival time <= arrival_times_in_output[j]
 #' @export
 #' @examples
 #' maxima = runif(100)
@@ -77,8 +77,8 @@ tsunami_maxima_and_arrival_time<-function(
 #' for(i in 1:ncol(exrate_matrix)){
 #'     for(j in 1:nrow(exrate_matrix)){
 #'         back_computed_sol[j,i] = sum(scenario_rates[ 
-#'             (arrival_times < arrival_times_in_output[i] &
-#'              maxima > tsunami_maxima_in_output[j])])
+#'             (arrival_times <= arrival_times_in_output[i] &
+#'              maxima >= tsunami_maxima_in_output[j])])
 #'     }
 #' }
 #' # Check it worked
