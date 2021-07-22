@@ -25,7 +25,7 @@ exceedance_rate_given_maxima_and_arrival_time(
 }
 \value{
 a matrix one row for each tsunami_maxima_in_output, and one column for each arrival_times_in_output. The
-entries give the rate of tsunamis with maxima exceeding tsunami_maxima_in_output, and arrival time before arrival_times_in_output.
+[i,j] entries give the rate of tsunamis with maxima >= tsunami_maxima_in_output[i], and arrival time <= arrival_times_in_output[j]
 }
 \description{
 Interface to the fortran routines
@@ -48,8 +48,8 @@ back_computed_sol = exrate_matrix * 0
 for(i in 1:ncol(exrate_matrix)){
     for(j in 1:nrow(exrate_matrix)){
         back_computed_sol[j,i] = sum(scenario_rates[ 
-            (arrival_times < arrival_times_in_output[i] &
-             maxima > tsunami_maxima_in_output[j])])
+            (arrival_times <= arrival_times_in_output[i] &
+             maxima >= tsunami_maxima_in_output[j])])
     }
 }
 # Check it worked
