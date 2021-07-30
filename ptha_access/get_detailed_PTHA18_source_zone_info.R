@@ -375,6 +375,9 @@ random_scenario_exceedance_rates_all_logic_tree_branches<-function(
 #' exceedance-rates from this curve, at N uniformly distributed random
 #' percentiles. While this often won't need to be changed it allows some
 #' numerical tuning of the calculation.
+#' @param use_numerical_probs If TRUE then use the provided or default numerical 
+#' probabilities. Otherwise directly use the cumulative distribution of the
+#' posterior probabilities after sorting by the exceedance-rates.
 #' @param print_progress_every_nth_threshold These calculations can be slow, and to 
 #' this enables the progress to be printed on every nth threshold calculation
 #' @return A list with 
@@ -395,7 +398,9 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
     segments_copula_type='comonotonic',
     percentile_probs=c(0.025, 0.16, 0.5, 0.84, 0.975),
     numerical_probs = (0.5*( 1 + sin(seq(-pi/2, pi/2, len=1000))) ),
-    print_progress_every_nth_threshold=50){
+    use_numerical_probs=TRUE,
+    print_progress_every_nth_threshold=50
+    ){
 
     stopifnot(abs(unsegmented_wt + union_of_segments_wt - 1) < 0.1/N)
 
@@ -450,12 +455,23 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
         if(Nu > 0){
             # Make an unsegmented ecdf of the exceedance-rates for this depth, and look it up
             # at the random_unsegmented values (uniformly distributed in [0-1])
-            exrate_quantiles_unsegmented = weighted_percentile(
-                unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
-                unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_posterior_prob,
-                p=numerical_probs)
+            if(use_numerical_probs){
+                exrate_quantiles_unsegmented = weighted_percentile(
+                    unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
+                    unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_posterior_prob,
+                    p=numerical_probs)
+            }else{
+                exrate_quantiles_unsegmented = sort(
+                    unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
+                    index.return=TRUE)
+                numerical_probs = cumsum(
+                    unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_posterior_prob[exrate_quantiles_unsegmented$ix]
+                )
+                exrate_quantiles_unsegmented = exrate_quantiles_unsegmented$x
+            }
+
             random_unsegmented_exrates = approx(numerical_probs, exrate_quantiles_unsegmented,
-                xout=random_unsegmented)$y
+                xout=random_unsegmented, ties=min, rule=2)$y
         }else{
             random_unsegmented_exrates = c()
         }
@@ -465,10 +481,20 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
             random_segmented_exrates = rep(0, Ns)
             for(j in 1:Nseg){
 
-                exrate_quantiles_seg = weighted_percentile(
-                    segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],
-                    segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_posterior_prob,
-                    p=numerical_probs)
+                if(use_numerical_probs){
+                    exrate_quantiles_seg = weighted_percentile(
+                        segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],
+                        segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_posterior_prob,
+                        p=numerical_probs)
+                }else{
+                    exrate_quantiles_seg = sort(
+                        segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],
+                        index.return=TRUE)
+                    numerical_probs = cumsum(
+                        segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_posterior_prob[exrate_quantiles_seg$ix]
+                    )
+                    exrate_quantiles_seg = exrate_quantiles_seg$x
+                }
 
                 # The 'full' exceedance-rate is the sum of the exceedance-rates
                 # on each segment.
@@ -476,7 +502,7 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
                 # have the co-monotonic solution, while if they are
                 # independent, we have the independent solution
                 random_segmented_exrates = random_segmented_exrates + 
-                    approx(numerical_probs, exrate_quantiles_seg, xout=random_segments[[j]])$y
+                    approx(numerical_probs, exrate_quantiles_seg, xout=random_segments[[j]], ties=min, rule=2)$y
             }
         }else{
             random_segmented_exrates = c()
@@ -734,6 +760,23 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
                   stage_exrate_curve$stochastic_slip_rate_lower_ci, 
                   reltol=0.1, 
                   which_inds = which(stage_exrate_curve$stochastic_slip_rate_lower_ci > 1.0e-05) )
+
+    # Alternative approach to the computation
+    percentile_uncertainty_results2 = compute_exceedance_rate_percentiles_with_random_sampling(
+        unsegmented_scenario_exrates_logic_tree,
+        segmented_scenario_exrates_logic_tree,
+        N = 1e+06,
+        unsegmented_wt=0.5,
+        union_of_segments_wt=0.5,
+        segments_copula_type = 'comonotonic',
+        print_progress_every_nth_threshold=99999,
+        use_numerical_probs=FALSE)
+
+    # Check that the alternative percentile uncertainty calculation is very close to the other one
+    check_similar(percentile_uncertainty_results$percentile_exrate,
+                  percentile_uncertainty_results2$percentile_exrate, 
+                  reltol=0.02,
+                  which_inds=which(percentile_uncertainty_results$percentile_exrate > 1e-20))
 }
 
 
