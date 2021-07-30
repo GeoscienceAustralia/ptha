@@ -464,6 +464,7 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
                 exrate_quantiles_unsegmented = sort(
                     unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
                     index.return=TRUE)
+                # Deliberately reset numerical_probs
                 numerical_probs = cumsum(
                     unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_posterior_prob[exrate_quantiles_unsegmented$ix]
                 )
@@ -490,6 +491,7 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
                     exrate_quantiles_seg = sort(
                         segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],
                         index.return=TRUE)
+                    # Deliberately reset numerical_probs
                     numerical_probs = cumsum(
                         segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_posterior_prob[exrate_quantiles_seg$ix]
                     )
