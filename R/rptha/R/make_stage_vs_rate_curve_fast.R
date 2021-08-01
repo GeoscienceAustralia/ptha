@@ -372,6 +372,8 @@ weighted_percentile<-function(vals, weights, p, method='orig'){
         sorted_vals = sort(vals, index.return=TRUE)
         sorted_weights = weights[sorted_vals$ix]
         cum_sorted_weights = cumsum(sorted_weights)
+        # Ensure the upper limit is EXACTLY 1
+        cum_sorted_weights = cum_sorted_weights/max(cum_sorted_weights)
 
         # Look up multiple indices at once
         ind = p * 0
@@ -388,6 +390,10 @@ weighted_percentile<-function(vals, weights, p, method='orig'){
         sorted_vals = sort(vals[k], index.return=TRUE)
         sorted_weights = weights[k[sorted_vals$ix]]
         cum_sorted_weights = cumsum(sorted_weights)
+
+        # Ensure the upper limit is EXACTLY 1
+        cum_sorted_weights = cum_sorted_weights/max(cum_sorted_weights)
+
         ind = findInterval(p, cum_sorted_weights, left.open=TRUE)
         ind = ind + 1
         return(sorted_vals$x[ind])
