@@ -4,7 +4,7 @@
 \alias{weighted_percentile}
 \title{Get a percentile from an empirical distribution}
 \usage{
-weighted_percentile(vals, weights, p)
+weighted_percentile(vals, weights, p, method = "orig")
 }
 \arguments{
 \item{vals}{vector of values}
@@ -12,7 +12,12 @@ weighted_percentile(vals, weights, p)
 \item{weights}{vector of non-negative weights (one for each value). These will be
 normalised to weights/sum(weights) inside the function}
 
-\item{p}{vector, with length 1 or more, containing values for 'p' as defined above. We require 0<=p<=1}
+\item{p}{vector, with length 1 or more, containing values for 'p' as defined
+above. We require 0<=p<=1}
+
+\item{method}{either 'orig' or 'findinterval_search'. The latter can be
+faster with many elements in p. The tests below suggest both methods give
+the same results, in future it might be sensible to change the default.}
 }
 \value{
 A vector 'X' with the same length as 'p', as defined above
@@ -31,5 +36,40 @@ This function returns the smallest value of X in 'vals' such that PR(vals <= X) 
 
    expected_vals = c(-10, -10, -4, -4, 3, 3, 5, 5, 5, 6, 6)
    stopifnot(all(empirical_q == expected_vals))
+
+
+   # Check for differences in the 2 methods
+   t1 = weighted_percentile(c(1, 2, 3), weights=c(0.5, 0, 0.5), p=c(0, 0.001, 0.5, 0.999, 1), method='orig')
+   t2 = weighted_percentile(c(1, 2, 3), weights=c(0.5, 0, 0.5), p=c(0, 0.001, 0.5, 0.999, 1), method='findinterval_search')
+   stopifnot(all(t1 == t2))
+
+   # Check for differences in the 2 methods
+   Nrepeat = 100*1000
+   N = 1000
+   for(i in 1:Nrepeat){
+       p = runif(N)
+       zvals = sample(seq(1, 50), size=N, replace=TRUE) 
+       weights = runif(N)
+       # Zero some weights
+       weights[sample(seq(1,N), size=50)] = 0
+       t0 = weighted_percentile(zvals, weights, p, method='orig')
+       t1 = weighted_percentile(zvals, weights, p, method='findinterval_search')
+       stopifnot(all(t0 == t1))
+   }
+
+   # Check for differences in the 2 methods -- alternative random 'p' and 'weights'
+   Nrepeat = 100*1000
+   N = 1000
+   for(i in 1:Nrepeat){
+       p = sample(seq(0, 1, len=101), size=N, replace=TRUE)
+       zvals = sample(seq(1, 50), size=N, replace=TRUE) 
+       weights = sample(seq(0, 1, len=101), size=N, replace=TRUE)
+       # Zero some weights
+       weights[sample(seq(1,N), size=50)] = 0
+       t0 = weighted_percentile(zvals, weights, p, method='orig')
+       t1 = weighted_percentile(zvals, weights, p, method='findinterval_search')
+       stopifnot(all(t0 == t1))
+   }
+
 
 }

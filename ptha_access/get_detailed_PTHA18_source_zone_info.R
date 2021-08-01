@@ -459,7 +459,8 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
                 exrate_quantiles_unsegmented = weighted_percentile(
                     unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
                     unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_posterior_prob,
-                    p=numerical_probs)
+                    p=numerical_probs,
+                    method='findinterval_search')
             }else{
                 exrate_quantiles_unsegmented = sort(
                     unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
@@ -486,7 +487,8 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
                     exrate_quantiles_seg = weighted_percentile(
                         segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],
                         segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_posterior_prob,
-                        p=numerical_probs)
+                        p=numerical_probs,
+                        method='findinterval_search')
                 }else{
                     exrate_quantiles_seg = sort(
                         segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],

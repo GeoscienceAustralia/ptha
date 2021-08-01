@@ -307,7 +307,11 @@ convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates<-function(
 #' @param vals vector of values
 #' @param weights vector of non-negative weights (one for each value). These will be
 #' normalised to weights/sum(weights) inside the function
-#' @param p vector, with length 1 or more, containing values for 'p' as defined above. We require 0<=p<=1
+#' @param p vector, with length 1 or more, containing values for 'p' as defined
+#' above. We require 0<=p<=1
+#' @param method either 'orig' or 'findinterval_search'. The latter can be
+#' faster with many elements in p. The tests below suggest both methods give
+#' the same results, in future it might be sensible to change the default.
 #' @return A vector 'X' with the same length as 'p', as defined above
 #'
 #' @examples
@@ -320,22 +324,73 @@ convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates<-function(
 #'    expected_vals = c(-10, -10, -4, -4, 3, 3, 5, 5, 5, 6, 6)
 #'    stopifnot(all(empirical_q == expected_vals))
 #'
+#'
+#'    # Check for differences in the 2 methods
+#'    t1 = weighted_percentile(c(1, 2, 3), weights=c(0.5, 0, 0.5), p=c(0, 0.001, 0.5, 0.999, 1), method='orig')
+#'    t2 = weighted_percentile(c(1, 2, 3), weights=c(0.5, 0, 0.5), p=c(0, 0.001, 0.5, 0.999, 1), method='findinterval_search')
+#'    stopifnot(all(t1 == t2))
+#'
+#'    # Check for differences in the 2 methods
+#'    Nrepeat = 100
+#'    N = 1000
+#'    for(i in 1:Nrepeat){
+#'        p = runif(N)
+#'        zvals = sample(seq(1, 50), size=N, replace=TRUE) 
+#'        weights = runif(N)
+#'        # Zero some weights
+#'        weights[sample(seq(1,N), size=50)] = 0
+#'        t0 = weighted_percentile(zvals, weights, p, method='orig')
+#'        t1 = weighted_percentile(zvals, weights, p, method='findinterval_search')
+#'        stopifnot(all(t0 == t1))
+#'    }
+#'
+#'    # Check for differences in the 2 methods -- alternative random 'p' and 'weights'
+#'    Nrepeat = 100
+#'    N = 1000
+#'    for(i in 1:Nrepeat){
+#'        p = sample(seq(0, 1, len=101), size=N, replace=TRUE)
+#'        zvals = sample(seq(1, 50), size=N, replace=TRUE) 
+#'        weights = sample(seq(0, 1, len=101), size=N, replace=TRUE)
+#'        # Zero some weights
+#'        weights[sample(seq(1,N), size=50)] = 0
+#'        t0 = weighted_percentile(zvals, weights, p, method='orig')
+#'        t1 = weighted_percentile(zvals, weights, p, method='findinterval_search')
+#'        stopifnot(all(t0 == t1))
+#'    }
+#'
+#'
 #' @export
 #'
-weighted_percentile<-function(vals, weights, p){
+weighted_percentile<-function(vals, weights, p, method='orig'){
 
     stopifnot( all(p >= 0 & p <= 1) )
     stopifnot( all(weights >= 0) )
 
-    weights = weights/sum(weights)
-    sorted_vals = sort(vals, index.return=TRUE)
-    sorted_weights = weights[sorted_vals$ix]
-    cum_sorted_weights = cumsum(sorted_weights)
+    if(method == 'orig'){
+        # This can be slow when looking up many elements in p
+        weights = weights/sum(weights)
+        sorted_vals = sort(vals, index.return=TRUE)
+        sorted_weights = weights[sorted_vals$ix]
+        cum_sorted_weights = cumsum(sorted_weights)
 
-    # Look up multiple indices at once
-    ind = p * 0
-    for(i in 1:length(p)){
-        ind[i] = sum(cum_sorted_weights < p[i]) + 1
+        # Look up multiple indices at once
+        ind = p * 0
+        for(i in 1:length(p)){
+            ind[i] = sum(cum_sorted_weights < p[i]) + 1
+        }
+        return(sorted_vals$x[ind])
+
+    }else if(method == 'findinterval_search'){
+
+        # Faster when looking up many p
+        weights = weights/sum(weights)
+        k = which(weights > 0)
+        sorted_vals = sort(vals[k], index.return=TRUE)
+        sorted_weights = weights[k[sorted_vals$ix]]
+        cum_sorted_weights = cumsum(sorted_weights)
+        ind = findInterval(p, cum_sorted_weights, left.open=TRUE)
+        ind = ind + 1
+        return(sorted_vals$x[ind])
+
     }
-    return(sorted_vals$x[ind])
 }
