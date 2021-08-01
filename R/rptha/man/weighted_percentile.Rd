@@ -44,7 +44,7 @@ This function returns the smallest value of X in 'vals' such that PR(vals <= X) 
    stopifnot(all(t1 == t2))
 
    # Check for differences in the 2 methods
-   Nrepeat = 100*1000
+   Nrepeat = 100
    N = 1000
    for(i in 1:Nrepeat){
        p = runif(N)
@@ -58,7 +58,7 @@ This function returns the smallest value of X in 'vals' such that PR(vals <= X) 
    }
 
    # Check for differences in the 2 methods -- alternative random 'p' and 'weights'
-   Nrepeat = 100*1000
+   Nrepeat = 100
    N = 1000
    for(i in 1:Nrepeat){
        p = sample(seq(0, 1, len=101), size=N, replace=TRUE)
