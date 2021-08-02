@@ -1408,3 +1408,192 @@ analytical_Monte_Carlo_exrate_uncertainty<-function(event_Mw, event_rates,
 
     return(c(mean_analytical, var_analytical))
 }
+
+
+#' Percentile uncertainties of exceedance-rate curves
+#'
+#' Calculate percentile uncertainties of exceedance-rate curves with a
+#' random-sampling technique, considering both segmented and unsegmented
+#' source-zones in PTHA18
+#'
+#' @param unsegmented_stage_exrates_all_logic_tree_branches Result of calling
+#' random_scenario_exceedance_rates_all_logic_tree_branches for the unsegmented
+#' source-zone representation (which is in get_detailed_PTHA18_source_zone_info.R)
+#' @param segmented_stage_exrates_all_logic_tree_branches A list with one
+#' entry for each segment, with the result of calling
+#' random_scenario_exceedance_rates_all_logic_tree_branches for each segment on
+#' the source-zone (which is in get_detailed_PTHA18_source_zone_info.R)
+#' @param N Number of random samples used for numerical computation of
+#' percentiles
+#' @param unsegmented_wt The weight assigned to the unsegmented branch
+#' @param union_of_segments_wt The weight assigned to the union-of-segments
+#' branch
+#' @param segments_copula_type Either 'comonotonic' or 'independent'. This
+#' denotes where the percentile uncertainties within the segments should be
+#' treated as comonotonic, or independent.
+#' @param percentile_probs Probability values for the percentile curves, e.g.
+#' c(0.16, 0.5, 0.84) will compute the median and the 16th/84th percentile
+#' curves.
+#' @param numerical_probs To do the calculation we approximate the
+#' exceedance-rate ECDF at these probabilities, and then get interpolated
+#' exceedance-rates from this curve, at N uniformly distributed random
+#' percentiles. While this often won't need to be changed it allows some
+#' numerical tuning of the calculation.
+#' @param use_numerical_probs If TRUE then use the provided or default numerical 
+#' probabilities. Otherwise directly use the cumulative distribution of the
+#' posterior probabilities after sorting by the exceedance-rates.
+#' @param print_progress_every_nth_threshold These calculations can be slow, and to 
+#' this enables the progress to be printed on every nth threshold calculation
+#' @return A list with 
+#' - threshold_stages Vector of stage_thresholds (same as
+#' unsegmented_stage_exrates_all_logic_tree_branches$threshold_stages)
+#' - mean_exrate vector of logic-tree mean exceedance-rates for each
+#' threshold_stage
+#' - percentile_probs - same as the input percentile_probs argument
+#' - percentile_exrate - a matrix with the percentile exceedance-rates (one row
+#' for each percentile, one column for each threshold_stage)
+#'
+compute_exceedance_rate_percentiles_with_random_sampling<-function(
+    unsegmented_stage_exrates_all_logic_tree_branches,
+    segmented_stage_exrates_all_logic_tree_branches,
+    N=4e+04,
+    unsegmented_wt=0.5,
+    union_of_segments_wt=0.5,
+    segments_copula_type='comonotonic',
+    percentile_probs=c(0.025, 0.16, 0.5, 0.84, 0.975),
+    numerical_probs = (0.5*( 1 + sin(seq(-pi/2, pi/2, len=1000))) ),
+    use_numerical_probs=TRUE,
+    print_progress_every_nth_threshold=50
+    ){
+
+    stopifnot(abs(unsegmented_wt + union_of_segments_wt - 1) < 0.1/N)
+
+    # Ensure all the threshold_stage values are identical.
+    Nseg = length(segmented_stage_exrates_all_logic_tree_branches)
+
+    for(i in 1:Nseg){
+        stopifnot(all(unsegmented_stage_exrates_all_logic_tree_branches$threshold_stages ==
+                      segmented_stage_exrates_all_logic_tree_branches[[i]]$threshold_stages))
+    }
+
+    # How many samples on unsegmented/segmented respectively?
+    Nu = round(N * unsegmented_wt)
+    Ns = N - Nu
+
+    # Random percentiles [0-1] -- we will look up the inverse CDF of the
+    # unsegmented exceedance-rates at these values to generate a random sample
+    # from the exceedance-rate distribution 
+    random_unsegmented = runif(Nu)
+
+    random_segments = vector(mode='list', length=Nseg)
+    random_segments[[1]] = runif(Ns) 
+    if(Nseg > 1){
+        if(segments_copula_type == 'comonotonic'){
+            # Perfectly correlated percentiles on segments
+            for(i in 2:Nseg){
+                random_segments[[i]] = random_segments[[1]]
+            }
+        }else if(segments_copula_type == 'independent'){
+            # Uncorrelated percentiles on segments
+            for(i in 2:Nseg){
+                random_segments[[i]] = runif(Ns)
+            }
+        }else{
+            stop('unknown copula type')
+        }
+    }else{
+        stop('Only one segment: This is not how PTHA18 works, so suggests an input error')
+    }
+
+    # Number of stage thresholds
+    Nst = nrow(unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates)
+    mean_exrate = rep(NA, Nst)
+    percentile_exrate = matrix(NA, nrow=length(percentile_probs), ncol=Nst)
+
+    # Do the calculation for each stage threshold
+    for(i in 1:Nst){
+        # Empirically compute the exceedance-rate CDF for the i'th depth threshold
+        if(i%%print_progress_every_nth_threshold == 0) print(i)
+
+        # Unsegmented branch
+        if(Nu > 0){
+            # Make an unsegmented ecdf of the exceedance-rates for this depth, and look it up
+            # at the random_unsegmented values (uniformly distributed in [0-1])
+            if(use_numerical_probs){
+                exrate_quantiles_unsegmented = weighted_percentile(
+                    unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
+                    unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_posterior_prob,
+                    p=numerical_probs,
+                    method='findinterval_search')
+            }else{
+                exrate_quantiles_unsegmented = sort(
+                    unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_exceedance_rates[i,],
+                    index.return=TRUE)
+                # Deliberately reset numerical_probs
+                numerical_probs = cumsum(
+                    unsegmented_stage_exrates_all_logic_tree_branches$logic_tree_branch_posterior_prob[exrate_quantiles_unsegmented$ix]
+                )
+                exrate_quantiles_unsegmented = exrate_quantiles_unsegmented$x
+            }
+
+            random_unsegmented_exrates = approx(numerical_probs, exrate_quantiles_unsegmented,
+                xout=random_unsegmented, ties=min, rule=2)$y
+        }else{
+            random_unsegmented_exrates = c()
+        }
+
+        # Segmented branch
+        if(Ns > 0){
+            random_segmented_exrates = rep(0, Ns)
+            for(j in 1:Nseg){
+
+                if(use_numerical_probs){
+                    exrate_quantiles_seg = weighted_percentile(
+                        segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],
+                        segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_posterior_prob,
+                        p=numerical_probs,
+                        method='findinterval_search')
+                }else{
+                    exrate_quantiles_seg = sort(
+                        segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_exceedance_rates[i,],
+                        index.return=TRUE)
+                    # Deliberately reset numerical_probs
+                    numerical_probs = cumsum(
+                        segmented_stage_exrates_all_logic_tree_branches[[j]]$logic_tree_branch_posterior_prob[exrate_quantiles_seg$ix]
+                    )
+                    exrate_quantiles_seg = exrate_quantiles_seg$x
+                }
+
+                # The 'full' exceedance-rate is the sum of the exceedance-rates
+                # on each segment.
+                # Here if all values of random_segments[[j]] are identical we
+                # have the co-monotonic solution, while if they are
+                # independent, we have the independent solution
+                random_segmented_exrates = random_segmented_exrates + 
+                    approx(numerical_probs, exrate_quantiles_seg, xout=random_segments[[j]], ties=min, rule=2)$y
+            }
+        }else{
+            random_segmented_exrates = c()
+        }
+
+        # Check that caught a bug while I was writing
+        stopifnot(length(random_segmented_exrates) == Ns)
+        stopifnot(length(random_unsegmented_exrates) == Nu)
+
+        # One sample, drawn from both the segmented and unsegmented curves, in the desired
+        # proportions
+        stage_exceedances_samples = c(random_unsegmented_exrates, random_segmented_exrates)
+
+        mean_exrate[i] = mean(stage_exceedances_samples)
+        percentile_exrate[,i] = quantile(stage_exceedances_samples, probs=percentile_probs, type=6)
+    }
+
+    output = list(
+        threshold_stages = unsegmented_stage_exrates_all_logic_tree_branches$threshold_stages,
+        mean_exrate = mean_exrate,
+        percentile_probs = percentile_probs,
+        percentile_exrate = percentile_exrate)
+
+    return(output)
+}
+
