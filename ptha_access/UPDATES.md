@@ -86,3 +86,5 @@ contain other variables - but this can be slow.
 * Draw on JG's revised ideas on large magnitude normal fault sources.
 
 * There is a mistake in the `arutrough` and `tanimbar` scenarios -- both of which are normal faults. The scenarios appear to have been created with a rigidity of 30 GPa. Apparently later the rigidity was changed to 60 GPa, which is how we treat normal faults in general - but it appears we did not update the scenarios. The impact is likely that the sources behave like they have a rigidity of 30 GPa, but we have a more aggresive peak-slip-limit than usual. Although these source-zones are minor, and the rigidity poorly constrained, this should be fixed. The other normal fault sources seem fine. 
+
+* The `Trobriand` source-zone is prescribed a much lower convergence rate than it would have been prescribed if we had used Bird 2003, based on arguments in Griffin and Davies (2018). From the longer-term history of that source-zone, it seems likely that a higher convergence rate might give more realistic results. This should be analysed and updated if necessary.
