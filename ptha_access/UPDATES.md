@@ -75,6 +75,12 @@ number of situations the ptha_access codes read from this file directly to get
 coordinate variables. Previously we would read from other netcdf files, which also
 contain other variables - but this can be slow. 
 
+## 2021
+
+* An update to the PTHA server caused the ptha_access scripts to break. This was easily
+fixed (by using https links, rather than http). Users will have to update their codes to
+get the database working again.
+
 
 # Ideas for future updates 
 

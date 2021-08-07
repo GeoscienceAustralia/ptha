@@ -32,7 +32,7 @@ information when making a commercial decision.
 Results may be updated if problems are identified. Please report any problems
 via the github issues page, or send an email to the maintainer
 (gareth.davies@ga.gov.au) or to hazards@ga.gov.au. See [UPDATES.md](./UPDATES.md) for
-notes regarding updates since the 2018 report release.
+notes regarding updates since the 2018 report release and ideas for future updates.
 
 ## Before you start
 
@@ -113,6 +113,7 @@ source('test_all.R')
 ```
 
 ```
+## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"
