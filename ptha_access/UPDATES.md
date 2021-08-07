@@ -1,4 +1,7 @@
-# Timeline of updates to the PTHA 
+Updates to PTHA, and suggestions for future updates
+---------------------------------------------------
+
+# Timeline of updates to the PTHA
 
 Below we note updates to the PTHA following initial publication, and
 differences with subsequent related publications.
@@ -73,7 +76,7 @@ coordinate variables. Previously we would read from other netcdf files, which al
 contain other variables - but this can be slow. 
 
 
-# Updates worth considering in future
+# Ideas for future updates 
 
 * Advice on tsunami dissipation models, and integration of something like this into the peak-stage exceedance-rate products.
 
