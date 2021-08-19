@@ -131,8 +131,7 @@ An example plot can be downloaded
 [here](https://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/example_plot.pdf).
 Because there are thousands of hazard points, the plots at other sites are provided in a set
 of zip folders. Each zip folder contains around 200 sites in a particular
-longitude range. The zip folders can be accessed 
-[here](https://dap.nci.org.au/thredds/remoteCatalogService?catalog=https://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/catalog.xml).
+longitude range. [The zip folders can be accessed here](https://dap.nci.org.au/thredds/remoteCatalogService?catalog=https://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/catalog.xml).
 Follow the link to the http download to get the file. The zip folder names are
 of the form *revised1_station_summary_plots_longitudes_LOWER_UPPER.zip* where *LOWER* is
 the lower longitude limit, and *UPPER* is the upper longitude limit. 
