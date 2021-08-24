@@ -1395,7 +1395,7 @@ analytical_Monte_Carlo_exrate_uncertainty<-function(event_Mw, event_rates,
     # the function for determining optimal sampling strategies (we are not interested
     # in optimal sampling, but the latter function also computes the numerator we do want)
 
-    optimal_samples_ts = ptha18$get_optimal_number_of_samples_per_Mw(
+    optimal_samples_ts = get_optimal_number_of_samples_per_Mw(
         event_Mw, event_rates, event_peak_stage, stage_threshold=stage_threshold,
         total_samples=sum(my_sampling_effort),
         event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs,
