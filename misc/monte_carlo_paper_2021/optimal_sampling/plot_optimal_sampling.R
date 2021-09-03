@@ -215,7 +215,7 @@ plot_hazard_curve<-function(
     }
 
 
-    abline(v=2, col='purple', lwd=2)
+    abline(v=target_stage, col='purple', lwd=2)
 
     mean_stoc = mean(exrate_ts_store$mean)
     var_stoc = var(exrate_ts_store$mean)
@@ -288,8 +288,8 @@ plot_hazard_curve<-function(
     print(c('    %err  : ', (1 - sqrt(var_stoc/var_analytical))*100))
 
     # Empirical confidence interval 95% true coverage
-    coverage_CI = mean( (mean_analytical > exrate_ts_store$mean - qnorm(1-(1-0.95)/2)*sqrt(exrate_ts_store$var)) &
-                        (mean_analytical < exrate_ts_store$mean + qnorm(1-(1-0.95)/2)*sqrt(exrate_ts_store$var)) )
+    coverage_CI = mean( (mean_analytical > exrate_ts_store$mean + qnorm(0.025)*sqrt(exrate_ts_store$var)) &
+                        (mean_analytical < exrate_ts_store$mean + qnorm(0.975)*sqrt(exrate_ts_store$var)) )
     print(c('  Empirical confidence interval coverage (ideal 0.95): ', coverage_CI))
 
 }
@@ -730,8 +730,10 @@ dev.off()
 
 #
 # As above, but do the calculation for the unsegmented/segmented logic-tree mean, and assume that stratified
-# sampling can spend 50% of the scenarios on the unsegmented branch, and 30% on Tonga, 20% on Kermadec, 
-# and 10% on Hikurangi.
+# sampling can spend 50% of the scenarios on the unsegmented branch. Later we also look at the segments, assuming
+# we can spend 30% on Tonga, 20% on Kermadec, and 10% on Hikurangi. In a real application the latter numbers 
+# should add to 50%, but these plots are just exploratory - we never use the combined results - so there is no
+# problem.
 #
 
 # (NOTE: The script we source below requires access to 'compute_rates_all_sources_session.RData', which 
@@ -793,7 +795,7 @@ plot_hazard_curve('stratified_importance', event_rates=tonga_segmented_KT2$HS_ev
     mw_sampling_fun=approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'))
 
 # As above, but do the calculation for the Kermadec segment logic-tree mean, and assume that stratified
-# sampling can spend 20% of the scenarios on the Kermadec segment
+# sampling can spend 20% of the scenarios on the Kermadec segment (optimistic)
 
 kermadec_segmented_KT2 = ptha18_source_rate_env$get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
     source_zone='kermadectonga2', segment='kermadec')
@@ -821,7 +823,8 @@ plot_hazard_curve('stratified_importance', event_rates=kermadec_segmented_KT2$HS
 
 
 # As above, but do the calculation for the Hikurangi segment logic-tree mean, and assume that stratified
-# sampling can spend 10% of the scenarios on the Hikurangi segment
+# sampling can spend 10% of the scenarios on the Hikurangi segment (very optimistic - impossible if we 
+# just spent 50% on unsegmented and 30% on Tonga and 20% on Kermadec !!)
 
 hikurangi_segmented_KT2 = ptha18_source_rate_env$get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
     source_zone='kermadectonga2', segment='hikurangi')
