@@ -739,7 +739,7 @@ dev.off()
 # (NOTE: The script we source below requires access to 'compute_rates_all_sources_session.RData', which 
 #  herein is also copied to the ../PLOT_DATA folder)
 ptha18_source_rate_env = new.env()
-source('../../../../../AustPTHA/CODE/ptha/ptha_access/get_detailed_PTHA18_source_zone_info.R', 
+source('../../../ptha_access/get_detailed_PTHA18_source_zone_info.R', 
        local=ptha18_source_rate_env, chdir=TRUE)
 
 # Unsegmented case -- stratified sampling gets 50% of the total scenarios (other 50% on segments)
