@@ -20,22 +20,23 @@ source_zone = 'kermadectonga2'
 kt2_scenarios = ptha18$get_source_zone_events_data(source_zone,  slip_type='stochastic')
 
 # Convenient shorthand for the magnitudes and rates in the event table
-event_Mw = kt2_scenarios$events$Mw 
+event_Mw = kt2_scenarios$events$Mw
 event_rates = kt2_scenarios$events$rate_annual
 
-# Get the peak stage value at a point east of Tongatapu
+# Useful wrapper for extracting peak-stage values for all scenarios at a given site
 get_peak_stage_at_target_point<-function(target_point){
     event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
-        target_point = target_point, 
+        target_point = target_point,
         slip_type='stochastic',
         all_source_names=source_zone)
     return(event_peak_stage_at_refpoint[[source_zone]]$max_stage)
 }
 
-target_point = c(185.1239, -21.0888) 
-event_peak_stage_target_point = get_peak_stage_at_target_point(target_point) 
+# Get the peak stage value at a point east of Tongatapu
+target_point = c(185.1239, -21.0888)
+event_peak_stage_target_point = get_peak_stage_at_target_point(target_point)
 
-TOTAL_SAMPLES = 1200
+TOTAL_SAMPLES = 1200 # How many samples in the Monte-Carlo scheme?
 
 DEFAULT_MC_REPS = 10000 # When we repeat MC-sampling many times, by default this defines 'many'
 
@@ -53,9 +54,9 @@ const_samples = const_samples/sum(const_samples)*TOTAL_SAMPLES
 # stratified sampling with constant sampling effort in "possible" Mw bins
 #
 plot_hazard_curve<-function(
-    sampling_type='stratified', 
+    sampling_type='stratified',
     event_rates = kt2_scenarios$events$rate_annual,
-    Number_MC_reps=DEFAULT_MC_REPS, 
+    Number_MC_reps=DEFAULT_MC_REPS,
     hist_xlim=c(6e-04, 2e-03),
     event_importance_weighted_sampling_probs = NULL,
     event_peak_stage_local = event_peak_stage_target_point,
@@ -107,7 +108,7 @@ plot_hazard_curve<-function(
     plot(peak_stage_vals, hazard_curve, log='xy', t='l', lwd=2, las=1,
         xlab="Tsunami maximum-stage (from offshore PTHA)",
         ylab='', #'Exceedance-rate (events/year)',
-        cex.lab=1.5, cex.axis=1.3, 
+        cex.lab=1.5, cex.axis=1.3,
         ylim=c(1/10000, 1/10), xlim=c(0.02, 10))
     mtext(side=2, 'Exceedance-rate (events/year)', line=5.5, cex=1.5)
     add_log_axis_ticks(side=1)
@@ -123,11 +124,11 @@ plot_hazard_curve<-function(
 
     # Store the analytical mean/variance as well, for cross-checking
     exrate_ts_store$analytical_mean_var = ptha18$analytical_Monte_Carlo_exrate_uncertainty(
-        event_Mw, 
-        event_rates, 
-        event_peak_stage_local, 
-        stage_threshold=target_stage, 
-        samples_per_Mw=mw_sampling_fun, 
+        event_Mw,
+        event_rates,
+        event_peak_stage_local,
+        stage_threshold=target_stage,
+        samples_per_Mw=mw_sampling_fun,
         event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs)
 
     set.seed(1234) # Reproducible randomness
@@ -149,8 +150,8 @@ plot_hazard_curve<-function(
         # Plot the first 500 samples (not too many to avoid cluttering the plot)
         if(i <= 500){
             random_scenario_stages = event_peak_stage_local[random_scenarios$inds]
-            random_hazard_curve = sapply(peak_stage_vals, 
-                function(x){ 
+            random_hazard_curve = sapply(peak_stage_vals,
+                function(x){
                     sum(random_scenarios$importance_sampling_scenario_rates_basic*
                         (random_scenario_stages > x), na.rm=TRUE)
                 })
@@ -165,13 +166,13 @@ plot_hazard_curve<-function(
         # Different legends depending on 95% analytical CIs
         if(!add_95pc_analytical_CI){
             legend('bottomleft', c('All scenarios in offshore PTHA',
-                   paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')')), 
+                   paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')')),
                    lty=c(1, 1), col=c('black', 'grey'), lwd=c(2, 2), cex=1.3)
         }else{
-            legend('bottomleft', 
+            legend('bottomleft',
                    c('All scenarios in offshore PTHA',
                        paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')'),
-                       '95% interval (analytical)'), 
+                       '95% interval (analytical)'),
                    lty=c(1, 1, 1), col=c('black', 'grey', 'orange'), lwd=c(2, 2, 2), cex=1.3)
         }
 
@@ -180,38 +181,38 @@ plot_hazard_curve<-function(
         # Different legends depending on 95% analytical CIs
         if(!add_95pc_analytical_CI){
 
-            legend('bottomleft', 
-                   c('All scenarios in offshore PTHA', 
-                     paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')'), 
+            legend('bottomleft',
+                   c('All scenarios in offshore PTHA',
+                     paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')'),
                      'Equivalent Synthetic Catalogue 95% interval'),
-                   lty=c('solid', 'solid', 'dashed'), col=c('black', 'grey', 'darkblue'), 
+                   lty=c('solid', 'solid', 'dashed'), col=c('black', 'grey', 'darkblue'),
                    lwd=c(2, 2, 1), cex=1.3, bg=rgb(1,1,1,alpha=0.7), bty='o', box.col=rgb(1,1,1,alpha=0.3))
         }else{
 
-            legend('bottomleft', 
-                   c('All scenarios in offshore PTHA', 
-                     paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')'), 
-                     '95% interval (analytical)', 
+            legend('bottomleft',
+                   c('All scenarios in offshore PTHA',
+                     paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')'),
+                     '95% interval (analytical)',
                      'Equivalent Synthetic Catalogue 95% interval'),
-                   lty=c('solid', 'solid', 'solid', 'dashed'), col=c('black', 'grey', 'orange', 'darkblue'), 
+                   lty=c('solid', 'solid', 'solid', 'dashed'), col=c('black', 'grey', 'orange', 'darkblue'),
                    lwd=c(2, 2, 2, 1), cex=1.3, bg=rgb(1,1,1,alpha=0.7), bty='o', box.col=rgb(1,1,1,alpha=0.3))
 
         }
 
         # Include 95% intervals for a synthetic catalogue
-        equivalent_synthetic_lower = sapply(hazard_curve, function(x){ 
+        equivalent_synthetic_lower = sapply(hazard_curve, function(x){
             qpois(0.025, lambda=x*EQUIVALENT_SYNTHETIC_CATALOGUE_DURATION)/EQUIVALENT_SYNTHETIC_CATALOGUE_DURATION
                })
-        equivalent_synthetic_upper = sapply(hazard_curve, function(x){ 
+        equivalent_synthetic_upper = sapply(hazard_curve, function(x){
             qpois(0.975, lambda=x*EQUIVALENT_SYNTHETIC_CATALOGUE_DURATION)/EQUIVALENT_SYNTHETIC_CATALOGUE_DURATION
                })
 
-       
+
         # Add lines to the plot -- because it is log-log we should not use zeros -- instead use a very small
         # threshold
         points(peak_stage_vals, pmax(equivalent_synthetic_lower, 1e-100), t='l', col='darkblue', lty='dashed')
         points(peak_stage_vals, pmax(equivalent_synthetic_upper, 1e-100), t='l', col='darkblue', lty='dashed')
-        
+
     }
 
 
@@ -223,15 +224,15 @@ plot_hazard_curve<-function(
     # Get the 'analytical' mean and variance expected for the sampling method
     analytical_mean_variance = ptha18$analytical_Monte_Carlo_exrate_uncertainty(
         event_Mw, event_rates, event_peak_stage_local, stage_threshold=target_stage,
-        samples_per_Mw = mw_sampling_fun, 
-        event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs)        
+        samples_per_Mw = mw_sampling_fun,
+        event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs)
     mean_analytical = analytical_mean_variance[1]
     var_analytical = analytical_mean_variance[2]
 
     if(add_95pc_analytical_CI){
         # Add an analytical confidence interval to the plot, using the normal approximation
 
-        lower_CI = rep(NA, length(peak_stage_vals)) 
+        lower_CI = rep(NA, length(peak_stage_vals))
         upper_CI = rep(NA, length(peak_stage_vals))
 
         for(i in 1:length(peak_stage_vals)){
@@ -250,20 +251,20 @@ plot_hazard_curve<-function(
     # Histogram of errors at the target_stage
     #
 
-    hist(exrate_ts_store$mean, breaks=100, freq=FALSE, main='', 
+    hist(exrate_ts_store$mean, breaks=100, freq=FALSE, main='',
          xlab="", ylab="", xlim=hist_xlim, cex.axis=1.3, las=1)
-    mtext(side=1, 
-          bquote(paste('Distribution of ', .(Number_MC_reps), 
-              ' Monte-Carlo exceedance-rates @ ', Q^T, '=', 
+    mtext(side=1,
+          bquote(paste('Distribution of ', .(Number_MC_reps),
+              ' Monte-Carlo exceedance-rates @ ', Q^T, '=',
               .(target_stage), ' m')),
           line=2.8, cex=1.5)
     mtext(side=2, 'Probability Density', line=4, cex=1.5)
     # Add normal distribution
     xs_local = seq(min(exrate_ts_store$mean), max(exrate_ts_store$mean), len=500)
-    points(xs_local, dnorm(xs_local, mean=mean_analytical, sd=sqrt(var_analytical)), t='l', 
+    points(xs_local, dnorm(xs_local, mean=mean_analytical, sd=sqrt(var_analytical)), t='l',
            col='orange', lwd=2)
     #abline(v=mean_analytical)
-    legend('topright', 
+    legend('topright',
            paste0("Normal distribution (analytical\n",
                   "mean and variance)"),
            lwd=2, col='orange', lty='solid', pch=NA, cex=1.25, bty='n')
@@ -294,7 +295,7 @@ plot_hazard_curve<-function(
 
 }
 
-plot_hazard_curve('stratified', fig_title = 'Exceedance_rate_stratified_target_point.png', 
+plot_hazard_curve('stratified', fig_title = 'Exceedance_rate_stratified_target_point.png',
     add_equivalent_synthetic_catalogue=TRUE)
 plot_hazard_curve('stratified_importance', fig_title = 'Exceedance_rate_stratified_importance_target_point.png')
 
@@ -303,24 +304,24 @@ plot_hazard_curve('stratified_importance', fig_title = 'Exceedance_rate_stratifi
 #
 
 # Which threshold-stage values should we do the computation for?
-threshold_stages = c(1, 2, 4, 8) 
+threshold_stages = c(1, 2, 4, 8)
 
 # Determine the optimal number of samples for each threshold
-optimal_samples = lapply(threshold_stages, function(x){ 
+optimal_samples = lapply(threshold_stages, function(x){
     ptha18$get_optimal_number_of_samples_per_Mw(
-        event_Mw, 
-        event_rates, 
+        event_Mw,
+        event_rates,
         event_peak_stage_target_point,
-        stage_threshold=x, 
+        stage_threshold=x,
         total_samples=TOTAL_SAMPLES) # No importance sampling
     })
 # As above, using importance sampling
-optimal_samples_IS = lapply(threshold_stages, function(x){ 
+optimal_samples_IS = lapply(threshold_stages, function(x){
     ptha18$get_optimal_number_of_samples_per_Mw(
-        event_Mw, 
-        event_rates, 
+        event_Mw,
+        event_rates,
         event_peak_stage_target_point,
-        stage_threshold=x, 
+        stage_threshold=x,
         total_samples=TOTAL_SAMPLES,
         event_importance_weighted_sampling_probs = (event_peak_stage_target_point*event_rates)) # With importance sampling
     })
@@ -347,8 +348,8 @@ mean_optimal_IS_including_constant = (r1*mean_optimal_IS + r2*const_samples)
 
 # Write the case with importance-sampling to a file so we can use it later
 write.csv(
-    data.frame(unique_mw=unique_mw, 
-               mean_optimal_samples_IS_including_constant=mean_optimal_IS_including_constant), 
+    data.frame(unique_mw=unique_mw,
+               mean_optimal_samples_IS_including_constant=mean_optimal_IS_including_constant),
     file='Non_uniform_sampling_effort_compromise_stratifiedImportance.csv',
     row.names=FALSE)
 
@@ -366,7 +367,7 @@ stopifnot(isTRUE(all.equal(sum(mean_optimal_IS_including_constant), TOTAL_SAMPLE
 get_variances<-function(optimal_samples_i, mean_optimal){
 
     # Get the variance if we optimizes the sampling strategy to minimise it, for this particular
-    # site and stage-threshold. This is the 'best-case' in terms of "number of samples' but in 
+    # site and stage-threshold. This is the 'best-case' in terms of "number of samples' but in
     # general we wouldn't do it (because we need to consider a range of return periods)
     variance_best = sum(optimal_samples_i$variance_numerator/optimal_samples_i$Nsamples, na.rm=TRUE)
 
@@ -376,13 +377,13 @@ get_variances<-function(optimal_samples_i, mean_optimal){
     # Get the variance if we used constant sampling in all bins
     variance_const = sum(optimal_samples_i$variance_numerator/const_samples, na.rm=TRUE)
 
-    return(list(variance_chosen=variance_chosen, 
-                chosen_on_best=variance_chosen/variance_best, 
+    return(list(variance_chosen=variance_chosen,
+                chosen_on_best=variance_chosen/variance_best,
                 constant_on_chosen=variance_const/variance_chosen,
                 constant_on_best=variance_const/variance_best))
 }
 print_variances<-function(optimal_samples, mean_optimal, mean_optimal_including_constant){
-    
+
     for(i in 1:length(optimal_samples)){
         vars = get_variances(optimal_samples[[i]], mean_optimal)
         print(c('No constant  ', signif(unlist(vars), 4)), width=999)
@@ -404,10 +405,10 @@ print('Variances (IMPORTANCE SAMPLING) with different scenario counts')
 print_variances(optimal_samples_IS, mean_optimal_IS, mean_optimal_IS_including_constant)
 
 #
-# Do some plotting of alternative optimal sampling efforts 
+# Do some plotting of alternative optimal sampling efforts
 #
 plot_sampling_effort<-function(
-    optimal_samples, mean_optimal, mean_optimal_including_constant, 
+    optimal_samples, mean_optimal, mean_optimal_including_constant,
     optimal_samples_IS, mean_optimal_IS, mean_optimal_IS_including_constant,
     const_samples, threshold_stages){
 
@@ -428,9 +429,9 @@ plot_sampling_effort<-function(
 
         if(i == 1){
 
-            plot(optimal_samples[[i]]$Mw + (i-BAR_H_OFFSET)/BAR_GROUP, 
-                 pmax(optimal_samples[[i]]$Nsamples, MIN_BAR_HT), 
-                 t='h', lwd=BAR_LWD, lend=1, col=i, ylim=PLOT_YLIM, 
+            plot(optimal_samples[[i]]$Mw + (i-BAR_H_OFFSET)/BAR_GROUP,
+                 pmax(optimal_samples[[i]]$Nsamples, MIN_BAR_HT),
+                 t='h', lwd=BAR_LWD, lend=1, col=i, ylim=PLOT_YLIM,
                  xlab='', ylab='Optimal # Samples', las=1,
                  main='Stratified sampling', cex.main=1.8, cex.lab=1.5)
 
@@ -439,25 +440,25 @@ plot_sampling_effort<-function(
 
         }else{
 
-            points(optimal_samples[[i]]$Mw + (i-BAR_H_OFFSET)/BAR_GROUP, 
-                   pmax(optimal_samples[[i]]$Nsamples, MIN_BAR_HT), 
+            points(optimal_samples[[i]]$Mw + (i-BAR_H_OFFSET)/BAR_GROUP,
+                   pmax(optimal_samples[[i]]$Nsamples, MIN_BAR_HT),
                    t='h', lwd=BAR_LWD, lend=1, col=i)
         }
     }
-    points(optimal_samples[[1]]$Mw + (0-BAR_H_OFFSET)/BAR_GROUP, 
-           pmax(const_samples, MIN_BAR_HT), 
+    points(optimal_samples[[1]]$Mw + (0-BAR_H_OFFSET)/BAR_GROUP,
+           pmax(const_samples, MIN_BAR_HT),
            t='h', lwd=BAR_LWD, lend=1, col='purple')
     grid(col='orange')
 
     # Report the variance reduction that would be obtained by optimising the
     # number of samples for the specific threshold (independent of the
     # mean_optimal argument)
-    legend_VR_local_optimised = unlist(lapply(optimal_samples, 
+    legend_VR_local_optimised = unlist(lapply(optimal_samples,
         function(x) get_variances(x, mean_optimal)$constant_on_best))
-    legend('topleft', 
-           c('Equal in all bins (VR = 1.00)', 
-              paste0('Threshold = ', threshold_stages, 
-              '    (VR = ', round(legend_VR_local_optimised ,2),')')), 
+    legend('topleft',
+           c('Equal in all bins (VR = 1.00)',
+              paste0('Threshold = ', threshold_stages,
+              '    (VR = ', round(legend_VR_local_optimised ,2),')')),
            fill=c('purple', 1:length(threshold_stages)))
 
     # Plot with importance sampling
@@ -467,9 +468,9 @@ plot_sampling_effort<-function(
 
         if(i == 1){
 
-            plot(optimal_samples_IS[[i]]$Mw + (i-2.5)/BAR_GROUP, 
-                 pmax(optimal_samples_IS[[i]]$Nsamples, MIN_BAR_HT), 
-                 t='h', lwd=BAR_LWD, lend=1, col=i, ylim=PLOT_YLIM, 
+            plot(optimal_samples_IS[[i]]$Mw + (i-2.5)/BAR_GROUP,
+                 pmax(optimal_samples_IS[[i]]$Nsamples, MIN_BAR_HT),
+                 t='h', lwd=BAR_LWD, lend=1, col=i, ylim=PLOT_YLIM,
                  xlab='', ylab='Optimal # Samples', las=1,
                  main='Stratified/importance-sampling', cex.main=1.8, cex.lab=1.5)
 
@@ -478,24 +479,24 @@ plot_sampling_effort<-function(
 
         }else{
 
-            points(optimal_samples_IS[[i]]$Mw + (i-2.5)/BAR_GROUP, 
+            points(optimal_samples_IS[[i]]$Mw + (i-2.5)/BAR_GROUP,
                    pmax(optimal_samples_IS[[i]]$Nsamples, MIN_BAR_HT),
                    t='h', lwd=BAR_LWD, lend=1, col=i)
         }
     }
     grid(col='orange')
-    points(optimal_samples_IS[[1]]$Mw + (0-2.5)/BAR_GROUP, pmax(const_samples, MIN_BAR_HT), 
+    points(optimal_samples_IS[[1]]$Mw + (0-2.5)/BAR_GROUP, pmax(const_samples, MIN_BAR_HT),
            t='h', lwd=BAR_LWD, lend=1, col='purple')
 
     # Report the variance reduction that would be obtained by optimising the
     # number of samples for the specific threshold (independent of the
     # mean_optimal_IS)
-    legend_VR_local_optimised = unlist(lapply(optimal_samples_IS, 
+    legend_VR_local_optimised = unlist(lapply(optimal_samples_IS,
         function(x) get_variances(x, mean_optimal_IS)$constant_on_best))
-    legend('topleft', 
-           c('Equal in all bins (VR = 1.00)', 
-              paste0('Threshold = ', threshold_stages, 
-                     '    (VR = ', round(legend_VR_local_optimised,2),')')), 
+    legend('topleft',
+           c('Equal in all bins (VR = 1.00)',
+              paste0('Threshold = ', threshold_stages,
+                     '    (VR = ', round(legend_VR_local_optimised,2),')')),
            fill=c('purple', 1:length(threshold_stages)))
     dev.off()
 
@@ -505,9 +506,9 @@ plot_sampling_effort<-function(
     #
     png('Chosen_sampling_effort.png', width=9, height=6, units='in', res=300)
     BAR_EPS = 0.012
-    plot(optimal_samples[[1]]$Mw - BAR_EPS, mean_optimal_including_constant, 
+    plot(optimal_samples[[1]]$Mw - BAR_EPS, mean_optimal_including_constant,
          ylim=c(0, 150), xlim=c(7.15, 9.65),
-         t='h', lwd=BAR_LWD*1.3, lend=1, col='black', 
+         t='h', lwd=BAR_LWD*1.3, lend=1, col='black',
          xlab='Mw', ylab = '# Samples', cex.lab=1.4, cex.axis=1.3)
 
     abline(h=const_samples[1], col='purple', lty='dashed')
@@ -516,25 +517,25 @@ plot_sampling_effort<-function(
 
     title(main='Selected non-uniform sampling effort and extra variance-reduction', cex.main=1.5)
 
-    legend_VR_chosen_IS = unlist(lapply(optimal_samples_IS, 
+    legend_VR_chosen_IS = unlist(lapply(optimal_samples_IS,
         function(x) get_variances(x, mean_optimal_IS_including_constant)$constant_on_chosen))
-    legend_VR_chosen = unlist(lapply(optimal_samples, 
+    legend_VR_chosen = unlist(lapply(optimal_samples,
         function(x) get_variances(x, mean_optimal_including_constant)$constant_on_chosen))
 
     white_t = rgb(1,1,1,alpha=0.3)
-    legend('topleft', 
-           paste0('Threshold = ', rep(threshold_stages, 1), 
+    legend('topleft',
+           paste0('Threshold = ', rep(threshold_stages, 1),
                   ' (VR = ', format(round(legend_VR_chosen, 2)), ')'),
-           title = 'Stratified sampling', 
+           title = 'Stratified sampling',
            box.col=white_t, cex=1.1, bg=white_t)
-    legend('top', 
-           paste0('Threshold = ', rep(threshold_stages, 1), 
+    legend('top',
+           paste0('Threshold = ', rep(threshold_stages, 1),
                   ' (VR = ', format(round(legend_VR_chosen_IS, 2)), ')'),
-           title = 'Stratified/importance-sampling', 
+           title = 'Stratified/importance-sampling',
            text.col='darkblue',
            title.col='darkblue',
            box.col=white_t, cex=1.1, bg=white_t)
-                                                                                     
+
     text(7.5, 53, 'Uniform sampling', col='purple', cex=1.4)
     dev.off()
 
@@ -542,7 +543,7 @@ plot_sampling_effort<-function(
 }
 # Make the plots
 plot_sampling_effort(
-    optimal_samples, mean_optimal, mean_optimal_including_constant, 
+    optimal_samples, mean_optimal, mean_optimal_including_constant,
     optimal_samples_IS, mean_optimal_IS, mean_optimal_IS_including_constant,
     const_samples, threshold_stages)
 
@@ -556,7 +557,7 @@ test_point_list = list(
     test_point_2 = c(184.6758, -21.3586),
     test_point_3 = c(184.47748, -21.041364),
     #test_point_4 = c(185.05833, -21.44512), ## This is very shallow, should avoid in offshore PTHA, although the sampling works OK
-    test_point_NZ =  c(178.3945, -37.3940) 
+    test_point_NZ =  c(178.3945, -37.3940)
     )
 
 event_peak_stage_list = list()
@@ -566,26 +567,26 @@ optimal_samples_IS_list = list()
 for(nm_i in names(test_point_list)){
     #
     # Generalisation to nearby sites?
-    event_peak_stage_list[[nm_i]] = get_peak_stage_at_target_point(test_point_list[[nm_i]]) 
-     
-    optimal_samples_list[[nm_i]] = lapply(threshold_stages, function(x){ 
+    event_peak_stage_list[[nm_i]] = get_peak_stage_at_target_point(test_point_list[[nm_i]])
+
+    optimal_samples_list[[nm_i]] = lapply(threshold_stages, function(x){
         ptha18$get_optimal_number_of_samples_per_Mw(
-            event_Mw, 
-            event_rates, 
+            event_Mw,
+            event_rates,
             event_peak_stage_list[[nm_i]],
-            stage_threshold=x, 
+            stage_threshold=x,
             total_samples=TOTAL_SAMPLES) # No importance sampling
         })
 
-    optimal_samples_IS_list[[nm_i]] = lapply(threshold_stages, function(x){ 
+    optimal_samples_IS_list[[nm_i]] = lapply(threshold_stages, function(x){
         ptha18$get_optimal_number_of_samples_per_Mw(
-            event_Mw, 
-            event_rates, 
+            event_Mw,
+            event_rates,
             event_peak_stage_list[[nm_i]],
-            stage_threshold=x, 
+            stage_threshold=x,
             total_samples=TOTAL_SAMPLES,
             # With importance sampling based on the previous stage
-            event_importance_weighted_sampling_probs = (event_peak_stage_target_point*event_rates))     
+            event_importance_weighted_sampling_probs = (event_peak_stage_target_point*event_rates))
         })
 
     print(paste0('Variances (no importance sampling) with different scenario counts at ', nm_i))
@@ -601,11 +602,11 @@ for(nm_i in names(test_point_list)){
 # effort in each bin, vs stratified/importance sampling with non-uniform sampling in each bin'
 #
 plot_curve_comparison_multiple_sites<-function(
-    event_peak_stage_list, 
-    unique_mw, 
-    mean_optimal_IS_including_constant, 
-    event_Mw, 
-    event_rates, 
+    event_peak_stage_list,
+    unique_mw,
+    mean_optimal_IS_including_constant,
+    event_Mw,
+    event_rates,
     event_importance_weighted_sampling_probs,
     nonuniform_sampling_fun,
     uniform_sampling_fun){
@@ -628,17 +629,17 @@ plot_curve_comparison_multiple_sites<-function(
     stopifnot(all(is.finite(match(names_plot_order, names(event_peak_stage_list)))))
 
     # Geometrically spaced peak-stage values at which we evaluate the curve
-    peak_stage_vals = 10^seq(-2, 1.3, by=0.025) 
+    peak_stage_vals = 10^seq(-2, 1.3, by=0.025)
 
     for(nm_i in names_plot_order){
 
         # Construct 95% "analytical" confidence intervals for the Monte-Carlo exceedance-rates
-        lower_CI_stratified = rep(NA, length(peak_stage_vals)) 
+        lower_CI_stratified = rep(NA, length(peak_stage_vals))
         upper_CI_stratified = rep(NA, length(peak_stage_vals))
-        lower_CI_stratified_importance = rep(NA, length(peak_stage_vals)) 
+        lower_CI_stratified_importance = rep(NA, length(peak_stage_vals))
         upper_CI_stratified_importance = rep(NA, length(peak_stage_vals))
-        variance_stratified = rep(NA, length(peak_stage_vals)) 
-        variance_stratified_importance = rep(NA, length(peak_stage_vals)) 
+        variance_stratified = rep(NA, length(peak_stage_vals))
+        variance_stratified_importance = rep(NA, length(peak_stage_vals))
 
         exrate_mean = rep(NA, length(peak_stage_vals))
         event_peak_stage_local = event_peak_stage_list[[nm_i]]
@@ -647,9 +648,9 @@ plot_curve_comparison_multiple_sites<-function(
 
             # stratified/importance sampling, non-uniform samples in each bin
             tmp = ptha18$analytical_Monte_Carlo_exrate_uncertainty(
-                event_Mw, event_rates, event_peak_stage_local, 
+                event_Mw, event_rates, event_peak_stage_local,
                 stage_threshold=peak_stage_vals[i],
-                samples_per_Mw = nonuniform_sampling_fun,  
+                samples_per_Mw = nonuniform_sampling_fun,
                 # Importance sampling based on target-point
                 event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs)
             lower_CI_stratified_importance[i] = tmp[1] + qnorm(0.025)*sqrt(tmp[2])
@@ -660,7 +661,7 @@ plot_curve_comparison_multiple_sites<-function(
 
             # stratified sampling, uniform samples in each bin
             tmp = ptha18$analytical_Monte_Carlo_exrate_uncertainty(
-                event_Mw, event_rates, event_peak_stage_local, 
+                event_Mw, event_rates, event_peak_stage_local,
                 stage_threshold=peak_stage_vals[i],
                 samples_per_Mw = uniform_sampling_fun,
                 event_importance_weighted_sampling_probs=(event_rates))
@@ -705,41 +706,41 @@ plot_curve_comparison_multiple_sites<-function(
     # Add legend in the final panel
     par(mar=c(0,0,0,0))
     plot(c(0,1), c(0,1), ann=FALSE, col='white', axes=FALSE)
-    legend(0.00, 1.0, c('95% interval (analytical) \nStratified with uniform\nMw-bin sampling'), 
+    legend(0.00, 1.0, c('95% interval (analytical) \nStratified with uniform\nMw-bin sampling'),
            lty='dashed', col='blue', lwd=2, cex=1.4, bty='n')
-    legend(0.00, 0.7, c('95% interval (analytical) \nStratified/importance with\nnon-uniform Mw-bin sampling'), 
+    legend(0.00, 0.7, c('95% interval (analytical) \nStratified/importance with\nnon-uniform Mw-bin sampling'),
            lty='twodash', col='red', lwd=2, cex=1.4, bty='n')
     text(0.5, 0.25, bquote(paste('VR2 = Variance-ratio @ ', Q^T, '=2m')), cex=1.5)
-    text(0.5, 0.15, bquote(paste('VR4 = Variance-ratio @ ', Q^T, '=4m')), cex=1.5) 
+    text(0.5, 0.15, bquote(paste('VR4 = Variance-ratio @ ', Q^T, '=4m')), cex=1.5)
 
 }
 # Compare the scheme used herein with 'stratified sampling and uniform N(M_w)', using the logic-tree mean
 # kermadectonga2 Mw-frequency curve
 png('Curve_comparison_multiple_sites.png', width=9, height=4.5, units='in', res=300)
 plot_curve_comparison_multiple_sites(
-    event_peak_stage_list, 
-    unique_mw, 
-    mean_optimal_IS_including_constant, 
-    event_Mw, 
-    event_rates, 
+    event_peak_stage_list,
+    unique_mw,
+    mean_optimal_IS_including_constant,
+    event_Mw,
+    event_rates,
     event_importance_weighted_sampling_probs=(event_peak_stage_target_point*event_rates),
     nonuniform_sampling_fun = approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'),
-    uniform_sampling_fun = function(Mw){ const_samples[1]*(Mw < 9.65) } 
+    uniform_sampling_fun = function(Mw){ const_samples[1]*(Mw < 9.65) }
     )
 dev.off()
 
 #
 # As above, but do the calculation for the unsegmented/segmented logic-tree mean, and assume that stratified
 # sampling can spend 50% of the scenarios on the unsegmented branch. Later we also look at the segments, assuming
-# we can spend 30% on Tonga, 20% on Kermadec, and 10% on Hikurangi. In a real application the latter numbers 
+# we can spend 30% on Tonga, 20% on Kermadec, and 10% on Hikurangi. In a real application the latter numbers
 # should add to 50%, but these plots are just exploratory - we never use the combined results - so there is no
 # problem.
 #
 
-# (NOTE: The script we source below requires access to 'compute_rates_all_sources_session.RData', which 
+# (NOTE: The script we source below requires access to 'compute_rates_all_sources_session.RData', which
 #  herein is also copied to the ../PLOT_DATA folder)
 ptha18_source_rate_env = new.env()
-source('../../../ptha_access/get_detailed_PTHA18_source_zone_info.R', 
+source('../../../ptha_access/get_detailed_PTHA18_source_zone_info.R',
        local=ptha18_source_rate_env, chdir=TRUE)
 
 # Unsegmented case -- stratified sampling gets 50% of the total scenarios (other 50% on segments)
@@ -747,24 +748,24 @@ unsegmented_KT2 = ptha18_source_rate_env$get_PTHA18_scenario_conditional_probabi
     source_zone='kermadectonga2', segment='')
 png('Curve_comparison_multiple_sites_UNSEGMENTED.png', width=9, height=4.5, units='in', res=300)
 plot_curve_comparison_multiple_sites(
-    event_peak_stage_list, 
-    unique_mw, 
-    mean_optimal_IS_including_constant, 
-    event_Mw, 
+    event_peak_stage_list,
+    unique_mw,
+    mean_optimal_IS_including_constant,
+    event_Mw,
     # Assume the true exceedance-rates correspond to the UNSEGMENTED logic-tree mean
-    event_rates=unsegmented_KT2$HS_event_rates, 
+    event_rates=unsegmented_KT2$HS_event_rates,
     event_importance_weighted_sampling_probs=(event_peak_stage_target_point*event_rates),
     nonuniform_sampling_fun = approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'),
     # Assume for stratified sampling that only half of the samples are spent on the unsegmented model.
     # The other half would have to be used to sample the segments
-    uniform_sampling_fun = function(Mw){ 0.5*const_samples[1]*(Mw < 9.65) } 
+    uniform_sampling_fun = function(Mw){ 0.5*const_samples[1]*(Mw < 9.65) }
     )
 dev.off()
 # Check it works OK via the other plot (which shows MC samples)
-plot_hazard_curve('stratified_importance', event_rates=unsegmented_KT2$HS_event_rates, 
-    Number_MC_reps=10000, 
-    event_importance_weighted_sampling_probs=event_rates*event_peak_stage_target_point, 
-    fig_title='target_point_stratified_importance_unequal_UNSEGMENTED.png', 
+plot_hazard_curve('stratified_importance', event_rates=unsegmented_KT2$HS_event_rates,
+    Number_MC_reps=10000,
+    event_importance_weighted_sampling_probs=event_rates*event_peak_stage_target_point,
+    fig_title='target_point_stratified_importance_unequal_UNSEGMENTED.png',
     mw_sampling_fun=approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'))
 
 # As above, but do the calculation for the Tonga segment logic-tree mean, and assume that stratified
@@ -774,24 +775,24 @@ tonga_segmented_KT2 = ptha18_source_rate_env$get_PTHA18_scenario_conditional_pro
     source_zone='kermadectonga2', segment='tonga')
 png('Curve_comparison_multiple_sites_TONGA_SEGMENT.png', width=9, height=4.5, units='in', res=300)
 plot_curve_comparison_multiple_sites(
-    event_peak_stage_list, 
-    unique_mw, 
-    mean_optimal_IS_including_constant, 
-    event_Mw, 
+    event_peak_stage_list,
+    unique_mw,
+    mean_optimal_IS_including_constant,
+    event_Mw,
     # Assume the true exceedance-rates correspond to the tonga-segment logic-tree mean
-    event_rates=tonga_segmented_KT2$HS_event_rates, 
+    event_rates=tonga_segmented_KT2$HS_event_rates,
     event_importance_weighted_sampling_probs=(event_peak_stage_target_point*event_rates),
     nonuniform_sampling_fun = approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'),
     # Assume for stratified sampling that only half of the samples are spent on the unsegmented model.
     # The other half would have to be used to sample the segments
-    uniform_sampling_fun = function(Mw){ 0.3*const_samples[1]*(Mw < 9.65) } 
+    uniform_sampling_fun = function(Mw){ 0.3*const_samples[1]*(Mw < 9.65) }
     )
 dev.off()
 # Check it works OK via the other plot (which shows MC samples)
-plot_hazard_curve('stratified_importance', event_rates=tonga_segmented_KT2$HS_event_rates, 
-    Number_MC_reps=10000, 
-    event_importance_weighted_sampling_probs=event_rates*event_peak_stage_target_point, 
-    fig_title='target_point_stratified_importance_unequal_TONGA_SEGMENT.png', 
+plot_hazard_curve('stratified_importance', event_rates=tonga_segmented_KT2$HS_event_rates,
+    Number_MC_reps=10000,
+    event_importance_weighted_sampling_probs=event_rates*event_peak_stage_target_point,
+    fig_title='target_point_stratified_importance_unequal_TONGA_SEGMENT.png',
     mw_sampling_fun=approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'))
 
 # As above, but do the calculation for the Kermadec segment logic-tree mean, and assume that stratified
@@ -801,53 +802,53 @@ kermadec_segmented_KT2 = ptha18_source_rate_env$get_PTHA18_scenario_conditional_
     source_zone='kermadectonga2', segment='kermadec')
 png('Curve_comparison_multiple_sites_KERMADEC_SEGMENT.png', width=9, height=4.5, units='in', res=300)
 plot_curve_comparison_multiple_sites(
-    event_peak_stage_list, 
-    unique_mw, 
-    mean_optimal_IS_including_constant, 
-    event_Mw, 
+    event_peak_stage_list,
+    unique_mw,
+    mean_optimal_IS_including_constant,
+    event_Mw,
     # Assume the true exceedance-rates correspond to the tonga-segment logic-tree mean
-    event_rates=kermadec_segmented_KT2$HS_event_rates, 
+    event_rates=kermadec_segmented_KT2$HS_event_rates,
     event_importance_weighted_sampling_probs=(event_peak_stage_target_point*event_rates),
     nonuniform_sampling_fun = approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'),
     # Assume for stratified sampling that only half of the samples are spent on the unsegmented model.
     # The other half would have to be used to sample the segments
-    uniform_sampling_fun = function(Mw){ 0.2*const_samples[1]*(Mw < 9.65) } 
+    uniform_sampling_fun = function(Mw){ 0.2*const_samples[1]*(Mw < 9.65) }
     )
 dev.off()
 # Check it works OK via the other plot (which shows MC samples)
-plot_hazard_curve('stratified_importance', event_rates=kermadec_segmented_KT2$HS_event_rates, 
-    Number_MC_reps=10000, 
-    event_importance_weighted_sampling_probs=event_rates*event_peak_stage_target_point, 
-    fig_title='target_point_stratified_importance_unequal_KERMADEC_SEGMENT.png', 
+plot_hazard_curve('stratified_importance', event_rates=kermadec_segmented_KT2$HS_event_rates,
+    Number_MC_reps=10000,
+    event_importance_weighted_sampling_probs=event_rates*event_peak_stage_target_point,
+    fig_title='target_point_stratified_importance_unequal_KERMADEC_SEGMENT.png',
     mw_sampling_fun=approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'))
 
 
 # As above, but do the calculation for the Hikurangi segment logic-tree mean, and assume that stratified
-# sampling can spend 10% of the scenarios on the Hikurangi segment (very optimistic - impossible if we 
+# sampling can spend 10% of the scenarios on the Hikurangi segment (very optimistic - impossible if we
 # just spent 50% on unsegmented and 30% on Tonga and 20% on Kermadec !!)
 
 hikurangi_segmented_KT2 = ptha18_source_rate_env$get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
     source_zone='kermadectonga2', segment='hikurangi')
 png('Curve_comparison_multiple_sites_HIKURANGI_SEGMENT.png', width=9, height=4.5, units='in', res=300)
 plot_curve_comparison_multiple_sites(
-    event_peak_stage_list, 
-    unique_mw, 
-    mean_optimal_IS_including_constant, 
-    event_Mw, 
+    event_peak_stage_list,
+    unique_mw,
+    mean_optimal_IS_including_constant,
+    event_Mw,
     # Assume the true exceedance-rates correspond to the tonga-segment logic-tree mean
-    event_rates=hikurangi_segmented_KT2$HS_event_rates, 
+    event_rates=hikurangi_segmented_KT2$HS_event_rates,
     event_importance_weighted_sampling_probs=(event_peak_stage_target_point*event_rates),
     nonuniform_sampling_fun = approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'),
     # Assume for stratified sampling that only half of the samples are spent on the unsegmented model.
     # The other half would have to be used to sample the segments
-    uniform_sampling_fun = function(Mw){ 0.1*const_samples[1]*(Mw < 9.65) } 
+    uniform_sampling_fun = function(Mw){ 0.1*const_samples[1]*(Mw < 9.65) }
     )
 dev.off()
 # Check it works OK via the other plot (which shows MC samples)
-plot_hazard_curve('stratified_importance', event_rates=hikurangi_segmented_KT2$HS_event_rates, 
-    Number_MC_reps=10000, 
-    event_importance_weighted_sampling_probs=event_rates*event_peak_stage_target_point, 
-    fig_title='target_point_stratified_importance_unequal_HIKURANGI_SEGMENT.png', 
+plot_hazard_curve('stratified_importance', event_rates=hikurangi_segmented_KT2$HS_event_rates,
+    Number_MC_reps=10000,
+    event_importance_weighted_sampling_probs=event_rates*event_peak_stage_target_point,
+    fig_title='target_point_stratified_importance_unequal_HIKURANGI_SEGMENT.png',
     mw_sampling_fun=approxfun(unique_mw, mean_optimal_IS_including_constant, method='constant'))
 
 
@@ -860,11 +861,11 @@ print('#')
 
 for(nm_i in names(event_peak_stage_list)){
     print(paste0('Plotting ', nm_i))
-    plot_hazard_curve('stratified', Number_MC_reps=DEFAULT_MC_REPS, 
-        event_peak_stage_local=event_peak_stage_list[[nm_i]], 
+    plot_hazard_curve('stratified', Number_MC_reps=DEFAULT_MC_REPS,
+        event_peak_stage_local=event_peak_stage_list[[nm_i]],
         fig_title=paste0(nm_i, '_stratified.png'))
-    plot_hazard_curve('stratified_importance', Number_MC_reps=DEFAULT_MC_REPS, 
-        event_peak_stage_local=event_peak_stage_list[[nm_i]], 
+    plot_hazard_curve('stratified_importance', Number_MC_reps=DEFAULT_MC_REPS,
+        event_peak_stage_local=event_peak_stage_list[[nm_i]],
         fig_title=paste0(nm_i, '_stratified_importance.png'))
 }
 
@@ -877,12 +878,12 @@ mw_sampling_fun_stratified_importance = approxfun(unique_mw, mean_optimal_IS_inc
 
 for(nm_i in names(event_peak_stage_list)){
     print(paste0('Plotting ', nm_i))
-    plot_hazard_curve('stratified', Number_MC_reps=DEFAULT_MC_REPS, 
-        event_peak_stage_local=event_peak_stage_list[[nm_i]], 
+    plot_hazard_curve('stratified', Number_MC_reps=DEFAULT_MC_REPS,
+        event_peak_stage_local=event_peak_stage_list[[nm_i]],
         mw_sampling_fun=mw_sampling_fun_stratified,
         fig_title=paste0(nm_i, '_stratified_unequal.png'))
-    plot_hazard_curve('stratified_importance', Number_MC_reps=DEFAULT_MC_REPS, 
-        event_peak_stage_local=event_peak_stage_list[[nm_i]], 
+    plot_hazard_curve('stratified_importance', Number_MC_reps=DEFAULT_MC_REPS,
+        event_peak_stage_local=event_peak_stage_list[[nm_i]],
         mw_sampling_fun=mw_sampling_fun_stratified_importance,
         fig_title=paste0(nm_i, '_stratified_importance_unequal.png'))
 }
@@ -892,8 +893,8 @@ for(nm_i in names(event_peak_stage_list)){
 # Add in a plot comparing MC variability at multiple sites
 #
 compute_MC_exceedances_multi_sites<-function(
-    sampling_type='stratified', 
-    Number_MC_reps=DEFAULT_MC_REPS, 
+    sampling_type='stratified',
+    Number_MC_reps=DEFAULT_MC_REPS,
     event_importance_weighted_sampling_probs = NULL,
     mw_sampling_fun = NULL){
 
@@ -926,7 +927,7 @@ compute_MC_exceedances_multi_sites<-function(
 
     set.seed(1234) # Reproducible randomness
 
-    empty_df = list(mean=rep(NA, Number_MC_reps), var=rep(NA, Number_MC_reps), analytical_mean_var=rep(NA,2)) 
+    empty_df = list(mean=rep(NA, Number_MC_reps), var=rep(NA, Number_MC_reps), analytical_mean_var=rep(NA,2))
     exrate_ts_store = list(
         target_point=empty_df,
         test_point_1=empty_df,
@@ -952,11 +953,11 @@ compute_MC_exceedances_multi_sites<-function(
             if(i == 1){
                 # Store the analytical mean/variance as well, for cross-checking. Only need to do this once
                 exrate_ts_store[[nm_i]]$analytical_mean_var = ptha18$analytical_Monte_Carlo_exrate_uncertainty(
-                    event_Mw, 
-                    event_rates, 
-                    event_peak_stage_list[[nm_i]], 
-                    stage_threshold=target_stage, 
-                    samples_per_Mw=mw_sampling_fun, 
+                    event_Mw,
+                    event_rates,
+                    event_peak_stage_list[[nm_i]],
+                    stage_threshold=target_stage,
+                    samples_per_Mw=mw_sampling_fun,
                     event_importance_weighted_sampling_probs=event_importance_weighted_sampling_probs)
             }
         }
@@ -974,7 +975,7 @@ exrate_ts_store_stratified_importance = compute_MC_exceedances_multi_sites(sampl
 exrate_ts_store_alternativeimportance = list()
 for(nm_i in names(event_peak_stage_list)){
     exrate_ts_store_alternativeimportance[[nm_i]] = compute_MC_exceedances_multi_sites(
-        sampling_type='stratified_importance', 
+        sampling_type='stratified_importance',
         event_importance_weighted_sampling_probs=event_peak_stage_list[[nm_i]]*event_rates)
 }
 
@@ -1010,8 +1011,8 @@ for(nm_i in names_plot_order){
     ds_stratified = density(exrate_ts_store_stratified[[nm_i]]$mean)
     ds_stratified_importance = density(exrate_ts_store_stratified_importance[[nm_i]]$mean)
 
-    var_stratified = var(exrate_ts_store_stratified[[nm_i]]$mean) 
-    var_stratified_importance = var(exrate_ts_store_stratified_importance[[nm_i]]$mean) 
+    var_stratified = var(exrate_ts_store_stratified[[nm_i]]$mean)
+    var_stratified_importance = var(exrate_ts_store_stratified_importance[[nm_i]]$mean)
 
     # We could either compute the Variance ratio from the samples, or with the analytical approach.
     # They should be similar with enough MC samples, but perhaps not identical
@@ -1026,7 +1027,7 @@ for(nm_i in names_plot_order){
     points(ds_stratified_importance, col='red', t='l', lty='dashed', lwd=2)
     grid(col='lightblue', lty='dotted')
     mtext(side=1, bquote(paste('Monte-Carlo exceedance-rate @ ', Q^T, '=2 m')), cex=0.8, line=3)
-    text(max(ds_stratified$x)*0.97, YLIM*0.7, 
+    text(max(ds_stratified$x)*0.97, YLIM*0.7,
          paste0('VR = ', signif(VR_analytical, 3), '\n',
                 '     ', '(', signif(ideal_VR_analytical[[nm_i]], 3), ')'),
         adj=c(1,0), cex=2)
@@ -1036,7 +1037,7 @@ for(nm_i in names_plot_order){
 }
 par(mar=c(0,0,0,0))
 plot(c(0,1), c(0,1), ann=FALSE, col='white', axes=FALSE)
-legend('left', c('Stratified', 'Stratified/Importance'), 
+legend('left', c('Stratified', 'Stratified/Importance'),
        lty=c('solid', 'dashed'), col=c('black', 'red'), lwd=c(2, 2), cex=1.7, bty='n')
 text(0.5, 0.3, 'VR = Variance-ratio', cex=1.7)
 dev.off()
