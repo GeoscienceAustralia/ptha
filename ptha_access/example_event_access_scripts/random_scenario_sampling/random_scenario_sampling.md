@@ -147,7 +147,7 @@ The columns are
   scenarios of interest, the weights will be more complicated.
 * `importance_sampling_scenario_weights_self_normalised` gives the scenarios
   weights determined by self-normalised importance sampling, which is an
-  alternative to basic importance sampling. 
+  alternative to basic importance sampling.
 * `importance_sampling_scenario_rates_basic` gives a nominal rate for each
   scenario, and is defined as `rate_with_this_mw` multiplied by
   `importance_sampling_scenario_weights_basic`. 
@@ -664,7 +664,7 @@ given magnitude bin, the weights do not sum to 1 exactly (although they do so
 on average). Thus if we add the `importance_sampling_scenario_rates_basic` within a
 magnitude bin, the result will not agree exactly with the corresponding
 `rate_with_this_mw` (although it will tend to be close). This means care is
-required in using the scenario rates for Mw-frequency calculations.
+required in using the scenario rates for other purposes (e.g. Mw-frequency calculations).
 
 
 ```r
@@ -708,6 +708,7 @@ Alternatively one may use the *self-normalised* importance-sampling weights.
 Exceedance-rates estimated with this method are asymptotically unbiased (i.e.
 the bias shrinks to zero as we increase the number of samples per magnitude),
 but have some bias with finite sample sizes.
+
 
 
 ```r
