@@ -63,7 +63,8 @@ plot_hazard_curve<-function(
     mw_sampling_fun = NULL,
     fig_title=NULL,
     add_equivalent_synthetic_catalogue=FALSE,
-    add_95pc_analytical_CI=TRUE){
+    add_95pc_analytical_CI=TRUE,
+    add_hardcoded_normal_distribution_to_second_panel = FALSE){
 
     if(is.null(fig_title)) stop('Must provide fig title')
 
@@ -106,13 +107,15 @@ plot_hazard_curve<-function(
     hazard_curve = sapply(peak_stage_vals,
         function(x) sum(event_rates * (event_peak_stage_local > x)))
     plot(peak_stage_vals, hazard_curve, log='xy', t='l', lwd=2, las=1,
-        xlab="Tsunami maximum-stage (from offshore PTHA)",
+        xlab="",
         ylab='', #'Exceedance-rate (events/year)',
-        cex.lab=1.5, cex.axis=1.3,
+        cex.lab=1.5, cex.axis=1.3, 
         ylim=c(1/10000, 1/10), xlim=c(0.02, 10))
+    mtext(side=1, "Tsunami maximum-stage (from offshore PTHA)", line=2.5, cex=1.5)
     mtext(side=2, 'Exceedance-rate (events/year)', line=5.5, cex=1.5)
     add_log_axis_ticks(side=1)
     add_log_axis_ticks(side=2)
+    #abline(h=c(1/10, 1/25, 1/100, 1/500, 1/2500, 1/10000), col='darkgreen', lty='dashed')
     abline(h=c(1/10, 1/100, 1/1000, 1/10000), col='darkgreen', lty='dashed')
 
     #
@@ -166,13 +169,13 @@ plot_hazard_curve<-function(
         # Different legends depending on 95% analytical CIs
         if(!add_95pc_analytical_CI){
             legend('bottomleft', c('All scenarios in offshore PTHA',
-                   paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')')),
+                   paste0('Monte-Carlo estimates (500 only)')), 
                    lty=c(1, 1), col=c('black', 'grey'), lwd=c(2, 2), cex=1.3)
         }else{
-            legend('bottomleft',
+            legend('bottomleft', 
                    c('All scenarios in offshore PTHA',
-                       paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')'),
-                       '95% interval (analytical)'),
+                       paste0('Monte-Carlo estimates (500 only)'),
+                       '95% interval (analytical)'), 
                    lty=c(1, 1, 1), col=c('black', 'grey', 'orange'), lwd=c(2, 2, 2), cex=1.3)
         }
 
@@ -181,20 +184,20 @@ plot_hazard_curve<-function(
         # Different legends depending on 95% analytical CIs
         if(!add_95pc_analytical_CI){
 
-            legend('bottomleft',
-                   c('All scenarios in offshore PTHA',
-                     paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')'),
+            legend('bottomleft', 
+                   c('All scenarios in offshore PTHA', 
+                     paste0('Monte-Carlo estimates (500 only)'), 
                      'Equivalent Synthetic Catalogue 95% interval'),
-                   lty=c('solid', 'solid', 'dashed'), col=c('black', 'grey', 'darkblue'),
+                   lty=c('solid', 'solid', 'dashed'), col=c('black', 'grey', 'darkblue'), 
                    lwd=c(2, 2, 1), cex=1.3, bg=rgb(1,1,1,alpha=0.7), bty='o', box.col=rgb(1,1,1,alpha=0.3))
         }else{
 
             legend('bottomleft',
-                   c('All scenarios in offshore PTHA',
-                     paste0('Monte-Carlo estimates (500/', Number_MC_reps, ')'),
-                     '95% interval (analytical)',
+                   c('All scenarios in offshore PTHA', 
+                     paste0('Monte-Carlo estimates (500 only)'), 
+                     '95% interval (analytical)', 
                      'Equivalent Synthetic Catalogue 95% interval'),
-                   lty=c('solid', 'solid', 'solid', 'dashed'), col=c('black', 'grey', 'orange', 'darkblue'),
+                   lty=c('solid', 'solid', 'solid', 'dashed'), col=c('black', 'grey', 'orange', 'darkblue'), 
                    lwd=c(2, 2, 2, 1), cex=1.3, bg=rgb(1,1,1,alpha=0.7), bty='o', box.col=rgb(1,1,1,alpha=0.3))
 
         }
@@ -263,11 +266,25 @@ plot_hazard_curve<-function(
     xs_local = seq(min(exrate_ts_store$mean), max(exrate_ts_store$mean), len=500)
     points(xs_local, dnorm(xs_local, mean=mean_analytical, sd=sqrt(var_analytical)), t='l',
            col='orange', lwd=2)
-    #abline(v=mean_analytical)
-    legend('topright',
-           paste0("Normal distribution (analytical\n",
-                  "mean and variance)"),
-           lwd=2, col='orange', lty='solid', pch=NA, cex=1.25, bty='n')
+
+    if(!add_hardcoded_normal_distribution_to_second_panel){
+        legend('topright', 
+               paste0("Normal distribution (analytical\n",
+                      "mean and variance)"),
+               lwd=2, col='orange', lty='solid', pch=NA, cex=1.25, bty='n')
+    }else{
+        # Useful when we want to compare the spread of Monte-Carlo results with other results
+        x_vals = seq(hist_xlim[1], hist_xlim[2], len=201)
+        y_vals = dnorm(x_vals, mean=0.00122335093286598, sd=sqrt(0.0000000304813319339911))
+        points(x_vals, y_vals, t='l', col='darkred', lwd=2, lty='dashed')
+
+        legend('topright', c(
+               paste0("Normal distribution (analytical\n",
+                      "mean and variance)"),
+               paste0("Stratified-sampling (Figure 2)")),
+               lwd=c(2,2), col=c('orange', 'darkred'), lty=c('solid', 'dashed'), 
+               pch=c(NA,NA), cex=1.25, bty='n')
+    }
     dev.off()
 
     #
@@ -295,9 +312,10 @@ plot_hazard_curve<-function(
 
 }
 
-plot_hazard_curve('stratified', fig_title = 'Exceedance_rate_stratified_target_point.png',
+plot_hazard_curve('stratified', fig_title = 'Exceedance_rate_stratified_target_point.png', 
     add_equivalent_synthetic_catalogue=TRUE)
-plot_hazard_curve('stratified_importance', fig_title = 'Exceedance_rate_stratified_importance_target_point.png')
+plot_hazard_curve('stratified_importance', fig_title = 'Exceedance_rate_stratified_importance_target_point.png',
+    add_hardcoded_normal_distribution_to_second_panel=TRUE)
 
 #
 # Optimal sampling
@@ -455,10 +473,10 @@ plot_sampling_effort<-function(
     # mean_optimal argument)
     legend_VR_local_optimised = unlist(lapply(optimal_samples,
         function(x) get_variances(x, mean_optimal)$constant_on_best))
-    legend('topleft',
-           c('Equal in all bins (VR = 1.00)',
-              paste0('Threshold = ', threshold_stages,
-              '    (VR = ', round(legend_VR_local_optimised ,2),')')),
+    legend('topleft', 
+           c('Equal in all bins    (VR = 1.00)', 
+              paste0('Threshold = ', threshold_stages, 
+              ' m   (VR = ', round(legend_VR_local_optimised ,2),')')), 
            fill=c('purple', 1:length(threshold_stages)))
 
     # Plot with importance sampling
@@ -493,10 +511,10 @@ plot_sampling_effort<-function(
     # mean_optimal_IS)
     legend_VR_local_optimised = unlist(lapply(optimal_samples_IS,
         function(x) get_variances(x, mean_optimal_IS)$constant_on_best))
-    legend('topleft',
-           c('Equal in all bins (VR = 1.00)',
-              paste0('Threshold = ', threshold_stages,
-                     '    (VR = ', round(legend_VR_local_optimised,2),')')),
+    legend('topleft', 
+           c('Equal in all bins    (VR = 1.00)', 
+              paste0('Threshold = ', threshold_stages, 
+                     ' m   (VR = ', round(legend_VR_local_optimised,2),')')), 
            fill=c('purple', 1:length(threshold_stages)))
     dev.off()
 
@@ -523,15 +541,15 @@ plot_sampling_effort<-function(
         function(x) get_variances(x, mean_optimal_including_constant)$constant_on_chosen))
 
     white_t = rgb(1,1,1,alpha=0.3)
-    legend('topleft',
-           paste0('Threshold = ', rep(threshold_stages, 1),
+    legend('topleft', 
+           paste0('Threshold = ', rep(threshold_stages, 1), 
                   ' (VR = ', format(round(legend_VR_chosen, 2)), ')'),
-           title = 'Stratified sampling',
+           title = 'Stratified sampling', 
            box.col=white_t, cex=1.1, bg=white_t)
-    legend('top',
-           paste0('Threshold = ', rep(threshold_stages, 1),
+    legend('top', 
+           paste0('Threshold = ', rep(threshold_stages, 1), 
                   ' (VR = ', format(round(legend_VR_chosen_IS, 2)), ')'),
-           title = 'Stratified/importance-sampling',
+           title = 'Stratified/importance-sampling', 
            text.col='darkblue',
            title.col='darkblue',
            box.col=white_t, cex=1.1, bg=white_t)
@@ -710,8 +728,8 @@ plot_curve_comparison_multiple_sites<-function(
            lty='dashed', col='blue', lwd=2, cex=1.4, bty='n')
     legend(0.00, 0.7, c('95% interval (analytical) \nStratified/importance with\nnon-uniform Mw-bin sampling'),
            lty='twodash', col='red', lwd=2, cex=1.4, bty='n')
-    text(0.5, 0.25, bquote(paste('VR2 = Variance-ratio @ ', Q^T, '=2m')), cex=1.5)
-    text(0.5, 0.15, bquote(paste('VR4 = Variance-ratio @ ', Q^T, '=4m')), cex=1.5)
+    text(0.5, 0.25, bquote(paste('VR2 = Variance-reduction @ ', Q^T, '=2m')), cex=1.4)
+    text(0.5, 0.15, bquote(paste('VR4 = Variance-reduction @ ', Q^T, '=4m')), cex=1.4) 
 
 }
 # Compare the scheme used herein with 'stratified sampling and uniform N(M_w)', using the logic-tree mean
@@ -1039,7 +1057,7 @@ par(mar=c(0,0,0,0))
 plot(c(0,1), c(0,1), ann=FALSE, col='white', axes=FALSE)
 legend('left', c('Stratified', 'Stratified/Importance'),
        lty=c('solid', 'dashed'), col=c('black', 'red'), lwd=c(2, 2), cex=1.7, bty='n')
-text(0.5, 0.3, 'VR = Variance-ratio', cex=1.7)
+text(0.5, 0.3, 'VR = Variance-reduction factor', cex=1.5)
 dev.off()
 
 # Check that the analytical and sampling-based variance ratios agree well
