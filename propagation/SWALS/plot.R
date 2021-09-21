@@ -1,6 +1,3 @@
-#'
-#' @param output_folder the output folder for a domain (not a multidomain)
-#' @return a list with informative names, containing the gauge data
 #
 # Scripts to work with SWALS output files. 
 #
@@ -1491,7 +1488,7 @@ test_partition_into_k_with_grouping<-function(){
 #' than not using groups, unless you have some other information that tells you
 #' that the partition should be done in this way.
 #' @return the function environment invisibly (so you have to use assignment to
-#' capture it)
+#' capture it).
 #'
 make_load_balance_partition<-function(multidomain_dir=NA, verbose=TRUE, 
                                       domain_index_groups = list()){
