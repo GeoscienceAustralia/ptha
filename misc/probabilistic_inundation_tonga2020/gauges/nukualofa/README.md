@@ -12,7 +12,7 @@ Key codes are:
 
 Key directories are:
 * [./Tonga2006_BOM](./Tonga2006_BOM) includes a record of the 2006 Tonga tsunami
-* [./BOM_2009_2010](./BOM_2009_2010) includes a record of the 2010 Chile Mw 8.8 tsunami
+* [./BOM_2009_2010](./BOM_2009_2010) includes a record of the 2010 Chile Mw 8.8 tsunami, and the 2009 Mw 8.1 Tonga tsunami (often called the 2009 Samoa tsunami)
 * [./Tohoku2011_IOC_Sealevel](./Tohoku2011_IOC_Sealevel) includes a record of the 2011 Tohoku tsunami
 * [./BOM_2014_2020](./BOM_2014_2020) includes a record from late 2014 to mid 2020, which includes the 2015 Mw 8.3 Chile tsunami
 
