@@ -7,6 +7,9 @@ gauge_files = list(
     'Tonga2006'  = list(
         file=normalizePath('Tonga2006_BOM/nukualofa_2006_tsunami_detided.csv'),
         start_time=strptime('2006/05/03 15:26:40', format='%Y/%m/%d %H:%M:%S', tz='Etc/GMT')),
+    'Tonga2009' = list(
+        file=normalizePath('BOM_2009_2010/nukualofa_samoa2009_detided.csv'), 
+        start_time=strptime('2009/09/29 17:48:11', format='%Y/%m/%d %H:%M:%S', tz='Etc/GMT')),
     'Tohoku2011' = list(
         file=normalizePath('Tohoku2011_IOC_Sealevel/nukualofa_tohoku_tsunami_detided.csv'),
         start_time=strptime('2011/03/11 05:46:23', format='%Y/%m/%d %H:%M:%S', tz='Etc/GMT')),
