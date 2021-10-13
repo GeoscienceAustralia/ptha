@@ -25,7 +25,7 @@ This folder contains code to run the tsunami models for all scenarios, and do so
 
 ### Post-processing models
 
-* [create_all_depth_rasters.R](create_all_depth_rasters.R) is used to create depth rasters for all model runs in a specified output folder inside `OUTPUTS`. Edits are required to `all_md_dirs` to specify or change the output folder. Then it can be run with `Rscript create_all_depth_rasters.R`. Note it assumes that 48 cores are available.
+* [create_all_depth_rasters.R](create_all_depth_rasters.R) is used to create depth rasters for all model runs in a specified output folder inside `OUTPUTS`. It can be run with `Rscript create_all_depth_rasters.R`. Note it assumes that 48 cores are available.
 * [make_rasters.R](make_rasters.R) is used for one-off creation of multiple rasters (elevation/max-stage/max-depth) for each domain in a specified multidomain output directory. This can be useful for plotting, for example. Run it with `Rscript make_rasters.R multidomain_folder_name`
 * [plot_max_stage_and_elevation.R](plot_max_stage_and_elevation.R) - This contains a number of plotting functions that can be called interactively, for instance to plot the maximum stage and elevation for a given multidomain, or to create an animation. 
 * [plot_validation_runs.R](plot_validation_runs.R) - Plot model-vs-data at Nuku'alofa for all the historic event test cases.
@@ -49,7 +49,8 @@ make -B -f make_model_ifort
 qsub run_validation_Chile2010.sh
 qsub run_validation_Chile2015.sh
 qsub run_validation_Tohoku2011_PTHA18_46994.sh
-qsub run_validation_Tonga2006_load_balance_no_animation.sh
+qsub run_validation_Tonga2006.sh
+qsub run_validation_Tonga2009.sh
 
 # After the above jobs have finished, for each one we plot the model-vs-data at 
 # Nuku'alofa tide gauge. The figures are written to plots/historic_events_time_series_plots
@@ -85,16 +86,3 @@ Rscript create_all_depth_rasters.R
 
 ```
 
-# Figures comparing observations with model runs
-
-Here we include a few figures comparing de-tided tsunami observations at Nuku'alofa (in black) with the model (in red). We do not expect perfect agreement. The model was run using initial conditions that aim to be similar to the historic event, based on either PTHA18 scenarios or (for Chile 2015) a published source inversion. The model ignores tides and assumes an ambient sea-level of 0m; this is expect to have some impact on the modelled time-series after the leading wave. 
-
-In the figures below the horizontal scale is either 5 hours (for the Tonga 2006 event) or 24 hours (for all other events). The vertical scale varies case-by-case, but the dotted horizontal lines denote 10cm intervals, and help make clear that the tsunami size varies considerably among the 4 cases.
- 
-![plot for the Tonga 2006 earthquake-tsunami](plots/historic_events_time_series_plots/Tonga2006/nukualofa_gauge_modelVdata_Tonga2006_validation_PTHA18_VAUS_26849_load_balance-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20210618_192506219.png)
-
-![plot for the Chile 2010 earthquake-tsunami](plots/historic_events_time_series_plots/Chile2010/nukualofa_gauge_modelVdata_Chile2010_validation_PTHA18_HS_128607_source-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20210622_163758800.png)
-
-![plot for the Tohoku 2011 earthquake-tsunami](plots/historic_events_time_series_plots/Tohoku2011/nukualofa_gauge_modelVdata_Tohoku2011_validation_PTHA18_HS_46994-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20210622_171415990.png)
-
-![plot for the Chile 2015 earthquake-tsunami](plots/historic_events_time_series_plots/Chile2015/nukualofa_gauge_modelVdata_Chile2015_validation_PTHA18_HS_101114_source-risetime_0-ambientsealevel_0.0-full-linear_with_manning-0.035-highres_tonga-RUN_20210622_163638497.png)
