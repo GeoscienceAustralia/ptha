@@ -31,6 +31,9 @@ This folder contains code to run the tsunami models for all scenarios, and do so
 * [plot_validation_runs.R](plot_validation_runs.R) - Plot model-vs-data at Nuku'alofa for all the historic event test cases.
 * [plots/plot_all.R](plots/plot_all.R) - This contains a function `historic_event_gauge_plot(md_dir)` which can be used to plot models vs data at Nukualofa gauge (that assumes a particular naming convention for the `md_dir`, followed herein). Note that when you source this plotting code, you need to add the `chdir=TRUE` argument for it to work (e.g., if you started R in the current directory and wanted to run the plotting script, you would do `source('plots/plot_all.R', chdir=TRUE)`). 
 
+### Cleaning up
+* [tar_multidomain_dirs.R](tar_multidomain_dirs.R) can be used to move files from each model run to a single archive in the same location.
+* [untar_multidomain_dirs.R](untar_multidomain_dirs.R) can be used to reverse the effect of [tar_multidomain_dirs.R](tar_multidomain_dirs.R) 
 
 # How to run everything
 -----------------------
