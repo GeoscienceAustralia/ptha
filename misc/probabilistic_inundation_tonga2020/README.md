@@ -1,5 +1,7 @@
-# Tonga probabilistic tsunami inundation hazard
------------------------------------------------
+# Tonga probabilistic tsunami inundation hazard -- initial attempt
+------------------------------------------------------------------
+
+**Note:** An updated version of this work is [available here](../monte_carlo_paper_2021), which uses improved Monte-Carlo sampling methods. Although the results are similar in both cases, we suggest [using the codes the updated version](../monte_carlo_paper_2021).
 
 This folder contains code and data for an inundation PTHA for Tonga that was
 initially developed in November 2020.
