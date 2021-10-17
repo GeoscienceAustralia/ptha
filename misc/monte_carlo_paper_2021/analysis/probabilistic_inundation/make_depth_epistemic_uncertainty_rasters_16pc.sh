@@ -1,0 +1,7 @@
+# Run the probabilistic inundation calculations
+Rscript make_depth_epistemic_uncertainty_rasters.R ptha18_tonga_MSL0_meshrefine4 3 0.16
+Rscript make_depth_epistemic_uncertainty_rasters.R ptha18_tonga_MSL0_meshrefine4 4 0.16
+Rscript make_depth_epistemic_uncertainty_rasters.R ptha18_tonga_MSL0_meshrefine4 5 0.16
+Rscript make_depth_epistemic_uncertainty_rasters.R ptha18_tonga_MSL0_meshrefine4 6 0.16
+Rscript make_depth_epistemic_uncertainty_rasters.R ptha18_tonga_MSL0_meshrefine4 7 0.16
+
