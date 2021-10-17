@@ -1,7 +1,7 @@
 library(rptha)
 
 ptha18_rate_curve_session = '../../../ptha_access/compute_rates_all_sources_session.RData'
-if(!file.exists(ptha18_rate_curve_session)) stop('You need download compute_rates_all_sources_session.RData in the ptha_access directory -- see the README in that folder for details')
+if(!file.exists(ptha18_rate_curve_session)) stop('You need download compute_rates_all_sources_session.RData in the ptha_access directory. This can be done by sourcing "get_detailed_PTHA18_source_zone_info.R" in that folder. See the README in that folder for details')
 
 load(ptha18_rate_curve_session)
 
