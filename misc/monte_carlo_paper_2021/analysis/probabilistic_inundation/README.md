@@ -5,7 +5,7 @@ The codes here can be run after all simulations in the [../../swals](../../swals
 
 Key codes are:
 
-* [run_make_probabilistic_inundation.sh](run_make_probabilistic_inundation.sh) submits the script [make_probabilistic_inundation.sh](make_probabilistic_inundation.sh). This calls a number of the R scripts that compute onshore hazard results.
+* [run_make_probabilistic_inundation.sh](run_make_probabilistic_inundation.sh) submits the script [make_probabilistic_inundation.sh](make_probabilistic_inundation.sh). This calls a number of the R scripts that compute most of the onshore hazard results (everything except rasters depicting the 16/84th percentile epistemic uncertainties).
 
 * [make_depth_epistemic_uncertainty_rasters.sh](make_depth_epistemic_uncertainty_rasters.sh) computes rasters depicting the 2%-in-50-years 84th percentile depths.
 
