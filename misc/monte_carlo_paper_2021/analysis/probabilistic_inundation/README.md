@@ -16,8 +16,8 @@ The codes here can be run after all simulations in the [../../swals](../../swals
 
 ## Code used to make Figure 12 
 
-* [create_base_elevation_rasters.R](create_base_elevation_rasters.R) makes raster files from the model outputs, that are useful for plotting. 
-* [create_openstreetmap_land_water_rasters.R](create_openstreetmap_land_water_rasters.R) makes rasters that are used to clip the inundation hazard results to inside the openstreetmap coastline.
+* [create_base_elevation_rasters.R](create_base_elevation_rasters.R) makes elevation raster files from the model outputs, that are useful for plotting. 
+* [create_openstreetmap_land_water_rasters.R](create_openstreetmap_land_water_rasters.R) makes rasters that are used to clip the inundation hazard results to inside the openstreetmap coastline for Figure 12.
 * [plot_depth_1_in_2475.R](plot_depth_1_in_2475.R) makes Figure 12 in the paper, assuming the previous codes have been run.
 
 ## Other 

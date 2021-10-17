@@ -1,7 +1,7 @@
 # Sample random scenarios from PTHA18
 -------------------------------------
 
-Here we sample random scenarios from PTHA18 for the Tongatapu study, and generate the scenario initial conditions. Only the `kermadectonga2` source-zone is considered. We use 'stratified+importance' sampling, where the scenarios are stratified by magnitude, and sampled based on the wave height at a site offshore of Tongatapu. This is combined with non-uniform sampling in different magnitude-bins
+Here we sample random scenarios from PTHA18 for the Tongatapu study, and generate the scenario initial conditions. Only the `kermadectonga2` source-zone is considered. We use 'stratified+importance' sampling, where the scenarios are stratified by magnitude, and sampled based on the wave height at a site offshore of Tongatapu. This is combined with non-uniform sampling in different magnitude-bins (as specified in the file [Non_uniform_sampling_effort_compromise_stratifiedImportance.csv](Non_uniform_sampling_effort_compromise_stratifiedImportance.csv) that was created in the previous [optimal sampling calculations](../../optimal_sampling/).
 
 The PTHA18 treats the kermadectonga2 source with a mixture of `unsegmented` and `segmented` treatments (union of 3 segments). For every case, we use THE SAME SINGLE MONTE-CARLO SAMPLE (which is sampled using weights based on the 'logic-tree-mean' rates, and the max-stage near Tongatapu). The way the code is written, it is convenient to do the calculation separately for unsegmented and each segment, but we have checks to confirm that the same sample is drawn in every case (which is achieved by re-setting the random-seed).
 
