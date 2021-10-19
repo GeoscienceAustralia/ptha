@@ -7,7 +7,7 @@ This folder contains application code used for our manuscript on Monte-Carlo sam
 
 * [./gauges](./gauges) -- Tide-gauge data used for model testing, and gauge locations stored by the model.
 
-* [./optimal_sampling](./optimal_sampling) -- A script that implements the offshore analysis of various Monte-Carlo schemes (prior to high-resolution inundation simulation). It creates Figures 2,3,4,5,6,7,8 from the paper (and many others that are not used in the paper). It also reports various statistics.
+* [./optimal_sampling](./optimal_sampling) -- A script that implements the offshore analysis of various Monte-Carlo schemes (prior to high-resolution inundation simulation). It creates Figures 2,3,4,5,6,7,8 from the paper (and many others that are not used in the paper). It also reports various statistics which summarise the performance of different Monte-Carlo schemes.
 
 * [./sources](./sources) -- Code to select the particular set of random scenarios that were used for the onshore PTHA computations. Also information on the source-models used for comparison with historic events. 
 
