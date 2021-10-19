@@ -4,6 +4,8 @@ library(raster)
 
 # Background data 
 kt_grid = readOGR('kermadectonga2.shp', layer='kermadectonga2')
+## These datasets are not provided here -- the former is the DEM used in PTHA18, while the latter is a zero-contour
+## derived from that.
 dem   = raster('../../../../../AustPTHA/MODELS/AustPTHA_c/DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif')
 zero_contour = '../../../../../AustPTHA/MODELS/AustPTHA_c/DATA/ELEV/merged_dem/zero_contour/zero_contour.shp'
 zc = readOGR(zero_contour, layer='zero_contour')

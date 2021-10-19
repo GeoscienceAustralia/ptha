@@ -1,9 +1,9 @@
 Code for a paper with working title: "From offshore to onshore PTHA: Efficient Monte-Carlo sampling"
 -----------------------------------------------------------------------------------------------------
 
-The directories contain:
+This folder contains application code used for our manuscript on Monte-Carlo sampling for PTHA. The directories contain:
 
-* [./elevation](./gauges) -- Elevation data used for modelling.
+* [./elevation](./gauges) -- Intended to contain elevation data used for modelling (rasters not included here).
 
 * [./gauges](./gauges) -- Tide-gauge data used for model testing, and gauge locations stored by model.
 
@@ -16,3 +16,6 @@ The directories contain:
 * [./analysis](./analysis) -- Probabilistic computations using the high-resolution model outputs. This can be run after all the simulations in the [./swals](./swals) directory are completed, and make Figures 10, 11, 12 in the paper.
 
 * [./regional_setting](./regional_setting) -- Code to make panels of Figure 1 in the paper.
+
+
+While intending to make the analysis transparent, the code is not set-up to straightforwardly adapt to other cases and other machines. The code was mostly run on [NCI's Gadi computer](https://nci.org.au/our-systems/hpc-systems), and our job-submission and module-loading scripts are specific to that machine. Some of our R scripts also include hard-coded links to data that exists on the machines we used , but cannot be provided here. 

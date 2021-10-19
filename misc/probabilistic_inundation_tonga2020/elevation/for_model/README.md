@@ -10,3 +10,5 @@ tonga_bathy_moasaic_patched.tif
 tonga_lidar_mosaic_dem_patched.tif
 tongatapu_and_offshore_patched.tif
 ```
+
+They were derived from a mixture of [LiDAR for Tonga](https://terranova.org.au/repository/paccsap-collection/airborne-light-detection-and-ranging-lidar-factsheets/lidar-tonga.pdf), data provided by SPC that was used for [this study](https://www.preventionweb.net/files/45270219.pdf), the [GA250 Bathymetry grid](https://ecat.ga.gov.au/geonetwork/srv/eng/catalog.search#/metadata/67703), and [GEBCO 2014](https://www.gebco.net/news_and_media/gebco_2014_grid.html). The data is not provided here as some of the input datasets are not openly available.
