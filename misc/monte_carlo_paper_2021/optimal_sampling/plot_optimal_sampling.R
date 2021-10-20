@@ -755,8 +755,6 @@ dev.off()
 # problem.
 #
 
-# (NOTE: The script we source below requires access to 'compute_rates_all_sources_session.RData', which
-#  herein is also copied to the ../PLOT_DATA folder)
 ptha18_source_rate_env = new.env()
 source('../../../ptha_access/get_detailed_PTHA18_source_zone_info.R',
        local=ptha18_source_rate_env, chdir=TRUE)
