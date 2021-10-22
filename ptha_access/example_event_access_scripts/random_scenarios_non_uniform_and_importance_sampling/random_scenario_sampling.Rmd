@@ -13,10 +13,12 @@ feasible with a random sample containing hundreds or thousands of scenarios.
 
 This tutorial demonstrates some approaches to randomly sample scenarios from a
 given source-zone in a manner that is statistically consistent with the PTHA18.
-This means that one can estimate quantities of interest (such as the
-maximum-stage exceedance-rate at a hazard point) from the random scenarios.
-The result will be approximate, but converge to the value that would have been
-obtained using all the scenarios as larger random samples are used.
+This means that one can estimate quantities of interest (such exceedance-rates
+at a hazard point) from the random scenarios. One can also simulate inundation
+for the random scenarios, and use those simulations to estimate
+exceedance-rates at onshore sites where the PTHA18 does not simulate the tsunami.
+The result will be approximate, but will converge to the value that would have been
+obtained using all the scenarios, as larger random samples are used.
 
 In all cases it is the users responsibility to determine a sample size
 sufficient for accurate results, and that the sampling strategy gives stable
