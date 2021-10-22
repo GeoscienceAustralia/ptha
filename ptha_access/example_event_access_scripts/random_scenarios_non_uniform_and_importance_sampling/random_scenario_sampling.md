@@ -39,7 +39,7 @@ ptha18 = new.env()
 source('../../get_PTHA_results.R', local=ptha18, chdir=TRUE)
 # Read all heterogeneous-slip scenario metadata (slip_type='stochastic' in PTHA18)
 source_zone = 'kermadectonga2'
-kt2_scenarios = ptha18$get_source_zone_events_data(source_zone,  slip_type='stochastic')
+source_zone_scenarios = ptha18$get_source_zone_events_data(source_zone,  slip_type='stochastic')
 ```
 
 To illustrate how we can use the random scenarios, it is useful to have the
@@ -79,8 +79,8 @@ Herein a constant (12) is used, although in general it can vary with magnitude
 
 ```r
 # Convenient shorthand for the magnitudes and rates in the event table
-event_Mw = kt2_scenarios$events$Mw 
-event_rates = kt2_scenarios$events$rate_annual
+event_Mw = source_zone_scenarios$events$Mw 
+event_rates = source_zone_scenarios$events$rate_annual
 
 # Make a reproducible random seed to make the code reproducible (this is optional)
 set.seed(12345)
@@ -137,7 +137,7 @@ The columns are
 * `inds` is the indices of the randomly selected scenarios. This corresponds to
   indices in the `event_Mw` and `event_rates` variables. Because herein these
   are simply columns of the event table, `inds` also also correspond to rows in
-  `kt2_scenarios$events`.
+  `source_zone_scenarios$events`.
 * `mw` is the scenario magnitude. This is the same as
   `event_Mw[random_scenarios_stratified$inds]`
 * `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. This
