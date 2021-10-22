@@ -298,10 +298,11 @@ event_importance_weighted_sampling_probs = event_rate # Regular stratified sampl
 The stratified/importance-sampling approach is useful for studying tsunami hazards near to the site from which
 `event_peak_stage` was extracted (e.g. near Tongatapu in this case). 
 
-The `event_peak_stage` definition used here would not be a good choice for
-studying the hazard far from the site at which `event_peak_stage` was extracted
-(e.g. in New Zealand, or Australia). In those case a different location should
-be used to specify `event_peak-stage`.
+The `event_importance_weighted_sampling_probs` definition used here for
+stratified/importance-sampling would not be a good choice for studying the
+hazard far from the site at which `event_peak_stage` was extracted (e.g. in New
+Zealand, or Australia). In those case a different location should be used to
+specify `event_peak-stage`.
 
 Alternative choices of the `event_importance_weighted_sampling_probs` could be
 made. Good choices should up-weight scenarios that are likely to be important
@@ -310,7 +311,7 @@ unimportant scenarios (e.g. that cause negligable inundation).
 
 ## Stratified/importance-sampling (with uniform sampling of magnitude-bins)
 
-Although Stratified/importance-sampling can be comined with non-uniform
+Although Stratified/importance-sampling can be combined with non-uniform
 sampling of magnitude-bins, we first illustrate the technique using uniform
 sampling.
 
@@ -587,7 +588,7 @@ quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, le
 
 # Summary
 
-Stratified/importance sampling can give valid Monte-Carlo results while better
+Stratified/importance-sampling can give valid Monte-Carlo results while better
 representing scenarios that produce large waves near a particular site of
 interest. This is useful for site-specific hazard assessments.
 
