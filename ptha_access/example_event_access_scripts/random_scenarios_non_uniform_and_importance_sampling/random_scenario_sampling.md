@@ -58,7 +58,7 @@ event_peak_stage = event_peak_stage_at_refpoint$kermadectonga2$max_stage
 ## Random scenario sampling, stratified by magnitude
 ----------------------------------------------------
 
-Our simplest random scenario sampling algorithm proceeds as follows
+Our simplest random scenario sampling algorithm is termed `stratified-sampling` and proceeds as follows
 * Group the scenarios by magnitude
 * For each magnitude, sample a given number of scenarios with replacement, with
   the chance of sampling each scenario proportional to its conditional
@@ -69,8 +69,9 @@ magnitudes, and the scenario rates. From these variables the function will
 internally compute the scenario conditional probability for each unique
 magnitude value (which ranges from 7.2, 7.3, ... 9.6, 9.7, 9.8 in PTHA18). 
 
-We also need to specify the number of scenarios to sample for each magnitude -
-herein a constant (12) is used, although in general it can vary with magnitude.
+We also need to specify the number of scenarios to sample for each magnitude. 
+Herein a constant (12) is used, although in general it can vary with magnitude
+(discussed later).
 
 
 ```r
@@ -82,11 +83,10 @@ event_rates = kt2_scenarios$events$rate_annual
 set.seed(12)
 
 # Make the random scenarios
-random_scenarios_simple = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+random_scenarios_stratified = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     event_rates=event_rates,
     event_Mw=event_Mw,
-    samples_per_Mw=function(Mw){ 12 }, # Number of samples for each Mw
-    mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
+    samples_per_Mw=function(Mw){ 12*(Mw < 9.65) } # Number of samples for each Mw
     )
 ```
 
@@ -97,7 +97,7 @@ that will be discussed further below.
 
 ```r
 # Look at the first few rows
-head(random_scenarios_simple)
+head(random_scenarios_stratified)
 ```
 
 ```
@@ -136,7 +136,7 @@ The columns are
   are simply columns of the event table, `inds` also also correspond to rows in
   `kt2_scenarios$events`.
 * `mw` is the scenario magnitude. This is the same as
-  `event_Mw[random_scenarios_simple$inds]`
+  `event_Mw[random_scenarios_stratified$inds]`
 * `rate_with_this_mw` is the rate of ANY scenario with the same magnitude. This
   is the sum of `event_rates` for scenarios with the corresponding magnitude.
   Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
@@ -162,7 +162,7 @@ table, for magnitudes `9.7` and `9.8`.
 
 ```r
 # Look at the last few rows - NA values for magnitudes that are "impossible" according to PTHA18 (rate_annual=0)
-tail(random_scenarios_simple)
+tail(random_scenarios_stratified)
 ```
 
 ```
@@ -200,7 +200,7 @@ Aside from the impossible magnitudes, we can confirm that we have 12 scenarios
 per magnitude, as requested.
 
 ```r
-table(random_scenarios_simple$mw)
+table(random_scenarios_stratified$mw)
 ```
 
 ```
@@ -239,10 +239,10 @@ stage_exrates_ptha18 = sapply(stage_seq, function(x) sum(event_rates*(event_peak
 The analogous calculation using only the random sample is:
 
 ```r
-stage_exrates_rs_simple = sapply(stage_seq, 
+stage_exrates_rs_stratified = sapply(stage_seq, 
     function(x){
-        sum(random_scenarios_simple$importance_sampling_scenario_rates_basic * 
-            (event_peak_stage[random_scenarios_simple$inds] > x), na.rm=TRUE)
+        sum(random_scenarios_stratified$importance_sampling_scenario_rates_basic * 
+            (event_peak_stage[random_scenarios_stratified$inds] > x), na.rm=TRUE)
     })
 ```
 
@@ -264,18 +264,17 @@ as the sample size is increased.
 
 ```r
 # Make the random scenarios -- use 120 per magnitude, instead of 12
-random_scenarios_simple_many = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+random_scenarios_stratified_many = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     event_rates=event_rates,
     event_Mw=event_Mw,
-    samples_per_Mw=function(Mw){ 120 }, # Number of samples for each Mw
-    mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
+    samples_per_Mw=function(Mw){ 120 } # Number of samples for each Mw
     )
 
 # Compute the max-stage exceedance-rates
-stage_exrates_rs_simple_many = sapply(stage_seq, 
+stage_exrates_rs_stratified_many = sapply(stage_seq, 
     function(x){
-        sum(random_scenarios_simple_many$importance_sampling_scenario_rates_basic * 
-            (event_peak_stage[random_scenarios_simple_many$inds] > x), na.rm=TRUE)
+        sum(random_scenarios_stratified_many$importance_sampling_scenario_rates_basic * 
+            (event_peak_stage[random_scenarios_stratified_many$inds] > x), na.rm=TRUE)
     })
 ```
 
@@ -304,14 +303,14 @@ accuracy improvement on-average.
 ## Random scenario sampling, with more scenarios at magnitudes of interest
 --------------------------------------------------------------------------
 
-The simple random sample that was defined above has many scenario with low
+The stratified random sample that was defined above has many scenario with low
 maximum-stage values, which are not of particular interest for this study. For
 instance half of all the scenarios have max-stage less than 
 0.171
 m, which seems too small to be of much interest in most tsunami hazard studies. 
 
 ```r
-quantile(event_peak_stage[random_scenarios_simple$inds], seq(0, 1, len=5), na.rm=TRUE)
+quantile(event_peak_stage[random_scenarios_stratified$inds], seq(0, 1, len=5), na.rm=TRUE)
 ```
 
 ```
@@ -344,8 +343,7 @@ sampling_effort_linear = approxfun(unique_Mws,
 random_scenarios_mw_weighted1 = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     event_rates=event_rates,
     event_Mw=event_Mw,
-    samples_per_Mw=sampling_effort_linear, 
-    mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
+    samples_per_Mw=sampling_effort_linear 
     )
 
 # Compute the max-stage exceedance-rates
@@ -384,6 +382,7 @@ non_uniform_samples_2 = ptha18$get_optimal_number_of_samples_per_Mw(
     event_Mw, event_rates, event_peak_stage, stage_threshold=2, 
     total_samples=TOTAL_SAMPLES)
 
+# Look at the data structure
 non_uniform_samples_2
 ```
 
@@ -455,7 +454,7 @@ average_nonuniform_sampling_effort =
     0.5*(non_uniform_samples_2$Nsamples + non_uniform_samples_5$Nsamples)
 
 # 25% uniform, 75% weighted non-uniform, rounded to integer values
-chosen_sampling_effort = round(
+chosen_sampling_effort_stratified = round(
     0.25*uniform_sampling_effort + 
     0.75*(average_nonuniform_sampling_effort))
 ```
@@ -468,8 +467,7 @@ At this point we can sample non-uniformly with the chosen sampling effort.
 random_scenarios_mw_weighted2 = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     event_rates=event_rates,
     event_Mw=event_Mw,
-    samples_per_Mw=approxfun(unique_Mws, chosen_sampling_effort, method='constant'), 
-    mw_limits=c(7.15, 9.85) # Optionally limit the mw range of random samples
+    samples_per_Mw=approxfun(unique_Mws, chosen_sampling_effort_stratified, method='constant')
     )
 
 # Compute the max-stage exceedance-rates
@@ -556,8 +554,7 @@ random_scenarios_stage_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rat
     event_rates=event_rates,
     event_Mw=event_Mw,
     event_importance_weighted_sampling_probs = (event_rates * event_peak_stage),
-    samples_per_Mw=function(Mw){ 12*(Mw < 9.65) },
-    mw_limits=c(7.15, 9.85) 
+    samples_per_Mw=function(Mw){ 12*(Mw < 9.65) }
     )
 
 # Compute the max-stage exceedance-rates
@@ -635,8 +632,7 @@ random_scenarios_stage_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_
     event_rates=event_rates,
     event_Mw=event_Mw,
     event_importance_weighted_sampling_probs = (event_rates * event_peak_stage),
-    samples_per_Mw=approxfun(unique_Mws, chosen_sampling_effort_IS, method='constant') ,
-    mw_limits=c(7.15, 9.85) 
+    samples_per_Mw=approxfun(unique_Mws, chosen_sampling_effort_IS, method='constant')
     )
 
 # Compute the max-stage exceedance-rates
@@ -661,4 +657,18 @@ quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, le
 ##           0%          25%          50%          75%         100% 
 ##  0.007150979  0.425657332  1.286300182  3.662756324 18.934926987
 ```
+
+### Summary of importance-sampling
+
+Using importance sampling it becomes much easier to well represent scenarios
+that have large waves near a site of interest. In practice we find the improvements
+can be very substantial, as compared with stratified-sampling
+
+Users should beware that importance sampling can backfire if the choice of
+`event_importance_weighted_sampling_probs` is poor. We do not have a foolproof
+method to set it, but expect the method here will work well in many cases. 
+
+Users can check for any problems by studying the performance of their choice
+under repeated sampling (at PTHA18 points) - a poor choice will lead to erratic
+behaviour, as compared to simpler approaches.
 
