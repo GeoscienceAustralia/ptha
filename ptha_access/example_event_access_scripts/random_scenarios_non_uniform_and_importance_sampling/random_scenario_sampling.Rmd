@@ -580,7 +580,7 @@ legend('topright', c('Original PTHA18 [desired result]', 'Importance based on ev
 ```
 
 The distribution of `event_peak_stage` values in the random sample is similar to the other case
-that used importance-sampling. Note that compared to the samples that did not use importance-sampling,
+that used importance-sampling. Compared to the samples that did not use importance-sampling,
 there is much better representation of large tsunamis.
 ```{r quantorig5}
 quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)

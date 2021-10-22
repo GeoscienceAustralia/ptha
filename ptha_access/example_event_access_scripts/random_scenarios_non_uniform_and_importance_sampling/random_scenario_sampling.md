@@ -375,7 +375,7 @@ unimportant scenarios (e.g. that cause negligable inundation).
 
 ## Stratified/importance-sampling (with uniform sampling of magnitude-bins)
 
-Although Stratified/importance-sampling can be comined with non-uniform
+Although Stratified/importance-sampling can be combined with non-uniform
 sampling of magnitude-bins, we first illustrate the technique using uniform
 sampling.
 
@@ -650,7 +650,7 @@ unimportant to the hazard).
 ![plot of chunk ptha18_tonga_point_plot5](figure/ptha18_tonga_point_plot5-1.png)
 
 The distribution of `event_peak_stage` values in the random sample is similar to the other case
-that used importance-sampling. Note that compared to the samples that did not use importance-sampling,
+that used importance-sampling. Compared to the samples that did not use importance-sampling,
 there is much better representation of large tsunamis.
 
 ```r
