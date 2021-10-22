@@ -55,7 +55,7 @@ event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
     all_source_names=source_zone)
 
 # Convenient shorthand
-event_peak_stage = event_peak_stage_at_refpoint$kermadectonga2$max_stage
+event_peak_stage = event_peak_stage_at_refpoint[[source_zone]]$max_stage
 ```
 
 # Approach 1: Random scenario sampling, stratified by magnitude
