@@ -483,11 +483,12 @@ offshore of Tonga. This means we prefer scenarios with higher max-stage at that
 site, all else being equal. 
 
 This is a good choice for studying tsunami hazards nearby to the site from
-which `event_peak_stage` is extracted (e.g. in Tonga). But it would not be a
-good choice if we were studying the hazard far away (e.g. in New Zealand).
+which `event_peak_stage` was extracted (e.g. in Tonga). But it would not be a
+good choice if we were studying the hazard far away from the site at which 
+`event_peak_stage` was extracted (e.g. in New Zealand).
 
 Many other choices of the `event_importance_weighted_sampling_probs` could be
-made. Good choices should put over-weight on scenarios that are likely to be
+made. Good choices should over-weight scenarios that are likely to be
 important for your application. 
 
 ## Importance-sampling (with uniform sampling of magnitude-bins)
