@@ -44,7 +44,7 @@ source_zone_scenarios = ptha18$get_source_zone_events_data(source_zone,  slip_ty
 
 To illustrate how we can use the random scenarios, it is useful to have the
 corresponding tsunami maximum-stage data at a point of interest. Herein we
-choose a point just east of Tonga, which is over the `kermadectonga2`
+choose a point just east of Tongatapu in Tonga, which is over the `kermadectonga2`
 source-zone. 
 
 ```{r peakStageTonga}
@@ -56,6 +56,10 @@ event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
 # Convenient shorthand
 event_peak_stage = event_peak_stage_at_refpoint[[source_zone]]$max_stage
 ```
+
+When we use importance-sampling techniques below, the `event_peak_stage` variable
+will be used to over-represent scenarios with larger `event_peak_stage` (and thus
+scenarios with larger waves in the vicinity of the hazard point, near Tongatapu).
 
 # Approach 1: Stratified-sampling by magnitude
 -----------------------------------------------
