@@ -3,21 +3,20 @@
 
 The PTHA18 often includes thousands or tens-of-thousands of scenarios on a
 source-zone. For some applications it is impractical to work with all
-scenarios, but may be practical to work with a random sample of scenarios that
-have similar statistical properties. 
+scenarios. But it may be practical to work with a random sample of scenarios
+that have similar statistical properties. 
 
 For example, suppose we wish to conduct a probabilistic tsunami inundation
-hazard assessment, which will require running computationally expensive
-inundation models for every scenario. It may be impractical to do this for
-every PTHA18 scenario, but feasible with a random sample containing hundreds or
-thousands of scenarios. 
+hazard assessment that requires running computationally expensive inundation
+models. It may be impractical to do this for every PTHA18 scenario, but
+feasible with a random sample containing hundreds or thousands of scenarios. 
 
-This tutorial examines a few approaches to randomly sample scenarios from a
+This tutorial demonstrates some approaches to randomly sample scenarios from a
 given source-zone in a manner that is statistically consistent with the PTHA18.
-This means that one can derive quantities of interest (such as the
-maximum-stage exceedance-rate at a hazard point) from the random scenarios, and
-the result will be arbitrarily close to the PTHA18 values IF the random sample
-is sufficiently large. 
+This means that one can estimate quantities of interest (such as the
+maximum-stage exceedance-rate at a hazard point) from the random scenarios.
+The result will be approximate, but converge to the value that would have been
+obtained using all the scenarios as larger random samples are used.
 
 In all cases it is the users responsibility to determine a sample size
 sufficient for accurate results, and that the sampling strategy gives stable
@@ -45,7 +44,7 @@ source_zone_scenarios = ptha18$get_source_zone_events_data(source_zone,  slip_ty
 To illustrate how we can use the random scenarios, it is useful to have the
 corresponding tsunami maximum-stage data at a point of interest. Herein we
 choose a point just east of Tonga, which is over the `kermadectonga2`
-source-zone.
+source-zone. 
 
 
 ```r
@@ -58,19 +57,20 @@ event_peak_stage_at_refpoint = ptha18$get_peak_stage_at_point_for_each_event(
 event_peak_stage = event_peak_stage_at_refpoint[[source_zone]]$max_stage
 ```
 
-# Approach 1: Random scenario sampling, stratified by magnitude
-----------------------------------------------------
+# Approach 1: Stratified-sampling by magnitude
+-----------------------------------------------
 
-Our simplest random scenario sampling algorithm is termed `stratified-sampling`. We
+Our simplest random scenario sampling algorithm is `stratified-sampling` by magnitude. We
 * Group the scenarios by magnitude
 * For each magnitude, sample a given number of scenarios randomly with
-  replacement.  The chance of sampling each scenario is proportional to its
-  conditional probability.
+  replacement. The chance of sampling each scenario is proportional to its
+  conditional probability (defined using the PTHA18 logic-tree mean model herein).
 
-The function which does this needs to be informed of the scenario magnitudes, and
-the scenario rates. From these variables it will internally compute the
-scenario conditional probability for each unique magnitude value (which ranges
-from 7.2, 7.3, ... 9.6, 9.7, 9.8 in PTHA18). 
+The function which creates the stratified-sample needs to be informed of the
+scenario magnitudes, and the scenario rates. From these variables it will
+internally compute the scenario conditional probability for each unique
+magnitude value (which ranges from 7.2, 7.3, ... 9.6, 9.7, 9.8 in PTHA18), and 
+randomly sample the scenarios. 
 
 We also need to specify the number of scenarios to sample for each magnitude. 
 Herein a constant (12) is used, although in general it can vary with magnitude
@@ -80,7 +80,7 @@ Herein a constant (12) is used, although in general it can vary with magnitude
 ```r
 # Convenient shorthand for the magnitudes and rates in the event table
 event_Mw = source_zone_scenarios$events$Mw 
-event_rates = source_zone_scenarios$events$rate_annual
+event_rates = source_zone_scenarios$events$rate_annual # Logic-tree mean model
 
 # Make a reproducible random seed to make the code reproducible (this is optional)
 set.seed(12345)
@@ -134,7 +134,7 @@ head(random_scenarios_stratified)
 ## 6                                        0.004754101
 ```
 The columns are
-* `inds` is the indices of the randomly selected scenarios. This corresponds to
+* `inds` is the indices of random scenarios in the stratified-sample. This corresponds to
   indices in the `event_Mw` and `event_rates` variables. Because herein these
   are simply columns of the event table, `inds` also also correspond to rows in
   `source_zone_scenarios$events`.
@@ -144,7 +144,7 @@ The columns are
   is the sum of `event_rates` for scenarios with the corresponding magnitude.
   Note THIS IS NOT THE RATE OF THE INDIVIDUAL SCENARIO!
 * `importance_sampling_scenario_weights_basic` gives the scenarios weights
-  determined by basic importance sampling. In this simple example they are
+  determined by basic importance sampling. For stratified-sampling they are
   constant in each magnitude bin, but later on when we define the
   `event_importance_weighted_sampling_probs` to bias the sampling toward
   scenarios of interest, the weights will be more complicated.
@@ -158,9 +158,9 @@ The columns are
   for each scenario, defined as `rate_with_this_mw` multiplied by
   `importance_sampling_scenario_weights_self_normalised`.
 
-In PTHA18 some earthquake magnitudes are impossible. In this case the scenario index will
-take an `NA` value, as will various other variables. We see this at the end of the current
-table, for magnitudes `9.7` and `9.8`.
+In PTHA18 some earthquake magnitudes are impossible. In this case the scenario
+index will take an `NA` value, as will various other variables. We see this at
+the end of the current table, for magnitudes `9.7` and `9.8`.
 
 
 ```r
@@ -221,25 +221,19 @@ PTHA18.
 ## Approximating PTHA18 max-stage exceedance-rates with the random scenario subset
 ----------------------------------------------------------------------------------
 
-What do we mean by saying the random scenarios are statistically consistent
-with the PTHA18? The key point is that we can approximate the PTHA18 results
-using a randomly chosen subset scenarios, which in some cases may contain many
-fewer scenarios that the full PTHA18. This can be advantageous, for example if
-we need to run new tsunami simulations for all the scenarios to get information
-at our site of interest.
-
-To demonstrate this we consider the tsunami max-stage exceedance-rates at the
+To demonstrate how exceedance-rate curves can be approximated from the random
+scenarios, consider the tsunami max-stage exceedance-rates at the
 aforementioned point offshore of Tonga. Any other location could similarly be
 chosen. 
 
-In the full PTHA, we can compute the max-stage exceedance rates at this point as:
+In the full PTHA, the `event_peak_stage` exceedance-rate curve at this point is:
 
 ```r
 stage_seq = seq(0.1, 20, by=0.1)
 stage_exrates_ptha18 = sapply(stage_seq, function(x) sum(event_rates*(event_peak_stage > x)))
 ```
 
-The analogous calculation using only the random sample is:
+That can be approximated using only the random sample as follows:
 
 ```r
 stage_exrates_rs_stratified = sapply(stage_seq, 
@@ -249,10 +243,10 @@ stage_exrates_rs_stratified = sapply(stage_seq,
     })
 ```
 
-The max-stage exceedance-rate curve derived from the random scenarios is
-similar to the PTHA18 result, but there is some error due to the limited number
-of samples (see figure below). As we increase the number of random scenarios
-per magnitude, the accuracy will improve (on average) until the difference is
+The exceedance-rate curve derived from the random scenarios is similar to the
+PTHA18 result, but there is some error due to the limited number of samples
+(see figure below). As we increase the number of random scenarios per
+magnitude, the accuracy will improve (on average) until the difference is
 negligible. In this sense the random sample is statistically consistent with
 the PTHA18.
 ![plot of chunk ptha18_tonga_point_plot1](figure/ptha18_tonga_point_plot1-1.png)
@@ -283,38 +277,24 @@ stage_exrates_rs_stratified_many = sapply(stage_seq,
 
 ![plot of chunk ptha18_tonga_point_plot1_moresam](figure/ptha18_tonga_point_plot1_moresam-1.png)
 
-In this example we are considering the max-stage exceedance-rates at a hazard
-point, where we can easily use the full PTHA18 results. So for this example
-there is no reason to use random sampling of scenarios. 
+In this example we are considering the exceedance-rate curve at a hazard point
+in the deep ocean, where the PTHA18 already provides exceedance-rate curves
+based on every scenario in the PTHA. So at this site there is no reason to use
+the Monte-Carlo approximation. But comparison with the PTHA18 solution provides
+an opportunity to test the approach. 
 
-Why might we want to use random scenarios? Suppose we were interested in the
-tsunami inundation-depth exceedance rates at a nearby point. The PTHA18 does
-not simulate inundation, and so we would need to run an inundation model for
-every scenario. This is likely computationally prohibitive for the full set of
-PTHA18 scenarios, but it may be feasible for a random subset of scenarios. So
+However, if we have simulated tsunami inundation for the randomly sampled
+scenarios, then the Monte-Carlo approximation could also be applied to
+approximate exceedance-rate curves onshore (where the PTHA18 does not already
+give valid solutions for every scenario). 
+
+While it may be computationally prohibitive to simulate tsunami inundation for
+every PTHA scenario, it may be feasible for a random subset of scenarios. So
 long as sufficiently many scenarios are sampled, it will also be accurate. That
-is the motivation for using random scenarios.
+is the motivation for Monte-Carlo approaches. 
 
-There are other sampling techniques that may improve the accuracy of the
-results , without increasing the number of random scenarios used. The idea is
-to use case-specific knowledge to bias the sampling toward scenarios of
-interest, while accounting for this in the scenario rate calculation (to retain
-consistency with PTHA18). 
-
-Some of these techniques are explored below. Beware their use requires
-judgement, and poor decisions may increase the error. In contrast, simply
-increasing the number of scenarios will always lead to an accuracy improvement
-(on-average), but can have a prohibitive computational cost.
-
-
-# Approach 2: Random scenario sampling, with more scenarios at magnitudes of interest
---------------------------------------------------------------------------
-
-The stratified random sample that was defined above has many scenario with low
-maximum-stage values, which are not of particular interest for this study. For
-instance half of all the scenarios have max-stage less than 
-0.224
-m, which seems too small to be of much interest in most tsunami hazard studies. 
+Finally, it is worth noting that the stratified random sample defined above has
+many scenario with low `event_peak_stage` values:
 
 ```r
 quantile(event_peak_stage[random_scenarios_stratified$inds], seq(0, 1, len=5), na.rm=TRUE)
@@ -324,77 +304,143 @@ quantile(event_peak_stage[random_scenarios_stratified$inds], seq(0, 1, len=5), n
 ##           0%          25%          50%          75%         100% 
 ## 7.280861e-04 3.522491e-02 2.242641e-01 8.319299e-01 1.505336e+01
 ```
-In practice we will be interested in larger waves. 
+Half of all the scenarios have max-stage less than 
+0.224
+m. This is too small to be of interest in most tsunami hazard studies, and 
+contributes to the Monte-Carlo errors seen in the previous figure.
 
-A potentially improved strategy is to sample more scenarios at higher
-magnitudes, which are more likely to generate larger waves. We can do this by
-adjusting `samples_per_Mw`. Many approaches could be tried; 2 alternatives are shown below.
+Alternative Monte-Caro sampling techniques can improve the representation of
+larger tsunami scenarios near a site of interest. This can improve the accuracy
+of the results, without increasing the number of random scenarios used. Two
+techniques are explored below:
+* Importance sampling
+* Non-uniform sampling of different magnitude bins
+They can be used separately or in combination.
 
-## Manually enforcing more sampling at higher magnitudes
+Use of the techniques below requires some judgement. Poor decisions may increase
+the error. Alternatively, simply increasing the number of random scenarios will
+always lead to an accuracy improvement (on-average), but can have a prohibitive
+computational cost.
 
-Here we increase the number of scenarios at higher magnitudes by varying the
-sampling effort linearly, from 6 scenarios per bin at Mw 7.2, up to 18
-scenarios at Mw 9.6. 
+# Improving the Monte-Carlo efficiency: Stratified/importance-sampling to emphasise higher max-stages
+-------------------------------------------------------------------------------------
 
-This choice leads to the same number of scenarios as the previous approach, but
-the sampling is better concentrated at high magnitudes.
+The theory of importance-sampling can be used to more strongly concentrate the
+Monte-Carlo sample on scenarios that have higher maximum-stage values. 
+
+Here the sampling algorithm is:
+* Group the scenarios by magnitude
+* For each magnitude, sample a given number of scenarios with replacement, with
+  the chance of sampling each scenario proportional to **a user-specified importance weighted sampling distribution**.
+  The latter step is where this method differs from regular stratified-sampling sampling.
+* The theory of importance-sampling provides a means to adjust the random
+  scenario weights to correct for this preferential sampling. There are many
+  statistical texts which cover importance-sampling, 
+  [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
+
+The examples below set:
+```r
+event_importance_weighted_sampling_probs = (event_rate * event_peak_stage) # Importance sampling
+```
+where the `event_peak_stage` is the tsunami maxima at our site offshore of Tonga.
+Compared to regular stratified-sampling this approach over-represents scenarios
+with high `event_peak_stage`. Note regular stratified-sampling would be
+equivalent to:
+```r
+event_importance_weighted_sampling_probs = event_rate # Regular stratified sampling 
+```
+
+The stratified/importance-sampling approach is useful for studying tsunami hazards near to the site from which
+`event_peak_stage` was extracted (e.g. near Tonga in this case). 
+
+The `event_peak_stage` definition used here would not be a good choice for
+studying the hazard far from the site at which `event_peak_stage` was extracted
+(e.g. in New Zealand, or Australia). In those case a different location should
+be used to specify `event_peak-stage`.
+
+Alternative choices of the `event_importance_weighted_sampling_probs` could be
+made. Good choices should up-weight scenarios that are likely to be important
+for the application (e.g. generate significant inundation), and down-weight
+unimportant scenarios (e.g. that cause negligable inundation).
+
+## Importance-sampling (with uniform sampling of magnitude-bins)
+
+Although Stratified/importance-sampling can be comined with non-uniform
+sampling of magnitude-bins, we first illustrate the technique using uniform
+sampling.
+
+
+```r
+# Random scenarios -- importance sampling, 12 samples per magnitude-bin.
+random_scenarios_stage_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+    event_rates=event_rates,
+    event_Mw=event_Mw,
+    event_importance_weighted_sampling_probs = (event_rates * event_peak_stage),
+    samples_per_Mw=function(Mw){ 12*(Mw < 9.65) }
+    )
+
+# Compute the max-stage exceedance-rates
+stage_exrates_rs_stage_weighted = sapply(stage_seq, 
+    function(x){
+        sum(random_scenarios_stage_weighted$importance_sampling_scenario_rates_basic * 
+            (event_peak_stage[random_scenarios_stage_weighted$inds] > x), na.rm=TRUE)
+    })
+```
+
+With stratified/importance-sampling we get much better agreement with the
+PTHA18 max-stage exceedance-rate curve, compared with the earlier Monte-Carlo
+results that also used 12 scenarios in each magnitude-bin. 
+
+![plot of chunk ptha18_tonga_point_plot4](figure/ptha18_tonga_point_plot4-1.png)
+
+The improvement occurs because, compared to the regular stratified-sampling,
+stratified/importance-sampling better represents scenarios with high max-stage
+values at our Tonga site. 
+
+```r
+quantile(event_peak_stage[random_scenarios_stage_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
+```
+
+```
+##           0%          25%          50%          75%         100% 
+##  0.002298993  0.112416586  0.581845820  2.162981093 17.066255569
+```
+This is because of how `event_peak_stage` was included in the definition of the
+`event_importance_weighted_sampling_probs`.
+
+
+# Improving the efficiency: Non-uniform sampling of magnitude-bins
+------------------------------------------------------------------
+
+Another approach to improving the Monte-Carlo efficiency is to sample some
+magnitude bins more than others. This can be done by adjusting `samples_per_Mw`. 
+
+For both stratified-sampling and stratified/importance sampling, it is possible
+to calculate the theoretically optimal sampling effort in each magnitude bin,
+IF we are given the site, scenario-frequency-model, and a threshold stage to
+optimize. The optimal solution minimise the variance (over repeated samples) of
+the Monte-Carlo exceedance rate at the threshold stage, given the site and
+scenario-frequency model. 
+
+We are usually interested in a range of sites and threshold stage values, and so no
+single optimal solution is adequate. But the optimal solutions are a useful guide. 
+
+## Optimal non-uniform sampling with stratified-sampling
+--------------------------------------------------------
+
+Here the optimal non-uniform sampling effort for a threshold stage of 2m is computed,
+assuming that stratified-sampling is used.
 
 
 ```r
 # Vector with magnitude values 7.2, 7.3, ... 9.6, 9.7, 9.8
 unique_Mws = ptha18$unique_sorted_with_check_for_even_spacing(event_Mw)
 
-# Sampling effort varies from 6 (@ Mw 7.2) up to 18 (@ Mw 9.6)
-sampling_effort_linear = approxfun(unique_Mws, 
-    (unique_Mws < 9.65)*round( 6 + 12 * (unique_Mws - 7.15)/(9.65 - 7.15) ),
-    method='constant')
+# Number of samples used 
+TOTAL_SAMPLES = sum(12*(unique_Mws < 9.65))
 
-# Make the random scenarios
-random_scenarios_mw_weighted1 = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
-    event_rates=event_rates,
-    event_Mw=event_Mw,
-    samples_per_Mw=sampling_effort_linear # Non-uniform sampling effort
-    )
-
-# Compute the max-stage exceedance-rates
-stage_exrates_rs_mw_weighted1 = sapply(stage_seq, 
-    function(x){
-        sum(random_scenarios_mw_weighted1$importance_sampling_scenario_rates_basic * 
-            (event_peak_stage[random_scenarios_mw_weighted1$inds] > x), na.rm=TRUE)
-    })
-```
-
-In this case we see modest improvement (compared with using 12 scenarios for each
-magnitude bin). This could reflect that our magnitude-sampling method is not very
-beneficial for this problem. 
-
-![plot of chunk ptha18_tonga_point_plot2](figure/ptha18_tonga_point_plot2-1.png)
-
-The benefit of more heavily sampling higher magnitudes will vary case-by-case;
-it is most useful when you have strong reason to think that low magnitudes are
-unimportant for your study. 
-
-It is also possible that a poor decision on the sampling effort could decrease
-the accuracy. For example, this could happen if lower magnitudes were important
-to the hazard but insufficiently sampled.
-
-
-## Semi-automatic calculation of the non-uniform sampling effort.
-
-Mathematically it is possible to calculate the theoretically optimum sampling effort in each magnitude bin,
-if we are given the site, scenario-frequency-model, and a threshold stage for which we would like to minimise
-the Monte-Carlo variance. 
-
-Although we are usually interested in a range of sites and threshold stage
-values, the optimial solutions are a useful guide. 
-
-Here we compute the optimal sampling effort for a threshold stage of 2m.
-
-
-```r
-TOTAL_SAMPLES = sum(12*(unique_Mws < 9.65)) # Number of samples used above
-
-# stage_threshold = 2
+# stage_threshold = 2 -- assumes stratified-sampling (because we don't specify
+# event_importance_weighted_sampling_probs)
 non_uniform_samples_2 = ptha18$get_optimal_number_of_samples_per_Mw(
     event_Mw, event_rates, event_peak_stage, stage_threshold=2, 
     total_samples=TOTAL_SAMPLES)
@@ -440,31 +486,33 @@ be used in practice, the solution gives real numbers because the optimization
 technique is continuous. Therefore rounding is required before using these
 values.
 
-Below we calculate the optimal sampling effort at a stage-threshold of 5m.
+Below we do the same calculation at a stage-threshold of 5m
 
 ```r
-# stage_threshold = 5
+# stage_threshold = 5 -- assumes stratified-sampling (because we don't specify
+# event_importance_weighted_sampling_probs)
 non_uniform_samples_5 = ptha18$get_optimal_number_of_samples_per_Mw(
     event_Mw, event_rates, event_peak_stage, stage_threshold=5, 
     total_samples=TOTAL_SAMPLES)
 ```
 
-Notice that the optimal solutions place most sampling effort on intermediate
-and high magnitudes. The details vary depending on the stage threshold.
+The figure shows that these optimal solutions place most sampling effort on intermediate and high
+magnitudes. The details vary depending on the stage threshold (2m or 5m here).
 
 ![plot of chunk plot_optimalNonUniformSampling1](figure/plot_optimalNonUniformSampling1-1.png)
 
-In practice we can only choose one non-uniform sampling effort. It should 
-be robust to different choices of the stage threshold, different sites,
-and even different `event_rates` (if we intend to explore epistemic
-uncertainties associated with source-frequency uncertainty). 
+In practical applications, only one non-uniform sampling effort can be selected. It should
+perform reasonably with different choices of the stage threshold, different
+sites, and even different `event_rates` (if we explore epistemic uncertainties
+in the source-frequencies). 
 
-One way to do that is involves a compromise between the optimal solutions and uniform sampling. Here we:
-* Use uniform-sampling for 25% of the scenarios. This ensures that all magnitude-bins are represented.
+One approach involves a compromise between the optimal solutions and uniform sampling. Here we:
+* Use uniform-sampling for 25% of the scenarios, which ensures that all magnitude-bins are represented.
 * Use the average of the non-uniform results for the remaining 75% of scenarios. 
 
-In practice the choice of stage thresholds should be varied according to the application at hand, to focus
-on offshore tsunami wave sizes that are likely to be associated with hazardous waves at the site of interest.
+In practice the choice of stage thresholds informing the non-uniform result
+should be varied according to the application, to focus on offshore tsunami
+wave sizes that are likely to produce hazardous waves at the site of interest.
 
 
 ```r
@@ -500,137 +548,37 @@ stage_exrates_rs_mw_weighted2 = sapply(stage_seq,
     })
 ```
 
-The results are qualitatively similar to those obtained using the manually-prescribed non-uniform
-sampling effort. 
+The Monte-Carlo accuracy is qualitatively similar to those obtained previously
+using stratified-sampling.  In practice we find the combination of
+stratified-sampling with non-uniform sampling is better than pure
+stratified-sampling, but not dramatically so. However in some circumstances it could
+be very beneficial (e.g. if most lower magnitude-bins were unimportant to the hazard).
 
 ![plot of chunk ptha18_tonga_point_plot3](figure/ptha18_tonga_point_plot3-1.png)
 
-## Summary of non-uniform sampling strategies.
-
-Although non-uniform sampling of magnitude-bins can be useful, in the authors
-experience the improvements tend to be modest (compared with other techniques shown below).
-
-Because there is more sampling at higher magnitudes, the techniques sample larger max-stage
-scenarios more often, as compared with the previous approach. However the
-effect is not particularly strong -- many scenarios with small `event_peak_stage` values are sampled, 
-although in hazard applications these scenarios are not so likely to be of interest.
+Because we only used stratified-sampling (rather than stratified/importance-sampling), the sample
+is once again concentrated on smaller tsunamis, which contributes to the observed Monte-Carlo errors.
 
 ```r
-# Ad-hoc choice of non-uniform sampling
-quantile(event_peak_stage[random_scenarios_mw_weighted1$inds], seq(0, 1, len=5), na.rm=TRUE)
-```
-
-```
-##           0%          25%          50%          75%         100% 
-##  0.002298993  0.067611994  0.309361756  1.220102608 14.023813248
-```
-
-```r
-# Semi-optimal choice of non-uniform sampling
 quantile(event_peak_stage[random_scenarios_mw_weighted2$inds], seq(0, 1, len=5), na.rm=TRUE)
 ```
 
 ```
-##           0%          25%          50%          75%         100% 
-##  0.001809635  0.136563525  0.502006888  1.073063135 11.615213394
+##         0%        25%        50%        75%       100% 
+##  0.0014247  0.1407757  0.4558249  1.1527460 15.9368391
 ```
-The reason we sample many small max-stage scenarios is that the
-`kermadectonga2` source-zone is very large, but the particular site of interest
-(offshore of Tonga) is mainly affected by a small region on the source-zone. 
 
-If we are mostly interested in larger waves, then this seems like an
-inefficient sampling approach for our site.
+## Optimal non-uniform sampling effort with stratified/importance-sampling
+--------------------------------------------------------------------------
 
-Much greater improvements can be obtained using the importance-sampling
-technique outlined below.
-
-# Random scenario sampling, using importance-sampling to emphasise higher max-stages
--------------------------------------------------------------------------------------
-
-Here we show how the theory of importance-sampling can be used to more strongly
-concentrate our random sample on scenarios that have higher maximum-stage
-values. 
-
-The sampling algorithm is:
-* Group the scenarios by magnitude
-* For each magnitude, sample a given number of scenarios with replacement, with
-  the chance of sampling each scenario proportional to **a user-specified importance weighted sampling distribution**
-  The latter step is where this method differs from regular sampling (unless
-  `event_rates` is used as the user-specified distribution).
-* The theory of importance-sampling provides a means to adjust the random
-  scenario weights to correct for this preferential sampling. There are many
-  statistical texts which cover importance-sampling, 
-  [for instance see Chapter 9 of this freely available draft book by Art Owen](https://statweb.stanford.edu/~owen/mc/). 
-
-The examples below set the `event_importance_weighted_sampling_probs`
-equal to the `event_rate` multiplied by the scenario's `event_peak_stage` at our site
-offshore of Tonga. This means we prefer scenarios with higher max-stage at that
-site, all else being equal. 
-
-This is a good choice for studying tsunami hazards nearby to the site from
-which `event_peak_stage` was extracted (e.g. in Tonga). But it would not be a
-good choice if we were studying the hazard far away from the site at which 
-`event_peak_stage` was extracted (e.g. in New Zealand).
-
-Many other choices of the `event_importance_weighted_sampling_probs` could be
-made. Good choices should over-weight scenarios that are likely to be
-important for your application. 
-
-## Importance-sampling (with uniform sampling of magnitude-bins)
-
-Importance-sampling can be comined with non-uniform sampling of magnitude-bins - however, 
-for simplicity we first illustrate the technique using uniform sampling.
+Below we repeat the optimal sampling-effort calculations for
+stratified/importance-sampling. The same stage-threshold values are used (2m
+and 5m), and the solutions are combined with uniform-sampling in the same way
+to derive the chosen sampling effort. 
 
 
 ```r
-# Random scenarios -- importance sampling, 12 samples per magnitude-bin.
-random_scenarios_stage_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
-    event_rates=event_rates,
-    event_Mw=event_Mw,
-    event_importance_weighted_sampling_probs = (event_rates * event_peak_stage),
-    samples_per_Mw=function(Mw){ 12*(Mw < 9.65) }
-    )
-
-# Compute the max-stage exceedance-rates
-stage_exrates_rs_stage_weighted = sapply(stage_seq, 
-    function(x){
-        sum(random_scenarios_stage_weighted$importance_sampling_scenario_rates_basic * 
-            (event_peak_stage[random_scenarios_stage_weighted$inds] > x), na.rm=TRUE)
-    })
-```
-
-With importance-sampling we get much better agreement with the PTHA18 max-stage
-exceedance-rate curve, compared with the earlier Monte-Carlo results using a
-similar sample-size.
-
-![plot of chunk ptha18_tonga_point_plot4](figure/ptha18_tonga_point_plot4-1.png)
-
-Compared to the previous approaches, importance sampling better represents scenarios with high
-max-stage values at our Tonga site. 
-
-```r
-quantile(event_peak_stage[random_scenarios_stage_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
-```
-
-```
-##           0%          25%          50%          75%         100% 
-##  0.003689284  0.100764897  0.383723050  1.868803799 18.934926987
-```
-This is expected because of how we used `event_peak_stage`
-in the definition of the `event_importance_weighted_sampling_probs`.
-
-## Combined importance-sampling and non-uniform sampling in magnitude-bins
-
-Importance-sampling can be combined with non-uniform sampling in each magnitude
-bin. The techniques are conceptually identical to those that were demonstrated
-earlier for regular stratified-sampling.
-
-Below we compute optimal sampling-effort solutions at a range of stage-values (2m and 5m),
-and combine them with uniform-sampling to define the non-uniform sampling effort. 
-
-
-```r
-TOTAL_SAMPLES = sum(12*(unique_Mws < 9.65)) # Number of samples used above
+TOTAL_SAMPLES = sum(12*(unique_Mws < 9.65)) # Number of samples used
 
 # stage_threshold = 2
 non_uniform_samples_IS_2 = ptha18$get_optimal_number_of_samples_per_Mw(
@@ -645,7 +593,7 @@ non_uniform_samples_IS_5 = ptha18$get_optimal_number_of_samples_per_Mw(
     total_samples=TOTAL_SAMPLES)
 ```
 
-To determine the final sampling effort, the logic follows the approach used above.
+The logic to combine the sampling effort alternatives follows the approach used above.
 
 
 ```r
@@ -682,15 +630,17 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
     })
 ```
 
-The performance is similar to the other example that used importance-sampling.
-In practice we find the combination of importance-sampling with non-uniform
-sampling is better, but not dramatically so.
+The Monte-Carlo accuracy is similar to the other example that used stratified/importance-sampling.
+In practice we find the combination of stratified/importance-sampling with non-uniform
+sampling is somewhat better than just stratified/importance-sampling, but not
+dramatically so. However in some circumstances it could be very beneficial
+(e.g. if most lower magnitude-bins were unimportant to the hazard).
 
 ![plot of chunk ptha18_tonga_point_plot5](figure/ptha18_tonga_point_plot5-1.png)
 
 The distribution of `event_peak_stage` values in the random sample is similar to the other case
-that used importance sampling, with much better representation of large tsunamis, as compared to
-the non-importance-sampling based techiques.
+that used importance sampling. Note that compared to the samples that did not use importance-sampling,
+there is much better representation of large tsunamis.
 
 ```r
 quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
@@ -698,8 +648,48 @@ quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, le
 
 ```
 ##          0%         25%         50%         75%        100% 
-##  0.00814709  0.44862407  1.46459222  3.54420996 14.74333000
+##  0.01279841  0.42490360  1.46761596  3.59824705 19.64801216
 ```
+
+<!---
+
+## Summary of non-uniform sampling strategies.
+
+Although non-uniform sampling of magnitude-bins can be useful, in our
+experience the improvements tend to be modest, a (compared with other techniques shown below).
+
+Because there is more sampling at higher magnitudes, the techniques sample larger max-stage
+scenarios more often, as compared with the previous approach. However the
+effect is not particularly strong -- many scenarios with small `event_peak_stage` values are sampled, 
+although in hazard applications these scenarios are not so likely to be of interest.
+
+```r
+# Ad-hoc choice of non-uniform sampling
+quantile(event_peak_stage[random_scenarios_mw_weighted1$inds], seq(0, 1, len=5), na.rm=TRUE)
+```
+
+```
+## Error in quantile(event_peak_stage[random_scenarios_mw_weighted1$inds], : object 'random_scenarios_mw_weighted1' not found
+```
+
+```r
+# Semi-optimal choice of non-uniform sampling
+quantile(event_peak_stage[random_scenarios_mw_weighted2$inds], seq(0, 1, len=5), na.rm=TRUE)
+```
+
+```
+##         0%        25%        50%        75%       100% 
+##  0.0014247  0.1407757  0.4558249  1.1527460 15.9368391
+```
+The reason we sample many small max-stage scenarios is that the
+`kermadectonga2` source-zone is very large, but the particular site of interest
+(offshore of Tonga) is mainly affected by a small region on the source-zone. 
+
+If we are mostly interested in larger waves, then this seems like an
+inefficient sampling approach for our site.
+
+Much greater improvements can be obtained using the importance-sampling
+technique outlined below.
 
 ### Summary of importance-sampling
 
@@ -714,3 +704,4 @@ Users can check for any problems by studying the performance of their choice
 under repeated sampling (at PTHA18 points). A poor choice will lead to erratic
 behaviour, as compared to the simpler approaches. 
 
+-->
