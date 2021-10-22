@@ -554,13 +554,13 @@ TOTAL_SAMPLES = sum(12*(unique_Mws < 9.65)) # Number of samples used above
 # stage_threshold = 2
 non_uniform_samples_IS_2 = ptha18$get_optimal_number_of_samples_per_Mw(
     event_Mw, event_rates, event_peak_stage, stage_threshold=2, 
-    event_importance_weighted_sampling_probs = (event_rates*event_peak_stage), # Different to above
+    event_importance_weighted_sampling_probs = (event_rates*event_peak_stage), # Importance sampling
     total_samples=TOTAL_SAMPLES)
 
 # stage_threshold = 5
 non_uniform_samples_IS_5 = ptha18$get_optimal_number_of_samples_per_Mw(
     event_Mw, event_rates, event_peak_stage, stage_threshold=5, 
-    event_importance_weighted_sampling_probs = (event_rates*event_peak_stage), # Different to above
+    event_importance_weighted_sampling_probs = (event_rates*event_peak_stage), # Importance sampling
     total_samples=TOTAL_SAMPLES)
 
 ```
