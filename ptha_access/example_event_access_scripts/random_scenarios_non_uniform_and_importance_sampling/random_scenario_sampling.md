@@ -78,9 +78,11 @@ internally compute the scenario conditional probability for each unique
 magnitude value (which ranges from 7.2, 7.3, ... 9.6, 9.7, 9.8 in PTHA18), and 
 randomly sample the scenarios. 
 
-We also need to specify the number of scenarios to sample for each magnitude. 
+We also need to specify the number of scenarios to sample for each magnitude.
 Herein a constant (12) is used, although in general it can vary with magnitude
-(discussed later).
+(discussed later). The sample sizes used below will be too small to control
+errors well in many realistic applications, but were selected to help make the
+errors more obvious. 
 
 
 ```r
@@ -229,8 +231,8 @@ PTHA18.
 
 To demonstrate how exceedance-rate curves can be approximated from the random
 scenarios, consider the tsunami max-stage exceedance-rates at the
-aforementioned point offshore of Tonga. Any other location could similarly be
-chosen. 
+aforementioned point offshore of Tongatapu. (Any other location could similarly be
+chosen). 
 
 In the full PTHA, the `event_peak_stage` exceedance-rate curve at this point is:
 
@@ -321,6 +323,7 @@ of the results, without increasing the number of random scenarios used. Two
 techniques are explored below:
 * Importance sampling
 * Non-uniform sampling of different magnitude bins
+
 They can be used separately or in combination.
 
 Use of the techniques below requires some judgement. Poor decisions may increase
@@ -348,7 +351,7 @@ The examples below set:
 ```r
 event_importance_weighted_sampling_probs = (event_rate * event_peak_stage) # Importance sampling
 ```
-where the `event_peak_stage` is the tsunami maxima at our site offshore of Tonga.
+where the `event_peak_stage` is the tsunami maxima at our site offshore of Tongatapu.
 Compared to regular stratified-sampling this approach over-represents scenarios
 with high `event_peak_stage`. Note regular stratified-sampling would be
 equivalent to:
@@ -357,7 +360,7 @@ event_importance_weighted_sampling_probs = event_rate # Regular stratified sampl
 ```
 
 The stratified/importance-sampling approach is useful for studying tsunami hazards near to the site from which
-`event_peak_stage` was extracted (e.g. near Tonga in this case). 
+`event_peak_stage` was extracted (e.g. near Tongatapu in this case). 
 
 The `event_peak_stage` definition used here would not be a good choice for
 studying the hazard far from the site at which `event_peak_stage` was extracted
@@ -369,7 +372,7 @@ made. Good choices should up-weight scenarios that are likely to be important
 for the application (e.g. generate significant inundation), and down-weight
 unimportant scenarios (e.g. that cause negligable inundation).
 
-## Importance-sampling (with uniform sampling of magnitude-bins)
+## Stratified/importance-sampling (with uniform sampling of magnitude-bins)
 
 Although Stratified/importance-sampling can be comined with non-uniform
 sampling of magnitude-bins, we first illustrate the technique using uniform
@@ -401,7 +404,7 @@ results that also used 12 scenarios in each magnitude-bin.
 
 The improvement occurs because, compared to the regular stratified-sampling,
 stratified/importance-sampling better represents scenarios with high max-stage
-values at our Tonga site. 
+values at our Tongatapu site. 
 
 ```r
 quantile(event_peak_stage[random_scenarios_stage_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
@@ -421,7 +424,7 @@ This is because of how `event_peak_stage` was included in the definition of the
 Another approach to improving the Monte-Carlo efficiency is to sample some
 magnitude bins more than others. This can be done by adjusting `samples_per_Mw`. 
 
-For both stratified-sampling and stratified/importance sampling, it is possible
+For both stratified-sampling and stratified/importance-sampling, it is possible
 to calculate the theoretically optimal sampling effort in each magnitude bin,
 IF we are given the site, scenario-frequency-model, and a threshold stage to
 optimize. The optimal solution minimise the variance (over repeated samples) of
@@ -513,7 +516,7 @@ sites, and even different `event_rates` (if we explore epistemic uncertainties
 in the source-frequencies). 
 
 One approach involves a compromise between the optimal solutions and uniform sampling. Here we:
-* Use uniform-sampling for 25% of the scenarios, which ensures that all magnitude-bins are represented.
+* Use uniform-sampling for 25% of the scenarios, which ensures that all magnitude-bins are represented, and gives some robustness in cases where the non-uniform-sampling efforts might be highly non-optimal (e.g. for other sites or scenario-frequency models)
 * Use the average of the non-uniform results for the remaining 75% of scenarios. 
 
 In practice the choice of stage thresholds informing the non-uniform result
@@ -540,33 +543,34 @@ Below we sample non-uniformly, using this chosen non-uniform sampling effort.
 
 ```r
 # Make the random scenarios
-random_scenarios_mw_weighted2 = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+random_scenarios_mw_weighted = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
     event_rates=event_rates,
     event_Mw=event_Mw,
     samples_per_Mw=approxfun(unique_Mws, chosen_sampling_effort_stratified, method='constant')
     )
 
 # Compute the max-stage exceedance-rates
-stage_exrates_rs_mw_weighted2 = sapply(stage_seq, 
+stage_exrates_rs_mw_weighted = sapply(stage_seq, 
     function(x){
-        sum(random_scenarios_mw_weighted2$importance_sampling_scenario_rates_basic * 
-            (event_peak_stage[random_scenarios_mw_weighted2$inds] > x), na.rm=TRUE)
+        sum(random_scenarios_mw_weighted$importance_sampling_scenario_rates_basic * 
+            (event_peak_stage[random_scenarios_mw_weighted$inds] > x), na.rm=TRUE)
     })
 ```
 
-The Monte-Carlo accuracy is qualitatively similar to those obtained previously
-using stratified-sampling.  In practice we find the combination of
-stratified-sampling with non-uniform sampling is better than pure
-stratified-sampling, but not dramatically so. However in some circumstances it could
-be very beneficial (e.g. if most lower magnitude-bins were unimportant to the hazard).
+The figure below compares the Monte-Carlo result with the exact solution. In
+practice we find the combination of stratified-sampling with non-uniform
+sampling is somewhat better than pure stratified-sampling (on average), but not
+dramatically so.  However in some circumstances it could be very beneficial
+(e.g. if most lower magnitude-bins were unimportant to the hazard).
 
 ![plot of chunk ptha18_tonga_point_plot3](figure/ptha18_tonga_point_plot3-1.png)
 
-Because we only used stratified-sampling (rather than stratified/importance-sampling), the sample
-is once again concentrated on smaller tsunamis, which contributes to the observed Monte-Carlo errors.
+Compared to the case of regular stratified-sampling with uniform sampling, we
+can see that the use of non-uniform sampling is leading to slightly better representation
+of large tsunamis (although to a lesser extent than stratified/importance-sampling).
 
 ```r
-quantile(event_peak_stage[random_scenarios_mw_weighted2$inds], seq(0, 1, len=5), na.rm=TRUE)
+quantile(event_peak_stage[random_scenarios_mw_weighted$inds], seq(0, 1, len=5), na.rm=TRUE)
 ```
 
 ```
@@ -636,16 +640,16 @@ stage_exrates_rs_stage_mw_weighted = sapply(stage_seq,
     })
 ```
 
-The Monte-Carlo accuracy is similar to the other example that used stratified/importance-sampling.
-In practice we find the combination of stratified/importance-sampling with non-uniform
-sampling is somewhat better than just stratified/importance-sampling, but not
-dramatically so. However in some circumstances it could be very beneficial
-(e.g. if most lower magnitude-bins were unimportant to the hazard).
+In practice we have found the combination of stratified/importance-sampling
+with non-uniform sampling is somewhat better (on average) than just
+stratified/importance-sampling, but not dramatically so. However in some
+circumstances it could be very beneficial (e.g. if most low-magnitude-bins are
+unimportant to the hazard).
 
 ![plot of chunk ptha18_tonga_point_plot5](figure/ptha18_tonga_point_plot5-1.png)
 
 The distribution of `event_peak_stage` values in the random sample is similar to the other case
-that used importance sampling. Note that compared to the samples that did not use importance-sampling,
+that used importance-sampling. Note that compared to the samples that did not use importance-sampling,
 there is much better representation of large tsunamis.
 
 ```r
@@ -656,6 +660,23 @@ quantile(event_peak_stage[random_scenarios_stage_mw_weighted$inds], seq(0, 1, le
 ##          0%         25%         50%         75%        100% 
 ##  0.01279841  0.42490360  1.46761596  3.59824705 19.64801216
 ```
+
+# Summary
+
+Stratified/importance sampling can give valid Monte-Carlo results while better
+representing scenarios that produce large waves near a particular site of
+interest. This is useful for site-specific hazard assessments.
+
+Non-uniform sampling of magnitude bins can offer an extra efficiency
+improvement for both stratified and stratified/importance sampling.
+
+The accuracy of all of the above techiques can be reliably improved by sampling
+more scenarios. For each technique, if we increase the sampling effort by a
+factor `X` without changing anything else, then on average the error will reduce
+inversely with the square-root of `X`. 
+
+Tthe sampling effort used herein will be too small for many applications. It
+was chosen to make the errors more obvious.
 
 <!---
 
@@ -689,7 +710,7 @@ quantile(event_peak_stage[random_scenarios_mw_weighted2$inds], seq(0, 1, len=5),
 ```
 The reason we sample many small max-stage scenarios is that the
 `kermadectonga2` source-zone is very large, but the particular site of interest
-(offshore of Tonga) is mainly affected by a small region on the source-zone. 
+(offshore of Tongatapu) is mainly affected by a small region on the source-zone. 
 
 If we are mostly interested in larger waves, then this seems like an
 inefficient sampling approach for our site.
