@@ -350,7 +350,7 @@ Here the sampling algorithm is:
 The examples below set:
 
 ```r
-event_importance = event_peak_stage_ref # Could be another site
+event_importance = event_peak_stage_ref # Could be another site -- suggest "near site of interest"
 event_importance_weighted_sampling_probs = (event_rates * event_importance) # Importance sampling
 ```
 Compared to regular stratified-sampling this approach over-represents scenarios
