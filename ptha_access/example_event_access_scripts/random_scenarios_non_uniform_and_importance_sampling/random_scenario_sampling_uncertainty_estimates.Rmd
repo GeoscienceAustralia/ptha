@@ -39,7 +39,7 @@ In practical applications there are 2 situations where this is useful:
   sampling effort. By checking the performance of a Monte-Carlo sampling scheme
   at offshore sites, prior to expensive inundation computation, it is easier to
   make good decisions on which scheme to use. For example if a scheme leads to high
-  errors offshore of the site-of-interest, we might assume it will also be inaccurate
+  errors offshore of the site of interest, we might assume it will also be inaccurate
   at the onshore site of interest.
 * After high-resolution computations have been conducted for a random sample of
   scenarios. In this situation we often want an estimate of the Monte-Carlo
@@ -260,8 +260,7 @@ onshore_quantity_of_interest = rep(NA, length(event_peak_stage_ref)) # One for e
 # Now set values for the randomly sampled scenarios (would normally come from a tsunami model),
 # using their indices
 random_inds = na.omit(random_scenarios_stratified$inds)
-onshore_quantity_of_interest[random_inds] = 
-    2* event_peak_stage_ref[random_inds]
+onshore_quantity_of_interest[random_inds] = 2* event_peak_stage_ref[random_inds]
 ```
 Please note the `onshore_quantity_of_interest` contains ONE VALUE FOR EVERY PTHA SCENARIO, even though
 they are missing for all except the random scenarios.
@@ -308,7 +307,7 @@ random_scenarios_stratified_importance = ptha18$randomly_sample_scenarios_by_Mw_
     event_rates=event_rates,
     event_Mw=event_Mw,
     samples_per_Mw=samples_per_Mw_stratified_importance,
-    event_importance_weighted_sampling_probs = (event_rates * event_importance), # Importance sampling
+    event_importance_weighted_sampling_probs = (event_rates * event_importance) # Importance sampling
     )
 
 ```
