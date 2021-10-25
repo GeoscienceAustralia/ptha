@@ -56,13 +56,16 @@ Below we do the calculation with a stage-threshold of 3m.
 
 ### Stratified-sampling
 
-We firstly illustrate the calculations for stratified-sampling. Here we assume 12 samples per magnitude bin are used, although
-any sampling effort can be specified using a function.
+We firstly illustrate the calculations for stratified-sampling. Here we assume
+12 samples per magnitude bin are used up to magnitude 9.6, although any
+sampling effort can be specified using a function.
 ```{r samplingEffort1}
 samples_per_Mw_stratified<-function(Mw){ 12*(Mw < 9.65) } # Sample size function used below
 ```
 
-The exact Monte-Carlo exceedance-rate (using all scenarios), and the variance of Monte-Carlo estimates that use stratified-sampling with the given sampling effort, can be computed like this: 
+The exact Monte-Carlo exceedance-rate (using all scenarios), and the variance
+of Monte-Carlo estimates that use stratified-sampling with the given sampling
+effort, can be computed like this: 
 ```{r stratifiedUncertainties}
 stage_threshold_example = 3 # 3m at the site where event_peak_stage_ref was defined.
 
@@ -78,7 +81,8 @@ exrate_and_var_stratified
 
 ```
 
-An approximate 95% confidence interval for the result obtained by Monte-Carlo sampling can be obtained if we assume a normal distribution
+An approximate 95% confidence interval for the result obtained by Monte-Carlo
+sampling can be obtained if we assume a normal distribution
 ```{r stratifiedUncertaintiesCI}
 # Quantiles of a normal distribution
 stratified_confint = qnorm(c(0.025, 0.5, 0.975), 
