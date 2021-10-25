@@ -57,14 +57,17 @@ Below we do the calculation with a stage-threshold of 3m.
 
 ### Stratified-sampling
 
-We firstly illustrate the calculations for stratified-sampling. Here we assume 12 samples per magnitude bin are used, although
-any sampling effort can be specified using a function.
+We firstly illustrate the calculations for stratified-sampling. Here we assume
+12 samples per magnitude bin are used up to magnitude 9.6, although any
+sampling effort can be specified using a function.
 
 ```r
 samples_per_Mw_stratified<-function(Mw){ 12*(Mw < 9.65) } # Sample size function used below
 ```
 
-The exact Monte-Carlo exceedance-rate (using all scenarios), and the variance of Monte-Carlo estimates that use stratified-sampling with the given sampling effort, can be computed like this: 
+The exact Monte-Carlo exceedance-rate (using all scenarios), and the variance
+of Monte-Carlo estimates that use stratified-sampling with the given sampling
+effort, can be computed like this: 
 
 ```r
 stage_threshold_example = 3 # 3m at the site where event_peak_stage_ref was defined.
@@ -84,7 +87,8 @@ exrate_and_var_stratified
 ## [1] 6.573855e-04 4.912610e-08
 ```
 
-An approximate 95% confidence interval for the result obtained by Monte-Carlo sampling can be obtained if we assume a normal distribution
+An approximate 95% confidence interval for the result obtained by Monte-Carlo
+sampling can be obtained if we assume a normal distribution
 
 ```r
 # Quantiles of a normal distribution
@@ -97,7 +101,7 @@ stratified_confint
 ```
 ## [1] 0.0002229711 0.0006573855 0.0010918000
 ```
-This means that 95\% of the time, we expect the exceedance-rate with a stage-threshold of 
+This means that about 95\% of the time, we expect the exceedance-rate with a stage-threshold= 
 3
 to be within 
 2.23 &times; 10<sup>-4</sup> 
@@ -119,7 +123,9 @@ We also need to know the `event_importance`
 event_importance = event_peak_stage_ref # Better sample scenarios where this is high
 ```
 
-The exact Monte-Carlo exceedance-rate (using all scenarios), and the variance of Monte-Carlo estimates that use stratified/importance-sampling with the given sampling effort, can be computed like this: 
+The exact Monte-Carlo exceedance-rate (using all scenarios), and the variance
+of Monte-Carlo estimates that use stratified/importance-sampling with the given
+sampling effort, can be computed like this: 
 
 ```r
 stage_threshold_example = 3 # 3m at the site where event_peak_stage_ref was defined.
@@ -146,7 +152,8 @@ exrate_and_var_stratified_importance
 # is exact), but the variance has reduced.
 ```
 
-An approximate 95% confidence interval for the result obtained by Monte-Carlo sampling can be obtained if we assume a normal distribution
+An approximate 95% confidence interval for the result obtained by Monte-Carlo
+sampling can be obtained if we assume a normal distribution
 
 ```r
 # Quantiles of a normal distribution
@@ -159,7 +166,7 @@ stratified_importance_confint
 ```
 ## [1] 0.0004826731 0.0006573855 0.0008320980
 ```
-This means that 95\% of the time, we expect the exceedance-rate with a stage-threshold of 
+This means that about 95\% of the time, we expect the exceedance-rate with a stage-threshold= 
 3
 to be within 
 4.83 &times; 10<sup>-4</sup> 

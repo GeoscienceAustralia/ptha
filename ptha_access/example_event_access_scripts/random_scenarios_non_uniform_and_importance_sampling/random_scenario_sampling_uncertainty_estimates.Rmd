@@ -90,7 +90,7 @@ stratified_confint = qnorm(c(0.025, 0.5, 0.975),
     sd=sqrt(exrate_and_var_stratified[2]))
 stratified_confint
 ```
-This means that 95\% of the time, we expect the exceedance-rate with a stage-threshold of 
+This means that about 95\% of the time, we expect the exceedance-rate with a stage-threshold= 
 `r signif(stage_threshold_example, 3)`
 to be within 
 `r signif(stratified_confint[1], 3) ` 
@@ -110,7 +110,9 @@ We also need to know the `event_importance`
 event_importance = event_peak_stage_ref # Better sample scenarios where this is high
 ```
 
-The exact Monte-Carlo exceedance-rate (using all scenarios), and the variance of Monte-Carlo estimates that use stratified/importance-sampling with the given sampling effort, can be computed like this: 
+The exact Monte-Carlo exceedance-rate (using all scenarios), and the variance
+of Monte-Carlo estimates that use stratified/importance-sampling with the given
+sampling effort, can be computed like this: 
 ```{r stratifiedimportanceUncertainties}
 stage_threshold_example = 3 # 3m at the site where event_peak_stage_ref was defined.
 
@@ -130,7 +132,8 @@ exrate_and_var_stratified_importance
 # is exact), but the variance has reduced.
 ```
 
-An approximate 95% confidence interval for the result obtained by Monte-Carlo sampling can be obtained if we assume a normal distribution
+An approximate 95% confidence interval for the result obtained by Monte-Carlo
+sampling can be obtained if we assume a normal distribution
 ```{r stratifiedimportanceUncertaintiesCI}
 # Quantiles of a normal distribution
 stratified_importance_confint = qnorm(c(0.025, 0.5, 0.975), 
@@ -138,7 +141,7 @@ stratified_importance_confint = qnorm(c(0.025, 0.5, 0.975),
     sd=sqrt(exrate_and_var_stratified_importance[2]))
 stratified_importance_confint
 ```
-This means that 95\% of the time, we expect the exceedance-rate with a stage-threshold of 
+This means that about 95\% of the time, we expect the exceedance-rate with a stage-threshold= 
 `r signif(stage_threshold_example, 3)`
 to be within 
 `r signif(stratified_importance_confint[1], 3) ` 
