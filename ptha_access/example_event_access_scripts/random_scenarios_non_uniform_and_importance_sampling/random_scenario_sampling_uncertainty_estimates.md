@@ -17,7 +17,7 @@ use of a finite random sample of scenarios. In theory as more and more
 scenarios are sampled, the solution will converge to the "correct" solution
 (i.e. that which would be obtained by using every PTHA scenario). 
 
-The theory of Monte-Carlo sampling is well understood, and that estimates of the
+The theory of Monte-Carlo sampling is well understood, and estimates of the
 Monte-Carlo errors can be obtained in 2 situations:
 1. Prior to sampling, the variance of the Monte-Carlo exceedance-rate (for a given
    site and threshold) can be analytically computed at PTHA18 hazard points
@@ -26,10 +26,11 @@ Monte-Carlo errors can be obtained in 2 situations:
    scenario, the variance of the Monte-Carlo exceedance-rate can be estimated
    using only the random scenarios (at any site covered by the high-resolution
    model).
-Here the "variance of the Monte-Carlo exceedance-rate" is the number that we would
+
+Above the "variance of the Monte-Carlo exceedance-rate" is the number that we would
 get by repeating Monte-Carlo sampling many many times, storing the exceedance-rate
 each time, and then computing their variance. It is a measure of the "typical accuracy"
-of the estimated Monte-Carlo exceedance-rate; with smaller variances, any given Monte-Carlo
+of the estimated Monte-Carlo exceedance-rate. With a smaller variance, any given Monte-Carlo
 estimate is more likely to be accurate.
 
 In practical applications there are 2 situations where this is useful:
@@ -230,11 +231,10 @@ variance_reduction_factor
 ## [1] 6.182456
 ```
 For these schemes, the variance reduces in proportion to the sampling effort.
-The result indicates we would need approximately `r
-signif(variance_reduction_factor, 3)` times as many samples with
-stratified-sampling to get the same accuracy as stratified/importance-sampling.
-The latter result is specific to the chosen site, scenario-frequency model, and
-stage threshold.
+The result indicates we would need approximately 6.18 
+times as many samples with stratified-sampling to get the same accuracy as
+stratified/importance-sampling. This is specific to the chosen site,
+scenario-frequency model, and stage threshold.
 
 In both cases, the errors can also be reduced by using a larger Monte-Carlo
 sample. The average error scales with the square-root of the sample size, so
@@ -316,6 +316,13 @@ stratified_onshore_confint
 ## [1] 0.0003709495 0.0010265167 0.0016820839
 ```
 
+In this particular case, because we used a made-up definition of the
+quantity-of-interest, we can compute the exact answer: 
+6.57 &times; 10<sup>-4</sup> 
+
+The exact answer is contained in the confidence interval in this case, 
+which is expected approximately 95% of the time.
+
 ### Stratified/importance sampling
 
 Here we repeat the above calculations, using stratified/importance sampling.
@@ -382,6 +389,13 @@ stratified_importance_onshore_confint
 ```
 ## [1] 0.0005391065 0.0007008044 0.0008625022
 ```
-
 Notice this confidence interval is substantially narrower than the one obtained
 with stratified-sampling. 
+
+In this particular case, because we used a made-up definition of the
+quantity-of-interest, we can compute the exact answer: 
+6.57 &times; 10<sup>-4</sup> 
+
+The exact answer is contained in the confidence interval in this case, 
+which is expected approximately 95% of the time.
+

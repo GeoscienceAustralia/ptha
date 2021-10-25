@@ -253,10 +253,10 @@ stage_exrates_rs_stratified = sapply(stage_seq,
 
 The exceedance-rate curve derived from the random scenarios is similar to the
 PTHA18 result, but there is some error due to the limited number of samples
-(see figure below). As we increase the number of random scenarios per
-magnitude, the accuracy will improve (on average) until the difference is
-negligible. In this sense the random sample is statistically consistent with
-the PTHA18.
+(see figure below). This error will vary from sample to sample. As we increase
+the number of random scenarios per magnitude, the accuracy will improve (on
+average) until the difference is negligible. In this sense the random sample is
+statistically consistent with the PTHA18.
 ![plot of chunk ptha18_tonga_point_plot1](figure/ptha18_tonga_point_plot1-1.png)
 
 *Note: Here and below we suppress the plotting code for readability. It can be found in the file
@@ -672,10 +672,12 @@ Non-uniform sampling of magnitude bins can offer an extra efficiency
 improvement for both stratified and stratified/importance sampling.
 
 The accuracy of all of the above techiques can be reliably improved by sampling
-more scenarios. For each technique, if we increase the sampling effort by a
+more scenarios. For each technique if we increase the sampling effort by a
 factor `X` without changing anything else, then on average the error will reduce
 inversely with the square-root of `X`. 
 
 The sampling effort used herein will be too small for many applications. It
 was chosen to make the errors more obvious.
 
+Techniques that can help to understand the errors in a particular application are presented
+in the tutorial [random_scenario_sampling_uncertainty_estimates.md](random_scenario_sampling_uncertainty_estimates.md).

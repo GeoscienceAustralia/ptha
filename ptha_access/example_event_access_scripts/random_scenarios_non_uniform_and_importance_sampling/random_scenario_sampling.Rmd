@@ -603,3 +603,5 @@ inversely with the square-root of `X`.
 The sampling effort used herein will be too small for many applications. It
 was chosen to make the errors more obvious.
 
+Techniques that can help to understand the errors in a particular application are presented
+in the tutorial [random_scenario_sampling_uncertainty_estimates.md](random_scenario_sampling_uncertainty_estimates.md).
