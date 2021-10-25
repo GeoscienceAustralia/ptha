@@ -126,19 +126,24 @@ be obtained, assuming a normal distribution
 stratified_confint = qnorm(c(0.025, 0.5, 0.975), 
     mean=exrate_and_var_stratified[1], 
     sd=sqrt(exrate_and_var_stratified[2]))
+# Confidence interval -- [lower, mean, upper]
 stratified_confint
 ```
 
 ```
 ## [1] 0.0002229711 0.0006573855 0.0010918000
 ```
-This means that about 95\% of the time, we expect the exceedance-rate with a stage-threshold= 
+This means that about 95\% of the time, we expect the Monte-Carlo
+exceedance-rate with a stage-threshold= 
 3
 to be within 
 2.23 &times; 10<sup>-4</sup> 
 and 
 0.00109. 
 
+The confidence interval could be narrowed by increasing the sampling effort, or
+using a more accurate Monte-Carlo sampling scheme, such as a well-designed
+stratified/importance-sampling scheme.
 
 ### Stratified/importance sampling
 
@@ -189,6 +194,7 @@ sampling can be obtained if we assume a normal distribution
 stratified_importance_confint = qnorm(c(0.025, 0.5, 0.975), 
     mean=exrate_and_var_stratified_importance[1], 
     sd=sqrt(exrate_and_var_stratified_importance[2]))
+# Confidence interval -- [lower, mean, upper]
 stratified_importance_confint
 ```
 
@@ -202,7 +208,9 @@ to be within
 and 
 8.32 &times; 10<sup>-4</sup>.
 
-Notice this interval is substantially narrower than the previous interval.
+Notice this interval is substantially narrower than the previous interval. It could be reduced
+further by using more scenarios, and perhaps with non-uniform sampling as discussed in the
+[random_scenario_sampling.md](random_scenario_sampling.md) tutorial.
 
 ### Summary
 
