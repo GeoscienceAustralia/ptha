@@ -111,7 +111,8 @@ and
 
 ### Stratified/importance sampling
 
-Below we show the same calculations for stratified/importance-sampling. We assume 12 samples per magnitude bin are used, although
+Below we show the same calculations for stratified/importance-sampling. We
+assume 12 samples per magnitude bin are used, although
 any sampling effort can be specified using a function.
 
 ```r
@@ -176,11 +177,20 @@ Notice this interval is substantially narrower than the previous interval.
 
 ### Summary - and how much better is stratified/importance sampling?
 
-Above we computed the variance of Monte-Carlo exceedance-rates that would be expected at a given site, for a given stage-threshold. This was also used to compute a 95% confidence interval. If the Monte-Carlo sampling were repeated many times, then approximately 95% of them would be contained in the confidence interval; it is approximate only because we assumed a normal distribution. 
+Above we computed the variance of Monte-Carlo exceedance-rates that would be
+expected at a given site, for a given stage-threshold. This was also used to
+compute a 95% confidence interval. If the Monte-Carlo sampling were repeated
+many times, then approximately 95% of them would be contained in the confidence
+interval; it is approximate only because we assumed a normal distribution. 
 
-Notice that no Monte-Carlo sampling was involved in these calculations. This is possible at PTHA18 hazard points because the statistical properties of Monte-Carlo sampling are well understood. 
+Notice that no Monte-Carlo sampling was involved in these calculations. This is
+possible at PTHA18 hazard points because the statistical properties of
+Monte-Carlo sampling are well understood. 
 
-The computations were performed for both stratified and stratified/importance-sampling, both using 12 scenarios in each magnitude-bin. One way to quantify the improvement gained via stratified/importance-sampling is to look at the ratios of the variances in each case.
+The computations were performed for both stratified and
+stratified/importance-sampling, both using 12 scenarios in each magnitude-bin.
+One way to quantify the improvement gained via stratified/importance-sampling
+is to look at the ratios of the variances in each case.
 
 ```r
 # Ratio of variances of Monte-Carlo exceedance-rates at the stage-threshold
@@ -191,11 +201,138 @@ variance_reduction_factor
 ```
 ## [1] 6.182456
 ```
-This indicates that at this site, for this stage-threshold and scenario-frequency model, we would need to use approximately 6.18 times as many samples with stratified-sampling to get the same accuracy as stratified/importance-sampling.
+This indicates that we would need to use approximately `r
+signif(variance_reduction_factor, 3)` times as many samples with
+stratified-sampling to get the same accuracy as stratified/importance-sampling.
+The latter result is specific to the chosen site, scenario-frequency model, and stage threshold.
 
-In both cases, the errors can also be reduced by using a large Monte-Carlo sample (e.g. to halve the errors, use 4x as many scenarios).
+In both cases, the errors can also be reduced by using a larger Monte-Carlo
+sample. The average error scales with the square-root of the sample size, so
+e.g., to halve the errors use 4x as many scenarios.
 
 ## 2. Confidence interval for Monte-Carlo exceedance-rates at coastal sites after high-resolution simulation. 
 -------------------------------------------------------------------------------------------------------------
 
-Suppose that high-resolution simulations have been performed for every scenario in a Monte-Carlo sample. That means that we can compute onshore tsunami statistics for those scenarios (but not for general PTHA scenarios). 
+Suppose that high-resolution simulations have been performed for every scenario
+in a Monte-Carlo sample. That means that we can compute onshore tsunami
+statistics for those scenarios (but not for general PTHA scenarios). 
+
+Below we show how to estimate the Monte-Carlo errors using only the random sample. This is typically useful
+to estimate the Monte-Carlo error for onshore quantities of interest.
+
+### Stratified-sampling
+
+The implementation requires a Monte-Carlo sample:
+
+```r
+# Make a reproducible random seed to make the code reproducible (this is optional)
+set.seed(12345)
+
+# Make the random scenarios -- stratified-sampling
+random_scenarios_stratified = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+    event_rates=event_rates,
+    event_Mw=event_Mw,
+    samples_per_Mw=samples_per_Mw_stratified
+    )
+```
+
+We also need to know the quantity-of-interest at some onshore site of interest, for
+only the random tsunami scenarios. Here for demonstration purposes we assume that the
+quantity of interest is equal to twice the offshore `event_peak_stage_ref` value. But in general
+this value should be provided from the tsunami model.
+
+```r
+# The code takes a quantity of interest for EVERY PTHA SCENARIO, but only uses the values
+# for the randomly sampled scenarios. 
+onshore_quantity_of_interest = rep(NA, length(event_peak_stage_ref)) # One for every PTHA scenario
+# Now set values for the randomly sampled scenarios (would normally come from a tsunami model),
+# using their indices
+random_inds = na.omit(random_scenarios_stratified$inds)
+onshore_quantity_of_interest[random_inds] = 
+    2* event_peak_stage_ref[random_inds]
+```
+
+Below we estimate the exceedance-rate and its variance at a threshold of 6 m
+
+```r
+exrate_estimate_stratified = ptha18$estimate_exrate_uncertainty(
+    random_scenarios_stratified,
+    onshore_quantity_of_interest,     
+    threshold_stage = 6
+    )
+# Estimate of the exceedance-rate mean, and the Monte-Carlo variance.
+exrate_estimate_stratified
+```
+
+```
+## [1] 1.026517e-03 1.118763e-07
+```
+
+From this we can estimate a 95% confidence interval for the true exceedance-rate, using the
+estimated mean and variance and assuming a normal distribution.
+
+```r
+stratified_onshore_confint = qnorm(c(0.025, 0.5, 0.975), 
+    mean=exrate_estimate_stratified[1], 
+    sd=sqrt(exrate_estimate_stratified[2]))
+```
+
+### Stratified/importance sampling
+
+The implementation requires a Monte-Carlo sample:
+
+```r
+event_importance = event_peak_stage_ref # Suggest this is located "near site of interest"
+
+# Make the random scenarios -- stratified-sampling
+random_scenarios_stratified_importance = ptha18$randomly_sample_scenarios_by_Mw_and_rate(
+    event_rates=event_rates,
+    event_Mw=event_Mw,
+    samples_per_Mw=samples_per_Mw_stratified_importance,
+    event_importance_weighted_sampling_probs = (event_rates * event_importance),
+    )
+```
+
+We also need to know the quantity-of-interest at some onshore site of interest, for
+only the random tsunami scenarios. Here for demonstration purposes we assume that the
+quantity of interest is equal to twice the offshore `event_peak_stage_ref` value. But in general
+this value should be provided from the tsunami model.
+
+```r
+# The code takes a quantity of interest for EVERY PTHA SCENARIO, but only uses the values
+# for the randomly sampled scenarios. 
+onshore_quantity_of_interest = rep(NA, length(event_peak_stage_ref)) # One for every PTHA scenario
+# Now set values for the randomly sampled scenarios (would normally come from a tsunami model),
+# using their indices
+random_inds = na.omit(random_scenarios_stratified_importance$inds)
+onshore_quantity_of_interest[random_inds] = 
+    2* event_peak_stage_ref[random_inds]
+```
+
+Below we estimate the exceedance-rate and its variance at a threshold of 6 m.
+
+```r
+exrate_estimate_stratified_importance = ptha18$estimate_exrate_uncertainty(
+    random_scenarios_stratified_importance,
+    onshore_quantity_of_interest,     
+    threshold_stage = 6
+    )
+# Estimate of the exceedance-rate mean, and the Monte-Carlo variance.
+exrate_estimate_stratified_importance
+```
+
+```
+## [1] 7.008044e-04 6.806318e-09
+```
+
+From this we can estimate a 95% confidence interval for the true exceedance-rate, using the
+estimated mean and variance and assuming a normal distribution.
+
+```r
+stratified_importance_onshore_confint = qnorm(c(0.025, 0.5, 0.975), 
+    mean=exrate_estimate_stratified_importance[1], 
+    sd=sqrt(exrate_estimate_stratified_importance[2]))
+```
+
+Notice this confidence interval is substantially narrower than the one obtained
+with stratified-sampling. 
