@@ -1471,9 +1471,11 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
     # Ensure all the threshold_stage values are identical.
     Nseg = length(segmented_stage_exrates_all_logic_tree_branches)
 
-    for(i in 1:Nseg){
-        stopifnot(all(unsegmented_stage_exrates_all_logic_tree_branches$threshold_stages ==
-                      segmented_stage_exrates_all_logic_tree_branches[[i]]$threshold_stages))
+    if(Nseg > 0){
+        for(i in 1:Nseg){
+            stopifnot(all(unsegmented_stage_exrates_all_logic_tree_branches$threshold_stages ==
+                          segmented_stage_exrates_all_logic_tree_branches[[i]]$threshold_stages))
+        }
     }
 
     # How many samples on unsegmented/segmented respectively?
@@ -1502,7 +1504,10 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
             stop('unknown copula type')
         }
     }else{
-        stop('Only one segment: This is not how PTHA18 works, so suggests an input error')
+        if(Nseg == 1) stop('Only one segment: This is not how PTHA18 works, so suggests an input error')
+        if( (Nseg == 0) & (union_of_segments_wt != 0) ){
+            stop('If no segments are provided then union_of_segments_wt should be zero')
+        }
     }
 
     # Number of stage thresholds
