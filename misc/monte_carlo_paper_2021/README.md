@@ -1,7 +1,9 @@
 Code for a paper with working title: "From offshore to onshore PTHA: Efficient Monte-Carlo sampling"
 -----------------------------------------------------------------------------------------------------
 
-This folder contains application code used for our manuscript on Monte-Carlo sampling for PTHA. The directories are:
+This folder contains application code used for our manuscript on Monte-Carlo sampling for PTHA. It is released to show how the calculations in the paper were implemented (i.e. for transparency), and is not expected to be developed or maintained in the longer term.
+
+The directories are:
 
 * [./elevation](./gauges) -- Intended to contain elevation data used for modelling (rasters not included here).
 
