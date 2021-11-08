@@ -3,6 +3,20 @@
 The scripts in this directory give a few examples of extracting a tsunami
 scenarios from the PTHA database.
 
+## Scenario selection based on exceedance-rates, informed by multiple gauges
+
+See [./multi_site_scenario_selection](./multi_site_scenario_selection)
+
+## Monte-Carlo sampling of scenarios
+
+See [./random_scenarios_non_uniform_and_importance_sampling](./random_scenarios_non_uniform_and_importance_sampling) 
+for tutorials on scenario sampling, including the use of stratified and
+stratified/importance-sampling, and computation of Monte-Carlo confidence
+intervals.
+
+An earlier variant of this tutorial is in
+[./random_scenario_sampling](./random_scenario_sampling).
+
 ## Plot tsunami deformation and gauge time-series for a number of events
 
 The code in [gauge_and_deformation_plots](gauge_and_deformation_plots) can be
@@ -16,6 +30,3 @@ See [extract_a_few_events_adhoc_approach](extract_a_few_events_adhoc_approach)
 
 See [./scenarios_similar_to_historical/](./scenarios_similar_to_historical/)
 
-## Random sampling of scenarios
-
-See [./random_scenario_sampling](./random_scenario_sampling)
