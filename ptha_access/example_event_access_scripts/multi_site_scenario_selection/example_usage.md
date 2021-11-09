@@ -115,7 +115,7 @@ kermadec_source_data = get_hazard_curves_and_peak_stages(
     site_gauge_inds, site_gauges, source_zone, slip_type)
 ```
 
-## Step 3: Define the properties of scenarios of interest
+## Step 3: Define the exceedance-rate and stage tolerance criteria.
 
 Next we specify properties of the scenarios of interest. The rough idea is that
 we pick an exceedance-rate `exrate` for the scenarios of interest, given the
