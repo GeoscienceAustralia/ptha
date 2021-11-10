@@ -10,7 +10,7 @@ rptha, (including
 The folder [propagation](propagation) contains a shallow water equations solver.
 
 The folder [ptha_access](ptha_access) contains scripts/tutorials to access the
-2018 Australian PTHA results - typically subsets thereof, since the full
+2018 Australian PTHA results - or typically subsets thereof, since the full
 analysis is several TB in size.
 
 The folder [misc](misc) contains data and code for related work, as detailed therein.
