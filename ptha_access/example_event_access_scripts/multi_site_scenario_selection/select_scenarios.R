@@ -72,7 +72,7 @@ get_default_slip_from_Mw_function<-function(source_zone_data){
         # Normal faults -- higher rigidity, difference scaling relation
         slip_from_Mw_function <- function(x){
             slip_from_Mw(x, mu = 6e+10, relation = "Blaser-normal",
-                        area_function = function(Mw) {Mw_2_rupture_size(Mw, relation = relation)[1] },
+                        area_function = function(Mw) {Mw_2_rupture_size(Mw, relation = 'Blaser-normal')[1] },
                         constant = 9.05)
             }
     }else{
