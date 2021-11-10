@@ -16,15 +16,15 @@ library(rptha)
 # Get hazard curves and peak-stages for all events at a specified set of gauges.
 # This can later be used for event selection (see get_matching_scenarios).
 #
-# @param site_gauge_inds indices of the gauges {within the PTHA18 hazard points array}
+# @param site_gauge_inds indices of the gauges {i.e. index within the site_gauges array}
 # @param site_gauges data.frame with lon/lat/elev/gaugeID for the gauges
 # corresponding to site_gauge_inds
 # @param source_zone name of the source_zone (e.g. 'kermadectonga2')
 # @param slip_type either 'stochastic' or 'variable_uniform', denoting the type
 # of earthquake slip model to use.
 # @return The function environment which contains the stage_exrate_curves at
-# all gauges, and the peak_stage values for all events on the source-zone,
-# among other things.
+# all gauges (including the effect of every source-zone in PTHA18), and the 
+# peak_stage values for all events on the specified source-zone, among other things.
 #
 get_hazard_curves_and_peak_stages<-function(site_gauge_inds, site_gauges, source_zone, slip_type){
 
