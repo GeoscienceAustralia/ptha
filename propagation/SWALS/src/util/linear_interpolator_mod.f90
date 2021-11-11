@@ -11,9 +11,9 @@ module linear_interpolator_mod
         !!
         !! Type for linear interpolation
         !!
-        real(dp), allocatable:: xs_local(:), ys_local(:) 
+        real(dp), allocatable:: xs_local(:), ys_local(:)
             !! Copies of the x/y data used for interpolation (used if initialised with copy_data=.FALSE.)
-        real(dp), pointer :: xs(:), ys(:) 
+        real(dp), pointer :: xs(:) => NULL(), ys(:) => NULL()
             !! Pointers to the x/y data used for interpolation.
         integer(ip) :: n
             !! Size of xs/ys
@@ -45,12 +45,12 @@ module linear_interpolator_mod
         class(linear_interpolator_type), target, intent(inout):: linear_interpolator
         real(dp), target, intent(in):: x(:), y(:)
             !! x/y data used for interpolation
-        logical, optional, intent(in):: copy_data 
+        logical, optional, intent(in):: copy_data
             !! If .TRUE., then make a copy of x/y in the class for interpolation. Otherwise
             !! just store pointers to x/y.
         integer(ip):: i, n
         logical:: use_pointers
-        
+
 
         if (present(copy_data)) then
             use_pointers = merge(.FALSE., .TRUE., copy_data)
@@ -58,7 +58,7 @@ module linear_interpolator_mod
             use_pointers = .FALSE.
         end if
 
-        n = size(x, kind=ip) 
+        n = size(x, kind=ip)
         linear_interpolator%n = n
         if(n /= size(y, kind=ip)) then
             print*, 'initialise_linear_interpolator error: size of x and y must be equal'
@@ -74,11 +74,11 @@ module linear_interpolator_mod
             linear_interpolator%ys_local = y
             linear_interpolator%ys => linear_interpolator%ys_local
         else
-            linear_interpolator%xs => x 
-            linear_interpolator%ys => y 
+            linear_interpolator%xs => x
+            linear_interpolator%ys => y
         end if
-      
-        ! Check xs is monotonic 
+
+        ! Check xs is monotonic
         do i = 1, size(linear_interpolator%xs, kind=ip)-1_ip
             if(linear_interpolator%xs(i) >= linear_interpolator%xs(i+1)) then
                 print*, 'initialise_linear_interpolator error: x must be monotonic increasing (no repeated values)'
@@ -92,7 +92,7 @@ module linear_interpolator_mod
         !! Clean-up and deallocate the linear_interpolator
         class(linear_interpolator_type), intent(inout):: linear_interpolator
 
-        if(allocated(linear_interpolator%xs_local)) then        
+        if(allocated(linear_interpolator%xs_local)) then
             deallocate(linear_interpolator%xs_local, linear_interpolator%ys_local)
         end if
 
@@ -127,14 +127,14 @@ module linear_interpolator_mod
     pure subroutine nearest_index_sorted(n, x, y, output)
         integer(ip), intent(in) :: n
         real(dp), intent(in) :: x(n)
-        real(dp), intent(in) :: y      
+        real(dp), intent(in) :: y
         integer(ip), intent(out) :: output
 
         integer :: i, upper, lower
 
         if(y < x(1)) then
             output = 1
-        else 
+        else
             if (y > x(n)) then
                 output = n
             else
@@ -164,7 +164,7 @@ module linear_interpolator_mod
     end subroutine
 
     !
-    ! Suppose input_x, input_y are some data with input_x being sorted and increasing 
+    ! Suppose input_x, input_y are some data with input_x being sorted and increasing
     ! We are given output_x, and wish to get output_y by linearly interpolating the
     ! original series.
     pure subroutine linear_interpolation(n_input, input_x, input_y, n_output, output_x, output_y)
@@ -228,7 +228,7 @@ module linear_interpolator_mod
             else
                 print*, 'FAIL', li%xs - x
             end if
-            
+
             if(all(abs(li%ys - y) < 1.0e-10_dp)) then
                 print*, 'PASS'
             else
