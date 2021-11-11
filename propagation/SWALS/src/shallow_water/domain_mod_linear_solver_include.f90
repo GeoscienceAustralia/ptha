@@ -1,5 +1,5 @@
 !
-! The code here solves the linear shallow water equations in cartesian or spherical 
+! The code here solves the linear shallow water equations in cartesian or spherical
 ! coordinates, with or without coriolis. It can also include a nonlinear friction term,
 ! (which may be an efficient choice for modelling large scale tsunami propagation with dissipation).
 !
@@ -8,7 +8,7 @@
 ! The subroutine header has been commented out
 
 
-!    ! 
+!    !
 !    ! Linear shallow water equations leap-frog update
 !    !
 !    ! Update domain%U by timestep dt, using the linear shallow water equations.
@@ -32,7 +32,7 @@
         ! d(stage)/dy; depth_{i, j+1/2}, depth_{j, i+1/2, j}
         real(dp):: dw_j(domain%nx(1)), h_jph_vec(domain%nx(1)), h_iph_vec(domain%nx(1))
         real(dp) :: h_iph_wet(domain%nx(1)), h_jph_wet(domain%nx(1))
-       
+
         integer(ip):: j, i, xl, xu, yl, yu, n_ext, my_omp_id, n_omp_threads, loop_work_count
         integer(ip) :: yl_omp, yU_omp
 
@@ -75,14 +75,14 @@
            flux_NS=domain%U(:,:,VH:VH), flux_NS_lower_index=2_ip, &
            flux_EW=domain%U(:,:,UH:UH), flux_EW_lower_index=2_ip, &
            var_indices=[STG, STG], flux_already_multiplied_by_dx=.FALSE.)
-        
+
 
 
 EVOLVE_TIMER_START('LF_update_stage')
 
         nx = domain%nx(1)
         ny = domain%nx(2)
-      
+
         xL = domain%xL
         xU = domain%xU
         yL = domain%yL
@@ -108,7 +108,7 @@ EVOLVE_TIMER_START('LF_update_stage')
                     (domain%U(i, j, VH)*domain%distance_bottom_edge(j+1) - &
                         domain%U(i, j-1, VH)*domain%distance_bottom_edge(j))&
                     )
-        
+
             end do
         end do
         !$OMP END DO
@@ -154,9 +154,9 @@ EVOLVE_TIMER_START('LF_boundary_flux_integration')
             ! We are in a multidomain -- carefully compute fluxes through
             ! exterior boundaries
             domain%boundary_flux_store_exterior = ZERO_dp
-       
+
             ! Here we implement masked versions of the boundary flux sums above, only counting cells
-            ! where the priority domain is receiving/sending the fluxes on actual physical boundaries 
+            ! where the priority domain is receiving/sending the fluxes on actual physical boundaries
 
             ! North boundary
             if(domain%boundary_exterior(1)) then
@@ -192,7 +192,7 @@ EVOLVE_TIMER_START('LF_boundary_flux_integration')
                     mask = (&
                         domain%nesting%priority_domain_index(1+n_ext, (1+n_ext):(ny-n_ext)) == domain%nesting%my_index .and. &
                         domain%nesting%priority_domain_image(1+n_ext, (1+n_ext):(ny-n_ext)) == domain%nesting%my_image ))
-            end if 
+            end if
         else
             ! We are not doing nesting
             domain%boundary_flux_store_exterior = domain%boundary_flux_store
@@ -231,7 +231,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
 #else
         ! Parallel loop from yL:(yU-1)
         !
-        ! NOTE: In fortran, 
+        ! NOTE: In fortran,
         !     DO i = start, end
         !       .... code here ...
         !     END DO
@@ -256,10 +256,10 @@ EVOLVE_TIMER_START('LF_update_UHVH')
         ! Tricks to implement coriolis without increasing memory usage much
         !
         ! For coriolis, we need values of 'VH' at coorinates corresponding to UH,
-        ! and also values of UH at coordinates corresponding to VH. 
+        ! and also values of UH at coordinates corresponding to VH.
         !
         ! This requires 4 point averaging of the 'OLD' values of UH and VH.
-        ! 
+        !
         ! A simply way to do that is to store all the OLD values -- but that involves
         ! lots of memory. Or,
         ! We can do this in a loop with care, without storing those 'OLD' values,
@@ -279,7 +279,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
         dt_half_coriolis_jph(xL:(xU-1)) = ZERO_dp
 
         !
-        ! Before starting the loop, get the value of VH at 
+        ! Before starting the loop, get the value of VH at
         ! 'i+1/2', 'yl_omp-1/2', to prevent the possibility that it is
         ! updated by another openmp thread before we read it !
         if(yl_omp == 1) then
@@ -312,7 +312,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
         end if
 
         !
-        ! Get the initial value of UH at 'i, yl_omp'. This 'starting value' is required because 
+        ! Get the initial value of UH at 'i, yl_omp'. This 'starting value' is required because
         ! inside the loop we set 'uh_i_j = uh_i_jph' after the update.
         !
         uh_i_j((xL+1):(xU-1)) = HALF_dp * &
@@ -341,8 +341,8 @@ EVOLVE_TIMER_START('LF_update_UHVH')
             ! with the stage and EW momentum term
             inv_cell_area_dt_vh_g = gravity * dt / &
                 (HALF_dp * (domain%area_cell_y(j) + domain%area_cell_y(j+1)))
-       
-            ! 
+
+            !
             ! Try to keep control-flow and non-local memory jumps out of inner loop
             ! This improves speed on my machine with gfortran (11/08/2016)
             !
@@ -350,7 +350,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
 
             if(truely_linear) then
                 !
-                ! In the g * d * dStage/dx type term, let d be constant 
+                ! In the g * d * dStage/dx type term, let d be constant
                 !
 
                 ! Depth at j-plus-half
@@ -365,7 +365,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
                     domain%msl_linear - HALF_dp * (domain%U((xL+1):xU, j, ELV) + domain%U((xL):(xU-1), j, ELV)), &
                     ZERO_dp, &
                     (( domain%U(xL:(xU-1),j,ELV) < -minimum_allowed_depth + domain%msl_linear).AND.&
-                     ( domain%U((xL+1):xU,j,ELV) < -minimum_allowed_depth + domain%msl_linear)))  
+                     ( domain%U((xL+1):xU,j,ELV) < -minimum_allowed_depth + domain%msl_linear)))
 
                 ! These variables can be used to zero UH/VH when stage < bed. However, this would introduce a nonlinearity into the
                 ! equations, which seems undesirable for a 'truely-linear' approach.
@@ -391,7 +391,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
                                (domain%U((xL+1):xU, j, ELV) + domain%U(xL:(xU-1), j, ELV))), &
                     ZERO_dp, &
                     ((domain%U(    xL:(xU-1), j, STG) - domain%U(    xL:(xU-1),j,ELV) > minimum_allowed_depth).AND.&
-                     (domain%U((xL+1):xU    , j, STG) - domain%U((xL+1):xU    ,j,ELV) > minimum_allowed_depth)))  
+                     (domain%U((xL+1):xU    , j, STG) - domain%U((xL+1):xU    ,j,ELV) > minimum_allowed_depth)))
 
                 ! Zero UH/VH when depths are < minimum_allowed_depth. This introduces an additional nonlinearity into the equations,
                 ! but seems reasonable in the 'not-truely-linear case'
@@ -407,7 +407,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
                 (domain%U(xL    :(xU-1), j, VH) + &
                  domain%U((xL+1):xU    , j, VH))
 
-            ! 'Old' UH at (i, j+1). 
+            ! 'Old' UH at (i, j+1).
             ! First get it assuming we are not at the last loop index -- and then fix it
             ! Step1: Get everything except xL, which needs special treatment if xL == 1
             uh_i_jp1((xL+1):(xU-1)) = HALF_dp * &
@@ -416,7 +416,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
             ! Special case of xL which is protective if xL == 1
             uh_i_jp1(xL) = HALF_dp * ( domain%U(xL          , j+1, UH) + &
                                        domain%U(max(xL-1, 1), j+1, UH) )
-            ! Final step to ensure that if (j == yu_omp), then we get the 
+            ! Final step to ensure that if (j == yu_omp), then we get the
             ! non-updated value of UH.
             uh_i_jp1(xl:(xU-1)) = merge(&
                                uh_i_jp1(xL:(xU-1)), &
@@ -438,19 +438,19 @@ EVOLVE_TIMER_START('LF_update_UHVH')
             ! Compute a multiplier that applies a semi-implicit treatment of manning friction.
             !
             ! This is equivalent to adding a term "g * depth * friction_slope" to the equations.
-            !   where friction_slope = {manning_sq * depth**(-4./3.) * speed * velocity_component} 
+            !   where friction_slope = {manning_sq * depth**(-4./3.) * speed * velocity_component}
             !   assuming Manning friction; for Chezy friction the power term is depth**(-1.)
             !
-            ! The term is broken up into a fast, semi-implicit discretization. 
+            ! The term is broken up into a fast, semi-implicit discretization.
             ! For UH, we break it up as (terms in { } -- again assuming Manning friction for illustration)
             !    g * depth * friction_slope = {g * manning_sq * depth^(-7/3)} * { sqrt(uh^2 + vh^2) } * {uh}
             ! while for VH, the final term is vh
             !    g * depth * friction_slope = {g * manning_sq * depth^(-7/3)} * { sqrt(uh^2 + vh^2) } * {vh}
             ! The discretization is semi-implicit as follows:
             !    - The component 'g n^2 depth^(-7/3)' is a constant in time, because the effective depth
-            !       never changes in this "linear" framework. 
+            !       never changes in this "linear" framework.
             !    - The term sqrt(uh^2+vh^2) {= speed*depth} is treated explicitly.
-            !    - The remaining 'uh' or 'vh' term is treated implicitly. 
+            !    - The remaining 'uh' or 'vh' term is treated implicitly.
             !
             ! Thus, appending the term g * depth * friction slope to the equations can be reduced to
             ! a multiplication of the form { 1/(1 + explicit_part_of_friction_terms) }
@@ -475,7 +475,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
                     dt * domain%friction_work(xL:(xU-1), j, VH) * ( &
                     ! Velocity * depth
                     ! FIXME: Stagger tidal flux appropriately
-                    sqrt( (domain%U(xL:(xU-1),j,VH) + domain%ambient_flux(xL:(xU-1), j, VH))**2 + & 
+                    sqrt( (domain%U(xL:(xU-1),j,VH) + domain%ambient_flux(xL:(xU-1), j, VH))**2 + &
                         (0.5_dp * ( uh_i_j(xL:(xU-1)) + uh_i_jp1(xL:(xU-1)) ) + &
                          domain%ambient_flux(xL:(xU-1), j, UH) )**2) ))
             else
@@ -515,9 +515,9 @@ EVOLVE_TIMER_START('LF_update_UHVH')
                     inv_cell_area_dt_vh_g * h_jph_vec(i) *&
                     dw_j(i) * domain%distance_bottom_edge(j+1)
 
-#else        
+#else
                 !
-                ! This update has coriolis. 
+                ! This update has coriolis.
                 !
 
                 ! duh/dt = - g * h0/(R cos (lat)) [ d stage / dlon ] + f*vh
@@ -546,7 +546,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
 #ifndef LINEAR_PLUS_NONLINEAR_FRICTION
             if(domain%linear_friction_coeff /= ZERO_dp) then
                 ! Add an implicit linear friction treatment for the 'regular linear solver', which missed out
-                ! earlier for cases treated using LINEAR_PLUS_NONLINEAR_FRICTION. 
+                ! earlier for cases treated using LINEAR_PLUS_NONLINEAR_FRICTION.
                 ! This is linear friction like in Fine et al (2012), Kulikov et al (2014)
                 domain%U(xL:(xU-1),j,UH) = ONE_dp/(ONE_dp + dt*domain%linear_friction_coeff) * domain%U(xL:(xU-1),j,UH)
                 domain%U(xL:(xU-1),j,VH) = ONE_dp/(ONE_dp + dt*domain%linear_friction_coeff) * domain%U(xL:(xU-1),j,VH)
@@ -567,7 +567,7 @@ EVOLVE_TIMER_START('LF_update_UHVH')
         domain%time = domain%time + HALF_dp*dt
 
 EVOLVE_TIMER_STOP('LF_update_UHVH')
-  
+
 
     contains
 

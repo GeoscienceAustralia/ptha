@@ -5,11 +5,11 @@ module which_mod
     use global_mod, only: ip
 
     implicit none
-    
+
     private
     public which, test_which, rle_ip, cumsum_ip, bind_arrays_ip, remove_rows_ip
 
-    interface 
+    interface
         !! When generalising rle, it is helpful for the user to pass
         !! a function defining whether two objects (indexed by integers)
         !! are equal
@@ -57,7 +57,7 @@ module which_mod
         integer(ip), intent(in) :: integer_array(:) !! rank 1 array with integers
         integer(ip), allocatable, intent(inout) :: values(:) !! return the values of the integer array
         integer(ip), allocatable, intent(inout) :: lengths(:) !! return the length of the 'runs' of equal values
-        procedure(eq_fun), optional :: equality_function 
+        procedure(eq_fun), optional :: equality_function
         !! (optional) function f(i1, i2) which returns
         !! .true. if i1 should be treated as equal to i2, and false otherwise. This
         !! can be used to generalise rle_ip, e.g. we could look for equality of rows in a
@@ -71,11 +71,11 @@ module which_mod
         else
             eq_fun_local => equality_function_default
         end if
-        
-        
+
+
         if(allocated(values)) deallocate(values)
         if(allocated(lengths)) deallocate(lengths)
-        
+
         n = size(integer_array, kind=ip)
 
         select case(n)
@@ -83,12 +83,12 @@ module which_mod
             ! If integer_array is empty, return length=0 arrays
             allocate(values(0), lengths(0))
 
-        case(1) 
+        case(1)
             allocate(values(1), lengths(1))
             values(1) = integer_array(1)
-            lengths(1) = 1_ip 
+            lengths(1) = 1_ip
 
-        case default 
+        case default
             ! n > 1 (typical case)
             np = 1_ip
             do i = 1, n-1
@@ -102,8 +102,8 @@ module which_mod
             do i = 2, n
 
                 !if(integer_array(i-1) /= integer_array(i)) then
-                if(.not. eq_fun_local(i-1, i)) then 
-                    np = np + 1 
+                if(.not. eq_fun_local(i-1, i)) then
+                    np = np + 1
                     values(np) = integer_array(i-1)
                     lengths(np) = counter
                     counter = 0_ip
@@ -111,8 +111,8 @@ module which_mod
 
                 counter = counter + 1_ip
 
-                if(i == n) then 
-                    np = np + 1 
+                if(i == n) then
+                    np = np + 1
                     values(np) = integer_array(n)
                     lengths(np) = counter
                 end if
@@ -168,14 +168,14 @@ module which_mod
         logical, optional, intent(in) :: rowbind !! logical indicating whether to do a 'rbind' (TRUE) or 'cbind' (FALSE)
 
         integer(ip), allocatable :: tmp_ar(:,:)
-        logical :: bind_rows 
+        logical :: bind_rows
         integer(ip) :: d1(2), d2(2)
-       
+
         if(present(rowbind)) then
             bind_rows = rowbind
         else
             bind_rows = .TRUE.
-        end if 
+        end if
 
         d1 = shape(ar1)
         d2 = shape(ar2)
@@ -191,7 +191,7 @@ module which_mod
         end if
 
         call move_alloc(ar1, tmp_ar)
-        
+
         if(bind_rows) then
             allocate(ar1(d1(1) + d2(1), d1(2)))
             ar1(1:d1(1),:) = tmp_ar
@@ -202,7 +202,7 @@ module which_mod
             ar1(:, (d1(2) + 1):(d1(2)+d2(2))) = ar2
         end if
 
-    end subroutine 
+    end subroutine
 
     subroutine remove_rows_ip(ar1, indices, apply_to_rows)
         !!
@@ -212,14 +212,14 @@ module which_mod
         integer(ip), intent(in) :: indices(:) !! Indices of rows (or columns) to remove
         logical, optional, intent(in) :: apply_to_rows !! If TRUE (default) remove rows, otherwise remove columns.
 
-        logical :: rows       
+        logical :: rows
         integer(ip), allocatable :: tmp_ar(:,:)
         integer(ip) :: d1(2), i, counter
         logical, allocatable :: tokeep(:)
-        
-        ! Apply to rows by default 
+
+        ! Apply to rows by default
         if(present(apply_to_rows)) then
-            rows = apply_to_rows 
+            rows = apply_to_rows
         else
             rows = .true.
         end if
@@ -252,7 +252,7 @@ module which_mod
             ! Only copy rows with 'tokeep = true'
             counter = 1
             do i = 1, d1(1)
-                if(tokeep(i)) then 
+                if(tokeep(i)) then
                     ar1(counter,:) = tmp_ar(i,:)
                     counter = counter + 1
                 end if
@@ -270,8 +270,8 @@ module which_mod
         end if
 
     end subroutine
-    
-    subroutine test_which() 
+
+    subroutine test_which()
         !! Test the module
 
         logical :: test_data(5)
@@ -292,7 +292,7 @@ module which_mod
             print*, 'PASS'
         else
             print*, 'FAIL'
-        end if 
+        end if
 
         !
         ! Test of 'rle'
@@ -334,8 +334,8 @@ module which_mod
             print*, 'PASS'
         else
             print*, 'FAIL'
-        end if      
- 
+        end if
+
         ! Typical case
         test_data_rle = [2,2,3,3,3,2,5,6,7,8]
         call rle_ip(test_data_rle, values, lengths)
@@ -344,7 +344,7 @@ module which_mod
             print*, 'PASS'
         else
             print*, 'FAIL'
-        end if      
+        end if
 
         ! Typical case
         test_data_rle = [2,3,3,3,3,3,3,3,3,3]
@@ -354,7 +354,7 @@ module which_mod
             print*, 'PASS'
         else
             print*, 'FAIL'
-        end if      
+        end if
 
         ! Typical case
         test_data_rle = [2,3,3,3,3,3,3,3,3,10]
@@ -364,7 +364,7 @@ module which_mod
             print*, 'PASS'
         else
             print*, 'FAIL'
-        end if      
+        end if
 
         ! Simple case with only 1 value
         test_data_rle = [2,2,2,2,2,2,2,2,2,2]
@@ -374,7 +374,7 @@ module which_mod
             print*, 'PASS'
         else
             print*, 'FAIL'
-        end if      
+        end if
 
         ! Case with user provided equality function -- 'equal' means i/3 is equal
         test_data_rle = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
@@ -388,7 +388,7 @@ module which_mod
         !
         ! Test of cumsum
         !
-        test_data_rle = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] 
+        test_data_rle = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
         call cumsum_ip(test_data_rle)
         if(all(test_data_rle == [1, 3, 6, 10, 15, 21, 28, 36, 45, 55])) then
             print*, 'PASS'
@@ -406,7 +406,7 @@ module which_mod
 
         if( all(shape(ar1) == [2,5]) .and. &
             all(ar1(1,:) == [1, 3, 5, 7, 9]) .and. &
-            all(ar1(2,:) == [2, 4, 6, 8, 10]) ) then 
+            all(ar1(2,:) == [2, 4, 6, 8, 10]) ) then
             print*, 'PASS'
         else
             print*, 'FAIL'
@@ -428,7 +428,7 @@ module which_mod
             print*, 'FAIL'
         end if
         deallocate(ar1, ar2)
-    
+
 
         !
         ! Test remove_rows

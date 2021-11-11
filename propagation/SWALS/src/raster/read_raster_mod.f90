@@ -1,11 +1,11 @@
-module read_raster_mod 
+module read_raster_mod
     !! Read GDAL supported rasters. Both a type-based interface and a basic procedural interface are provided.
     !!
-    !! The type-based interface (using the multi_raster_type) is more flexible and should 
-    !! be preferred. Given a set of raster filenames (in order of preference) it can 
-    !! extract raster data at a given set of coordinates. At each coordinates, it will use 
+    !! The type-based interface (using the multi_raster_type) is more flexible and should
+    !! be preferred. Given a set of raster filenames (in order of preference) it can
+    !! extract raster data at a given set of coordinates. At each coordinates, it will use
     !! the highest-preference raster that has non-missing data. Constant and bilinear interpolation
-    !! are supported. The code does not fully read the files into memory. 
+    !! are supported. The code does not fully read the files into memory.
     !!
     !! The procedural interface is not recommended anymore, because it does not separate "opening and closing
     !! the files" from "reading the data". But see 'read_gdal_raster' and 'get_raster_dimensions'.
@@ -30,7 +30,7 @@ module read_raster_mod
 
     type :: gdal_raster_dataset_type
         !!
-        !! Type to work with a single raster dataset. 
+        !! Type to work with a single raster dataset.
         !!
 
         type(c_ptr) :: hDataset !! Pointer to GDAL raster data structure
@@ -42,7 +42,7 @@ module read_raster_mod
         real(C_DOUBLE) :: adfGeoTransform(6) !! GDAL's geotransform information
         real(C_DOUBLE) :: dx(2) !! Raster cell size
         real(C_DOUBLE) :: nodata_value !! The raster's nodata value
-    
+
         contains
         procedure:: initialise => initialise_gdal_raster_dataset !! Initialise the object
         procedure:: get_xy => get_xy_values !! Interpolate at coordinates
@@ -90,7 +90,7 @@ module read_raster_mod
         character(kind=C_CHAR), intent(in) :: inputFile(*) !! Input filename
         type(c_ptr), intent(out) :: hDataset !! GDAL raster object
     end subroutine
-    
+
     subroutine close_gdal_raster_Cfun(hDataset) bind(C, name='close_gdal_raster')
         !! Close the raster via GDAL
         use iso_c_binding
@@ -101,7 +101,7 @@ module read_raster_mod
     subroutine get_gdal_raster_dimensions_Cfun(hDataset, xydim, lowerleft, upperright, &
         adfGeoTransform, dx, nodata_value) bind(C, name='get_gdal_raster_dimensions')
         !! Store the raster dimensions, lower-left and upper-right coordinates, cellsize, nodata value, and some GDAL geo-transform
-        !! information 
+        !! information
         use iso_c_binding
         implicit none
         type(C_PTR), intent(in) :: hDataset !! GDAL raster object
@@ -123,14 +123,14 @@ module read_raster_mod
 
     subroutine read_gdal_raster_Cfun(inputFile, x, y, z, N, verbose, bilinear) bind(C, name='read_gdal_raster')
         !! Procedural interface for reading the raster. This routine opens the inputFile, reads the data and closes the file before
-        !! returning. 
+        !! returning.
         use iso_c_binding
         implicit none
         character(kind = C_CHAR), intent(in) :: inputFile(*) !! Raster file name
         integer(C_INT), value, intent(in) :: N, verbose, bilinear
         real(C_DOUBLE), intent(in) :: x(N), y(N)
         real(C_DOUBLE), intent(out) :: z(N)
-        
+
     end subroutine
 
     subroutine get_raster_dimensions_Cfun(inputFile, xydim, lowerleft, upperright) bind(C, name='get_raster_dimensions')
@@ -142,7 +142,7 @@ module read_raster_mod
         integer(C_INT), intent(out):: xydim(2)
 
     end subroutine
-    
+
     end interface
 
     interface read_gdal_raster
@@ -176,7 +176,7 @@ module read_raster_mod
 
         call close_gdal_raster_Cfun(gdal_raster_dataset%hDataset)
         gdal_raster_dataset%isOpen = .FALSE.
-    
+
     end subroutine
 
     subroutine get_gdal_raster_dimensions(gdal_raster_dataset)
@@ -187,7 +187,7 @@ module read_raster_mod
             gdal_raster_dataset%xydim, &
             gdal_raster_dataset%lowerleft, gdal_raster_dataset%upperright, &
             gdal_raster_dataset%adfGeoTransform, gdal_raster_dataset%dx, &
-            gdal_raster_dataset%nodata_value) 
+            gdal_raster_dataset%nodata_value)
 
     end subroutine
 
@@ -281,7 +281,7 @@ module read_raster_mod
 
 
         if(present(bilinear)) then
-            use_bilinear_local = bilinear 
+            use_bilinear_local = bilinear
         else
             use_bilinear_local = use_bilinear_default
         end if
@@ -290,7 +290,7 @@ module read_raster_mod
         inputFile_c = trim(inputFile) // C_NULL_CHAR
         N_c = size(x, kind=C_INT)
         verbose_c = 1_C_INT * verbose
-        
+
         call read_gdal_raster_Cfun(inputFile_c, x, y, z, N_c, verbose_c, use_bilinear_local)
 
     end subroutine
@@ -306,7 +306,7 @@ module read_raster_mod
         integer(C_INT) :: use_bilinear_local
 
         if(present(bilinear)) then
-            use_bilinear_local = bilinear 
+            use_bilinear_local = bilinear
         else
             use_bilinear_local = use_bilinear_default
         end if
@@ -330,7 +330,7 @@ module read_raster_mod
         real(C_DOUBLE), allocatable :: x0(:), y0(:), z0(:)
 
         if(present(bilinear)) then
-            use_bilinear_local = bilinear 
+            use_bilinear_local = bilinear
         else
             use_bilinear_local = use_bilinear_default
         end if
@@ -340,7 +340,7 @@ module read_raster_mod
         inputFile_c = trim(inputFile) // C_NULL_CHAR
         N_c = size(x, kind=C_INT)
         verbose_c = 1_C_INT * verbose
-        
+
         ! If x,y,z are not C_DOUBLE, we copy C_DOUBLE versions
         allocate(x0(N_c), y0(N_c), z0(N_c))
         x0 = real(x, C_DOUBLE)
@@ -351,7 +351,7 @@ module read_raster_mod
         deallocate(x0, y0, z0)
 
     end subroutine
-    
+
     ! Read gdal raster, assuming x,y,z are rank 2 arrays with N entries of type C_FLOAT
     subroutine read_gdal_raster_C_FLOAT_2D(inputFile, x, y, z, N, verbose, bilinear)
         character(len=charlen), intent(in) :: inputFile
@@ -362,7 +362,7 @@ module read_raster_mod
         integer(C_INT) :: use_bilinear_local
 
         if(present(bilinear)) then
-            use_bilinear_local = bilinear 
+            use_bilinear_local = bilinear
         else
             use_bilinear_local = use_bilinear_default
         end if
@@ -375,7 +375,7 @@ module read_raster_mod
         !!
         !! Read a number of rasters into a single multi_raster object. The
         !! rasters should all have the same projection, but can have different resolutions
-        !! and extents. 
+        !! and extents.
         !!
         class(multi_raster_type), intent(inout) :: multi_raster
         character(len=charlen) :: raster_files(:)
@@ -412,7 +412,7 @@ module read_raster_mod
         !! Close/cleanup a multi raster object
         !!
         class(multi_raster_type), intent(inout) :: multi_raster
-        
+
         integer(ip) :: i, n
 
         do i = 1, size(multi_raster%raster_datasets, kind=ip)
@@ -435,10 +435,10 @@ module read_raster_mod
         integer(ip), optional, intent(in) :: verbose !! Print information
         integer(ip), optional, intent(in) :: bilinear !! Use bilinear interpolation (1) or nearest-cell interpolation (0)
         integer(ip), optional, intent(in) :: band !! Integer giving the raster band to interpolate from
-        real(dp), optional, intent(in) :: na_below_limit 
+        real(dp), optional, intent(in) :: na_below_limit
         !! Treat raster values below this number as NA. This can be useful if nodata values are not preserved exactly (e.g. due to
         !! changes in precision). Often nodata values are large negative numbers, in which case we can be sure that all numbers below
-        !! some threshold (e.g. `na_below_limit = -1.0e+10`) should be treated as NA. 
+        !! some threshold (e.g. `na_below_limit = -1.0e+10`) should be treated as NA.
 
         real(dp) :: empty_value, ll(2), ur(2), lower_limit_l
         integer(ip) :: i, j, verbose_l, bilinear_l, band_l
@@ -509,7 +509,7 @@ module read_raster_mod
         write(log_output_unit, *) '  dx         : ', raster_data%dx
         write(log_output_unit, *) '  nodata     : ', raster_data%nodata_value
 
-    end subroutine 
+    end subroutine
 
     subroutine test_read_raster1()
         !! Unit tests for read_raster_mod
@@ -559,7 +559,7 @@ module read_raster_mod
         yf = real(y, csp)
         real_zf = real(real_z, csp)
         real_zf_bl = real(real_z_bl, csp)
-       
+
 
         !
         !
@@ -572,9 +572,9 @@ module read_raster_mod
         if((test_file%inputFile == inputFile) .AND. &
             c_associated(test_file%hDataset) .AND. &
             test_file%isOpen) then
-            print*, 'PASS' 
+            print*, 'PASS'
         else
-            print*, 'FAIL' 
+            print*, 'FAIL'
 
         end if
 
@@ -586,7 +586,7 @@ module read_raster_mod
         else
             print*, 'FAIL'
             print*, test_file%dx
-            print*, test_file%xydim 
+            print*, test_file%xydim
             print*, test_file%lowerleft
             print*, test_file%upperright
         end if
@@ -597,7 +597,7 @@ module read_raster_mod
         else
             print*, 'FAIL'
         end if
-        
+
         call test_file%get_xy(x_dp, y_dp, z_dp, size(z_dp), verbose=0, bilinear=1, band=1)
         if(all(abs(z_dp - real_z_bl) < (1.0e-6_dp*real_z_bl))) then
             print*, 'PASS'
@@ -612,9 +612,9 @@ module read_raster_mod
 
         if( (test_file%isOpen .eqv. .FALSE.) .AND. &
             (c_associated(test_file%hDataset) .eqv. .FALSE.)) then
-            print*, 'PASS' 
+            print*, 'PASS'
         else
-            print*, 'FAIL' 
+            print*, 'FAIL'
         end if
 
         !
@@ -622,7 +622,7 @@ module read_raster_mod
         ! Test reading of raster summary data
         !
         !
-        call get_raster_dimensions(inputFile, xydim, lowerleft, upperright) 
+        call get_raster_dimensions(inputFile, xydim, lowerleft, upperright)
         if( (xydim(1) == 50) .and. (xydim(2) == 50) ) then
             print*, 'PASS'
         else
@@ -648,7 +648,7 @@ module read_raster_mod
         !
 
 
-        ! Test double precision version 
+        ! Test double precision version
         call read_gdal_raster(inputFile, x, y, z, N, verbose, bilinear=0_ip)
 
         ! Got these values from R's extract
@@ -657,19 +657,19 @@ module read_raster_mod
         else
             print*, 'FAIL'
             do i = 1, N
-                print*, real_z(i), z(i) 
+                print*, real_z(i), z(i)
             end do
         end if
 
         ! Test bilinear version -- got these values from R's extract with
-        ! method='bilinear'. 
+        ! method='bilinear'.
         call read_gdal_raster(inputFile, x, y, z, N, verbose, bilinear=1_ip)
         if(all(abs(z - real_z_bl) < 1.0e-10_cdp*real_z_bl)) then
             print*, 'PASS'
         else
             print*, 'FAIL'
             do i = 1, N
-                print*, real_z_bl(i), z(i) 
+                print*, real_z_bl(i), z(i)
             end do
         end if
 
@@ -682,10 +682,10 @@ module read_raster_mod
         else
             print*, 'FAIL'
             do i = 1, N
-                print*, real_zf(i), zf(i) 
+                print*, real_zf(i), zf(i)
             end do
         end if
-            
+
         ! Test bilinaer single precision version
         CALL read_gdal_raster(inputFile, xf, yf, zf, N, verbose, bilinear=1_ip)
 
@@ -694,7 +694,7 @@ module read_raster_mod
         else
             print*, 'FAIL'
             do i = 1, N
-                print*, real_zf_bl(i), zf(i) 
+                print*, real_zf_bl(i), zf(i)
             end do
         end if
 
@@ -702,14 +702,14 @@ module read_raster_mod
         !
         ! Test reading a raster with NaN values
         !
-        
+
         inputFile = 'data/test_rast_nans.tif'
         call test_file%initialise(inputFile)
         !print*, test_file%nodata_value
         if( abs(test_file%nodata_value + 1.7e+308_C_DOUBLE) < 1.0e-06*(1.7e+308_C_DOUBLE)) then
             print*, 'PASS'
         else
-            print*, 'FAIL' 
+            print*, 'FAIL'
         end if
 
         ! Point right in a nodata cell. Check it is identified as nodata
@@ -750,7 +750,7 @@ module read_raster_mod
         x_dp(1) = 500901.0_dp
         y_dp(1) = 1617111.0_dp
         real_z_bl(1) = 3722691.0_dp
-    
+
         call test_multi_raster%initialise(inputFiles)
         call test_multi_raster%get_xy(x_dp, y_dp, z_dp, size(z_dp, kind=ip), verbose=0, bilinear=1)
 
@@ -769,10 +769,10 @@ module read_raster_mod
             allocated(test_multi_raster%raster_datasets)) then
             print*, 'FAIL'
         else
-            print*, 'PASS' 
+            print*, 'PASS'
         end if
 
     end subroutine
-end module read_raster_mod 
+end module read_raster_mod
 
 

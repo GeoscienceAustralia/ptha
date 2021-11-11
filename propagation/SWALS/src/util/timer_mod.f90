@@ -24,10 +24,10 @@ module timer_mod
     type:: timer_type
         !! Main type to do the timing
         character(len=charlen_timer_names) :: names(max_timers) !! Names for the sections of code that are timed
-        real(C_DOUBLE):: start(max_timers) = unstarted 
+        real(C_DOUBLE):: start(max_timers) = unstarted
         !! Work array holding the time when we last started timing each named section of code
         real(C_DOUBLE):: total(max_timers) = 0.0_C_DOUBLE !! The total time taken in each named section of code
-        integer:: ntimers = 0 !! How many sections of code are being timed? 
+        integer:: ntimers = 0 !! How many sections of code are being timed?
         integer:: last_index = 1 !! The index of timer_type%names that was timed most recently.
 
         contains
@@ -102,7 +102,7 @@ contains
 #else
         timer%start(tname_index) = omp_get_wtime()
 #endif
-       
+
     end subroutine
 
 
@@ -114,7 +114,7 @@ contains
         integer:: tname_index
         real(C_DOUBLE):: current_time
 
-        ! Get the current time 
+        ! Get the current time
 #ifdef COARRAY
         current_time = mpi_wtime()
 #elif defined(NOOPENMP)
@@ -134,7 +134,7 @@ contains
         if(timer%start(tname_index) == unstarted) then
             stop 'Timer not started'
         end if
-       
+
         timer%total(tname_index) = timer%total(tname_index) + (current_time - timer%start(tname_index))
         timer%start(tname_index) = unstarted
 
@@ -143,7 +143,7 @@ contains
     subroutine timer_print(timer, output_file_unit)
         !! Print the timer results
         class(timer_type), intent(in):: timer !! The timer class
-        integer(C_INT), optional:: output_file_unit 
+        integer(C_INT), optional:: output_file_unit
         !! Optional unit of file to write the information to. If not provide, uses output_unit from iso_fortran_env, which prints to
         !! screen
 

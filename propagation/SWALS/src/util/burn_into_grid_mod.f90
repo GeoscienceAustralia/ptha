@@ -1,7 +1,7 @@
 module burn_into_grid_mod
     !!
     !! Allows definition of 'xyz lines' which can denote the elevation of linear features, and
-    !! provides routines to burn these into grids. For example, this can be used to ensure that 
+    !! provides routines to burn these into grids. For example, this can be used to ensure that
     !! an elevation grid includes a continuous representation of a breakwall or riverwall.
     !!
     use global_mod, only: ip, dp, charlen, force_double
@@ -21,7 +21,7 @@ module burn_into_grid_mod
 
     type xyz_lines_type
         !! Type to hold a collection of xyz lines, and enable 'burning' the z values into a grid (i.e. setting the grid values along
-        !! the lines) 
+        !! the lines)
         type(rank2_allocatable_type), allocatable :: lines(:)
         contains
         procedure :: read_from_csv => read_xyz_lines_from_csv
@@ -32,11 +32,11 @@ module burn_into_grid_mod
 
     subroutine read_xyz_lines_from_csv(xyz_lines, line_files, skip_header)
         !! Read a set of line_files (each containing x,y,z data for a xyz-line in csv format)
-        !! into an xyz_lines_type object. 
+        !! into an xyz_lines_type object.
         class(xyz_lines_type), intent(inout) :: xyz_lines !! The xyz_lines to be set from the line_files.
         character(len=charlen), intent(in) :: line_files(:) !! Array with csv file names containing xyz lines data.
         integer(ip), optional, intent(in) :: skip_header !! How many header rows to skip when reading the files (default 0)?
-    
+
         integer(ip) :: i, nl, skip_h
 
         if(present(skip_header)) then
@@ -79,12 +79,12 @@ module burn_into_grid_mod
         else
             burnt = 'point_value'
         end if
-        
+
 
         if(size(x, kind=ip) /= size(y, kind=ip) .or. size(x, kind=ip) /= size(z, kind=ip)) then
             write(log_output_unit, *) "Error in burn_xyz_into_grid: x,y, and z must have the same length"
             call generic_stop
-        end if     
+        end if
 
         if(.not. all(upper_right > lower_left)) then
             write(log_output_unit, *) "Error in burn_xyz_into_grid: upper_right must be > lower_left"
@@ -125,7 +125,7 @@ module burn_into_grid_mod
         real(dp), intent(in) :: x(:), y(:), z(:) !! Coordinates of the 3D line
         real(dp), intent(inout) :: grid(:,:) !! Grid into which we burn the elevations
         real(dp), intent(in) :: lower_left(2), upper_right(2) !! Coordinates of the grid
-        character(len=*), optional :: burn_type 
+        character(len=*), optional :: burn_type
         !! character controlling when we burn -- either 'point_value' (default, always burn), or 'max' (only burn if z >
         !! grid value) or 'min' (only burn if z < grid_value)
 
@@ -143,7 +143,7 @@ module burn_into_grid_mod
         if(size(x, kind=ip) /= size(y, kind=ip) .or. size(x, kind=ip) /= size(z, kind=ip)) then
             write(log_output_unit, *) "Error in burn_line_into_grid: x,y, and z must have the same length"
             call generic_stop
-        end if     
+        end if
 
         if(.not. all(upper_right > lower_left)) then
             write(log_output_unit, *) "Error in burn_line_into_grid: upper_right must be > lower_left"
@@ -188,7 +188,7 @@ module burn_into_grid_mod
         real(dp), intent(inout) :: grid(:,:) !! The grid
         real(dp), intent(in) :: lower_left(2), upper_right(2) !! The grid extent
         character(len=*), optional :: burn_type
-        !! character controlling when we burn -- either 'point_value' (default, always burn the z value into the grid), or 'max' 
+        !! character controlling when we burn -- either 'point_value' (default, always burn the z value into the grid), or 'max'
         !! (only burn if z > grid value) or 'min' (only burn if z < grid_value)
 
         character(len=charlen) :: burnt
@@ -291,9 +291,9 @@ module burn_into_grid_mod
         end if
 
         !print*, 'grid(1:6, 4): ', grid(1:6, 4)
-        !print*, 'expected_grid(1:6, 4): ', expected_grid(1:6, 4) 
+        !print*, 'expected_grid(1:6, 4): ', expected_grid(1:6, 4)
         !print*, 'grid(6, 5:10): ', grid(6, 5:10)
-        !print*, 'expected_grid(6, 5:10): ', expected_grid(6, 5:10) 
+        !print*, 'expected_grid(6, 5:10): ', expected_grid(6, 5:10)
 
     end subroutine
 

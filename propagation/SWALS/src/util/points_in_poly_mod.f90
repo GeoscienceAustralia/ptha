@@ -5,9 +5,9 @@ module points_in_poly_mod
     !! The tests suggest being on the boundary is counted as being inside, although
     !! I would not rely on that behaviour always being true for complex polygons.
     !!
-    !! Main routine is 
+    !! Main routine is
     !!   points_in_poly(vertx, verty, px, py, is_inside)
-    !! where all arguments are arrays 
+    !! where all arguments are arrays
     !! (with size(vertx) == size(verty) & (size(px) == size(py) == size(is_inside))
     !!
     !! A discussion of the problem is here (we use a similar algorithm)
@@ -16,10 +16,10 @@ module points_in_poly_mod
     use global_mod, only: ip, dp
     implicit none
 
-    contains    
+    contains
 
     ! Find if a single point (px, py) is inside a poly defined by nvert vertices
-    ! (vertx, verty). 
+    ! (vertx, verty).
     !
     ! @param nvert number of vertices in the polygon
     ! @param vertx x coordinates of polygon vertices, in order
@@ -75,7 +75,7 @@ module points_in_poly_mod
 
         ! bounding box for polygon to speed up check
         real(dp):: min_vertx, max_vertx, min_verty, max_verty
-       
+
         nvert = size(vertx, kind=ip)
         np = size(px, kind=ip)
 
@@ -100,7 +100,7 @@ module points_in_poly_mod
     !
     subroutine test_points_in_poly_mod
         integer(ip):: nvert
-    
+
         ! doesn't seem to matter whether last point == first point or not
         real(dp), dimension(5) :: vertx = [0._dp, 0.0_dp, 1.0_dp, 1.0_dp, 0._dp]
         real(dp), dimension(5) :: verty = [0._dp, 1.0_dp, 1.0_dp, 0.0_dp, 0._dp]
@@ -116,16 +116,16 @@ module points_in_poly_mod
         end type
 
         type(test_point_type):: test_points(10)
-        
+
         real(dp):: test_points_array(10, 2)
         logical:: is_inside_result_array(10), is_inside_array(10)
-     
+
         nvert = size(vertx, kind=ip)
- 
-        ! Manually make test points and flag if they lie on a boundary 
-        ! 
+
+        ! Manually make test points and flag if they lie on a boundary
+        !
         ! It seems the routine counts being 'on' the boundary as being inside
-        ! (although that may vary in more complex cases due to round-off?) 
+        ! (although that may vary in more complex cases due to round-off?)
         !
         test_points(1) = test_point_type([-1.0_dp, 0.0_dp], .FALSE.)
         test_points(2) = test_point_type([-1.0_dp, 0.5_dp], .FALSE.)
@@ -137,7 +137,7 @@ module points_in_poly_mod
         test_points(8) = test_point_type([ 0.1_dp, 0.0_dp], .TRUE.)
         test_points(9) = test_point_type([ 1.0e-10_dp, 1.0e-10_dp], .TRUE.)
         test_points(10) = test_point_type([ -1.0e-10_dp, -1.0e-10_dp], .FALSE.)
-       
+
         do i = 1, 10
 
             call point_in_poly(size(vertx)*1_ip, vertx, verty, &
@@ -149,7 +149,7 @@ module points_in_poly_mod
                 print*, 'FAIL on point ', i, ' : ', test_points(i)
             end if
 
-        end do 
+        end do
 
         ! Test the array version
         do i = 1, 10

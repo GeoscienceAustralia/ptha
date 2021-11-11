@@ -9,7 +9,7 @@
 
         if(.not. have_allocated_p2p_comms) then
             error stop 'Need to call allocate_p2p_comms before trying to send'
-        end if 
+        end if
 
         ! If there is nothing to send, exit
         if(.not. allocated(send_buffer)) then
@@ -19,7 +19,7 @@
         call find_send_buffer_label_index(buffer_label, buffer_label_int)
 
         ! Copy the send array to the right part of the send buffer
-        si = send_start_index(buffer_label_int) 
+        si = send_start_index(buffer_label_int)
         ei = si + size(send_array, kind=ip) - 1
         ! The following routine is generic, for send_array having rank 1 to 4.
         call flatten_array(send_array, send_buffer(si:ei))

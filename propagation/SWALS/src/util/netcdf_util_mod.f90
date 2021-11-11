@@ -15,14 +15,14 @@ module netcdf_util
 
 ! Switch on/off netcdf 4 calls, which will fail if we have only compiled with netcdf 3
 #ifdef NETCDF4_GRIDS
-# define USING_NETCDF4_GUARD( x ) x    
+# define USING_NETCDF4_GUARD( x ) x
 #else
-# define USING_NETCDF4_GUARD( x ) 
+# define USING_NETCDF4_GUARD( x )
 #endif
 
     implicit none
 
-    private 
+    private
     public :: nc_grid_output_type, check
 
     ! Indices of stage, uh, vh, elevation in domain%U
@@ -98,7 +98,7 @@ module netcdf_util
         integer, intent(in) :: error_status
         integer, optional, intent(in) :: line
 
-    ! Gracefully compile in case we don't link with netcdf 
+    ! Gracefully compile in case we don't link with netcdf
 #ifndef NONETCDF
 
         if(error_status /= nf90_noerr) then
@@ -126,7 +126,7 @@ module netcdf_util
         logical, intent(in) :: record_max_U !! Do we record the max-stage ?
         real(dp), intent(in) :: xs(:), ys(:) !! array of grid x/y coordinates
         character(charlen), optional, intent(in):: attribute_names(:) !! global attribute names for netcdf file
-        character(charlen), optional, intent(in):: attribute_values(:) 
+        character(charlen), optional, intent(in):: attribute_values(:)
             !! values for global attributes of netcdf file (same length as attribute_names)
 
         integer:: iNcid, output_prec, i, output_byte, output_int4, spatial_stride, spatial_start(2)
@@ -136,13 +136,13 @@ module netcdf_util
 
         integer:: netcdf_file_type
         !logical:: using_netcdf4
-       
+
     ! Gracefully compile in case we don't link with netcdf
 #ifndef NONETCDF
 
         ! Setup the filetype -- currently the HDF5 format seems slower, and compression is not great
 #ifdef NETCDF4_GRIDS
-        netcdf_file_type = NF90_HDF5 
+        netcdf_file_type = NF90_HDF5
 #else
         netcdf_file_type = NF90_CLOBBER
 #endif
@@ -208,7 +208,7 @@ module netcdf_util
         iNcid = nc_grid_output%nc_file_id ! Shorthand
 
         ! Define dimensions
-        call check(nf90_def_dim(iNcid, "x", len=nc_grid_output%spatial_count(1), dimid=nc_grid_output%dim_x_id), __LINE__) 
+        call check(nf90_def_dim(iNcid, "x", len=nc_grid_output%spatial_count(1), dimid=nc_grid_output%dim_x_id), __LINE__)
         call check(nf90_def_dim(iNcid, "y", len=nc_grid_output%spatial_count(2), dimid=nc_grid_output%dim_y_id), __LINE__)
         call check(nf90_def_dim(iNcid, "time", NF90_UNLIMITED, nc_grid_output%dim_time_id), __LINE__)
 
@@ -265,7 +265,7 @@ module netcdf_util
         call check(nf90_def_var(iNcid, "is_priority_domain", output_byte, &
             [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
             nc_grid_output%var_is_priority_domain_id), __LINE__ )
-        
+
         ! priority_domain index
         call check(nf90_def_var(iNcid, "priority_domain_index", output_int4, &
             [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
@@ -331,7 +331,7 @@ SRC_GIT_VERSION ), &
         ! Write a few things
         !
         call check(nf90_put_var(iNcid, nc_grid_output%var_x_id , &
-            xs(spatial_start(1):nx:spatial_stride)), __LINE__ ) 
+            xs(spatial_start(1):nx:spatial_stride)), __LINE__ )
         call check(nf90_put_var(iNcid, nc_grid_output%var_y_id , &
             ys(spatial_start(2):ny:spatial_stride)), __LINE__)
 
@@ -344,12 +344,12 @@ SRC_GIT_VERSION ), &
         !! Write variables in U to file associated with nc_grid_output
         !!
 
-        class(nc_grid_output_type), intent(inout) :: nc_grid_output 
+        class(nc_grid_output_type), intent(inout) :: nc_grid_output
             !! instance of nc_grid_output_type which has been initialised
-        real(dp), intent(in) :: U(:,:,:) 
-            !! array with the flow data. It has size(U,3) == 4. 
+        real(dp), intent(in) :: U(:,:,:)
+            !! array with the flow data. It has size(U,3) == 4.
             !! Also U(:,:,1) = stage, U(:,:,2) = uh, U(:,:,3) = vh, U(:,:,4) = elev
-        real(dp), intent(in) :: time 
+        real(dp), intent(in) :: time
             !! Time associated with U(:,:,:)
         real(dp), optional, intent(in) :: debug_array(:,:)
             !! If compiled with -DDEBUG_ARRAY, this array will also be written to the netcdf file.
@@ -440,11 +440,11 @@ SRC_GIT_VERSION ), &
 
     subroutine store_priority_domain_cells(nc_grid_output, priority_domain_index, priority_domain_image, &
         is_priority_domain_not_periodic, my_index, my_image)
-        !! Store a 1 byte integer, denoting the cells in the current domain that are 
+        !! Store a 1 byte integer, denoting the cells in the current domain that are
         !! priority_domain cells. Also store regular integer grids with the priority domain index
         !! and image.
-        class(nc_grid_output_type), intent(in) :: nc_grid_output 
-            !! Initialised nc_grid_output type 
+        class(nc_grid_output_type), intent(in) :: nc_grid_output
+            !! Initialised nc_grid_output type
         integer(ip), intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:)
             !! Arrays denoting the priority domain index and image, i.e., the index/image of
             !! the domain that is consider to contain the 'real' solution on each cell. Generally the priority domain
@@ -459,11 +459,11 @@ SRC_GIT_VERSION ), &
             !! and value 0_ip otherwise
         integer(ip) :: my_index, my_image
             !! The domain index (i.e. index of the domain in md%domains(:)) and image (i.e. always 1 for non-coarray programs, or
-            !! equal to this_image() for coarray programs) 
+            !! equal to this_image() for coarray programs)
 
         integer(ip) :: i, iNcid, spatial_start(2), nxy(2), spatial_stride(2)
-    
-#ifndef NONETCDF 
+
+#ifndef NONETCDF
         iNcid = nc_grid_output%nc_file_id ! Shorthand
 
         spatial_stride = nc_grid_output%spatial_stride
@@ -474,7 +474,7 @@ SRC_GIT_VERSION ), &
         ! Loop to avoid making a temporary variable that contains the 0/1 mask
         do i = spatial_start(2), nxy(2), spatial_stride(2)
             ! NOTE: This records cells that are in the priority domain, but it may double-count
-            ! cells if there are periodic regions, and the domain receives periodic halos from itself. 
+            ! cells if there are periodic regions, and the domain receives periodic halos from itself.
             ! There is another variable (integer(ip) domain%nesting%is_priority_domain_not_periodic) that records
             ! this info - consider making use of that here instead.
             call check(nf90_put_var(&
@@ -484,7 +484,7 @@ SRC_GIT_VERSION ), &
                     mask=(is_priority_domain_not_periodic(spatial_start(1):nxy(1):spatial_stride(1),i) == 1_ip)), &
                 start = [1, (i - spatial_start(2))/spatial_stride(2) + 1]), &
                 __LINE__)
-        end do 
+        end do
 
         ! Priority domain index
         do i = spatial_start(2), nxy(2), spatial_stride(2)
@@ -495,7 +495,7 @@ SRC_GIT_VERSION ), &
                 priority_domain_index(spatial_start(1):nxy(1):spatial_stride(1),i), &
                 start = [1, (i - spatial_start(2))/spatial_stride(2) + 1]), &
                 __LINE__)
-        end do 
+        end do
 
         ! Priority domain image
         do i = spatial_start(2), nxy(2), spatial_stride(2)
@@ -506,7 +506,7 @@ SRC_GIT_VERSION ), &
                 priority_domain_image(spatial_start(1):nxy(1):spatial_stride(1),i), &
                 start = [1, (i - spatial_start(2))/spatial_stride(2) + 1]), &
                 __LINE__)
-        end do 
+        end do
 
 #endif
     end subroutine
@@ -529,9 +529,9 @@ SRC_GIT_VERSION ), &
         spatial_stride = nc_grid_output%spatial_stride
         nxy(1) = size(max_stage, dim=1)
         nxy(2) = size(max_stage, dim=2)
- 
-        if(nc_grid_output%record_max_U) then  
- 
+
+        if(nc_grid_output%record_max_U) then
+
             ! Shorthand
             iNcid = nc_grid_output%nc_file_id
 
@@ -567,16 +567,16 @@ SRC_GIT_VERSION ), &
     end subroutine
 
     subroutine finalise(nc_grid_output)
-        !! Close the netcdf file. 
+        !! Close the netcdf file.
 
         class(nc_grid_output_type), intent(inout) :: nc_grid_output
 
     ! Compile gracefully in case we don't use netcdf
 #ifndef NONETCDF
 
-        ! Close the netcdf file 
+        ! Close the netcdf file
         call check(nf90_close(nc_grid_output%nc_file_id))
-        
+
 #endif
 
     end subroutine

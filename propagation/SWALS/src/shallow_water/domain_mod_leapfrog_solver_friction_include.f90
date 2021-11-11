@@ -1,13 +1,13 @@
 
 !
-! This is included in the "linear_with_nonlinear_friction" friction computation. 
+! This is included in the "linear_with_nonlinear_friction" friction computation.
 ! We make _FRICTION_DEPTH_POWER_ a constant for efficiency
 !
 
 
     !subroutine precompute_friction_work(domain)
     !    type(domain_type), intent(inout) :: domain
-    ! 
+    !
     !    integer(ip) :: i, j, jp1, ip1
     !    real(dp) :: depth_iph, depth_jph, nsq_iph, nsq_jph
     !    real(dp), parameter :: manning_depth_power = NEG_SEVEN_ON_THREE_dp, chezy_depth_power = -2.0_dp

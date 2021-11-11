@@ -1,16 +1,16 @@
 !
-! The code here solves the nonlinear shallow water equations in cartesian or spherical 
+! The code here solves the nonlinear shallow water equations in cartesian or spherical
 ! coordinates, with or without coriolis. It is modified from the corresponding linear code.
 !
 ! It has been moved out of domain_mod.f90 because: A) it became complex, and B) including this
 ! code in different subroutines with different parameters/preprocessor-variables facilitates
 ! efficient code generation
-! 
+!
 !
 ! The subroutine header has been commented out
 
 
-!    ! 
+!    !
 !    ! Nonlinear shallow water equations leap-frog update
 !    !
 !    ! Update domain%U by timestep dt, using the nonlinear shallow water equations.
@@ -32,7 +32,7 @@
         real(dp):: dw_j(domain%nx(1)), h_jph_vec(domain%nx(1)), h_iph_vec(domain%nx(1))
         real(dp) :: h_iph_wet_strict(domain%nx(1)), h_jph_wet_strict(domain%nx(1))
         real(dp) :: h_iph_wet(domain%nx(1)), h_jph_wet(domain%nx(1))
-       
+
         integer(ip):: j, i, xl, xu, yl, yu, n_ext, my_omp_id, n_omp_threads, loop_work_count, jm1, im1, jp1, jp2
         integer(ip) :: yl_omp, yu_omp
 
@@ -93,10 +93,10 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
            flux_NS=domain%U(:,:,VH:VH), flux_NS_lower_index=2_ip, &
            flux_EW=domain%U(:,:,UH:UH), flux_EW_lower_index=2_ip, &
            var_indices=[STG, STG], flux_already_multiplied_by_dx=.FALSE.)
-        
+
         nx = domain%nx(1)
         ny = domain%nx(2)
-     
+
         ! For now don't try to support evolving a subset of rows/columns
         ! (It may or may not work but needs to be tested).
         xL = 1 !domain%xL
@@ -123,7 +123,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                     (domain%U(i, j, VH)*domain%distance_bottom_edge(j+1) - &
                         domain%U(i, j-1, VH)*domain%distance_bottom_edge(j))&
                     )
-        
+
             end do
         end do
         !$OMP END DO
@@ -160,9 +160,9 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
             ! We are in a multidomain -- carefully compute fluxes through
             ! exterior boundaries
             domain%boundary_flux_store_exterior = ZERO_dp
-       
+
             ! Here we implement masked versions of the boundary flux sums above, only counting cells
-            ! where the priority domain is receiving/sending the fluxes on actual physical boundaries 
+            ! where the priority domain is receiving/sending the fluxes on actual physical boundaries
 
             ! North boundary
             if(domain%boundary_exterior(1)) then
@@ -198,7 +198,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                     mask = (&
                         domain%nesting%priority_domain_index(1+n_ext, (1+n_ext):(ny-n_ext)) == domain%nesting%my_index .and. &
                         domain%nesting%priority_domain_image(1+n_ext, (1+n_ext):(ny-n_ext)) == domain%nesting%my_image ))
-            end if 
+            end if
         else
             ! We are not doing nesting
             domain%boundary_flux_store_exterior = domain%boundary_flux_store
@@ -219,7 +219,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         ! NOTE: Here we manually determine the openmp loop indices. This is
         ! required to include the Coriolis terms without having to copy
         ! memory of size domain%U(:,:,UH:VH) -- which would increase memory use
-        ! by 50% for the simple linear solver. 
+        ! by 50% for the simple linear solver.
         ! (For the nonlinear solver this is not useful because we store many things anyway)
         !
         loop_work_count = yU - yL ! Number of indices between 'yU - 1' and 'yL'
@@ -233,7 +233,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
 #else
         ! Parallel loop from yL:(yU-1)
         !
-        ! NOTE: In fortran, 
+        ! NOTE: In fortran,
         !     DO i = start, end
         !       .... code here ...
         !     END DO
@@ -261,7 +261,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                 max(domain%U(:,j,STG) - domain%U(:,j,ELV), ZERO_dp) )
         end do
 
-        ! 
+        !
         ! Get uuh and uvh terms at {i+1/2, j} for i-inds 1...(domain%nx(1)) and j-inds 1...(domain%nx(2))
         ! Extrapolate as required to cover those indices
         !
@@ -275,7 +275,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                 ! U*UH at i+1/2, j
                 domain%advection_work(i,j,UUH) = (domain%U(i,j,UH) * domain%U(i,j,UH)) * inv_depth_local
 
-                ! U*VH at i+1/2, j. 
+                ! U*VH at i+1/2, j.
                 if(i < nx-1) domain%advection_work(i,j,UVH) = domain%U(i,j,UH) * inv_depth_local * 0.25_dp * &
                     (domain%U(i,jm1,VH) + domain%U(i+1,jm1,VH) + domain%U(i,j,VH) + domain%U(i+1,j,VH))
              end do
@@ -305,9 +305,9 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                 inv_depth_local = merge(1.0_dp / depth_local, ZERO_dp, depth_local > minimum_allowed_depth)
 
                 ! V*VH at i, j+1/2
-                domain%advection_work(i,j,VVH) = domain%U(i,j,VH) * domain%U(i, j, VH) * inv_depth_local 
+                domain%advection_work(i,j,VVH) = domain%U(i,j,VH) * domain%U(i, j, VH) * inv_depth_local
 
-                ! V*UH at i, j+1/2. 
+                ! V*UH at i, j+1/2.
                 ! Avoid out-of-bounds when xL=1
                 if(i > 1 .and. j < (ny - 1)) domain%advection_work(i,j,VUH) = domain%U(i,j,VH) * inv_depth_local * 0.25_dp * &
                      (domain%U(i-1,j,UH) + domain%U(i,j,UH) + domain%U(i-1,j+1,UH) + domain%U(i,j+1,UH))
@@ -336,7 +336,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         do j = yl_omp, yu_omp
             ! NB: distance_left_edge is constant, so do not worry about shifting for staggered grid
             domain%flux_EW(xL+1:xU-1, j, UH) = domain%distance_left_edge(xL+1:xU-1) * merge(&
-                domain%advection_work(xL  :xU-2, j, UUH), & 
+                domain%advection_work(xL  :xU-2, j, UUH), &
                 domain%advection_work(xL+1:xU-1, j, UUH), &
                 domain%U(xL+1:xU-1, j, UH) + domain%U(xL:xU-2, j, UH) > ZERO_dp)
             ! Extrapolate if we really are at the boundaries -- noting "distance_left_edge = constant"
@@ -465,7 +465,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
             domain%flux_EW(xL+1:xU, j, VH) = domain%distance_left_edge(xL:xU-1) * merge(&
                 domain%advection_work(xL  :xU-1, j, VUH), &
                 domain%advection_work(xL+1:xU  , j, VUH), &
-                domain%U(xL:xU-1,j,UH) + domain%U(xL:xU-1,j+1,UH) > ZERO_dp) 
+                domain%U(xL:xU-1,j,UH) + domain%U(xL:xU-1,j+1,UH) > ZERO_dp)
             if(xL == 1) domain%flux_EW(1, j, VH) = domain%flux_EW(2, j, VH)
 
             ! Treat case where neighbour UH is of opposite sign and equal
@@ -475,7 +475,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                  domain%flux_EW(xL+1:xU, j, VH), &
                  (domain%U(xL:xU-1,j,UH) + domain%U(xL:xU-1,j+1,UH)) == ZERO_dp)
 
-            ! Wetting and drying 
+            ! Wetting and drying
             domain%flux_EW(xL+1:xU, j, VH) = merge(&
                 domain%flux_EW(xL+1:xU, j, VH), &
                 ZERO_dp, &
@@ -489,10 +489,10 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         ! Tricks to implement coriolis without increasing memory usage much
         !
         ! For coriolis, we need values of 'VH' at coorinates corresponding to UH,
-        ! and also values of UH at coordinates corresponding to VH. 
+        ! and also values of UH at coordinates corresponding to VH.
         !
         ! This requires 4 point averaging of the 'OLD' values of UH and VH.
-        ! 
+        !
         ! A simply way to do that is to store all the OLD values -- but that involves
         ! lots of memory. Or,
         ! We can do this in a loop with care, without storing those 'OLD' values,
@@ -512,7 +512,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         dt_half_coriolis_jph(xL:(xU-1)) = ZERO_dp
 
         !
-        ! Before starting the loop, get the value of VH at 
+        ! Before starting the loop, get the value of VH at
         ! 'i+1/2', 'yl_omp-1/2', to prevent the possibility that it is
         ! updated by another openmp thread before we read it !
         if(yl_omp == 1) then
@@ -545,7 +545,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         end if
 
         !
-        ! Get the initial value of UH at 'i, yl_omp'. This 'starting value' is required because 
+        ! Get the initial value of UH at 'i, yl_omp'. This 'starting value' is required because
         ! inside the loop we set 'uh_i_j = uh_i_jph' after the update.
         !
         uh_i_j((xL+1):(xU-1)) = HALF_dp * &
@@ -579,8 +579,8 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
             inv_cell_area_dt_vh = dt / &
                 (HALF_dp * (domain%area_cell_y(j) + domain%area_cell_y(j+1)))
             inv_cell_area_dt_vh_g = gravity * inv_cell_area_dt_vh
-       
-            ! 
+
+            !
             ! Try to keep control-flow and non-local memory jumps out of inner loop
             ! This improves speed on my machine with gfortran (11/08/2016)
             !
@@ -641,8 +641,8 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                 (domain%U(xL    :(xU-1), j, VH) + &
                  domain%U((xL+1):xU    , j, VH))
 
-            ! 'Old' UH at (i, j+1). 
-            ! First get it assuming we are not at the last loop index -- and then fix it 
+            ! 'Old' UH at (i, j+1).
+            ! First get it assuming we are not at the last loop index -- and then fix it
             ! -- and account for the case that j+1 is on another openmp thread.
             ! Step1: Get everything except xL, which needs special treatment if xL == 1
             uh_i_jp1((xL+1):(xU-1)) = HALF_dp * &
@@ -651,7 +651,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
             ! Special case of xL which is protective if xL == 1
             uh_i_jp1(xL) = HALF_dp * ( domain%U(xL          , j+1, UH) + &
                                        domain%U(max(xL-1, 1), j+1, UH) )
-            ! Final step to ensure that if (j == yu_omp), so j+1 is on another openmp 
+            ! Final step to ensure that if (j == yu_omp), so j+1 is on another openmp
             ! thread, then we still get the non-updated value of UH.
             uh_i_jp1(xl:(xU-1)) = merge(&
                                uh_i_jp1(xL:(xU-1)), &
@@ -673,17 +673,17 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
             ! This is equivalent to adding a term "g * depth * friction_slope" to the equations.
             !   where friction_slope = {manning_sq * depth**(-4./3.) * speed * velocity_component}
             !
-            ! The term is broken up into a fast, semi-implicit discretization. 
+            ! The term is broken up into a fast, semi-implicit discretization.
             ! For UH, we break it up as (terms in { })
             !    g * depth * friction_slope = {g * manning_sq * depth^(-7/3)} * { sqrt(uh^2 + vh^2) } * {uh}
             ! while for VH, the final term is vh
             !    g * depth * friction_slope = {g * manning_sq * depth^(-7/3)} * { sqrt(uh^2 + vh^2) } * {vh}
             ! The discretization is semi-implicit as follows:
-            !    - The component 'g n^2 depth^(-7/3)' is a constant in time for the "truely-linear" solver, 
+            !    - The component 'g n^2 depth^(-7/3)' is a constant in time for the "truely-linear" solver,
             !      because the effective depth never changes in this "linear" framework. Otherwise it is updated
             !      every time-step.
             !    - The term sqrt(uh^2+vh^2) {= speed*depth} is treated explicitly.
-            !    - The remaining 'uh' or 'vh' term is treated implicitly. 
+            !    - The remaining 'uh' or 'vh' term is treated implicitly.
             !
             ! Thus, appending the term g * depth * friction slope to the equations can be reduced to
             ! a multiplication of the form { 1/(1 + explicit_part_of_friction_terms) }
@@ -758,7 +758,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                 if(domain%U(i,j,UH) * domain%U(i,j,UH) > fr_limit_uh * fr_limit_uh) domain%U(i,j,UH) = fr_limit_uh
             end do
             do i = xL , (xU-1)
-                ! Limit VH 
+                ! Limit VH
                 depth_local = 0.5_dp * (domain%U(i,j  ,STG) - domain%U(i,j  ,ELV) + &
                                         domain%U(i,j+1,STG) - domain%U(i,j+1,ELV))
                 if(depth_local < minimum_allowed_depth) depth_local = ZERO_dp
@@ -766,7 +766,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                     depth_local * sign(1.0_dp, domain%U(i,j,VH))
                 if(domain%U(i,j,VH) * domain%U(i,j,VH) > fr_limit_vh * fr_limit_vh) domain%U(i,j,VH) = fr_limit_vh
             end do
-#endif                      
+#endif
 
             ! On the next j iteration, the 'old' value of VH at i+1/2,
             ! j-1/2 can be derived using the current value of VH at i+1, j+1/2
@@ -776,8 +776,8 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         end do
 
         ! For nonlinear solvers we apply a wetting-and-drying treatment
-        do j = yl_omp, yu_omp                
-            ! 
+        do j = yl_omp, yu_omp
+            !
             ! Zero flux outflow from dry cells
             !
             do i = xL, xU !(xU-1)
@@ -799,7 +799,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                 end if
             end do
         end do
-            
+
 
         !@!$OMP END DO
         !$OMP END PARALLEL
@@ -809,7 +809,7 @@ EVOLVE_TIMER_STOP('LF_nonlinear_update')
 
 contains
 
-    ! Partial computation of friction term 
+    ! Partial computation of friction term
     !
     ! This assumes stage/UH/VH/elev have been set
     !

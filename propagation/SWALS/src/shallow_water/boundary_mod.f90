@@ -6,9 +6,9 @@ module boundary_mod
 
     !! In a typical application the user might provide their own, which
     !!  is passed to the procedure pointer 'domain%boundary_subroutine'.
-    !! The only requirement on the boundary_subroutine is that it 
+    !! The only requirement on the boundary_subroutine is that it
     !!  has 'domain' as its only input argument.
-    !! If access to other data is required for boundary_subroutine, you 
+    !! If access to other data is required for boundary_subroutine, you
     !! can create the boundary_subroutine in its own module, and put the
     !! required data in the same module.
     !!
@@ -52,7 +52,7 @@ module boundary_mod
                 ! For stability it seems important that the elevation is equal to
                 ! the neighbour elevation [likely because this makes the current
                 ! approach equivalent to velocity extrapolation]
-            
+
                 ! West boundary
                 if(domain%boundary_exterior(4)) domain%U(1,j,k) = domain%U(2,j,k) !- domain%U(3,j,k)
                 ! East boundary
@@ -78,7 +78,7 @@ module boundary_mod
 
     !
     ! Apply the boundary function domain%boundary_function at the boundaries.
-    ! The latter function must take as input (domain, time, i, j) and 
+    ! The latter function must take as input (domain, time, i, j) and
     ! return a vector of length 4 giving the [stage,uh,vh,elev] values at
     ! boundary location domain%x(i),domain%y(j) at time t.
     !
@@ -318,7 +318,7 @@ module boundary_mod
 
     !
     ! Apply the boundary function domain%boundary_function at the boundaries.
-    ! The latter function must take as input (domain, time, i, j) and 
+    ! The latter function must take as input (domain, time, i, j) and
     ! return a vector of length 4 giving the [stage,uh,vh,elev] values at
     ! boundary location domain%x(i),domain%y(j) at time t.
     !
@@ -494,7 +494,7 @@ module boundary_mod
     !    !$OMP END PARALLEL
 
     !end subroutine
-   
+
     !
     ! Flather type boundary condition.
     !
@@ -502,9 +502,9 @@ module boundary_mod
     !
     ! In practice it seems good when the free surface perturbation is small compared
     ! with the flow depth (e.g. domain of linear shallow water theory), but is partly reflective
-    ! in the nonlinear regime. 
+    ! in the nonlinear regime.
     ! This seems consistent with the theory outlined by Blayo and Debreu (2005)
-    ! 
+    !
     subroutine flather_boundary(domain)
 
         type(domain_type), intent(inout):: domain
@@ -523,13 +523,13 @@ module boundary_mod
             if(domain%boundary_exterior(4)) then
                 i = 1
                 depth_inside = domain%U(i+1,j,STG) - domain%U(i+1,j,ELV)
-              
-                ! Get the 'outside' values 
+
+                ! Get the 'outside' values
                 if(associated(domain%boundary_function) .EQV. .FALSE.) then
                     ! default values
-                    stage_outside = max(domain%msl_linear, domain%U(i,j,ELV))!ZERO_dp 
+                    stage_outside = max(domain%msl_linear, domain%U(i,j,ELV))!ZERO_dp
                     u_outside = ZERO_dp
-                    v_outside = ZERO_dp   
+                    v_outside = ZERO_dp
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
                 else
                     ! use the boundary function
@@ -549,7 +549,7 @@ module boundary_mod
                     depth_inside_inv = ONE_dp / depth_inside
                     sqrt_g_on_di = sqrt(gravity * depth_inside_inv)
                     ! w1 = u + sqrt(g/depth) * stage_outside -- uses 'outside' info
-                    w1 = u_outside + sqrt_g_on_di * stage_outside 
+                    w1 = u_outside + sqrt_g_on_di * stage_outside
                     ! w2 = v (velocity parallel to boundary)
                     w2 = merge(domain%U(i+1,j,VH) * depth_inside_inv, ZERO_dp, domain%U(i+1,j,UH) < ZERO_dp)
                     ! w3 = u - sqrt(g/depth) * stage_inside -- uses inside info
@@ -573,12 +573,12 @@ module boundary_mod
                 i = domain%nx(1)
                 depth_inside = domain%U(i-1,j,STG) - domain%U(i-1,j,ELV)
 
-                ! Get the 'outside' values 
+                ! Get the 'outside' values
                 if(associated(domain%boundary_function) .EQV. .FALSE.) then
                     ! default values
                     stage_outside = max(domain%msl_linear, domain%U(i,j,ELV))
                     u_outside = ZERO_dp
-                    v_outside = ZERO_dp   
+                    v_outside = ZERO_dp
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
                 else
                     ! use the boundary function
@@ -598,7 +598,7 @@ module boundary_mod
                     depth_inside_inv = ONE_dp / depth_inside
                     sqrt_g_on_di = sqrt(gravity * depth_inside_inv)
                     ! w1 = u - sqrt(g/depth) * stage_outside -- uses 'outside' info
-                    w1 = u_outside - sqrt_g_on_di * stage_outside 
+                    w1 = u_outside - sqrt_g_on_di * stage_outside
                     ! w2 = v (velocity parallel to boundary)
                     w2 = merge(domain%U(i-1,j,VH) * depth_inside_inv, ZERO_dp, domain%U(i-1,j,UH) > ZERO_dp)
                     ! w3 = u + sqrt(g/depth) * stage_inside -- uses inside info
@@ -618,7 +618,7 @@ module boundary_mod
             end if
         end do
         !$OMP END DO
-        
+
         !$OMP DO SCHEDULE(STATIC)
         do i = 1, domain%nx(1)
             ! South edge
@@ -626,12 +626,12 @@ module boundary_mod
                 j = 1
                 depth_inside = domain%U(i,j+1,STG) - domain%U(i,j+1,ELV)
 
-                ! Get the 'outside' values 
+                ! Get the 'outside' values
                 if(associated(domain%boundary_function) .EQV. .FALSE.) then
                     ! default values
                     stage_outside = max(domain%msl_linear, domain%U(i,j,ELV))
                     u_outside = ZERO_dp
-                    v_outside = ZERO_dp   
+                    v_outside = ZERO_dp
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
                 else
                     ! use the boundary function
@@ -651,7 +651,7 @@ module boundary_mod
                     depth_inside_inv = ONE_dp / depth_inside
                     sqrt_g_on_di = sqrt(gravity * depth_inside_inv)
                     ! w1 = v + sqrt(g/depth) * stage_outside -- uses 'outside' info
-                    w1 = v_outside + sqrt_g_on_di * stage_outside 
+                    w1 = v_outside + sqrt_g_on_di * stage_outside
                     ! w2 = u (velocity parallel to boundary)
                     w2 = merge(domain%U(i,j+1,UH) * depth_inside_inv, ZERO_dp, domain%U(i,j+1,VH) < ZERO_dp)
                     ! w3 = v - sqrt(g/depth) * stage_inside -- uses inside info
@@ -675,12 +675,12 @@ module boundary_mod
                 j = domain%nx(2)
                 depth_inside = domain%U(i,j-1,STG) - domain%U(i,j-1,ELV)
 
-                ! Get the 'outside' values 
+                ! Get the 'outside' values
                 if(associated(domain%boundary_function) .EQV. .FALSE.) then
                     ! default values
                     stage_outside = max(domain%msl_linear, domain%U(i,j, ELV))
                     u_outside = ZERO_dp
-                    v_outside = ZERO_dp   
+                    v_outside = ZERO_dp
                     depth_outside = stage_outside - domain%U(i,j,ELV) !depth_inside
                 else
                     ! use the boundary function
@@ -700,7 +700,7 @@ module boundary_mod
                     depth_inside_inv = ONE_dp / depth_inside
                     sqrt_g_on_di = sqrt(gravity * depth_inside_inv)
                     ! w1 = v - sqrt(g/depth) * stage_outside -- uses 'outside' info
-                    w1 = v_outside - sqrt_g_on_di * stage_outside 
+                    w1 = v_outside - sqrt_g_on_di * stage_outside
                     ! w2 = u (velocity parallel to boundary)
                     w2 = merge(domain%U(i,j-1,UH) * depth_inside_inv, ZERO_dp, domain%U(i,j-1,VH) > ZERO_dp)
                     ! w3 = v + sqrt(g/depth) * stage_inside -- uses inside info
@@ -728,7 +728,7 @@ module boundary_mod
     !
     ! Impose Periodic EW boundaries, and reflective NS boundaries
     ! This can be useful in global scale tsunami models with poles
-    ! cut off (although it would be better to use transmissive at north 
+    ! cut off (although it would be better to use transmissive at north
     !
     subroutine periodic_EW_reflective_NS(domain)
 
@@ -759,12 +759,12 @@ module boundary_mod
             endif
             if(domain%boundary_exterior(1)) then
                 if((j==domain%nx(2)-1).OR.(j==domain%nx(2))) then
-                    domain%U(:,j,ELV) = wall_elevation 
+                    domain%U(:,j,ELV) = wall_elevation
                     domain%U(:,j,STG) = wall_elevation
                 end if
             endif
 
-        end do    
+        end do
         !$OMP END DO
         !$OMP END PARALLEL
     end subroutine

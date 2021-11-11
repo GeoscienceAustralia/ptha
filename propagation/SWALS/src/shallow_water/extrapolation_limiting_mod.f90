@@ -18,7 +18,7 @@ module extrapolation_limiting_mod
         !!
         real(dp), intent(in):: a, b
         real(dp):: minmod_ab
-        
+
         minmod_ab = merge(min(abs(a), abs(b))*sign(ONE_dp,a), ZERO_dp, sign(ONE_dp,a) == sign(ONE_dp,b))
         !minmod_ab = sign(one_dp, a) * max(zero_dp, min(abs(a), sign(one_dp, a)*b))
 
@@ -71,7 +71,7 @@ module extrapolation_limiting_mod
                 half_sasb = HALF_dp * (sa + sb)
                 d = min(abs(a), abs(b)) * half_sasb * th ! Limit on local gradient
                 e = HALF_dp * (a + b)
-                c = merge(ZERO_dp, e, d == ZERO_dp) 
+                c = merge(ZERO_dp, e, d == ZERO_dp)
                 ! NOTE: IF d /= 0, then clearly d, c have the same sign
                 ! We exploit this to avoid a further minmod call (which seems
                 ! expensive)
@@ -96,7 +96,7 @@ module extrapolation_limiting_mod
                 else
                     b = d
                 endif
-                gradient_dx(i) = b 
+                gradient_dx(i) = b
             end do
 
         else if(limiter_type == "Minmod2") then
@@ -129,10 +129,10 @@ module extrapolation_limiting_mod
 
             gradient_dx = HALF_dp * (U_upper - U_lower)
 
-        else 
+        else
             gradient_dx = ZERO_dp
         end if
-            
+
 
     end subroutine
 
@@ -160,7 +160,7 @@ module extrapolation_limiting_mod
         half_sasb = HALF_dp * (sa + sb)
         d = min(abs(a), abs(b)) * half_sasb * th ! Limit on local gradient
         e = HALF_dp * (a + b)
-        c = merge(ZERO_dp, e, d == ZERO_dp) 
+        c = merge(ZERO_dp, e, d == ZERO_dp)
         ! NOTE: IF d /= 0, then clearly d, c have the same sign
         ! We exploit this to avoid a further minmod call (which seems
         ! expensive)
@@ -170,7 +170,7 @@ module extrapolation_limiting_mod
 
     subroutine test_extrapolation_limiting_mod
         !! Unit tests
-    
+
         integer(ip), parameter :: N = 10
         real(dp) :: U(N), U_lower(N), U_upper(N)
         real(dp) :: theta(N), extrapolation_sign(N)
@@ -217,7 +217,7 @@ module extrapolation_limiting_mod
             U_lower = U + 2.0_dp
             U_upper = U + 3.0_dp
             call test_both_limited_gradient_dx_vectorized(version, U, U_lower, U_upper, theta, answer, N)
-            desired_answer = U 
+            desired_answer = U
             call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
             ! Local max.
@@ -226,11 +226,11 @@ module extrapolation_limiting_mod
             U_upper = U - 3.0_dp
             extrapolation_sign = -1.0_dp
             call test_both_limited_gradient_dx_vectorized(version, U, U_lower, U_upper, theta, answer, N)
-            desired_answer = U 
+            desired_answer = U
             call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
             ! Limited gradients
-            ! 
+            !
             ! Central gradient = 2, lower-gradient=1, upper-gradient=3
             U_lower = U - 1.0_dp
             U_upper = U + 3.0_dp
@@ -245,7 +245,7 @@ module extrapolation_limiting_mod
             desired_answer = U + 0.5_dp * 1.5_dp
             call assert_equal_within_tol(desired_answer, U+HALF_dp*extrapolation_sign*answer, __LINE__)
 
-            
+
             extrapolation_sign = -1.0_dp ! As above, negative side
             call test_both_limited_gradient_dx_vectorized(version, U, U_lower, U_upper, theta, answer, N)
             desired_answer = U - 0.5_dp * 1.5_dp
