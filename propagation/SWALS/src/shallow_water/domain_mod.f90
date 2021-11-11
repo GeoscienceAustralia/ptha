@@ -3548,12 +3548,18 @@ TIMER_STOP('send_halos')
     end subroutine
 
     subroutine store_forcing(domain)
-        !! Suppose we want to apply multiple forcing terms to the domain.
-        !! One forcing term can be added by setting domain%forcing_subroutine => my_subroutine,
-        !! and optionally populating domain%forcing_context_cptr with a c_ptr to required data.
-        !! When that is done, "call domain%store_forcing()" will append those terms to the array
-        !! domain%forcing_terms_storage(:) and also clear the forcing data (i.e. it will set
-        !! domain%forcing_context_cptr=c_null_pointer and domain%foring_subroutine => NULL() )
+        !! Adds new forcing terms to domain%forcing_terms_storage.
+        !!
+        !! Recall that a forcing term can be used by setting domain%forcing_subroutine => my_subroutine,
+        !! and optionally populating domain%forcing_context_cptr with a c_ptr to required data. If only
+        !! one forcing term is applied then nothing else needs to be done. But what about if we want to 
+        !! add multiple forcing terms? In that case we add the first term as above. Then 
+        !! "call domain%store_forcing()" will append those terms to the array
+        !! "domain%forcing_terms_storage(:)" and also clear the forcing data (i.e. it will set
+        !! domain%forcing_context_cptr=c_null_pointer and domain%foring_subroutine => NULL() ).
+        !! We can then optionally add another forcing term by again setting domain%forcing_subroutine and
+        !! domain%forcing_context_cptr and calling domain%store_forcing(). And repeat for multiple forcing terms.
+        !!
         class(domain_type), intent(inout) :: domain
 
         type(forcing_term_type) :: temp_forcing
