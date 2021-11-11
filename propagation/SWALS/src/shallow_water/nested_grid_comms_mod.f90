@@ -2,7 +2,7 @@
 module nested_grid_comms_mod
     !!
     !! Module for nesting communication. It defines a type 'two_way_nesting_comms_type'
-    !! which can send and/or receive data between corresponding rectangular regions in 2 domains. 
+    !! which can send and/or receive data between corresponding rectangular regions in 2 domains.
     !! In practice each domain in a multidomain contains two arrays of this type - one to manage
     !! the data it sends to other domains, and one to manage the data it receives from other domains.
     !!
@@ -14,7 +14,7 @@ module nested_grid_comms_mod
     use global_mod, only: dp, ip, charlen, minimum_allowed_depth, send_boundary_flux_data, force_double, &
         real_bytes, integer_bytes, force_double_bytes
     use stop_mod, only: generic_stop
-    ! Note: coarray_point2point_comms_mod works in serial or parallel 
+    ! Note: coarray_point2point_comms_mod works in serial or parallel
     use coarray_point2point_comms_mod, only: include_in_p2p_send_buffer, &
         send_to_p2p_comms, recv_from_p2p_comms, linked_p2p_images, &
         allocate_p2p_comms, deallocate_p2p_comms, communicate_p2p
@@ -34,8 +34,8 @@ module nested_grid_comms_mod
     logical, parameter :: use_averaging_for_fine_to_coarse_data_sends = .false.
     !!
     !! When sending from a fine grid to a coarse grid cell, should we average over all cells
-    !! in the fine grid that are inside the coarse grid cell (.TRUE.), or just sent a 
-    !! single 'central value' from the fine grid (.FALSE.). 
+    !! in the fine grid that are inside the coarse grid cell (.TRUE.), or just sent a
+    !! single 'central value' from the fine grid (.FALSE.).
     !! While the former could be more accurarate, it also may have wet/dry challenges which
     !! are not an issue for the latter.
     !!
@@ -54,15 +54,15 @@ module nested_grid_comms_mod
     !! which the fine domain can use to interpolate the result. For instance we might send
     !! 2 x-gradients (forward and backward) and 2 y-gradients (forward and backward)
 
-    ! Received data can partially weighted using "receive_weights". 
-    ! If receive_weights are used, they can cause problems if applied in wet/dry areas. So 
-    ! we need some parameters to detect "near-wet-dry" type regions. 
+    ! Received data can partially weighted using "receive_weights".
+    ! If receive_weights are used, they can cause problems if applied in wet/dry areas. So
+    ! we need some parameters to detect "near-wet-dry" type regions.
     real(dp), parameter :: ignore_receive_weights_depth_shallower_than = 20.0_dp
     real(dp), parameter :: ignore_receive_weights_depth_ratio = 2.0_dp
-    ! NOTE: In practice we rarely use receive_weights other than 1.0 (corresponding to a 
+    ! NOTE: In practice we rarely use receive_weights other than 1.0 (corresponding to a
     ! straightforward receive), in which case the above parameters don't matter, arguably
-    ! the associated logic should be removed from the code. However the functionality does 
-    ! enable various experiments with nesting techniques (e.g. see the 'separate_halos' 
+    ! the associated logic should be removed from the code. However the functionality does
+    ! enable various experiments with nesting techniques (e.g. see the 'separate_halos'
     ! method of the multidomain type).
 
     ! Indices into boundary flux tracking arrays
@@ -93,7 +93,7 @@ module nested_grid_comms_mod
 
         ! cell_ratios = my_dx/neighbour_dx
         real(dp) :: cell_ratios(SPATIAL_DIM)
-        logical :: my_domain_is_finer 
+        logical :: my_domain_is_finer
         logical :: equal_cell_ratios
 
 
@@ -104,7 +104,7 @@ module nested_grid_comms_mod
         !
         ! send_inds =  min_i, min_j, min_k,
         !              max_i, max_j, max_k
-        integer(ip) :: send_inds(2, SPATIAL_DIM + 1) 
+        integer(ip) :: send_inds(2, SPATIAL_DIM + 1)
         real(dp), allocatable :: send_buffer(:)
         integer(ip) :: nsend ! We only need to send send_buffer(1:nsend)
         integer(ip) :: nsend_interior ! Number of send values that are not edge fluxes
@@ -113,7 +113,7 @@ module nested_grid_comms_mod
         ! length(4) = NORTH, SOUTH, EAST, WEST
         type(array_rank2_dp_type) :: send_box_flux_integral(4)
 
-        ! This array will tell us if we **can use** the exterior cells 
+        ! This array will tell us if we **can use** the exterior cells
         ! that are around the edges of the box. We might want to use
         ! them in derivative calculation.
         !type(array_rank1_logical_type) :: can_use_exterior_cells_send(4)
@@ -125,10 +125,10 @@ module nested_grid_comms_mod
         !
         ! recv_inds = min_i, min_j, min_k,
         !             max_i, max_j, max_k
-        integer(ip) :: recv_inds(2, SPATIAL_DIM + 1) 
+        integer(ip) :: recv_inds(2, SPATIAL_DIM + 1)
         real(dp), allocatable :: recv_buffer(:)
         integer(ip) :: nrecv ! We only need to use recv_buffer(1:nrecv)
-        integer(ip) :: nrecv_interior 
+        integer(ip) :: nrecv_interior
         logical :: recv_active = .true. ! Can use to switch off 'recv' (so only sends occur)
         ! Store the flux integral around the recv_inds bbox boundary
         ! length(4) = NORTH, SOUTH, EAST, WEST
@@ -153,23 +153,23 @@ module nested_grid_comms_mod
         ! 'neighbour_domain_image_index', specifically with the
         ! 'neighbour_domain_comms_index' index of its two_way_nesting_comms array
         ! i.e., EITHER (if we recv)
-        !     domains(neighbour_domain_index)%nesting%send_comms(neighbour_domain_comms_index) 
+        !     domains(neighbour_domain_index)%nesting%send_comms(neighbour_domain_comms_index)
         !  OR (if we send)
-        !     domains(neighbour_domain_index)%nesting%recv_comms(neighbour_domain_comms_index) 
+        !     domains(neighbour_domain_index)%nesting%recv_comms(neighbour_domain_comms_index)
         integer(ip) :: neighbour_domain_index = -1_ip
         integer(ip) :: neighbour_domain_comms_index = -1_ip
         integer(ip) :: my_domain_index = -1_ip
         integer(ip) :: my_domain_comms_index = -1_ip
 
-#if defined(COARRAY) 
-        integer(ip) :: neighbour_domain_image_index = -1_ip 
+#if defined(COARRAY)
+        integer(ip) :: neighbour_domain_image_index = -1_ip
         integer(ip) :: my_domain_image_index = -1_ip
 #else
         integer(ip) :: neighbour_domain_image_index = 1_ip
         integer(ip) :: my_domain_image_index = 1_ip
 #endif
 
-        ! Info on the communicating domain grid types. We may interpolate differently if 
+        ! Info on the communicating domain grid types. We may interpolate differently if
         ! one domain has a staggered grid and the other doesn't
         integer(ip) :: my_domain_staggered_grid = -1_ip
         integer(ip) :: neighbour_domain_staggered_grid = -1_ip
@@ -189,7 +189,7 @@ module nested_grid_comms_mod
         procedure :: boundary_flux_integral_multiply => boundary_flux_integral_multiply
         procedure :: boundary_flux_integral_tstep => boundary_flux_integral_tstep
         ! Memory summary
-        procedure :: memory_summary => two_way_nesting_comms_memory_summary 
+        procedure :: memory_summary => two_way_nesting_comms_memory_summary
 
     end type
 
@@ -244,18 +244,18 @@ module nested_grid_comms_mod
             do i = 1, size(domain_nesting%send_comms, kind=ip)
                 call domain_nesting%send_comms(i)%memory_summary(local_buffer_size)
                 buffer_size = buffer_size + local_buffer_size
-            end do        
+            end do
         end if
         if(allocated(domain_nesting%recv_comms)) then
             do i = 1, size(domain_nesting%recv_comms, kind=ip)
                 call domain_nesting%recv_comms(i)%memory_summary(local_buffer_size)
                 buffer_size = buffer_size + local_buffer_size
-            end do        
+            end do
         end if
 
         ! This information is useful, but it's not really 'buffers' -- it's metadata.
         ! That could be important, but consider reporting separately
-        !if(allocated(domain_nesting%priority_domain_index)) then       
+        !if(allocated(domain_nesting%priority_domain_index)) then
         !    buffer_size = buffer_size + integer_bytes * (size(domain_nesting%send_metadata) + &
         !        size(domain_nesting%recv_metadata) + size(domain_nesting%priority_domain_index) + &
         !        size(domain_nesting%priority_domain_image))
@@ -281,7 +281,7 @@ module nested_grid_comms_mod
     !    domain' [i.e. assuming all domains are in a vector 'domains', and
     !    'neighbour domain' = domains(neighbour_domain_index) ]
     ! @param my_domain_index integer giving the index of 'my domain'
-    !    [assuming all domains are in a vector 'domains(:)', and 
+    !    [assuming all domains are in a vector 'domains(:)', and
     !     'my domain' = domains(my_domain_index)  ]
     ! @param neighbour_domain_image_index optional image_index holding
     !    the 'neighbour domain' (for coarrays)
@@ -324,9 +324,9 @@ module nested_grid_comms_mod
 
         !
         ! Allow 'send_only' or 'recv_only' instances of this type
-        ! 
+        !
         if(present(send_only) .and. present(recv_only)) then
-            write(log_output_unit,*) 'Error: Both send_only and recv_only were passed to initialise_two_way_nesting_comms' 
+            write(log_output_unit,*) 'Error: Both send_only and recv_only were passed to initialise_two_way_nesting_comms'
             write(log_output_unit,*) 'At most one of these arguments may be passed'
             call generic_stop()
         end if
@@ -368,8 +368,8 @@ module nested_grid_comms_mod
             two_way_nesting_comms%neighbour_domain_staggered_grid = neighbour_domain_staggered_grid
         end if
 
-        ! Find the ratios of the cell sizes -- should either be equal, or one is an 
-        ! integer divisor of the other. 
+        ! Find the ratios of the cell sizes -- should either be equal, or one is an
+        ! integer divisor of the other.
         cell_ratios = my_dx/neighbour_dx
         equal_cell_ratios = all(abs(cell_ratios - 1.0_dp) < EPS)
 
@@ -386,8 +386,8 @@ module nested_grid_comms_mod
                 write(log_output_unit,*) 'Nesting cell dimensions not consistently larger', cell_ratios
                 call generic_stop()
             end if
-           
-            ! cell_ratios should be an integer (up to floating point) 
+
+            ! cell_ratios should be an integer (up to floating point)
             if(any(abs(cell_ratios - nint(cell_ratios)) > EPS)) then
                 write(log_output_unit,*) 'Apparent non-integer cell ratios (not finer) ', cell_ratios, &
                     my_dx, neighbour_dx
@@ -457,12 +457,12 @@ module nested_grid_comms_mod
             kU = ijk_to_send(2,3)
 
             ! Sanity check the send/recv indices
-            if(two_way_nesting_comms%my_domain_is_finer) then 
+            if(two_way_nesting_comms%my_domain_is_finer) then
                 ! Finer grid should be perfectly contained in coarser grid
                 ! (i.e. iU - iL + 1 should be a multiple of the relative cell sizes)
                 if(mod(iU - iL + 1, int(nint(ONE_dp/cell_ratios(1)))) /= 0) then
                     write(log_output_unit,*) 'Imperfectly nested i'
-                    write(log_output_unit,*) iU, iL, iU - iL + 1, int(nint(ONE_dp/cell_ratios(1))) 
+                    write(log_output_unit,*) iU, iL, iU - iL + 1, int(nint(ONE_dp/cell_ratios(1)))
                     write(log_output_unit,*) neighbour_domain_comms_index, my_domain_comms_index
                     call generic_stop()
                 end if
@@ -477,8 +477,8 @@ module nested_grid_comms_mod
                 write(log_output_unit,*) 'indices to send has min > max'
                 call generic_stop()
             end if
-            
- 
+
+
             ! Allocate space to store fluxes around the boundary of the send region
             ! (iL:iU, jL:jU), for all variables from kL:kU
 
@@ -495,7 +495,7 @@ module nested_grid_comms_mod
             end do
 
             ! Number of values to add to the send array, considering that we
-            ! will transform them to match recv grid. 
+            ! will transform them to match recv grid.
             flux_integral_size =  count([send_boundary_flux_data]) * &
                 (sum(int(nint(four_ip(1:2) * bd * cell_ratios(1))))  + &
                  sum(int(nint(four_ip(3:4) * bd * cell_ratios(2)))))
@@ -504,8 +504,8 @@ module nested_grid_comms_mod
             !do i = 1, 4
             !    allocate(two_way_nesting_comms%can_use_exterior_cells_send(dir_ip(i))%x(four_ip(i)))
             !end do
-            
-            ! Figure out how much data we need to send 
+
+            ! Figure out how much data we need to send
             ! Make this the same length as the region we will send to
             if(two_way_nesting_comms%my_domain_is_finer .or. equal_cell_ratios) then
                 sbs = (iU - iL + 1) * (jU - jL + 1) * (kU - kL + 1) / &
@@ -514,11 +514,11 @@ module nested_grid_comms_mod
                 ! Sends from a coarse domain to a fine domain should send
                 ! the coarse data, and a number of 'gradient' terms that can
                 ! be used by the recipient fine domain to reconstruct the data
-                ! at all fine cells. 
+                ! at all fine cells.
                 sbs = (iU - iL + 1) * (jU - jL + 1) * (kU - kL + 1) * &
                     (1_ip + number_of_gradients_coarse_to_fine)
             end if
-            sbs = sbs + flux_integral_size 
+            sbs = sbs + flux_integral_size
 
             two_way_nesting_comms%nsend = sbs
             two_way_nesting_comms%nsend_interior = sbs - flux_integral_size
@@ -546,7 +546,7 @@ module nested_grid_comms_mod
                 allocate(two_way_nesting_comms%recv_box_flux_error(dir_ip(i))%x(four_ip(i), bd))
                 two_way_nesting_comms%recv_box_flux_error(dir_ip(i))%x = 0.0_force_double
             end do
-    
+
             ! Number of values to add to recv array
             flux_integral_size = sum(four_ip*bd)*count([send_boundary_flux_data])
 
@@ -585,7 +585,7 @@ module nested_grid_comms_mod
         two_way_nesting_comms%nrecv = rbs
         two_way_nesting_comms%nrecv_interior = rbs - flux_integral_size
 
-        ! Allocate buffers    
+        ! Allocate buffers
         allocate(two_way_nesting_comms%send_buffer(sbs))
         allocate(two_way_nesting_comms%recv_buffer(rbs))
 
@@ -595,14 +595,14 @@ module nested_grid_comms_mod
         !
         ! Prepare communication
         !
-        
+
         if(two_way_nesting_comms%send_active) then
 
             two_way_nesting_comms%send_ID = 'nesting_from_' // (trim(char1)) // '_' // &
                 (trim(char2)) // '_' // (trim(char3)) // '_to_' // &
                 (trim(n_char1)) // '_' // (trim(n_char2)) // '_' // &
                 (trim(n_char3))
-       
+
             ! Make sure the point2point coarray communicator has space for this variable
             call include_in_p2p_send_buffer(two_way_nesting_comms%send_buffer, &
                 buffer_label = two_way_nesting_comms%send_ID, &
@@ -614,7 +614,7 @@ module nested_grid_comms_mod
 
         if(two_way_nesting_comms%recv_active) then
             ! Note the ordering of this is reversed compared with above, so it will match the
-            ! 'send_ID' of another two_way_nesting_comms instance which is sending the data 
+            ! 'send_ID' of another two_way_nesting_comms instance which is sending the data
             two_way_nesting_comms%recv_ID = 'nesting_from_' // (trim(n_char1)) // '_' // &
                 (trim(n_char2)) // '_' // (trim(n_char3)) // '_to_' // &
                 (trim(char1)) // '_' // (trim(char2)) // '_' // &
@@ -646,32 +646,32 @@ module nested_grid_comms_mod
             buffer_size = buffer_size + size(two_way_nesting_comms%recv_buffer, kind=ip)*real_bytes
         end if
 
-        do i = 1, size(two_way_nesting_comms%send_box_flux_integral)        
+        do i = 1, size(two_way_nesting_comms%send_box_flux_integral)
             if(.not. allocated(two_way_nesting_comms%send_box_flux_integral(i)%x)) continue
             buffer_size = buffer_size + size(two_way_nesting_comms%send_box_flux_integral(i)%x, kind=ip)*real_bytes
         end do
 
-        do i = 1, size(two_way_nesting_comms%recv_box_flux_integral)        
+        do i = 1, size(two_way_nesting_comms%recv_box_flux_integral)
             if(.not. allocated(two_way_nesting_comms%recv_box_flux_integral(i)%x)) continue
             buffer_size = buffer_size + size(two_way_nesting_comms%recv_box_flux_integral(i)%x, kind=ip)*real_bytes
         end do
 
-        do i = 1, size(two_way_nesting_comms%recv_box_flux_error)        
+        do i = 1, size(two_way_nesting_comms%recv_box_flux_error)
             if(.not. allocated(two_way_nesting_comms%recv_box_flux_error(i)%x)) continue
             buffer_size = buffer_size + size(two_way_nesting_comms%recv_box_flux_error(i)%x, kind=ip)*force_double_bytes
         end do
 
         if(allocated(two_way_nesting_comms%recv_weights)) then
-           buffer_size = buffer_size + size(two_way_nesting_comms%recv_weights, kind=ip)*real_bytes 
+           buffer_size = buffer_size + size(two_way_nesting_comms%recv_weights, kind=ip)*real_bytes
         end if
 
         if(allocated(two_way_nesting_comms%recv_work)) then
-           buffer_size = buffer_size + size(two_way_nesting_comms%recv_work, kind=ip)*real_bytes 
+           buffer_size = buffer_size + size(two_way_nesting_comms%recv_work, kind=ip)*real_bytes
         end if
 
     end subroutine
 
-    
+
     ! Copy data to the send buffer, with appropriate averaging or interpolation
     !
     ! @param two_way_nesting_comms the communicator
@@ -698,9 +698,9 @@ module nested_grid_comms_mod
         real(dp) :: gradient_scale_x, gradient_scale_y, depth_min_x, depth_max_x, depth_min_y, depth_max_y
         logical :: equal_cell_ratios
         ! parameters controlling how gradients are limited when doing coarse-to-fine interpolation
-        real(dp), parameter :: depth_limit_upper_threshold = 0.25_dp 
+        real(dp), parameter :: depth_limit_upper_threshold = 0.25_dp
         real(dp), parameter :: depth_limit_lower_threshold = 0.05_dp
-        real(dp), parameter :: smooth_scale_coarse2fine = 0.0_dp
+        !real(dp), parameter :: smooth_scale_coarse2fine = 0.0_dp
         ! Indices for stage and elevation in U. This is used to do 'wet-dry-limiting'
         ! of gradients in coarse-to-fine sends (which involve interpolation)
         integer(ip), parameter :: STG=1, UH=2, VH=3, ELV=4
@@ -745,21 +745,21 @@ module nested_grid_comms_mod
             inv_cell_ratios = 1.0_dp
             inv_cell_ratios_ip = 1_ip
             cell_ratios_ip = 1_ip
-            product_cell_ratios = 1.0_dp 
+            product_cell_ratios = 1.0_dp
             inv_product_cell_ratios = 1.0_dp
             ! Number of i/j cells in receive zone
             iR = iU - iL + 1
             jR = jU - jL + 1
         else
             ! Define useful constants
-            inv_cell_ratios = ONE_dp / cell_ratios 
+            inv_cell_ratios = ONE_dp / cell_ratios
             inv_cell_ratios_ip = int(nint(inv_cell_ratios))
             cell_ratios_ip = int(nint(cell_ratios))
             product_cell_ratios = cell_ratios(1) * cell_ratios(2) !product(cell_ratios)
             inv_product_cell_ratios = ONE_dp/product_cell_ratios
             ! Number of i/j cells in receive zone
-            iR = int( nint((iU - iL + 1) * cell_ratios(1)) ) 
-            jR = int( nint((jU - jL + 1) * cell_ratios(2)) ) 
+            iR = int( nint((iU - iL + 1) * cell_ratios(1)) )
+            jR = int( nint((jU - jL + 1) * cell_ratios(2)) )
         end if
 
 
@@ -767,7 +767,7 @@ module nested_grid_comms_mod
         two_way_nesting_comms%send_buffer = ZERO_dp
 
         ! We use iCounter, jCounter, kCounter to track the index of the send
-        ! buffer that needs modification. 
+        ! buffer that needs modification.
         iCounter = 0
         jCounter = 0
         kCounter = 0
@@ -799,7 +799,7 @@ module nested_grid_comms_mod
                 do jouter = jL, jU, inv_cell_ratios_ip(2)
                 do jinner = 0, inv_cell_ratios_ip(2)-1
                     j = jouter + jinner
-               
+
                     ! NOTE: Put this inside the loop, so we can collapse the j/k loops with OMP
                     kCounter = (k - kL) + 1
 
@@ -848,7 +848,7 @@ module nested_grid_comms_mod
                                 ! Get indices of the fine cell 'inside the coarse cell'.
                                 !   central_i = 0, 1, 2, ... inv_cell_ratios_ip(1) - 1, 0, 1, 2, ..
                                 !   central_j = 0, 1, 2, ... inv_cell_ratios_ip(2) - 1, 0, 1, 2, ..
-                                central_i = mod(i - iL , inv_cell_ratios_ip(1)) 
+                                central_i = mod(i - iL , inv_cell_ratios_ip(1))
                                 central_j = mod(j - jL , inv_cell_ratios_ip(2))
 
                                 if(my_domain_staggered_grid == 1 .and. neighbour_domain_staggered_grid == 1) then
@@ -862,7 +862,7 @@ module nested_grid_comms_mod
                                             two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k)
                                         end if
                                     else if(k == UH) then
-                                        ! East point. 
+                                        ! East point.
                                         if(central_i == inv_cell_ratios_ip(1)-1) then
                                             ! Average value of UH along 'y' direction inside cell
                                             ! Avoid using points on the edge of nest box (for stability reasons)
@@ -918,7 +918,7 @@ module nested_grid_comms_mod
                                             two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k)
                                         end if
                                     else if(k == UH) then
-                                        ! East point. 
+                                        ! East point.
                                         if( (central_i == inv_cell_ratios_ip(1)-1) ) then
                                             im1 = max(i-1, 1) ! Safe (i-1) index
                                             ! Avoid using points on the edge of nest box (for stability regions)
@@ -935,7 +935,7 @@ module nested_grid_comms_mod
                                             !        (1.0_dp * U(im1,j,k) - 0.0_dp*U(im2,j,k))*cell_ratios(2)
                                             !end if
                                         end if
-                                        !if( (central_i == inv_cell_ratios_ip(1)-1) .and. & 
+                                        !if( (central_i == inv_cell_ratios_ip(1)-1) .and. &
                                         !    (central_j == inv_cell_ratios_ip(2)/2) ) then
                                         !    two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k)
                                         !end if
@@ -959,7 +959,7 @@ module nested_grid_comms_mod
                                             !end if
                                         end if
 
-                                        !if( (central_i == inv_cell_ratios_ip(1)/2) .and. & 
+                                        !if( (central_i == inv_cell_ratios_ip(1)/2) .and. &
                                         !    (central_j == inv_cell_ratios_ip(2)-1) ) then
                                         !    two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k)
                                         !end if
@@ -981,7 +981,7 @@ module nested_grid_comms_mod
                                     end if
 
                                 end if
-                            
+
                             end if
                         end do !i
                     end if
@@ -996,7 +996,7 @@ module nested_grid_comms_mod
             !
 
             ! Loop with 'k' as an inner variable, so that we only need to
-            ! compute gradient_scale once for eack i,j pair 
+            ! compute gradient_scale once for eack i,j pair
             !$OMP DO SCHEDULE(STATIC), COLLAPSE(2)
             do j = jL, jU
                 do i = iL, iU
@@ -1005,9 +1005,9 @@ module nested_grid_comms_mod
                     iip1 = min(imx, i+1)
                     jjm1 = max(jmn, j-1)
                     jjp1 = min(jmx, j+1)
-                    gradient_scale = 1.0_dp 
-                    gradient_scale_x = 1.0_dp 
-                    gradient_scale_y = 1.0_dp 
+                    gradient_scale = 1.0_dp
+                    gradient_scale_x = 1.0_dp
+                    gradient_scale_y = 1.0_dp
 
                     if(two_way_nesting_comms%use_wetdry_limiting) then
                         ! Reduce "gradient_scale" if the depth is rapidly varying
@@ -1016,7 +1016,7 @@ module nested_grid_comms_mod
                         depth_min = HUGE(1.0_dp)
                         do jj = jjm1, jjp1
                             do ii = iim1, iip1
-                                dep = U(ii,jj,STG) - U(ii,jj,ELV)  ! STAGE - ELEVATION  
+                                dep = U(ii,jj,STG) - U(ii,jj,ELV)  ! STAGE - ELEVATION
                                 depth_max = max(depth_max, dep)
                                 depth_min = min(depth_min, dep)
                             end do
@@ -1029,9 +1029,9 @@ module nested_grid_comms_mod
                             gradient_scale = &
                                 max(depth_min/depth_max - depth_limit_lower_threshold, 0.0_dp) / &
                                 (depth_limit_upper_threshold - depth_limit_lower_threshold)
-                                
+
                         end if
-                        ! negative depth should not occur, but this extrapolates gracefully in any case. 
+                        ! negative depth should not occur, but this extrapolates gracefully in any case.
                         if(depth_max < 0.0_dp .or. depth_min < 0.0_dp) gradient_scale = 0.0_dp
 
                         !
@@ -1044,9 +1044,9 @@ module nested_grid_comms_mod
                             gradient_scale_x = &
                                 max(depth_min_x/depth_max_x - depth_limit_lower_threshold, 0.0_dp) / &
                                 (depth_limit_upper_threshold - depth_limit_lower_threshold)
-                                
+
                         end if
-                        ! negative depth should not occur, but this extrapolates gracefully in any case. 
+                        ! negative depth should not occur, but this extrapolates gracefully in any case.
                         if(depth_max_x < 0.0_dp .or. depth_min_x < 0.0_dp) gradient_scale_x = 0.0_dp
 
 
@@ -1060,9 +1060,9 @@ module nested_grid_comms_mod
                             gradient_scale_y = &
                                 max(depth_min_y/depth_max_y - depth_limit_lower_threshold, 0.0_dp) / &
                                 (depth_limit_upper_threshold - depth_limit_lower_threshold)
-                                
+
                         end if
-                        ! negative depth should not occur, but this extrapolates gracefully in any case. 
+                        ! negative depth should not occur, but this extrapolates gracefully in any case.
                         if(depth_max_y < 0.0_dp .or. depth_min_y < 0.0_dp) gradient_scale_y = 0.0_dp
 
 
@@ -1114,15 +1114,15 @@ module nested_grid_comms_mod
                             ! Sending from a coarse staggered grid to a finer grid.
                             ! The finer grid will expect the UH/VH components to be nearer the middle of the cell
 
-                            ! Make sure we only use points that really are in the 'send' zone. 
+                            ! Make sure we only use points that really are in the 'send' zone.
                             !! Potential instabilities / logic issues if we use points received from other domains (?).
                             ip1 = iip1 !min(iip1, iU) !min(i+1, iip1)
-                            im1 = iim1 !max(iim1, iL) !max(i-1, iim1) 
+                            im1 = iim1 !max(iim1, iL) !max(i-1, iim1)
                             jp1 = jjp1 !min(jjp1, jU) !min(j+1, jjp1)
-                            jm1 = jjm1 !max(jjm1, jL) !max(j-1, jjm1) 
+                            jm1 = jjm1 !max(jjm1, jL) !max(j-1, jjm1)
 
                             if(k == UH) then
-                                ! UH is offset east of where the receive grid wants it 
+                                ! UH is offset east of where the receive grid wants it
 
                                 if(neighbour_domain_staggered_grid == 1) then
                                     ! Slightly east of middle of the cell
@@ -1133,10 +1133,10 @@ module nested_grid_comms_mod
                                     del = 0.5_dp
                                 end if
 
-                                ! Move uh back 
+                                ! Move uh back
                                 uc = uc - dU_di_m*del
                                 ! There is only one relevent EW gradient -- the 'minus' one
-                                dU_di_p = dU_di_m 
+                                dU_di_p = dU_di_m
 
                                 !if(neighbour_domain_staggered_grid /= 1) then
                                 !    ! Add slight smoothing
@@ -1239,7 +1239,7 @@ module nested_grid_comms_mod
                             ! Number of cells for previous j, with this k
                             (iU - iL + 1) * (j - jL) * (1 + number_of_gradients_coarse_to_fine) + &
                             ! Cells for previous i, with this j and k
-                            (i - iL) * (1 + number_of_gradients_coarse_to_fine) 
+                            (i - iL) * (1 + number_of_gradients_coarse_to_fine)
 
                         ! Send the variable value and a number of gradients
                         !
@@ -1263,7 +1263,7 @@ module nested_grid_comms_mod
         ! Send boundary flux data as well
         !
         if(send_boundary_flux_data) then
-   
+
 
             if(equal_cell_ratios) then
                 !
@@ -1293,7 +1293,7 @@ module nested_grid_comms_mod
                 if(two_way_nesting_comms%my_domain_is_finer) then
                     ! Fine-to-coarse
                     ! Pack each boundary flux into the send_buffer, by columns,
-                    ! aggregating to the coarse recv grid 
+                    ! aggregating to the coarse recv grid
                     already_sent = iR * kR * jR
 
                     ! Loop over send_box_flux_integral sides
@@ -1312,7 +1312,7 @@ module nested_grid_comms_mod
                             ! Genuine fine to coarse case
                             do i = 1, imx
                                 ! Aggregate cell values to match the coarser recv grid
-                                two_way_nesting_comms%send_buffer(already_sent + 1) = &                
+                                two_way_nesting_comms%send_buffer(already_sent + 1) = &
                                     two_way_nesting_comms%send_buffer(already_sent + 1) + &
                                     two_way_nesting_comms%send_box_flux_integral(j)%x(i, k)
                                 if(mod(i, stride(nb)) == 0) already_sent = already_sent + 1
@@ -1359,21 +1359,21 @@ module nested_grid_comms_mod
 
     end subroutine
 
-    
+
     ! Routine to copy the recv buffer into the main computational array, once
     ! it has been filled by the neighbour.
-    ! 
-    ! We keep this separate from the routine which copies the data, so that 
+    !
+    ! We keep this separate from the routine which copies the data, so that
     ! in parallel we can do a sync between the two steps. This also gives us the flexibility
     ! to use the sync for other parallel comms processes.
     !
-    ! @param two_way_nesting_comms 
+    ! @param two_way_nesting_comms
     ! @param U the main computational array that we copy the received data to.
-    ! 
+    !
     subroutine process_received_data(two_way_nesting_comms, U)
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
         real(dp), intent(inout) :: U(:,:,:)
-  
+
         integer(ip) :: iL, iU, jL, jU, kL, kU, n0, n1, dir_ip(4), i, j, nvar, s1
         !real(dp) :: stage_mean_before, stage_mean_after
         real(dp) :: uc, dU_di_p, dU_di_m, dU_dj_p, dU_dj_m
@@ -1425,7 +1425,7 @@ module nested_grid_comms_mod
             ! Number of fine i/j cells per coarse cell
             inv_cell_ratios_ip = int(nint(1/two_way_nesting_comms%cell_ratios))
 
-            ! 'index' of the fine cell in the middle of a coarse cell. 
+            ! 'index' of the fine cell in the middle of a coarse cell.
             ! This is useful for interpolation, e.g.
             ! if inv_cell_ratios_ip = [3,3], then middle_index = [2,2] (i.e. average of 1, 2, 3)
             ! if inv_cell_ratios_ip = [4,4], then middle_index = [2.5,2.5] (i.e. average of 1, 2, 3, 4)
@@ -1433,7 +1433,7 @@ module nested_grid_comms_mod
 
             ! Number of i/j cells in the coarser domain
             niC = (iU - iL + 1)/inv_cell_ratios_ip(1)
-            njC = (jU - jL + 1)/inv_cell_ratios_ip(2) 
+            njC = (jU - jL + 1)/inv_cell_ratios_ip(2)
             nC = niC * njC
 
             !$OMP DO SCHEDULE(STATIC)
@@ -1451,7 +1451,7 @@ module nested_grid_comms_mod
                 ! Compute C-style multidimensional indices corresponding to the
                 ! coarser domain we are receiving from -- index starting from 0
                 coarse_cell_count = (i-1)/coarse_factor
-                coarse_cell_k = coarse_cell_count/nC 
+                coarse_cell_k = coarse_cell_count/nC
                 coarse_cell_j = (coarse_cell_count - (coarse_cell_k*nC))/niC
                 coarse_cell_i = (coarse_cell_count - (coarse_cell_k*nC + coarse_cell_j*niC))
 
@@ -1467,7 +1467,7 @@ module nested_grid_comms_mod
                 ! For mass conservation, we need to force exact matches.
                 ! FIXME: Make these thresholds less ad-hoc.
                 ! FIXME: Actually this functionality is rarely used [we always have recv_weights=1].
-                ! The associated logic could be removed, although it can be useful to 
+                ! The associated logic could be removed, although it can be useful to
                 ! experiment with nesting modifications if making major changes to the code.
                 depth_low  = minval(two_way_nesting_comms%recv_work(iL_1:iU_1, jL_1:jU_1))
                 depth_high = maxval(two_way_nesting_comms%recv_work(iL_1:iU_1, jL_1:jU_1))
@@ -1553,7 +1553,7 @@ module nested_grid_comms_mod
     ! Copy send_buffer to the right recv_buffer. This should be called AFTER process_data_to_send.
     !
     ! @param send_to_recv_buffer optional logical. If FALSE, then do not do a
-    ! parallel communication, but only pack the data in the send buffer [we can 
+    ! parallel communication, but only pack the data in the send buffer [we can
     ! communicate later with communicate_p2p].
     subroutine send_data(two_way_nesting_comms, send_to_recv_buffer)
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
@@ -1569,15 +1569,15 @@ module nested_grid_comms_mod
         else
             put_in_recv_buffer = .TRUE.
         end if
-  
-        ! Send to point2point coarray communication buffer 
+
+        ! Send to point2point coarray communication buffer
         call send_to_p2p_comms(two_way_nesting_comms%send_buffer, &
             buffer_label=two_way_nesting_comms%send_ID, &
             put_in_recv_buffer=put_in_recv_buffer)
-     
+
     end subroutine
 
-    ! Multiply the boundary flux integral terms by some constant. 
+    ! Multiply the boundary flux integral terms by some constant.
     ! Useful when we time-integrate the boundary fluxes
     pure subroutine boundary_flux_integral_multiply(two_way_nesting_comms, c)
 
@@ -1605,7 +1605,7 @@ module nested_grid_comms_mod
 
     end subroutine
 
-    ! Replace each boundary_flux_integral_term with 
+    ! Replace each boundary_flux_integral_term with
     !  (dt * current_fluxes * dx + boundary_flux_integral_term)
     !
     ! @param two_way_nesting_comms Communication object, which is also tracking
@@ -1619,7 +1619,7 @@ module nested_grid_comms_mod
     !   terms are effectively stored in the domain%U variable].
     ! @param distance_bottom_edge real rank 1 array with length = (1+number of 'j' cells in domain).
     !    Gives the length of the bottom edge of a cell with 'j' y index. This
-    !    is an array because for spherical coordinates, the bottom edge cell 
+    !    is an array because for spherical coordinates, the bottom edge cell
     !    distance changes with latitude.
     ! @param flux_EW rank 3 array with east-west fluxes (for the whole domain)
     ! @param flux_EW_lower_index integer. Assume flux_EW(1,:,:) contains the left-edge
@@ -1634,7 +1634,7 @@ module nested_grid_comms_mod
     !   already been multiplied by their 'distance_bottom_edge' or 'distance_left_edge' term,
     !   so do not multiply by this again. Useful because some of our solvers store the fluxes
     !   as (flux . dx), while others do not.
-    ! 
+    !
     pure subroutine boundary_flux_integral_tstep(two_way_nesting_comms, dt, &
         flux_NS, flux_NS_lower_index, distance_bottom_edge, &
         flux_EW, flux_EW_lower_index, distance_left_edge, &
@@ -1651,9 +1651,9 @@ module nested_grid_comms_mod
         ! Range of variable indices we update is based on the 3rd dimension of flux_NS.
         ! This allows a few cases:
         !     - If flux_NS contains fluxes for [stg, uh, vh], then all those
-        !       will be updated in the boundary flux integral. 
+        !       will be updated in the boundary flux integral.
         !     - If flux_NS has only fluxes for [stg], then only that is updated.
-        
+
         ks = k_indices
 
         if (two_way_nesting_comms%send_active) then
@@ -1688,7 +1688,7 @@ module nested_grid_comms_mod
             edge_ip = [EAST, WEST] ! Index into send_box_flux_integral(.)
             ind1_ip = [2, 1] ! Rank1 index into two_way_nesting_comms%send_inds(., 1)
             ind2_ip = [1, 0] ! Offset required to get 'exterior edge flux' -- +1 for EAST, +0 for WEST
-            do i = 1, 2 
+            do i = 1, 2
                 ! i indices in flux_EW = ns-dns
                 ns = two_way_nesting_comms%send_inds(ind1_ip(i),1) + ind2_ip(i)
                 dns = (flux_EW_lower_index - 1_ip)
@@ -1741,7 +1741,7 @@ module nested_grid_comms_mod
             edge_ip = [EAST, WEST] ! Index into recv_box_flux_integral(.)
             ind1_ip = [2, 1] ! Rank1 index into two_way_nesting_comms%recv_inds(., 1)
             ind2_ip = [1, 0] ! Offset required to get 'exterior edge flux' -- +1 for EAST, +0 for WEST
-            do i = 1, 2 
+            do i = 1, 2
                 ! i indices in flux_EW = ns-dns
                 ns = two_way_nesting_comms%recv_inds(ind1_ip(i),1) + ind2_ip(i)
                 dns = (flux_EW_lower_index - 1_ip)
@@ -1792,21 +1792,21 @@ module nested_grid_comms_mod
     !            my_index = nesting%send_comms(i)%my_domain_index
     !            my_image = nesting%send_comms(i)%my_domain_image_index
     !            my_comms = nesting%send_comms(i)%my_domain_comms_index
-    !       
+    !
     !            !
     !            ! NORTH-SOUTH SIDE
-    !            ! 
+    !            !
     !            edge_ip = [NORTH, SOUTH] ! Index into send_box_flux_integral(.)
     !            ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%send_inds(.,2)
     !            ind2_ip = [1, -1] ! Offset required to get 'j index of cell just outside the bbox ' -- +1 for NORTH, -1 for SOUTH
-    !            do j = 1, 2 
+    !            do j = 1, 2
 
     !                n = nesting%send_comms(i)%send_inds(ind1_ip(j),2) + ind2_ip(j) ! j-index just outside the send bbox
     !                i1 = nesting%send_comms(i)%send_inds(:,1)
 
     !                edge = edge_ip(j)
     !                if(n <= size(nesting%priority_domain_index,2, kind=ip) .and. n >= 1) then
-    !                    ! Find the mass flux northward to/from the neighbour domain (if any) 
+    !                    ! Find the mass flux northward to/from the neighbour domain (if any)
     !                    flux_send(edge) = sum(&
     !                        nesting%send_comms(i)%send_box_flux_integral(edge)%x(:,1), &
     !                        mask=( (nesting%priority_domain_index(i1(1):i1(2),n) == nbr_index) .and. &
@@ -1831,7 +1831,7 @@ module nested_grid_comms_mod
     !            !
     !            edge_ip = [EAST, WEST] ! Index into send_box_flux_integral(.)
     !            ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%send_inds(.,2)
-    !            ind2_ip = [1, -1] ! Offset required to get 'i index of cell just outside the bbox ' -- +1 for EAST, -1 for WEST 
+    !            ind2_ip = [1, -1] ! Offset required to get 'i index of cell just outside the bbox ' -- +1 for EAST, -1 for WEST
 
     !            do j = 1, 2
 
@@ -1932,10 +1932,10 @@ module nested_grid_comms_mod
     !            !
     !            edge_ip = [EAST, WEST] ! Index into recv_box_flux_integral(.)
     !            ind1_ip = [2, 1] ! Rank1 index in two_way_nesting_comms%recv_inds(.,2)
-    !            ind2_ip = [1, -1] ! Offset required to get 'i index of cell just outside the bbox ' -- +1 for EAST, -1 for WEST 
+    !            ind2_ip = [1, -1] ! Offset required to get 'i index of cell just outside the bbox ' -- +1 for EAST, -1 for WEST
 
     !            do j = 1, 2
-    !                ! Find the mass flux eastward/westward to/from the priority part of my domain (if any) 
+    !                ! Find the mass flux eastward/westward to/from the priority part of my domain (if any)
     !                n = nesting%recv_comms(i)%recv_inds(ind1_ip(j),1) + ind2_ip(j) ! i-index just outside the recv bbox
     !                i1 = nesting%recv_comms(i)%recv_inds(:,2)
 
@@ -1954,7 +1954,7 @@ module nested_grid_comms_mod
     !                        mask=( (nesting%priority_domain_index(n,i1(1):i1(2)) == my_index) .and. &
     !                               (nesting%priority_domain_image(n,i1(1):i1(2)) == my_image) ) )
     !                else
-    !                    flux_recv(edge) = 0.0_dp 
+    !                    flux_recv(edge) = 0.0_dp
     !                    flux_err_coarse_recv(edge) = 0.0_dp
     !                end if
 
@@ -1991,7 +1991,7 @@ module nested_grid_comms_mod
         integer(ip), INTENT(IN) :: nest_ratio != 3
 
         ! Where communicating, each domain needs to receive a layer of cells at
-        ! least this thick along its boundary. 
+        ! least this thick along its boundary.
         integer(ip) :: min_exchange_halo = 2
 
         ! Number of variables in the problem
@@ -2035,7 +2035,7 @@ module nested_grid_comms_mod
 #else
         this_image_local = 1
         num_images_local = 1
-#endif    
+#endif
 
         ! Do communication in parallel case
         child_image_index = this_image_local - 1
@@ -2043,7 +2043,7 @@ module nested_grid_comms_mod
         if(parent_image_index > num_images_local) parent_image_index = 1
         if(child_image_index < 1) child_image_index = num_images_local
 
-        ! Number of cells in child domain 
+        ! Number of cells in child domain
         nx2 = nx2_on_nest_ratio * nest_ratio
         ! dx in child domain
         dx2 = dx1/nest_ratio
@@ -2070,7 +2070,7 @@ module nested_grid_comms_mod
             end do
         end do
 
-        ! Make up some data for the inner domain, which 
+        ! Make up some data for the inner domain, which
         ! should agree with the outer domain (with linear interpolation)
         do k = 1, nvar
             do j = 1, nx2(2)
@@ -2106,8 +2106,8 @@ module nested_grid_comms_mod
 
         ! x/y index of parent domain cell inside lower left corner of child
         ! domain
-        xi = nint((ll2(1) - ll1(1))/dx1(1)) + 1 
-        yi = nint((ll2(2) - ll1(2))/dx1(2)) + 1 
+        xi = nint((ll2(1) - ll1(1))/dx1(1)) + 1
+        yi = nint((ll2(2) - ll1(2))/dx1(2)) + 1
 
         ! Left side comms -- parent to child
         call Us(1)%two_way_nesting_comms(parent_comms_index)%initialise( &
@@ -2188,7 +2188,7 @@ module nested_grid_comms_mod
                 call generic_stop()
             else
                 write(log_output_unit,*) 'PASS'
-            end if        
+            end if
 
             if(.NOT.Us(2)%two_way_nesting_comms(child_comms_index)%my_domain_is_finer) then
                 write(log_output_unit,*) 'FAIL: Problem with fine/coarse classification', __LINE__, &
@@ -2241,7 +2241,7 @@ module nested_grid_comms_mod
         test_min = minval(Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer(1:b4_flux_data_c))
         if( (test_max/(max_parent_send_val+max_parent_send_val_offset) > ONE_dp + err_tol) .OR. &
             (test_min/(min_parent_send_val-max_parent_send_val_offset) < ONE_dp - err_tol)) then
-    
+
             write(log_output_unit,*) 'FAIL: Send buffer (2) range is incorrect', __LINE__, &
                 __FILE__
             write(log_output_unit,*) Us(2)%two_way_nesting_comms(child_comms_index)%send_buffer(1:b4_flux_data_c)
@@ -2251,7 +2251,7 @@ module nested_grid_comms_mod
         end if
         !print*, 'Us(2): ', test_max, test_min
 
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)        
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data(send_to_recv_buffer=.FALSE.)
         call Us(2)%two_way_nesting_comms(child_comms_index)%send_data(send_to_recv_buffer=.FALSE.)
         call communicate_p2p
@@ -2264,7 +2264,7 @@ module nested_grid_comms_mod
         sync images(linked_p2p_images)
 #endif
 
-        ! Copy the recv buffer to the main array 
+        ! Copy the recv buffer to the main array
         call Us(1)%two_way_nesting_comms(parent_comms_index)%process_received_data(Us(1)%U)
         call Us(2)%two_way_nesting_comms(child_comms_index)%process_received_data(Us(2)%U)
 
