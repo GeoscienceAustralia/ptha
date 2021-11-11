@@ -5,22 +5,23 @@ module point_gauge_mod
     use global_mod, only: dp, ip, output_precision, charlen
     use file_io_mod, only: read_csv_into_array
     use stop_mod, only: generic_stop
-    use which_mod, only: which 
+    use which_mod, only: which
     use logging_mod, only: log_output_unit
 
     ! point_gauge output can be either:
-    !   A) netcdf, or 
+    !   A) netcdf, or
     !   B) a home-brew mix of ascii and binary files
-    ! The latter can be turned on by compiling with -DNONETCDF. 
-    ! This is mainly useful if it is difficult to link with netcdf (e.g. due to a different
-    ! compiler having been used to compile netcdf vs the program)
+    ! The latter can be turned on by compiling with -DNONETCDF.
+    ! "B" is mainly useful if it is difficult to link with netcdf (e.g. due to a different
+    ! compiler having been used to compile netcdf vs the program), but is not properly supported,
+    ! so really only for testing.
 #ifndef NONETCDF
     use netcdf
     use netcdf_util, only: check
 #endif
 
     implicit none
-    
+
     private
     public:: point_gauge_type, test_point_gauge_mod
 
@@ -37,7 +38,7 @@ module point_gauge_mod
     ! Used to store values from an array at an irregular set of points
     !
     ! The array from which point gauges are extracted is assumed to be 3 dimensional U(:,:,:)
-    ! The first 2 dimensions are spatial (x/y or lon/lat), and 
+    ! The first 2 dimensions are spatial (x/y or lon/lat), and
     ! the last dimension represents the quantity (e.g. Stage, UH, VH, ELEV)
     type point_gauge_type
         !!
@@ -51,7 +52,7 @@ module point_gauge_mod
 #else
         ! Variables for writing out to netcdf
         character(len=charlen):: netcdf_gauge_output_file
-        integer :: netcdf_gauge_output_file_ID 
+        integer :: netcdf_gauge_output_file_ID
         integer(ip) :: netcdf_time_var_ID
         integer(ip), allocatable:: time_series_ncdf_iVar_ID(:)
         ! Count how many steps have been output
@@ -64,7 +65,7 @@ module point_gauge_mod
         ! which can speed up gauge-merging for multidomains
         logical :: priority_gauges_only = .FALSE.
 
-        ! Indices of variables 
+        ! Indices of variables
         integer(ip), allocatable:: time_series_var(:), static_var(:)
 
         ! Coordinates of gauges
@@ -102,11 +103,10 @@ module point_gauge_mod
     !  wish to store once. e.g. [ELV], or [UH, VH, ELV]
     ! @param gauge_ids real array of size n_gauges giving an ID for each
     !  gauge. Make it REAL to avoid truncation issues for large IDs
-    ! @param bounding_box If provided, only keep gauges inside a given bounding 
+    ! @param bounding_box If provided, only keep gauges inside a given bounding
     ! box
-    ! @param priority_gauges If provided, a logical array with one entry per 
-    ! gauge. 
-    ! Gauges with .TRUE. are retained, others are removed.
+    ! @param priority_gauges If provided, a logical array with one entry per
+    ! gauge. Gauges with .TRUE. are retained, others are removed.
     !
     subroutine allocate_gauges(point_gauges, xy_coordinates, &
         time_series_var_indices, static_var_indices, gauge_ids, &
@@ -122,21 +122,21 @@ module point_gauge_mod
         logical :: all_gauges
         logical, allocatable :: points_inside(:)
         integer(ip), allocatable :: indices_inside(:)
-            
-            ! At the moment the space dimension must be 2 
+
+            ! At the moment the space dimension must be 2
             if (point_gauges%space_dim /= size(xy_coordinates, 1)) then
                 write(log_output_unit,*) 'gauge xy dimension is not equal ', &
                     point_gauges%space_dim
                 flush(log_output_unit)
             end if
 
-            ! Make space for all gauges. Depending on optional arguments 
+            ! Make space for all gauges. Depending on optional arguments
             ! passed, this may be updated again below
             all_gauges = .TRUE.
             n_gauges = size(xy_coordinates, 2, kind=ip)
 
             if(present(bounding_box) .or. present(priority_gauges)) then
-                ! It is possible that not all the gauges will be in the 
+                ! It is possible that not all the gauges will be in the
                 ! bounding box. Identify those which are inside
                 all_gauges = .FALSE.
 
@@ -176,17 +176,17 @@ module point_gauge_mod
             allocate(point_gauges%xy(space_dim, n_gauges))
 
             if(all_gauges) then
-                point_gauges%xy = xy_coordinates 
+                point_gauges%xy = xy_coordinates
             else
                 point_gauges%xy = xy_coordinates(1:2, indices_inside)
             end if
-            
+
             space_dim = point_gauges%space_dim
             n_gauges = point_gauges%n_gauges
 
             n_ts_var = size(time_series_var_indices, kind=ip)
             n_static_var = size(static_var_indices, kind=ip)
-   
+
             allocate(point_gauges%site_index(space_dim, n_gauges))
             allocate(point_gauges%time_series_values(n_gauges, n_ts_var))
             allocate(point_gauges%static_values(n_gauges, n_static_var))
@@ -208,13 +208,13 @@ module point_gauge_mod
     ! Convenience subroutine to lookup variables in domain_U at point_gauges,
     ! and populate time_series_values with the values of quantities var_inds
     !
-    ! This can be used to populate either point_gauges%static_values or 
+    ! This can be used to populate either point_gauges%static_values or
     ! point_gauges%time_series_values
     !
     ! @param point_gauges point_gauge_type
-    ! @param time_series_values array with size [n_gauges, size(var_inds)] 
+    ! @param time_series_values array with size [n_gauges, size(var_inds)]
     ! that holds the time series data
-    ! @param var_inds Array giving indices in the 3rd dimension of domain_U 
+    ! @param var_inds Array giving indices in the 3rd dimension of domain_U
     ! that we write out. e.g. [STG, UH, VH], or [STG]
     !
     subroutine update_gauge_var(point_gauges, time_series_values, domain_U, &
@@ -239,14 +239,14 @@ module point_gauge_mod
                 xind = point_gauges%site_index(1,i)
                 yind = point_gauges%site_index(2,i)
                 time_series_values(i,j) = domain_U(xind, yind, var_inds(j))
-            end do 
+            end do
         end do
 
     end subroutine
-      
+
     !
     ! Write time snapshot at gauges to netcdf
-    ! 
+    !
     ! @param point_gauges point_gauges_type
     ! @param domain_U array from which we extract data at the gauges
     ! @param domain_time the time as a real number
@@ -257,7 +257,7 @@ module point_gauge_mod
         integer(ip) :: i
 
         if(point_gauges%n_gauges == 0) return
- 
+
         call update_gauge_var(point_gauges, point_gauges%time_series_values, &
             domain_U, point_gauges%time_series_var)
 
@@ -269,7 +269,7 @@ module point_gauge_mod
         ! Write to ncdf
         ! We need to record how many time-steps are written
         point_gauges%netcdf_num_output_steps = point_gauges%netcdf_num_output_steps + 1
-        
+
         ! Save the time
         call check(nf90_put_var(point_gauges%netcdf_gauge_output_file_ID, &
             point_gauges%netcdf_time_var_ID, domain_time, &
@@ -300,12 +300,12 @@ module point_gauge_mod
     ! @param point_gauges variable of type point_gauge_type
     ! @param domain_dx cell size [dx,dy] in the domain
     ! @param domain_nx number of cells [nx,ny] in the domain
-    ! @param domain_U the array with dimensions [nx, ny, :] in which we look 
+    ! @param domain_U the array with dimensions [nx, ny, :] in which we look
     ! up values at the gauges
     ! @param netcdf_gauge_output_file name of output file
-    ! @param attribute_names character vector of names for additional 
+    ! @param attribute_names character vector of names for additional
     ! attributes to add to the netcdf file
-    ! @param attribute_values character vector of values for the additional 
+    ! @param attribute_values character vector of values for the additional
     ! attributes in the netcdf file
     !
     subroutine initialise_gauges(point_gauges, domain_lower_left, domain_dx, &
@@ -328,11 +328,11 @@ module point_gauge_mod
         flush(log_output_unit)
 
         if(n_gauges == 0) return
-   
-        ! Get indices of gauges on domain        
+
+        ! Get indices of gauges on domain
         do i = 1, n_gauges
-            ! Map to [i,j] index. Note the 'min' operation deals with the 
-            ! corner case where the coordinate has x = max_domain_x or 
+            ! Map to [i,j] index. Note the 'min' operation deals with the
+            ! corner case where the coordinate has x = max_domain_x or
             ! y = max_domain_y
             point_gauges%site_index(:,i) = 1_ip + &
                 min(floor((point_gauges%xy(:,i) - domain_lower_left)/domain_dx), &
@@ -348,7 +348,7 @@ module point_gauge_mod
             end if
 
         end do
-        
+
         ! Get static values -- could potentially write them here, and the
         ! deallocate the array, if conserving memory is very important
         call update_gauge_var(point_gauges, point_gauges%static_values, &
@@ -368,11 +368,11 @@ module point_gauge_mod
         ! Setup home-brew binary output
         !
         ! For simplicity, this routine only includes a netcdf filename as argument.
-        ! If we are writing to a home-brew binary format, then we make file 
+        ! If we are writing to a home-brew binary format, then we make file
         ! names from the 'netcdf' name
-        point_gauges%static_output_file = trim(netcdf_gauge_output_file) // '_static' 
-        point_gauges%time_series_output_file = trim(netcdf_gauge_output_file) // '_timeseries' 
-        point_gauges%gauge_metadata_file = trim(netcdf_gauge_output_file) // '_metadata' 
+        point_gauges%static_output_file = trim(netcdf_gauge_output_file) // '_static'
+        point_gauges%time_series_output_file = trim(netcdf_gauge_output_file) // '_timeseries'
+        point_gauges%gauge_metadata_file = trim(netcdf_gauge_output_file) // '_metadata'
 
         ! Save 'static' variables to home-brew binary
         open(newunit=point_gauges%static_output_unit, &
@@ -382,7 +382,7 @@ module point_gauge_mod
             write(point_gauges%static_output_unit) &
                 real(point_gauges%xy(:,i), output_precision), &
                 real(point_gauges%static_values(i,:), output_precision), &
-                real(point_gauges%gauge_ids(i), output_precision) 
+                real(point_gauges%gauge_ids(i), output_precision)
         end do
         close(point_gauges%static_output_unit)
 
@@ -401,7 +401,7 @@ module point_gauge_mod
         write(point_gauges%gauge_metadata_unit, *) 'static_output_file: ', &
             trim(point_gauges%static_output_file)
         close(point_gauges%gauge_metadata_unit)
-#endif        
+#endif
     end subroutine
 
     !
@@ -415,7 +415,7 @@ module point_gauge_mod
     subroutine setup_gauge_netcdf_output(point_gauges, netcdf_gauge_output_file, &
         attribute_names, attribute_values)
 
-        type(point_gauge_type), intent(inout):: point_gauges 
+        type(point_gauge_type), intent(inout):: point_gauges
         character(charlen), intent(in):: netcdf_gauge_output_file
         character(charlen), optional, intent(in):: attribute_names(:)
         character(charlen), optional, intent(in):: attribute_values(:)
@@ -426,11 +426,11 @@ module point_gauge_mod
         ! start of the simulation)
         integer:: iVar_STG_static_ID, iVar_UH_static_ID, iVar_VH_static_ID, &
             iVar_ELV_static_ID
-        ! ID's for variables that we might store each output timestep 
+        ! ID's for variables that we might store each output timestep
         integer:: iVar_STG_time_ID, iVar_UH_time_ID, iVar_VH_time_ID, &
             iVar_ELV_time_ID
         ! Up to 32 characters for site names (shorter than usual)
-        ! Could set this based on input string name lengths 
+        ! Could set this based on input string name lengths
         integer:: iLenStringName = 32
         integer(ip):: i, j
 
@@ -444,7 +444,7 @@ module point_gauge_mod
 
         ! Create output file
         call check (nf90_create(netcdf_gauge_output_file, NF90_CLOBBER, iNcid), __LINE__)
-    
+
         point_gauges%netcdf_gauge_output_file_ID = iNcid
 
         ! Define the dimensions. Try to follow CF standards for Orthogonal
@@ -489,7 +489,7 @@ module point_gauge_mod
 
         ! Time
         call check( nf90_def_var(iNcid, 'time', NF90_REAL4, (/ iDimTime_ID /), iVarTIME_ID) , __LINE__)
-        point_gauges%netcdf_time_var_ID = iVarTIME_ID        
+        point_gauges%netcdf_time_var_ID = iVarTIME_ID
         call check(nf90_put_att(iNcid, iVarTIME_ID, "standard_name", &
             "time"), __LINE__)
         call check(nf90_put_att(iNcid, iVarTIME_ID, "long_name", &
@@ -506,7 +506,7 @@ module point_gauge_mod
         do i = 1, size(point_gauges%static_var, kind=ip)
             j = point_gauges%static_var(i)
 
-            ! Initial stage 
+            ! Initial stage
             if(j == STG) then
                 call check( nf90_def_var(iNcid, "stage0", NF90_REAL4, [iDimStation_ID], iVar_STG_static_ID), __LINE__)
                 call check(nf90_put_att(iNcid, iVar_STG_static_ID, "long_name", &
@@ -582,8 +582,8 @@ module point_gauge_mod
 
         ! This is the standard netcdf attribute for time-series
         call check(nf90_put_att(iNcid, nf90_global, "featureType", "timeSeries"), __LINE__)
-   
-        ! Here we add other attributes that might be useful (e.g. the name of the input stage and elevation) 
+
+        ! Here we add other attributes that might be useful (e.g. the name of the input stage and elevation)
         if((present(attribute_names)).and.(present(attribute_values))) then
             do i = 1, size(attribute_names, kind=ip)
                 call check(nf90_put_att(iNcid, nf90_global, attribute_names(i), attribute_values(i)), __LINE__)
@@ -610,26 +610,26 @@ SRC_GIT_VERSION ), __LINE__)
 
         ! Finish definitions so writing can begin
         call check(nf90_enddef(iNcid, __LINE__))
-                
+
         ! Write lon/lat/gauge_ids
-        call check(nf90_put_var(iNcid, iVarLON_ID , point_gauges%xy(1,:)), __LINE__) 
-        call check(nf90_put_var(iNcid, iVarLAT_ID , point_gauges%xy(2,:)), __LINE__) 
+        call check(nf90_put_var(iNcid, iVarLON_ID , point_gauges%xy(1,:)), __LINE__)
+        call check(nf90_put_var(iNcid, iVarLAT_ID , point_gauges%xy(2,:)), __LINE__)
         call check(nf90_put_var(iNcid, iVarGAUGEID_ID, point_gauges%gauge_ids(:)), __LINE__)
 
         ! Write static variables
         do i = 1, size(point_gauges%static_var, kind=ip)
             j = point_gauges%static_var(i)
             if(j == STG) then
-                call check(nf90_put_var(iNcid, iVar_STG_static_ID , point_gauges%static_values(:,i) ), __LINE__) 
+                call check(nf90_put_var(iNcid, iVar_STG_static_ID , point_gauges%static_values(:,i) ), __LINE__)
             end if
             if(j == UH) then
-                call check(nf90_put_var(iNcid, iVar_UH_static_ID , point_gauges%static_values(:,i) ), __LINE__) 
+                call check(nf90_put_var(iNcid, iVar_UH_static_ID , point_gauges%static_values(:,i) ), __LINE__)
             end if
             if(j == VH) then
                 call check(nf90_put_var(iNcid, iVar_VH_static_ID , point_gauges%static_values(:,i) ), __LINE__)
             end if
             if(j == ELV) then
-                call check(nf90_put_var(iNcid, iVar_ELV_static_ID , point_gauges%static_values(:,i) ), __LINE__) 
+                call check(nf90_put_var(iNcid, iVar_ELV_static_ID , point_gauges%static_values(:,i) ), __LINE__)
             end if
         end do
 
@@ -643,8 +643,8 @@ SRC_GIT_VERSION ), __LINE__)
         class(point_gauge_type), intent(inout):: point_gauges
 
         if (point_gauges%n_gauges > 0) then
-#ifndef NONETCDF      
-            ! Close the netcdf file 
+#ifndef NONETCDF
+            ! Close the netcdf file
             call check(nf90_close(point_gauges%netcdf_gauge_output_file_ID), __LINE__)
 #else
             close(point_gauges%time_series_output_unit)
@@ -673,7 +673,7 @@ SRC_GIT_VERSION ), __LINE__)
         integer(ip):: domain_nvar
         real(dp):: xy_coords(2,6)
         real(dp), allocatable:: domain_U(:,:,:)
-        real(dp):: gauge_ids(6)
+        real(dp):: gauge_ids(6), eps(2)
 
         integer(ip) :: i, j, k
         character(charlen), parameter:: netcdf_gauges_file = 'test_gauge_output.nc'
@@ -691,13 +691,16 @@ SRC_GIT_VERSION ), __LINE__)
         domain_ll = [-100.0_dp, 250.0_dp]
         allocate(domain_U(domain_nx(1), domain_nx(2), domain_nvar))
 
+
+        eps(1:2) = 1.0e-04_dp ! Avoid gauge coordinates falling on boundaries between cells
+
         ! Make some gauge coordinates
-        xy_coords(:,1) = [0._dp, 0._dp] + domain_ll
-        xy_coords(:,2) = [50.0_dp, 20.0_dp] + domain_ll
-        xy_coords(:,3) = [20.0_dp, 50.0_dp] + domain_ll
-        xy_coords(:,4) = [20.0_dp, 200.0_dp] + domain_ll
-        xy_coords(:,5) = [90.0_dp, 10.0_dp] + domain_ll
-        xy_coords(:,6) = [90.0_dp, 10.0_dp] + domain_ll
+        xy_coords(:,1) = [0._dp, 0._dp] + domain_ll + eps
+        xy_coords(:,2) = [50.0_dp, 20.0_dp] + domain_ll + eps
+        xy_coords(:,3) = [20.0_dp, 50.0_dp] + domain_ll + eps
+        xy_coords(:,4) = [20.0_dp, 200.0_dp] + domain_ll + eps
+        xy_coords(:,5) = [90.0_dp, 10.0_dp] + domain_ll + eps
+        xy_coords(:,6) = [90.0_dp, 10.0_dp] + domain_ll + eps
 
         gauge_ids = (/ (i, i=1,6) /)
 
@@ -709,10 +712,10 @@ SRC_GIT_VERSION ), __LINE__)
                 end do
             end do
         end do
-      
-        ! Choose some indices to store statically/dynamically 
+
+        ! Choose some indices to store statically/dynamically
         time_series_var_indices = [1_ip, 2_ip, 4_ip]
-        static_var_indices = 3_ip 
+        static_var_indices = 3_ip
 
         call point_gauges%allocate_gauges(xy_coords, time_series_var_indices, &
             static_var_indices, gauge_ids)
@@ -745,7 +748,7 @@ SRC_GIT_VERSION ), __LINE__)
 
         call assert_test(all(point_gauges%static_values(:,1) == &
             point_gauges%site_index(1,:) + point_gauges%site_index(2,:)**2 + 3**3))
-       
+
         call assert_test(all(point_gauges%time_series_values(:,1) == &
             point_gauges%site_index(1,:) + point_gauges%site_index(2,:)**2 + 1**3))
         call assert_test(all(point_gauges%time_series_values(:,2) == &
