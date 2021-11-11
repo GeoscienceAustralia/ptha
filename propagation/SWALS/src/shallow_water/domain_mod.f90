@@ -3552,8 +3552,8 @@ TIMER_STOP('send_halos')
         !!
         !! Recall that a forcing term can be used by setting domain%forcing_subroutine => my_subroutine,
         !! and optionally populating domain%forcing_context_cptr with a c_ptr to required data. If only
-        !! one forcing term is applied then nothing else needs to be done. But what about if we want to 
-        !! add multiple forcing terms? In that case we add the first term as above. Then 
+        !! one forcing term is applied then nothing else needs to be done. But what about if we want to
+        !! add multiple forcing terms? In that case we add the first term as above. Then
         !! "call domain%store_forcing()" will append those terms to the array
         !! "domain%forcing_terms_storage(:)" and also clear the forcing data (i.e. it will set
         !! domain%forcing_context_cptr=c_null_pointer and domain%foring_subroutine => NULL() ).
