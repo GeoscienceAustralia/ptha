@@ -163,9 +163,10 @@ SOURCEDIR
             forcing_patch%forcing_work(xl:xU, yl:yU, STG) = domain%U(xl:xU, yl:yU, STG)
 
             ! Move the forcing patch into the domain, and ensure it is used in a forcing term
+            domain%forcing_subroutine => apply_forcing_patch
             domain%forcing_context_cptr = c_loc(forcing_patch)
             forcing_patch => NULL()
-            domain%forcing_subroutine => apply_forcing_patch
+            call domain%store_forcing()
 
             ! Re-set the stage deformation to zero, as it will be applied in a forcing instead.
             domain%U(:,:,STG) = 0.0_dp

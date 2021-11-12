@@ -167,7 +167,11 @@ module local_routines
             ! doing a separate mass balance. This assumes 1 domain (only)
             num_input_discharge_cells = num_input_discharge_cells + size(rainfall_region_indices%i2(j)%i1)
         end do
+
+        ! Add rainfall to the domain
+        domain%forcing_subroutine => apply_rainfall_forcing
         domain%forcing_context_cptr = c_loc(rainfall_region_indices)
+        call domain%store_forcing()
 
     end subroutine
 
@@ -250,8 +254,6 @@ program merewether
         ! Allow waves to propagate outside all edges
         domain%boundary_subroutine => transmissive_boundary
     end if
-    ! Add rainfall to the domain
-    domain%forcing_subroutine => apply_rainfall_forcing
 
     ! Call local routine to set initial conditions
     call set_initial_conditions_merewether(domain, reflective_boundaries)
