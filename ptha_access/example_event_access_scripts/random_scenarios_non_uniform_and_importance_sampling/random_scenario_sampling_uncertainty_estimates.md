@@ -172,7 +172,7 @@ exrate_and_var_stratified_importance = ptha18$analytical_Monte_Carlo_exrate_unce
     event_Mw, event_rates, 
     event_peak_stage_ref, 
     stage_threshold=stage_threshold_example, 
-    samples_per_Mw=samples_per_Mw_stratified,
+    samples_per_Mw=samples_per_Mw_stratified_importance,
     event_importance_weighted_sampling_probs = (event_rates * event_importance) # Importance sampling
     )
 
