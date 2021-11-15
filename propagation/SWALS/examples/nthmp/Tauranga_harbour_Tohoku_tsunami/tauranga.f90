@@ -22,9 +22,7 @@ module local_routines
 
     !
     ! Parameter controlling the northern boundary treatment, which substantially
-    ! affects the tsunami in this case.
-    !
-    ! Possible values are:
+    ! affects the tsunami in this case. Possible values are:
     !   'boundary_stage_radiation_momentum' -- Works pretty well without tuning for rk2 and related. 
     !   'flather_with_vh_from_continuity' -- about right? But depends on a scale for the boundary 
     !       VH term, which we can estimate from continuity, but needs tuning. OK for leapfrog_nonlinear.
@@ -73,15 +71,14 @@ module local_routines
         boundary_information%boundary_data(nr - skip + extra,2) = &
             boundary_information%boundary_data(nr - skip + extra - 1, 2)
 
-        !print*, 'ZEROING STAGE '
-        !boundary_information$boundary_data(:,2) = 0.0_dp
         call boundary_information%gauge4_ts_function%initialise(&
-                boundary_information%boundary_data(:,1), boundary_information%boundary_data(:,2))
+            boundary_information%boundary_data(:,1), boundary_information%boundary_data(:,2))
         boundary_information%t0 = boundary_information%boundary_data(1,1)
 
     end subroutine
-    
-    ! Make a function to evaluate the boundary at the domain
+   
+    ! 
+    ! Evaluate the boundary condition -- this will be called inside the domain%boundary_subroutine
     !
     function boundary_function(domain, t, i, j) result(stage_uh_vh_elev)
         type(domain_type), intent(in):: domain
@@ -203,8 +200,6 @@ module local_routines
             call domain%smooth_elevation(smooth_method='cliffs')
         end if
 
-        !call domain%smooth_elevation(smooth_method='9pt_average')
-
         ! The DEM needs to be 'fixed' in a few places where bridges remain. Google earth    
         ! suggests the bridges should not strongly impede the flow. So based on checks of the DEM, ....
         ! This doesn't really affect the model results near the gauges, but....
@@ -309,7 +304,6 @@ program Tauranga
     ! nd domains in this model
     nd = 2
     allocate(md%domains(nd))
-    !md%load_balance_file = 'load_balance_partition.txt'
 
     !
     ! Setup basic metadata
@@ -324,16 +318,12 @@ program Tauranga
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
-    !md%domains(1)%compute_fluxes_inner_method = 'DE1'
-    !md%domains(1)%theta = 4.0_dp !! No big impact for this problem.
-    !md%domains(1)%timestepping_method = 'leapfrog_linear_plus_nonlinear_friction'
-    !md%domains(1)%linear_solver_is_truely_linear = .false.
-
+    !md%domains(1)%use_eddy_viscosity = .true.
 
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
 
-    ! A detailed domain [Cannot partially share a physical boundary with the outer domain]
+    ! A detailed domain
     call md%domains(2)%match_geometry_to_parent(&
         parent_domain=md%domains(1), &
         lower_left=[28500.0_dp, 11500.0_dp], &
@@ -341,8 +331,8 @@ program Tauranga
         dx_refinement_factor=nest_ratio, &
         timestepping_refinement_factor=nest_ratio,&
         rounding_method='nearest')
-    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method !'cliffs' !'midpoint' !'rk2'
-    !md%domains(2)%theta = 4.0_dp ! No big impact for this problem.
+    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method
+    !md%domains(2)%use_eddy_viscosity = .true.
 
     print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
         ' nx: ', md%domains(2)%nx
@@ -359,15 +349,12 @@ program Tauranga
         boundary_type = 'boundary_stage_radiation_momentum'
     end if
         
-
     ! Initial conditions
     do j = 1, size(md%domains)
         call set_initial_conditions(md%domains(j))
-        ! Even for linear solver, allow the (g depth dstage/dx) term to have depth varying
-        md%domains(j)%linear_solver_is_truely_linear = .false.
     end do
     call md%make_initial_conditions_consistent 
-    ! NOTE: For stability in 'null' regions, we set them to 'high land' that
+    ! For stability in 'null' regions, we set them to 'high land' that
     ! should be inactive. 
     call md%set_null_regions_to_dry()
 
@@ -438,4 +425,5 @@ program Tauranga
     call program_timer%print(log_output_unit)
 
     call swals_mpi_finalize
+
 end program

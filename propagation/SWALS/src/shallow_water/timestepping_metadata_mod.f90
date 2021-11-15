@@ -30,6 +30,8 @@ module timestepping_metadata_mod
             !! Parameter affecting the slope-limiter for finite-volume methods.
         logical :: adaptive_timestepping = .true.
             !! Can the solver compute its own time-step adaptively?
+        logical :: eddy_viscosity_is_supported = .false.
+            !! Does the solver support an optional eddy viscosity?
 
         integer(ip) :: nesting_thickness_for_one_timestep = -1_ip
             !! How many halo cells are required to advance interior cells a single timestep while
@@ -74,6 +76,7 @@ module timestepping_metadata_mod
             timestepping_metadata(1)%default_theta = 1.6_dp
             timestepping_metadata(1)%nesting_thickness_for_one_timestep = 4_ip
             timestepping_metadata(1)%forcing_elevation_is_allowed = 'optional'
+            timestepping_metadata(1)%eddy_viscosity_is_supported = .true.
 
             !
             ! rk2n defaults
@@ -83,6 +86,7 @@ module timestepping_metadata_mod
             timestepping_metadata(2)%default_theta = 1.6_dp
             timestepping_metadata(2)%nesting_thickness_for_one_timestep = 10_ip
             timestepping_metadata(2)%forcing_elevation_is_allowed = 'optional'
+            timestepping_metadata(2)%eddy_viscosity_is_supported = .true.
 
             !
             ! midpoint defaults
@@ -92,6 +96,7 @@ module timestepping_metadata_mod
             timestepping_metadata(3)%default_theta = 1.6_dp
             timestepping_metadata(3)%nesting_thickness_for_one_timestep = 4_ip
             timestepping_metadata(3)%forcing_elevation_is_allowed = 'optional'
+            timestepping_metadata(3)%eddy_viscosity_is_supported = .true.
 
             !
             ! Euler defaults
@@ -101,6 +106,7 @@ module timestepping_metadata_mod
             timestepping_metadata(4)%default_theta = 0.9_dp
             timestepping_metadata(4)%nesting_thickness_for_one_timestep = 2_ip
             timestepping_metadata(4)%forcing_elevation_is_allowed = 'always'
+            timestepping_metadata(4)%eddy_viscosity_is_supported = .true.
 
             !
             ! Linear leapfrog defaults

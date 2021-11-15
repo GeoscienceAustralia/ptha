@@ -20,6 +20,7 @@
     !logical, parameter :: upwind_transverse_momentum = .false.
     logical, parameter :: upwind_normal_momentum = .false.
     !logical, parameter :: reduced_momentum_diffusion = .true.
+    !logical, parameter :: use_eddy_viscosity = .false.
 
     ! wavespeeds
     real(dp):: s_max, s_min, gs_pos, gs_neg, sminsmax
@@ -35,8 +36,9 @@
     integer(ip):: i, j, nx, ny, jlast
     real(dp):: denom, inv_denom, max_speed, max_dt, dx_cfl_half_inv(2), z_pos_b, z_neg_b, stg_b, stg_a
     real(dp):: bed_slope_pressure_s, bed_slope_pressure_n, bed_slope_pressure_e, bed_slope_pressure_w
-    real(dp) :: half_g_hh_edge, precision_factor, half_g_hh_edge_a, half_g_hh_edge_b
+    real(dp):: half_g_hh_edge, precision_factor, half_g_hh_edge_a, half_g_hh_edge_b
     real(dp):: half_cfl, max_dt_inv, dxb, common_multiple, fr2
+    real(dp):: diffusion_hll, diffusion_turbulent, diffusion_total, diffusion_max
     character(len=charlen):: timer_name
     real(dp), parameter :: diffusion_scale = ONE_dp
     real(dp), parameter :: EPS = 1.0e-12_dp
@@ -63,6 +65,11 @@
         dv_EW(domain%nx(1)), theta_wd_EW(domain%nx(1)), duh_EW(domain%nx(1)), dvh_EW(domain%nx(1))
 
     real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1)), explicit_source_im1_work(domain%nx(1))
+
+    ! Should we reduce the hll numerical diffusion (if possible) when applying the physical diffusion? 
+    ! If .true., then if numerical and turbulent have the same sign, only use the one with largest absolute value
+    logical, parameter :: reduced_numerical_diffusion = .true. 
+    real(dp) :: eddy_visc_j(domain%nx(1)), eddy_visc_jm1(domain%nx(1))
 
     half_cfl = HALF_dp * domain%cfl
     ny = domain%nx(2)
@@ -116,6 +123,11 @@
     call get_NS_limited_gradient_dx(domain, j_low-1, nx, ny, &
         theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS, duh_NS, dvh_NS, extrapolate_uh_vh)
 
+    if(use_eddy_viscosity) then
+        ! Get eddy viscosity for cells at j-1
+        call get_eddy_viscosity(domain, j_low-1, eddy_visc_j)
+    end if
+
     ! Main loop
     do j = j_low, j_high
 
@@ -134,6 +146,12 @@
         ! Get bed at j-1 (might improve cache access)
         bed_j_minus_1 = domain%U(:,j-1,ELV)
 
+        if(use_eddy_viscosity) then
+            ! Get the eddy viscosity, reusing value from previous j
+            eddy_visc_jm1 = eddy_visc_j
+            call get_eddy_viscosity(domain, j, eddy_visc_j)
+        end if
+
         ! Get the NS change in stage, depth, u-vel, v-vel, at the row 'j-1'
         ! We can reuse the old values since the 'j' loop is ordered
         dstage_NS_lower = dstage_NS
@@ -149,7 +167,7 @@
             theta_wd_NS, dstage_NS, ddepth_NS, du_NS, dv_NS, duh_NS, dvh_NS, extrapolate_uh_vh)
 
         !$OMP SIMD PRIVATE(stage_neg, stage_pos, depth_neg, depth_pos, u_neg, u_pos, v_neg, v_pos, depth_neg_c, depth_pos_c, &
-        !$OMP vd_neg, ud_neg, vd_pos, ud_pos, &
+        !$OMP vd_neg, ud_neg, vd_pos, ud_pos, diffusion_turbulent, diffusion_hll, diffusion_total, diffusion_max, &
         !$OMP z_neg, z_pos, z_half, stage_neg_star, depth_neg_star, stage_pos_star, depth_pos_star, gs_neg, gs_pos, vel_beta_neg, &
         !$OMP vel_beta_pos, s_min, s_max, inv_denom, denom, sminsmax, fr2, half_g_hh_edge, bed_slope_pressure_e, &
         !$OMP bed_slope_pressure_w, dxb, stg_b, stg_a, common_multiple, max_speed)
@@ -249,27 +267,92 @@
                  s_min * vd_pos + &
                  sminsmax * (stage_pos_star - stage_neg_star)) * inv_denom
 
-            if(.not. upwind_transverse_momentum) then
-                domain%flux_NS(i, j, UH) = &
-                    (s_max * ud_neg * vel_beta_neg - &
-                     s_min * ud_pos * vel_beta_pos + &
-                    fr2 * sminsmax * (ud_pos - ud_neg)) * inv_denom
-            else
-                domain%flux_NS(i,j,UH) = advection_beta * &
-                    merge(u_neg, u_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
-            end if
+            if(.not. use_eddy_viscosity) then
 
-            if(.not. upwind_normal_momentum) then
-                domain%flux_NS(i, j, VH) = &
-                    (s_max * vd_neg * vel_beta_neg - &
-                     s_min * vd_pos * vel_beta_pos + &
-                     fr2 * sminsmax * (vd_pos - vd_neg))*inv_denom
-                    !(s_max * vh_neg * vel_beta_neg - &
-                    ! s_min * vh_pos * vel_beta_pos + &
-                    ! fr2 * sminsmax * (vh_pos - vh_neg))*inv_denom
-            else
-                domain%flux_NS(i, j, VH) = advection_beta * &
-                    merge(v_neg, v_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
+                ! Momentum fluxes without turbulent diffusion 
+
+                ! UH term
+                if(.not. upwind_transverse_momentum) then
+                     domain%flux_NS(i, j, UH) = &
+                         (s_max * ud_neg * vel_beta_neg - &
+                          s_min * ud_pos * vel_beta_pos + &
+                         fr2 * sminsmax * (ud_pos - ud_neg)) * inv_denom
+                 else
+                     domain%flux_NS(i,j,UH) = advection_beta * &
+                         merge(u_neg, u_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
+                 end if
+
+                 ! VH term
+                 if(.not. upwind_normal_momentum) then
+                     domain%flux_NS(i, j, VH) = &
+                         (s_max * vd_neg * vel_beta_neg - &
+                          s_min * vd_pos * vel_beta_pos + &
+                          fr2 * sminsmax * (vd_pos - vd_neg))*inv_denom
+                 else
+                     domain%flux_NS(i, j, VH) = advection_beta * &
+                         merge(v_neg, v_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
+                 end if
+
+             else
+                ! Momentum fluxes with turbulent diffusion 
+
+                ! UH term
+                if(.not. upwind_transverse_momentum) then
+                    domain%flux_NS(i, j, UH) = &
+                        (s_max * ud_neg * vel_beta_neg - &
+                         s_min * ud_pos * vel_beta_pos ) * inv_denom
+                    diffusion_hll =  fr2 * sminsmax * (ud_pos - ud_neg) * inv_denom
+                else
+                    domain%flux_NS(i,j,UH) = advection_beta * &
+                        merge(u_neg, u_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
+                    diffusion_hll = ZERO_dp
+                end if
+                !
+                ! Turbulent diffusion
+                ! Note the eddy-viscosity has been clipped based on explicit time-step constraints, as in e.g. SWASH and other
+                ! well-known solvers that use explicit eddy-visc.
+                diffusion_turbulent = - &
+                    ! { eddy_visc * depth * dx * du/dy} = "turbulent_diffusion" * dx (geometric mean for depth)
+                    HALF_dp * (eddy_visc_j(i) + eddy_visc_jm1(i)) * &
+                    sqrt(depth_neg_star*depth_pos_star) * domain%distance_bottom_edge(j) * &
+                        ((domain%velocity(i,j, UH) - domain%velocity(i, j-1, UH))/domain%distance_left_edge(i) )
+
+                ! Compute diffusive terms.
+                diffusion_max = max(abs(diffusion_turbulent), abs(diffusion_hll))
+                ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true." and both terms are of the same sign,
+                ! in which case we take the max of their absolute value
+                diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
+                    .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
+
+                domain%flux_NS(i,j,UH) = domain%flux_NS(i,j,UH) + diffusion_total
+
+                ! VH term
+                if(.not. upwind_normal_momentum) then
+                    domain%flux_NS(i, j, VH) = &
+                        (s_max * vd_neg * vel_beta_neg - & 
+                         s_min * vd_pos * vel_beta_pos ) * inv_denom
+                    diffusion_hll = fr2 * sminsmax * (vd_pos - vd_neg)*inv_denom 
+                else
+                    domain%flux_NS(i, j, VH) = advection_beta * &
+                        merge(v_neg, v_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
+                    diffusion_hll = ZERO_dp
+                end if
+                !
+                ! Turbulent diffusion
+                diffusion_turbulent = - &
+                    ! { eddy_visc * depth * dx * du/dy} = "turbulent_diffusion" * dx (geometric mean for depth)
+                    HALF_dp * (eddy_visc_j(i) + eddy_visc_jm1(i)) * &
+                    sqrt(depth_neg_star*depth_pos_star) * domain%distance_bottom_edge(j) * &
+                        ((domain%velocity(i,j, VH) - domain%velocity(i, j-1, VH))/domain%distance_left_edge(i) )
+
+                ! Compute diffusive terms.
+                diffusion_max = max(abs(diffusion_turbulent), abs(diffusion_hll))
+                ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true. " and both terms are of the same sign,
+                ! in which case we take the max of their absolute value
+                diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
+                    .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
+
+                domain%flux_NS(i,j,VH) = domain%flux_NS(i,j,VH) + diffusion_total
             end if
 
             ! Here we put in the gravity/pressure terms. Can try a flux conservative treatment,
@@ -431,26 +514,93 @@
                  s_min * ud_pos + &
                  sminsmax * (stage_pos_star - stage_neg_star)) * inv_denom
 
-            if(.not. upwind_normal_momentum) then
-                domain%flux_EW(i,j,UH) = &
-                     (s_max * ud_neg * vel_beta_neg  - &
-                      s_min * ud_pos * vel_beta_pos + &
-                     fr2 * sminsmax * (ud_pos - ud_neg) )*inv_denom
-                     !(s_max * uh_neg * vel_beta_neg  - &
-                     ! s_min * uh_pos * vel_beta_pos + &
-                     !fr2 * sminsmax * (uh_pos - uh_neg) )*inv_denom
+            if(.not. use_eddy_viscosity) then
+
+                ! Momentum fluxes without turbulent diffusion
+
+                ! UH term
+                if(.not. upwind_normal_momentum) then
+                    domain%flux_EW(i,j,UH) = &
+                        (s_max * ud_neg * vel_beta_neg  - &
+                         s_min * ud_pos * vel_beta_pos + &
+                         fr2 * sminsmax * (ud_pos - ud_neg) )*inv_denom
+                else
+                    domain%flux_EW(i,j,UH) = advection_beta * &
+                        merge(u_neg, u_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
+                end if
+
+                ! VH term
+                if(.not. upwind_transverse_momentum) then
+                    domain%flux_EW(i,j,VH) = &
+                        (s_max * vd_neg * vel_beta_neg - &
+                         s_min * vd_pos * vel_beta_pos + &
+                        fr2 * sminsmax * (vd_pos - vd_neg)) * inv_denom
+                else
+                    domain%flux_EW(i,j,VH) = advection_beta * &
+                        merge(v_neg, v_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
+                end if
+
             else
-                domain%flux_EW(i,j,UH) = advection_beta * &
-                    merge(u_neg, u_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
-            end if
-            if(.not. upwind_transverse_momentum) then
-                domain%flux_EW(i,j,VH) = &
-                    (s_max * vd_neg * vel_beta_neg - &
-                     s_min * vd_pos * vel_beta_pos + &
-                    fr2 * sminsmax * (vd_pos - vd_neg)) * inv_denom
-            else
-                domain%flux_EW(i,j,VH) = advection_beta * &
-                    merge(v_neg, v_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
+
+                ! Momentum fluxes with turbulent diffusion
+
+                ! UH term
+                if(.not. upwind_normal_momentum) then
+                    domain%flux_EW(i,j,UH) = &
+                        (s_max * ud_neg * vel_beta_neg  - &
+                         s_min * ud_pos * vel_beta_pos )*inv_denom
+                     diffusion_hll = fr2 * sminsmax * (ud_pos - ud_neg) * inv_denom
+                else
+                    domain%flux_EW(i,j,UH) = advection_beta * &
+                        merge(u_neg, u_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
+                    diffusion_hll = ZERO_dp
+                end if
+                !
+                ! Turbulent diffusion
+                diffusion_turbulent = - &
+                    ! { eddy_visc * depth * dy * dU/dx } = "turbulent_diffusion" * dy (geometric mean for depth)
+                    HALF_dp * (eddy_visc_j(i) + eddy_visc_j(i-1)) * &
+                    sqrt(depth_neg_star*depth_pos_star) * domain%distance_left_edge(i) * &
+                        ((domain%velocity(i,j, UH) - domain%velocity(i-1, j, UH))/&
+                         (HALF_dp * (domain%distance_bottom_edge(j) + domain%distance_bottom_edge(j+1))))
+
+                ! Compute diffusive terms.
+                diffusion_max = max(abs(diffusion_turbulent), abs(diffusion_hll))
+                ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true." and both terms are of the same sign,
+                ! in which case we take the max of their absolute value
+                diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
+                    .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
+
+                domain%flux_EW(i,j,UH) = domain%flux_EW(i,j,UH) + diffusion_total
+
+                ! VH term
+                if(.not. upwind_transverse_momentum) then
+                    domain%flux_EW(i,j,VH) = &
+                        (s_max * vd_neg * vel_beta_neg - &
+                         s_min * vd_pos * vel_beta_pos ) * inv_denom
+                    diffusion_hll =  fr2 * sminsmax * (vd_pos - vd_neg) * inv_denom
+                else
+                    domain%flux_EW(i,j,VH) = advection_beta * &
+                        merge(v_neg, v_pos, domain%flux_EW(i,j,STG) > ZERO_dp) * domain%flux_EW(i,j,STG)
+                    diffusion_hll = ZERO_dp
+                end if
+                !
+                ! Turbulent diffusion, constant eddy viscosity
+                diffusion_turbulent = - &
+                    ! { eddy_visc * depth * dy * du/dx} = "turbulent_diffusion" * dy (geometric mean for depth)
+                    HALF_dp * (eddy_visc_j(i) + eddy_visc_j(i-1)) * &
+                    sqrt(depth_neg_star*depth_pos_star) * domain%distance_left_edge(i) * &
+                        ((domain%velocity(i,j, VH) - domain%velocity(i-1, j, VH))/&
+                         (HALF_dp * (domain%distance_bottom_edge(j) + domain%distance_bottom_edge(j+1))))
+
+                ! Compute diffusive terms.
+                diffusion_max = max(abs(diffusion_turbulent), abs(diffusion_hll))
+                ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true. " and both terms are of the same sign,
+                ! in which case we take the max of their absolute value
+                diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
+                    .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
+
+                domain%flux_EW(i,j,VH) = domain%flux_EW(i,j,VH) + diffusion_total
 
             end if
 
@@ -689,5 +839,163 @@
 
     end subroutine
 
+    subroutine get_eddy_viscosity(domain, j, eddy_visc)
+        !! Compute the eddy viscosity for row j. 
+        !!
+        !! The supported models are:
+        !! - Constant [ if (domain%eddy_visc_constants(2) == 0.0)]
+        !! - Constant + Smagorinsky,  with coefficients determined by domain%eddy_visc_constants(1:2) (
+        !!   where the first entry is the constant coefficient and the second is the smagorinsky coefficient).
+        !! - Constant + "Shiono & Knight 1991" model (again domain%eddy_visc_constants(1) is constant model, and 
+        !!   domain%eddy_visc_constants(2) is the constant in "constant * depth * shear_velocity")
+        !!
+        !! The viscosity is limited to min(visc, dx*dx/(2*dt)) so as to not interfere with the explicit timestepping.
+        !! This is done in SWASH and other models.
+        !!
+        ! @param domain
+        ! @param j integer -- get viscosity for domain%U(:,j,:)
+        ! @param eddy_vis -- vector eddy viscosity
+        !
+        type(domain_type), intent(in) :: domain
+            !! 
+        integer(ip), intent(in) :: j
+            !! Compute viscosity for the row associated with domain%U(:,j,:) and y-coordinate domain%y(j)
+        real(dp), intent(out) :: eddy_visc(domain%nx(1))
+            !! On output holds the eddy viscosity for row j.
+
+        integer(ip) :: i
+        real(dp) :: two_dx, two_dy
+        real(dp), parameter :: eps_zerodiv = 1.0e-10_dp
+
+        character(len=charlen), parameter :: eddy_viscosity_type = 'shionoknight' !'smagorinsky'
+
+        if(domain%eddy_visc_constants(2) == 0.0_dp) then
+
+            !
+            ! Constant eddy-viscosity
+            !
+
+            eddy_visc = domain%eddy_visc_constants(1) 
+
+            ! Clip for stability of explicit time-stepping (see SWASH, Zijelma et al (2011), and other codes)
+            two_dx = domain%distance_bottom_edge(j) + domain%distance_bottom_edge(j+1)
+            do i = 2, (domain%nx(1)-1)
+                two_dy = domain%distance_left_edge(i) + domain%distance_left_edge(i+1)
+                eddy_visc(i) = min(eddy_visc(i), &
+                    0.25_dp * min(two_dx * two_dx, two_dy * two_dy) / (2.0_dp * domain%dt_last_update + eps_zerodiv))
+            end do
+            ! Naive extrapolation at the edges
+            eddy_visc(1) = eddy_visc(2)
+            eddy_visc(domain%nx(1)) = eddy_visc(domain%nx(1)-1)
+
+        else if(eddy_viscosity_type == 'smagorinsky') then
+
+            !
+            ! Smagorinsky eddy viscosity
+            !
+
+            if(j /= 1 .and. j /= domain%nx(2)) then
+                ! Typical case
+
+                two_dx = domain%distance_bottom_edge(j) + domain%distance_bottom_edge(j+1)
+
+                do i = 2, (domain%nx(1)-1)
+
+                    two_dy = domain%distance_left_edge(i) + domain%distance_left_edge(i+1)
+
+                    ! Smagorinsky type formula with extra constant
+                    eddy_visc(i) = domain%eddy_visc_constants(1) + &
+                        domain%eddy_visc_constants(2) * domain%area_cell_y(j) * sqrt( &
+                        ( (domain%velocity(i+1,j,UH) - domain%velocity(i-1,j,UH))/two_dx)**2 + &
+                        ( (domain%velocity(i,j+1,VH) - domain%velocity(i,j-1,VH))/two_dy)**2 + &
+                        HALF_dp * ( &
+                            abs(domain%velocity(i,j+1,UH) - domain%velocity(i,j-1,UH))/two_dy + &
+                            abs(domain%velocity(i+1,j,VH) - domain%velocity(i-1,j,VH))/two_dx &
+                            )**2)
+
+                     ! Clip for stability of explicit time-stepping (see SWASH, Zijelma et al (2011), and other codes)
+                     eddy_visc(i) = min(eddy_visc(i), &
+                         0.25_dp * min(two_dx * two_dx, two_dy * two_dy) / (2.0_dp * domain%dt_last_update + eps_zerodiv))
+                end do
+
+            else if(j == 1) then
+                ! South boundary case -- avoid j-1 indexing
+
+                two_dx = domain%distance_bottom_edge(j) + domain%distance_bottom_edge(j+1)
+
+                do i = 2, (domain%nx(1)-1)
+
+                    two_dy = domain%distance_left_edge(i) + domain%distance_left_edge(i+1)
+
+                    ! Smagorinsky type formula with extra constant
+                    eddy_visc(i) = domain%eddy_visc_constants(1) + &
+                        domain%eddy_visc_constants(2) * domain%area_cell_y(j) * sqrt( &
+                        ( (domain%velocity(i+1,j,UH) - domain%velocity(i-1,j,UH))/two_dx)**2 + &
+                        ( 2*(domain%velocity(i,j+1,VH) - domain%velocity(i,j,VH))/two_dy)**2 + &
+                        HALF_dp * ( &
+                            2*abs(domain%velocity(i,j+1,UH) - domain%velocity(i,j,UH))/two_dy + &
+                            abs(domain%velocity(i+1,j,VH) - domain%velocity(i-1,j,VH))/two_dx )**2 )
+
+                     ! Clip for stability of explicit time-stepping (see SWASH, Zijelma et al (2011), and other codes)
+                     eddy_visc(i) = min(eddy_visc(i), &
+                         0.25_dp * min(two_dx * two_dx, two_dy * two_dy) / (2.0_dp * domain%dt_last_update + eps_zerodiv))
+                end do
+
+            else if(j == domain%nx(2)) then
+                ! North boundary case -- avoid j+1 indexing
+
+                two_dx = domain%distance_bottom_edge(j-1) + domain%distance_bottom_edge(j)
+                do i = 2, (domain%nx(1)-1)
+
+                    two_dy = domain%distance_left_edge(i) + domain%distance_left_edge(i+1)
+
+                    ! Smagorinsky type formula with extra constant
+                    eddy_visc(i) = domain%eddy_visc_constants(1) + &
+                        domain%eddy_visc_constants(2) * domain%area_cell_y(j) * sqrt( &
+                        ( (domain%velocity(i+1,j,UH) - domain%velocity(i-1,j,UH))/two_dx)**2 + &
+                        ( 2*(domain%velocity(i,j,VH) - domain%velocity(i,j-1,VH))/two_dy)**2 + &
+                        HALF_dp * ( &
+                            2*abs(domain%velocity(i,j,UH) - domain%velocity(i,j-1,UH))/two_dy + &
+                            abs(domain%velocity(i+1,j,VH) - domain%velocity(i-1,j,VH))/two_dx )**2 )
+
+                     ! Clip for stability of explicit time-stepping (see SWASH, Zijelma et al (2011), and other codes)
+                     eddy_visc(i) = min(eddy_visc(i), &
+                         0.25_dp * min(two_dx * two_dx, two_dy * two_dy) / (2.0_dp * domain%dt_last_update + eps_zerodiv))
+                end do
+
+            end if
+
+            ! Naive extrapolation at the edges
+            eddy_visc(1) = eddy_visc(2)
+            eddy_visc(domain%nx(1)) = eddy_visc(domain%nx(1)-1)
+
+        else if(eddy_viscosity_type == 'shionoknight') then
+            
+            !
+            ! A common eddy-viscosity, used in the Compound-Channel-Flow model of Shiono and Knight (1991) and many other
+            ! places.
+            !     eddy_viscocity = constant * depth * shear_velocity
+            ! where
+            !     shear_velocity = sqrt(bed_shear_stress/rho) = sqrt( d ^(-1/3) * n^2 * g * speed^2 )
+            !
+            eddy_visc = domain%eddy_visc_constants(1) + &
+                domain%eddy_visc_constants(2) * domain%depth(:,j)**(1.0_dp - 1.0_dp/6.0_dp) * &
+                sqrt(domain%manning_squared(:,j) * gravity * (domain%velocity(:,j,UH)**2 + domain%velocity(:,j,VH)**2))
+
+            ! Clip for stability of explicit time-stepping (see SWASH, Zijelma et al (2011), and other codes)
+            two_dx = domain%distance_bottom_edge(j) + domain%distance_bottom_edge(j+1)
+            do i = 2, (domain%nx(1)-1)
+                two_dy = domain%distance_left_edge(i) + domain%distance_left_edge(i+1)
+                eddy_visc(i) = min(eddy_visc(i), &
+                    0.25_dp * min(two_dx * two_dx, two_dy * two_dy) / (2.0_dp * domain%dt_last_update + eps_zerodiv))
+            end do
+
+            ! Naive extrapolation at the edges
+            eddy_visc(1) = eddy_visc(2)
+            eddy_visc(domain%nx(1)) = eddy_visc(domain%nx(1)-1)
+
+        end if
+
+    end subroutine
 
 !end subroutine

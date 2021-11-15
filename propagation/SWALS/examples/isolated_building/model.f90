@@ -36,7 +36,7 @@ module local_routines
         real(dp) :: gauge_xy(3,8), leftmost_x(3)
         type(xyz_lines_type) :: polygons
         logical :: is_inside
-        real(dp), parameter :: wall = 1.0_dp, initial_reservoir_stage = 0.4_dp, initial_downstream_stage = 0.02_dp
+        real(dp), parameter :: wall = 1.0_dp, initial_reservoir_stage = 0.4_dp, initial_downstream_stage = 0.02_dp !0.002_dp
         
 
         ! These define the dam-wall and the building
@@ -117,7 +117,7 @@ program isolated_building
 
     type(timer_type) :: program_timer
 
-    real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
+    real(dp), parameter :: mesh_refine = 1.0_dp ! 8.0_dp ! Increase resolution by this amount
    
     ! This can voilate the theoretical rk2 time-stepping limit, but still the solution is good. 
     ! That might be common for rk2, for instance see:
@@ -163,6 +163,7 @@ program isolated_building
     md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'cliffs' !'rk2'
     md%domains(1)%cliffs_minimum_allowed_depth = 0.01_dp
     !md%domains(1)%theta = 4.0_dp
+    !md%domains(1)%use_eddy_viscosity = .true.
 
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
@@ -216,7 +217,7 @@ program isolated_building
 
         ! Write gauges every time-step, but print and write grids less often
         call program_timer%timer_start('IO')
-        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=0.0_dp,&
+        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency,&
             write_grids_less_often=write_grids_and_print_every_nth_step, &
             print_less_often = write_grids_and_print_every_nth_step,&
             write_gauges_less_often= 1_ip)

@@ -180,6 +180,8 @@ module local_routines
         ! ( Manning coefficient )^2
         domain%manning_squared = 0.005_dp**2
 
+        domain%msl_linear = initial_sea_level
+
     end subroutine
 
 end module 
@@ -194,7 +196,7 @@ program Seaside_OSU
     use global_mod, only: ip, dp, minimum_allowed_depth, &
         default_nonlinear_timestepping_method
     use multidomain_mod, only: multidomain_type, setup_multidomain
-    use boundary_mod, only: boundary_stage_transmissive_normal_momentum
+    use boundary_mod, only: boundary_stage_transmissive_normal_momentum, boundary_stage_radiation_momentum
     use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit
     use local_routines
@@ -270,6 +272,7 @@ program Seaside_OSU
     ! Build boundary conditions
     call setup_boundary_information()
     md%domains(1)%boundary_subroutine => boundary_stage_transmissive_normal_momentum
+    !md%domains(1)%boundary_subroutine => boundary_stage_radiation_momentum
     md%domains(1)%boundary_function => boundary_function
 
     call md%make_initial_conditions_consistent()

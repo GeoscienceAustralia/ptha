@@ -159,7 +159,7 @@ program Submerged_Island
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 5.0_dp ! 0.5_dp 
-    real(dp), parameter :: final_time = 1000._dp
+    real(dp), parameter :: final_time = 1500._dp
 
     ! Use this to read command line arguments
     character(len=20) :: tempchar
@@ -195,6 +195,7 @@ program Submerged_Island
 
     !md%domains(1)%eddy_visc_constants = [0.000_dp, 0.0_dp]
     !md%domains(1)%eddy_visc_constants = [0.000_dp, 0.5_dp]
+    !md%domains(1)%use_eddy_viscosity = .true.
     md%domains(1)%msl_linear = msl_linear
 
     ! Allocate domains and prepare comms

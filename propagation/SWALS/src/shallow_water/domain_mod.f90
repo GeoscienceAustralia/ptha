@@ -7,6 +7,7 @@
 #   define TIMER_STOP(tname)
 #endif
 
+! Compile with -DEVOLVE_TIMER to add detailed timing of the evolve loop 
 #ifdef EVOLVE_TIMER
 #   define EVOLVE_TIMER_START(tname) call domain%evolve_timer%timer_start(tname)
 #   define EVOLVE_TIMER_STOP(tname)  call domain%evolve_timer%timer_end(tname)
@@ -72,13 +73,13 @@ module domain_mod
     public:: domain_type, STG, UH, VH, ELV
 
     integer(int32), parameter :: STG=1, UH=2, VH=3, ELV=4
-        ! Indices for arrays: Stage, depth-integrated-x-velocity, depth-integrated-v-velocity, elevation. So e.g. stage is in
+        ! Indices for arrays: Stage, depth-integrated-x-velocity, depth-integrated-y-velocity, elevation. So e.g. stage is in
         ! domain%U(:,:,STG), and elevation is in domain%U(:,:,ELV)
 
     ! Handy constants
     real(dp), parameter :: HALF_dp = 0.5_dp, ZERO_dp = 0.0_dp, ONE_dp=1.0_dp
     real(dp), parameter :: QUARTER_dp = HALF_dp * HALF_dp
-    real(dp), parameter:: NEG_SEVEN_ON_THREE_dp = -2.0_dp - 1.0_dp/3.0_dp !-7.0_dp/3.0_dp
+    real(dp), parameter:: NEG_SEVEN_ON_THREE_dp = -7.0_dp/3.0_dp
 
     ! Make 'rk2n' involve this many flux calls -- it will evolve (rk2n_n_value -1) steps,
     ! with one extra step used for a second-order correction
@@ -136,77 +137,34 @@ module domain_mod
         !! structured grid.
         !!
 
+        !
+        ! Geometry
+        !
         real(dp):: lw(2) = -HUGE(1.0_dp)
             !! [Length,width] of domain in x/y units.
         integer(ip):: nx(2) = -1_ip
             !! grid size [number of x-cells, number of y-cells]
         real(dp):: dx(2) = - HUGE(1.0_dp)
-            !! cell size [dx,dy]
+            !! cell size [dx,dy] (= lw/nx)
         real(dp):: lower_left(2) = HUGE(1.0_dp)
             !! Absolute lower-left coordinate (bottom left corner of cell(1,1))
 
+        !
+        ! Solver related
+        !
+        integer(ip):: nvar = 4
+            !! Number of quantities in domain%U (stage, uh, vh, elevation)
+        character(len=charlen):: timestepping_method = default_nonlinear_timestepping_method
+            !! timestepping_method determines the choice of solver
+        character(len=charlen) :: compute_fluxes_inner_method = 'DE1_low_fr_diffusion' ! 'DE1'
+            !! Subroutine called inside domain%compute_fluxes, to allow variations on flux computation.
         real(dp) :: theta = -HUGE(1.0_dp) !
             !! Parameter controlling extrapolation for finite volume methods
         real(dp):: cfl = -HUGE(1.0_dp)
             !! CFL number
-
-        real(dp) :: dx_refinement_factor = ONE_dp
-        real(dp) :: dx_refinement_factor_of_parent_domain = ONE_dp
-            !! This information is useful in the context of nesting, where interior
-            !! domains have cell sizes that are an integer divisor of the
-            !! coarse-domain dx.
-        integer(ip) :: timestepping_refinement_factor = 1_ip
-            !! Number of timesteps taken by this domain inside each multidomain timestep.
-            !! Only used in conjunction with the multidomain class
-
-        integer(ip) :: nest_layer_width = -1_ip
-            !! The width of the nesting layer for this domain in the multidomain. This will depend
-            !! on the dx value relative to the neighbouring domains, on the timestepping_method,
-            !! and on the timestepping_refinement_factor. See 'get_domain_nesting_layer_thickness'
-
-        real(dp) :: interior_bounding_box(4,2) = 0.0_dp
-            !! Useful to hold the interior bounding box [ = originally provided bounding box]
-            !! since the actual bounding box might be changed to accommodate nesting
-
-        integer(int64):: myid = 1
-            !! Domain ID, which is useful if multiple domains are running
-        integer(int64):: local_index = 1
-            !! Useful when we partition a domain in parallel
-
-        logical :: is_nesting_boundary(4) = .FALSE.
-            !! Flag to denote boundaries at which nesting occurs: order is N, E, S, W.
-
-        character(len=charlen):: timestepping_method = default_nonlinear_timestepping_method
-            !! timestepping_method determines the choice of solver
-
-        real(dp) :: max_parent_dx_ratio
-            !! Maximum value of (dx-from-domains-we-receive-from)/my-dx. Useful for nesting.
-
-        integer(ip):: nvar = 4
-            !! Number of quantities in domain%U (stage, uh, vh, elevation)
-
-        character(len=charlen):: metadata_ascii_filename
-            !! Name of ascii file where we output metadata
-
-        character(len=charlen) :: compute_fluxes_inner_method = 'DE1_low_fr_diffusion' ! 'DE1'
-            !! Subroutine called inside domain%compute_fluxes, to allow variations on flux computation.
-
-        integer(ip):: exterior_cells_width = 2
-            !! The domain 'interior' is surrounded by 'exterior' cells which are
-            !! updated by boundary conditions, or copied from other domains. When
-            !! tracking mass conservation, we only want to record inflows/outflows to
-            !! interior cells. The interior cells are:
-            !!    [(1+exterior_cells_width):(domain%nx(1)-exterior_cells_width), &
-            !!     (1+exterior_cells_width):(domain%nx(2)-exterior_cells_width)]
-            !! NOTE: exterior_cells_width should only be used to influence mass conservation tracking calculations.
-            !! It is not strictly related to the halo width for parallel computations. When using a multidomain, the
-            !! mass conservation tracking is somewhat different (based around subroutines with names matching
-            !! 'nesting_boundary_flux_*')
-
         integer(ip):: nsteps_advanced = 0
             !! Count number of time steps (useful if we want to do something only
             !! every n'th timestep)
-
         real(dp):: time = ZERO_dp
             !! The evolved time in seconds
         real(dp):: max_dt = ZERO_dp
@@ -222,7 +180,6 @@ module domain_mod
             !! If the time is less than this number, then we will assume the domain flow is stationary, and will not re-compute the
             !! flow. Useful to increase the efficiency of domains where you know nothing happens until some set time (e.g. far-field
             !! tsunami).
-
         real(dp):: msl_linear = 0.0_dp
             !! Parameter which determines how the 'static depth' is computed in
             !! linear solver [i.e. corresponding to 'h0' in the pressure gradient term 'g h_0 d(free_surface)/dx'],
@@ -234,15 +191,8 @@ module domain_mod
             !! Otherwise 'h0' varies as the stage varies (which actually makes the equations nonlinear)
         logical :: is_staggered_grid
             !! Useful variable to distinguish staggered-grid and centred-grid numerical methods
-        logical :: adaptive_timestepping = .true.
+        logical :: adaptive_timestepping
             !! Can the time-step vary over time?
-        real(dp) :: local_timestepping_scale = 1.0_dp
-            !! If LOCAL_TIMESTEP_PARTITIONED_DOMAINS is used in a multidomain, then the partitioned domain's time-step
-            !! may be increased above that implied by its timestep_refinement_factor, up to
-            !! (local_timestepping_scale * domain%max_dt). The idea is that local_timestepping_scale
-            !! can be set to a value between [0-1], with smaller values making for a less aggressive
-            !! local-timestep increase. This can help with stability on some occasions.
-
         real(dp) :: cliffs_minimum_allowed_depth = 0.001_dp
             !! The CLIFFS solver seems to require tuning of the minimum allowed depth (and often it should
             !! be larger than for SWALS finite-volume solvers). For field-scale problems, Tolkova (2014) mentions
@@ -251,16 +201,13 @@ module domain_mod
         real(dp) :: cliffs_bathymetry_smoothing_alpha = 2.0_dp
             !! For bathymetry smoothing with the cliffs method, Tolkova (in CLIFFS manual) suggests this is typically a reasonable
             !! value.
-
         real(dp) :: leapfrog_froude_limit = 10.0_dp
             !! Froude-limiter for nonlinear leapfrog scheme. Velocity will be supressed at higher
             !! froude numbers, so as not to exceed this.
-
         character(len=charlen) :: friction_type = 'manning'
             !! If friction_type = 'manning' then interpret domain%manning_squared as (manning's n)**2
             !! If friction_type = 'chezy' then interpret domain%manning_squared as (1/chezy_friction)**2, and use the Chezy friction
             !! model
-
         real(dp) :: linear_friction_coeff = 0.0_dp
             !! Linear friction coefficient similar to Fine et al., (2012),  Kulikov et al., (2014), and others.
             !! For the UH (and VH) equations we add a term '- linear_friction_coeff * UH (or VH)' to the right-hand-side.
@@ -270,6 +217,60 @@ module domain_mod
             !! Note this parameterization is different to that used often in the global tidal modelling literature for
             !! linear friction -- where instead the term is like "drag_coefficient * U (or V)" when the momentum equation
             !! is written in terms of the depth-integrated velocity (e.g. Egbert and Erofeeva 2002)
+        integer(ip):: xL, xU, yL, yU
+            !! Lower/upper x and y indices over which the SWE computation takes place
+            !! These might restrict the SWE update to a fraction of the domain (e.g.
+            !! beginning of an earthquake-tsunami run where only a fraction of the domain is
+            !! active. Currently implemented for linear leap-frog solvers only
+
+        !
+        ! Eddy viscosity terms -- only for nonlinear finite-volume solvers
+        !
+        logical :: eddy_viscosity_is_supported
+            !! Can eddy-viscosity be used with this solver? Depends on the time-stepping method
+        logical :: use_eddy_viscosity = .false.
+            !! Use a flux routine that includes a contribution from eddy-viscosity?
+        real(dp) :: eddy_visc_constants(2) = [0.0_dp, 0.5_dp]
+            !! Constants used to control the eddy-viscosity model. All eddy-visc-models are of the form
+            !! "constant + another_model". The first coefficient is the constant eddy viscosity, 
+            !! while the second relates to either the smagorinksy eddy-viscocity model, or the 
+            !! shiono/knight eddy-viscosity model. 
+
+        !
+        ! Nesting-related
+        !
+        type(domain_nesting_type) :: nesting
+            !! Type to manage nesting communication. This is required for nesting, and is the standard
+            !! approach for distributed-memory parallel runs.
+        real(dp) :: dx_refinement_factor = ONE_dp
+        real(dp) :: dx_refinement_factor_of_parent_domain = ONE_dp
+            !! This information is useful in the context of nesting, where interior
+            !! domains have cell sizes that are an integer divisor of the
+            !! coarse-domain dx.
+        integer(ip) :: timestepping_refinement_factor = 1_ip
+            !! Number of timesteps taken by this domain inside each multidomain timestep.
+            !! Only used in conjunction with the multidomain class
+        real(dp) :: local_timestepping_scale = 1.0_dp
+            !! If LOCAL_TIMESTEP_PARTITIONED_DOMAINS is used in a multidomain, then the partitioned domain's time-step
+            !! may be increased above that implied by its timestep_refinement_factor, up to
+            !! (local_timestepping_scale * domain%max_dt). The idea is that local_timestepping_scale
+            !! can be set to a value between [0-1], with smaller values making for a less aggressive
+            !! local-timestep increase. This can help with stability on some occasions.
+        integer(ip) :: nest_layer_width = -1_ip
+            !! The width of the nesting layer for this domain in the multidomain. This will depend
+            !! on the dx value relative to the neighbouring domains, on the timestepping_method,
+            !! and on the timestepping_refinement_factor. See 'get_domain_nesting_layer_thickness'
+        real(dp) :: interior_bounding_box(4,2) = 0.0_dp
+            !! Useful to hold the interior bounding box [ = originally provided bounding box]
+            !! since the actual bounding box might be changed to accommodate nesting
+        integer(int64):: myid = 1
+            !! Domain ID, which is useful if multiple domains are running
+        integer(int64):: local_index = 1
+            !! Useful when we partition a domain in parallel
+        logical :: is_nesting_boundary(4) = .FALSE.
+            !! Flag to denote boundaries at which nesting occurs: order is N, E, S, W.
+        real(dp) :: max_parent_dx_ratio
+            !! Maximum value of (dx-from-domains-we-receive-from)/my-dx. Useful for nesting.
 
         !
         ! Boundary conditions.
@@ -295,6 +296,9 @@ module domain_mod
             !! which are different.
             !! Order is North (1), East (2), South (3), West (4)
 
+        !
+        ! Forcing terms
+        !
         procedure(forcing_subroutine), pointer, nopass:: forcing_subroutine => NULL()
             !! The user can use this to create source-terms. If associated, is called inside domain%apply_forcing
             !! If you need to add multiple forcing terms, then for each forcing term, set this (and forcing_context_cptr if
@@ -308,7 +312,6 @@ module domain_mod
             !! This is used internally in the code to store multiple forcing terms. A call to domain%store_forcing
             !! will move domain%forcing_subroutine and domain%forcing_context_cptr into an element of this array. This
             !! can be repeated to add in mutliple forcing terms.
-
         logical :: support_elevation_forcing = .FALSE.
             !! If the forcing_patch_type tries to evolve the elevation, but support_elevation_forcing is FALSE, then
             !! the code will throw an error. The value of this variable will be overridden automatically for schemes
@@ -331,14 +334,26 @@ module domain_mod
             !! Time integrated boundary fluxes in nested-grid case
         real(force_double):: boundary_flux_evolve_integral_exterior = ZERO_dp
             !! Alternative to the above which is appropriate for the nested-grid case
+        integer(long_long_ip) :: negative_depth_fix_counter = 0
+            !! Count the number of time-steps at which we clip depths.
+            !! For a 'well behaved' model this should remain zero -- non-zero values indicate mass conservation issues.
+        integer(ip):: exterior_cells_width = 2
+            !! The domain 'interior' is surrounded by 'exterior' cells which are
+            !! updated by boundary conditions, or copied from other domains. When
+            !! tracking mass conservation, we only want to record inflows/outflows to
+            !! interior cells. The interior cells are:
+            !!    [(1+exterior_cells_width):(domain%nx(1)-exterior_cells_width), &
+            !!     (1+exterior_cells_width):(domain%nx(2)-exterior_cells_width)]
+            !! NOTE: exterior_cells_width should only be used to influence mass conservation tracking calculations.
+            !! It is not strictly related to the halo width for parallel computations. When using a multidomain, the
+            !! mass conservation tracking is somewhat different (based around subroutines with names matching
+            !! 'nesting_boundary_flux_*')
 
-        integer(ip):: xL, xU, yL, yU
-            !! Lower/upper x and y indices over which the SWE computation takes place
-            !! These might restrict the SWE update to a fraction of the domain (e.g.
-            !! beginning of an earthquake-tsunami run where only a fraction of the domain is
-            !! active. Currently implemented for linear leap-frog solvers only
-
-        ! Output folder units
+        !
+        ! Output file content
+        !
+        character(len=charlen):: metadata_ascii_filename
+            !! Name of ascii file where we output metadata
         integer(ip):: output_time_unit_number
             !! Output file unit for time (stored as ascii)
         character(len=charlen):: output_basedir = default_output_folder
@@ -346,54 +361,45 @@ module domain_mod
         character(len=charlen):: output_folder_name = ''
             !! Output folder (it will begin with domain%output_basedir, and include another timestamped folder)
         logical :: output_folders_were_created = .FALSE.
-
         integer(ip):: logfile_unit = output_unit
             !! Unit number for domain log file
-
         integer(ip), allocatable :: output_variable_unit_number(:)
             !! Units for home-brew binary output format [better to use netcdf nowadays].
             !! This is only used when the code is compiled with "-DNONETCDF"
-
-        integer(long_long_ip) :: negative_depth_fix_counter = 0
-            !! Count the number of time-steps at which we clip depths.
-            !! For a 'well behaved' model this should remain zero -- non-zero values indicate mass conservation issues.
-
         type(nc_grid_output_type) :: nc_grid_output
             !! Type to manage netcdf grid outputs
-
-        type(timer_type):: timer, evolve_timer
-            !! Types to record CPU timings
-
-        ! Variables controlling the storage of maximum-stage.
         logical:: record_max_U = .true.
             !! Should we store the max(domain%U) variable? For some problems (linear solver) that can
             !! take a significant fraction of the total time, or use too much memory.
         integer(ip):: max_U_update_frequency = 1
             !! Only update the maximum(domain%U) variable every n time-steps. Values other than 1 introduce
             !! an error, but the option might be useful for speed in some cases.
+        type(point_gauge_type) :: point_gauges
+            !! Type to manage storing of tide gauges
 
+
+        !
+        ! Timing
+        !
+        type(timer_type):: timer, evolve_timer
+            !! Types to record CPU timings
+
+        !
+        ! 1D arrays
+        !
         real(dp), allocatable :: x(:), y(:), distance_bottom_edge(:), distance_left_edge(:)
             !! Spatial coordinates, dx/dy distances (useful for spherical coordinates)
         real(dp), allocatable :: area_cell_y(:)
             !! Area of cells (varies with 'y' only)
-
         real(dp), allocatable :: coslat(:), coslat_bottom_edge(:), tanlat_on_radius_earth(:)
             !! These variables are only used with spherical coordinates
         real(dp), allocatable :: coriolis(:), coriolis_bottom_edge(:)
             !! These variables are only used with coriolis
-
-        type(point_gauge_type) :: point_gauges
-            !! Type to manage storing of tide gauges
-
-        type(domain_nesting_type) :: nesting
-            !! Type to manage nesting communication. This is required for nesting, and is the standard
-            !! approach for distributed-memory parallel runs.
-
         real(force_double), allocatable :: volume_work(:), energy_potential_on_rho_work(:), energy_kinetic_on_rho_work(:)
             !! Work arrays which permit an openmp-reproducible summation
             !! (since for standard REDUCE(+: variable), the summation order may change).
 
-
+        !
         ! Big arrays to hold the domain variables
         !
         real(dp), allocatable :: U(:,:,:)
@@ -422,7 +428,6 @@ module domain_mod
             !! For debugging it can be helpful to have this array.  If DEBUG_ARRAY is defined, then it will be allocated with
             !! dimensions (nx, ny), and will be written to the netcdf file at each time.
 #endif
-
         ! Optionally include other currents (e.g. tides) in the friction term. This is an experiment, currently only supported for
         ! leapfrog_linear_with_nonlinear_friction
         logical :: friction_with_ambient_fluxes = .false.
@@ -823,6 +828,7 @@ TIMER_STOP("compute_statistics")
         ! Flag to note if the grid should be interpreted as staggered
         domain%is_staggered_grid = (timestepping_metadata(tsi)%is_staggered_grid == 1)
         domain%adaptive_timestepping = timestepping_metadata(tsi)%adaptive_timestepping
+        domain%eddy_viscosity_is_supported = timestepping_metadata(tsi)%eddy_viscosity_is_supported
 
         ! Determine whether we allow domain%forcing_subroutine to update the elevation
         if(timestepping_metadata(tsi)%forcing_elevation_is_allowed == 'always') then
@@ -837,6 +843,16 @@ TIMER_STOP("compute_statistics")
             domain%support_elevation_forcing) then
             write(log_output_unit, *) 'Error: The numerical scheme ', trim(domain%timestepping_method)
             write(log_output_unit, *) 'does not allow forcing of elevation.'
+            call generic_stop
+        end if
+
+        ! ! Uncomment the following line to use eddy viscosity by default if it is supported (but beware this
+        ! ! will overwrite what the user specified)
+        !if(domain%eddy_viscosity_is_supported) domain%use_eddy_viscosity = .true.
+
+        if(domain%use_eddy_viscosity .and. (.not. domain%eddy_viscosity_is_supported)) then
+            write(log_output_unit, *) 'Error: Eddy viscosity is not supported for the numerical scheme ', &
+                trim(domain%timestepping_method)
             call generic_stop
         end if
 
@@ -1268,19 +1284,41 @@ EVOLVE_TIMER_START('compute_fluxes')
         !
         select case(domain%compute_fluxes_inner_method)
         case('DE1_low_fr_diffusion')
-            ! Something like ANUGA (sort of..) but with diffusion scaled for low-froude numbers
-            call compute_fluxes_DE1_low_fr_diffusion(domain, max_dt_out_local)
+            if(.not. domain%use_eddy_viscosity) then
+                ! Something like ANUGA (sort of..) but with diffusion scaled for low-froude numbers
+                call compute_fluxes_DE1_low_fr_diffusion(domain, max_dt_out_local)
+            else
+                ! Something like ANUGA (sort of..) but with diffusion scaled for low-froude numbers, and eddy-viscosity
+                call compute_fluxes_DE1_low_fr_diffusion_eddyvisc(domain, max_dt_out_local)
+            end if
         case('DE1')
-            ! Something like ANUGA (sort of..)
-            call compute_fluxes_DE1(domain, max_dt_out_local)
+            if(.not. domain%use_eddy_viscosity) then
+                ! Something like ANUGA (sort of..)
+                call compute_fluxes_DE1(domain, max_dt_out_local)
+            else
+                ! Something like ANUGA (sort of..), and eddy-viscosity
+                call compute_fluxes_DE1_eddyvisc(domain, max_dt_out_local)
+            end if
         case('DE1_low_fr_diffusion_upwind_transverse')
-            ! Something like ANUGA (sort of..) but with diffusion scaled for low-froude numbers
-            ! Also using an upwind treatment of the transverse flux term
-            call compute_fluxes_DE1_low_fr_diffusion_upwind_transverse(domain, max_dt_out_local)
+            if(.not. domain%use_eddy_viscosity) then
+                ! Something like ANUGA (sort of..) but with diffusion scaled for low-froude numbers
+                ! Also using an upwind treatment of the transverse flux term
+                call compute_fluxes_DE1_low_fr_diffusion_upwind_transverse(domain, max_dt_out_local)
+            else
+                ! Something like ANUGA (sort of..) but with diffusion scaled for low-froude numbers
+                ! Also using an upwind treatment of the transverse flux term, and eddy-viscosity
+                call compute_fluxes_DE1_low_fr_diffusion_upwind_transverse_eddyvisc(domain, max_dt_out_local)
+            end if
         case('DE1_upwind_transverse')
-            ! Something like ANUGA (sort of..)
-            ! Also using an upwind treatment of the transverse flux term
-            call compute_fluxes_DE1_upwind_transverse(domain, max_dt_out_local)
+            if(.not. domain%use_eddy_viscosity) then
+                ! Something like ANUGA (sort of..)
+                ! Also using an upwind treatment of the transverse flux term
+                call compute_fluxes_DE1_upwind_transverse(domain, max_dt_out_local)
+            else
+                ! Something like ANUGA (sort of..)
+                ! Also using an upwind treatment of the transverse flux term, and eddy-viscosity
+                call compute_fluxes_DE1_upwind_transverse_eddyvisc(domain, max_dt_out_local)
+            end if
         case('EEC')
             ! Experimental energy conservative method, no wetting/drying
             call compute_fluxes_EEC(domain, max_dt_out_local)
