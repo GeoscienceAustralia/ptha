@@ -976,7 +976,7 @@
             ! places.
             !     eddy_viscocity = constant * depth * shear_velocity
             ! where
-            !     shear_velocity = sqrt(bed_shear_stress/rho) = sqrt( d ^(-1/3) * n * g * speed^2 )
+            !     shear_velocity = sqrt(bed_shear_stress/rho) = sqrt( d ^(-1/3) * n^2 * g * speed^2 )
             !
             eddy_visc = domain%eddy_visc_constants(1) + &
                 domain%eddy_visc_constants(2) * domain%depth(:,j)**(1.0_dp - 1.0_dp/6.0_dp) * &
