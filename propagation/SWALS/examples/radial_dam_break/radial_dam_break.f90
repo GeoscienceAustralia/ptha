@@ -126,10 +126,10 @@ program radial_dam_break
     ! Crude check on peak velocity. The 7.75 is a numerical value, not a proper
     ! comparison with analytical solution. Really this is just a regression test,
     ! FIXME: get a reference solution.
-    if((abs(maxval(domain%velocity(:,:,UH)) - 7.75_dp) < 0.05) .and. &
-       (abs(maxval(domain%velocity(:,:,VH)) - 7.75_dp) < 0.05) .and. &
-       (abs(minval(domain%velocity(:,:,UH)) + 7.75_dp) < 0.05) .and. &
-       (abs(minval(domain%velocity(:,:,VH)) + 7.75_dp) < 0.05) .and. &
+    if((abs(maxval(domain%velocity(:,:,UH)) - 7.75_dp) < 0.10) .and. &
+       (abs(maxval(domain%velocity(:,:,VH)) - 7.75_dp) < 0.10) .and. &
+       (abs(minval(domain%velocity(:,:,UH)) + 7.75_dp) < 0.10) .and. &
+       (abs(minval(domain%velocity(:,:,VH)) + 7.75_dp) < 0.10) .and. &
        ! Symmetry tests here
        (abs(maxval(domain%velocity(:,:,UH)) + minval(domain%velocity(:,:,UH))) < 1.0e-06_dp) .and. &
        (abs(maxval(domain%velocity(:,:,VH)) + minval(domain%velocity(:,:,VH))) < 1.0e-06_dp) ) then
