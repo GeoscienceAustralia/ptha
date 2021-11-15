@@ -493,7 +493,10 @@ program BP06
     call setup_boundary_information(forcing_case)
     md%domains(1)%boundary_subroutine => flather_boundary 
         ! FIXME: Boundary condition really should prevent mass flowing out, experiment has walls!
-    if(.not. use_initial_condition_forcing) md%domains(1)%forcing_subroutine => forcing_subroutine
+    if(.not. use_initial_condition_forcing) then
+        md%domains(1)%forcing_subroutine => forcing_subroutine
+        call md%domains(1)%store_forcing()
+    end if
 
     call md%make_initial_conditions_consistent()
     
