@@ -286,10 +286,13 @@ program BP09
         md%domains(7)%static_before_time = very_high_res_static_before_time
     end if
 
-    !do j = 1, size(md%domains)
-    !    ! Nearly turn off limiting
-    !    md%domains(j)%theta = 4.0_dp
-    !end do
+    do j = 1, size(md%domains)
+        ! Nearly turn off limiting
+        !md%domains(j)%theta = 4.0_dp
+
+        ! Eddy viscosity
+        !if(md%domains(j)%timestepping_method /= default_linear_timestepping_method) md%domains(j)%use_eddy_viscosity=.true.
+    end do
 
 
     ! Allocate domains and prepare comms
