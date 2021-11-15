@@ -73,7 +73,7 @@ module domain_mod
     public:: domain_type, STG, UH, VH, ELV
 
     integer(int32), parameter :: STG=1, UH=2, VH=3, ELV=4
-        ! Indices for arrays: Stage, depth-integrated-x-velocity, depth-integrated-v-velocity, elevation. So e.g. stage is in
+        ! Indices for arrays: Stage, depth-integrated-x-velocity, depth-integrated-y-velocity, elevation. So e.g. stage is in
         ! domain%U(:,:,STG), and elevation is in domain%U(:,:,ELV)
 
     ! Handy constants
