@@ -35,7 +35,7 @@ for(i in 1:6){
     if(i == 1){
         # Mean stage between 15-25s ~ 0.08m
         inds = which(gauges$time > 15 & gauges$time < 25)
-        if(mean(gauges$time_var$stage[i,inds] - 0.08) < 0.01){
+        if(mean(gauges$time_var$stage[i,inds] - 0.08) < 0.015){
             print('PASS')
         }else{
             print('FAIL')
