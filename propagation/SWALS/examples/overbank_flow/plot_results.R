@@ -18,7 +18,7 @@ model_transpose_vh = EW_model[[1]]$ud[ind_y, , ind_t]
 model_transpose_depth = EW_model[[1]]$stage[ind_y, , ind_t] - EW_model[[1]]$elev[ind_y, , ind_t]
 
 # Check for consistent results in transposed/regular model
-if(all(abs(model_transpose_vh - model_vh) <= 1.0e-05*abs(model_vh))){
+if(all(abs(model_transpose_vh - model_vh) <= 1.0e-06*abs(model_vh))){
     print('PASS')
 }else{
     print('FAIL')

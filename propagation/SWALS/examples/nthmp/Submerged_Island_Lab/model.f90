@@ -195,6 +195,7 @@ program Submerged_Island
 
     !md%domains(1)%eddy_visc_constants = [0.000_dp, 0.0_dp]
     !md%domains(1)%eddy_visc_constants = [0.000_dp, 0.5_dp]
+    !md%domains(1)%use_eddy_viscosity = .true.
     md%domains(1)%msl_linear = msl_linear
 
     ! Allocate domains and prepare comms

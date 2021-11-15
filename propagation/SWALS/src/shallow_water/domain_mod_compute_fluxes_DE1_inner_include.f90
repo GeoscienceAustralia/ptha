@@ -322,7 +322,7 @@
                 ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true." and both terms are of the same sign,
                 ! in which case we take the max of their absolute value
                 diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
-                    (diffusion_turbulent*diffusion_hll >= 0) .or. reduced_numerical_diffusion)
+                    .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
 
                 domain%flux_NS(i,j,UH) = domain%flux_NS(i,j,UH) + diffusion_total
 
@@ -340,9 +340,9 @@
                 !
                 ! Turbulent diffusion
                 diffusion_turbulent = - &
-                    ! { eddy_visc * depth * dx * du/dy} = "turbulent_diffusion" * dx
+                    ! { eddy_visc * depth * dx * du/dy} = "turbulent_diffusion" * dx (geometric mean for depth)
                     HALF_dp * (eddy_visc_j(i) + eddy_visc_jm1(i)) * &
-                    min(depth_neg_star, depth_pos_star) * domain%distance_bottom_edge(j) * &
+                    sqrt(depth_neg_star*depth_pos_star) * domain%distance_bottom_edge(j) * &
                         ((domain%velocity(i,j, VH) - domain%velocity(i, j-1, VH))/domain%distance_left_edge(i) )
 
                 ! Compute diffusive terms.
@@ -350,7 +350,7 @@
                 ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true. " and both terms are of the same sign,
                 ! in which case we take the max of their absolute value
                 diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
-                    (diffusion_turbulent*diffusion_hll >= 0) .or. reduced_numerical_diffusion)
+                    .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
 
                 domain%flux_NS(i,j,VH) = domain%flux_NS(i,j,VH) + diffusion_total
             end if
@@ -569,7 +569,7 @@
                 ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true." and both terms are of the same sign,
                 ! in which case we take the max of their absolute value
                 diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
-                    (diffusion_turbulent*diffusion_hll >= 0) .or. reduced_numerical_diffusion)
+                    .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
 
                 domain%flux_EW(i,j,UH) = domain%flux_EW(i,j,UH) + diffusion_total
 
@@ -587,9 +587,9 @@
                 !
                 ! Turbulent diffusion, constant eddy viscosity
                 diffusion_turbulent = - &
-                    ! { eddy_visc * depth * dy * du/dx} = "turbulent_diffusion" * dy
+                    ! { eddy_visc * depth * dy * du/dx} = "turbulent_diffusion" * dy (geometric mean for depth)
                     HALF_dp * (eddy_visc_j(i) + eddy_visc_j(i-1)) * &
-                    min(depth_neg_star, depth_pos_star) * domain%distance_left_edge(i) * &
+                    sqrt(depth_neg_star*depth_pos_star) * domain%distance_left_edge(i) * &
                         ((domain%velocity(i,j, VH) - domain%velocity(i-1, j, VH))/&
                          (HALF_dp * (domain%distance_bottom_edge(j) + domain%distance_bottom_edge(j+1))))
 
@@ -598,11 +598,11 @@
                 ! Sum the diffusions -- unless "reduced_numerical_diffusion == .true. " and both terms are of the same sign,
                 ! in which case we take the max of their absolute value
                 diffusion_total = merge(diffusion_turbulent + diffusion_hll, sign(diffusion_max, diffusion_turbulent), &
-                    (diffusion_turbulent*diffusion_hll >= 0) .or. reduced_numerical_diffusion)
+                    .not. ((diffusion_turbulent*diffusion_hll > 0) .and. reduced_numerical_diffusion))
 
                 domain%flux_EW(i,j,VH) = domain%flux_EW(i,j,VH) + diffusion_total
 
-            end if                    
+            end if
 
             ! Here we put in the gravity/pressure terms. Can try a flux conservative treatment,
             ! or a good old fashioned { g x depth x grad(stage) } term
