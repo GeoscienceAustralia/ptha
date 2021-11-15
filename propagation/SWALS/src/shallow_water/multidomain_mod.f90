@@ -1392,6 +1392,11 @@ module multidomain_mod
         tsi = timestepping_method_index(domain%timestepping_method)
         required_cells_ts_method = timestepping_metadata(tsi)%nesting_thickness_for_one_timestep
 
+        ! For schemes with eddy viscosity we need to increase the halo thickness
+        if(domain%use_eddy_viscosity) then 
+            required_cells_ts_method = (required_cells_ts_method * 3_ip) / 2_ip
+        end if
+
         ! Now multiply by the number of evolve_one_step calls actually taken, and add any extra buffer
         thickness = (required_cells_ts_method ) * &
             domain%timestepping_refinement_factor + extra_cells_in_halo

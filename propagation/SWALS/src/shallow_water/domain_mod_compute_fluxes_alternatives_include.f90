@@ -15,6 +15,7 @@
         ! Providing this at compile time leads to substantial optimization.
         logical, parameter :: reduced_momentum_diffusion = .false.
         logical, parameter :: upwind_transverse_momentum = .false.
+        logical, parameter :: use_eddy_viscosity = .false.
 
 #include "domain_mod_compute_fluxes_DE1_inner_include.f90"
 
@@ -28,6 +29,7 @@
         ! Providing this at compile time leads to substantial optimization.
         logical, parameter :: reduced_momentum_diffusion = .true.
         logical, parameter :: upwind_transverse_momentum = .false.
+        logical, parameter :: use_eddy_viscosity = .false.
 
 #include "domain_mod_compute_fluxes_DE1_inner_include.f90"
 
@@ -41,6 +43,7 @@
         ! Providing this at compile time leads to substantial optimization.
         logical, parameter :: reduced_momentum_diffusion = .false.
         logical, parameter :: upwind_transverse_momentum = .true.
+        logical, parameter :: use_eddy_viscosity = .false.
 
 #include "domain_mod_compute_fluxes_DE1_inner_include.f90"
 
@@ -54,8 +57,68 @@
         ! Providing this at compile time leads to substantial optimization.
         logical, parameter :: reduced_momentum_diffusion = .true.
         logical, parameter :: upwind_transverse_momentum = .true.
+        logical, parameter :: use_eddy_viscosity = .false.
 
 #include "domain_mod_compute_fluxes_DE1_inner_include.f90"
 
     end subroutine
 
+    !
+    ! Cases with eddy-viscosity below here
+    !
+
+    ! Regular DE1 flux
+    subroutine compute_fluxes_DE1_eddyvisc(domain, max_dt_out)
+
+        class(domain_type), intent(inout):: domain
+        real(dp), optional, intent(inout) :: max_dt_out
+        ! Providing this at compile time leads to substantial optimization.
+        logical, parameter :: reduced_momentum_diffusion = .false.
+        logical, parameter :: upwind_transverse_momentum = .false.
+        logical, parameter :: use_eddy_viscosity = .true.
+
+#include "domain_mod_compute_fluxes_DE1_inner_include.f90"
+
+    end subroutine
+
+    ! Low-diffusion DE1 flux
+    subroutine compute_fluxes_DE1_low_fr_diffusion_eddyvisc(domain, max_dt_out)
+
+        class(domain_type), intent(inout):: domain
+        real(dp), optional, intent(inout) :: max_dt_out
+        ! Providing this at compile time leads to substantial optimization.
+        logical, parameter :: reduced_momentum_diffusion = .true.
+        logical, parameter :: upwind_transverse_momentum = .false.
+        logical, parameter :: use_eddy_viscosity = .true.
+
+#include "domain_mod_compute_fluxes_DE1_inner_include.f90"
+
+    end subroutine
+
+    ! Regular DE1 flux with upwind transverse momentum flux
+    subroutine compute_fluxes_DE1_upwind_transverse_eddyvisc(domain, max_dt_out)
+
+        class(domain_type), intent(inout):: domain
+        real(dp), optional, intent(inout) :: max_dt_out
+        ! Providing this at compile time leads to substantial optimization.
+        logical, parameter :: reduced_momentum_diffusion = .false.
+        logical, parameter :: upwind_transverse_momentum = .true.
+        logical, parameter :: use_eddy_viscosity = .true.
+
+#include "domain_mod_compute_fluxes_DE1_inner_include.f90"
+
+    end subroutine
+
+    ! Low-diffusion DE1 flux with upwind transverse momentum flux
+    subroutine compute_fluxes_DE1_low_fr_diffusion_upwind_transverse_eddyvisc(domain, max_dt_out)
+
+        class(domain_type), intent(inout):: domain
+        real(dp), optional, intent(inout) :: max_dt_out
+        ! Providing this at compile time leads to substantial optimization.
+        logical, parameter :: reduced_momentum_diffusion = .true.
+        logical, parameter :: upwind_transverse_momentum = .true.
+        logical, parameter :: use_eddy_viscosity = .true.
+
+#include "domain_mod_compute_fluxes_DE1_inner_include.f90"
+
+    end subroutine
