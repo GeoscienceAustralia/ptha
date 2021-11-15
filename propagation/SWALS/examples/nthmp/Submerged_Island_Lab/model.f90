@@ -159,7 +159,7 @@ program Submerged_Island
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 5.0_dp ! 0.5_dp 
-    real(dp), parameter :: final_time = 1000._dp
+    real(dp), parameter :: final_time = 1500._dp
 
     ! Use this to read command line arguments
     character(len=20) :: tempchar
