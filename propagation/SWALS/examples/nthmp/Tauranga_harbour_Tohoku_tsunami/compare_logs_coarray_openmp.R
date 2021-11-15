@@ -131,7 +131,7 @@ for(domain_ind in domain_inds){
 }
 dev.off()
 
-if(all(err_stats < 1.0e-8)){
+if(all(err_stats < 1.0e-5)){
     print('PASS')
 }else{
     print('FAIL')
