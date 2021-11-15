@@ -7,7 +7,7 @@ module date_to_numeric_mod
     use logging_mod, only: log_output_unit
     use stop_mod, only: generic_stop
     use iso_c_binding, only: C_DOUBLE
-    
+
     implicit none
 
     ! Here we always use double-precision reals
@@ -21,23 +21,23 @@ module date_to_numeric_mod
     integer, parameter :: days_in_month_regular_year(12) = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     integer, parameter :: days_in_month_leap_year(12)    = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-    contains 
+    contains
 
     function is_leap_year(yyyy)
         !! Is year yyyy a leap-year?
         integer(ip), intent(in) :: yyyy
         logical :: is_leap_year
-        ! Leap years -- note centuries are only leap years if they divide 400, e.g. 
+        ! Leap years -- note centuries are only leap years if they divide 400, e.g.
         ! 2100, 2200, 2300 are not leap-years, but 2400 is.
         is_leap_year = (mod(yyyy, 4) == 0) .and. ((mod(yyyy, 100) /= 0) .or. (mod(yyyy, 400) == 0))
     end function
 
     subroutine check_datetime(yyyy, mm, dd, hh, mi, ss)
             !! Check that a date of the form yyyy/mm/dd/hh/mi/ss is valid
-            !! The hh/mi/ss are optional. 
+            !! The hh/mi/ss are optional.
             !! Because this can throw errors, it is not elemental
         integer(ip), intent(in) :: yyyy, mm, dd
-            !! Year/month/day 
+            !! Year/month/day
         integer(ip), optional, intent(in) :: hh, mi, ss
             !! Hour/minute/second
 
@@ -47,8 +47,8 @@ module date_to_numeric_mod
                 write(log_output_unit,*) 'Month must be from 1-12, but got ', mm
                 call generic_stop
             end if
-   
-           ! Figure out how many days in the month 
+
+           ! Figure out how many days in the month
             if(is_leap_year(yyyy)) then
                 max_days = days_in_month_leap_year(mm)
             else
@@ -101,7 +101,7 @@ module date_to_numeric_mod
     end subroutine
 
     elemental subroutine julian_day_to_ymd (jd, yyyy, mm, dd)
-        !! Convert a julian date (days since start of julian calendar) into year/month/day 
+        !! Convert a julian date (days since start of julian calendar) into year/month/day
         !! Fliegel and Van Flandern (1968) CACM 11(10):657
         !! See discussion at:
         !! https://software.intel.com/en-us/forums/intel-fortran-compiler/topic/271933
@@ -128,7 +128,7 @@ module date_to_numeric_mod
 
     elemental subroutine datetime_to_days(yyyy, mm, dd, hh, mi, ss, days, julian_origin)
         !! Get the "real number of days" since an origin date (default origin = 1970-01-01)
-        !! 
+        !!
         integer(ip), intent(in) :: yyyy, mm, dd, hh, mi, ss
             !! Date in yyyy/mm/dd/hh/mm/ss format, where the hours is in 24hr format
         real(rp), intent(out) :: days
@@ -151,12 +151,12 @@ module date_to_numeric_mod
 
         days = days + (1.0_rp/24.0_rp)*hh + (1.0_rp/(24.0_rp*60.0_rp))*mi + &
             (1.0_rp/(24.0_rp*3600.0_rp))*ss
-    
+
     end subroutine
 
     elemental subroutine days_to_datetime(days, yyyy, mm, dd, hh, mi, ss, julian_origin)
         !! Get the date (yyyy/mm/dd HH:MI:SS) for a given 'real number of days' from an origin date (default origin = 1970-01-01)
-        !! 
+        !!
         real(rp), intent(in) :: days
             !! Real "number of days since the julian_origin"
         integer(ip), intent(out) :: yyyy, mm, dd, hh, mi, ss
@@ -200,7 +200,7 @@ module date_to_numeric_mod
             mi = 0
             hh = hh+1
         end if
-    
+
     end subroutine
 
 
@@ -231,7 +231,7 @@ module date_to_numeric_mod
         else
             print*, 'FAIL', __LINE__
         end if
-        
+
         ! Check start of 1992
         yyyy = 1992; mm = 01; dd = 01
         call ymd_to_julian_day(yyyy, mm, dd, jd)
@@ -269,7 +269,7 @@ module date_to_numeric_mod
         ss2 = [31, 59]
         call datetime_to_days(yyyy2, mm2, dd2, hh2, mi2, ss2, days)
         expected_days = [18463.680914351851243_rp, -25521.000011574073142_rp] ! From R's julian()
-        ! Should agree to nearest second 
+        ! Should agree to nearest second
         if(all(abs(days - expected_days) < 0.5_rp/(24.0_rp*3600.0_rp))) then
             print*, 'PASS'
         else
@@ -296,14 +296,14 @@ module date_to_numeric_mod
         call datetime_to_days(yyyy2, mm2, dd2, hh2, mi2, ss2, days)
         expected_days = [376400.68091435183305_rp, -719116.00001157412771_rp]
 
-        ! Should agree to nearest second 
+        ! Should agree to nearest second
         if(all(abs(days - expected_days) < 0.5_rp/(24.0_rp*3600.0_rp))) then
             print*, 'PASS'
         else
             print*, 'FAIL', __LINE__, days, (days - expected_days)
         end if
 
-        ! Check rounding -- take a day within < 1/2 second of 1970-01-01. 
+        ! Check rounding -- take a day within < 1/2 second of 1970-01-01.
         days = julian_day_1970_01_01 - 0.4_rp/(3600.0_rp * 24.0_rp)
         call days_to_datetime(days, yyyy2, mm2, dd2, hh2, mi2, ss2, julian_origin = [0, 0])
         if(all(yyyy2 == 1970 .and. dd2 == 01 .and. mm2 == 01 .and. hh2 == 00 .and. mi2 == 00 .and. ss2 == 00)) then

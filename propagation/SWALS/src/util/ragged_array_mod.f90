@@ -17,7 +17,7 @@ module ragged_array_mod
     type ragged_array_2d_ip_type
         type(allocatable_array_ip_type), allocatable:: i2(:)
     end type
-    
+
     type ragged_array_3d_ip_type
         type(ragged_array_2d_ip_type), allocatable:: i3(:)
     end type
@@ -31,7 +31,7 @@ module ragged_array_mod
     type ragged_array_2d_dp_type
         type(allocatable_array_dp_type), allocatable:: i2(:)
     end type
-    
+
     type ragged_array_3d_dp_type
         type(ragged_array_2d_dp_type), allocatable:: i3(:)
     end type
@@ -46,7 +46,7 @@ module ragged_array_mod
     type ragged_array_2d_force_double_type
         type(allocatable_array_force_double_type), allocatable:: i2(:)
     end type
-    
+
     type ragged_array_3d_force_double_type
         type(ragged_array_2d_force_double_type), allocatable:: i3(:)
     end type

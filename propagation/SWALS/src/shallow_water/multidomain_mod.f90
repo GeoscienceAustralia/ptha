@@ -1,4 +1,4 @@
-! Compile with -DTIMER to add timing to the code 
+! Compile with -DTIMER to add timing to the code
 #ifdef TIMER
 #   define TIMER_START(tname) call md%timer%timer_start(tname)
 #   define TIMER_STOP(tname)  call md%timer%timer_end(tname)
@@ -9,15 +9,15 @@
 
 module multidomain_mod
 !! Contains a multidomain_type, to hold multiple rectangular domains which
-!! communicate with each other (i.e. for nesting). 
+!! communicate with each other (i.e. for nesting).
 
 !! The idea of the multidomain type is that it contains multiple domains that communicate with each other:
 !!
-!!   * Finer resolution domains may overlap coarser domains. 
+!!   * Finer resolution domains may overlap coarser domains.
 !!
 !!   * Domains with the same cell size cannot overlap each other, because where domains
 !!     overlap, we need to decide which one has 'priority', and this is currently
-!!     done by selecting the one with finest cell area. Overlaps with the same cell size 
+!!     done by selecting the one with finest cell area. Overlaps with the same cell size
 !!     would lead to an ambiguous choice, and so are not currently supported.
 !!
 !!   * Internally, the code will extend each domain with 'communication buffers',
@@ -31,7 +31,7 @@ module multidomain_mod
 !!     domain [so that waves do not propagate through the communication buffer in-between communications].
 !!
 !! Note that most of the 'setup' type functions in this module work
-!! with domains that have not run domain%allocate_quantities. 
+!! with domains that have not run domain%allocate_quantities.
 !!
 
     use global_mod, only: dp, ip, charlen, gravity, &
@@ -39,23 +39,25 @@ module multidomain_mod
         default_output_folder, send_boundary_flux_data, &
         real_bytes, force_double_bytes, integer_bytes, pi
     use timestepping_metadata_mod, only: timestepping_metadata, timestepping_method_index
-    use domain_mod, only: domain_type, STG, UH, VH, ELV 
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     use stop_mod, only: generic_stop
     use points_in_poly_mod, only: point_in_poly
     use ragged_array_mod, only: ragged_array_2d_dp_type, ragged_array_2d_ip_type
     use which_mod, only: which, rle_ip, bind_arrays_ip, remove_rows_ip, cumsum_ip
     use qsort_mod, only: match
     use coarray_point2point_comms_mod, only: allocate_p2p_comms, deallocate_p2p_comms, &
-        linked_p2p_images, communicate_p2p, size_of_send_recv_buffers 
+        linked_p2p_images, communicate_p2p, size_of_send_recv_buffers
     use iso_fortran_env, only: int64
     use logging_mod, only: log_output_unit, send_log_output_to_file
     use file_io_mod, only: mkdir_p, read_ragged_array_2d_ip, read_csv_into_array
     use timer_mod, only: timer_type
+
 #if defined(COARRAY_PROVIDE_CO_ROUTINES)
     use coarray_intrinsic_alternatives, only: co_broadcast, co_max, co_sum, co_min, sync_all_generic, this_image2, num_images2
 #elif defined(COARRAY)
     use coarray_intrinsic_alternatives, only: sync_all_generic, this_image2, num_images2
-#endif 
+#endif
+
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
     use iso_c_binding
     use mpi
@@ -67,7 +69,7 @@ module multidomain_mod
     public :: multidomain_type
     public :: setup_multidomain, test_multidomain_mod
 
-    logical, parameter :: send_halos_immediately = .false. 
+    logical, parameter :: send_halos_immediately = .false.
         !! Key parameter affecting parallel communication.
         !! If .TRUE., send halos as soon as they've been computed. This might give more time to overlap computation and comms.
         !! If .FALSE., then send all at once. This allows us to do only one send to each image, which may have other efficiencies.
@@ -86,17 +88,17 @@ module multidomain_mod
     integer(ip), parameter :: extra_halo_buffer_default = 0_ip !
         !! Parameter affecting default halo approach.
         !! Set this to an integer > 0 so that "parts of another domain that I receive from"
-        !! do not directly neighbour "parts of my domain that I send to that domain". 
+        !! do not directly neighbour "parts of my domain that I send to that domain".
         !! This can be overridden in the multidomain setup stage as e.g. " call md%setup(extra_halo_buffer=1_ip) "
         !! This could help with stability with the "old" evolve_multidomain_one_step approach.
-        !! Other references suggest such an approach can help with stability 
-        !! (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS nesting). But 
+        !! Other references suggest such an approach can help with stability
+        !! (e.g. Debreu et al 2012 Ocean modelling, paper on ROMS nesting). But
         !! it seems not required with the 'revised' nesting technique in SWALS
-        !! It is ignored if we only communicate with domains that have the same domain%dx, 
+        !! It is ignored if we only communicate with domains that have the same domain%dx,
         !! as the benefit is really for coarse-to-fine communication
 
     integer(ip), parameter :: extra_cells_in_halo_default = 1_ip
-        !! This is another "padding" factor for the halos. By adding an extra-pad, 
+        !! This is another "padding" factor for the halos. By adding an extra-pad,
         !! we can ensure that e.g. gradient calculations are
         !! valid, when otherwise they might involve 'out-of-date' cells.
 
@@ -106,9 +108,9 @@ module multidomain_mod
     logical, parameter :: local_timestep_partitioned_domains = .false.
 #endif
         !! Option to permit local timestepping of domains.
-        !! This affects the distributed-memory version of the model, where we 
+        !! This affects the distributed-memory version of the model, where we
         !! partition the larger domains in parallel. Doing that allows
-        !! for some domains to take shorter timesteps than others (if the 
+        !! for some domains to take shorter timesteps than others (if the
         !! depth/speed vary significantly). We can exploit this to reduce
         !! model run-times (generally load-balancing will be required)
 
@@ -142,7 +144,7 @@ module multidomain_mod
     integer :: ti = -1 !! Result of this_image(). Default values will cause error if not set later
     integer :: ni = -1 !! Result of num_images(). Default values will cause error if not set later
 
-#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS) 
+#if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
 #ifdef REALFLOAT
     integer :: mympi_dp = MPI_REAL
 #else
@@ -152,7 +154,7 @@ module multidomain_mod
 
 
     integer(ip), parameter :: srm = 6
-        !! Number of variables used to describe send/recv_metadata. We often need 
+        !! Number of variables used to describe send/recv_metadata. We often need
         !! this constant, so put it here to reduce 'magic numbers'
 
     integer(int64), parameter :: large_64_int = 10000000000_int64
@@ -160,9 +162,9 @@ module multidomain_mod
 
     type :: multidomain_type
         !! Type to hold nested-grids that communicate with each other.
-        !! Each nested grid is a domain_type. 
-        ! Idea is for the multidomain_type to have methods matching the domain type as much 
-        ! as possible, for easy translation of existing scripts which use single-grid 
+        !! Each nested grid is a domain_type.
+        ! Idea is for the multidomain_type to have methods matching the domain type as much
+        ! as possible, for easy translation of existing scripts which use single-grid
         ! domains to multidomains.
 
         type(domain_type), allocatable :: domains(:)
@@ -184,7 +186,7 @@ module multidomain_mod
         real(dp) :: periodic_xs(2) = [-HUGE(1.0_dp), HUGE(1.0_dp)]
         real(dp) :: periodic_ys(2) = [-HUGE(1.0_dp), HUGE(1.0_dp)]
             !! The lower/upper extents of periodic domains. For example, on the earth,
-            !! we could have EW periodic spherical coordinates with 
+            !! we could have EW periodic spherical coordinates with
             !! periodic_xs = [-180.0_dp, 180.0_dp]
 
         character(len=charlen) :: load_balance_file = ''
@@ -206,7 +208,7 @@ module multidomain_mod
         integer(ip) :: writeout_counter = 0
         real(dp) :: last_write_time = -HUGE(1.0_dp)
             !! Convenience variables controlling writeout
-        
+
 
         contains
 
@@ -241,7 +243,7 @@ module multidomain_mod
 
     end type
 
-    contains 
+    contains
 
     !
     ! Given an x, y point, and size=2 arrays periodic_xs, periodic_ys defining
@@ -313,13 +315,13 @@ module multidomain_mod
     ! Scan domains for unreasonably large numbers or NaN issues
     subroutine check_for_overflow(md, flag, domain_ind)
         class(multidomain_type), intent(inout) :: md
-        character(len=*) :: flag
+        character(len=*), intent(in) :: flag
         integer(ip), optional, intent(in):: domain_ind
 
         logical :: throw_error
         integer(ip) :: i1, i2, i3, j, d1, d2
         real(dp), parameter :: bignum = HUGE(1.0)/2.0 ! Deliberate single-precision number
-       
+
         if(present(domain_ind)) then
             d1 = domain_ind
             d2 = domain_ind
@@ -353,26 +355,25 @@ module multidomain_mod
                     end do
                 end do
             end do
-        end do 
+        end do
 
         if(throw_error) then
             flush(log_output_unit)
             call generic_stop
         end if
 
-
     end subroutine
 
 
     ! Communicate max-stage array in halo regions.
     !
-    ! Often max-stage values in non-priority domain areas are clearly wrong 
-    ! (because during timestepping we allow halos to become invalid -- we only 
+    ! Often max-stage values in non-priority domain areas are clearly wrong
+    ! (because during timestepping we allow halos to become invalid -- we only
     ! communicate frequently enough to ensure validity of priority domain areas - and
     ! the max-stage is thus derived from the invalid values).
     ! That's not really a problem (because we should never use non-priority-domain
     ! cell values), but for visualisation it is nice to correct them before the end
-    ! of the simulation. 
+    ! of the simulation.
     !
     ! Here we make max_U consistent between domains by:
     ! A) Swapping max_U and domain%U
@@ -391,13 +392,13 @@ module multidomain_mod
             if(.not. md%domains(j)%record_max_U) then
                 write(log_output_unit) 'Note: Not communicating max_U values because not all domains record_max_U.'
                 return
-            end if 
+            end if
         end do
 
         ! Check the array dimensions are compatible with our logic
         do j = 1, size(md%domains)
             n = size(md%domains(j)%max_U, 3)
-            if(n > size(md%domains(j)%U, 3)) then 
+            if(n > size(md%domains(j)%U, 3)) then
                 write(log_output_unit) 'Error (not fatal): Will not communicate max_U values because it contains '
                 write(log_output_unit) 'more variables than domain%U, which we use as a scratch space. Skipping'
                 return
@@ -436,14 +437,14 @@ module multidomain_mod
             call communicate_p2p
             TIMER_STOP('comms1')
         end if
-        
+
         ! Get the halo information from neighbours
         ! For coarray comms, we need to sync before to ensure the information is sent, and
         ! also sync after to ensure it is not overwritten before it is used
         call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
 
         ! Now domain%U contains the max_U variable, updated consistently between domains,
-        ! whereas the max_U variable contains the value of domain%U. Swap them 
+        ! whereas the max_U variable contains the value of domain%U. Swap them
         do j = 1, size(md%domains)
             n = size(md%domains(j)%max_U, 3)
             do k = 1, n
@@ -463,13 +464,13 @@ module multidomain_mod
 
     !
     ! For each domain in domains, figure out how thick the nesting layer
-    ! has to be. Also determine which boundaries have a nesting buffer, 
+    ! has to be. Also determine which boundaries have a nesting buffer,
     ! which are physical boundaries, etc.
     !
     ! This is called before domains have been buffered to include nesting
     ! regions -- so that we know how thick to make the buffer.
-    ! 
-    ! @param domains array of domains 
+    !
+    ! @param domains array of domains
     ! @param verbose logical
     !
     subroutine compute_multidomain_nesting_layer_width(domains, verbose,&
@@ -500,48 +501,46 @@ module multidomain_mod
         allocate(is_nesting_boundary(4,nd_local))
 
         ! Allocate arrays of ragged arrays (one entry for each domain on this_image), which
-        ! will hold metadata on the other domains just outside its boundary. We use that 
+        ! will hold metadata on the other domains just outside its boundary. We use that
         ! to help determine nesting relationships.
-        allocate(nbr_domain_ind(nd_local), &
-            nbr_image_ind(nd_local))
+        allocate(nbr_domain_ind(nd_local), nbr_image_ind(nd_local))
 
         do j = 1, nd_local
             ! Allocate ragged arrays to store data for each boundary (N, E, S, W)
-            allocate(nbr_domain_ind(j)%i2(4), &
-                nbr_image_ind(j)%i2(4))
+            allocate(nbr_domain_ind(j)%i2(4), nbr_image_ind(j)%i2(4))
         end do
 
-        ! Set the coarray-related module variables ni, ti 
+        ! Set the coarray-related module variables ni, ti
 #ifdef COARRAY
         ni = num_images2()
         ti = this_image2()
 #else
         ni = 1
         ti = 1
-#endif        
+#endif
 
         ! Store the dx and 'interior' bounding box of all domains
         call create_all_bbox_and_dx(domains, periodic_xs, periodic_ys)
 
         !
-        ! Loop over north(1), east(2), south(3), west(4) domain interior 
-        ! boundaries and find which other domains (if any) cells just outside 
+        ! Loop over north(1), east(2), south(3), west(4) domain interior
+        ! boundaries and find which other domains (if any) cells just outside
         ! our interior boundary would lie inside.
         !
-        ! We want to receive data from the 'best' domain available. If we need 
-        ! data from a region containing multiple overlapping domains, then we 
+        ! We want to receive data from the 'best' domain available. If we need
+        ! data from a region containing multiple overlapping domains, then we
         ! take data from the one having finest dx.
         !
         ! If cells just outside our boundary are not inside any domain, then
-        ! that boundary is a 'physical' boundary [i.e. better be treated with 
-        ! a boundary condition]. 
+        ! that boundary is a 'physical' boundary [i.e. better be treated with
+        ! a boundary condition].
         !
-        ! 
+        !
         do j = 1, nd_local
 
             if(verbose1) write(log_output_unit, *) 'Domain ', j
 
-            ! Initial value to be refined in loop            
+            ! Initial value to be refined in loop
             max_parent_dx_ratio = 1.0_dp
 
             ! Loop over all boundaries
@@ -556,7 +555,7 @@ module multidomain_mod
                 ! other domain they are inside [if any]. If they are inside
                 ! multiple domains, then select the one with finest dx
                 call find_priority_nesting_domains_along_a_boundary(&
-                    domains(j), boundary_flag, & 
+                    domains(j), boundary_flag, &
                     nest_layer_width, &
                     nbr_domain_ind(j)%i2(i)%i1, &
                     nbr_image_ind(j)%i2(i)%i1, &
@@ -589,8 +588,8 @@ module multidomain_mod
             end do
             if(verbose1) write(log_output_unit,*) 'Nesting boundaries: ', is_nesting_boundary(:,j)
             domains(j)%is_nesting_boundary = is_nesting_boundary(:,j)
-    
-            ! Now we know the dx of all parent domains, we can compute  
+
+            ! Now we know the dx of all parent domains, we can compute
             ! the required nest_layer_width for domains(j)
             nest_layer_width = get_domain_nesting_layer_thickness(&
                 domains(j), max_parent_dx_ratio, extra_halo_buffer, extra_cells_in_halo)
@@ -603,7 +602,7 @@ module multidomain_mod
                 ! Only check cells right next to the original domain boundary,
                 ! since it is possible that other cells are not nested [e.g. if this domain
                 ! lies on the physical boundary of the "full multidomain extent" ]
-                do ii = 2, size(nbr_image_ind(j)%i2(i)%i1, kind=ip) - 1 
+                do ii = 2, size(nbr_image_ind(j)%i2(i)%i1, kind=ip) - 1
                     if((nbr_image_ind(j)%i2(i)%i1(ii) > 0)) then
                         if((nbr_image_ind(j)%i2(i)%i1(ii) < 0)) then
                             write(log_output_unit,*) 'Boundary cannot be half nested and half un-nested'
@@ -663,7 +662,7 @@ module multidomain_mod
             run_indices(dims(1)))
 
         run_indices = (/ (i, i=1, dims(1)) /)
-    
+
         ! Loop over domain y-coordinate
         do j = 1, dims(2)
 
@@ -686,21 +685,21 @@ module multidomain_mod
             nest_image = merge(priority_domain_image(:,j), &
                 0 * priority_domain_image(:,j), in_active)
             ! Find 'start' and 'end' indices corresponding to x values with a
-            ! contiguous priority domain/image, AND never crossing periodic_xs or periodic_ys. 
+            ! contiguous priority domain/image, AND never crossing periodic_xs or periodic_ys.
             ! Note that 'rle_ip' is similar
             ! to the function 'rle' in the R language, which gives 'run-lengths'
-            ! of repeated variables. 
+            ! of repeated variables.
             call rle_ip(run_indices, run_values, run_lengths, &
                 equality_function=equal_domain_image_and_index)
-            
+
             ! 'ends' gives the end index of the chunk
             if(allocated(ends)) deallocate(ends)
             ends = run_lengths
-            call cumsum_ip(ends) 
+            call cumsum_ip(ends)
             ! 'starts' gives the start index of the chunk
             if(allocated(starts)) deallocate(starts)
             allocate(starts(size(ends, kind=ip)))
-            starts = ends - (run_lengths - 1) 
+            starts = ends - (run_lengths - 1)
 
             ! Sanity check
             if(maxval(ends) > dims(1)) then
@@ -716,7 +715,7 @@ module multidomain_mod
                 ! eventually be box_metadata)
                 !
                 ! Candidate_boxes is a table (integer matrix) with 6 variables:
-                ! domain_index, domain_image, box_left_i, box_right_i, 
+                ! domain_index, domain_image, box_left_i, box_right_i,
                 ! box_bottom_j, box_top_j
                 allocate(candidate_boxes(srm, size(run_values, kind=ip)))
                 candidate_boxes(1,:) = nest_ind(run_values)
@@ -728,26 +727,26 @@ module multidomain_mod
                 ! represent NA. We will find the upper-right index when we scan
                 ! the j row just past the box. At that time, the box is can be
                 ! finalised
-                candidate_boxes(6,:) = -1 + 0*starts 
+                candidate_boxes(6,:) = -1 + 0*starts
 
                 ! Final_boxes has the same structure, but the 6th column is
                 ! known. Once boxes are finalised, we move them to 'final_boxes'
                 allocate(final_boxes(srm,0))
 
             else
-                
+
                 if(allocated(box_i_string)) deallocate(box_i_string)
                 allocate( box_i_string( size(starts, kind=ip) ) )
                 if(allocated(cbox_i_string)) deallocate(cbox_i_string)
                 allocate( cbox_i_string( size(candidate_boxes(1,:), kind=ip) ) )
 
-                ! Perform a 'match' of starts/ends on the current row with 
+                ! Perform a 'match' of starts/ends on the current row with
                 ! starts/ends of existing candidate boxes.
-                ! When there is no match of starts/ends/nest_index/nest_image, 
-                ! we know the candiate box has finished, and so we can populate 
+                ! When there is no match of starts/ends/nest_index/nest_image,
+                ! we know the candiate box has finished, and so we can populate
                 ! its upper_right y value, and move it to the final boxes.
-                ! The match is done using strings. For current domain y-value, 
-                ! and the candidate boxes, we make a string containing 
+                ! The match is done using strings. For current domain y-value,
+                ! and the candidate boxes, we make a string containing
                 ! domain_index, domain_image, box_left_i, box_right_i. We put 'in_periodic_y(j)'
                 ! on the end (to prevent boxes from crossing 'y' periodic' boundaries). Note
                 ! we already prevented it from crossing x periodic boundaries by the equality function
@@ -768,8 +767,8 @@ module multidomain_mod
                 allocate(match_ind(size(box_i_string, kind=ip)))
                 call match(box_i_string, cbox_i_string, match_ind)
                 call which(match_ind == -1_ip, new_boxes)
-                
-                ! Candidate boxes without a match are 'finished' 
+
+                ! Candidate boxes without a match are 'finished'
                 deallocate(match_ind)
                 allocate(match_ind(size(cbox_i_string, kind=ip)))
                 call match(cbox_i_string, box_i_string, match_ind)
@@ -779,7 +778,7 @@ module multidomain_mod
                 ! and remove them from the candidate boxes array
                 if( size(end_boxes, kind=ip) > 0) then
                     ! We now know the upper-right y index of the box
-                    candidate_boxes(srm,end_boxes) = j - 1 
+                    candidate_boxes(srm,end_boxes) = j - 1
                     call bind_arrays_ip(final_boxes, &
                         candidate_boxes(:,end_boxes), rowbind=.false.)
                     call remove_rows_ip(candidate_boxes, end_boxes, &
@@ -797,8 +796,8 @@ module multidomain_mod
                     candidate_boxes_new(3,:) = starts(new_boxes)
                     candidate_boxes_new(4,:) = ends(new_boxes)
                     candidate_boxes_new(5,:) = j + 0*new_boxes
-                    ! For unknown upper-right y-index, use -1 
-                    candidate_boxes_new(6,:) = -1 + 0*new_boxes 
+                    ! For unknown upper-right y-index, use -1
+                    candidate_boxes_new(6,:) = -1 + 0*new_boxes
                     call bind_arrays_ip(candidate_boxes, candidate_boxes_new, &
                         rowbind=.false.)
                 end if
@@ -814,8 +813,8 @@ module multidomain_mod
 
         end do
 
-        dims = shape(final_boxes) 
-        allocate(box_metadata(dims(1), dims(2))) 
+        dims = shape(final_boxes)
+        allocate(box_metadata(dims(1), dims(2)))
         box_metadata = final_boxes
 
         ! Final check
@@ -852,7 +851,7 @@ module multidomain_mod
                             ! a different constraint (in string matching of candidate boxes)
                             ! to ensure boxes do not cross the periodic boundary along
                             ! the y axis
-                           (in_periodic_x(i1) .eqv. in_periodic_x(i2)) ) 
+                           (in_periodic_x(i1) .eqv. in_periodic_x(i2)) )
 
             end function
 
@@ -866,7 +865,7 @@ module multidomain_mod
     ! of domains(i) on image j
     !
     ! @param domains the array of domains
-    ! 
+    !
     subroutine create_all_bbox_and_dx(domains, periodic_xs, periodic_ys)
 
         type(domain_type), intent(inout) :: domains(:)
@@ -881,7 +880,7 @@ module multidomain_mod
         call co_max(nd)
 #else
         nd = nd_local
-#endif        
+#endif
 
         if(allocated(all_bbox)) deallocate(all_bbox)
         if(allocated(all_dx)) deallocate(all_dx)
@@ -945,14 +944,14 @@ module multidomain_mod
         ! Need a sync to ensure that every domain has already set its all_bbox
         ! to zero a few lines above. Otherwise, below we could communicate our data, but then
         ! have it set to zero elsewhere!
-        sync all 
+        sync all
         ! broadcast the current 'domains' metadata to all other images.
         ! ni-to-ni one-sided communication.
         do k = 1, ni
             ! Alternatively do mpi_allgather for each
             all_bbox(1:4, 1:2, 1:nd, ti)[k] = all_bbox(1:4, 1:2, 1:nd, ti)
             all_dx(1:2, 1:nd, ti)[k] = all_dx(1:2, 1:nd, ti)
-            all_timestepping_refinement_factor(1:nd,ti)[k] = all_timestepping_refinement_factor(1:nd, ti) 
+            all_timestepping_refinement_factor(1:nd,ti)[k] = all_timestepping_refinement_factor(1:nd, ti)
             all_timestepping_methods(1:nd, ti)[k] = all_timestepping_methods(1:nd, ti)
         end do
         sync all
@@ -986,11 +985,11 @@ module multidomain_mod
 
 
     ! Timestep all grids (by the global time-step).
-    ! 
+    !
     ! This method only includes communication at each global time-step. While that's
     ! good in terms of reducing comms, it does mean comms buffers might need
     ! to be very large. To reduce the comms buffer size, we could have more
-    ! communication in sub-steps of the global timestep 
+    ! communication in sub-steps of the global timestep
     !
     subroutine evolve_multidomain_one_step(md, dt)
         class(multidomain_type), intent(inout) :: md
@@ -999,13 +998,13 @@ module multidomain_mod
         integer(ip) :: j, i, nt
         real(dp) :: dt_local, max_dt_store, tend
 
-        ! All the domains will evolve to this time 
+        ! All the domains will evolve to this time
         tend = md%domains(1)%time + dt
-        ! However they may take different numbers of steps to get 
+        ! However they may take different numbers of steps to get
         ! there, leading to tiny numerical differences in the time.
         ! To avoid any issues, we explicitly set them to the same number
 
-        !FIXME DEBUG
+        !DEBUG
         !call md%check_for_overflow('start')
 
         ! Evolve every domain, sending the data to communicate straight after
@@ -1023,7 +1022,7 @@ module multidomain_mod
             nt = md%domains(j)%timestepping_refinement_factor
 
             if(local_timestep_partitioned_domains .and. (.not. md%domains(j)%is_staggered_grid)) then
-                ! For nonlinear domains, allow fewer timesteps, if it won't cause blowup. 
+                ! For nonlinear domains, allow fewer timesteps, if it won't cause blowup.
                 ! Do not do this for staggered-grid domains, because the leap-frog numerical method needs
                 ! a constant time-step
                 !
@@ -1065,7 +1064,7 @@ module multidomain_mod
             md%domains(j)%time = tend
         end do
 
-        !FIXME DEBUG
+        !DEBUG
         !call md%check_for_overflow('step-before-comms')
 
         if(.not. send_halos_immediately) then
@@ -1076,13 +1075,13 @@ module multidomain_mod
             call communicate_p2p
             TIMER_STOP('comms1')
         end if
-        
+
         ! Get the halo information from neighbours
         ! For coarray comms, we need to sync before to ensure the information is sent, and
         ! also sync after to ensure it is not overwritten before it is used
         call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
 
-        !FIXME DEBUG
+        !DEBUG
         !call md%check_for_overflow('step-after-comms')
 
         if(send_boundary_flux_data) then
@@ -1094,7 +1093,7 @@ module multidomain_mod
             end do
             TIMER_STOP('nesting_flux_correction')
 
-            !FIXME DEBUG
+            !DEBUG
             !call md%check_for_overflow('step-after-flux_correct')
         end if
 
@@ -1111,7 +1110,7 @@ module multidomain_mod
     ! @param xs x-coordinates of test points
     ! @param ys y-coordinates of test points
     ! @param nbr_domain_ind integer array with the same length as xs. Will
-    !   be filled with the index of the domain that contains the points, 
+    !   be filled with the index of the domain that contains the points,
     !   or (-1) for points not inside any domain
     ! @param nbr_image_ind integer array with the same length as xs. Will
     !   be filled with the image_index of the domain that contains the points
@@ -1167,7 +1166,7 @@ module multidomain_mod
                 if(all(bbox(:,1) == 0.0_dp) .and. &
                     all(bbox(:,2) == 0.0_dp)) cycle
 
-                do xi = 1, size(xs, kind=ip) 
+                do xi = 1, size(xs, kind=ip)
                     ! Find whether xs(xi), ys(x) is inside the di'th domain on
                     ! image ii
 
@@ -1182,9 +1181,9 @@ module multidomain_mod
                     if(is_inside) then
                         !
                         ! We want to take the point from the highest-resolution
-                        ! domain -- i.e. smallest cell 'area'. 
+                        ! domain -- i.e. smallest cell 'area'.
                         !
-                        ! Note that the computation of cell_area1 and 
+                        ! Note that the computation of cell_area1 and
                         ! cell_area (product(nbr_dx)) may not lead to physical
                         ! areas [e.g. spherical coordinates] but because all
                         ! domains have dx/dy as some integer multiple of the
@@ -1223,7 +1222,7 @@ module multidomain_mod
 
                                 write(log_output_unit,*) 'ii: ', ii, ' di: ', di
                                 write(log_output_unit,*) 'xy: ', xs(xi), ys(xi)
-                                write(log_output_unit,*) 'bbox: ' 
+                                write(log_output_unit,*) 'bbox: '
                                 write(log_output_unit,*) bbox(1,:)
                                 write(log_output_unit,*) bbox(2,:)
                                 write(log_output_unit,*) bbox(3,:)
@@ -1277,11 +1276,11 @@ module multidomain_mod
         integer(ip) :: i, n1, n2
         real(dp) :: dx, dy
 
-        call get_domain_xs_ys(domain, domain_xs, domain_ys) 
+        call get_domain_xs_ys(domain, domain_xs, domain_ys)
 
         ! Make points just outside boundaries
         select case(boundary_flag)
-            case(1) 
+            case(1)
                 ! Make row of points just outside the north boundary, extending
                 ! 'nest_layer_width' over both edges
                 n1 = domain%nx(1)
@@ -1296,7 +1295,7 @@ module multidomain_mod
                 end do
                 ys = domain_ys(domain%nx(2)) + dy * nest_layer_width
 
-            case(2) 
+            case(2)
                 ! Make row of points just outside the east boundary, extending
                 ! 'nest_layer_width' over both edges
                 n1 = domain%nx(2)
@@ -1311,7 +1310,7 @@ module multidomain_mod
                 end do
                 xs = domain_xs(domain%nx(1)) + dx * nest_layer_width
 
-            case(3) 
+            case(3)
                 ! Make row of points just outside the south boundary, extending
                 ! 'nest_layer_width' over both edges
                 n1 = domain%nx(1)
@@ -1326,7 +1325,7 @@ module multidomain_mod
                 end do
                 ys = domain_ys(1) - dy * nest_layer_width
 
-            case(4) 
+            case(4)
                 ! Make row of points just outside the west boundary, extending
                 ! 'nest_layer_width' over both edges
                 n1 = domain%nx(2)
@@ -1364,17 +1363,17 @@ module multidomain_mod
 
     !
     ! Determine the required thickness of cells in the nesting region,
-    !  in which the domain receives data. 
+    !  in which the domain receives data.
     ! It has to be thick enough so we can take one_evolve_step() without
-    !  the full nesting_region information propagating into the interior. 
+    !  the full nesting_region information propagating into the interior.
     ! It also has to be an integer multiple of the ratio between the coarsest
-    !  parent domain's dx size and the current domain's dx -- so that the 
+    !  parent domain's dx size and the current domain's dx -- so that the
     !  nesting region represents 'full' coarse cells
     !
     ! @param max_parent_dx_ratio maximum value of {dx-for-domains-I-nest-with}/{my-dx}
-    ! @param extra_halo_buffer A constant to add to the halo thickness (see code for details) 
+    ! @param extra_halo_buffer A constant to add to the halo thickness (see code for details)
     ! @param extra_cells_in_halo A constant to add to the timestepping_metadata%nesting_thickness_for_one_step, before computing
-    ! halo thickness (see code for details & distinction with extra_halo_buffer). 
+    ! halo thickness (see code for details & distinction with extra_halo_buffer).
     !
     function get_domain_nesting_layer_thickness(domain, &
         max_parent_dx_ratio, extra_halo_buffer, extra_cells_in_halo) result(thickness)
@@ -1404,10 +1403,10 @@ module multidomain_mod
             ! Now round up to be a multiple of the parent cell-sizes.
             thickness = (ceiling(thickness*1.0_dp/max_parent_dx_ratio)                    ) * nint(max_parent_dx_ratio)
         end if
-     
+
     end function
 
-    ! 
+    !
     ! Compute the coordinate x/y arrays associated with a given domain
     !
     ! The domain is in this subroutine is typically used prior to a call to domain%allocate_quantities()
@@ -1466,7 +1465,7 @@ module multidomain_mod
 
         vol = 0.0_force_double
 
-        do k = kstart, kend 
+        do k = kstart, kend
             call md%domains(k)%volume_in_priority_domain(md%volume(k))
             vol = vol + md%volume(k)
         end do
@@ -1511,13 +1510,13 @@ module multidomain_mod
     ! Convenience routine for estimating memory usage
     ! Only used for reporting
     !
-    subroutine memory_summary(md) 
+    subroutine memory_summary(md)
         class(multidomain_type), intent(in) :: md
 
         integer(int64) :: domain_U_size, nesting_buffer_size, big_tmp
         integer(ip) ::  i, p2p_buffer_size, tmp
         real(dp) :: buffer_size_on_domain_U_size
-        
+
 
         domain_U_size = 0
         nesting_buffer_size = 0
@@ -1530,7 +1529,7 @@ module multidomain_mod
             domain_U_size = domain_U_size + big_tmp
             call md%domains(i)%nesting%memory_size(tmp)
             nesting_buffer_size = nesting_buffer_size + tmp
-        end do 
+        end do
 
         p2p_buffer_size = size_of_send_recv_buffers()
 
@@ -1546,7 +1545,7 @@ module multidomain_mod
 
     !
     ! Convenience routine to report multidomain-wide mass conservation statistics.
-    ! This will integrate the mass using the correct priority domain in each place, 
+    ! This will integrate the mass using the correct priority domain in each place,
     ! and check whether changes in this mass match with fluxes through the physical boundary
     ! of the multidomain.
     !
@@ -1576,18 +1575,18 @@ module multidomain_mod
             vol_and_bfi(3) = vol0
             vol_and_bfi(4) = dvol
 #ifndef COARRAY_PROVIDE_CO_ROUTINES
-            call co_sum(vol_and_bfi) 
+            call co_sum(vol_and_bfi)
 #else
             ! The MPI-replacement version of co_sum does not operate on a
             ! vector
             do i = 1, 4
-                call co_sum(vol_and_bfi(i)) 
+                call co_sum(vol_and_bfi(i))
             end do
 #endif
             vol = vol_and_bfi(1)
             bfi = vol_and_bfi(2)
             vol0 = vol_and_bfi(3)
-            dvol = vol_and_bfi(4) 
+            dvol = vol_and_bfi(4)
 #endif
             write(log_output_unit, "(A)"         ) 'Volume statistics (m^3) integrated over all domains and images:'
             write(log_output_unit, "(A, ES25.12E3)") '  Multidomain volume       : ', vol
@@ -1603,8 +1602,8 @@ module multidomain_mod
     !
     ! The 'active region' contains cells which we need to get from other images, AND
     ! cells which have priority domain = [ domains(myindex) on 'this_image() == myimage'],
-    ! (although in the latter case, no communication is required, except if using periodic boundaries). 
-    ! An example of cells which are not in the 'active region' is coarse domain cells 
+    ! (although in the latter case, no communication is required, except if using periodic boundaries).
+    ! An example of cells which are not in the 'active region' is coarse domain cells
     ! which are completely covered by finer domains (and not within the communication buffers).
     ! Such 'inactive' cells do not affect the solution in priority domains
     !
@@ -1622,7 +1621,7 @@ module multidomain_mod
     pure subroutine is_in_active_region(priority_domain_index, priority_domain_image, &
         myindex, myimage, halo_width, i, j, is_in_active)
 
-        integer(ip), intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:)        
+        integer(ip), intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:)
         integer(ip), intent(in) :: myindex, myimage, halo_width, i, j
         logical, intent(inout) :: is_in_active
 
@@ -1657,7 +1656,7 @@ module multidomain_mod
 
         integer(ip) :: nd, next_d, i, j, ni, ti, ii, i0, i1
         integer(ip) :: local_ti, local_ni, local_co_size_xy(2), local_co_index(2)
-        integer(ip) :: domain_nx(2), nx(2), lower_left_nx(2), upper_right_nx(2) 
+        integer(ip) :: domain_nx(2), nx(2), lower_left_nx(2), upper_right_nx(2)
         integer(ip) :: domain_dx_refinement_factor(2), dx_refine_X_co_size_xy(2)
         integer(ip) :: parent_domain_dx_refinement_factor(2), dx_refine_ratio(2)
         integer(ip) :: best_co_size_xy(2), fileID, extra_halo_padding(2)
@@ -1759,7 +1758,7 @@ module multidomain_mod
         allocate(md%domains(nd))
 
 
-        ! Split the originally provided domains 
+        ! Split the originally provided domains
         next_d = 0
         do i = 1, size(md%domain_metadata, kind=ip)
             ! Number of pieces that we split the i'th domain into
@@ -1769,7 +1768,7 @@ module multidomain_mod
             do j = 1, local_ni
 
                 ! If this piece is not assigned to the current image, do nothing
-                if(ti /= md%load_balance_part%i2(i)%i1(j)) cycle 
+                if(ti /= md%load_balance_part%i2(i)%i1(j)) cycle
 
                 ! Index of the 'piece' of the i'th domain we are working on
                 local_ti = j
@@ -1796,10 +1795,10 @@ module multidomain_mod
                     if(product(local_co_size_xy) /= local_ni) cycle
 
                     ! Approximate total number of 'boundary cells' in all tiles
-                    nboundary = 2 * local_ni * sum(domain_nx/(1.0_dp*local_co_size_xy)) 
+                    nboundary = 2 * local_ni * sum(domain_nx/(1.0_dp*local_co_size_xy))
                     if(nboundary < best_nboundary) then
                         ! We have a new 'best' local_co_size_xy
-                        best_co_size_xy = local_co_size_xy 
+                        best_co_size_xy = local_co_size_xy
                         best_nboundary = nboundary
                     end if
                 end do
@@ -1848,7 +1847,7 @@ module multidomain_mod
                 ! Now we need to set variables, like:
                 ! -- reduce lw
                 md%domains(next_d)%lw = ((upper_right_nx - lower_left_nx + 1)*&
-                    real(md%domain_metadata(i)%lw, force_long_double))/ & 
+                    real(md%domain_metadata(i)%lw, force_long_double))/ &
                     md%domain_metadata(i)%nx
                 ! -- change lower_left
                 md%domains(next_d)%lower_left = real(md%domain_metadata(i)%lower_left, force_long_double) + &
@@ -1862,7 +1861,7 @@ module multidomain_mod
 
                 ! NAME THE DOMAIN, using the "original" domain index, rather than the one
                 ! after partitioning
-                md%domains(next_d)%myid = ti * large_64_int + i 
+                md%domains(next_d)%myid = ti * large_64_int + i
                 md%domains(next_d)%local_index = local_ti
 
                 write(log_output_unit,*) 'i: ', i, &
@@ -1871,7 +1870,7 @@ module multidomain_mod
                     ' upper_right_nx: ', upper_right_nx, ' lower-left: ', md%domains(next_d)%lower_left, &
                     ' dx: ', md%domains(next_d)%lw/md%domains(next_d)%nx, ' lw: ', md%domains(next_d)%lw
             end do
-        end do 
+        end do
 #ifdef COARRAY
         call sync_all_generic
 #endif
@@ -1912,7 +1911,7 @@ module multidomain_mod
         ! Variables to track extremes over all domains
         global_max_stage = -HUGE(1.0_dp)
         global_min_stage = HUGE(1.0_dp)
-        global_max_speed = 0.0_dp 
+        global_max_speed = 0.0_dp
         global_min_speed = 0.0_dp
         global_energy_potential_on_rho = 0.0_dp
         global_energy_kinetic_on_rho = 0.0_dp
@@ -2058,8 +2057,8 @@ module multidomain_mod
 
         TIMER_START('receive_multidomain_halos')
 
-        ! Note: This loop can go in OMP, but apparently they do not support 
-        ! type bound procedures, so we avoid calling like that. 
+        ! Note: This loop can go in OMP, but apparently they do not support
+        ! type bound procedures, so we avoid calling like that.
         ! {Fixed in openmp 5 standard?}
 
         !!!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md)
@@ -2091,7 +2090,7 @@ module multidomain_mod
 
         integer(ip):: i
 
-        do i = 1, size(md%volume_initial, kind=ip)        
+        do i = 1, size(md%volume_initial, kind=ip)
             call md%get_flow_volume(md%volume_initial(i), i)
         end do
 
@@ -2145,14 +2144,14 @@ module multidomain_mod
         TIMER_STOP('send_multidomain_halos')
     end subroutine
 
-    ! In nesting communication, when a fine domain receives from a coarse domain, 
+    ! In nesting communication, when a fine domain receives from a coarse domain,
     ! we may want to 'not update' fine halo cells that are very close to their domain.
     !
-    ! This can be beneficial for numerical stability, although it can also cause problems. 
+    ! This can be beneficial for numerical stability, although it can also cause problems.
     !
-    ! This routine sets the nesting recv_weights to 0.0_dp, for fine-domain cells that 
+    ! This routine sets the nesting recv_weights to 0.0_dp, for fine-domain cells that
     ! are close to a coarse domain.
-    ! 
+    !
     ! Beware that other parameters in nested_grid_comms_mod.f90 control whether these weights
     ! are even used -- which depends also on the depth and depth-gradients.
 
@@ -2160,7 +2159,7 @@ module multidomain_mod
     !
     subroutine separate_fine_halos_from_their_domain(md)
         class(multidomain_type), intent(inout) :: md
-       
+
         integer(ip) :: i, j, nx, ny, irecv_L, irecv_U, ir, jrecv_L, jrecv_U, jr
         integer(ip) :: ia, ib, ja, jb, i1, j1
         integer(ip) :: sep
@@ -2177,7 +2176,7 @@ module multidomain_mod
 
             if(md%domains(j)%max_parent_dx_ratio > 1_ip) then
                 ! Separate this much from halos -- must be a multiple of md%domains(j)%max_parent_dx_ratio
-                sep = md%extra_halo_buffer*md%domains(j)%max_parent_dx_ratio 
+                sep = md%extra_halo_buffer*md%domains(j)%max_parent_dx_ratio
             else
                 ! No extra separation if we only receive data from domains of the same or finer size
                 cycle
@@ -2189,8 +2188,8 @@ module multidomain_mod
                 ! Look for recv_comms where a fine domain receives
                 if(.not. (md%domains(j)%nesting%recv_comms(i)%recv_active .and. &
                           md%domains(j)%nesting%recv_comms(i)%my_domain_is_finer)) cycle
-       
-                ! Indices of the recv domain where the recv happens 
+
+                ! Indices of the recv domain where the recv happens
                 irecv_L = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,1)
                 irecv_U = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,1)
                 jrecv_L = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,2)
@@ -2215,7 +2214,7 @@ module multidomain_mod
                                 md%domains(j)%nesting%recv_comms(i)%my_domain_index) ) ) then
 
                                 md%domains(j)%nesting%recv_comms(i)%recv_weights(i1, j1) = 0.0_dp
-                            
+
                         end if
                     end do
                 end do
@@ -2227,9 +2226,9 @@ module multidomain_mod
 
     ! Set the flow variables in 'null regions' of a domain to 'high and dry' values
     !
-    ! The 'null regions' are areas where nesting%recv_metadata(:,1) == 0 
+    ! The 'null regions' are areas where nesting%recv_metadata(:,1) == 0
     ! Such regions have no impact on the computed flow solution
-    ! in 'priority_domain' regions. 
+    ! in 'priority_domain' regions.
     !
     ! @param md
     ! @param ignore_linear logical. Default FALSE. If TRUE, do not make any changes to null
@@ -2237,7 +2236,7 @@ module multidomain_mod
     !     used to avoid minor wet-dry artefacts (now fixed), caused by neighbouring domains communicating
     !     non-zero U(:,:,UH) or U(:,:,VH) along wet-dry boundaries. The linear solver
     !     should always have zero flux terms along such boundaries, but that can be
-    !     violated by nesting communication. 
+    !     violated by nesting communication.
     subroutine set_null_regions_to_dry(md, ignore_linear)
 
         class(multidomain_type), intent(inout) :: md
@@ -2258,7 +2257,7 @@ module multidomain_mod
             ignore_linear_local = ignore_linear
         else
             ignore_linear_local = .false.
-        end if 
+        end if
 
         do j = 1, size(md%domains, kind=ip)
 
@@ -2381,8 +2380,8 @@ module multidomain_mod
 
         ! Make separate output folder
         call setup_multidomain_output_folder(md)
-   
-        if(capture_log_local) then     
+
+        if(capture_log_local) then
             ! Log in that folder
             log_filename = trim(md%output_basedir) // '/multidomain_log'
             call send_log_output_to_file(log_filename)
@@ -2396,7 +2395,7 @@ module multidomain_mod
         ! Split up domains among images, and create all md%domains(i)%myid
         call md%partition_domains()
 
-        ! Make sure all domains use the new output_basedir 
+        ! Make sure all domains use the new output_basedir
         do i = 1, size(md%domains, kind=ip)
             md%domains(i)%output_basedir = md%output_basedir
             ! Make output folders. This involves system calls and forks, so we should do it before allocating lots of memory
@@ -2417,7 +2416,7 @@ module multidomain_mod
 
         ! Storage space for mass conservation
         allocate(md%volume_initial(size(md%domains, kind=ip)), md%volume(size(md%domains, kind=ip)))
-    
+
         md%volume_initial = 0.0_dp
         md%volume = 0.0_dp
 
@@ -2426,11 +2425,11 @@ module multidomain_mod
         TIMER_STOP('setup')
     end subroutine
 
-    ! Main routine for setting up the multidomain 
+    ! Main routine for setting up the multidomain
     !
     ! Determine which domains we need to have a two-way-nesting-comms relation
     ! with, adjust domain bboxes, setup the nesting_boundaries, etc
-    ! 
+    !
     ! What this routine does:
     !   Step 1: For each domain, compute its required nesting layer width. This is done
     !           by looking 'just outside' the outer boundary of each domain, to see if another
@@ -2442,7 +2441,7 @@ module multidomain_mod
     !   Step 2: For each domain, make a 'priority_domain_metadata', which tells us what
     !           the priority domain for each cell is. We blank out cells which are more than
     !           one nesting layer width away from that domain's priority region.
-    !   Step 3: Collapse the priority_domain_metadata to a set of rectangles, represented in a 
+    !   Step 3: Collapse the priority_domain_metadata to a set of rectangles, represented in a
     !           tabular format. These DEFINE the regions that the domain needs to receive data from,
     !           and so we call them the 'receive metadata'
     !   Step 4: Broadcast the 'receive metadata', and create the 'send metadata', based on the
@@ -2451,10 +2450,10 @@ module multidomain_mod
     !           part of the send_metadata (i.e. the comms index of domains(j)%nesting%send_comms that they will be
     !           getting data from) to build the communication data structure. Further, having the full send metadata
     !           is useful for debugging.
-    !   Step 6: Set-up the domains(j)%nesting%send_comms, and domains(j)%nesting%recv_comms. This is 
+    !   Step 6: Set-up the domains(j)%nesting%send_comms, and domains(j)%nesting%recv_comms. This is
     !           straightforward given the information above.
     !
-    ! @param domains array of domains 
+    ! @param domains array of domains
     ! @param verbose control print-out verbosity
     ! @param use_wetdry_limiting_nesting If .true., then in wet-dry regions the nesting communication differs. This is important to
     ! avoid wet-dry artefacts related to nesting.
@@ -2496,10 +2495,10 @@ module multidomain_mod
         integer :: ierr
 #endif
 
-        !! Index labels for send/recv metadata 
+        !! Index labels for send/recv metadata
         !! The following parameters give the 'row-index' at which we store various types of metadata.
         ! IND --> index in domains(:)
-        ! IMG --> image holding the domain 
+        ! IMG --> image holding the domain
         ! XLO, XHI --> indices for x coordinates in communication region. These must be consecutive
         ! YLO, YHI --> indices for y coordinates in communication region. These must be consecutive
         !
@@ -2524,11 +2523,11 @@ module multidomain_mod
 #ifdef COARRAY
         call co_max(nd_global)
 #endif
- 
+
 
         !
         ! Figure out how thick the nesting layer buffer has to be for each domain
-        ! in the multi domain. 
+        ! in the multi domain.
         ! Note this is ONLY based on checking around the 'exterior boundary', one cell
         ! width outside of each domain. There might be 'internal' nesting
         ! regions, but they are computed later
@@ -2542,7 +2541,7 @@ module multidomain_mod
         ! Extend domain bounding boxes to include nesting layers
         !
         do j = 1, nd_local
-            do i = 1, 4 
+            do i = 1, 4
                 !
                 ! i = {1, 2, 3, 4} <==> boundary = {N, E, S, W}
                 !
@@ -2606,7 +2605,7 @@ module multidomain_mod
             ! Loop over each column (i.e. with fixed y coordinate) and for each
             ! cell, find the priority domain index and corresponding image in
             ! which it is contained
-            do jj = 1, d_nx(2) 
+            do jj = 1, d_nx(2)
                 y_tmp = xc_tmp * 0.0_dp + yc_tmp(jj)
                 call find_priority_domain_containing_xy(&
                     xc_tmp, y_tmp, &
@@ -2627,7 +2626,7 @@ module multidomain_mod
                     (xc_tmp > periodic_xs(1) .and. xc_tmp < periodic_xs(2) .and. &
                       y_tmp > periodic_ys(1) .and. y_tmp  < periodic_ys(2) )  )
 
-          
+
                 if(any(domains(j)%nesting%priority_domain_index(:,jj) < 0)) then
                     write(log_output_unit, *) &
                         'Error: priority_domain_index contains areas that are not inside any domain. ', &
@@ -2635,8 +2634,8 @@ module multidomain_mod
                         'to spill outside their neighbours (e.g. using too much parallel refinement)'
                     call generic_stop
                 end if
- 
-                ! Logical check 
+
+                ! Logical check
                 do ii = 1, 2
                     if(any(nbr_domain_dx_local(:,ii) > (1.0001_dp * domains(j)%max_parent_dx_ratio*domains(j)%dx(ii)))) then
                         write(log_output_unit,*) &
@@ -2679,7 +2678,7 @@ module multidomain_mod
             ! Keep track of the maximum number of 'boxes' in the box metadata
             tmp2 = shape(domains(j)%nesting%recv_metadata)
             nbox_max = max(nbox_max, tmp2(2))
-  
+
         end do
 #ifdef COARRAY
         call co_max(nbox_max)
@@ -2709,7 +2708,7 @@ module multidomain_mod
         ! even though both reals and integers are stored
         !
 
-        ! Columns of all_recv_metadata correspond to: 
+        ! Columns of all_recv_metadata correspond to:
         ! recv_from_domain_index, recv_from_image_index, xlo, xhi, ylo, yhi, send_metadata_row_index, recv_comms_index
         if(allocated(all_recv_metadata)) deallocate(all_recv_metadata)
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
@@ -2717,7 +2716,7 @@ module multidomain_mod
         call sync_all_generic
 #elif defined(COARRAY)
         allocate( all_recv_metadata(srm+2, nbox_max, nd_global, ni )[*])
-#else     
+#else
         allocate( all_recv_metadata(srm+2, nbox_max, nd_global, ni ) )
 #endif
 
@@ -2729,7 +2728,7 @@ module multidomain_mod
         do j = 1, nd_local
 
             counter = 0 ! Keep track of 'real' receive indices -- i.e. those that communicate with another domain/image
-    
+
             do i = 1, size(domains(j)%nesting%recv_metadata, 2, kind=ip)
 
                 ! Domain index and image that is needed for box i [as reals, even though the values are integer]
@@ -2739,7 +2738,7 @@ module multidomain_mod
                 ! Firstly, get centroid  coordinates, and determine if we are in the periodic region
                 ! These were constructed to never cross a periodic boundary
                 tmp_xs = domains(j)%x( domains(j)%nesting%recv_metadata(3:4,i) )
-                tmp_ys = domains(j)%y( domains(j)%nesting%recv_metadata(5:6,i) ) 
+                tmp_ys = domains(j)%y( domains(j)%nesting%recv_metadata(5:6,i) )
                 call check_periodic(tmp_xs(1), tmp_ys(1), periodic_xs, periodic_ys, in_periodic_region, &
                     adjust_coordinates=.FALSE.)
                 call check_periodic(tmp_xs(2), tmp_ys(2), periodic_xs, periodic_ys, in_periodic_region, &
@@ -2747,19 +2746,19 @@ module multidomain_mod
                 ! Range of the communication regions, extended to cell edges
                 local_metadata(3:4,i,j) = tmp_xs + [-0.5_dp, 0.5_dp]*domains(j)%dx(1)
                 local_metadata(5:6,i,j) = tmp_ys +  [-0.5_dp, 0.5_dp]*domains(j)%dx(2)
-    
+
                 ! Sequential index for 'true' communication rows
                 if( ( (.not. in_periodic_region).and.&
                       (local_metadata(IND,i,j) == j .and. local_metadata(IMG,i,j) == ti)) .or. &
                       (local_metadata(IND,i,j) < 1) ) then
                     ! Not 'true' communication, because we are "not in the periodic region, and we are
-                    ! communicating with our own image and index", or we're not in an active region 
+                    ! communicating with our own image and index", or we're not in an active region
                     ! The code design ensures this corresponds to regions which do not need nesting information.
                 else
                     ! True communication.
 
                     ! For now we skip index 7 in local_metadata
- 
+
                     counter = counter + 1
                     local_metadata(8,i,j) = counter
                 end if
@@ -2784,7 +2783,7 @@ module multidomain_mod
 #endif
 
         !
-        ! Set up the 'send' metadata 
+        ! Set up the 'send' metadata
         !
 
         nbox_max = 0
@@ -2855,7 +2854,7 @@ module multidomain_mod
                         do i = 1, size(all_recv_metadata,2, kind=ip) ! Every row in the receive metadata
                             ! Tell all_recv_metadata the row index in send_metadata
                             if(all_recv_metadata(IND,i,jj,k) == j .and. all_recv_metadata(IMG,i,jj,k) == ims) then
-                                counter = counter + 1 
+                                counter = counter + 1
                                 all_recv_metadata(7, i, jj, k) = 1.0_dp * counter
                             end if
                         end do
@@ -2872,7 +2871,7 @@ module multidomain_mod
         write(log_output_unit, *) 'recv_from_domain_index, recv_from_image_index, xlo, xhi,', &
                                   ' ylo, yhi, send_metadata_row_index, recv_comms_index'
         do k = 1, ni
-            do j = 1, size(all_recv_metadata, 3, kind=ip) 
+            do j = 1, size(all_recv_metadata, 3, kind=ip)
                 write(log_output_unit, *) '    image ', k, ', domain ', j
                 do i = 1, size(all_recv_metadata, 2, kind=ip)
                     write(log_output_unit, *) '      ', all_recv_metadata(:,i,j,k)
@@ -2959,7 +2958,7 @@ module multidomain_mod
         write(log_output_unit, *) 'send_to_domain_index, send_to_image_index, xlo, xhi,', &
                                   ' ylo, yhi, recv_metadata_row_index, counter'
         do k = 1, ni
-            do j = 1, size(all_send_metadata, 3, kind=ip) 
+            do j = 1, size(all_send_metadata, 3, kind=ip)
                 write(log_output_unit, *) '    ', k, j
                 do i = 1, size(all_send_metadata, 2, kind=ip)
                     write(log_output_unit, *) '      ', all_send_metadata(:,i,j,k)
@@ -2974,7 +2973,7 @@ module multidomain_mod
         !
 
         do j = 1, nd_local
-    
+
             !
             ! Setup sends
             !
@@ -2992,9 +2991,9 @@ module multidomain_mod
                 n_ind = nint(all_send_metadata(IND,i,j,ti))
                 n_img = nint(all_send_metadata(IMG,i,j,ti))
                 ! Row in all_recv_metadata corresponding to this send
-                n_row = nint(all_send_metadata(7,i,j,ti)) 
+                n_row = nint(all_send_metadata(7,i,j,ti))
                 ! Send to domains(n_ind)%nesting%recv_comms(n_comms) on image n_img
-                n_comms = nint(all_recv_metadata(8, n_row, n_ind, n_img)) 
+                n_comms = nint(all_recv_metadata(8, n_row, n_ind, n_img))
 
                 ! DEBUG: Check that the send/recv coordinate boxes are
                 ! identical, to within tolerable rounding
@@ -3006,7 +3005,7 @@ module multidomain_mod
                     ! But this could be due to periodic boundaries
                     if(any(abs(box_diff(1:2)) > 0.9999_dp*(periodic_xs(2) - periodic_xs(1))) .or. &
                        any(abs(box_diff(3:4)) > 0.9999_dp*(periodic_ys(2) - periodic_ys(1)))) then
-                        ! Periodic boundaries. Skip them! 
+                        ! Periodic boundaries. Skip them!
                     else
                         msg = 'Error: Send/recv metadata do not appear to have the same boxes to within round-off'
                         write(log_output_unit,"(A)") trim(msg)
@@ -3016,7 +3015,7 @@ module multidomain_mod
                         write(log_output_unit,"(A)") trim(msg)
                         msg = '  refining the grid (so that halos shrink), or by increasing the separation of the domain'
                         write(log_output_unit,"(A)") trim(msg)
-                        msg = '  boundaries in the problematic area, or by passing recursive_nesting=.true. to the ' 
+                        msg = '  boundaries in the problematic area, or by passing recursive_nesting=.true. to the '
                         write(log_output_unit,"(A)", advance='no') trim(msg)
                         msg = ' relevant domain%match_geometry_to_parent'
                         write(log_output_unit,"(A)") trim(msg)
@@ -3041,7 +3040,7 @@ module multidomain_mod
 
                 ! Array bounds to receive -- NULL
                 ijk_to_recv = -1
-    
+
                 counter = counter + 1
                 call domains(j)%nesting%send_comms(counter)%initialise(&
                     my_dx = all_dx(1:2, j, ti), &
@@ -3079,7 +3078,7 @@ module multidomain_mod
                 ! Neighbour domain index/image
                 n_ind = nint( all_recv_metadata(IND,i,j,ti))
                 n_img = nint( all_recv_metadata(IMG,i,j,ti))
-                n_row = nint( all_recv_metadata(7, i, j, ti)) 
+                n_row = nint( all_recv_metadata(7, i, j, ti))
                 n_comms = nint(all_send_metadata(8, n_row, n_ind, n_img) )
 
                 ! Check that boxes have the same x/y coordinates to within tolerable round-off
@@ -3092,7 +3091,7 @@ module multidomain_mod
                     ! But this could be due to periodic boundaries
                     if(any(abs(box_diff(1:2)) > 0.9999_dp*(periodic_xs(2) - periodic_xs(1))) .or. &
                        any(abs(box_diff(3:4)) > 0.9999_dp*(periodic_ys(2) - periodic_ys(1)))) then
-                        ! Periodic boundaries. Skip them! 
+                        ! Periodic boundaries. Skip them!
                     else
                         ! Looks like a genuine error
                         msg = 'Error: Send/recv metadata do not appear to have the same boxes to within round-off'
@@ -3103,7 +3102,7 @@ module multidomain_mod
                         write(log_output_unit,"(A)") trim(msg)
                         msg = '  refining the grid (so that halos shrink), or by increasing the separation of the domain'
                         write(log_output_unit,"(A)") trim(msg)
-                        msg = '  boundaries in the problematic area, or by passing recursive_nesting=.true. to the ' 
+                        msg = '  boundaries in the problematic area, or by passing recursive_nesting=.true. to the '
                         write(log_output_unit,"(A)", advance='no') trim(msg)
                         msg = ' relevant domain%match_geometry_to_parent'
                         write(log_output_unit,"(A)") trim(msg)
@@ -3128,7 +3127,7 @@ module multidomain_mod
                 ijk_to_recv(1:2,1) = domains(j)%nesting%recv_metadata([XLO, XHI],i)
                 ijk_to_recv(1:2,2) = domains(j)%nesting%recv_metadata([YLO, YHI],i)
                 ijk_to_recv(1:2,3) = [1,4] ! Recv all variables
-    
+
                 counter = counter + 1
                 call domains(j)%nesting%recv_comms(counter)%initialise(&
                     my_dx = all_dx(1:2, j, ti), &
@@ -3174,7 +3173,7 @@ module multidomain_mod
         ! Store all dx in a variable all_dx_md, which in practice will be inside the multidomain
         ! Cannot just have it in the multidomain from the start, because it might be a coarray
         if(allocated(all_dx)) then
-            if(allocated(all_dx_md)) deallocate(all_dx_md)  
+            if(allocated(all_dx_md)) deallocate(all_dx_md)
             allocate( all_dx_md(2, size(all_dx, 2, kind=ip), size(all_dx,3, kind=ip)) )
             all_dx_md = all_dx
             deallocate(all_dx)
@@ -3201,7 +3200,7 @@ module multidomain_mod
 
     ! Make elevation constant in send_regions that go to a single coarser cell,
     ! if the maximum elevation is above elevation_threshold
-    ! 
+    !
     ! This is done to avoid wet-dry instabilities, caused by aggregating over
     ! wet-and-dry cells on a finer domain, which is then sent to a coarser domain.
     ! Such an operation will break the hydrostatic balance, unless the elevation
@@ -3212,7 +3211,7 @@ module multidomain_mod
     !
     ! @param md multidomain
     ! @param elevation_threshold constant -- only do the aggregation if the
-    !     elevation is above this threshold. The idea is to make this small enough 
+    !     elevation is above this threshold. The idea is to make this small enough
     !     to encompass all potentially wet-dry regions, while not affecting deep
     !     cells. [e.g, a typical value might be -10.0 m or similar]
     !
@@ -3237,7 +3236,7 @@ module multidomain_mod
 
     ! Print all domain timers, as well as the multidomain timer itself, finalise the domains,
     ! and write max quantities. This is a typical step at the end of a program
-    ! 
+    !
     subroutine finalise_and_print_timers(md)
         class(multidomain_type), intent(inout) :: md
 
@@ -3264,7 +3263,7 @@ module multidomain_mod
         write(log_output_unit, "(A)") ''
         call md%timer%print(log_output_unit)
 
-#ifdef EVOLVE_TIMER                
+#ifdef EVOLVE_TIMER
         do i = 1, size(md%domains)
             ! Output the evolve timer data to a separate file, in the domain folder.
             timer_log_filename = trim(md%domains(i)%output_folder_name) // '/Evolve_timer_details.txt'
@@ -3349,7 +3348,7 @@ module multidomain_mod
         deallocate(point_gauges, time_var_local, static_var_local)
 
 
-    end subroutine 
+    end subroutine
 
 
     ! Convenience IO function. Write all domain outputs and print md statistics, if a given time has passed since
@@ -3360,7 +3359,7 @@ module multidomain_mod
     ! @param write_grids_less_often optional integer (default 1) -- only write grids every 'nth' time we would otherwise writeout
     ! @param write_gauges_less_often optional integer (default 1) -- only write gauges every 'nth' time we would otherwise writeout
     ! @param print_less_often optional integer (default 1) -- only print every 'nth' time we would otherwise writeout
-    ! @param timing_tol real (default 0) if the time since the last write out is > "approximate_writeout_frequency - timing_tol" 
+    ! @param timing_tol real (default 0) if the time since the last write out is > "approximate_writeout_frequency - timing_tol"
     ! , then do the write. This is an attempt to avoid round-off causing a shift in the write-out times
     ! @param energy_is_finite optional logical variable -- if present it will be passed to the statistics printing routine. In that
     ! case it will be .TRUE. if the global_energy_on_rho is finite, and .FALSE. otherwise. If the statistics are not printed (e.g.
@@ -3472,7 +3471,7 @@ module multidomain_mod
         integer(ip):: j, i, k, ri(srm), jj
         real(dp):: xmx, xmn, ymx, ymn, val, err, c1, c2
 
-        ! type holding all domains 
+        ! type holding all domains
         type(multidomain_type) :: md
 
         ! length/width
@@ -3480,7 +3479,7 @@ module multidomain_mod
         ! lower-left corner coordinate
         real(dp), parameter, dimension(2):: global_ll = [185985.0_dp, 8795845.0_dp]
         ! grid size (number of x/y cells)
-        integer(ip), parameter, dimension(2):: global_nx = [360_ip, 210_ip] 
+        integer(ip), parameter, dimension(2):: global_nx = [360_ip, 210_ip]
         !integer(ip):: global_nx(2)
 
         ! inner domain in the 'middle 3rd' of the outer domain inside
@@ -3495,18 +3494,18 @@ module multidomain_mod
         real(dp) :: bboxes(2, 2, 4)
 
         ! Clear out any preliminary comms setup
-        call deallocate_p2p_comms 
+        call deallocate_p2p_comms
 
         ! 4 domains in this model
         allocate(md%domains(4))
 
         ! This is required to match the reference results below (because they were developed when
-        ! it was the default approach). 
+        ! it was the default approach).
         md%extra_cells_in_halo = 0_ip
 
         !
         ! Parent domain
-        ! 
+        !
         md%domains(1)%lw = global_lw
         md%domains(1)%lower_left =global_ll
         md%domains(1)%nx = global_nx
@@ -3522,7 +3521,7 @@ module multidomain_mod
         ! A detailed domain which shares a physical boundary with the global
         ! domain. NOTE: The flow solver doesn't work with this configuration.
         !
-        md%domains(2)%lower_left = global_ll 
+        md%domains(2)%lower_left = global_ll
         md%domains(2)%lw = nint(inner_lw/md%domains(1)%dx)*md%domains(1)%dx ! Is a multiple of parent domain dx
         md%domains(2)%dx_refinement_factor = real(nest_ratio, dp)
         md%domains(2)%dx = md%domains(1)%dx / md%domains(2)%dx_refinement_factor
@@ -3539,7 +3538,7 @@ module multidomain_mod
         md%domains(3)%lower_left = global_ll + nint((inner_ll - global_ll)/md%domains(1)%dx)*md%domains(1)%dx ! Is a multiple of parent domain dx
         md%domains(3)%lw = nint(inner_lw/md%domains(1)%dx)*md%domains(1)%dx ! Is a multiple of parent domain dx
         md%domains(3)%dx_refinement_factor = real(nest_ratio, dp)
-        md%domains(3)%dx = md%domains(1)%dx / md%domains(3)%dx_refinement_factor 
+        md%domains(3)%dx = md%domains(1)%dx / md%domains(3)%dx_refinement_factor
         md%domains(3)%nx = nint(md%domains(3)%lw /  md%domains(3)%dx)
         md%domains(3)%timestepping_method = 'rk2'
         md%domains(3)%timestepping_refinement_factor = 2_ip
@@ -3590,7 +3589,7 @@ module multidomain_mod
             if(all(md%domains(1)%nesting%recv_metadata(1:srm,:) == reference_results)) then
                 write(log_output_unit,*) 'PASS'
             else
-                write(log_output_unit,*) 'FAIL', __LINE__,& 
+                write(log_output_unit,*) 'FAIL', __LINE__,&
 __FILE__
             end if
             deallocate(reference_results)
@@ -3615,7 +3614,7 @@ __FILE__
             end if
             deallocate(reference_results)
 
-            reference_results = reshape(&    
+            reference_results = reshape(&
                 [2, 1,    1,   9,   1,   9, &
                  1, 1,   10, 378,   1,   9, &
                  3, 1,   10, 369,  10,  30, &
@@ -3662,10 +3661,10 @@ __FILE__
                 do j = 1, size(md%domains(i)%nesting%recv_metadata(1,:), kind=ip)
 
                     ! Row i
-                    ri = md%domains(i)%nesting%recv_metadata(:,j)                
+                    ri = md%domains(i)%nesting%recv_metadata(:,j)
                     if( ri(1) == 0) cycle
-       
-                    ! Bounding box of the priority domain associated with row i 
+
+                    ! Bounding box of the priority domain associated with row i
                     xmn = minval(all_bbox(:,1,ri(1),ri(2)))
                     xmx = maxval(all_bbox(:,1,ri(1),ri(2)))
                     ymn = minval(all_bbox(:,2,ri(1),ri(2)))
@@ -3673,7 +3672,7 @@ __FILE__
 
                     ! For each box in the priority domain metadata, check that
                     ! the x/y values on domain i really are inside it.
-                    if( all((md%domains(i)%x(ri(3):ri(4)) >= xmn) .and. & 
+                    if( all((md%domains(i)%x(ri(3):ri(4)) >= xmn) .and. &
                             (md%domains(i)%x(ri(3):ri(4)) <= xmx)) .and. &
                         all((md%domains(i)%y(ri(5):ri(6)) >= ymn) .and. &
                             (md%domains(i)%y(ri(5):ri(6)) <= ymx ))) then
@@ -3700,7 +3699,7 @@ __FILE__
                             ymn = minval(all_bbox(:,2,4,k))
                             ymx = maxval(all_bbox(:,2,4,k))
 
-                            if(any((md%domains(i)%x(ri(3):ri(4)) >= xmn) .and. & 
+                            if(any((md%domains(i)%x(ri(3):ri(4)) >= xmn) .and. &
                                    (md%domains(i)%x(ri(3):ri(4)) <= xmx)) .and. &
                                any((md%domains(i)%y(ri(5):ri(6)) >= ymn) .and. &
                                    (md%domains(i)%y(ri(5):ri(6)) <= ymx )) ) then
@@ -3711,19 +3710,19 @@ __FILE__
                             end if
 
                         end if
-                        
+
                         if( ri(1) == 1 ) then
                             ! Check that priority_domain points are NEVER in
                             ! domains(2:4), which have higher resolution
 
                             do jj = 2, 4
-                                ! Bounding box of the priority domain associated with domains(jj) 
+                                ! Bounding box of the priority domain associated with domains(jj)
                                 xmn = minval(all_bbox(:,1,jj,k))
                                 xmx = maxval(all_bbox(:,1,jj,k))
                                 ymn = minval(all_bbox(:,2,jj,k))
                                 ymx = maxval(all_bbox(:,2,jj,k))
 
-                                if(any((md%domains(i)%x(ri(3):ri(4)) >= xmn) .and. & 
+                                if(any((md%domains(i)%x(ri(3):ri(4)) >= xmn) .and. &
                                        (md%domains(i)%x(ri(3):ri(4)) <= xmx)) .and. &
                                    any((md%domains(i)%y(ri(5):ri(6)) >= ymn) .and. &
                                        (md%domains(i)%y(ri(5):ri(6)) <= ymx )) ) then
@@ -3795,12 +3794,12 @@ __FILE__
                     do k = 1, 4
                         val = (md%domains(j)%x( i) - global_ll(1))*c1 + &
                               (md%domains(j)%y(jj) - global_ll(2))*c2 + &
-                               md%domains(j)%nesting%priority_domain_index(i,jj) + 3*(k-1) ! 
+                               md%domains(j)%nesting%priority_domain_index(i,jj) + 3*(k-1) !
                         val = abs(md%domains(j)%U(i,jj,k) - val )
 
                         if(val > err) then
                             xmx = i
-                            ymx = jj 
+                            ymx = jj
                             err = val
                         end if
 
@@ -3844,7 +3843,7 @@ __FILE__
     !
     subroutine test_multidomain_mod_periodic()
 
-        ! type holding all domains 
+        ! type holding all domains
         type(multidomain_type) :: md
 
         integer(ip) :: nd, i, j, k, ii, region, sgn
@@ -3926,13 +3925,13 @@ __FILE__
                 ! point precision issues) from the x and y at point which sends data
                 !
                 ! This is a heuristic tolerance, allowing higher errors in association with changes in x/y due to
-                ! periodicity. Instead of (x+y^2) we have ( (x+dx) + (y+dy)^2), suggesting an error of the form 
+                ! periodicity. Instead of (x+y^2) we have ( (x+dx) + (y+dy)^2), suggesting an error of the form
                 ! dx + 2*y*dy (and we use 'spacing' to get an idea of dx, dy). There can also be error due to the
-                ! size of trueval. 
+                ! size of trueval.
                 err_tol = 1.0e-10_dp + &
-                    40.0_dp*(spacing(abs(x) + abs(y*y)) + (spacing(xchange) + 2.0_dp * ychange * spacing(ychange))) !10.0_dp*spacing(trueval + xchange + ychange) 
+                    40.0_dp*(spacing(abs(x) + abs(y*y)) + (spacing(xchange) + 2.0_dp * ychange * spacing(ychange))) !10.0_dp*spacing(trueval + xchange + ychange)
 
-    
+
                 ! Track for debugging
                 err_max = max(err, err_max)
                 !print*, x, y, md%domains(k)%x(i), md%domains(k)%y(j), trueval, err, spacing(trueval + xchange + ychange)
@@ -3952,7 +3951,7 @@ __FILE__
             print*, 'FAIL' , __LINE__, &
 __FILE__
         end if
-    
+
         call deallocate_p2p_comms
 
     end subroutine
@@ -3965,7 +3964,7 @@ __FILE__
     subroutine test_multidomain_global
 
 
-        ! Type holding all domains 
+        ! Type holding all domains
         type(multidomain_type) :: md
 
         ! Change this to decrease the cell size by mesh_refine (i.e. for convergence testing)
@@ -3976,7 +3975,7 @@ __FILE__
         ! Lower-left corner coordinate
         real(dp), parameter, dimension(2):: global_ll = [-180.0_dp, -90.0_dp]
 
-        ! Inner domain 
+        ! Inner domain
         integer(ip), parameter :: nest_ratio = 3_ip
 
         ! Useful misc variables
@@ -3991,8 +3990,8 @@ __FILE__
 
         ! Set periodic EW boundary condition
         md%periodic_xs = [global_ll(1), global_ll(1) + global_lw(1)]
-        
-        
+
+
         ! nd domains in this model
         nd = 6
         allocate(md%domains(nd))
@@ -4004,7 +4003,7 @@ __FILE__
         ! Main domain
         md%domains(1)%lw = [global_lw(1), 65.0_dp * 2]
         md%domains(1)%lower_left = [global_ll(1), -65.0_dp]
-        md%domains(1)%dx = 1/60.0_dp * 4.0_dp * [1.0_dp, 1.0_dp] / mesh_refine 
+        md%domains(1)%dx = 1/60.0_dp * 4.0_dp * [1.0_dp, 1.0_dp] / mesh_refine
         md%domains(1)%nx = nint(md%domains(1)%lw/md%domains(1)%dx)
         md%domains(1)%dx_refinement_factor = 3.0_dp
         md%domains(1)%timestepping_refinement_factor = 1_ip
@@ -4046,7 +4045,7 @@ __FILE__
         md%domains(5)%timestepping_refinement_factor = 1_ip
         md%domains(5)%timestepping_method = 'euler'
 
-        
+
         ! High-res domain fully inside domain 1
         call md%domains(6)%match_geometry_to_parent(&
             parent_domain=md%domains(1), &
@@ -4082,7 +4081,7 @@ __FILE__
                     call generic_stop
             end select
 
-            ! Set the domain variables based on the coordinates. We can later use 
+            ! Set the domain variables based on the coordinates. We can later use
             ! this to check that comms have been done correctly
             do j0 = 1, nd
                 do k = 1, 4
@@ -4126,7 +4125,7 @@ __FILE__
                     do j = 1, md%domains(j0)%nx(2)
 
                         ! Subtract the same 'random' function defined above
-                        residual = md%domains(j0)%U(:,j,k) - (ci*md%domains(j0)%x + cj*md%domains(j0)%y(j) - k*10 - 1000.0_dp) 
+                        residual = md%domains(j0)%U(:,j,k) - (ci*md%domains(j0)%x + cj*md%domains(j0)%y(j) - k*10 - 1000.0_dp)
                         ! Account for periodic
                         where(md%domains(j0)%x < global_ll(1)) residual = residual - 360.0_dp*ci
                         where(md%domains(j0)%x > (global_ll(1) + 360.0_dp)) residual = residual + 360.0_dp*ci
@@ -4148,7 +4147,7 @@ __FILE__
 
                     end do
                 end do
-            
+
                 if(has_passed) then
                     print*, 'PASS'
                 else
@@ -4156,18 +4155,18 @@ __FILE__
                     print*, 'FAIL ', __LINE__, &
 __FILE__
                     call generic_stop
-                end if    
+                end if
             end do
 
         end do
-        
-        call deallocate_p2p_comms 
+
+        call deallocate_p2p_comms
 
     end subroutine
-   
+
     !
     ! Main test subroutine
-    ! 
+    !
     subroutine test_multidomain_mod
         call test_multidomain_mod1()
         call test_multidomain_mod_periodic()

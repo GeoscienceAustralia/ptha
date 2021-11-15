@@ -14,7 +14,7 @@
     !type(domain_type), intent(inout) :: domain
     !real(dp), intent(inout) :: max_dt_out
 
-    ! Option to use upwind flux for transverse momentum component, as in 
+    ! Option to use upwind flux for transverse momentum component, as in
     ! e.g. "Chertock et al. (2017) Well-balanced schemes for
     ! the shallow water equations with Coriolis forces"
     !logical, parameter :: upwind_transverse_momentum = .false.
@@ -39,27 +39,27 @@
     real(dp):: half_cfl, max_dt_inv, dxb, common_multiple, fr2
     character(len=charlen):: timer_name
     real(dp), parameter :: diffusion_scale = ONE_dp
-    real(dp), parameter :: EPS = 1.0e-12_dp 
+    real(dp), parameter :: EPS = 1.0e-12_dp
     real(dp), parameter :: EPS_gs = sqrt(gravity * minimum_allowed_depth)  ! EPS relevant to sqrt(gH)
     real(dp), parameter:: half_gravity = HALF_dp * gravity
     integer(ip):: n_ext, loop_work_count, j_low, j_high, my_omp_id, n_omp_threads
     ! Option to use experimental non-conservative pressure gradient term (with .false.)
     logical, parameter :: flux_conservative_pressure = .true.
     logical, parameter :: extrapolate_uh_vh = .false.
-    
+
     ! NS change over a cell of stage/depth/u/v, and the "theta" coefficient controlling limiting
     ! Store values for row 'j' and row 'j-1'
-    real(dp) :: dstage_NS_lower(domain%nx(1)), dstage_NS(domain%nx(1)), & 
-        ddepth_NS_lower(domain%nx(1)), ddepth_NS(domain%nx(1)), & 
-        du_NS_lower(domain%nx(1)), du_NS(domain%nx(1)), & 
+    real(dp) :: dstage_NS_lower(domain%nx(1)), dstage_NS(domain%nx(1)), &
+        ddepth_NS_lower(domain%nx(1)), ddepth_NS(domain%nx(1)), &
+        du_NS_lower(domain%nx(1)), du_NS(domain%nx(1)), &
         dv_NS_lower(domain%nx(1)), dv_NS(domain%nx(1)), &
-        duh_NS_lower(domain%nx(1)), duh_NS(domain%nx(1)), & 
+        duh_NS_lower(domain%nx(1)), duh_NS(domain%nx(1)), &
         dvh_NS_lower(domain%nx(1)), dvh_NS(domain%nx(1)), &
         theta_wd_NS_lower(domain%nx(1)), theta_wd_NS(domain%nx(1))
 
     ! EW change over a cell of stage/depth/u/v, and the "theta" coefficient controlling limiting
     ! Only store values for row 'j'
-    real(dp) :: dstage_EW(domain%nx(1)), ddepth_EW(domain%nx(1)), du_EW(domain%nx(1)), & 
+    real(dp) :: dstage_EW(domain%nx(1)), ddepth_EW(domain%nx(1)), du_EW(domain%nx(1)), &
         dv_EW(domain%nx(1)), theta_wd_EW(domain%nx(1)), duh_EW(domain%nx(1)), dvh_EW(domain%nx(1))
 
     real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1)), explicit_source_im1_work(domain%nx(1))
@@ -85,14 +85,14 @@
     max_dt_inv_work = ONE_dp/max_dt
 #ifdef NOOPENMP
     ! Serial loop from 2:(ny)
-    j_low = 2 
+    j_low = 2
     j_high = ny
     my_omp_id = 0
     n_omp_threads = 1
 #else
     ! Parallel loop from 2:ny
     !
-    ! NOTE: In fortran, 
+    ! NOTE: In fortran,
     !     DO i = start, end
     !       .... code here ...
     !     END DO
@@ -131,7 +131,7 @@
         dx_cfl_half_inv(1) = ONE_dp/(domain%distance_bottom_edge(j) * half_cfl)
         dx_cfl_half_inv(2) = ONE_dp/(domain%distance_left_edge(1) * half_cfl)
 
-        ! Get bed at j-1 (might improve cache access) 
+        ! Get bed at j-1 (might improve cache access)
         bed_j_minus_1 = domain%U(:,j-1,ELV)
 
         ! Get the NS change in stage, depth, u-vel, v-vel, at the row 'j-1'
@@ -158,14 +158,14 @@
             ! North-South flux computation
             ! Compute flux_NS(i,j) = flux(i,j-1/2)
             !
-            ! Cell i,j has North-South flux(i,j+1/2) at flux_NS index i,j+1, 
+            ! Cell i,j has North-South flux(i,j+1/2) at flux_NS index i,j+1,
             !          and North-South flux(i,j-1/2) at flux_NS index i,j
             !
 
             ! Negative/positive bottom edge values
             stage_neg = domain%U(i, j-1, STG) + HALF_dp * dstage_NS_lower(i)
             stage_pos = domain%U(i, j  , STG) - HALF_dp * dstage_NS(i)
-            depth_neg = domain%depth(i, j-1) + HALF_dp * ddepth_NS_lower(i) 
+            depth_neg = domain%depth(i, j-1) + HALF_dp * ddepth_NS_lower(i)
             depth_pos = domain%depth(i, j  ) - HALF_dp * ddepth_NS(i)
             u_neg = domain%velocity(i, j-1, UH) + HALF_dp * du_NS_lower(i)
             u_pos = domain%velocity(i, j  , UH) - HALF_dp * du_NS(i)
@@ -204,7 +204,7 @@
             ! Audusse stage and depths, positive side
             stage_pos_star = max(stage_pos, z_half)
             depth_pos_star = stage_pos_star - z_half
-            
+
             ! Velocity (in NS direction)
             if(depth_pos_star == ZERO_dp) then
                 v_pos = ZERO_dp
@@ -228,7 +228,7 @@
             denom = s_max - s_min
 
             if (denom > EPS .and. (gs_pos > EPS_gs .or. gs_neg > EPS_gs)) then
-                inv_denom = domain%distance_bottom_edge(j) / denom 
+                inv_denom = domain%distance_bottom_edge(j) / denom
             else
                 inv_denom = ZERO_dp
             end if
@@ -243,11 +243,11 @@
                 fr2 = ONE_dp
             end if
 
-            ! Advection flux terms 
+            ! Advection flux terms
             domain%flux_NS(i, j, STG) = &
                 (s_max * vd_neg - &
                  s_min * vd_pos + &
-                 sminsmax * (stage_pos_star - stage_neg_star)) * inv_denom 
+                 sminsmax * (stage_pos_star - stage_neg_star)) * inv_denom
 
             if(.not. upwind_transverse_momentum) then
                 domain%flux_NS(i, j, UH) = &
@@ -261,12 +261,12 @@
 
             if(.not. upwind_normal_momentum) then
                 domain%flux_NS(i, j, VH) = &
-                    (s_max * vd_neg * vel_beta_neg - & 
+                    (s_max * vd_neg * vel_beta_neg - &
                      s_min * vd_pos * vel_beta_pos + &
-                     fr2 * sminsmax * (vd_pos - vd_neg))*inv_denom 
-                    !(s_max * vh_neg * vel_beta_neg - & 
+                     fr2 * sminsmax * (vd_pos - vd_neg))*inv_denom
+                    !(s_max * vh_neg * vel_beta_neg - &
                     ! s_min * vh_pos * vel_beta_pos + &
-                    ! fr2 * sminsmax * (vh_pos - vh_neg))*inv_denom 
+                    ! fr2 * sminsmax * (vh_pos - vh_neg))*inv_denom
             else
                 domain%flux_NS(i, j, VH) = advection_beta * &
                     merge(v_neg, v_pos, domain%flux_NS(i,j,STG) > ZERO_dp) * domain%flux_NS(i,j,STG)
@@ -294,16 +294,16 @@
                 ! Other pressure gradient cases refer to i,j, or i-1,j, so should be ok
                 domain%explicit_source_VH_j_minus_1(i,j) = &
                     bed_slope_pressure_n * domain%distance_bottom_edge(j) - &
-                    half_g_hh_edge 
+                    half_g_hh_edge
 
                 ! 'bed slope' part of pressure gradient term at i,j, south-side
-                bed_slope_pressure_s = half_gravity * ( & 
+                bed_slope_pressure_s = half_gravity * ( &
                     (depth_pos_star - depth_pos) * (depth_pos_star + depth_pos) - &
-                    (depth_pos + depth_pos_c)*(z_pos - domain%U(i, j, ELV)) ) 
-                
+                    (depth_pos + depth_pos_c)*(z_pos - domain%U(i, j, ELV)) )
+
                 domain%explicit_source(i, j, VH) = domain%explicit_source(i, j, VH) - &
                     bed_slope_pressure_s * domain%distance_bottom_edge(j) + &
-                    half_g_hh_edge 
+                    half_g_hh_edge
             else
                 ! Non-conservative treatment
                 ! area * g * depth * (stage_top - stage_bottom)/dy
@@ -334,7 +334,7 @@
         !
         !
 
-        ! Compute flux_EW(i,j) = flux(i-1/2,j) 
+        ! Compute flux_EW(i,j) = flux(i-1/2,j)
         !
         ! Cell i,j has East-West flux(i+1/2,j) at flux_EW index i+1,j
         !          and East-West flux(i-1/2,j) at flux_EW index i,j
@@ -350,7 +350,7 @@
         !$OMP bed_slope_pressure_w, dxb, stg_b, stg_a, common_multiple, max_speed)
         do i = 2, nx
 
-            ! left edge variables 
+            ! left edge variables
             stage_neg = domain%U(i-1,j,STG) + HALF_dp * dstage_EW(i-1)
             stage_pos = domain%U(i  ,j,STG) - HALF_dp * dstage_EW(i)
             depth_neg = domain%depth(i-1,j) + HALF_dp * ddepth_EW(i-1)
@@ -412,7 +412,7 @@
             denom = s_max - s_min
 
             if (denom > EPS .and. (gs_pos > EPS_gs .or. gs_neg > EPS_gs)) then
-                inv_denom = domain%distance_left_edge(i) / denom 
+                inv_denom = domain%distance_left_edge(i) / denom
             else
                 inv_denom = ZERO_dp
             end if
@@ -489,9 +489,9 @@
                 !stg_b = stage_neg
                 stg_b = (s_max*s_max*stage_neg + s_min*s_min*stage_pos)/max(s_max*s_max+s_min*s_min, 1.0e-6_dp)
                 !domain%explicit_source(i-1,j,UH) = domain%explicit_source(i-1,j,UH) - &
-                !    domain%area_cell_y(j) * gravity * depth_neg_c * stg_b / dxb 
+                !    domain%area_cell_y(j) * gravity * depth_neg_c * stg_b / dxb
                 explicit_source_im1_work(i-1) = - &
-                    domain%area_cell_y(j) * gravity * depth_neg_c * stg_b / dxb 
+                    domain%area_cell_y(j) * gravity * depth_neg_c * stg_b / dxb
                 !stg_a = stage_pos
                 stg_a = stg_b !(s_max*stage_pos - s_min*stage_neg)/max(s_max-s_min, 1.0e-06_dp)
                 domain%explicit_source(i,j,UH) = domain%explicit_source(i,j,UH) + &
@@ -509,7 +509,7 @@
             ! Using the product rule for derivatives we can write
             ! R cos(lat) dlon * [(F)_{lat+} - (F)_{lat-}] = flux - source
             ! where
-            ! (flux)  = [ (F R cos(lat) dlon)_{lat+} - (F R cos(lat) dlon)_{lat-} ] 
+            ! (flux)  = [ (F R cos(lat) dlon)_{lat+} - (F R cos(lat) dlon)_{lat-} ]
             ! (source) = F [(R cos(lat) dlon)_{lat+} - (R cos(lat) dlon)_{lat-}]
             if(flux_conservative_pressure) then
                 ! 'Source' term associated with treating the pressure in
@@ -528,7 +528,7 @@
                 common_multiple * domain%U(i,j,UH)
 #endif
 
-            ! Extra Spherical terms from Williamson et al (1992) 
+            ! Extra Spherical terms from Williamson et al (1992)
             common_multiple = domain%area_cell_y(j) * &
                 domain%tanlat_on_radius_earth(j) * domain%velocity(i,j,UH)
             domain%explicit_source(i,j,UH) = domain%explicit_source(i,j,UH) + &
@@ -573,7 +573,7 @@
 
         if(j > 1 .and. j < ny) then
             ! Typical case
-            
+
             ! limiter coefficient
             !$OMP SIMD PRIVATE(mindep, maxdep, theta_local)
             do i = 1, nx
@@ -584,10 +584,10 @@
                 theta_wd_NS(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
             end do
 
-            ! stage 
+            ! stage
             call limited_gradient_dx_vectorized(domain%U(:,j,STG), domain%U(:,j-1,STG), domain%U(:,j+1,STG), &
                 theta_wd_NS, dstage_NS, nx)
-            ! depth 
+            ! depth
             call limited_gradient_dx_vectorized(domain%depth(:,j), domain%depth(:,j-1), domain%depth(:,j+1), &
                 theta_wd_NS, ddepth_NS, nx)
             ! u velocity
@@ -599,7 +599,7 @@
             call limited_gradient_dx_vectorized(domain%velocity(:,j,VH), domain%velocity(:,j-1, VH), &
                 domain%velocity(:,j+1, VH), theta_wd_NS, dv_NS, nx)
             if(extrapolate_uh_vh) then
-                ! uh 
+                ! uh
                 call limited_gradient_dx_vectorized(domain%U(:,j,UH), domain%U(:,j-1, UH), &
                     domain%U(:,j+1, UH), theta_wd_NS, duh_NS, nx)
                 ! vh
@@ -635,7 +635,7 @@
 
         real(dp) :: mindep, maxdep, theta_local
         integer(ip) :: i
-        
+
         ! limiter coefficient
         !$OMP SIMD PRIVATE(mindep, maxdep, theta_local)
         do i = 2, nx-1
@@ -646,13 +646,13 @@
             theta_wd_EW(i) = max(domain%theta * min(ONE_dp, theta_local), ZERO_dp)
         end do
 
-        ! stage 
+        ! stage
         call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,STG), domain%U(1:(nx-2),j,STG), domain%U(3:nx,j,STG), &
             theta_wd_EW(2:(nx-1)), dstage_EW(2:(nx-1)), nx)
         dstage_EW(1) = ZERO_dp
         dstage_EW(nx) = ZERO_dp
 
-        ! depth 
+        ! depth
         call limited_gradient_dx_vectorized(domain%depth(2:(nx-1),j), domain%depth(1:(nx-2),j), domain%depth(3:nx,j), &
             theta_wd_EW(2:(nx-1)), ddepth_EW(2:(nx-1)), nx)
         ddepth_EW(1) = ZERO_dp
@@ -674,13 +674,13 @@
 
         ! Optionally get uh/vh
         if(extrapolate_uh_vh) then
-            ! uh 
+            ! uh
             call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,UH), domain%U(1:(nx-2),j,UH), &
                 domain%U(3:nx,j, UH), theta_wd_EW(2:(nx-1)), duh_EW(2:(nx-1)), nx)
             duh_EW(1) = ZERO_dp
             duh_EW(nx) = ZERO_dp
 
-            ! vh 
+            ! vh
             call limited_gradient_dx_vectorized(domain%U(2:(nx-1),j,VH), domain%U(1:(nx-2),j,VH), &
                 domain%U(3:nx,j, VH), theta_wd_EW(2:(nx-1)), dvh_EW(2:(nx-1)), nx)
             dvh_EW(1) = ZERO_dp

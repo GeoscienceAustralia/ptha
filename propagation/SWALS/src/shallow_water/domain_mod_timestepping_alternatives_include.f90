@@ -6,7 +6,7 @@
 
 
     subroutine one_euler_step(domain, timestep, update_nesting_boundary_flux_integral)
-        !! 
+        !!
         !! Standard forward euler 1st order timestepping scheme.
         !! This is also used as a component of more advanced timestepping schemes.
         !! Argument 'timestep' is optional, but if provided should satisfy the CFL condition
@@ -29,7 +29,7 @@
         else
             nesting_bf = .TRUE.
         end if
-            
+
 
         call domain%compute_fluxes(ts)
 
@@ -49,7 +49,7 @@
         domain%boundary_flux_evolve_integral_exterior = domain%boundary_flux_evolve_integral_exterior + &
             ts * sum(domain%boundary_flux_store_exterior, mask=domain%boundary_exterior)
 
-        if(nesting_bf) then 
+        if(nesting_bf) then
             ! Update the nesting boundary flux
             call domain%nesting_boundary_flux_integral_tstep(&
                 ts,&
@@ -82,7 +82,7 @@
         ! rk2 involves taking 2 euler steps, then halving the change.
         !
 
-        ! First euler step -- 
+        ! First euler step --
         if(present(timestep)) then
             call one_euler_step(domain, timestep, &
                 update_nesting_boundary_flux_integral = .FALSE.)
@@ -104,8 +104,8 @@
 
 
         max_dt_store = domain%max_dt
-       
-        ! Second euler step with the same timestep 
+
+        ! Second euler step with the same timestep
         call one_euler_step(domain, dt_first_step, &
             update_nesting_boundary_flux_integral=.FALSE.)
 
@@ -144,7 +144,7 @@ EVOLVE_TIMER_START('rk2_average')
 EVOLVE_TIMER_STOP('rk2_average')
 
     end subroutine
-    
+
 
     subroutine one_rk2n_step(domain, timestep)
         !!
@@ -166,15 +166,15 @@ EVOLVE_TIMER_STOP('rk2_average')
         ! Backup quantities
         backup_time = domain%time
         call domain%backup_quantities()
-     
-        if(present(timestep)) then 
+
+        if(present(timestep)) then
             ! store timestep
             dt_first_step = timestep/(n-1.0_dp)
-            ! first step 
+            ! first step
             call one_euler_step(domain, dt_first_step,&
                 update_nesting_boundary_flux_integral=.FALSE.)
         else
-            ! first step 
+            ! first step
             call one_euler_step(domain, update_nesting_boundary_flux_integral=.FALSE.)
             ! store timestep
             dt_first_step = domain%max_dt
@@ -192,7 +192,7 @@ EVOLVE_TIMER_STOP('rk2_average')
         max_dt_store = domain%max_dt
 
         ! Steps 2, n-1
-        do j = 2, n-1        
+        do j = 2, n-1
             call one_euler_step(domain, dt_first_step,&
                 update_nesting_boundary_flux_integral=.FALSE.)
 
@@ -227,7 +227,7 @@ EVOLVE_TIMER_STOP('rk2n_sum_step')
         reduced_dt = (ONE_dp * n - ONE_dp) * n_inverse * dt_first_step
         call one_euler_step(domain, reduced_dt, &
             update_nesting_boundary_flux_integral=.TRUE.)
-        
+
 EVOLVE_TIMER_START('rk2n_final_update')
 
         ! Final update
@@ -243,7 +243,7 @@ EVOLVE_TIMER_START('rk2n_final_update')
         !$OMP END PARALLEL
 
         ! Fix time and timestep (since we updated (n-1)*dt regular timesteps)
-        domain%time = backup_time + dt_first_step * (n-1) 
+        domain%time = backup_time + dt_first_step * (n-1)
 
         ! We want the max_dt reported to always be based on the first-sub-step CFL (since that is
         ! what is required for stability, even though at later sub-steps the max_dt might reduce)
@@ -268,7 +268,7 @@ EVOLVE_TIMER_STOP('rk2n_final_update')
         ! Backup quantities
         backup_time = domain%time
         call domain%backup_quantities()
-        
+
         call domain%compute_fluxes(dt_first_step)
 
         domain%max_dt = dt_first_step
@@ -283,7 +283,7 @@ EVOLVE_TIMER_STOP('rk2n_final_update')
             call domain%update_U(dt_first_step*HALF_dp)
         end if
 
-        ! Compute fluxes 
+        ! Compute fluxes
         call domain%compute_fluxes()
 
 EVOLVE_TIMER_START('midpoint_U_from_backup')
@@ -324,11 +324,11 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
     end subroutine
 
     subroutine one_linear_leapfrog_step(domain, dt)
-        !! 
+        !!
         !! Linear shallow water equations leap-frog update.
         !! Update domain%U by timestep dt, using the linear shallow water equations.
         !! Note that unlike the other timestepping routines, this does not require a
-        !! prior call to domain%compute_fluxes 
+        !! prior call to domain%compute_fluxes
         !!
         type(domain_type), intent(inout):: domain
         real(dp), intent(in):: dt
@@ -353,7 +353,7 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         logical, parameter:: truely_linear = .TRUE.
 
         ! The linear solver code has become complex [in order to reduce memory footprint, and
-        ! include coriolis, while still having openmp work]. So it is moved here. 
+        ! include coriolis, while still having openmp work]. So it is moved here.
 #include "domain_mod_linear_solver_include.f90"
 
     end subroutine
@@ -368,7 +368,7 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         logical, parameter:: truely_linear = .FALSE.
 
         ! The linear solver code has become complex [in order to reduce memory footprint, and
-        ! include coriolis, while still having openmp work]. So it is moved here. 
+        ! include coriolis, while still having openmp work]. So it is moved here.
 #include "domain_mod_linear_solver_include.f90"
 
     end subroutine
@@ -395,7 +395,7 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
         logical, parameter:: truely_linear = .true.
         ! The linear solver code has become complex [in order to reduce memory footprint, and
-        ! include coriolis, while still having openmp work]. So it is moved here. 
+        ! include coriolis, while still having openmp work]. So it is moved here.
 
 #define LINEAR_PLUS_NONLINEAR_FRICTION
 #include "domain_mod_linear_solver_include.f90"
@@ -411,7 +411,7 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         ! or with a nonlinear term g * depth * dStage/dx (i.e. where the 'depth' varies)?
         logical, parameter:: truely_linear = .false.
         ! The linear solver code has become complex [in order to reduce memory footprint, and
-        ! include coriolis, while still having openmp work]. So it is moved here. 
+        ! include coriolis, while still having openmp work]. So it is moved here.
 
 #define LINEAR_PLUS_NONLINEAR_FRICTION
 #include "domain_mod_linear_solver_include.f90"
@@ -443,7 +443,7 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
         ! Flag to remind us that some computations can be optimized later
         logical, parameter :: update_depth_velocity_celerity = .true.
 
-#ifdef SPHERICAL              
+#ifdef SPHERICAL
         ! Spherical scaling factor in CLIFFS
         zeta = domain%tanlat_on_radius_earth * 0.125_dp
 #else
@@ -451,7 +451,7 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
 #endif
 
         if(update_depth_velocity_celerity) then
-            ! In principle we can re-use these variables if they are already up-to-date. 
+            ! In principle we can re-use these variables if they are already up-to-date.
             ! FIXME: Do this in a more optimized implementation.
 
             ! Compute depth and velocity
@@ -472,7 +472,7 @@ EVOLVE_TIMER_START('cliffs_update')
         do j = 2, (domain%nx(2) - 1)
             ! 1D-slice along the x direction
             dx = 0.5_dp * (domain%distance_bottom_edge(j+1) + domain%distance_bottom_edge(j))
-            dy = 0.0_dp ! Never used for x-sweep 
+            dy = 0.0_dp ! Never used for x-sweep
             ! Get that tan(lat) term
             call cliffs(dt, 1_ip, j, domain%nx(1), domain%cliffs_minimum_allowed_depth, &
                 domain%U(:,:,ELV), &
@@ -482,16 +482,16 @@ EVOLVE_TIMER_START('cliffs_update')
                 zeta, domain%manning_squared, domain%linear_friction_coeff)
         end do
         !$OMP END PARALLEL DO
-        
 
-        ! Loop over the x-coordinate. 
+
+        ! Loop over the x-coordinate.
         ! NOTE: This may have reduced performance because of all the strided lookups like domain%backup_U(i,:,1).
         !        Consider optimising later on
         !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain, zeta, dt)
         do i = 2, (domain%nx(1) - 1)
             ! 1D-slice along the y direction
             dx = 0.0_dp ! Never used for y-sweep
-            dy = domain%distance_left_edge(i) 
+            dy = domain%distance_left_edge(i)
             call cliffs(dt, 2_ip, i, domain%nx(2), domain%cliffs_minimum_allowed_depth, &
                 domain%U(:,:,ELV), &
                 ! Celerity stored in backup_U
@@ -503,7 +503,7 @@ EVOLVE_TIMER_START('cliffs_update')
 EVOLVE_TIMER_STOP('cliffs_update')
 
 EVOLVE_TIMER_START('cliffs_transformation')
-        ! Update domain%U -- in principle part of this could be skipped if we 
+        ! Update domain%U -- in principle part of this could be skipped if we
         ! were to immediately were to take another step, except
         ! for some required boundary updates
         !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(domain)

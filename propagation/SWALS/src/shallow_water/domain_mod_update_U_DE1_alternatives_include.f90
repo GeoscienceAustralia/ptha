@@ -1,5 +1,5 @@
     !
-    ! This file includes various alternatives to the 'domain%update_U' routine. 
+    ! This file includes various alternatives to the 'domain%update_U' routine.
     ! The latter has become complicated in trying to optimize the code.
     !
 
@@ -49,7 +49,7 @@
 !        ! Friction power-law term as parameter makes the code more efficient.
 !        real(dp), parameter :: friction_power_depth = NEG_SEVEN_ON_THREE_dp
 !
-!        if(domain%friction_type /= 'manning') stop "Alternative friction models not implemented here" 
+!        if(domain%friction_type /= 'manning') stop "Alternative friction models not implemented here"
 !
 !        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt)
 !        dt_gravity = dt * gravity
@@ -61,10 +61,10 @@
 !
 !            !$OMP SIMD
 !            do i = 1, domain%nx(1)
-!        
+!
 !                !! Fluxes
 !                do kk = 1, 3
-!                    domain%U(i,j,kk) = domain%U(i,j,kk) - inv_cell_area_dt * ( & 
+!                    domain%U(i,j,kk) = domain%U(i,j,kk) - inv_cell_area_dt * ( &
 !                        (domain%flux_NS(i, j+1, kk) - domain%flux_NS(i, j, kk)) + &
 !                        (domain%flux_EW(i+1, j, kk) - domain%flux_EW(i, j, kk) ))
 !                end do
@@ -97,13 +97,13 @@
 !
 !            !$OMP SIMD
 !            do i = 1, domain%nx(1)
-!                    ! Pressure gradients 
+!                    ! Pressure gradients
 !                    domain%U(i,j,UH) = domain%U(i,j,UH) + inv_cell_area_dt * domain%explicit_source(i, j, UH)
 !                    ! Friction
 !                    domain%U(i,j,UH) = domain%U(i,j,UH) * implicit_factor(i)
 !
 !                    ! Here we add an extra source to take care of the j-1 pressure gradient addition, which
-!                    ! could not be updated in parallel (since j-1 might be affected by another OMP thread) 
+!                    ! could not be updated in parallel (since j-1 might be affected by another OMP thread)
 !                    domain%U(i,j,VH) = domain%U(i,j,VH) + inv_cell_area_dt * &
 !                        (domain%explicit_source(i, j, VH) + domain%explicit_source_VH_j_minus_1(i, j+1))
 !                    ! Friction
@@ -117,9 +117,9 @@
 !
 !        call domain%update_boundary()
 !        call domain%apply_forcing(dt)
-!    
+!
 !    end subroutine
-!    
+!
 !    !
 !    ! Vectorized version of update_U (i.e. using arrays to avoid the 'i' loop)
 !    ! Update the values of domain%U (i.e. the main flow variables), based on the fluxes and sources in domain
@@ -136,7 +136,7 @@
 !        ! Friction power-law term as parameter makes the code more efficient.
 !        real(dp), parameter :: friction_power_depth = NEG_SEVEN_ON_THREE_dp
 !
-!        if(domain%friction_type /= 'manning') stop "Alternative friction models not implemented here" 
+!        if(domain%friction_type /= 'manning') stop "Alternative friction models not implemented here"
 !
 !        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, dt)
 !        dt_gravity = dt * gravity
@@ -148,7 +148,7 @@
 !
 !            !! Fluxes
 !            do kk = 1, 3
-!                domain%U(:,j,kk) = domain%U(:,j,kk) - inv_cell_area_dt * ( & 
+!                domain%U(:,j,kk) = domain%U(:,j,kk) - inv_cell_area_dt * ( &
 !                    (domain%flux_NS(:, j+1, kk) - domain%flux_NS(:, j, kk)) + &
 !                    (domain%flux_EW(2:(domain%nx(1)+1), j, kk) - domain%flux_EW(1:domain%nx(1), j, kk) ))
 !            end do
@@ -171,13 +171,13 @@
 !#endif
 !            ! Velocity clipping here
 !            implicit_factor = merge(implicit_factor, ZERO_dp, domain%U(:,j,STG) > (domain%U(:,j,ELV) + minimum_allowed_depth))
-!            ! Pressure gradients 
+!            ! Pressure gradients
 !            domain%U(:,j,UH) = domain%U(:,j,UH) + inv_cell_area_dt * domain%explicit_source(:, j, UH)
 !            ! Friction
 !            domain%U(:,j,UH) = domain%U(:,j,UH) * implicit_factor
 !
 !            ! Here we add an extra source to take care of the j-1 pressure gradient addition, which
-!            ! could not be updated in parallel (since j-1 might be affected by another OMP thread) 
+!            ! could not be updated in parallel (since j-1 might be affected by another OMP thread)
 !            domain%U(:,j,VH) = domain%U(:,j,VH) + inv_cell_area_dt * &
 !                (domain%explicit_source(:, j, VH) + domain%explicit_source_VH_j_minus_1(:, j+1))
 !            ! Friction
@@ -189,7 +189,7 @@
 !
 !        call domain%update_boundary()
 !        call domain%apply_forcing(dt)
-!    
+!
 !    end subroutine
 !
 !

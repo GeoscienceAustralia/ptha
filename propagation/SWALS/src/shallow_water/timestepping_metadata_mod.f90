@@ -1,6 +1,6 @@
 module timestepping_metadata_mod
     !!
-    !! Keep most solver metadata here in an array of type "timestepping_metadata_type", 
+    !! Keep most solver metadata here in an array of type "timestepping_metadata_type",
     !! where each entry contains important metadata for one numerical method.
     !!
 
@@ -15,14 +15,14 @@ module timestepping_metadata_mod
 
     type timestepping_metadata_type
         !! Type that holds metadata for each type of solver
-        character(len=charlen) :: timestepping_method = '' 
+        character(len=charlen) :: timestepping_method = ''
             !! Name of the timestepping method
-        
-        integer(ip) :: is_staggered_grid = 0 
+
+        integer(ip) :: is_staggered_grid = 0
             !! Is the grid treated as staggered (1) or colocated (0) ?
-        logical :: flux_correction_is_unsupported = .false. 
+        logical :: flux_correction_is_unsupported = .false.
             !! Flag for solvers that do not track fluxes (so cannot do any flux-correction)
-        logical :: flux_correction_of_mass_only = .false. 
+        logical :: flux_correction_of_mass_only = .false.
             !! Some solvers can only do flux correction of mass, but not momentum
         real(dp) :: default_cfl = -1.0_dp
             !! CFL condition
@@ -30,14 +30,14 @@ module timestepping_metadata_mod
             !! Parameter affecting the slope-limiter for finite-volume methods.
         logical :: adaptive_timestepping = .true.
             !! Can the solver compute its own time-step adaptively?
-       
+
         integer(ip) :: nesting_thickness_for_one_timestep = -1_ip
             !! How many halo cells are required to advance interior cells a single timestep while
             !! retaining a valid solution?
             !! For example, consider the 'euler' finite-volume timestepping method.  A single 'euler' step of the finite volume solver
             !! needs a 2-layer halo. Suppose the cells are indexed 1, 2, 3, ... N, and initially contain valid values. If we try to
             !! evolve in time by one step, then 'cell 1' has no-way to compute the flux at 'edge (1-1/2)' -- and furthermore, the flux at
-            !! 'edge (1+1/2)' is problematic because 'cell 1' cannot compute its gradient, so the update of 'cell 2' is also invalid. 
+            !! 'edge (1+1/2)' is problematic because 'cell 1' cannot compute its gradient, so the update of 'cell 2' is also invalid.
             !! Thus, a 2-layer halo is needed (where the values for 'cell 1', 'cell 2', 'cell (N-1)', 'cell N' are provided
             !! by halo exchanges with another grid, or by boundary-condition assumptions).
 
@@ -67,7 +67,7 @@ module timestepping_metadata_mod
             ! rk2 defaults
             !
             timestepping_metadata(1)%timestepping_method = 'rk2'
-            ! NOTE: In some case rk2 is stable with a larger time-step, see 
+            ! NOTE: In some case rk2 is stable with a larger time-step, see
             ! Andrew Giuliani, Lilia Krivodonova, On the optimal CFL
             !   number of SSP methods for hyperbolic problems.
             timestepping_metadata(1)%default_cfl = 0.99_dp
@@ -157,7 +157,7 @@ module timestepping_metadata_mod
         function timestepping_method_index(timestepping_method) result(ts_index)
             !! Given a timestepping_method (e.g. 'linear' or 'rk2'),
             !! return the corresponding index of timestepping_metadata
-            character(len=*), intent(in) :: timestepping_method 
+            character(len=*), intent(in) :: timestepping_method
                 !! The timestepping method (e.g. 'rk2' or 'linear', etc)
             integer(ip) :: ts_index
 

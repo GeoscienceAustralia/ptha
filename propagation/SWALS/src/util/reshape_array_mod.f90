@@ -19,8 +19,8 @@ module reshape_array_mod
         ! HOWEVER, the intrinsic 'pack' function might be better?
         module procedure flatten_array_rank4, flatten_array_rank3, &
             flatten_array_rank2, flatten_array_rank1
-    end interface 
-    
+    end interface
+
     interface repack_rank1_array
         !! Copy a rank-1 array into an array with some other rank but the same size.
         !! This can be faster than using the intrinsic 'reshape' function.
@@ -32,7 +32,7 @@ module reshape_array_mod
 
     !
     ! Useful routines to repack rank-n arrays to rank1
-    ! 
+    !
     pure subroutine flatten_array_rank4(rank4_array, output_rank1)
         real(dp), intent(in) :: rank4_array(:,:,:,:)
         real(dp), intent(inout) :: output_rank1(:)
@@ -41,7 +41,7 @@ module reshape_array_mod
 
         counter = 1
         r4shape = shape(rank4_array)
-        do l = 1, r4shape(4) 
+        do l = 1, r4shape(4)
             do k = 1, r4shape(3)
                 do j = 1, r4shape(2)
                     do i = 1, r4shape(1)
@@ -118,9 +118,9 @@ module reshape_array_mod
         integer(ip) :: i, j, output_shape(2), counter
 
         output_shape = shape(output_rank2)
-       
+
         !if(product(output_shape) /= size(rank1_array)) then
-        !    stop('Non-conforming dimensions in repack_rank1_array_rank2') 
+        !    stop('Non-conforming dimensions in repack_rank1_array_rank2')
         !end if
 
         counter = 1
@@ -130,7 +130,7 @@ module reshape_array_mod
                 counter = counter+1
             end do
         end do
-        
+
     end subroutine
 
     pure subroutine repack_rank1_array_rank3(rank1_array, output_rank3)
@@ -140,9 +140,9 @@ module reshape_array_mod
         integer(ip) :: i, j, k, output_shape(3), counter
 
         output_shape = shape(output_rank3)
-       
+
         !if(product(output_shape) /= size(rank1_array)) then
-        !    stop('Non-conforming dimensions in repack_rank1_array_rank3') 
+        !    stop('Non-conforming dimensions in repack_rank1_array_rank3')
         !end if
 
         counter = 1
@@ -163,14 +163,14 @@ module reshape_array_mod
         integer(ip) :: i, j, k, l, output_shape(4), counter
 
         output_shape = shape(output_rank4)
-       
+
         !if(product(output_shape) /= size(rank1_array)) then
-        !    stop('Non-conforming dimensions in repack_rank1_array_rank4') 
+        !    stop('Non-conforming dimensions in repack_rank1_array_rank4')
         !end if
 
         counter = 1
-       
-        do l = 1, output_shape(4) 
+
+        do l = 1, output_shape(4)
             do k = 1, output_shape(3)
                 do j = 1, output_shape(2)
                     do i = 1, output_shape(1)
@@ -180,15 +180,15 @@ module reshape_array_mod
                 end do
             end do
         end do
-        
+
     end subroutine
-    
+
     subroutine test_reshape_array_mod
         !!
         !! Unit tests
         !!
-        real(dp) :: r1(10), r2(10,9), r3(10,9,8), r4(10, 9, 8, 7)        
-        real(dp) :: a1(10), a2(90),   a3(720),    a4(5040)        
+        real(dp) :: r1(10), r2(10,9), r3(10,9,8), r4(10, 9, 8, 7)
+        real(dp) :: a1(10), a2(90),   a3(720),    a4(5040)
         integer(ip) :: i
         integer(ip):: newshp1(1)
         integer(ip), parameter:: newshp2(2) = [10,9], newshp3(3) = [10, 9, 8], newshp4(4) = [10, 9, 8, 7]
@@ -236,7 +236,7 @@ module reshape_array_mod
             print*, 'FAIL r4'
             call generic_stop()
         end if
-        
+
         ! Now flatten arrays again
         call flatten_array(r1, a1)
         call flatten_array(r2, a2)

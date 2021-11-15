@@ -33,9 +33,9 @@ module grid_spacetime_interpolator_mod
         type(c_ptr) :: interp_dataptr
             !! Used to store any data required by the get_grid_at_time function
 
-       
+
         procedure(get_grid_at_time), pointer, nopass :: get_grid_at_time => NULL()
-            !! User-provided subroutine to update the g1 and g2 values 
+            !! User-provided subroutine to update the g1 and g2 values
 
         contains
 
@@ -44,7 +44,7 @@ module grid_spacetime_interpolator_mod
         procedure :: interpolate => interpolate_from_grid_spacetime
         procedure :: interpolate_grid_in_time => interpolate_full_grids_time_only
         procedure :: finalise => finalise_grid_spacetime_interpolator
-            
+
     end type
 
     interface
@@ -62,12 +62,12 @@ module grid_spacetime_interpolator_mod
     contains
 
     subroutine initialise_grid_spacetime_interpolator(gsi, x, y, start_time, dt, ng)
-        !! Setup the grid_spacetime_interpolator 
+        !! Setup the grid_spacetime_interpolator
         !! Allocate memory, set gsi%g1, gsi%g2, etc.
 
         class(grid_spacetime_interpolator_type), intent(inout) :: gsi
         real(dp), intent(in) :: x(:), y(:)
-            !! x/y values for the grid on which interpolation occurs 
+            !! x/y values for the grid on which interpolation occurs
         real(dp), intent(in) :: start_time, dt
             !! the time associated with g1, and the time between interpolation grids g1, g2
         integer(ip), intent(in), optional :: ng
@@ -91,7 +91,7 @@ module grid_spacetime_interpolator_mod
         do i = 1, (size(y, kind=ip)-1)
             if(y(i+1) <= y(i)) then
                 write(log_output_unit, *) "y must be increasing", y
-                call generic_stop 
+                call generic_stop
             end if
         end do
 
@@ -119,7 +119,7 @@ module grid_spacetime_interpolator_mod
     end subroutine
 
     subroutine setup_to_read_at_time(gsi, time)
-        !! Ensure that gsi contains grids to interpolate at the given time. 
+        !! Ensure that gsi contains grids to interpolate at the given time.
         !! Although we can integrate this check into the interpolation routine, that is
         !! potentially problematic in parallel with threads (because many threads might try
         !! to update g1/g2 from a file). To avoid that, we can call this routine separately on a single thread,
@@ -144,7 +144,7 @@ module grid_spacetime_interpolator_mod
             ! g1 ==> g2
             gsi%g1_time = gsi%g2_time
             gsi%g1 = gsi%g2
-            
+
             ! Update g2
             gsi%g2_time = gsi%g2_time + gsi%dt
             call gsi%get_grid_at_time(gsi%g2_time, gsi%x, gsi%y, gsi%g2)
@@ -160,7 +160,7 @@ module grid_spacetime_interpolator_mod
 
     subroutine interpolate_full_grids_time_only(gsi, time, values, suppress_checks)
         !!
-        !! Interpolate linearly in time between gsi%g1 and gsi%g2. Return an array with 
+        !! Interpolate linearly in time between gsi%g1 and gsi%g2. Return an array with
         !! the same dimensions as gsi%g1 and gsi%g2
         !!
         class(grid_spacetime_interpolator_type), intent(inout) :: gsi
@@ -169,7 +169,7 @@ module grid_spacetime_interpolator_mod
         real(dp), intent(inout) :: values(:,:,:)
             !! Stores output
         logical, optional :: suppress_checks
-            !! If .TRUE., do not check that time is inside the current 'gsi grids time range', or the dimensions of the inputs. 
+            !! If .TRUE., do not check that time is inside the current 'gsi grids time range', or the dimensions of the inputs.
             !! This check will provoke an automatic update of the grids if required, so if you suppress it, ensure you know that no
             !! update is needed.
 
@@ -183,7 +183,7 @@ module grid_spacetime_interpolator_mod
             check = .true.
         end if
 
-        
+
         if(check) then
             ! Ensure that time is within [gsi%g1_time, gsi%g2_time]
             ! If not, update gsi
@@ -217,10 +217,10 @@ module grid_spacetime_interpolator_mod
     end subroutine
 
     subroutine interpolate_from_grid_spacetime(gsi, time, xs, ys, values, suppress_checks)
-        !! Get 'values' given coordinates xs, ys at the given time. 
+        !! Get 'values' given coordinates xs, ys at the given time.
         !! Use bilinear interpolation in space, and linear interpolation in time.
         !! Note that xs, ys can be completely unstructured -- however, this means the lookup is relatively slow (finding the
-        !! nearest cell involves 2 bisection searches for each point). 
+        !! nearest cell involves 2 bisection searches for each point).
 
         class(grid_spacetime_interpolator_type), intent(inout) :: gsi
         real(dp), intent(in) :: time
@@ -230,7 +230,7 @@ module grid_spacetime_interpolator_mod
         real(dp), intent(inout) :: values(:,:)
             !! Holds output
         logical, optional, intent(in) :: suppress_checks
-            !! If .TRUE., do not check that time is inside the current 'gsi grids time range', or the dimensions of the inputs. 
+            !! If .TRUE., do not check that time is inside the current 'gsi grids time range', or the dimensions of the inputs.
             !! This check will provoke an automatic update  if required, so if you suppress it, ensure you know that no update is
             !! needed.
 
@@ -290,7 +290,7 @@ module grid_spacetime_interpolator_mod
             ! Get y-indices for bilinear interpolation: j0 < j1
             call nearest_index_sorted(gsi%nx(2), gsi%y, ys(i), j0)
             if(ys(i) > gsi%y(j0)) then
-                j1 = min(j0+1, gsi%nx(2))            
+                j1 = min(j0+1, gsi%nx(2))
             else
                 j1 = j0
                 j0 = max(j0-1, 1)
@@ -302,7 +302,7 @@ module grid_spacetime_interpolator_mod
                 w0_y = (gsi%y(j1) - ys(i))/(gsi%y(j1) - gsi%y(j0))
             end if
             w1_y = 1.0_dp - w0_y
-            
+
             !print*, ys(i), gsi%y(j0), gsi%y(j1), j0, j1, w0_y, w1_y
 
             do k = 1, size(gsi%g1, 3, kind=ip)
@@ -370,9 +370,9 @@ module grid_spacetime_interpolator_mod
         integer(ip), parameter :: ng = 2
         integer(ip) :: i, j, k
         real(dp) :: tx(5), ty(5), tv(5,ng), test_grid(10, 20, ng)
-        real(dp) :: errtol 
-        
-        errtol = 3*spacing(100.0_dp) 
+        real(dp) :: errtol
+
+        errtol = 3*spacing(100.0_dp)
 
         ! x-coordinates of gsi
         dx = 0.5_dp

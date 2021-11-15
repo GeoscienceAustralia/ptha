@@ -1,6 +1,6 @@
 module logging_mod
     !!
-    !! Module to make an 'image specific' file log when using coarrays. 
+    !! Module to make an 'image specific' file log when using coarrays.
     !! We 'use' log_output_unit to output generic print type statements to the log.
     !! By default log_output_unit=stdout. But it can also be directed to a file.
     !!
@@ -17,7 +17,7 @@ module logging_mod
     contains
 
     subroutine send_log_output_to_file(filename_prefix)
-        !! Direct the log_output_unit to a file, with name like (filename_prefix + '.log'). 
+        !! Direct the log_output_unit to a file, with name like (filename_prefix + '.log').
         !! If coarrays are used, then the name will be like (filename_prefix + '_image_' + my_image + '.log')
         character(len=*), intent(in) :: filename_prefix
 

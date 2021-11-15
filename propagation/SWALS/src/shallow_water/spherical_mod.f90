@@ -10,12 +10,12 @@ module spherical_mod
     !! Convert degrees to radians
 #ifdef LEGACY_CORIOLIS_PARAMETER
     real(dp), parameter :: EARTH_ANGULAR_FREQ = 2.0_dp * pi / (3600.0_dp * 24.0_dp)
-    !! Radians/second of earth rotation -- this assumes one rotation per day, 
-    !! which is very slightly incorrect, but matches JAGURS and COMCOT. 
+    !! Radians/second of earth rotation -- this assumes one rotation per day,
+    !! which is very slightly incorrect, but matches JAGURS and COMCOT.
 #else
     real(dp), parameter :: EARTH_ANGULAR_FREQ = 7.292115e-05_dp
-    !! Radians/second of earth rotation, with slightly more than one rotation per day 
-    !! (which is correct). 
+    !! Radians/second of earth rotation, with slightly more than one rotation per day
+    !! (which is correct).
 #endif
 
     contains
@@ -66,10 +66,10 @@ module spherical_mod
     subroutine test_spherical_mod()
         !! Unit tests
         real(dp):: lon1, lon2, lat1, lat2, area
-        real(dp):: ans 
+        real(dp):: ans
         ! the test cases assume this radius
         real(dp), parameter:: test_radius = 6378137.0_dp
-        real(dp), parameter:: radius_adjustment_factor = (test_radius/radius_earth)**2 
+        real(dp), parameter:: radius_adjustment_factor = (test_radius/radius_earth)**2
 
         !! Test 1
         ans = 12391399902.0_dp
@@ -94,11 +94,11 @@ module spherical_mod
         else
             print*, 'FAIL'
         end if
-        
-    
+
+
         !! Test 2
         ans = 3379082.32316_dp
-        lon1 = 108.0_dp 
+        lon1 = 108.0_dp
         lon2 = 108.0_dp + 1.0_dp/60.0_dp
         lat1 = -11.0_dp
         lat2 = -11.0_dp + 1.0_dp/60.0_dp
@@ -113,7 +113,7 @@ module spherical_mod
 
         !! Test 3
         ans = 1689517.29722_dp
-        lon1 = 108.0_dp 
+        lon1 = 108.0_dp
         lon2 = 108.0_dp + 1.0_dp/60.0_dp
         lat1 = -11.0_dp
         lat2 = -11.0_dp + 1.0_dp/120.0_dp

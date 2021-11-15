@@ -104,7 +104,7 @@ module coarray_intrinsic_alternatives
     ! Co-broadcast from a source image
     !
     subroutine co_broadcast_int32(var, source_image)
-        integer(int32), intent(inout) :: var    
+        integer(int32), intent(inout) :: var
         integer(int32), intent(in) :: source_image
 
         integer :: ierr
@@ -136,7 +136,7 @@ module coarray_intrinsic_alternatives
     end subroutine
 
     subroutine co_broadcast_c_float(var, source_image)
-        real(c_float), intent(inout) :: var    
+        real(c_float), intent(inout) :: var
         integer(int32), intent(in) :: source_image
 
         integer :: ierr
@@ -168,7 +168,7 @@ module coarray_intrinsic_alternatives
     end subroutine
 
     subroutine co_broadcast_c_double(var, source_image)
-        real(c_double), intent(inout) :: var    
+        real(c_double), intent(inout) :: var
         integer(int32), intent(in) :: source_image
 
         integer :: ierr
@@ -297,7 +297,7 @@ module coarray_intrinsic_alternatives
 
         call MPI_Allreduce(MPI_IN_PLACE, var, 1, MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, ierr)
     end subroutine
-    
+
     subroutine co_min_real128(var)
         real(real128), intent(inout) :: var
 

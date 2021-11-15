@@ -24,7 +24,7 @@ module file_io_mod
 
         do while (io_test >= 0)
             read(input_file_unit_no,*, iostat=io_test)
-            if(io_test >= 0) count_file_lines = count_file_lines+1 
+            if(io_test >= 0) count_file_lines = count_file_lines+1
         end do
 
         rewind(input_file_unit_no) ! Start of file
@@ -86,10 +86,10 @@ module file_io_mod
         num_lines=count_file_lines(input_file_unit_no)
         allocate(output_lines(num_lines))
 
-        print*, 'reading file ...' 
+        print*, 'reading file ...'
 
         do i=1,num_lines
-            read(input_file_unit_no, format_string, iostat=io_test) output_lines(i) 
+            read(input_file_unit_no, format_string, iostat=io_test) output_lines(i)
         end do
         rewind(input_file_unit_no)
 
@@ -112,26 +112,26 @@ module file_io_mod
         else
             skip_header_local = 0
         endif
-        
+
         ! Clean out 'array' in case it is already allocated
         if(allocated(array)) deallocate(array)
 
         open(newunit=file_unit_no, file=csv_file, action='read')
 
         file_rows = count_file_lines(file_unit_no)
-        
+
         read(file_unit_no, '(A)') local_buffer
         rewind(file_unit_no)
 
         file_columns =  count(transfer(local_buffer, 'a', len(local_buffer)) == ",") + 1
 
         allocate(array(file_columns, file_rows - skip_header_local))
-        
+
         do i = 1, file_rows
             if(i <= skip_header_local) then
                 read(file_unit_no, *)
             else
-                read(file_unit_no,*) array(:,i - skip_header_local)          
+                read(file_unit_no,*) array(:,i - skip_header_local)
             end if
         end do
 
@@ -151,7 +151,7 @@ module file_io_mod
         integer(ip), parameter :: empty = -HUGE(1_ip)
         character(len=8192) :: string_buf
 
-    
+
         open(newunit=fid, file=filename, action='read')
 
         nd = count_file_lines(fid)
@@ -159,8 +159,8 @@ module file_io_mod
         !print*, 'allocating ... '
         !if(allocated(ragged_array_2d_ip%i2)) deallocate(ragged_array_2d_ip%i2)
         allocate(ragged_array_2d_ip%i2(nd))
-      
-        !print*, 'reading ...' 
+
+        !print*, 'reading ...'
         do i = 1, nd
 
             read(fid, '(A)') string_buf

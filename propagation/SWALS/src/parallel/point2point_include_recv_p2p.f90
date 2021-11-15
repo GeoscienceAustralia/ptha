@@ -9,7 +9,7 @@
 
         if(.not. have_allocated_p2p_comms) then
             error stop 'Need to call allocate_p2p_comms before trying to receive'
-        end if 
+        end if
 
         ! If there is nothing to receive, exit
         if(.not. allocated(recv_buffer_label)) then
@@ -30,8 +30,8 @@
             !print*, 'unrecognized buffer_label :', buffer_label
             error stop 'unrecognized buffer_label '
         end if
-       
-        ! Check the array sizes agree 
+
+        ! Check the array sizes agree
         if(size(recv_array, kind=ip) /= recv_size(buffer_label_int)) then
             !print*, 'size(recv_array) = ', size(recv_array), &
             !    ' does not match buffer size (', &

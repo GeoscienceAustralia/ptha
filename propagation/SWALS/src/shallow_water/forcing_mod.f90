@@ -1,7 +1,7 @@
 module forcing_mod
     !!
-    !! SWALS allows the user to define a subroutine "domain%forcing_subroutine" to 
-    !! apply user-specified forcing terms. In general that can be defined by the user in their 
+    !! SWALS allows the user to define a subroutine "domain%forcing_subroutine" to
+    !! apply user-specified forcing terms. In general that can be defined by the user in their
     !! program. However, there are some common forcing cases, e.g., often we want to add a spatially variable source
     !! over some specified time-interval. This module contains some subroutines and
     !! derived_types to help with such cases.
@@ -23,12 +23,12 @@ module forcing_mod
 
     type forcing_patch_type
         !! Suppose we want to apply a forcing over some rectangular subset of domain%U,
-        !! say domain%U(i0:i1, j0:j1, k0:k1). The forcing is applied between some specified start_time and end_time. 
+        !! say domain%U(i0:i1, j0:j1, k0:k1). The forcing is applied between some specified start_time and end_time.
         !! This data structure can help with that
         real(dp), allocatable :: forcing_work(:,:,:)
             !! This is added to domain%U(i0:i1, j0:j1, k0:k1) over the specified time interval
         integer(ip) :: i0 = HUGE(1_ip), i1=-HUGE(1_ip), j0=HUGE(1_ip), j1=-HUGE(1_ip), k0=STG, k1=ELV
-            !! An index denoting where the forcing is applied (i.e. to domain%U(i0:i1, j0:j1, k0:k1). 
+            !! An index denoting where the forcing is applied (i.e. to domain%U(i0:i1, j0:j1, k0:k1).
             !! The default value will cause an error if used in apply_forcing_patch
         real(dp) :: start_time = HUGE(1.0_dp), end_time = -HUGE(1.0_dp)
             !! Controls the time-interval over which the forcing is applied. Must have start_time >= end_time.
@@ -45,7 +45,7 @@ module forcing_mod
         !! Type to hold an array of forcing patches. This could be used e.g. to simulate an earthquake
         !! where each unit-source had a different start-time and rise time.
         type(forcing_patch_type), allocatable :: forcing_patches(:)
-            !! Hold multiple forcing_patches. 
+            !! Hold multiple forcing_patches.
     end type
 
 
@@ -61,7 +61,7 @@ module forcing_mod
         real(dp), intent(inout) :: U(:,:,:)
             !! The field to be updated, typically domain%U
         real(dp), intent(in) :: forcing_work(:,:,:)
-            !! The forcing -- it MUST have the same shape as U. Furthermore, forcing_work must be populated 
+            !! The forcing -- it MUST have the same shape as U. Furthermore, forcing_work must be populated
             !! with the total forcing to be applied between start_time and end_time
         real(dp), intent(in) :: time
             !! Update the domain for a time-step from (time-dt, time). Note "time" is the END of the timestep
@@ -96,7 +96,7 @@ module forcing_mod
                 update_fraction = 1.0_dp
             else
                 ! The time-step might not be completely between start_time and end_time.
-                ! This is the fraction of the forcing we actually need to apply 
+                ! This is the fraction of the forcing we actually need to apply
                 local_dt = min(time, end_time) - max((time-dt), start_time)
                 update_fraction = local_dt/(end_time - start_time)
             end if
@@ -168,7 +168,7 @@ module forcing_mod
             call generic_stop
         end if
 
-        ! All seems well so apply the forcing. 
+        ! All seems well so apply the forcing.
         call add_forcing_work_to_U_over_time(domain%U(i0:i1, j0:j1, k0:k1), fp%forcing_work, domain%time, &
             dt, fp%start_time, fp%end_time)
 
@@ -197,7 +197,7 @@ module forcing_mod
         !!
         !! Convenience subroutine. If domain%forcing_context_cptr contains a forcing_patch_array_type, then this subroutine can be
         !! passed to domain%forcing_subroutine to apply the forcing for every forcing patch it contains. Ultimately it will
-        !! repeatedly call add_forcing_work_to_U_over_time, once for each forcing_patch, taking care of the spatial subsetting, 
+        !! repeatedly call add_forcing_work_to_U_over_time, once for each forcing_patch, taking care of the spatial subsetting,
         !! with some error checking.
         !!
         type(domain_type), intent(inout) :: domain
@@ -217,7 +217,7 @@ module forcing_mod
     end subroutine
 
     subroutine setup_forcing_patch(forcing_patch, start_time, end_time, i0, i1, j0, j1, k0, k1)
-        !! Convenience routine to setup a forcing_patch_type. This sets the start and end times, and 
+        !! Convenience routine to setup a forcing_patch_type. This sets the start and end times, and
         !! allocates forcing_patch%forcing_work(i0:i1, j0:j1, k0:k1). If k0,k1 are not provided then
         !! they are set to STG,ELV as used in the domain object.
         class(forcing_patch_type), intent(inout) :: forcing_patch
@@ -310,8 +310,8 @@ module forcing_mod
                 domain%U(i,j,STG) = domain%x(i) + domain%y(j)
                 domain%U(i,j,ELV) = domain%x(i) + domain%y(j) - 10.0_dp
                     ! bed is below stage
-                domain%U(i,j,UH) = domain%x(i) 
-                domain%U(i,j,VH) = domain%y(j) 
+                domain%U(i,j,UH) = domain%x(i)
+                domain%U(i,j,VH) = domain%y(j)
             end do
         end do
 
@@ -319,7 +319,7 @@ module forcing_mod
         ! When the routine exits this memory will not be freed because init_context is a pointer (not an allocatable)
         allocate(init_context)
         call init_context%setup(start_time = 0.0_dp, end_time = 0.0_dp, i0=1, i1=domain%nx(1), j0=1, j1=domain%nx(2))
-            ! Later we will manually change start_time, end_time 
+            ! Later we will manually change start_time, end_time
 
         init_context%forcing_work(:,:,1) = 10.0_dp
         init_context%forcing_work(:,:,2) = 5.0_dp
@@ -375,7 +375,7 @@ module forcing_mod
             if(err < err_tol) then
                 print*, 'PASS'
             else
-                print*, 'FAIL', err, err_tol, __LINE__ 
+                print*, 'FAIL', err, err_tol, __LINE__
             end if
             domains(j)%U = domains(j)%backup_U
         end do
@@ -443,7 +443,7 @@ module forcing_mod
             domains(j)%U = domains(j)%backup_U
         end do
 
-        ! Test 6 -- time-step doesn't overlap with the forcing 
+        ! Test 6 -- time-step doesn't overlap with the forcing
         do j = 1, nd
             call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
             call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &

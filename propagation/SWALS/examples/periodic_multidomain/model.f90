@@ -97,11 +97,12 @@ module local_routines
                 !forcing_context%forcing_work(i0:i1,j0:j1,ELV) = 0.0_dp !domain%U(i0:i1, j0:j1, STG)
                 !forcing_context%forcing_work(:,:,UH:VH) = 0.0_dp
 
-                ! Store the forcing context inside the domain
+                ! Define the forcing subroutine, and store the forcing context inside the domain
+                domain%forcing_subroutine => apply_forcing_patch
                 domain%forcing_context_cptr = c_loc(forcing_context)
                 forcing_context => NULL()
-                ! Define the forcing subroutine
-                domain%forcing_subroutine => apply_forcing_patch
+                call domain%store_forcing()
+
                 ! Re-set the stage deformation to zero, because now we will apply it as a forcing_subroutine
                 domain%U(:,:,STG) = 0.0_dp
             end if
