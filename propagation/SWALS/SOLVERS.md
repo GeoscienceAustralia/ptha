@@ -28,7 +28,7 @@ While multiple numerical methods are supported in SWALS (detailed below), the va
 
 ## The finite-volume solvers
 
-SWALS has a number of classical shock-capturing finite-volume schemes with accuracy up to second order in space and time. These work well for flows with moderate or high Froude-numbers and wetting/drying, but may be too dissipative at very low Froude-numbers (e.g. they are not well suited to global-scale tsunami propagation, but can work well the nearshore and inundation simulation). 
+SWALS has a number of classical shock-capturing finite-volume schemes with accuracy up to second order in space and time. These solve the nonlinear shallow water equations with Manning (or Chezy) friction, and optionally an eddy viscosity term. They work well for flows with moderate or high Froude-numbers and wetting/drying, but may be too numerically dissipative at very low Froude-numbers (e.g. they are not well suited to global-scale tsunami propagation, but can work well the nearshore and inundation simulation). 
 
 In general the finite-volume schemes in SWALS have good stability when used in conjunction with nesting. Occasionally these solvers can be subject to artifical vortices at coarse-to-fine nesting regions, especially where the elevation has rapid variation. This is not particularly common though, and can usually be solved by moving the domain boundary to an area with weaker elevation variation.
 
@@ -56,14 +56,6 @@ For all schemes above the spatial extrapolation of the flow-state to cell edges 
 
 In all cases `theta` is tapered to zero in flows that are near a wet/dry boundary or extremely shallow, reducing the scheme to first order accuracy there. For details on how this is done see [domain_mod.f90](./src/shallow_water/domain_mod.f90) including the comments near the definition of `limiter_coef`1-3.
 
-The friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
-
-* `"manning"`. This is Manning friction, so the array `md%domains(j)%manning_squared(:,:)` is interpreted as the (manning friction)^2
-
-* `"chezy"`. This is Chezy friction. In this case the array `md%domains(j)%manning_squared(:,:)` is interpreted as (1/chezy_friction)^2
-
-In addition one can set a linear friction coefficient `md%domains(j)%linear_drag_coef` which is zero by default. If non-zero this implements a linear-friction model following *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. In practice you probably do not want to use this for the finite-volume schemes, which are already somewhat numerically dissipative; it is more likely to be useful to add slow friction to the leap-frog schemes.
-
 The numerical fluxes are derived from the left and right cell edge values using an approximate Riemann solver. Various options can be controlled by setting the character string `md%domains(j)%compute_fluxes_inner_method`. Values are:
 
 * `"DE1"`. This is similar to the DE1 solver in ANUGA [see *Davies and Roberts, 2015, Open source flood modelling with a 2D discontinuous elevation hydrodynamic model. Proceedings of MODSIM 2015*]. It uses a HLL approximate Riemann solver, with a treatment of the pressure gradient term. Variants in this approach are popular in the literature.
@@ -76,6 +68,20 @@ The numerical fluxes are derived from the left and right cell edge values using 
 
 Broadly speaking the solvers with `_low_fr_diffusion` might perform better in low Froude-number flows, although often results will be similar. The solvers with `_upwind_transverse` may have less numerical dissipation in shear flows, which may be a good or bad thing, but more often will be similar. 
 
+The friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
+
+* `"manning"`. This is Manning friction, so the array `md%domains(j)%manning_squared(:,:)` is interpreted as the (manning friction)^2
+
+* `"chezy"`. This is Chezy friction. In this case the array `md%domains(j)%manning_squared(:,:)` is interpreted as (1/chezy_friction)^2
+
+In addition one can set a linear friction coefficient `md%domains(j)%linear_drag_coef` which is zero by default. If non-zero this implements a linear-friction model following *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. In practice you probably do not want to use this for the finite-volume schemes, which are already somewhat numerically dissipative; it is more likely to be useful to add slow friction to the leap-frog schemes.
+
+By default there is no additional turbulence model. However a simple eddy viscosity model can be turned on by specifying `domain%use_eddy_viscosity=.true.` and adjusting the values of `domain%eddy_visc_constants(1:2)`. 
+* With this option, turbulence-terms of the form `d/dx( eddy_viscosity * depth * d(vel_x)/dx) + d/dy(eddy_viscosity * depth * d(vel_x)/dy)` are appended to the equation modelling the time rate of change of `(depth * vel_x)`, and analogously for the time rate of change of `(depth * vel_y)`. 
+* The `eddy_viscosity` is defined as `domain%eddy_visc_constants(1) + domain%eddy_visc_constants(2) * depth * shear_velocity`. 
+* The first term allows a simple constant eddy viscosity
+* The second term corresponds to a very common eddy viscosity model (e.g. Shiono, K. & Knight, D. W. 1991. Turbulent open-channel flows with variable depth across the channel. Journal of Fluid Mechanics, 222, 617-646) 
+* A simple second-order-in-space explicit scheme is used to discretise the equations. The `eddy_viscosity` is clipped if needed to prevent violation of the time-step constraint for explicit diffusion (`eddy_viscosity <= (min_grid_cell_side_length**2 / (2 * timestep))`). This approach is common in applied hydraulic models (e.g. Mike 21, SWASH), and can work well in practical cases where turbulent diffusion is not very strong. For models with high resolution and/or strong turbulent diffusion, you may need to reduce the `timestep` to prevent clipping from affecting the solution. 
 
 ## The Leap-frog schemes
 
