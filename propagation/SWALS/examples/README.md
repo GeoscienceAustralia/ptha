@@ -21,6 +21,8 @@ The problems are:
 
 * nesting_reflection -- This is a simple 1D plane wave propagation test problem which includes a nested grid. 
 
+* overbank_flow -- This computes steady, overbank flow in a channel with floodplains, and compares the model with an analytical solution for the cross-channel distribution of velocity, including the effect of eddy-viscosity.
+
 * parabolic_canal -- This compares the model with a 2D analytical solution for flow in a parabolic canal, which also includes a Coriolis term and periodic wetting and drying.
 
 * paraboloid_bowl -- This compares the model with a 2D analytical solution for flow in a paraboloid bowl, which is periodic with strong wetting and drying.
