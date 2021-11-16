@@ -76,11 +76,11 @@ The friction model can be controlled by setting the variable `md%domains(j)%fric
 
 In addition one can set a linear friction coefficient `md%domains(j)%linear_drag_coef` which is zero by default. If non-zero this implements a linear-friction model following *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. In practice you probably do not want to use this for the finite-volume schemes, which are already somewhat numerically dissipative; it is more likely to be useful to add slow friction to the leap-frog schemes.
 
-By default there is no additional turbulence model. However a simple eddy viscosity model can be turned on by specifying `domain%use_eddy_viscosity=.true.` and adjusting the values of `domain%eddy_visc_constants(1:2)`. 
+By default there is no additional turbulence model. However a simple eddy viscosity model can be turned on by specifying `md%domains(j)%use_eddy_viscosity=.true.` and adjusting the values of `md%domains(j)%eddy_visc_constants(1:2)`. 
 * With this option, turbulence-terms of the form `d/dx( eddy_viscosity * depth * d(vel_x)/dx) + d/dy(eddy_viscosity * depth * d(vel_x)/dy)` are appended to the equation modelling the time rate of change of `(depth * vel_x)`, and analogously for the time rate of change of `(depth * vel_y)`. 
-* The `eddy_viscosity` is defined as `domain%eddy_visc_constants(1) + domain%eddy_visc_constants(2) * depth * shear_velocity`. 
-* The first term allows a simple constant eddy viscosity
-* The second term corresponds to a very common eddy viscosity model (e.g. Shiono, K. & Knight, D. W. 1991. Turbulent open-channel flows with variable depth across the channel. Journal of Fluid Mechanics, 222, 617-646) 
+* The `eddy_viscosity` is defined as `md%domains(j)%eddy_visc_constants(1) + md%domains(j)%eddy_visc_constants(2) * depth * shear_velocity`. 
+    * The first term allows a simple constant eddy viscosity
+    * The second term corresponds to a very common eddy viscosity model (e.g. *Shiono, K. & Knight, D. W. 1991. Turbulent open-channel flows with variable depth across the channel. Journal of Fluid Mechanics, 222, 617-646*) 
 * A simple second-order-in-space explicit scheme is used to discretise the equations. The `eddy_viscosity` is clipped if needed to prevent violation of the time-step constraint for explicit diffusion (`eddy_viscosity <= (min_grid_cell_side_length**2 / (2 * timestep))`). This approach is common in applied hydraulic models (e.g. Mike 21, SWASH), and can work well in practical cases where turbulent diffusion is not very strong. For models with high resolution and/or strong turbulent diffusion, you may need to reduce the `timestep` to prevent clipping from affecting the solution. 
 
 ## The Leap-frog schemes
