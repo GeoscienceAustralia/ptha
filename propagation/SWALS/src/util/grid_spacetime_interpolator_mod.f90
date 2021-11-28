@@ -5,11 +5,8 @@ module grid_spacetime_interpolator_mod
     use linear_interpolator_mod, only: nearest_index_sorted
     use logging_mod, only: log_output_unit
     use stop_mod, only: generic_stop
-    use iso_c_binding, only: c_ptr
+    use iso_c_binding, only: c_ptr, c_null_ptr, c_loc, c_f_pointer
     implicit none
-
-    real(dp), parameter :: cx = 2.7_dp, cy = 3.05_dp
-        !! Parameters for test case
 
     type grid_spacetime_interpolator_type
         !! Interpolation of multi-gridded time-series.
@@ -30,9 +27,8 @@ module grid_spacetime_interpolator_mod
             !! The second dimension has size = size(y)
             !! The third dimension has size = "number of grids". Often this will be 1,
             !! but sometimes we want several grids (e.g. east/north velocity)
-        type(c_ptr) :: interp_dataptr
+        type(c_ptr) :: grid_update_context = c_null_ptr
             !! Used to store any data required by the get_grid_at_time function
-
 
         procedure(get_grid_at_time), pointer, nopass :: get_grid_at_time => NULL()
             !! User-provided subroutine to update the g1 and g2 values
@@ -48,18 +44,31 @@ module grid_spacetime_interpolator_mod
     end type
 
     interface
-        subroutine get_grid_at_time(time, x, y, grid)
+        subroutine get_grid_at_time(time, x, y, grid, grid_update_context)
             !! A subroutine with this interface must be provided to the grid_spacetime_interpolator
             !! It populates the grid given the time, and the x/y coordinates associated with the grid.
-            import dp
+            import dp, c_ptr
             implicit none
             real(dp), intent(in) :: time
             real(dp), intent(in) :: x(:), y(:)
             real(dp), intent(inout) :: grid(:,:,:)
+            type(c_ptr), intent(in) :: grid_update_context
         end subroutine
     end interface
 
     contains
+
+    subroutine swap_rank3_arrays(g1, g2)
+        !! Swap g1 and g2, without any copy.
+        real(dp), allocatable, intent(inout) :: g1(:,:,:), g2(:,:,:)
+
+        real(dp), allocatable :: tmp_g1(:,:,:)
+
+        call move_alloc(g1, tmp_g1)
+        call move_alloc(g2, g1)
+        call move_alloc(tmp_g1, g2)
+
+    end subroutine
 
     subroutine initialise_grid_spacetime_interpolator(gsi, x, y, start_time, dt, ng)
         !! Setup the grid_spacetime_interpolator
@@ -113,8 +122,8 @@ module grid_spacetime_interpolator_mod
         gsi%g2_time = start_time + dt
 
         ! Read the grids
-        call gsi%get_grid_at_time(gsi%g1_time, x, y, gsi%g1)
-        call gsi%get_grid_at_time(gsi%g2_time, x, y, gsi%g2)
+        call gsi%get_grid_at_time(gsi%g1_time, x, y, gsi%g1, gsi%grid_update_context)
+        call gsi%get_grid_at_time(gsi%g2_time, x, y, gsi%g2, gsi%grid_update_context)
 
     end subroutine
 
@@ -143,11 +152,11 @@ module grid_spacetime_interpolator_mod
 
             ! g1 ==> g2
             gsi%g1_time = gsi%g2_time
-            gsi%g1 = gsi%g2
+            call swap_rank3_arrays(gsi%g1, gsi%g2)
 
             ! Update g2
             gsi%g2_time = gsi%g2_time + gsi%dt
-            call gsi%get_grid_at_time(gsi%g2_time, gsi%x, gsi%y, gsi%g2)
+            call gsi%get_grid_at_time(gsi%g2_time, gsi%x, gsi%y, gsi%g2, gsi%grid_update_context)
 
         end if
 
@@ -347,16 +356,20 @@ module grid_spacetime_interpolator_mod
     end subroutine
 
     ! Use this for testing the grid interpolator
-    subroutine for_test_get_grid_at_time(time, x, y, grid)
+    subroutine for_test_get_grid_at_time(time, x, y, grid, grid_update_context)
             real(dp), intent(in) :: time
             real(dp), intent(in) :: x(:), y(:)
             real(dp), intent(inout) :: grid(:,:,:)
+            type(c_ptr), intent(in) :: grid_update_context
 
             integer(ip) :: j, k
+            real(dp), pointer :: cxy(:)
+
+            call c_f_pointer(grid_update_context, cxy, [2])
 
             do k = 1, size(grid,3, kind=ip)
             do j = 1, size(grid,2, kind=ip)
-                grid(:,j,k) = (cx * x + cy * y(j) + time)*k
+                grid(:,j,k) = (cxy(1) * x + cxy(2) * y(j) + time)*k
             end do
             end do
 
@@ -371,6 +384,9 @@ module grid_spacetime_interpolator_mod
         integer(ip) :: i, j, k
         real(dp) :: tx(5), ty(5), tv(5,ng), test_grid(10, 20, ng)
         real(dp) :: errtol
+        type(c_ptr) :: grid_update_context
+        real(dp), parameter :: cx = 2.7_dp, cy = 3.05_dp
+        real(dp), target :: cxy(2) = [cx, cy]
 
         errtol = 3*spacing(100.0_dp)
 
@@ -393,6 +409,7 @@ module grid_spacetime_interpolator_mod
         ! Setup the gsi object
         start_time = 35.0_dp
         dt = 15.0_dp
+        gsi%grid_update_context = c_loc(cxy(1))
         gsi%get_grid_at_time => for_test_get_grid_at_time
         call gsi%initialise(xs, ys, start_time, dt, ng)
 
@@ -404,10 +421,10 @@ module grid_spacetime_interpolator_mod
         time = start_time + 5.0_dp
         call gsi%interpolate(time, tx, ty, tv)
         do k = 1, ng
-            if(all(abs(tv(:,k) - k*(time + cx * x0 + cy * y0)) < errtol)) then
+            if(all(abs(tv(:,k) - k*(time + cxy(1) * x0 + cxy(2) * y0)) < errtol)) then
                 print*, 'PASS'
             else
-                print*, 'FAIL', abs(tv(:,k) - k*(time + cx * x0 + cy * y0))
+                print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * x0 + cxy(2) * y0))
             end if
         end do
 
@@ -419,10 +436,10 @@ module grid_spacetime_interpolator_mod
         time = start_time + 5.0_dp
         call gsi%interpolate(time, tx, ty, tv)
         do k = 1, ng
-            if(all(abs(tv(:,k) - k*(time + cx * tx + cy * ty)) < errtol)) then
+            if(all(abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty)) < errtol)) then
                 print*, 'PASS'
             else
-                print*, 'FAIL', abs(tv(:,k) - k*(time + cx * tx + cy * ty))
+                print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty))
             end if
         end do
 
@@ -430,10 +447,10 @@ module grid_spacetime_interpolator_mod
         time = start_time + 5.0_dp + dt
         call gsi%interpolate(time, tx, ty, tv) ! This will cause g1 => g2, and g2 to be updated using for_test_get_grid_at_time
         do k = 1, ng
-            if(all(abs(tv(:,k) - k*(time + cx * tx + cy * ty)) < errtol)) then
+            if(all(abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty)) < errtol)) then
                 print*, 'PASS'
             else
-                print*, 'FAIL', abs(tv(:,k) - k*(time + cx * tx + cy * ty))
+                print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty))
             end if
         end do
 
