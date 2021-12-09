@@ -39,7 +39,10 @@ module domain_mod
     use stop_mod, only: generic_stop
     use iso_fortran_env, only: output_unit, int32, int64
     use iso_c_binding, only: c_ptr, c_null_ptr
-    use netcdf_util, only: nc_grid_output_type
+    use netcdf_util, only: nc_grid_output_type, &
+        gridded_output_variables_time, & ! Names of time-varying grids that SWALS can output
+        gridded_output_variables_max_U, & ! Names of grids that SWALS can output once, which require tracking the flow
+        gridded_output_variables_other ! Names of other grids that SWALS can output once
     use logging_mod, only: log_output_unit
     use file_io_mod, only: mkdir_p
     use cliffs_tolkova_mod, only: cliffs, setSSLim
@@ -350,7 +353,7 @@ module domain_mod
             !! 'nesting_boundary_flux_*')
 
         !
-        ! Output file content
+        ! Output file content -- bespoke binary format (that is no longer properly supported, consider removing)
         !
         character(len=charlen):: metadata_ascii_filename
             !! Name of ascii file where we output metadata
@@ -361,22 +364,43 @@ module domain_mod
         character(len=charlen):: output_folder_name = ''
             !! Output folder (it will begin with domain%output_basedir, and include another timestamped folder)
         logical :: output_folders_were_created = .FALSE.
+            !! To avoid trying to repeatedly create output folders
         integer(ip):: logfile_unit = output_unit
             !! Unit number for domain log file
         integer(ip), allocatable :: output_variable_unit_number(:)
             !! Units for home-brew binary output format [better to use netcdf nowadays].
             !! This is only used when the code is compiled with "-DNONETCDF"
+        !
+        ! netcdf-output
+        !
         type(nc_grid_output_type) :: nc_grid_output
             !! Type to manage netcdf grid outputs
+        character(len=charlen), allocatable :: time_grids_to_store(:)
+            !! Specify which gridded variables to store over time. For example:
+            !!   [character(len=charlen):: 'stage', 'uh', 'vh', 'elev'] to store everything; 
+            !!   [''] to store nothing;
+            !!   ['stage'] to just store the stage.
+            !! If unallocated then it will be set in domain%nc_grid_output%initialise
+        character(len=charlen), allocatable :: nontemporal_grids_to_store(:)
+            !! Specify which 'nontemporal' variables to store. For example:
+            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0'] 
+            !! to store everything; 
+            !!   [''] to store nothing;
+            !!   ['max_stage'] to just store the maximum stage.
         logical:: record_max_U = .true.
-            !! Should we store the max(domain%U) variable? For some problems (linear solver) that can
-            !! take a significant fraction of the total time, or use too much memory.
+            !! (Deprecated) approach to specifying whether we store maximum-stage (.true.) or not (.false.). 
+            !! For new code please specify 'nontemporal_grids_to_store' instead, because the latter is more flexible
+        character(len=charlen), allocatable :: max_U_variables(:)
+            !! Names of variables contained in max_U. Currently if it has size > 0, then the first variable is 
+            !! ALWAYS 'max_stage' (for backward compatability - consider revising)
         integer(ip):: max_U_update_frequency = 1
-            !! Only update the maximum(domain%U) variable every n time-steps. Values other than 1 introduce
-            !! an error, but the option might be useful for speed in some cases.
+            !! Only update domain%max_U every n time-steps. Values other than 1 introduce
+            !! some approximation error, but the option might be useful for speed in some cases.
+        real(dp) :: arrival_stage_threshold_above_msl_linear = 0.01_dp
+            !! The "arrival time" is defined as the time at which the stage exceeds 
+            !! (msl_linear + arrival_stage_threshold_above_msl_linear) AND the cell is wet
         type(point_gauge_type) :: point_gauges
             !! Type to manage storing of tide gauges
-
 
         !
         ! Timing
@@ -406,7 +430,7 @@ module domain_mod
             !! U holds main flow variables -- STG, UH, VH, ELV
             !! First 2 dimensions = space, 3rd = number of quantities
         real(dp), allocatable :: max_U(:,:,:)
-            !! Store maxima of U. FIXME: Consider storing in reduced precision.
+            !! Store various flow maxima. FIXME: Consider storing in reduced precision.
         !
         ! Multi-dimensional arrays below are only required for nonlinear solver. Would be possible
         ! to further reduce memory usage, but not completely trivial. Not all of these are required
@@ -719,30 +743,16 @@ TIMER_START("compute_statistics")
                         ! treatment of the pressure gradient term in the linear shallow water equations.
                         if(use_truely_linear_method) then
                             ! Depth is always relative to MSL.
-
-                            depth_E = 0.5_dp * ( (domain%msl_linear - domain%U(i+1,j,ELV)) + &
-                                                 (domain%msl_linear - domain%U(i  ,j,ELV)) )
-                            depth_N = 0.5_dp * ( (domain%msl_linear - domain%U(i,j+1,ELV)) + &
-                                                 (domain%msl_linear - domain%U(i,j  ,ELV)) )
+                            depth_E = 0.5_dp * sum( (domain%msl_linear - domain%U(i:i+1,j,ELV)))
+                            depth_N = 0.5_dp * sum( (domain%msl_linear - domain%U(i,j:j+1,ELV)))
                         else
-                            ! In this case the convential definition of depth is appropriate.
-                            depth_E = 0.5_dp * ( (domain%U(i+1,j,STG) - domain%U(i+1,j,ELV)) + &
-                                                 (domain%U(i  ,j,STG) - domain%U(i  ,j,ELV)) )
-                            depth_N = 0.5_dp * ( (domain%U(i,j+1,STG) - domain%U(i,j+1,ELV)) + &
-                                                 (domain%U(i,j  ,STG) - domain%U(i,j  ,ELV)) )
+                            ! Spatially averaged depth on staggered grid
+                            depth_E = 0.5_dp * sum( (domain%U(i:i+1,j,STG) - domain%U(i:i+1,j,ELV)))
+                            depth_N = 0.5_dp * sum( (domain%U(i,j:j+1,STG) - domain%U(i,j:j+1,ELV))) 
                         end if
 
-                        if(depth_E > minimum_allowed_depth) then
-                            depth_E_inv = 1.0_dp/depth_E
-                        else
-                            depth_E_inv = 0.0_dp
-                        end if
-
-                        if(depth_N > minimum_allowed_depth) then
-                            depth_N_inv = 1.0_dp/depth_N
-                        else
-                            depth_N_inv = 0.0_dp
-                        end if
+                        depth_E_inv = merge(1.0_dp/depth_E, 0.0_dp, depth_E > minimum_allowed_depth)
+                        depth_N_inv = merge(1.0_dp/depth_N, 0.0_dp, depth_N > minimum_allowed_depth)
 
                         speed_sq = domain%U(i,j,UH) * domain%U(i,j,UH) * depth_E_inv**2  + &
                                    domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv**2
@@ -803,7 +813,7 @@ TIMER_STOP("compute_statistics")
         real(dp):: local_lw(2), local_ll(2)
         integer(ip):: local_nx(2)
 
-        ! Send domain print statements to the default log (over-ridden later if we send the domain log to its own file
+        ! Send domain print statements to the default log. Over-ridden later if we send the domain log to its own file.
         domain%logfile_unit = log_output_unit
 
         if(present(create_output_files)) then
@@ -911,11 +921,12 @@ TIMER_STOP("compute_statistics")
 
 #endif
 
-
-        ! Distances along edges.
+        ! Distances along cell edges.
         ! For spherical lon/lat coordinates, distance_bottom_edge changes with y
-        ! For cartesian x/y coordinates, they are constants
-        ! In general we allow the bottom-edge distance to change with y, and the left-edge distance to change with x.
+        ! For cartesian x/y coordinates, the cell edge lengths are constant
+        ! In general we allow the bottom-edge distance to change with y, and the left-edge distance to change with x,
+        ! although to date I never used the latter case, and beware that other parts of the code may assume
+        ! distance_left_edge is constant in space.
         allocate(domain%distance_bottom_edge(ny+1), domain%distance_left_edge(nx+1))
 
         do i = 1, nx + 1
@@ -959,6 +970,61 @@ TIMER_STOP("compute_statistics")
         allocate(domain%energy_kinetic_on_rho_work(ny))
 
         !
+        ! If we specified the time_grids_to_store, check for spelling errors
+        !
+        if(allocated(domain%time_grids_to_store)) then
+            do i = 1, size(domain%time_grids_to_store)
+                if(.not. ((domain%time_grids_to_store(i) == '') .or. &
+                    any(domain%time_grids_to_store(i) == gridded_output_variables_time))) then
+
+                    write(log_output_unit, *) 'Unsupported variable in time_grids_to_store: ', &
+                        trim(domain%time_grids_to_store(i))
+                    call generic_stop
+                end if
+            end do
+        end if 
+        !
+        ! Determine which flow statistics we store that are not time-series.
+        !
+        if(.not. allocated(domain%nontemporal_grids_to_store)) then
+            ! Mimic 'old behaviour' before we allowed specification of domain%nontempral_grids_to_store.
+            ! In new code please avoid setting domain%record_max_U -- instead set domain%nontemporal_grids_to_store
+            if(domain%record_max_U) then
+                ! Old default where we store maxima
+                domain%nontemporal_grids_to_store = [character(len=charlen):: 'max_stage', 'elevation0', 'manning_squared'] 
+            else
+                ! Old default where we don't store maxima or elevation or manning
+                domain%nontemporal_grids_to_store = [''] 
+            end if
+        end if
+        ! Check for spelling errors in nontemporal_grids_to_store 
+        do i = 1, size(domain%nontemporal_grids_to_store)
+            if(.not. ((domain%nontemporal_grids_to_store(i) == '') .or. &
+                any(domain%nontemporal_grids_to_store(i) == gridded_output_variables_max_U) .or. &
+                any(domain%nontemporal_grids_to_store(i) == gridded_output_variables_other) )) then
+                
+                write(log_output_unit, *) 'Unsupported variable in nontemporal_grids_to_store: ', &
+                    trim(domain%nontemporal_grids_to_store(i))
+                call generic_stop
+            end if 
+        end do
+        ! Define the names of nontemporal variables to store that require tracking flow statistics
+        allocate(domain%max_U_variables(0))
+        do i = 1, size(gridded_output_variables_max_U)
+            if(any(domain%nontemporal_grids_to_store == gridded_output_variables_max_U(i))) &
+                domain%max_U_variables = [domain%max_U_variables, gridded_output_variables_max_U(i)]
+        end do
+        if(size(domain%max_U_variables) > 0) then
+            ! Ensure the first max_U variable is 'max_stage'
+            if(domain%max_U_variables(1) /= 'max_stage') then
+                write(log_output_unit, *) 'Error: "max_stage" MUST be added to domain%nontemporal_grids_to_store.'
+                write(log_output_unit, *) 'While not logically essential, some older code assumes that if'
+                write(log_output_unit, *) 'domain%max_U is allocated, then domain%max_U(:,:,1) has max-stage'
+                call generic_stop
+            end if
+        end if
+
+        !
         ! Below we allocate the main arrays, using loops to promote openmp memory affinity (based on the first-touch principle).
         !
         allocate(domain%U(nx, ny, 1:nvar))
@@ -970,12 +1036,16 @@ TIMER_STOP("compute_statistics")
         !$OMP END DO
         !$OMP END PARALLEL
 
-        if(domain%record_max_U) then
-            allocate(domain%max_U(nx, ny, 1))
+        !
+        ! Storage for various flow maxima statistics
+        !
+        if(size(domain%max_U_variables) > 0) then
+            allocate(domain%max_U(nx, ny, size(domain%max_U_variables)))
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
             !$OMP DO SCHEDULE(STATIC)
             do j = 1, ny
-                domain%max_U(:,j,1) = -huge(ONE_dp)
+                ! The default value can be stored even at reduced precision
+                domain%max_U(:,j,:) = -huge(real(1.0, kind=output_precision)) 
             end do
             !$OMP END DO
             !$OMP END PARALLEL
@@ -1133,23 +1203,18 @@ TIMER_STOP("compute_statistics")
         !
         ! Setup for Chezy or Manning friction
         !
-        if(domain%friction_type == 'manning') then
-            ! For efficiency we ensure the friction power is known at compile time
-            ! Previously it was set here
-
-        else if(domain%friction_type == 'chezy') then
-            ! For efficiency we ensure the friction power is known at compile time
-            ! Previously it was set here
-
+        select case(domain%friction_type)
+        case('manning')
+            ! Nothing to do here, but this avoids hitting "case default"
+        case('chezy') 
             if(domain%timestepping_method == 'cliffs') then
                 write(log_output_unit, *) "ERROR: chezy_friction has not yet been implemented for our cliffs solver"
                 call generic_stop
             end if
-
-        else
+        case default
             write(log_output_unit, *) ' Error: Unrecognized value of domain%friction_type '
             call generic_stop
-        end if
+        end select
 
 #ifdef DEBUG_ARRAY
         ! Optional for debugging -- this will be written to the netcdf file
@@ -1198,6 +1263,7 @@ TIMER_STOP("compute_statistics")
 
     subroutine compute_depth_and_velocity(domain, min_depth)
         !! Compute domain%depth and domain%velocity, so they are consistent with domain%U.
+        !! This only applies to the finite-volume solvers on non-staggered grids
         !! We also implement a mass conservation check in this routine, and zero velocities
         !! at sites with depth < minimum_allowed_depth.
 
@@ -1747,8 +1813,8 @@ TIMER_STOP('compute_volume_in_priority_domain')
                 ! max timestep = Distance along latitude / wave-speed <= dt
                 ts_max = min(ts_max, &
                     0.5_dp * min(&
-                        (domain%distance_bottom_edge(j+1) + domain%distance_bottom_edge(j)),&
-                        (domain%distance_left_edge(i+1)   + domain%distance_left_edge(i)  ) ) / &
+                        sum(domain%distance_bottom_edge(j:j+1)),&
+                        sum(domain%distance_left_edge(i:i+1)) ) / &
                     sqrt(gravity * max(domain%msl_linear-domain%U(i,j,ELV), minimum_allowed_depth)) )
             end do
         end do
@@ -1945,7 +2011,7 @@ TIMER_STOP('compute_volume_in_priority_domain')
 
         t1 = trim(domain%output_folder_name) // '/' // 'Grid_output_ID' // trim(t3) // '.nc'
         ! Character attributes
-        natt = 7!8
+        natt = 7
         allocate(attribute_names(natt), attribute_values(natt))
         !
         attribute_names(1) = 'timestepping_method'
@@ -1971,8 +2037,9 @@ TIMER_STOP('compute_volume_in_priority_domain')
 
         call domain%nc_grid_output%initialise(filename=t1,&
             output_precision = output_precision, &
-            record_max_U = domain%record_max_U, &
             xs = domain%x, ys = domain%y, &
+            time_grids_to_store = domain%time_grids_to_store, &
+            nontemporal_grids_to_store = domain%nontemporal_grids_to_store, &
             attribute_names=attribute_names, attribute_values=attribute_values)
 
         deallocate(attribute_names, attribute_values)
@@ -2068,26 +2135,116 @@ TIMER_STOP('fileIO')
         class(domain_type), intent(inout):: domain
         integer(ip):: j, k, i
 
+        real(dp) :: local_depth, local_depth_inv, arrival_stage, &
+            depth_E, depth_N, depth_E_inv, depth_N_inv
+        logical :: use_truely_linear_method
+
         if(domain%record_max_U) then
 EVOLVE_TIMER_START('update_max_quantities')
 
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
 
-            !! Previously we stored all quantities in max_U. However, generally
-            !! max uh and max vh don't have much meaning by themselves. So now
-            !! we just store max stage
-            !!$OMP DO SCHEDULE(GUIDED), COLLAPSE(2)
-            !DO k = 1, domain%nvar
+            do k = 1, size(domain%max_U_variables)
 
-            !! UPDATE: Only record max stage
-            !$OMP DO SCHEDULE(STATIC)
-                do j = domain%yL, domain%yU !1, domain%nx(2)
-                    do i = domain%xL, domain%xU !1, domain%nx(1)
-                        domain%max_U(i,j,STG) = max(domain%max_U(i,j,STG), domain%U(i,j,STG))
+                select case(domain%max_U_variables(k))
+
+                case('max_stage') 
+
+                    ! Track max stage
+                    !$OMP DO SCHEDULE(STATIC)
+                    do j = domain%yL, domain%yU !1, domain%nx(2)
+                        do i = domain%xL, domain%xU !1, domain%nx(1)
+                            domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                        end do
                     end do
-                end do
-            !END DO
-            !$OMP END DO
+                    !$OMP END DO
+
+                case('max_speed')
+
+                    if(domain%is_staggered_grid) then
+                        ! Speed on staggered grid
+                        use_truely_linear_method = (domain%linear_solver_is_truely_linear .and. &
+                            any(domain%timestepping_method == &
+                            [character(len=charlen) :: 'linear', 'leapfrog_linear_plus_nonlinear_friction']))
+
+                        !$OMP DO SCHEDULE(STATIC)
+                        do j = domain%yL, domain%yU !1, domain%nx(2)
+                            do i = domain%xL, domain%xU !1, domain%nx(1)
+                                ! Get depths at UH point (E) and VH point (N).
+                                ! The interpretation of 'depth' varies depending on whether we are using the 'truely-linear'
+                                ! treatment of the pressure gradient term in the linear shallow water equations.
+                                if(use_truely_linear_method) then
+                                    ! Depth is always relative to MSL.
+                                    depth_E = 0.5_dp * sum( (domain%msl_linear - domain%U(i:i+1,j,ELV)))
+                                    depth_N = 0.5_dp * sum( (domain%msl_linear - domain%U(i,j:j+1,ELV)))
+                                else
+                                    ! Spatially averaged depth on staggered grid
+                                    depth_E = 0.5_dp * sum( (domain%U(i:i+1,j,STG) - domain%U(i:i+1,j,ELV)))
+                                    depth_N = 0.5_dp * sum( (domain%U(i,j:j+1,STG) - domain%U(i,j:j+1,ELV))) 
+                                end if
+
+                                depth_E_inv = merge(1.0_dp/depth_E, 0.0_dp, depth_E > minimum_allowed_depth)
+                                depth_N_inv = merge(1.0_dp/depth_N, 0.0_dp, depth_N > minimum_allowed_depth)
+
+                                domain%max_U(i,j,k) = sqrt(&
+                                    domain%U(i,j,UH) * domain%U(i,j,UH) * depth_E_inv**2  + &
+                                    domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv**2)
+                            end do
+                        end do
+                        !$OMP END DO
+                    else
+                        ! Speed on co-located grid
+                        !$OMP DO SCHEDULE(STATIC)
+                        do j = domain%yL, domain%yU !1, domain%nx(2)
+                            do i = domain%xL, domain%xU !1, domain%nx(1)
+                                local_depth = domain%U(i,j,STG) - domain%U(i,j,ELV)
+                                local_depth_inv = merge(1.0_dp/local_depth, 0.0_dp, local_depth > minimum_allowed_depth)
+                                domain%max_U(i,j,k) = max(&
+                                    domain%max_U(i,j,k), &
+                                    sqrt((domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2)*local_depth_inv**2))
+                            end do
+                        end do
+                        !$OMP END DO
+                    end if
+
+                case('max_flux')
+
+                    ! Track max flux
+                    !$OMP DO SCHEDULE(STATIC)
+                    do j = domain%yL, domain%yU !1, domain%nx(2)
+                        do i = domain%xL, domain%xU !1, domain%nx(1)
+                            domain%max_U(i,j,k) = max(&
+                                domain%max_U(i,j,k), &
+                                sqrt(domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2))
+                        end do
+                    end do
+                    !$OMP END DO
+
+                case('arrival_time')
+
+                    !! Track the arrival time
+                    !$OMP DO SCHEDULE(STATIC)
+                    do j = domain%yL, domain%yU !1, domain%nx(2)
+                        do i = domain%xL, domain%xU !1, domain%nx(1)
+                            local_depth = domain%U(i,j,STG) - domain%U(i,j,ELV)
+                            arrival_stage = domain%msl_linear + domain%arrival_stage_threshold_above_msl_linear
+                            if( (local_depth > minimum_allowed_depth) .and. &
+                                (domain%U(i,j,STG) > arrival_stage  ) .and. &
+                                ! The arrival time was initialised to a negative number
+                                ( domain%max_U(i,j,k) < 0.0_dp ) ) then
+                                domain%max_U(i,j,k) = domain%time
+                            end if
+                        end do
+                    end do
+                    !$OMP END DO
+
+                case default
+                    write(log_output_unit, *) ' Unknown value in domain%max_U_variables '
+                    call generic_stop
+                end select
+
+            end do
+
             !$OMP END PARALLEL
 
 EVOLVE_TIMER_STOP('update_max_quantities')
@@ -2105,9 +2262,10 @@ EVOLVE_TIMER_STOP('update_max_quantities')
         character(len=charlen):: max_quantities_filename
         integer:: i, j, k
 
-        if(domain%record_max_U) then
 #ifdef NONETCDF
-            ! Use home-brew binary format to output max stage
+        if(domain%record_max_U) then
+            ! Use home-brew binary format to output max stage (only)
+            ! This is not up-to-date (consider removing support for the home-brew file format)
 
             max_quantities_filename = trim(domain%output_folder_name) // '/Max_quantities'
 
@@ -2127,19 +2285,26 @@ EVOLVE_TIMER_STOP('update_max_quantities')
             end do
 
             close(i)
+        end if
 #else
-            if(allocated(domain%manning_squared)) then
-                call domain%nc_grid_output%store_max_stage(max_stage=domain%max_U(:,:,STG), &
-                    elevation=domain%U(:,:,ELV), manning_squared = domain%manning_squared)
 
-            else
-                call domain%nc_grid_output%store_max_stage(max_stage=domain%max_U(:,:,STG), &
-                    elevation=domain%U(:,:,ELV))
+            ! Save the nontemporal variables that require tracking the flow
+            do j = 1, size(domain%max_U_variables)
+                call domain%nc_grid_output%store_static_variable(domain%max_U_variables(j), domain%max_U(:,:,j))
+            end do
+
+            ! Save manning^2
+            if(allocated(domain%manning_squared) .and. &
+                any(domain%nontemporal_grids_to_store == 'manning_squared')) then
+                call domain%nc_grid_output%store_static_variable('manning_squared', domain%manning_squared)
             end if
 
+            ! Save elevation
+            if(any(domain%nontemporal_grids_to_store == 'elevation0')) then
+                call domain%nc_grid_output%store_static_variable('elevation0', domain%U(:,:,ELV))
+            end if
 
 #endif
-        end if
 
     end subroutine
 
