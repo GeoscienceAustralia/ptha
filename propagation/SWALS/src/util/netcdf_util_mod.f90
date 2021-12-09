@@ -23,11 +23,26 @@ module netcdf_util
     implicit none
 
     private
-    public :: nc_grid_output_type, check
+    public :: nc_grid_output_type, check, gridded_output_variables_time, &
+        gridded_output_variables_max_U, gridded_output_variables_other
 
     ! Indices of stage, uh, vh, elevation in domain%U
     integer(ip), parameter :: STG=1, UH=2, VH=3, ELV=4
     ! Note -- the above definitions must agree with those in domain_mod.f90
+
+    !
+    ! Names of gridded variables that SWALS can output
+    !
+    character(len=charlen), parameter :: gridded_output_variables_time(4) = &
+        [character(len=charlen) :: 'stage', 'uh', 'vh', 'elev']
+        !! Gridded variables that can be output as time-series. Must match [STG, UH, VH, ELV] in order.
+    character(len=charlen), parameter :: gridded_output_variables_max_U(4) = &
+        [character(len=charlen) :: 'max_stage', 'max_speed', 'max_flux', 'arrival_time']
+        !! Gridded variables that can be output, are not time-series, but require tracking flow maxima.
+        !! Keep 'max_stage' as the first entry (for now) to support code that assumes domain%max_U(:,:,1) contains the max-stage.
+    character(len=charlen), parameter :: gridded_output_variables_other(2) = &
+        [character(len=charlen) :: 'manning_squared', 'elevation0']
+        !! Other gridded variables that can be output and are not time-series
 
     type :: nc_grid_output_type
         !!
@@ -41,15 +56,12 @@ module netcdf_util
         integer :: dim_time_id, dim_x_id, dim_y_id
         integer :: var_time_id, var_x_id, var_y_id
 
-        integer :: var_stage_id, var_uh_id, var_vh_id, var_elev_id
-            !! Time varying variables
 #ifdef DEBUG_ARRAY
         integer :: var_debug_array_id
             !! Time-varying array for debugging
 #endif
-        integer :: var_max_stage_id, var_elev0_id, var_is_priority_domain_id, &
-            var_manningsq_id, var_priority_ind, var_priority_img
-            !! Static variables
+        integer :: var_is_priority_domain_id, var_priority_ind, var_priority_img
+            !! Variables describing the priority domain
 
         integer :: flush_every_n_output_steps = 25
             !! It can be slow to flush every time we write to files. But
@@ -59,14 +71,31 @@ module netcdf_util
         integer :: num_output_steps = 0
             ! Track number of output steps
 
-        logical :: record_max_U
-            !! Flag for whether we store max stage, etc
-
-        logical :: time_var_store_flag(4) = [.true. , .true., .true., .true.]
+        !
+        ! Time-varying variables to store.
+        !
+        integer :: time_var_id(4)
+            !! netcdf variable id's for stage, uh, vh, elev
+        character(len=charlen) :: time_var_names(4) = gridded_output_variables_time
+            !! Names of the time-varying variables - do not change this. We turn on/off storage by
+            !! adjusting the corresponding entry of time_var_store_flag
+        logical :: time_var_store_flag(4) = .true. 
             !! Options to store stage/uh/vh/elev over time.
             !! .true. or .false. for STG, UH, VH, ELV
             !! For example, if we didn't want to store ELV every time-step, we
             !! would do "nc_grid_output%time_var_store_flag(ELV) = .false."
+
+        !
+        ! Static variables that can be stored. These describe the solution, are real, and are only
+        ! stored once (i.e. no time evolution)
+        !
+        integer :: static_var_id(6)
+        character(len=charlen) :: static_var_names(6) = &
+            [gridded_output_variables_max_U, gridded_output_variables_other]
+            !! Names of solution variables that can be stored once. We turn on/off storeage
+            !! by adjusting the static_var_store_flag
+        logical :: static_var_store_flag(6) = .true.
+            !! True if we want to store the corresponding variable in static_var_names, false otherwise.
 
         integer :: spatial_stride = 1
             !! Allow only storing every n'th point in x/y space.
@@ -82,7 +111,7 @@ module netcdf_util
         contains
         procedure :: initialise => initialise
         procedure :: write_grids => write_grids
-        procedure :: store_max_stage => store_max_stage
+        procedure :: store_static_variable => store_static_variable
         procedure :: store_priority_domain_cells => store_priority_domain_cells
         procedure :: finalise => finalise
 
@@ -115,17 +144,32 @@ module netcdf_util
     end subroutine
 
     subroutine initialise(nc_grid_output, filename, output_precision, &
-        record_max_U, xs, ys, attribute_names, attribute_values)
+        xs, ys, &
+        time_grids_to_store, nontemporal_grids_to_store, &
+        attribute_names, attribute_values)
         !!
         !! Create nc file to hold gridded outputs
         !!
 
-        class(nc_grid_output_type), intent(inout) :: nc_grid_output !!type with nc_grid_output info
-        character(len=charlen), intent(in) :: filename !! Name of the output netcdf file
-        integer(ip), intent(in) :: output_precision !! Fortran real kind denoting precision of output (either C_FLOAT or C_DOUBLE)
-        logical, intent(in) :: record_max_U !! Do we record the max-stage ?
-        real(dp), intent(in) :: xs(:), ys(:) !! array of grid x/y coordinates
-        character(charlen), optional, intent(in):: attribute_names(:) !! global attribute names for netcdf file
+        class(nc_grid_output_type), intent(inout) :: nc_grid_output 
+            !!type with nc_grid_output info
+        character(len=charlen), intent(in) :: filename 
+            !! Name of the output netcdf file
+        integer(ip), intent(in) :: output_precision 
+            !! Fortran real kind denoting precision of output (either C_FLOAT or C_DOUBLE)
+        real(dp), intent(in) :: xs(:), ys(:) 
+            !! array of grid x/y coordinates
+        character(charlen), allocatable, intent(inout) :: time_grids_to_store(:) 
+            !! Array with names of time-variables to store. Values should match those in nc_grid_output%time_var_names, or ''.
+            !! To support some legacy behaviour we allow this to be unallocated on entry. Some older code specified
+            !! variables to store by directly manipulating the nc_grid_output variable, and that approach is still supported
+            !! if time_grids_to_store is unallocated (although it is not recommended -- in future code please just specify
+            !! the variables to store in domain%time_grids_to_store).
+        character(charlen), intent(inout) :: nontemporal_grids_to_store(:) 
+            !! Array with names of variables without a time dimension. Note that irrespective of the value of this variable, 
+            !! we also store other "priority-domain" variables. Values should match those in nc_grid_output%static_var_names, or ''.
+        character(charlen), optional, intent(in):: attribute_names(:) 
+            !! global attribute names for netcdf file
         character(charlen), optional, intent(in):: attribute_values(:)
             !! values for global attributes of netcdf file (same length as attribute_names)
 
@@ -212,7 +256,7 @@ module netcdf_util
         call check(nf90_def_dim(iNcid, "y", len=nc_grid_output%spatial_count(2), dimid=nc_grid_output%dim_y_id), __LINE__)
         call check(nf90_def_dim(iNcid, "time", NF90_UNLIMITED, nc_grid_output%dim_time_id), __LINE__)
 
-        ! Define variables
+        ! Define variables of dimensions
         call check( nf90_def_var(iNcid, "x", output_prec_force_double, &
             (/ nc_grid_output%dim_x_id /), nc_grid_output%var_x_id), __LINE__)
         call check( nf90_def_var(iNcid, "y", output_prec_force_double, &
@@ -220,38 +264,58 @@ module netcdf_util
         call check( nf90_def_var(iNcid, "time", output_prec_force_double, &
             (/ nc_grid_output%dim_time_id /), nc_grid_output%var_time_id), __LINE__ )
 
-        ! Stage
-        if(nc_grid_output%time_var_store_flag(STG)) then
-            call check( nf90_def_var(iNcid, "stage", output_prec, &
-                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
-                nc_grid_output%var_stage_id), __LINE__ )
-            ! Compress
-            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_stage_id, 1, 1, 3), __LINE__) )
+        if(allocated(time_grids_to_store)) then
+            ! If time_grids_to_store has been specified, use it to define which variables to store
+            ! This will over-ride any specification of nc_grid_output%time_var_store_flag (which some
+            ! legacy programs do). So make sure the latter has not been set already
+            if(.not. all(nc_grid_output%time_var_store_flag)) then
+                write(log_output_unit, *)&
+                    "Cannot specify BOTH time_grids_to_store AND time_var_store_flag. Use one or the other."
+                call generic_stop
+            end if
+
+            ! Check for typos in time_grids_to_store. It can contain either an empty string '', or
+            ! a value in nc_grid_output%time_var_names
+            do i = 1, size(time_grids_to_store)
+                if(.not. (time_grids_to_store(i) == '' .or. &
+                      any(time_grids_to_store(i) == nc_grid_output%time_var_names))) then
+                    write(log_output_unit, *)&
+                        "Unknown value in time_grids_to_store:", trim(time_grids_to_store(i))
+                    call generic_stop
+                end if
+            end do
+
+            ! Set the time_var_store_flag based on the presence/absence of the variable in time_grids_to_store
+            do i = 1, size(nc_grid_output%time_var_names)
+                nc_grid_output%time_var_store_flag(i) = &
+                    any(nc_grid_output%time_var_names(i) == time_grids_to_store)
+            end do
+        else
+            ! If unallocated, make time_grids_to_store consistent with time_var_store_flag
+            ! This gives backward compatibility with older application codes that directly 
+            ! set nc_grid_output%time_var_store_flag, which was previously the only way to 
+            ! control these things.
+            time_grids_to_store = pack(nc_grid_output%time_var_names, nc_grid_output%time_var_store_flag)
         end if
-        ! UH
-        if(nc_grid_output%time_var_store_flag(UH)) then
-            call check( nf90_def_var(iNcid, "uh", output_prec, &
-                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
-                nc_grid_output%var_uh_id), __LINE__ )
-            ! Compress
-            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_uh_id, 1, 1, 3), __LINE__) )
-        end if
-        ! VH
-        if(nc_grid_output%time_var_store_flag(VH)) then
-            call check( nf90_def_var(iNcid, "vh", output_prec, &
-                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
-                nc_grid_output%var_vh_id), __LINE__ )
-            ! Compress
-            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_vh_id, 1, 1, 3), __LINE__) )
-        end if
-        ! Elev
-        if(nc_grid_output%time_var_store_flag(ELV)) then
-            call check( nf90_def_var(iNcid, "elev", output_prec, &
-                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], &
-                nc_grid_output%var_elev_id), __LINE__ )
-            ! Compress
-            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%var_elev_id, 1, 1, 3), __LINE__) )
-        end if
+
+        ! Store the time-varying variables
+        do i = STG, ELV
+
+            if( .not. nc_grid_output%time_var_store_flag(i)) cycle
+
+            ! Store the variable
+            call check( &
+                nf90_def_var(iNcid, &
+                    trim(nc_grid_output%time_var_names(i)), & ! Name of the variable
+                    output_prec, & ! Precision
+                    [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id, nc_grid_output%dim_time_id], & ! Dimensions
+                    nc_grid_output%time_var_id(i) & ! File ID of the variable
+                    ), &
+                __LINE__ )
+
+            ! Compress if we are using netcdf4
+            USING_NETCDF4_GUARD( call check(nf90_def_var_deflate(iNcid, nc_grid_output%time_var_id(i), 1, 1, 3), __LINE__) )
+        end do
 
 #ifdef DEBUG_ARRAY
         ! A time-varying rank-3 debug array, with spatial dimensions (nx, ny)
@@ -275,27 +339,38 @@ module netcdf_util
             [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
             nc_grid_output%var_priority_img), __LINE__ )
 
-        ! Peak stage
-        if(record_max_U) then
 
-            nc_grid_output%record_max_U = .TRUE.
+        ! Use nontemporal_grids_to_store to define which variables to store.
+        !
+        ! Check for typos. It can contain either an empty string '', or
+        ! a value in nc_grid_output%static_var_names
+        do i = 1, size(nontemporal_grids_to_store)
+            if(.not. (nontemporal_grids_to_store(i) == '' .or. &
+                  any(nontemporal_grids_to_store(i) == nc_grid_output%static_var_names))) then
+                write(log_output_unit, *)&
+                    "Unknown value in nontemporal_grids_to_store:", trim(time_grids_to_store(i))
+                call generic_stop
+            end if
+        end do
+        ! Set the value of static_var_store_flag so that the variables that we want to store are stored.
+        do i = 1, size(nc_grid_output%static_var_names)
+            nc_grid_output%static_var_store_flag(i) = &
+                any(nc_grid_output%static_var_names(i) == nontemporal_grids_to_store)
+        end do
 
-            call check( nf90_def_var(iNcid, "max_stage", output_prec, &
-                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
-                nc_grid_output%var_max_stage_id), __LINE__ )
+        ! Storage for the static variables
+        do i = 1, size(nc_grid_output%static_var_names)
 
-            call check( nf90_def_var(iNcid, "elevation0", output_prec, &
-                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
-                nc_grid_output%var_elev0_id), __LINE__ )
+            if(.not. nc_grid_output%static_var_store_flag(i)) cycle
 
-            call check( nf90_def_var(iNcid, "manning_squared", output_prec, &
-                [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
-                nc_grid_output%var_manningsq_id), __LINE__ )
-        else
-
-            nc_grid_output%record_max_U = .FALSE.
-
-        end if
+            call check( &
+                nf90_def_var(iNcid, &
+                    trim(nc_grid_output%static_var_names(i)), &
+                    output_prec, &
+                    [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
+                    nc_grid_output%static_var_id(i)), &
+                __LINE__ )
+        end do
 
         !
         ! Add some attributes
@@ -355,7 +430,7 @@ SRC_GIT_VERSION ), &
             !! If compiled with -DDEBUG_ARRAY, this array will also be written to the netcdf file.
             !! Provides a useful means of debugging or reporting non-standard quantities.
 
-        integer:: iNcid, nxy(2), spatial_start(2), spatial_stride(2)
+        integer:: iNcid, nxy(2), spatial_start(2), spatial_stride(2), i
         real(C_DOUBLE) :: current_cpu_time
 
         ! Gracefully compile in case we don't link with netcdf
@@ -379,45 +454,18 @@ SRC_GIT_VERSION ), &
         call check(nf90_put_var(iNcid, nc_grid_output%var_time_id, time, &
             start=[nc_grid_output%num_output_steps]), __LINE__ )
 
-        ! Save the stage
-        if(nc_grid_output%time_var_store_flag(STG)) then
+
+        ! Save the flow variables
+        do i = STG, ELV
+            if( .not. nc_grid_output%time_var_store_flag(i)) cycle
+
             call check(nf90_put_var(&
                 iNcid, &
-                nc_grid_output%var_stage_id, &
-                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),STG), &
+                nc_grid_output%time_var_id(i), &
+                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2), i), &
                 start=[1,1,nc_grid_output%num_output_steps]),&
                 __LINE__)
-        end if
-
-        ! Save uh
-        if(nc_grid_output%time_var_store_flag(UH)) then
-            call check(nf90_put_var(&
-                iNcid, &
-                nc_grid_output%var_uh_id, &
-                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),UH), &
-                start=[1,1,nc_grid_output%num_output_steps]), &
-                __LINE__)
-        end if
-
-        ! Save vh
-        if(nc_grid_output%time_var_store_flag(VH)) then
-            call check(nf90_put_var(&
-                iNcid, &
-                nc_grid_output%var_vh_id, &
-                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),VH), &
-                start=[1,1,nc_grid_output%num_output_steps]), &
-                __LINE__)
-        end if
-
-        ! Save elev
-        if(nc_grid_output%time_var_store_flag(ELV)) then
-            call check(nf90_put_var(&
-                iNcid, &
-                nc_grid_output%var_elev_id, &
-                U(spatial_start(1):nxy(1):spatial_stride(1),spatial_start(2):nxy(2):spatial_stride(2),ELV), &
-                start=[1,1,nc_grid_output%num_output_steps]), &
-                __LINE__)
-        end if
+        end do
 
 #ifdef DEBUG_ARRAY
         if(present(debug_array)) then
@@ -512,54 +560,48 @@ SRC_GIT_VERSION ), &
     end subroutine
 
 
-    subroutine store_max_stage(nc_grid_output, max_stage, elevation, manning_squared)
+    subroutine store_static_variable(nc_grid_output, variable_name, values)
         !!
-        !! Store the 'max-stage' variable. Also store elevation and manning_squared, if provided.
+        !! Store a static flow variable (e.g. 'max-stage'), which is a variable desribing the flow that we only store once.
         !!
         class(nc_grid_output_type), intent(in) :: nc_grid_output
-        real(dp), intent(in) :: max_stage(:,:)
-        real(dp), optional, intent(in) :: elevation(:,:)
-        real(dp), optional, intent(in) :: manning_squared(:,:)
+        character(*), intent(in) :: variable_name
+        real(dp), intent(in) :: values(:,:)
 
-        integer :: iNcid, spatial_start(2), nxy(2), spatial_stride(2)
+        integer :: iNcid, spatial_start(2), nxy(2), spatial_stride(2), j, my_j
+        logical :: found_var
 
         ! Gracefully compile in case we don't link with netcdf
 #ifndef NONETCDF
         spatial_start = nc_grid_output%spatial_start
         spatial_stride = nc_grid_output%spatial_stride
-        nxy(1) = size(max_stage, dim=1)
-        nxy(2) = size(max_stage, dim=2)
+        nxy(1) = size(values, dim=1)
+        nxy(2) = size(values, dim=2)
 
-        if(nc_grid_output%record_max_U) then
+        ! Shorthand
+        iNcid = nc_grid_output%nc_file_id
 
-            ! Shorthand
-            iNcid = nc_grid_output%nc_file_id
+        found_var = .false.
+        do j = 1, size(nc_grid_output%static_var_names)
+            ! Only one 'j' will correspond to 'variable_name'
+            if((trim(variable_name) == nc_grid_output%static_var_names(j)) .and. &
+               nc_grid_output%static_var_store_flag(j)) then
 
-            ! Save max stage
-            call check(nf90_put_var(&
-                iNcid, &
-                nc_grid_output%var_max_stage_id, &
-                max_stage(spatial_start(1):nxy(1):spatial_stride(1), spatial_start(2):nxy(2):spatial_stride(2))), &
-                __LINE__)
-
-            if(present(elevation)) then
-                ! Save elevation
+                ! Save the variable
                 call check(nf90_put_var(&
                     iNcid, &
-                    nc_grid_output%var_elev0_id, &
-                    elevation(spatial_start(1):nxy(1):spatial_stride(1), spatial_start(2):nxy(2):spatial_stride(2))), &
+                    nc_grid_output%static_var_id(j), &
+                    values(spatial_start(1):nxy(1):spatial_stride(1), spatial_start(2):nxy(2):spatial_stride(2))), &
                     __LINE__)
-            end if
 
-            if(present(manning_squared)) then
-                ! Save manning coefficient squared
-                call check(nf90_put_var(&
-                    iNcid, &
-                    nc_grid_output%var_manningsq_id, &
-                    manning_squared(spatial_start(1):nxy(1):spatial_stride(1), spatial_start(2):nxy(2):spatial_stride(2))), &
-                    __LINE__)
+                found_var = .true. ! If this is never set, we know that no variable was saved.
+                exit
             end if
+        end do
 
+        if(.not. found_var) then
+            write(log_output_unit, *) "Cannot store static variable: ", trim(variable_name)
+            call generic_stop
         end if
 
 #endif
