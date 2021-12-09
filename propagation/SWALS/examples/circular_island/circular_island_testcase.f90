@@ -201,7 +201,7 @@ program circular_island
             ! result reflects the 'stationary' model solution
             if((domain%time >= reset_max_stage_at_time) .and. &
                (last_write_time <= reset_max_stage_at_time)) then
-                domain%max_U(:,:,1) = -huge(1.0_dp)
+                domain%max_U(:,:,1) = -huge(1.0) ! Deliberate single-precision so it can be stored
             end if
 
             last_write_time = last_write_time + approximate_writeout_frequency
