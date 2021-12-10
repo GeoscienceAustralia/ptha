@@ -77,18 +77,22 @@ program radial_dam_break
     ! lower-left corner coordinate
     real(dp), parameter, dimension(2):: global_ll = [0._dp, 0._dp]
     ! grid size (number of x/y cells)
-    integer(ip), parameter, dimension(2):: global_nx = [400, 400] * 2 ! [400, 400] 
+    integer(ip), parameter, dimension(2):: global_nx = [400, 400] * 2 + 1
 
     ! analytical solution
     real(dp), allocatable :: analytical_solution(:,:)
     character(len=charlen):: analytical_solution_file
 
     ! Misc
-    integer :: j
+    integer :: j, nd
     real(dp) :: global_dt
 
-    allocate(md%domains(1))
+    nd = 1 ! Number of domains in model
+    allocate(md%domains(nd))
 
+    !
+    ! Set the domain properties
+    !
     md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
 
     ! Domain Geometry
@@ -96,25 +100,29 @@ program radial_dam_break
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
 
-    ! Select the output variables to store
+    ! Output variables to store
     md%domains(1)%time_grids_to_store = [character(len=charlen):: 'stage', 'uh', 'vh']
     md%domains(1)%nontemporal_grids_to_store = [character(len=charlen):: 'max_stage', 'max_speed', 'max_flux', &
         'arrival_time', 'elevation0', 'manning_squared']
 
-    ! Set the definition of arrival time
+    ! Define how the "arrival time" statistic is calculated. It is the time when stage 
+    ! exceeds the sum of these two variables.
     md%domains(1)%msl_linear = 0.0_dp
     md%domains(1)%arrival_stage_threshold_above_msl_linear = 1.01_dp
 
+    ! Setup the multidomain -- note for some models this can change the number of domains (e.g. for parallel),
+    ! although that is not done in this example
     call md%setup()
 
     do j = 1, size(md%domains)
-        ! Call local routine to set initial conditions
-        CALL set_initial_conditions_radial_dam(md%domains(j))
+        ! Set initial conditions on each domain
+        call set_initial_conditions_radial_dam(md%domains(j))
     end do
 
+    ! Time-step at which we evolve the solution
     global_dt = 0.75_dp * md%stationary_timestep_max()
 
-    ! Evolve the code
+    ! Evolve the solution
     do while (.TRUE.)
 
         call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency)
@@ -126,31 +134,6 @@ program radial_dam_break
         call md%evolve_one_step(global_dt)
 
     end do
-
- 
-    ! Crude check on peak velocity. This is just a regression test - the 7.75 is not a proper
-    ! comparison with an analytical solution. 
-    call md%domains(1)%compute_depth_and_velocity()
-    ! FIXME: get a reference solution.
-    if((abs(maxval(md%domains(1)%velocity(:,:,UH)) - 7.75_dp) < 0.10) .and. &
-       (abs(maxval(md%domains(1)%velocity(:,:,VH)) - 7.75_dp) < 0.10) .and. &
-       (abs(minval(md%domains(1)%velocity(:,:,UH)) + 7.75_dp) < 0.10) .and. &
-       (abs(minval(md%domains(1)%velocity(:,:,VH)) + 7.75_dp) < 0.10) .and. &
-       ! Symmetry tests here
-       (abs(maxval(md%domains(1)%velocity(:,:,UH)) + minval(md%domains(1)%velocity(:,:,UH))) < 1.0e-06_dp) .and. &
-       (abs(maxval(md%domains(1)%velocity(:,:,VH)) + minval(md%domains(1)%velocity(:,:,VH))) < 1.0e-06_dp) ) then
-        print*, ' '
-        print*, '##############'
-        print*, 'PASS'
-        print*, '##############'
-        print*, ' '
-    else
-        print*, ' '
-        print*, '##############'
-        print*, 'FAIL'
-        print*, '##############'
-        print*, ' '
-    end if
 
     call md%finalise_and_print_timers
 
