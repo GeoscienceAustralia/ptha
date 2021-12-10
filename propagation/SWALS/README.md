@@ -197,6 +197,8 @@ not a replacement for eyeballing the figures and thinking about the results.
 
 ## Examples to consider
 
+A simple example that illustrates basic useage with a multidomain is in [./examples/radial_dam_break](./examples/radial_dam_break).
+
 The validation tests  in [./examples/](./examples) provide templates for developing other models. They illustrate driver programs, compilation, and model post-processing. Some of the more practical examples include:
 
 * [./examples/nthmp/BP09/](./examples/nthmp/BP09) which simulates the Okushiri Island tsunami using multiple nested grids, and compares with observations
