@@ -9,6 +9,9 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions_radial_dam(domain)            
+        !
+        ! This function sets the initial conditions in a domain
+        !
         class(domain_type), target, intent(inout):: domain
         integer(ip):: i,j
         real(dp):: x, y, cx, cy, initial_stage_1, initial_stage_2, radius
@@ -19,6 +22,8 @@ module local_routines
 
         ! Stage
         domain%U(:,:,STG) = initial_stage_1 
+        ! Depth integrated velocity
+        domain%U(:,:, UH:VH) = 0.0_dp
 
         ! Elevation
         domain%U(:,:,ELV) = 0._dp
@@ -45,6 +50,7 @@ module local_routines
             end do
         end do
 
+        ! Manning friction squared
         domain%manning_squared = 0.0_dp
 
     end subroutine
@@ -78,10 +84,6 @@ program radial_dam_break
     real(dp), parameter, dimension(2):: global_ll = [0._dp, 0._dp]
     ! grid size (number of x/y cells)
     integer(ip), parameter, dimension(2):: global_nx = [400, 400] * 2 + 1
-
-    ! analytical solution
-    real(dp), allocatable :: analytical_solution(:,:)
-    character(len=charlen):: analytical_solution_file
 
     ! Misc
     integer :: j, nd
