@@ -59,14 +59,14 @@ program radial_dam_break
     !! Radial dam-break problem
     !!
     use global_mod, only: ip, dp, charlen, default_nonlinear_timestepping_method
-    use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use file_io_mod, only: read_csv_into_array
+    use multidomain_mod, only: multidomain_type
+    use domain_mod, only: UH, VH
     use local_routines
     implicit none
 
     integer(ip):: i, nsteps
     real(dp):: last_write_time
-    type(domain_type):: domain
+    type(multidomain_type) :: md
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
@@ -83,56 +83,62 @@ program radial_dam_break
     real(dp), allocatable :: analytical_solution(:,:)
     character(len=charlen):: analytical_solution_file
 
+    ! Misc
+    integer :: j
+    real(dp) :: global_dt
 
-    domain%timestepping_method = default_nonlinear_timestepping_method !'rk2' !'euler' !'rk2n'
-    !domain%compute_fluxes_inner_method='EEC'
+    allocate(md%domains(1))
 
-    ! Allocate domain
-    CALL domain%allocate_quantities(global_lw, global_nx, global_ll)
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
 
-    ! Call local routine to set initial conditions
-    CALL set_initial_conditions_radial_dam(domain)
+    ! Domain Geometry
+    md%domains(1)%lw = global_lw
+    md%domains(1)%lower_left = global_ll
+    md%domains(1)%nx = global_nx
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
+    ! Select the output variables to store
+    md%domains(1)%time_grids_to_store = [character(len=charlen):: 'stage', 'uh', 'vh']
+    md%domains(1)%nontemporal_grids_to_store = [character(len=charlen):: 'max_stage', 'max_speed', 'max_flux', &
+        'arrival_time', 'elevation0', 'manning_squared']
+
+    ! Set the definition of arrival time
+    md%domains(1)%msl_linear = 0.0_dp
+    md%domains(1)%arrival_stage_threshold_above_msl_linear = 1.01_dp
+
+    call md%setup()
+
+    do j = 1, size(md%domains)
+        ! Call local routine to set initial conditions
+        CALL set_initial_conditions_radial_dam(md%domains(j))
+    end do
+
+    global_dt = 0.75_dp * md%stationary_timestep_max()
 
     ! Evolve the code
     do while (.TRUE.)
 
-        if(domain%time - last_write_time >= approximate_writeout_frequency) then
+        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency)
 
-            last_write_time = last_write_time + approximate_writeout_frequency
-
-            call domain%print()
-            call domain%write_to_output_files()
-
-            if (domain%time > final_time) then
-                exit 
-            end if
-
+        if (md%domains(1)%time > final_time) then
+            exit 
         end if
 
-        call domain%evolve_one_step()
+        call md%evolve_one_step(global_dt)
 
     end do
 
-    call domain%write_max_quantities()
-
-    call domain%timer%print()
-
-   
-    call domain%compute_depth_and_velocity()
  
-    ! Crude check on peak velocity. The 7.75 is a numerical value, not a proper
-    ! comparison with analytical solution. Really this is just a regression test,
+    ! Crude check on peak velocity. This is just a regression test - the 7.75 is not a proper
+    ! comparison with an analytical solution. 
+    call md%domains(1)%compute_depth_and_velocity()
     ! FIXME: get a reference solution.
-    if((abs(maxval(domain%velocity(:,:,UH)) - 7.75_dp) < 0.10) .and. &
-       (abs(maxval(domain%velocity(:,:,VH)) - 7.75_dp) < 0.10) .and. &
-       (abs(minval(domain%velocity(:,:,UH)) + 7.75_dp) < 0.10) .and. &
-       (abs(minval(domain%velocity(:,:,VH)) + 7.75_dp) < 0.10) .and. &
+    if((abs(maxval(md%domains(1)%velocity(:,:,UH)) - 7.75_dp) < 0.10) .and. &
+       (abs(maxval(md%domains(1)%velocity(:,:,VH)) - 7.75_dp) < 0.10) .and. &
+       (abs(minval(md%domains(1)%velocity(:,:,UH)) + 7.75_dp) < 0.10) .and. &
+       (abs(minval(md%domains(1)%velocity(:,:,VH)) + 7.75_dp) < 0.10) .and. &
        ! Symmetry tests here
-       (abs(maxval(domain%velocity(:,:,UH)) + minval(domain%velocity(:,:,UH))) < 1.0e-06_dp) .and. &
-       (abs(maxval(domain%velocity(:,:,VH)) + minval(domain%velocity(:,:,VH))) < 1.0e-06_dp) ) then
+       (abs(maxval(md%domains(1)%velocity(:,:,UH)) + minval(md%domains(1)%velocity(:,:,UH))) < 1.0e-06_dp) .and. &
+       (abs(maxval(md%domains(1)%velocity(:,:,VH)) + minval(md%domains(1)%velocity(:,:,VH))) < 1.0e-06_dp) ) then
         print*, ' '
         print*, '##############'
         print*, 'PASS'
@@ -146,6 +152,6 @@ program radial_dam_break
         print*, ' '
     end if
 
-    CALL domain%finalise()
+    call md%finalise_and_print_timers
 
 end program

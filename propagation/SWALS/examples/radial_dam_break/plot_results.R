@@ -1,9 +1,10 @@
-
 # Report the fortran test. Note this is not an analytical result,
-# we are just checking for a change from the standard value.
+# just a regression test. In future we should get a high-resolution
+# reference model result to compare against.
 outlog = readLines('outfile.log')
-if(tail(outlog)[4] == ' PASS'){
+if(tail(outlog)[3] == ' PASS'){
     print('PASS')
 }else{
     print('FAIL')
 }
+
