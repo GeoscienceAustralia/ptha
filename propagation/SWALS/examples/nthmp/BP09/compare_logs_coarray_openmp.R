@@ -27,8 +27,8 @@
 #
 
 
-multidomain_log_openmp = readLines(rev(Sys.glob('multidomain_log*openmp.log')))
-multidomain_log_coarray = readLines(rev(Sys.glob('multidomain_log*coarray.log')))
+multidomain_log_openmp = readLines(rev(Sys.glob('OUTPUTS/openmp_results/multidomain_log.log')))
+multidomain_log_coarray = readLines(rev(Sys.glob('OUTPUTS/coarray_results/multidomain_*.log')[1]))
 
 # Get max/min stage, and max speed, globally over the domains
 k = grep('Global stage range', multidomain_log_openmp)
@@ -112,10 +112,10 @@ dev.off()
 #
 
 source('../../../plot.R')
-library(fields)
+suppressMessages(library(fields))
 
-md_omp = Sys.glob('OUTPUTS/RUN*')[1]
-md_ca = Sys.glob('OUTPUTS/RUN*')[2]
+md_omp = 'OUTPUTS/openmp_results'
+md_ca = 'OUTPUTS/coarray_results'
 
 if(md_omp == md_ca){
     print('FAIL: Cannot find separate openmp/coarray directories')
