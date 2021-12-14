@@ -12,6 +12,7 @@
 # those regions). In sum, care is required to combine results from multiple domains
 # while only using "priority domain" cells. 
 #
+.library_quiet<-function(...){ suppressMessages(library(...)) }
 
 
 #' Get name of folder most recently written to OUTPUTS (according to timestamp
@@ -193,7 +194,7 @@ get_gauges_mixed_binary_format<-function(output_folder){
 #' @param output_folder The domain's output folder
 #' @return a list with informative names, containing the gauge data
 get_gauges_netcdf_format<-function(output_folder){
-    library('ncdf4')
+    .library_quiet('ncdf4')
 
     gauge_fid = try(
         nc_open(Sys.glob(paste0(output_folder, '/', 'Gauges_data_*.nc'))[1], 
@@ -369,7 +370,7 @@ get_gridded_variable<-function(var = 'Var_1', output_folder = NULL){
             Var_4 = 'elev', x = 'x', y = 'y',
             Max_quantities = 'max_stage', elev0 = 'elevation0', 
             is_priority_domain='is_priority_domain')
-        library('ncdf4')
+        .library_quiet('ncdf4')
         fid = nc_open(nc_file, readunlim=FALSE)
         var_name = var_list[[var]]
         if(var_name %in% c(names(fid$var), names(fid$dim))){
@@ -532,7 +533,7 @@ get_multidomain<-function(multidomain_dir, ...){
 #' @return a vector of times at which the 'grids' or 'gauges' are output
 #'
 get_multidomain_output_times<-function(multidomain_dir, output_type='grids'){
-    library(ncdf4)
+    .library_quiet(ncdf4)
 
     if(!file.exists(multidomain_dir)){
         stop(paste0('Could not find multidomain_dir ', multidomain_dir))
@@ -584,7 +585,7 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326',
     na_above_zero=FALSE, return_elevation=FALSE, 
     na_outside_priority_domain=FALSE){
 
-    library(raster)
+    .library_quiet(raster)
 
     if(length(dim(swals_out$maxQ)) == 3){
         # Using old binary format
@@ -672,8 +673,8 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
     use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list()){
 
-    library('ncdf4')
-    library(fields)
+    .library_quiet('ncdf4')
+    .library_quiet(fields)
     # Find all netcdf
     all_nc = Sys.glob(paste0(multidomain_dir, '/*/Grid*.nc')) 
 
@@ -913,10 +914,10 @@ nearest_point_in_multidomain<-function(x, y, md){
 merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, 
     domain_index = NA, desired_var = 'max_stage', desired_time_index = NA,
     return_raster=FALSE, proj4string="+init=epsg:4326"){
-    library('ncdf4')
-    library('raster')
-    library('sp')
-    library('rgdal')
+    .library_quiet('ncdf4')
+    .library_quiet('raster')
+    .library_quiet('sp')
+    .library_quiet('rgdal')
 
     # Check input makes sense
     if(all(is.null(nc_grid_files)) & 
@@ -1713,7 +1714,7 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
     include_SpatialPolygonsDataFrame=FALSE, 
     spdf_proj4string="+init=epsg:4326"){
 
-    library(ncdf4)
+    .library_quiet(ncdf4)
 
     all_domain_run_folders = Sys.glob(paste0(multidomain_dir, '/RUN_ID*')) 
     if(length(all_domain_run_folders) == 0) stop('No domains found')
@@ -1768,8 +1769,8 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
     names(merged_domain_ibb) = as.character(merged_domain_indices)
 
     if(include_SpatialPolygonsDataFrame){
-        library(rgdal)
-        library(sp)
+        .library_quiet(rgdal)
+        .library_quiet(sp)
         #
         # Convert merged domain extents to a spatial polygons data frame
         #
@@ -1973,7 +1974,7 @@ get_energy_truely_linear_domain<-function(domain_dir, spherical=TRUE,
 
     deg2rad = pi/180
 
-    library(ncdf4)
+    .library_quiet(ncdf4)
     target_file = Sys.glob(paste0(domain_dir, "/Grid_output_ID*.nc"))
     if(length(target_file) != 1){
         stop(paste0('Did not find exactly one Grid_output_ID*.nc file in ', 
@@ -2081,7 +2082,7 @@ get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
             multidomain_dir))
     }
 
-    library(parallel)
+    .library_quiet(parallel)
 
     all_energies = mclapply(all_domain_dirs, get_energy_truely_linear_domain, 
                             mc.preschedule=FALSE, mc.cores=24)
@@ -2118,7 +2119,7 @@ get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
 #'
 get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE, 
                              verbose=FALSE){
-    library(rptha)
+    .library_quiet(rptha)
 
     # Make sure the input is a matrix. The code below will convert the
     # single-gauge case ( xy_sites=c(lon, lat) )
