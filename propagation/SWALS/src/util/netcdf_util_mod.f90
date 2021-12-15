@@ -173,7 +173,7 @@ module netcdf_util
         character(charlen), optional, intent(in):: attribute_values(:)
             !! values for global attributes of netcdf file (same length as attribute_names)
 
-        integer:: iNcid, output_prec, i, output_byte, output_int4, spatial_stride, spatial_start(2)
+        integer:: iNcid, output_prec, i, output_byte, output_int4, output_int2, spatial_stride, spatial_start(2)
         integer:: nx, ny, first_index_relative_to_full_domain(2), output_prec_force_double
         real(dp) :: dx_local(2)
         character(len=charlen) :: local_att
@@ -243,6 +243,7 @@ module netcdf_util
 
         output_byte = NF90_BYTE
         output_int4 = NF90_INT4
+        output_int2 = NF90_INT4 ! Can get away with this for priority_domain_index/priority_domain_image
 
         !
         ! Create output file
@@ -331,11 +332,11 @@ module netcdf_util
             nc_grid_output%var_is_priority_domain_id), __LINE__ )
 
         ! priority_domain index
-        call check(nf90_def_var(iNcid, "priority_domain_index", output_int4, &
+        call check(nf90_def_var(iNcid, "priority_domain_index", output_int2, &
             [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
             nc_grid_output%var_priority_ind), __LINE__ )
         ! priority domain image
-        call check(nf90_def_var(iNcid, "priority_domain_image", output_int4, &
+        call check(nf90_def_var(iNcid, "priority_domain_image", output_int2, &
             [nc_grid_output%dim_x_id, nc_grid_output%dim_y_id], &
             nc_grid_output%var_priority_img), __LINE__ )
 
