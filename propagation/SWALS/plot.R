@@ -2247,3 +2247,40 @@ get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE,
 
     return(output)
 }
+
+
+#' Make table with domain summary statistics from all multidomain_log files
+#'
+#' The table contains a dump of the statistics reported in the log file, as text.
+#'
+#' @param md_dir multidomain directory containing the log files to be parsed.
+#' @return a matrix of character type with the statistics for all domains at all times,
+#' and each row containing a single domain at a single time.
+get_log_statistics<-function(md_dir){
+    # Read all the log statistics into a matrix, with domains-at-each-time arranged in rows.
+    all_logs = Sys.glob(paste0(md_dir, '/*.log'))
+
+
+    find_domain_stats<-function(log_file){
+
+        log_lines = readLines(log_file)
+
+        # The statistics start with this pattern
+        dashed_line = "^-----------"
+        dashed_line_inds = grep(dashed_line, log_lines)
+        # And are followed by "domain N" where "N" is the domain index
+        domain_stats_start = dashed_line_inds[grepl('^domain   ', log_lines[dashed_line_inds+1])] + 1
+        # The stats end with another 'dashed line'
+        domain_stats_end = dashed_line_inds[findInterval(domain_stats_start, dashed_line_inds)+1] -1
+
+        # Extract statistics as data.frame with columns
+        desired_lines = mapply(function(i1, i2) c(log_lines[i1:i2], 'log_file:', log_file), 
+                               i1=domain_stats_start, i2=domain_stats_end)
+    }
+
+    tmp = lapply(all_logs, find_domain_stats)
+    desired_result = do.call(cbind, tmp)
+
+    return(t(desired_result))
+}
+

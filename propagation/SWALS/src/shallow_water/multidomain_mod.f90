@@ -357,7 +357,8 @@ module multidomain_mod
                             if((md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
                                (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
                                (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1))) then
-                               write(log_output_unit,*) flag
+                               write(log_output_unit,*) flag, &
+                                   " (NB: overflow just after mpi-comms can result from error-stop on other images)"
                                write(log_output_unit,*) 'error-count: ', throw_error
                                write(log_output_unit,*) 'md%domains(', j,')%U(', i3, i2, i1, ')'
                                write(log_output_unit,*) md%domains(j)%U(i3, i2, i1)
@@ -379,7 +380,7 @@ module multidomain_mod
             flush(log_output_unit)
 
             ! Store whatever we can in the netcdf file (useful for debugging)
-            do j = d1, d2
+            do j = 1, size(md%domains)
                 ! But avoid overflow in output files
                 md%domains(j)%U = min(md%domains(j)%U,  HUGE(1.0_output_precision))
                 md%domains(j)%U = max(md%domains(j)%U, -HUGE(1.0_output_precision))
