@@ -1032,10 +1032,11 @@ module nested_grid_comms_mod
 
                         end if
                         ! negative depth should not occur, but this extrapolates gracefully in any case.
+                        ! note if everything is dry we keep using gradient_scale=1.0_dp
                         if(depth_max < 0.0_dp .or. depth_min < 0.0_dp) gradient_scale = 0.0_dp
 
                         !
-                        ! As above, but only in x-direction
+                        ! As above, but only in x-direction (alternative to single gradient_scale)
                         !
 
                         depth_max_x = maxval(U(iim1:iip1, j, STG) - U(iim1:iip1, j, ELV))
@@ -1047,11 +1048,12 @@ module nested_grid_comms_mod
 
                         end if
                         ! negative depth should not occur, but this extrapolates gracefully in any case.
+                        ! note if everything is dry we keep using gradient_scale_x=1.0_dp
                         if(depth_max_x < 0.0_dp .or. depth_min_x < 0.0_dp) gradient_scale_x = 0.0_dp
 
 
                         !
-                        ! As above, but only in y-direction
+                        ! As above, but only in y-direction (alternative to single gradient_scale)
                         !
 
                         depth_max_y = maxval(U(i, jjm1:jjp1, STG) - U(i, jjm1:jjp1, ELV))
@@ -1063,6 +1065,7 @@ module nested_grid_comms_mod
 
                         end if
                         ! negative depth should not occur, but this extrapolates gracefully in any case.
+                        ! note if everything is dry we keep using gradient_scale_y=1.0_dp
                         if(depth_max_y < 0.0_dp .or. depth_min_y < 0.0_dp) gradient_scale_y = 0.0_dp
 
 
@@ -1423,7 +1426,7 @@ module nested_grid_comms_mod
             !
 
             ! Number of fine i/j cells per coarse cell
-            inv_cell_ratios_ip = int(nint(1/two_way_nesting_comms%cell_ratios))
+            inv_cell_ratios_ip = int(nint(1.0_dp/two_way_nesting_comms%cell_ratios))
 
             ! 'index' of the fine cell in the middle of a coarse cell.
             ! This is useful for interpolation, e.g.
@@ -1484,22 +1487,14 @@ module nested_grid_comms_mod
                 do j1 = jL_1, jU_1
 
                     ! Get the j gradient
-                    if(j1 - jL_1 + 1 < middle_index(2)) then
-                        dU_dj = dU_dj_m
-                    else
-                        dU_dj = dU_dj_p
-                    end if
+                    dU_dj = merge(dU_dj_m, dU_dj_p, (j1 - jL_1 + 1 < middle_index(2)))
 
                     ! The 'j interpolation adjustment' of the variable
                     dUj = ((j1-jL_1+1) - middle_index(2)) * two_way_nesting_comms%cell_ratios(2) *  dU_dj
 
                     do i1 = iL_1, iU_1
                         ! Get the i gradient
-                        if(i1 - iL_1 + 1 < middle_index(1)) then
-                            dU_di = dU_di_m
-                        else
-                            dU_di = dU_di_p
-                        end if
+                        dU_di = merge(dU_di_m, dU_di_p, (i1 - iL_1 + 1 < middle_index(1)))
 
                         ! The i interpolation adjustment of the variable
                         dUi = ((i1-iL_1+1) - middle_index(1)) * two_way_nesting_comms%cell_ratios(1) *  dU_di
