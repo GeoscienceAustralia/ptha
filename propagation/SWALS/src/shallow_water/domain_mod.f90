@@ -2133,7 +2133,7 @@ TIMER_STOP('fileIO')
         !! Keep track of the maxima of stage, i.e. domain%U(:,:,STG)
         !!
         class(domain_type), intent(inout):: domain
-        integer(ip):: j, k, i
+        integer(ip):: j, k, i, ip1, jp1
 
         real(dp) :: local_depth, local_depth_inv, arrival_stage, &
             depth_E, depth_N, depth_E_inv, depth_N_inv
@@ -2173,14 +2173,16 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 ! Get depths at UH point (E) and VH point (N).
                                 ! The interpretation of 'depth' varies depending on whether we are using the 'truely-linear'
                                 ! treatment of the pressure gradient term in the linear shallow water equations.
+                                ip1 = min(i+1, domain%nx(1))
+                                jp1 = min(j+1, domain%nx(2))
                                 if(use_truely_linear_method) then
                                     ! Depth is always relative to MSL.
-                                    depth_E = 0.5_dp * sum( (domain%msl_linear - domain%U(i:i+1,j,ELV)))
-                                    depth_N = 0.5_dp * sum( (domain%msl_linear - domain%U(i,j:j+1,ELV)))
+                                    depth_E = 0.5_dp * sum( (domain%msl_linear - domain%U(i:ip1,j,ELV)))
+                                    depth_N = 0.5_dp * sum( (domain%msl_linear - domain%U(i,j:jp1,ELV)))
                                 else
                                     ! Spatially averaged depth on staggered grid
-                                    depth_E = 0.5_dp * sum( (domain%U(i:i+1,j,STG) - domain%U(i:i+1,j,ELV)))
-                                    depth_N = 0.5_dp * sum( (domain%U(i,j:j+1,STG) - domain%U(i,j:j+1,ELV))) 
+                                    depth_E = 0.5_dp * sum( (domain%U(i:ip1,j,STG) - domain%U(i:ip1,j,ELV)))
+                                    depth_N = 0.5_dp * sum( (domain%U(i,j:jp1,STG) - domain%U(i,j:jp1,ELV))) 
                                 end if
 
                                 depth_E_inv = merge(1.0_dp/depth_E, 0.0_dp, depth_E > minimum_allowed_depth)
