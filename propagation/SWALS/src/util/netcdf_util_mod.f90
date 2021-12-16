@@ -243,7 +243,7 @@ module netcdf_util
 
         output_byte = NF90_BYTE
         output_int4 = NF90_INT4
-        output_int2 = NF90_INT4 ! Can get away with this for priority_domain_index/priority_domain_image
+        output_int2 = NF90_INT2 ! Can get away with this for priority_domain_index/priority_domain_image
 
         !
         ! Create output file
