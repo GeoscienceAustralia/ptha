@@ -379,7 +379,7 @@ module multidomain_mod
             flush(log_output_unit)
 
             ! Store whatever we can in the netcdf file (useful for debugging)
-            do j = d1, d2
+            do j = 1, size(md%domains)
                 ! But avoid overflow in output files
                 md%domains(j)%U = min(md%domains(j)%U,  HUGE(1.0_output_precision))
                 md%domains(j)%U = max(md%domains(j)%U, -HUGE(1.0_output_precision))
