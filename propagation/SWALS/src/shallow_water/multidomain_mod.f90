@@ -37,7 +37,7 @@ module multidomain_mod
     use global_mod, only: dp, ip, charlen, gravity, &
         wall_elevation, minimum_allowed_depth, force_double, force_long_double, &
         default_output_folder, send_boundary_flux_data, &
-        real_bytes, force_double_bytes, integer_bytes, pi
+        real_bytes, force_double_bytes, integer_bytes, pi, output_precision
     use timestepping_metadata_mod, only: timestepping_metadata, timestepping_method_index
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use stop_mod, only: generic_stop
@@ -377,6 +377,18 @@ module multidomain_mod
             end do
 
             flush(log_output_unit)
+
+            ! Store whatever we can in the netcdf file (useful for debugging)
+            do j = d1, d2
+                ! But avoid overflow in output files
+                md%domains(j)%U = min(md%domains(j)%U,  HUGE(1.0_output_precision))
+                md%domains(j)%U = max(md%domains(j)%U, -HUGE(1.0_output_precision))
+                md%domains(j)%max_U = min(md%domains(j)%max_U,  HUGE(1.0_output_precision))
+                md%domains(j)%max_U = max(md%domains(j)%max_U, -HUGE(1.0_output_precision))
+                call md%domains(j)%write_to_output_files()
+                call md%domains(j)%write_max_quantities()
+                call md%domains(j)%write_gauge_time_series()
+            end do
             call md%finalise_and_print_timers()
             call generic_stop
         end if
