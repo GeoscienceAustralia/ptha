@@ -2188,9 +2188,9 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 depth_E_inv = merge(1.0_dp/depth_E, 0.0_dp, depth_E > minimum_allowed_depth)
                                 depth_N_inv = merge(1.0_dp/depth_N, 0.0_dp, depth_N > minimum_allowed_depth)
 
-                                domain%max_U(i,j,k) = sqrt(&
+                                domain%max_U(i,j,k) = max(domain%max_U(i,j,k), sqrt(&
                                     domain%U(i,j,UH) * domain%U(i,j,UH) * depth_E_inv**2  + &
-                                    domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv**2)
+                                    domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv**2))
                             end do
                         end do
                         !$OMP END DO
