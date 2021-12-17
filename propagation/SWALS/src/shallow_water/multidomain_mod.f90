@@ -67,7 +67,7 @@ module multidomain_mod
 
     private
     public :: multidomain_type
-    public :: setup_multidomain, test_multidomain_mod
+    public :: setup_multidomain, test_multidomain_mod, check_multidomain_stability
 
     logical, parameter :: send_halos_immediately = .false.
         !! Key parameter affecting parallel communication.
@@ -312,13 +312,13 @@ module multidomain_mod
 
 
     ! Scan domains for unreasonably large numbers or NaN issues
-    subroutine check_for_overflow(md, flag, domain_ind)
+    subroutine check_multidomain_stability(md, flag, domain_ind)
         type(multidomain_type), intent(inout) :: md
         character(len=*), intent(in) :: flag
         integer(ip), optional, intent(in):: domain_ind
 
         integer :: throw_error
-        integer(ip) :: i1, i2, i3, j, d1, d2
+        integer(ip) :: i1, i2, i3, j, d1, d2, ecw
         real(dp), parameter :: bignum = HUGE(1.0)/2.0 ! Deliberate single-precision number
 
         if(present(domain_ind)) then
@@ -333,10 +333,11 @@ module multidomain_mod
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md, d1, d2) REDUCTION(+:throw_error)
         throw_error = 0
         do j = d1, d2
+            ecw = md%domains(j)%exterior_cells_width
             !$OMP DO SCHEDULE(STATIC) COLLAPSE(2)
             do i1 = STG, ELV
-                do i2 = 1, md%domains(j)%nx(2)
-                    do i3 = 1, md%domains(j)%nx(1)
+                do i2 = 1+ecw, md%domains(j)%nx(2)-ecw
+                    do i3 = 1+ecw, md%domains(j)%nx(1)-ecw
                         if((md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
                            (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
                            (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1))) then
@@ -350,10 +351,12 @@ module multidomain_mod
         !$OMP END PARALLEL
 
         if(throw_error > 0) then
+            ! Write out info on the error
             do j = d1, d2
+                ecw = md%domains(j)%exterior_cells_width
                 do i1 = STG, ELV
-                    do i2 = 1, md%domains(j)%nx(2)
-                        do i3 = 1, md%domains(j)%nx(1)
+                    do i2 = 1+ecw, md%domains(j)%nx(2)-ecw
+                        do i3 = 1+ecw, md%domains(j)%nx(1)-ecw
                             if((md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
                                (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
                                (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1))) then
@@ -1035,8 +1038,9 @@ module multidomain_mod
         ! there, leading to tiny numerical differences in the time.
         ! To avoid any issues, we explicitly set them to the same number
 
-        !DEBUG
-        !call check_for_overflow(md, 'start')
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+        call check_multidomain_stability(md, 'start')
+#endif
 
         ! Evolve every domain, sending the data to communicate straight after
         ! the evolve
@@ -1073,8 +1077,9 @@ module multidomain_mod
 
             ! Step once
             call md%domains(j)%evolve_one_step(dt_local)
-            !call check_for_overflow(md, 'inner', j)
-
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+            call check_multidomain_stability(md, 'inner', j)
+#endif
             ! Report max_dt as the peak dt during the first timestep
             ! In practice max_dt may cycle between time-steps
             max_dt_store = md%domains(j)%max_dt
@@ -1082,7 +1087,9 @@ module multidomain_mod
             ! Do the remaining sub-steps
             do i = 2, nt ! Loop never runs if nt < 2
                 call md%domains(j)%evolve_one_step(dt_local)
-                !call check_for_overflow(md, 'innerB', j)
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+                call check_multidomain_stability(md, 'innerB', j)
+#endif
             end do
             md%domains(j)%max_dt = max_dt_store
 
@@ -1095,8 +1102,9 @@ module multidomain_mod
             md%domains(j)%time = tend
         end do
 
-        !DEBUG
-        !call check_for_overflow(md, 'step-before-comms')
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+        call check_multidomain_stability(md, 'step-before-comms')
+#endif
 
         if(.not. send_halos_immediately) then
             ! Do all the coarray communication in one hit
@@ -1112,9 +1120,9 @@ module multidomain_mod
         ! also sync after to ensure it is not overwritten before it is used
         call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
 
-        !DEBUG
-        !call check_for_overflow(md, 'step-after-comms')
-
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+        call check_multidomain_stability(md, 'step-after-comms')
+#endif
         if(send_boundary_flux_data) then
             TIMER_START('nesting_flux_correction')
             ! Do flux correction
@@ -1124,8 +1132,9 @@ module multidomain_mod
             end do
             TIMER_STOP('nesting_flux_correction')
 
-            !DEBUG
-            !call check_for_overflow(md, 'step-after-flux_correct')
+#ifdef TRACK_MULTIDOMAIN_STABILITY
+            call check_multidomain_stability(md, 'step-after-flux_correct')
+#endif
         end if
 
     end subroutine
