@@ -75,7 +75,7 @@ module timestepping_metadata_mod
             timestepping_metadata(1)%default_cfl = 0.99_dp
             timestepping_metadata(1)%default_theta = 1.6_dp
             timestepping_metadata(1)%nesting_thickness_for_one_timestep = 4_ip
-            timestepping_metadata(1)%forcing_elevation_is_allowed = 'optional'
+            timestepping_metadata(1)%forcing_elevation_is_allowed = 'optional' ! The option requires more storage
             timestepping_metadata(1)%eddy_viscosity_is_supported = .true.
 
             !
@@ -85,7 +85,7 @@ module timestepping_metadata_mod
             timestepping_metadata(2)%default_cfl = 0.99_dp
             timestepping_metadata(2)%default_theta = 1.6_dp
             timestepping_metadata(2)%nesting_thickness_for_one_timestep = 10_ip
-            timestepping_metadata(2)%forcing_elevation_is_allowed = 'optional'
+            timestepping_metadata(2)%forcing_elevation_is_allowed = 'optional' ! The option requires more storage
             timestepping_metadata(2)%eddy_viscosity_is_supported = .true.
 
             !
@@ -95,7 +95,7 @@ module timestepping_metadata_mod
             timestepping_metadata(3)%default_cfl = 0.99_dp
             timestepping_metadata(3)%default_theta = 1.6_dp
             timestepping_metadata(3)%nesting_thickness_for_one_timestep = 4_ip
-            timestepping_metadata(3)%forcing_elevation_is_allowed = 'optional'
+            timestepping_metadata(3)%forcing_elevation_is_allowed = 'optional' ! The option requires more storage
             timestepping_metadata(3)%eddy_viscosity_is_supported = .true.
 
             !
