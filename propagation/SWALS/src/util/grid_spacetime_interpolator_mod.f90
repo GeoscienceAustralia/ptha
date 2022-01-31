@@ -29,6 +29,8 @@ module grid_spacetime_interpolator_mod
             !! but sometimes we want several grids (e.g. east/north velocity)
         type(c_ptr) :: grid_update_context = c_null_ptr
             !! Used to store any data required by the get_grid_at_time function
+        logical :: even_x_spacing, even_y_spacing
+            !! If x/y are evenly spaced then we can quickly find the nearest index
 
         procedure(get_grid_at_time), pointer, nopass :: get_grid_at_time => NULL()
             !! User-provided subroutine to update the g1 and g2 values
@@ -83,6 +85,7 @@ module grid_spacetime_interpolator_mod
             !! Size of the third dimension of gsi%g1, gsi%g2
 
         integer(ip) :: i, ng_local
+        real(dp) :: dx, dy
 
         ! By default assume third dimension of gsi%g1, gsi%g2 has size 1
         if(present(ng)) then
@@ -91,17 +94,26 @@ module grid_spacetime_interpolator_mod
             ng_local = 1_ip
         end if
 
+        ! Check if x is increasing and evenly spaced
+        gsi%even_x_spacing = .true.
+        dx = (x(size(x)) - x(1) ) / (size(x) - 1.0_dp)
         do i = 1, (size(x, kind=ip)-1)
             if(x(i+1) <= x(i)) then
                 write(log_output_unit, *) "x must be increasing", x
                 call generic_stop
             end if
+            if( abs(x(i+1) - x(i) - dx) > 10*maxval(spacing([dx, x(i:i+1)])) ) gsi%even_x_spacing = .false.
         end do
+
+        ! Check if y is increasing and evenly spaced
+        gsi%even_y_spacing = .true.
+        dy = (y(size(y)) - y(1) ) / (size(y) - 1.0_dp)
         do i = 1, (size(y, kind=ip)-1)
             if(y(i+1) <= y(i)) then
                 write(log_output_unit, *) "y must be increasing", y
                 call generic_stop
             end if
+            if( abs(y(i+1) - y(i) - dy) > 10*maxval(spacing([dy, y(i:i+1)])) ) gsi%even_y_spacing = .false.
         end do
 
         ! Grid size
@@ -279,7 +291,12 @@ module grid_spacetime_interpolator_mod
         do i = 1, size(xs, kind=ip)
 
             ! Get x-indices for bilinear interpolation: i0 < i1
-            call nearest_index_sorted(gsi%nx(1), gsi%x, xs(i), i0)
+            if(gsi%even_x_spacing) then
+                i0 = nint( (xs(i) - gsi%x(1)) / ((gsi%x(gsi%nx(1)) - gsi%x(1))/(gsi%nx(1)-1.0_dp)) ) + 1
+                i0 = min(max(i0, 1), gsi%nx(1))
+            else
+                call nearest_index_sorted(gsi%nx(1), gsi%x, xs(i), i0)
+            end if
             if(xs(i) > gsi%x(i0)) then
                 i1 = min(i0+1, gsi%nx(1))
             else
@@ -297,7 +314,12 @@ module grid_spacetime_interpolator_mod
             !print*, xs(i), gsi%x(i0), gsi%x(i1), i0, i1, w0_x, w1_x
 
             ! Get y-indices for bilinear interpolation: j0 < j1
-            call nearest_index_sorted(gsi%nx(2), gsi%y, ys(i), j0)
+            if(gsi%even_y_spacing) then
+                j0 = nint( (ys(i) - gsi%y(1)) / ((gsi%y(gsi%nx(2)) - gsi%y(1))/(gsi%nx(2)-1.0_dp)) ) + 1
+                j0 = min(max(j0, 1), gsi%nx(2))
+            else
+                call nearest_index_sorted(gsi%nx(2), gsi%y, ys(i), j0)
+            end if
             if(ys(i) > gsi%y(j0)) then
                 j1 = min(j0+1, gsi%nx(2))
             else
@@ -352,6 +374,9 @@ module grid_spacetime_interpolator_mod
         gsi%g1_time = HUGE(1.0_dp)
         gsi%g2_time = -HUGE(1.0_dp)
         gsi%dt = -HUGE(1.0_dp)
+        gsi%nx = -HUGE(1_ip)
+
+        gsi%grid_update_context = c_null_ptr
 
     end subroutine
 
@@ -381,7 +406,7 @@ module grid_spacetime_interpolator_mod
         real(dp) :: xs(10), ys(20), time, dt, start_time
         real(dp) :: dx, dy, x0, y0
         integer(ip), parameter :: ng = 2
-        integer(ip) :: i, j, k
+        integer(ip) :: i, j, k, testcase
         real(dp) :: tx(5), ty(5), tv(5,ng), test_grid(10, 20, ng)
         real(dp) :: errtol
         type(c_ptr) :: grid_update_context
@@ -406,69 +431,101 @@ module grid_spacetime_interpolator_mod
         end do
         !print*, ys
 
-        ! Setup the gsi object
-        start_time = 35.0_dp
-        dt = 15.0_dp
+        do testcase = 1, 2
+
+            ! Setup the gsi object
+            start_time = 35.0_dp
+            dt = 15.0_dp
+            gsi%grid_update_context = c_loc(cxy(1))
+            gsi%get_grid_at_time => for_test_get_grid_at_time
+            call gsi%initialise(xs, ys, start_time, dt, ng)
+
+            if(testcase == 1) then
+                ! The x/y spacing is even, which should be detected
+                if(gsi%even_x_spacing .and. gsi%even_y_spacing) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL'
+                end if
+            else
+                ! Forcibly set even_x_spacing/even_y_spacing to .false., so that
+                ! we exercise the test code for uneven spacing. 
+                ! This is not recommended in general usage!
+                gsi%even_x_spacing = .false.
+                gsi%even_y_spacing = .false.
+            end if
+
+            !
+            ! Setup the test data -- off the grid in this case
+            !
+            tx = x0 - 1.0_dp
+            ty = y0 - 1.0_dp
+            time = start_time + 5.0_dp
+            call gsi%interpolate(time, tx, ty, tv)
+            do k = 1, ng
+                if(all(abs(tv(:,k) - k*(time + cxy(1) * x0 + cxy(2) * y0)) < errtol)) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * x0 + cxy(2) * y0))
+                end if
+            end do
+
+            !
+            ! Setup the test data -- on the grid in this case
+            !
+            tx = x0 + dx * ([1.0 , 3.0, 6.3, 4.0, 8.0] - 1.0)
+            ty = y0 + dy * ([20.0, 4.0, 5.2, 1.0, 2.0] - 1.0)
+            time = start_time + 5.0_dp
+            call gsi%interpolate(time, tx, ty, tv)
+            do k = 1, ng
+                if(all(abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty)) < errtol)) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty))
+                end if
+            end do
+
+            ! As before, with time large enough to trigger a grid update
+            time = start_time + 5.0_dp + dt
+            call gsi%interpolate(time, tx, ty, tv) ! This will cause g1 => g2, and g2 to be updated using for_test_get_grid_at_time
+            do k = 1, ng
+                if(all(abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty)) < errtol)) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty))
+                end if
+            end do
+
+            ! Finally check we can interpolate the grids in time
+            time = 0.6_dp*gsi%g1_time + 0.4_dp*gsi%g2_time
+            if(abs(time - (0.6_dp*50.0_dp + 0.4_dp*65.0_dp)) < errtol) then
+                print*, 'PASS'
+            else
+                print*, 'FAIL', time, time - (0.6_dp*50.0_dp + 0.4_dp*65.0_dp), errtol
+            end if
+            call gsi%interpolate_grid_in_time(time, test_grid)
+            if(all(abs(test_grid - (0.6_dp * gsi%g1 + 0.4_dp * gsi%g2)) < errtol)) then
+                print*, 'PASS'
+            else
+                print*, 'FAIL'
+            end if
+
+            call gsi%finalise
+
+        end do
+
+        ! Check that uneven x/y coordinates are detected
+        xs(1) = xs(1) - 0.1_dp
+        ys(size(ys)) = ys(size(ys)) + 0.4_dp
         gsi%grid_update_context = c_loc(cxy(1))
         gsi%get_grid_at_time => for_test_get_grid_at_time
         call gsi%initialise(xs, ys, start_time, dt, ng)
-
-        !
-        ! Setup the test data -- off the grid in this case
-        !
-        tx = x0 - 1.0_dp
-        ty = y0 - 1.0_dp
-        time = start_time + 5.0_dp
-        call gsi%interpolate(time, tx, ty, tv)
-        do k = 1, ng
-            if(all(abs(tv(:,k) - k*(time + cxy(1) * x0 + cxy(2) * y0)) < errtol)) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * x0 + cxy(2) * y0))
-            end if
-        end do
-
-        !
-        ! Setup the test data -- on the grid in this case
-        !
-        tx = x0 + dx * ([1.0 , 3.0, 6.3, 4.0, 8.0] - 1.0)
-        ty = y0 + dy * ([20.0, 4.0, 5.2, 1.0, 2.0] - 1.0)
-        time = start_time + 5.0_dp
-        call gsi%interpolate(time, tx, ty, tv)
-        do k = 1, ng
-            if(all(abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty)) < errtol)) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty))
-            end if
-        end do
-
-        ! As before, with time large enough to trigger a grid update
-        time = start_time + 5.0_dp + dt
-        call gsi%interpolate(time, tx, ty, tv) ! This will cause g1 => g2, and g2 to be updated using for_test_get_grid_at_time
-        do k = 1, ng
-            if(all(abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty)) < errtol)) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', abs(tv(:,k) - k*(time + cxy(1) * tx + cxy(2) * ty))
-            end if
-        end do
-
-        ! Finally check we can interpolate the grids in time
-        time = 0.6_dp*gsi%g1_time + 0.4_dp*gsi%g2_time
-        if(abs(time - (0.6_dp*50.0_dp + 0.4_dp*65.0_dp)) < errtol) then
-            print*, 'PASS'
-        else
-            print*, 'FAIL', time, time - (0.6_dp*50.0_dp + 0.4_dp*65.0_dp), errtol
-        end if
-        call gsi%interpolate_grid_in_time(time, test_grid)
-        if(all(abs(test_grid - (0.6_dp * gsi%g1 + 0.4_dp * gsi%g2)) < errtol)) then
-            print*, 'PASS'
-        else
+        ! The x/y spacing is uneven, which should be detected
+        if(gsi%even_x_spacing .or. gsi%even_y_spacing) then
             print*, 'FAIL'
+        else
+            print*, 'PASS'
         end if
-
-        call gsi%finalise
 
     end subroutine
 
