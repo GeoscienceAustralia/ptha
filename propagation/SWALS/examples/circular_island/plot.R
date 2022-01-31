@@ -1,7 +1,10 @@
 # Assuming the model has been run, we do
 source('../../plot.R')
 
-x = get_all_recent_results(quiet=TRUE)
+#x = get_all_recent_results(quiet=TRUE)
+
+md = get_multidomain(sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1])
+x = md[[length(md)]] # Gives the domain of interest for BOTH single domain model and nested model
 
 # Allowed mean error fraction for 'PASS'
 REL_ERR = 0.05
@@ -71,7 +74,7 @@ err_val = mean(abs(peak_wave_height[1:l + l] - peak_wave_analytical[1:l + l]))/m
 if(err_val < REL_ERR){
     print('PASS')
 }else{
-    print('FAIL')
+    print(c('FAIL', err_val))
 }
 
 plot(peak_wave_height[1:l + 2*l], t='o', 
@@ -86,7 +89,7 @@ err_val = mean(abs(peak_wave_height[1:l + 2*l] - peak_wave_analytical[1:l + 2*l]
 if(err_val  < REL_ERR ){
     print('PASS')
 }else{
-    print('FAIL')
+    print(c('FAIL', err_val))
 }
 
 dev.off()
