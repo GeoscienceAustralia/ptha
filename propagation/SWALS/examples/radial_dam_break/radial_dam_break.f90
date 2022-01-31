@@ -129,9 +129,7 @@ program radial_dam_break
 
         call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency)
 
-        if (md%domains(1)%time > final_time) then
-            exit 
-        end if
+        if (md%domains(1)%time > final_time) exit
 
         call md%evolve_one_step(global_dt)
 
