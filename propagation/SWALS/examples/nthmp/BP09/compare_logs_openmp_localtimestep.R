@@ -47,18 +47,18 @@ if(quantile(err_stat, 0.95) < 1.0e-05){
 }
 # Compare min stage 
 err_stat = abs(min_stage_openmp - min_stage_ompLocalTS)/diff(range(min_stage_ompLocalTS))
-if(quantile(err_stat, 0.95) < 1.0e-03){
+if(quantile(err_stat, 0.95) < 2.0e-03){
     print('PASS')
 }else{
-    print('FAIL')
+    print(c('FAIL', quantile(err_stat, 0.95)))
 }
 
 # Compare max speed
 err_stat = abs(max_speed_openmp - max_speed_ompLocalTS)/diff(range(max_speed_ompLocalTS))
-if(quantile(err_stat, 0.95) < 1.0e-02 & quantile(err_stat, 0.5) < 1.0e-03){
+if(quantile(err_stat, 0.95) < 2.0e-02 & quantile(err_stat, 0.5) < 1.0e-03){
     print('PASS')
 }else{
-    print('FAIL')
+    print(c('FAIL', quantile(err_stat, c(0.95, 0.5))))
 }
 
 #
@@ -131,7 +131,7 @@ for(time_ind in time_inds){
         if(all(err_stats < target_errs)){
             print('PASS')
         }else{
-            print('FAIL')
+            print(c('FAIL', err_stats))
         }
 
     }else{
