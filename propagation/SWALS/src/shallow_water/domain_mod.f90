@@ -1825,7 +1825,8 @@ TIMER_STOP('compute_volume_in_priority_domain')
     function nonlinear_stationary_timestep_max(domain) result(timestep)
         !!
         !! Function to compute the max timestep allowed for the nonlinear shallow water equations, for a stationary flow (i.e. gravity
-        !! wave only), using the provided CFL.
+        !! wave only), using the provided CFL, similar to [cfl * min(cell_dx, cell_dy)/sqrt(gravity * max(depth)) ]. The numerical
+        !! methods can often only take half this step, but we correct for that later.
         !! Results are not exactly the same as the gravity-wave timestep limit for nonlinear-FV solvers, because the latter compute
         !! wave speeds at edges rather than cell centres. But results are very close in general for a stationary flow.
         !!
@@ -1853,8 +1854,9 @@ TIMER_STOP('compute_volume_in_priority_domain')
     end function
 
     function stationary_timestep_max(domain) result(timestep)
-        !! Convenience wrapper which uses 'linear_timestep_max' or 'nonlinear_stationary_timestep_max' depending on the numerical
-        !! method.
+        !! Convenience wrapper which uses 'linear_timestep_max' or 'nonlinear_stationary_timestep_max', depending on the numerical
+        !! method, to compute the max timestep allowed for a stationary flow (i.e. just gravity waves, ignoring flow velocities for
+        !! nonlinear shallow water equations).
         !! This is mainly useful when setting up models, as a guide to the timestep that one might be able to take.
         !! Beware the time-step calculations are not exactly the same as the results from the nonlinear-FV solvers (because the
         !! latter use the edge-based wave speed calculations). But they should be very similar.
@@ -3275,8 +3277,17 @@ TIMER_STOP('nesting_flux_correction')
                 else
                     ! Both 'nbr' and 'out' have the same cell size.
                     equal_sizes = .true.
-                    ! Need a rule to decide which one to correct
-                    ! Select dm based on the order of the index, with tie-breaking by image
+                    ! Need a rule to decide which one to correct. All images should see the same rule.
+#ifdef OLD_PROCESS_DATA_TO_SEND_B4FEB22
+                    ! Solution: Select dm based on the order of the index, with tie-breaking by image
+                    ! OLD METHOD -- it has a weakness:
+                    !     With this rule, if we run two models that are identical except image indices are reordered, 
+                    !     then this could behave differently. While there is no 'correct' choice, seems better to have 
+                    !     the same solution irrespective (perhaps based on geometric criteria)? Note that if the equal 
+                    !     sized domains are using local time-stepping, so have different time-steps, then presumably 
+                    !     flux correction will be needed.
+                    !     Alternative: using the value of `dm_outside` [e.g. dm = merge(0, dm_outside, dm_outside > 0)].
+                    !            
                     if(out_index > nbr_index) then
                         dm = dm_outside
                     else
@@ -3291,6 +3302,10 @@ TIMER_STOP('nesting_flux_correction')
                             end if
                         end if
                     end if
+#else
+                    ! This approach will not depend on the ordering of md%domains, or their distribution among images
+                    dm = merge(0, dm_outside, dm_outside > 0)
+#endif
                 end if
 
                 ! Get indices for 'the domain to be corrected'  = cor_index, cor_image

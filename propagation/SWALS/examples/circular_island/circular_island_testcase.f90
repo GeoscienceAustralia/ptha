@@ -59,6 +59,8 @@ module local_routines
         ! Stage, UH, VH
         domain%U(:,:,[STG, UH, VH]) = 0.0_dp
 
+        domain%msl_linear = 0.0_dp
+
         ! Set elevation
         slope = offshore_depth/(slope_radius - island_radius)
         do j = 1, domain%nx(2)
@@ -109,34 +111,26 @@ program circular_island
     !! variable depth. Journal of fluid mechanics 278: 391-406
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_linear_timestepping_method
-    use domain_mod, only: domain_type
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary
     use linear_interpolator_mod, only: linear_interpolator_type
     use local_routines
     implicit none
 
-    integer(ip):: j
-    real(dp):: last_write_time, rain_rate
-    type(domain_type):: domain
+    type(multidomain_type) :: md
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 50.0_dp
     real(dp), parameter :: final_time = 200000.0_dp
 
-    ! Domain info
+    ! Timestepping method should be linear, as we compare against a linear analytical solution.
     character(charlen) :: timestepping_method = default_linear_timestepping_method
     
-    !! length/width
-    real(dp), dimension(2) :: global_lw, global_ll
-    integer(ip), dimension(2) :: global_nx 
-
     ! Local variables 
-    real(dp) :: timestep
+    real(dp) :: timestep, boundary_wave_period
     real(dp) :: offshore_depth, island_radius, slope_radius, dx
-    real(dp) :: boundary_wave_period
     character(charlen):: test_case, bc_file
-    real(dp):: tank_bases(4), tank_slopes(4) 
-    integer(ip) :: full_write_step
+    integer(ip) :: j
 
     ! Write the stage raster time-series less often than we write at gauges, to avoid
     ! overly large files. 
@@ -147,15 +141,48 @@ program circular_island
     ! idea is to allow the transients to pass, then reset the max stage,
     ! so it ultimately only records the 'stationary' part of the run
     real(dp), parameter :: reset_max_stage_at_time = 120000.0_dp
+    logical :: have_reset_max_stage = .FALSE.
 
-    ! Resolution
-    dx = 2000.00_dp
+    integer, parameter :: nd = 2
+    
 
- 
     ! Large scale domain. Wave comes from east side
-    global_lw = [2000.0_dp , 3000.0_dp]*1e+03 
-    global_ll = -global_lw/2.0_dp
-    global_nx = nint(global_lw/dx)
+    if(nd == 1) then
+        ! Single domain model
+        allocate(md%domains(1))
+        dx = 2000.00_dp
+        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03 
+        md%domains(1)%lower_left = -md%domains(1)%lw/2.0_dp
+        md%domains(1)%nx = nint(md%domains(1)%lw/dx)
+        md%domains(1)%timestepping_method = timestepping_method
+
+    else if(nd == 2) then
+        ! Nested domain model
+
+        ! Coarser outer domain
+        allocate(md%domains(2))
+        dx = 4000.00_dp
+        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03 
+        md%domains(1)%lower_left = -md%domains(1)%lw/2.0_dp
+        md%domains(1)%nx = nint(md%domains(1)%lw/dx)
+        md%domains(1)%timestepping_method = timestepping_method
+
+        ! Finer nested domain
+        call md%domains(2)%match_geometry_to_parent(&
+            parent_domain = md%domains(1), &
+            lower_left  = [-4.0e+05_dp, -4.0e+05_dp], &
+            upper_right = [ 4.0e+05_dp,  4.0e+05_dp], &
+            dx_refinement_factor = 2_ip, &
+            ! For inner linear domains, timestepping refinement should not be used
+            ! (leads to instability).
+            timestepping_refinement_factor = 1_ip)
+        md%domains(2)%timestepping_method = timestepping_method
+
+    else
+        stop 'unsupported nesting setup'
+    end if
+
+    call md%setup
 
     ! Geometry
     island_radius = 40000.0_dp
@@ -166,76 +193,51 @@ program circular_island
     ! wavelength = 2 x slope_radius
     boundary_wave_period = slope_radius * 2.0_dp /sqrt(9.8_dp * offshore_depth) !12.0_dp * 60.0_dp
 
-
-    domain%timestepping_method = timestepping_method
-
-    ! Allocate domain -- must have set timestepping method BEFORE this
-    call domain%allocate_quantities(global_lw, global_nx, global_ll)
-
-    ! Call local routine to set initial conditions
-    call set_initial_conditions_circular_island(domain, offshore_depth, island_radius, slope_radius)
+    do j = 1, size(md%domains)
+        ! Call local routine to set initial conditions
+        call set_initial_conditions_circular_island(md%domains(j), offshore_depth, island_radius, slope_radius)
+    end do
 
     ! Get the boundary data and make an interpolation function f(t) for gauge 4
-    domain%boundary_function => boundary_function
-    domain%boundary_subroutine => flather_boundary
     boundary_information%offshore_elev = -offshore_depth
     boundary_information%boundary_wave_period = boundary_wave_period
+    do j = 1, size(md%domains)
+        if(any(md%domains(j)%boundary_exterior)) then
+            md%domains(j)%boundary_function => boundary_function
+            md%domains(j)%boundary_subroutine => flather_boundary
+        end if
+    end do
 
+    call md%make_initial_conditions_consistent
+    call md%set_null_regions_to_dry
    
-    ! Linear requires a fixed timestep 
-    if (.not. domain%adaptive_timestepping) then
-        timestep = domain%stationary_timestep_max() 
-    end if
+    ! Use the min timestep on the multidomain (accounting for the fact that wave heights grow somewhat)
+    timestep = md%stationary_timestep_max() * offshore_depth/(10.0_dp + offshore_depth)
 
-
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = domain%time - approximate_writeout_frequency
-
-    full_write_step = 0
     ! Evolve the code
     do while (.true.)
 
-        if(domain%time - last_write_time >= approximate_writeout_frequency) then
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency=approximate_writeout_frequency, &
+            write_grids_less_often = frequency_full_write_steps, &
+            print_less_often = frequency_full_write_steps)
 
-            ! Reset the peak stage record once during the simulation, so the final
-            ! result reflects the 'stationary' model solution
-            if((domain%time >= reset_max_stage_at_time) .and. &
-               (last_write_time <= reset_max_stage_at_time)) then
-                domain%max_U(:,:,1) = -huge(1.0) ! Deliberate single-precision so it can be stored
-            end if
-
-            last_write_time = last_write_time + approximate_writeout_frequency
-
-            ! This avoids any artefacts in the numerical update of the model
-            ! which should be overwritten by the boundary condition
-            call domain%update_boundary()
-
-            full_write_step = full_write_step + 1
-            if(mod(full_write_step, frequency_full_write_steps) == 0) then 
-                call domain%write_to_output_files(time_only=never_write_grid_time_slices)
-                call domain%print()
-                print*, 'Mass balance: ', domain%mass_balance_interior()
-            end if
-
-            call domain%write_gauge_time_series()
-
+        ! We are interested in the 'periodic steady-state' solution. To avoid the initial model transients,
+        ! reset this after a burn in time
+        if(md%domains(1)%time > reset_max_stage_at_time .and. (.not. have_reset_max_stage)) then
+            do j = 1, size(md%domains)
+                md%domains(j)%max_U = -HUGE(1.0_dp)
+            end do
+            have_reset_max_stage = .true. 
         end if
 
-        if (domain%time > final_time) exit 
+        ! End of run
+        if(md%domains(1)%time > final_time) exit
 
-        if (.not. domain%adaptive_timestepping) then
-            call domain%evolve_one_step(timestep = timestep)
-        else
-            call domain%evolve_one_step()
-        end if
+        call md%evolve_one_step(timestep)
 
     end do
 
-    call domain%write_max_quantities()
-
-    ! Print timing info
-    call domain%timer%print()
-
-    call domain%finalise()
+    call md%finalise_and_print_timers
 
 end program

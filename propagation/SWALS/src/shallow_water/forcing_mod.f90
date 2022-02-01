@@ -218,8 +218,9 @@ module forcing_mod
 
     subroutine setup_forcing_patch(forcing_patch, start_time, end_time, i0, i1, j0, j1, k0, k1)
         !! Convenience routine to setup a forcing_patch_type. This sets the start and end times, and
-        !! allocates forcing_patch%forcing_work(i0:i1, j0:j1, k0:k1). If k0,k1 are not provided then
-        !! they are set to STG,ELV as used in the domain object.
+        !! allocates forcing_patch%forcing_work(i0:i1, j0:j1, k0:k1). The latter will be used to force 
+        !! domain%U(i0:i1, j0:j1, k0:k1). If k0,k1 are not provided then they are set to STG,ELV as 
+        !! used in the domain object.
         class(forcing_patch_type), intent(inout) :: forcing_patch
             !! The input forcing patch
         real(dp), intent(in) :: start_time, end_time

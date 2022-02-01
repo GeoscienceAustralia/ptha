@@ -25,7 +25,7 @@ module local_routines
         logical, intent(in):: adaptive_computational_extents, negative_elevation_raster
         real(dp), intent(in) :: manning_n, rise_time
 
-        integer(ip):: i, j, extra_buffer
+        integer(ip):: i, j
         real(dp), allocatable:: x(:), y(:), xy_coords(:,:)
         integer(ip):: stage_raster_dim(2), xl, xu, yl, yu
         real(dp) :: stage_raster_ll(2), stage_raster_ur(2)
@@ -95,7 +95,6 @@ SOURCEDIR
             call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), &
                 bilinear=1_ip)
             if(negative_elevation_raster) domain%U(:,j,ELV) = -domain%U(:,j,ELV)
-
         end do
         call elevation_data%finalise()
 
@@ -113,11 +112,10 @@ SOURCEDIR
 
         ! Get the x indices which are inside the stage raster 
         ! We permit this to only cover a small part of the domain
-        extra_buffer = 0
-        xl = count(domain%x < stage_data%lowerleft(1)) + 1  - extra_buffer
-        xU = count(domain%x < stage_data%upperright(1)) + extra_buffer
-        yl = count(domain%y < stage_data%lowerleft(2)) + 1 - extra_buffer
-        yU = count(domain%y < stage_data%upperright(2)) + extra_buffer
+        xl = count(domain%x < stage_data%lowerleft(1)) + 1 
+        xU = count(domain%x < stage_data%upperright(1))
+        yl = count(domain%y < stage_data%lowerleft(2)) + 1 
+        yU = count(domain%y < stage_data%upperright(2))
 
         print*, '    bounding box of input stage: ' 
         print*, '    ', stage_data%lowerleft

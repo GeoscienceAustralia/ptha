@@ -196,8 +196,9 @@ module multidomain_mod
 
         integer(ip) :: extra_halo_buffer = extra_halo_buffer_default
         integer(ip) :: extra_cells_in_halo = extra_cells_in_halo_default
-            !! Controls on any additional halo width. This can enable separation of send/recv halos,
-            !! which may reduce nesting artefacts in some situations.
+            !! Controls on any additional halo width. This can be useful e.g. to allow interpolation involving
+            !! neighbouring points in send regions, or if other numerical terms (with a larger stencil) are
+            !! added to the code
 
         real(dp), allocatable :: all_dx_md(:,:,:)
             !! Store all_dx (i.e. dx values of all domains) on (x-and-y-dims, all domains, all images)
@@ -208,6 +209,11 @@ module multidomain_mod
         integer(ip) :: writeout_counter = 0
         real(dp) :: last_write_time = -HUGE(1.0_dp)
             !! Convenience variables controlling writeout
+        character(len=charlen) :: label = ''
+            !! Label for the multidomain. When running models with more than one multidomain,
+            !! unique labels should be used for each, to avoid problems in parallel communication.
+            !! (Note: This could be avoided by converting the main data in p2p_comms_mod into a derived
+            !! type, one per multidomain, and that should be a better approach).
 
 
         contains
@@ -228,7 +234,6 @@ module multidomain_mod
         ! Inter-domain communication
         procedure :: send_halos => send_multidomain_halos
         procedure :: recv_halos => receive_multidomain_halos
-        procedure :: separate_halos => separate_fine_halos_from_their_domain
         procedure :: communicate_max_U => communicate_max_U
         ! Memory tracking
         procedure :: memory_summary => memory_summary
@@ -1520,20 +1525,8 @@ module multidomain_mod
 
     ! Make sure initial flow/elev values are consistent between parallel domains, by doing one halo exchange
     !
-    ! If separate_halos = .true., then call md%separate_halos() to make recv_weights zero in parts of fine-domain nesting regions
-    ! that are close to other nesting regions
-    !
-    subroutine make_initial_conditions_consistent(md, separate_halos)
+    subroutine make_initial_conditions_consistent(md)
         class(multidomain_type), intent(inout) :: md
-        logical, optional, intent(in) :: separate_halos
-
-        logical :: separate_halos_local
-
-        if(present(separate_halos)) then
-            separate_halos_local = separate_halos
-        else
-            separate_halos_local = .false.
-        end if
 
         call md%send_halos(send_to_recv_buffer=send_halos_immediately)
         if(.not. send_halos_immediately) call communicate_p2p
@@ -1541,10 +1534,6 @@ module multidomain_mod
         call sync_all_generic
 #endif
         call md%recv_halos()
-
-        if(separate_halos_local) then
-            call md%separate_halos()
-        end if
 
         ! For mass conservation tracking it is good to do this
         call md%record_initial_volume()
@@ -2189,85 +2178,6 @@ module multidomain_mod
         TIMER_STOP('send_multidomain_halos')
     end subroutine
 
-    ! In nesting communication, when a fine domain receives from a coarse domain,
-    ! we may want to 'not update' fine halo cells that are very close to their domain.
-    !
-    ! This can be beneficial for numerical stability, although it can also cause problems.
-    !
-    ! This routine sets the nesting recv_weights to 0.0_dp, for fine-domain cells that
-    ! are close to a coarse domain.
-    !
-    ! Beware that other parameters in nested_grid_comms_mod.f90 control whether these weights
-    ! are even used -- which depends also on the depth and depth-gradients.
-
-    ! In any case, halos must be 'fatter than required'.
-    !
-    subroutine separate_fine_halos_from_their_domain(md)
-        class(multidomain_type), intent(inout) :: md
-
-        integer(ip) :: i, j, nx, ny, irecv_L, irecv_U, ir, jrecv_L, jrecv_U, jr
-        integer(ip) :: ia, ib, ja, jb, i1, j1
-        integer(ip) :: sep
-
-
-        ! Search all domains
-        do j = 1, size(md%domains, kind=ip)
-
-            ! Quick exit
-            if(.not. allocated(md%domains(j)%nesting%recv_comms)) cycle
-
-            nx = size(md%domains(j)%nesting%priority_domain_index, 1, kind=ip)
-            ny = size(md%domains(j)%nesting%priority_domain_index, 2, kind=ip)
-
-            if(md%domains(j)%max_parent_dx_ratio > 1_ip) then
-                ! Separate this much from halos -- must be a multiple of md%domains(j)%max_parent_dx_ratio
-                sep = md%extra_halo_buffer*md%domains(j)%max_parent_dx_ratio
-            else
-                ! No extra separation if we only receive data from domains of the same or finer size
-                cycle
-            end if
-
-            ! Search the recv comms
-            do i = 1, size(md%domains(j)%nesting%recv_comms, kind=ip)
-
-                ! Look for recv_comms where a fine domain receives
-                if(.not. (md%domains(j)%nesting%recv_comms(i)%recv_active .and. &
-                          md%domains(j)%nesting%recv_comms(i)%my_domain_is_finer)) cycle
-
-                ! Indices of the recv domain where the recv happens
-                irecv_L = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,1)
-                irecv_U = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,1)
-                jrecv_L = md%domains(j)%nesting%recv_comms(i)%recv_inds(1,2)
-                jrecv_U = md%domains(j)%nesting%recv_comms(i)%recv_inds(2,2)
-
-                ! Loop over every cell in the recv region, and see if it is within 'sep' cells
-                ! of a cell having priority_domain_index/image equal to the recv domain.
-                ! If such cells are found, then the halo is 'near', so we set the recv_weight to 0
-                do j1 = jrecv_L, jrecv_U
-                    do i1 = irecv_L, irecv_U
-                        ! Avoid out-of-bounds
-                        ia = max(1, i1-sep)
-                        ib = min(nx, i1+sep)
-                        ja = max(1, j1-sep)
-                        jb = min(ny, j1+sep)
-
-                        ! Check if the halo cell is near. If so, ignore the received data
-                        if(any(&
-                            (md%domains(j)%nesting%priority_domain_image(ia:ib, ja:jb) == &
-                                md%domains(j)%nesting%recv_comms(i)%my_domain_image_index) .and. &
-                            (md%domains(j)%nesting%priority_domain_index(ia:ib, ja:jb) == &
-                                md%domains(j)%nesting%recv_comms(i)%my_domain_index) ) ) then
-
-                                md%domains(j)%nesting%recv_comms(i)%recv_weights(i1, j1) = 0.0_dp
-
-                        end if
-                    end do
-                end do
-            end do
-        end do
-
-    end subroutine
-
 
     ! Set the flow variables in 'null regions' of a domain to 'high and dry' values
     !
@@ -2378,8 +2288,6 @@ module multidomain_mod
         logical, optional, intent(in) :: capture_log !! log outputs in a multidomain specific file
         integer(ip), optional, intent(in) :: extra_halo_buffer
             !! integer controlling the 'extra' width of halos beyond that strictly required for the solver.
-            !! Increased buffer size can be used to separate neighbouring send halo regions, which can be important for numerical
-            !! stability, although this also requires the use of nesting receive weights (controlled by other parts of the code).
         logical, optional, intent(in) :: allocate_comms
             !! Call allocate_p2p_comms to setup the parallel communication structures
 
@@ -2457,7 +2365,8 @@ module multidomain_mod
             extra_halo_buffer = md%extra_halo_buffer, &
             extra_cells_in_halo = md%extra_cells_in_halo, &
             all_dx_md = md%all_dx_md, &
-            all_timestepping_methods_md = md%all_timestepping_methods_md)
+            all_timestepping_methods_md = md%all_timestepping_methods_md,&
+            md_label = md%label)
 
         ! Storage space for mass conservation
         allocate(md%volume_initial(size(md%domains, kind=ip)), md%volume(size(md%domains, kind=ip)))
@@ -2470,59 +2379,60 @@ module multidomain_mod
         TIMER_STOP('setup')
     end subroutine
 
-    ! Main routine for setting up the multidomain
-    !
-    ! Determine which domains we need to have a two-way-nesting-comms relation
-    ! with, adjust domain bboxes, setup the nesting_boundaries, etc
-    !
-    ! What this routine does:
-    !   Step 1: For each domain, compute its required nesting layer width. This is done
-    !           by looking 'just outside' the outer boundary of each domain, to see if another
-    !           domain is there. If so, we determine the nesting layer width so that
-    !           a) cells in overlapping areas are completely overlapping [i.e. no half-covered coarse cells]
-    !           b) We can sync only once per global time-step, without having
-    !              the flow propagate over the full nesting layer width in that time
-    !           c) There may be other constraints too (e.g. separate buffers ?)
-    !   Step 2: For each domain, make a 'priority_domain_metadata', which tells us what
-    !           the priority domain for each cell is. We blank out cells which are more than
-    !           one nesting layer width away from that domain's priority region.
-    !   Step 3: Collapse the priority_domain_metadata to a set of rectangles, represented in a
-    !           tabular format. These DEFINE the regions that the domain needs to receive data from,
-    !           and so we call them the 'receive metadata'
-    !   Step 4: Broadcast the 'receive metadata', and create the 'send metadata', based on the
-    !           regions that need to be received
-    !   Step 5: Broadcast the 'send metadata'. This is done because the receives need to know
-    !           part of the send_metadata (i.e. the comms index of domains(j)%nesting%send_comms that they will be
-    !           getting data from) to build the communication data structure. Further, having the full send metadata
-    !           is useful for debugging.
-    !   Step 6: Set-up the domains(j)%nesting%send_comms, and domains(j)%nesting%recv_comms. This is
-    !           straightforward given the information above.
-    !
-    ! @param domains array of domains
-    ! @param verbose control print-out verbosity
-    ! @param use_wetdry_limiting_nesting If .true., then in wet-dry regions the nesting communication differs. This is important to
-    ! avoid wet-dry artefacts related to nesting.
-    ! @param periodic_xs cells with x-coordinate < periodic_xs(1) or > periodic_xs(2) are halos that will receive from the other
-    ! side of the domain.
-    ! @param periodic_ys Analogous to periodic_xs
-    ! @param extra_halo_buffer integer controlling the 'extra' width of halos beyond that strictly required for the solver.
-    ! @param extra_cells_in_halo another integer controlling the 'extra' width of halos.
-    ! @param all_dx_md stores the dx values for all domains in multidomain (i.e. copy of all_dx)
-    ! @param all_timestepping_methods_md stores the all_timestepping_methods variable in the multidomain.
-    ! Increased buffer size can be used to separate neighbouring send halo regions, which can be important for numerical stability,
-    ! although this also requires the use of nesting receive weights (controlled by other parts of the code)
-    !
     subroutine setup_multidomain_domains(domains, verbose, use_wetdry_limiting_nesting,&
         periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo, &
-        all_dx_md, all_timestepping_methods_md)
-
+        all_dx_md, all_timestepping_methods_md, md_label)
+        !! Main routine for setting up the multidomain
+        !!
+        !! Determines which domains we need to have a two-way-nesting-comms relation
+        !! with, adjust domain bboxes, setup the nesting_boundaries, etc
+        !!
+        !! What this routine does:
+        !!   Step 1: For each domain, compute its required nesting layer width. This is done
+        !!           by looking 'just outside' the outer boundary of each domain, to see if another
+        !!           domain is there. If so, we determine the nesting layer width so that
+        !!           a) cells in overlapping areas are completely overlapping [i.e. no half-covered coarse cells]
+        !!           b) We can sync only once per global time-step, without having
+        !!              the flow propagate over the full nesting layer width in that time
+        !!           c) There may be other constraints too (e.g. make halos wide enough that we can extrapolate 
+        !!              using neighbouring points)
+        !!   Step 2: For each domain, make a 'priority_domain_metadata', which tells us what
+        !!           the priority domain for each cell is. We blank out cells which are more than
+        !!           one nesting layer width away from that domain's priority region.
+        !!   Step 3: Collapse the priority_domain_metadata to a set of rectangles, represented in a
+        !!           tabular format. These DEFINE the regions that the domain needs to receive data from,
+        !!           and so we call them the 'receive metadata'
+        !!   Step 4: Broadcast the 'receive metadata', and create the 'send metadata', based on the
+        !!           regions that need to be received
+        !!   Step 5: Broadcast the 'send metadata'. This is done because the receives need to know
+        !!           part of the send_metadata (i.e. the comms index of domains(j)%nesting%send_comms that they will be
+        !!           getting data from) to build the communication data structure. Further, having the full send metadata
+        !!           is useful for debugging.
+        !!   Step 6: Set-up the domains(j)%nesting%send_comms, and domains(j)%nesting%recv_comms. This is
+        !!           straightforward given the information above.
+        !!
         type(domain_type), intent(inout) :: domains(:)
+            !! array of domains
         logical, optional, intent(in) :: verbose
+            !! control print-out verbosity
         logical, optional, intent(in) :: use_wetdry_limiting_nesting
+            !! If .true., then in wet-dry regions the nesting communication differs. This is important to
+            !! avoid wet-dry artefacts related to nesting.
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
-        integer(ip), intent(in) :: extra_halo_buffer, extra_cells_in_halo
+            !! Used for models with periodic x or y coordinates. For example, global tsunami models have a periodic x-coordinate
+            !! (longitude), so periodic_xs must be specified. In the latter case, cells with x-coordinate < periodic_xs(1) or >
+            !! periodic_xs(2) are halos that will receive from the other side of the domain.
+        integer(ip), intent(in) :: extra_halo_buffer
+            !! integer controlling the 'extra' width of halos beyond that strictly required for the solver.
+        integer(ip), intent(in) :: extra_cells_in_halo
+            !! another integer controlling the 'extra' width of halos.
         real(dp), allocatable, intent(inout) :: all_dx_md(:,:,:)
+            !! stores the dx values for all domains in multidomain (i.e. copy of all_dx)
         integer(ip), allocatable, intent(inout) :: all_timestepping_methods_md(:,:)
+            !! stores the all_timestepping_methods variable in the multidomain.
+        character(len=charlen) :: md_label
+            !! md_label a character label for the multidomain. If there is more than one multidomain, they should have unique labels.
+            !! (set via md%label) to avoid problems in parallel communication.
 
         integer(ip):: i, j, k, jj, ii, nd_local, nest_layer_width, tmp2(2), nbox_max, counter, nd_global
 
@@ -3103,7 +3013,8 @@ module multidomain_mod
                     neighbour_domain_staggered_grid = &
                         timestepping_metadata(all_timestepping_methods(n_ind, n_img))%is_staggered_grid,&
                     my_domain_staggered_grid = &
-                        timestepping_metadata(all_timestepping_methods(j, ti))%is_staggered_grid)
+                        timestepping_metadata(all_timestepping_methods(j, ti))%is_staggered_grid, &
+                    comms_tag_prefix=md_label)
 
             end do
 
@@ -3190,7 +3101,8 @@ module multidomain_mod
                     neighbour_domain_staggered_grid = &
                         timestepping_metadata(all_timestepping_methods(n_ind, n_img))%is_staggered_grid,&
                     my_domain_staggered_grid = &
-                        timestepping_metadata(all_timestepping_methods(j, ti))%is_staggered_grid)
+                        timestepping_metadata(all_timestepping_methods(j, ti))%is_staggered_grid,&
+                    comms_tag_prefix=md_label)
 
             end do
 
