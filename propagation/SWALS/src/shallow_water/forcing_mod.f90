@@ -33,8 +33,19 @@ module forcing_mod
         real(dp) :: start_time = HUGE(1.0_dp), end_time = -HUGE(1.0_dp)
             !! Controls the time-interval over which the forcing is applied. Must have start_time >= end_time.
             !! The default values will throw an error if used in apply_forcing_patch
+        procedure(forcing_time), pointer, nopass :: forcing_time_function => NULL()
+            !! A user-specified non-decreasing function of x such that:
+            !!     forcing_time_function(0.0) = 0.0
+            !! and:
+            !!     forcing_time_function(1.0) = 1.0
+            !! The idea is that, supposing: 
+            !!     start_time <= t <= end_time
+            !! then:
+            !!     forcing_time( (t-start_time)/(end_time-start_time) ) 
+            !! gives the fraction of the forcing that has been applied by time t.
+            !! If not specified then the identify function is used (i.e. constant 
+            !! rate of forcing between start_time and end_time).
         contains
-
         procedure:: setup => setup_forcing_patch
             !! Allocate forcing_patch%forcing_work and set start_time, end_time, and spatial indices
         procedure:: finalise => deallocate_forcing_patch
@@ -48,10 +59,25 @@ module forcing_mod
             !! Hold multiple forcing_patches.
     end type
 
+    interface
+        function forcing_time(x) result(p)
+            ! A non-decreasing function of x such that forcing_time(0.0) = 0.0 and forcing_time(1.0)
+            ! The idea is that, supposing: 
+            !     start_time <= t <= end_time
+            ! then:
+            !     forcing_time( (t-start_time)/(end_time-start_time) ) 
+            ! gives the fraction of the forcing that has been applied at time t.
+            import dp
+            implicit none
+            real(dp), intent(in) :: x
+            real(dp) :: p
+        end function
+    end interface
+
 
     contains
 
-    subroutine add_forcing_work_to_U_over_time(U, forcing_work, time, dt, start_time, end_time)
+    subroutine add_forcing_work_to_U_over_time(U, forcing_work, time, dt, start_time, end_time, forcing_time_function)
         !!
         !! Add the field forcing_work(:,:,:) to U(:,:,:) (the latter is typically domain%U). Do this smoothly over the time interval
         !! between start_time and end_time, such that the sum of the contributions over all time-steps in this interval adds up to
@@ -69,11 +95,12 @@ module forcing_mod
             !! Update the domain for a time-step from (time-dt, time). Note "time" is the END of the timestep
         real(dp), intent(in) :: start_time, end_time
             !! Apply the entire forcing at a steady rate between start_time and end_time
+        procedure(forcing_time), pointer :: forcing_time_function
 
-        real(dp) :: update_fraction, local_dt
+        real(dp) :: update_fraction, local_dt, p1, p2
         integer(ip) :: i, j, k
 
-        if( ((time - dt) <= end_time) .and. (time >= start_time)) then
+        if( ((time - dt) <= end_time) .and. (time >= start_time) ) then
             ! The forcing is only applied between start_time and end_time - so
             ! we need to make sure the current time-step overlapped that period.
             ! (Note we are at the end of the timestep, and time was already updated).
@@ -84,21 +111,27 @@ module forcing_mod
                 call generic_stop
             end if
 
-            ! !This if-statement must always be .FALSE. given the outer if
-            !if(start_time > end_time) then
-            !    write(log_output_unit, *) &
-            !        'Error: start_time must be > end_time in add_forcing_work_to_U_over_time'
-            !    call generic_stop
-            !end if
-
             ! Determine what fraction of forcing_work should be added to U
             if(start_time == end_time) then
                 update_fraction = 1.0_dp
             else
                 ! The time-step might not be completely between start_time and end_time.
-                ! This is the fraction of the forcing we actually need to apply
-                local_dt = min(time, end_time) - max((time-dt), start_time)
-                update_fraction = local_dt/(end_time - start_time)
+                ! Determine the fraction of the forcing we actually need to apply
+                if(.not. associated(forcing_time_function)) then
+                    ! Default case: Constant forcing
+                    update_fraction = (min(time, end_time) - max((time-dt), start_time))/(end_time - start_time)
+                else
+                    ! User-specified function
+                    p2 = ( min(time, end_time)        - start_time ) / (end_time - start_time)
+                    p1 = ( max(time - dt, start_time) - start_time ) / (end_time - start_time)
+                    update_fraction = forcing_time_function(p2) - forcing_time_function(p1)
+                    if(update_fraction < 0.0_dp .or. update_fraction > 1.0_dp) then
+                        write(log_output_unit, *) &
+                            'Error: forcing_time_function must be non-decreasing and map [0.0, 1.0] -> [0.0,1.0]', &
+                            p2, p1, forcing_time_function(p2), forcing_time_function(p1), update_fraction
+                        call generic_stop
+                    end if
+                end if
             end if
             !print*, update_fraction
 
@@ -170,7 +203,7 @@ module forcing_mod
 
         ! All seems well so apply the forcing.
         call add_forcing_work_to_U_over_time(domain%U(i0:i1, j0:j1, k0:k1), fp%forcing_work, domain%time, &
-            dt, fp%start_time, fp%end_time)
+            dt, fp%start_time, fp%end_time, fp%forcing_time_function)
 
     end subroutine
 
@@ -332,6 +365,13 @@ module forcing_mod
 
     end subroutine
 
+    function identity_function(x) result(p)
+        ! Useful for testing
+        real(dp), intent(in) :: x
+        real(dp) :: p
+        p = x
+    end function
+
     subroutine test_forcing_mod
         !! Test the forcing subroutines by setting up 2 domains, and checking the forcing works
 
@@ -340,153 +380,171 @@ module forcing_mod
         integer(ip), parameter :: global_nx(2) = [50, 30], local_nx(2) = [23, 90]
 
         type(domain_type), allocatable :: domains(:)
-        integer(ip) :: i, j
+        integer(ip) :: i, j, provide_function
         real(dp) :: err_tol, err, time, dt
         type(forcing_patch_type), pointer :: domain_forcing_context
         integer(ip), parameter :: nd = 2
+        procedure(forcing_time), pointer :: forcing_time_function
 
         err_tol = spacing(10.0_dp)*10
 
-        allocate(domains(nd))
+        do provide_function = 1, 2
+            ! Loop to test with/without forcing function
 
-        ! Setup the main test domain
-        call setup_domain_for_test(domains(1), global_lw, global_nx, global_ll)
-        ! Backup the initial condition for later usage
-        domains(1)%backup_U = domains(1)%U
-
-        ! Setup another test domain
-        call setup_domain_for_test(domains(2), local_lw, local_nx, local_ll)
-        domains(2)%backup_U = domains(2)%U
-
-        ! Suppose we just evolved from 0.0 to 10.0
-        time = 10.0_dp
-        dt = 10.0_dp
-
-        !
-        ! Tests of add_forcing_work_to_U_over_time
-        !
-
-        ! Test 1 -- time-step exactly equals range of forcing
-        do j = 1, nd
-            call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
-                ! unpack the forcing_context, which is stored as a c_ptr in the domain
-            call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
-                time, dt, start_time = 0.0_dp, end_time = 10.0_dp)
-            err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work)))
-            if(err < err_tol) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', err, err_tol, __LINE__
+            if(provide_function == 1) then
+                ! First time we set forcing_time_function => NULL,
+                forcing_time_function => NULL()
+            else if(provide_function == 2) then
+                ! Second time we set it to identity_function
+                ! While the result should be the same, different code paths are exercised
+                forcing_time_function => identity_function
             end if
-            domains(j)%U = domains(j)%backup_U
-        end do
 
+            allocate(domains(nd))
 
-        ! Test 2 -- time-step starts before range of forcing
-        do j = 1, nd
-            call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
-            call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
-                time, dt, start_time = 4.0_dp, end_time = 10.0_dp)
-            err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work)))
-            if(err < err_tol ) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', err, err_tol, __LINE__
-            end if
-            domains(j)%U = domains(j)%backup_U
-        end do
+            ! Setup the main test domain
+            call setup_domain_for_test(domains(1), global_lw, global_nx, global_ll)
+            ! Backup the initial condition for later usage
+            domains(1)%backup_U = domains(1)%U
 
-        ! Test 3 -- time-step starts after range of forcing
-        do j = 1, nd
-            call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
-            call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
-                time, dt, start_time = -4.0_dp, end_time = 10.0_dp)
-            err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/14.0_dp)))
-            if(err < err_tol) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', err, err_tol, __LINE__, &
-                   minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/14.0_dp)), &
-                   maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/14.0_dp))
-            end if
-            domains(j)%U = domains(j)%backup_U
-        end do
+            ! Setup another test domain
+            call setup_domain_for_test(domains(2), local_lw, local_nx, local_ll)
+            domains(2)%backup_U = domains(2)%U
 
-        ! Test 4 -- time-step fully inside the forcing time
-        do j = 1, nd
-            call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
-            call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
-                time, dt, start_time = -15.0_dp, end_time = 15.0_dp)
-            err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/30.0_dp)))
-            if(err < err_tol) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', err, err_tol, __LINE__, &
-                   minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/30.0_dp)), &
-                   maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/30.0_dp))
-            end if
-            domains(j)%U = domains(j)%backup_U
-        end do
+            ! Suppose we just evolved from 0.0 to 10.0
+            time = 10.0_dp
+            dt = 10.0_dp
 
-        ! Test 5 -- time-step overshoots the forcing end time
-        do j = 1, nd
-            call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
-            call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work,&
-                time, dt, start_time = -15.0_dp, end_time = 5.0_dp)
-            err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 5.0_dp/20.0_dp)))
-            if(err < err_tol) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', err, err_tol, __LINE__, &
-                   minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 5.0_dp/20.0_dp)), &
-                   maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 5.0_dp/20.0_dp))
-            end if
-            domains(j)%U = domains(j)%backup_U
-        end do
+            !
+            ! Tests of add_forcing_work_to_U_over_time
+            !
 
-        ! Test 6 -- time-step doesn't overlap with the forcing
-        do j = 1, nd
-            call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
-            call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
-                time, dt, start_time = -15.0_dp, end_time = -5.0_dp)
-            err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 0.0_dp)))
-            if(err == 0.0_dp) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', err, err_tol, __LINE__, &
-                   minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 0.0_dp)), &
-                   maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 0.0_dp))
-            end if
-            domains(j)%U = domains(j)%backup_U
-        end do
+            ! Test 1 -- time-step exactly equals range of forcing, { i.e. dt == (end_time - start_time) }
+            do j = 1, nd
+                call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
+                    ! unpack the forcing_context, which is stored as a c_ptr in the domain
 
-        ! Test 7 -- a timestepping type test, where we should end up adding the full contribution of forcing_work
-        ! Use some erratic numbers -- it shouldn't matter so long as we fully step through start_time to end_time
-        do j = 1, nd
-            call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
-            time = -10.01242_dp
-            dt = 1.4444_dp
-            do i = 1, 30
-                ! When the loop is complete we will have covered the time
                 call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
-                    time, dt, start_time = -1.332_dp, end_time = 5.15430_dp)
-                time = time + dt
+                    time, dt, start_time = 0.0_dp, end_time = 10.0_dp, forcing_time_function=forcing_time_function)
+                err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work)))
+                if(err < err_tol) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', err, err_tol, __LINE__
+                end if
+                domains(j)%U = domains(j)%backup_U
             end do
-            err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 1.0_dp)))
-            if(err < err_tol) then
-                print*, 'PASS'
-            else
-                print*, 'FAIL', err, err_tol, __LINE__, &
-                   minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work)), &
-                   maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work))
-            end if
-            domains(j)%U = domains(j)%backup_U
-        end do
 
-        do j = 1, nd
-            call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
-            deallocate(domain_forcing_context%forcing_work)
-            deallocate(domain_forcing_context)
+
+            ! Test 2 -- time-step starts before range of forcing {i.e. time-dt < start_time }
+            do j = 1, nd
+                call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
+                call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
+                    time, dt, start_time = 4.0_dp, end_time = 10.0_dp, forcing_time_function=forcing_time_function)
+                err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work)))
+                if(err < err_tol ) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', err, err_tol, __LINE__
+                end if
+                domains(j)%U = domains(j)%backup_U
+            end do
+
+            ! Test 3 -- time-step starts after range of forcing {i.e. time - dt > start_time}
+            do j = 1, nd
+                call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
+                call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
+                    time, dt, start_time = -4.0_dp, end_time = 10.0_dp, forcing_time_function=forcing_time_function)
+                err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/14.0_dp)))
+                if(err < err_tol) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', err, err_tol, __LINE__, &
+                       minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/14.0_dp)), &
+                       maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/14.0_dp))
+                end if
+                domains(j)%U = domains(j)%backup_U
+            end do
+
+            ! Test 4 -- time-step fully inside the forcing time
+            do j = 1, nd
+                call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
+                call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
+                    time, dt, start_time = -15.0_dp, end_time = 15.0_dp, forcing_time_function=forcing_time_function)
+                err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/30.0_dp)))
+                if(err < err_tol) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', err, err_tol, __LINE__, &
+                       minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/30.0_dp)), &
+                       maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 10.0_dp/30.0_dp))
+                end if
+                domains(j)%U = domains(j)%backup_U
+            end do
+
+            ! Test 5 -- time-step overshoots the forcing end time
+            do j = 1, nd
+                call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
+                call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work,&
+                    time, dt, start_time = -15.0_dp, end_time = 5.0_dp, forcing_time_function=forcing_time_function)
+                err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 5.0_dp/20.0_dp)))
+                if(err < err_tol) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', err, err_tol, __LINE__, &
+                       minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 5.0_dp/20.0_dp)), &
+                       maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 5.0_dp/20.0_dp))
+                end if
+                domains(j)%U = domains(j)%backup_U
+            end do
+
+            ! Test 6 -- time-step doesn't overlap with the forcing
+            do j = 1, nd
+                call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
+                call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
+                    time, dt, start_time = -15.0_dp, end_time = -5.0_dp, forcing_time_function=forcing_time_function)
+                err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 0.0_dp)))
+                if(err == 0.0_dp) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', err, err_tol, __LINE__, &
+                       minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 0.0_dp)), &
+                       maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 0.0_dp))
+                end if
+                domains(j)%U = domains(j)%backup_U
+            end do
+
+            ! Test 7 -- a timestepping type test, where we should end up adding the full contribution of forcing_work
+            ! Use some erratic numbers -- it shouldn't matter so long as we fully step through start_time to end_time
+            do j = 1, nd
+                call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
+                time = -10.01242_dp
+                dt = 1.4444_dp
+                do i = 1, 30
+                    ! When the loop is complete we will have covered the time
+                    call add_forcing_work_to_U_over_time(domains(j)%U, domain_forcing_context%forcing_work, &
+                        time, dt, start_time = -1.332_dp, end_time = 5.15430_dp, forcing_time_function=forcing_time_function)
+                    time = time + dt
+                end do
+                err = maxval(abs(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work * 1.0_dp)))
+                if(err < err_tol) then
+                    print*, 'PASS'
+                else
+                    print*, 'FAIL', err, err_tol, __LINE__, &
+                       minval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work)), &
+                       maxval(domains(j)%U - (domains(j)%backup_U + domain_forcing_context%forcing_work))
+                end if
+                domains(j)%U = domains(j)%backup_U
+            end do
+
+            do j = 1, nd
+                call c_f_pointer(domains(j)%forcing_context_cptr, domain_forcing_context)
+                deallocate(domain_forcing_context%forcing_work)
+                deallocate(domain_forcing_context)
+            end do
+
+            deallocate(domains)
+
         end do
 
     end subroutine
