@@ -1542,7 +1542,7 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
             }
 
             random_unsegmented_exrates = approx(numerical_probs, exrate_quantiles_unsegmented,
-                xout=random_unsegmented, ties=min, rule=2)$y
+                xout=random_unsegmented, ties=base::min, rule=2)$y
         }else{
             random_unsegmented_exrates = c()
         }
@@ -1575,7 +1575,7 @@ compute_exceedance_rate_percentiles_with_random_sampling<-function(
                 # have the co-monotonic solution, while if they are
                 # independent, we have the independent solution
                 random_segmented_exrates = random_segmented_exrates + 
-                    approx(numerical_probs, exrate_quantiles_seg, xout=random_segments[[j]], ties=min, rule=2)$y
+                    approx(numerical_probs, exrate_quantiles_seg, xout=random_segments[[j]], ties=base::min, rule=2)$y
             }
         }else{
             random_segmented_exrates = c()
