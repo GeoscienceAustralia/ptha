@@ -35,7 +35,7 @@ R_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate<-function(
                                event_max_stage_sorted_decreasing[1]+1.0e-03, 
                                event_max_stage_sorted_decreasing)
     sorted_exrates_with_cap = cumsum( c(0, 0, scenario_rates[event_max_stage_sorted_decreasing_inds]) )
-    stage_exceedance_rates = approx(sorted_stages_with_cap, sorted_exrates_with_cap, xout=output_stages, rule=2:1, ties=max)$y
+    stage_exceedance_rates = approx(sorted_stages_with_cap, sorted_exrates_with_cap, xout=output_stages, rule=2:1, ties=base::max)$y
 
     return(stage_exceedance_rates)
 

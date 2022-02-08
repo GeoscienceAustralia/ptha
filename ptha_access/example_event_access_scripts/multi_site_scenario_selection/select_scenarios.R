@@ -124,7 +124,7 @@ get_matching_scenarios<-function(source_zone_data, scenario_match, slip_from_Mw_
     # get the stage @ scenario_match$exrate.
     max_stage_at_exrate = unlist(lapply(
         stage_exrate_curves, 
-        f<-function(x) approx(x[[rate_curve_name]], x$stage, xout=scenario_match$exrate, ties='min')$y))
+        f<-function(x) approx(x[[rate_curve_name]], x$stage, xout=scenario_match$exrate, ties=base::min)$y))
     # Make a 'max-stage-matrix', with constant values in each column, to
     # facilitate matrix-wise operations below.
     mdim = dim(peak_stage_sourcezone_matrix)

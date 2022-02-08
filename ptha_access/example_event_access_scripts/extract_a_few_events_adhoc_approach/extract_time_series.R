@@ -110,7 +110,7 @@ for(ir in 1:length(all_desired_rates)){
     # If stage has not been provided, compute it
     if(is.na(desired_stage)){
         desired_stage = approx(return_period_info$stochastic_slip_rate, 
-            return_period_info$stage, xout=desired_rate, ties=min)$y
+            return_period_info$stage, xout=desired_rate, ties=base::min)$y
     }
     # If desired_rate has not been provided, compute it
     if(is.na(desired_rate)){
