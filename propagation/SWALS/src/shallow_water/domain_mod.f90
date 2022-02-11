@@ -82,7 +82,7 @@ module domain_mod
     ! Handy constants
     real(dp), parameter :: HALF_dp = 0.5_dp, ZERO_dp = 0.0_dp, ONE_dp=1.0_dp
     real(dp), parameter :: QUARTER_dp = HALF_dp * HALF_dp
-    real(dp), parameter:: NEG_SEVEN_ON_THREE_dp = -7.0_dp/3.0_dp
+    real(dp), parameter :: NEG_SEVEN_ON_THREE_dp = -7.0_dp/3.0_dp
 
     ! Make 'rk2n' involve this many flux calls -- it will evolve (rk2n_n_value -1) steps,
     ! with one extra step used for a second-order correction
@@ -106,7 +106,6 @@ module domain_mod
     ! Basically, we 'linearly change' the allowed extrapolation theta, as we
     !   move between 'not small' and 'small' values of Q (see the routines below
     !   where these parameters are used).
-    !
     ! We use 'limiter_coef1' for the 'small' threshold, and limiter_coef2 for the 'not small' threshold.
     real(dp), parameter :: limiter_coef1 = 0.1_dp, limiter_coef2 = 0.3_dp, limiter_coef3 = 100.0_dp
     !real(dp), parameter :: limiter_coef1 = 0.00_dp, limiter_coef2 = 0.15_dp, limiter_coef3 = 10.0_dp
@@ -1044,8 +1043,11 @@ TIMER_STOP("compute_statistics")
             !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, ny)
             !$OMP DO SCHEDULE(STATIC)
             do j = 1, ny
-                ! The default value can be stored even at reduced precision
-                domain%max_U(:,j,:) = -huge(real(1.0, kind=output_precision)) 
+                ! The default value can be stored even at reduced precision.
+                ! Although I expected -huge(1.0) could be stored, I ran into problems with netcdf
+                ! which did not occur for slightly smaller magnitude numbers -- hence the factor 0.99
+                ! in the following.
+                domain%max_U(:,j,:) = -0.99_output_precision * huge(real(1.0, kind=output_precision)) 
             end do
             !$OMP END DO
             !$OMP END PARALLEL
