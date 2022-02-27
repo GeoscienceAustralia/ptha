@@ -1,9 +1,8 @@
 module timer_mod
     !! Module to time parts of code, using the class timer_type
 
-#ifdef COARRAY
-    ! Assumes that mpi is available with coarrays, which should
-    ! be the case e.g. for opencoarrays
+#if defined(COARRAY_PROVIDE_CO_ROUTINES) || defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
+    ! Assumes that mpi is available
     use mpi, only: mpi_wtime
 #endif
 #ifndef NOOPENMP
@@ -95,7 +94,7 @@ contains
         end if
 
         ! Set the start time
-#ifdef COARRAY
+#if defined(COARRAY_PROVIDE_CO_ROUTINES) || defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         timer%start(tname_index) = mpi_wtime()
 #elif defined(NOOPENMP)
         call cpu_time(timer%start(tname_index))
@@ -115,7 +114,7 @@ contains
         real(C_DOUBLE):: current_time
 
         ! Get the current time
-#ifdef COARRAY
+#if defined(COARRAY_PROVIDE_CO_ROUTINES) || defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         current_time = mpi_wtime()
 #elif defined(NOOPENMP)
         call cpu_time(current_time)
