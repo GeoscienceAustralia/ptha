@@ -36,6 +36,7 @@ module domain_mod
         setup_timestepping_metadata, timestepping_method_index
     use point_gauge_mod, only: point_gauge_type
     use nested_grid_comms_mod, only: domain_nesting_type, process_received_data
+    use coarray_point2point_comms_mod, only: p2p_comms_type
     use stop_mod, only: generic_stop
     use iso_fortran_env, only: output_unit, int32, int64
     use iso_c_binding, only: c_ptr, c_null_ptr
@@ -3534,25 +3535,27 @@ TIMER_STOP('nesting_flux_correction')
 
     end subroutine
 
-    subroutine receive_halos(domain)
+    subroutine receive_halos(domain, p2p)
         !!
         !! Loop over domain%nesting%receive_comms, and receive the halo data
         !!
         class(domain_type), intent(inout) :: domain
+        type(p2p_comms_type), intent(in) :: p2p
 
         integer(ip) :: i, j, ii, jj, iL, iU, jL, jU, ip1, jp1, nbr_j, nbr_ti
         real(dp) :: elev_lim
 
 TIMER_START('receive_halos')
 
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, p2p)
         !$OMP DO SCHEDULE(DYNAMIC)
         do i = 1, size(domain%nesting%recv_comms, kind=ip)
 
             !! Avoid use of type-bound-procedure in openmp region
             !call domain%nesting%recv_comms(i)%process_received_data(domain%U)
-            call process_received_data(domain%nesting%recv_comms(i), domain%U)
+            call process_received_data(domain%nesting%recv_comms(i), p2p, domain%U)
         end do
+        !$OMP END DO
 
         !$OMP DO SCHEDULE(DYNAMIC)
         do i = 1, size(domain%nesting%recv_comms, kind=ip)
@@ -3686,11 +3689,12 @@ TIMER_STOP('receive_halos')
 
     end subroutine
 
-    subroutine send_halos(domain, send_to_recv_buffer)
+    subroutine send_halos(domain, p2p, send_to_recv_buffer)
         !!
         !! Loop over domain%nesting%send_comms, and send the halo data
         !!
         class(domain_type), intent(inout) :: domain
+        type(p2p_comms_type), intent(inout) :: p2p
         logical, intent(in) :: send_to_recv_buffer
             !! If .TRUE., then do parallel communication. If .FALSE., then only copy data
             !! to the send buffer (in that case, one can later call "communicate_p2p"
@@ -3707,7 +3711,7 @@ TIMER_START('send_halos')
             do i = 1, size(domain%nesting%send_comms, kind=ip)
 
                 call domain%nesting%send_comms(i)%process_data_to_send(domain%U)
-                call domain%nesting%send_comms(i)%send_data(send_to_recv_buffer=send_to_recv_buffer)
+                call domain%nesting%send_comms(i)%send_data(p2p, send_to_recv_buffer=send_to_recv_buffer)
             end do
             !!$OMP END DO
             !!$OMP END PARALLEL
