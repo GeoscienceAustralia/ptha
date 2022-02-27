@@ -45,8 +45,9 @@ module multidomain_mod
     use ragged_array_mod, only: ragged_array_2d_dp_type, ragged_array_2d_ip_type
     use which_mod, only: which, rle_ip, bind_arrays_ip, remove_rows_ip, cumsum_ip
     use qsort_mod, only: match
-    use coarray_point2point_comms_mod, only: allocate_p2p_comms, deallocate_p2p_comms, &
-        linked_p2p_images, communicate_p2p, size_of_send_recv_buffers
+    use coarray_point2point_comms_mod, only: p2p_comms_type, &
+        allocate_p2p_comms, deallocate_p2p_comms, &
+        communicate_p2p, size_of_send_recv_buffers
     use iso_fortran_env, only: int64
     use logging_mod, only: log_output_unit, send_log_output_to_file
     use file_io_mod, only: mkdir_p, read_ragged_array_2d_ip, read_csv_into_array
@@ -146,9 +147,9 @@ module multidomain_mod
 
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
 #ifdef REALFLOAT
-    integer :: mympi_dp = MPI_REAL
+    integer, parameter :: mympi_dp = MPI_REAL
 #else
-    integer :: mympi_dp = MPI_DOUBLE_PRECISION
+    integer, parameter :: mympi_dp = MPI_DOUBLE_PRECISION
 #endif
 #endif
 
@@ -173,6 +174,10 @@ module multidomain_mod
         type(domain_type), allocatable :: domain_metadata(:)
             !! If we split domains in parallel (COARRAYS), then
             !! this will hold the 'initial, unallocated' domains
+
+        type(p2p_comms_type) :: p2p
+            !! Manages all the point-2-point parallel communication
+            !! for this multidomain
 
         real(force_double), allocatable :: volume_initial(:), volume(:)
             !! Domain volume tracking
@@ -473,7 +478,7 @@ module multidomain_mod
             ! This lets us 'collapse' multiple sends to a single image,
             ! and is more efficient in a bunch of cases.
             TIMER_START('comms1')
-            call communicate_p2p
+            call communicate_p2p(md%p2p)
             TIMER_STOP('comms1')
         end if
 
@@ -1116,7 +1121,7 @@ module multidomain_mod
             ! This lets us 'collapse' multiple sends to a single image,
             ! and is more efficient in a bunch of cases.
             TIMER_START('comms1')
-            call communicate_p2p
+            call communicate_p2p(md%p2p)
             TIMER_STOP('comms1')
         end if
 
@@ -1529,7 +1534,7 @@ module multidomain_mod
         class(multidomain_type), intent(inout) :: md
 
         call md%send_halos(send_to_recv_buffer=send_halos_immediately)
-        if(.not. send_halos_immediately) call communicate_p2p
+        if(.not. send_halos_immediately) call communicate_p2p(md%p2p)
 #ifdef COARRAY
         call sync_all_generic
 #endif
@@ -1565,7 +1570,7 @@ module multidomain_mod
             nesting_buffer_size = nesting_buffer_size + tmp
         end do
 
-        p2p_buffer_size = size_of_send_recv_buffers()
+        p2p_buffer_size = size_of_send_recv_buffers(md%p2p)
 
         buffer_size_on_domain_U_size = ((p2p_buffer_size+nesting_buffer_size)*1.0_dp)/(domain_U_size*1.0_dp)
 
@@ -2083,7 +2088,7 @@ module multidomain_mod
 #if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         if(sync_before_local .and. ni > 1) then
             TIMER_START('sync_before_recv')
-            sync images(linked_p2p_images)
+            sync images(md%p2p%linked_p2p_images)
             TIMER_STOP('sync_before_recv')
         end if
 #endif
@@ -2098,7 +2103,7 @@ module multidomain_mod
         !!!$OMP PARALLEL DEFAULT(PRIVATE) SHARED(md)
         !!!$OMP DO SCHEDULE(DYNAMIC)
         do j = 1, size(md%domains, kind=ip)
-            call md%domains(j)%receive_halos()
+            call md%domains(j)%receive_halos(md%p2p)
         end do
         !!$OMP END DO
         !!$OMP END PARALLEL
@@ -2108,7 +2113,7 @@ module multidomain_mod
 #if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         if(sync_after_local .and. ni > 1) then
             TIMER_START('sync_after_recv')
-            sync images(linked_p2p_images)
+            sync images(md%p2p%linked_p2p_images)
             TIMER_STOP('sync_after_recv')
         end if
 #endif
@@ -2172,7 +2177,7 @@ module multidomain_mod
 #endif
 
         do j = jmn, jmx
-            call md%domains(j)%send_halos(send_to_recv_buffer=send_to_recv_buffer_local)
+            call md%domains(j)%send_halos(md%p2p, send_to_recv_buffer=send_to_recv_buffer_local)
         end do
 
         TIMER_STOP('send_multidomain_halos')
@@ -2249,12 +2254,23 @@ module multidomain_mod
 
     end subroutine
 
-    ! Routine to put all domains outputs in a single folder
     subroutine setup_multidomain_output_folder(md)
+        ! Routine to put all domains outputs in a single folder
 
         class(multidomain_type), intent(inout) :: md
         integer:: i, date_time_values(8) ! For date_and_time
         character(len=charlen) :: datetime_char, mkdir_command
+
+        ! FIXME: Suppose we want to make a multidomain only on 1 image, or some
+        ! subset of images. This code won't work as it always involves source-image 1.
+        !
+        ! We could figure out the images that are reaching this routine and then
+        ! modify so that works. But this would require more extensive changes to the code.
+        ! (e.g. each multidomain would need it's own MPI communicator -- perhaps the md%p2p object
+        ! could make it with MPI_Comm_Create(MPI_Comm_World, p2p%linked_p2p_images - 1, p2p%MPI_Comm_local)).
+        !
+        ! Alternative -- say we have to setup multidomains on all images. BUT on most images
+        ! they have almost no data (e.g. no domains allocated). 
 
         call date_and_time(values=date_time_values)
 #ifdef COARRAY
@@ -2366,7 +2382,8 @@ module multidomain_mod
             extra_cells_in_halo = md%extra_cells_in_halo, &
             all_dx_md = md%all_dx_md, &
             all_timestepping_methods_md = md%all_timestepping_methods_md,&
-            md_label = md%label)
+            md_label = md%label, &
+            md_p2p = md%p2p)
 
         ! Storage space for mass conservation
         allocate(md%volume_initial(size(md%domains, kind=ip)), md%volume(size(md%domains, kind=ip)))
@@ -2374,14 +2391,14 @@ module multidomain_mod
         md%volume_initial = 0.0_dp
         md%volume = 0.0_dp
 
-        if(allocate_comms_local) call allocate_p2p_comms
+        if(allocate_comms_local) call allocate_p2p_comms(md%p2p)
 
         TIMER_STOP('setup')
     end subroutine
 
     subroutine setup_multidomain_domains(domains, verbose, use_wetdry_limiting_nesting,&
         periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo, &
-        all_dx_md, all_timestepping_methods_md, md_label)
+        all_dx_md, all_timestepping_methods_md, md_label, md_p2p)
         !! Main routine for setting up the multidomain
         !!
         !! Determines which domains we need to have a two-way-nesting-comms relation
@@ -2433,6 +2450,8 @@ module multidomain_mod
         character(len=charlen) :: md_label
             !! md_label a character label for the multidomain. If there is more than one multidomain, they should have unique labels.
             !! (set via md%label) to avoid problems in parallel communication.
+        type(p2p_comms_type), intent(inout) :: md_p2p
+            !! The point2point communicator used for this multidomain.
 
         integer(ip):: i, j, k, jj, ii, nd_local, nest_layer_width, tmp2(2), nbox_max, counter, nd_global
 
@@ -2485,9 +2504,7 @@ module multidomain_mod
         ! in the multi domain.
         ! Note this is ONLY based on checking around the 'exterior boundary', one cell
         ! width outside of each domain. There might be 'internal' nesting
-        ! regions, but they are computed later
-        ! FIXME: This will need editing if we are to do 'multi-time-level-communication'.
-        !        Or, we might be able to back-calculate the required thickness
+        ! regions (if finer domains are inside this domain), but they are computed later
         call compute_multidomain_nesting_layer_width(domains=domains, verbose=verbose1, &
             periodic_xs=periodic_xs, periodic_ys=periodic_ys, extra_halo_buffer=extra_halo_buffer, &
             extra_cells_in_halo=extra_cells_in_halo)
@@ -2614,8 +2631,6 @@ module multidomain_mod
             ! for each box, with the variables:
             !    domain_index, domain_image, box_left_i, box_right_i, box_bottom_j, box_top_j
             !
-            ! FIXME: This would have to be changed to allow 'multi-time-level-communication',
-            !        to deal with variable halow_width
             call get_domain_xs_ys(domains(j), xc_tmp, yc_tmp)
             call convert_priority_domain_info_to_boxes(&
                 priority_domain_index = domains(j)%nesting%priority_domain_index, &
@@ -2998,6 +3013,7 @@ module multidomain_mod
 
                 counter = counter + 1
                 call domains(j)%nesting%send_comms(counter)%initialise(&
+                    md_p2p, &
                     my_dx = all_dx(1:2, j, ti), &
                     neighbour_dx = all_dx(1:2, n_ind, n_img), &
                     ijk_to_send = ijk_to_send, &
@@ -3086,6 +3102,7 @@ module multidomain_mod
 
                 counter = counter + 1
                 call domains(j)%nesting%recv_comms(counter)%initialise(&
+                    md_p2p, &
                     my_dx = all_dx(1:2, j, ti), &
                     neighbour_dx = all_dx(1:2, n_ind, n_img), &
                     ijk_to_send = ijk_to_send, &
@@ -3451,7 +3468,7 @@ module multidomain_mod
         real(dp) :: bboxes(2, 2, 4)
 
         ! Clear out any preliminary comms setup
-        call deallocate_p2p_comms
+        call deallocate_p2p_comms(md%p2p)
 
         ! 4 domains in this model
         allocate(md%domains(4))
@@ -3697,10 +3714,6 @@ __FILE__
             end do ! i
         end if
 
-        !
-        ! Set up comms
-        !
-        !call allocate_p2p_comms
 
         ! Make a planar solution, offset by the domain_index. If we
         ! communicate, then the interopolation / aggregation should not lead
@@ -3720,7 +3733,7 @@ __FILE__
         end do
 
         call md%send_halos(send_to_recv_buffer=send_halos_immediately)
-        if(.not. send_halos_immediately) call communicate_p2p
+        if(.not. send_halos_immediately) call communicate_p2p(md%p2p)
 
 #ifdef COARRAY
         call sync_all_generic
@@ -3791,7 +3804,7 @@ __FILE__
             end if
         end do
 
-        call deallocate_p2p_comms
+        call deallocate_p2p_comms(md%p2p)
 
     end subroutine
 
@@ -3812,7 +3825,7 @@ __FILE__
         real(dp) :: trueval, x, y, err, err_max, xchange, ychange, err_tol
         logical :: passed, periodic_point
 
-        call deallocate_p2p_comms
+        call deallocate_p2p_comms(md%p2p)
 
         ! Try to make a periodic domain
         md%periodic_xs = [-10.0_dp, 350.0_dp]
@@ -3851,7 +3864,7 @@ __FILE__
         ! halo exchange
         !
         call md%send_halos(send_to_recv_buffer=send_halos_immediately)
-        if(.not. send_halos_immediately) call communicate_p2p
+        if(.not. send_halos_immediately) call communicate_p2p(md%p2p)
 
 #ifdef COARRAY
         call sync_all_generic
@@ -3909,7 +3922,7 @@ __FILE__
 __FILE__
         end if
 
-        call deallocate_p2p_comms
+        call deallocate_p2p_comms(md%p2p)
 
     end subroutine
 
@@ -3943,7 +3956,7 @@ __FILE__
         real(dp), allocatable :: residual(:)
 
         ! Clean up
-        call deallocate_p2p_comms
+        call deallocate_p2p_comms(md%p2p)
 
         ! Set periodic EW boundary condition
         md%periodic_xs = [global_ll(1), global_ll(1) + global_lw(1)]
@@ -4056,7 +4069,7 @@ __FILE__
             ! Make sure flow/elev values are consistent between domains, by doing one
             ! halo exchange
             call md%send_halos(send_to_recv_buffer=send_halos_immediately)
-            if(.not. send_halos_immediately) call communicate_p2p
+            if(.not. send_halos_immediately) call communicate_p2p(md%p2p)
 
 #ifdef COARRAY
             call sync_all_generic
@@ -4117,7 +4130,7 @@ __FILE__
 
         end do
 
-        call deallocate_p2p_comms
+        call deallocate_p2p_comms(md%p2p)
 
     end subroutine
 
