@@ -14,6 +14,9 @@ SWALS_PREPROCESSOR_FLAGS ?=
 # SWALS_FC, SWALS_PREPROCESSOR_FLAGS 
 SWALS_BUILD_WITH_PARALLEL_DEFAULTS ?=
 
+# Flag to turn off link time optimization
+NO_LTO ?= -no-ipo
+
 
 #
 # C compiler and gdal libraries
