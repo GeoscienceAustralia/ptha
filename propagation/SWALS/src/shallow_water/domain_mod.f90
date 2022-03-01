@@ -50,7 +50,7 @@ module domain_mod
 
 #ifdef SPHERICAL
     ! Compile with -DSPHERICAL to get the code to run in spherical coordinates
-    use spherical_mod, only: area_lonlat_rectangle, deg2rad, earth_angular_freq
+    use spherical_mod, only: area_lonlat_rectangle, deg2rad, earth_angular_freq, distance_haversine
     use global_mod, only: radius_earth
     !
     ! Can only have coriolis if we have spherical. However, the code
@@ -3834,7 +3834,7 @@ TIMER_STOP('send_halos')
         is_nearby = ( (pt(1) >= domain%x(1 ) - dlon) .and. &
                       (pt(1) <= domain%x(nx) + dlon) .and. &
                       (pt(2) >= domain%y(1 ) - dlat) .and. &
-                      (pt(2) <= domain%y(nt) + dlat) )
+                      (pt(2) <= domain%y(ny) + dlat) )
 
 #else
         ! Check whether pt is 'likely' close enough to the domain for smoothing to matter,
