@@ -51,7 +51,7 @@ module domain_mod
 
 #ifdef SPHERICAL
     ! Compile with -DSPHERICAL to get the code to run in spherical coordinates
-    use spherical_mod, only: area_lonlat_rectangle, deg2rad, earth_angular_freq
+    use spherical_mod, only: area_lonlat_rectangle, deg2rad, earth_angular_freq, distance_haversine
     use global_mod, only: radius_earth
     !
     ! Can only have coriolis if we have spherical. However, the code
@@ -74,7 +74,7 @@ module domain_mod
     ! Make everything private except domain_type (which has its own methods) and
     ! the indices of key variables in the 3rd dimension of domain%U(:,:,:)
     private
-    public:: domain_type, STG, UH, VH, ELV
+    public:: domain_type, STG, UH, VH, ELV, test_domain_mod
 
     integer(int32), parameter :: STG=1, UH=2, VH=3, ELV=4
         ! Indices for arrays: Stage, depth-integrated-x-velocity, depth-integrated-y-velocity, elevation. So e.g. stage is in
@@ -515,6 +515,7 @@ module domain_mod
 
         ! Smoothing of elevation. Not recommended in general, but with poor elevation data it might reduce artefacts.
         procedure :: smooth_elevation => smooth_elevation
+        procedure :: smooth_elevation_near_point => smooth_elevation_near_point
 
         ! Sending and receiving halos
         procedure :: send_halos => send_halos
@@ -3773,6 +3774,127 @@ TIMER_STOP('send_halos')
 
     end subroutine
 
+    subroutine smooth_elevation_near_point(domain, number_of_9pt_smooths, pt, &
+            smooth_region_radius_meters, transition_region_radius_meters)
+        !!
+        !! Smooth the elevation grid near a specified point. 
+        !!
+        !! We apply the 9pt_smoother to the elevation a specified number of times. At sites within a distance
+        !! "smooth_region_radius_meters" of the point, we use the smoothed elevation value. For points with distance between
+        !! smooth_region_radius_meters and transition_region_radius_meters, we linearly blend the smooth DEM value and the original
+        !! DEM value by a factor that decreases from 1 to 0 with distance. 
+        !!
+        class(domain_type), intent(inout) :: domain
+            !! Input domain
+        integer(ip), intent(in) :: number_of_9pt_smooths
+            !! Number of calls to domain%smooth_elevation().
+        real(dp), intent(in) :: pt(2)
+            !! The point in the middle of the region to be smoothed
+        real(dp), intent(in) :: smooth_region_radius_meters
+            !! Use the smooth DEM within this distance from pt
+        real(dp), intent(in) :: transition_region_radius_meters
+            !! Transition between the smooth DEM and the original DEM at distances between smooth_region_radius_meters and
+            !! transition_region_radius_meters, so that beyond transition_region_radius_meters, we are just using the original DEM.
+
+        real(dp), allocatable :: initial_elevation(:,:)
+        integer(ip) :: i, j, nx, ny
+        real(dp) :: distance_to_pt, wt, dlon, dlat, cosfac
+        logical :: is_nearby
+
+        if(number_of_9pt_smooths < 1) return
+
+        if(smooth_region_radius_meters > transition_region_radius_meters) then
+            write(log_output_unit, *) 'smooth_region_radius_meters must be <= transition_region_radius_meters'
+            call generic_stop
+        end if
+
+        if(smooth_region_radius_meters < 0.0_dp) then
+            write(log_output_unit, *) 'smooth_region_radius_meters must be non-negative' 
+            call generic_stop
+        end if
+        
+        nx = domain%nx(1)
+        ny = domain%nx(2)
+
+#ifdef SPHERICAL
+        ! Check whether pt is 'likely' close enough to the domain for smoothing to matter,
+        ! by searching in an 'extended' box. 
+
+        if(abs(pt(1) - domain%x(1)) >= 360.0_dp .or. abs(pt(1) - domain%x(nx)) >= 360.0_dp) then
+            write(log_output_unit, *) 'Code does not yet treat longitude wrapping in spherical coordinates'
+            call generic_stop
+        end if
+
+        ! Approximate lat change corresponding to the transition_region_radius_meters 
+        dlat = transition_region_radius_meters/radius_earth * 1.0_dp/DEG2RAD
+        ! For dlon, this depends on latitude
+        cosfac = min(cos((domain%y(1)-dlat)*DEG2RAD), cos((domain%y(ny) + dlat)*DEG2RAD)) ! Conservative
+        if(cosfac <= 0.0_dp) then
+            dlon = 360.0_dp
+        else
+            dlon = min( dlat/cosfac, 360.0_dp)
+        end if
+        
+        is_nearby = ( (pt(1) >= domain%x(1 ) - dlon) .and. &
+                      (pt(1) <= domain%x(nx) + dlon) .and. &
+                      (pt(2) >= domain%y(1 ) - dlat) .and. &
+                      (pt(2) <= domain%y(ny) + dlat) )
+
+#else
+        ! Check whether pt is 'likely' close enough to the domain for smoothing to matter,
+        ! by searching in an 'extended' box 
+        is_nearby = ( (pt(1) >= domain%x(1 ) - transition_region_radius_meters) .and. &
+                      (pt(1) <= domain%x(nx) + transition_region_radius_meters) .and. &
+                      (pt(2) >= domain%y(1 ) - transition_region_radius_meters) .and. &
+                      (pt(2) <= domain%y(ny) + transition_region_radius_meters) )
+#endif
+
+        if(.not. is_nearby) return
+
+        !
+        ! Apply smoothing
+        !
+
+        ! Backup
+        initial_elevation = domain%U(:,:, ELV)
+
+        ! Smooth the entire elevation grid. This could be made more efficient if only a small patch of domain
+        ! needs to be smoothed.
+        do i = 1, number_of_9pt_smooths
+            call domain%smooth_elevation(smooth_method='9pt_average')
+        end do
+      
+        !$OMP PARALLEL DO PRIVATE(distance_to_pt, wt) & 
+        !$OMP SHARED(initial_elevation, nx, ny, domain, pt, transition_region_radius_meters, smooth_region_radius_meters)
+        do j = 1, ny
+            do i = 1, nx
+                ! Weight the smoothed version, based on the distance to pt
+                distance_to_pt = pt_distance(domain%x(i), domain%y(j))
+                wt = (transition_region_radius_meters - distance_to_pt) / &
+                     (transition_region_radius_meters - smooth_region_radius_meters)
+                wt = min(1.0_dp, max(wt, 0.0_dp))
+                domain%U(i,j,ELV) = wt * domain%U(i,j,ELV) + (1.0_dp - wt) * initial_elevation(i,j)
+            end do 
+        end do
+        !$OMP END PARALLEL DO
+
+        deallocate(initial_elevation)
+
+        contains 
+            
+            function pt_distance(x, y) result(distance_to_pt)
+            real(dp), intent(in) :: x, y
+            real(dp) :: distance_to_pt
+#ifdef SPHERICAL
+                distance_to_pt = distance_haversine(x, y, pt(1), pt(2))
+#else
+                distance_to_pt = sqrt((x - pt(1))**2 + (y - pt(2))**2)
+#endif
+            end function
+
+    end subroutine
+
+
     subroutine store_forcing(domain)
         !! Adds new forcing terms to domain%forcing_terms_storage.
         !!
@@ -3812,6 +3934,110 @@ TIMER_STOP('send_halos')
         ! Remove the forcing from the regular domain terms
         domain%forcing_subroutine => NULL()
         domain%forcing_context_cptr = c_null_ptr
+
+    end subroutine
+
+
+    subroutine test_domain_mod
+        ! Unit-tests (basic stuff only -- the solver quality is checked by the validation tests)
+        type(domain_type) :: domain
+        integer(ip), parameter :: nx = 20, ny = 10
+        real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp]
+        real(dp), parameter :: global_lw(2) = [100.0_dp, 50.0_dp]
+        real(dp), parameter :: pt(2) = [50.0_dp, 20.0_dp]
+        real(dp), parameter :: r1 = 10.0_dp, r2 = 15.0_dp
+
+        integer(ip) :: i, j
+        real(dp) :: err, tol, dist2, wt
+        logical :: has_failed
+
+        call domain%allocate_quantities(global_lw, [nx, ny], global_ll, create_output_files = .FALSE., verbose=.FALSE.)
+
+        !
+        ! Check the domain was allocated with zero U
+        !
+        if(all(domain%U == 0.0_dp)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        endif
+
+        !
+        ! Check smooth_elevation 
+        !
+        do j = 1, ny
+            do i = 1, nx
+                ! Ensure that in every 9x9 block there is a single elevation value of 1.0 (the rest are 0.0)
+                if(mod(i, 3) == 2 .and. mod(j, 3) == 2) domain%U(i,j,ELV) = 1.0_dp
+            end do
+        end do
+        !do j = 1, ny
+        !    print*, j, ':', domain%U(:,j,ELV)
+        !end do
+
+        ! With this above configuration, 9pt average should lead to the interior having an elevation of 1.0/9.0
+        call domain%smooth_elevation(smooth_method='9pt_average')
+        err = maxval(abs(domain%U(2:nx-1, 2:ny-1, ELV) - 1.0_dp/9.0_dp))
+        tol = 100.0_dp * spacing(1.0_dp)
+        if( err < tol) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL', err, tol
+        end if
+        !do j = 1, ny
+        !    print*, j, ':', domain%U(:,j,ELV)
+        !end do
+
+
+        !
+        ! Check smooth_elevation_near_pt
+        !
+        domain%U(:,:,ELV) = 0.0_dp
+        do j = 1, ny
+            do i = 1, nx
+                ! Ensure that in every 9x9 block there is a single elevation value of 1.0 (the rest are 0.0)
+                if(mod(i, 3) == 2 .and. mod(j, 3) == 2) domain%U(i,j,ELV) = 1.0_dp
+            end do
+        end do
+        !do j = 1, ny
+        !    print*, j, ':', domain%U(:,j,ELV)
+        !end do
+
+        call smooth_elevation_near_point(domain, number_of_9pt_smooths = 1_ip, pt = pt, &
+            smooth_region_radius_meters = r1, transition_region_radius_meters = r2)
+
+        has_failed = .false.
+        do j = 2, ny-1
+            do i = 2, nx-1
+
+                dist2 = (domain%x(i) - pt(1))**2 + (domain%y(j) - pt(2))**2 
+
+                if( ( dist2 <= r1**2 ) ) then
+                    ! Inner radius
+                    if(abs(domain%U(i,j,ELV) - 1.0_dp/9.0_dp) > tol) has_failed = .true.
+                else if(dist2 >= r2**2) then
+                    ! Outside smoothing zone
+                    if(.not. any(domain%U(i,j,ELV) == [0.0_dp, 1.0_dp])) has_failed = .true.
+                else
+                    ! Transition zone
+                    wt = (r2 - sqrt(dist2)) / (r2 - r1)
+                    ! Value should be a weighted average of 1.0/9.0, and either 0, or 1.0
+                    if(.not. any(abs( domain%U(i,j,ELV) - (wt * 1.0_dp/9.0_dp + (1.0_dp - wt) * [0.0_dp, 1.0_dp])) < tol)) then
+                        has_failed = .true.
+                        !print*, domain%U(i,j,ELV) - (wt * 1.0_dp/9.0_dp + (1.0_dp - wt) * [0.0_dp, 1.0_dp]), tol
+                    end if
+                end if
+            end do
+        end do
+
+        if(.not. has_failed) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+        !do j = 1, ny
+        !    print*, j, ':', domain%U(:,j,ELV)
+        !end do
 
     end subroutine
 

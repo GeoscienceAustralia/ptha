@@ -17,6 +17,7 @@ program unit_tests
     use extrapolation_limiting_mod, only: test_extrapolation_limiting_mod
     use date_to_numeric_mod, only: test_date_to_numeric_mod
     use forcing_mod, only: test_forcing_mod
+    use domain_mod, only: test_domain_mod
     implicit none
 
     print*, 'Testing read raster'
@@ -66,6 +67,9 @@ program unit_tests
 
     print*, 'Testing forcing_mod'
     call test_forcing_mod()
+
+    print*, 'Testing domain_mod'
+    call test_domain_mod()
 
 end program
     
