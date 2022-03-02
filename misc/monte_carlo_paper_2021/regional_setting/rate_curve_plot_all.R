@@ -76,9 +76,9 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
     }
     add_log_axis_ticks(side=2)
 
-    points(mw, se$mw_rate_function(mw), t='o', col='red', lwd=1, pch=19, cex=0.5)
-    points(mw, pmax(se$mw_rate_function(mw, quantiles=0.975), 1.0e-100), t='l', col='purple', lty='dashed', lwd=2)
-    points(mw, pmax(se$mw_rate_function(mw, quantiles=0.025), 1.0e-100), t='l', col='purple', lty='dashed', lwd=2)
+    points(mw, se$mw_rate_function(mw), t='o', col='red', lwd=1, pch=19, cex=0.7)
+    points(mw, pmax(se$mw_rate_function(mw, quantiles=0.975), 1.0e-100), t='l', col='purple', lty='dotdash', lwd=1.5)
+    points(mw, pmax(se$mw_rate_function(mw, quantiles=0.025), 1.0e-100), t='l', col='purple', lty='dotdash', lwd=1.5)
     points(mw, pmax(se$mw_rate_function(mw, quantiles=0.84), 1.0e-100), t='l', col='blue', lty='dashed', lwd=2)
     points(mw, pmax(se$mw_rate_function(mw, quantiles=0.16), 1.0e-100), t='l', col='blue', lty='dashed', lwd=2)
 
@@ -86,9 +86,9 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
         legend('topright', 
             c('Logic-tree mean', 
               'Posterior 16/84 %', 'Posterior 2.5/97.5 %'),
-            lty=c('solid', 'dashed', 'dashed'), 
+            lty=c('solid', 'dashed', 'dotdash'), 
             pch=c(19, NA, NA), bg=rgb(1, 1, 1, alpha=0.5), 
-            cex=legend_cex, lwd = c(1, 2, 2), box.col=rgb(1,1,1,alpha=0.3),
+            cex=legend_cex, lwd = c(1, 2, 1.5), box.col=rgb(1,1,1,alpha=0.3),
             col=c('red', 'blue', 'purple'))
 
         legend('bottomleft', 
