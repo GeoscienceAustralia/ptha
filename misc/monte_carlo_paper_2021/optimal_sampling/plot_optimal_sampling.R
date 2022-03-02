@@ -7,6 +7,7 @@ sink(file='log_of_plot_optimal_sampling.log')
 
 # Get the PTHA18 access script in its own environment
 ptha18_access_script = '../../../ptha_access/get_PTHA_results.R'
+#ptha18_access_script = '../../../../../AustPTHA/CODE/ptha/ptha_access/get_PTHA_results.R'
 if(!file.exists(ptha18_access_script)) stop('You need to update the path to the get_PTHA_results.R script')
 ptha18 = new.env()
 source(ptha18_access_script, local=ptha18, chdir=TRUE)
@@ -176,7 +177,8 @@ plot_hazard_curve<-function(
                    c('All scenarios in offshore PTHA',
                        paste0('Monte-Carlo estimates (500 only)'),
                        '95% interval (analytical)'), 
-                   lty=c(1, 1, 1), col=c('black', 'grey', 'orange'), lwd=c(2, 2, 2), cex=1.3)
+                   lty=c('solid', 'solid', 'dotdash'), col=c('black', 'grey', 'darkred'), 
+                   lwd=c(2, 2, 2), cex=1.3)
         }
 
     }else{
@@ -189,7 +191,7 @@ plot_hazard_curve<-function(
                      paste0('Monte-Carlo estimates (500 only)'), 
                      'Equivalent Synthetic Catalogue 95% interval'),
                    lty=c('solid', 'solid', 'dashed'), col=c('black', 'grey', 'darkblue'), 
-                   lwd=c(2, 2, 1), cex=1.3, bg=rgb(1,1,1,alpha=0.7), bty='o', box.col=rgb(1,1,1,alpha=0.3))
+                   lwd=c(2, 1, 2), cex=1.3, bg=rgb(1,1,1,alpha=0.7), bty='o', box.col=rgb(1,1,1,alpha=0.3))
         }else{
 
             legend('bottomleft',
@@ -197,8 +199,8 @@ plot_hazard_curve<-function(
                      paste0('Monte-Carlo estimates (500 only)'), 
                      '95% interval (analytical)', 
                      'Equivalent Synthetic Catalogue 95% interval'),
-                   lty=c('solid', 'solid', 'solid', 'dashed'), col=c('black', 'grey', 'orange', 'darkblue'), 
-                   lwd=c(2, 2, 2, 1), cex=1.3, bg=rgb(1,1,1,alpha=0.7), bty='o', box.col=rgb(1,1,1,alpha=0.3))
+                   lty=c('solid', 'solid', 'dotdash', 'dashed'), col=c('black', 'grey', 'darkred', 'darkblue'), 
+                   lwd=c(2, 1, 2, 2), cex=1.3, bg=rgb(1,1,1,alpha=0.7), bty='o', box.col=rgb(1,1,1,alpha=0.3))
 
         }
 
@@ -213,8 +215,8 @@ plot_hazard_curve<-function(
 
         # Add lines to the plot -- because it is log-log we should not use zeros -- instead use a very small
         # threshold
-        points(peak_stage_vals, pmax(equivalent_synthetic_lower, 1e-100), t='l', col='darkblue', lty='dashed')
-        points(peak_stage_vals, pmax(equivalent_synthetic_upper, 1e-100), t='l', col='darkblue', lty='dashed')
+        points(peak_stage_vals, pmax(equivalent_synthetic_lower, 1e-100), t='l', col='darkblue', lty='dashed', lwd=2)
+        points(peak_stage_vals, pmax(equivalent_synthetic_upper, 1e-100), t='l', col='darkblue', lty='dashed', lwd=2)
 
     }
 
@@ -246,8 +248,8 @@ plot_hazard_curve<-function(
             lower_CI[i] = tmp[1] + qnorm(0.025)*sqrt(tmp[2])
             upper_CI[i] = tmp[1] + qnorm(0.975)*sqrt(tmp[2])
         }
-        points(peak_stage_vals, lower_CI, t='l', col='orange', lty='solid')
-        points(peak_stage_vals, upper_CI, t='l', col='orange', lty='solid')
+        points(peak_stage_vals, lower_CI, t='l', col='darkred', lty='dotdash', lwd=2)
+        points(peak_stage_vals, upper_CI, t='l', col='darkred', lty='dotdash', lwd=2)
     }
 
     #
@@ -265,24 +267,24 @@ plot_hazard_curve<-function(
     # Add normal distribution
     xs_local = seq(min(exrate_ts_store$mean), max(exrate_ts_store$mean), len=500)
     points(xs_local, dnorm(xs_local, mean=mean_analytical, sd=sqrt(var_analytical)), t='l',
-           col='orange', lwd=2)
+           col='darkred', lty='dotdash', lwd=3)
 
     if(!add_hardcoded_normal_distribution_to_second_panel){
         legend('topright', 
                paste0("Normal distribution (analytical\n",
                       "mean and variance)"),
-               lwd=2, col='orange', lty='solid', pch=NA, cex=1.25, bty='n')
+               lwd=3, col='darkred', lty='dotdash', pch=NA, cex=1.25, bty='n')
     }else{
         # Useful when we want to compare the spread of Monte-Carlo results with other results
         x_vals = seq(hist_xlim[1], hist_xlim[2], len=201)
         y_vals = dnorm(x_vals, mean=0.00122335093286598, sd=sqrt(0.0000000304813319339911))
-        points(x_vals, y_vals, t='l', col='darkred', lwd=2, lty='dashed')
+        points(x_vals, y_vals, t='l', col='blue', lwd=3, lty='dotted')
 
         legend('topright', c(
                paste0("Normal distribution (analytical\n",
                       "mean and variance)"),
                paste0("Stratified-sampling (Figure 2)")),
-               lwd=c(2,2), col=c('orange', 'darkred'), lty=c('solid', 'dashed'), 
+               lwd=c(3,3), col=c('darkred', 'blue'), lty=c('dotdash', 'dotted'), 
                pch=c(NA,NA), cex=1.25, bty='n')
     }
     dev.off()
@@ -437,6 +439,9 @@ plot_sampling_effort<-function(
     MIN_BAR_HT = 0*(const_samples > 0) # To show a bar can try using a small non-zero value
     BAR_H_OFFSET = 1.5
 
+    library(cptcity)
+    COLZ = cpt(pal='cb_seq_YlOrRd_06', n=6)[3:6]
+
     png('Optimal_sampling_effort.png', width=9, height=6, units='in', res=300)
     par(mar=c(4,4.5,2,1))
     par(mfrow=c(2,1))
@@ -449,7 +454,7 @@ plot_sampling_effort<-function(
 
             plot(optimal_samples[[i]]$Mw + (i-BAR_H_OFFSET)/BAR_GROUP,
                  pmax(optimal_samples[[i]]$Nsamples, MIN_BAR_HT),
-                 t='h', lwd=BAR_LWD, lend=1, col=i, ylim=PLOT_YLIM,
+                 t='h', lwd=BAR_LWD, lend=1, col=COLZ[i], ylim=PLOT_YLIM,
                  xlab='', ylab='Optimal # Samples', las=1,
                  main='Stratified sampling', cex.main=1.8, cex.lab=1.5)
 
@@ -460,12 +465,12 @@ plot_sampling_effort<-function(
 
             points(optimal_samples[[i]]$Mw + (i-BAR_H_OFFSET)/BAR_GROUP,
                    pmax(optimal_samples[[i]]$Nsamples, MIN_BAR_HT),
-                   t='h', lwd=BAR_LWD, lend=1, col=i)
+                   t='h', lwd=BAR_LWD, lend=1, col=COLZ[i])
         }
     }
     points(optimal_samples[[1]]$Mw + (0-BAR_H_OFFSET)/BAR_GROUP,
            pmax(const_samples, MIN_BAR_HT),
-           t='h', lwd=BAR_LWD, lend=1, col='purple')
+           t='h', lwd=BAR_LWD, lend=1, col='black')
     grid(col='orange')
 
     # Report the variance reduction that would be obtained by optimising the
@@ -477,7 +482,7 @@ plot_sampling_effort<-function(
            c('Equal in all bins    (VR = 1.00)', 
               paste0('Threshold = ', threshold_stages, 
               ' m   (VR = ', round(legend_VR_local_optimised ,2),')')), 
-           fill=c('purple', 1:length(threshold_stages)))
+           fill=c('black', COLZ))
 
     # Plot with importance sampling
     for(i in 1:length(threshold_stages)){
@@ -488,7 +493,7 @@ plot_sampling_effort<-function(
 
             plot(optimal_samples_IS[[i]]$Mw + (i-2.5)/BAR_GROUP,
                  pmax(optimal_samples_IS[[i]]$Nsamples, MIN_BAR_HT),
-                 t='h', lwd=BAR_LWD, lend=1, col=i, ylim=PLOT_YLIM,
+                 t='h', lwd=BAR_LWD, lend=1, col=COLZ[i], ylim=PLOT_YLIM,
                  xlab='', ylab='Optimal # Samples', las=1,
                  main='Stratified/importance-sampling', cex.main=1.8, cex.lab=1.5)
 
@@ -499,12 +504,12 @@ plot_sampling_effort<-function(
 
             points(optimal_samples_IS[[i]]$Mw + (i-2.5)/BAR_GROUP,
                    pmax(optimal_samples_IS[[i]]$Nsamples, MIN_BAR_HT),
-                   t='h', lwd=BAR_LWD, lend=1, col=i)
+                   t='h', lwd=BAR_LWD, lend=1, col=COLZ[i])
         }
     }
     grid(col='orange')
     points(optimal_samples_IS[[1]]$Mw + (0-2.5)/BAR_GROUP, pmax(const_samples, MIN_BAR_HT),
-           t='h', lwd=BAR_LWD, lend=1, col='purple')
+           t='h', lwd=BAR_LWD, lend=1, col='black')
 
     # Report the variance reduction that would be obtained by optimising the
     # number of samples for the specific threshold (independent of the
@@ -515,7 +520,7 @@ plot_sampling_effort<-function(
            c('Equal in all bins    (VR = 1.00)', 
               paste0('Threshold = ', threshold_stages, 
                      ' m   (VR = ', round(legend_VR_local_optimised,2),')')), 
-           fill=c('purple', 1:length(threshold_stages)))
+           fill=c('black', COLZ))
     dev.off()
 
 
@@ -531,7 +536,7 @@ plot_sampling_effort<-function(
 
     abline(h=const_samples[1], col='purple', lty='dashed')
     points(optimal_samples[[1]]$Mw + BAR_EPS, mean_optimal_IS_including_constant, ylim=c(0, 150),
-        t='h', lwd=BAR_LWD*1.3, lend=1, col='darkblue')
+        t='h', lwd=BAR_LWD*1.3, lend=1, col='skyblue4')
 
     title(main='Selected non-uniform sampling effort and extra variance-reduction', cex.main=1.5)
 
@@ -540,7 +545,7 @@ plot_sampling_effort<-function(
     legend_VR_chosen = unlist(lapply(optimal_samples,
         function(x) get_variances(x, mean_optimal_including_constant)$constant_on_chosen))
 
-    white_t = rgb(1,1,1,alpha=0.3)
+    white_t = rgb(1,1,1,alpha=0.0)
     legend('topleft', 
            paste0('Threshold = ', rep(threshold_stages, 1), 
                   ' (VR = ', format(round(legend_VR_chosen, 2)), ')'),
@@ -550,8 +555,8 @@ plot_sampling_effort<-function(
            paste0('Threshold = ', rep(threshold_stages, 1), 
                   ' (VR = ', format(round(legend_VR_chosen_IS, 2)), ')'),
            title = 'Stratified/importance-sampling', 
-           text.col='darkblue',
-           title.col='darkblue',
+           text.col='skyblue4',
+           title.col='skyblue4',
            box.col=white_t, cex=1.1, bg=white_t)
 
     text(7.5, 53, 'Uniform sampling', col='purple', cex=1.4)
@@ -756,6 +761,7 @@ dev.off()
 #
 
 ptha18_source_rate_env = new.env()
+#source('../../../../../AustPTHA/CODE/ptha/ptha_access/get_detailed_PTHA18_source_zone_info.R',
 source('../../../ptha_access/get_detailed_PTHA18_source_zone_info.R',
        local=ptha18_source_rate_env, chdir=TRUE)
 
