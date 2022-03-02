@@ -114,5 +114,5 @@ SWALS_FORTRAN := $(SWALS_FC) $(SWALS_FC_FLAGS) $(SWALS_PREPROCESSOR_FLAGS) $(SWA
 
 # Use this to make the $(SWALS_LIBRARY)
 SWALS_LIBRARY ?= libSWE.a
-SWALS_AR ?= ar rcs
+SWALS_AR ?= xiar rcs
 
