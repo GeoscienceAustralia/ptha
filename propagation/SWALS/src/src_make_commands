@@ -37,7 +37,7 @@ $(SWALS_LIBRARY): $(SWALS_OBJECTS)
 # unlimit the stack size). Here we pass -O3 to the compiler [by default, if multiple
 # optimizations options are passed it uses the last one]
 qsort_mod.o : $(SWALS_SRC)/util/qsort_mod.f90
-	$(SWALS_FORTRAN) -O3 -c $^
+	$(SWALS_FORTRAN) -O3 $(NO_LTO) -c $^
 
 #qsort_c.o : $(SWALS_SRC)/util/qsort_c.c
 #	gcc -O3 -c $^
@@ -48,7 +48,7 @@ read_raster_c.o: $(SWALS_SRC)/raster/read_raster_c.c
 	$(SWALS_CC) -O2 -c $^ $(SWALS_GDAL_CFLAGS)
 # Heavy optimization of the read_raster_mod.f90 can cause issues
 read_raster_mod.o: $(SWALS_SRC)/raster/read_raster_mod.f90
-	$(SWALS_FORTRAN) -O2 -c $^ $(SWALS_GDAL_CFLAGS)
+	$(SWALS_FORTRAN) -O2 $(NO_LTO) -c $^ $(SWALS_GDAL_CFLAGS)
 
 #
 # These rely on NETCDF, unless compiled with -DNONETCDF,
@@ -56,9 +56,9 @@ read_raster_mod.o: $(SWALS_SRC)/raster/read_raster_mod.f90
 #     NETCDF_FINCLUDE=
 #
 point_gauge_mod.o: $(SWALS_SRC)/shallow_water/point_gauge_mod.f90 
-	$(SWALS_FORTRAN) -DSRC_GIT_VERSION=\"$(SWALS_SRC_GIT_VERSION)\" -g -c $^ $(SWALS_NETCDF_FINCLUDE)
+	$(SWALS_FORTRAN) $(NO_LTO) -DSRC_GIT_VERSION=\"$(SWALS_SRC_GIT_VERSION)\" -g -c $^ $(SWALS_NETCDF_FINCLUDE)
 netcdf_util_mod.o: $(SWALS_SRC)/util/netcdf_util_mod.f90 
-	$(SWALS_FORTRAN) -DSRC_GIT_VERSION=\"$(SWALS_SRC_GIT_VERSION)\" -g -c $^ $(SWALS_NETCDF_FINCLUDE)
+	$(SWALS_FORTRAN) $(NO_LTO) -DSRC_GIT_VERSION=\"$(SWALS_SRC_GIT_VERSION)\" -g -c $^ $(SWALS_NETCDF_FINCLUDE)
 
 gpu_interface_cu.o: $(SWALS_SRC)/device/gpu_interface_cu.cu
 	$(SWALS_CUDA_CC) -c $^ $(SWALS_CUDA_CC_INCLUDE)

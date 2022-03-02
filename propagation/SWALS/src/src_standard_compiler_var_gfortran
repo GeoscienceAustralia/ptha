@@ -21,6 +21,10 @@ SWALS_CC ?= gcc -O3
 SWALS_GDAL_LIBS ?= `gdal-config --libs`
 SWALS_GDAL_CFLAGS ?= `gdal-config --cflags`
 
+# Flag to turn off link time optimization
+NO_LTO ?= -fno-lto
+
+
 #
 # NVCC and associated flags
 # 
