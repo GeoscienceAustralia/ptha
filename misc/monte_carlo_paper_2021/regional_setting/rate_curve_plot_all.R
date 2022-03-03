@@ -1,9 +1,9 @@
 library(rptha)
-ptha18_rate_curve_session = '../../../ptha_access/compute_rates_all_sources_session.RData'
-if(!file.exists(ptha18_rate_curve_session)) stop('You need download compute_rates_all_sources_session.RData in the ptha_access directory. This can be done by sourcing "get_detailed_PTHA18_source_zone_info.R" in that folder. See the README in that folder for details')
+#ptha18_rate_curve_session = '../../../ptha_access/compute_rates_all_sources_session.RData'
+#if(!file.exists(ptha18_rate_curve_session)) stop('You need download compute_rates_all_sources_session.RData in the ptha_access directory. This can be done by sourcing "get_detailed_PTHA18_source_zone_info.R" in that folder. See the README in that folder for details')
 
-load(ptha18_rate_curve_session)
-#load('../PLOT_DATA/compute_rates_all_sources_session.RData')
+#load(ptha18_rate_curve_session)
+load('../PLOT_DATA/compute_rates_all_sources_session.RData')
 
 #
 # 'Nice-ish' source-zone specific plot
@@ -26,8 +26,8 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
 
         site_title = 'Tonga segment \n (50% weight on union of segments)'
         title_cex = 2.2 #1.8
-        lab_cex = 1.7
-        axis_cex = 1.7
+        lab_cex = 1.8
+        axis_cex = 1.9
         legend_cex=1.6
         ylim = c(1.0e-04, 10)
         with_posterior_mean_CI=TRUE
@@ -37,8 +37,8 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
 
         site_title = 'Kermadec segment \n (50% weight on union of segments)'
         title_cex = 2.2 # 2 #1.8
-        lab_cex = 1.7
-        axis_cex = 1.7
+        lab_cex = 1.8
+        axis_cex = 1.9
         legend_cex=1.6
         ylim = c(1.0e-04, 10)
         with_posterior_mean_CI=TRUE
@@ -48,8 +48,8 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
 
         site_title = 'Hikurangi segment \n (50% weight on union of segments)'
         title_cex = 2.2 # 2 #1.8
-        lab_cex = 1.6
-        axis_cex = 1.6
+        lab_cex = 1.8
+        axis_cex = 1.9
         legend_cex=1.4
         ylim = c(1.0e-04, 10)
         with_posterior_mean_CI=TRUE
@@ -66,9 +66,11 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
 
     options(scipen=5)
 
+    par('mar' = c(5.1, 5.1, 4.1, 2.1))
     plot(mw, se$mw_rate_function(mw), t='o', ylim=ylim, log='y', xlab="", 
-        ylab='Exceedance Rate (events/year)', col='white', cex.lab=1.5, cex.axis=axis_cex)
-    title(xlab=expression(M[w]), cex.lab=lab_cex*1.4, line=2)
+        ylab='Exceedance Rate (events/year)', col='white', cex.lab=lab_cex, 
+        cex.axis=axis_cex)
+    title(xlab=expression(M[w]), cex.lab=lab_cex*1.4, line=2.3)
     grid(col='orange')
     for(i in 1:nrow(all_rate_curves$all_rate_matrix)){
         points(all_rate_curves$Mw_seq, pmax(all_rate_curves$all_rate_matrix[i,], 0e-100), 
