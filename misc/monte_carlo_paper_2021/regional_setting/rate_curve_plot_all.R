@@ -1,9 +1,9 @@
 library(rptha)
-
 ptha18_rate_curve_session = '../../../ptha_access/compute_rates_all_sources_session.RData'
 if(!file.exists(ptha18_rate_curve_session)) stop('You need download compute_rates_all_sources_session.RData in the ptha_access directory. This can be done by sourcing "get_detailed_PTHA18_source_zone_info.R" in that folder. See the README in that folder for details')
 
 load(ptha18_rate_curve_session)
+#load('../PLOT_DATA/compute_rates_all_sources_session.RData')
 
 #
 # 'Nice-ish' source-zone specific plot
@@ -15,9 +15,9 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
 
         site_title = 'Full source-zone unsegmented \n (50% weight on unsegmented)'
         title_cex = 1.8 # 2 #1.8
-        lab_cex = 1.5
-        axis_cex = 1.4
-        legend_cex=1.4
+        lab_cex = 1.7
+        axis_cex = 1.7
+        legend_cex=1.6
         ylim = c(1.0e-04, 10)
         with_posterior_mean_CI=TRUE
         add_legend=TRUE
@@ -26,9 +26,9 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
 
         site_title = 'Tonga segment \n (50% weight on union of segments)'
         title_cex = 2.2 #1.8
-        lab_cex = 1.5
-        axis_cex = 1.4
-        legend_cex=1.4
+        lab_cex = 1.7
+        axis_cex = 1.7
+        legend_cex=1.6
         ylim = c(1.0e-04, 10)
         with_posterior_mean_CI=TRUE
         add_legend=FALSE
@@ -37,9 +37,9 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
 
         site_title = 'Kermadec segment \n (50% weight on union of segments)'
         title_cex = 2.2 # 2 #1.8
-        lab_cex = 1.5
-        axis_cex = 1.4
-        legend_cex=1.4
+        lab_cex = 1.7
+        axis_cex = 1.7
+        legend_cex=1.6
         ylim = c(1.0e-04, 10)
         with_posterior_mean_CI=TRUE
         add_legend=FALSE
@@ -48,8 +48,8 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
 
         site_title = 'Hikurangi segment \n (50% weight on union of segments)'
         title_cex = 2.2 # 2 #1.8
-        lab_cex = 1.5
-        axis_cex = 1.4
+        lab_cex = 1.6
+        axis_cex = 1.6
         legend_cex=1.4
         ylim = c(1.0e-04, 10)
         with_posterior_mean_CI=TRUE
@@ -87,7 +87,7 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
             c('Logic-tree mean', 
               'Posterior 16/84 %', 'Posterior 2.5/97.5 %'),
             lty=c('solid', 'dashed', 'dotdash'), 
-            pch=c(19, NA, NA), bg=rgb(1, 1, 1, alpha=0.5), 
+            pch=c(19, NA, NA), bg=rgb(1, 1, 1, alpha=0.3), 
             cex=legend_cex, lwd = c(1, 2, 1.5), box.col=rgb(1,1,1,alpha=0.3),
             col=c('red', 'blue', 'purple'))
 
@@ -96,7 +96,7 @@ for(site in c('kermadectonga2', 'kermadectonga2_tonga', 'kermadectonga2_kermadec
             lty=c('solid','solid'), pch=c(17, NA), pt.cex=c(1.5, NA),
             col=c('darkgreen', 'grey'), bg=rgb(1,1,1,alpha=0.3), 
             lwd = c(1, 2),
-            cex=legend_cex, box.col=rgb(1,1,1,alpha=0.5))
+            cex=legend_cex, box.col=rgb(1,1,1,alpha=0.3))
     }
 
     title(paste0(site_title), cex.main=title_cex)
