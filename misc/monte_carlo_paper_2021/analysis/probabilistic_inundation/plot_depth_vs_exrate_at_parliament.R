@@ -425,13 +425,12 @@ plot_panel<-function(mean_curve_env, plot_title=''){
     plot(peak_depths, mean_curve_env$mean_exrate, 
         t='l', log='y', ylim=c(1e-04, 1e-02), xlim=c(0.1, 10), lwd=3, las=1, 
         xlab="", ylab="",  cex.lab=1.4, cex.axis=1.4, axes=FALSE)
-    axis(side=1, cex.axis=1.5)
-    axis(side=2, at=10**seq(-5, -1), cex.axis=1.5,
-         labels=c('1/100000', '1/10000', '1/1000', '1/100', '1/10'), 
-         las=1)
+    axis(side=1, cex.axis=1.9)
+    axis(side=2, at=10**seq(-5, -1), cex.axis=1.9,
+         labels=c('1/100000', '1/10000', '1/1000', '1/100', '1/10'))
     add_log_axis_ticks(side=2)
-    mtext(side=1, "Tsunami inundation depth (m)", cex=1.7, line=2.5)
-    mtext(side=2, "Mean exceedances per year ", cex=1.7, line=4.5)
+    mtext(side=1, "Tsunami inundation depth (m)", cex=1.9, line=2.5)
+    mtext(side=2, "Mean exceedances per year ", cex=1.9, line=4.5)
     title(main=plot_title, cex.main=2.2)
     points(peak_depths, mean_curve_env$percentile_exrate[3,],  t='l', col='brown', lwd=3)
     points(peak_depths, mean_curve_env$percentile_exrate[2,],  t='l', col='blue', lwd=2)
@@ -443,7 +442,7 @@ plot_panel<-function(mean_curve_env, plot_title=''){
 
     legend('right', c('Mean', 'Median', '16/84 %', '2.5/97.5 %'), 
            col=c('black', 'brown', 'blue', 'green'),
-           lwd=c(3,3,2,2), pch=c(NA, NA, NA, NA), cex=1.8, bty='n')
+           lwd=c(3,3,2,2), pch=c(NA, NA, NA, NA), cex=2.0, bty='n')
 
     }
 
@@ -466,14 +465,13 @@ unsegmented_curve = add_exrate_curves_with_mc_2sd(unsegmented_random_scenarios,
     curve_type='depth', COL='red')
 segmented_curve = add_exrate_curves_with_mc_2sd(segments_union_random_scenarios, 
     curve_type='depth', COL='green')
-axis(side=1, cex.axis=1.5)
-axis(side=2, at=10**seq(-5, -2), cex.axis=1.5,
-     labels=c('1/100000', '1/10000', '1/1000', '1/100'), 
-     las=1)
+axis(side=1, cex.axis=1.8)
+axis(side=2, at=10**seq(-5, -2), cex.axis=1.8,
+     labels=c('1/100000', '1/10000', '1/1000', '1/100'))
 add_log_axis_ticks(side=2)
 abline(v=seq(0,10),  col='darkgrey', lty='dotted')
-mtext('Tsunami inundation depth (m)', side=1, line=2.5, cex=1.7)
-mtext('Mean exceedances per year', side=2, line=4.5, cex=1.7)
+mtext('Tsunami inundation depth (m)', side=1, line=2.5, cex=1.9)
+mtext('Mean exceedances per year', side=2, line=4.5, cex=1.9)
 
 abline(h=1/c(500, 2500, 10000), col='orange')
 
