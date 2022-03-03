@@ -278,13 +278,13 @@ plot_hazard_curve<-function(
         # Useful when we want to compare the spread of Monte-Carlo results with other results
         x_vals = seq(hist_xlim[1], hist_xlim[2], len=201)
         y_vals = dnorm(x_vals, mean=0.00122335093286598, sd=sqrt(0.0000000304813319339911))
-        points(x_vals, y_vals, t='l', col='blue', lwd=3, lty='dotted')
+        points(x_vals, y_vals, t='l', col='skyblue', lwd=3, lty='dotted')
 
         legend('topright', c(
                paste0("Normal distribution (analytical\n",
                       "mean and variance)"),
                paste0("Stratified-sampling (Figure 2)")),
-               lwd=c(3,3), col=c('darkred', 'blue'), lty=c('dotdash', 'dotted'), 
+               lwd=c(3,3), col=c('darkred', 'skyblue'), lty=c('dotdash', 'dotted'), 
                pch=c(NA,NA), cex=1.25, bty='n')
     }
     dev.off()
@@ -319,6 +319,7 @@ plot_hazard_curve('stratified', fig_title = 'Exceedance_rate_stratified_target_p
 plot_hazard_curve('stratified_importance', fig_title = 'Exceedance_rate_stratified_importance_target_point.png',
     add_hardcoded_normal_distribution_to_second_panel=TRUE)
 
+#stop()
 #
 # Optimal sampling
 #
@@ -1044,11 +1045,11 @@ for(nm_i in names_plot_order){
 
     YLIM = max(c(max(ds_stratified_importance$y), max(ds_stratified$y)))
     plot(ds_stratified$x, ds_stratified$y, t='l', col='black', ylim=c(0, YLIM),
-        xlab='', ylab='Density', cex.lab=1.2, cex.axis=1.2,
+        xlab='', ylab='Density', cex.lab=1.4, cex.axis=1.4,
         main=all_titles[[nm_i]], cex.main=1.8, lwd=2)
     points(ds_stratified_importance, col='red', t='l', lty='dashed', lwd=2)
     grid(col='lightblue', lty='dotted')
-    mtext(side=1, bquote(paste('Monte-Carlo exceedance-rate @ ', Q^T, '=2 m')), cex=0.8, line=3)
+    mtext(side=1, bquote(paste('Monte-Carlo exceedance-rate (', Q^T, '=2m)')), cex=0.95, line=3)
     text(max(ds_stratified$x)*0.97, YLIM*0.7,
          paste0('VR = ', signif(VR_analytical, 3), '\n',
                 '     ', '(', signif(ideal_VR_analytical[[nm_i]], 3), ')'),
