@@ -305,14 +305,14 @@ abline(h=10**seq(-6, 0), col='orange', lty='dotted')
 add_log_axis_ticks(side=2)
 add_log_axis_ticks(side=1)
 legend('bottomleft',  
-       c('High-resolution Monte-Carlo',
+       c('High-res Monte-Carlo',
          'PTHA18: Logic-tree mean',
-         'PTHA18: 95% CI for Monte-Carlo \nexceedance-rate'
+         'PTHA18: 95% CI for Monte-\nCarlo exceedance-rate'
          ),
        col=c('red', 'blue', 'blue'), pch=c(NA, NA, NA), 
        lty=c('solid', 'solid', 'dashed'), lwd = c(3,1,1),
        pt.cex=c(0.3, NA, NA), bg=rgb(1,1,1,alpha=0.0), 
-       box.col=rgb(1,1,1,alpha=0.0), cex=1.2, yjust=1)
+       box.col=rgb(1,1,1,alpha=0.0), cex=1.4, yjust=1)
 title(main = 'A) Monte-Carlo uncertainties', cex.main = 1.8)
 
 # Panel 2

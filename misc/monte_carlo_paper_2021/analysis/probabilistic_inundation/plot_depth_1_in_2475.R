@@ -9,7 +9,9 @@ tonga_coast = readOGR('../../elevation/Tonga_coast/Tonga_coast_nearlon180.shp',
     'Tonga_coast_nearlon180')
 
 # Colours and x/y/depth limits
-COLZ = c('white', rev(rainbow(255)[1:200]))
+#COLZ = c('white', rev(rainbow(255)[1:200]))
+library(cptcity)
+COLZ = c('white', cpt('jjg_cbac_seq_cbacYlGnBu09', n=250)[51:250])
 depth_limit = 6
 XLIM = c(184.625, 185.0)
 YLIM = c(-21.29, -21)
@@ -49,7 +51,8 @@ plot_panel<-function(raster_group_matching_strings, raster_group_tiles, xlim=NUL
                 if(is.null(xlim)) xlim=XLIM
                 if(is.null(ylim)) ylim=YLIM
                 plot(r1, asp=1/cos(mean_lat/180*pi), col=COLZ, xlim=xlim, ylim=ylim,
-                     zlim=c(0, depth_limit), maxpixels=Inf, xaxs='i', yaxs='i')
+                     zlim=c(0, depth_limit), maxpixels=Inf, xaxs='i', yaxs='i', cex.axis=1.3, 
+                     cex.lab=1.3, axis.args=list(cex.axis=1.2))
             }else{
                 image(r1, asp=1/cos(mean_lat/180*pi), zlim = c(0, depth_limit), 
                       col=COLZ, add=TRUE, maxpixels=Inf)
