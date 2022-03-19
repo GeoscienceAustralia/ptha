@@ -1961,7 +1961,7 @@ module multidomain_mod
             if(.not. only_global_stats) then
                 write(log_output_unit,"(A)") ''
                 write(log_output_unit,"(A)") '-----------'
-                write(log_output_unit,"(A,I6)") 'domain ', k, ' ', trim(md%label)
+                write(log_output_unit,"(A7,I6, 2A)") 'domain ', k, ' ', trim(md%label)
             end if
 
             call md%domains(k)%compute_domain_statistics(maxstage, maxspeed, minstage, minspeed, &
