@@ -15,8 +15,8 @@ module nested_grid_comms_mod
         real_bytes, integer_bytes, force_double_bytes
     use stop_mod, only: generic_stop
     ! Note: coarray_point2point_comms_mod works in serial or parallel
-    use coarray_point2point_comms_mod, only: include_in_p2p_send_buffer, &
-        send_to_p2p_comms, recv_from_p2p_comms, linked_p2p_images, &
+    use coarray_point2point_comms_mod, only: p2p_comms_type, include_in_p2p_send_buffer, &
+        send_to_p2p_comms, recv_from_p2p_comms, &
         allocate_p2p_comms, deallocate_p2p_comms, communicate_p2p
     use reshape_array_mod, only: repack_rank1_array
     use logging_mod, only: log_output_unit
@@ -245,6 +245,7 @@ module nested_grid_comms_mod
 
     subroutine initialise_two_way_nesting_comms(&
         two_way_nesting_comms, &
+        p2p, &
         my_dx, neighbour_dx, &
         ijk_to_send, ijk_to_recv, &
         neighbour_domain_index, my_domain_index, &
@@ -259,6 +260,9 @@ module nested_grid_comms_mod
         !!
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
             !! The two-way-nesting-comms-type to set up
+        type(p2p_comms_type), intent(inout) :: p2p
+            !! The point-2-point communication type that will manage this two-way communication,
+            !! (typically associated with the multidomain)
         real(dp), intent(in) :: my_dx(SPATIAL_DIM), &
                          neighbour_dx(SPATIAL_DIM)
              !! [dx,dy] of my domain or the neighbour domain
@@ -306,8 +310,8 @@ module nested_grid_comms_mod
         character(len=*), optional, intent(in) :: comms_tag_prefix
             !! A string that will be prepended to the point2point communication tags (required
             !! in models with more than one multidomain, to avoid name clashes in communication.
-            !! FIXME: This variable could be removed by redesigning the p2p_comms module to use
-            !! a derived type to hold all data).
+            !! FIXME: This seems no longer required, now that we use p2p_comms_type to encapsulate
+            !! the comms data. But no immediate need to remove it -- it could come in handy?
 
         ! Local variables
         real(dp) :: cell_ratios(SPATIAL_DIM), prod_cell_ratios
@@ -589,7 +593,7 @@ module nested_grid_comms_mod
                 (trim(n_char3))
 
             ! Make sure the point2point coarray communicator has space for this variable
-            call include_in_p2p_send_buffer(two_way_nesting_comms%send_buffer, &
+            call include_in_p2p_send_buffer(p2p, two_way_nesting_comms%send_buffer, &
                 buffer_label = two_way_nesting_comms%send_ID, &
                 receiver_image = two_way_nesting_comms%neighbour_domain_image_index)
 
@@ -1987,8 +1991,9 @@ module nested_grid_comms_mod
     ! @param two_way_nesting_comms
     ! @param U the main computational array that we copy the received data to.
     !
-    subroutine process_received_data(two_way_nesting_comms, U)
+    subroutine process_received_data(two_way_nesting_comms, p2p, U)
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
+        type(p2p_comms_type), intent(in) :: p2p
         real(dp), intent(inout) :: U(:,:,:)
 
         integer(ip) :: iL, iU, jL, jU, kL, kU, n0, n1, dir_ip(4), i, j, nvar, s1
@@ -2012,9 +2017,7 @@ module nested_grid_comms_mod
         kL = two_way_nesting_comms%recv_inds(1,3)
         kU = two_way_nesting_comms%recv_inds(2,3)
 
-        !stage_mean_before = sum(U(iL:iU, jL:jU, 1))/((iU-iL+1)*(jU-jL+1))
-
-        call recv_from_p2p_comms(two_way_nesting_comms%recv_buffer(:), &
+        call recv_from_p2p_comms(p2p, two_way_nesting_comms%recv_buffer(:), &
             buffer_label = two_way_nesting_comms%recv_ID)
 
 
@@ -2142,8 +2145,9 @@ module nested_grid_comms_mod
     ! @param send_to_recv_buffer optional logical. If FALSE, then do not do a
     ! parallel communication, but only pack the data in the send buffer [we can
     ! communicate later with communicate_p2p].
-    subroutine send_data(two_way_nesting_comms, send_to_recv_buffer)
+    subroutine send_data(two_way_nesting_comms, p2p, send_to_recv_buffer)
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
+        type(p2p_comms_type), intent(inout) :: p2p
         logical, optional, intent(in) :: send_to_recv_buffer
 
         logical:: put_in_recv_buffer
@@ -2158,7 +2162,7 @@ module nested_grid_comms_mod
         end if
 
         ! Send to point2point coarray communication buffer
-        call send_to_p2p_comms(two_way_nesting_comms%send_buffer, &
+        call send_to_p2p_comms(p2p, two_way_nesting_comms%send_buffer, &
             buffer_label=two_way_nesting_comms%send_ID, &
             put_in_recv_buffer=put_in_recv_buffer)
 
@@ -2577,6 +2581,10 @@ module nested_grid_comms_mod
         ! Relative grid sizes
         integer(ip), INTENT(IN) :: nest_ratio != 3
 
+        ! Type to manage the point-to-point communication. In SWALS applications this is 
+        ! usually associated with the multidomain
+        type(p2p_comms_type) :: p2p
+
         ! Where communicating, each domain needs to receive a layer of cells at
         ! least this thick along its boundary.
         integer(ip) :: min_exchange_halo = 2
@@ -2676,6 +2684,7 @@ module nested_grid_comms_mod
 
         ! Left side comms -- child to parent
         call Us(2)%two_way_nesting_comms(child_comms_index)%initialise( &
+            p2p, &
             my_dx = dx2, &
             neighbour_dx = dx1, &
             ! Star halo to send
@@ -2698,6 +2707,7 @@ module nested_grid_comms_mod
 
         ! Left side comms -- parent to child
         call Us(1)%two_way_nesting_comms(parent_comms_index)%initialise( &
+            p2p, &
             my_dx = dx1, &
             neighbour_dx = dx2, &
             ! Send all cells on the outer edge of the child domain
@@ -2713,7 +2723,7 @@ module nested_grid_comms_mod
             my_domain_image_index = this_image_local,&
             use_wetdry_limiting = .false.)
 
-        call allocate_p2p_comms
+        call allocate_p2p_comms(p2p)
 
         !
         ! Basic tests of cell ratios
@@ -2839,21 +2849,21 @@ module nested_grid_comms_mod
         !print*, 'Us(2): ', test_max, test_min
 
 #if defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data(send_to_recv_buffer=.FALSE.)
-        call Us(2)%two_way_nesting_comms(child_comms_index)%send_data(send_to_recv_buffer=.FALSE.)
-        call communicate_p2p
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data(p2p, send_to_recv_buffer=.FALSE.)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%send_data(p2p, send_to_recv_buffer=.FALSE.)
+        call communicate_p2p(p2p)
 #else
         ! Communicate
-        call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data()
-        call Us(2)%two_way_nesting_comms(child_comms_index)%send_data()
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%send_data(p2p)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%send_data(p2p)
 #endif
 #if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
-        sync images(linked_p2p_images)
+        sync images(p2p%linked_p2p_images)
 #endif
 
         ! Copy the recv buffer to the main array
-        call Us(1)%two_way_nesting_comms(parent_comms_index)%process_received_data(Us(1)%U)
-        call Us(2)%two_way_nesting_comms(child_comms_index)%process_received_data(Us(2)%U)
+        call Us(1)%two_way_nesting_comms(parent_comms_index)%process_received_data(p2p, Us(1)%U)
+        call Us(2)%two_way_nesting_comms(child_comms_index)%process_received_data(p2p, Us(2)%U)
 
         if(mod(nest_ratio, 2_ip) == 1) then
             ! Check U has not changed, up to numerical precision
@@ -2874,7 +2884,7 @@ module nested_grid_comms_mod
             end do
         end if
 
-        call deallocate_p2p_comms
+        call deallocate_p2p_comms(p2p)
 
     end subroutine
 
