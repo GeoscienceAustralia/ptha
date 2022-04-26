@@ -10,4 +10,4 @@ Run with
 Rscript plot_optimal_sampling.R
 ```
 
-
+See also [synthetic_catalogue_confidence_intervals.R](synthetic_catalogue_confidence_intervals.R) for code that computes the confidence intervals for Monte-Carlo exceedance-rates using the Synthetic Catalogue method. 
