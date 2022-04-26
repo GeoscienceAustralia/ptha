@@ -1,5 +1,5 @@
-Code for a paper with working title: "From offshore to onshore PTHA via efficient Monte-Carlo sampling"
------------------------------------------------------------------------------------------------------
+Code for the paper "[Davies et al., (2022) From offshore to onshore PTHA via efficient Monte Carlo sampling, Geophysical Joournal International](https://doi.org/10.1093/gji/ggac140)"
+---------------------------------------------------------------------------------------
 
 This folder contains application code used for our manuscript on Monte-Carlo sampling for PTHA. It is released to show how the calculations in the paper were implemented (i.e. for transparency), and is not expected to be developed or maintained in the longer term.
 
