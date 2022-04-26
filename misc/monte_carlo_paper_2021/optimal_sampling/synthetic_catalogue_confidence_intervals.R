@@ -22,7 +22,7 @@ lambda = 1/c(1000, 2500, 10000)
 # [1] 25000.00000000000  5882.35294117647
 
 #
-# Generate many random scenarios for lambda=0/2500, to check the result with lambda[2]=1/2500
+# Generate many random scenarios for lambda=1/2500, to check the result with lambda[2]=1/2500
 #
 random_scenarios = rpois(1e+06, lambda=lambda[2]*D)
 1/(quantile(random_scenarios, c(0.025, 0.5, 0.975))/D)
