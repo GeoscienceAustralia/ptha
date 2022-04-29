@@ -30,11 +30,12 @@ on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp)
 A paper using SWALS to model historic tsunamis in Australia is [available
 here](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) -
 this includes discussion of the range of equations that are solved, and the energy
-conservation properties of different solvers. The linear solver in SWALS was
-also used extensively for the 
+conservation properties of different solvers. [Another paper](https://doi.org/10.1093/gji/ggac140) 
+uses it to model historic tsunamis and inundation hazards in Tongatapu. The
+linear solver in SWALS was also used extensively for the 
 [2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041)
 and two associated papers: [this one in GJI](https://doi.org/10.1093/gji/ggz260) and 
-[this one in PAGEOPH](https://link.springer.com/article/10.1007/s00024-019-02299-w).
+[this one in PAGEOPH](https://link.springer.com/article/10.1007/s00024-019-02299-w). 
 
 ## Installation prerequisites
 --------------------------
