@@ -11,7 +11,7 @@ The [SWALS model](circular_island_testcase.f90) solves this problem with the
 linear shallow water equations, using grid nesting to better resolve the
 island. The offshore wave is generated using a Flather boundary condition with
 periodic waves travelling from east to west. This generates the desired
-offshore wave field while enabling radiation of outgoing waves from the domain.
+offshore wave field while enabling radiation of outgoing waves from the model.
 
 To focus on the periodic steady-state solution, we reset the stored tsunami maxima
 after an initial burn-in period, which is long enough to allow the model to reach steady state.
