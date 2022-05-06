@@ -43,14 +43,17 @@ hardware and what other jobs are being run.
 ## The tests
 
 The test-suite runs this code in the source-region of the 2011 Tohoku tsunami,
-using a number of different solver options. 
+using a number of different solver options. The earthquake source was selected
+from among randomly generated sources, so is not a precise representation of
+the real forcing of Tohoku.
 
-It performs a regression test by checking that the difference between the
-modelled and observed wave is very close to previously computed values (these
-are distinct for each solver).
+We perform a regression test by checking that the difference between the
+modelled and observed wave is very close to previously computed values (which
+are distinct for each solver). The idea is to detect any changes in the solver
+predictions; the model is not supposed to give precise agreement to the data.
 
-It also checks that models using a rise-time (i.e. applying the earthquake
-forcing over a finite time) give solutions that are equivalent to temporally
-smoothed solutions of models with an instantaneous forcing. 
+We also check that for models using a rise-time (i.e. applying the earthquake
+forcing over a finite time), the solutions are equivalent to temporally
+smoothed solutions from models using an instantaneous forcing. 
 * This is true analytically for the linear shallow water equations. 
 * In the specific situation tested, it is also a good approximation for the nonlinear shallow water equations.
