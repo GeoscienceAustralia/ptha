@@ -1,8 +1,15 @@
 # Single grid shallow water model in spherical coordinates.
 
-Here we attempt to give a fairly simple and generic interface to a spherical
-coordinates shallow water model using a single grid. This is often convenient
-for simulating global-scale tsunami propagation.
+This code is often convenient for simulating global-scale tsunami propagation.
+
+It enables a variety of shallow water solvers to be used on a single grid in spherical coordinates.
+
+The boundary conditions are transmissive, unless the longitude-extent is 360
+degrees. In the latter case, the model uses a combination of periodic east-west
+boundaries and reflective north-south boundaries. 
+
+It you wish to create more complex models (e.g. with nesting, or different
+boundary conditions) it is better to start from [../periodic_multidomain](../periodic_multidomain).
 
 ## To compile and run the code
 
