@@ -2,7 +2,7 @@
 source('../../plot.R')
 
 md_dir = sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1]
-md = get_multidomain(md_dir)
+md = get_multidomain(md_dir, read_grids=FALSE, always_read_max_grids=TRUE)
 x = md[[length(md)]] # Gives the domain of interest for BOTH single domain model and nested model
 
 # Allowed mean error fraction for 'PASS'

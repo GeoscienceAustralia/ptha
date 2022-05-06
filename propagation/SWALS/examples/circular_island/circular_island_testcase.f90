@@ -81,7 +81,7 @@ module local_routines
         ! Gauges around the island (slightly increase the radius to avoid points on dry cells)
         do i = 1, 50
             theta = 2*pi/50.0_dp * (i-1)
-            gauges(1:2,i) = (island_radius + domain%dx(1)) *  [cos(theta), sin(theta)]
+            gauges(1:2,i) = (island_radius + 1.01_dp*domain%dx(1)) *  [cos(theta), sin(theta)]
         end do
 
         ! Gauges a bit further offshore
@@ -120,7 +120,7 @@ program circular_island
     type(multidomain_type) :: md
 
     ! Approx timestep between outputs
-    real(dp), parameter :: approximate_writeout_frequency = 50.0_dp
+    real(dp), parameter :: approximate_writeout_frequency = 10.0_dp
     real(dp), parameter :: final_time = 200000.0_dp
 
     ! Timestepping method should be linear, as we compare against a linear analytical solution.
@@ -134,7 +134,7 @@ program circular_island
 
     ! Write the stage raster time-series less often than we write at gauges, to avoid
     ! overly large files. 
-    integer(ip), parameter :: frequency_full_write_steps = 60
+    integer(ip), parameter :: frequency_full_write_steps = 300
     logical, parameter :: never_write_grid_time_slices = .false.
 
     ! Zero the max stage record after this much time has elapsed. The
