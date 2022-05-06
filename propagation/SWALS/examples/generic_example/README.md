@@ -11,6 +11,13 @@ boundaries and reflective north-south boundaries.
 It you wish to create more complex models (e.g. with nesting, or different
 boundary conditions) it is better to start from [../periodic_multidomain](../periodic_multidomain).
 
+[Davies and Griffin (2018, p 178)](http://dx.doi.org/10.11636/Record.2018.041)
+used this code to compare the linear shallow water solvers in SWALS with the
+JAGURS model. That test case showed negligible differences in modelled wave
+maxima and time-series between the two codes. That might be expected given
+that the linear solvers in SWALS and JAGURS implement very similar staggered
+grid numerical methods (albeit their implementations are completely different).
+
 ## The tests
 
 The test-suite runs this code in the source-region of the 2011 Tohoku tsunami,
