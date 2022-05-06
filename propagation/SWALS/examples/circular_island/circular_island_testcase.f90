@@ -143,6 +143,9 @@ program circular_island
     real(dp), parameter :: reset_max_stage_at_time = 120000.0_dp
     logical :: have_reset_max_stage = .FALSE.
 
+    ! Scale this to refine the mesh -- e.g. value of 2 will halve the grid cell-size and time-step.
+    real(dp), parameter :: mesh_refine = 1.0_dp 
+
     integer, parameter :: nd = 2
     
 
@@ -150,8 +153,8 @@ program circular_island
     if(nd == 1) then
         ! Single domain model
         allocate(md%domains(1))
-        dx = 2000.00_dp
-        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03 
+        dx = 2000.00_dp/mesh_refine
+        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03
         md%domains(1)%lower_left = -md%domains(1)%lw/2.0_dp
         md%domains(1)%nx = nint(md%domains(1)%lw/dx)
         md%domains(1)%timestepping_method = timestepping_method
@@ -161,7 +164,7 @@ program circular_island
 
         ! Coarser outer domain
         allocate(md%domains(2))
-        dx = 4000.00_dp
+        dx = 4000.00_dp/mesh_refine
         md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03 
         md%domains(1)%lower_left = -md%domains(1)%lw/2.0_dp
         md%domains(1)%nx = nint(md%domains(1)%lw/dx)
@@ -172,7 +175,7 @@ program circular_island
             parent_domain = md%domains(1), &
             lower_left  = [-4.0e+05_dp, -4.0e+05_dp], &
             upper_right = [ 4.0e+05_dp,  4.0e+05_dp], &
-            dx_refinement_factor = 2_ip, &
+            dx_refinement_factor = 3_ip, &
             ! For inner linear domains, timestepping refinement should not be used
             ! (leads to instability).
             timestepping_refinement_factor = 1_ip)
