@@ -1,7 +1,8 @@
 # Single grid shallow water model in spherical coordinates.
 
-Here we attempt to give a fairly generic interface to a spherical coordinates
-shallow water model.
+Here we attempt to give a fairly simple and generic interface to a spherical
+coordinates shallow water model using a single grid. This is often convenient
+for simulating global-scale tsunami propagation.
 
 ## To compile and run the code
 
