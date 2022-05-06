@@ -20,7 +20,7 @@ after an initial burn-in period, which is long enough to allow the model to reac
 with 3 rings of points (inner, middle, outer) around the conical island, at
 which [Figure 2](model_data_comparison_2.png) compares the modelled stage
 maxima with the analytical solution. The automated test confirms that these
-solutions are within an prescribed tolerance, and that mass conservation errors
+solutions are within a prescribed tolerance, and that mass conservation errors
 are negligible. 
 
 ![Figure 1](model_data_comparison_1.png)
