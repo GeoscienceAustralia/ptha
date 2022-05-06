@@ -1,7 +1,10 @@
-Here we attempt to give a fairly generic interface to a spherical coordinates
-linear shallow water model.
+# Single grid shallow water model in spherical coordinates.
 
-To run it:
+Here we attempt to give a fairly generic interface to a spherical coordinates
+shallow water model.
+
+## To compile and run the code
+
 * Copy one of the '\*.in' files to a new file (e.g. 'my_model.in'), and edit it
 to ensure that the input_elevation_raster and input_stage_raster exist on your
 filesystem, and that the model extents are as desired. The input rasters should
@@ -36,3 +39,11 @@ It can also be advantageous to control the process affinity (e.g. include
 "OMP_PROC_BIND=true" in the model run command), although this depends on your
 hardware and what other jobs are being run.
 
+## The regression tests
+
+The test-suite runs this code in the source-region of the 2011 Tohoku tsunami,
+using a number of different solver options. 
+
+It performs a regression test by checking that the difference between the
+modelled and observed wave is very close to previously computed values (these
+are distinct for each solver).
