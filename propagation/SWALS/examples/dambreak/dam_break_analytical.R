@@ -1,12 +1,3 @@
-# This code needs more testing. However, it looks like the 'dry' dam-break
-# does conserve energy, while the 'wet' dam break does not. Theoretically I 
-# think this is due to the shock in the latter case.
-
-# In Steve's notes, the chapter on the dam-break solution mentions a solution
-# for the Shock height, and how this is not perfectly related to the energy
-# dissipation -- and refers to a missing figure!
-#
-
 #
 # Does the dam-break solution conserve energy? This dry dam-break seems to
 #
@@ -41,8 +32,7 @@ dry_dam_break<-function(t=2, L=100, H1=1, N=1001, G=9.8){
 #tmp = dry_dam_break(5, N=10001)
 
 #
-# What about the wet dam break? This needs more testing. The energy plots
-# made later on clearly have some artefacts
+# What about the wet dam break?
 #
 wet_dam_break<-function(t=2, L=100, H0=0.1, H1=1, N=1001, G=9.8){
 
@@ -50,8 +40,8 @@ wet_dam_break<-function(t=2, L=100, H0=0.1, H1=1, N=1001, G=9.8){
 
     if(L < sqrt(G*H1)*t) stop('L is not long enough to support this t')
 
-    #To calculate the Stoker solution, we minimize this function, Wu et al., (1999)
-    allvars<-function(v){
+    # To calculate the Stoker solution, we minimize this function, Wu et al., (1999)
+    Wu_allvars<-function(v){
         #u2 is velocity in shock zone
         u2=v[1]
         #h2 is depth
@@ -75,10 +65,11 @@ wet_dam_break<-function(t=2, L=100, H0=0.1, H1=1, N=1001, G=9.8){
 
     }
 
+    #
     # Zoppou and Roberts solution
-    # In my PhD code, I suggested there were problems with this in some cases.
-    # So the values were used as initial guesses for another optimization
-    # This seems to work
+    #
+    # I found problems with this in some cases (my coding or the paper?).
+    # So the values are used as an initial guess for the Wu solution optimization.
     S2fun<-function(S2){
         abs(-S2+2*sqrt(G*H1)+G/(4*S2)*(H0+sqrt(H0^2+8*H0*S2^2/(G)) ) -(2*G*sqrt(H0^2+8*H0*S2^2/(G)) -2*G*H0 )^0.5)
     }
@@ -86,23 +77,18 @@ wet_dam_break<-function(t=2, L=100, H0=0.1, H1=1, N=1001, G=9.8){
     S2 = a11$minimum
     # So now we have the shock speed. We need u2, and h2
     u2 = S2-G/(4*S2)*(H0+sqrt(H0^2+8*H0*S2^2/(G)))
-
-    # h2 also needs minimizing --- however, I think this gives incorrect values
+    # h2 also needs minimizing
     h2fun<-function(h2){
         #abs(-h2 + h0/2*sqrt(1+8*(2*h2/(h2-h0)*(sqrt(h1)-sqrt(h2))/sqrt(h0) )^2  ) -1/2)
         abs(-h2 + 1/2*sqrt(H0^2+8*H0*(2*h2/(h2-H0)*(sqrt(H1)-sqrt(h2)) )^2  ) -1/2)
     }
-    a11 = optimize(h2fun, interval=c(H0+1E-9,H1)) #This interval is important, should be sensible I guess
+    a11 = optimize(h2fun, interval=c(H0+1E-9,H1)) #This interval is important
     h2 = a11$minimum
 
-    # Find the minimum of allvars- practically, this should set all equations to 0.
-    # For initial values, make these guesses
-    #S2 = sqrt(G*H0)
-    #h2 = 0.5*(H1 + H0)
-    #u2 = sqrt(G*h2)
-
-    #a11 = optim(c(u2,h2,S2),allvars,lower=c(0,H0,0),method='L-BFGS-B', control=list(abstol=1e-12))
-    a11 = optim(c(u2,h2,S2), allvars, control=list(abstol=1e-15, reltol=1e-12))
+    #
+    # Find the Wu solution, using the above values as guesses
+    #
+    a11 = optim(c(u2,h2,S2), Wu_allvars, control=list(abstol=1e-15, reltol=1e-12))
     u2 = a11$par[1]
     h2 = a11$par[2]
     S2 = a11$par[3]
@@ -132,15 +118,8 @@ wet_dam_break<-function(t=2, L=100, H0=0.1, H1=1, N=1001, G=9.8){
     return(out)
 }
 
-# Here we see the wet dam break solution is bleeding energy over time,
-# (assuming I correctly coded it!)
-#tmp = wet_dam_break(0.0001, N=10001)
-#tmp = wet_dam_break(1, N=10001)
-#tmp = wet_dam_break(5, N=10001)
-#tmp = wet_dam_break(10, N=10001)
-#tmp = wet_dam_break(20, N=10001)
-
-# Figure showing energy loss issues.
+# Here we see the wet dam break solution is bleeding energy over time, because of the shock.
+# Figure showing energy loss.
 make_energy_loss_figure<-function(){
     png('Dam_break_energy_loss.png', width=12, height=8, units='in', res=300)
     par(mfrow=c(2,2))
