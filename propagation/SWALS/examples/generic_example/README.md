@@ -40,7 +40,7 @@ It can also be advantageous to control the process affinity (e.g. include
 "OMP_PROC_BIND=true" in the model run command), although this depends on your
 hardware and what other jobs are being run.
 
-## The regression tests
+## The tests
 
 The test-suite runs this code in the source-region of the 2011 Tohoku tsunami,
 using a number of different solver options. 
@@ -48,3 +48,9 @@ using a number of different solver options.
 It performs a regression test by checking that the difference between the
 modelled and observed wave is very close to previously computed values (these
 are distinct for each solver).
+
+It also checks that models using a rise-time (i.e. applying the earthquake
+forcing over a finite time) give solutions that are equivalent to temporally
+smoothed solutions of models with an instantaneous forcing. 
+* This is true analytically for the linear shallow water equations. 
+* In the specific situation tested, it is also a good approximation for the nonlinear shallow water equations.
