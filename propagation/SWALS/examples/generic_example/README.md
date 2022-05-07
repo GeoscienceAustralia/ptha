@@ -2,14 +2,8 @@
 
 This code is often convenient for simulating global-scale tsunami propagation.
 
-It enables a variety of shallow water solvers to be used on a single grid in spherical coordinates.
-
-The boundary conditions are transmissive, unless the longitude-extent is 360
-degrees. In the latter case, the model uses a combination of periodic east-west
-boundaries and reflective north-south boundaries. 
-
-It you wish to create more complex models (e.g. with nesting, or different
-boundary conditions) it is better to start from [../periodic_multidomain](../periodic_multidomain).
+It enables a variety of shallow water solvers to be used on a single grid in
+spherical coordinates. 
 
 [Davies and Griffin (2018, p 178)](https://dx.doi.org/10.11636/Record.2018.041)
 used this code to compare the linear shallow water solvers in SWALS with the
@@ -17,6 +11,9 @@ JAGURS model. That test case showed negligible differences in modelled wave
 maxima and time-series between the two codes. That might be expected given
 that the linear solvers in SWALS and JAGURS implement very similar staggered
 grid numerical methods (albeit their implementations are completely different).
+
+It you wish to create more complex models (e.g. with nesting, or different
+boundary conditions) it is better to start from [../periodic_multidomain](../periodic_multidomain).
 
 ## The tests
 
