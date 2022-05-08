@@ -3,6 +3,8 @@ Code for the paper "[Davies et al., (2022) From offshore to onshore PTHA via eff
 
 This folder contains application code used for our manuscript on Monte-Carlo sampling for PTHA. It is released to show how the calculations in the paper were implemented (i.e. for transparency), and is not expected to be developed or maintained in the longer term.
 
+Note that a separate tutorial on using these sampling methods with PTHA18 is available [here](../../ptha_access/example_event_access_scripts/random_scenarios_non_uniform_and_importance_sampling).
+
 The directories are:
 
 * [./optimal_sampling](./optimal_sampling) -- A script that implements the offshore analysis of various Monte-Carlo schemes (prior to high-resolution inundation simulation). It creates Figures 2,3,4,5,6,7,8 from the paper (and many others that are not used in the paper). It also reports various statistics which summarise the performance of different Monte-Carlo schemes, and computes the non-uniform sampling effort within magnitude-bins that is used in the paper. 
