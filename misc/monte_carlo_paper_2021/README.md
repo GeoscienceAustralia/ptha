@@ -15,7 +15,7 @@ The directories are:
 
 * [./sources](./sources) -- Code to select the particular set of random scenarios that were used for the onshore PTHA computations. Also information on the source-models used for comparison with historic events.
 
-* [./swals](./swals) -- The tsunami model application code, which uses the [swals solver](../../../propagation/SWALS). The models here can be run after all the random source models have been created [using the code here](./sources/random/). As well as making simulations for all random scenarios, the code in this folder produces plots of the model domain and the comparison with historical events, which were manually combined to make Figure 9 of the paper.
+* [./swals](./swals) -- The tsunami model application code, which uses the [SWALS solver](../../propagation/SWALS). The models here can be run after all the random source models have been created [using the code here](./sources/random/). As well as making simulations for all random scenarios, the code in this folder produces plots of the model domain and the comparison with historical events, which were manually combined to make Figure 9 of the paper.
 
 * [./analysis](./analysis) -- Probabilistic computations using the high-resolution model outputs. This can be run after all the simulations in the [./swals](./swals) directory have completed. These codes make Figures 10, 11, 12 of the paper.
 
