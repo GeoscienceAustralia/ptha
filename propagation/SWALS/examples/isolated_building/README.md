@@ -11,12 +11,19 @@ The figures below show the observed and modelled velocity fields at times of 3, 
 At this resolution the numerical model captures the broad main of the flow, but it is not numerically convergent. Mesh refinement can better resolve the unsteady velocities downstream of the building (Gauge 5), but also changes the locations of shocks enough to affect the modelled flow at some gauges. These features are also affected by the choice of friction and use of eddy-viscosity. 
 
 ![Time 3s: Measured and modelled velocity field](velocity_field_t03_testcase.png)
+
 ![Time 5s: Measured and modelled velocity field](velocity_field_t05_testcase.png)
+
 ![Time 10s: Measured and modelled velocity field](velocity_field_t10_testcase.png)
+
 ![Time 15s: Measured and modelled velocity field](velocity_field_t15_testcase.png)
+
 ![Stage time-series at gauges 1-5](Gauges_stage_plot_testcase.png)
+
 ![Velocity in the downstream (x) direction at gauges 1-5](Gauges_Vvel_plot_testcase.png)
+
 ![Velocity in the cross-flume (y) direction at gauges 1-5](Gauges_Vvel_plot_testcase.png)
+
 
 
 ## Minor discrepancies in the experiment description.
