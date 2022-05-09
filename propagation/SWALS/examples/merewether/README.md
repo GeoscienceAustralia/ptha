@@ -13,10 +13,11 @@ Some data from this test problem was previously released as part of the
 [ANUGA model test-suite](https://github.com/GeoscienceAustralia/anuga_core/tree/main/validation_tests/case_studies/merewether),
 which was used to make the test here.
 
-The code here makes a number of plots that can be compared with figures in Smith and Wasko (2012). 
-Note that the SWALS model results should not be identical, in part because we are using
-different datasets to define the friction (and don't have those inputs used in the ARR
-report).
+The [SWALS model](merewether_example.f90) and associated plotting code makes
+several figures that can be compared with figures in Smith and Wasko (2012).
+Note that the SWALS model results should not be identical, in part because we
+are using different datasets to define the friction (and don't have those
+inputs used in the ARR report).
 
 * The velocity vector plot can be compared with their Figure 30
 
