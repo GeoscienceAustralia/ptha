@@ -34,8 +34,9 @@ inputs used in the ARR report).
 The test code checks that:
 
 * The model conserves mass well. Because SWALS mass-conservation tracking does
-  not account for the inflows, we check that the expected inflow matches the
-unexplained component of SWALS mass conservation calculations. 
+  not account for the circular input discharge, we check that the latter
+precisely accounts the unexplained component of SWALS mass conservation
+calculations. 
 
 * The model gives reasonable predictions of the max-depth at a number of sites
   with known max-depth (see Table 4 of Smith and Wasko 2012). In particular we
