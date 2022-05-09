@@ -1,12 +1,23 @@
 source('../../plot.R')
+md_dir = sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1]
+md = get_multidomain(md_dir)
+x = md[[1]]
+nx = dim(x$stage)[1]
+ny = dim(x$stage)[2]
+ts = length(x$time)
 
 #
-# Read the model log and see if the test passed
-# (just a mass conservation check)
+# Check mass conservation -- this model should have an 'unexplained change'
+# due to the discharge source (which SWALS doesn't track). In the model code
+# we wrote the volume to the file
 #
-model_log = readLines('outfile.log')
-k = grep('MASS CONSERVATION TEST', model_log)
-if(model_log[k+1] == ' PASS'){
+model_log = readLines(Sys.glob(paste0(md_dir, '/multi*.log'))[1])
+# Get 'unexplained change'
+unexplained_change = as.numeric(strsplit(model_log[max(grep('unexplained change', model_log))], ':')[[1]][2])
+# Get the volume we added
+expected_change = as.numeric(model_log[grep('Expected mass change due to inflows', model_log)+1])
+
+if(abs(expected_change - unexplained_change) < 1.0e-06*abs(unexplained_change)){
     print('PASS')
 }else{
     print('FAIL')
@@ -14,12 +25,6 @@ if(model_log[k+1] == ' PASS'){
 
 lx = 320
 ly = 415
-
-x = get_all_recent_results()
-nx = dim(x$stage)[1]
-ny = dim(x$stage)[2]
-ts = length(x$time)
-
 
 depth = x$stage[,,ts] - x$elev0
 elev = x$elev0
