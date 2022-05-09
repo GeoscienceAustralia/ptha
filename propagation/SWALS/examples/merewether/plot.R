@@ -31,19 +31,24 @@ elev = x$elev0
 xs = matrix(1:nx, nrow=nx, ncol=ny)*(lx/nx)
 ys = matrix(1:ny, nrow=nx, ncol=ny, byrow=TRUE)*(ly/ny)
 
-pdf('merewether_plots.pdf', width=10, height=10)
+#pdf('merewether_plots.pdf', width=10, height=10)
+png('Velocity_vector_plot.png', width=10, height=10, units='in', res=300)
 # Close up arrows plot
 image(xs[,1], ys[1,], elev, asp=1, col=rainbow(255), xlim=c(100, 250), ylim=c(100, 250),
     main=paste0('Velocity up close: Time = ', round(x$time[ts],3)))
 arrows(xs, ys, xs+x$ud[,,ts]/depth, ys+x$vd[,,ts]/depth, length=0.001)
+dev.off()
 
 # Froude plot
+png('Froude_number_plot.png', width=10, height=10, units='in', res=300)
 vel = sqrt(x$ud[,,ts]**2 + x$vd[,,ts]**2)/(depth + 1.0e-10)*(depth > 1.0e-05)
 froude = vel/sqrt(9.81 * depth + 1.0e-10)*(depth > 1.0e-05)
 
-image(xs[,1], ys[1,], (froude > 1) + (froude > 1.0e-05) , asp=1, main=paste0('Froude number: Time = ', round(x$time[ts],3)))
+image(xs[,1], ys[1,], (froude > 1) + (froude > 1.0e-05) , asp=1, 
+      main=paste0('Froude number: Time = ', round(x$time[ts],3)))
+dev.off()
 
-
+png('Hazard_plot.png', width=10, height=10, units='in', res=300)
 hazard = vel * depth
 hazard_cat = (hazard > 1.0e-3) + (hazard > 0.2) + (hazard > 0.5) + (hazard > 1) + (hazard > 2)
 image(xs[,1], ys[1,],  hazard_cat, col=c('white', 'skyblue', 'lightgreen', 'yellow', 'orange', 'red'), asp=1,

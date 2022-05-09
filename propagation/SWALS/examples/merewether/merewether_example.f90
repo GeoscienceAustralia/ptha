@@ -113,12 +113,13 @@ module local_routines
             domain%U(:, 1 ,ELV) = wall_elevation
             domain%U(:, domain%nx(2), ELV) = wall_elevation    
         else
-            ! Transmissive outflow -- but we prevent mass leaking out of the back of the domain. 
-            ! Also block off other sides -- only need outflow on east edge of domain.
-            domain%U(:, 1:2, ELV) = domain%U(:,1:2, ELV) + 10.0_dp
-            domain%U(1:2, :, ELV) = domain%U(1:2, :, ELV) + 10.0_dp
-            domain%U(:, (domain%nx(2)-1):domain%nx(2), ELV) = 10.0_dp + &
-                domain%U(:, (domain%nx(2)-1):domain%nx(2), ELV)
+            ! Transmissive outflow
+            ! We prevent mass leaking by using walls for 2 boundaries
+            domain%U(:, 1:2, ELV) = 100.0_dp
+            domain%U(1:2, :, ELV) = 100.0_dp
+            ! We use a flat boundary on the east and north so that the transmissive BC is well-behaved
+            domain%U(domain%nx(1), :, ELV) = domain%U(domain%nx(1)-1, :, ELV)
+            domain%U(:, domain%nx(2), ELV) = domain%U(:, domain%nx(2)-1, ELV) 
         end if 
 
 
@@ -216,7 +217,7 @@ program merewether
     !! Urban Areas - Representation of Buildings in 2D Numerical Flood Models Australian 
     !! Rainfall and Runoff, Engineers Australia, 2012
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
+    use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use multidomain_mod, only: multidomain_type
     use boundary_mod, only: transmissive_boundary
     use local_routines
@@ -228,7 +229,7 @@ program merewether
     type(multidomain_type):: md
 
     ! Global timestep
-    real(dp), parameter :: global_dt = 0.32_dp
+    real(dp), parameter :: global_dt = 0.08_dp
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 60.0_dp
@@ -248,10 +249,10 @@ program merewether
     ! Single domain model 
     allocate(md%domains(1)) 
 
-    md%domains(1)%timestepping_method = 'rk2n' !'euler' !'rk2n'
     md%domains(1)%lw = global_lw
     md%domains(1)%nx = global_nx
     md%domains(1)%lower_left = global_ll
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
 
     ! Initialise the domain
     call md%setup()
