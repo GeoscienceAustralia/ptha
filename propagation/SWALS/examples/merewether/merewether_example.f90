@@ -257,8 +257,13 @@ program merewether
         call set_initial_conditions_merewether(md%domains(j))
 
         if(.not. all(md%domains(j)%is_nesting_boundary)) then
-            ! Allow waves to propagate outside all edges
+            ! Allow waves to propagate out of the domain 
             md%domains(j)%boundary_subroutine => transmissive_boundary
+            ! Note we adjusted the topography 
+            ! (inside set_initial_conditions_merewether) to ensure that
+            ! the outflow is restricted to the downstream edge, and that the
+            ! transmissive boundary is well behaved (boundary elevation 
+            ! equal to that just inside the boundary).
         end if
     end do
 
