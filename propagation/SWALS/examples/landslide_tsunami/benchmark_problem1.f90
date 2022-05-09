@@ -125,6 +125,7 @@ program landslide_tsunami
     ! dx (mesh resolution) in different regions
     real(dp), parameter :: res_d1 = 25.0_dp/mesh_refine ! Coarse res offshore
     real(dp), parameter :: res_d2 = res_d1/9_ip ! High-res near shoreline
+    !real(dp), parameter :: res_d2 = res_d1/25_ip ! Even higher-res near shoreline
 
     call program_timer%timer_start('setup')
 

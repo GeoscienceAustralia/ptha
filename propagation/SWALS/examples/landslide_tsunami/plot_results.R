@@ -4,6 +4,9 @@ source('../../plot.R')
 # Get the most recent 002 domain (nested domain)
 x = get_all_recent_results(sort(Sys.glob('OUTPUTS/RUN_*/RUN_*0002_*'), decreasing=TRUE)[1])
 
+# Analytical shoreline solution
+shore = read.csv('DATA/Shoreline.csv')
+
 ERR_TOL = 0.05
 
 # Plot instants in time
@@ -21,13 +24,15 @@ for(i in 1:length(ts)){
     par(mfrow=c(2,1))
     # This "analytical solution" can go below the bed in some regions -- find them
     beach_slope = -0.1
-    #nullpts = which(m1[,2] <  beach_slope * m1[,1])
+    nullpts = which(m1[,2] <  beach_slope * m1[,1])
     #if(length(nullpts) > 0){
     #    # Fix stage
     #    m1[nullpts,2] = beach_slope * m1[nullpts,1] 
     #    # Fix speed
     #    m1[nullpts,3] = NA
     #}
+    #analytical_shoreline = m1[max(which(m1[,2] < (beach_slope * m1[,1]))),1]
+    analytical_shoreline = approx(shore[,1], shore[,2], xout=ts[i])$y
 
     # Plot free-surface
     plot(m1[,1], m1[,2], t='p', 
@@ -39,9 +44,13 @@ for(i in 1:length(ts)){
     ind = which.min(abs(ts[i] - x$time))
     points(x$xs, x$stage[,yi,ind],t='o', col='red', pch=19, cex=0.2)
     points(x$xs, x$elev0[,yi],t='l', col='blue')
+    abline(v=analytical_shoreline, col='brown', lty='dashed')
 
-    legend('right', c('Analytical', 'Numerical', 'Bed'), col=c('black', 'red', 'blue'),
-           pch=c(1, NA, NA), lty=c(NA, 1,1), bty='n', cex=1.3)
+    legend('right', c('Analytical', 'Numerical', 'Bed', 'Analytical shoreline'), 
+           col=c('black', 'red', 'blue', 'brown'),
+           pch=c(1, NA, NA, NA), lty=c(NA, 'solid', 'solid', 'dashed'), 
+           bty='n', cex=1.3)
+
 
     # Plot velocity
     plot(m1[,1], m1[,3], t='p', 
@@ -50,6 +59,7 @@ for(i in 1:length(ts)){
     points(x$xs, x$ud[,yi,ind]/(x$stage[,yi,ind]-x$elev0[,yi] + 1e-100), t='o', 
            col='red', pch=19, cex=0.2)
 
+    abline(v=analytical_shoreline, col='brown', lty='dashed')
 
     # Test 1 -- stage (PASS/FAIL)
     model_at_analytical_x = approx(x$xs, x$stage[,yi, ind], xout=m1[,1])
@@ -90,6 +100,8 @@ plot(shore[,1], shore[,2], t='l',
      xlab='Time', ylab='Position', lwd=3)
 points(x$time, shore_x, t='o', col='red', pch=19, cex=0.2)
 grid()
+legend('topleft', c('Analytical', 'Numerical'), col=c('black', 'red'), lty=c(1,1), pch=c(NA, NA), 
+       bty='n', cex=1.3)
 plot(shore[,1], shore[,3], t='l', main='Shoreline velocity', xlab='Time', ylab = 'Velocity (m/s)',
     ylim=c(-20, 15), lwd=3)
 points(x$time, shore_vel, t='o', col='red', pch=19, cex=0.2)
