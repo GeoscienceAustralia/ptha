@@ -116,7 +116,7 @@ for(i in 1:length(vel_times)){
     par(mar=c(3, 3, 3, 1))
     vel_scale = 20
 
-    # The measurements have x/y origin being 6.75, 1.8 relative to our model
+    # The measurements have x/y origin being (6.75 + 0.8), 1.8 relative to our model
     vel_measured = read.table(vel_files[i], skip=2)
     vel_measured[,1] = vel_measured[,1] + 6.75 + 0.8
     vel_measured[,2] = vel_measured[,2] + 1.8
@@ -130,6 +130,9 @@ for(i in 1:length(vel_times)){
            vel_measured[,2] + vel_measured[,4]/vel_scale * zero_vels,
            length=0, col=zero_vels)
     for(j in 1:length(all_polys)) polygon(all_polys[[j]][,1], all_polys[[j]][,2], fill=NA, border='red')
+
+    points(gauges$lon, gauges$lat, pch=19, cex=0.4, col='red')
+    text(gauges$lon, gauges$lat, paste0('G', seq(1, 5)), col='red', pos=1, cex=1.5)
 
     # Compare with model -- get UH, VH, and depth(=stage because elevation=0)
     model_time_ind = which.min(abs(model_metadata[[1]]$time - vel_times[i]))
@@ -160,6 +163,10 @@ for(i in 1:length(vel_times)){
            vel_measured[,1] + mu*zero_vels/vel_scale, 
            vel_measured[,2] + mv*zero_vels/vel_scale, length=0, col=zero_vels)
     for(j in 1:length(all_polys)) polygon(all_polys[[j]][,1], all_polys[[j]][,2], fill=NA, border='red')
+
+    points(gauges$lon, gauges$lat, pch=19, cex=0.4, col='red')
+    text(gauges$lon, gauges$lat, paste0('G', seq(1, 5)), col='red', pos=1, cex=1.5)
+
     dev.off()
 }
 
