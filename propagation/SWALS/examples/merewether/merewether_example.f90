@@ -5,7 +5,7 @@ module local_routines
 
     use global_mod, only: dp, ip, force_double, charlen, wall_elevation, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: read_gdal_raster
+    use read_raster_mod, only: multi_raster_type
     use which_mod, only: which
     use ragged_array_mod, only: ragged_array_2d_ip_type
     use file_io_mod, only: read_character_file, read_csv_into_array
@@ -30,9 +30,11 @@ module local_routines
         class(domain_type), target, intent(inout):: domain
 
         integer(ip):: i, j, k
-        real(dp), allocatable:: x(:,:), y(:,:)
+        real(dp), allocatable:: x(:), y(:)
 
-        character(len=charlen):: input_elevation_file, polygon_filename
+        ! For reading background elevation
+        character(len=charlen):: input_elevation_file
+        type(multi_raster_type) :: elevation_data
 
         ! Add this elevation to all points in houses/ csv polygons
         real(dp), parameter:: house_height = 3.0_dp
@@ -40,15 +42,14 @@ module local_routines
         real(dp), parameter:: friction_road = 0.02_dp, friction_other = 0.04_dp
 
         ! things to help read polygons
-        character(len=charlen), allocatable:: house_filenames(:)
+        character(len=charlen), allocatable:: house_filenames(:), polygon_filename
         integer(ip):: house_file_unit, inside_point_counter, house_cell_count
         real(dp), allocatable:: polygon_coords(:,:)
         logical, allocatable:: is_inside_poly(:)
+        
+        ! For inflow boundary
         type(ragged_array_2d_ip_type), pointer :: rainfall_region_indices
-        integer(ip), allocatable :: i_inside(:)
 
-
-        allocate(x(domain%nx(1),domain%nx(2)), y(domain%nx(1),domain%nx(2)))
 
         !
         ! Dry flow to start with. Later we clip stage to elevation.
@@ -59,15 +60,18 @@ module local_routines
         ! Set elevation with the raster
         !
         input_elevation_file = "./topography/topography1.tif"
+        call elevation_data%initialise([input_elevation_file])
 
+        ! To hold x/y coordinates along a row with constant y-value
+        allocate(x(domain%nx(1)), y(domain%nx(1)))
+        x = domain%x
+
+        ! Read the elevation data row-by-row
         do j = 1, domain%nx(2)
-          do i = 1, domain%nx(1)
-            x(i,j) = domain%lower_left(1) + (i-0.5_dp)*domain%dx(1) 
-            y(i,j) = domain%lower_left(2) + (j-0.5_dp)*domain%dx(2) 
-          end dO
+            y = domain%y(j)
+            call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), bilinear=0_ip)
         end do
-        call read_gdal_raster(input_elevation_file, x, y, domain%U(:,:,ELV), &
-            domain%nx(1)*domain%nx(2), verbose=1_ip, bilinear=0_ip)
+        call elevation_data%finalise
 
         write(log_output_unit, *) 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
 
@@ -87,7 +91,8 @@ module local_routines
 
             do j = 1, domain%nx(2)
                 ! Find points in the polygon in column j
-                call points_in_poly(polygon_coords(1,:), polygon_coords(2,:), x(:,j), y(:,j), is_inside_poly)
+                y = domain%y(j)
+                call points_in_poly(polygon_coords(1,:), polygon_coords(2,:), x, y, is_inside_poly)
                 inside_point_counter = inside_point_counter + count(is_inside_poly)
 
                 do i = 1, domain%nx(1) 
@@ -113,7 +118,6 @@ module local_routines
         domain%U(domain%nx(1), :, ELV) = domain%U(domain%nx(1)-1, :, ELV)
         domain%U(:, domain%nx(2), ELV) = domain%U(:, domain%nx(2)-1, ELV) 
 
-
         !
         ! Set friction
         !
@@ -126,8 +130,8 @@ module local_routines
         call read_csv_into_array(polygon_coords, polygon_filename)
         inside_point_counter = 0
         do j = 1, domain%nx(2)
-
-            call points_in_poly(polygon_coords(1,:), polygon_coords(2,:), x(:,j), y(:,j), is_inside_poly)
+            y = domain%y(j)
+            call points_in_poly(polygon_coords(1,:), polygon_coords(2,:), x, y, is_inside_poly)
             inside_point_counter = inside_point_counter + count(is_inside_poly)
 
             do i = 1, domain%nx(1) 
@@ -165,6 +169,8 @@ module local_routines
         domain%forcing_subroutine => apply_rainfall_forcing
         domain%forcing_context_cptr = c_loc(rainfall_region_indices)
         call domain%store_forcing()
+
+        deallocate(x,y, is_inside_poly)
 
     end subroutine
 
