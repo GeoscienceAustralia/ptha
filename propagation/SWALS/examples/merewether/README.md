@@ -14,6 +14,9 @@ Some data from this test problem was previously released as part of the
 which was used to make the test here.
 
 The code here makes a number of plots that can be compared with figures in Smith and Wasko (2012). 
+Note that the SWALS model results should not be identical, in part because we are using
+different datasets to define the friction (and don't have those inputs used in the ARR
+report).
 
 * The velocity vector plot can be compared with their Figure 30
 
@@ -24,9 +27,6 @@ The code here makes a number of plots that can be compared with figures in Smith
 ![Froude number plot](Froude_number_plot.png)
 
 * The "Hazard" plot gives the speed-times-depth, and can be compared with their Figure 35
-Note the SWALS model results should not be identical, in part because we are using
-different datasets to define the friction (and don't have those inputs used in the ARR
-report).
 
 ![Hazard plot (speed x depth)](Hazard_plot.png)
 
