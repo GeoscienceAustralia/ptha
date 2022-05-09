@@ -17,7 +17,7 @@ module local_routines
 
     ! Manning friction. This affects the placement of shocks, and so has
     ! significant on some gauge time-series (e.g. G2).
-    real(dp), parameter :: manning_squared  = 0.01**2 !0.015_dp**2
+    real(dp), parameter :: manning_squared  = 0.01_dp**2 !0.015_dp**2
 
     ! Polygons defining the geometry
     character(len=charlen) :: domain_polygons(3) = [character(len=charlen):: &
