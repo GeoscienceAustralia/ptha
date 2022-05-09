@@ -25,10 +25,9 @@ module local_routines
     !
     ! Main setup routine
     !
-    subroutine set_initial_conditions_merewether(domain, reflective_boundaries)            
+    subroutine set_initial_conditions_merewether(domain)            
 
         class(domain_type), target, intent(inout):: domain
-        logical, intent(in):: reflective_boundaries
 
         integer(ip):: i, j, k
         real(dp), allocatable:: x(:,:), y(:,:)
@@ -106,21 +105,13 @@ module local_routines
 
         write(log_output_unit, *) '# cells in houses: ', house_cell_count
        
-        if(reflective_boundaries) then 
-            ! Walls all sides
-            domain%U(1,:,ELV) = wall_elevation
-            domain%U(domain%nx(1), :, ELV) = wall_elevation    
-            domain%U(:, 1 ,ELV) = wall_elevation
-            domain%U(:, domain%nx(2), ELV) = wall_elevation    
-        else
-            ! Transmissive outflow
-            ! We prevent mass leaking by using walls for 2 boundaries
-            domain%U(:, 1:2, ELV) = 100.0_dp
-            domain%U(1:2, :, ELV) = 100.0_dp
-            ! We use a flat boundary on the east and north so that the transmissive BC is well-behaved
-            domain%U(domain%nx(1), :, ELV) = domain%U(domain%nx(1)-1, :, ELV)
-            domain%U(:, domain%nx(2), ELV) = domain%U(:, domain%nx(2)-1, ELV) 
-        end if 
+        ! Transmissive outflow
+        ! We prevent mass leaking by using walls for 2 boundaries
+        domain%U(:, 1:2, ELV) = 100.0_dp
+        domain%U(1:2, :, ELV) = 100.0_dp
+        ! We use a flat boundary on the east and north so that the transmissive BC is well-behaved
+        domain%U(domain%nx(1), :, ELV) = domain%U(domain%nx(1)-1, :, ELV)
+        domain%U(:, domain%nx(2), ELV) = domain%U(:, domain%nx(2)-1, ELV) 
 
 
         !
@@ -241,8 +232,6 @@ program merewether
     real(dp), parameter, dimension(2):: global_ll = [382251.0_dp, 6354266.5_dp]
     ! grid size (number of x/y cells)
     integer(ip), parameter, dimension(2):: global_nx = [320_ip, 415_ip] ![160_ip, 208_ip] ![321_ip, 416_ip]
-    ! Use reflective or transmissive boundaries
-    logical, parameter:: reflective_boundaries = .FALSE.
     ! Track mass
     real(force_double) :: volume_added
 
@@ -259,9 +248,9 @@ program merewether
 
     do j = 1, size(md%domains)
         ! Set the initial and boundary conditions
-        call set_initial_conditions_merewether(md%domains(j), reflective_boundaries)
+        call set_initial_conditions_merewether(md%domains(j))
 
-        if((.not. reflective_boundaries) .and. (.not. all(md%domains(j)%is_nesting_boundary))) then
+        if(.not. all(md%domains(j)%is_nesting_boundary)) then
             ! Allow waves to propagate outside all edges
             md%domains(j)%boundary_subroutine => transmissive_boundary
         end if

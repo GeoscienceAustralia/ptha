@@ -23,13 +23,16 @@ if(abs(expected_change - unexplained_change) < 1.0e-06*abs(unexplained_change)){
     print('FAIL')
 }
 
+# Length of x/y domain extents
 lx = 320
 ly = 415
 
 depth = x$stage[,,ts] - x$elev0
 elev = x$elev0
-xs = matrix(1:nx, nrow=nx, ncol=ny)*(lx/nx)
-ys = matrix(1:ny, nrow=nx, ncol=ny, byrow=TRUE)*(ly/ny)
+
+# x,y coordinate, translated with lower-left = 0,0
+xs = (matrix(1:nx, nrow=nx, ncol=ny)-0.5)*(lx/nx)
+ys = (matrix(1:ny, nrow=nx, ncol=ny, byrow=TRUE)-0.5)*(ly/ny)
 
 #pdf('merewether_plots.pdf', width=10, height=10)
 png('Velocity_vector_plot.png', width=10, height=10, units='in', res=300)
