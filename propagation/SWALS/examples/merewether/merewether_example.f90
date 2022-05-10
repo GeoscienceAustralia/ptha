@@ -5,11 +5,12 @@ module local_routines
 
     use global_mod, only: dp, ip, force_double, charlen, wall_elevation, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: read_gdal_raster
+    use read_raster_mod, only: multi_raster_type
     use which_mod, only: which
     use ragged_array_mod, only: ragged_array_2d_ip_type
     use file_io_mod, only: read_character_file, read_csv_into_array
     use points_in_poly_mod, only: points_in_poly
+    use logging_mod, only: log_output_unit
     use iso_c_binding, only: c_f_pointer, c_loc
     implicit none
 
@@ -24,15 +25,16 @@ module local_routines
     !
     ! Main setup routine
     !
-    subroutine set_initial_conditions_merewether(domain, reflective_boundaries)            
+    subroutine set_initial_conditions_merewether(domain)            
 
         class(domain_type), target, intent(inout):: domain
-        logical, intent(in):: reflective_boundaries
 
         integer(ip):: i, j, k
-        real(dp), allocatable:: x(:,:), y(:,:)
+        real(dp), allocatable:: x(:), y(:)
 
-        character(len=charlen):: input_elevation_file, polygon_filename
+        ! For reading background elevation
+        character(len=charlen):: input_elevation_file
+        type(multi_raster_type) :: elevation_data
 
         ! Add this elevation to all points in houses/ csv polygons
         real(dp), parameter:: house_height = 3.0_dp
@@ -40,15 +42,14 @@ module local_routines
         real(dp), parameter:: friction_road = 0.02_dp, friction_other = 0.04_dp
 
         ! things to help read polygons
-        character(len=charlen), allocatable:: house_filenames(:)
+        character(len=charlen), allocatable:: house_filenames(:), polygon_filename
         integer(ip):: house_file_unit, inside_point_counter, house_cell_count
         real(dp), allocatable:: polygon_coords(:,:)
         logical, allocatable:: is_inside_poly(:)
+        
+        ! For inflow boundary
         type(ragged_array_2d_ip_type), pointer :: rainfall_region_indices
-        integer(ip), allocatable :: i_inside(:)
 
-
-        allocate(x(domain%nx(1),domain%nx(2)), y(domain%nx(1),domain%nx(2)))
 
         !
         ! Dry flow to start with. Later we clip stage to elevation.
@@ -59,17 +60,20 @@ module local_routines
         ! Set elevation with the raster
         !
         input_elevation_file = "./topography/topography1.tif"
+        call elevation_data%initialise([input_elevation_file])
 
+        ! To hold x/y coordinates along a row with constant y-value
+        allocate(x(domain%nx(1)), y(domain%nx(1)))
+        x = domain%x
+
+        ! Read the elevation data row-by-row
         do j = 1, domain%nx(2)
-          do i = 1, domain%nx(1)
-            x(i,j) = domain%lower_left(1) + (i-0.5_dp)*domain%dx(1) 
-            y(i,j) = domain%lower_left(2) + (j-0.5_dp)*domain%dx(2) 
-          end dO
+            y = domain%y(j)
+            call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), bilinear=0_ip)
         end do
-        call read_gdal_raster(input_elevation_file, x, y, domain%U(:,:,ELV), &
-            domain%nx(1)*domain%nx(2), verbose=1_ip, bilinear=0_ip)
+        call elevation_data%finalise
 
-        print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
+        write(log_output_unit, *) 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
 
         ! Get filenames for the houses
         open(newunit = house_file_unit, file='houses_filenames.txt')
@@ -87,7 +91,8 @@ module local_routines
 
             do j = 1, domain%nx(2)
                 ! Find points in the polygon in column j
-                call points_in_poly(polygon_coords(1,:), polygon_coords(2,:), x(:,j), y(:,j), is_inside_poly)
+                y = domain%y(j)
+                call points_in_poly(polygon_coords(1,:), polygon_coords(2,:), x, y, is_inside_poly)
                 inside_point_counter = inside_point_counter + count(is_inside_poly)
 
                 do i = 1, domain%nx(1) 
@@ -99,27 +104,19 @@ module local_routines
 
             end do 
 
-            print*, trim(house_filenames(k)), ': ', inside_point_counter
+            write(log_output_unit, *) trim(house_filenames(k)), ': ', inside_point_counter
 
         end do
 
-        print*, '# cells in houses: ', house_cell_count
+        write(log_output_unit, *) '# cells in houses: ', house_cell_count
        
-        if(reflective_boundaries) then 
-            ! Walls all sides
-            domain%U(1,:,ELV) = wall_elevation
-            domain%U(domain%nx(1), :, ELV) = wall_elevation    
-            domain%U(:, 1 ,ELV) = wall_elevation
-            domain%U(:, domain%nx(2), ELV) = wall_elevation    
-        else
-            ! Transmissive outflow -- but we prevent mass leaking out of the back of the domain. 
-            ! Also block off other sides -- only need outflow on east edge of domain.
-            domain%U(:, 1:2, ELV) = domain%U(:,1:2, ELV) + 10.0_dp
-            domain%U(1:2, :, ELV) = domain%U(1:2, :, ELV) + 10.0_dp
-            domain%U(:, (domain%nx(2)-1):domain%nx(2), ELV) = 10.0_dp + &
-                domain%U(:, (domain%nx(2)-1):domain%nx(2), ELV)
-        end if 
-
+        ! Transmissive outflow
+        ! We prevent mass leaking by using walls for 2 boundaries
+        domain%U(:, 1:2, ELV) = 100.0_dp
+        domain%U(1:2, :, ELV) = 100.0_dp
+        ! We use a flat boundary on the east and north so that the transmissive BC is well-behaved
+        domain%U(domain%nx(1), :, ELV) = domain%U(domain%nx(1)-1, :, ELV)
+        domain%U(:, domain%nx(2), ELV) = domain%U(:, domain%nx(2)-1, ELV) 
 
         !
         ! Set friction
@@ -133,8 +130,8 @@ module local_routines
         call read_csv_into_array(polygon_coords, polygon_filename)
         inside_point_counter = 0
         do j = 1, domain%nx(2)
-
-            call points_in_poly(polygon_coords(1,:), polygon_coords(2,:), x(:,j), y(:,j), is_inside_poly)
+            y = domain%y(j)
+            call points_in_poly(polygon_coords(1,:), polygon_coords(2,:), x, y, is_inside_poly)
             inside_point_counter = inside_point_counter + count(is_inside_poly)
 
             do i = 1, domain%nx(1) 
@@ -143,15 +140,15 @@ module local_routines
 
         end do
 
-        print*, ''
-        print*, '# Points in road polygon :', inside_point_counter
-        print*, ''
+        write(log_output_unit, *) ''
+        write(log_output_unit, *) '# Points in road polygon :', inside_point_counter
+        write(log_output_unit, *) ''
 
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-08_dp)
 
-        print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
-        print*, 'Stage range: ', minval(domain%U(:,:,STG)), maxval(domain%U(:,:,STG))
+        write(log_output_unit, *) 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
+        write(log_output_unit, *) 'Stage range: ', minval(domain%U(:,:,STG)), maxval(domain%U(:,:,STG))
 
 
         ! Figure out indices that are inside the rainfall forcing region.
@@ -172,6 +169,8 @@ module local_routines
         domain%forcing_subroutine => apply_rainfall_forcing
         domain%forcing_context_cptr = c_loc(rainfall_region_indices)
         call domain%store_forcing()
+
+        deallocate(x,y, is_inside_poly)
 
     end subroutine
 
@@ -215,8 +214,8 @@ program merewether
     !! Urban Areas - Representation of Buildings in 2D Numerical Flood Models Australian 
     !! Rainfall and Runoff, Engineers Australia, 2012
 
-    use global_mod, only: ip, dp, minimum_allowed_depth
-    use domain_mod, only: domain_type
+    use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: transmissive_boundary
     use local_routines
 
@@ -224,7 +223,10 @@ program merewether
 
     integer(ip):: j
     real(dp):: last_write_time
-    type(domain_type):: domain
+    type(multidomain_type):: md
+
+    ! Global timestep
+    real(dp), parameter :: global_dt = 0.08_dp
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 60.0_dp
@@ -236,81 +238,54 @@ program merewether
     real(dp), parameter, dimension(2):: global_ll = [382251.0_dp, 6354266.5_dp]
     ! grid size (number of x/y cells)
     integer(ip), parameter, dimension(2):: global_nx = [320_ip, 415_ip] ![160_ip, 208_ip] ![321_ip, 416_ip]
-    ! Use reflective or transmissive boundaries
-    logical, parameter:: reflective_boundaries = .FALSE.
     ! Track mass
-    real(force_double) :: volume_added, volume_initial
-    ! Use a small time step at the start
-    real(dp) :: startup_timestep = 0.05_dp
-    real(dp) :: startup_time = 10.0_dp
-  
-    domain%timestepping_method = 'rk2n' !'euler' !'rk2n'
+    real(force_double) :: volume_added
 
-    ! Use a very small maximum timestep initially, because the domain is dry, but water is quickly
-    ! added, which can cause 'first-step' instability otherwise. Re-set it after an evolve
-    call domain%allocate_quantities(global_lw, global_nx, global_ll)
+    ! Single domain model 
+    allocate(md%domains(1)) 
 
-    if((.not. reflective_boundaries) .and. (.not. all(domain%is_nesting_boundary))) then
-        ! Allow waves to propagate outside all edges
-        domain%boundary_subroutine => transmissive_boundary
-    end if
+    md%domains(1)%lw = global_lw
+    md%domains(1)%nx = global_nx
+    md%domains(1)%lower_left = global_ll
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
 
-    ! Call local routine to set initial conditions
-    call set_initial_conditions_merewether(domain, reflective_boundaries)
-    call domain%update_boundary()
-    volume_initial = domain%mass_balance_interior()
-    
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
+    ! Initialise the domain
+    call md%setup()
 
-    ! Evolve the code
+    do j = 1, size(md%domains)
+        ! Set the initial and boundary conditions
+        call set_initial_conditions_merewether(md%domains(j))
+
+        if(.not. all(md%domains(j)%is_nesting_boundary)) then
+            ! Allow waves to propagate out of the domain 
+            md%domains(j)%boundary_subroutine => transmissive_boundary
+            ! Note we adjusted the topography 
+            ! (inside set_initial_conditions_merewether) to ensure that
+            ! the outflow is restricted to the downstream edge, and that the
+            ! transmissive boundary is well behaved (boundary elevation 
+            ! equal to that just inside the boundary).
+        end if
+    end do
+
+    call md%make_initial_conditions_consistent() 
+
+    ! Evolve the model
     do while (.TRUE.)
 
-        if(domain%time - last_write_time >= approximate_writeout_frequency) then
+        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency)
 
-            last_write_time = last_write_time + approximate_writeout_frequency
+        if (md%domains(1)%time > final_time) exit
 
-            call domain%print()
-            call domain%write_to_output_files()
-        
-            print*, 'mass_balance: ', domain%mass_balance_interior() 
-            print*, 'volume_added + initial: ', volume_added + volume_initial
-            print*, '.... difference: ', domain%mass_balance_interior() - (volume_added + volume_initial)
-        end if
-
-        if (domain%time > final_time) then
-            exit 
-        end if
-
-        ! At the start, evolve with a specified (small) timestep.
-        ! Later allow an adaptive step
-        if(domain%time < startup_time) then
-            call domain%evolve_one_step(startup_timestep)
-        else
-            call domain%evolve_one_step()
-        end if
-
-        ! Track volume added 'in theory' based on the known rainfall rate that is going into 
-        ! a known number of cells
-        volume_added = domain%time * rain_rate * num_input_discharge_cells * product(domain%dx)
-
-        !print*, 'negative_depth_fix_counter: ', domain%negative_depth_fix_counter
+        call md%evolve_one_step(global_dt)
 
     end do
 
-    call domain%write_max_quantities()
+    write(log_output_unit, *) ''
+    write(log_output_unit, *) 'Expected mass change due to inflows (that SWALS does not account for in mass-tracking):'
+    write(log_output_unit, *) num_input_discharge_cells * md%domains(1)%time * product(md%domains(1)%dx) * rain_rate
+    write(log_output_unit, *) ''
 
-    ! Print timing info
-    call domain%timer%print()
+    call md%finalise_and_print_timers()
 
-    ! Simple test (mass conservation only)
-    print*, 'MASS CONSERVATION TEST'
-    if(abs(domain%mass_balance_interior() - (volume_added + volume_initial) ) < 1.0e-06_dp) then
-        print*, 'PASS'
-    else
-        print*, 'FAIL -- mass conservation not good enough. ', &
-            'This is expected with single precision, which will affect the computed direct rainfall volumes'
-    end if
 
-    call domain%finalise()
 END PROGRAM

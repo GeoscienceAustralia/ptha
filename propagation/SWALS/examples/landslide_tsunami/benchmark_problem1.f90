@@ -64,13 +64,6 @@ module local_routines
         end do
         call initial_stage_interpolator%finalise
 
-        !if(maxval(domain%x) > 49950.0_dp) then
-        !    domain%U(domain%nx(1), :, ELV) = wall
-        !end if
-        ! Use walls as lateral boundary conditions
-        ! FIXME: Use periodic boundary conditions instead
-        !domain%U(domain%nx(1), :, ELV) = wall
-        
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-07_dp)
 
@@ -85,12 +78,6 @@ module local_routines
         if(domain%timestepping_method == 'cliffs') then
             domain%cliffs_minimum_allowed_depth = 0.02_dp
         end if
-
-        !! Gauges
-        !gauge_xy(1:3, 1) = [4.521, 1.196, 5.0]
-        !gauge_xy(1:3, 2) = [4.521, 1.696, 7.0]
-        !gauge_xy(1:3, 3) = [4.521, 2.196, 9.0]
-        !call domain%setup_point_gauges(xy_coords = gauge_xy(1:2,:), gauge_ids=gauge_xy(3,:))
 
     end subroutine
 
@@ -124,7 +111,7 @@ program landslide_tsunami
 
     real(dp), parameter :: mesh_refine = 1.0_dp ! Increase/decrease resolution by this amount
     
-    real(dp) ::  global_dt != 0.040_dp / mesh_refine
+    real(dp) ::  global_dt
 
     ! Approx timestep between outputs
     real(dp) :: approximate_writeout_frequency = 1.00_dp
@@ -134,10 +121,11 @@ program landslide_tsunami
     real(dp), parameter :: global_lw(2) = [400.0_dp + 50000.0_dp, 125.0_dp/mesh_refine]
     ! Lower-left corner coordinate
     real(dp), parameter :: global_ll(2) = [-400.0_dp, 0.0_dp]
-    ! grid size (number of x/y cells)
-    !integer(ip), dimension(2):: global_nx = [nint(global_lw(1)/25.0_dp)*nint(mesh_refine), 5_ip] !nint(global_lw/25.0_dp) * mesh_refine
 
-    real(dp) :: res_d1 = 25.0_dp/mesh_refine, res_d2 = 5.0_dp/mesh_refine
+    ! dx (mesh resolution) in different regions
+    real(dp), parameter :: res_d1 = 25.0_dp/mesh_refine ! Coarse res offshore
+    real(dp), parameter :: res_d2 = res_d1/9_ip ! High-res near shoreline
+    !real(dp), parameter :: res_d2 = res_d1/25_ip ! Even higher-res near shoreline
 
     call program_timer%timer_start('setup')
 
@@ -156,10 +144,7 @@ program landslide_tsunami
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method ! Can set this to 'linear', but the difference with the analytical solution becomes obvious
-
-    !print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
-    !    ' nx: ', md%domains(1)%nx
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method 
 
     ! Main domain
     md%domains(2)%lower_left = global_ll 
@@ -167,8 +152,8 @@ program landslide_tsunami
     md%domains(2)%nx = nint(md%domains(2)%lw/res_d2)
     md%domains(2)%dx = md%domains(2)%lw/md%domains(2)%nx
     md%domains(2)%timestepping_refinement_factor = 1_ip
-    md%domains(2)%dx_refinement_factor = res_d1/res_d2
-    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method !'cliffs'
+    md%domains(2)%dx_refinement_factor = nint(res_d1/res_d2)
+    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method
     
     ! Allocate domains and prepare comms
     call md%setup()

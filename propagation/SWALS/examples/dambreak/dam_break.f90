@@ -33,7 +33,7 @@ module local_routines
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
 
-    
+        ! Frictionless
         domain%manning_squared = 0.0_dp
 
     end subroutine

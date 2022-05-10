@@ -1,9 +1,8 @@
 # Assuming the model has been run, we do
 source('../../plot.R')
 
-#x = get_all_recent_results(quiet=TRUE)
-
-md = get_multidomain(sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1])
+md_dir = sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1]
+md = get_multidomain(md_dir, read_grids=FALSE, always_read_max_grids=TRUE)
 x = md[[length(md)]] # Gives the domain of interest for BOTH single domain model and nested model
 
 # Allowed mean error fraction for 'PASS'
@@ -20,7 +19,7 @@ source('analytical_solution_zhang.R')
 peak_wave_analytical_function = compute_zhang_solution()
 peak_wave_analytical = peak_wave_analytical_function(x$gauges$lon, x$gauges$lat)
 
-# Get the 'exact' gauge location (i.e. mid-cell of model)
+## Get the 'exact' gauge location (i.e. mid-cell of model)
 #gx_ind = sapply(x$gauges$lon, f<-function(y) which.min(abs(y-x$xs)))
 #gy_ind = sapply(x$gauges$lat, f<-function(y) which.min(abs(y-x$ys)))
 #peak_wave_analytical = peak_wave_analytical_function(x$xs[gx_ind], x$ys[gy_ind])
@@ -94,3 +93,27 @@ if(err_val  < REL_ERR ){
 
 dev.off()
 
+#
+# Check mass conservation
+#
+md_log_files = Sys.glob(paste0(md_dir, '/*.log'))
+log_data = readLines(md_log_files)
+k = grep('unexplained change:', log_data)
+last_k = k[length(k)]
+
+unexplained_mass_change = as.numeric(strsplit(log_data[last_k], split=':')[[1]][2])
+# The volume should be a few lines earier
+md_volume_line = log_data[last_k - 3]
+# Double check it's the correct line
+if(!grepl('Multidomain volume', md_volume_line)){
+    print('FAIL: (due to change in log file format?)')
+}else{
+    # Test mass conservation
+    md_volume = as.numeric(strsplit(md_volume_line, split=':')[[1]][2])
+     
+    if(abs(unexplained_mass_change) < (1.0e-06 * md_volume)){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
+}

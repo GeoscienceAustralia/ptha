@@ -1,6 +1,7 @@
 timestepping_method = commandArgs(trailingOnly=TRUE)[1]
 
-library(rptha)
+#library(rptha)
+library(geosphere)
 source('../../plot.R')
 md_dir = rev(Sys.glob('OUTPUTS/RUN*'))[1]
 x = get_multidomain(md_dir)

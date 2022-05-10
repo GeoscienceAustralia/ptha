@@ -81,7 +81,7 @@ module local_routines
         ! Gauges around the island (slightly increase the radius to avoid points on dry cells)
         do i = 1, 50
             theta = 2*pi/50.0_dp * (i-1)
-            gauges(1:2,i) = (island_radius + domain%dx(1)) *  [cos(theta), sin(theta)]
+            gauges(1:2,i) = (island_radius + 1.01_dp*domain%dx(1)) *  [cos(theta), sin(theta)]
         end do
 
         ! Gauges a bit further offshore
@@ -120,7 +120,7 @@ program circular_island
     type(multidomain_type) :: md
 
     ! Approx timestep between outputs
-    real(dp), parameter :: approximate_writeout_frequency = 50.0_dp
+    real(dp), parameter :: approximate_writeout_frequency = 10.0_dp
     real(dp), parameter :: final_time = 200000.0_dp
 
     ! Timestepping method should be linear, as we compare against a linear analytical solution.
@@ -134,7 +134,7 @@ program circular_island
 
     ! Write the stage raster time-series less often than we write at gauges, to avoid
     ! overly large files. 
-    integer(ip), parameter :: frequency_full_write_steps = 60
+    integer(ip), parameter :: frequency_full_write_steps = 300
     logical, parameter :: never_write_grid_time_slices = .false.
 
     ! Zero the max stage record after this much time has elapsed. The
@@ -143,6 +143,9 @@ program circular_island
     real(dp), parameter :: reset_max_stage_at_time = 120000.0_dp
     logical :: have_reset_max_stage = .FALSE.
 
+    ! Scale this to refine the mesh -- e.g. value of 2 will halve the grid cell-size and time-step.
+    real(dp), parameter :: mesh_refine = 1.0_dp 
+
     integer, parameter :: nd = 2
     
 
@@ -150,8 +153,8 @@ program circular_island
     if(nd == 1) then
         ! Single domain model
         allocate(md%domains(1))
-        dx = 2000.00_dp
-        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03 
+        dx = 2000.00_dp/mesh_refine
+        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03
         md%domains(1)%lower_left = -md%domains(1)%lw/2.0_dp
         md%domains(1)%nx = nint(md%domains(1)%lw/dx)
         md%domains(1)%timestepping_method = timestepping_method
@@ -161,7 +164,7 @@ program circular_island
 
         ! Coarser outer domain
         allocate(md%domains(2))
-        dx = 4000.00_dp
+        dx = 4000.00_dp/mesh_refine
         md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03 
         md%domains(1)%lower_left = -md%domains(1)%lw/2.0_dp
         md%domains(1)%nx = nint(md%domains(1)%lw/dx)
@@ -172,7 +175,7 @@ program circular_island
             parent_domain = md%domains(1), &
             lower_left  = [-4.0e+05_dp, -4.0e+05_dp], &
             upper_right = [ 4.0e+05_dp,  4.0e+05_dp], &
-            dx_refinement_factor = 2_ip, &
+            dx_refinement_factor = 3_ip, &
             ! For inner linear domains, timestepping refinement should not be used
             ! (leads to instability).
             timestepping_refinement_factor = 1_ip)

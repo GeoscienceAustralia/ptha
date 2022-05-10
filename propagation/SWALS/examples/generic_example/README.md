@@ -1,7 +1,40 @@
-Here we attempt to give a fairly generic interface to a spherical coordinates
-linear shallow water model.
+# Single grid shallow water model in spherical coordinates.
 
-To run it:
+This code is often convenient for simulating global-scale tsunami propagation.
+
+It enables a variety of shallow water solvers to be used on a single grid in
+spherical coordinates. 
+
+[Davies and Griffin (2018, p 178)](https://dx.doi.org/10.11636/Record.2018.041)
+used this code to compare the linear shallow water solvers in SWALS with the
+JAGURS model. That test case showed negligible differences in modelled wave
+maxima and time-series between the two codes. That might be expected given
+that the linear solvers in SWALS and JAGURS implement very similar staggered
+grid numerical methods (albeit their implementations are completely different).
+
+It you wish to create more complex models (e.g. with nesting, or different
+boundary conditions) it is better to start from [../periodic_multidomain](../periodic_multidomain).
+
+## The tests
+
+The test-suite runs this code in the source-region of the 2011 Tohoku tsunami,
+using a number of different solver options. The earthquake source was selected
+from among randomly generated sources, so is not a precise representation of
+the real forcing of Tohoku.
+
+We perform a regression test by checking that the difference between the
+modelled and observed wave is very close to previously computed values (which
+are distinct for each solver). The idea is to detect any changes in the solver
+predictions; the model is not supposed to give precise agreement to the data.
+
+We also check that for models using a rise-time (i.e. applying the earthquake
+forcing over a finite time), the solutions are equivalent to temporally
+smoothed solutions from models using an instantaneous forcing. 
+* This is true analytically for the linear shallow water equations. 
+* In the specific situation tested, it is also a good approximation for the nonlinear shallow water equations.
+
+## How to adapt the code to another case
+
 * Copy one of the '\*.in' files to a new file (e.g. 'my_model.in'), and edit it
 to ensure that the input_elevation_raster and input_stage_raster exist on your
 filesystem, and that the model extents are as desired. The input rasters should
@@ -35,4 +68,3 @@ The above code uses 6 openmp threads -- you can use any number relevant to your 
 It can also be advantageous to control the process affinity (e.g. include
 "OMP_PROC_BIND=true" in the model run command), although this depends on your
 hardware and what other jobs are being run.
-

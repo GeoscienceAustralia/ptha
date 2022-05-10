@@ -17,7 +17,7 @@ module local_routines
 
     ! Manning friction. This affects the placement of shocks, and so has
     ! significant on some gauge time-series (e.g. G2).
-    real(dp), parameter :: manning_squared  = 0.015_dp**2
+    real(dp), parameter :: manning_squared  = 0.01_dp**2 !0.015_dp**2
 
     ! Polygons defining the geometry
     character(len=charlen) :: domain_polygons(3) = [character(len=charlen):: &
@@ -135,7 +135,8 @@ program isolated_building
     ! Length/Width
     real(dp), parameter :: global_lw(2) = [35.8_dp, 3.60_dp]
     ! Lower-left coordinate
-    real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp]
+    real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp] ! Matching sketch in supplementary material
+    !real(dp), parameter :: global_ll(2) = [-0.15_dp, 0.0_dp] ! Matching Fig 1 in paper
 
 
     ! Grid size (number of x/y cells) in outer domain
@@ -164,22 +165,10 @@ program isolated_building
     md%domains(1)%cliffs_minimum_allowed_depth = 0.01_dp
     !md%domains(1)%theta = 4.0_dp
     !md%domains(1)%use_eddy_viscosity = .true.
+    !md%domains(1)%eddy_visc_coef(1:2) = [0.0_dp, 0.5_dp]
 
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
-
-    !@ A detailed domain
-    !call md%domains(2)%match_geometry_to_parent(&
-    !    parent_domain=md%domains(1), &
-    !    lower_left=high_res_ll, &
-    !    upper_right=high_res_ur, &
-    !    dx_refinement_factor=nest_ratio, &
-    !    timestepping_refinement_factor=nest_ratio)
-    !md%domains(2)%timestepping_method = 'rk2' !'cliffs' !'rk2'
-    !md%domains(2)%cliffs_minimum_allowed_depth = 0.002_dp
-
-    !print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
-    !    ' nx: ', md%domains(2)%nx
 
     if(md%domains(1)%timestepping_method == 'rk2n') global_dt = global_dt * 4.0_dp
      
