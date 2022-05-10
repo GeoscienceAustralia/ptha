@@ -13,3 +13,10 @@ and:
     library(knitr)
     library(rptha)
     knit('random_scenario_sampling_uncertainty_estimates.Rmd')
+
+
+Related publications include:
+
+* [This technical report](https://purl.org/spc/digilib/doc/dmup7) that discusses Monte-Carlo methods for PTHA alongside scenario-based methods.
+
+* [This journal paper](https://doi.org/10.1093/gji/ggac140) that provides a more detailed explanation of the Monte-Carlo technqiues.
