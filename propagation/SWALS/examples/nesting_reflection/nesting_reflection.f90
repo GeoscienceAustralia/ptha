@@ -30,25 +30,18 @@ module local_routines
 
         do j = 1, domain%nx(2)
             do i = 1, domain%nx(1)
-               !stage0 = a0 * cos(2*pi*(x(i) - x0)*k0) * exp(-((x(i) - x0) / 30000.0_dp)**2)
                if(abs(x(i) - x0)*k0 < 3.25_dp) then
                    stage0 = a0 * cos(2*pi*(x(i) - x0)*k0)
                else
                    stage0 = 0.0_dp
                end if
                domain%U(i,j,STG) = stage0
-               domain%U(i,j,ELV) = d0 !+ 20 * a0 * (mod(i, 3) - 0.5_dp) ! Interesting to see what a depth perturbation does -- not much.
+               domain%U(i,j,ELV) = d0 
                domain%U(i,j,UH) = (-d0) * sqrt(gravity/(-d0))*stage0
                domain%U(i,j,VH) = 0.0_dp
             end do    
         end do
         
-        ! Wall boundaries
-        !domain%U(1,:,ELV) = wall
-        !domain%U(:,1,ELV) = wall
-        !domain%U(domain%nx(1),:,ELV) = wall
-        !domain%U(:,domain%nx(2),ELV) = wall
-
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-07_dp)
 
@@ -59,13 +52,6 @@ module local_routines
         if(domain%timestepping_method /= 'linear') then
             domain%manning_squared = 0.0_dp
         end if
-
-
-        !@ Gauges
-        !gauge_xy(1:3, 1) = [4.521, 1.196, 5.0]
-        !gauge_xy(1:3, 2) = [4.521, 1.696, 7.0]
-        !gauge_xy(1:3, 3) = [4.521, 2.196, 9.0]
-        !call domain%setup_point_gauges(xy_coords = gauge_xy(1:2,:), gauge_ids=gauge_xy(3,:))
 
     end subroutine
 

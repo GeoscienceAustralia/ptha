@@ -28,7 +28,8 @@ for(ts_method in ts_methods){
 
 
     # Plot the solutions
-    pdf(paste0('cycle_solution_', ts_method, '.pdf'), width=7, height=4)
+    #pdf(paste0('cycle_solution_', ts_method, '.pdf'), width=7, height=4)
+    png(paste0('cycle_solution_', ts_method, '.png'), width=7, height=4, units='in', res=300)
 
     plot_ylim = range(c(range(x[[nd]]$stage[,yind,1]), range(x[[nd]]$stage[,yind,tind])))
 
@@ -38,14 +39,17 @@ for(ts_method in ts_methods){
          ylab='stage (m)')
     points(x[[nd]]$xs + x_offset, x[[nd]]$stage[,yind,1], t='l', col='red')
 
+    dev.off()
 
     amp_loss_fraction = diff(range(x[[nd]]$stage[,yind,tind]))/diff(range(x[[nd]]$stage[,yind,1]))
 
+    png(paste0('cycle_solution_relative_', ts_method, '.png'), width=7, height=4, units='in', res=300)
     plot(x[[nd]]$xs, x[[nd]]$stage[,yind,tind], t='o', ylim=plot_ylim,
          main=paste0('Waveform range at end as percent of start (black) = ', signif(amp_loss_fraction, 4)),
          xlab='x', 
          ylab='stage (m)')
     points(x[[nd]]$xs + x_offset, x[[nd]]$stage[,yind,1], t='l', col='red')
+    dev.off()
 
     # Check the error
     s1 = x[[nd]]$stage[,yind,tind]
@@ -58,10 +62,8 @@ for(ts_method in ts_methods){
 
     err = sum( (s1[k]-initial_s_shifted$y)^2)/sum(s1[k]^2 + initial_s_shifted$y^2)
 
+    png(paste0('cycle_solution_error_', ts_method, '.png'), width=7, height=4, units='in', res=300)
     plot(x[[nd]]$xs[k], s1[k] - initial_s_shifted$y, main='Error in the central part of the domain')
-
-
-
     dev.off()
     
     err_tol = 0.01
