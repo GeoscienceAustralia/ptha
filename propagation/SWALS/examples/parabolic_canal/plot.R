@@ -39,12 +39,13 @@ vvel<-function(x, y, t) -G*f*cos(ohm*t)
 # Beware the analytical stage can sometimes go below the bed elevation.
 ks = c(which.min(abs(xc - 2500)), which.min(abs(xc+500)), which.min(abs(xc+1000)))
 
-pdf(paste0('model_vs_analytical_', timestepping_method, '.pdf'), width=9, height=7)
+#pdf(paste0('model_vs_analytical_', timestepping_method, '.pdf'), width=9, height=7)
+png(paste0('model_vs_analytical_stage_', timestepping_method, '.png'), width=9, height=7, units='in', res=300)
 # Stage time-series
 par(mfrow=c(3,1))
 for(k in ks){
     model_stage = x[[1]]$stage[k, floor(ymid),]
-    plot(x[[1]]$time, model_stage, t='l', col='red', main=paste0('Stage timeseries @ x = ', round(xc[k], 2)))
+    plot(x[[1]]$time, model_stage, t='o', col='red', main=paste0('Stage timeseries @ x = ', round(xc[k], 2)))
     exact_stage = stage(xc[k], 0, x[[1]]$time)
     points(x[[1]]$time, exact_stage, t='l', col='black')
     legend('topright', c('Analytical', 'Model'), lty=c(1, 1), pch=c(NA,NA), col=c('black', 'red'))
@@ -56,13 +57,15 @@ for(k in ks){
         print(paste0('FAIL', err))
     }
 }
+dev.off()
 
 # U timeseries
+png(paste0('model_vs_analytical_stage_U_', timestepping_method, '.png'), width=9, height=7, units='in', res=300)
 par(mfrow=c(3,1))
 for(k in ks){
     depth = x[[1]]$stage[k,floor(ymid),] - x[[1]]$elev0[k,floor(ymid)]
     model_u = x[[1]]$ud[k, floor(ymid),]/depth
-    plot(x[[1]]$time, model_u, t='l', col='red', 
+    plot(x[[1]]$time, model_u, t='o', col='red', 
          main=paste0('U-velocity timeseries @ x = ', round(xc[k], 2)))
     exact_u = uvel(xc[k], 0, x[[1]]$time)
     points(x[[1]]$time, exact_u, t='l', col='black')
@@ -75,13 +78,15 @@ for(k in ks){
         print(paste0('FAIL', err))
     }
 }
+dev.off()
 
 # V timeseries
+png(paste0('model_vs_analytical_stage_V_', timestepping_method, '.png'), width=9, height=7, units='in', res=300)
 par(mfrow=c(3,1))
 for(k in ks){
     depth = x[[1]]$stage[k,floor(ymid),] - x[[1]]$elev0[k,floor(ymid)]
     model_v =  x[[1]]$vd[k, floor(ymid),]/depth
-    plot(x[[1]]$time, model_v, t='l', col='red', 
+    plot(x[[1]]$time, model_v, t='o', col='red', 
          main=paste0('V-velocity timeseries @ x = ', round(xc[k], 2)))
     exact_v = vvel(xc[k], 0, x[[1]]$time)
     points(x[[1]]$time, exact_v, t='l', col='black')
@@ -128,7 +133,7 @@ if(abs(volume_totals[1] - expected_initial_volume_total) < 0.001 * expected_init
     print('FAIL')
 }
 n = length(volume_totals)
-# Check the final volume is not too different -- noting some solvers are more dissipative than others
+# Check the final volume is not too different
 if(abs(volume_totals[n] - expected_initial_volume_total) < 0.001 * expected_initial_volume_total){
     print('PASS')
 }else{

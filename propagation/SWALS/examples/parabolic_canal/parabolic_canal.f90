@@ -96,7 +96,7 @@ program parabolic_canal
     use boundary_mod, only: transmissive_boundary
     implicit none
 
-    integer(ip):: i, nsteps
+    integer(ip):: i, nsteps, yi
     real(dp):: last_write_time
     type(multidomain_type):: md
 
@@ -150,6 +150,14 @@ program parabolic_canal
 
     ! Set initial conditions
     CALL set_initial_conditions(md%domains(1))
+
+    do i = 1, size(md%domains)
+        ! Enforce a constant coriolis -- noting multiple parameters affect the coriolis treatment
+        yi = size(md%domains(i)%y)/2 + 1
+        if(allocated(md%domains(i)%coriolis)) md%domains(i)%coriolis = md%domains(i)%coriolis(yi)
+        if(allocated(md%domains(i)%coriolis_bottom_edge)) md%domains(i)%coriolis = md%domains(i)%coriolis_bottom_edge(yi)
+        if(allocated(md%domains(i)%tanlat_on_radius_earth)) md%domains(i)%coriolis = md%domains(i)%coriolis_bottom_edge(yi)
+    end do
 
     ! Choose the fixed timestep
     if(md%domains(1)%timestepping_method == 'cliffs') then
