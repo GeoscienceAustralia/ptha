@@ -3,7 +3,7 @@ Test problems and example model setups
 
 Each directory here contains a test problem or example. Before trying to run these tests, make sure you can get the unit-tests and parallel-tests to PASS (as discussed [here](../README.md)), which will confirm you've got all the dependencies working.
 
-You can run the tests individually using the `run_model.sh` scripts in each directory. Alternatively you can run all the test problems in one go using the script in [../tests/validation_tests/](../tests/validation_tests/). The latter takes about 35 minutes on the authors home desktop (with an Intel(R) Xeon(R) CPU E5-1650 v4 @ 3.60GHz), and is regularly run when the code is updated. In each subdirectory it will compile and run the model, make a series of the plots, and report multiple PASS/FAIL criteria for the problem (the latter is printed by the R script that runs the test). 
+You can run the tests individually using the `run_model.sh` scripts in each directory. Alternatively you can run all the test problems in one go using the script in [../tests/validation_tests/](../tests/validation_tests/). The latter takes about an hour on the authors home desktop (with an Intel(R) Xeon(R) CPU E5-1650 v4 @ 3.60GHz, for tests as of May 2022). It is regularly run when the code is updated. In each subdirectory it will compile and run the model, make a series of the plots, and report multiple PASS/FAIL criteria for the problem (the latter is printed by the R script that runs the test). 
 
 The problems are:
 
