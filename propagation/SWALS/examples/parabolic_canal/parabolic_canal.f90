@@ -9,7 +9,7 @@ module local_routines
 
     real(dp), parameter :: problem_a = 3000.0_dp
     real(dp), parameter :: problem_h0 = 10.0_dp
-    real(dp), parameter :: problem_g = 10.0_dp
+    real(dp), parameter :: problem_g = 200.0_dp !10.0_dp
 
     real(dp) :: problem_ohm ! parameter that appears in the solution
 
@@ -26,17 +26,17 @@ module local_routines
         real(dp) :: imid, jmid, coriolis_f
 
         
-        !We assume coriolis is constant over these small spatial scales
+        ! The analytical problem ignores variations of coriolis over these small spatial scales
         write(log_output_unit,*) 'Coriolis range: ', minval(domain%coriolis), maxval(domain%coriolis)
         coriolis_f = domain%coriolis(domain%nx(2)/2)
         write(log_output_unit,*) 'Forcing coriolis = ', coriolis_f
-        domain%coriolis = coriolis_f
+        !domain%coriolis = coriolis_f
 
         ! This parameter appears in the solution repeatedly. 
         problem_ohm = sqrt(coriolis_f**2 + 2 * gravity * problem_h0/problem_a**2)
 
         ! Define parabolic elevation
-        imid = domain%nx(1)/2.0_dp
+        imid = domain%nx(1)/2.0_dp + 0.5_dp
         do j = 1, domain%nx(2)
             do i = 1, domain%nx(1)
                 ! A 'cartesian' x coordinate
