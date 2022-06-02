@@ -12,7 +12,7 @@ Figures 1 to 3 compare the analytical solution with the model at 3 sites. The th
 
 ![Figure 3: Modelled northerly flux (VH) at 3 sites (with wetting and drying at the bottom site)](model_vs_analytical_VH_rk2.png)
 
-Figures 4 and 5 are similar to the previous figures but consider the velocity component in the east and west directions. In these cases we see some deviations between SWALS and the analytical solution in the wet/dry zone, even though the fluxes were predicted very well. The differences occur when the flow is extremely shallow. While the analytical solution predicts drying, the numerical model is slower to dry, resulting in a very thin layer of flowing water on the domain. The velocities in this thin layer are by definition spurious, and are depicted below. 
+Figures 4 and 5 are similar to the previous figures but consider the velocity component in the east and west directions. In these cases we see some deviations between SWALS and the analytical solution in the wet/dry zone, even though the fluxes were predicted very well. The differences occur when the flow is extremely shallow. While the analytical solution predicts drying, the numerical model is slower to dry, resulting in a very thin layer of flowing water on the domain, when actually the flow should be dry (with zero velocities).
 
 ![Figure 4: Modelled easterly velocity (U) at 3 sites (with wetting and drying at the bottom site)](model_vs_analytical_U_rk2.png)
 
