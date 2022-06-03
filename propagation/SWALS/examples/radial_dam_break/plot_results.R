@@ -47,7 +47,7 @@ for(var in names(output_data)[2:ncol(output_data)]){
     plot(output_data$x, output_data[[var]], t='p', main=var, xlab='x', ylab=var)
     points(output_data_reference$x, output_data_reference[[var]], t='l', col='red')
     legend('topleft', c('Coarse', 'Fine reference'), col=c('black', 'red'), pch=c(1, NA), lty=c(NA, 'solid'), bty='n')
-    if(var == 'vh_last_time_step') title(sub='Should be approximately zero')
+    if(var == 'vh_last_time_step') title(sub='Should be approximately zero (along y==0)')
     dev.off()
 
     # Check the errors
