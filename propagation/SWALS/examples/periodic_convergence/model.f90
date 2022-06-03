@@ -44,7 +44,6 @@ program periodic_convergence
     !! Test the convergence of the code in a periodic domain
 
     use global_mod, only: ip, dp, default_nonlinear_timestepping_method
-    use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type
     use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit
