@@ -53,15 +53,15 @@ program uniform_slope_shallow
     !! Very shallow steady uniform flow down a uniform slope
     !!
 
-    use global_mod, only: ip, dp, charlen, gravity
-    use domain_mod, only: domain_type, STG, UH, VH, ELV
+    use global_mod, only: ip, dp, charlen, gravity, default_nonlinear_timestepping_method
+    use multidomain_mod, only: multidomain_type
     use file_io_mod, only: read_csv_into_array
     use local_routines
     implicit none
 
-    integer(ip):: i, j
+    integer(ip):: i, j, nd
     real(dp):: last_write_time
-    type(domain_type):: domain
+    type(multidomain_type):: md
 
     ! Slope of surface. Use higher value to make it supercritical
     real(dp), parameter:: bed_slope = 0.01_dp ! 0.05_dp
@@ -77,84 +77,79 @@ program uniform_slope_shallow
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 60.0_dp
-    real(dp), parameter :: final_time = 1000.0_dp/(discharge_per_unit_width)**(1.0_dp/3.0_dp) ! The division is a 'rough way' to account for different timescales to equilibrium required. Might not work for every discharge.
+    real(dp), parameter :: final_time = 1000.0_dp/(discharge_per_unit_width)**(1.0_dp/3.0_dp)
+    ! In final_time, the division is a 'rough way' to account for different timescales to equilibrium required. Might not work for
+    ! every discharge.
 
     ! length/width
-    real(dp), parameter, dimension(2):: global_lw = [50._dp, 1000._dp] 
+    real(dp), parameter :: global_lw(2) = [50._dp, 1000._dp] 
     ! lower-left corner coordinate
-    real(dp), parameter, dimension(2):: global_ll = [0._dp, 0._dp]
+    real(dp), parameter :: global_ll(2) = [0._dp, 0._dp]
     ! grid size (number of x/y cells)
-    integer(ip), parameter, dimension(2):: global_nx = [50, 100] ! [400, 400] 
+    integer(ip), parameter :: global_nx(2) = [50, 100] ! [400, 400] 
 
     ! Discharge of 1 cubic meter / second per metre width
-    real(dp) :: Qin, model_vd, model_d, model_v, theoretical_d, theoretical_v, theoretical_vol, model_vol
+    real(dp) :: Qin, model_vd, model_d, model_v, theoretical_d, theoretical_v, theoretical_vol, model_vol, ts
 
 
     ! This gives the inflow discharge per cell, where it is applied
     Qin = discharge_per_unit_width * (global_lw(1)/global_nx(1))
 
-    domain%timestepping_method = 'rk2' !'euler' !'rk2n'
+    nd = 1 ! Number of domains in model
+    allocate(md%domains(nd))
 
-    ! Prevent dry domain from causing enormous initial step
-    domain%maximum_timestep = 5.0_dp
-
-    ! Allocate domain
-    call domain%allocate_quantities(global_lw, global_nx, global_ll)
-
-    ! call local routine to set initial conditions
-    call set_initial_conditions_uniform_slope(domain, bed_slope)
+    ! Geometry
+    md%domains(1)%lw = global_lw
+    md%domains(1)%lower_left = global_ll
+    md%domains(1)%nx = global_nx
+    ! Timestepping
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'euler' !'rk2n'
 
     ! If we force the code to be first-order accurate, we fail on this problem
-    if(force_first_order_accurate) domain%theta = 0.0_dp
+    if(force_first_order_accurate) md%domains(1)%theta = 0.0_dp
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
+    call md%setup
 
-    ! Evolve the code
-    do while (.true.)
+    ! call local routine to set initial conditions
+    call set_initial_conditions_uniform_slope(md%domains(1), bed_slope)
 
-        if(domain%time - last_write_time >= approximate_writeout_frequency) then
+    ts = 2.0_dp ! From experience this timestep is good for rk2
 
-            last_write_time = last_write_time + approximate_writeout_frequency
+    ! Evolve the solution
+    do while (.TRUE.)
 
-            call domain%print()
-            call domain%write_to_output_files()
+        call md%write_outputs_and_print_statistics(approximate_writeout_frequency=approximate_writeout_frequency)
 
-            if (domain%time > final_time) then
-                exit 
-            end if
+        if (md%domains(1)%time > final_time) exit
 
-        end if
-
-        call domain%evolve_one_step()
+        call md%evolve_one_step(ts)
 
         ! Add discharge inflow
-        domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) = &
-            domain%U(2:(domain%nx(1)-1), domain%nx(2)-1, STG) + Qin*domain%evolve_step_dt / product(domain%dx)
+        md%domains(1)%U(2:md%domains(1)%nx(1)-1, md%domains(1)%nx(2)-1, STG) = &
+            md%domains(1)%U(2:md%domains(1)%nx(1)-1, md%domains(1)%nx(2)-1, STG) + &
+            Qin*ts/product(md%domains(1)%dx)
 
     end do
 
-    call domain%write_max_quantities()
+    theoretical_vol = Qin * md%domains(1)%time * (md%domains(1)%nx(1) - 2) 
+    model_vol = sum(md%domains(1)%U(:,:,STG) - md%domains(1)%U(:,:,ELV)) * product(md%domains(1)%dx)
 
-    call domain%timer%print()
-
-
-    theoretical_vol = Qin * domain%time * (domain%nx(1) - 2) ! * domain%lw(1) * (global_nx(1) - 2) * 1.0_dp / global_nx(1)
-    model_vol = sum(domain%U(:,:,STG) - domain%U(:,:,ELV)) * domain%dx(1) * domain%dx(2)
-    print*, 'Cell area: ', domain%dx, product(domain%dx)
+    print*, 'Cell area: ', md%domains(1)%dx, product(md%domains(1)%dx)
     ! Analytical solution
     ! vd = discharge_per_unit_width
     ! bed_slope = manning_squared * v * abs(v) / d^(4/3)
     ! bed_slope = manning_squared * discharge_per_unit_width**2 / (d^(10/3))
     ! d = (manning_squared * discharge_per_unit_width**2 / bed_slope )**(3/10)
 
-    i = domain%nx(1)/2
-    j = domain%nx(2)/2    
-    model_vd = -1.0_dp * domain%U(i,j,VH)    
-    model_d = domain%U(i,j,STG) - domain%U(i,j,ELV)
+    i = md%domains(1)%nx(1)/2
+    j = md%domains(1)%nx(2)/2    
+    model_vd = -1.0_dp * md%domains(1)%U(i,j,VH)    
+    model_d = md%domains(1)%U(i,j,STG) - md%domains(1)%U(i,j,ELV)
     model_v = model_vd/model_d
 
-    theoretical_d = (domain%manning_squared(i,j) * discharge_per_unit_width**2 / bed_slope)**(3.0_dp/10.0_dp)
+    theoretical_d = (md%domains(1)%manning_squared(i,j) * discharge_per_unit_width**2 / bed_slope)**(3.0_dp/10.0_dp)
+
+    call md%finalise_and_print_timers
 
     print*, '## Testing ##'
     print*, '    Froude: ', (discharge_per_unit_width/theoretical_d)/sqrt(gravity * theoretical_d)
@@ -184,7 +179,5 @@ program uniform_slope_shallow
     else
         stop 'FAIL: Flux error '
     end if
-
-    call domain%finalise()    
 
 end program
