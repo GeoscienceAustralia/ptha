@@ -3,7 +3,7 @@ module local_routines
     !! Setup uniform channel problem (aligned to grid)
     !!
     use global_mod, only: dp, ip, wall_elevation
-    use domain_mod, only: domain_type
+    use domain_mod, only: domain_type, STG, UH, VH, ELV
     use which_mod, only: which
     implicit none
     
@@ -24,23 +24,23 @@ module local_routines
             do j = 1, domain%nx(2)
                 x = (i-0.5_dp)*domain%dx(1) - cx
                 y = (j-0.5_dp)*domain%dx(2) - cy 
-                domain%U(i,j,4) = y*slope
+                domain%U(i,j,ELV) = y*slope
                 if(x > -channel_width/2.0_dp .and. x < channel_width/2.0_dp) then
-                    domain%U(i,j,4) = domain%U(i,j,4) - channel_depth 
+                    domain%U(i,j,ELV) = domain%U(i,j,ELV) - channel_depth 
                 end if
             end do
         end do
         ! Wall boundaries along the sides and top
-        domain%U(1,:,4) = wall_elevation 
-        domain%U(domain%nx(1),:,4) = wall_elevation 
-        domain%U(:,domain%nx(2),4) = wall_elevation 
-        domain%U(:,1,4) = wall_elevation 
+        domain%U(1,:,ELV) = wall_elevation 
+        domain%U(domain%nx(1),:,ELV) = wall_elevation 
+        domain%U(:,domain%nx(2),ELV) = wall_elevation 
+        domain%U(:,1,ELV) = wall_elevation 
 
         ! Stage
-        domain%U(:,:,1) = domain%U(:,:,4)
+        domain%U(:,:,STG) = domain%U(:,:,ELV)
 
         ! Ensure stage >= elevation
-        domain%U(:,:,1 ) = max(domain%U(:,:,1), domain%U(:,:,4))
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
 
         ! Friction
         domain%manning_squared = 0.03_dp**2
@@ -102,7 +102,7 @@ program uniform_channel
 
     ! Find channel indices 
     ! This corresponds to the lowest points on a horizontal cross-section
-    call which(md%domains(1)%U(:,2,4) < (minval(md%domains(1)%U(:,2,4)) + 1.0e-06), channel_x_indices)
+    call which(md%domains(1)%U(:,2,ELV) < (minval(md%domains(1)%U(:,2,ELV)) + 1.0e-06), channel_x_indices)
     print*, channel_x_indices
 
     ! Time-step at which we evolve the solution
@@ -118,8 +118,8 @@ program uniform_channel
         call md%evolve_one_step(global_dt)
 
         ! Add discharge inflow
-        md%domains(1)%U(channel_x_indices, md%domains(1)%nx(2)-1, 1) = &
-            md%domains(1)%U(channel_x_indices, md%domains(1)%nx(2)-1, 1) + &
+        md%domains(1)%U(channel_x_indices, md%domains(1)%nx(2)-1, STG) = &
+            md%domains(1)%U(channel_x_indices, md%domains(1)%nx(2)-1, STG) + &
             Qin*global_dt/product(md%domains(1)%dx)
 
     end do
@@ -127,7 +127,7 @@ program uniform_channel
 
     ! Mass conservation check
     theoretical_vol = Qin * md%domains(1)%time * channel_width
-    model_vol = sum(md%domains(1)%U(:,:,1) - md%domains(1)%U(:,:,4)) * md%domains(1)%dx(1) * md%domains(1)%dx(2)
+    model_vol = sum(md%domains(1)%U(:,:,STG) - md%domains(1)%U(:,:,ELV)) * md%domains(1)%dx(1) * md%domains(1)%dx(2)
 
     ! Analytical solution for uniform slope
     ! vd = discharge_per_unit_width
