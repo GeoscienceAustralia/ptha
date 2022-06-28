@@ -74,7 +74,10 @@ program BP01
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.025_dp
+    ! Run for this long
     real(dp), parameter :: final_time = 50.0_dp
+    ! Increase this to refine the mesh
+    real(dp), parameter :: mesh_refine = 1.0_dp
 
     ! Domain info
     character(charlen) :: timestepping_method, tempchar != 'linear' !'rk2' !'linear'
@@ -114,7 +117,7 @@ program BP01
     tank_length = sea_length + land_length
  
     ! Resolution
-    dx = 0.1_dp !(0.5_dp/12.0_dp)
+    dx = 0.1_dp/mesh_refine !(0.5_dp/12.0_dp)
 
     ! Model parameters. Note we apply the boundary on the right. x = 0 is the shoreline
     global_lw = [tank_length, tank_width]

@@ -26,10 +26,13 @@ for(numerical_method in numerical_methods){
     g = 9.8 
 
     #pdf('Model-vs-data.pdf', width=20, height=10)
-    pdf(paste0('Model-vs-data_', numerical_method, '.pdf'), width=20, height=10)
+    #pdf(paste0('Model-vs-data_', numerical_method, '.pdf'), width=20, height=10)
+    png(paste0('Model-vs-data-at-two-sites_', numerical_method, '.png'), width=10, height=6, units='in', res=300)
     par(mfrow=c(2,1))
+    par(mar=c(4,4,2,1))
     # x/d = 0.25
-    plot(ts_ab[,1:2], xlab='Time x sqrt(d/g)', ylab='m', t='l', main='x/d ~ 0.25')
+    plot(ts_ab[,1:2], xlab='Time x sqrt(d/g)', ylab='Stage (m)', t='l', 
+         main='Timeseries at location x/d ~ 0.25; Analytical in black, SWALS model in red.')
     k = which.min(abs(x$gauges$lon - 0.25))
     points(x$time * sqrt(g/d), x$gauges$time_var$stage[k,], t='l', col='red')
 
@@ -45,7 +48,8 @@ for(numerical_method in numerical_methods){
     }
 
     # x/d = 9.95
-    plot(ts_ab[,3:4], xlab='Time x sqrt(d/g)', ylab='m', t='l', main='x/d ~ 9.95')
+    plot(ts_ab[,3:4], xlab='Time x sqrt(d/g)', ylab='Stage (m)', t='l', 
+         main='Timeseries at location x/d ~ 9.95; Analytical in black, SWALS model in red.')
     k = which.min(abs(x$gauges$lon - 9.95))
     points(x$time * sqrt(g/d), x$gauges$time_var$stage[k,], t='l', col='red')
 
@@ -60,18 +64,22 @@ for(numerical_method in numerical_methods){
         print('FAIL')
     }
 
+    dev.off()
 
     ## Profiles
     canonical_profiles = read.table('../test_repository/BP01-DmitryN-Single_wave_on_simple_beach/canonical_profiles.txt', skip=5,header=FALSE)
     profile_times = seq(35, 70, by=5)
+    png(paste0('Model-vs-data-canonical-profiles_', numerical_method, '.png'), width=10, height=6, units='in', res=300)
     par(mfrow=c(3,3))
+    par(mar=c(4,4,3,1))
     for(i in 1:length(profile_times)){
-        plot(canonical_profiles[,1], canonical_profiles[,i+1],t='l', main=paste0( 'T = ', profile_times[i], 'sqrt(d/g)'))
         tind = which.min(abs(x$time * sqrt(g/d) - profile_times[i]))
         model_time_rescaled = x$time[tind] * sqrt(g/d)
+        plot(canonical_profiles[,1], canonical_profiles[,i+1],t='l', cex.main=1.2, xlab='x (m)', ylab='Stage (m)', 
+             main=paste0( 'T = ', profile_times[i], 'sqrt(d/g);  Numerical T = ', round(model_time_rescaled, 2), 'sqrt(d/g)'))
         points(x$gauges$lon, x$gauges$time_var$stage[,tind], t='l', col='red')
-        title(main=paste0('Model time rescaled: ', round(model_time_rescaled, 2)), line=0)
     }
+    legend('bottomright', c('Analytical', 'SWALS model'), col=c('black', 'red'), lty=c(1,1), pch=c(NA, NA), cex=1.2)
 
     dev.off()
 }
