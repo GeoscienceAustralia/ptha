@@ -19,7 +19,8 @@ for(numerical_method in numerical_methods){
 
     # Get the model results
     sink(tempfile())
-    x = get_all_recent_results()
+    md = get_multidomain(sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1])
+    x = md[[1]] #get_all_recent_results()
     sink()
     d = 1.0 # This is set in the model code
     g = 9.8 
