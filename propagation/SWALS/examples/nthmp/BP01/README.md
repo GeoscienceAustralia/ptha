@@ -2,7 +2,7 @@
 
 We model the runup of a 1D solitary wave on a sloping beach. The analytical solution to this problem is known ([Synolakis, 1987](https://doi.org/10.1017/S002211208700329X)).
 
-This test problem is from the [NTHMP benchmark suite](). The test data and a problem description is also available in [Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP01-DmitryN-Single_wave_on_simple_beach). 
+This test problem is from the NTHMP benchmark suite. The test data and a problem description is available in [Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP01-DmitryN-Single_wave_on_simple_beach). 
 
 The [SWALS model](BP1_testcases.f90) solves this problem using the nonlinear shallow water equations without friction. The code allows the numerical method to be specified on the commandline, and we test both the `rk2` finite volume solver, and the `leapfrog_nonlinear` finite-difference solver. Both solvers perform well, although for this kind of problem the `rk2` method is somewhat more accurate.
 
@@ -10,7 +10,7 @@ The [SWALS model](BP1_testcases.f90) solves this problem using the nonlinear sha
 
 The results below use a grid size of 10cm. 
 
-Below we compare the modelled and analytical time-series at two sites in the model domain. The model compares very well with the analytical solution, and minor deviations can be reduced by refining the mesh.
+Below we compare the modelled and analytical time-series at two sites in the model domain. The model compares very well with the analytical solution. The gap in the analytical solution corresponds to drying at that site. Minor deviations between the numerical and analytical solutions can be reduced by refining the mesh.
 
 ![Figure 1: Comparison of modelled and analytical time-series at two sites](Model-vs-data-at-two-sites_rk2.png)
 
