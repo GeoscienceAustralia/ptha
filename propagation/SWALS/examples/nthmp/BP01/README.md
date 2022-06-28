@@ -16,7 +16,7 @@ Below we compare the modelled and analytical time-series at two sites in the mod
 
 Below we compare the modelled free-surface profiles at several instants in time. Due to the finite model time-step, the modelled time is close to, but not exactly equal, the analytically desired times. Again the model performs well.
 
-![Figure 2: Comparison of modelled and analytical free-surface profiles at several instances in time](Model-vs-data-canonical-profiles_rk2.png)
+![Figure 2: Comparison of modelled and analytical free-surface profiles at several instants in time](Model-vs-data-canonical-profiles_rk2.png)
 
 ## Results from the leapfrog nonlinear finite difference method
 
@@ -28,4 +28,4 @@ Below we compare the modelled and analytical time-series at two sites in the mod
 
 Below we compare the modelled free-surface profiles at several instants in time. Due to the finite model time-step, the modelled time is close to, but not exactly equal, the analytically desired times. Again the model performs well.
 
-![Figure 2: Comparison of modelled and analytical free-surface profiles at several instances in time](Model-vs-data-canonical-profiles_leapfrog_nonlinear.png)
+![Figure 2: Comparison of modelled and analytical free-surface profiles at several instants in time](Model-vs-data-canonical-profiles_leapfrog_nonlinear.png)
