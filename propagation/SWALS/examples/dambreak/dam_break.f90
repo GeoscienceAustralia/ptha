@@ -86,10 +86,12 @@ program dam_break
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
     md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
-    !@ rk2 still works well with the following parameters, which would usually be seen
-    !@ as voilating stability constraints.
+    ! rk2 still works well with this CFL (with a variable timstep), 
+    ! which would usually be seen as voilating stability constraints.
     !domain%cfl = 1.49_dp
-    !domain%theta = 4.0_dp
+    ! Deliberately use a non-TVD limiter (> 2.0) to stress-test that approach. 
+    ! It turns out to work well.
+    md%domains(1)%theta = 4.0_dp 
     call md%setup
 
     ! Call local routine to set initial conditions

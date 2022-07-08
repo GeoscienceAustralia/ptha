@@ -10,4 +10,7 @@ make -B -f make_BP2_testcases > build_outfile.log
 Rscript plot.R linear
 Rscript plot.R leapfrog_nonlinear
 Rscript plot.R rk2
-Rscript plot.R cliffs
+
+# Cliffs result is interesting. We can see it is not shock-capturing (delayed
+# shocks, like in dam-break test case).
+# Rscript plot.R cliffs 
