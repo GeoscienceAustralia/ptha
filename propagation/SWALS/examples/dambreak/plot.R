@@ -10,7 +10,8 @@ g = 9.8
 near_t = 15 # Plot near this time
 
 source('../../plot.R')
-x = get_all_recent_results()
+md = get_multidomain(sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1])
+x = md[[1]]
 
 yind = round(dim(x$stage)[2]/2)
 

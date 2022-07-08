@@ -48,7 +48,7 @@ program dam_break
     !! 1D Dam-break problem with a flat bed.
     !!
     use global_mod, only: ip, dp, charlen, default_nonlinear_timestepping_method
-    use domain_mod, only: domain_type
+    use multidomain_mod, only: multidomain_type
     use file_io_mod, only: read_csv_into_array
     use local_routines
     use boundary_mod, only: transmissive_boundary
@@ -56,7 +56,7 @@ program dam_break
 
     integer(ip):: i, nsteps
     real(dp):: last_write_time
-    type(domain_type):: domain
+    type(multidomain_type):: md
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
@@ -72,9 +72,7 @@ program dam_break
     ! analytical solution
     real(dp), allocatable :: analytical_solution(:,:)
     character(len=charlen):: analytical_solution_file, input_char
-    real(dp) :: h_upstream, h_downstream
-
-    domain%timestepping_method = default_nonlinear_timestepping_method
+    real(dp) :: h_upstream, h_downstream, timestep
 
     ! Get the upstream/downstream initial depth from the command line
     call get_command_argument(1, input_char)
@@ -82,46 +80,38 @@ program dam_break
     call get_command_argument(2, input_char)
     read(input_char, *) h_downstream
 
+    ! Set up the domain
+    allocate(md%domains(1))
+    md%domains(1)%lw = global_lw
+    md%domains(1)%lower_left = global_ll
+    md%domains(1)%nx = global_nx
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
     !@ rk2 still works well with the following parameters, which would usually be seen
     !@ as voilating stability constraints.
     !domain%cfl = 1.49_dp
     !domain%theta = 4.0_dp
-
-    ! Allocate domain
-    CALL domain%allocate_quantities(global_lw, global_nx, global_ll)
+    call md%setup
 
     ! Call local routine to set initial conditions
-    CALL set_initial_conditions_dam(domain, h_upstream, h_downstream)
+    CALL set_initial_conditions_dam(md%domains(1), h_upstream, h_downstream)
 
-    domain%boundary_subroutine => transmissive_boundary
+    timestep = md%stationary_timestep_max() * 0.5_dp
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = -approximate_writeout_frequency
+    md%domains(1)%boundary_subroutine => transmissive_boundary
 
     ! Evolve the code
     do while (.TRUE.)
 
-        if(domain%time - last_write_time >= approximate_writeout_frequency) then
+        ! Avoid storing grids often
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency=approximate_writeout_frequency)
 
-            last_write_time = last_write_time + approximate_writeout_frequency
+        if (md%domains(1)%time > final_time) exit
 
-            call domain%print()
-            call domain%write_to_output_files()
-
-            if (domain%time > final_time) then
-                exit 
-            end if
-
-        end if
-
-        call domain%evolve_one_step()
+        call md%evolve_one_step(timestep)
 
     end do
 
-    call domain%write_max_quantities()
-
-    call domain%timer%print()
-
-    CALL domain%finalise()
+    call md%finalise_and_print_timers
 
 end program
