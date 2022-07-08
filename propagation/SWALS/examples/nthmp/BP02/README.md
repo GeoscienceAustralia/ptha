@@ -14,10 +14,10 @@ significant for this problem because the wave amplitudes are not negligible comp
 to the depth (especially for cases B and C). 
 
 Dispersion also matters physically for this problem because the wave length is
-sufficiently short compared to the water depth. It causes the reflected wave to
-be delayed in the experimental data, as compared to the linear solution. This
-also causes differences between experiments and non-dispersive shallow water
-models.
+sufficiently short compared to the water depth (moreso for cases B and C). It
+causes the reflected wave to be delayed in the experimental data, as compared
+to the linear solution. This also causes differences between experiments and
+non-dispersive shallow water models.
 
 The [SWALS model](BP2_testcases.f90) is setup to take the numerical method as a commandline
 argument. This is used to test the linear shallow water solver (`linear`) as well as two
