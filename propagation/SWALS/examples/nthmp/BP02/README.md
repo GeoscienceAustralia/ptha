@@ -12,8 +12,10 @@ For this problem we expect solutions based on the nonlinear shallow water
 equations to deviate from the linear solution. Physically, nonlinearity is
 significant for this problem. 
 
-Dispersion also matters physically for this problem. That is a source of differences
-between experiments and non-dispersive shallow water models.
+Dispersion also matters physically for this problem, and causes the reflected wave to
+be delayed in the experimental data as compaerd to the linear solution. That is
+a source of differences between experiments and non-dispersive shallow water
+models.
 
 The [SWALS model](BP2_testcases.f90) is setup to take the numerical method as a commandline
 argument. This is used to test the linear shallow water solver (`linear`) as well as two
