@@ -135,7 +135,7 @@ program BP02
     !!
     use global_mod, only: ip, dp, minimum_allowed_depth
     use multidomain_mod, only: multidomain_type
-    use boundary_mod, only: boundary_stage_transmissive_momentum
+    use boundary_mod, only: boundary_stage_transmissive_momentum, flather_boundary
     use linear_interpolator_mod, only: linear_interpolator_type
     use local_routines
     implicit none
@@ -186,7 +186,7 @@ program BP02
     ! Tank geometry  -- add a little extra at the end so the reflective wall is in the right place
     tank_bases = [base_L, 4.36_dp, 2.93_dp, 0.9_dp + 2.0_dp*dx]
     tank_slopes = [0.0_dp, 1.0_dp/53.0_dp, 1.0_dp/150.0_dp, 1.0_dp/13.0_dp]
-    tank_width = 1.0_dp
+    tank_width = 0.2_dp !1.0_dp
     tank_length = sum(tank_bases)
     initial_depth = 0.218_dp
 
@@ -209,6 +209,8 @@ program BP02
     ! Get the boundary data and make an interpolation function f(t) for gauge 4
     call setup_boundary_information(bc_file, -initial_depth)
     md%domains(1)%boundary_function => boundary_function
+    ! For nonlinear schemes, this boundary condition causes spurious reflections of the outgoing waves (because depths are too
+    ! shallow)
     md%domains(1)%boundary_subroutine => boundary_stage_transmissive_momentum
 
 
@@ -226,6 +228,13 @@ program BP02
         if (md%domains(1)%time > final_time) exit
 
         call md%evolve_one_step(timestep)
+
+        if(md%domains(1)%time > 10.0_dp) then
+            ! After the initial wave has entered the domain, we change the boundary condition
+            ! to reduce reflection of outgoing waves
+            md%domains(1)%boundary_subroutine => flather_boundary
+            md%domains(1)%boundary_function => NULL()
+        end if
 
     END DO
 

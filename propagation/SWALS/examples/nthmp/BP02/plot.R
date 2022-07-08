@@ -7,9 +7,11 @@ ERR_TOL = 1.0e-02
 test_cases = c('a', 'b', 'c')
 test_cases_caps = c('A', 'B', 'C')
 
-timestepping_method = 'linear' 
+#timestepping_method = 'linear' 
 #timestepping_method = 'leapfrog_nonlinear'
 #timestepping_method = 'rk2'
+timestepping_method = commandArgs(trailingOnly=TRUE)[1]
+stopifnot(any(timestepping_method == c('linear', 'rk2', 'leapfrog_nonlinear')))
 
 show_obs = TRUE #FALSE
 
@@ -60,20 +62,26 @@ for(i in 1:length(test_cases)){
         points(x$gauges$time, x$gauges$time_var$stage[ii+2,],t='l', col='red', lwd=1)
         if(ii == 2){
             if(show_obs){
-                legend('topright', c('Analytical', 'Model', 'Experiment'), col=c('black', 'red', 'green'), lwd=c(4,1,1), cex=2)
+                legend('topright', 
+                       c('Analytical (linear)', paste0('Model (', timestepping_method, ')'), 'Experiment'), 
+                       col=c('black', 'red', 'green'), lwd=c(4,1,1), cex=2, bty='n')
             }else{
-                legend('topright', c('Analytical', 'Model'), col=c('black', 'red'), lwd=c(4,1), cex=3, bty='n')
+                legend('topright', 
+                       c('Analytical (linear)', paste0('Model (', timestepping_method, ')')), 
+                       col=c('black', 'red'), lwd=c(4,1), cex=3, bty='n')
             }
         }
         title(gauge_names[ii-1], cex.main=3)
 
-        # Quick test that error are small
-        model_at_analytical = approx(x$gauges$time, x$gauges$time_var$stage[ii+2,], xout=analytical[,1])
-        err_stat = mean(abs(model_at_analytical$y - analytical[,ii]))/diff(range(analytical[,ii]))
-        if(err_stat < ERR_TOL){
-            print('PASS')
-        }else{
-            print('FAIL')
+        if(timestepping_method == 'linear'){
+            # Quick test that analytical errors are small
+            model_at_analytical = approx(x$gauges$time, x$gauges$time_var$stage[ii+2,], xout=analytical[,1])
+            err_stat = mean(abs(model_at_analytical$y - analytical[,ii]))/diff(range(analytical[,ii]))
+            if(err_stat < ERR_TOL){
+                print('PASS')
+            }else{
+                print('FAIL')
+            }
         }
     }
     dev.off()
