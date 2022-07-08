@@ -80,7 +80,7 @@ program BP01
     real(dp), parameter :: mesh_refine = 1.0_dp
 
     ! Domain info
-    character(charlen) :: timestepping_method, tempchar != 'linear' !'rk2' !'linear'
+    character(charlen) :: timestepping_method, tempchar
     
     real(dp) :: global_lw(2), global_ll(2)
     integer(ip) :: global_nx(2) 
@@ -117,7 +117,7 @@ program BP01
     tank_length = sea_length + land_length
  
     ! Resolution
-    dx = 0.1_dp/mesh_refine !(0.5_dp/12.0_dp)
+    dx = 0.1_dp/mesh_refine
 
     ! Model parameters. Note we apply the boundary on the right. x = 0 is the shoreline
     global_lw = [tank_length, tank_width]
@@ -133,7 +133,6 @@ program BP01
     md%domains(1)%nx = global_nx
     md%domains(1)%timestepping_method = timestepping_method
 
-    ! Allocate domain -- must have set timestepping method BEFORE this
     call md%setup
 
     ! Call local routine to set initial conditions
