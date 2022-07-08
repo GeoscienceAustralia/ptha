@@ -8,24 +8,24 @@ The [SWALS model](BP1_testcases.f90) solves this problem using the nonlinear sha
 
 ## Results from the rk2 finite volume method
 
-The results below use a grid size of 10cm. 
+The results below use a grid size of 10cm and the `rk2` finite volume scheme.
 
-Below we compare the modelled and analytical time-series at two sites in the model domain. The model compares very well with the analytical solution. The gap in the analytical solution corresponds to drying at that site. Minor deviations between the numerical and analytical solutions can be reduced by refining the mesh.
+Below we compare the modelled and analytical time-series at two sites in the model domain. The model compares very well with the analytical solution. The gap in the analytical solution (top panel) represents drying at that site. Minor deviations between the numerical and analytical solutions can be reduced by refining the mesh.
 
-![Figure 1: Comparison of modelled and analytical time-series at two sites](Model-vs-data-at-two-sites_rk2.png)
+![Figure 1: Comparison of modelled (rk2) and analytical time-series at two sites](Model-vs-data-at-two-sites_rk2.png)
 
 Below we compare the modelled free-surface profiles at several instants in time. Due to the finite model time-step, the modelled time is close to, but not exactly equal, the analytically desired times. Again the model performs well.
 
-![Figure 2: Comparison of modelled and analytical free-surface profiles at several instants in time](Model-vs-data-canonical-profiles_rk2.png)
+![Figure 2: Comparison of modelled (rk2) and analytical free-surface profiles at several instants in time](Model-vs-data-canonical-profiles_rk2.png)
 
 ## Results from the leapfrog nonlinear finite difference method
 
-The results below use a grid size of 10cm, as above. 
+The results below use a grid size of 10cm (as above) with the `leapfrog_nonlinear` finite difference scheme. 
 
 Below we compare the modelled and analytical time-series at two sites in the model domain. The model compares well with the analytical solution, although is slightly less accurate than the `rk2` solution above with the same grid size. Minor deviations from the analytical solution can be reduced by refining the mesh.
 
-![Figure 1: Comparison of modelled and analytical time-series at two sites](Model-vs-data-at-two-sites_leapfrog_nonlinear.png)
+![Figure 1: Comparison of modelled (leapfrog nonlinear) and analytical time-series at two sites](Model-vs-data-at-two-sites_leapfrog_nonlinear.png)
 
 Below we compare the modelled free-surface profiles at several instants in time. Due to the finite model time-step, the modelled time is close to, but not exactly equal, the analytically desired times. Again the model performs well.
 
-![Figure 2: Comparison of modelled and analytical free-surface profiles at several instants in time](Model-vs-data-canonical-profiles_leapfrog_nonlinear.png)
+![Figure 2: Comparison of modelled (leapfrog nonlinear) and analytical free-surface profiles at several instants in time](Model-vs-data-canonical-profiles_leapfrog_nonlinear.png)
