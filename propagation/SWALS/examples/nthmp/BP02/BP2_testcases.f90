@@ -26,6 +26,7 @@ module local_routines
     contains 
 
     subroutine setup_boundary_information(bc_file, boundary_elev)
+        ! Read boundary info from a file and pack into the boundary_information type 
         character(charlen), intent(in):: bc_file
         real(dp), intent(in):: boundary_elev
 
@@ -53,9 +54,8 @@ module local_routines
 
     end subroutine
     
-    ! Make a function to evaluate the boundary at the domain
-    !
     function boundary_function(domain, t, i, j) result(stage_uh_vh_elev)
+        ! Function to evaluate the boundary at the domain, passed to model boundary conditions
         type(domain_type), intent(in):: domain
         real(dp), intent(in):: t
         integer(ip), intent(in) :: i, j
@@ -74,10 +74,10 @@ module local_routines
         integer(ip):: j, i, k
         real(dp):: gauge_xy(2,11), wall
 
-        ! Set stage
+        ! Stage
         domain%U(:,:,STG) = 0.0_dp
 
-        ! Set elevation
+        ! Elevation
         tank_x = 0.0_dp
         do i = 2, 5
             tank_x(i) = sum(tank_bases(1:(i-1)))            
@@ -103,13 +103,13 @@ module local_routines
         domain%U(:, domain%nx(2)-1, ELV) = wall
         domain%U(domain%nx(1), :, ELV) = wall
         domain%U(domain%nx(1)-1, :, ELV) = wall
-    
+   
+        ! Stage >= bed 
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
         
-        ! Get gauge points
-        gauge_xy(2,:) = 0.0_dp
-        gauge_xy(1, 1:3) = 0.0_dp
-        gauge_xy(1, 4) = 0.0_dp
+        ! Define locations of gauge outputs
+        gauge_xy(2,:) = 0.0_dp ! Always y == 0
+        gauge_xy(1, 1:4) = 0.0_dp + 1.0e-06_dp ! Nudge x-coordinate inside the domain
         gauge_xy(1,5) = tank_x(2)
         gauge_xy(1,6) = 0.5_dp * (tank_x(3) + tank_x(2))
         gauge_xy(1,7) = tank_x(3)
@@ -134,22 +134,20 @@ program BP02
     !! some experimental results. 
     !!
     use global_mod, only: ip, dp, minimum_allowed_depth
-    use domain_mod, only: domain_type
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: boundary_stage_transmissive_momentum
     use linear_interpolator_mod, only: linear_interpolator_type
     use local_routines
     implicit none
 
-    integer(ip):: j
-    real(dp):: last_write_time, rain_rate
-    type(domain_type):: domain
+    type(multidomain_type):: md
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.1_dp
     real(dp), parameter :: final_time = 30.0_dp
 
     ! Domain info
-    character(charlen) :: timestepping_method != 'linear' !'rk2' !'linear'
+    character(charlen) :: timestepping_method
     
     ! length/width
     real(dp), dimension(2) :: global_lw, global_ll
@@ -191,75 +189,46 @@ program BP02
     tank_width = 1.0_dp
     tank_length = sum(tank_bases)
     initial_depth = 0.218_dp
-    
 
     ! Large scale
     global_lw = [tank_length, tank_width]
     global_ll = [0.0_dp, -tank_width/2.0_dp]
     global_nx = global_lw/dx
 
-    domain%timestepping_method = timestepping_method
-
-    ! Allocate domain -- must have set timestepping method BEFORE this
-    call domain%allocate_quantities(global_lw, global_nx, global_ll)
+    ! Setup model with 1 domain
+    allocate(md%domains(1))
+    md%domains(1)%lw = global_lw
+    md%domains(1)%lower_left = global_ll
+    md%domains(1)%nx = global_nx
+    md%domains(1)%timestepping_method = timestepping_method
+    call md%setup
 
     ! Call local routine to set initial conditions
-    call set_initial_conditions_BP2(domain, tank_bases, tank_slopes, tank_width, initial_depth)
+    call set_initial_conditions_BP2(md%domains(1), tank_bases, tank_slopes, tank_width, initial_depth)
 
     ! Get the boundary data and make an interpolation function f(t) for gauge 4
     call setup_boundary_information(bc_file, -initial_depth)
-    domain%boundary_function => boundary_function
-    !domain%boundary_subroutine => boundary_stage_transmissive_normal_momentum
-    domain%boundary_subroutine => boundary_stage_transmissive_momentum
-
-   
-    ! Linear requires a fixed timestep 
-    if (.not. domain%adaptive_timestepping) then
-        timestep = domain%stationary_timestep_max() * 0.5_dp
-    end if
+    md%domains(1)%boundary_function => boundary_function
+    md%domains(1)%boundary_subroutine => boundary_stage_transmissive_momentum
 
 
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = domain%time - approximate_writeout_frequency
+    ! Fixed timestep  
+    timestep = md%stationary_timestep_max() * 0.5_dp 
 
     ! Evolve the code
     do while (.TRUE.)
 
-        if(domain%time - last_write_time >= approximate_writeout_frequency) then
+        ! Avoid storing grids often
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency=approximate_writeout_frequency, &
+            write_grids_less_often = 999999_ip)
 
-            last_write_time = last_write_time + approximate_writeout_frequency
+        if (md%domains(1)%time > final_time) exit
 
-            call domain%print()
-            call domain%write_to_output_files(time_only=.true.)
-            call domain%write_gauge_time_series()
-            print*, 'Mass balance: ', domain%mass_balance_interior()
-
-        end if
-
-        if (domain%time > final_time) exit
-
-        ! Suggested to use a transmissive type boundary at this stage
-        !IF(domain%time > 10.0_dp) THEN
-        !    domain%boundary_type = 'flather_still_water' !'transmissive'
-        !    domain%boundary_function => NULL()
-        !END IF
-        ! Example with fixed timestep
-        !CALL domain%evolve_one_step(timestep=2.5_dp)
-
-        ! Variable timestep
-        if(.not. domain%adaptive_timestepping) then
-            call domain%evolve_one_step(timestep = timestep)
-        else
-            call domain%evolve_one_step()
-        end if
+        call md%evolve_one_step(timestep)
 
     END DO
 
-    call domain%write_max_quantities()
-
-    ! Print timing info
-    call domain%timer%print()
-
-    call domain%finalise()
+    call md%finalise_and_print_timers
 
 end program

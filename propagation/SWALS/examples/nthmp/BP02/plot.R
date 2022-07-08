@@ -18,7 +18,8 @@ for(i in 1:length(test_cases)){
     run_command = paste0(omp_run_command, ' ./BP2_testcases case', test_cases_caps[i], ' ', timestepping_method, ' > outfile.log')
     system(run_command)
 
-    x = get_all_recent_results(quiet=TRUE)
+    md = get_multidomain(sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1])
+    x = md[[1]]
 
     analytical = read.table(paste0('../test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3', 
         test_cases[i], '_analytical.txt'), skip=6)
@@ -44,7 +45,7 @@ for(i in 1:length(test_cases)){
 
 
     # Adjust time offset
-    x$time = x$time + analytical[1,1]
+    x$gauges$time = x$gauges$time + analytical[1,1]
 
     #pdf(paste0('solution', test_cases_caps[i], '.pdf'), width=15, height=8)
     png(paste0('solution', test_cases_caps[i], '_', timestepping_method, '.png'), width=15, height=8, units='in', res=300)
@@ -56,7 +57,7 @@ for(i in 1:length(test_cases)){
         plot(analytical[,1], analytical[,ii],t='l', ylim=plot_ylim, 
             xlab='Time (s)', ylab='Stage (m)', lwd=4, cex.axis=1.7, cex.lab=2)
         if(show_obs & ii < ncol(analytical)) points(obs[,1], obs[,ii], t='l', col='green') 
-        points(x$time, x$gauges$time_var$stage[ii+2,],t='l', col='red', lwd=1)
+        points(x$gauges$time, x$gauges$time_var$stage[ii+2,],t='l', col='red', lwd=1)
         if(ii == 2){
             if(show_obs){
                 legend('topright', c('Analytical', 'Model', 'Experiment'), col=c('black', 'red', 'green'), lwd=c(4,1,1), cex=2)
@@ -67,7 +68,7 @@ for(i in 1:length(test_cases)){
         title(gauge_names[ii-1], cex.main=3)
 
         # Quick test that error are small
-        model_at_analytical = approx(x$time, x$gauges$time_var$stage[ii+2,], xout=analytical[,1])
+        model_at_analytical = approx(x$gauges$time, x$gauges$time_var$stage[ii+2,], xout=analytical[,1])
         err_stat = mean(abs(model_at_analytical$y - analytical[,ii]))/diff(range(analytical[,ii]))
         if(err_stat < ERR_TOL){
             print('PASS')
