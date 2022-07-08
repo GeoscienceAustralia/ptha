@@ -63,11 +63,11 @@ program dam_break
     real(dp), parameter :: final_time = 30.0_dp * 1
 
     ! length/width
-    real(dp), parameter, dimension(2):: global_lw = [200._dp, 20._dp] 
+    real(dp), parameter :: global_lw(2) = [200._dp, 20._dp] 
     ! lower-left corner coordinate
-    real(dp), parameter, dimension(2):: global_ll = -global_lw/2.0_dp
+    real(dp), parameter :: global_ll(2) = -global_lw/2.0_dp
     ! grid size (number of x/y cells)
-    integer(ip), parameter, dimension(2):: global_nx = [200, 20] * 4 ! [400, 400] 
+    integer(ip), parameter :: global_nx(2) = [200, 20] * 4 ! [400, 400] 
 
     ! analytical solution
     real(dp), allocatable :: analytical_solution(:,:)
