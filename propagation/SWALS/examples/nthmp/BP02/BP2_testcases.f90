@@ -181,12 +181,12 @@ program BP02
     call get_command_argument(2, timestepping_method)  
     
     ! Resolution
-    dx = 0.01_dp
+    dx = 0.02_dp
  
     ! Tank geometry  -- add a little extra at the end so the reflective wall is in the right place
     tank_bases = [base_L, 4.36_dp, 2.93_dp, 0.9_dp + 2.0_dp*dx]
     tank_slopes = [0.0_dp, 1.0_dp/53.0_dp, 1.0_dp/150.0_dp, 1.0_dp/13.0_dp]
-    tank_width = 0.2_dp !1.0_dp
+    tank_width = 0.1_dp !1.0_dp
     tank_length = sum(tank_bases)
     initial_depth = 0.218_dp
 
@@ -213,6 +213,7 @@ program BP02
     ! shallow)
     md%domains(1)%boundary_subroutine => boundary_stage_transmissive_momentum
 
+    call md%make_initial_conditions_consistent() ! Get the initial volume right
 
     ! Fixed timestep  
     timestep = md%stationary_timestep_max() * 0.5_dp 
@@ -229,9 +230,9 @@ program BP02
 
         call md%evolve_one_step(timestep)
 
-        if(md%domains(1)%time > 10.0_dp) then
+        if(md%domains(1)%time > 10.0_dp .and. timestepping_method /= 'linear') then
             ! After the initial wave has entered the domain, we change the boundary condition
-            ! to reduce reflection of outgoing waves
+            ! for nonlinear schemes to reduce reflection of outgoing waves. 
             md%domains(1)%boundary_subroutine => flather_boundary
             md%domains(1)%boundary_function => NULL()
         end if

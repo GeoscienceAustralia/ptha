@@ -7,13 +7,10 @@ ERR_TOL = 1.0e-02
 test_cases = c('a', 'b', 'c')
 test_cases_caps = c('A', 'B', 'C')
 
-#timestepping_method = 'linear' 
-#timestepping_method = 'leapfrog_nonlinear'
-#timestepping_method = 'rk2'
 timestepping_method = commandArgs(trailingOnly=TRUE)[1]
-stopifnot(any(timestepping_method == c('linear', 'rk2', 'leapfrog_nonlinear')))
+stopifnot(any(timestepping_method == c('linear', 'rk2', 'leapfrog_nonlinear', 'cliffs')))
 
-show_obs = TRUE #FALSE
+show_obs = TRUE
 
 for(i in 1:length(test_cases)){
 
@@ -30,11 +27,13 @@ for(i in 1:length(test_cases)){
 
     gauge_names = c(paste0('G', 4:10), 'Wall')
 
+    yind  = floor(dim(x$elev0)[2] / 2) + 1
+
     # Plot the geometry
     if(i == 1){
         png(paste0('solution_geometry_caseA_', timestepping_method, '.png'), width=8, height=6, units='in', res=300)
         l = length(x$xs)
-        plot(x$xs[1:(l-1)], x$elev0[1:(l-1),10], t='l', xlab='Along-beach distance (m)', ylab='Vertical coordinate (m)',
+        plot(x$xs[1:(l-1)], x$elev0[1:(l-1),yind], t='l', xlab='Along-beach distance (m)', ylab='Vertical coordinate (m)',
             ylim=c(-0.25, 0.25), lwd=2)
         abline(h=0, col='red', lty='dashed')
         legend('topleft', c('Beach profile', 'Initial water surface', 'Gauge location'),
