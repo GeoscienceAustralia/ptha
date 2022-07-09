@@ -44,7 +44,8 @@ Here we test the `rk2` finite volume scheme, which solves the nonlinear shallow 
 In this problem nonlinear terms are not negligible, so we expect the numerical
 solution to differ from the analytical linear solution.  The model also differs
 significantly from the experiments due to dispersion, which is absent in the
-model, but physically tends to suppress shock formation.
+model, but physically tends to suppress shock formation. Our modelled results are similar
+to those [reported in the GEOCLAW nonlinear shallow water solver](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
 
 ![Figure 5: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](solutionA_rk2.png)
 
@@ -64,7 +65,8 @@ is unsurprising as both are solving the nonlinear shallow water equations.
 In this problem nonlinear terms are not negligible, so we expect the numerical
 solution to differ from the analytical linear solution.  The model also differs
 significantly from the experiments due to dispersion, which is absent in the
-model, but physically tends to suppress shock formation.
+model, but physically tends to suppress shock formation. Our modelled results are similar
+to those [reported in the GEOCLAW nonlinear shallow water solver](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
 
 ![Figure 8: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](solutionA_leapfrog_nonlinear.png)
 
