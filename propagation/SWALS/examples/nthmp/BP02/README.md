@@ -17,10 +17,9 @@ equations to deviate from the linear solution for this problem. Physically, nonl
 significant because the wave amplitudes are not negligible compared
 to the depth (especially for cases B and C). Dispersion also matters physically
 because the wave length is not very long short compared to the water depth
-(moreso for cases B and C). Dispersion causes the reflected wave to be delayed in the
-experimental data, as compared to the linear solution. It also causes short waves
-to form in the experiments, over regions where non-dispersive shallow water models
-predict shock formation.
+(moreso for cases B and C). Dispersion causes short waves to form in the
+experiments, over regions where non-dispersive shallow water models predict
+shock formation.
 
 The [SWALS model](BP2_testcases.f90) is setup to take the numerical method as a commandline
 argument. This is used to test the linear shallow water solver (`linear`) as well as two
