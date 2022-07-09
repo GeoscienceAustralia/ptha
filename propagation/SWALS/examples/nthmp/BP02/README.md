@@ -1,6 +1,8 @@
 # Solitary wave on a composite beach (analytical solution and experiment)
 
-This problem covers benchmarks 2 and 5 from the NTHMP test suite.
+This problem covers benchmarks 2 and 5 from the NTHMP test suite. The test data
+and a problem description is available in 
+[Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic)
 
 Three different solitary waves (cases A, B, C) are propagated over a 1D
 composite beach. The analytical solutions are known for the linear shallow water
