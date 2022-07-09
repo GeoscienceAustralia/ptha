@@ -6,20 +6,21 @@ and a problem description is available in
 
 Three different solitary waves (cases A, B, C) are propagated over a 1D
 composite beach. The analytical solutions are known for the linear shallow water
-equations. 
+equations (NTHMP benchmark 2). Experiments have also been conducted for this setup
+(NTHMP benchmark problem 5). Herein we combine these cases, by simultaneously 
+comparing models with the linear analytical solution and experiments.
 
 ![Figure 1: Beach profile and gauge locations](solution_geometry_caseA_linear.png)
 
-For this problem we expect solutions based on the nonlinear shallow water
-equations to deviate from the linear solution. Physically, nonlinearity is
-significant for this problem because the wave amplitudes are not negligible compared
-to the depth (especially for cases B and C). 
-
-Dispersion also matters physically for this problem because the wave length is
-sufficiently short compared to the water depth (moreso for cases B and C). It
-causes the reflected wave to be delayed in the experimental data, as compared
-to the linear solution. This also causes differences between experiments and
-non-dispersive shallow water models.
+Mathematically we expect solutions based on the nonlinear shallow water
+equations to deviate from the linear solution for this problem. Physically, nonlinearity is
+significant because the wave amplitudes are not negligible compared
+to the depth (especially for cases B and C). Dispersion also matters physically
+because the wave length is not very long short compared to the water depth
+(moreso for cases B and C). Dispersion causes the reflected wave to be delayed in the
+experimental data, as compared to the linear solution. It also causes short waves
+to form in the experiments, over regions where non-dispersive shallow water models
+predict shock formation.
 
 The [SWALS model](BP2_testcases.f90) is setup to take the numerical method as a commandline
 argument. This is used to test the linear shallow water solver (`linear`) as well as two
