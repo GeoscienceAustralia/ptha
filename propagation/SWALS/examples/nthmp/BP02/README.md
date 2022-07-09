@@ -45,7 +45,7 @@ In this problem nonlinear terms are not negligible, so we expect the numerical
 solution to differ from the analytical linear solution.  The model also differs
 significantly from the experiments due to dispersion, which is absent in the
 model, but physically tends to suppress shock formation. Our modelled results are similar
-to those [reported in the GEOCLAW nonlinear shallow water solver](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
+to those [reported in the GEOCLAW nonlinear shallow water solver for benchmark 5](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
 
 ![Figure 5: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](solutionA_rk2.png)
 
@@ -66,7 +66,7 @@ In this problem nonlinear terms are not negligible, so we expect the numerical
 solution to differ from the analytical linear solution.  The model also differs
 significantly from the experiments due to dispersion, which is absent in the
 model, but physically tends to suppress shock formation. Our modelled results are similar
-to those [reported in the GEOCLAW nonlinear shallow water solver](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
+to those [reported in the GEOCLAW nonlinear shallow water solver for benchmark 5](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
 
 ![Figure 8: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](solutionA_leapfrog_nonlinear.png)
 
