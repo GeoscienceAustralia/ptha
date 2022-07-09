@@ -41,7 +41,7 @@ derived from the linear shallow water equations.
 
 Here we test the `rk2` finite volume scheme, which solves the nonlinear shallow water equations. 
 
-In this problem nonlinear terms are not negligable, so we expect the numerical
+In this problem nonlinear terms are not negligible, so we expect the numerical
 solution to differ from the analytical linear solution.  The model also differs
 significantly from the experiments due to dispersion, which is absent in the
 model, but physically tends to suppress shock formation.
@@ -61,7 +61,7 @@ nonlinear shallow water equations.
 The numerical solution is almost identical to the `rk2` solution above, which
 is unsurprising as both are solving the nonlinear shallow water equations.
 
-In this problem nonlinear terms are not negligable, so we expect the numerical
+In this problem nonlinear terms are not negligible, so we expect the numerical
 solution to differ from the analytical linear solution.  The model also differs
 significantly from the experiments due to dispersion, which is absent in the
 model, but physically tends to suppress shock formation.
