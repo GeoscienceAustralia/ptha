@@ -46,8 +46,8 @@ src_dir: ./examples/periodic_multidomain/
 exclude_dir: ./examples/periodic_multidomain/OUTPUTS/
 src_dir: ./examples/nthmp/BP01/
 exclude_dir: ./examples/nthmp/BP01/OUTPUTS/
-src_dir: ./examples/nthmp/BP02/
-exclude_dir: ./examples/nthmp/BP02/OUTPUTS/
+src_dir: ./examples/nthmp/BP02_and_BP05/
+exclude_dir: ./examples/nthmp/BP02_and_BP05/OUTPUTS/
 src_dir: ./examples/nthmp/BP04/
 exclude_dir: ./examples/nthmp/BP04/OUTPUTS/
 src_dir: ./examples/nthmp/BP06/
