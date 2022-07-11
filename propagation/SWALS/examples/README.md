@@ -19,7 +19,7 @@ The problems are:
 
 * merewether -- This compares the model with a flooding scenario for merewether, similar to [the ANUGA test](https://github.com/GeoscienceAustralia/anuga_core/tree/master/validation_tests/case_studies/merewether), which is based on field observations and laboratory experiments.
 
-* nesting_reflection -- This is a simple 1D plane wave propagation test problem which includes a nested grid. 
+* nesting_plane_wave -- This is a simple 1D plane wave propagation test problem which includes a nested grid. 
 
 * overbank_flow -- This computes steady, overbank flow in a channel with floodplains, and compares the model with an analytical solution for the cross-channel distribution of velocity, including the effect of eddy-viscosity.
 
