@@ -4,10 +4,6 @@ module local_routines
     !!
     use global_mod, only: dp, ip, charlen, wall_elevation, g => gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
-    use read_raster_mod, only: read_gdal_raster
-    use which_mod, only: which
-    use file_io_mod, only: count_file_lines
-    use linear_interpolator_mod, only: linear_interpolator_type
     implicit none
 
     contains 
@@ -74,26 +70,23 @@ program BP04
     !! the onshore runup and offshore wave height.
     !!
 
-    use global_mod, only: ip, dp, minimum_allowed_depth, pi
-    use domain_mod, only: domain_type
-    use linear_interpolator_mod, only: linear_interpolator_type
+    use global_mod, only: ip, dp
+    use multidomain_mod, only: multidomain_type
     use local_routines
     implicit none
 
-    integer(ip):: j
-    real(dp):: last_write_time, rain_rate
-    type(domain_type):: domain
+    type(multidomain_type) :: md
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.025_dp
     real(dp), parameter :: final_time = 50.0_dp
 
     ! Domain info
-    character(charlen) :: timestepping_method, tempchar != 'linear' !'rk2' !'linear'
+    character(charlen) :: timestepping_method, tempchar
     
     ! length/width
-    real(dp), dimension(2) :: global_lw, global_ll
-    integer(ip), dimension(2) :: global_nx 
+    real(dp) :: global_lw(2), global_ll(2)
+    integer(ip) :: global_nx(2) 
 
     ! Local variables 
     real(dp) :: timestep, L, dx, tank_width, tank_length, initial_depth, &
@@ -128,63 +121,35 @@ program BP04
     global_ll = [-land_length, -tank_width/2.0_dp]
     global_nx = nint(global_lw/dx)
 
+    ! Setup md with 1 domain
+    allocate(md%domains(1))
+    md%domains(1)%lw = global_lw
+    md%domains(1)%lower_left = global_ll
+    md%domains(1)%nx = global_nx
+    md%domains(1)%timestepping_method = timestepping_method
 
-    domain%timestepping_method = timestepping_method
-
-    ! Allocate domain -- must have set timestepping method BEFORE this
-    call domain%allocate_quantities(global_lw, global_nx, global_ll, verbose=.false.)
-
-    call domain%log_outputs()
+    call md%setup
     
-    write(domain%logfile_unit, *) 'timestepping method: ', TRIM(timestepping_method)
-    write(domain%logfile_unit, *) 'initial depth: ', initial_depth
-    write(domain%logfile_unit, *) 'h_on_d: ', h_on_d 
-    write(domain%logfile_unit, *) 'd: ', initial_depth, ' H: ', H, ' beach slope: ', beach_slope, &
-        ' X0 :', X0, ' X1: ', X1, ' L: ', L, ' gamma: ', gamma0
-    write(domain%logfile_unit, *) 'll: ', global_ll
-
     ! Call local routine to set initial conditions
-    call set_initial_conditions_BP1(domain, initial_depth, beach_slope, &
+    call set_initial_conditions_BP1(md%domains(1), initial_depth, beach_slope, &
         land_length, sea_length, X0, X1, H, gamma0)
 
-    ! Linear requires a fixed timestep 
-    if (.not. domain%adaptive_timestepping) then
-        timestep = domain%stationary_timestep_max() * 0.5_dp
-    end if
-
-
-    ! Trick to get the code to write out just after the first timestep
-    last_write_time = domain%time - approximate_writeout_frequency
+    ! Fixed timestep
+    timestep = md%stationary_timestep_max() * 0.5_dp
 
     ! Evolve the code
     do while (.true.)
 
-        if(domain%time - last_write_time >= approximate_writeout_frequency) then
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency=approximate_writeout_frequency, &
+            write_grids_less_often = 99999_ip)
 
-            last_write_time = last_write_time + approximate_writeout_frequency
+        if (md%domains(1)%time > final_time) exit
 
-            call domain%print()
-            call domain%write_to_output_files(time_only=.true.)
-            call domain%write_gauge_time_series()
-
-        end if
-
-        if (domain%time > final_time) exit
-
-        ! Variable timestep
-        if(.not. domain%adaptive_timestepping) then
-            call domain%evolve_one_step(timestep = timestep)
-        else
-            call domain%evolve_one_step()
-        end if
+        call md%evolve_one_step(timestep)
 
     end do
 
-    call domain%write_max_quantities()
-
-    ! Print timing info
-    call domain%timer%print(domain%logfile_unit)
-
-    call domain%finalise()
+    call md%finalise_and_print_timers
 
 end program

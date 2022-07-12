@@ -14,7 +14,7 @@ data_caseA = list(
     plot_xlim = c(-5, 20),
     DEPTH_EPS = 1.0e-03,
     snapshot_files = Sys.glob('../test_repository/BP04-JosephZ-Single_wave_on_simple_beach/profs/Case0_0185*'),
-    pdf_filename = 'Model-vs-data_0.0185.pdf',
+    png_filename = 'Model-vs-data_0.0185.png',
     target_max_runup_dimensionless = 0.076,
     # Percentage error in max runup
     allowed_runup_error = 0.10
@@ -31,7 +31,7 @@ data_caseB = list(
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.55,
     snapshot_files = Sys.glob('../test_repository/BP04-JosephZ-Single_wave_on_simple_beach/profs/Case0_3*'),
-    pdf_filename = 'Model-vs-data_0.3.pdf',
+    png_filename = 'Model-vs-data_0.3.png',
     # Percentage error in max runup
     allowed_runup_error = 0.10
     )
@@ -51,7 +51,7 @@ data_caseC = list(
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.274,
     snapshot_files = NA,
-    pdf_filename = NA,
+    png_filename = NA,
     # Percentage error in max runup
     allowed_runup_error = 0.10
     )
@@ -66,7 +66,7 @@ data_caseD = list(
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.156,
     snapshot_files = NA,
-    pdf_filename = NA,
+    png_filename = NA,
     # Percentage error in max runup
     allowed_runup_error = 0.10
     )
@@ -81,7 +81,7 @@ data_caseE = list(
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.426,
     snapshot_files = NA,
-    pdf_filename = NA,
+    png_filename = NA,
     # Percentage error in max runup
     allowed_runup_error = 0.12
     )
@@ -96,7 +96,7 @@ data_caseF = list(
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.467,
     snapshot_files = NA,
-    pdf_filename = NA,
+    png_filename = NA,
     # Percentage error in max runup
     allowed_runup_error = 0.12
     )
@@ -111,7 +111,7 @@ data_caseG = list(
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.805,
     snapshot_files = NA,
-    pdf_filename = NA,
+    png_filename = NA,
     # Percentage error in max runup
     allowed_runup_error = 0.12
     )
@@ -126,7 +126,7 @@ data_caseH = list(
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.641,
     snapshot_files = NA,
-    pdf_filename = NA,
+    png_filename = NA,
     # Percentage error in max runup
     allowed_runup_error = 0.12
     )
@@ -141,7 +141,7 @@ data_caseI = list(
     DEPTH_EPS = 1.0e-03,
     target_max_runup_dimensionless = 0.384,
     snapshot_files = NA,
-    pdf_filename = NA,
+    png_filename = NA,
     # Percentage error in max runup
     allowed_runup_error = 0.12
     )
@@ -167,10 +167,11 @@ for(NJOB in 1:ncase){
     # Get time-series at 2 locations
     # Avoid noisy messages about IO
     sink('tmp_sink_file')
-    x = get_all_recent_results()
+    md = get_multidomain(sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1])
+    x = md[[1]] #get_all_recent_results()
     sink()
 
-    if(!is.na(pdf_filename)){
+    if(!is.na(png_filename)){
 
         # Times should be scaled by sqrt(g/d)
         snapshot_file_times_dimensionless = unlist(lapply(strsplit(snapshot_files, 't='), f<-function(x) as.numeric(x[2])))
@@ -180,7 +181,7 @@ for(NJOB in 1:ncase){
         nearest_time_index = sapply(snapshot_file_times, f<-function(y) which.min(abs(y - x$gauges$time)))
 
         # Plot time snapshots
-        pdf(pdf_filename, width=10, height=5)
+        png(png_filename, width=10, height=5, units='in', res=200)
         par(mfrow=c(2,3))
         for(i in 1:length(snapshot_files)){
             model_ind = nearest_time_index[i]
@@ -188,11 +189,11 @@ for(NJOB in 1:ncase){
             elv = x$gauges$static_var$elevation0
             k = which(stg > elv + DEPTH_EPS)
             plot(x$gauges$lon[k]/d, stg[k]/d, t='o', ylim=plot_ylim, cex=0.1, pch=19,
-                 xlim = plot_xlim, xlab='x/d', ylab='Stage / d')
+                 xlim = plot_xlim, xlab='x/d', ylab='Stage / d', cex.axis=1.3, cex.lab=1.3)
             points(x$gauges$lon/d, elv/d, t='l', col='grey')
             dat = read.table(snapshot_files[i])
             points(dat, col='red', t='o', pch=19, cex=0.1)
-            title(main = paste0('t/T = ', snapshot_file_times_dimensionless[i]))
+            title(main = paste0('t/T = ', snapshot_file_times_dimensionless[i]), cex.main=1.5)
             grid(col='brown')
             points(x$gauges$lon/d, stg/d, t='l')
         }
