@@ -1,6 +1,6 @@
 # NTHMP test problem 1: Solitary wave on a simple beach (analytical version)
 
-We model the runup of a 1D solitary wave on a sloping beach. The analytical solution to this problem is known ([Synolakis, 1987](https://doi.org/10.1017/S002211208700329X)).
+We model the runup of a 1D solitary wave on a sloping beach. The analytical solution to this problem is known ([Synolakis, 1987](https://doi.org/10.1017/S002211208700329X)) and is used for model testing herein. A comparison with experimental data is in [benchmark problem 4](../BP04). 
 
 This test problem is from the NTHMP benchmark suite. The test data and a problem description is available in [Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP01-DmitryN-Single_wave_on_simple_beach). 
 
