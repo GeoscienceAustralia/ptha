@@ -28,15 +28,15 @@ While multiple numerical methods are supported in SWALS (detailed below), the va
 
 ## The finite-volume solvers
 
-SWALS has a number of classical shock-capturing finite-volume schemes with accuracy up to second order in space and time. These solve the nonlinear shallow water equations with Manning (or Chezy) friction, and optionally a turbulent diffusion term. 
+SWALS has a number of classical shock-capturing finite-volume schemes with accuracy up to second order in space and time. These solve the nonlinear shallow water equations with Manning (or Chezy) friction. 
 
 $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
 $$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + \frac{g}{2} \nabla h^2 + g h \nabla z + g h \mathbf{S_{f}} + \mathbf{\Omega}= 0 $$
 
-Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_{f}}=n^2\mathbf{u}|\mathbf{u}|h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force with latitude dependent Coriolis parameter $\omega$.
+Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_{f}}=n^2\mathbf{u}|\mathbf{u}|h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force with latitude dependent Coriolis parameter $\omega$ in spherical coordinates. Coriolis is not applied to models in Cartesian coordinates. 
 
-In general the SWALS finite-volume solvers perform well for flows with moderate or high Froude-numbers and wetting/drying, but may be too numerically dissipative at very low Froude-numbers (e.g. they are not well suited to global-scale tsunami propagation, but can work well the nearshore and inundation simulation). 
+In general the SWALS finite-volume solvers perform well for flows with moderate or high Froude-numbers and wetting/drying, but may be too numerically dissipative at very low Froude-numbers. For example they can work well for nearshore and inundation simulation, but are not well suited to global-scale tsunami propagation (as compared to the leapfrog schemes below). 
 
 In general the finite-volume schemes in SWALS have good stability when used in conjunction with nesting. Occasionally these solvers can be subject to artifical vortices at coarse-to-fine nesting regions, especially where the elevation has rapid variation. This is not particularly common though, and can usually be solved by moving the domain boundary to an area with weaker elevation variation, or by slightly smoothing the elevation data in the neighbourhood of the spurious flow (the subroutine `md%domains(j)%smooth_elevation_near_point` can do this).
 
