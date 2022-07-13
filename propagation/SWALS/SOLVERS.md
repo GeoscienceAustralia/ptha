@@ -34,7 +34,7 @@ $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
 $$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + \frac{g}{2} \nabla h^2 + g h \nabla z + g h \mathbf{S_{f}} + \mathbf{\Omega}= 0 $$
 
-Here $\eta = h + z$ is the free surface elevation (m), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $g$ is gravity (m/s$^2$), $\mathbf{S_{f}}=n^2\mathbf{u}|\mathbf{u}|h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force with latitude dependent Coriolis parameter $\omega$.
+Here $\eta = h + z$ is the free surface elevation (m), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_{f}}=n^2\mathbf{u}|\mathbf{u}|h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force with latitude dependent Coriolis parameter $\omega$.
 
 In general the SWALS finite-volume solvers perform well for flows with moderate or high Froude-numbers and wetting/drying, but may be too numerically dissipative at very low Froude-numbers (e.g. they are not well suited to global-scale tsunami propagation, but can work well the nearshore and inundation simulation). 
 
