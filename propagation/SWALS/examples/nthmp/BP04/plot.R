@@ -231,10 +231,11 @@ for(NJOB in 1:ncase){
 #
 lab_data = read.table('../test_repository/BP04-JosephZ-Single_wave_on_simple_beach/Lab_runup.txt')
 png('Runup_scaling_plot.png', width=8, height=6, units='in', res=300)
-plot(lab_data[,1:2], xlab='h/d', ylab='R/d', main='NTHMP Benchmark problem 4: Runup scaling')
+plot(lab_data[,1:2], xlab='h/d', ylab='R/d', main='NTHMP Benchmark problem 4: Runup scaling', 
+     cex.main=1.7, cex.lab=1.5, cex.axis=1.5)
 grid()
 points(model_runup_test_store[,2], model_runup_test_store[,3], col='red', pch=19)
-legend('topleft', c('Data', 'Model'), col=c('black', 'red'), pch=c(1, 19))
+legend('topleft', c('Data', 'Model'), col=c('black', 'red'), pch=c(1, 19), cex=1.2, bty='n')
 dev.off()
 write.csv(model_runup_test_store, 'runup_model_test_results.csv', row.names=FALSE)
 
