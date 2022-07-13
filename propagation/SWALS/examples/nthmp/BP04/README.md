@@ -14,8 +14,10 @@ The figure below compares modelled (black) and observed (red) free surface profi
 
 ## The case with a large amplitude wave, $h/d = 0.3$ 
 
-The figure below compares modelled (black) and observed (red) free surface profiles for a relatively large amplitude wave. In this case the runup is well reproduced, but in the propagation phase the model produces a shock, while dispersive processes cause the observed wave to arrive later with a higher peak. Such results are typical for this problem, for example see
-[the GEOCLAW nonlinear shallow water solver for benchmark 4](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
+The figure below compares modelled (black) and observed (red) free surface profiles for a relatively large amplitude wave. In this case the runup is well reproduced, but in the propagation phase the model produces a shock, while dispersive processes cause the observed wave to arrive later with a higher peak. 
+
+Such results are typical for this problem because the flow violates the assumptions of the nonlinear shallow water equations. See for example the
+[GEOCLAW nonlinear shallow water solver for benchmark 4](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
 
 ![Figure 2: Comparison of modelled (rk2) and experimental free surface at various times, high amplitude wave](Model-vs-data_0.3.png)
 
