@@ -1,6 +1,6 @@
 # Comparison of 3 algorithms in spherical coordinates over quasi-realistic topography
 
-Three flow algorithms (`leapfrog_nonlinear`, `cliffs` and `rk2`) are compared for a large-area domain with spherical coordinates, and quasi-realistic topography. The flow algorithms use very different numerical methods and implementations. The aim is to check that they give similar results for "low Froude number" gravity wave propagation in spherical coordinates. 
+Three flow algorithms (`leapfrog_nonlinear`, `cliffs` and `rk2`) are compared for a large-area domain with spherical coordinates, and quasi-realistic topography. The flow algorithms use very different numerical methods and implementations, but should nonetheless give similar results for "low Froude number" gravity wave propagation in spherical coordinates. Below we check that this holds.
 
 The [SWALS model](model.f90) is setup to take the flow algorithm as a command-line argument. Because the `cliffs` solver in SWALS does not include the Coriolis force, the Coriolis terms are removed for all cases by compiling with `-DNOCORIOLIS` (see the [makefile](make_model) ). If this is not done then the `cliffs` results differ more significantly from the other solvers. 
 
