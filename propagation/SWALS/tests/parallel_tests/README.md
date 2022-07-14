@@ -10,7 +10,7 @@ To quickly count the `FAIL` statements I suggest
 
     cat outfile.log | grep FAIL | wc -w
 
-which should return zero if there are no failures. The same approach can be applied to `PASS` statements
+which should return `0` if there are no failures. The same approach can be applied to `PASS` statements
 
     cat outfile.log | grep FAIL | wc -w
 
