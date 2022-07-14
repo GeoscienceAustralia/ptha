@@ -33,6 +33,8 @@ The problems are:
 
 * radial_dam_break -- This runs a radial dam break problem.
 
+* spherical_box -- This compares the results of 3 different flow algorithms in an idealised test problem using spherical coordinates. The problem involves a large area domain with quasi-realistic topography, and we check that all algorithms produce similar results.
+
 * uniform_channel -- This tests the model with steady-uniform-flow in a uniform channel
 
 * uniform_slope -- This tests the model with steady-uniform-flow in a uniform slope
