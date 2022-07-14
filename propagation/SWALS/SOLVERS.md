@@ -36,6 +36,10 @@ $$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\math
 
 Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, $\mathbf{\Psi}$ is a turbulent diffusion term, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force. 
 
+In Cartesian coordinates $(x,y)$ in meters, the "grad" operator $\nabla f$ applied to a scalar function $f$ gives $( \frac{\partial f}{\partial x}, \frac{\partial f}{\partial y})$. The divergence operator $\nabla \cdot \mathbf{u}$ applied to a vector $\mathbf{u} = (u,v)$ gives $( \frac{\partial u}{\partial x} + \frac{\partial v}{\partial y})$, and applied to a matrix it gives the vector resulting from application to each column separately. 
+
+In Spherical coordinates $(\theta, \phi)$ giving longitude and latitude respectively, the "grad" operator $\nabla f$ applied to a scalar function $f$ gives $( \frac{1}{R \cos(\phi)} \frac{\partial f}{\partial \theta}, \frac{1}{R \phi} \frac{\partial f}{\partial \phi})$ where the angles should be interpreted in radians. The divergence operator $\nabla \cdot \mathbf{u}$ applied to a vector $\mathbf{u}$ gives $( \frac{1}{R \cos(\phi)} \frac{\partial u}{\partial \theta} + \frac{\partial cos(\phi) v}{\partial \phi}))$, and applied to a matrix it gives the vector resulting from application to each column. 
+
 The turbulent diffusion term $\mathbf{\Psi}$ is by default set to zero. But an eddy viscosity formulation can also be applied as described below. 
 
 In Cartesian coordinates there is no Coriolis term ($\omega = 0$). In spherical coordinates we use a latitude dependent Coriolis parameter $\omega = 2 \sin(\textrm{latitude}) \times \textrm{(earth-angular-frequency)}$ (here angles are in units of radians).
