@@ -12,6 +12,6 @@ Figure 2 shows the modelled stage after 1 hour of propagation with each flow alg
 
 ![Figure 2: The modelled stage after 1 hour of propagation time elevation for the test problem](three_models_at_final_time.png)
 
-Figure 3 shows difference between the modelled stage results at 1 hour, computed with each flow algorithm. It is difficult to see any differences in the 3 results when using the same vertical scale as in the previous figure. The test code checks that the average difference is less than 1cm in all cases. 
+Figure 3 shows difference between the modelled stage results at 1 hour, computed with each flow algorithm. It is difficult to see any differences in the 3 results when using the same vertical scale as in the previous figure. The test code checks that the average absolute difference is less than 1cm in all cases. 
 
 ![Figure 3: Differences in modelled stage after 1 hour of propagation time elevation for the test problem](model_differences_at_final_time.png)
