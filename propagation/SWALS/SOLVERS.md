@@ -36,7 +36,7 @@ $$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\math
 
 Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force. 
 
-In spherical coordinates we use a latitude dependent Coriolis parameter $\omega = 2 \sin(\textrm{latitude-in-radians}) \times \textrm{earth-angular-frequency}$ in spherical coordinates. In Cartesian coordinates there is no Coriolis term ($\omega = 0$). 
+In spherical coordinates we use a latitude dependent Coriolis parameter $\omega = 2 \sin(\textrm{latitude}) \times \textrm{earth-angular-frequency}$ (angles are in units of radians). In Cartesian coordinates there is no Coriolis term ($\omega = 0$). 
 
 A turbulent diffusion term (eddy viscosity formulation) can also be applied as described below, but is not included by default. 
 
