@@ -48,7 +48,7 @@ The SWALS finite-volume solvers approximate the above equations in flux conserva
 
 In general the finite-volume schemes in SWALS have good stability when used in conjunction with nesting. Occasionally these solvers can be subject to artifical vortices at coarse-to-fine nesting regions, especially where the elevation has rapid variation. This is not particularly common though, and can usually be solved by moving the domain boundary to an area with weaker elevation variation, or by slightly smoothing the elevation data in the neighbourhood of the spurious flow (the subroutine `md%domains(j)%smooth_elevation_near_point` can do this).
 
-The finite-volume schemes in SWALS use a range of different timestepping schemes, flux functions, and spatial extrapolations to derive the flow state at edges. Each scheme has a default limiter coefficient, flux function, and friction model, but these can be changed by the user prior to calling `md%setup`:
+The finite-volume schemes in SWALS use a range of different timestepping schemes, flux functions, and spatial extrapolations to derive the flow state at edges. They are essentially variants of the scheme described [here](https://www.researchgate.net/publication/289882157_Open_source_flood_simulation_with_a_2D_discontinuous-elevation_hydrodynamic_model), but on a structured grid rather than an unstructured mesh. Each scheme has a default limiter coefficient, flux function, and friction model, but these can be changed by the user prior to calling `md%setup`:
 
 The finite-volume solvers are supported by setting `md%domains(j)%timestepping_method` to:
 
