@@ -101,7 +101,7 @@ By default there is no additional turbulence model. However a simple eddy viscos
 
 ## The Leap-frog schemes
 
-Leap-frog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this is has not been a focus for leap-frog schemes in SWALS). They have good energy conservation properties which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. Some references that describe classical leap-frog schemes for the linear and nonlinear shallow water equations are:
+Leap-frog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this has not been a focus for leap-frog schemes in SWALS). They have good energy conservation properties which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. Some references that describe classical leap-frog schemes for the linear and nonlinear shallow water equations are:
 
 * *IOC Numerical method of tsunami simulation with the leap-frog scheme IUGG/IOC Time Project, IUGG/IOC Time Project, 1997*
 * *Liu, P. L. F.; Cho, Y.-S.; Briggs, M. J.; Kanoglu, U. & Synolakis, C. E. Runup of solitary waves on a circular Island Journal of Fluid Mechanics, Cambridge University Press, 1995, 302, 259–285*
