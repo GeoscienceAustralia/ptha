@@ -32,13 +32,13 @@ SWALS has a number of classical shock-capturing finite-volume schemes with accur
 
 $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
-$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Omega}= 0 $$
+$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Psi} + \mathbf{\Omega} = 0 $$
 
-Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force. 
+Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, $\mathbf{Psi} is a turbulent diffusion term, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force. 
 
-In spherical coordinates we use a latitude dependent Coriolis parameter $\omega = 2 \sin(\textrm{latitude}) \times \textrm{earth-angular-frequency}$ (angles are in units of radians). In Cartesian coordinates there is no Coriolis term ($\omega = 0$). 
+The turbulent diffusion term $\mathbf{\Psi}$ is by default set to zero. But an eddy viscosity formulation can also be applied as described below. 
 
-A turbulent diffusion term (eddy viscosity formulation) can also be applied as described below, but is not included by default. 
+In Cartesian coordinates there is no Coriolis term ($\omega = 0$). In spherical coordinates we use a latitude dependent Coriolis parameter $\omega = 2 \sin(\textrm{latitude}) \times \textrm{(earth-angular-frequency)}$ (here angles are in units of radians).
 
 The SWALS finite-volume solvers approximate the above equations in flux conservative form. They are shock capturing, and well suited to flows with moderate or high Froude-numbers and wetting/drying, but may be too numerically dissipative to efficiently model flow at very low Froude-numbers. For example they can work well for nearshore and inundation simulation, but are not as well suited to global-scale tsunami propagation as the leapfrog schemes (discussed below). In practice we often develop global-to-local nested grid models by using a leapfrog solver on the coarsest global grid, and finite-volume solvers on the nested grids (such as in [this paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full)). 
 
