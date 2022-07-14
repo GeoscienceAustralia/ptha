@@ -50,7 +50,7 @@ for(model_ind in 2:3){
     }
 }
 
-library(fields)
+suppressMessages(library(fields))
 png('initial_conditions.png', width=10, height=4, units='in', res=200)
 par(mfrow=c(1,2))
 par(oma = c(0, 0, 0, 2))
