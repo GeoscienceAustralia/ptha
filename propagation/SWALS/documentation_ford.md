@@ -26,8 +26,8 @@ src_dir: ./examples/landslide_tsunami/
 exclude_dir: ./examples/landslide_tsunami/OUTPUTS/
 src_dir: ./examples/merewether/
 exclude_dir: ./examples/merewether/OUTPUTS/
-src_dir: ./examples/nesting_reflection/
-exclude_dir: ./examples/nesting_reflection/OUTPUTS/
+src_dir: ./examples/nesting_plane_wave/
+exclude_dir: ./examples/nesting_plane_wave/OUTPUTS/
 src_dir: ./examples/parabolic_canal/
 exclude_dir: ./examples/parabolic_canal/OUTPUTS/
 src_dir: ./examples/paraboloid_bowl/
@@ -36,6 +36,8 @@ src_dir: ./examples/periodic_convergence/
 exclude_dir: ./examples/periodic_convergence/OUTPUTS/
 src_dir: ./examples/radial_dam_break/
 exclude_dir: ./examples/radial_dam_break/OUTPUTS/
+src_dir: ./examples/spherical_box/
+exclude_dir: ./examples/spherical_box/OUTPUTS/
 src_dir: ./examples/uniform_channel/
 exclude_dir: ./examples/uniform_channel/OUTPUTS/
 src_dir: ./examples/uniform_slope/
