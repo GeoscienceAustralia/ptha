@@ -1,5 +1,5 @@
 module local_routines 
-    !! Test the convergence of the code in a periodic domain
+    !! Test flow algorithms in a large area spherical box with complex topography
     use global_mod, only: dp, ip, wall_elevation, pi, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
@@ -24,14 +24,14 @@ module local_routines
         do j = 1, domain%nx(2)
             y = domain%y(j)
 
-            call elevation_rast%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip)
-
             domain%U(:,j,STG) = exp(sin(2*pi*x/10.0_dp))*cos(2*pi*y/10.0_dp)
+
+            call elevation_rast%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip)
         end do
 
         deallocate(x,y)
        
-        ! Wet everywhere 
+        ! Wet everywhere and not too shallow
         domain%U(:,:,ELV) = min(domain%U(:,:,ELV), -100.0_dp)
 
         ! Ensure topography is smooth
@@ -61,9 +61,9 @@ end module
 !@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 program spherical_box
-    !! Spherical box with real topography and idealised stage
+    !! Test flow algorithms in a large area spherical box with complex topography
 
-    use global_mod, only: ip, dp, default_nonlinear_timestepping_method
+    use global_mod, only: ip, dp, charlen
     use multidomain_mod, only: multidomain_type
     use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit
@@ -77,7 +77,7 @@ program spherical_box
     ! Local timing object
     type(timer_type) :: program_timer
 
-    character(len=32) :: timestepping_method
+    character(len=charlen) :: timestepping_method
 
     ! Approx timestep between outputs
     real(dp) :: approximate_writeout_frequency = 1000
@@ -91,8 +91,7 @@ program spherical_box
     ! grid size (number of x/y cells)
     integer(ip), parameter :: global_nx(2) = [945_ip, 615_ip] 
 
-    ! Number of domains in model; loop variable
-    integer(ip):: nd, j
+    integer(ip):: j
 
     ! Set the model name
     md%output_basedir = './OUTPUTS/'
@@ -106,15 +105,10 @@ program spherical_box
     call generic_stop
 #endif
 
-    ! nd domains in this model
-    nd = 1 
-    allocate(md%domains(nd))
+    ! Single domain model
+    allocate(md%domains(1))
 
-    !
     ! Setup basic metadata
-    !
-
-    ! Linear domain
     md%domains(1)%lw = global_lw
     md%domains(1)%lower_left =global_ll
     md%domains(1)%nx = global_nx
@@ -130,10 +124,9 @@ program spherical_box
     do j = 1, size(md%domains)
         call set_initial_conditions(md%domains(j))
     end do
+
+    ! These steps are important in complex nested models, but not really needed here.
     call md%make_initial_conditions_consistent()
-    
-    ! NOTE: For stability in 'null' regions, we set them to 'high land' that
-    ! should be inactive. 
     call md%set_null_regions_to_dry()
 
     ! Fixed timestep
