@@ -34,7 +34,7 @@ $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
 $$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Psi} + \mathbf{\Omega} = 0 $$
 
-Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, $\mathbf{Psi} is a turbulent diffusion term, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force. 
+Here $\eta = h + z$ is the free surface elevation (m), $t$ is time (s), $h$ is the depth (m), $z$ is the bed elevation (m), $\mathbf{q}=h\mathbf{u}$ is the 2D flux vector (m$^2$/s), $\mathbf{u} = (u,v)$ is the 2D velocity vector (m/s), $\otimes$ is the [outer product](https://en.wikipedia.org/wiki/Outer_product), $g$ is gravity (m/s$^2$), $\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-4/3}$ is the friction slope vector with Manning-friction coefficient $n$, $\mathbf{Psi}$ is a turbulent diffusion term, and $\mathbf{\Omega} = \omega (-vh, uh)$ is the Coriolis force. 
 
 The turbulent diffusion term $\mathbf{\Psi}$ is by default set to zero. But an eddy viscosity formulation can also be applied as described below. 
 
