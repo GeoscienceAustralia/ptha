@@ -42,7 +42,7 @@
         ! in an inner loop. Use a vector so we can zero it for dry cells
         real(dp):: dt_half_coriolis(domain%nx(1)), dt_half_coriolis_jph(domain%nx(1))
 
-        ! Vector to hold the advection related metric terms in spherical coordinates.
+        ! Vector to hold some metric terms in spherical coordinates.
         ! If placed on the RHS of the momentum equations they have the form
         ! (+ tan(lat)/R * uvh , -tan(lat)/R * uuh ) 
         real(dp):: dt_tanlat_uvh_on_radius_earth_iph_j(domain%nx(1)), dt_tanlat_uuh_on_radius_earth_i_jph(domain%nx(1))
@@ -678,7 +678,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
 #endif
 
 #if defined(SPHERICAL)
-            ! Spherical metric terms related to advection. These have a form like
+            ! Some spherical coordinate metric terms. These have a form like
             ! (+ tan(lat)/R * uvh , -tan(lat)/R * uuh ) 
             ! although here we include dt, and exclude the leading sign (treated later).
             ! In practice these terms are often small and ignored in many papers.
@@ -781,7 +781,7 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
 #endif
 
 #if defined(SPHERICAL)
-                ! Spherical metric terms related to advection
+                ! Some spherical coordinate metric terms
 
                 ! duh/dt = tan(lat)/earth_radius * uvh
                 domain%U(i,j,UH) = domain%U(i,j,UH) + dt_tanlat_uvh_on_radius_earth_iph_j(i)
