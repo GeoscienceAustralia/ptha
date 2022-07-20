@@ -6,11 +6,14 @@ module local_routines
     use logging_mod, only: log_output_unit
     implicit none
 
+
     contains 
 
-    subroutine set_initial_conditions(domain)            
+    subroutine set_initial_conditions(domain, grid_smooth_iterations)            
         class(domain_type), intent(inout):: domain
-        integer(ip):: i, j
+        integer(ip), intent(in) :: grid_smooth_iterations
+
+        integer(ip):: j
         real(dp), allocatable:: x(:), y(:)
         type(multi_raster_type) :: elevation_rast
 
@@ -35,7 +38,7 @@ module local_routines
         domain%U(:,:,ELV) = min(domain%U(:,:,ELV), -100.0_dp)
 
         ! Ensure topography is smooth
-        do j = 1,10
+        do j = 1, grid_smooth_iterations
             call domain%smooth_elevation
         end do
 
@@ -80,8 +83,9 @@ program spherical_box
     character(len=charlen) :: timestepping_method
 
     ! Approx timestep between outputs
-    real(dp) :: approximate_writeout_frequency = 1000
-    real(dp) :: final_time = 3600.0_dp 
+    real(dp), parameter :: approximate_writeout_frequency = 1000
+    real(dp), parameter :: final_time = 3600.0_dp
+    real(dp), parameter :: mesh_refine = 1.0_dp
     real(dp) :: my_dt 
 
     ! Lower-left corner coordinate
@@ -91,7 +95,7 @@ program spherical_box
     ! grid size (number of x/y cells)
     integer(ip), parameter :: global_nx(2) = [945_ip, 615_ip] 
 
-    integer(ip):: j
+    integer(ip):: j, grid_smooth_iterations
 
     ! Set the model name
     md%output_basedir = './OUTPUTS/'
@@ -111,7 +115,7 @@ program spherical_box
     ! Setup basic metadata
     md%domains(1)%lw = global_lw
     md%domains(1)%lower_left =global_ll
-    md%domains(1)%nx = global_nx
+    md%domains(1)%nx = nint(global_nx * mesh_refine)
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_refinement_factor = 1_ip
@@ -120,9 +124,12 @@ program spherical_box
     ! Allocate domains and prepare comms
     call md%setup()
 
+    ! Apply repeated smooths. 
+    grid_smooth_iterations = nint(10 * mesh_refine**2)
+
     ! Set initial conditions
     do j = 1, size(md%domains)
-        call set_initial_conditions(md%domains(j))
+        call set_initial_conditions(md%domains(j), grid_smooth_iterations)
     end do
 
     ! These steps are important in complex nested models, but not really needed here.
