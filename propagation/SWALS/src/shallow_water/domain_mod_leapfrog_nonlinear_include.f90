@@ -30,6 +30,8 @@
         real(dp):: fr_limit_uh, fr_limit_vh
         ! d(stage)/dy; depth_{i, j+1/2}, depth_{j, i+1/2, j}
         real(dp):: dw_j(domain%nx(1)), h_jph_vec(domain%nx(1)), h_iph_vec(domain%nx(1))
+
+        ! Indicators for wet/dry state (taking values 0.0 or 1.0)
         real(dp) :: h_iph_wet_strict(domain%nx(1)), h_jph_wet_strict(domain%nx(1))
         real(dp) :: h_iph_wet(domain%nx(1)), h_jph_wet(domain%nx(1))
 
@@ -39,6 +41,11 @@
         ! Vector to hold the (coriolis force x time-step x 0.5), which arises
         ! in an inner loop. Use a vector so we can zero it for dry cells
         real(dp):: dt_half_coriolis(domain%nx(1)), dt_half_coriolis_jph(domain%nx(1))
+
+        ! Vector to hold the advection related metric terms in spherical coordinates.
+        ! If placed on the RHS of the momentum equations they have the form
+        ! (+ tan(lat)/R * uvh , -tan(lat)/R * uuh ) 
+        real(dp):: dt_tanlat_uvh_on_radius_earth_iph_j(domain%nx(1)), dt_tanlat_uuh_on_radius_earth_i_jph(domain%nx(1))
 
         ! Vector to hold the semi_implicit_friction_multiplier
         real(dp):: friction_multiplier_UH(domain%nx(1)), friction_multiplier_VH(domain%nx(1))
@@ -510,6 +517,8 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
         uh_i_jp1_max_loop_index(xL:(xU-1)) = ZERO_dp
         dt_half_coriolis(xL:(xU-1)) = ZERO_dp
         dt_half_coriolis_jph(xL:(xU-1)) = ZERO_dp
+        dt_tanlat_uvh_on_radius_earth_iph_j(xL:(xU-1)) = ZERO_dp
+        dt_tanlat_uuh_on_radius_earth_i_jph(xL:(xU-1)) = ZERO_dp
 
         !
         ! Before starting the loop, get the value of VH at
@@ -668,6 +677,37 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                 merge(ONE_dp, ZERO_dp, h_jph_wet_strict(xL:(xU-1)) > ZERO_dp)
 #endif
 
+#if defined(SPHERICAL)
+            ! Spherical metric terms related to advection. These have a form like
+            ! (+ tan(lat)/R * uvh , -tan(lat)/R * uuh ) 
+            ! although here we include dt, and exclude the leading sign (treated later).
+            ! In practice these terms are often small and ignored in many papers.
+            do i = xL, xU-1
+
+                ! Inverse depth at i+1/2, j
+                inv_depth_local = ZERO_dp
+                if(h_iph_wet_strict(i) > ZERO_dp) inv_depth_local = ONE_dp/h_iph_vec(i)
+
+                ! dt * tan(lat)/R * uvh at i+1/2, j
+                dt_tanlat_uvh_on_radius_earth_iph_j(i) = dt * &
+                    domain%tanlat_on_radius_earth(j) * &
+                    domain%U(i,j,UH) * & ! uh
+                    0.5_dp * (vh_iph_jmh(i) + vh_iph_jph(i)) * & ! vh
+                    inv_depth_local ! 1/h
+
+                ! Inverse depth at i, j+1/2
+                inv_depth_local = ZERO_dp
+                if(h_jph_wet_strict(i) > ZERO_dp) inv_depth_local = ONE_dp/h_jph_vec(i)
+
+                ! dt * tan(lat)/R * uuh at i, j+1/2
+                dt_tanlat_uuh_on_radius_earth_i_jph(i) = dt * &
+                    0.5_dp * (domain%tanlat_on_radius_earth(j) + domain%tanlat_on_radius_earth(j+1)) * &
+                    0.5_dp * (uh_i_jp1(i) + uh_i_j(i)) * & ! uh
+                    0.5_dp * (uh_i_jp1(i) + uh_i_j(i)) * & ! uh
+                    inv_depth_local ! 1/h
+            end do
+#endif
+
             ! Compute a multiplier that applies a semi-implicit treatment of manning friction.
             !
             ! This is equivalent to adding a term "g * depth * friction_slope" to the equations.
@@ -738,6 +778,16 @@ EVOLVE_TIMER_START('LF_nonlinear_update')
                 domain%U(i, j, VH) = domain%U(i, j, VH)  &
                     - dt_half_coriolis_jph(i) * (uh_i_j(i) + uh_i_jp1(i))
 
+#endif
+
+#if defined(SPHERICAL)
+                ! Spherical metric terms related to advection
+
+                ! duh/dt = tan(lat)/earth_radius * uvh
+                domain%U(i,j,UH) = domain%U(i,j,UH) + dt_tanlat_uvh_on_radius_earth_iph_j(i)
+
+                ! dvh/dt = -tan(lat)/earth_radius * uuh
+                domain%U(i,j,VH) = domain%U(i,j,VH) - dt_tanlat_uuh_on_radius_earth_i_jph(i)
 #endif
 
                 ! Add the semi-implicit friction terms
