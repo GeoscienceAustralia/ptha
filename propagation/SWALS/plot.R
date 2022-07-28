@@ -2119,6 +2119,8 @@ get_energy_truely_linear_multidomain<-function(multidomain_dir, mc_cores=1){
 #'
 get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE, 
                              verbose=FALSE){
+
+    # FIXME: Import more specific libraries to avoid rptha
     .library_quiet(rptha)
 
     # Make sure the input is a matrix. The code below will convert the
