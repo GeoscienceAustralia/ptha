@@ -7,6 +7,7 @@ module local_routines
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: count_file_lines, read_csv_into_array
     use linear_interpolator_mod, only: linear_interpolator_type
+    use stop_mod, only: generic_stop
 
     implicit none
 
@@ -39,7 +40,7 @@ module local_routines
     real(dp), parameter :: wavemaker_x_start = 0.0_dp
 
     ! Force the model with an initial solitary wave ( like the corresponding Funwave test case )
-    logical :: use_initial_condition_forcing = .true.
+    logical :: use_initial_condition_forcing = .false. !.true.
 
     ! if use_initial_condition_forcing is .FALSE. then
     ! there are 2 other alternative "active" forcings of this problem.
@@ -347,7 +348,7 @@ module local_routines
                 h_on_d = 0.181_dp
             else
                 print*, 'forcing_case not recognized'
-                stop
+                call generic_stop
             end if
 
             gamma0 = sqrt((3.0_dp / 4.0_dp) * h_on_d)
@@ -399,49 +400,47 @@ program BP06
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: flather_boundary, transmissive_boundary
-    use timer_mod
+    use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit
+    use stop_mod, only: generic_stop
     use local_routines
     implicit none
-
-    ! Useful misc variables
-    integer(ip):: j, i, nd, forcing_case
 
     ! Type holding all domains 
     type(multidomain_type) :: md
 
     type(timer_type) :: program_timer
 
-    real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
-    
-    real(dp), parameter ::  global_dt = 0.024_dp / mesh_refine ! * 0.5_dp
-
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
     real(dp), parameter :: final_time = 40._dp
 
-    ! Use this to read command line arguments
-    character(len=20) :: tempchar
-
     !
     ! Key geometric parameters are defined in the 'local routines' module
     !
+    
+    ! Resolution and extent of inner domain (around the island)
+    real(dp), parameter :: high_res_ll(2) = island_centre - [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
+    real(dp), parameter :: high_res_ur(2) = island_centre + [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
 
-    ! Grid size (number of x/y cells) in outer domain
-    integer(ip), parameter:: global_nx(2) = int(global_lw*10, ip) * mesh_refine
-    ! Extent of Inner domain around the island
-    integer(ip) :: nest_ratio = 3_ip
-    real(dp) :: high_res_ll(2) = island_centre - [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
-    real(dp) :: high_res_ur(2) = island_centre + [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
+    ! Local vars
+    real(dp) :: mesh_refine ! Increase resolution by this amount
+    real(dp) ::  global_dt ! Outer-grid timestep
+    integer(ip) :: global_nx(2) ! Grid size (number of x/y cells) in outer domain
+    integer(ip) :: ts_refinement ! Inner grid timestepping refinement
+    integer(ip) :: write_grids_and_print_every_nth_step ! Control output file size (but keep dense record at gauges)
+    integer(ip) :: nest_ratio ! Inner grid refinement factor
+    character(len=charlen) :: ts_method ! Timestepping method
+    character(len=charlen) :: model_setup ! Denote different types of model setups
 
-    integer(ip), parameter :: write_grids_and_print_every_nth_step = ceiling(approximate_writeout_frequency/global_dt)
+    character(len=charlen) :: tempchar
+    integer(ip):: j, i, nd, forcing_case
 
-    ! Option to use 'DE1' compute fluxes methods + a more aggressive limiter
-    logical, parameter :: more_diffusive = .FALSE.
-
-    ! Forcing-case = 1, 2, 3
+    ! Forcing-case = 1, 2, 3, for Cases A, B, C respectively
     call get_command_argument(1, tempchar)  
     read(tempchar, *) forcing_case 
+
+    call get_command_argument(2, model_setup)
 
     call program_timer%timer_start('setup')
 
@@ -450,8 +449,37 @@ program BP06
     allocate(md%domains(nd))
 
     !
-    ! Setup basic metadata
+    ! Setup basic metadata. Allow for a few kids of setup
     !
+    if(model_setup == 'default') then
+        ! Standard setup, decent grid refinement, no attempt to mimic dispersion
+        ts_method = default_nonlinear_timestepping_method
+        mesh_refine = 1.0_dp
+        nest_ratio = 3_ip
+        ts_refinement = nest_ratio
+        global_dt = 0.024_dp / mesh_refine
+    else if(model_setup == 'cliffs') then
+        ! For CLIFFS solver -- setup similar to that described by Tolkova in the NTHMP report,
+        ! but with an inner grid resolution intermediate between the other two.
+        ts_method = 'cliffs'
+        mesh_refine = 1.0_dp/3.0_dp
+        nest_ratio = 10_ip
+        ts_refinement = 1_ip
+        global_dt = 0.01_dp 
+    else if(model_setup == 'leapfrog_nonlinear') then
+        ! For leapfrog_nonlinear solver
+        ts_method = 'leapfrog_nonlinear'
+        mesh_refine = 1.0_dp/3.0_dp
+        nest_ratio = 7_ip ! Shows some instability using a value of 10.
+        ts_refinement = 1_ip
+        global_dt = 0.01_dp 
+    else
+        write(log_output_unit, *) 'unrecognized value of "model_setup":', trim(model_setup)
+        call generic_stop
+    end if
+
+    global_nx = nint(global_lw*10*mesh_refine, ip)
+    write_grids_and_print_every_nth_step = ceiling(approximate_writeout_frequency/global_dt)
 
     ! Main domain
     md%domains(1)%lower_left =global_ll
@@ -460,12 +488,8 @@ program BP06
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
+    md%domains(1)%timestepping_method = ts_method
     md%domains(1)%cliffs_minimum_allowed_depth = 0.01_dp
-    if(more_diffusive) then
-        md%domains(1)%compute_fluxes_inner_method = 'DE1' ! Very similar to default
-        md%domains(1)%theta = 1.3_dp !
-    end if
 
     ! A detailed domain
     call md%domains(2)%match_geometry_to_parent(&
@@ -473,13 +497,9 @@ program BP06
         lower_left=high_res_ll, &
         upper_right=high_res_ur, &
         dx_refinement_factor=nest_ratio, &
-        timestepping_refinement_factor= nest_ratio)
-    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method
+        timestepping_refinement_factor= ts_refinement)
+    md%domains(2)%timestepping_method = ts_method
     md%domains(2)%cliffs_minimum_allowed_depth = 0.002_dp
-    if(more_diffusive) then
-        md%domains(2)%compute_fluxes_inner_method = 'DE1'
-        md%domains(2)%theta = 1.3_dp
-    end if
 
     ! Allocate domains and prepare comms
     call md%setup()
@@ -493,6 +513,7 @@ program BP06
     call setup_boundary_information(forcing_case)
     md%domains(1)%boundary_subroutine => flather_boundary 
         ! FIXME: Boundary condition really should prevent mass flowing out, experiment has walls!
+        ! But modellers in the NTHMP mention use of radiation boundaries, so that is done here too.
     if(.not. use_initial_condition_forcing) then
         md%domains(1)%forcing_subroutine => forcing_subroutine
         call md%domains(1)%store_forcing()

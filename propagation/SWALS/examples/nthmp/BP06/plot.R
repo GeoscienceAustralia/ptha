@@ -25,6 +25,10 @@ omp_run_command = Sys.getenv('OMP_RUN_COMMAND')
 forcing_cases = c(1, 2, 3)[1:3]
 forcing_cases_name = c('A', 'B', 'C')[1:3]
 
+model_setup = 'default' #'leapfrog_nonlinear' #'cliffs' #'default'
+
+stopifnot(model_setup %in% c('default', 'cliffs', 'leapfrog_nonlinear'))
+
 # Allowed relative error in "max(runup anywhere around island)" between model and measured
 ERR_TOL_MAX_RUNUP = 0.2
 # Allowed mean of relative error in gauge maxima
@@ -38,7 +42,7 @@ for(model_run in 1:length(forcing_cases)){
     forcing_case_name = forcing_cases_name[model_run]
 
     # Run the model
-    system(paste0(omp_run_command, ' ./BP06 ', forcing_case, ' > outfile.log'))
+    system(paste0(omp_run_command, ' ./BP06 ', forcing_case, ' ', model_setup, ' > outfile.log'))
 
     #
     # Get the multidomain
@@ -102,7 +106,7 @@ for(model_run in 1:length(forcing_cases)){
     #                      c(2,6), c(2,9), c(2,16), c(2,22))
     gauge_IDs = c(1, 2, 3, 4, 6, 9, 16, 22)
 
-    png(paste0('Gauges_plot_', forcing_case_name, '.png'), width=10, height=9, units='in', res=300)
+    png(paste0('Gauges_plot_', forcing_case_name, '_', model_setup, '.png'), width=10, height=9, units='in', res=300)
     par(mfrow=c(4,2))
     par(mar = c(4.5,4.5,2,1))
     err_store = rep(NA, length(gauge_IDs))
@@ -140,7 +144,7 @@ for(model_run in 1:length(forcing_cases)){
     #
     # Plot multidomain elevation
     #
-    png(paste0('Flume_plot_', forcing_case_name, '.png'), width=7.2, height=8, units='in', res=300)
+    png(paste0('Flume_plot_', forcing_case_name, '_', model_setup, '.png'), width=7.2, height=8, units='in', res=300)
     multidomain_image(dirname(x[[1]]$output_folder), variable='elev', time_index=1, 
         xlim=range(x[[1]]$xs), ylim=range(x[[1]]$ys), zlim=c(-0.35, 0.65),
         cols=colorRampPalette(c('lightblue', 'green', 'yellow', 'orange', 'red', 'purple', 'black'))(255))
@@ -157,7 +161,7 @@ for(model_run in 1:length(forcing_cases)){
     alternate_runup_data = read.csv(alternate_runup_data_file, skip=2)
     island_centre = c(12.96, 13.80)
 
-    png(paste0('Runup_plot_', forcing_case_name, '.png'), width=6, height=5, units='in', res=300)
+    png(paste0('Runup_plot_', forcing_case_name, '_', model_setup, '.png'), width=6, height=5, units='in', res=300)
 
     plot(runup_data[,2], runup_data[,3]/100, t='p', xlab='Degrees around island', ylab='Runup (m)', 
          ylim=c(0, max(c(runup_data[,3]/100, alternate_runup_data$observed_R)*1.5)), 
