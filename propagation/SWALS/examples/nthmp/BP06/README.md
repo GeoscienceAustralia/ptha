@@ -8,7 +8,8 @@ The [SWALS model](BP06.f90) simulates this problem using a nested grid. The wave
 
 The [SWALS model code](BP06.f90) has a variety of options that allow use of other solvers, grid resolutions and forcings, reflecting experiments with this problem. For example the solitary wave forcing can be created with an analytical initial condition; an approximate wavemaker forcing; or (as used herein) a forcing based on the observed wave time-series. A model setup using the `cliffs` solver was implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). While these variations are not discussed in detail here, they are useful for exploring the sensitivity of results to details of the model setup. 
 
-# Note on the runup data
+# Differing runup observations are reported for this problem
+
 For this problem the runup data provided for the NTHMP benchmark, and used in many publications (e.g.  [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8) and [Horillo et al., 2014](10.1007/s00024-014-0891-y)), differs noticeably to data in other publications: ([Liu et al., 1995](https://doi.org/10.1017/S0022112095004095), [Choi et al., 2007](https://doi.org/10.1016/j.coastaleng.2007.02.001), [Ma et al., 2019](https://doi.org/10.1080/19942060.2019.1642960)). The latter publications also attribute their data to [Briggs et al., 1995](https://doi.org/10.1007/bf00874384), and there do not appear to be any other differences in the problem description. Runup maxima are especially different for Case A, where runups in the latter publications are consistently 30-50% larger than for the NTHMP data.
 
 Comparisons with models and data in the literature do not consistently show better agreement with one or other dataset, but there is considerable variation between models. The reasons are not clear, but several factors likely contribute.
