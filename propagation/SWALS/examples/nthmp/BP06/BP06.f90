@@ -453,7 +453,6 @@ program BP06
         nest_ratio = 3_ip
         ts_refinement = nest_ratio
         global_dt = 0.024_dp / mesh_refine
-        ! Not initial condition or wavemaker --> uses boundary forcing
         forcing_type = 'boundary'
     else if(model_setup == 'cliffs') then
         ! For CLIFFS solver -- setup similar to that described by Tolkova in the NTHMP report,
