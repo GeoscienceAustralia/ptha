@@ -144,13 +144,14 @@ for(model_run in 1:length(forcing_cases)){
     #
     # Plot multidomain elevation
     #
-    png(paste0('Flume_plot_', forcing_case_name, '_', model_setup, '.png'), width=7.2, height=8, units='in', res=300)
+    png(paste0('Flume_plot_', forcing_case_name, '_', model_setup, '.png'), width=8, height=8, units='in', res=300)
     multidomain_image(dirname(x[[1]]$output_folder), variable='elev', time_index=1, 
-        xlim=range(x[[1]]$xs), ylim=range(x[[1]]$ys), zlim=c(-0.35, 0.65),
+        xlim=range(x[[1]]$xs), ylim=range(x[[1]]$ys), zlim=c(-0.35, 0.65), use_fields=TRUE,
         cols=colorRampPalette(c('lightblue', 'green', 'yellow', 'orange', 'red', 'purple', 'black'))(255))
     points(md_gauges$lon, md_gauges$lat, pch=20)
     text(md_gauges$lon, md_gauges$lat, round(md_gauges$gaugeID), col='purple', 
         pos=c(rep(4,4), 2, rep(4,3)), cex=1.4)
+    title('Flume elevation and gauge locations \n Wavemaker near the left side of the domain')
     dev.off()
 
 

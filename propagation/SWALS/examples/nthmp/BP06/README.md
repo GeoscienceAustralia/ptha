@@ -4,7 +4,9 @@ We model the runup of three different solitary waves around a conical island. Th
 
 The test problem is from the NTHMP benchmark suite. The test data and a problem description is available in [Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP06-FrankG-Solitary_wave_on_a_conical_island). This includes gauge time-series between the wavemaker and the island (gauges 1,2,3,4), gauge time-series around the island (gauges 6, 9, 16, 22), and records of the runup maxima around the island. Note the locations of gauges 1-4 differ for cases A, B, and C.
 
-The [SWALS model](BP06.f90) simulates this problem using a nested grid. It has a variety of options that allow use of different solvers, grid resolutions, and forcings, reflecting experiments with this problem. For example, the solitary wave forcing can be created in 3 different ways: an analytical initial condition; an approximate wavemaker forcing; a forcing based on waves observed between the wavemaker and the island. A setup using the `cliffs` solver was also implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). 
+![Conical Island flume geometry and gauge locations. The wavemaker is near the left edge of the domain. Gauge locations 1-4 vary slightly between cases A, B and C](Flume_plot_A_default.png)
+
+The [SWALS model](BP06.f90) simulates this problem using a nested grid around the island. It has a variety of options that allow use of different solvers, grid resolutions, and forcings, reflecting experiments with this problem. For example, the solitary wave forcing can be created in 3 different ways: an analytical initial condition; an approximate wavemaker forcing; a forcing based on waves observed between the wavemaker and the island. A setup using the `cliffs` solver was also implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). 
 
 While not discussed in detail here, these alternatives are useful for studying the model sensitivity to different setups. 
 
