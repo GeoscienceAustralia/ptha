@@ -214,7 +214,7 @@ for(model_run in 1:length(forcing_cases)){
     #    legend_loc = 'bottomright'
     #}
     legend(legend_loc, 
-           c('Observed by Briggs (NTHMP repo)', 'Observed by Briggs (Liu95, Ma19)', 'SWALS (boundary forcing)', 'Funwave (non-dispersive, analytical forcing, 0.025m grid)',
+           c('Observed by Briggs (NTHMP repo)', 'Observed by Briggs (Liu95, Ma19)', 'SWALS (boundary forcing)', 'FUNWAVE NON-DISPERSIVE (analytical forcing, 0.025m grid)',
              'Liu et al 1995 model'),
            col=c('black', 'orange', 'red', 'purple', 'green'), 
            pch=c(1, 19, NA, 19, 15), 
