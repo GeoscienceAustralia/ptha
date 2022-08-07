@@ -7,6 +7,8 @@ module local_routines
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: count_file_lines, read_csv_into_array
     use linear_interpolator_mod, only: linear_interpolator_type
+    use stop_mod, only: generic_stop
+    use logging_mod, only: log_output_unit
 
     implicit none
 
@@ -38,28 +40,19 @@ module local_routines
     ! Wavemaker x position
     real(dp), parameter :: wavemaker_x_start = 0.0_dp
 
-    ! Force the model with an initial solitary wave ( like the corresponding Funwave test case )
-    logical :: use_initial_condition_forcing = .true.
-
-    ! if use_initial_condition_forcing is .FALSE. then
-    ! there are 2 other alternative "active" forcings of this problem.
-    ! We can use a wavemaker forcing, or a gauge-based estimate.
-    logical :: use_wavemaker_forcing = .false. 
-        ! Both approaches force the velocity near the wavemaker, and also adjust the stage based
-        ! on a linear plane wave approximation. 
-        ! The wavemaker_forcing approach estimates the velocity from the paddle displacement time-series.
-        ! See "convert_obs_to_wavemaker.R" for details of the gauge-based forcing - basically we roughly estimate
-        ! the wave profile 'propagated backward in time', and use that at the wavemaker forcing.
-        ! Both approaches give fairly similar results, but the gauge-based estimate can
-        ! better match the gauge-1-4 initial waves (likely it is correcting for some dispersion
-        ! that is not in the model itself). 
+    ! How the wave is forced: "initial_condition" or "wavemaker" or "boundary"
+    character(len=charlen) :: forcing_type = 'boundary'
+    ! If forcing_type == 'initial_condition', use a solitary wave initial condition.
+    ! If forcing_type == 'wavemaker', force with the wavemaker data (method could be improved)
+    ! If forcing_type == 'boundary', use a boundary forcing consistent with observations at gauge 2, see
+    ! "convert_obs_to_wavemaker.R"
 
     ! Manning friction
     real(dp), parameter :: low_friction_manning  = 0.01_dp
     real(dp), parameter :: high_friction_manning = 0.01_dp
    
     !
-    ! Hold some data for the forcing [unused if use_initial_condition_forcing]
+    ! Hold some data for the forcing [unused if forcing_type=='initial_condition']
     !
     type :: boundary_information_type
 
@@ -157,7 +150,7 @@ module local_routines
     end subroutine
    
     ! 
-    ! Pass this to domain%forcing_subroutine to make the wavemaker (unused if use_initial_condition_forcing). 
+    ! Pass this to domain%forcing_subroutine to make the wavemaker (unused if forcing_type=='initial_condition'). 
     !
     subroutine forcing_subroutine(domain, dt)
         type(domain_type), intent(inout) :: domain
@@ -178,7 +171,7 @@ module local_routines
         !
         fc = boundary_information%forcing_case
 
-        if(use_wavemaker_forcing) then
+        if(forcing_type == 'wavemaker') then
             ! Here we differentiate the wavemaker paddle velocity to estimate the forcing velocity
 
             ! The forcing is imperfect -- target(actual) wave heights were 0.05(0.045), 0.1(0.096), and 0.2(0.181). 
@@ -205,7 +198,7 @@ module local_routines
             ! Numerical estimate of the velocity. Time-lag needs to give enough smoothing
             forcing_vel = (pos_x_future(1) - pos_x_past(1)) / (2.0_dp * time_lag) * inflation_factor
 
-        else
+        else if(forcing_type == 'boundary') then
             !
             ! Here we use a gauge-based estimate of the forcing
             ! Preprocessing is already done.
@@ -223,6 +216,9 @@ module local_routines
             end if
             ! Apply boundary at regular wavemaker position
             pos_x = 0.0_dp 
+        else
+            write(log_output_unit, *) 'Unknown forcing_type'
+            call generic_stop
         end if
 
         ! Now impose this velocity at the wavemaker x-locations
@@ -334,10 +330,10 @@ module local_routines
 
         deallocate(x,y)
 
-        print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
+        write(log_output_unit, *) 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
 
 
-        if(use_initial_condition_forcing) then
+        if(forcing_type == 'initial_condition') then
             ! Apply wave
             if(forcing_case == 1) then
                 h_on_d = 0.045_dp
@@ -346,8 +342,8 @@ module local_routines
             else if(forcing_case == 3) then
                 h_on_d = 0.181_dp
             else
-                print*, 'forcing_case not recognized'
-                stop
+                write(log_output_unit, *) 'forcing_case not recognized'
+                call generic_stop
             end if
 
             gamma0 = sqrt((3.0_dp / 4.0_dp) * h_on_d)
@@ -399,49 +395,47 @@ program BP06
     use domain_mod, only: domain_type
     use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
     use boundary_mod, only: flather_boundary, transmissive_boundary
-    use timer_mod
+    use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit
+    use stop_mod, only: generic_stop
     use local_routines
     implicit none
-
-    ! Useful misc variables
-    integer(ip):: j, i, nd, forcing_case
 
     ! Type holding all domains 
     type(multidomain_type) :: md
 
     type(timer_type) :: program_timer
 
-    real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
-    
-    real(dp), parameter ::  global_dt = 0.024_dp / mesh_refine ! * 0.5_dp
-
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
     real(dp), parameter :: final_time = 40._dp
 
-    ! Use this to read command line arguments
-    character(len=20) :: tempchar
-
     !
     ! Key geometric parameters are defined in the 'local routines' module
     !
+    
+    ! Resolution and extent of inner domain (around the island)
+    real(dp), parameter :: high_res_ll(2) = island_centre - [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
+    real(dp), parameter :: high_res_ur(2) = island_centre + [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
 
-    ! Grid size (number of x/y cells) in outer domain
-    integer(ip), parameter:: global_nx(2) = int(global_lw*10, ip) * mesh_refine
-    ! Extent of Inner domain around the island
-    integer(ip) :: nest_ratio = 3_ip
-    real(dp) :: high_res_ll(2) = island_centre - [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
-    real(dp) :: high_res_ur(2) = island_centre + [1.0_dp, 1.0_dp] * island_radius_base * sqrt(2.0_dp)
+    ! Local vars
+    real(dp) :: mesh_refine ! Increase resolution by this amount
+    real(dp) ::  global_dt ! Outer-grid timestep
+    integer(ip) :: global_nx(2) ! Grid size (number of x/y cells) in outer domain
+    integer(ip) :: ts_refinement ! Inner grid timestepping refinement
+    integer(ip) :: write_grids_and_print_every_nth_step ! Control output file size (but keep dense record at gauges)
+    integer(ip) :: nest_ratio ! Inner grid refinement factor
+    character(len=charlen) :: ts_method ! Timestepping method
+    character(len=charlen) :: model_setup ! Denote different types of model setups
 
-    integer(ip), parameter :: write_grids_and_print_every_nth_step = ceiling(approximate_writeout_frequency/global_dt)
+    character(len=charlen) :: tempchar
+    integer(ip):: j, i, nd, forcing_case
 
-    ! Option to use 'DE1' compute fluxes methods + a more aggressive limiter
-    logical, parameter :: more_diffusive = .FALSE.
-
-    ! Forcing-case = 1, 2, 3
+    ! Forcing-case = 1, 2, 3, for Cases A, B, C respectively
     call get_command_argument(1, tempchar)  
     read(tempchar, *) forcing_case 
+
+    call get_command_argument(2, model_setup)
 
     call program_timer%timer_start('setup')
 
@@ -450,8 +444,41 @@ program BP06
     allocate(md%domains(nd))
 
     !
-    ! Setup basic metadata
+    ! Setup basic metadata. Allow for a few kids of setup
     !
+    if(model_setup == 'default') then
+        ! Standard setup, decent grid refinement, no attempt to mimic dispersion
+        ts_method = default_nonlinear_timestepping_method
+        mesh_refine = 1.0_dp
+        nest_ratio = 3_ip
+        ts_refinement = nest_ratio
+        global_dt = 0.024_dp / mesh_refine
+        forcing_type = 'boundary'
+    else if(model_setup == 'cliffs') then
+        ! For CLIFFS solver -- setup similar to that described by Tolkova in the NTHMP report,
+        ! but with an inner grid resolution intermediate between the other two.
+        ts_method = 'cliffs'
+        mesh_refine = 1.0_dp/3.0_dp
+        nest_ratio = 10_ip
+        ts_refinement = 1_ip
+        global_dt = 0.01_dp 
+        ! Initial condition works better for this cliffs model (coarse outer grid)
+        forcing_type = 'initial_condition'
+    else if(model_setup == 'leapfrog_nonlinear') then
+        ! For leapfrog_nonlinear solver
+        ts_method = 'leapfrog_nonlinear'
+        mesh_refine = 1.0_dp/3.0_dp
+        nest_ratio = 7_ip ! Shows some instability using a value of 10.
+        ts_refinement = 1_ip
+        global_dt = 0.01_dp 
+        forcing_type = 'initial_condition'
+    else
+        write(log_output_unit, *) 'unrecognized value of "model_setup":', trim(model_setup)
+        call generic_stop
+    end if
+
+    global_nx = nint(global_lw*10*mesh_refine, ip)
+    write_grids_and_print_every_nth_step = ceiling(approximate_writeout_frequency/global_dt)
 
     ! Main domain
     md%domains(1)%lower_left =global_ll
@@ -460,12 +487,8 @@ program BP06
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
+    md%domains(1)%timestepping_method = ts_method
     md%domains(1)%cliffs_minimum_allowed_depth = 0.01_dp
-    if(more_diffusive) then
-        md%domains(1)%compute_fluxes_inner_method = 'DE1' ! Very similar to default
-        md%domains(1)%theta = 1.3_dp !
-    end if
 
     ! A detailed domain
     call md%domains(2)%match_geometry_to_parent(&
@@ -473,13 +496,9 @@ program BP06
         lower_left=high_res_ll, &
         upper_right=high_res_ur, &
         dx_refinement_factor=nest_ratio, &
-        timestepping_refinement_factor= nest_ratio)
-    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method
+        timestepping_refinement_factor= ts_refinement)
+    md%domains(2)%timestepping_method = ts_method
     md%domains(2)%cliffs_minimum_allowed_depth = 0.002_dp
-    if(more_diffusive) then
-        md%domains(2)%compute_fluxes_inner_method = 'DE1'
-        md%domains(2)%theta = 1.3_dp
-    end if
 
     ! Allocate domains and prepare comms
     call md%setup()
@@ -493,7 +512,8 @@ program BP06
     call setup_boundary_information(forcing_case)
     md%domains(1)%boundary_subroutine => flather_boundary 
         ! FIXME: Boundary condition really should prevent mass flowing out, experiment has walls!
-    if(.not. use_initial_condition_forcing) then
+        ! But modellers in the NTHMP mention use of radiation boundaries, so that is done here too.
+    if(forcing_type /= 'initial_condition') then
         md%domains(1)%forcing_subroutine => forcing_subroutine
         call md%domains(1)%store_forcing()
     end if
@@ -506,11 +526,11 @@ program BP06
 
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
-        print*, 'domain: ', j, 'ts: ', &
+        write(log_output_unit, *) 'domain: ', j, 'ts: ', &
             md%domains(j)%stationary_timestep_max()
     end do
 
-    print*, 'End setup'
+    write(log_output_unit, *) 'End setup'
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
 
@@ -534,7 +554,7 @@ program BP06
     call program_timer%timer_end('evolve')
     call md%finalise_and_print_timers
 
-    print*, ''
+    write(log_output_unit, *) ''
     call program_timer%print(output_file_unit=log_output_unit)
 
 end program
