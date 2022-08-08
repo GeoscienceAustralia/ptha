@@ -7,6 +7,7 @@ module local_routines
     use read_raster_mod, only: multi_raster_type
     use file_io_mod, only: count_file_lines
     use linear_interpolator_mod, only: linear_interpolator_type
+    use logging_mod, only: log_output_unit
 
     implicit none
 
@@ -110,7 +111,7 @@ module local_routines
 
         deallocate(x,y)
 
-        print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
+        write(log_output_unit, *) 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
 
         ! Wall boundaries (without boundary conditions)
         wall = 0.3_dp
@@ -157,30 +158,36 @@ program BP07
     ! Type holding all domains 
     type(multidomain_type) :: md
 
+    ! For timing
     type(timer_type) :: program_timer
 
-    real(dp), parameter :: mesh_refine = 1.0_dp ! Increase resolution by this amount
-    
+    ! Increase resolution by this amount
+    real(dp), parameter :: mesh_refine = 1.0_dp
+   
+    ! Outer domain timestep 
     real(dp), parameter ::  global_dt = 8.0E-03_dp / mesh_refine 
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 0.05_dp
     real(dp), parameter :: final_time = 35.0_dp
 
-    character(len=charlen) ::  bc_file = '../test_repository/BP07-DmitryN-Monai_valley_beach/Benchmark_2_input.txt'
-    real(dp) :: bc_elev
-
     ! Length/width
-    real(dp), dimension(2):: global_lw = [5.49_dp, 3.39_dp]
+    real(dp), parameter :: global_lw(2) = [5.49_dp, 3.39_dp]
     ! Lower-left corner coordinate
-    real(dp), dimension(2):: global_ll = [0.0_dp, 0.0_dp]
+    real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp]
     ! grid size (number of x/y cells)
-    integer(ip), dimension(2):: global_nx = [225_ip, 171_ip] * mesh_refine
+    integer(ip), parameter :: global_nx(2) = [225_ip, 171_ip] * mesh_refine
 
     ! Inner domain 
-    integer(ip) :: nest_ratio = 3_ip
-    real(dp) :: high_res_ll(2) = [3.00_dp, 1.0_dp]
-    real(dp) :: high_res_ur(2) = [5.25_dp, 2.7_dp]
+    integer(ip), parameter :: nest_ratio = 3_ip
+    real(dp), parameter :: high_res_ll(2) = [3.00_dp, 1.0_dp]
+    real(dp), parameter :: high_res_ur(2) = [5.25_dp, 2.7_dp]
+
+    ! Boundary condition file
+    character(len=charlen) ::  bc_file = '../test_repository/BP07-DmitryN-Monai_valley_beach/Benchmark_2_input.txt'
+    ! Elevation for the boundary condition
+    real(dp) :: bc_elev
+
 
     call program_timer%timer_start('setup')
 
@@ -199,21 +206,21 @@ program BP07
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
     md%domains(1)%dx_refinement_factor = 1.0_dp
-    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method !'rk2'
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
 
-    print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
+    write(log_output_unit, *) 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, ' dx: ', md%domains(1)%dx, &
         ' nx: ', md%domains(1)%nx
 
-    ! A detailed domain [Cannot partially share a physical boundary with the outer domain]
+    ! A detailed domain
     call md%domains(2)%match_geometry_to_parent(&
         parent_domain=md%domains(1), &
         lower_left=high_res_ll, &
         upper_right=high_res_ur, &
         dx_refinement_factor=nest_ratio, &
         timestepping_refinement_factor=nest_ratio)
-    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method !'rk2'
+    md%domains(2)%timestepping_method = default_nonlinear_timestepping_method
 
-    print*, 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
+    write(log_output_unit, *) 2, ' lw: ', md%domains(2)%lw, ' ll: ', md%domains(2)%lower_left, ' dx: ', md%domains(2)%dx, &
         ' nx: ', md%domains(2)%nx
 
     ! Allocate domains and prepare comms
@@ -233,17 +240,15 @@ program BP07
 
     call md%make_initial_conditions_consistent()
     
-    ! NOTE: For stability in 'null' regions, we set them to 'high land' that
-    ! should be inactive. 
+    ! For stability in 'null' regions, set to 'high land' that should be inactive. 
     call md%set_null_regions_to_dry()
 
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
-        print*, 'domain: ', j, 'ts: ', &
-            md%domains(j)%stationary_timestep_max()
+        write(log_output_unit, *) 'domain: ', j, 'ts: ', md%domains(j)%stationary_timestep_max()
     end do
 
-    print*, 'End setup'
+    write(log_output_unit, *) 'End setup'
     call program_timer%timer_end('setup')
     call program_timer%timer_start('evolve')
 
@@ -268,7 +273,7 @@ program BP07
     call program_timer%timer_end('evolve')
     call md%finalise_and_print_timers
 
-    print*, ''
+    write(log_output_unit,*) ''
     call program_timer%print(output_file_unit=log_output_unit)
 
 end program
