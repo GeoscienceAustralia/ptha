@@ -162,7 +162,7 @@ for(model_run in 1:length(forcing_cases)){
     alternate_runup_data = read.csv(alternate_runup_data_file, skip=2)
     island_centre = c(12.96, 13.80)
 
-    png(paste0('Runup_plot_', forcing_case_name, '_', model_setup, '.png'), width=6, height=5, units='in', res=300)
+    png(paste0('Runup_plot_', forcing_case_name, '_', model_setup, '.png'), width=7, height=5, units='in', res=300)
 
     plot(runup_data[,2], runup_data[,3]/100, t='p', xlab='Degrees around island', ylab='Runup (m)', 
          ylim=c(0, max(c(runup_data[,3]/100, alternate_runup_data$observed_R)*1.5)), 
@@ -215,7 +215,7 @@ for(model_run in 1:length(forcing_cases)){
     #    legend_loc = 'bottomright'
     #}
     legend(legend_loc, 
-           c('Observed by Briggs (NTHMP repo)', 'Observed by Briggs (Liu95, Ma19)', 'SWALS (boundary forcing)', 'FUNWAVE NON-DISPERSIVE (analytical forcing, 0.025m grid)',
+           c('Observed by Briggs (NTHMP repo)', 'Observed by Briggs (Liu95, Ma19)', 'SWALS (boundary forcing)', 'FUNWAVE NON-DISPERSIVE (analytical forcing, 2.5cm grid)',
              'Liu et al 1995 model'),
            col=c('black', 'orange', 'red', 'purple', 'green'), 
            pch=c(1, 19, NA, 19, 15), 
