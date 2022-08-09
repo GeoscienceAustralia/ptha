@@ -11,7 +11,7 @@ Figure 1 compares the modelled and observed time series at several gauges. The a
 
 ![Figure 1: Modelled and observed gauge time-series at three sites.](gauges_plot.png)
 
-The figures below compare the model wet-dry front with experimental snapshots near the runup maxima. They were taken every 0.5 second starting from about 15 seconds. The benchmark description notes some uncertainty in the start time, and herein a value of 15.1 seconds was found to give reasonable consistency of the model and experiment. 
+The figures below compare the model wet-dry front with experimental snapshots near the runup maxima. They were taken every 0.5 second starting from about 15 seconds. The benchmark description notes some uncertainty in the start time, and herein a value of 15.1 seconds was found to give reasonable consistency of the model and experiment. The model contour is defined from a 2mm depth threshold.
 
 ![Figure 2: Snapshot of model and observations in main runup area.](snapshot_time_15.1.png)
 ![Figure 3: Snapshot of model and observations in main runup area.](snapshot_time_15.6.png)
