@@ -83,8 +83,7 @@ for(i in 1:5){
 #dev.off()
 
 
-# Peak runup at points, from 6 runs of the experiment
-## Yamazaki, Y (2009)
+# Peak runup at points, from 6 runs of the experiment [included in NTHMP test problem]
 ## 
 ##                                             Case NO.
 ##                      109_105  109_106  109_107  210_101  210_102  210_103  
@@ -108,6 +107,9 @@ range_list = list(
 )
 
 #print('Checking peak stage at 3 reported gauges')
+modelled_stage_maxima = rep(NA, 3)
+experimental_maxima = rep(NA, 3)
+experimental_minima = rep(NA, 3)
 for(i in 1:3){
 
     # Check that the gauge level is between the observed levels in repeated experiments
@@ -120,4 +122,18 @@ for(i in 1:3){
         #print(c('FAIL', stagei))
         print('FAIL')
     }
+
+    modelled_stage_maxima[i] = stagei
+    experimental_maxima[i] = rangei[2]
+    experimental_minima[i] = rangei[1]
 }
+
+# Store the runup values
+outputs = data.frame(
+    x = c(5.1575, 5.0300, 4.9975),
+    y = c(1.8800, 2.2062, 2.3200),
+    model = modelled_stage_maxima,
+    experiment_lower_limit = experimental_minima,
+    experiment_upper_limit = experimental_maxima)
+
+write.csv(round(outputs, 4), 'model_vs_experiment_test_result.csv', row.names=FALSE)
