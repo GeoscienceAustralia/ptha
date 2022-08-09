@@ -7,11 +7,11 @@ The experiment represents runup at Monai during the 1993 Okushiri tsunami event,
 
 The [SWALS model](monai.f90) simulates this problem using a nested grid in the main runup zone, with boundary forcing from the measured time-series.
 
-Figure 1 compares the modelled and observed time series at several gauges. The agreement is good, although there are some minor differences in the early part of the time series (around 5-10 seconds) suggesting the experiment had background waves that do not feature in the boundary forcing.
+Figure 1 compares the modelled and observed time series at several gauges. The agreement is good, although there are some minor differences in the early part of the time series (around 5-10s) suggesting the experiment had background waves that do not feature in the boundary forcing.
 
 ![Figure 1: Modelled and observed gauge time-series at three sites.](gauges_plot.png)
 
-The figures below compare the model wet-dry front with experimental snapshots near the runup maxima. They were taken every 0.5 second starting from about 15 seconds. The benchmark description notes some uncertainty in the start time, and herein a value of 15.1 seconds was found to give reasonable consistency of the model and experiment. The model contour is defined from a 2mm depth threshold.
+The figures below compare the model wet-dry front with experimental snapshots near the runup maxima. They were taken every 0.5s starting from about 15s. The benchmark description notes some uncertainty in the start time, and herein a value of 15.1s was found to give reasonable consistency of the model and experiment. The model contour is defined from a 2mm depth threshold (also suggested in the [GEOCLAW NTHMP tests for this problem](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf)).
 
 ![Figure 2: Snapshot of model and observations in main runup area.](snapshot_time_15.1.png)
 ![Figure 3: Snapshot of model and observations in main runup area.](snapshot_time_15.6.png)
