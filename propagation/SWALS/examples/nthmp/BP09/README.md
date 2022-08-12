@@ -8,7 +8,7 @@ The [SWALS_model](BP09.f90) simulates this problem for one hour following the ea
 
 ## Issues with the benchmark problem datasets
 
-Although models reasonably produce observations for this benchmark problem, the underlying data also has some weaknesses (also discussed in the [GEOCLAW benchmark report](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf):
+Although models reasonably produce observations for this benchmark problem, the underlying data also has some weaknesses (also discussed in the [GEOCLAW benchmark report](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf)):
 * The elevation data has clear discontinuities and mismatches between neighbouring grids. For the SWALS test, some effort was made to preprocess DEMs to reduce discontinuities, but elevation artefacts definitely remain and must be affecting the model.
 * The runup observations have substantial location errors, relative to the DEMs. To partially correct for this we have estimated offsets for each dataset, which are applied in [plot.R](plot.R). This improves the positions, but does not resolve all the location errors.
 
