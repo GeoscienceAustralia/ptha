@@ -29,5 +29,5 @@ The test code checks that all of these models give similar results. While we can
 
 Note that while we can force runs 1 and 2 to give the same results by prescribing domain partition, is not possible for force run 3 to give identical results as either run 1 or run 2. This is because by allowing different timestepping in run 3, the numerical method has changed. 
 
-Another interesting test (not run by default) is to repeat run 1 while adding a tiny perturbation to the model elevations (1e-10 m). This leads to differences comparable to those between runs 1 and 2, and further highlights that tiny floating point differences in the initial conditions lead to small differences in the results.
+Another interesting test (not run by default) is to repeat run 1 while adding a tiny perturbation to the model elevations (1e-10 m). This leads to differences comparable to those between runs 1 and 2, and further highlights that tiny floating point differences in the initial conditions lead to small differences in the results. The subroutine `set_initial_conditions_BP09` in [BP09.f90](BP09.f90) can be modified to do this by changing `real(dp), parameter :: random_perturbation_scale = 0.0e-10_dp` to `real(dp), parameter :: random_perturbation_scale = 1.0e-10_dp`. 
 
