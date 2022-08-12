@@ -16,10 +16,10 @@ While this remains a very useful benchmark problem, caution should be applied to
 
 ## Stability of the results with different domain partitions and timestepping
 
-As part of this test problem the [run_model.sh](run_model.sh) script re-runs the problem with several different setups.
-1. The first run uses openmp alone
+As part of this test problem the [run_model.sh](run_model.sh) script re-runs the problem with several different setups and checks that they all give similar results.
+1. The first run uses openmp alone, with no domain partitioning.
 2. The second run uses a mixture of openmp and MPI, with default partitioning of domains.
-3. The third run also uses a mixture of openmp and MPI, with prescribed partitioning of domains, and allows nonlinear domains to take longer timesteps if their CFL allows it. This option is enabled by compiling SWALS with `-DLOCAL_TIMESTEP_PARTIONED_DOMAINS`.
+3. The third run also uses a mixture of openmp and MPI, with prescribed partitioning of domains. It also allows nonlinear domains to take longer timesteps if their CFL allows it. This option is enabled by compiling SWALS with `-DLOCAL_TIMESTEP_PARTIONED_DOMAINS`.
 
 The test code checks that all of these models give similar results. While we can force the results of runs 1 and 2 to be identical (discussed below) with the default setup we expect small differences, because:
 * For runs 1 and 2 we do not specify how the domains should be partitioned. SWALS default behaviour is for run 1 to use the original 6 domains, while run 2 splits each domain into as many pieces as there are MPI ranks and spreads them among processes. Due to the use of finite precision floating point numbers to define the domains, the partitioned domain coordinates are not __exactly__ equivalent to the original domain coordinates (although the differences are tiny). Thus, small differences in the solutions occur. 
