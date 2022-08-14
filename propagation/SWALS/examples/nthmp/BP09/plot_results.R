@@ -7,6 +7,12 @@ if(length(image_flags) != 1){
 }
 
 #
+# Read field data. Note there are obvious spatial registration problems with
+# these datasets relative to the DEMs used for modelling (discussed in the
+# GEOCLAW validation report). Here we try to correct those, but it isn't perfect.
+#
+
+#
 # Tohoku field data
 #
 field_data_tohoku = read.csv('../test_repository/BP09-FrankG-Okushiri_island/test_data/FieldData_Tohoku.csv')
@@ -20,7 +26,6 @@ field = data.frame( lon = field_data_tohoku[,8] + field_data_tohoku[,9]/60 + fie
                     z_corrected = field_data_tohoku[,4],
                     tide = field_data_tohoku[,3],
                     quality = field_data_tohoku[,1] )
-
 field[field==99999] = NA
 
 #
@@ -56,14 +61,11 @@ field_tsuji = data.frame(
 source('../../../plot.R')
 eps=1.0e-03
 
+MD_DIR = rev(Sys.glob(paste0('OUTPUTS/RUN_*')))[1]
+
 get_domain_contour<-function(domain_number){
 
-    #most_recent_run = rev(Sys.glob(paste0('OUTPUTS/RUN_*/RUN_*000', domain_number, '*')))[1]
-    most_recent_run = rev(Sys.glob(paste0('OUTPUTS/RUN_*')))[1]
-
-    #x5 = get_all_recent_results(most_recent_run)
-    #stage_elev_rasters = make_max_stage_raster(x5, return_elevation=TRUE, na_outside_priority_domain=TRUE)
-    #x5 = list()
+    most_recent_run = MD_DIR
 
     stage_elev_rasters = vector(mode='list', length=2)
     stage_elev_rasters[[1]] = merge_domains_nc_grids(multidomain_dir = most_recent_run, 
@@ -72,15 +74,6 @@ get_domain_contour<-function(domain_number){
         domain_index=domain_number, desired_var = 'elevation0', return_raster=TRUE)
     xs = xFromCol(stage_elev_rasters[[1]], 1:ncol(stage_elev_rasters[[1]])) 
     ys = yFromRow(stage_elev_rasters[[1]], nrow(stage_elev_rasters[[1]]):1) 
-
-    # Get 'peak' elevation, which accounts for the fact that nesting + linear extrapolation
-    # can change elevation in nesting regions. If not accounted for, we might mistakenly think
-    # that nesting regions have wet peak stage in some areas
-    #peak_elev = x5$elev[,,1]
-    #for(i in 2:length(x5$elev[1,1,])){
-    #    peak_elev = pmax(peak_elev, x5$elev[,,i])
-    #}
-    #setValues(stage_elev_rasters[[2]], c(peak_elev))
 
     wet_or_dry = as.matrix(stage_elev_rasters[[1]]) > (as.matrix(stage_elev_rasters[[2]]) + eps)
     # Flip around into the desired orientation
@@ -179,7 +172,7 @@ for(j in 3:6){
     # This will depend on the model resolution/setup
     #
     if(j == 5){
-        # Monai domain
+        # Monai domain -- high runup region
         desired_max_wet_stage = 31.7
         model_max_wet_stage = max(as.matrix(wet_stage), na.rm=TRUE)
         err_stat = abs(model_max_wet_stage - desired_max_wet_stage)/desired_max_wet_stage
@@ -197,7 +190,7 @@ dev.off()
 #
 # Check mass conservation in the domain
 #
-multidomain_log = readLines(rev(Sys.glob('OUTPUTS/RUN*/multidomain*.log'))[1])
+multidomain_log = readLines(Sys.glob(paste0(MD_DIR,'/multidomain*.log'))[1])
 k = grep('unexplained ', multidomain_log)
 final_mass_err = multidomain_log[k[length(k)]]
 final_mass_err_val = as.numeric(strsplit(final_mass_err, ':')[[1]][2])
@@ -206,3 +199,25 @@ if(abs(final_mass_err_val) < 5){
 }else{
     print(c('FAIL', final_mass_err_val))
 }
+
+#
+# Add an image of the elevation and domains
+#
+tmp = get_domain_interior_bbox_in_multidomain(MD_DIR)
+COLPOW = 2
+
+png(paste0('elevation_okushiri_', image_flags, '.png'), width=7.3, height=8, units='in', res=200)
+multidomain_image(multidomain_dir=MD_DIR, variable='elevation0', 
+    xlim=tmp$multidomain_xlim, ylim=tmp$multidomain_ylim, zlim=4000*c(-1,1), 
+    cols=c(rev(colorRampPalette(rev(c('darkblue', 'blue', 'steelblue', 'skyblue', 'lightblue')), bias=COLPOW)(255)), 
+           colorRampPalette(c('lightgreen', 'green', 'darkgreen', 'orange', 'brown'), bias=COLPOW)(255) ),
+    use_fields=TRUE)
+mtext('Longitude', side=1, cex=1.5, line=2)
+mtext('Latitude', side=2, cex=1.5, line=2)
+title(main='Model elevation and domain nesting', cex.main=2)
+# Add bounding boxes (without merging)
+for(i in 1:length(tmp$domain_interior_bbox)){
+  bb = tmp$domain_interior_bbox[[i]]
+  points(rbind(bb, bb[1,]), t='l', col='red')
+}
+dev.off()
