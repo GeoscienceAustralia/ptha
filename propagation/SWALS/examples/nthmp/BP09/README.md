@@ -4,7 +4,7 @@ This problem simulates the 12 July 1993 Hokkaido-Nansei-Oki tsunami (often refer
 
 This test problem is from the NTHMP benchmark suite. The test data and problem description are available in [Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP09-FrankG-Okushiri_island/). 
 
-The [SWALS_model](BP09.f90) simulates the tsunami for one hour following the earthquake. The multidomain uses 6 nested domains and spherical coordinates. The outer domain uses the `linear` solver, while all nested domains use the default nonlinear solver `rk2`. 
+The [SWALS_model](BP09.f90) simulates the tsunami for one hour following the earthquake. The multidomain contains six domains in spherical coordinates. The outer domain uses the `linear` solver, while all other domains use the default nonlinear solver `rk2`. 
 
 ![Figure 1: Elevation data and multidomain design](elevation_okushiri_lowresolution_omp.png)
 
@@ -22,7 +22,7 @@ Figure 2 shows the modelled and observed runup, plotted radially from the centre
 
 Different datasets sometimes give different estimates of the runup (Figure 2). There are also obvious location errors in in some of the datasets, such as points plotting too far offshore or inland.
 
-The locally high runups near Monai (~30m) are well represented in the model near (139.42, 42.10). The test code checks that runup >25m is predicted here. With the default resolution we obtain runup >26m, which becomes closer to 30m with further grid refinement (e.g. setting `mesh_refine=1.0_dp` in the [SWALS model](BP09.f90)). 
+The locally high runups near Monai (~30m) are well represented in the model near (lon=139.42, lat=42.10). The test code checks that runup >25m is predicted here. With the default resolution we obtain runup >26m, which becomes closer to 30m with further grid refinement (e.g. setting `mesh_refine=1.0_dp` in the [SWALS model](BP09.f90)). 
 
 ![Figure 2: Modelled and observed tsunami runup around Okushiri Island](runup_heights_okushiri_lowresolution_omp.png)
 
@@ -45,7 +45,7 @@ The [run_model.sh](run_model.sh) script re-runs the problem with trivially diffe
 
 ![Figure 4: Domain partitioning in runs 2 and 3. Each of the original domains is split into several pieces (compare to Figure 1)](elevation_okushiri_lowresolution_coarray.png)
 
-The test code checks that runs 1, 2 and 3 give similar results. They are not bitwise identical (reasons discussed below), but the figures below show it isn't easy to notice differences in runup. For visual clarity the domains are not shown as partitioned in runs 2 and 3.
+The test code checks that runs 1, 2 and 3 give similar results. They are not bitwise identical (reasons discussed below), but the figures below show it isn't easy to notice differences in runup. For visual clarity the domain bounding boxes are not shown as partitioned in runs 2 and 3.
 
 ![Runup with Run 1](runup_heights_okushiri_lowresolution_omp.png) ![Runup with Run 2](runup_heights_okushiri_lowresolution_coarray.png) ![Runup with Run 3](runup_heights_okushiri_lowresolution_omp_localtimestep.png)
 
@@ -55,13 +55,16 @@ Below we show the max-stage figures for the three runs.
 
 ### Time-varying model statistics in the three runs
 
-Below we overplot time-varying model summary statistics for run 1 and run 2 (left), and run 1 vs run 3 (right). This further highlights their similarity despite the different domain partitioning and timestepping.
+Below we overplot time-varying model summary statistics for run 1 and run 2 (left), and run 1 vs run 3 (right). The time-series are very similar in all models.
 
 ![Model statistics over time in run 1 and run 2](Compare_openmp_coarray.png) ![Model statistics over time in run 1 and run 3](Compare_openmp_ompLocalTS.png)
 
 ### Differences in UH in the three runs near the time of extreme runup at Monai
 
-To better highlight differences between the models, below we compare the easterly flux UH in run 1 and run 2 after 40 outputs steps (292.5s). This is around the time of extreme runup at Monai. For each domain we show both the difference plot, and the solution, using a different colour scale in each panel. At this time the difference plots are very close to zero, but some nonzero values occur. (More detail can be obtained by storing results in double precision rather than single precision, see the variable `output_precision` in [global_mod.f90](../../../../src/shallow_water/global_mod.f90)).
+To better highlight differences between the models we use the easterly flux UH, which is more sensitive than the stage. 
+
+Below we compare UH in runs 1 and 2 after 40 outputs steps (292.5s). This is around the time of extreme runup at Monai. For each domain we show both the difference plot, and the solution, using a different colour scale in each panel. The difference plots are very close to zero, but some nonzero values occur. 
+  * More detail can be obtained by storing results in double precision rather than single precision. See the variable `output_precision` in [global_mod.f90](../../../../src/shallow_water/global_mod.f90).
 
 ![Comparison of UH in runs 1 and run 2 after 40 output time-steps (292.5s). For each domain we plot the difference, and the solution.](Compare_omp_coarray_time_index_40.png)
 
@@ -71,11 +74,11 @@ Below we compare run 1 and run 3 in the same way. In this case the model differe
 
 ### Differences in UH in the three runs at the end of the simulation
 
-Over time the differences between these models grows. To illustrate this we repeat the UH comparison figures (run 1 and run 2) after 400 output timesteps (2992.5s). The differences are still quite small.
+Over time the differences grow. To illustrate this we repeat the UH comparison (run 1 and run 2) after 400 output timesteps (2992.5s). The differences are still quite small, although larger than at 292.5s.
 
 ![Comparison of UH in runs 1 and run 2 after 400 output time-steps (2992.5s). For each domain we plot the difference, and the solution.](Compare_omp_coarray_time_index_400.png)
 
-Below we compare run 1 and run 3 in the same way. In this case the differences are larger, especially around the nearshore domains where model predicts eddy formation. The evolution of these eddies is chaotic and so sensitive to details of the numerical method, such as local timestepping.
+Below we compare run 1 and run 3 in the same way. In this case the differences are larger, especially around nearshore domains where the model predicts eddy formation. The long-time evolution of these eddies is chaotic and thus sensitive to details of the numerical method such as local timestepping.
 
 ![Comparison of UH in runs 1 and run 3 after 400 output time-steps (2992.5s). For each domain we plot the difference, and the solution.](Compare_omp_ompLocalTS_time_index_400.png)
 
@@ -85,7 +88,7 @@ We expect small differences between runs 1 and 2 because of the domain partition
   * It is possible to force models with different openmp/MPI configurations to give __identical__ results by prescribing the same domain partition in both cases (i.e. setting `md%load_balance_file`). This is good practice in applications. 
     * This is done in an alternative script [run_model_exact_reproduce.sh](run_model_exact_reproduce.sh). For brevity that is not run by the automated test suite, but such a test is run in [paraboloid_bowl](../../paraboloid_bowl).
 
-For run 3 the use of local timestepping changes the numerical method, which will cause differences with run 1 and run 2 (even though the latter uses the same domain partition). 
+For run 3, the use of local timestepping changes the numerical method, so it differs from both run 1 and run 2 (even though the latter uses the same domain partition). 
 
 To further explore the sensitivity of the solution to tiny floating point differences, another interesting test is to repeat run 1 while adding a tiny perturbation to the model elevations (1e-10 m). 
   * Although not run by default, this leads to differences comparable to those between runs 1 and 2. 
