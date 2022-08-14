@@ -12,7 +12,7 @@ The [SWALS_model](BP09.f90) simulates the tsunami for one hour following the ear
 
 For this benchmark we expect models to reproduce the observations quite well, but the underlying data has some weaknesses (also discussed in the [GEOCLAW benchmark report](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf)):
 * The elevation has clear discontinuities and mismatches between neighbouring grids. For the SWALS test, some effort was made to preprocess DEMs to reduce mismatches, but elevation artefacts definitely remain.
-* The runup observations have substantial location errors, relative to the DEMs. To partially correct for this we have estimated location offsets for each dataset, which are applied in [plot.R](plot.R). This improves the positions, but does not resolve all the location errors.
+* The runup observations have substantial location errors, relative to the DEMs. To partially correct for this we have estimated location offsets for each dataset, which are applied in [plot_results.R](plot_results.R). This improves the positions, but does not resolve all the location errors.
 
 While this remains a very useful benchmark problem, these issues should be considered when interpreting the results. 
 
