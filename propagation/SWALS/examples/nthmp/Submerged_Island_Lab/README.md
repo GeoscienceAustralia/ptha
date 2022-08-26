@@ -1,4 +1,4 @@
-Submerged Island benchmark from the NTHMP tsunami-currents test-suite.
+# Submerged Island benchmark from the NTHMP tsunami-currents test-suite.
 
 The problem is [described here](http://coastal.usc.edu/currents_workshop/problems/prob1.html).
 
