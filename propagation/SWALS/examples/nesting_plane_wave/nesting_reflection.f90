@@ -15,7 +15,7 @@ module local_routines
         integer(ip):: i, j
         character(len=charlen):: initial_stage
         real(dp), allocatable:: x(:)
-        real(dp) :: wall, stage0, x0, d0, a0, k0
+        real(dp) :: wall, stage0, stage0_uhpoint, x0, d0, a0, k0
         real(dp) :: gauge_xy(3,3)
 
         wall = 50.0_dp
@@ -32,12 +32,20 @@ module local_routines
             do i = 1, domain%nx(1)
                if(abs(x(i) - x0)*k0 < 3.25_dp) then
                    stage0 = a0 * cos(2*pi*(x(i) - x0)*k0)
+                   
+                   ! As above, at the x-coordinate of UH
+                   if(domain%is_staggered_grid) then
+                       stage0_uhpoint = a0 * cos(2*pi*(x(i) - x0 + domain%dx(1)/2.0_dp )*k0)
+                   else
+                       stage0_uhpoint = stage0
+                   end if
                else
                    stage0 = 0.0_dp
+                   stage0_uhpoint = 0.0_dp
                end if
                domain%U(i,j,STG) = stage0
                domain%U(i,j,ELV) = d0 
-               domain%U(i,j,UH) = (-d0) * sqrt(gravity/(-d0))*stage0
+               domain%U(i,j,UH) = (-d0) * sqrt(gravity/(-d0))*stage0_uhpoint
                domain%U(i,j,VH) = 0.0_dp
             end do    
         end do

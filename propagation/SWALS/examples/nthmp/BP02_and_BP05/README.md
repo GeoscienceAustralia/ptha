@@ -1,4 +1,4 @@
-# Solitary wave on a composite beach (analytical solution and experiment)
+# NTHMP test problems 2 and 5: Solitary wave on a composite beach (analytical solution and experiment)
 
 This problem covers benchmarks 2 and 5 from the NTHMP test suite. The test data
 and a problem description is available in 
