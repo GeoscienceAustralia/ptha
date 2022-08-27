@@ -117,14 +117,14 @@ program nesting_reflection
     integer(ip), parameter :: n_domains = 2_ip
     ! Allow overshoots to prevent excess dissipation
     real(dp), parameter :: nonlinear_theta = 4.0_dp
-    character(len=charlen) :: compute_fluxes_inner_method = "DE1_low_fr_diffusion" ! "DE1" -- distinguishes 'rk2' and 'midpoint'
+    character(len=charlen) :: compute_fluxes_inner_method = "DE1_low_fr_diffusion" ! Default
 
     !@ Alternate version -- shows the dissipation of the regular 'DE1' type approach.
     !@ Similar behaviour is seen in 1D "Basilisk", which employs a very similar algorithm.
     !@ Note the dissipation also occurs with >1 domain (but n_domains=1 for simplicity here)
     !integer(ip), parameter :: n_domains = 1_ip
     !real(dp), parameter :: nonlinear_theta = 1.3_dp
-    !character(len=charlen), parameter :: compute_fluxes_inner_method = 'DE1' !'DE1_low_fr_diffusion'
+    !character(len=charlen), parameter :: compute_fluxes_inner_method = 'DE1' ! More diffusive
 
     character(len=charlen) :: ts_method
 
