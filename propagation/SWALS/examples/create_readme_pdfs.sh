@@ -4,4 +4,4 @@ for i in ./README.md ./*/README.md ./nthmp/*/README.md; do echo $i; cd $(dirname
 
 
 # Combine to a single pdf
-gs -dNOPAUSE -sDEVICE=pdfwrite -SOUTPUTFILE=all_test_problems.pdf -dBATCH README.pdf ./*/README.pdf ./nthmp/*/README.pdf
+gs -dNOPAUSE -sDEVICE=pdfwrite -SOUTPUTFILE=all_test_problems.pdf -dBATCH ./nthmp/README.pdf ./nthmp/*/README.pdf README.pdf ./*/README.pdf 
