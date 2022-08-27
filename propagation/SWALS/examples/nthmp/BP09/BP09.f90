@@ -18,11 +18,12 @@ module local_routines
         real(dp), allocatable:: x(:), y(:)
         type(multi_raster_type):: elevation_data, stage_data
         real(dp), allocatable :: random_uniform(:)
+
         ! Use this to check the effect of very small perturbations of the initial condition
-        ! Eventually  a tiny perturbation will lead to differences in the results. This seems comparable
-        ! to the differences that eventually emerge in DEFAULT openmp/coarray versions, which seem
-        ! to begin with differences of this order in elevation/stage. That case is due to differences in
-        ! domain partitioning, and can be eliminated by providing a load_balance_partition.txt file
+        ! Eventually  a tiny perturbation will eventually lead to differences in the results. 
+        ! This seems comparable to the differences that eventually emerge with different 
+        ! domain partitioning (with can be eliminated by providing a load_balance_partition.txt 
+        ! file)
         real(dp), parameter :: random_perturbation_scale = 0.0e-10_dp
 
         ! Stage
@@ -72,15 +73,10 @@ module local_routines
             call domain%smooth_elevation(smooth_method = 'cliffs')
         end if
 
-        !call domain%smooth_elevation()
-
         deallocate(x,y, random_uniform)
 
-        !print*, 'CONSTANT ELEVATION FOR TESTING'
-        !domain%U(:,:, ELV) = -20.0_dp 
-
         if(domain%timestepping_method /= 'linear') then
-            domain%manning_squared = 0.02_dp * 0.02_dp !0.0_dp !0.025_dp * 0.025_dp
+            domain%manning_squared = 0.02_dp * 0.02_dp
         else
             ! Clip depths in linear solver, to avoid 'stage below the bed'
             where(domain%U(:,:,ELV) < 0.0_dp .and. domain%U(:,:,ELV) > -5.0_dp) domain%U(:,:,ELV) = -5.0_dp
@@ -88,9 +84,6 @@ module local_routines
 
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-07_dp)
-
-        !write(log_output_unit,*) 'DEBUG: SETTING STAGE TO ZERO'
-        !domain%U(:,:,STG) = max(0.0_dp, domain%U(:,:,ELV) + 1.0e-07_dp)
 
         write(log_output_unit,*) 'Stage range is: ', minval(domain%U(:,:,STG)), maxval(domain%U(:,:,STG))
         write(log_output_unit,*) 'Elev range is: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
@@ -106,17 +99,16 @@ program BP09
     !! NTHMP benchmark problem 9 -- Okushiri tsunami field test case
     !!
 
-    use global_mod, only: ip, dp, minimum_allowed_depth, charlen, default_nonlinear_timestepping_method,&
+    use global_mod, only: ip, dp, charlen, default_nonlinear_timestepping_method,&
         default_linear_timestepping_method
-    use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
-    use boundary_mod, only: flather_boundary, transmissive_boundary
-    use local_routines
-    use timer_mod
+    use multidomain_mod, only: multidomain_type
+    use boundary_mod, only: flather_boundary
+    use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit, send_log_output_to_file
     use stop_mod, only: generic_stop
-    use iso_c_binding, only: C_DOUBLE !, C_INT, C_LONG
     use coarray_intrinsic_alternatives, only : swals_mpi_init, swals_mpi_finalize
+    use iso_c_binding, only: C_DOUBLE
+    use local_routines
 
     implicit none
 
@@ -130,34 +122,32 @@ program BP09
     real(dp), parameter :: mesh_refine = 0.4_dp ! Good for more efficient testing
     !real(dp), parameter :: mesh_refine = 1.0_dp ! Standard
 
-    ! Optionally put a "very high res" domain around monai. Slows things down and the code requires care
-    ! If this is true, then also use "mesh_refine = 1.0_dp"
-    !logical, parameter:: very_high_res_monai = .true. 
-    logical, parameter:: very_high_res_monai = .false.
-
-    ! If using very high res domain, then reduce the entire model timestep when it becomes active
-    real(dp), parameter :: very_high_res_timestep_reduction = 10.0_dp
-    ! Assume(require) the very high res domain is dry before this time. If not set correctly, expect the wrong answer!
-    real(dp), parameter :: very_high_res_static_before_time = 235.0_dp
-
     ! Approx timestep between outputs
-    real(dp), parameter :: approximate_writeout_frequency = 7.50_dp !0.6_dp * (1.0_dp/0.4_dp ) * 1.0_dp/3.0_dp!7.50_dp
+    real(dp), parameter :: approximate_writeout_frequency = 7.50_dp
     real(dp), parameter :: final_time = 3600.0_dp * 1.0_dp
-    !real(dp), parameter :: final_time = 30.0_dp * 1.0_dp
-    !real(dp), parameter :: approximate_writeout_frequency = 0.2_dp
-    !real(dp), parameter :: final_time = 10.0_dp
 
     ! Length/width
-    real(dp), parameter, dimension(2):: global_lw = [3.9_dp, 4.6_dp]
+    real(dp), parameter :: global_lw(2) = [3.9_dp, 4.6_dp]
     ! Lower-left corner coordinate
-    real(dp), parameter, dimension(2):: global_ll = [137.6_dp, 39.6_dp]
-    ! grid size (number of x/y cells). Note that dx is in lon/lat, so an increment of dx(1) is smaller than dx(2)
-    integer(ip), parameter, dimension(2):: global_nx = nint(global_lw*[77, 100]*1.12_dp*mesh_refine)
+    real(dp), parameter :: global_ll(2) = [137.6_dp, 39.6_dp]
+    ! grid size (number of x/y cells). 
+    integer(ip), parameter :: global_nx(2) = nint(global_lw*[77, 100]*1.12_dp*mesh_refine)
 
     ! Refinement factor for domains
     integer(ip), parameter :: nest_ratio = 5_ip
+
     ! The global (i.e. outer-domain) time-step in the multidomain 
-    real(dp) ::  global_dt = 0.60_dp * (1.0_dp/mesh_refine) * (1.0_dp / 3.0_dp)
+    real(dp) ::  global_dt = 0.20_dp * (1.0_dp/mesh_refine)
+
+    !! Optionally put a "very high res" domain around monai. Slows things down and the code requires care
+    !! If this is true, then also use "mesh_refine = 1.0_dp"
+    !logical, parameter:: very_high_res_monai = .false.
+    !! If using very high res domain, reduce the entire model timestep when it becomes active
+    !real(dp), parameter :: very_high_res_timestep_reduction = 10.0_dp
+    !! If using a very high res domain, assume it is dry before this time. 
+    !! If not set correctly, expect the wrong answer!
+    !real(dp), parameter :: very_high_res_static_before_time = 235.0_dp
+
 
     ! Useful misc variables
     integer(ip):: j, nd
@@ -171,34 +161,27 @@ program BP09
     call generic_stop
 #endif
     
-    ! nd domains in this model
-    if(very_high_res_monai) then
-        ! In this case we put a 30cm x 30cm cell domain around the monai inundation peak (with mesh_refine=1.0_dp)
-        !
-        ! It leads to a peak of > 30.0m with mesh_refine=1.0_dp (vs 31.7 obs, although the latter varies depending on which
-        ! dataset is used).
-        !
-        ! The model needs various modifications to do this stably, and it takes more than twice as long.
-        !
-        ! Keep in mind the poor quality bathymetry, the steep slopes (making SWE 
-        ! questionable), highly localised nature of the runup-peak, and low quality observations. 
-        ! While the result is good, there are many ways in which to question it.
-        nd = 7
-    else
+    !! nd domains in this model
+    !if(very_high_res_monai) then
+    !    ! In this case we put a 30cm x 30cm cell domain around the monai inundation peak (with mesh_refine=1.0_dp)
+    !    !
+    !    ! It leads to a peak of > 30.0m with mesh_refine=1.0_dp (vs 31.7 obs, although the latter varies depending on which
+    !    ! dataset is used).
+    !    !
+    !    ! The model needs various modifications to do this stably, and it takes more than twice as long.
+    !    nd = 7
+    !else
         ! This case has a domain res ~ 1.5x1.5m around the monai inundation peak (with mesh_refine = 1.0_dp)
         !
         ! It leads to a peak of >28.0m with mesh_refine=1.0_dp (vs 31.7 obs, although the latter varies depending on which
         ! dataset is used). So the very_high_res_monai case does better.
-        !
-        ! Keep in mind the poor quality bathymetry, the steep slopes (making SWE 
-        ! questionable), highly localised nature of the runup-peak, and low quality observations. 
-        ! While the result is good, there are many ways in which to question it.
         nd = 6
-    end if
+    !end if
 
     allocate(md%domains(nd))
 
-    ! Need to provide a load_balance_partition.txt file to get exact reproducibility in openmp/coarray
+    ! Need to provide a load_balance_partition.txt file to get exact reproducibility 
+    ! with varying number of openmp threads & MPI ranks
     call get_command_argument(1, md%load_balance_file)
 
     !
@@ -235,7 +218,7 @@ program BP09
     md%domains(3)%timestepping_method = default_nonlinear_timestepping_method
     md%domains(3)%cliffs_minimum_allowed_depth = 1.0_dp
 
-    ! The monai domain 
+    ! The Monai domain 
     call md%domains(4)%match_geometry_to_parent(&
         parent_domain=md%domains(3), &
         lower_left  = [139.38_dp, 42.0828_dp], &
@@ -268,32 +251,23 @@ program BP09
     md%domains(6)%timestepping_method = default_nonlinear_timestepping_method  
     md%domains(6)%cliffs_minimum_allowed_depth = 0.2_dp
 
-    if(very_high_res_monai) then
-        ! An even more detailed Monai domain
-        call md%domains(7)%match_geometry_to_parent(&
-            parent_domain=md%domains(5), &
-            !lower_left  = [139.4176_dp, 42.0935_dp], &
-            lower_left  = [139.4230_dp, 42.09896_dp], &
-            !upper_right = [139.4299_dp, 42.1046_dp], &
-            upper_right = [139.4254_dp, 42.09995_dp], &
-            dx_refinement_factor = nest_ratio, &
-            timestepping_refinement_factor = 6_ip,&
-            rounding_method='nearest')
-        ! Older versions of the code needed euler for stability. Does it still?
-        md%domains(7)%timestepping_method = 'euler'  
-        ! Should be dry before this time -- note also we change the time-step 
-        ! in the evolve loop on the basis of this value
-        md%domains(7)%static_before_time = very_high_res_static_before_time
-    end if
-
-    do j = 1, size(md%domains)
-        ! Nearly turn off limiting
-        !md%domains(j)%theta = 4.0_dp
-
-        ! Eddy viscosity
-        !if(md%domains(j)%timestepping_method /= default_linear_timestepping_method) md%domains(j)%use_eddy_viscosity=.true.
-    end do
-
+    !if(very_high_res_monai) then
+    !    ! An even more detailed Monai domain
+    !    call md%domains(7)%match_geometry_to_parent(&
+    !        parent_domain=md%domains(5), &
+    !        !lower_left  = [139.4176_dp, 42.0935_dp], &
+    !        lower_left  = [139.4230_dp, 42.09896_dp], &
+    !        !upper_right = [139.4299_dp, 42.1046_dp], &
+    !        upper_right = [139.4254_dp, 42.09995_dp], &
+    !        dx_refinement_factor = nest_ratio, &
+    !        timestepping_refinement_factor = 6_ip,&
+    !        rounding_method='nearest')
+    !    ! Older versions of the code needed euler for stability.
+    !    md%domains(7)%timestepping_method = 'euler'  
+    !    ! Should be dry before this time -- note also we change the time-step 
+    !    ! in the evolve loop on the basis of this value
+    !    md%domains(7)%static_before_time = very_high_res_static_before_time
+    !end if
 
     ! Allocate domains and prepare comms
     call md%setup()
@@ -311,8 +285,7 @@ program BP09
     end do
     call md%make_initial_conditions_consistent()
     
-    ! NOTE: For stability in 'null' regions, we set them to 'high land' that
-    ! should be inactive. 
+    ! For stability in 'null' regions, we set them to 'high land' that should be inactive. 
     call md%set_null_regions_to_dry()
    
     write(log_output_unit,*) 'End setup'
@@ -345,20 +318,20 @@ program BP09
         ! Finish looping at some point
         if (md%domains(1)%time > final_time) exit
 
-        if(very_high_res_monai) then
-            ! Take a different time step once the high res domain starts evolving.
-            ! This will introduce a (formal) first-order error into the linear leap-frog scheme,
-            ! because that requires a fixed time step, but only at the change in time point.
-            ! But practically no problem (?).
-            if(md%domains(1)%time < md%domains(7)%static_before_time) then
-                call md%evolve_one_step(global_dt)
-            else
-                call md%evolve_one_step(global_dt/very_high_res_timestep_reduction)
-            end if
-        else
+        !if(very_high_res_monai) then
+        !    ! Take a different time step once the high res domain starts evolving.
+        !    ! This will introduce a (formal) first-order error into the linear leap-frog scheme,
+        !    ! because that requires a fixed time step, but only at the change in time point.
+        !    ! But practically no problem (?).
+        !    if(md%domains(1)%time < md%domains(7)%static_before_time) then
+        !        call md%evolve_one_step(global_dt)
+        !    else
+        !        call md%evolve_one_step(global_dt/very_high_res_timestep_reduction)
+        !    end if
+        !else
             ! Regular case
             call md%evolve_one_step(global_dt)
-        end if
+        !end if
 
     end do
 

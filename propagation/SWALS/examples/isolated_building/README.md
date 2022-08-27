@@ -20,7 +20,7 @@ At this resolution the numerical model captures the broad main of the flow, but 
 
 ![Stage time-series at gauges 1-5](Gauges_stage_plot_testcase.png)
 
-![Velocity in the downstream (x) direction at gauges 1-5](Gauges_Vvel_plot_testcase.png)
+![Velocity in the downstream (x) direction at gauges 1-5](Gauges_Uvel_plot_testcase.png)
 
 ![Velocity in the cross-flume (y) direction at gauges 1-5](Gauges_Vvel_plot_testcase.png)
 

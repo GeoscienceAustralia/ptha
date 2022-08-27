@@ -9,17 +9,25 @@ GAUGE_TS_ERR_TOL = 0.1
 x = get_all_recent_results(sort(Sys.glob('OUTPUTS/RUN_*/RUN_*'), decreasing=TRUE)[1], quiet=TRUE)
 m1 = read.csv('../test_repository/BP07-DmitryN-Monai_valley_beach/output_ch5-7-9.csv')
 
-pdf('gauges_plot.pdf', width=18, height=12)
+#pdf('gauges_plot.pdf', width=18, height=12)
+png('gauges_plot.png', width=12, height=8, units='in', res=200)
 par(mfrow=c(3,1))
-plot(x$gauges$time, x$gauges$time_var$stage[1,], t='o', ylim=c(-0.01, 0.045), xlim=c(0,30))
+par(mar=c(5.1,5.1, 4.1, 2.1))
+plot(x$gauges$time, x$gauges$time_var$stage[1,], t='o', ylim=c(-0.01, 0.045), xlim=c(0,30),
+    xlab='Time (s)', ylab='Stage (m)', cex.lab=2, cex.axis=2)
 points(m1[,1], m1[,2]/100, t='l', col='red', lwd=2)
-grid(); title('Gauge 5', cex.main=2)
-plot(x$gauges$time, x$gauges$time_var$stage[2,], t='o', ylim=c(-0.01, 0.045), xlim=c(0,30))
+grid(); title('Gauge 5', cex.main=2.5)
+legend('topleft', c('Model', 'Observed'), lty=rep('solid',2), pch=c(1, NA), col=c('black', 'red'), 
+       bty='n', cex=2)
+plot(x$gauges$time, x$gauges$time_var$stage[2,], t='o', ylim=c(-0.01, 0.045), xlim=c(0,30),
+    xlab='Time (s)', ylab='Stage (m)', cex.lab=2, cex.axis=2)
 points(m1[,1], m1[,3]/100, t='l', col='red', lwd=2)
-grid(); title('Gauge 7', cex.main=2)
-plot(x$gauges$time, x$gauges$time_var$stage[3,], t='o', ylim=c(-0.01, 0.045), xlim=c(0,30))
+grid(); title('Gauge 7', cex.main=2.5)
+plot(x$gauges$time, x$gauges$time_var$stage[3,], t='o', ylim=c(-0.01, 0.045), xlim=c(0,30),
+    xlab='Time (s)', ylab='Stage (m)', cex.lab=2, cex.axis=2)
 points(m1[,1], m1[,4]/100, t='l', col='red', lwd=2)
-grid(); title('Gauge 9', cex.main=2)
+grid(); title('Gauge 9', cex.main=2.5)
+dev.off()
 
 #
 # Pass/Fail tests that we reasonably match the observed time-series at the
@@ -42,8 +50,6 @@ for(i in 2:4){
     }
 }
 
-par(mfrow=c(1,2))
-
 im_xlim = c(4.6, 5.2)
 im_ylim = c(1.5, 2.2)
 
@@ -51,27 +57,33 @@ im_ylim = c(1.5, 2.2)
 ts = c(15.3, 15.8, 16.3, 16.8, 17.3) - 0.2
 rasts = paste0('../test_repository/BP07-DmitryN-Monai_valley_beach/Frame_', c(10, 25, 40, 55, 70),'_line.png')
 for(i in 1:5){
-    image(x$xs, x$ys, x$elev[,,1], col=grey(seq(0,1,len=255)), xlim=im_xlim, ylim=im_ylim, asp=1)
+
+
+    png(paste0('snapshot_time_', round(ts[i], 3), '.png'), width=18, height=12, units='in', res=200)
+    par(mfrow=c(1,2))
+    image(x$xs, x$ys, x$elev[,,1], col=grey(seq(0,1,len=255)), xlim=im_xlim, ylim=im_ylim, asp=1,
+        cex.lab=2, cex.axis=2, xlab='x(m)', ylab='y(m)')
     contour(x$xs, x$ys, x$elev[,,1], add=TRUE, levels=seq(-.1, 0.1, by=0.01))
 
     ind = which.min(abs(x$time - ts[i]))
     wet = x$stage[,,ind] > (x$elev[,,1] + 2.0e-03)
     
     contour(x$xs, x$ys, wet, add=TRUE, levels=c(0.5), col='red', lwd=3) 
-    title(paste0('Time ', ts[i], ' s'))
+    title(paste0('Time ', ts[i], ' s'), cex.main=2.5)
 
     points(x$gauges$lon, x$gauges$lat, col='green', pch=19)
     text(x$gauges$lon, x$gauges$lat, col='green', c('G5', 'G7', 'G9'), pos=3, cex=1.5)
 
     snapshot1 = brick(rasts[i])
     plotRGB(flip(t(snapshot1), direction='x'))
+
+    dev.off()
 }
 
-dev.off()
+#dev.off()
 
 
-# Peak runup at points, from 6 runs of the experiment
-## Yamazaki, Y (2009)
+# Peak runup at points, from 6 runs of the experiment [included in NTHMP test problem]
 ## 
 ##                                             Case NO.
 ##                      109_105  109_106  109_107  210_101  210_102  210_103  
@@ -95,6 +107,9 @@ range_list = list(
 )
 
 #print('Checking peak stage at 3 reported gauges')
+modelled_stage_maxima = rep(NA, 3)
+experimental_maxima = rep(NA, 3)
+experimental_minima = rep(NA, 3)
 for(i in 1:3){
 
     # Check that the gauge level is between the observed levels in repeated experiments
@@ -107,4 +122,18 @@ for(i in 1:3){
         #print(c('FAIL', stagei))
         print('FAIL')
     }
+
+    modelled_stage_maxima[i] = stagei
+    experimental_maxima[i] = rangei[2]
+    experimental_minima[i] = rangei[1]
 }
+
+# Store the runup values
+outputs = data.frame(
+    x = c(5.1575, 5.0300, 4.9975),
+    y = c(1.8800, 2.2062, 2.3200),
+    model = modelled_stage_maxima,
+    experiment_lower_limit = experimental_minima,
+    experiment_upper_limit = experimental_maxima)
+
+write.csv(round(outputs, 4), 'model_vs_experiment_test_result.csv', row.names=FALSE)

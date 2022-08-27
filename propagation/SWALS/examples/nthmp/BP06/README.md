@@ -40,7 +40,7 @@ Figure 1 compares the SWALS model with the gauge time-series. For early times th
 
 ![Figure 1: Modelled and observed time-series at offshore gauges, Case A](Gauges_plot_A_default.png)
 
-Figure 2 compares the modelled and observed runups around the island. For this case there is a large difference between the two available sets of runup data. The SWALS runups agree well with the reference FUNWAVE shallow water simulation, and with the "alternative" runup data, but are significantly larger than the NTHMP runup data.
+Figure 2 compares the modelled and observed runups around the island. For this case there is a large difference between the two available sets of runup data. The SWALS runups agree well with the reference FUNWAVE shallow water simulation, and with the "alternative" runup data, but are significantly larger than the NTHMP runup data. This does not imply that the alternative data is necessarily more accurate. While that could be true, it is also plausible that both shallow water models over-estimate runup (e.g. due to neglect of dispersion or imperfect forcing).
 
 ![Figure 2: Modelled and observed runup maxima around the island, Case A](Runup_plot_A_default.png)
 
@@ -50,7 +50,7 @@ Figure 3 compares the SWALS model with the gauge time-series. For early times th
 
 ![Figure 3: Modelled and observed time-series at offshore gauges, Case B](Gauges_plot_B_default.png)
 
-Figure 4 compares the modelled and observed runups around the island. The SWALS runups are similar to the datasets. They are also similar reference FUNWAVE shallow water simulation, except around 200-350 degrees where the SWALS model predicts less runup. This is due to the different forcings of the FUNWAVE and SWALS models herein; if we run the SWALS model with the analytical forcing (as used in the FUNWAVE model) then it produces runups similar to the FUNWAVE model in this region. 
+Figure 4 compares the modelled and observed runups around the island. The SWALS runups are similar to the datasets. They are also similar to the reference FUNWAVE shallow water simulation, except around 200-350 degrees where the SWALS model predicts less runup. This is due to the different forcings of the FUNWAVE and SWALS models herein; if we run the SWALS model with the analytical forcing (as used in the FUNWAVE model) then it produces runups similar to the FUNWAVE model in this region. 
 
 ![Figure 4: Modelled and observed runup maxima around the island, Case B](Runup_plot_B_default.png)
 
