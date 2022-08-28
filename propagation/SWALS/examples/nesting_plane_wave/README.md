@@ -16,7 +16,7 @@ The finite volume algorithms can also solve this problem, but are less accurate 
 
 ![Solution with the finite-volume `midpoint` flow algorithm](cycle_solution_midpoint.png)
 
-To prevent the finite-volume slope-limiters from excessively dissipating the wave packet, this SWALS model is setup to use a non total-variation-diminishing slope-limiter (setting `md%domains(..)%theta = 4.0`; the limiters are  TVD for values less than 2). Without this, the wave packet would be noticeably attenuated. The same numerical issues arise in another model (Basilisk) that implements a very similar finite volume scheme as SWALS. 
+To prevent the finite-volume slope-limiters from excessively dissipating the wave packet, this SWALS model is setup to use a non total-variation-diminishing slope-limiter (setting `md%domains(..)%theta = 4.0`; the limiters are  TVD for values less than 2). Without this, the wave packet would be noticeably attenuated. The same numerical issues arise in another model (Basilisk, see code in [basilisk_model](basilisk_model)) that implements a very similar finite volume scheme as SWALS. 
 
 This problem highlights that, compared to the staggered grid schemes, the finite-volume schemes are simply less well suited to long distance wave propagation at low Froude-numbers, such as global scale tsunami propagation to far-field sites. The advantages of the finite-volume schemes arise for more strongly nonlinear problems, including inundation. In practice these kinds of numerical issues can be detected using convergence tests, i.e., checking for numerical changes in the solution as the model is run with increasingly fine grid resolutions.
 
