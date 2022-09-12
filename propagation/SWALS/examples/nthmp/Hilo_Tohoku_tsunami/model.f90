@@ -15,7 +15,7 @@ module local_routines
     type :: boundary_information_type
         character(charlen):: bc_file
         real(dp), allocatable:: boundary_data(:,:)
-        type(linear_interpolator_type):: gauge4_ts_function
+        type(linear_interpolator_type):: gauge_ts_function
         real(dp):: boundary_elev
         real(dp):: t0 = 0.0_dp
     end type
@@ -59,7 +59,7 @@ module local_routines
         boundary_information%boundary_data(nr - skip + extra,2) = &
             boundary_information%boundary_data(nr - skip + extra - 1, 2)
 
-        call boundary_information%gauge4_ts_function%initialise(&
+        call boundary_information%gauge_ts_function%initialise(&
                 boundary_information%boundary_data(:,1), &
                 boundary_information%boundary_data(:,2))
         boundary_information%t0 = boundary_information%boundary_data(1,1)
@@ -76,12 +76,12 @@ module local_routines
         real(dp) :: local_elev, dhdt(1), dt, next_h(1)
 
         ! Set the stage
-        call boundary_information%gauge4_ts_function%eval(&
+        call boundary_information%gauge_ts_function%eval(&
             [t + boundary_information%t0], stage_uh_vh_elev(1:1))
       
         ! Get the time-derivative of stage. Useful for some approaches
         dt = 1.0e-06
-        call boundary_information%gauge4_ts_function%eval(&
+        call boundary_information%gauge_ts_function%eval(&
             [t + boundary_information%t0 + dt], next_h)
         dhdt = (next_h(1)/dt - stage_uh_vh_elev(1)/dt)
        
@@ -157,13 +157,13 @@ module local_routines
         print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), &
             maxval(domain%U(:,:,ELV))
 
-        ! A bit unclear how this boundary should be treated -- but works ok
+        ! A bit unclear how this boundary should be treated -- a wall works ok
         wall = 20._dp
         domain%U((domain%nx(1)-1):domain%nx(1),:,ELV) = wall
 
         ! Friction 
         if(domain%timestepping_method /= 'linear') then
-            domain%manning_squared = 0.025_dp * 0.025_dp
+            domain%manning_squared = 0.025_dp**2
         end if
 
         ! Ensure stage >= elevation
@@ -212,7 +212,7 @@ program Hilo_harbour_Tohoku
     character(len=charlen) ::  bc_file = './boundary/se_dat_converted.csv'
     real(dp) :: bc_elev
 
-    ! The domain has resolution = 1/3 arc-sec. Make sure our model is inside this
+    ! The elevation has resolution = 1/3 arc-sec. Make sure our model is inside this
     real(dp), parameter :: onethird_arcsec = 1.0_dp / (3.0_dp * (60.0_dp**2) )
     ! Length/width
     real(dp), parameter :: global_lw(2) = [0.065_dp, 0.05_dp] - (4 * onethird_arcsec) 
@@ -235,10 +235,10 @@ program Hilo_harbour_Tohoku
 
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
-    md%domains(1)%lw = global_lw * ( ( 1.0_dp * md%domains(1)%nx ) / (1.0_dp * global_nx) )
+    md%domains(1)%lw = global_lw
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
-    md%domains(1)%static_before_time = 1920.0_dp
+    md%domains(1)%static_before_time = 1920.0_dp ! No need to evolve prior to this time
 
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, &
         ' dx: ', md%domains(1)%dx, ' nx: ', md%domains(1)%nx
@@ -263,6 +263,8 @@ program Hilo_harbour_Tohoku
     call md%make_initial_conditions_consistent 
     call md%set_null_regions_to_dry()
 
+    ! The elevation has a flat area near the boundary (see NTHMP problem blurb for discussion).
+    ! Get min elevation there as we use it in the boundary forcing.
     bc_elev = HUGE(1.0_dp)
     do j = 1, size(md%domains)
         bc_elev = min(bc_elev, minval(md%domains(j)%U(:,:,4)))
@@ -270,9 +272,6 @@ program Hilo_harbour_Tohoku
     ! Build boundary conditions
     call setup_boundary_information(bc_file, bc_elev)
 
-    ! Setup hazard points
-    call md%set_point_gauges_from_csv("point_gauges.csv", skip_header=1_ip)
-   
     do j = 1, size(md%domains) 
         select case(boundary_type)
         case('flather_with_vh_from_continuity')
@@ -284,6 +283,9 @@ program Hilo_harbour_Tohoku
         end select
         md%domains(j)%boundary_function => boundary_function
     end do
+
+    ! Setup hazard points
+    call md%set_point_gauges_from_csv("point_gauges.csv", skip_header=1_ip)
    
     ! Print the gravity-wave CFL limit, to guide timestepping
     do j = 1, size(md%domains)
