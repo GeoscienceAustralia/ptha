@@ -107,13 +107,16 @@ err_stats = rep(NA, length(domain_inds))
 for(time_ind in time_inds){
     png(paste0('Compare_omp_ompLocalTS_time_index_', time_ind, '.png'), width=18, height=10, res=300, units='in')
     par(mfrow = c(3,4))
+    par(mar = c(5,6,2,4))
     par(oma=c(0, 1, 0, 1))
     for(domain_ind in domain_inds){
         xOMP = merge_domains_nc_grids(multidomain_dir=md_omp, domain_index=domain_ind, desired_var=desired_var, desired_time_index=time_ind)
         xCA  = merge_domains_nc_grids(multidomain_dir=md_ca,  domain_index=domain_ind, desired_var=desired_var, desired_time_index=time_ind)
-        image.plot(xOMP$xs, xOMP$ys, xOMP[[desired_var]] - xCA[[desired_var]], asp=1, main=paste0(domain_ind, ' difference'))
+        image.plot(xOMP$xs, xOMP$ys, xOMP[[desired_var]] - xCA[[desired_var]], asp=1, main=paste0('domain ', domain_ind, ': ', desired_var, ' difference'), 
+                   cex.main=2, xlab="", ylab="", cex.axis=1.5, axis.args=list(cex.axis=1.5))
         err_stats[domain_ind] = max(abs(xOMP[[desired_var]] - xCA[[desired_var]]), na.rm=TRUE)/diff(range(xOMP[[desired_var]], na.rm=TRUE))
-        image.plot(xOMP$xs, xOMP$ys, xOMP[[desired_var]], asp=1, main=paste0(domain_ind, ' omp'))
+        image.plot(xOMP$xs, xOMP$ys, xOMP[[desired_var]], asp=1, main=paste0('domain ', domain_ind, ': ', desired_var, ' solution'), 
+                   cex.main=2, xlab="", ylab="", cex.axis=1.5, axis.args=list(cex.axis=1.5))
     }
     dev.off()
 
@@ -123,7 +126,7 @@ for(time_ind in time_inds){
         if(max(err_stats) < 1.0e-01 & min(err_stats) < 1e-05 & median(err_stats) < 0.02){
             print('PASS')
         }else{
-            print('FAIL')
+            print(c('FAIL', err_stats))
         }
     }else if(time_ind == time_inds[2]){
         # By now the models differ more significantly on some domains.
