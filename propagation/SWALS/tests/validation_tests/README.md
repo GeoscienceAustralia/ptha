@@ -18,7 +18,7 @@ Aside from genuine bugs, `FAIL` statements may reflect the ad-hoc nature of the 
 
 The outputs should be similar to below, but may be interspersed with messages from the compiler and/or R. 
 
-The run times can vary greatly depending on your machine and compiler. This example used the `ifort` compiler on a half-node of NCI's Gadi machine. While `ifort` is a good compiler the compilation process is much slower than `gfortran`, although the executables are often faster.
+The time taken includes (for each problem) compilation, running the model, and post-processing. It can vary greatly depending on your machine and compiler. This example used the `ifort` compiler on a half-node of NCI's Gadi machine. While `ifort` is a good compiler the compilation process is much slower than `gfortran`, and for the smaller test problems compilation can domainate the recorded time.
 ```
 gxd547@gadi-cpu-clx-0792 validation_tests]$ Rscript run_validations.R 
 [1] ""
