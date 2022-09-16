@@ -16,7 +16,7 @@ Aside from genuine bugs, `FAIL` statements may reflect the ad-hoc nature of the 
 
 ## What the outputs should look like
 
-The outputs should be similar to below, but may be interspersed with messages from the compiler and/or R. 
+The outputs should be similar to below, but may be interspersed with messages from the compiler and/or R. Model run files and figures are created in the individual problem directories.
 
 The time taken includes (for each problem) compilation, running the model, and post-processing. It can vary greatly depending on your machine and compiler. This example used the `ifort` compiler on a half-node of NCI's Gadi machine. While `ifort` is a good compiler the compilation process is much slower than `gfortran`, and for the smaller test problems compilation can dominates the recorded time.
 ```
