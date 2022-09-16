@@ -8,7 +8,7 @@ The script here can be used to run test problems in `../../examples/*` and `../.
 
 This takes about an hour to run on my desktop (as of July 2022). It searches the test problem directories for scripts named `run_model.sh`, and runs them inside their parent directories. 
 
-Most tests use openmp parallelism alone, but a significant minority also use MPI. The commands controlling openmp and MPI (i.e. number of threads, ranks, etc) are determined by the script [../../src/test_run_commands.sh](../../src/test_run_commands). For easier portablility between machines the latter script usually just sources some machine specific script, such as [this example](../../src/test_run_commands_basic).
+Most tests use openmp parallelism alone, but a significant minority also use MPI. The commands controlling openmp and MPI (i.e. number of threads, ranks, etc) are determined by the script [../../src/test_run_commands.sh](../../src/test_run_commands). For easier portability between machines the latter script usually just sources some machine specific script, such as [this example](../../src/test_run_commands_basic).
 
 For each problem the `run_model.sh` scripts print multiple `PASS` (or `FAIL`) statements and, in most cases, make figures in the test problem directories. `FAIL` statements indicate the test criteria were not satisfied.
 
@@ -18,7 +18,7 @@ Aside from genuine bugs, `FAIL` statements may reflect the ad-hoc nature of the 
 
 The outputs should be similar to below, but may be interspersed with messages from the compiler and/or R. 
 
-The time taken includes (for each problem) compilation, running the model, and post-processing. It can vary greatly depending on your machine and compiler. This example used the `ifort` compiler on a half-node of NCI's Gadi machine. While `ifort` is a good compiler the compilation process is much slower than `gfortran`, and for the smaller test problems compilation can domainate the recorded time.
+The time taken includes (for each problem) compilation, running the model, and post-processing. It can vary greatly depending on your machine and compiler. This example used the `ifort` compiler on a half-node of NCI's Gadi machine. While `ifort` is a good compiler the compilation process is much slower than `gfortran`, and for the smaller test problems compilation can dominates the recorded time.
 ```
 gxd547@gadi-cpu-clx-0792 validation_tests]$ Rscript run_validations.R 
 [1] ""
