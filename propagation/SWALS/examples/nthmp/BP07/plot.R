@@ -1,5 +1,5 @@
 source('../../../plot.R')
-library(raster)
+suppressMessages(library(raster))
 
 # Tolerance for agreement in model/obs time-series at a few gauges.
 # This restricts the " mean(abs(error)) / observed_range "

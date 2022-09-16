@@ -107,7 +107,7 @@ dev.off()
 #
 
 source('../../../plot.R')
-library(fields)
+suppressMessages(library(fields))
 
 md_omp = Sys.glob('OUTPUTS/RUN*')[1]
 md_ca = Sys.glob('OUTPUTS/RUN*')[2]

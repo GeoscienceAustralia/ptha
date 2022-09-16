@@ -86,13 +86,18 @@ endif
 # If -DNOOPENMP was passed to the preprocessor, we should not link with openmp.
 ifeq ($(findstring DNOOPENMP, $(SWALS_PREPROCESSOR_FLAGS)),)
     # Case with openmp
-    # For coarray (e.g. 32 images), use SWALS_FC=mpif90 as the compiler, and add
-    # -coarray=distributed -coarray-num-images=32 to the SWALS_FC_FLAGS
-    # and -DCOARRAY -DCOARRAY_PROVIDE_CO_ROUTINES
-    SWALS_FC_FLAGS ?= -O3 -qopenmp -fpp -fPIC
+    # Quiet ifort warnings like this (which are compiler
+    # issues, not Fortran standard issues, and have apparently never been
+    # observed to create problems in the wild:
+    # https://community.intel.com/t5/Intel-Fortran-Compiler/warning-5462-Global-name-too-long-shortened-from-side-effects/m-p/1069914
+    # warning #5462: Global name too long, shortened from:
+    # domain_modone_leapfrog_truely_linear_plus_nonlinear_friction_step_mp_PRECOMPUTE_FRICTION_WORK
+    # to:
+    # main_modone_leapfrog_truely_linear_plus_nonlinear_friction_step_mp_PRECOMPUTE_FRICTION_WORK
+    SWALS_FC_FLAGS ?= -O3 -qopenmp -fpp -fPIC -diag-disable=5462
 else
     # Case without openmp
-    SWALS_FC_FLAGS ?= -O3 -fpp -fPIC
+    SWALS_FC_FLAGS ?= -O3 -fpp -fPIC -diag-disable=5462
 endif
 
 # Make it easier to append flags for hardware-specific optimization, such as
