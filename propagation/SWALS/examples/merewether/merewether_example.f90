@@ -42,7 +42,8 @@ module local_routines
         real(dp), parameter:: friction_road = 0.02_dp, friction_other = 0.04_dp
 
         ! things to help read polygons
-        character(len=charlen), allocatable:: house_filenames(:), polygon_filename
+        character(len=charlen), allocatable:: house_filenames(:)
+        character(len=charlen) :: polygon_filename
         integer(ip):: house_file_unit, inside_point_counter, house_cell_count
         real(dp), allocatable:: polygon_coords(:,:)
         logical, allocatable:: is_inside_poly(:)
@@ -170,7 +171,7 @@ module local_routines
         domain%forcing_context_cptr = c_loc(rainfall_region_indices)
         call domain%store_forcing()
 
-        deallocate(x,y, is_inside_poly)
+        deallocate(x,y, is_inside_poly, house_filenames, polygon_coords)
 
     end subroutine
 
@@ -281,7 +282,7 @@ program merewether
     end do
 
     write(log_output_unit, *) ''
-    write(log_output_unit, *) 'Expected mass change due to inflows (that SWALS does not account for in mass-tracking):'
+    write(log_output_unit, '(A)') 'Expected mass change due to inflows (that SWALS does not account for in mass-tracking):'
     write(log_output_unit, *) num_input_discharge_cells * md%domains(1)%time * product(md%domains(1)%dx) * rain_rate
     write(log_output_unit, *) ''
 
