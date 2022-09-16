@@ -1,6 +1,7 @@
 # NTHMP benchmark problem 7: Laboratory model of runup at Monai
 
 We simulate the experiment of Matsuyama and Tanaka (2001)
+
   * Matsuyama and Tanaka (2001), An experimental study of the highest run-up height in the 1993 Hokkaido Nansei-oki earthquake tsunami. ITS 2001 Proceedings, Session 7, Number 7-21.
 
 The experiment represents runup at Monai during the 1993 Okushiri tsunami event, which was higher than on much of the neighbouring coast. For the full field problem see [../BP09](../BP09). The test data and problem description are available in [Randy LeVeque's repository](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP07-DmitryN-Monai_valley_beach). This includes the flume geometry, boundary time-series, measured internal gauge time-series, runup photograph time-series, and measurements of runup maxima at several sites (the latter provided for multiple experimental runs).

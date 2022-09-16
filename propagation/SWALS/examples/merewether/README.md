@@ -35,12 +35,12 @@ The test code checks that:
 
 * The model conserves mass well. Because SWALS mass-conservation tracking does
   not account for the circular input discharge, we check that the latter
-precisely accounts the unexplained component of SWALS mass conservation
-calculations. 
+  precisely accounts the unexplained component of SWALS mass conservation
+  calculations. 
 
 * The model gives reasonable predictions of the max-depth at a number of sites
   with known max-depth (see Table 4 of Smith and Wasko 2012). In particular we
-check that the mean absolute error of the model is less than that obtained by
-some other models that use 0.5m, 1m and 2m grids (from Table 9 of Smith and Wasko,
-2012).
+  check that the mean absolute error of the model is less than that obtained by
+  some other models that use 0.5m, 1m and 2m grids (from Table 9 of Smith and Wasko,
+  2012).
 
