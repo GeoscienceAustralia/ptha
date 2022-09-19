@@ -2,12 +2,11 @@ module local_routines
     !!
     !! Setup NTHMP currents test problem -- Tohoku tsunami at Hilo Harbour with an artificial forcing.
     !!
-    use global_mod, only: dp, ip, charlen, wall_elevation
+    use global_mod, only: dp, ip, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use file_io_mod, only: count_file_lines
     use linear_interpolator_mod, only: linear_interpolator_type
-    use points_in_poly_mod, only: points_in_poly
 
     implicit none
 
@@ -134,22 +133,23 @@ module local_routines
         ! Stage
         domain%U(:,:,STG) = 0.0_dp
 
-        ! Set elevation with the raster
-        input_elevation = './bathymetry/hilo_grid_1_3_arsec.tif' 
-        call elevation_data%initialise([input_elevation])
-
         ! Make space for x/y coordinates, at which we will look-up the rasters
         allocate(x(domain%nx(1)), y(domain%nx(1)))
         x = domain%x
 
+        ! Set elevation with the raster
+        input_elevation = './bathymetry/hilo_grid_1_3_arsec.tif' 
+        call elevation_data%initialise([input_elevation])
         do j = 1, domain%nx(2)
             y = domain%y(j)
             call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), &
                 bilinear=1_ip)
         end do
         deallocate(x,y)
+        call elevation_data%finalise
 
         if(domain%timestepping_method == 'cliffs') then
+            ! For field problems CLIFFS typically needs a larger minimum depth
             domain%cliffs_minimum_allowed_depth = 0.1_dp
             call domain%smooth_elevation(smooth_method='cliffs')
         end if
@@ -157,9 +157,11 @@ module local_routines
         print*, 'Elevation range: ', minval(domain%U(:,:,ELV)), &
             maxval(domain%U(:,:,ELV))
 
-        ! A bit unclear how this boundary should be treated -- a wall works ok
-        wall = 20._dp
-        domain%U((domain%nx(1)-1):domain%nx(1),:,ELV) = wall
+        ! The east boundary should have some kind of single-sided Flather treatment. 
+        ! Not yet implemented, but a wall works ok in practice for the test problem.
+        !wall = 20._dp
+        !domain%U((domain%nx(1)-1):domain%nx(1),:,ELV) = wall
+        ! It also works OK just using the offshore forcing along this boundary.
 
         ! Friction 
         if(domain%timestepping_method /= 'linear') then
@@ -197,18 +199,23 @@ program Hilo_harbour_Tohoku
     ! Type holding all domains 
     type(multidomain_type) :: md
 
+    ! Used for timing the code
     type(timer_type) :: program_timer
 
     ! Increase resolution by this amount, e.g. 1.0 = 1/3 arcsec, 2.0 = 1/6 arcsec
     real(dp), parameter :: mesh_refine = 0.5_dp 
-    
+   
+    ! Largest timestep 
     real(dp) ::  global_dt = 0.27_dp / mesh_refine
+    ! Duration of simulation
     real(dp), parameter :: final_time = 23370.0_dp 
-
+    ! Do not evolve the domain for the first part of the simulation (until the tsunami comes)
+    real(dp), parameter :: static_before_time = 1920.0_dp 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 30.0_dp
-    integer(ip), parameter :: only_write_grids_every_nth_output_step = 1_ip
+    integer(ip), parameter :: only_write_grids_every_nth_output_step = 10_ip
 
+    ! Boundary data
     character(len=charlen) ::  bc_file = './boundary/se_dat_converted.csv'
     real(dp) :: bc_elev
 
@@ -232,13 +239,17 @@ program Hilo_harbour_Tohoku
     !
     ! Setup basic metadata
     !
-
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
     md%domains(1)%lw = global_lw
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
-    md%domains(1)%static_before_time = 1920.0_dp ! No need to evolve prior to this time
+    md%domains(1)%static_before_time = static_before_time ! No need to evolve prior to this time
+
+    ! Output variables to store
+    md%domains(1)%time_grids_to_store = [character(len=charlen):: 'stage', 'uh', 'vh']
+    md%domains(1)%nontemporal_grids_to_store = [character(len=charlen):: 'max_stage', 'max_speed', &
+        'elevation0']
 
     print*, 1, ' lw: ', md%domains(1)%lw, ' ll: ', md%domains(1)%lower_left, &
         ' dx: ', md%domains(1)%dx, ' nx: ', md%domains(1)%nx
@@ -251,7 +262,7 @@ program Hilo_harbour_Tohoku
         ! radiative with the leapfrog solvers. This bc is still not great, but better.
         boundary_type = 'flather_with_vh_from_continuity'
     else
-        ! Good for rk2 and related type solvers -- but poor for 
+        ! This boundary is good for rk2 and related type solvers -- but poor for 
         ! leapfrog_nonlinear, and not so good for cliffs.
         boundary_type = 'boundary_stage_radiation_momentum'
     end if
