@@ -129,9 +129,12 @@ points(gauges$time/3600 + boundary_hours_offset, smooth_speed, t='l', col='purpl
 
 points(i_top, t='l', col='grey')
 
-legend('topright', c('Data', 'Model (no averaging)', 'Model (6min average)', 'Model intercomparison: average 6min speed envelope'), 
-       pch=c(1, NA, NA, NA), lty=c(NA, 1, 1, 1),
-       col=c('black', 'red', 'purple', 'grey'), bty='n')
+legend('topleft', c('Data', 'Model (no averaging)', 'Model (6min average)'), 
+       pch=c(1, NA, NA), lty=c(NA, 1, 1),
+       col=c('black', 'red', 'purple'), bty='n')
+legend('topright', c('Model intercomparison: average 6min speed envelope'), 
+       pch=c(NA), lty=c(1),
+       col=c('grey'), bty='n')
 
 #
 # Velocity time-series, HA126
@@ -171,9 +174,12 @@ points(gauges$time/3600 + boundary_hours_offset, smooth_speed, t='l', col='purpl
 
 points(i_top, t='l', col='grey')
 
-legend('topright', c('Data', 'Model (no averaging)', 'Model (6min average)', 'Model intercomparison: average 6min speed envelope'), 
-       pch=c(1, NA, NA, NA), lty=c(NA, 1, 1, 1),
-       col=c('black', 'red', 'purple', 'grey'), bty='n')
+legend('topleft', c('Data', 'Model (no averaging)', 'Model (6min average)'), 
+       pch=c(1, NA, NA), lty=c(NA, 1, 1),
+       col=c('black', 'red', 'purple'), bty='n')
+legend('topright', c('Model intercomparison: average 6min speed envelope'), 
+       pch=c(NA), lty=c(1),
+       col=c('grey'), bty='n')
 
 dev.off()
 

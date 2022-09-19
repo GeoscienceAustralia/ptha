@@ -115,8 +115,11 @@ if(md_omp == md_ca){
 }
 
 # Plot difference between coarray/openmp at a particular time
-time_ind =  700
-desired_var = 'vh' # 'stage' does not show any differences, perhaps because the range is high (due to topography)?
+# Won't show up if we are specifying the load balance partition.
+error_tol = 0 # If we specify the load balance partition
+#error_tol = 1e-08 # If we don't specify the load balance partition
+time_ind =  78
+desired_var = 'vh' # 'stage' does not show differences in any case, perhaps because the range is high (due to topography)?
 domain_inds = 1
 err_stats = rep(NA, length(domain_inds))
 png(paste0('Compare_omp_coarray_time_index_', time_ind, '.png'), width=6, height=5, res=300, units='in')
@@ -124,12 +127,15 @@ par(mfrow = c(1,1))
 for(domain_ind in domain_inds){
     xOMP = merge_domains_nc_grids(multidomain_dir=md_omp, domain_index=domain_ind, desired_var=desired_var, desired_time_index=time_ind)
     xCA  = merge_domains_nc_grids(multidomain_dir=md_ca,  domain_index=domain_ind, desired_var=desired_var, desired_time_index=time_ind)
-    image.plot(xOMP$xs, xOMP$ys, xOMP[[desired_var]] - xCA[[desired_var]], asp=1)
+    image.plot(xOMP$xs, xOMP$ys, xOMP[[desired_var]] - xCA[[desired_var]], asp=1, 
+               main=paste0('Difference in ', desired_var, ' @ time-index ', time_ind,
+                           ' with different \n parallel treatments and the same domain partition'), 
+               xlab='Latitude', ylab='Longitude')
     err_stats[domain_ind] = max(abs(xOMP[[desired_var]] - xCA[[desired_var]]), na.rm=TRUE)
 }
 dev.off()
 
-if(all(err_stats < 1.0e-8)){
+if(all(err_stats <= error_tol)){
     print('PASS')
 }else{
     print('FAIL')
