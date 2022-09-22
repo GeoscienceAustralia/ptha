@@ -116,7 +116,7 @@ comptime = 100
 solend = free_surface_solution(comptime)
 
 #
-library(raster)
+suppressMessages(library(raster))
 r1 = raster(sol0, xmn=min(xs), xmx=max(xs), ymn=min(ys), ymx=max(ys))
 writeRaster(r1, file='initial_condition_file.tif', overwrite=TRUE, options=c('COMPRESS=DEFLATE'))
 

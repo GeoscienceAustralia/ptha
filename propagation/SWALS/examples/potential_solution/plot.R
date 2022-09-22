@@ -1,4 +1,4 @@
-library(raster)
+suppressMessages(library(raster))
 source('../../plot.R')
 
 source('potential_solution.R')

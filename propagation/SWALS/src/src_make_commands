@@ -10,18 +10,9 @@
 SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../../../.git log -n1 | head -n1 | tail -c41)
 
 
-#
-# Make a library
-# 
-ifeq ($(SWALS_CUDA_CC_ACTIVE),)
-    # If we don't have nvcc, then gracefully do nothing with the GPU code
-    SWALS_DEVICE_OBJECTS :=
-else
-    # These objects require cuda-c to do useful things
-    SWALS_DEVICE_OBJECTS :=gpu_interface_cu.o gpu_interface_mod.o test_gpu_interface_mod.o
-endif
+
 # REGULAR OBJECTS
-SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) coarray_intrinsic_alternatives_mod.o logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o date_to_numeric_mod.o linear_interpolator_mod.o grid_spacetime_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o timestepping_metadata_mod.o extrapolation_limiting_mod.o cliffs_tolkova_mod.o burn_into_grid_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o domain_mod.o forcing_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
+SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) coarray_intrinsic_alternatives_mod.o logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o date_to_numeric_mod.o linear_interpolator_mod.o grid_spacetime_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o timestepping_metadata_mod.o extrapolation_limiting_mod.o linear_dispersive_solver_mod.o cliffs_tolkova_mod.o burn_into_grid_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o domain_mod.o forcing_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
 
 
 # Make the library

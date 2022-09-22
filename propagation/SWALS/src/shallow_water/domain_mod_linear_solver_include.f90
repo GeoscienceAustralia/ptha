@@ -77,6 +77,11 @@
            var_indices=[STG, STG], flux_already_multiplied_by_dx=.FALSE.)
 
 
+       ! Store the last timestep in the dispersive solver
+       if(domain%use_dispersion) then
+           call domain%ds%store_last_U(domain%U)
+       end if
+
 
 EVOLVE_TIMER_START('LF_update_stage')
 
@@ -565,6 +570,14 @@ EVOLVE_TIMER_START('LF_update_UHVH')
         !!!!!$OMP END DO
         !$OMP END PARALLEL
         domain%time = domain%time + HALF_dp*dt
+
+
+        if(domain%use_dispersion) then
+            call domain%ds%solve_staggered_grid(&
+                domain%U, domain%dx(1), domain%dx(2), &
+                domain%distance_bottom_edge, domain%distance_left_edge, &
+                domain%msl_linear)
+        end if
 
 EVOLVE_TIMER_STOP('LF_update_UHVH')
 

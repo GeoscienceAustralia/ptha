@@ -1451,6 +1451,13 @@ module multidomain_mod
         thickness = (required_cells_ts_method ) * &
             domain%timestepping_refinement_factor + extra_cells_in_halo
 
+        if(thickness < domain%minimum_nesting_layer_thickness) then
+            ! In some situations we might want to force the thickness (e.g. if using multiple multidomains
+            ! with different timestepping methods, but we want them to have the same domains, say to simplify
+            ! the forcing treatment).
+            thickness = domain%minimum_nesting_layer_thickness
+        end if
+
         if(nint(max_parent_dx_ratio) > 1) then
             ! Now round up to be a multiple of the parent cell-sizes, and add another extra buffer
             thickness = (ceiling(thickness*1.0_dp/max_parent_dx_ratio) + extra_halo_buffer) * nint(max_parent_dx_ratio)

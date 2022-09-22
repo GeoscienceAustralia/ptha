@@ -48,6 +48,7 @@ module domain_mod
     use file_io_mod, only: mkdir_p
     use cliffs_tolkova_mod, only: cliffs, setSSLim
     use extrapolation_limiting_mod, only: limited_gradient_dx_vectorized
+    use linear_dispersive_solver_mod, only: dispersive_solver_type
 
 #ifdef SPHERICAL
     ! Compile with -DSPHERICAL to get the code to run in spherical coordinates
@@ -240,6 +241,12 @@ module domain_mod
             !! shiono/knight eddy-viscosity model. 
 
         !
+        ! Dispersion
+        !
+        logical :: use_dispersion = .false.
+        type(dispersive_solver_type) :: ds
+
+        !
         ! Nesting-related
         !
         type(domain_nesting_type) :: nesting
@@ -348,9 +355,12 @@ module domain_mod
             !!    [(1+exterior_cells_width):(domain%nx(1)-exterior_cells_width), &
             !!     (1+exterior_cells_width):(domain%nx(2)-exterior_cells_width)]
             !! NOTE: exterior_cells_width should only be used to influence mass conservation tracking calculations.
-            !! It is not strictly related to the halo width for parallel computations. When using a multidomain, the
+            !! It is not strictly related to the nesting layer thickness for parallel computations. When using a multidomain, the
             !! mass conservation tracking is somewhat different (based around subroutines with names matching
             !! 'nesting_boundary_flux_*')
+        integer(ip) :: minimum_nesting_layer_thickness = 0_ip
+            !! There are situations where we might want to force the nesting layer thickness for parallel computations.
+            !! Set this to the desired thickness. The actual value will not be less than this.
 
         !
         ! Output file content -- bespoke binary format (that is no longer properly supported, consider removing)
@@ -1244,6 +1254,9 @@ TIMER_STOP("compute_statistics")
             !$OMP END DO
             !$OMP END PARALLEL
         end if
+
+        ! Setup the dispersive solver type's data
+        if(domain%use_dispersion) call domain%ds%setup(nx, ny)
 
 
         if(create_output) then
