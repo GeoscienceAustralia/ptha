@@ -7,6 +7,8 @@ module file_io_mod
     use ragged_array_mod
     implicit none
 
+    ! Size of buffers used to read a file line with a-priori unknown size
+    integer, parameter :: bigcharlen = 65536
 
     contains
 
@@ -104,7 +106,7 @@ module file_io_mod
         character(len=charlen), intent(in):: csv_file !! Filename
         integer(ip), optional, intent(in):: skip_header !! Number of lines to skip in read
 
-        character(len=charlen):: local_buffer
+        character(len=bigcharlen):: local_buffer
         integer(ip) :: file_unit_no, file_columns, file_rows, i, skip_header_local
 
         if(present(skip_header)) then
@@ -122,6 +124,8 @@ module file_io_mod
 
         read(file_unit_no, '(A)') local_buffer
         rewind(file_unit_no)
+
+        if(local_buffer(bigcharlen:bigcharlen) /= " ") stop "local_buffer is too small"
 
         file_columns =  count(transfer(local_buffer, 'a', len(local_buffer)) == ",") + 1
 
@@ -145,11 +149,11 @@ module file_io_mod
         character(len=charlen), intent(in) :: filename
 
         integer :: fid, nd, i, nc, j
-        ! Assume the lines will never be longer than this
-        integer, parameter :: sb = 1024
+        ! Assume the lines will never have more than this many entries
+        integer, parameter :: sb = 4096
         integer(ip) :: buffer(sb)
         integer(ip), parameter :: empty = -HUGE(1_ip)
-        character(len=8192) :: string_buf
+        character(len=bigcharlen) :: string_buf
 
 
         open(newunit=fid, file=filename, action='read')
@@ -164,7 +168,8 @@ module file_io_mod
         do i = 1, nd
 
             read(fid, '(A)') string_buf
-            string_buf = trim(string_buf)
+            if(string_buf(bigcharlen:bigcharlen) /= " ") stop "string_buf is too small"
+            !string_buf = trim(string_buf)
             !print*, 'string_buf: ', string_buf
 
             ! "Clear" the buffer
