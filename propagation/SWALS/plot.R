@@ -937,14 +937,17 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA,
                    '_*/Grid*000', domain_index, '.nc'))
     }
     
-    # Open all the files 
-    fids = sapply(nc_grid_files, function(x){nc_open(x, readunlim=FALSE)}, 
-                  simplify=FALSE)
-
-    # Get the 'x' and 'y' and 'time' dimension variables
-    xs = lapply(fids, function(x) ncvar_get(x, 'x'))
-    ys = lapply(fids, function(x) ncvar_get(x, 'y'))
-    ts = lapply(fids, function(x) ncvar_get(x, 'time'))
+    # Get x,y,time in all the files 
+    xs = vector(mode='list', length=length(nc_grid_files))
+    ys = vector(mode='list', length=length(nc_grid_files))
+    ts = vector(mode='list', length=length(nc_grid_files))
+    for(i in 1:length(nc_grid_files)){
+        fid = nc_open(nc_grid_files[i], readunlim=FALSE)
+        xs[[i]] = ncvar_get(fid, 'x')
+        ys[[i]] = ncvar_get(fid, 'y')
+        ts[[i]] = ncvar_get(fid, 'time')
+        nc_close(fid)
+    }
 
     # Check that times are compatible in all files
     if(length(ts) > 1){
@@ -994,12 +997,13 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA,
     # The output variable
     output_full = matrix(NA, nrow=nx, ncol=ny)
 
-    for(i in 1:length(fids)){
-        ipd = ncvar_get(fids[[i]], 'is_priority_domain')
+    for(i in 1:length(nc_grid_files)){
+        fid = nc_open(nc_grid_files[i], readunlim=FALSE)
+        ipd = ncvar_get(fid, 'is_priority_domain')
         if(is.na(desired_time_index)){
-            local_var = ncvar_get(fids[[i]], desired_var)
+            local_var = ncvar_get(fid, desired_var)
         }else{
-            local_var = ncvar_get(fids[[i]], desired_var, 
+            local_var = ncvar_get(fid, desired_var, 
                 start=c(1, 1, desired_time_index), count=c(-1, -1, 1))
         }
         # Set 'non-priority-domain' regions to NA
@@ -1012,10 +1016,8 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA,
         # Set only regions where ipd == 1
         output_full[xi:(xi+dim(local_var)[1]-1), yi:(yi+dim(local_var)[2]-1)][ipd == 1] = 
             local_var[ipd == 1]
+        nc_close(fid)
     }
-
-    # Close the netcdf files
-    lapply(fids, nc_close)
 
     if(!return_raster){
         # Return the grid, with x/y dimensions (e.g. for passing to 'image')
