@@ -219,7 +219,11 @@ module multidomain_mod
             !! unique labels should be used for each, to avoid problems in parallel communication.
             !! (Note: This could be avoided by converting the main data in p2p_comms_mod into a derived
             !! type, one per multidomain, and that should be a better approach).
-
+        integer(ip) :: log_output_unit = -HUGE(1_ip)
+            ! File unit for logging. If more than one multidomain is used (relatively uncommon)
+            ! we can put the most common log output for each multidomain in separate files. 
+            ! But beware many other modules just use the "logging module's log_output_unit", 
+            ! and for such messages, the file locations may be messed up if using more than one multidomain
 
         contains
 
@@ -370,19 +374,19 @@ module multidomain_mod
                             if((md%domains(j)%U(i3, i2, i1) >  bignum) .or. &
                                (md%domains(j)%U(i3, i2, i1) < -bignum) .or. &
                                (md%domains(j)%U(i3, i2, i1) /= md%domains(j)%U(i3, i2, i1))) then
-                               write(log_output_unit,*) flag, &
+                               write(md%log_output_unit,*) flag, &
                                    " (NB: overflow just after mpi-comms can result from error-stop on other images)"
-                               write(log_output_unit,*) 'error-count: ', throw_error
-                               write(log_output_unit,*) 'md%domains(', j,')%U(', i3, i2, i1, ')'
-                               write(log_output_unit,*) md%domains(j)%U(i3, i2, i1)
-                               write(log_output_unit,*) 'x: ', md%domains(j)%x(i3), '; y: ', md%domains(j)%y(i2)
-                               write(log_output_unit,*) 'time: ', md%domains(j)%time
-                               write(log_output_unit,*) 'stg:elv, ', md%domains(j)%U(i3, i2, STG:ELV)
+                               write(md%log_output_unit,*) 'error-count: ', throw_error
+                               write(md%log_output_unit,*) 'md%domains(', j,')%U(', i3, i2, i1, ')'
+                               write(md%log_output_unit,*) md%domains(j)%U(i3, i2, i1)
+                               write(md%log_output_unit,*) 'x: ', md%domains(j)%x(i3), '; y: ', md%domains(j)%y(i2)
+                               write(md%log_output_unit,*) 'time: ', md%domains(j)%time
+                               write(md%log_output_unit,*) 'stg:elv, ', md%domains(j)%U(i3, i2, STG:ELV)
                                if(md%domains(j)%nesting%my_index > 0) then
-                                   write(log_output_unit,*) 'priority domain index'
-                                   write(log_output_unit,*) md%domains(j)%nesting%priority_domain_index(i3, i2)
-                                   write(log_output_unit,*) 'priority domain image'
-                                   write(log_output_unit,*) md%domains(j)%nesting%priority_domain_image(i3, i2)
+                                   write(md%log_output_unit,*) 'priority domain index'
+                                   write(md%log_output_unit,*) md%domains(j)%nesting%priority_domain_index(i3, i2)
+                                   write(md%log_output_unit,*) 'priority domain image'
+                                   write(md%log_output_unit,*) md%domains(j)%nesting%priority_domain_image(i3, i2)
                                end if
                             end if
                         end do
@@ -390,7 +394,7 @@ module multidomain_mod
                 end do
             end do
 
-            flush(log_output_unit)
+            flush(md%log_output_unit)
 
             ! Store whatever we can in the netcdf file (useful for debugging)
             do j = 1, size(md%domains)
@@ -434,7 +438,7 @@ module multidomain_mod
         ! If they are not, do a quick exit
         do j = 1, size(md%domains)
             if(.not. md%domains(j)%record_max_U) then
-                write(log_output_unit) 'Note: Not communicating max_U values because not all domains record_max_U.'
+                write(md%log_output_unit) 'Note: Not communicating max_U values because not all domains record_max_U.'
                 return
             end if
         end do
@@ -443,15 +447,15 @@ module multidomain_mod
         do j = 1, size(md%domains)
             n = size(md%domains(j)%max_U, 3)
             if(n > size(md%domains(j)%U, 3)) then
-                write(log_output_unit) 'Error (not fatal): Will not communicate max_U values because it contains '
-                write(log_output_unit) 'more variables than domain%U, which we use as a scratch space. Skipping'
+                write(md%log_output_unit) 'Error (not fatal): Will not communicate max_U values because it contains '
+                write(md%log_output_unit) 'more variables than domain%U, which we use as a scratch space. Skipping'
                 return
             end if
 
             if( (size(md%domains(j)%max_U, 1) /= size(md%domains(j)%U, 1)) .or. &
                 (size(md%domains(j)%max_U, 2) /= size(md%domains(j)%U, 2)) ) then
-                write(log_output_unit) 'Error (not fatal): Will not communicate max_U values because its dimensions '
-                write(log_output_unit) 'are not consistent with domain%U, which we use as a scratch space. Skipping'
+                write(md%log_output_unit) 'Error (not fatal): Will not communicate max_U values because its dimensions '
+                write(md%log_output_unit) 'are not consistent with domain%U, which we use as a scratch space. Skipping'
                 return
             end if
         end do
@@ -518,12 +522,14 @@ module multidomain_mod
     ! @param verbose logical
     !
     subroutine compute_multidomain_nesting_layer_width(domains, verbose,&
-        periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo)
+        periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo,&
+        md_log_output_unit)
         type(domain_type), intent(inout) :: domains(:)
         logical, optional, intent(in) :: verbose
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
         integer(ip), intent(in) :: extra_halo_buffer
         integer(ip), intent(in) :: extra_cells_in_halo
+        integer(ip), intent(in) :: md_log_output_unit
 
         integer(ip):: i, j, ii, nd_local, nest_layer_width, boundary_flag, n1
 
@@ -564,7 +570,7 @@ module multidomain_mod
 #endif
 
         ! Store the dx and 'interior' bounding box of all domains
-        call create_all_bbox_and_dx(domains, periodic_xs, periodic_ys)
+        call create_all_bbox_and_dx(domains, periodic_xs, periodic_ys, md_log_output_unit)
 
         !
         ! Loop over north(1), east(2), south(3), west(4) domain interior
@@ -582,7 +588,7 @@ module multidomain_mod
         !
         do j = 1, nd_local
 
-            if(verbose1) write(log_output_unit, *) 'Domain ', j
+            if(verbose1) write(md_log_output_unit, *) 'Domain ', j
 
             ! Initial value to be refined in loop
             max_parent_dx_ratio = 1.0_dp
@@ -605,7 +611,8 @@ module multidomain_mod
                     nbr_image_ind(j)%i2(i)%i1, &
                     nbr_domain_dx_local,&
                     periodic_xs = periodic_xs,&
-                    periodic_ys = periodic_ys)
+                    periodic_ys = periodic_ys, &
+                    md_log_output_unit=md_log_output_unit)
 
                 ! Find the max ratio between parent cell sizes and the current
                 ! domain's cell size. Note that nbr_domain_dx_local will hold a
@@ -622,15 +629,15 @@ module multidomain_mod
 
             end do
 
-            if (verbose1) write(log_output_unit, *) 'max_parent_dx_ratio: ', max_parent_dx_ratio
+            if (verbose1) write(md_log_output_unit, *) 'max_parent_dx_ratio: ', max_parent_dx_ratio
             domains(j)%max_parent_dx_ratio = max_parent_dx_ratio
 
             ! Record whether this boundary does nesting (or not)
             do i = 1, 4
-                if(verbose1) write(log_output_unit,*) '.. ', i, any(nbr_image_ind(j)%i2(i)%i1 > 0)
+                if(verbose1) write(md_log_output_unit,*) '.. ', i, any(nbr_image_ind(j)%i2(i)%i1 > 0)
                 is_nesting_boundary(i,j) = any(nbr_image_ind(j)%i2(i)%i1 > 0)
             end do
-            if(verbose1) write(log_output_unit,*) 'Nesting boundaries: ', is_nesting_boundary(:,j)
+            if(verbose1) write(md_log_output_unit,*) 'Nesting boundaries: ', is_nesting_boundary(:,j)
             domains(j)%is_nesting_boundary = is_nesting_boundary(:,j)
 
             ! Now we know the dx of all parent domains, we can compute
@@ -638,7 +645,7 @@ module multidomain_mod
             nest_layer_width = get_domain_nesting_layer_thickness(&
                 domains(j), max_parent_dx_ratio, extra_halo_buffer, extra_cells_in_halo)
             domains(j)%nest_layer_width = nest_layer_width
-            if(verbose1) write(log_output_unit,*) 'Nesting layer width: ', domains(j)%nest_layer_width
+            if(verbose1) write(md_log_output_unit,*) 'Nesting layer width: ', domains(j)%nest_layer_width
 
             ! Logical checks
             do i = 1, 4
@@ -649,10 +656,10 @@ module multidomain_mod
                 do ii = 2, size(nbr_image_ind(j)%i2(i)%i1, kind=ip) - 1
                     if((nbr_image_ind(j)%i2(i)%i1(ii) > 0)) then
                         if((nbr_image_ind(j)%i2(i)%i1(ii) < 0)) then
-                            write(log_output_unit,*) 'Boundary cannot be half nested and half un-nested'
-                            write(log_output_unit,*) ' but this occurs on image ', ti, ' on domains ', j , &
+                            write(md_log_output_unit,*) 'Boundary cannot be half nested and half un-nested'
+                            write(md_log_output_unit,*) ' but this occurs on image ', ti, ' on domains ', j , &
                                 'on boundary ', i, '. The domain coordinates are: '
-                            write(log_output_unit,*) all_bbox(:,:, j, ti)
+                            write(md_log_output_unit,*) all_bbox(:,:, j, ti)
                             call generic_stop()
                         end if
                     end if
@@ -670,7 +677,7 @@ module multidomain_mod
     !
     subroutine convert_priority_domain_info_to_boxes(priority_domain_index, &
         priority_domain_image, halo_width, myimage, myindex, box_metadata, &
-        xs, ys, periodic_xs, periodic_ys, max_parent_dx_ratio)
+        xs, ys, periodic_xs, periodic_ys, max_parent_dx_ratio, md_log_output_unit)
 
         integer(ip), intent(in) :: priority_domain_index(:,:), &
             priority_domain_image(:,:)
@@ -679,6 +686,7 @@ module multidomain_mod
         real(dp), intent(in):: xs(:), ys(:)
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
         integer(ip), intent(in) :: max_parent_dx_ratio
+        integer(ip), intent(in) :: md_log_output_unit
 
         integer(ip) :: dims(2), i, j, ii, i1, i2, j1, j2
         integer(ip), allocatable :: nest_ind(:), nest_image(:), match_ind(:)
@@ -747,10 +755,10 @@ module multidomain_mod
 
             ! Sanity check
             if(maxval(ends) > dims(1)) then
-                write(log_output_unit,*) 'ERROR: j = ', j
-                write(log_output_unit,*) 'ends: ', ends
-                write(log_output_unit,*) 'run_values: ', run_values
-                write(log_output_unit,*) 'run_lengths: ', run_lengths
+                write(md_log_output_unit,*) 'ERROR: j = ', j
+                write(md_log_output_unit,*) 'ends: ', ends
+                write(md_log_output_unit,*) 'run_values: ', run_values
+                write(md_log_output_unit,*) 'run_lengths: ', run_lengths
                 stop
             end if
 
@@ -874,9 +882,9 @@ module multidomain_mod
                 any( priority_domain_image(i1:i2,j1:j2) /= box_metadata(2,j)) .or. &
                 any( in_periodic_x(i1:i2) .neqv. in_periodic_x(i1) ).or. &
                 any( in_periodic_y(j1:j2) .neqv. in_periodic_y(j1) ) ) then
-                write(log_output_unit,*) 'image :', myimage, ' index: ', myindex
-                write(log_output_unit,*) 'invalid: ', box_metadata(:,j)
-                write(log_output_unit,*) '.......: ', final_boxes(:,j)
+                write(md_log_output_unit,*) 'image :', myimage, ' index: ', myindex
+                write(md_log_output_unit,*) 'invalid: ', box_metadata(:,j)
+                write(md_log_output_unit,*) '.......: ', final_boxes(:,j)
                 stop 'Error in creating box_metadata for priority domain information'
             end if
         end do
@@ -910,10 +918,11 @@ module multidomain_mod
     !
     ! @param domains the array of domains
     !
-    subroutine create_all_bbox_and_dx(domains, periodic_xs, periodic_ys)
+    subroutine create_all_bbox_and_dx(domains, periodic_xs, periodic_ys, md_log_output_unit)
 
         type(domain_type), intent(inout) :: domains(:)
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
+        integer(ip), intent(in) :: md_log_output_unit
 
         integer(ip):: nd, i, j, k, nd_local, ierr
 
@@ -1009,21 +1018,21 @@ module multidomain_mod
                 if( (any(all_bbox(:,1,i,k) < periodic_xs(1)) .or. any(all_bbox(:,1,i,k) > periodic_xs(2)) .or. &
                      any(all_bbox(:,2,i,k) < periodic_ys(1)) .or. any(all_bbox(:,2,i,k) > periodic_ys(2))) .and. &
                     (.not. all(all_bbox(:,:,i,k) == 0.0_dp)) ) then
-                    write(log_output_unit,*) 'Error: one of the input bounding boxes extends outside the periodic domain'
-                    write(log_output_unit,*) 'This is not permitted. If periodic boundary conditions are desired, then'
-                    write(log_output_unit,*) 'the extremes of the bounding boxes in the multidomain should touch the '
-                    write(log_output_unit,*) 'box defined by periodic_xs and periodic_ys, but not go outside it'
-                    write(log_output_unit,*) ''
-                    write(log_output_unit,*) '.... the offending bounding box is ... '
-                    write(log_output_unit,*) all_bbox(:,:,i,k)
-                    write(log_output_unit,*) 'with index ', i, k
-                    write(log_output_unit,*) '.....and the periodic extents are ...'
-                    write(log_output_unit,*) 'periodic_xs: ', periodic_xs, '; periodic_ys: ', periodic_ys
+                    write(md_log_output_unit,*) 'Error: one of the input bounding boxes extends outside the periodic domain'
+                    write(md_log_output_unit,*) 'This is not permitted. If periodic boundary conditions are desired, then'
+                    write(md_log_output_unit,*) 'the extremes of the bounding boxes in the multidomain should touch the '
+                    write(md_log_output_unit,*) 'box defined by periodic_xs and periodic_ys, but not go outside it'
+                    write(md_log_output_unit,*) ''
+                    write(md_log_output_unit,*) '.... the offending bounding box is ... '
+                    write(md_log_output_unit,*) all_bbox(:,:,i,k)
+                    write(md_log_output_unit,*) 'with index ', i, k
+                    write(md_log_output_unit,*) '.....and the periodic extents are ...'
+                    write(md_log_output_unit,*) 'periodic_xs: ', periodic_xs, '; periodic_ys: ', periodic_ys
                     call generic_stop
                 end if
             end do
         end do
-        write(log_output_unit, *) '    '
+        write(md_log_output_unit, *) '    '
 
     end subroutine
 
@@ -1169,16 +1178,18 @@ module multidomain_mod
     !   length as xs. Will be filled with the dx values of the domain that
     !   contains the points, or a large negative number for points not in any domain
     ! @param error_domain_overlap_same_dx
-    !
+    ! @param periodic_xs, periodic_ys x and y limits for the periodic domain
+    ! @param md_log_output_unit file unit for logging
     subroutine find_priority_domain_containing_xy(xs, ys, nbr_domain_ind, &
         nbr_image_ind, nbr_domain_dx, error_domain_overlap_same_dx, &
-        periodic_xs, periodic_ys)
+        periodic_xs, periodic_ys, md_log_output_unit)
 
         real(dp), intent(in) :: xs(:), ys(:)
         integer(ip), intent(inout) :: nbr_domain_ind(:), nbr_image_ind(:)
         real(dp), intent(inout) :: nbr_domain_dx(:,:)
         logical, intent(in) :: error_domain_overlap_same_dx
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
+        integer(ip), intent(in) :: md_log_output_unit
 
         integer(ip) :: di, ii, xi, nd
         real(dp) :: xs1, ys1
@@ -1262,7 +1273,7 @@ module multidomain_mod
                             if(error_domain_overlap_same_dx .and. &
                                 (abs(cell_area1 - cell_area2) < err_tol)) then
 
-                                write(log_output_unit,*) 'Overlapping domains with the same', &
+                                write(md_log_output_unit,*) 'Overlapping domains with the same', &
                                     ' cell size exist around: ', &
                                     xs(xi), ys(xi), &
                                     '. This is not permitted.', &
@@ -1270,13 +1281,13 @@ module multidomain_mod
                                     abs(cell_area1 - cell_area2), &
                                     sqrt(cell_area1)
 
-                                write(log_output_unit,*) 'ii: ', ii, ' di: ', di
-                                write(log_output_unit,*) 'xy: ', xs(xi), ys(xi)
-                                write(log_output_unit,*) 'bbox: '
-                                write(log_output_unit,*) bbox(1,:)
-                                write(log_output_unit,*) bbox(2,:)
-                                write(log_output_unit,*) bbox(3,:)
-                                write(log_output_unit,*) bbox(4,:)
+                                write(md_log_output_unit,*) 'ii: ', ii, ' di: ', di
+                                write(md_log_output_unit,*) 'xy: ', xs(xi), ys(xi)
+                                write(md_log_output_unit,*) 'bbox: '
+                                write(md_log_output_unit,*) bbox(1,:)
+                                write(md_log_output_unit,*) bbox(2,:)
+                                write(md_log_output_unit,*) bbox(3,:)
+                                write(md_log_output_unit,*) bbox(4,:)
                                 stop
 
                             end if
@@ -1311,7 +1322,8 @@ module multidomain_mod
         nbr_image_ind, &
         nbr_domain_dx,&
         periodic_xs,&
-        periodic_ys)
+        periodic_ys,&
+        md_log_output_unit)
 
         type(domain_type), intent(in) :: domain
         integer(ip), intent(in) :: boundary_flag, nest_layer_width
@@ -1319,6 +1331,7 @@ module multidomain_mod
             nbr_image_ind(:)
         real(dp), allocatable, intent(out):: nbr_domain_dx(:,:)
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
+        integer(ip), intent(in) :: md_log_output_unit
 
         ! Local vars
         real(dp), allocatable :: domain_xs(:), domain_ys(:), xs(:), ys(:)
@@ -1406,7 +1419,8 @@ module multidomain_mod
 
         call find_priority_domain_containing_xy(xs, ys, nbr_domain_ind, &
             nbr_image_ind, nbr_domain_dx, error_domain_overlap_same_dx=.true.,&
-            periodic_xs=periodic_xs, periodic_ys=periodic_ys)
+            periodic_xs=periodic_xs, periodic_ys=periodic_ys, &
+            md_log_output_unit=md_log_output_unit)
 
     end subroutine
 
@@ -1581,10 +1595,10 @@ module multidomain_mod
 
         buffer_size_on_domain_U_size = ((p2p_buffer_size+nesting_buffer_size)*1.0_dp)/(domain_U_size*1.0_dp)
 
-        write(log_output_unit, *) 'Multidomain has ', domain_U_size, ' U bytes and ', &
+        write(md%log_output_unit, *) 'Multidomain has ', domain_U_size, ' U bytes and ', &
             p2p_buffer_size , ' p2p bytes and ', nesting_buffer_size , &
             ' nesting buffer bytes , ratio= ', buffer_size_on_domain_U_size
-        write(log_output_unit, *) 'Nonlinear domains will include other large arrays ', &
+        write(md%log_output_unit, *) 'Nonlinear domains will include other large arrays ', &
             '(e.g. for fluxes) with total size larger than U, which are not accounted for above'
 
     end subroutine
@@ -1634,11 +1648,11 @@ module multidomain_mod
             vol0 = vol_and_bfi(3)
             dvol = vol_and_bfi(4)
 #endif
-            write(log_output_unit, "(A)"         ) 'Volume statistics (m^3) integrated over all domains and images:'
-            write(log_output_unit, "(A, ES25.12E3)") '  Multidomain volume       : ', vol
-            write(log_output_unit, "(A, ES25.12E3)") '              volume change: ', dvol
-            write(log_output_unit, "(A, ES25.12E3)") '     boundary flux integral: ', bfi
-            write(log_output_unit, "(A, ES25.12E3)") '         unexplained change: ', dvol + bfi
+            write(md%log_output_unit, "(A)"         ) 'Volume statistics (m^3) integrated over all domains and images:'
+            write(md%log_output_unit, "(A, ES25.12E3)") '  Multidomain volume       : ', vol
+            write(md%log_output_unit, "(A, ES25.12E3)") '              volume change: ', dvol
+            write(md%log_output_unit, "(A, ES25.12E3)") '     boundary flux integral: ', bfi
+            write(md%log_output_unit, "(A, ES25.12E3)") '         unexplained change: ', dvol + bfi
 
     end subroutine
 
@@ -1696,7 +1710,6 @@ module multidomain_mod
     ! This routine can be used to partition domains among coarray images
     ! Basically we move the provided md%domains to md%domain_metadata, and
     ! make a new md%domains, with the right piece of the domain on each image
-    !
     subroutine partition_domains(md)
         class(multidomain_type), intent(inout) :: md
 
@@ -1721,8 +1734,8 @@ module multidomain_mod
         ! Name domains as " image_index * 1e+10 + original_domain_index "
         ! The naming will be implemented below -- for now, check that the naming will not overflow.
         if(ni * large_64_int + size(md%domains, kind=int64) > HUGE(md%domains(1)%myid)) then
-            write(log_output_unit, *) 'The number of images and local domains is too high for the naming convention'
-            flush(log_output_unit)
+            write(md%log_output_unit, *) 'The number of images and local domains is too high for the naming convention'
+            flush(md%log_output_unit)
             call generic_stop()
         end if
 
@@ -1747,9 +1760,9 @@ module multidomain_mod
             ! If there are values > ni, convert to the range 1-ni, with a warning
             do i = 1, size(md%load_balance_part%i2, kind=ip)
                 if( maxval(md%load_balance_part%i2(i)%i1) > ni ) then
-                    write(log_output_unit, *) &
+                    write(md%log_output_unit, *) &
                         ' WARNING: load_balance_file contains values > num_images: converting to smaller values.'
-                    flush(log_output_unit)
+                    flush(md%log_output_unit)
                     md%load_balance_part%i2(i)%i1 = mod((md%load_balance_part%i2(i)%i1 - 1), ni) + 1_ip
                 end if
             end do
@@ -1782,17 +1795,17 @@ module multidomain_mod
         end if
 
        ! Write out md%load_balance_part
-        write(log_output_unit, *) " "
-        write(log_output_unit, *) "The load-balance-partition assigns one or more images to each domain."
-        write(log_output_unit, *) "    Integers below denote images (this_image()); each row is a domain,"
-        write(log_output_unit, *) "    split into as many pieces as their are integers in the row."
-        write(log_output_unit, *) "    Rows are ordered as was input to md%domains."
+        write(md%log_output_unit, *) " "
+        write(md%log_output_unit, *) "The load-balance-partition assigns one or more images to each domain."
+        write(md%log_output_unit, *) "    Integers below denote images (this_image()); each row is a domain,"
+        write(md%log_output_unit, *) "    split into as many pieces as their are integers in the row."
+        write(md%log_output_unit, *) "    Rows are ordered as was input to md%domains."
         do i = 1, size(md%domain_metadata, kind=ip)
             ! This format string ensures the write is on one line, making it easy to copy the file.
             write(my_fmt, '(a, i0, a)') "(A,", size(md%load_balance_part%i2(i)%i1, kind=ip), "I5)"
-            write(log_output_unit, my_fmt) '    ', md%load_balance_part%i2(i)%i1
+            write(md%log_output_unit, my_fmt) '    ', md%load_balance_part%i2(i)%i1
         end do
-        write(log_output_unit, *) " "
+        write(md%log_output_unit, *) " "
 
 
         ! Count how many domains we need on the current image
@@ -1851,8 +1864,8 @@ module multidomain_mod
                 local_co_size_xy = best_co_size_xy
                 ! Check we got some sensible result
                 if(any(local_co_size_xy < 0)) then
-                    write(log_output_unit,*) 'Error in splitting up images into 2d', local_co_size_xy, local_ni
-                    flush(log_output_unit)
+                    write(md%log_output_unit,*) 'Error in splitting up images into 2d', local_co_size_xy, local_ni
+                    flush(md%log_output_unit)
                     call generic_stop
                 end if
 
@@ -1865,17 +1878,17 @@ module multidomain_mod
                 !dx_refine_ratio = domain_dx_refinement_factor ! Assuming the domain's parent is the global domain
                 dx_refine_ratio = ((domain_dx_refinement_factor/parent_domain_dx_refinement_factor))
                 if(.not. all(dx_refine_ratio * parent_domain_dx_refinement_factor == domain_dx_refinement_factor)) then
-                    write(log_output_unit,*) 'dx_refine_ratio should be an exact integer upon creation'
-                    flush(log_output_unit)
+                    write(md%log_output_unit,*) 'dx_refine_ratio should be an exact integer upon creation'
+                    flush(md%log_output_unit)
                     call generic_stop()
                 end if
                 dx_refine_X_co_size_xy = dx_refine_ratio * local_co_size_xy
                 if(.not. all( (domain_nx/(dx_refine_X_co_size_xy)) > 1)) then
-                    write(log_output_unit, *) 'Cannot split domain ', i, ' with nx=', domain_nx, &
+                    write(md%log_output_unit, *) 'Cannot split domain ', i, ' with nx=', domain_nx, &
                         ' into local_co_size_xy=', local_co_size_xy, ' when domain_dx_refinement_factor=', &
                         domain_dx_refinement_factor, ' and dx_refine_ratio = ', dx_refine_ratio
-                    write(log_output_unit,*) 'Consider enlarging the domain, or specifying the decomposition more thoroughly'
-                    flush(log_output_unit)
+                    write(md%log_output_unit,*) 'Consider enlarging the domain, or specifying the decomposition more thoroughly'
+                    flush(md%log_output_unit)
                     call generic_stop()
                 end if
 
@@ -1910,7 +1923,7 @@ module multidomain_mod
                 md%domains(next_d)%myid = ti * large_64_int + i
                 md%domains(next_d)%local_index = local_ti
 
-                write(log_output_unit,*) 'i: ', i, &
+                write(md%log_output_unit,*) 'i: ', i, &
                     ' local_ti: ', local_ti, ' local_ni: ', local_ni, ' ti: ', ti, ' ni: ', ni, &
                     ' lower_left_nx: ', lower_left_nx, &
                     ' upper_right_nx: ', upper_right_nx, ' lower-left: ', md%domains(next_d)%lower_left, &
@@ -1920,7 +1933,7 @@ module multidomain_mod
 #ifdef COARRAY
         call sync_all_generic
 #endif
-        flush(log_output_unit)
+        flush(md%log_output_unit)
 
     end subroutine
 
@@ -1951,8 +1964,8 @@ module multidomain_mod
         TIMER_START('printing_stats')
 
         ! Mark out the new time-step
-        write(log_output_unit, "(A)") ''
-        write(log_output_unit, "(A)") '###################################'
+        write(md%log_output_unit, "(A)") ''
+        write(md%log_output_unit, "(A)") '###################################'
 
         ! Variables to track extremes over all domains
         global_max_stage = -HUGE(1.0_dp)
@@ -1966,9 +1979,9 @@ module multidomain_mod
         do k = 1, size(md%domains, kind=ip)
 
             if(.not. only_global_stats) then
-                write(log_output_unit,"(A)") ''
-                write(log_output_unit,"(A)") '-----------'
-                write(log_output_unit,"(A7,I6, 2A)") 'domain ', k, ' ', trim(md%label)
+                write(md%log_output_unit,"(A)") ''
+                write(md%log_output_unit,"(A)") '-----------'
+                write(md%log_output_unit,"(A7,I6, 2A)") 'domain ', k, ' ', trim(md%label)
             end if
 
             call md%domains(k)%compute_domain_statistics(maxstage, maxspeed, minstage, minspeed, &
@@ -1985,39 +1998,39 @@ module multidomain_mod
             if(only_global_stats) cycle
 
             ! Print main statistics
-            write(log_output_unit, "(A)"         ) ''
-            write(log_output_unit, "(A)"         ) 'Domain ID: '
-            write(log_output_unit, "(A, I15)"     ) '        ', md%domains(k)%myid
-            write(log_output_unit, "(A)"         ) 'Time: '
-            write(log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%time
-            write(log_output_unit, "(A)"         ) 'nsteps_advanced:'
-            write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%nsteps_advanced
-            write(log_output_unit, "(A)"         ) 'max_dt in substep [ ~(cfl*dx)/(2*wave_speed) for FV solvers; 0 otherwise]:'
-            write(log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%max_dt
-            write(log_output_unit, "(A)"         ) 'evolve_step_dt (one or more sub-steps): '
-            write(log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%evolve_step_dt
-            write(log_output_unit, "(A)"         ) 'Stage: '
-            write(log_output_unit, "(A, ES25.12E3)") '        ', maxstage
-            write(log_output_unit, "(A, ES25.12E3)") '        ', minstage
-            write(log_output_unit, "(A)"         ) 'Speed: '
-            write(log_output_unit, "(A, ES25.12E3)") '        ', maxspeed
-            write(log_output_unit, "(A, ES25.12E3)") '        ', minspeed
-            write(log_output_unit, "(A)"         ) &
+            write(md%log_output_unit, "(A)"         ) ''
+            write(md%log_output_unit, "(A)"         ) 'Domain ID: '
+            write(md%log_output_unit, "(A, I15)"     ) '        ', md%domains(k)%myid
+            write(md%log_output_unit, "(A)"         ) 'Time: '
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%time
+            write(md%log_output_unit, "(A)"         ) 'nsteps_advanced:'
+            write(md%log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%nsteps_advanced
+            write(md%log_output_unit, "(A)"         ) 'max_dt in substep [ ~(cfl*dx)/(2*wave_speed) for FV solvers; 0 otherwise]:'
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%max_dt
+            write(md%log_output_unit, "(A)"         ) 'evolve_step_dt (one or more sub-steps): '
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', md%domains(k)%evolve_step_dt
+            write(md%log_output_unit, "(A)"         ) 'Stage: '
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', maxstage
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', minstage
+            write(md%log_output_unit, "(A)"         ) 'Speed: '
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', maxspeed
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', minspeed
+            write(md%log_output_unit, "(A)"         ) &
                 'Energy (potential) / rho [= integral of (g * depth * z + g/2 depth^2) ], zero when stage=domain%msl_linear: '
-            write(log_output_unit, "(A, ES25.12E3)") '        ', energy_potential_on_rho
-            write(log_output_unit, "(A)"         ) 'Energy (kinetic) / rho [i.e. integral of (1/2 depth * speed^2) ]: '
-            write(log_output_unit, "(A, ES25.12E3)") '        ', energy_kinetic_on_rho
-            write(log_output_unit, "(A)"         ) 'Energy (total) / rho: '
-            write(log_output_unit, "(A, ES25.12E3)") '        ', energy_total_on_rho
-            write(log_output_unit, "(A)"         ) 'Negative_depth_clip_counter: '
-            write(log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%negative_depth_fix_counter
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', energy_potential_on_rho
+            write(md%log_output_unit, "(A)"         ) 'Energy (kinetic) / rho [i.e. integral of (1/2 depth * speed^2) ]: '
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', energy_kinetic_on_rho
+            write(md%log_output_unit, "(A)"         ) 'Energy (total) / rho: '
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', energy_total_on_rho
+            write(md%log_output_unit, "(A)"         ) 'Negative_depth_clip_counter: '
+            write(md%log_output_unit, "(A, I12)"    ) '        ', md%domains(k)%negative_depth_fix_counter
 
         end do
 
         ! Even if reporting global stats only, we'll still want to know the time
         if(only_global_stats) then
-            write(log_output_unit, "(A)"         ) 'Time: '
-            write(log_output_unit, "(A, ES25.12E3)") '        ', md%domains(1)%time
+            write(md%log_output_unit, "(A)"         ) 'Time: '
+            write(md%log_output_unit, "(A, ES25.12E3)") '        ', md%domains(1)%time
         end if
 
 #ifdef COARRAY
@@ -2030,23 +2043,23 @@ module multidomain_mod
         call co_sum(global_energy_total_on_rho)
 #endif
 
-        write(log_output_unit, "(A)"         ) ''
-        write(log_output_unit, "(A)"         ) '-----------'
-        write(log_output_unit, "(A)"         ) 'Global stage range (over all domains and images): '
-        write(log_output_unit, "(A, ES25.12E3)") '        ', global_max_stage
-        write(log_output_unit, "(A, ES25.12E3)") '        ', global_min_stage
-        write(log_output_unit, "(2A)"        ) 'Global speed range (over all domains and images): '
-        write(log_output_unit, "(A, ES25.12E3)") '        ', global_max_speed
-        write(log_output_unit, "(A, ES25.12E3)") '        ', global_min_speed
-        write(log_output_unit, "(2A)"        ) &
+        write(md%log_output_unit, "(A)"         ) ''
+        write(md%log_output_unit, "(A)"         ) '-----------'
+        write(md%log_output_unit, "(A)"         ) 'Global stage range (over all domains and images): '
+        write(md%log_output_unit, "(A, ES25.12E3)") '        ', global_max_stage
+        write(md%log_output_unit, "(A, ES25.12E3)") '        ', global_min_stage
+        write(md%log_output_unit, "(2A)"        ) 'Global speed range (over all domains and images): '
+        write(md%log_output_unit, "(A, ES25.12E3)") '        ', global_max_speed
+        write(md%log_output_unit, "(A, ES25.12E3)") '        ', global_min_speed
+        write(md%log_output_unit, "(2A)"        ) &
             'Global energy-potential / rho (over all domains and images), zero when stage=domain%msl_linear: '
-        write(log_output_unit, "(A, ES25.12E3)") '        ', global_energy_potential_on_rho
-        write(log_output_unit, "(2A)"        ) 'Global energy-kinetic / rho (over all domains and images): '
-        write(log_output_unit, "(A, ES25.12E3)") '        ', global_energy_kinetic_on_rho
-        write(log_output_unit, "(2A)"        ) &
+        write(md%log_output_unit, "(A, ES25.12E3)") '        ', global_energy_potential_on_rho
+        write(md%log_output_unit, "(2A)"        ) 'Global energy-kinetic / rho (over all domains and images): '
+        write(md%log_output_unit, "(A, ES25.12E3)") '        ', global_energy_kinetic_on_rho
+        write(md%log_output_unit, "(2A)"        ) &
             'Global energy-total / rho (over all domains and images): '
-        write(log_output_unit, "(A, ES25.12E3)") '        ', global_energy_total_on_rho
-        write(log_output_unit, "(A)") '-----------'
+        write(md%log_output_unit, "(A, ES25.12E3)") '        ', global_energy_total_on_rho
+        write(md%log_output_unit, "(A)") '-----------'
         call md%report_mass_conservation_statistics()
 
         ! Unstable models may produce NaN energy -- this is useful to detect.
@@ -2177,7 +2190,7 @@ module multidomain_mod
         end if
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
         if(send_halos_immediately) then
-            write(log_output_unit, *) 'Error: Cannot do send_halos_immediately with COARRAY_USE_MPI_FOR_INTENSIVE_COMMS', &
+            write(md%log_output_unit, *) 'Error: Cannot do send_halos_immediately with COARRAY_USE_MPI_FOR_INTENSIVE_COMMS', &
                 __LINE__, __FILE__
             call generic_stop
         end if
@@ -2362,6 +2375,8 @@ module multidomain_mod
             log_filename = trim(md%output_basedir) // '/multidomain_log'
             call send_log_output_to_file(log_filename)
         end if
+        ! If above we called send_log_output_to_file, then log_output_unit will be updated
+        md%log_output_unit = log_output_unit
 
         ! Make sure 'dx' has been defined for all domains
         do i = 1, size(md%domains, kind=ip)
@@ -2390,7 +2405,8 @@ module multidomain_mod
             all_dx_md = md%all_dx_md, &
             all_timestepping_methods_md = md%all_timestepping_methods_md,&
             md_label = md%label, &
-            md_p2p = md%p2p)
+            md_p2p = md%p2p, &
+            md_log_output_unit = md%log_output_unit)
 
         ! Storage space for mass conservation
         allocate(md%volume_initial(size(md%domains, kind=ip)), md%volume(size(md%domains, kind=ip)))
@@ -2405,7 +2421,7 @@ module multidomain_mod
 
     subroutine setup_multidomain_domains(domains, verbose, use_wetdry_limiting_nesting,&
         periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo, &
-        all_dx_md, all_timestepping_methods_md, md_label, md_p2p)
+        all_dx_md, all_timestepping_methods_md, md_label, md_p2p, md_log_output_unit)
         !! Main routine for setting up the multidomain
         !!
         !! Determines which domains we need to have a two-way-nesting-comms relation
@@ -2459,6 +2475,8 @@ module multidomain_mod
             !! (set via md%label) to avoid problems in parallel communication.
         type(p2p_comms_type), intent(inout) :: md_p2p
             !! The point2point communicator used for this multidomain.
+        integer(ip), intent(in) :: md_log_output_unit
+            !! Unit number for logging messages to file
 
         integer(ip):: i, j, k, jj, ii, nd_local, nest_layer_width, tmp2(2), nbox_max, counter, nd_global
 
@@ -2514,7 +2532,7 @@ module multidomain_mod
         ! regions (if finer domains are inside this domain), but they are computed later
         call compute_multidomain_nesting_layer_width(domains=domains, verbose=verbose1, &
             periodic_xs=periodic_xs, periodic_ys=periodic_ys, extra_halo_buffer=extra_halo_buffer, &
-            extra_cells_in_halo=extra_cells_in_halo)
+            extra_cells_in_halo=extra_cells_in_halo, md_log_output_unit=md_log_output_unit)
 
         !
         ! Extend domain bounding boxes to include nesting layers
@@ -2591,7 +2609,8 @@ module multidomain_mod
                     domains(j)%nesting%priority_domain_index(:,jj), &
                     domains(j)%nesting%priority_domain_image(:,jj), &
                     nbr_domain_dx_local, error_domain_overlap_same_dx=.true.,&
-                    periodic_xs=periodic_xs, periodic_ys=periodic_ys)
+                    periodic_xs=periodic_xs, periodic_ys=periodic_ys, &
+                    md_log_output_unit = md_log_output_unit)
 
                 ! Useful to store the current domain index and image inside the nesting structure
                 domains(j)%nesting%my_index = j
@@ -2607,7 +2626,7 @@ module multidomain_mod
 
 
                 if(any(domains(j)%nesting%priority_domain_index(:,jj) < 0)) then
-                    write(log_output_unit, *) &
+                    write(md_log_output_unit, *) &
                         'Error: priority_domain_index contains areas that are not inside any domain. ', &
                         'This can happen if domains are small and have nesting buffers large enough ', &
                         'to spill outside their neighbours (e.g. using too much parallel refinement)'
@@ -2617,15 +2636,15 @@ module multidomain_mod
                 ! Logical check
                 do ii = 1, 2
                     if(any(nbr_domain_dx_local(:,ii) > (1.0001_dp * domains(j)%max_parent_dx_ratio*domains(j)%dx(ii)))) then
-                        write(log_output_unit,*) &
+                        write(md_log_output_unit,*) &
                             'ERROR: nesting boundary overlaps with a domain coarser than domains on its immediate boundary.'
-                        write(log_output_unit,*) &
+                        write(md_log_output_unit,*) &
                             'This may occur if the nesting buffers are very fat, and there are close domains that do not touch'
-                        write(log_output_unit,*) 'domain_index: ', j
-                        write(log_output_unit,*) domains(j)%max_parent_dx_ratio
-                        write(log_output_unit,*) domains(j)%dx(ii)
-                        write(log_output_unit,*) domains(j)%dx(ii) * domains(j)%max_parent_dx_ratio
-                        write(log_output_unit,*) maxval(nbr_domain_dx_local(:,ii))
+                        write(md_log_output_unit,*) 'domain_index: ', j
+                        write(md_log_output_unit,*) domains(j)%max_parent_dx_ratio
+                        write(md_log_output_unit,*) domains(j)%dx(ii)
+                        write(md_log_output_unit,*) domains(j)%dx(ii) * domains(j)%max_parent_dx_ratio
+                        write(md_log_output_unit,*) maxval(nbr_domain_dx_local(:,ii))
                         stop
                     end if
                 end do
@@ -2650,7 +2669,8 @@ module multidomain_mod
                 ys=yc_tmp, &
                 periodic_xs=periodic_xs,&
                 periodic_ys=periodic_ys,&
-                max_parent_dx_ratio=nint(domains(j)%max_parent_dx_ratio))
+                max_parent_dx_ratio=nint(domains(j)%max_parent_dx_ratio),&
+                md_log_output_unit=md_log_output_unit)
 
             ! Keep track of the maximum number of 'boxes' in the box metadata
             tmp2 = shape(domains(j)%nesting%recv_metadata)
@@ -2666,9 +2686,9 @@ module multidomain_mod
         !
         do j = 1, nd_local
 
-            if(verbose1) write(log_output_unit,*) ' '
-            if(verbose1) write(log_output_unit,*) ' #################'
-            if(verbose1) write(log_output_unit,*) ' Domain ID: ', domains(j)%myid
+            if(verbose1) write(md_log_output_unit,*) ' '
+            if(verbose1) write(md_log_output_unit,*) ' #################'
+            if(verbose1) write(md_log_output_unit,*) ' Domain ID: ', domains(j)%myid
 
             domains(j)%boundary_exterior = (.NOT. domains(j)%is_nesting_boundary)
 
@@ -2842,21 +2862,21 @@ module multidomain_mod
 
 #ifdef MULTIDOMAIN_DEBUG
         ! DEBUG: Write out all_recv_metadata. Compile with -DMULTIDOMAIN_DEBUG to do this
-        write(log_output_unit, *) ''
-        write(log_output_unit, *) '## all_recv_metadata:'
-        write(log_output_unit, *) 'Columns of all_recv_metadata correspond to: '
-        write(log_output_unit, *) 'recv_from_domain_index, recv_from_image_index, xlo, xhi,', &
+        write(md_log_output_unit, *) ''
+        write(md_log_output_unit, *) '## all_recv_metadata:'
+        write(md_log_output_unit, *) 'Columns of all_recv_metadata correspond to: '
+        write(md_log_output_unit, *) 'recv_from_domain_index, recv_from_image_index, xlo, xhi,', &
                                   ' ylo, yhi, send_metadata_row_index, recv_comms_index'
         do k = 1, ni
             do j = 1, size(all_recv_metadata, 3, kind=ip)
-                write(log_output_unit, *) '    image ', k, ', domain ', j
+                write(md_log_output_unit, *) '    image ', k, ', domain ', j
                 do i = 1, size(all_recv_metadata, 2, kind=ip)
-                    write(log_output_unit, *) '      ', all_recv_metadata(:,i,j,k)
+                    write(md_log_output_unit, *) '      ', all_recv_metadata(:,i,j,k)
                 end do
             end do
         end do
-        write(log_output_unit, *) ''
-        flush(log_output_unit)
+        write(md_log_output_unit, *) ''
+        flush(md_log_output_unit)
 #endif
         !
         ! Broadcast the send metadata
@@ -2929,21 +2949,21 @@ module multidomain_mod
 
 #ifdef MULTIDOMAIN_DEBUG
         ! DEBUG: Write out all_send_metadata
-        write(log_output_unit, *) ''
-        write(log_output_unit, *) '## all_send_metadata:'
-        write(log_output_unit, *) 'Columns of all_send_metadata correspond to: '
-        write(log_output_unit, *) 'send_to_domain_index, send_to_image_index, xlo, xhi,', &
+        write(md_log_output_unit, *) ''
+        write(md_log_output_unit, *) '## all_send_metadata:'
+        write(md_log_output_unit, *) 'Columns of all_send_metadata correspond to: '
+        write(md_log_output_unit, *) 'send_to_domain_index, send_to_image_index, xlo, xhi,', &
                                   ' ylo, yhi, recv_metadata_row_index, counter'
         do k = 1, ni
             do j = 1, size(all_send_metadata, 3, kind=ip)
-                write(log_output_unit, *) '    ', k, j
+                write(md_log_output_unit, *) '    ', k, j
                 do i = 1, size(all_send_metadata, 2, kind=ip)
-                    write(log_output_unit, *) '      ', all_send_metadata(:,i,j,k)
+                    write(md_log_output_unit, *) '      ', all_send_metadata(:,i,j,k)
                 end do
             end do
         end do
-        write(log_output_unit, *) ''
-        flush(log_output_unit)
+        write(md_log_output_unit, *) ''
+        flush(md_log_output_unit)
 #endif
         !
         ! Set up sends and recvs
@@ -2985,28 +3005,28 @@ module multidomain_mod
                         ! Periodic boundaries. Skip them!
                     else
                         msg = 'Error: Send/recv metadata do not appear to have the same boxes to within round-off'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
                         msg = '  This often happens if nested domains are too close to their parent bbox, such that'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
                         msg = '  the halos end up nesting with an even coarser domain. It can generally be fixed by'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
                         msg = '  refining the grid (so that halos shrink), or by increasing the separation of the domain'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
                         msg = '  boundaries in the problematic area, or by passing recursive_nesting=.true. to the '
-                        write(log_output_unit,"(A)", advance='no') trim(msg)
+                        write(md_log_output_unit,"(A)", advance='no') trim(msg)
                         msg = ' relevant domain%match_geometry_to_parent'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
 
-                        write(log_output_unit,*) 'my_domain_index=', j, &
+                        write(md_log_output_unit,*) 'my_domain_index=', j, &
                             '; my_image=', ti
-                        write(log_output_unit,*) 'my_send_metadata_rank2_index=', i
-                        write(log_output_unit,*) 'neighbour_domain_index=', n_ind, &
+                        write(md_log_output_unit,*) 'my_send_metadata_rank2_index=', i
+                        write(md_log_output_unit,*) 'neighbour_domain_index=', n_ind, &
                             '; neighbour_image=', n_img
-                        write(log_output_unit,*) 'neighbour_recv_metadata_rank2_index=', n_row, &
+                        write(md_log_output_unit,*) 'neighbour_recv_metadata_rank2_index=', n_row, &
                             '; neighbour_recv_metadata_recv_comms_index=', n_comms
-                        write(log_output_unit,*) 'my_send_metadata_bbox=', all_send_metadata(3:6,i,j,ti)
-                        write(log_output_unit,*) 'neighbour_recv_metadata_bbox=', all_recv_metadata(3:6,n_row, n_ind, n_img)
-                        write(log_output_unit,*) 'bbox_roundoff_threshold=', box_roundoff_tol
+                        write(md_log_output_unit,*) 'my_send_metadata_bbox=', all_send_metadata(3:6,i,j,ti)
+                        write(md_log_output_unit,*) 'neighbour_recv_metadata_bbox=', all_recv_metadata(3:6,n_row, n_ind, n_img)
+                        write(md_log_output_unit,*) 'bbox_roundoff_threshold=', box_roundoff_tol
                     end if
                 end if
 
@@ -3074,28 +3094,28 @@ module multidomain_mod
                     else
                         ! Looks like a genuine error
                         msg = 'Error: Send/recv metadata do not appear to have the same boxes to within round-off'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
                         msg = '  This often happens if nested domains are too close to their parent bbox, such that'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
                         msg = '  the halos end up nesting with an even coarser domain. It can generally be fixed by'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
                         msg = '  refining the grid (so that halos shrink), or by increasing the separation of the domain'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
                         msg = '  boundaries in the problematic area, or by passing recursive_nesting=.true. to the '
-                        write(log_output_unit,"(A)", advance='no') trim(msg)
+                        write(md_log_output_unit,"(A)", advance='no') trim(msg)
                         msg = ' relevant domain%match_geometry_to_parent'
-                        write(log_output_unit,"(A)") trim(msg)
+                        write(md_log_output_unit,"(A)") trim(msg)
 
-                        write(log_output_unit,*) 'my_domain_index=', j, &
+                        write(md_log_output_unit,*) 'my_domain_index=', j, &
                             '; my_image=', ti
-                        write(log_output_unit,*) 'my_recv_metadata_rank2_index=', i
-                        write(log_output_unit,*) 'neighbour_domain_index=', n_ind, &
+                        write(md_log_output_unit,*) 'my_recv_metadata_rank2_index=', i
+                        write(md_log_output_unit,*) 'neighbour_domain_index=', n_ind, &
                             '; neighbour_image=', n_img
-                        write(log_output_unit,*) 'neighbour_send_metadata_rank2_index=', n_row, &
+                        write(md_log_output_unit,*) 'neighbour_send_metadata_rank2_index=', n_row, &
                             '; neighbour_send_metadata_send_comms_index=', n_comms
-                        write(log_output_unit,*) 'my_recv_metadata_bbox=', all_recv_metadata(3:6,i,j,ti)
-                        write(log_output_unit,*) 'neighbour_send_metadata_bbox=', all_send_metadata(3:6,n_row, n_ind, n_img)
-                        write(log_output_unit,*) 'bbox_roundoff_threshold=', box_roundoff_tol
+                        write(md_log_output_unit,*) 'my_recv_metadata_bbox=', all_recv_metadata(3:6,i,j,ti)
+                        write(md_log_output_unit,*) 'neighbour_send_metadata_bbox=', all_send_metadata(3:6,n_row, n_ind, n_img)
+                        write(md_log_output_unit,*) 'bbox_roundoff_threshold=', box_roundoff_tol
                     end if
                 end if
 
@@ -3131,7 +3151,7 @@ module multidomain_mod
             end do
 
         end do
-        flush(log_output_unit)
+        flush(md_log_output_unit)
 
         ! Free memory we don't need. Note some of these variables
         ! will grow in size rapidly with num_images, so good to be careful.
@@ -3229,20 +3249,20 @@ module multidomain_mod
 
         ! Print out timing info for each
         do i = 1, size(md%domains, kind=ip)
-            write(log_output_unit, "(A)") ''
-            write(log_output_unit, "(A,I6,A)") 'Timer of md%domains(', i, ')'
-            write(log_output_unit, "(A)") trim(md%domains(i)%output_folder_name)
-            write(log_output_unit, "(I6, I6)") mod(md%domains(i)%myid, large_64_int), md%domains(i)%local_index
-            write(log_output_unit, "(A)") ''
-            call md%domains(i)%timer%print(log_output_unit)
+            write(md%log_output_unit, "(A)") ''
+            write(md%log_output_unit, "(A,I6,A)") 'Timer of md%domains(', i, ')'
+            write(md%log_output_unit, "(A)") trim(md%domains(i)%output_folder_name)
+            write(md%log_output_unit, "(I6, I6)") mod(md%domains(i)%myid, large_64_int), md%domains(i)%local_index
+            write(md%log_output_unit, "(A)") ''
+            call md%domains(i)%timer%print(md%log_output_unit)
             call md%domains(i)%write_max_quantities()
             call md%domains(i)%finalise()
         end do
 
-        write(log_output_unit, "(A)") ''
-        write(log_output_unit, "(A)") 'Multidomain timer'
-        write(log_output_unit, "(A)") ''
-        call md%timer%print(log_output_unit)
+        write(md%log_output_unit, "(A)") ''
+        write(md%log_output_unit, "(A)") 'Multidomain timer'
+        write(md%log_output_unit, "(A)") ''
+        call md%timer%print(md%log_output_unit)
 
 #ifdef EVOLVE_TIMER
         do i = 1, size(md%domains)
@@ -3303,17 +3323,17 @@ module multidomain_mod
         point_gauges_csv_file_local = point_gauges_csv_file
 
         ! Flush the log file to help with debugging (e.g. due to incorrect file type)
-        write(log_output_unit,*) '    Setting up gauges'
-        flush(log_output_unit)
+        write(md%log_output_unit,*) '    Setting up gauges'
+        flush(md%log_output_unit)
         call read_csv_into_array(point_gauges, point_gauges_csv_file_local, skip_header=skip_header_local)
-        write(log_output_unit,*) '    ... have read file, point_gauges dimensions are', shape(point_gauges)
-        flush(log_output_unit)
+        write(md%log_output_unit,*) '    ... have read file, point_gauges dimensions are', shape(point_gauges)
+        flush(md%log_output_unit)
 
         if(size(point_gauges, dim=1, kind=ip) /= 3) then
-            write(log_output_unit, *) 'ERROR: First dimensions of point_gauges should have size=3.'
-            write(log_output_unit, *) '       Either change the point_gauges_csv_file to have 3 columns (x,y,gaugeID)'
-            write(log_output_unit, *) '       or manually set hazard points for each domain with domain%setup_point_gauges'
-            flush(log_output_unit)
+            write(md%log_output_unit, *) 'ERROR: First dimensions of point_gauges should have size=3.'
+            write(md%log_output_unit, *) '       Either change the point_gauges_csv_file to have 3 columns (x,y,gaugeID)'
+            write(md%log_output_unit, *) '       or manually set hazard points for each domain with domain%setup_point_gauges'
+            flush(md%log_output_unit)
             call generic_stop
         end if
 
@@ -3323,8 +3343,8 @@ module multidomain_mod
                 gauge_ids = point_gauges(3,:))
         end do
 
-        write(log_output_unit,*) '    Gauges are setup'
-        flush(log_output_unit)
+        write(md%log_output_unit,*) '    Gauges are setup'
+        flush(md%log_output_unit)
 
         deallocate(point_gauges, time_var_local, static_var_local)
 
