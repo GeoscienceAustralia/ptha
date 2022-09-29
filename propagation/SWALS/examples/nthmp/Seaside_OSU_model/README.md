@@ -1,4 +1,4 @@
-# NTHMP tsunami currents benchmark problem 5: Seaside OSU experiment of tsunami inundation through a city
+# NTHMP tsunami currents benchmark problem 4: Seaside OSU experiment of tsunami inundation through a city
 
 We model the Seaside OSU experiment from Park et al. (2013), which simulates tsunami inundation through a city. A movie of this problem is [available here](https://www.youtube.com/watch?v=nj98sHcTGOo).
 
