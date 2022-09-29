@@ -10,7 +10,7 @@ Figures 1 and 2 below show the [SWALS model](model.f90) structure, elevation dat
 
 ![Figure 2: Inner domain elevation and gauge locations.](Model_elevation_and_gauges_zoom.png)
 
-The model is forced using a provided synthetic stage time-series at x=5m, which bypasses the need for a wavemaker forcing around x=0m. The boundary speeds are specified with the plane wave relation $(uh = \sqrt{g h} stage)$. Both are provided to a Flather boundary condition which tries to enforce the wave while eliminating spurious reflections. Figure 3 compares the modelled and prescribed boundary stage, along with a gauge observation at x=2m (outside our domain, but inside the experimental domain). The model does a reasonable job of representing the boundary forcing, and increases the stage at later times (consistent with the observed gauge) to reduce boundary reflections.
+The model is forced using a provided synthetic stage time-series at x=5m, which bypasses the need for a wavemaker forcing around x=0m. The boundary speeds are specified with the plane wave relation $(uh = \sqrt{g h} stage)$. Both are provided to a Flather boundary condition which aims to enforce the wave while minimising spurious boundary reflections. Figure 3 compares the modelled and prescribed boundary stage, along with a gauge observation at x=2m (outside our domain, but inside the experimental domain). The model does a reasonable job of representing the boundary forcing, and increases the stage at later times (consistent with the observed gauge) to reduce boundary reflections.
 
 ![Figure 3: Boundary time-series](boundary_check.png)
 
