@@ -4,7 +4,7 @@ We model the Seaside OSU experiment from Park et al. (2013), which simulates tsu
 
 Data for this problem was obtained from the [NTHMP velocities benchmark suite](http://coastal.usc.edu/currents_workshop/problems.html). That page also links to presentations from other modelling groups, and can help give an idea of the performance we might expect. See also the NTHMP currents workshop report (NTHMP, 2017).
 
-Figures 1 and 2 below show the [SWALS model](model.f90) structure, elevation data and locations of gauges. The model uses two nested domains with 4x grid refinement near the city. A wave time-series is applied from the west. Gauges WG3, WG4 are used to check that the boundary forcing is reasonable. To the east is a "city" that includes 4 rows of gauges (A1-9, B1-9, C1-9, D1-4), where the model is compared with data on depths, cross-shore velocities, and cross-shore momentum fluxes $(u^2h)$. Here "cross-shore" is taken to be the x-direction as specified in the NTHMP problem description.
+Figures 1 and 2 below show the [SWALS model](model.f90) structure, elevation data and locations of gauges. The model uses two nested domains with 4x grid refinement near the "city". A wave time-series is applied from the west. Gauges WG3, WG4 are used to check that the boundary forcing is reasonable. The city includes 4 rows of gauges (A1-9, B1-9, C1-9, D1-4), where the model is compared with data on depths, cross-shore velocities, and cross-shore momentum fluxes $(u^2h)$. Here "cross-shore" is taken to be the x-direction as specified in the NTHMP problem description.
 
 ![Figure 1: Multidomain structure (red lines), elevation and gauge locations. The wave arrives from the west.](Model_elevation_and_gauges.png)
 
