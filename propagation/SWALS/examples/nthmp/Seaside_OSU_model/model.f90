@@ -119,7 +119,17 @@ module local_routines
             stage_uh_vh_elev(1) = local_elev
         end if
         ! Semi-transmissive boundary condition will provide uh/vh values
-        stage_uh_vh_elev(2:3) = 0.0_dp 
+        !stage_uh_vh_elev(2:3) = 0.0_dp 
+
+        ! With flather boundary we need to well approximate the UH value
+        ! Estimate from plane wave equation
+        !stage_uh_vh_elev(2) = (stage_uh_vh_elev(1) - initial_sea_level) * sqrt(gravity * initial_sea_level)
+        !stage_uh_vh_elev(2) = (stage_uh_vh_elev(1) - initial_sea_level) * sqrt(gravity * (stage_uh_vh_elev(1) - local_elev))
+        stage_uh_vh_elev(2) = (stage_uh_vh_elev(1) - initial_sea_level) * sqrt(gravity/(initial_sea_level-local_elev)) * &
+            (stage_uh_vh_elev(1) - local_elev)
+
+        stage_uh_vh_elev(3) = 0.0_dp
+
         stage_uh_vh_elev(4) = local_elev
 
     end function
@@ -196,7 +206,7 @@ program Seaside_OSU
     use global_mod, only: ip, dp, minimum_allowed_depth, &
         default_nonlinear_timestepping_method
     use multidomain_mod, only: multidomain_type, setup_multidomain
-    use boundary_mod, only: boundary_stage_transmissive_normal_momentum, boundary_stage_radiation_momentum
+    use boundary_mod, only: boundary_stage_transmissive_normal_momentum, boundary_stage_radiation_momentum, flather_boundary
     use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit
     use local_routines
@@ -271,8 +281,9 @@ program Seaside_OSU
 
     ! Build boundary conditions
     call setup_boundary_information()
-    md%domains(1)%boundary_subroutine => boundary_stage_transmissive_normal_momentum
-    !md%domains(1)%boundary_subroutine => boundary_stage_radiation_momentum
+    !md%domains(1)%boundary_subroutine => boundary_stage_transmissive_normal_momentum ! OK but slightly attenuates
+    !md%domains(1)%boundary_subroutine => boundary_stage_radiation_momentum ! Strongly attenuates
+    md%domains(1)%boundary_subroutine => flather_boundary ! Strongly attenuates if UH@boundary is zero
     md%domains(1)%boundary_function => boundary_function
 
     call md%make_initial_conditions_consistent()
