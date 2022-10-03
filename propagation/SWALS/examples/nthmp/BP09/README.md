@@ -94,7 +94,7 @@ Below we compare run 1 and run 3 in the same way. In this case the differences a
 We expect small differences between runs 1 and 2 because of the domain partitioning. Due to finite precision of floating point arithmetic, the partitioned domain coordinates are not bitwise equal to the original domain coordinates (although differences are tiny, in the least significant digits). This leads to small differences in the solutions. 
 
 * It is possible to force models with different openmp/MPI configurations to give __identical__ results by prescribing the same domain partition in both cases (i.e. setting `md%load_balance_file`). This is good practice in applications. 
-    * This is done in an alternative script [run_model_exact_reproduce.sh](run_model_exact_reproduce.sh). For brevity that is not run by the automated test suite, but such a test is run in [paraboloid_bowl](../../paraboloid_bowl).
+    * This is done in an alternative script [run_model_exact_reproduce.sh](run_model_exact_reproduce.sh). For brevity that is not run by the automated test suite, but such a test is run in [paraboloid_bowl](../../paraboloid_bowl) and in [../Hilo_Tohoku_tsunami/](../Hilo_Tohoku_tsunami).
 
 For run 3, the use of local timestepping changes the numerical method, so it differs from both run 1 and run 2 (even though the latter uses the same domain partition). 
 
