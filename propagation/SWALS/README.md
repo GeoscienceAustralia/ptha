@@ -4,7 +4,7 @@
 Shallow WAter Like Solvers (SWALS) computes solutions to several [variants of
 the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear) in cartesian
 and spherical coordinates, on domains represented as a connected set of
-structured grids.
+rectangular grids.
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
@@ -23,7 +23,7 @@ solution. Information on the priority domain solution is communicated between
 domains as required to enable seamless evolution of the flow. 
 
 Nested domains may use different numerical solvers, and take different
-timesteps. For example a single model might represent global-scale tsunami
+timesteps. For example, a single model might represent global-scale tsunami
 propagation using a cheap quasi-linear solver with a relatively large
 time-step, while inundation in a region of interest may be represented with a
 sequence of increasingly fine domains using shock-capturing finite-volume
