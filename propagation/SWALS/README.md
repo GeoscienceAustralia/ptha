@@ -14,9 +14,9 @@ solver developed by Elena Tolkova (which is similar to the well-known MOST
 tsunami solver, but uses a different wetting and drying scheme). 
 
 Two-way nesting allows for the use of higher-resolution domains in specified
-areas. For example a single model could use hundreds of domains, with
-resolutions varying from kilometers to meters, to simulate global-scale tsunami
-propagation and site-specific high-resolution inundation. In models with
+areas. For example a single model could simulate global-scale tsunami
+propagation and site-specific high-resolution inundation using hundreds of
+domains, with resolutions varying from kilometers to meters. In models with
 multiple domains, the finest-resolution domain at any particular point is the
 "priority domain" at that point, and is taken to contain the SWALS numerical
 solution. Information on the priority domain solution is communicated between
