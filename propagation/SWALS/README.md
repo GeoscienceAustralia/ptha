@@ -14,7 +14,11 @@ solver developed by Elena Tolkova (which is similar to the well-known MOST
 tsunami solver, but uses a different wetting and drying scheme). 
 
 Two-way nesting allows for the use of higher-resolution domains in specified
-areas. Nested domains may use different numerical solvers, and take different
+areas. In a model with multiple domains, the finest-resolution domain at any
+particular site is the "priority domain" at that point and is taken to contain
+the SWALS numerical solution. Information on the solution in priority domain
+regions is communicated between domains as required to enable seamless evolution of the
+flow. Nested domains may use different numerical solvers, and take different
 timesteps. For some solvers, flux correction is used to enforce the
 conservation of mass and advected momentum through nested domain interfaces.
 
