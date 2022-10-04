@@ -105,6 +105,14 @@ By default there is no additional turbulence model. However a simple eddy viscos
 
 ## The Leap-frog schemes
 
+The SWALS leap-frog schemes solve of the nonlinear shallow water equations, with a particular focus on linear or quasi-linear variants. The most complete scheme is `leapfrog_nonlinear`, which solves the nonlinear shallow water equations without any eddy-viscosity term.
+
+$$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
+
+$$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Omega_s} + \mathbf{M_s} = 0 $$
+
+See the previous section on finite-volume schemes for definitions of each variable. 
+
 Leap-frog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this has not been a focus for leap-frog schemes in SWALS). They have good energy conservation properties which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. Some references that describe classical leap-frog schemes for the linear and nonlinear shallow water equations are:
 
 * *IOC Numerical method of tsunami simulation with the leap-frog scheme IUGG/IOC Time Project, IUGG/IOC Time Project, 1997*
@@ -114,11 +122,11 @@ In general the leap-frog schemes in SWALS do not have good long-time stability w
 
 The leap-frog solver variants provided by SWALS are:
 
-* `"linear"`. This solves the linear shallow water equations in the default case that `md%domains(j)%linear_solver_is_truely_linear=.true.`. In that case the pressure gradient term is linearized by setting the depth equal to the depth at mean-sea-level; the mean-sea level should be set by specifying `md%domains(j)%msl_linear` (which is 0.0 by default). Thus, these settings solve the standard linear shallow water equations. Alternatively, if you set `md%domains(j)%linear_solver_is_truely_linear=.false.` then the pressure gradient term is not linearized, and the equations are nonlinear (but without nonlinear advection terms or nonlinear friction).
+* `"linear"`. This solves the linear shallow water equations in the default case that `md%domains(j)%linear_solver_is_truely_linear=.true.`. In that case the pressure gradient term $( g h \nabla \eta )$ is linearized by replacing the depth $h$ with the depth at mean-sea-level $h_0$, so the term becomes $(g h_0 \nabla \eta )$. In this case the mean-sea level should be set by specifying `md%domains(j)%msl_linear` (which is 0.0 by default). In addition we ignore other nonlinear terms, including the nonlinear advection term $( \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) )$, the nonlinear friction term $(g h \mathbf{S_f})$, and the nonlinear spherical coordinate metric term $(\mathbf{M_s)$. These settings correspond to the standard linear shallow water equations, including the Coriolis force in spherical coordinates. Note that one can retain nonlinearity in the pressure gradient term by setting `md%domains(j)%linear_solver_is_truely_linear=.false.`, while still ignoring the other nonlinear terms.
 
 * `"leapfrog_linear_plus_nonlinear_friction"`. This is similar to `"linear"` above with the addition of a nonlinear friction term (either Manning or Chezy as discussed below). The same parameters as discussed above should be specified to control nonlinearity in the pressure gradient term. This is useful as a cheap way to include friction in global scale tsunami models.
 
-* `"leapfrog_nonlinear"`. This solves the nonlinear shallow water equations with a leap-frog scheme, including wetting and drying. 
+* `"leapfrog_nonlinear"`. This solves the nonlinear shallow water equations with a leap-frog scheme, including wetting and drying.
 
 
 For all leap-frog solvers except `"linear"`, the friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
