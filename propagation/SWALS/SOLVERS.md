@@ -27,7 +27,7 @@ The solvers support use of either Cartesian or Spherical coordinates by specifyi
 
 # Details on the solvers
 
-Multiple numerical methods are supported in SWALS (detailed below). The validation test-suite most often uses `default_nonlinear_timestepping_method` (currently equal to `rk2`) for nonlinear problems, and `default_linear_timestepping_method` (currently equal to `linear`) for linear problems. 
+Multiple numerical methods are supported in SWALS (detailed below). The validation test-suite most often uses `default_nonlinear_timestepping_method` (currently equal to `'rk2'`) for nonlinear problems, and `default_linear_timestepping_method` (currently equal to `'linear'`) for linear problems. 
 
 With these defaults, other schemes are less heavily exercised by the validation test-suite. If you wish to better understand the performance of other schemes, the default nonlinear and linear solvers used in the test suite can be changed by setting `default_nonlinear_timestepping_method` and `default_linear_timestepping_method` in [global\_mod.f90](./src/shallow_water/global_mod.f90). This will affect many but not all test problems. A number of tests deliberately exercise non-default solvers by directly specifying `md%domains(j)%timestepping_method`, rather than using the defaults. In such cases one should directly change `md%domains(j)%timestepping_method` in the code used to setup the problem.
 
