@@ -105,13 +105,13 @@ By default there is no additional turbulence model. However a simple eddy viscos
 
 ## The Leap-frog schemes
 
-The SWALS leap-frog schemes solve of the nonlinear shallow water equations, with a particular focus on linear or quasi-linear variants. The most complete scheme is `leapfrog_nonlinear`, which solves the nonlinear shallow water equations without any eddy-viscosity term.
+The SWALS leap-frog schemes solve the nonlinear shallow water equations, with a particular focus on linear or quasi-linear variants that are efficient for low-Froude-number flow. The most complete scheme is `leapfrog_nonlinear`, which solves the nonlinear shallow water equations without any eddy-viscosity term:
 
 $$ \frac{\partial \eta}{\partial t} + \nabla \cdot \mathbf{q} = 0 $$
 
 $$ \frac{\partial \mathbf{q}}{\partial t} + \nabla \cdot (\mathbf{u}\otimes\mathbf{q}) + g h \nabla \eta + g h \mathbf{S_f} + \mathbf{\Omega_s} + \mathbf{M_s} = 0 $$
 
-See the previous section on finite-volume schemes for definitions of each variable. 
+For definitions of these variables see the previous section on finite-volume schemes. 
 
 Leap-frog schemes are classically used for deep-ocean tsunami propagation, and are also popular for inundation modelling (although this has not been a focus for leap-frog schemes in SWALS). They have good energy conservation properties which makes them much better suited to long-distance deep ocean tsunami propagation, as compared with the finite-volume schemes discussed above. Some references that describe classical leap-frog schemes for the linear and nonlinear shallow water equations are:
 
