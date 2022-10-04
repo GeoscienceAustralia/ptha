@@ -4,6 +4,7 @@ We simulate an experiement in which a steady flow is input to a mostly flat-bedd
 
 The [SWALS model](model.f90) simulates this problem in a flume with walls on three sides (bottom, left, top), a discharge forcing on the left-hand-side, and a Flather boundary (to radiate outgoing waves) on the right hand-side. The discharge is computed to match the velocity specified in the experiment (0.115 m/s). The target stage for the Flather boundary is tuned to give adequate outflow and ensure that the modelled stage near the island matches the desired value (0 m in our setup which has a flume-bottom depth of -0.054 m). The problem is simulated using a Manning friction coefficient of 0.025, which was found to give a reasonable match with the experiments. An increased Manning friction is prescribed along the flume walls (0.05) to account for the combined bed and wall friction there.
 
+After the model is run for some time, eddies develop downstream of the island, eventually developing a (statistically) steady state. Figure 1 shows the flume elevation and modelled speed and stage at the final timestep, with eddies clearly visible.
 
 ![Figure 1: Flume elevation, and modelled snapshots of speed and stage at the final model timestep.](Model_elevation_and_speed.png)
 
