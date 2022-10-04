@@ -17,15 +17,16 @@ Two-way nesting allows for the use of higher-resolution domains in specified
 areas. In models with multiple domains, the finest-resolution domain at any
 particular point is the "priority domain" at that point, and is taken to
 contain the SWALS numerical solution. Information on the priority domain
-solution is communicated between domains as required to enable seamless
-evolution of the flow. Nested domains may use different numerical solvers, and
-take different timesteps. For some solvers, flux correction is used to enforce
-the conservation of mass and advected momentum through nested domain
-interfaces. 
+solution is communicated between domains as required to enable domains to update
+their "non-priority" (halo) regions with the priority domain flow state. This
+enables seamless evolution of the flow in nested domains. Nested domains may
+use different numerical solvers, and take different timesteps. For some
+solvers, flux correction is used to enforce the conservation of mass and
+advected momentum through nested domain interfaces. 
 
 Parallel computation (shared and distributed memory CPU) is supported with a
 mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can be
-used to improve the efficiency of large parallel jobs. 
+used to improve the efficiency of large parallel jobs.
 
 The code includes various test suits that [can be run automatically](#compiling-and-testing), including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
