@@ -1,5 +1,5 @@
-SWALS solvers
---------------
+# SWALS solvers
+----------------
 
 SWALS contains a range of solvers for variants of the 2D shallow water equations. For models that involve multiple domains (i.e. using a `multidomain` object, typically denoted `md`), one can use different solvers on different domains, and they may take different time-steps. [See here for a study that uses a range of SWALS solvers](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full).
 
