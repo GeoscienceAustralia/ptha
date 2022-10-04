@@ -2,8 +2,8 @@
 -----
 
 Shallow WAter Like Solvers (SWALS) computes solutions to several [variants of
-the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear) in cartesian
-and spherical coordinates, on domains represented as a connected set of
+the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear) in Cartesian
+and Spherical coordinates, on domains represented as a connected set of
 rectangular grids.
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
@@ -14,22 +14,31 @@ solver developed by Elena Tolkova (which is similar to the well-known MOST
 tsunami solver, but uses a different wetting and drying scheme). 
 
 Two-way nesting allows for the use of higher-resolution domains in specified
-areas. For example a single model could simulate global-scale tsunami
-propagation and site-specific high-resolution inundation using hundreds of
-domains, with resolutions varying from kilometers to meters. In models with
+areas. For example, a single model could simulate global-scale tsunami
+propagation through to site-specific high-resolution inundation using hundreds
+of domains, with resolutions varying from kilometers to meters. In models with
 multiple domains, the finest-resolution domain at any particular point is the
-"priority domain" at that point, and is taken to contain the SWALS numerical
-solution. Information on the priority domain solution is communicated between
-domains as required to enable seamless evolution of the flow. 
+"priority domain" at that point, and is interpreted as containg the SWALS
+numerical solution. Information on the priority domain solution is communicated
+between domains as required to enable seamless evolution of the flow. 
 
 Nested domains may use different numerical solvers, and take different
 timesteps. For example, a single model might represent global-scale tsunami
 propagation using a cheap quasi-linear solver with a relatively large
 time-step, while inundation in a region of interest may be represented with a
 sequence of increasingly fine domains using shock-capturing finite-volume
-schemes and smaller timesteps. Flux correction is used to enforce the
-conservation of mass (and sometimes advected momentum) through nested domain
-interfaces, if this is permitted by the solver type.
+schemes and smaller timesteps. 
+
+Flux correction is used to enforce the conservation of mass and advected
+momentum through nested domain interfaces. There are exceptions for schemes
+that ignore momentum advection (where it makes sense to flux-correct the mass,
+but not advected momentum), and for the CLIFFS scheme which is not mass or
+momentum conservative (so we do not flux correct anything).  In practice we
+obtain excellent mass conservation in complex multidomains when using a
+combination of leap-frog and finite-volume schemes. This can be checked using
+the SWALS mass conservation tracking routine, which reports any differences
+between the time-integrated boundary fluxes and the volume change in the
+multidomain. 
 
 Parallel computation (shared and distributed memory CPU) is supported with a
 mixture of MPI (or Fortran coarrays) and openmp. Domains can be automatically split
