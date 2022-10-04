@@ -3,8 +3,8 @@
 
 Shallow WAter Like Solvers (SWALS) computes solutions to several [variants of
 the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear) in Cartesian
-and Spherical coordinates, on domains represented as a connected set of
-rectangular grids.
+and Spherical coordinates, on "multidomains" represented as a connected set of
+rectangular grid domains.
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
@@ -22,8 +22,8 @@ solution is communicated between domains as required to enable seamless
 evolution of the flow. 
 
 Flux correction is used to enforce the conservation of mass and advected
-momentum through nested domain interfaces (for schemes that should conserve
-mass and advected momentum on a single grid). In practice we obtain excellent
+momentum through nested domain interfaces, for schemes that would conserve
+these quantities on a single grid. In practice we obtain excellent
 mass conservation in complex multidomains when using a combination of leap-frog
 and finite-volume schemes. This can be checked using the SWALS mass
 conservation tracking routine, which reports any unexplained mass change (i.e.
