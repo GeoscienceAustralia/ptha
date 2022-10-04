@@ -45,7 +45,6 @@ In Spherical coordinates $(\theta, \phi)$ are (longitude, latitude) in degrees. 
 The friction slope term by default uses Manning friction $\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-4/3}$, with Manning coefficient $n$ that is zero by default. But it can also use Chezy friction, which can be written in a similar form using a different power of the depth $(\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-1})$, where $n^{-2}$ is an unusual way of writing the Chezy coefficient. A non-standard linear friction term is also available (as discussed below). 
 
 The turbulent diffusion term $\mathbf{\Psi}$ is by default set to zero. But an eddy viscosity formulation can also be applied, $\mathbf{\Psi} = -\nabla \cdot (\epsilon h (\nabla \otimes \mathbf{u}))$. Here $\epsilon$ is the eddy viscosity model and $\nabla \otimes \mathbf{u}$ is a 2x2 matrix with columns $\nabla u$, $\nabla v$ respectively. More detail is provided on the turbulent diffusion term below. 
-
 In Cartesian coordinates there is no Coriolis term $(\mathbf{\Omega_s} = 0)$. In Spherical coordinates the Coriolis force is $\mathbf{\Omega_s} = 2 \sin(\phi_r) \gamma_r (-vh, uh)$, where $\gamma_r = 7.292115 \times 10^{-5}$ gives the earth angular frequency in radians per second.
 
 In Cartesian coordinates there are no spherical coordinate metric terms $(\mathbf{M_s} = 0)$. In Spherical coordinates $\mathbf{M_s} = \frac{\tan(\phi_r)}{R} u (-vh, uh)$; this leads to a very small correction away from the poles and is often ignored in the tsunami literature. For examples of papers which discuss it, see [Williamson et al. 1992](https://doi.org/10.1016/S0021-9991(05)80016-6), [Titov et al. 2016](http://dx.doi.org/10.1061/(ASCE)WW.1943-5460.0000357), and [Popinet 2011](https://doi.org/10.1007/s10236-011-0438-z). 
@@ -104,6 +103,7 @@ By default there is no additional turbulence model. However a simple eddy viscos
     * The first term allows a simple constant eddy viscosity
     * The second term corresponds to a very common eddy viscosity model (e.g. *Shiono, K. & Knight, D. W. 1991. Turbulent open-channel flows with variable depth across the channel. Journal of Fluid Mechanics, 222, 617-646*) 
 * A simple second-order-in-space explicit scheme is used to discretise the equations. The eddy viscosity $\epsilon$ is clipped if needed to prevent violation of the time-step constraint for explicit diffusion (`eddy_viscosity <= (min_grid_cell_side_length**2 / (2 * timestep))`). This approach can work well in practical cases where turbulent diffusion is not very strong. For models with high resolution and/or strong turbulent diffusion, you may need to reduce the `timestep` to prevent clipping from affecting the solution. The same approach to limiting the eddy-viscosity is used in the model SWASH (*Zijlema, M.; Stelling, G. & Smit, P. SWASH: An operational public domain code for simulating wave fields and rapidly varied flows in coastal waters Coastal Engineering, 2011, 58, 992 - 1012*).
+* See [here](examples/overbank_flow/) for a test of the turbulent diffusion model in SWALS, which compares with a separate solution for steady-state overbank flow.
 
 ## The Leap-frog schemes
 
