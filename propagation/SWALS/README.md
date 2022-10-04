@@ -14,25 +14,28 @@ solver developed by Elena Tolkova (which is similar to the well-known MOST
 tsunami solver, but uses a different wetting and drying scheme). 
 
 Two-way nesting allows for the use of higher-resolution domains in specified
-areas. In models with multiple domains, the finest-resolution domain at any
-particular point is the "priority domain" at that point, and is taken to
-contain the SWALS numerical solution. Information on the priority domain
-solution is communicated between domains as required to enable seamless
-evolution of the flow. There is no limit to the number of nested domains or the
-"depth" of nesting. It is common for large models to use hundreds of domains
-with grid sizes ranging from kilometers to meters.
+areas. For example a single model could use hundreds of domains, with
+resolutions varying from kilometers to meters, to simulate global-scale tsunami
+propagation and site-specific high-resolution inundation. In models with
+multiple domains, the finest-resolution domain at any particular point is the
+"priority domain" at that point, and is taken to contain the SWALS numerical
+solution. Information on the priority domain solution is communicated between
+domains as required to enable seamless evolution of the flow. 
 
 Nested domains may use different numerical solvers, and take different
 timesteps. For example a single model might represent global-scale tsunami
 propagation using a cheap quasi-linear solver with a relatively large
-time-step, while the inundation zone may be represented at high-resolution
-using shock-capturing finite-volume schemes and smaller timesteps. Where
-possible flux correction is used to enforce the conservation of mass and
-advected momentum through nested domain interfaces.  
+time-step, while inundation in a region of interest may be represented with a
+sequence of increasingly fine domains using shock-capturing finite-volume
+schemes and smaller timesteps. Flux correction is used to enforce the
+conservation of mass (and sometimes advected momentum) through nested domain
+interfaces, if this is permitted by the solver type.
 
 Parallel computation (shared and distributed memory CPU) is supported with a
-mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can be
-used to improve the efficiency of large parallel jobs.
+mixture of MPI (or Fortran coarrays) and openmp. Domains can be automatically split
+between MPI ranks, or the partition can be specified by the user at run-time.
+Static load balancing can be used to improve the efficiency of large parallel
+jobs.
 
 The code includes various test suits that [can be run automatically](#compiling-and-testing), including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
