@@ -28,7 +28,7 @@ Multiple numerical methods are supported in SWALS (detailed below). The validati
 
 With these defaults, other schemes are less heavily exercised by the validation test-suite. If you wish to better understand the performance of other schemes, the default nonlinear and linear solvers used in the test suite can be changed by setting `default_nonlinear_timestepping_method` and `default_linear_timestepping_method` in [global\_mod.f90](./src/shallow_water/global_mod.f90). This will affect many but not all test problems. A number of tests deliberately exercise non-default solvers by directly specifying `md%domains(j)%timestepping_method`, rather than using the defaults. In such cases one should directly change `md%domains(j)%timestepping_method` in the code used to setup the problem.
 
-## The finite-volume solvers
+## The Finite-Volume solvers
 
 SWALS has a number of classical shock-capturing finite-volume schemes with accuracy up to second order in space and time. These solve the nonlinear shallow water equations with Manning (or Chezy) friction. 
 
