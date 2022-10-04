@@ -19,11 +19,15 @@ png('Model_elevation_and_speed.png', width=12, height=5.4, units='in', res=200)
 par(mfrow=c(3,1))
 par(mar = c(2, 3.3, 2, 2))
 image.plot(x[[1]]$xs, x[[1]]$ys, x[[1]]$elev0, asp=1, zlim=c(-0.06, 0.01), las=1, 
-           main='Flume elevation with conical island. The flow is from left to right.', 
+           main='Flume elevation and gauges. Flow is from left to right.', 
            legend.args=list('Elevation (m)', side=2), cex.main=2.,
            xlab="", ylab="")
 mtext('x (m)', side=1, line=1)
 mtext('y (m)', side=2, line=2.3)
+
+points(x[[1]]$gauges$lon, x[[1]]$gauges$lat, pch=19, col='white')
+text(x[[1]]$gauges$lon, x[[1]]$gauges$lat, paste0('Gauge ', seq(1, length(x[[1]]$gauges$lon))), adj=0, 
+     col='white', cex=2)
 
 speed = sqrt(x[[1]]$ud[,,nt]**2 + x[[1]]$vd[,,nt]**2)/pmax(x[[1]]$stage[,,nt] - x[[1]]$elev0, 1e-06)
 image.plot(x[[1]]$xs, x[[1]]$ys, speed, asp=1, las=1, 
@@ -76,7 +80,12 @@ for(gi in 1:2){
     grid(col='orange')
     abline(h=0, col='orange', lty='dashed', lwd=2)
     points(model_time - toffset, model_uh/model_depth, t='l', col='red')
-    title(main=paste0('Site ', gi, ': u-velocity'))
+    title(main=paste0('Gauge ', gi, ': u-velocity'))
+
+    if(gi == 1){
+        legend('top', c('Model', 'Data'), lty=c(1,1), col=c('red', 'black'), 
+               pch=c(NA, NA), horiz=TRUE, bty='n', cex=1.5)
+    }
 
     # Compare model and data -- mean
     k = which(model_time > toffset)
@@ -108,7 +117,7 @@ for(gi in 1:2){
     grid(col='orange')
     abline(h=0, col='orange', lty='dashed', lwd=2)
     points(model_time - toffset, model_vh/model_depth, t='l', col='red')
-    title(main=paste0('Site ', gi, ': v-velocity'))
+    title(main=paste0('Gauge ', gi, ': v-velocity'))
 
     # Compare model and data -- mean
     k = which(model_time > toffset)
