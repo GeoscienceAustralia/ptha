@@ -24,7 +24,9 @@ The available solver types are specified in the file [timestepping\_metadata\_mo
 
 # Details on the solvers
 
-While multiple numerical methods are supported in SWALS (detailed below), the validation test-suite most often uses `rk2` for nonlinear problems, and `linear` for linear problems. Other schemes are by default less well tested. However these defaults can be changed by setting `default_nonlinear_timestepping_method` and `default_linear_timestepping_method` in [global\_mod.f90](./src/shallow_water/global_mod.f90). Many test problems use the latter variables to specify the solver type, which provides a convenient approach to running the tests with other solvers. Not all test problems employ this approach, however, in order to deliberately exercise non-default solvers. In such cases one may directly change the `timestepping_method` in the problem code.
+Multiple numerical methods are supported in SWALS (detailed below). However the validation test-suite most often uses `default_nonlinear_timestepping_method` (currently equal to `rk2`) for nonlinear problems, and `default_linear_timestepping_method` (currently equal to `linear`) for linear problems. 
+
+With these defaults, other schemes are less heavily exercised by the validation test-suite. If you want to better understand the performance of other schemes, the default nonlinear and linear solvers used in the test suite can be changed by setting `default_nonlinear_timestepping_method` and `default_linear_timestepping_method` in [global\_mod.f90](./src/shallow_water/global_mod.f90). This will affect many but not all test problems; a number of tests deliberately exercise non-default solvers by directly specifying `md%domains(j)%timestepping_method`. In such cases one should directly change the latter variable in the problem code.
 
 ## The finite-volume solvers
 
