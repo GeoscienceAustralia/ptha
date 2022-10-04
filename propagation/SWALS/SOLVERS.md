@@ -118,7 +118,7 @@ Leap-frog schemes are classically used for deep-ocean tsunami propagation, and a
 * *IOC Numerical method of tsunami simulation with the leap-frog scheme IUGG/IOC Time Project, IUGG/IOC Time Project, 1997*
 * *Liu, P. L. F.; Cho, Y.-S.; Briggs, M. J.; Kanoglu, U. & Synolakis, C. E. Runup of solitary waves on a circular Island Journal of Fluid Mechanics, Cambridge University Press, 1995, 302, 259–285*
 
-In general the leap-frog schemes in SWALS do not have good long-time stability when used in conjunction with nesting. They work well as the coarsest grid in a multidomain, but if used in a refined grid (which receives halo data from a coarser domain) then they often develop instability during long-time integration. This is not always a problem, especially for short model runs, but if it is a problem one should consider using a finite-volume scheme such as `rk2` on problematic domains. 
+In general the leap-frog schemes in SWALS do not have good long-time stability when used in conjunction with nesting. They work well as the coarsest grid in a multidomain, but if used in a refined grid (which receives halo data from a coarser domain) then they often develop instability during long-time integration. This is not always a problem, especially for short model runs. If it is a problem then consider using a finite-volume scheme such as `rk2` on problematic domains. 
 
 The leap-frog solver variants provided by SWALS are:
 
