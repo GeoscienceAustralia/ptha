@@ -1,9 +1,10 @@
 # SWALS
 -----
 
-Shallow WAter Like Solvers (SWALS) computes solutions to several variants of
-the 2D shallow-water equations (linear/nonlinear) in cartesian and spherical
-coordinates, on domains represented as a connected set of structured grids.
+Shallow WAter Like Solvers (SWALS) computes solutions to several [variants of
+the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear) in cartesian
+and spherical coordinates, on domains represented as a connected set of
+structured grids.
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
