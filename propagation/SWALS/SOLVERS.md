@@ -44,7 +44,7 @@ In Spherical coordinates $(\theta, \phi)$ are (longitude, latitude) in degrees. 
 
 The friction slope term by default uses Manning friction $\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-4/3}$, with Manning coefficient $n$ that is zero by default. But it can also use Chezy friction, which can be written in a similar form using a different power of the depth $(\mathbf{S_f} = n^2\mathbf{u} |\mathbf{u}| h^{-1})$, where $n^{-2}$ is an unusual way of writing the Chezy coefficient. A non-standard linear friction term is also available (as discussed below). 
 
-The turbulent diffusion term $\mathbf{\Psi}$ is by default set to zero. But an eddy viscosity formulation can also be applied, $\mathbf{\Psi} = \nabla \cdot (\epsilon h (\nabla \otimes \mathbf{u}))$. Here $\epsilon$ is the eddy viscosity model and $\nabla \otimes \mathbf{u}$ is a 2x2 matrix with columns $\nabla u$, $\nabla v$ respectively. More detail is provided on the turbulent diffusion term below. 
+The turbulent diffusion term $\mathbf{\Psi}$ is by default set to zero. But an eddy viscosity formulation can also be applied, $\mathbf{\Psi} = -\nabla \cdot (\epsilon h (\nabla \otimes \mathbf{u}))$. Here $\epsilon$ is the eddy viscosity model and $\nabla \otimes \mathbf{u}$ is a 2x2 matrix with columns $\nabla u$, $\nabla v$ respectively. More detail is provided on the turbulent diffusion term below. 
 
 In Cartesian coordinates there is no Coriolis term $(\mathbf{\Omega_s} = 0)$. In Spherical coordinates the Coriolis force is $\mathbf{\Omega_s} = 2 \sin(\phi_r) \gamma_r (-vh, uh)$, where $\gamma_r = 7.292115 \times 10^{-5}$ gives the earth angular frequency in radians per second.
 
@@ -99,7 +99,7 @@ The friction model can be controlled by setting the variable `md%domains(j)%fric
 In addition one can set a linear friction coefficient `md%domains(j)%linear_drag_coef` which is zero by default. If non-zero this implements a linear-friction model following *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. In practice you probably do not want to use this for the finite-volume schemes, which are already somewhat numerically dissipative; it is more likely to be useful to add slow friction to the leap-frog schemes.
 
 By default there is no additional turbulence model. However a simple eddy viscosity model can be turned on by specifying `md%domains(j)%use_eddy_viscosity=.true.` and adjusting the values of `md%domains(j)%eddy_visc_constants(1:2)`. 
-* With this option, turbulence-terms of the form $\nabla \cdot (\epsilon h (\nabla \otimes \mathbf{u}))$ are appended to the equation modelling the time rate of change of the depth integrated velocity $\mathbf{q} = h\mathbf{u}$. 
+* With this option, turbulence-terms of the form $\nabla \cdot (\epsilon h (\nabla \otimes \mathbf{u}))$ are used on the right-hand-side of the depth integrated velocity equations (for the evolution of $\mathbf{q} = h\mathbf{u}$). 
 * The eddy viscosity $\epsilon$ is set equal to `md%domains(j)%eddy_visc_constants(1) + md%domains(j)%eddy_visc_constants(2) * depth * shear_velocity`. 
     * The first term allows a simple constant eddy viscosity
     * The second term corresponds to a very common eddy viscosity model (e.g. *Shiono, K. & Knight, D. W. 1991. Turbulent open-channel flows with variable depth across the channel. Journal of Fluid Mechanics, 222, 617-646*) 
