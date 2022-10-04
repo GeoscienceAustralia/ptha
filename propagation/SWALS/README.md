@@ -17,12 +17,18 @@ Two-way nesting allows for the use of higher-resolution domains in specified
 areas. In models with multiple domains, the finest-resolution domain at any
 particular point is the "priority domain" at that point, and is taken to
 contain the SWALS numerical solution. Information on the priority domain
-solution is communicated between domains as required to enable domains to update
-their "non-priority" (halo) regions with the priority domain flow state. This
-enables seamless evolution of the flow in nested domains. Nested domains may
-use different numerical solvers, and take different timesteps. For some
-solvers, flux correction is used to enforce the conservation of mass and
-advected momentum through nested domain interfaces. 
+solution is communicated between domains as required to enable seamless
+evolution of the flow. There is no limit to the number of nested domains or the
+"depth" of nesting. It is common for large models to use hundreds of domains
+with grid sizes ranging from kilometers to meters.
+
+Nested domains may use different numerical solvers, and take different
+timesteps. For example a single model might represent global-scale tsunami
+propagation using a cheap quasi-linear solver with a relatively large
+time-step, while the inundation zone may be represented at high-resolution
+using shock-capturing finite-volume schemes and smaller timesteps. Where
+possible flux correction is used to enforce the conservation of mass and
+advected momentum through nested domain interfaces.  
 
 Parallel computation (shared and distributed memory CPU) is supported with a
 mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can be
