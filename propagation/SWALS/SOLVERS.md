@@ -1,9 +1,7 @@
 # SWALS solvers
 ----------------
 
-SWALS contains a range of solvers for variants of the 2D shallow water equations. For models that involve multiple domains (i.e. using a `multidomain` object, typically denoted `md`), one can use different solvers on different domains, and they may take different time-steps. [See here for a study that uses a range of SWALS solvers](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full).
-
-The solvers support use of either Cartesian or Spherical coordinates by specifying the appropriate [compile time option](README.md#advanced-compilation). By default Cartesian coordinates are used. To use spherical coordinates we set the preprocessor varable `-DSPHERICAL` when compiling. [Many examples](./examples) are provided in the test-problems; for instance [this makefile](examples/nthmp/Hilo_Tohoku_tsunami/) uses spherical coordinates (and unrelated code timing) by defining the variable `SWALS_PREPROCESSOR_FLAGS := -DTIMER -DSPHERICAL`. If the variable `-DSPHERICAL` were not set then Cartesian coordinates would be used.
+SWALS contains a range of solvers for variants of the 2D shallow water equations. For models that involve multiple domains (i.e. using a `multidomain` object, typically denoted `md`), one can use different solvers on different domains, and they may take different time-steps. Both Cartesian and Spherical coordinates are supported and the choice is made when compiling the code; any individual model will use either Cartesian or Spherical coordinates, but not both. [See here for a study that uses a range of SWALS solvers](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full).
 
 In general the different solvers have different strengths and limitations, which are discussed below. For instance some of our solvers work well for global-scale tsunami propagation (at least for long-waves that satisfy the shallow water equations), but are inappropriate for nearshore inundation simulation. The converse holds for some other solvers. Furthermore, not all solvers in SWALS are equally well supported by the boundary conditions and the nesting formulation. 
 
@@ -23,6 +21,9 @@ A SWALS `multidomain` object (denoted `md`) contains one or more structured grid
 The solver for each domain is set by specifying its timestepping method. For example by setting `md%domains(3)%timestepping_method = "linear"`, we make the 3rd domain use the linear leap-frog solver. Many examples are included in the validation test suite, such as [here](./examples/nthmp/BP09/BP09.f90). 
 
 The available solver types are specified in the file [timestepping\_metadata\_mod.f90](./src/shallow_water/timestepping_metadata_mod.f90). This also sets solver specific variables such as the halo thickness required to advance one time-step. Additional aspects of the solver behavior are controlled by other variables in the domain. 
+
+The solvers support use of either Cartesian or Spherical coordinates by specifying the appropriate [compile time option](README.md#advanced-compilation). By default Cartesian coordinates are used. To use spherical coordinates we set the preprocessor varable `-DSPHERICAL` when compiling. [Many examples](./examples) are provided in the test-problems; for instance [this makefile](examples/nthmp/Hilo_Tohoku_tsunami/) uses spherical coordinates (and unrelated code timing) by defining the variable `SWALS_PREPROCESSOR_FLAGS := -DTIMER -DSPHERICAL`. If the variable `-DSPHERICAL` were not set then Cartesian coordinates would be used.
+
 
 # Details on the solvers
 
