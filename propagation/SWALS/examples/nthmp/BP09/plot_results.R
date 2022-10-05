@@ -148,7 +148,7 @@ abline(v=seq(139.3, 139.7,by=0.01), col='grey', lty='dotted')
 abline(h=seq(42, 42.3, by=0.01), col='grey', lty='dotted')
 points(centroid[1], centroid[2], pch=19)
 
-legend('bottomright', c('Model', 'Data (Tohoku)', 'Data (UJNR)', 'Data (Tsuji)'), lty=rep(1, 4)
+legend('bottomright', c('Model', 'Data (Tohoku)', 'Data (UJNR)', 'Data (Tsuji)'), lty=rep(1, 4), cex=1.5,
        lwd=c(3,1,1,1), col=c('orange', 'black', 'green', 'red'), bty='n')
 
 dev.off()
