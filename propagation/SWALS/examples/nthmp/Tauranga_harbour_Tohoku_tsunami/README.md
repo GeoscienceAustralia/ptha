@@ -2,11 +2,26 @@
 
 We simulate currents and stage in Tauranga harbour (New Zealand) following the Tohoku tsunami. The data for this problem is available at the [NTHMP velocities benchmark suite](http://coastal.usc.edu/currents_workshop/problems.html).
 
-The [SWALS model](tauranga.f90) uses two nested domains (Figure 1). The outer domain has a coarse cell size (167 m), with factor 3 refinement in the inner domain. The model is forced along the top boundary with a stage time-series observed at the "A Beacon" gauge and a radiation treatment of the fluxes. Alternative boundary treatments are implemented in the code; while not discussed here, the results are moderately sensitive to the boundary treatment because the boundary so close to the coast, making in nontrivial to prescribe the stage while properly radiating outgoing waves. 
+The [SWALS model](tauranga.f90) uses two nested domains (Figure 1). The outer domain has a coarse cell size (120 m), with factor 5 refinement (24 m) in the inner domain. The model is forced along the top boundary with a stage time-series observed at the "A Beacon" gauge and a radiation treatment of the fluxes. Alternative boundary conditions are implemented in the [SWALS model](tauranga.f90) but not discussed here; for this problem because the boundary so close to the coast, it is nontrivial to prescribe the stage while properly radiating outgoing waves. A variety of interesting approaches to boundary conditions were presented in the NTHMP benchmarking workshop, based on slides available [here](http://coastal.usc.edu/currents_workshop/agenda.html).
 
-We compare the modelled and observed water elevations at four water-level gauges (A Beacon, Moturiki, Tug Berth, Sulphur Point), as well as modelled and observed flow speeds at the ADCP. The ADCP location is subject to some uncertainty and so two points are included there (discussed below).
+![Figure 1: Model elevation, domain structure and gauge locations](Model_elevation_and_gauge_locations_lowresolution_coarray.png)
 
-![Figure 1: Model elevation, domain structure and gauge locations](Model_elevation_and_gauge_locations.png)
+We compare modelled and observed water elevations at four water-level gauges (A Beacon, Moturiki, Tug Berth, Sulphur Point), and modelled and observed flow speeds at the ADCP (Figure 1). The ADCP location is subject to some uncertainty and so two points are included there (discussed below).
 
+Figure 2 shows the modelled and observed water-levels at 4 gauges. The model reproduces the observations quite well. 
 
-gauges_plot_lowresolution_omp.png
+![Figure 2: Modelled and observed water levels at four gauges.](gauges_plot_lowresolution_coarray.png)
+
+Figure 3 shows the modelled and observed speed at the ADCP. If the modelled speed is taken from the provided coordinate then speeds are underestimated for both the initial tide, and the subsequent combined tide+tsunami. However, the problem description notes uncertainty in the ADCP location, while currents here are varying rapidly in space. Much better results are obtained by moving the ADCP location a few grid points towards the channel (Figure 3). Similar underestimation at the original ADCP location was reported by NTHMP benchmarking workshop partitipants including [Elena Tolkova using CLIFFS](http://coastal.usc.edu/currents_workshop/presentations/Tolkova.pdf), [Jim Kirby using FUNWAVE](http://coastal.usc.edu/currents_workshop/presentations/Kirby.pdf), and [Diego Arcas using MOST](http://coastal.usc.edu/currents_workshop/presentations/Arcas_PMEL.pdf). Tolkova found better results could be obtained by shifting the ADCP coordinate slightly toward the channel, as reported here (see also NTHMP 2017, p85). 
+
+![Figure 3: Modelled and observed speed at the ADCP.](currents_lowresolution_coarray.png)
+
+## Parallel reproducibility
+
+For this problem we run the same model twice with different domain partitions and check that results are almost identical. The first model run (denoted `lowresolution_omp`) uses the domain partition in Figure 1; the second (denoted `lowresolution_coarray`) splits each of the nested domains into 6 pieces for parallel computation with MPI. 
+
+Because these domain partitions differ, we do not expect bitwise identical results in the two runs. But results should be practically indistinguishable unless chaotic processes dominate (e.g. while not the case here, this is possible for the long time evolution of eddies).
+
+The test code checks that the modelled instantaneous stage maxima and stage minima in both models differ by less than $1 \times 10^{-6}$, while the speed maxima differ by less than $1 \times 10^{-5}$. It also compares the VH flux at a late model timestep and checks that they differ by less than $2 \times 10^{-5}$. 
+
+Note that if the models had been run with the same domain partition, then results would be bitwise identical. While not tested here, similar tests are reported in [../../paraboloid_bowl](../../paraboloid_bowl) and in [../Hilo_Tohoku_tsunami](../Hilo_Tohoku_tsunami). 

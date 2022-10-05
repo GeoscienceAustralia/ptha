@@ -52,28 +52,25 @@ if(all( abs(times_coarray - times_openmp) < 1.0e-06)){
     print('FAIL')
 }
 
-# Compare max stage. Tolerances were designed with an older version of the code which
-# had worse openmp/coarray reproducibility
-k = which(times_coarray < 50000 | times_coarray > 60000) 
-err_stat = abs(max_stage_openmp - max_stage_coarray)/diff(range(max_stage_coarray))
-if(all(err_stat[k] < 5.0e-4)){
+# Compare max stage. 
+err_stat = abs(max_stage_openmp - max_stage_coarray)
+if(all(err_stat < 1.0e-6)){
     print('PASS')
 }else{
     print('FAIL')
 }
 
 # Compare min stage 
-k = which(times_coarray < 80000)
-err_stat = abs(min_stage_openmp - min_stage_coarray)/diff(range(min_stage_coarray))
-if(all(err_stat[k] < 5.0e-4) & all(err_stat[-k] < 5e-02)){
+err_stat = abs(min_stage_openmp - min_stage_coarray)
+if(all(err_stat[k] < 1.0e-6)){
     print('PASS')
 }else{
     print('FAIL')
 }
 
 # Compare max speed
-err_stat = abs(max_speed_openmp - max_speed_coarray)/diff(range(max_speed_coarray))
-if(all(err_stat < 5.0e-3)){
+err_stat = abs(max_speed_openmp - max_speed_coarray)
+if(all(err_stat < 1.0e-5)){
     print('PASS')
 }else{
     print('FAIL')

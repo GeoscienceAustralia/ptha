@@ -21,7 +21,8 @@ model_gauges = merge_multidomain_gauges(multidomain_dir = recent_dir)
 #
 # Image plot of elevation, gauge locations, and domains
 #
-png('Model_elevation_and_gauge_locations.png', width=9, height=4.35, units='in', res=200)
+png(paste0('Model_elevation_and_gauge_locations_', image_name_flag, '.png'), 
+           width=9, height=4.35, units='in', res=200)
 par(mar=c(2,2,3,2))
 # Elevation
 elev_col = c(hcl.colors('Mako', n=40), hcl.colors('Lajolla', n=60)[1:40])
@@ -85,6 +86,9 @@ for(i in 1:length(tobs)){
     }else{
         print(c('FAIL', err_stat))
     }
+
+    legend('bottomleft', c('Data', 'Model'), lty=c(1,1), col=c('black', 'red'), pch=c(NA, NA), bty='n', cex=1.5, 
+           inset=c(0.08, 0))
 }
 dev.off()
 
@@ -110,7 +114,8 @@ png(paste0('currents_', image_name_flag, '.png'), width=10, height=6, units='in'
 plot(obs_c$time/3600, obs_c$speed, t='l', xlim=c(0, 48), xlab='Time (hours)', ylab='Speed (m/s)')
 points(model_time/3600, model_speed, t='l', col='red')
 points(model_time/3600, model_speed_extra, t='l', col='blue', lty='dotted')
-title('Currents at ADCP (Improves with higher resolution). \n Underestimates reported by several codes, adcp position uncertainty?')
+#title('Currents at ADCP (Improves with higher resolution). \n Underestimates reported by several codes, adcp position uncertainty?')
+title('Currents at the ADCP, and a nearby site (slightly further toward the main channel).')
 legend('topleft', c('Data', 'Model @ reported coord', 'Model near reported coord'),
     lty=c('solid','solid','dotted'), col=c('black', 'red', 'blue'))
 # In the NTHMP report, several groups discuss issues with the locations:
