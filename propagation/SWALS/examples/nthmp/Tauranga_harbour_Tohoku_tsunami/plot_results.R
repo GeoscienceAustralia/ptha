@@ -16,11 +16,33 @@ source('../../../plot.R')
 # Get the model results
 #
 recent_dir = rev(Sys.glob('OUTPUTS/RUN_*'))[1]
-md = lapply(Sys.glob(paste0(recent_dir, '/RUN*')), 
-    f<-function(x) get_all_recent_results(x, quiet=TRUE, read_grids=FALSE, always_read_priority_domain=FALSE))
-model_gauges = merge_multidomain_gauges(md)
+model_gauges = merge_multidomain_gauges(multidomain_dir = recent_dir)
 
+#
+# Image plot of elevation, gauge locations, and domains
+#
+png('Model_elevation_and_gauge_locations.png', width=9, height=4.35, units='in', res=200)
+par(mar=c(2,2,3,2))
+# Elevation
+elev_col = c(hcl.colors('Mako', n=40), hcl.colors('Lajolla', n=60)[1:40])
+#elev_col = c(hcl.colors('Mako', n=40), hcl.colors('Green-Orange', n=40))
+multidomain_image(recent_dir, variable='elevation0', time_index=NA, 
+    var_transform_function=function(x) pmin(x, 40),  zlim=c(-40, 40), 
+    xlim=c(0, 41000), ylim=c(0, 18600), col=elev_col, use_fields=TRUE)
+title(main='Elevation, multidomain structure and gauge locations', cex.main=1.7)
+# Domain boxes
+bbox = get_domain_interior_bbox_in_multidomain(recent_dir)
+for(i in 1:length(bbox$merged_domain_interior_bbox)){
+    polygon(bbox$merged_domain_interior_bbox[[i]], border='red', lty='dashed')
+}
 
+# Gauge locations
+pg = read.csv('point_gauge_locations.csv')
+points(pg[,1], pg[,2], pch=4, col='black', cex=1.5)
+text(pg[,1], pg[,2], c('A Beacon', 'Tug Berth', 'Sulphur Point', 'Moturiki', 'ADCP', ''), 
+     col='black', pos=c(1, 4, 4, 4, 2, 1), cex=1.2)
+
+dev.off()
 #
 # Extract gauge data. Interpretation of data based on matlab script provided in
 # the test problem
@@ -48,8 +70,8 @@ par(mar = c(2, 2, 2, 2))
 par(oma = c(0, 2, 0, 0))
 for(i in 1:length(tobs)){
 
-    plot(tobs[[i]]$time/3600, tobs[[i]]$stage, t='l', xlim=c(0, 40),
-        xlab='Hours', ylab='m', cex.axis=1.5, cex.lab=1.7)
+    plot(tobs[[i]]$time/3600, tobs[[i]]$stage, t='l', xlim=c(0, 48),
+        xlab='Hours', ylab='Stage (m)', cex.axis=1.5, cex.lab=1.7)
     title(paste0('Stage @ ', names(tobs)[i]), cex.main=1.8)
     grid()
     mgi = model_gauge_inds[i]
@@ -84,8 +106,8 @@ ind = match(6, model_gauges$gaugeID)
 model_speed_extra = sqrt(model_gauges$time_var$uh[ind,]^2 + model_gauges$time_var$vh[ind,]^2)/
     (model_gauges$time_var$stage[ind,] - model_gauges$static_var$elevation0[ind])
 
-png(paste0('currents_', image_name_flag, '.png'), width=8, height=6, units='in', res=200)
-plot(obs_c$time/3600, obs_c$speed, t='l', xlim=c(0, 40))
+png(paste0('currents_', image_name_flag, '.png'), width=10, height=6, units='in', res=200)
+plot(obs_c$time/3600, obs_c$speed, t='l', xlim=c(0, 48), xlab='Time (hours)', ylab='Speed (m/s)')
 points(model_time/3600, model_speed, t='l', col='red')
 points(model_time/3600, model_speed_extra, t='l', col='blue', lty='dotted')
 title('Currents at ADCP (Improves with higher resolution). \n Underestimates reported by several codes, adcp position uncertainty?')

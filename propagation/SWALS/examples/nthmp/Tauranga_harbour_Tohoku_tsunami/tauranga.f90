@@ -275,11 +275,12 @@ program Tauranga
 
     type(timer_type) :: program_timer
 
-    real(dp), parameter :: mesh_refine = 0.06_dp ! Increase resolution by this amount.  {e.g. 1.0 = 10m; 2 = 5m; 0.1 = 100m; etc}
+    !real(dp), parameter :: mesh_refine = 0.06_dp ! Increase resolution by this amount.  {e.g. 1.0 = 10m; 2 = 5m; 0.1 = 100m; etc}
+    real(dp), parameter :: mesh_refine = 0.08333333_dp ! Increase resolution by this amount.  {e.g. 1.0 = 10m; 2 = 5m; 0.1 = 100m; etc}
     !real(dp), parameter :: mesh_refine = 0.12_dp ! Increase resolution by this amount.  {e.g. 1.0 = 10m; 2 = 5m; 0.1 = 100m; etc}
     
     real(dp) ::  global_dt = 0.22_dp / mesh_refine
-    real(dp), parameter :: final_time = 3600.0_dp * 24.0_dp * 2.0_dp !6.8_dp
+    real(dp), parameter :: final_time = 3600.0_dp * 24.0_dp * 2.0_dp
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 30.0_dp
@@ -294,7 +295,7 @@ program Tauranga
     real(dp), dimension(2):: global_ll = [0.0_dp, 0.0_dp]
     ! grid size (number of x/y cells)
     integer(ip), dimension(2):: global_nx = nint([4100_ip, 1860_ip] * mesh_refine) !nint([4100_ip, 2240_ip] * mesh_refine) !
-    integer(ip), parameter :: nest_ratio = 3_ip
+    integer(ip), parameter :: nest_ratio = 5_ip
     integer(ip), parameter :: boundary_domain_thickness = 0_ip
 
     call swals_mpi_init
