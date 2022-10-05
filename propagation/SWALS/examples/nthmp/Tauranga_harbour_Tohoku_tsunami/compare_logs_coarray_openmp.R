@@ -62,7 +62,7 @@ if(all(err_stat < 1.0e-6)){
 
 # Compare min stage 
 err_stat = abs(min_stage_openmp - min_stage_coarray)
-if(all(err_stat[k] < 1.0e-6)){
+if(all(err_stat < 1.0e-6)){
     print('PASS')
 }else{
     print('FAIL')
@@ -93,7 +93,7 @@ points(times_coarray, min_stage_coarray, t='l', col='black', lty='dotted')
 legend('bottomright', c('Openmp', 'Coarray'), lty=c('dashed', 'dotted'), col=2:1, cex=2, bty='n')
 
 plot(times_openmp, max_speed_openmp, t='l', lty='dashed', xlab='Time (s)', ylab='Maximum speed (m/s)',
-     main='Maximum speed over time (note linear domains may \n produce artificially high transient values, even if stable)', 
+     main='Maximum speed over time', 
      col='red', cex.main=2, cex.axis=1.5, cex.lab=1.6)
 points(times_coarray, max_speed_coarray, t='l', col='black', lty='dotted')
 legend('topleft', c('Openmp', 'Coarray'), lty=c('dashed', 'dotted'), col=2:1, cex=2, bty='n')

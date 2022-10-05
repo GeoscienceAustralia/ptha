@@ -24,13 +24,13 @@ model_gauges = merge_multidomain_gauges(multidomain_dir = recent_dir)
 png(paste0('Model_elevation_and_gauge_locations_', image_name_flag, '.png'), 
            width=9, height=4.35, units='in', res=200)
 par(mar=c(2,2,3,2))
+
 # Elevation
 elev_col = c(hcl.colors('Mako', n=40), hcl.colors('Lajolla', n=60)[1:40])
-#elev_col = c(hcl.colors('Mako', n=40), hcl.colors('Green-Orange', n=40))
 multidomain_image(recent_dir, variable='elevation0', time_index=NA, 
     var_transform_function=function(x) pmin(x, 40),  zlim=c(-40, 40), 
     xlim=c(0, 41000), ylim=c(0, 18600), col=elev_col, use_fields=TRUE)
-title(main='Elevation, multidomain structure and gauge locations', cex.main=1.7)
+title(main='Elevation and gauge locations', cex.main=1.7)
 # Domain boxes
 bbox = get_domain_interior_bbox_in_multidomain(recent_dir)
 for(i in 1:length(bbox$merged_domain_interior_bbox)){
