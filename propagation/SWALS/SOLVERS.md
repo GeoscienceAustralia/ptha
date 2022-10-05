@@ -3,13 +3,13 @@
 
 SWALS contains a range of solvers for variants of the 2D shallow water equations. For models that involve multiple domains (i.e. using a `multidomain` object, typically denoted `md`), one can use different solvers on different domains, and they may take different time-steps. Both Cartesian and Spherical coordinates are supported for all solver types and the choice is made when compiling the code. Any individual model will use either Cartesian or Spherical coordinates on all of its domains; you cannot combine Cartesian and Spherical domains in the one model. [See here for a study that uses a range of SWALS solvers](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full).
 
-In general the different solvers have different strengths and limitations, which are discussed below. For instance some of our solvers work well for global-scale tsunami propagation (at least for long-waves that satisfy the shallow water equations), but are inappropriate for nearshore inundation simulation. The converse holds for some other solvers. Furthermore, not all solvers in SWALS are equally well supported by the boundary conditions and the nesting formulation. 
+In general the different solvers have different strengths and limitations, which are discussed below. For instance, some solvers work well for global-scale tsunami propagation (at least for long-waves that satisfy the shallow water equations) but are inappropriate for nearshore inundation simulation. The converse holds for some other solvers.
 
 Generally speaking the SWALS code development has focussed most on:
 
 * A range of shock-capturing finite volume schemes. These are mainly used for flows with significant nonlinearity, medium to high Froude-numbers, etc. They are quite robust for this purpose, but tend to be more diffusive than the leap-frog schemes (and thus less well suited to global scale tsunami propagation). Some variants of these schemes have better performance at low Froude-numbers than others.
 
-* A range of leap-frog schemes. These solve the linear shallow water equations; variants on the latter with some additional nonlinear terms (e.g. nonlinear pressure gradient terms; manning friction); and there is a variant with all nonlinear terms. The leap-frog schemes have mostly been used for flows domainated by low Froude-numbers (especially global-scale tsunami propagation simulation). The fully nonlinear leap-frog scheme can perform well in some more strongly nonlinear problems (e.g. inundation), but we haven't focussed on making it extremely robust for such purposes (and generally prefer the finite-volume schemes such as `rk2`).
+* A range of leap-frog schemes. These solve the linear shallow water equations; variants on the latter with some additional nonlinear terms (e.g. nonlinear pressure gradient terms; Manning friction); and there is a variant with all nonlinear terms. The leap-frog schemes have mostly been used for flows domainated by low Froude-numbers (especially global-scale tsunami propagation simulation). The fully nonlinear leap-frog scheme can perform well in some more strongly nonlinear problems (e.g. inundation), but we haven't focussed on making it extremely robust for such purposes (and generally prefer the finite-volume schemes such as `rk2`).
 
 We also include the CLIFFS solver developed by Elena Tolkova, but have not worked extensively with that.
 
@@ -95,9 +95,9 @@ Broadly speaking the solvers with `_low_fr_diffusion` might perform better in lo
 
 The friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
 
-* `"manning"`. This is Manning friction, so the array `md%domains(j)%manning_squared(:,:)` is interpreted as the (manning friction)^2
+* `"manning"`. This is Manning friction, so the array `md%domains(j)%manning_squared(:,:)` is interpreted as the (Manning friction)^2
 
-* `"chezy"`. This is Chezy friction. In this case the array `md%domains(j)%manning_squared(:,:)` is interpreted as (1/chezy_friction)^2
+* `"chezy"`. This is Chezy friction. In this case the array `md%domains(j)%manning_squared(:,:)` is interpreted as (1/Chezy friction)^2
 
 In addition one can set a linear friction coefficient `md%domains(j)%linear_drag_coef` which is zero by default. If non-zero this implements a linear-friction model following *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. In practice you probably do not want to use this for the finite-volume schemes, which are already somewhat numerically dissipative; it is more likely to be useful to add slow friction to the leap-frog schemes. See [here](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) for a paper that uses this friction model in SWALS.
 
@@ -137,9 +137,9 @@ The leap-frog solver variants provided by SWALS are:
 
 For all leap-frog solvers except `"linear"`, the friction model can be controlled by setting the variable `md%domains(j)%friction_type`. Values are:
 
-* `"manning"`. This is Manning friction, so the array `md%domains(j)%manning_squared(:,:)` is interpreted as the (manning friction)**2
+* `"manning"`. This is Manning friction, so the array `md%domains(j)%manning_squared(:,:)` is interpreted as the (Manning friction)**2
 
-* `"chezy"`. This is Chezy friction. In this case the array `md%domains(j)%manning_squared(:,:)` is interpreted as (1/chezy_friction)**2
+* `"chezy"`. This is Chezy friction. In this case the array `md%domains(j)%manning_squared(:,:)` is interpreted as (1/Chezy friction)**2
 
 For all solvers (including `"linear"`), one can set the linear friction coefficient `md%domains(j)%linear_drag_coef` which is 0.0 by default. If this is set to a non-zero value then it implements the linear friction model of *Fine, I. V.; Kulikov, E. A. & Cherniawsky, J. Y. Japans 2011 Tsunami: Characteristics of Wave Propagation from Observations and Numerical Modelling Pure and Applied Geophysics, Springer Science and Business Media LLC, 2012, 170, 1295-1307*. 
 
@@ -160,6 +160,6 @@ In general CLIFFS needs a wetting and drying threshold to be tuned to the proble
 
 The CLIFFS solver requires sufficiently smooth bathymetry for stability; see the analysis by Tolkova in the CLIFFS user manual. A bathymetry-smoothing routine is provided by Tolkova for this purpose and has been integrated into SWALS; one must generally use this to avoid instabilities. To apply the bathymetry smoothing, after the elevation has been set in `md%domains(j)%U(:,:,ELV)` you would call the bathymetry smoothing routine, e.g. `call md%domains(j)%smooth_elevation(smooth_method='cliffs')`.
 
-By default our CLIFFS solver uses `md%domains(j)%friction_type = "manning"`. This is Manning friction, and can be spatially variable. It is set using the array `md%domains(j)%manning_squared(:,:)` which interpreted as the (manning friction)^2. Thus far we have not implemented Chezy friction in the CLIFFS solver (although that would not be difficult). We have implemented the linear-friction model associated with `md%domains(j)%linear_drag_coef` (discussed above), which is zero by default. In practice this model is unlikely to be desirable for use with CLIFFS, which is numerically dissipative in any case.
+By default our CLIFFS solver uses `md%domains(j)%friction_type = "manning"`. This is Manning friction, and can be spatially variable. It is set using the array `md%domains(j)%manning_squared(:,:)` which interpreted as the (Manning friction)^2. Thus far we have not implemented Chezy friction in the CLIFFS solver (although that would not be difficult). We have implemented the linear-friction model associated with `md%domains(j)%linear_drag_coef` (discussed above), which is zero by default. In practice this model is unlikely to be desirable for use with CLIFFS, which is numerically dissipative in any case.
 
 The CLIFFS solver is not mass conservative; see Tolkova papers for discussion of this, especially in relation to wetting and drying. For this reason in SWALS's nesting framework, no flux correction is applied between neighbouring domains if one uses CLIFFS, and mass conservation errors are expected.
