@@ -24,7 +24,7 @@ evolution of the flow.
 Flux correction is used to enforce the conservation of mass and advected
 momentum through nested domain interfaces, for schemes that would conserve
 these quantities on a single grid. In practice we obtain excellent
-mass conservation in complex multidomains when using a combination of leap-frog
+mass conservation in complex multidomains when using a combination of leapfrog
 and finite-volume schemes. This can be checked using the SWALS mass
 conservation tracking routine, which reports any unexplained mass change (i.e.
 differences between the time-integrated boundary fluxes and the volume change
