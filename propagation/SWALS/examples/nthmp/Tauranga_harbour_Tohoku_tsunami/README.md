@@ -18,7 +18,7 @@ Figure 3 shows the modelled and observed speed at the ADCP. If the modelled spee
 
 ## Parallel reproducibility
 
-For this problem we run the same model twice with different domain partitions and check that results are almost identical. The first model run (denoted `lowresolution_omp`) uses the domain partition in Figure 1; the second (denoted `lowresolution_coarray`) splits each of the nested domains into 6 pieces for parallel computation with MPI. 
+For this problem we run the same model twice with different domain partitions and check that results are almost identical. The first model run (denoted `lowresolution_omp`) uses the domain partition in Figure 1; the second (denoted `lowresolution_coarray`) splits each domain into 6 pieces for parallel computation with MPI. 
 
 Because these domain partitions differ, we do not expect bitwise identical results in the two runs. But results should be practically indistinguishable unless chaotic processes dominate (e.g. while not the case here, this is possible for the long time evolution of eddies).
 
