@@ -20,7 +20,7 @@ Figure 3 shows the modelled and observed speed at the ADCP. If the modelled spee
 
 For this problem we run the same model twice with different domain partitions and check that results are almost identical. The first model run (denoted `Openmp`) uses the domain partition in Figure 1; the second (denoted `Coarray`) splits each domain into 6 pieces for parallel computation with MPI. 
 
-Because these domain partitions differ, we do not expect bitwise identical results in the two runs. But results should be practically indistinguishable, unless chaotic processes dominate (e.g. long time eddy evolution) which is not the case here.
+Because these domain partitions differ, we do not expect bitwise identical results in the two runs (as discussed in the [BP09 README](../BP09/README.md#why-differences-are-expected-due-to-alternative-domain-partitions-and-local-timestepping)). But results should be practically indistinguishable, unless chaotic processes dominate (e.g. long time eddy evolution) which is not the case here.
 
 Figure 4 shows the time varying maximum stage (i.e. maximum over all points in the multidomain), minimum stage and maximum speed in both models. They are visually indistinguishable. The test code checks that the modelled instantaneous stage maxima and stage minima in both models differ by less than $1 \times 10^{-6}$, while the speed maxima differ by less than $1 \times 10^{-5}$. It also compares the VH flux at a late model timestep and checks that they differ by less than $2 \times 10^{-5}$ everywhere in the multidomain. 
 
