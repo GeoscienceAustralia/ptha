@@ -26,7 +26,8 @@ png(paste0('Model_elevation_and_gauge_locations_', image_name_flag, '.png'),
 par(mar=c(2,2,3,2))
 
 # Elevation
-elev_col = c(hcl.colors('Mako', n=40), hcl.colors('Lajolla', n=60)[1:40])
+#elev_col = c(hcl.colors('Mako', n=40), hcl.colors('Lajolla', n=60)[1:40])
+elev_col = c(hcl.colors('BuPu', n=60)[1:40], hcl.colors('Lajolla', n=60)[1:40])
 multidomain_image(recent_dir, variable='elevation0', time_index=NA, 
     var_transform_function=function(x) pmin(x, 40),  zlim=c(-40, 40), 
     xlim=c(0, 41000), ylim=c(0, 18600), col=elev_col, use_fields=TRUE)
