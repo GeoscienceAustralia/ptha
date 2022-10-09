@@ -6,7 +6,7 @@ The test problem is from the NTHMP benchmark suite. The test data and a problem 
 
 ![Conical Island flume geometry and gauge locations. The wavemaker is near the left edge of the domain. Gauge locations 1-4 vary slightly between cases A, B and C](Flume_plot_A_default.png)
 
-The [SWALS model](BP06.f90) simulates this problem using a nested grid around the island. It has a variety of options that allow use of different solvers, grid resolutions, and forcings, reflecting experiments with this problem. For example, the solitary wave forcing can be created in 3 different ways: an analytical initial condition; an approximate wavemaker forcing; a forcing based on waves observed at gauge 2 (between the wavemaker and the island). A setup using the `cliffs` solver was also implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). 
+The [SWALS model](BP06.f90) simulates this problem using a nested grid around the island. It has a variety of options that allow use of different solvers, grid resolutions, and forcings, reflecting experiments with this problem. For example, the solitary wave forcing can be created in three different ways: an analytical initial condition; an approximate wavemaker forcing; or a forcing based on observed waves at gauge 2 (between the wavemaker and the island). A setup using the `cliffs` solver was also implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). 
 
 While not discussed in detail here, these alternatives are useful for studying the model sensitivity to different setups. 
 
