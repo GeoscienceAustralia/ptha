@@ -15,7 +15,7 @@ parallel reproducibility tests it is partitioned into 6 pieces (Figure 1) by
 passing a [load balance file](load_balance_partion.txt) to
 `md%load_balance_file`. The boundary conditions use the specified idealised
 stage combined with a radiation treatment of the fluxes. In future it might be
-better to applying a separate flather-type condition to the eastern side, but
+better to apply a separate flather-type condition to the eastern side, but
 the sites of interest are simulated well by using the synthetic forcing
 everywhere.
 

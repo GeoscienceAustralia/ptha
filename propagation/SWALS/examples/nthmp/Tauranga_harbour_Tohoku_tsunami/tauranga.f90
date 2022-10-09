@@ -30,6 +30,8 @@ module local_routines
     !       because of reflections from the boundary. Tide is OK
     !   'boundary_stage_transmissive_momentum' -- Similar to previous
     !   'flather_with_uh_equal_zero' -- tsunami waves under-amplified (i.e. too small). Tide is OK
+    ! Interesting treatments of boundary conditions are discussed in the NTHMP currents benchmark 
+    ! presentations (e.g. CLIFFS: de-convolution approach, FUNWAVE: iterative approach) 
     !   
     character(len=charlen) :: boundary_type = 'boundary_stage_radiation_momentum'
     !character(len=charlen) :: boundary_type = 'flather_with_vh_from_continuity'
@@ -267,35 +269,42 @@ program Tauranga
     use coarray_intrinsic_alternatives, only: swals_mpi_init, swals_mpi_finalize
     implicit none
 
-    ! Useful misc variables
-    integer(ip):: j, nd
-
     ! Type holding all domains 
     type(multidomain_type) :: md
 
     type(timer_type) :: program_timer
 
-    real(dp), parameter :: mesh_refine = 0.06_dp ! Increase resolution by this amount.  {e.g. 1.0 = 10m; 2 = 5m; 0.1 = 100m; etc}
-    !real(dp), parameter :: mesh_refine = 0.12_dp ! Increase resolution by this amount.  {e.g. 1.0 = 10m; 2 = 5m; 0.1 = 100m; etc}
-    
-    real(dp) ::  global_dt = 0.22_dp / mesh_refine
-    real(dp), parameter :: final_time = 3600.0_dp * 24.0_dp * 2.0_dp !6.8_dp
+    ! Increase resolution of all domains by this amount. 
+    ! {e.g. on outer domain, 1.0 = 10m; 2.0 = 5m; 0.1 = 100m; etc}
+    real(dp), parameter :: mesh_refine = 0.1_dp 
+   
+    ! Outer domain timestep 
+    real(dp), parameter ::  global_dt = 0.26_dp / mesh_refine
+    ! Duration of simulation
+    real(dp), parameter :: final_time = 3600.0_dp * 24.0_dp * 2.0_dp
 
     ! Approx timestep between outputs
     real(dp), parameter :: approximate_writeout_frequency = 30.0_dp
-    integer(ip), parameter :: only_write_grids_every_nth_output_step = 20_ip ! Write grids less often than gauges
+    ! Write grids less often than gauges
+    integer(ip), parameter :: only_write_grids_every_nth_output_step = 20_ip 
 
-    character(len=charlen) ::  bc_file = './boundary/ABeacon_stage_timeseries.csv'
-    real(dp) :: bc_elev
-
-    ! Length/width
-    real(dp), dimension(2):: global_lw = [41000.0_dp, 18600.0_dp] ![41000.0_dp, 22400.0_dp]
-    ! Lower-left corner coordinate
-    real(dp), dimension(2):: global_ll = [0.0_dp, 0.0_dp]
-    ! grid size (number of x/y cells)
-    integer(ip), dimension(2):: global_nx = nint([4100_ip, 1860_ip] * mesh_refine) !nint([4100_ip, 2240_ip] * mesh_refine) !
+    ! Outer domain Length/width
+    real(dp), parameter :: global_lw(2) = [41000.0_dp, 18600.0_dp]
+    ! Outer domain Lower-left corner coordinate
+    real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp]
+    ! Outer domain grid size (number of x/y cells)
+    integer(ip), parameter :: global_nx(2) = nint([4100_ip, 1860_ip] * mesh_refine)
+    ! Inner domain grid refinement factor
     integer(ip), parameter :: nest_ratio = 3_ip
-    integer(ip), parameter :: boundary_domain_thickness = 0_ip
+
+    ! Boundary condition file
+    character(len=charlen) ::  bc_file = './boundary/ABeacon_stage_timeseries.csv'
+
+    ! Useful misc variables
+    integer(ip):: j, nd
+    real(dp) :: bc_elev ! Need to pass elevation to the boundary
+
+
 
     call swals_mpi_init
 
@@ -309,10 +318,9 @@ program Tauranga
     ! Setup basic metadata
     !
 
-    ! Main domain, with the northern-end optionally shorn off and replaced with a
-    ! boundary_domain
+    ! Main domain
     md%domains(1)%lower_left = global_ll
-    md%domains(1)%nx = global_nx - [0_ip, boundary_domain_thickness]
+    md%domains(1)%nx = global_nx
     md%domains(1)%lw = global_lw * ( ( 1.0_dp * md%domains(1)%nx ) / (1.0_dp * global_nx) )
     md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
     md%domains(1)%timestepping_refinement_factor = 1_ip
@@ -397,9 +405,8 @@ program Tauranga
     ! Evolve the code
     do while (.true.)
        
-        ! Write gauges and print after 'approximate_writeout_frequency' time has passed 
-        ! Don't write gauges every time
         call program_timer%timer_start('IO')
+        ! Write gauges and print after 'approximate_writeout_frequency' time has passed 
         call md%write_outputs_and_print_statistics(&
             approximate_writeout_frequency=approximate_writeout_frequency, &
             write_grids_less_often = only_write_grids_every_nth_output_step, &

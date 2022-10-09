@@ -1,9 +1,10 @@
 # SWALS
 -----
 
-Shallow WAter Like Solvers (SWALS) computes solutions to several variants of
-the 2D shallow-water equations (linear/nonlinear) in cartesian and spherical
-coordinates, on domains represented as a connected set of structured grids.
+Shallow WAter Like Solvers (SWALS) computes solutions to several [variants of
+the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear) in Cartesian
+and Spherical coordinates, on "multidomains" represented as a connected set of
+rectangular grid domains.
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
@@ -14,12 +15,26 @@ tsunami solver, but uses a different wetting and drying scheme).
 
 Two-way nesting allows for the use of higher-resolution domains in specified
 areas. Nested domains may use different numerical solvers, and take different
-timesteps. For some solvers, flux correction is used to enforce the
-conservation of mass and advected momentum through nested domain interfaces.
+timesteps. In models with multiple domains, the finest-resolution domain at any
+particular point is the "priority domain" at that point, and is interpreted as
+containg the SWALS numerical solution. Information on the priority domain
+solution is communicated between domains as required to enable seamless
+evolution of the flow. 
+
+Flux correction is used to enforce the conservation of mass and advected
+momentum through nested domain interfaces, for schemes that would conserve
+these quantities on a single grid. In practice we obtain excellent
+mass conservation in complex multidomains when using a combination of leapfrog
+and finite-volume schemes. This can be checked using the SWALS mass
+conservation tracking routine, which reports any unexplained mass change (i.e.
+differences between the time-integrated boundary fluxes and the volume change
+in the multidomain). 
 
 Parallel computation (shared and distributed memory CPU) is supported with a
-mixture of MPI (or Fortran coarrays) and openmp. Static load balancing can be
-used to improve the efficiency of large parallel jobs. 
+mixture of MPI (or Fortran coarrays) and openmp. Domains can be automatically split
+between MPI ranks, or the partition can be specified by the user at run-time.
+Static load balancing can be used to improve the efficiency of large parallel
+jobs.
 
 The code includes various test suits that [can be run automatically](#compiling-and-testing), including a
 [unit test suite](./tests/unit_tests), a [parallel unit test suite](./tests/parallel_tests),
@@ -227,7 +242,7 @@ A number of preprocessor variables can be defined to control features of the cod
 - `-DCOARRAY` Build with distributed memory parallel support (in addition to shared memory support with openmp - which is enabled by default in any case). If ONLY this flag is provided then coarrays are used - alternatively, the coarray calls may be replaced with MPI by ALSO using flags below.
 - `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` This uses MPI instead of coarrays for communication, which is useful because compiler support for coarrays is quite variable, while MPI is very mature. If using this option you MUST also use `-DCOARRAY` (even though MPI replaces coarrays). 
 - `-DCOARRAY_PROVIDE_CO_ROUTINES` Provide implementations of coarray collectives using MPI. This is required for compilers that do not support Fortran coarray collectives such as `co_min`, `co_max`, `co_sum`, etc. If using this option you MUST also use `-DCOARRAY`, and `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS` if using MPI. To be clear; **if this option and the previous 2 are provided**, then the compiler does NOT need to support coarrays (i.e. **all distributed-memory communication is done with MPI**).
-- `-DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS` Allow nonlinear domains inside a multidomain to take larger timesteps than suggested by `domain%timestepping_refinement_factor`, if this would be stable according to their own cfl-limit. This can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file (e.g. `md%load_balance_file="load_balance_partition.txt"`), which can be generated from a preliminary model run. See `make_load_balance_partition` in [./plot.R](./plot.R).
+- `-DLOCAL_TIMESTEPPING_PARTITIONED_DOMAINS` Allow domains in a multidomain to take larger timesteps than suggested by `domain%timestepping_refinement_factor`, if this would be stable according to their own cfl-limit. Currently it is only allowed for non-staggered-grid schemes (finite-volume and CLIFFS) because the logic of the staggered-grid schemes requires a fixed timestep. The use of local timestepping can speed up model runs, but also introduces load imbalance. The load imbalance can be dealt with by providing a load_balance_partition file (e.g. `md%load_balance_file="load_balance_partition.txt"`), which can be generated from a preliminary model run. See `make_load_balance_partition` in [./plot.R](./plot.R).
 - `-DNETCDF4_GRIDS` Use the HDF5-based netcdf4 format for grid-file output. This requires that the netcdf library is compiled with netcdf4 support -- if not it will cause compilation to fail.
 - `-DTRACK_MULTIDOMAIN_STABILITY` Insert calls to `check_multidomain_stability` into the multidomain evolve loop. This checks every domain in the multidomain for `NaNs` or unusually small/large values, repeatedly during each time-step. If issues are detected then the multidomain writes various output and calls `error-stop`. In practice this is useful to identify the root-cause of stability problems in complex models. Note that if instability is detected on one multidomain in a distributed parallel model, then the call to `error-stop` can cause stability issues to be detected on other images right after the call to the communication routines (tagged with `step-after-comms`). In this case, the multidomain that "really" caused the issue can be identified because its instability is not triggered right after the communication step; it is more likely to have a tag like `inner` or `innerB`. See `evolve_multidomain_one_step` for the tags that are used.
 - `-DDEBUG_ARRAY` Add an array `domain%debug_array(nx, ny)` to every domain, which is written to netcdf at every output timestep. This can provide a scratch space for debugging.

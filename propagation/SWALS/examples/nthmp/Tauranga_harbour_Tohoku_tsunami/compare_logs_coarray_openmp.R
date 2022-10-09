@@ -52,28 +52,25 @@ if(all( abs(times_coarray - times_openmp) < 1.0e-06)){
     print('FAIL')
 }
 
-# Compare max stage. Tolerances were designed with an older version of the code which
-# had worse openmp/coarray reproducibility
-k = which(times_coarray < 50000 | times_coarray > 60000) 
-err_stat = abs(max_stage_openmp - max_stage_coarray)/diff(range(max_stage_coarray))
-if(all(err_stat[k] < 5.0e-4)){
+# Compare max stage. 
+err_stat = abs(max_stage_openmp - max_stage_coarray)
+if(all(err_stat < 1.0e-6)){
     print('PASS')
 }else{
     print('FAIL')
 }
 
 # Compare min stage 
-k = which(times_coarray < 80000)
-err_stat = abs(min_stage_openmp - min_stage_coarray)/diff(range(min_stage_coarray))
-if(all(err_stat[k] < 5.0e-4) & all(err_stat[-k] < 5e-02)){
+err_stat = abs(min_stage_openmp - min_stage_coarray)
+if(all(err_stat < 1.0e-6)){
     print('PASS')
 }else{
     print('FAIL')
 }
 
 # Compare max speed
-err_stat = abs(max_speed_openmp - max_speed_coarray)/diff(range(max_speed_coarray))
-if(all(err_stat < 5.0e-3)){
+err_stat = abs(max_speed_openmp - max_speed_coarray)
+if(all(err_stat < 1.0e-5)){
     print('PASS')
 }else{
     print('FAIL')
@@ -96,7 +93,7 @@ points(times_coarray, min_stage_coarray, t='l', col='black', lty='dotted')
 legend('bottomright', c('Openmp', 'Coarray'), lty=c('dashed', 'dotted'), col=2:1, cex=2, bty='n')
 
 plot(times_openmp, max_speed_openmp, t='l', lty='dashed', xlab='Time (s)', ylab='Maximum speed (m/s)',
-     main='Maximum speed over time (note linear domains may \n produce artificially high transient values, even if stable)', 
+     main='Maximum speed over time', 
      col='red', cex.main=2, cex.axis=1.5, cex.lab=1.6)
 points(times_coarray, max_speed_coarray, t='l', col='black', lty='dotted')
 legend('topleft', c('Openmp', 'Coarray'), lty=c('dashed', 'dotted'), col=2:1, cex=2, bty='n')

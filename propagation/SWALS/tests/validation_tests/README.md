@@ -6,7 +6,7 @@ The script here can be used to run test problems in `../../examples/*` and `../.
 
     Rscript run_validations.R
 
-This takes about an hour to run on my desktop (as of July 2022). It searches the test problem directories for scripts named `run_model.sh`, and runs them inside their parent directories. 
+This takes about 70 min to run on my desktop (as of October 2022). It searches the test problem directories for scripts named `run_model.sh`, and runs them inside their parent directories. 
 
 Most tests use openmp parallelism alone, but a significant minority also use MPI. The commands controlling openmp and MPI (i.e. number of threads, ranks, etc) are determined by the script [../../src/test_run_commands.sh](../../src/test_run_commands). For easier portability between machines the latter script usually just sources some machine specific script, such as [this example](../../src/test_run_commands_basic).
 
