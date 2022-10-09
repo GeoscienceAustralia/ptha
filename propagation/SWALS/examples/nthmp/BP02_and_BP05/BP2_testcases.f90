@@ -77,6 +77,8 @@ module local_routines
         ! Stage
         domain%U(:,:,STG) = 0.0_dp
 
+        domain%msl_linear = 0.0_dp
+
         ! Elevation
         tank_x = 0.0_dp
         do i = 2, 5
