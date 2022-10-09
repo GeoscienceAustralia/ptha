@@ -6,11 +6,11 @@ The test problem is from the NTHMP benchmark suite. The test data and a problem 
 
 ![Conical Island flume geometry and gauge locations. The wavemaker is near the left edge of the domain. Gauge locations 1-4 vary slightly between cases A, B and C](Flume_plot_A_default.png)
 
-The [SWALS model](BP06.f90) simulates this problem using a nested grid around the island. It has a variety of options that allow use of different solvers, grid resolutions, and forcings, reflecting experiments with this problem. For example, the solitary wave forcing can be created in three different ways: an analytical initial condition; an approximate wavemaker forcing; or a forcing based on observed waves at gauge 2 (between the wavemaker and the island). A setup using the `cliffs` solver was also implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). 
+The [SWALS model](BP06.f90) uses a nested grid around the island. It has a options to use different solvers, grid resolutions, and forcings, reflecting our experiments with this problem. 
 
-While not discussed in detail here, these alternatives are useful for studying the model sensitivity to different setups. 
+* For example, the solitary wave forcing can be created in three different ways: an analytical initial condition; an approximate wavemaker forcing; or a forcing based on observed waves at gauge 2 (between the wavemaker and the island). A setup using the `cliffs` solver was also implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). 
 
-For this test the wave forcing is based on the wave time-series at gauge 2 (between the wavemaker and the island). This gauge is well inside the model domain, so is not used directly as a boundary condition. Instead we use a heuristic approach to determine a boundary condition compatible with the observations at gauge 2; see [convert_obs_to_wavemaker.R](convert_obs_to_wavemaker.R). 
+For the example below the wave forcing was derived from observations at gauge 2 (between the wavemaker and the island). This gauge is well inside the model domain so not used directly as a boundary condition. Instead we use a heuristic approach to determine a boundary condition compatible with the observations at gauge 2; see [convert_obs_to_wavemaker.R](convert_obs_to_wavemaker.R). 
 
 In the [SWALS model](BP06.f90) the first command line argument takes the value 1, 2 or 3, corresponding to cases A, B and C. The second command line argument takes the value `default` for all results below (to use the default nonlinear solver `rk2`). 
 
@@ -22,17 +22,15 @@ Comparisons with models and data in the literature do not consistently show bett
 
 * The wave forcing in this problem can be defined several ways. Some studies use empirical wavemaker data. Others specify an initial solitary wave (as for FUNWAVE herein). Others adapt the measured wave time-series to specify a boundary condition (as for SWALS herein).
 
-* The experiment involves solitary waves, which feature both dispersion and nonlinearity. They are not well represented with shallow water models (used in many studies), although some shallow water models can emulate physical dispersion by deliberately using a coarse grid (e.g. [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8)). However, even when this problem is approached with more complicated physics (i.e. dispersive or 3D models), we see reports of good agreement for some models using the NTHMP dataset (e.g. SELFE in the [NTHMP 2011 workshop report](https://nws.weather.gov/nthmp/documents/nthmpWorkshopProcMerged.pdf)), and for other models using the alternative runup dataset (e.g. [Choi et al., 2007](https://doi.org/10.1016/j.coastaleng.2007.02.001), [Ma et al., 2019](https://doi.org/10.1080/19942060.2019.1642960)).
+* The experiment involves solitary waves, which feature both dispersion and nonlinearity. They are not well represented with non-dispersive shallow water models (used in many studies). However some shallow water models can emulate physical dispersion by deliberately using a coarse grid (e.g. [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8)). 
 
-Because it is unclear which dataset should be used, both are included below. 
+But even when this problem is approached with more complicated physics (i.e. dispersive or 3D models), we see reports of good agreement for some models using the NTHMP dataset (e.g. SELFE in the [NTHMP 2011 workshop report](https://nws.weather.gov/nthmp/documents/nthmpWorkshopProcMerged.pdf)), and for other models using the alternative runup dataset (e.g. [Choi et al., 2007](https://doi.org/10.1016/j.coastaleng.2007.02.001), [Ma et al., 2019](https://doi.org/10.1080/19942060.2019.1642960)). Because it is unclear which dataset should be used, both are included below. 
 
 ## Reference FUNWAVE model, without dispersion, using analytical forcing
 
-We also compare the SWALS runup results to a high-resolution FUNWAVE simulation, which was run __without dispersion__, on a 2.5cm uniform grid, and initialised with an analytical solitary wave. [See here for FUNWAVE model setup files](funwave_comparison). 
+We also compare the SWALS runup results with a high-resolution FUNWAVE simulation. FUNWAVE was run __without dispersion__ on a 2.5cm uniform grid, and initialised with an analytical solitary wave. [See here for FUNWAVE model setup files](funwave_comparison). 
 
-This serves as a high-order reference solution to the shallow water equations, while using a different style of wave forcing than the SWALS model. 
-
-To be clear, this not intended to a test of the FUNWAVE model itself (for which better results might be obtained using dispersion), but enables us to cross-check results with a different shallow water solver and forcing. 
+This serves as a high-order reference solution to the shallow water equations, while using a different style of wave forcing than the SWALS model. It is not intended to test the FUNWAVE model itself, for which better results might be obtained using dispersion. Rather it enables cross-checking the SWALS results with a different shallow water solver and forcing. 
 
 # Results for Case A
 
