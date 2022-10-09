@@ -203,6 +203,7 @@ program BP02
     md%domains(1)%lower_left = global_ll
     md%domains(1)%nx = global_nx
     md%domains(1)%timestepping_method = timestepping_method
+    !md%domains(1)%use_dispersion = .true.
     call md%setup
 
     ! Call local routine to set initial conditions
