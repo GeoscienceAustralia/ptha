@@ -20,11 +20,11 @@ For this problem the runup data provided for the NTHMP benchmark, and used in ma
 
 Comparisons with models and data in the literature do not consistently show better agreement with one or other dataset, but there is considerable variation between models. The reasons are not clear, but several factors likely contribute.
 
-One factor is that alternative approaches are used to define the wave forcing in this problem. Some studies use empirical wavemaker data. Others specify an initial solitary wave (as herein). Others adapt the measured wave time-series to specify a boundary condition.
+* The wave forcing in this problem can be defined several ways. Some studies use empirical wavemaker data. Others specify an initial solitary wave (as for FUNWAVE herein). Others adapt the measured wave time-series to specify a boundary condition (as for SWALS herein).
 
-Another factor is that solitary waves feature both dispersion and nonlinearity. Thus they are not well represented with shallow water models (used in many studies). Some shallow water models can emulate the physical dispersion with numerical dispersion by deliberately using a coarse grid (e.g. [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8)). Yet even when this problem is approached with more complicated physics (i.e. dispersive or 3D models), we see reports of good agreement in case A for some models using the NTHMP dataset (e.g. SELFE in the [NTHMP 2011 workshop report](https://nws.weather.gov/nthmp/documents/nthmpWorkshopProcMerged.pdf)), and for other models using the alternative runup dataset (e.g. [Choi et al., 2007](https://doi.org/10.1016/j.coastaleng.2007.02.001), [Ma et al., 2019](https://doi.org/10.1080/19942060.2019.1642960)).
+* The experiment involves solitary waves, which feature both dispersion and nonlinearity. They are not well represented with shallow water models (used in many studies), although some shallow water models can emulate physical dispersion by deliberately using a coarse grid (e.g. [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8)). However, even when this problem is approached with more complicated physics (i.e. dispersive or 3D models), we see reports of good agreement for some models using the NTHMP dataset (e.g. SELFE in the [NTHMP 2011 workshop report](https://nws.weather.gov/nthmp/documents/nthmpWorkshopProcMerged.pdf)), and for other models using the alternative runup dataset (e.g. [Choi et al., 2007](https://doi.org/10.1016/j.coastaleng.2007.02.001), [Ma et al., 2019](https://doi.org/10.1080/19942060.2019.1642960)).
 
-Because it isn't clear to the author which dataset should be used, herein we compare the model with both sets of data. 
+Because it is unclear which dataset should be used, both are included below. 
 
 ## Reference FUNWAVE model, without dispersion, using analytical forcing
 
@@ -40,7 +40,9 @@ Figure 1 compares the SWALS model with the gauge time-series. For early times th
 
 ![Figure 1: Modelled and observed time-series at offshore gauges, Case A](Gauges_plot_A_default.png)
 
-Figure 2 compares the modelled and observed runups around the island. For this case there is a large difference between the two available sets of runup data. The SWALS runups agree well with the reference FUNWAVE shallow water simulation, and with the "alternative" runup data, but are significantly larger than the NTHMP runup data. This does not imply that the alternative data is necessarily more accurate. While that could be true, it is also plausible that both shallow water models over-estimate runup (e.g. due to neglect of dispersion or imperfect forcing).
+Figure 2 compares the modelled and observed runups around the island. Note the large difference between the two runup datasets. The SWALS runups agree well with the reference FUNWAVE shallow water simulation, and with the "alternative" runup data. Both modelled runups are significantly larger than the NTHMP runup data. 
+
+* This does not imply that the alternative runup data is necessarily more accurate. If dispersion is included in the FUNWAVE simulation then the modelled runup is in better agreement with the other dataset, suggesting the importance of non-hydrostatic physics that we don't expect to be captured by the shallow water equations.
 
 ![Figure 2: Modelled and observed runup maxima around the island, Case A](Runup_plot_A_default.png)
 
@@ -50,7 +52,7 @@ Figure 3 compares the SWALS model with the gauge time-series. For early times th
 
 ![Figure 3: Modelled and observed time-series at offshore gauges, Case B](Gauges_plot_B_default.png)
 
-Figure 4 compares the modelled and observed runups around the island. The SWALS runups are similar to the datasets. They are also similar to the reference FUNWAVE shallow water simulation, except around 200-350 degrees where the SWALS model predicts less runup. This is due to the different forcings of the FUNWAVE and SWALS models herein; if we run the SWALS model with the analytical forcing (as used in the FUNWAVE model) then it produces runups similar to the FUNWAVE model in this region. 
+Figure 4 compares the modelled and observed runups around the island. The SWALS runups are similar to the datasets. They are also similar to the reference FUNWAVE shallow water simulation, except around 200-350 degrees where the SWALS model predicts less runup. This is due to the different forcings of the FUNWAVE and SWALS models herein. If we run the SWALS model with the analytical forcing (as used in the FUNWAVE model) then it produces runups similar to the FUNWAVE model in this region. 
 
 ![Figure 4: Modelled and observed runup maxima around the island, Case B](Runup_plot_B_default.png)
 
