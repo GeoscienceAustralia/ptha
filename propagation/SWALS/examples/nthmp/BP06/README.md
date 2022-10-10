@@ -10,7 +10,7 @@ The [SWALS model](BP06.f90) uses a nested grid around the island. It has a optio
 
 * For example, the solitary wave forcing can be created in three different ways: an analytical initial condition; an approximate wavemaker forcing; or a forcing based on observed waves at gauge 2 (between the wavemaker and the island). A setup using the `cliffs` solver was also implemented to mimic the results of [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8). 
 
-For the example below the wave forcing was derived from observations at gauge 2 (between the wavemaker and the island). This gauge is well inside the model domain so not used directly as a boundary condition. Instead we use a heuristic approach to determine a boundary condition compatible with the observations at gauge 2; see [convert_obs_to_wavemaker.R](convert_obs_to_wavemaker.R). 
+In the example below the wave forcing was derived from observations at gauge 2 (between the wavemaker and the island). This gauge is well inside the model domain so is not used as a boundary condition directly. Instead we use a heuristic approach to determine a boundary condition compatible with the observations at gauge 2; see [convert_obs_to_wavemaker.R](convert_obs_to_wavemaker.R). 
 
 In the [SWALS model](BP06.f90) the first command line argument takes the value 1, 2 or 3, corresponding to cases A, B and C. The second command line argument takes the value `default` for all results below (to use the default nonlinear solver `rk2`). 
 
@@ -38,7 +38,7 @@ Figure 1 compares the SWALS model with the gauge time-series. For early times th
 
 ![Figure 1: Modelled and observed time-series at offshore gauges, Case A](Gauges_plot_A_default.png)
 
-Figure 2 compares the modelled and observed runups around the island. Note the large difference between the two runup datasets. The SWALS runups agree well with the reference FUNWAVE shallow water simulation, and with the "alternative" runup data. Both modelled runups are significantly larger than the NTHMP runup data. Our model results are similar to those reported for CLIFFS and MOST by [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8)(see Figure 19 Case A therein).
+Figure 2 compares the modelled and observed runups around the island. Note the large difference between the two runup datasets. The SWALS runups agree well with the reference FUNWAVE shallow water simulation, and with the "alternative" runup data. Both modelled runups are significantly larger than the NTHMP runup data. Our model results are similar to those reported for CLIFFS and MOST by [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8) (see Figure 19 Case A therein).
 
 * This does not imply that the alternative runup data is necessarily more accurate. If dispersion is included in the FUNWAVE simulation then the modelled runup is in better agreement with the NTHMP dataset, suggesting the importance of non-hydrostatic physics that are not captured by the shallow water equations.
 
