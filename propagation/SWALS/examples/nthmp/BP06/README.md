@@ -38,7 +38,7 @@ Figure 1 compares the SWALS model with the gauge time-series. For early times th
 
 ![Figure 1: Modelled and observed time-series at offshore gauges, Case A](Gauges_plot_A_default.png)
 
-Figure 2 compares the modelled and observed runups around the island. Note the large difference between the two runup datasets. The SWALS runups agree well with the reference FUNWAVE shallow water simulation, and with the "alternative" runup data. Both modelled runups are significantly larger than the NTHMP runup data. 
+Figure 2 compares the modelled and observed runups around the island. Note the large difference between the two runup datasets. The SWALS runups agree well with the reference FUNWAVE shallow water simulation, and with the "alternative" runup data. Both modelled runups are significantly larger than the NTHMP runup data. Our model results are similar to those reported for CLIFFS and MOST by [Tolkova, 2014](https://doi.org/10.1007/s00024-014-0825-8)(see Figure 19 Case A therein).
 
 * This does not imply that the alternative runup data is necessarily more accurate. If dispersion is included in the FUNWAVE simulation then the modelled runup is in better agreement with the NTHMP dataset, suggesting the importance of non-hydrostatic physics that are not captured by the shallow water equations.
 
