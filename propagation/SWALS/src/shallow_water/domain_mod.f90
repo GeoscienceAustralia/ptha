@@ -1259,7 +1259,7 @@ TIMER_STOP("compute_statistics")
         if(domain%use_dispersion) then
             ! Dispersive terms are not supported for all solvers
             if(.not. any(domain%timestepping_method == [character(len=charlen):: &
-                'linear', 'leapfrog_linear_plus_nonlinear_friction', 'leapfrog_nonlinear']) ) then
+                'linear', 'leapfrog_linear_plus_nonlinear_friction', 'leapfrog_nonlinear', 'rk2', 'euler']) ) then
                 write(log_output_unit, *) 'Dispersion not supported for timestepping_method: ', trim(domain%timestepping_method)
                 call generic_stop
             end if

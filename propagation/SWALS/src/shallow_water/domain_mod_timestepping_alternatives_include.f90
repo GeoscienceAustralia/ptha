@@ -23,13 +23,17 @@
         real(dp):: ts
         logical :: nesting_bf
 
+       ! Store the last timestep in the dispersive solver
+       if(domain%use_dispersion) then
+           call domain%ds%store_last_U(domain%U)
+       end if
+
         ! By default, update the nesting_boundary_flux_integral tracker
         if(present(update_nesting_boundary_flux_integral)) then
             nesting_bf = update_nesting_boundary_flux_integral
         else
             nesting_bf = .TRUE.
         end if
-
 
         call domain%compute_fluxes(ts)
 
@@ -41,6 +45,14 @@
         end if
 
         call domain%update_U(ts)
+
+        if(domain%use_dispersion) then
+            call domain%ds%solve_cellcentred_grid(&
+                domain%U, domain%dx(1), domain%dx(2), &
+                domain%distance_bottom_edge, domain%distance_left_edge, &
+                domain%msl_linear)
+        end if
+        
 
         ! Track flux through boundaries
         domain%boundary_flux_evolve_integral = domain%boundary_flux_evolve_integral + &
