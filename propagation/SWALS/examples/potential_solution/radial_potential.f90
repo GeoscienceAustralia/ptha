@@ -46,9 +46,10 @@ program radial_potential
     !!
     !! Radially symmetric problem for potential flow
     !!
-    use global_mod, only: ip, dp, charlen, default_nonlinear_timestepping_method
+    use global_mod, only: ip, dp, charlen, default_linear_timestepping_method, default_nonlinear_timestepping_method
     use multidomain_mod, only: multidomain_type
     use domain_mod, only: UH, VH
+    use boundary_mod, only: flather_boundary
     use local_routines
     use coarray_intrinsic_alternatives, only: swals_mpi_init, swals_mpi_finalize
     implicit none
@@ -81,7 +82,7 @@ program radial_potential
     !
     ! Set the domain properties
     !
-    md%domains(1)%timestepping_method = 'linear' !default_nonlinear_timestepping_method
+    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
 
     ! Domain Geometry
     md%domains(1)%lw = global_lw
@@ -106,6 +107,8 @@ program radial_potential
     end do
 
     call md%make_initial_conditions_consistent()
+
+    md%domains(1)%boundary_subroutine => flather_boundary
 
     ! Evolve the solution
     do while (.TRUE.)
