@@ -129,7 +129,7 @@ program Seaside_OSU
     md%domains(1)%dx_refinement_factor = 1.0_dp
     md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
     !md%domains(1)%use_dispersion = .true.
-    if(md%domains(1)%use_dispersion) md%domains(1)%minimum_nesting_layer_thickness = 25_ip
+    !if(md%domains(1)%use_dispersion) md%domains(1)%minimum_nesting_layer_thickness = 25_ip
 
     ! Allocate domains and prepare comms
     call md%setup()
