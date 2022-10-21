@@ -71,7 +71,7 @@ module local_routines
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV) + 1.0e-07_dp)
 
         ! ( Manning coefficient )^2
-        domain%manning_squared = 0.005_dp**2
+        domain%manning_squared = 0.025_dp**2
 
         deallocate(x,y)
 
