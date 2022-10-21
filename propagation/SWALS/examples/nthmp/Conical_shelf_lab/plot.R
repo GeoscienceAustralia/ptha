@@ -33,6 +33,16 @@ for(i in 1:9){
     title(main=paste0(gsub('.txt', '', basename(gauge_files[i])), ' @ x=', gauges$lon[i], ', y=', gauges$lat[i]), 
           line=-1.5, cex.main=1.7)
     if(i == 1) legend('center', c('Data', 'Model'), col=1:2, lty=c(1,1), pch=c(NA, NA), bty='n', cex=1.6)
+
+    # Rough error checks
+    m1 = max(model_stage[model_time < 30])
+    o1 = max(obs_data[obs_data[,1] < 30,2])
+    #print(c(i, m1, o1, abs(m1-o1), abs(m1-o1)/o1)) 
+    if(abs(m1 - o1) < 0.08){
+        print('PASS')
+    }else{
+        print('FAIL')
+    }
 }
 dev.off()
 
@@ -49,7 +59,10 @@ par(mar=c(4,4,2,1))
 for(i in 1:length(vel_inds)){
     vi = vel_inds[i]
     li = vel_gauge[i]
-    plot(gauges$time-TM, gauges$time_var$uh[vi,]/(gauges$time_var$stage[vi,]-gauges$static_var$elevation0[vi]), 
+    model_time = gauges$time - TM
+
+    model_u = gauges$time_var$uh[vi,]/(gauges$time_var$stage[vi,]-gauges$static_var$elevation0[vi])
+    plot(model_time, model_u, 
          t='l', col='red', xlab='Time (s)', ylab='U-velocity component (m/s)', 
          main=paste0('U-velocity @ site ', li, ', x=', gauges$lon[vi], ', y=', gauges$lat[vi]),
          ylim=c(-2,2), cex.main=1.5, cex.lab=1.5, cex.axis=1.5)
@@ -58,7 +71,17 @@ for(i in 1:length(vel_inds)){
     abline(h=0, col='orange')
     grid(col='orange')
 
-    plot(gauges$time-TM, gauges$time_var$vh[vi,]/(gauges$time_var$stage[vi,]-gauges$static_var$elevation0[vi]), 
+    # Basic error check
+    m1 = max(model_u[model_time < 40])
+    o1 = max(u[u[,1] < 30, 2], na.rm=TRUE)
+    if(abs(m1 - o1) < 0.3*o1){
+        print('PASS')
+    }else{
+        print(c('FAIL', m1, o1, abs(m1-o1)/o1))
+    }
+
+    model_v = gauges$time_var$vh[vi,]/(gauges$time_var$stage[vi,]-gauges$static_var$elevation0[vi])
+    plot(model_time, model_v, 
          t='l', col='red', xlab='Time (s)', ylab='V-velocity component (m/s)', 
          main=paste0('V-velocity @ site ', li, ', x=', gauges$lon[vi], ', y=', gauges$lat[vi]),
          ylim=c(-1,1), cex.main=1.5, cex.lab=1.5, cex.axis=1.5)
@@ -67,6 +90,11 @@ for(i in 1:length(vel_inds)){
     abline(h=0, col='orange')
     grid(col='orange')
     legend('topright', c('Data', 'Model'), col=1:2, lty=c(1,1), pch=c(NA, NA), bty='n', cex=1.6)
+    #print(c(i, 'V', max(model_v[model_time < 30]), max(v[v[,1] < 30, 2], na.rm=TRUE)))
+
+    # Don't do error check on V velocities -- literature suggests no-one can model them too well
+    # At y=0 sites we might not expect such large v-velocities (due to the symmetry of the domain),
+    # so not surprising that the observations are tricky to model
 }
 dev.off()
 
