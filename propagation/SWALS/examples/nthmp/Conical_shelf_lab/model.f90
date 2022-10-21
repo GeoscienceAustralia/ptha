@@ -29,7 +29,7 @@ module local_routines
         real(dp), allocatable:: x(:), y(:)
         integer(ip):: j
         ! Wave parameters, Macais et al. 2020
-        real(dp), parameter :: wa=0.39_dp, wx0=-3.3_dp, wH=0.78_dp
+        real(dp), parameter :: wa=0.39_dp, wH=0.78_dp, wx0=-5.0_dp !-3.3_dp
 
         real(dp), parameter :: wall_t = 0.2_dp, wall_h = 10.0_dp
         

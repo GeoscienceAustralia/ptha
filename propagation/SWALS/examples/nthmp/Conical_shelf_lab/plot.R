@@ -1,7 +1,7 @@
 source('../../../plot.R')
 MSL = 0.78
 # Time offset, needed because of our initial condition forcing
-TM = -0.6
+TM = 0.0 #-0.6
 
 md_dir = get_recent_output_folder()
 
@@ -38,10 +38,10 @@ for(i in 1:9){
     m1 = max(model_stage[model_time < 30])
     o1 = max(obs_data[obs_data[,1] < 30,2])
     #print(c(i, m1, o1, abs(m1-o1), abs(m1-o1)/o1)) 
-    if(abs(m1 - o1) < 0.08){
+    if(abs(m1 - o1) < 0.082){
         print('PASS')
     }else{
-        print('FAIL')
+        print(c('FAIL', m1, o1, abs(m1-o1)))
     }
 }
 dev.off()
@@ -72,9 +72,9 @@ for(i in 1:length(vel_inds)){
     grid(col='orange')
 
     # Basic error check
-    m1 = max(model_u[model_time < 40])
+    m1 = max(model_u[model_time < 30])
     o1 = max(u[u[,1] < 30, 2], na.rm=TRUE)
-    if(abs(m1 - o1) < 0.3*o1){
+    if(abs(m1 - o1) < 0.25*o1){
         print('PASS')
     }else{
         print(c('FAIL', m1, o1, abs(m1-o1)/o1))
@@ -84,7 +84,7 @@ for(i in 1:length(vel_inds)){
     plot(model_time, model_v, 
          t='l', col='red', xlab='Time (s)', ylab='V-velocity component (m/s)', 
          main=paste0('V-velocity @ site ', li, ', x=', gauges$lon[vi], ', y=', gauges$lat[vi]),
-         ylim=c(-1,1), cex.main=1.5, cex.lab=1.5, cex.axis=1.5)
+         ylim=c(-2,2), cex.main=1.5, cex.lab=1.5, cex.axis=1.5)
     v = read.table(paste0('obs_timeseries/V_Velocity_Average', li, '.txt'))
     points(v, t='l', col='black')
     abline(h=0, col='orange')
