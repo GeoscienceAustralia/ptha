@@ -10,19 +10,20 @@ The figures below show the observed and modelled velocity fields at times of 3, 
 
 At this resolution the numerical model captures the broad main of the flow, but it is not numerically convergent. Mesh refinement can better resolve the unsteady velocities downstream of the building (Gauge 5), but also changes the locations of shocks enough to affect the modelled flow at some gauges. These features are also affected by the choice of friction and use of eddy-viscosity. 
 
-![Time 3s: Measured and modelled velocity field](velocity_field_t03_testcase.png)
 
-![Time 5s: Measured and modelled velocity field](velocity_field_t05_testcase.png)
+![Time 3s: Measured and modelled velocity field](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/isolated_building/velocity_field_t03_testcase.png)
 
-![Time 10s: Measured and modelled velocity field](velocity_field_t10_testcase.png)
+![Time 5s: Measured and modelled velocity field](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/isolated_building/velocity_field_t05_testcase.png)
 
-![Time 15s: Measured and modelled velocity field](velocity_field_t15_testcase.png)
+![Time 10s: Measured and modelled velocity field](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/isolated_building/velocity_field_t10_testcase.png)
 
-![Stage time-series at gauges 1-5](Gauges_stage_plot_testcase.png)
+![Time 15s: Measured and modelled velocity field](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/isolated_building/velocity_field_t15_testcase.png)
 
-![Velocity in the downstream (x) direction at gauges 1-5](Gauges_Uvel_plot_testcase.png)
+![Stage time-series at gauges 1-5](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/isolated_building/Gauges_stage_plot_testcase.png)
 
-![Velocity in the cross-flume (y) direction at gauges 1-5](Gauges_Vvel_plot_testcase.png)
+![Velocity in the downstream (x) direction at gauges 1-5](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/isolated_building/Gauges_Uvel_plot_testcase.png)
+
+![Velocity in the cross-flume (y) direction at gauges 1-5](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/isolated_building/Gauges_Vvel_plot_testcase.png)
 
 
 
