@@ -10,7 +10,7 @@ equations (NTHMP benchmark 2). Experiments have also been conducted for this set
 (NTHMP benchmark problem 5). Herein we combine these cases, by simultaneously 
 comparing models with the linear analytical solution and experiments.
 
-![Figure 1: Beach profile and gauge locations](solution_geometry_caseA_linear.png)
+![Figure 1: Beach profile and gauge locations](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solution_geometry_caseA_linear.png)
 
 Mathematically we expect solutions based on the nonlinear shallow water
 equations to deviate from the linear solution for this problem. Physically, nonlinearity is
@@ -30,11 +30,11 @@ nonlinear shallow water solvers (`rk2` and `leapfrog_nonlinear`).
 Here we test the `linear` scheme, which should give excellent agreement with the analytical solution
 derived from the linear shallow water equations.
 
-![Figure 2: Comparison of analytical, experimental, and SWALS linear solutions for case A](solutionA_linear.png)
+![Figure 2: Comparison of analytical, experimental, and SWALS linear solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionA_linear.png)
 
-![Figure 3: Comparison of analytical, experimental, and SWALS linear solutions for case B](solutionB_linear.png)
+![Figure 3: Comparison of analytical, experimental, and SWALS linear solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionB_linear.png)
 
-![Figure 4: Comparison of analytical, experimental, and SWALS linear solutions for case C](solutionC_linear.png)
+![Figure 4: Comparison of analytical, experimental, and SWALS linear solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionC_linear.png)
 
 ## Nonlinear solutions - `rk2`
 
@@ -46,11 +46,11 @@ significantly from the experiments due to dispersion, which is absent in the
 model, but physically tends to suppress shock formation. Our modelled results are similar
 to those [reported in the GEOCLAW nonlinear shallow water solver for benchmark 5](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
 
-![Figure 5: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](solutionA_rk2.png)
+![Figure 5: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionA_rk2.png)
 
-![Figure 6: Comparison of analytical, experimental, and SWALS nonlinear solutions for case B](solutionB_rk2.png)
+![Figure 6: Comparison of analytical, experimental, and SWALS nonlinear solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionB_rk2.png)
 
-![Figure 7: Comparison of analytical, experimental, and SWALS nonlinear solutions for case C](solutionC_rk2.png)
+![Figure 7: Comparison of analytical, experimental, and SWALS nonlinear solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionC_rk2.png)
 
 
 ## Nonlinear solutions - `leapfrog_nonlinear`
@@ -67,8 +67,8 @@ significantly from the experiments due to dispersion, which is absent in the
 model, but physically tends to suppress shock formation. Our modelled results are similar
 to those [reported in the GEOCLAW nonlinear shallow water solver for benchmark 5](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
 
-![Figure 8: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](solutionA_leapfrog_nonlinear.png)
+![Figure 8: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionA_leapfrog_nonlinear.png)
 
-![Figure 9: Comparison of analytical, experimental, and SWALS nonlinear solutions for case B](solutionB_leapfrog_nonlinear.png)
+![Figure 9: Comparison of analytical, experimental, and SWALS nonlinear solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionB_leapfrog_nonlinear.png)
 
-![Figure 10: Comparison of analytical, experimental, and SWALS nonlinear solutions for case C](solutionC_leapfrog_nonlinear.png)
+![Figure 10: Comparison of analytical, experimental, and SWALS nonlinear solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP02_and_BP05/solutionC_leapfrog_nonlinear.png)

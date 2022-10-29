@@ -19,7 +19,7 @@ better to apply a separate flather-type condition to the eastern side, but
 the sites of interest are simulated well by using the synthetic forcing
 everywhere.
 
-![Figure 1: Elevation data, gauge locations and multidomain structure (dotted red lines)](Model_elevation_lowresolution_omp.png)
+![Figure 1: Elevation data, gauge locations and multidomain structure (dotted red lines)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Hilo_Tohoku_tsunami/Model_elevation_lowresolution_omp.png)
 
 Here test problem is simulated using a resolution of 2/3 arc-seconds (about 20m), corresponding to the coarser of the three resolutions suggested (20m, 10m, 5m) by Lynett et al (2017). 
 
@@ -29,7 +29,7 @@ Figure 2 shows the modelled maximum stage and speed near the harbour. The speed
 color-range is limited to 3m/s because Lynett et al (2017) and other studies
 use this color range.
 
-![Figure 2: Modelled maximum stage (left) and speed (right)](Model_fields_lowresolution_omp.png)
+![Figure 2: Modelled maximum stage (left) and speed (right)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Hilo_Tohoku_tsunami/Model_fields_lowresolution_omp.png)
 
 The modelled stage at the synthetic boundary forcing point agrees well with the
 provided boundary forcing (Figure 3, top panel). The synthetic forcing was extracted
@@ -38,7 +38,7 @@ the wet boundary (along with a radiation treatment of the momentum). The
 slight differences are due to the use of a radiation treatment of the momentum,
 and the spatial difference between the model boundary and site.
 
-![Figure 3: (Top:) Comparison of modelled stage at the boundary and the boundary forcing time-series. (Bottom:) Comparison of the modelled and observed time-series at the Hilo tide gauge.](Gauges_plot_lowresolution_omp.png)
+![Figure 3: (Top:) Comparison of modelled stage at the boundary and the boundary forcing time-series. (Bottom:) Comparison of the modelled and observed time-series at the Hilo tide gauge.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Hilo_Tohoku_tsunami/Gauges_plot_lowresolution_omp.png)
 
 The model agrees quite well with the tide-gauge at Hilo harbour (Figure 3,
 bottom panel). Exact agreement is not expected because of the idealised
@@ -51,7 +51,7 @@ apparently represents 6-min averaged speeds, so we compare with the model using
 both raw and 6-min averaged speeds. We also compare with a model-average
 envelope reported by Lynett et al. (2017) for 6-min averaged speeds. 
 
-![Figure 4: (Top:) Comparison of modelled and observed speed HA25. (Bottom:) Comparison of modelled and observed speed at HA26.](Speed_comparisons_lowresolution_omp.png)
+![Figure 4: (Top:) Comparison of modelled and observed speed HA25. (Bottom:) Comparison of modelled and observed speed at HA26.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Hilo_Tohoku_tsunami/Speed_comparisons_lowresolution_omp.png)
 
 Although the observed data is supposed to represent a 6-min average, our raw model
 values seem to better represent the range of the data. For instance the time-averaging tends
