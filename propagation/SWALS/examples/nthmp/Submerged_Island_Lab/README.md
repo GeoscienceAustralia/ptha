@@ -6,9 +6,9 @@ The [SWALS model](model.f90) simulates this problem in a flume with walls on thr
 
 After the model is run for some time, eddies develop downstream of the island, eventually developing a (statistically) steady state. Figure 1 shows the flume elevation and modelled speed and stage at the final timestep, with eddies clearly visible.
 
-![Figure 1: Flume elevation, and modelled snapshots of speed and stage at the final model timestep.](Model_elevation_and_speed.png)
+![Figure 1: Flume elevation, and modelled snapshots of speed and stage at the final model timestep.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Submerged_Island_Lab/Model_elevation_and_speed.png)
 
 
 Figure 2 compares the modelled and observed velocity vector (with x,y components denoted u,v) at Gauges 1 and 2 after the model has reached a statistically steady state. As the overall flow is directed downstream we see the u-components fluctuate about a non-zero mean, while the v-components fluctuate about zero. The model gives a reasonable representation of the unsteady velocities measured at these sites. 
 
-![Figure 2: Comparison of modelled and observed velocity components at Gauges 1 and 2 (u in the downstream direction, v in the cross-channel direction).](Velocities_at_2_sites.png)
+![Figure 2: Comparison of modelled and observed velocity components at Gauges 1 and 2 (u in the downstream direction, v in the cross-channel direction).](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/Submerged_Island_Lab/Velocities_at_2_sites.png)

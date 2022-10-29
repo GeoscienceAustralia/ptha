@@ -21,15 +21,15 @@ inputs used in the ARR report).
 
 * The velocity vector plot can be compared with their Figure 30
 
-![Velocity vector plot near buildings](Velocity_vector_plot.png)
+![Velocity vector plot near buildings](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/merewether/Velocity_vector_plot.png)
 
 * The Froude number plot can be compared with their Figure 29
 
-![Froude number plot](Froude_number_plot.png)
+![Froude number plot](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/merewether/Froude_number_plot.png)
 
 * The "Hazard" plot gives the speed-times-depth, and can be compared with their Figure 35
 
-![Hazard plot (speed x depth)](Hazard_plot.png)
+![Hazard plot (speed x depth)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/merewether/Hazard_plot.png)
 
 The test code checks that:
 

@@ -6,15 +6,15 @@ The [SWALS model](nesting_reflection.f90) simulates the problem with nested grid
 
 In practice we find the staggered grid algorithms provide a very accurate solution to this problem, using either the linear or the nonlinear shallow water equations. This is expected, as in general they are well suited to modelling low Froude-number flows.
 
-![Solution with the staggered-grid `linear` flow algorithm](cycle_solution_linear.png)
+![Solution with the staggered-grid `linear` flow algorithm](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nesting_plane_wave/cycle_solution_linear.png)
 
-![Solution with the staggered-grid `leapfrog_nonlinear` flow algorithm](cycle_solution_leapfrog_nonlinear.png)
+![Solution with the staggered-grid `leapfrog_nonlinear` flow algorithm](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nesting_plane_wave/cycle_solution_leapfrog_nonlinear.png)
 
 The finite volume algorithms can also solve this problem, but are less accurate than the staggered-grid algorithms. They tend to introduce asymmetries into the numerical solution, albeit these reduce with grid refinement. 
 
-![Solution with the finite-volume `rk2` flow algorithm](cycle_solution_rk2.png)
+![Solution with the finite-volume `rk2` flow algorithm](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nesting_plane_wave/cycle_solution_rk2.png)
 
-![Solution with the finite-volume `midpoint` flow algorithm](cycle_solution_midpoint.png)
+![Solution with the finite-volume `midpoint` flow algorithm](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nesting_plane_wave/cycle_solution_midpoint.png)
 
 To prevent the finite-volume slope-limiters from excessively dissipating the wave packet, this SWALS model is setup to use a non total-variation-diminishing slope-limiter (setting `md%domains(..)%theta = 4.0`; the limiters are  TVD for values less than 2). Without this, the wave packet would be noticeably attenuated. The same numerical issues arise in another model (Basilisk, see code in [basilisk_model](basilisk_model)) that implements a very similar finite volume scheme as SWALS. 
 

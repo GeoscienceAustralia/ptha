@@ -10,14 +10,14 @@ The [SWALS model](monai.f90) simulates this problem using a nested grid in the m
 
 Figure 1 compares the modelled and observed time series at several gauges. The agreement is good, although there are some minor differences in the early part of the time series (around 5-10s) suggesting the experiment had background waves that do not feature in the boundary forcing.
 
-![Figure 1: Modelled and observed gauge time-series at three sites.](gauges_plot.png)
+![Figure 1: Modelled and observed gauge time-series at three sites.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/gauges_plot.png)
 
 The figures below compare the model wet-dry front with experimental snapshots near the runup maxima. They were taken every 0.5s starting from about 15s. The benchmark description notes some uncertainty in the start time, and herein a value of 15.1s was found to give reasonable consistency of the model and experiment. The model contour is defined from a 2mm depth threshold (also suggested in the [GEOCLAW NTHMP tests for this problem](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf)).
 
-![Figure 2: Snapshot of model and observations in main runup area.](snapshot_time_15.1.png)
-![Figure 3: Snapshot of model and observations in main runup area.](snapshot_time_15.6.png)
-![Figure 4: Snapshot of model and observations in main runup area.](snapshot_time_16.1.png)
-![Figure 5: Snapshot of model and observations in main runup area.](snapshot_time_16.6.png)
-![Figure 6: Snapshot of model and observations in main runup area.](snapshot_time_17.1.png)
+![Figure 2: Snapshot of model and observations in main runup area.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/snapshot_time_15.1.png)
+![Figure 3: Snapshot of model and observations in main runup area.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/snapshot_time_15.6.png)
+![Figure 4: Snapshot of model and observations in main runup area.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/snapshot_time_16.1.png)
+![Figure 5: Snapshot of model and observations in main runup area.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/snapshot_time_16.6.png)
+![Figure 6: Snapshot of model and observations in main runup area.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/snapshot_time_17.1.png)
 
 The test script also checks that the modelled runup maxima at three sites is within the range of the experimental results. Those results are written to [this csv file](model_vs_experiment_test_result.csv).

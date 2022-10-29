@@ -16,14 +16,14 @@ offshore wave field while enabling radiation of outgoing waves from the model.
 To focus on the periodic steady-state solution, we reset the stored tsunami maxima
 after an initial burn-in period, which is long enough to allow the model to reach steady state.
 
-[Figure 1](model_data_comparison_1.png) shows the computed wave maxima along
+Figure 1 shows the computed wave maxima along
 with 3 rings of points (inner, middle, outer) around the conical island, at
-which [Figure 2](model_data_comparison_2.png) compares the modelled stage
+which Figure 2 compares the modelled stage
 maxima with the analytical solution. The automated test confirms that these
 solutions are within a prescribed tolerance, and that mass conservation errors
 are negligible. 
 
-![Figure 1](model_data_comparison_1.png)
+![Figure 1](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/circular_island/model_data_comparison_1.png)
 
+![Figure 2](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/circular_island/model_data_comparison_2.png)
 
-![Figure 2](model_data_comparison_2.png)

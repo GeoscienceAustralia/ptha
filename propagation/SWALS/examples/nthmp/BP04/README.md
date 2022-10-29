@@ -10,7 +10,7 @@ The [SWALS model](BP4_testcases.f90) solves this problem using the nonlinear sha
 
 The figure below compares modelled (black) and observed (red) free surface profiles for a relatively small amplitude wave. They show generally good agreement. 
 
-![Figure 1: Comparison of modelled (rk2) and experimental free surface at various times, low amplitude wave](Model-vs-data_0.0185.png)
+![Figure 1: Comparison of modelled (rk2) and experimental free surface at various times, low amplitude wave](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP04/Model-vs-data_0.0185.png)
 
 ## The case with a large amplitude wave, $h/d = 0.3$ 
 
@@ -19,10 +19,10 @@ The figure below compares modelled (black) and observed (red) free surface profi
 Such results are typical for this problem because the flow violates the assumptions of the nonlinear shallow water equations. See for example the
 [GEOCLAW nonlinear shallow water solver for benchmark 4](https://depts.washington.edu/clawpack/links/nthmp-benchmarks/geoclaw-results.pdf). 
 
-![Figure 2: Comparison of modelled (rk2) and experimental free surface at various times, high amplitude wave](Model-vs-data_0.3.png)
+![Figure 2: Comparison of modelled (rk2) and experimental free surface at various times, high amplitude wave](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP04/Model-vs-data_0.3.png)
 
 ## Dimensionless runup vs dimensionless wave amplitude
 
 For this case a we focus on the relationship between the runup and the initial wave amplitude, both normalised by the depth (which varies substantially among the experiments). With our chosen Manning coefficient of 0.005, the `rk2` solver shows good agreement with the general trend of the experimental data.
 
-![Figure 3: Dimensionless runup as a function of dimensionless wave amplitude in experiments and model (rk2).](Runup_scaling_plot.png)
+![Figure 3: Dimensionless runup as a function of dimensionless wave amplitude in experiments and model (rk2).](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP04/Runup_scaling_plot.png)

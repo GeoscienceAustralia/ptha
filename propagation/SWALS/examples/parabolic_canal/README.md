@@ -6,16 +6,16 @@ The analytical solution is formulated in Cartesian coordinates, assuming a const
 
 Figures 1 to 3 compare the analytical solution with the model at 3 sites. The third site is situated in the wetting and drying zone. There is very good agreement with the analytical solution for the stage, the east directed flux (UH) and the north directed flux (VH). 
 
-![Figure 1: Modelled stage at 3 sites (with wetting and drying at the bottom site)](model_vs_analytical_stage_rk2.png)
+![Figure 1: Modelled stage at 3 sites (with wetting and drying at the bottom site)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/parabolic_canal/model_vs_analytical_stage_rk2.png)
 
-![Figure 2: Modelled easterly flux (UH) at 3 sites (with wetting and drying at the bottom site)](model_vs_analytical_UH_rk2.png)
+![Figure 2: Modelled easterly flux (UH) at 3 sites (with wetting and drying at the bottom site)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/parabolic_canal/model_vs_analytical_UH_rk2.png)
 
-![Figure 3: Modelled northerly flux (VH) at 3 sites (with wetting and drying at the bottom site)](model_vs_analytical_VH_rk2.png)
+![Figure 3: Modelled northerly flux (VH) at 3 sites (with wetting and drying at the bottom site)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/parabolic_canal/model_vs_analytical_VH_rk2.png)
 
 Figures 4 and 5 are similar to the previous figures but consider the velocity component in the east and west directions. In these cases we see some deviations between SWALS and the analytical solution in the wet/dry zone, even though the fluxes were predicted very well. The differences occur when the flow is extremely shallow. While the analytical solution predicts drying, the numerical model is slower to dry, resulting in a very thin layer of flowing water on the domain, when actually the flow should be dry (with zero velocities).
 
-![Figure 4: Modelled easterly velocity (U) at 3 sites (with wetting and drying at the bottom site)](model_vs_analytical_U_rk2.png)
+![Figure 4: Modelled easterly velocity (U) at 3 sites (with wetting and drying at the bottom site)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/parabolic_canal/model_vs_analytical_U_rk2.png)
 
-![Figure 5: Modelled northerly velocity (V) at 3 sites (with wetting and drying at the bottom site)](model_vs_analytical_V_rk2.png)
+![Figure 5: Modelled northerly velocity (V) at 3 sites (with wetting and drying at the bottom site)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/parabolic_canal/model_vs_analytical_V_rk2.png)
 
 This slow-to-dry behaviour has been observed previously for frictionless flows using the ANUGA hydrodynamic model, which uses a similar numerical scheme as the SWALS `rk2` solver, albeit on an unstructured mesh ([Davies and Roberts, 2015](https://www.mssanz.org.au/modsim2015/L5/davies.pdf)). The issue is also reported by [Kesserwania and Wang (2014)]( https://doi.org/10.1002/2013WR014906) using another finite-volume numerical scheme. [Xia et al. 2017](https://doi.org/10.1002/2016WR020055) analyse the underlying causes of these issues. This issue is common for cases involving frictionless flow with wetting and drying, but has little impact on the modelled stage or flux time-series. 
