@@ -28,6 +28,8 @@ src_dir: ./examples/merewether/
 exclude_dir: ./examples/merewether/OUTPUTS/
 src_dir: ./examples/nesting_plane_wave/
 exclude_dir: ./examples/nesting_plane_wave/OUTPUTS/
+src_dir: ./examples/overbank_flow/
+exclude_dir: ./examples/overbank_flow/OUTPUTS/
 src_dir: ./examples/parabolic_canal/
 exclude_dir: ./examples/parabolic_canal/OUTPUTS/
 src_dir: ./examples/paraboloid_bowl/
@@ -64,6 +66,12 @@ exclude_dir: ./examples/nthmp/BP09/REF_OUTPUTS/
 src_dir: ./examples/nthmp/Hilo_Tohoku_tsunami/
 exclude_dir: ./examples/nthmp/Hilo_Tohoku_tsunami/OUTPUTS/
 exclude_dir: ./examples/nthmp/Hilo_Tohoku_tsunami/one_arcsec_OUTPUTS/
+src_dir: ./examples/nthmp/Conical_shelf_lab/
+exclude_dir: ./examples/nthmp/Conical_shelf_lab/OUTPUTS/
+src_dir: ./examples/nthmp/Seaside_OSU_model/
+exclude_dir: ./examples/nthmp/Seaside_OSU_model/OUTPUTS/
+src_dir: ./examples/nthmp/Submerged_Island_Lab/
+exclude_dir: ./examples/nthmp/Submerged_Island_Lab/OUTPUTS/
 src_dir: ./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/
 exclude_dir: ./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/OUTPUTS/
 exclude_dir: ./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/REF_OUTPUTS/
