@@ -81,9 +81,9 @@ end module
 
 !@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program Seaside_OSU
+program Conical_shelf
     !!
-    !! NTHMP tsunami-currents benchmark problem, Seaside OSU Experiment
+    !! NTHMP tsunami-currents benchmark problem, Solitary wave on shelf with a conical island
     !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
