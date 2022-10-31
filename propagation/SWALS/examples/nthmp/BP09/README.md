@@ -100,6 +100,6 @@ For run 3, local timestepping changes the numerical method. Thus results differ 
 
 To further explore the sensitivity of the solution to tiny floating point differences, it is interesting to repeat run 1 while adding a tiny perturbation to the model elevations (1e-10 m). 
 
-* This is not here, but leads to differences comparable to "run 1 - run 2". 
+* While not shown here, but leads to differences comparable to "run 1 - run 2". 
 * The subroutine `set_initial_conditions_BP09` in [BP09.f90](BP09.f90) can be modified to do this by changing `real(dp), parameter :: random_perturbation_scale = 0.0e-10_dp` to `real(dp), parameter :: random_perturbation_scale = 1.0e-10_dp`. 
 
