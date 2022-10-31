@@ -33,7 +33,7 @@ Figure 3 shows the modelled tsunami maxima around Okushiri Island. The previous 
 
 ## Consistency of the results with alternative domain partitions and local timestepping
 
-The [run_model.sh](run_model.sh) script runs the problem with three different setups. In principle the adjustments should not lead to substantial differences in the computed solution; results should be "almost the same" if not identical. Here we check for consistency among the three approaches, which are:
+The [run_model.sh](run_model.sh) script runs the problem with three different setups. In principle the three alternatives should lead to results that are "almost the same", if not identical. Here we check for consistency among the three approaches. They are:
 
 1. The first run uses the domains in Figure 1 with openmp for parallelism (`openmp`).
 
@@ -43,10 +43,10 @@ The [run_model.sh](run_model.sh) script runs the problem with three different se
     * The defaults can be overridden by providing a load balance file (e.g. `md%load_balance_file = load_balance_partition.txt`). 
         * The load balance file contains one row for each of original domains. Each row includes one or more integers (one for each piece that the domain is split into). The integers give the "image index" (=`MPI rank + 1`) that runs that piece. 
 
-3. The third run is like the second except it also uses local timestepping (`omp_LocalTS`). 
+3. The third run is like the second except it uses local timestepping (`omp_LocalTS`). 
 
-    * Local timestepping allows the nonlinear domains to take longer timesteps (an integer multiple of `global_dt/domain%timestepping_refinement_factor`) if that is stable according to their CFL condition.
-    * No local timestepping is applied to the leapfrog-type algorithms, because their second order accuracy relies on a fixed timestep.
+    * Local timestepping allows nonlinear domains to take longer timesteps (an integer multiple of `global_dt/domain%timestepping_refinement_factor`) if that is stable according to their CFL condition.
+    * No local timestepping is applied to domains using leapfrog-type solvers, as their second order accuracy relies on a fixed timestep.
     * Local timestepping is enabled by compiling SWALS with `-DLOCAL_TIMESTEP_PARTIONED_DOMAINS`, see [make_BP09_localtimestep](make_BP09_localtimestep).
 
 ![Figure 4: Domain partitioning in runs 2 and 3. Each of the original domains is split into several pieces (compare to Figure 1)](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/elevation_okushiri_lowresolution_coarray.png)
