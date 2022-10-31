@@ -69,7 +69,7 @@ Below we overplot time-varying model summary statistics for run 1 and run 2, and
 
 In the previous plots it was hard to see differences in the models, although the results were not actually identical. To better highlight differences between the models we focus on the easterly flux UH, which is more sensitive to model differences than the water surface and runup.
 
-Figures below compare UH in runs 1 and 2 at around time=292.5s. This is near the time of Monai's extreme runup. For each domain we show both the difference plot (run 1 - run2), and the solution (run 1), using a different colour scale in each panel. While the differences are very similar they are not zero. 
+Figures below compare UH in runs 1 and 2 at around time=292.5s. This is near the time of Monai's extreme runup. For each domain we show both the difference plot (run 1 - run2), and the solution (run 1), using a different colour scale in each panel. While the differences are very small they are not zero. 
 
 * More detail can be obtained by storing results in double precision rather than single precision. See the variable `output_precision` in [global_mod.f90](../../../../src/shallow_water/global_mod.f90).
 
@@ -91,7 +91,7 @@ Below we compare run 1 and run 3 in the same way. The differences are larger, es
 
 ### Why differences are expected due to alternative domain partitions and local timestepping.
 
-Small differences between runs 1 and 2 occur because of the domain partitioning. In finite precision floating point arithmetic, the partitioned domain coordinates are not bitwise equal to the original domain coordinates (although differences are tiny, in the least significant digits). Similarly, the flux correction algorithm leads to different summation orderings in each case. Such factors leads to small differences in the solutions. 
+Small differences between runs 1 and 2 occur because of the domain partitioning. In finite precision floating point arithmetic, the partitioned domain coordinates are not bitwise equal to the original domain coordinates (although differences are tiny, in the least significant digits). Similarly, the flux correction algorithm leads to different summation orderings in each case. Such factors introduce tiny differences in the solutions that can grow over time. 
 
 * It is possible to force models with different openmp/MPI configurations to give __identical__ results by prescribing the same domain partition in both cases (i.e. setting `md%load_balance_file`). This is good practice in applications. 
     * This is done in an alternative script [run_model_exact_reproduce.sh](run_model_exact_reproduce.sh). For brevity that is not run by the automated test suite, but such a test is run in [paraboloid_bowl](../../paraboloid_bowl) and in [../Hilo_Tohoku_tsunami/](../Hilo_Tohoku_tsunami).
