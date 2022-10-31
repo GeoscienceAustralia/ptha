@@ -33,17 +33,17 @@ Figure 3 shows the modelled tsunami maxima around Okushiri Island. The previous 
 
 ## Consistency of the results with alternative domain partitions and local timestepping
 
-The [run_model.sh](run_model.sh) script re-runs the problem with trivially different setups to check that results are similar.
+The [run_model.sh](run_model.sh) script runs the problem with three different setups. In principle the adjustments should not lead to substantial differences in the computed solution; results should be "almost the same" if not identical. Here we check for consistency among the three approaches, which are:
 
-1. The first run (`openmp`) uses the domains in Figure 1 with openmp for parallelism.
+1. The first run uses the domains in Figure 1 with openmp for parallelism (`openmp`).
 
-2. The second run (`coarray`) uses the partitioning of domains in Figure 4, where the original domains are each split into 6 pieces.
+2. The second run partitions each domain into 6 pieces as in Figure 4 (`coarray`).
 
     * When SWALS uses MPI (or coarray) parallelism, by default each domain is split into pieces (one per MPI rank, or coarray image). 
     * The defaults can be overridden by providing a load balance file (e.g. `md%load_balance_file = load_balance_partition.txt`). 
         * The load balance file contains one row for each of original domains. Each row includes one or more integers (one for each piece that the domain is split into). The integers give the "image index" (=`MPI rank + 1`) that runs that piece. 
 
-3. The third run (`omp_LocalTS`) uses local timestepping and the same domain partitioning as the second run (Figure 4). 
+3. The third run is like the second except it also uses local timestepping (`omp_LocalTS`). 
 
     * Local timestepping allows the nonlinear domains to take longer timesteps (an integer multiple of `global_dt/domain%timestepping_refinement_factor`) if that is stable according to their CFL condition.
     * No local timestepping is applied to the leapfrog-type algorithms, because their second order accuracy relies on a fixed timestep.
