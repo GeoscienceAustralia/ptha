@@ -61,7 +61,7 @@ Below we show the max-stage figures for the three runs.
 
 ### Time-varying model statistics in the three runs
 
-Below we overplot time-varying model summary statistics for run 1 and run 2 (left), and run 1 vs run 3 (right). The time-series are very similar in all models.
+Below we overplot time-varying model summary statistics for run 1 and run 2, and then repeat for run 1 vs run 3. The time-series are very similar in all models.
 
 ![Model statistics over time in run 1 and run 2](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/Compare_openmp_coarray.png) ![Model statistics over time in run 1 and run 3](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/Compare_openmp_ompLocalTS.png)
 
