@@ -21,19 +21,19 @@ While this remains a very useful benchmark problem, these issues should be consi
 
 Figure 2 shows the modelled and observed runup, plotted radially from the centre of the island. The modelled values are in orange, while the three different datasets are in green, red and black. Overall the model does a good job of predicting the observed runup heights.
 
-Different datasets sometimes give different estimates of the runup (Figure 2). There are also obvious location errors in some of the datasets, such as points plotting too far offshore or inland.
+Different datasets sometimes give different runup estimates (Figure 2). There are obvious location errors in some data points which plot too far offshore or inland.
 
-The locally high runups near Monai (~30m) are well represented in the model (near coordinate 139.42,42.10). The test code checks that runup >25m is predicted here. With the default resolution we obtain runup >26m, which becomes closer to 30m with further grid refinement (e.g. setting `mesh_refine=1.0_dp` in the [SWALS model](BP09.f90)). 
+The high runups near Monai (~30m) are well represented in the model (near coordinate 139.42,42.10). The test checks that runup >25 m is predicted here. With default resolution we obtain runup >26 m, which becomes closer to 30 m with further grid refinement (e.g. setting `mesh_refine=1.0_dp` in the [SWALS model](BP09.f90)). 
 
 ![Figure 2: Modelled and observed tsunami runup around Okushiri Island](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_omp.png)
 
-Figure 3 shows the modelled tsunami maxima around Okushiri Island. The previous figure suggests this gives a good representation of the onshore runup. There are some north-south oriented features in deeper waters associated with (spurious) jumps in the elevation data, which we expect would be eliminated with better data.
+Figure 3 shows the modelled tsunami maxima around Okushiri Island. The previous figure suggests this gives a good representation of runup onshore. There are some north-south oriented features in deeper waters associated with (spurious) jumps in the elevation data, which are not nesting related, and should be eliminated with better data.
 
 ![Figure 3: Modelled tsunami maxima near Okushiri Island](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/max_stage_okushiri_lowresolution_omp.png)
 
 ## Consistency of the results with alternative domain partitions and local timestepping
 
-The [run_model.sh](run_model.sh) script runs the problem with three different setups. In principle the three alternatives should lead to results that are "almost the same", if not identical. Here we check for consistency among the three approaches. They are:
+Here we run the problem with three alternative model setups. In principle the three alternatives should lead to results that are "almost the same", if not identical. Below we check for consistency among the three approaches. They are:
 
 1. The first run uses the domains in Figure 1 with openmp for parallelism (`openmp`).
 
