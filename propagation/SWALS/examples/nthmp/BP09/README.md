@@ -21,9 +21,9 @@ While this remains a very useful benchmark problem, these issues should be consi
 
 Figure 2 shows the modelled and observed runup, plotted radially from the centre of the island. The modelled values are in orange, while the three different datasets are in green, red and black. Overall the model does a good job of predicting the observed runup heights.
 
-Different datasets sometimes give different estimates of the runup (Figure 2). There are also obvious location errors in in some of the datasets, such as points plotting too far offshore or inland.
+Different datasets sometimes give different estimates of the runup (Figure 2). There are also obvious location errors in some of the datasets, such as points plotting too far offshore or inland.
 
-The locally high runups near Monai (~30m) are well represented in the model near (lon=139.42, lat=42.10). The test code checks that runup >25m is predicted here. With the default resolution we obtain runup >26m, which becomes closer to 30m with further grid refinement (e.g. setting `mesh_refine=1.0_dp` in the [SWALS model](BP09.f90)). 
+The locally high runups near Monai (~30m) are well represented in the model (near coordinate 139.42,42.10). The test code checks that runup >25m is predicted here. With the default resolution we obtain runup >26m, which becomes closer to 30m with further grid refinement (e.g. setting `mesh_refine=1.0_dp` in the [SWALS model](BP09.f90)). 
 
 ![Figure 2: Modelled and observed tsunami runup around Okushiri Island](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_omp.png)
 
