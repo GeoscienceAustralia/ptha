@@ -55,7 +55,7 @@ The test code checks that runs 1, 2 and 3 give similar results. They are not bit
 
 ![Runup with Run 1](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_omp.png) ![Runup with Run 2](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_coarray.png) ![Runup with Run 3](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_omp_localtimestep.png)
 
-Below we show the max-stage figures for the three runs. 
+Below we show the max-stage figures for the three runs; again we cannot notice differences. 
 
 ![Tsunami maxima with Run 1](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/max_stage_okushiri_lowresolution_omp.png) ![Tsunami maxima with Run 2](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/max_stage_okushiri_lowresolution_coarray.png) ![Tsunami maxima with Run 3](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/max_stage_okushiri_lowresolution_omp_localtimestep.png)
 
@@ -67,39 +67,39 @@ Below we overplot time-varying model summary statistics for run 1 and run 2, and
 
 ### Differences in UH in the three runs near the time of extreme runup at Monai
 
-To better highlight differences between the models we use the easterly flux UH, which is more sensitive than the stage. 
+In the previous plots it was hard to see differences in the models, although the results were not actually identical. To better highlight differences between the models we focus on the easterly flux UH, which is more sensitive to model differences than the water surface and runup.
 
-Below we compare UH in runs 1 and 2 after 40 outputs steps (292.5s). This is around the time of extreme runup at Monai. For each domain we show both the difference plot, and the solution, using a different colour scale in each panel. The difference plots are very close to zero, but some nonzero values occur. 
+Figures below compare UH in runs 1 and 2 at around time=292.5s. This is near the time of Monai's extreme runup. For each domain we show both the difference plot (run 1 - run2), and the solution (run 1), using a different colour scale in each panel. While the differences are very similar they are not zero. 
 
 * More detail can be obtained by storing results in double precision rather than single precision. See the variable `output_precision` in [global_mod.f90](../../../../src/shallow_water/global_mod.f90).
 
 ![Comparison of UH in runs 1 and run 2 after 40 output time-steps (292.5s). For each domain we plot the difference, and the solution.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/Compare_omp_coarray_time_index_40.png)
 
-Below we compare run 1 and run 3 in the same way. In this case the model differences are still very small, but more noticeable than above. This is because local timestepping is more significant change to the computational method. 
+Below we compare run 1 and run 3 in the same way. The model differences are still very small, but more noticeable than above. This is because local timestepping is more significant change to the computational method. 
 
 ![Comparison of UH in runs 1 and run 3 after 40 output time-steps (292.5s). For each domain we plot the difference, and the solution.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/Compare_omp_ompLocalTS_time_index_40.png)
 
 ### Differences in UH in the three runs at the end of the simulation
 
-Over time the differences grow. To illustrate this we repeat the UH comparison (run 1 and run 2) after 400 output timesteps (2992.5s). The differences are still quite small, although larger than at 292.5s.
+Over time the differences grow. To illustrate this we repeat the UH comparison (run 1 - run 2) at time=2992.5s. The differences are still small, albeit larger than at 292.5s.
 
 ![Comparison of UH in runs 1 and run 2 after 400 output time-steps (2992.5s). For each domain we plot the difference, and the solution.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/Compare_omp_coarray_time_index_400.png)
 
-Below we compare run 1 and run 3 in the same way. In this case the differences are larger, especially around nearshore domains where the model predicts eddy formation. The long-time evolution of these eddies is chaotic and thus sensitive to details of the numerical method such as local timestepping.
+Below we compare run 1 and run 3 in the same way. The differences are larger, especially in nearshore domains where the model predicts eddy formation. These eddies evolve chaotically over long times, so are sensitive to details of the numerical method such as local timestepping.
 
 ![Comparison of UH in runs 1 and run 3 after 400 output time-steps (2992.5s). For each domain we plot the difference, and the solution.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/Compare_omp_ompLocalTS_time_index_400.png)
 
 ### Why differences are expected due to alternative domain partitions and local timestepping.
 
-We expect small differences between runs 1 and 2 because of the domain partitioning. Due to finite precision of floating point arithmetic, the partitioned domain coordinates are not bitwise equal to the original domain coordinates (although differences are tiny, in the least significant digits). This leads to small differences in the solutions. 
+Small differences between runs 1 and 2 occur because of the domain partitioning. In finite precision floating point arithmetic, the partitioned domain coordinates are not bitwise equal to the original domain coordinates (although differences are tiny, in the least significant digits). Similarly, the flux correction algorithm leads to different summation orderings in each case. Such factors leads to small differences in the solutions. 
 
 * It is possible to force models with different openmp/MPI configurations to give __identical__ results by prescribing the same domain partition in both cases (i.e. setting `md%load_balance_file`). This is good practice in applications. 
     * This is done in an alternative script [run_model_exact_reproduce.sh](run_model_exact_reproduce.sh). For brevity that is not run by the automated test suite, but such a test is run in [paraboloid_bowl](../../paraboloid_bowl) and in [../Hilo_Tohoku_tsunami/](../Hilo_Tohoku_tsunami).
 
-For run 3, the use of local timestepping changes the numerical method, so it differs from both run 1 and run 2 (even though the latter uses the same domain partition). 
+For run 3, local timestepping changes the numerical method. Thus results differ from both run 1 and run 2. 
 
-To further explore the sensitivity of the solution to tiny floating point differences, another interesting test is to repeat run 1 while adding a tiny perturbation to the model elevations (1e-10 m). 
+To further explore the sensitivity of the solution to tiny floating point differences, it is interesting to repeat run 1 while adding a tiny perturbation to the model elevations (1e-10 m). 
 
-* Although not run by default, this leads to differences comparable to those between runs 1 and 2. 
+* This is not here, but leads to differences comparable to "run 1 - run 2". 
 * The subroutine `set_initial_conditions_BP09` in [BP09.f90](BP09.f90) can be modified to do this by changing `real(dp), parameter :: random_perturbation_scale = 0.0e-10_dp` to `real(dp), parameter :: random_perturbation_scale = 1.0e-10_dp`. 
 
