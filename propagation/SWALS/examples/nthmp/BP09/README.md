@@ -53,7 +53,7 @@ The [run_model.sh](run_model.sh) script re-runs the problem with trivially diffe
 
 The test code checks that runs 1, 2 and 3 give similar results. They are not bitwise identical (reasons discussed below), but the figures below show it isn't easy to notice differences in runup. For visual clarity the domain bounding boxes are not shown as partitioned in runs 2 and 3.
 
-![Runup with Run 1](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_omp.png) ![https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/Runup with Run 2](runup_heights_okushiri_lowresolution_coarray.png) ![Runup with Run 3](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_omp_localtimestep.png)
+![Runup with Run 1](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_omp.png) ![Runup with Run 2](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_coarray.png) ![Runup with Run 3](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP09/runup_heights_okushiri_lowresolution_omp_localtimestep.png)
 
 Below we show the max-stage figures for the three runs. 
 
