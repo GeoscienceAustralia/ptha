@@ -653,7 +653,7 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326',
 #' @param var_transform_function if not NULL, a function that is used to
 #' transform the variable before plotting
 #' @param NA_if_stage_not_above_elev logical. If TRUE, the set regions with
-#' stage <= (elev + 1e-03) to NA
+#' stage <= (elev + dry_depth) to NA
 #' @param use_fields logical. If TRUE, use image.plot from the fields package.
 #' Otherwise use graphics::image
 #' @param clip_to_zlim logical. If TRUE, clip the variable limits to be within
@@ -666,12 +666,15 @@ make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326',
 #' @param fields_axis_args If use_fields=TRUE, then this list is passed to
 #' image.plot(..., axis.args=fields_axis_args).  It can be used to control the
 #' labels on the colourbar.
+#' @param dry_depth Used to determine dry regions, see documentation above for 
+#' NA_if_stage_not_above_elev
 #' @return Nothing, but make the plot.
 multidomain_image<-function(multidomain_dir, variable, time_index, 
     xlim, ylim, zlim, cols, add=FALSE,
     var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, 
     use_fields=FALSE, clip_to_zlim=FALSE,
-    buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list()){
+    buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list(), 
+    dry_depth = 1.0e-03){
 
     .library_quiet('ncdf4')
     .library_quiet(fields)
@@ -743,7 +746,7 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
                                       count=c(-1,-1))
             }
 
-            var[stage < elevation + 1.0e-03] = NA
+            var[stage < elevation + dry_depth] = NA
         }
         nc_close(fid)
 
