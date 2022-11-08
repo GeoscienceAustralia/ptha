@@ -1,4 +1,4 @@
-Rprof(line.profiling=TRUE)
+#Rprof(line.profiling=TRUE)
 
 # Read key codes
 source('R/sum_tsunami_unit_sources.R', local=TRUE)
@@ -544,4 +544,4 @@ test_random_scenario_sampling<-function(){
 test_random_scenario_sampling()
 
 
-Rprof(NULL)
+#Rprof(NULL)
