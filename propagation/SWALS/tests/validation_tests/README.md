@@ -2,7 +2,7 @@
 
 Before running the validation tests, make sure you can run the [unit tests](../unit_tests) and the [parallel unit tests](../parallel_tests).
 
-The script here can be used to run test problems in `../../examples/*` and `../../examples/nthmp/*` via:
+The script here can be used to run test problems in folders within [../../examples/](../../examples) and [../../examples/nthmp/](../../examples/nthmp]) via:
 
     Rscript run_validations.R
 
