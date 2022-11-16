@@ -272,4 +272,43 @@ for(i in 1:length(tmp$domain_interior_bbox)){
   bb = tmp$domain_interior_bbox[[i]]
   points(rbind(bb, bb[1,]), t='l', col='red')
 }
+
+if(FALSE){
+    # Optionally add a contour with the initial deformation
+    suppressMessages(library(raster))
+    initial_condition = raster("../test_repository/BP09-FrankG-Okushiri_island/initial_condition_raster/HNO1993.tif")
+
+    contour(initial_condition, level=setdiff(seq(-1, 5, by=0.5), 0), col='white', add=TRUE)    
+    #contour(initial_condition, level=seq(-1, -2, -3, -4, -5), col='black', add=TRUE)    
+}
+
 dev.off()
+
+
+if(FALSE){
+    # Zoom of the above plot
+
+    png(paste0('elevation_okushiri_zoom_', image_flags, '.png'), width=7.3, height=8, units='in', res=200)
+    multidomain_image(multidomain_dir=MD_DIR, variable='elevation0', 
+        xlim=c(139.2, 139.8), ylim=c(41.7, 42.3), zlim=4000*c(-1,1), 
+        cols=c(rev(colorRampPalette(rev(c('darkblue', 'blue', 'steelblue', 'skyblue', 'lightblue')), bias=COLPOW)(255)), 
+               colorRampPalette(c('lightgreen', 'green', 'darkgreen', 'orange', 'brown'), bias=COLPOW)(255) ),
+        use_fields=TRUE)
+    mtext('Longitude', side=1, cex=1.5, line=2)
+    mtext('Latitude', side=2, cex=1.5, line=2)
+    title(main='Zoom around Okushiri Island', cex.main=2)
+    # Add bounding boxes (without merging)
+    for(i in 1:length(tmp$domain_interior_bbox)){
+      bb = tmp$domain_interior_bbox[[i]]
+      points(rbind(bb, bb[1,]), t='l', col='red')
+    }
+
+    suppressMessages(library(raster))
+    initial_condition = raster("../test_repository/BP09-FrankG-Okushiri_island/initial_condition_raster/HNO1993.tif")
+
+    contour(initial_condition, level=setdiff(seq(-1, 5, by=0.5), 0), col='white', add=TRUE)    
+
+    dev.off()
+
+
+}
