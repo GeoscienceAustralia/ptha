@@ -12,6 +12,11 @@ if(length(image_flags) != 1){
 # GEOCLAW validation report). Here we try to correct those, but it isn't perfect.
 #
 
+# Optionally make a point remove "bad" observations. They are detected based on
+# being "too far" from the modelled wet-dry boundary
+DROP_BAD_POINTS = FALSE # TRUE
+
+
 #
 # Tohoku field data
 #
@@ -27,6 +32,9 @@ field = data.frame( lon = field_data_tohoku[,8] + field_data_tohoku[,9]/60 + fie
                     tide = field_data_tohoku[,3],
                     quality = field_data_tohoku[,1] )
 field[field==99999] = NA
+# Convert cm to m
+field$z_uncorrected = field$z_uncorrected * 1/100
+field$z_corrected = field$z_corrected * 1/100
 
 #
 # UJNR field data
@@ -96,23 +104,57 @@ get_domain_contour<-function(domain_number){
 
 centroid = c(139.47, 42.14) # Center for radial height plots
 # Useful function to add radial arrows to plot
-add_arrows<-function(lon, lat, len, centroid, ...){
+add_arrows<-function(lon, lat, len, centroid, coastal_points, ...){
+
+    if(!is.null(coastal_points) & DROP_BAD_POINTS){
+        # Some data is clearly in an erronious position. 
+        # Remove them by dropping points if the "distance" between the coast and the point is too big
+        DROP_DATA_DIST = 0.003 # degrees -- roughly 300m.
+
+        stopifnot(is(coastal_points, 'matrix') & (ncol(coastal_points) == 2))
+        tokeep = rep(FALSE, length(lon))
+        for(i in 1:length(lon)){
+            if(any(is.na(lon[i]) | is.na(lat[i]) | is.na(len[i]))) next
+            # The following is roughly proportional to distance^2 near latitude of 42 deg
+            local_dist_sq = min( ((lon[i] - coastal_points[,1])*cos(42/180*pi))**2 + (lat[i] - coastal_points[,2])**2)
+            if(local_dist_sq < DROP_DATA_DIST**2){
+                tokeep[i] = TRUE
+            }
+        }
+        
+        lon = lon[tokeep]
+        lat = lat[tokeep]
+        len = len[tokeep]
+    }
+
     uv = cbind(lon - centroid[1], lat-centroid[2])
     uv = uv/sqrt(rowSums(uv**2))
     arrows(lon, lat, lon + uv[,1]*len, lat+uv[,2]*len, length=0, ...)
+}
+
+# Scale the runup bars (observed in meters, size plotted in degrees)
+ARROW_LENGTH_SCALE = 1/1000
+
+if(DROP_BAD_POINTS){
+    # This is not actually related to dropping bad points, but the options are
+    # consistent with older behaviour of the script.
+    PLOT_MODEL_ON_LAND_ONLY = FALSE
+}else{
+    PLOT_MODEL_ON_LAND_ONLY = TRUE
 }
 
 png(paste0('runup_heights_okushiri_', image_flags, '.png'), width=8, height=8, units='in', res=200)
 
 # Setup plot frame with tohoku university group data
 plot(field$lon, field$lat, asp=1, pch=19, cex=0.2,
-    ylim=c(42.02, 42.25), xlim=c(139.35, 139.6),
+    ylim=c(42.02, 42.25), xlim=c(139.35, 139.6), col='white',
     xlab='Lon', ylab='Lat', cex.axis=1.5, cex.lab=1.7)
 title('Okushiri runup (plotted radially from center point) \n Beware some data positioning errors', 
       cex.main=1.7, line=1)
 
 # High-ish res models
 max_stage_store = list()
+store_wd_points = matrix(NA, ncol=2, nrow=0)
 for(j in 3:6){
     x5 = get_domain_contour(j)
     #plot(x5$stage_elev_rasters[[2]], zlim=c(0, 30), add=TRUE)
@@ -123,11 +165,18 @@ for(j in 3:6){
         elv = x5$peak_elev[[i]]
         iswet = (stg > (elv))
 
-        len=stg/1000 # arrow length
-        # Plot wet areas, with elevation > 0 (to avoid getting most boundaries of interior nested grids)
-        kk = which(elv > 0 & iswet)
-        add_arrows(lon[kk], lat[kk], len[kk], centroid=centroid, col='orange', lwd=3)
+        len=stg*ARROW_LENGTH_SCALE # arrow length
+
+        if(PLOT_MODEL_ON_LAND_ONLY){
+            # Plot wet areas, with elevation > 0
+            kk = which(elv > 0 & iswet)
+        }else{
+            # Or plot all wet areas at the coast
+            kk = which(iswet)
+        }
+        add_arrows(lon[kk], lat[kk], len[kk], centroid=centroid, coastal_points = NULL, col='orange', lwd=3)
         points(lon[kk], lat[kk], pch=19, cex=0.2, col='purple')
+        store_wd_points = rbind(store_wd_points, cbind(lon, lat))
     }
     plot(extent(x5$stage_elev_rasters[[2]]), add=TRUE, col='blue')
 
@@ -135,13 +184,13 @@ for(j in 3:6){
 }
 
 # Tohoku group
-add_arrows(field$lon, field$lat, field$z_corrected/(100*1000), centroid=centroid)
+add_arrows(field$lon, field$lat, field$z_corrected*ARROW_LENGTH_SCALE, centroid=centroid, coastal_points=store_wd_points)
 points(field$lon, field$lat, pch=19, cex=0.2)
 # ujnr dataset
 points(field_ujnr$lon, field_ujnr$lat, cex=0.2, pch=19, col='green')
-add_arrows(field_ujnr$lon, field_ujnr$lat, field_ujnr$z/1000, centroid=centroid, col='green')
+add_arrows(field_ujnr$lon, field_ujnr$lat, field_ujnr$z*ARROW_LENGTH_SCALE, centroid=centroid, coastal_points=store_wd_points, col='green')
 # Tsuji dataset (incomplete)
-add_arrows(field_tsuji$lon, field_tsuji$lat, field_tsuji$z_max/1000, centroid=centroid, col='red')
+add_arrows(field_tsuji$lon, field_tsuji$lat, field_tsuji$z_max*ARROW_LENGTH_SCALE, centroid=centroid, coastal_points=store_wd_points, col='red')
 
 # Dense grid
 abline(v=seq(139.3, 139.7,by=0.01), col='grey', lty='dotted')
