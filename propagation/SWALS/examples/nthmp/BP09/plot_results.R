@@ -12,6 +12,15 @@ if(length(image_flags) != 1){
 # GEOCLAW validation report). Here we try to correct those, but it isn't perfect.
 #
 
+# Optionally treat "bad" observations, with a few different options
+BAD_OBS_TREATMENT = 'Project'
+stopifnot(any(BAD_OBS_TREATMENT == c('None', 'Drop', 'Project')))
+
+DROP_DATA_DIST = 300 # meters -- only used if (BAD_OBS_TREATMENT == 'Drop')
+
+# Optionally add source contours to the elevation plot, and make a zoomed elevation plot
+PLOT_EXTRAS = FALSE
+
 #
 # Tohoku field data
 #
@@ -27,6 +36,9 @@ field = data.frame( lon = field_data_tohoku[,8] + field_data_tohoku[,9]/60 + fie
                     tide = field_data_tohoku[,3],
                     quality = field_data_tohoku[,1] )
 field[field==99999] = NA
+# Convert cm to m
+field$z_uncorrected = field$z_uncorrected * 1/100
+field$z_corrected = field$z_corrected * 1/100
 
 #
 # UJNR field data
@@ -96,25 +108,88 @@ get_domain_contour<-function(domain_number){
 
 centroid = c(139.47, 42.14) # Center for radial height plots
 # Useful function to add radial arrows to plot
-add_arrows<-function(lon, lat, len, centroid, ...){
+add_arrows<-function(lon, lat, len, centroid, coastal_points, ...){
+
+    if(!is.null(coastal_points) & !(BAD_OBS_TREATMENT == 'None')){
+        # Some data is clearly in an erronious position. There are 2 possible "Fixes"
+        #    - Remove them by dropping points if the "distance" between the coast and the point is too big
+        #    - Project their base point onto the nearest coastal point
+        stopifnot(is(coastal_points, 'matrix') & (ncol(coastal_points) == 2))
+
+        # Apply the fix
+        tokeep = rep(TRUE, length(lon))
+        for(i in 1:length(lon)){
+            if(any(is.na(lon[i]) | is.na(lat[i]) | is.na(len[i]))) next
+
+            if(BAD_OBS_TREATMENT == 'Drop'){
+                # Throw away observed lon/lat that are too far away
+                # Estimate distance, without depending on a spherical geometry package
+                earth_rad_times_deg2rad = 6371000 * pi/180
+                local_dist = earth_rad_times_deg2rad * 
+                    sqrt( min( ((lon[i] - coastal_points[,1])*cos(42/180*pi))**2 + 
+                                (lat[i] - coastal_points[,2])**2) )
+
+                if(local_dist >= DROP_DATA_DIST) tokeep[i] = FALSE
+            }else if(BAD_OBS_TREATMENT == 'Project'){
+                # Replace observed lon/lat with nearest coastal point in model
+                local_ind = which.min(
+                    ((lon[i] - coastal_points[,1])*cos(42/180*pi))**2 + 
+                    (lat[i]  - coastal_points[,2]                )**2)
+                lon[i] = coastal_points[local_ind,1]
+                lat[i] = coastal_points[local_ind,2]
+            }
+        }
+        
+        lon = lon[tokeep]
+        lat = lat[tokeep]
+        len = len[tokeep]
+    }
+
     uv = cbind(lon - centroid[1], lat-centroid[2])
     uv = uv/sqrt(rowSums(uv**2))
     arrows(lon, lat, lon + uv[,1]*len, lat+uv[,2]*len, length=0, ...)
 }
 
-png(paste0('runup_heights_okushiri_', image_flags, '.png'), width=8, height=8, units='in', res=200)
+# Scale the runup bars (observed in meters, size plotted in degrees)
+ARROW_LENGTH_SCALE = 1/1000
+
+if(BAD_OBS_TREATMENT == 'None'){
+    # This is not actually related to dropping bad points, but the options are
+    # consistent with older behaviour of the script.
+    PLOT_MODEL_ON_LAND_ONLY = TRUE
+}else{
+    PLOT_MODEL_ON_LAND_ONLY = FALSE
+}
+
+png(paste0('runup_heights_okushiri_', image_flags, '.png'), width=6.1, height=8, units='in', res=200)
 
 # Setup plot frame with tohoku university group data
-plot(field$lon, field$lat, asp=1, pch=19, cex=0.2,
-    ylim=c(42.02, 42.25), xlim=c(139.35, 139.6),
+plot(field$lon, field$lat, pch=19, cex=0.2, asp=1/cos(42/180*pi), 
+    ylim=c(42.02, 42.25), xlim=c(139.35, 139.6), col='white',
     xlab='Lon', ylab='Lat', cex.axis=1.5, cex.lab=1.7)
-title('Okushiri runup (plotted radially from center point) \n Beware some data positioning errors', 
-      cex.main=1.7, line=1)
+title("Okushiri runup plotted radially from centre point", cex.main=1.4, line=1)
+if(BAD_OBS_TREATMENT == 'None'){
+    title(main='Beware some data positioning errors', 
+          cex.main=1, line=-1)
+}else if(BAD_OBS_TREATMENT == 'Drop'){
+    title(paste0('Beware some data positioning errors, addressed here \n by dropping points > ', 
+                 DROP_DATA_DIST, 'm from nearest model point'), 
+          cex.main=1.1, line=-2)
+}else if(BAD_OBS_TREATMENT == 'Project'){
+    title('Beware some data positioning errors, addressed \n here by relocation to nearest model point', 
+          cex.main=1.1, line=-2)
+}
 
 # High-ish res models
 max_stage_store = list()
-for(j in 3:6){
+store_wd_points = matrix(NA, ncol=2, nrow=0)
+for(j in 2:6){
     x5 = get_domain_contour(j)
+
+    max_stage_store[[j]] = x5$stage_elev_rasters
+
+    if(j == 2) next
+
     #plot(x5$stage_elev_rasters[[2]], zlim=c(0, 30), add=TRUE)
     for(i in 1:length(x5$all_wet_dry_contours)){
         lon = x5$all_wet_dry_contours[[i]]$x
@@ -123,32 +198,42 @@ for(j in 3:6){
         elv = x5$peak_elev[[i]]
         iswet = (stg > (elv))
 
-        len=stg/1000 # arrow length
-        # Plot wet areas, with elevation > 0 (to avoid getting most boundaries of interior nested grids)
-        kk = which(elv > 0 & iswet)
-        add_arrows(lon[kk], lat[kk], len[kk], centroid=centroid, col='orange', lwd=3)
+        len=stg*ARROW_LENGTH_SCALE # arrow length
+
+        if(PLOT_MODEL_ON_LAND_ONLY){
+            # Plot wet areas, with elevation > 0
+            kk = which(elv > 0 & iswet)
+        }else{
+            # Or plot all wet areas at the coast
+            kk = which(iswet)
+        }
+        add_arrows(lon[kk], lat[kk], len[kk], centroid=centroid, coastal_points = NULL, col='orange', lwd=3)
         points(lon[kk], lat[kk], pch=19, cex=0.2, col='purple')
+        store_wd_points = rbind(store_wd_points, cbind(lon, lat))
     }
     plot(extent(x5$stage_elev_rasters[[2]]), add=TRUE, col='blue')
-
-    max_stage_store[[j]] = x5$stage_elev_rasters
 }
 
 # Tohoku group
-add_arrows(field$lon, field$lat, field$z_corrected/(100*1000), centroid=centroid)
-points(field$lon, field$lat, pch=19, cex=0.2)
+add_arrows(field$lon, field$lat, field$z_corrected*ARROW_LENGTH_SCALE, centroid=centroid, 
+           coastal_points=store_wd_points)
+#points(field$lon, field$lat, pch=19, cex=0.2)
+
 # ujnr dataset
-points(field_ujnr$lon, field_ujnr$lat, cex=0.2, pch=19, col='green')
-add_arrows(field_ujnr$lon, field_ujnr$lat, field_ujnr$z/1000, centroid=centroid, col='green')
+#points(field_ujnr$lon, field_ujnr$lat, cex=0.2, pch=19, col='green')
+add_arrows(field_ujnr$lon, field_ujnr$lat, field_ujnr$z*ARROW_LENGTH_SCALE, centroid=centroid, 
+           coastal_points=store_wd_points, col='green')
+
 # Tsuji dataset (incomplete)
-add_arrows(field_tsuji$lon, field_tsuji$lat, field_tsuji$z_max/1000, centroid=centroid, col='red')
+add_arrows(field_tsuji$lon, field_tsuji$lat, field_tsuji$z_max*ARROW_LENGTH_SCALE, centroid=centroid, 
+           coastal_points=store_wd_points, col='red')
 
 # Dense grid
 abline(v=seq(139.3, 139.7,by=0.01), col='grey', lty='dotted')
 abline(h=seq(42, 42.3, by=0.01), col='grey', lty='dotted')
 points(centroid[1], centroid[2], pch=19)
 
-legend('bottomright', c('Model', 'Data (Tohoku)', 'Data (UJNR)', 'Data (Tsuji)'), lty=rep(1, 4), cex=1.5,
+legend('bottomright', c('Model', 'Data (Tohoku)', 'Data (UJNR)', 'Data (Tsuji)'), lty=rep(1, 4), cex=1.2,
        lwd=c(3,1,1,1), col=c('orange', 'black', 'green', 'red'), bty='n')
 
 dev.off()
@@ -156,12 +241,12 @@ dev.off()
 #
 # Make similar max-stage plot
 #
-png(paste0('max_stage_okushiri_', image_flags, '.png'), width=7, height=8, units='in', res=800)
-plot(field$lon, field$lat, asp=1, pch=19, cex=0.2,
-    ylim=c(42.02, 42.25), xlim=c(139.35, 139.57), col='white',
+png(paste0('max_stage_okushiri_', image_flags, '.png'), width=6.1, height=8, units='in', res=800)
+plot(field$lon, field$lat, pch=19, cex=0.2, asp=1/cos(42/180*pi), 
+    ylim=c(42.02, 42.25), xlim=c(139.35, 139.6), col='white',
     xlab='Lon', ylab='Lat', cex.lab=1.7, cex.axis=1.5)
-title('Okushiri Island modelled max-stage', cex.main=2)
-for(j in 3:6){
+title('Okushiri Island modelled max-stage', cex.main=1.7)
+for(j in 2:6){
     wet_stage = max_stage_store[[j]][[1]]
     elev = max_stage_store[[j]][[2]]
     wet_stage[wet_stage <= elev + eps] = NA
@@ -209,18 +294,57 @@ if(abs(final_mass_err_val) < 5){
 tmp = get_domain_interior_bbox_in_multidomain(MD_DIR)
 COLPOW = 2
 
-png(paste0('elevation_okushiri_', image_flags, '.png'), width=7.3, height=8, units='in', res=200)
+png(paste0('elevation_okushiri_', image_flags, '.png'), width=6.0, height=8, units='in', res=200)
 multidomain_image(multidomain_dir=MD_DIR, variable='elevation0', 
-    xlim=tmp$multidomain_xlim, ylim=tmp$multidomain_ylim, zlim=4000*c(-1,1), 
+    xlim=tmp$multidomain_xlim, ylim=tmp$multidomain_ylim, zlim=4000*c(-1,1), asp=1/cos(42/180*pi), 
     cols=c(rev(colorRampPalette(rev(c('darkblue', 'blue', 'steelblue', 'skyblue', 'lightblue')), bias=COLPOW)(255)), 
            colorRampPalette(c('lightgreen', 'green', 'darkgreen', 'orange', 'brown'), bias=COLPOW)(255) ),
     use_fields=TRUE)
 mtext('Longitude', side=1, cex=1.5, line=2)
 mtext('Latitude', side=2, cex=1.5, line=2)
-title(main='Model elevation and domain nesting', cex.main=2)
+title(main='Model elevation and domain nesting', cex.main=1.7)
 # Add bounding boxes (without merging)
 for(i in 1:length(tmp$domain_interior_bbox)){
   bb = tmp$domain_interior_bbox[[i]]
   points(rbind(bb, bb[1,]), t='l', col='red')
 }
+
+if(PLOT_EXTRAS){
+    # Optionally add a contour with the initial deformation
+    suppressMessages(library(raster))
+    initial_condition = raster("../test_repository/BP09-FrankG-Okushiri_island/initial_condition_raster/HNO1993.tif")
+
+    contour(initial_condition, level=setdiff(seq(-1, 5, by=0.5), 0), col='white', add=TRUE)    
+    #contour(initial_condition, level=seq(-1, -2, -3, -4, -5), col='black', add=TRUE)    
+}
+
 dev.off()
+
+
+if(PLOT_EXTRAS){
+    # Zoom of the above plot
+
+    png(paste0('elevation_okushiri_zoom_', image_flags, '.png'), width=6.1, height=8, units='in', res=200)
+    multidomain_image(multidomain_dir=MD_DIR, variable='elevation0', asp=1/cos(42/180*pi),
+        xlim=c(139.2, 139.8), ylim=c(41.7, 42.3), zlim=4000*c(-1,1), 
+        cols=c(rev(colorRampPalette(rev(c('darkblue', 'blue', 'steelblue', 'skyblue', 'lightblue')), bias=COLPOW)(255)), 
+               colorRampPalette(c('lightgreen', 'green', 'darkgreen', 'orange', 'brown'), bias=COLPOW)(255) ),
+        use_fields=TRUE)
+    mtext('Longitude', side=1, cex=1.5, line=2)
+    mtext('Latitude', side=2, cex=1.5, line=2)
+    title(main='Zoom around Okushiri Island', cex.main=2)
+    # Add bounding boxes (without merging)
+    for(i in 1:length(tmp$domain_interior_bbox)){
+      bb = tmp$domain_interior_bbox[[i]]
+      points(rbind(bb, bb[1,]), t='l', col='red')
+    }
+
+    suppressMessages(library(raster))
+    initial_condition = raster("../test_repository/BP09-FrankG-Okushiri_island/initial_condition_raster/HNO1993.tif")
+
+    contour(initial_condition, level=setdiff(seq(-1, 5, by=0.5), 0), col='white', add=TRUE)    
+
+    dev.off()
+
+
+}

@@ -255,7 +255,7 @@ end module
 
 program Tauranga
     !!
-    !! NTHMP currents test problem -- Tohoku tsunami observed at Tauganga Harbour, New Zealand.
+    !! NTHMP currents test problem -- Tohoku tsunami observed at Tauranga Harbour, New Zealand.
     !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
