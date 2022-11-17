@@ -16,6 +16,8 @@ if(length(image_flags) != 1){
 BAD_OBS_TREATMENT = 'Project'
 stopifnot(any(BAD_OBS_TREATMENT == c('None', 'Drop', 'Project')))
 
+DROP_DATA_DIST = 300 # meters -- only used if (BAD_OBS_TREATMENT == 'Drop')
+
 # Optionally add source contours to the elevation plot, and make a zoomed elevation plot
 PLOT_EXTRAS = FALSE
 
@@ -121,7 +123,6 @@ add_arrows<-function(lon, lat, len, centroid, coastal_points, ...){
 
             if(BAD_OBS_TREATMENT == 'Drop'){
                 # Throw away observed lon/lat that are too far away
-                DROP_DATA_DIST = 300 # meters
                 # Estimate distance, without depending on a spherical geometry package
                 earth_rad_times_deg2rad = 6371000 * pi/180
                 local_dist = earth_rad_times_deg2rad * 
@@ -166,12 +167,17 @@ png(paste0('runup_heights_okushiri_', image_flags, '.png'), width=6.1, height=8,
 plot(field$lon, field$lat, pch=19, cex=0.2, asp=1/cos(42/180*pi), 
     ylim=c(42.02, 42.25), xlim=c(139.35, 139.6), col='white',
     xlab='Lon', ylab='Lat', cex.axis=1.5, cex.lab=1.7)
-if(BAD_OBS_TREATMENT %in% c('Drop', 'None')){
-    title('Okushiri runup (plotted radially from center point) \n Beware some data positioning errors', 
-          cex.main=1.4, line=1)
+title("Okushiri runup plotted radially from centre point", cex.main=1.4, line=1)
+if(BAD_OBS_TREATMENT == 'None'){
+    title(main='Beware some data positioning errors', 
+          cex.main=1, line=-1)
+}else if(BAD_OBS_TREATMENT == 'Drop'){
+    title(paste0('Beware some data positioning errors, addressed here \n by dropping points > ', 
+                 DROP_DATA_DIST, 'm from nearest model point'), 
+          cex.main=1.1, line=-2)
 }else if(BAD_OBS_TREATMENT == 'Project'){
-    title('Okushiri runup (plotted radially from center point) \n Data projected to coast', 
-          cex.main=1.4, line=1)
+    title('Beware some data positioning errors, addressed \n here by relocation to nearest model point', 
+          cex.main=1.1, line=-2)
 }
 
 # High-ish res models
