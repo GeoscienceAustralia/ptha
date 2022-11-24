@@ -3,7 +3,7 @@ module local_routines
     !! NTHMP benchmark problem 9 -- Okushiri tsunami field test case
     !!
 
-    use global_mod, only: dp, ip, charlen, wall_elevation
+    use global_mod, only: dp, ip, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use logging_mod, only: log_output_unit

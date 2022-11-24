@@ -3,7 +3,7 @@ module local_routines
     !! Setup the "wave on a composite beach" problem
     !!
 
-    use global_mod, only: dp, ip, charlen, wall_elevation
+    use global_mod, only: dp, ip, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: read_gdal_raster
     use which_mod, only: which

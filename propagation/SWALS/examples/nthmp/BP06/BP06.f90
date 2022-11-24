@@ -3,7 +3,7 @@ module local_routines
     !!
     !! NTHMP Benchmark problem 6
     !!
-    use global_mod, only: dp, ip, charlen, wall_elevation, gravity
+    use global_mod, only: dp, ip, charlen, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use file_io_mod, only: count_file_lines, read_csv_into_array
     use linear_interpolator_mod, only: linear_interpolator_type

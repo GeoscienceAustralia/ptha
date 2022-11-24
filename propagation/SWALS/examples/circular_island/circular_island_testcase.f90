@@ -2,7 +2,7 @@
 module local_routines 
     !! Define initial and boundary conditions
 
-    use global_mod, only: dp, ip, charlen, wall_elevation, pi, gravity
+    use global_mod, only: dp, ip, charlen, pi, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: read_gdal_raster
     use which_mod, only: which

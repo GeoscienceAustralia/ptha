@@ -3,7 +3,7 @@ module local_routines
     !! Subroutines and data used to setup the model scenario 
     !!
 
-    use global_mod, only: dp, ip, charlen, wall_elevation
+    use global_mod, only: dp, ip, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type 
     use which_mod, only: which

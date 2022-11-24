@@ -1,6 +1,6 @@
 module local_routines 
     !! Test flow algorithms in a large area spherical box with complex topography
-    use global_mod, only: dp, ip, wall_elevation, pi, charlen
+    use global_mod, only: dp, ip, pi, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use logging_mod, only: log_output_unit
