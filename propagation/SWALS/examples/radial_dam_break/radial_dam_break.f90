@@ -2,7 +2,7 @@ module local_routines
     !!
     !! Setup the radial dam-break problem
     !!
-    use global_mod, only: dp, ip, wall_elevation
+    use global_mod, only: dp, ip
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
 
@@ -28,10 +28,10 @@ module local_routines
         ! Elevation
         domain%U(:,:,ELV) = 0._dp
         ! Wall boundaries (without boundary conditions)
-        domain%U(1,:,ELV) = 20.0_dp !wall_elevation 
-        domain%U(domain%nx(1),:,4) = 20.0_dp !wall_elevation 
-        domain%U(:,1,ELV) = 20.0_dp !wall_elevation
-        domain%U(:,domain%nx(2),ELV) = 20.0_dp !wall_elevation
+        domain%U(1,:,ELV) = 20.0_dp
+        domain%U(domain%nx(1),:,4) = 20.0_dp
+        domain%U(:,1,ELV) = 20.0_dp
+        domain%U(:,domain%nx(2),ELV) = 20.0_dp
 
         ! Ensure stage >= elevation
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))

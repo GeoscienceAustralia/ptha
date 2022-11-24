@@ -2,7 +2,7 @@ module local_routines
     !!
     !! Setup for the dam-break problem
     !!
-    use global_mod, only: dp, ip, wall_elevation
+    use global_mod, only: dp, ip
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     implicit none
 

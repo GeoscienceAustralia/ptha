@@ -2,7 +2,7 @@ module local_routines
     !
     ! Setup for the parabolic canal problem
     !
-    use global_mod, only: dp, ip, wall_elevation, gravity
+    use global_mod, only: dp, ip, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use logging_mod, only: log_output_unit
     implicit none
