@@ -28,9 +28,9 @@ integer(ip), parameter:: output_precision = C_FLOAT !! Store real output at this
 ! km). The following constants are used for that purpose
 integer(ip), parameter:: force_double = C_DOUBLE !! Double precision irrespective of whether -DREALFLOAT was passed to compiler.
 #ifdef PGI_COMPILER
-integer(ip), parameter:: force_long_double = C_DOUBLE !! Long double precision
+integer(ip), parameter:: force_long_double = C_DOUBLE !! If compiled with -DPGI_COMPILER, deal with lack of support for long double precision
 #else
-integer(ip), parameter:: force_long_double = REAL128 !! Long double precision
+integer(ip), parameter:: force_long_double = REAL128 !! Long double precision (unless compiled with -DPGI_COMPILER)
 #endif
 
 ! Physical constants
