@@ -35,9 +35,10 @@ module multidomain_mod
 !!
 
     use global_mod, only: dp, ip, charlen, gravity, &
-        wall_elevation, minimum_allowed_depth, force_double, force_long_double, &
+        minimum_allowed_depth, force_double, force_long_double, &
         default_output_folder, send_boundary_flux_data, &
-        real_bytes, force_double_bytes, integer_bytes, pi, output_precision
+        real_bytes, force_double_bytes, integer_bytes, pi, output_precision, &
+        stage_null, elev_null, uh_null, vh_null, wall_elevation
     use timestepping_metadata_mod, only: timestepping_metadata, timestepping_method_index
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use stop_mod, only: generic_stop
@@ -160,6 +161,7 @@ module multidomain_mod
 
     integer(int64), parameter :: large_64_int = 10000000000_int64
         !! Useful to have a very large integer, which is still smaller than huge(1_int64)
+
 
     type :: multidomain_type
         !! Type to hold nested-grids that communicate with each other.
@@ -2225,11 +2227,6 @@ module multidomain_mod
         ! Null regions have particular values of the recv_metadata index and image
         integer(ip), parameter :: null_index = 0, null_image = 0
 
-        ! Values used to denote 'null regions'
-        real(dp), parameter :: stage_null = wall_elevation
-        real(dp), parameter :: elev_null = wall_elevation
-        real(dp), parameter :: uh_null = 0.0_dp , vh_null = 0.0_dp
-
         integer(ip) :: i, j, x1, x2, y1, y2
         logical :: ignore_linear_local
 
@@ -4161,6 +4158,190 @@ __FILE__
 
     end subroutine
 
+    subroutine test_multidomain_smoothing_near_coarse2fine_boundaries
+        !
+        ! Test of md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries
+        !
+
+        type(multidomain_type) :: md
+
+        ! Outer domain geometry
+        real(dp), parameter :: global_lw(2) = [5.0_dp, 3.0_dp]
+        real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp]
+        integer(ip), parameter :: global_nx(2) = [50_ip, 30_ip]*8
+
+        ! Inner domain 
+        integer(ip), parameter :: nest_ratio = 3_ip
+        real(dp), parameter :: high_res_ll(2) = [3.0_dp, 1.0_dp]
+        real(dp), parameter :: high_res_ur(2) = [4.0_dp, 2.0_dp]
+
+        ! Problem data
+        real(dp), parameter :: coarse_elev = 1.0_dp, fine_elev = 2.0_dp
+        ! Smooth region sizes. Smooth enough times so that all points in the smooth region should
+        ! have been affected by the smooth
+        integer(ip), parameter :: coarse_n = 2_ip, fine_n = 6_ip, num_smooth = 10_ip
+
+        logical :: in_outer_poly, in_inner_poly, passed
+        real(dp) :: coarse_dx(2), fine_dx(2)
+        integer(ip) :: i0, j0, j, nd
+        real(dp) :: poly_outer_buffer(4, 2), poly_inner_buffer(4,2), buf(2), ll(2), ur(2), pol_buffer(4,2)
+
+        ! Clean up
+        call deallocate_p2p_comms(md%p2p)
+
+        ! nd domains in this model
+        nd = 2
+        allocate(md%domains(nd))
+
+        !
+        ! Setup basic metadata
+        !
+
+        ! Main domain
+        md%domains(1)%lower_left =global_ll
+        md%domains(1)%lw = global_lw
+        md%domains(1)%nx = global_nx
+        md%domains(1)%dx = md%domains(1)%lw/md%domains(1)%nx
+        md%domains(1)%timestepping_refinement_factor = 1_ip
+        md%domains(1)%dx_refinement_factor = 1.0_dp
+        md%domains(1)%timestepping_method = 'rk2'
+
+        ! A detailed domain
+        call md%domains(2)%match_geometry_to_parent(&
+            parent_domain=md%domains(1), &
+            lower_left=high_res_ll, &
+            upper_right=high_res_ur, &
+            dx_refinement_factor=nest_ratio, &
+            timestepping_refinement_factor=nest_ratio)
+        md%domains(2)%timestepping_method = 'rk2'
+
+        ! For debugging, helps to flush file often
+        md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip
+        md%domains(2)%nc_grid_output%flush_every_n_output_steps = 1_ip
+
+        ! Handy constants
+        coarse_dx = md%domains(1)%dx
+        fine_dx = md%domains(2)%dx
+        ll = high_res_ll
+        ur = high_res_ur
+
+        ! Allocate domains and prepare comms
+        call md%setup()
+
+        ! Set the initial conditions -- elevation only.
+        do j = 1, size(md%domains)
+            do j0 = 1, md%domains(j)%nx(2)
+                do i0 = 1, md%domains(j)%nx(1)
+                    if(md%domains(j)%x(i0) > ll(1) .and. md%domains(j)%x(i0) < ur(1) .and. &
+                       md%domains(j)%y(j0) > ll(2) .and. md%domains(j)%y(j0) < ur(2) ) then
+                       ! One value inside the high-res area
+                       md%domains(j)%U(i0, j0, ELV) = fine_elev
+                   else
+                       ! Another value outside the high res area
+                       md%domains(j)%U(i0, j0, ELV) = coarse_elev
+                   end if
+                end do
+            end do
+        end do
+        call md%make_initial_conditions_consistent
+
+        !call md%write_outputs_and_print_statistics
+
+        ! Apply local smoothing near nesting boundaries
+        do j = 1, size(md%domains)
+            call md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries(md%all_dx_md, &
+                coarse_side_ncells = coarse_n, fine_side_ncells = fine_n, number_of_9pt_smooths = num_smooth)
+        end do
+        !call md%write_outputs_and_print_statistics
+
+        call md%make_initial_conditions_consistent
+        call md%set_null_regions_to_dry
+
+        !call md%write_outputs_and_print_statistics
+
+        ! Check if it worked
+        passed = .true.
+        domain_loop: do j = 1, size(md%domains)
+
+            ! Make a polygon containing BOTH the inner domain AND the region that should be affected by smoothing 
+            buf = coarse_dx*coarse_n ! Buffer that applies in the coarse domain
+            poly_outer_buffer(1,1:2) = ll - buf
+            poly_outer_buffer(2,1:2) = [ll(1) - buf(1), ur(2) + buf(2)]
+            poly_outer_buffer(3,1:2) = ur + buf
+            poly_outer_buffer(4,1:2) = [ur(1) + buf(1), ll(2) - buf(2)]
+
+            ! Boundary of that part of the inner domain that won't be smoothed
+            buf = fine_dx*fine_n ! Buffer that applies in the fine domain
+            poly_inner_buffer(1,1:2) = ll + buf
+            poly_inner_buffer(2,1:2) = [ll(1) + buf(1), ur(2) - buf(2)]
+            poly_inner_buffer(3,1:2) = ur - buf
+            poly_inner_buffer(4,1:2) = [ur(1) - buf(1), ll(2) + buf(2)]
+
+            ! Check each point in the priority domain region
+            do j0 = 1, md%domains(j)%nx(2)
+                do i0 = 1, md%domains(j)%nx(1)
+
+                    ! Skip null regions -- they may not have received data everywhere.
+                    if(md%domains(j)%U(i0, j0, ELV) == elev_null) cycle
+
+                    ! Are we inside the outer/inner polygons?
+                    call point_in_poly(4, poly_outer_buffer(:,1), poly_outer_buffer(:,2), &
+                        md%domains(j)%x(i0), md%domains(j)%y(j0), in_outer_poly)
+                    call point_in_poly(4, poly_inner_buffer(:,1), poly_inner_buffer(:,2), &
+                        md%domains(j)%x(i0), md%domains(j)%y(j0), in_inner_poly)
+
+                    if(.not. in_outer_poly) then
+                        ! Well outside of the outer poly, should have coarse elevation
+                        if(md%domains(j)%U(i0, j0, ELV) /= coarse_elev) then
+                            passed = .false.
+                            print*, 'Not in outer poly, md%domains(', j, '), site ', &
+                                md%domains(j)%x(i0), md%domains(j)%y(j0), &
+                                ' elev = ', md%domains(j)%U(i0, j0, ELV), &
+                                md%domains(j)%output_folder_name
+                            exit domain_loop
+                        end if
+                    else
+                        if(in_inner_poly) then
+                            ! Well inside inner poly, should have fine elevation
+                            if(md%domains(j)%U(i0, j0, ELV) /= fine_elev) then
+                                passed = .false.
+                                print*, 'In inner poly, md%domains(', j, '), site ', &
+                                    md%domains(j)%x(i0), md%domains(j)%y(j0), &
+                                    ' elev = ', md%domains(j)%U(i0, j0, ELV), &
+                                    md%domains(j)%output_folder_name
+                                exit domain_loop
+                            end if
+                        else
+                            ! In the smoothing region, should be in-between the fine and coarse elevations.
+                            if(md%domains(j)%U(i0, j0, ELV) >= fine_elev .or. &
+                               md%domains(j)%U(i0, j0, ELV) <= coarse_elev) then
+                                passed = .false.
+                                print*, 'In smooth region, md%domains(', j, '), site ', &
+                                    md%domains(j)%x(i0), md%domains(j)%y(j0), &
+                                    ' elev = ', md%domains(j)%U(i0, j0, ELV), &
+                                    md%domains(j)%output_folder_name
+                                exit domain_loop
+                            end if
+                        end if
+                    end if
+                end do
+            end do
+
+        end do domain_loop
+
+        if(passed) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL ', __LINE__, &
+__FILE__
+            call generic_stop
+        end if
+
+        ! Cleanup
+        call deallocate_p2p_comms(md%p2p)
+
+    end subroutine
+
     !
     ! Main test subroutine
     !
@@ -4168,6 +4349,7 @@ __FILE__
         call test_multidomain_mod1()
         call test_multidomain_mod_periodic()
         call test_multidomain_global()
+        call test_multidomain_smoothing_near_coarse2fine_boundaries()
     end subroutine
 
 end module

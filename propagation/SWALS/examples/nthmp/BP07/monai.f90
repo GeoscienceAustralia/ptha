@@ -2,7 +2,7 @@ module local_routines
     !!
     !! Setup NTHMP benchmark problem 7 -- experiment inspired by Okushiri tsunami
     !!
-    use global_mod, only: dp, ip, charlen, wall_elevation
+    use global_mod, only: dp, ip, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use file_io_mod, only: count_file_lines

@@ -3,7 +3,7 @@ module local_routines
     !! NTHMP benchmark problem 9 -- Okushiri tsunami field test case
     !!
 
-    use global_mod, only: dp, ip, charlen, wall_elevation
+    use global_mod, only: dp, ip, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use logging_mod, only: log_output_unit
@@ -11,8 +11,12 @@ module local_routines
 
     contains 
 
-    subroutine set_initial_conditions_BP09(domain)            
-        class(domain_type), target, intent(inout):: domain
+    subroutine set_initial_conditions_BP09(domain, all_dx_md)
+        class(domain_type), intent(inout):: domain
+            !! The domain
+        real(dp), intent(in), optional :: all_dx_md(:,:,:)
+            !! Metadata on multidomain grid sizes, used to smooth along multidomain boundaries.
+
         integer(ip):: i, j
         character(len=charlen):: input_elevation(6), input_stage(1)
         real(dp), allocatable:: x(:), y(:)
@@ -74,6 +78,9 @@ module local_routines
         end if
 
         deallocate(x,y, random_uniform)
+
+        ! Smooth near fine-to-coarse boundaries. Must do this BEFORE adjusting the stage to be >= elevation.
+        if(present(all_dx_md)) call domain%smooth_elevation_near_nesting_fine2coarse_boundaries(all_dx_md)
 
         if(domain%timestepping_method /= 'linear') then
             domain%manning_squared = 0.02_dp * 0.02_dp
@@ -147,6 +154,9 @@ program BP09
     !! If using a very high res domain, assume it is dry before this time. 
     !! If not set correctly, expect the wrong answer!
     !real(dp), parameter :: very_high_res_static_before_time = 235.0_dp
+
+    ! Optionally smooth the elevation near fine 2 coarse nesting boundaries.
+    logical, parameter :: smooth_elevation_near_fine2coarse_nesting_boundaries = .false.
 
 
     ! Useful misc variables
@@ -281,10 +291,16 @@ program BP09
 
     ! Set initial conditions
     do j = 1, size(md%domains)
-        call set_initial_conditions_BP09(md%domains(j))
+        if(smooth_elevation_near_fine2coarse_nesting_boundaries) then
+            ! Option with local smoothing of elevation
+            call set_initial_conditions_BP09(md%domains(j), md%all_dx_md)
+        else
+            ! No smoothing
+            call set_initial_conditions_BP09(md%domains(j))
+        end if
     end do
     call md%make_initial_conditions_consistent()
-    
+
     ! For stability in 'null' regions, we set them to 'high land' that should be inactive. 
     call md%set_null_regions_to_dry()
    

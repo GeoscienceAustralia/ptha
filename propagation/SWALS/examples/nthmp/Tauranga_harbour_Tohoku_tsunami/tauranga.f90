@@ -2,7 +2,7 @@ module local_routines
     !!
     !! Setup the Tauranga harbour geometry and boundary conditions
     !!
-    use global_mod, only: dp, ip, charlen, wall_elevation
+    use global_mod, only: dp, ip, charlen
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use file_io_mod, only: count_file_lines
@@ -255,7 +255,7 @@ end module
 
 program Tauranga
     !!
-    !! NTHMP currents test problem -- Tohoku tsunami observed at Tauganga Harbour, New Zealand.
+    !! NTHMP currents test problem -- Tohoku tsunami observed at Tauranga Harbour, New Zealand.
     !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method

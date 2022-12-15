@@ -20,4 +20,4 @@ The figures below compare the model wet-dry front with experimental snapshots ne
 ![Figure 5: Snapshot of model and observations in main runup area.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/snapshot_time_16.6.png)
 ![Figure 6: Snapshot of model and observations in main runup area.](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/snapshot_time_17.1.png)
 
-The test script also checks that the modelled runup maxima at three sites is within the range of the experimental results. Those results are written to [this csv file](model_vs_experiment_test_result.csv).
+The test script also checks that the modelled runup maxima at three sites is within the range of the experimental results. Those results are written to [this csv file](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/nthmp/BP07/model_vs_experiment_test_result.csv).

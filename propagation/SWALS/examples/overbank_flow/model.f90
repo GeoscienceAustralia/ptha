@@ -2,7 +2,7 @@ module local_routines
     !!
     !! Setup overbank flow problem (aligned to grid). This can treat either NS-aligned or EW-aligned channels.
     !!
-    use global_mod, only: dp, ip, wall_elevation, gravity
+    use global_mod, only: dp, ip, gravity
     use domain_mod, only: domain_type, STG, UH, VH, ELV 
     use which_mod, only: which
     implicit none

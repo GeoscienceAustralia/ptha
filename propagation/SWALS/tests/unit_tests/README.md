@@ -12,13 +12,17 @@ Compile with:
 
 and run with:
 
-    ./unit_tests
+    ./unit_tests > outfile.log
 
 Since the output is a bit verbose, you might use
 
-    ./unit_tests | grep FAIL
+    grep FAIL outfile.log | wc -l
 
-to check just for failures.
+to count failures (should be 0), and 
+
+    grep PASS outfile.log | wc -l
+
+to count passes (383 at the time of writing).
 
 You might want to adjust the preprocessing flags to check that the
 tests still pass with different compilation options.
