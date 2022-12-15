@@ -7,7 +7,7 @@
 #   define TIMER_STOP(tname)
 #endif
 
-! Compile with -DEVOLVE_TIMER to add detailed timing of the evolve loop 
+! Compile with -DEVOLVE_TIMER to add detailed timing of the evolve loop
 #ifdef EVOLVE_TIMER
 #   define EVOLVE_TIMER_START(tname) call domain%evolve_timer%timer_start(tname)
 #   define EVOLVE_TIMER_STOP(tname)  call domain%evolve_timer%timer_end(tname)
@@ -235,9 +235,9 @@ module domain_mod
             !! Use a flux routine that includes a contribution from eddy-viscosity?
         real(dp) :: eddy_visc_constants(2) = [0.0_dp, 0.5_dp]
             !! Constants used to control the eddy-viscosity model. All eddy-visc-models are of the form
-            !! "constant + another_model". The first coefficient is the constant eddy viscosity, 
-            !! while the second relates to either the smagorinksy eddy-viscocity model, or the 
-            !! shiono/knight eddy-viscosity model. 
+            !! "constant + another_model". The first coefficient is the constant eddy viscosity,
+            !! while the second relates to either the smagorinksy eddy-viscocity model, or the
+            !! shiono/knight eddy-viscosity model.
 
         !
         ! Nesting-related
@@ -272,7 +272,7 @@ module domain_mod
             !! Useful when we partition a domain in parallel
         logical :: is_nesting_boundary(4) = .FALSE.
             !! Flag to denote boundaries at which nesting occurs: order is N, E, S, W.
-        real(dp) :: max_parent_dx_ratio
+        real(dp) :: max_parent_dx_ratio = -1.0_dp
             !! Maximum value of (dx-from-domains-we-receive-from)/my-dx. Useful for nesting.
 
         !
@@ -377,27 +377,27 @@ module domain_mod
             !! Type to manage netcdf grid outputs
         character(len=charlen), allocatable :: time_grids_to_store(:)
             !! Specify which gridded variables to store over time. For example:
-            !!   [character(len=charlen):: 'stage', 'uh', 'vh', 'elev'] to store everything; 
+            !!   [character(len=charlen):: 'stage', 'uh', 'vh', 'elev'] to store everything;
             !!   [''] to store nothing;
             !!   ['stage'] to just store the stage.
             !! If unallocated then it will be set in domain%nc_grid_output%initialise
         character(len=charlen), allocatable :: nontemporal_grids_to_store(:)
             !! Specify which 'nontemporal' variables to store. For example:
-            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0'] 
-            !! to store everything; 
+            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0']
+            !! to store everything;
             !!   [''] to store nothing;
             !!   ['max_stage'] to just store the maximum stage.
         logical:: record_max_U = .true.
-            !! (Deprecated) approach to specifying whether we store maximum-stage (.true.) or not (.false.). 
+            !! (Deprecated) approach to specifying whether we store maximum-stage (.true.) or not (.false.).
             !! For new code please specify 'nontemporal_grids_to_store' instead, because the latter is more flexible
         character(len=charlen), allocatable :: max_U_variables(:)
-            !! Names of variables contained in max_U. Currently if it has size > 0, then the first variable is 
+            !! Names of variables contained in max_U. Currently if it has size > 0, then the first variable is
             !! ALWAYS 'max_stage' (for backward compatability - consider revising)
         integer(ip):: max_U_update_frequency = 1
             !! Only update domain%max_U every n time-steps. Values other than 1 introduce
             !! some approximation error, but the option might be useful for speed in some cases.
         real(dp) :: arrival_stage_threshold_above_msl_linear = 0.01_dp
-            !! The "arrival time" is defined as the time at which the stage exceeds 
+            !! The "arrival time" is defined as the time at which the stage exceeds
             !! (msl_linear + arrival_stage_threshold_above_msl_linear) AND the cell is wet
         type(point_gauge_type) :: point_gauges
             !! Type to manage storing of tide gauges
@@ -515,7 +515,9 @@ module domain_mod
 
         ! Smoothing of elevation. Not recommended in general, but with poor elevation data it might reduce artefacts.
         procedure :: smooth_elevation => smooth_elevation
+        ! Sometimes local smoothing near nesting boundaries can aid stability
         procedure :: smooth_elevation_near_point => smooth_elevation_near_point
+        procedure :: smooth_elevation_near_nesting_fine2coarse_boundaries => smooth_elevation_near_nesting_fine2coarse_boundaries
 
         ! Sending and receiving halos
         procedure :: send_halos => send_halos
@@ -749,7 +751,7 @@ TIMER_START("compute_statistics")
                         else
                             ! Spatially averaged depth on staggered grid
                             depth_E = 0.5_dp * sum( (domain%U(i:i+1,j,STG) - domain%U(i:i+1,j,ELV)))
-                            depth_N = 0.5_dp * sum( (domain%U(i,j:j+1,STG) - domain%U(i,j:j+1,ELV))) 
+                            depth_N = 0.5_dp * sum( (domain%U(i,j:j+1,STG) - domain%U(i,j:j+1,ELV)))
                         end if
 
                         depth_E_inv = merge(1.0_dp/depth_E, 0.0_dp, depth_E > minimum_allowed_depth)
@@ -983,7 +985,7 @@ TIMER_STOP("compute_statistics")
                     call generic_stop
                 end if
             end do
-        end if 
+        end if
         !
         ! Determine which flow statistics we store that are not time-series.
         !
@@ -992,22 +994,22 @@ TIMER_STOP("compute_statistics")
             ! In new code please avoid setting domain%record_max_U -- instead set domain%nontemporal_grids_to_store
             if(domain%record_max_U) then
                 ! Old default where we store maxima
-                domain%nontemporal_grids_to_store = [character(len=charlen):: 'max_stage', 'elevation0', 'manning_squared'] 
+                domain%nontemporal_grids_to_store = [character(len=charlen):: 'max_stage', 'elevation0', 'manning_squared']
             else
                 ! Old default where we don't store maxima or elevation or manning
-                domain%nontemporal_grids_to_store = [''] 
+                domain%nontemporal_grids_to_store = ['']
             end if
         end if
-        ! Check for spelling errors in nontemporal_grids_to_store 
+        ! Check for spelling errors in nontemporal_grids_to_store
         do i = 1, size(domain%nontemporal_grids_to_store)
             if(.not. ((domain%nontemporal_grids_to_store(i) == '') .or. &
                 any(domain%nontemporal_grids_to_store(i) == gridded_output_variables_max_U) .or. &
                 any(domain%nontemporal_grids_to_store(i) == gridded_output_variables_other) )) then
-                
+
                 write(log_output_unit, *) 'Unsupported variable in nontemporal_grids_to_store: ', &
                     trim(domain%nontemporal_grids_to_store(i))
                 call generic_stop
-            end if 
+            end if
         end do
         ! Define the names of nontemporal variables to store that require tracking flow statistics
         allocate(domain%max_U_variables(0))
@@ -1049,7 +1051,7 @@ TIMER_STOP("compute_statistics")
                 ! Although I expected -huge(1.0) could be stored, I ran into problems with netcdf
                 ! which did not occur for slightly smaller magnitude numbers -- hence the factor 0.99
                 ! in the following.
-                domain%max_U(:,j,:) = -0.99_output_precision * huge(real(1.0, kind=output_precision)) 
+                domain%max_U(:,j,:) = -0.99_output_precision * huge(real(1.0, kind=output_precision))
             end do
             !$OMP END DO
             !$OMP END PARALLEL
@@ -1210,7 +1212,7 @@ TIMER_STOP("compute_statistics")
         select case(domain%friction_type)
         case('manning')
             ! Nothing to do here, but this avoids hitting "case default"
-        case('chezy') 
+        case('chezy')
             if(domain%timestepping_method == 'cliffs') then
                 write(log_output_unit, *) "ERROR: chezy_friction has not yet been implemented for our cliffs solver"
                 call generic_stop
@@ -2154,7 +2156,7 @@ EVOLVE_TIMER_START('update_max_quantities')
 
                 select case(domain%max_U_variables(k))
 
-                case('max_stage') 
+                case('max_stage')
 
                     ! Track max stage
                     !$OMP DO SCHEDULE(STATIC)
@@ -2188,7 +2190,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 else
                                     ! Spatially averaged depth on staggered grid
                                     depth_E = 0.5_dp * sum( (domain%U(i:ip1,j,STG) - domain%U(i:ip1,j,ELV)))
-                                    depth_N = 0.5_dp * sum( (domain%U(i,j:jp1,STG) - domain%U(i,j:jp1,ELV))) 
+                                    depth_N = 0.5_dp * sum( (domain%U(i,j:jp1,STG) - domain%U(i,j:jp1,ELV)))
                                 end if
 
                                 depth_E_inv = merge(1.0_dp/depth_E, 0.0_dp, depth_E > minimum_allowed_depth)
@@ -3285,13 +3287,13 @@ TIMER_STOP('nesting_flux_correction')
 #ifdef OLD_PROCESS_DATA_TO_SEND_B4FEB22
                     ! Solution: Select dm based on the order of the index, with tie-breaking by image
                     ! OLD METHOD -- it has a weakness:
-                    !     With this rule, if we run two models that are identical except image indices are reordered, 
-                    !     then this could behave differently. While there is no 'correct' choice, seems better to have 
-                    !     the same solution irrespective (perhaps based on geometric criteria)? Note that if the equal 
-                    !     sized domains are using local time-stepping, so have different time-steps, then presumably 
+                    !     With this rule, if we run two models that are identical except image indices are reordered,
+                    !     then this could behave differently. While there is no 'correct' choice, seems better to have
+                    !     the same solution irrespective (perhaps based on geometric criteria)? Note that if the equal
+                    !     sized domains are using local time-stepping, so have different time-steps, then presumably
                     !     flux correction will be needed.
                     !     Alternative: using the value of `dm_outside` [e.g. dm = merge(0, dm_outside, dm_outside > 0)].
-                    !            
+                    !
                     if(out_index > nbr_index) then
                         dm = dm_outside
                     else
@@ -3777,12 +3779,12 @@ TIMER_STOP('send_halos')
     subroutine smooth_elevation_near_point(domain, number_of_9pt_smooths, pt, &
             smooth_region_radius_meters, transition_region_radius_meters)
         !!
-        !! Smooth the elevation grid near a specified point. 
+        !! Smooth the elevation grid near a specified point.
         !!
         !! We apply the 9pt_smoother to the elevation a specified number of times. At sites within a distance
         !! "smooth_region_radius_meters" of the point, we use the smoothed elevation value. For points with distance between
         !! smooth_region_radius_meters and transition_region_radius_meters, we linearly blend the smooth DEM value and the original
-        !! DEM value by a factor that decreases from 1 to 0 with distance. 
+        !! DEM value by a factor that decreases from 1 to 0 with distance.
         !!
         class(domain_type), intent(inout) :: domain
             !! Input domain
@@ -3809,23 +3811,23 @@ TIMER_STOP('send_halos')
         end if
 
         if(smooth_region_radius_meters < 0.0_dp) then
-            write(log_output_unit, *) 'smooth_region_radius_meters must be non-negative' 
+            write(log_output_unit, *) 'smooth_region_radius_meters must be non-negative'
             call generic_stop
         end if
-        
+
         nx = domain%nx(1)
         ny = domain%nx(2)
 
 #ifdef SPHERICAL
         ! Check whether pt is 'likely' close enough to the domain for smoothing to matter,
-        ! by searching in an 'extended' box. 
+        ! by searching in an 'extended' box.
 
         if(abs(pt(1) - domain%x(1)) >= 360.0_dp .or. abs(pt(1) - domain%x(nx)) >= 360.0_dp) then
             write(log_output_unit, *) 'Code does not yet treat longitude wrapping in spherical coordinates'
             call generic_stop
         end if
 
-        ! Approximate lat change corresponding to the transition_region_radius_meters 
+        ! Approximate lat change corresponding to the transition_region_radius_meters
         dlat = transition_region_radius_meters/radius_earth * 1.0_dp/DEG2RAD
         ! For dlon, this depends on latitude
         cosfac = min(cos((domain%y(1)-dlat)*DEG2RAD), cos((domain%y(ny) + dlat)*DEG2RAD)) ! Conservative
@@ -3834,7 +3836,7 @@ TIMER_STOP('send_halos')
         else
             dlon = min( dlat/cosfac, 360.0_dp)
         end if
-        
+
         is_nearby = ( (pt(1) >= domain%x(1 ) - dlon) .and. &
                       (pt(1) <= domain%x(nx) + dlon) .and. &
                       (pt(2) >= domain%y(1 ) - dlat) .and. &
@@ -3842,7 +3844,7 @@ TIMER_STOP('send_halos')
 
 #else
         ! Check whether pt is 'likely' close enough to the domain for smoothing to matter,
-        ! by searching in an 'extended' box 
+        ! by searching in an 'extended' box
         is_nearby = ( (pt(1) >= domain%x(1 ) - transition_region_radius_meters) .and. &
                       (pt(1) <= domain%x(nx) + transition_region_radius_meters) .and. &
                       (pt(2) >= domain%y(1 ) - transition_region_radius_meters) .and. &
@@ -3863,8 +3865,8 @@ TIMER_STOP('send_halos')
         do i = 1, number_of_9pt_smooths
             call domain%smooth_elevation(smooth_method='9pt_average')
         end do
-      
-        !$OMP PARALLEL DO PRIVATE(distance_to_pt, wt) & 
+
+        !$OMP PARALLEL DO PRIVATE(distance_to_pt, wt) &
         !$OMP SHARED(initial_elevation, nx, ny, domain, pt, transition_region_radius_meters, smooth_region_radius_meters)
         do j = 1, ny
             do i = 1, nx
@@ -3874,14 +3876,14 @@ TIMER_STOP('send_halos')
                      (transition_region_radius_meters - smooth_region_radius_meters)
                 wt = min(1.0_dp, max(wt, 0.0_dp))
                 domain%U(i,j,ELV) = wt * domain%U(i,j,ELV) + (1.0_dp - wt) * initial_elevation(i,j)
-            end do 
+            end do
         end do
         !$OMP END PARALLEL DO
 
         deallocate(initial_elevation)
 
-        contains 
-            
+        contains
+
             function pt_distance(x, y) result(distance_to_pt)
             real(dp), intent(in) :: x, y
             real(dp) :: distance_to_pt
@@ -3891,6 +3893,148 @@ TIMER_STOP('send_halos')
                 distance_to_pt = sqrt((x - pt(1))**2 + (y - pt(2))**2)
 #endif
             end function
+
+    end subroutine
+
+    subroutine smooth_elevation_near_nesting_fine2coarse_boundaries(domain, all_dx_md, &
+            coarse_side_ncells, fine_side_ncells, number_of_9pt_smooths)
+        !! Smooth the domain elevation locally near fine2coarse nesting boundaries (for domains that
+        !! are part of a multidomain).
+        !!
+        !! Elevation smoothing at specific sites can improve stability in some cases. In practice
+        !! problems most often arise at sites near nesting boundaries (with a grid size change).
+        !! This routine applies "local" smoothing near all coarse to fine boundaries in the domain.
+        !! The number of cells involved around the nesting boundary differs for the fine domain vs
+        !! the coarse domain.
+        !!
+        !! This is unit-tested in the multidomain module. See domain%smooth_elevation_near_point for
+        !! a more specific approach.
+        !!
+        class(domain_type), intent(inout) :: domain
+        real(dp), intent(in) :: all_dx_md(:,:,:)
+            !! Array with rank (2, max_number_domains_on_any_image, number_images), which in practice
+            !! is stored in the multidomain object md%all_dx_md.
+            !! It contains the cell size (dx & dy) for each domain on every image in a multidomain.
+            !! The first argument "domain" is also part of the multidomain.
+            !! At any cell i,j, in our domain, the priority_domain_cellsize(1:2) can be computed as:
+            !!     n = domain%nesting%priority_domain_index(i,j)
+            !!     m = domain%nesting%priority_domain_image(i,j)
+            !!     priority_domain_cellsize = all_dx_md(1:2, n, m)
+        integer(ip), optional, intent(in) :: coarse_side_ncells
+            !! Smooth within "coarse_side_ncells" of a coarse-2-fine nesting boundary on the coarse domain.
+        integer(ip), optional, intent(in) :: fine_side_ncells
+            !! Smooth within "fine_side_ncells" of a coarse-2-fine nesting boundary on the fine domain.
+        integer(ip), optional, intent(in) :: number_of_9pt_smooths
+            !! Smoothing corresponds to this many applications of a 9pt smooth
+
+        real(dp), allocatable :: temp_elev(:,:)
+        integer(ip) :: i, j, n, m, i0, j0
+        real(dp) :: smooth_elev, nonsmooth_elev
+        integer(ip) :: coarse_window_size, fine_window_size, nsmooth
+        logical:: did_coarse_smoothing, did_fine_smoothing
+
+        ! Smooth within this many cells on the coarse side of a nesting boundary
+        coarse_window_size = 2_ip
+        if(present(coarse_side_ncells)) coarse_window_size = coarse_side_ncells
+
+        ! Smooth within this many cells on the fine side of a nesting boundary
+        fine_window_size = max(nint(domain%max_parent_dx_ratio), 2_ip)
+        if(present(fine_side_ncells)) fine_window_size = fine_side_ncells
+
+        ! Smooth using this many 9pt smooths
+        nsmooth = 1_ip
+        if(present(number_of_9pt_smooths)) nsmooth = number_of_9pt_smooths
+
+        ! Store the non-smooth elevation
+        temp_elev = domain%U(:,:,ELV)
+
+        ! Smooth elevation everywhere.
+        ! Later we ignore most of these values -- could be made more efficient.
+        do j = 1, nsmooth
+            call domain%smooth_elevation('9pt_average')
+        end do
+
+        !$OMP PARALLEL DEFAULT(PRIVATE),&
+        !$OMP SHARED(domain, temp_elev, all_dx_md, coarse_window_size, fine_window_size, nsmooth), &
+        !$OMP REDUCTION(.or.: did_coarse_smoothing), &
+        !$OMP REDUCTION(.or.: did_fine_smoothing)
+
+        ! Swap temp_elev and domain%U(:,:,ELV) -- so the domain elevation is
+        ! non-smooth, and the temp_elev is smooth
+        !$OMP DO SCHEDULE(STATIC)
+        do j = 1, domain%nx(2)
+            do i = 1, domain%nx(1)
+                smooth_elev = domain%U(i,j,ELV)
+                nonsmooth_elev = temp_elev(i,j)
+
+                domain%U(i,j,ELV) = nonsmooth_elev
+                temp_elev(i,j) = smooth_elev
+            end do
+        end do
+        !$OMP END DO
+
+        ! These may be redefined in loop below
+        did_coarse_smoothing = .false.
+        did_fine_smoothing = .false.
+
+        ! Find cells that need smoothing, and set their elevations to the smooth value
+        !$OMP DO SCHEDULE(STATIC)
+        do j = 1, domain%nx(2)
+            cell_loop: do i = 1, domain%nx(1)
+
+                ! Skip non-priority-domain cells
+                if(domain%nesting%is_priority_domain_not_periodic(i,j) == 0_ip) cycle cell_loop
+
+                ! Detect cells on the coarse side of a coarse-2-fine boundary
+                do j0 = max(j-coarse_window_size, 1), min(j+coarse_window_size, domain%nx(2))
+                    do i0 = max(i-coarse_window_size, 1), min(i+coarse_window_size, domain%nx(1))
+                        n = domain%nesting%priority_domain_index(i0, j0)
+                        m = domain%nesting%priority_domain_image(i0, j0)
+                        ! Finer cells will be an integer divisor finer (1/2, 1/3, ...) than cells in this domain.
+                        ! Below we use a factor slightly larger than 1/2 to protect against
+                        ! small floating point differences in dx.
+                        if(any(all_dx_md(1:2, n, m) < 0.55_dp * domain%dx(1:2))) then
+                            domain%U(i,j,ELV) = temp_elev(i,j)
+                            did_coarse_smoothing = .true.
+                            cycle cell_loop
+                        end if
+                    end do
+                end do
+
+                ! Detect cells on the fine side of a coarse-2-fine boundary
+                do j0 = max(j-fine_window_size, 1), min(j+fine_window_size, domain%nx(2))
+                    do i0 = max(i-fine_window_size, 1), min(i+fine_window_size, domain%nx(1))
+                        n = domain%nesting%priority_domain_index(i0, j0)
+                        m = domain%nesting%priority_domain_image(i0, j0)
+                        ! Coarser cells will be an integer factor coarser (2, 3, ...) than cells in this domain.
+                        ! Below we use a factor slightly smaller than 2 to protect against
+                        ! small floating point differences in dx.
+                        if(any(all_dx_md(1:2, n, m) > 1.9_dp * domain%dx(1:2))) then
+                            domain%U(i,j,ELV) = temp_elev(i,j)
+                            did_fine_smoothing = .true.
+                            cycle cell_loop
+                        end if
+                    end do
+                end do
+
+            end do cell_loop
+        end do
+        !$OMP END DO
+
+        !$OMP END PARALLEL
+
+        deallocate(temp_elev) ! Should happen automatically but have seen buggy compilers (years ago).
+
+        ! Check whether the smoothing would have been contained in the nesting layer. Warn if not. 
+        if( ( did_fine_smoothing .and. & 
+              ((fine_window_size   + nsmooth) > domain%nest_layer_width)) .or. &
+            ( did_coarse_smoothing .and. & 
+               ((coarse_window_size + nsmooth) > domain%nest_layer_width )) ) then
+            write(log_output_unit, *) &
+                'WARNING: elevation smoothing may affect an area that exceeds the nesting layer thickness. ', &
+                'If smoothing occurs near domain boundaries, then elevations may be sensitive to the domain partition.'
+        end if
+
 
     end subroutine
 
@@ -3963,7 +4107,7 @@ TIMER_STOP('send_halos')
         endif
 
         !
-        ! Check smooth_elevation 
+        ! Check smooth_elevation
         !
         do j = 1, ny
             do i = 1, nx
@@ -4010,7 +4154,7 @@ TIMER_STOP('send_halos')
         do j = 2, ny-1
             do i = 2, nx-1
 
-                dist2 = (domain%x(i) - pt(1))**2 + (domain%y(j) - pt(2))**2 
+                dist2 = (domain%x(i) - pt(1))**2 + (domain%y(j) - pt(2))**2
 
                 if( ( dist2 <= r1**2 ) ) then
                     ! Inner radius
