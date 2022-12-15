@@ -3,7 +3,7 @@ module local_routines
     !! Setup the Merewether problem.
     !!
 
-    use global_mod, only: dp, ip, force_double, charlen, wall_elevation, pi
+    use global_mod, only: dp, ip, force_double, charlen, pi
     use domain_mod, only: domain_type, STG, UH, VH, ELV
     use read_raster_mod, only: multi_raster_type
     use which_mod, only: which

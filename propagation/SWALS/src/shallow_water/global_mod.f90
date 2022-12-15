@@ -43,6 +43,12 @@ real(dp), parameter:: minimum_allowed_depth = 1.0e-05_dp !! Depth at which veloc
 
 real(dp), parameter:: wall_elevation = 1.0e+6_dp !! Walls (e.g. reflective boundary) may be given this elevation
 
+! Values used to denote 'null regions' (parts of the domain that cannot affect the flow) that are conveniently set to dry
+real(dp), parameter :: stage_null = wall_elevation !! Stage in null region
+real(dp), parameter :: elev_null = wall_elevation  !! Elevation in null region
+real(dp), parameter :: uh_null = 0.0_dp , vh_null = 0.0_dp !! Fluxes in null region
+
+
 ! Timestepping
 real(dp), parameter:: maximum_timestep = 1.0e+20_dp !! Default upper limit on the time-step.
 character(len=charlen), parameter:: default_nonlinear_timestepping_method = 'rk2' !! Used in test suite
