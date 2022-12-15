@@ -4238,19 +4238,19 @@ __FILE__
         end do
         call md%make_initial_conditions_consistent
 
-        call md%write_outputs_and_print_statistics
+        !call md%write_outputs_and_print_statistics
 
         ! Apply local smoothing near nesting boundaries
         do j = 1, size(md%domains)
             call md%domains(j)%smooth_elevation_near_nesting_fine2coarse_boundaries(md%all_dx_md, &
                 coarse_side_ncells = coarse_n, fine_side_ncells = fine_n, number_of_9pt_smooths = num_smooth)
         end do
-        call md%write_outputs_and_print_statistics
+        !call md%write_outputs_and_print_statistics
 
         call md%make_initial_conditions_consistent
         call md%set_null_regions_to_dry
 
-        call md%write_outputs_and_print_statistics
+        !call md%write_outputs_and_print_statistics
 
         ! Check if it worked
         passed = .true.
