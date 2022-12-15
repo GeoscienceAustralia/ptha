@@ -18,4 +18,4 @@ which should return `0` if there are no failures. The same approach can be appli
 
     cat outfile.log | grep FAIL | wc -w
 
-and at the time of writing returns `4163`.
+and at the time of writing returns `4215`.
