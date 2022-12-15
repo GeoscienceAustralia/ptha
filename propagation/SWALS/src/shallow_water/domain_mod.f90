@@ -3902,13 +3902,14 @@ TIMER_STOP('send_halos')
         !! are part of a multidomain).
         !!
         !! Elevation smoothing at specific sites can improve stability in some cases. In practice
-        !! problems most often arise at sites near nesting boundaries (with a grid size change).
+        !! problems most often arise at sites near nesting boundaries (where the grid size changes).
         !! This routine applies "local" smoothing near all coarse to fine boundaries in the domain.
         !! The number of cells involved around the nesting boundary differs for the fine domain vs
         !! the coarse domain.
         !!
-        !! This is unit-tested in the multidomain module. See domain%smooth_elevation_near_point for
-        !! a more specific approach.
+        !! See unit-test in the multidomain module. 
+        !! See domain%smooth_elevation_near_point for smoothing near a specified point.
+        !! See domain%smooth_elevation for smoothing the entire domain.
         !!
         class(domain_type), intent(inout) :: domain
         real(dp), intent(in) :: all_dx_md(:,:,:)
@@ -3930,8 +3931,8 @@ TIMER_STOP('send_halos')
         real(dp), allocatable :: temp_elev(:,:)
         integer(ip) :: i, j, n, m, i0, j0
         real(dp) :: smooth_elev, nonsmooth_elev
-        integer(ip) :: coarse_window_size, fine_window_size, nsmooth
-        logical:: did_coarse_smoothing, did_fine_smoothing
+        integer(ip) :: coarse_window_size, fine_window_size, nsmooth, smooth_footprint
+        logical:: smooth_footprint_exceeded_boundary
 
         ! Smooth within this many cells on the coarse side of a nesting boundary
         coarse_window_size = 2_ip
@@ -3945,6 +3946,14 @@ TIMER_STOP('send_halos')
         nsmooth = 1_ip
         if(present(number_of_9pt_smooths)) nsmooth = number_of_9pt_smooths
 
+        ! At cell (i,j), smoothing leads to an influence from cells
+        !  [i-smooth_footprint, ..., i+smooth_footprint] .outer_product. &
+        !  [j-smooth_footprint, ..., j+smooth_footprint]
+        ! We can warn if any of these cells touched the domain boundary (as
+        ! changes to the domain partition might interact with the smoothing, potentially
+        ! making models more sensitive to the partition than they should be).
+        smooth_footprint = 3 + (nsmooth-1)
+
         ! Store the non-smooth elevation
         temp_elev = domain%U(:,:,ELV)
 
@@ -3955,9 +3964,8 @@ TIMER_STOP('send_halos')
         end do
 
         !$OMP PARALLEL DEFAULT(PRIVATE),&
-        !$OMP SHARED(domain, temp_elev, all_dx_md, coarse_window_size, fine_window_size, nsmooth), &
-        !$OMP REDUCTION(.or.: did_coarse_smoothing), &
-        !$OMP REDUCTION(.or.: did_fine_smoothing)
+        !$OMP SHARED(domain, temp_elev, all_dx_md, coarse_window_size, fine_window_size, nsmooth, smooth_footprint), &
+        !$OMP REDUCTION(.or.: smooth_footprint_exceeded_boundary)
 
         ! Swap temp_elev and domain%U(:,:,ELV) -- so the domain elevation is
         ! non-smooth, and the temp_elev is smooth
@@ -3974,8 +3982,7 @@ TIMER_STOP('send_halos')
         !$OMP END DO
 
         ! These may be redefined in loop below
-        did_coarse_smoothing = .false.
-        did_fine_smoothing = .false.
+        smooth_footprint_exceeded_boundary = .false.
 
         ! Find cells that need smoothing, and set their elevations to the smooth value
         !$OMP DO SCHEDULE(STATIC)
@@ -3995,7 +4002,11 @@ TIMER_STOP('send_halos')
                         ! small floating point differences in dx.
                         if(any(all_dx_md(1:2, n, m) < 0.55_dp * domain%dx(1:2))) then
                             domain%U(i,j,ELV) = temp_elev(i,j)
-                            did_coarse_smoothing = .true.
+                            if(i - smooth_footprint < 1 .or. i + smooth_footprint > domain%nx(1) .or. &
+                               j - smooth_footprint < 1 .or. j + smooth_footprint > domain%nx(2)) then
+                               ! Trigger a warning about boundary interactions
+                                smooth_footprint_exceeded_boundary = .true.
+                            end if
                             cycle cell_loop
                         end if
                     end do
@@ -4011,7 +4022,11 @@ TIMER_STOP('send_halos')
                         ! small floating point differences in dx.
                         if(any(all_dx_md(1:2, n, m) > 1.9_dp * domain%dx(1:2))) then
                             domain%U(i,j,ELV) = temp_elev(i,j)
-                            did_fine_smoothing = .true.
+                            if(i - smooth_footprint < 1 .or. i + smooth_footprint > domain%nx(1) .or. &
+                               j - smooth_footprint < 1 .or. j + smooth_footprint > domain%nx(2)) then
+                               ! Trigger a warning about boundary interactions
+                                smooth_footprint_exceeded_boundary = .true.
+                            end if
                             cycle cell_loop
                         end if
                     end do
@@ -4026,13 +4041,11 @@ TIMER_STOP('send_halos')
         deallocate(temp_elev) ! Should happen automatically but have seen buggy compilers (years ago).
 
         ! Check whether the smoothing would have been contained in the nesting layer. Warn if not. 
-        if( ( did_fine_smoothing .and. & 
-              ((fine_window_size   + nsmooth) > domain%nest_layer_width)) .or. &
-            ( did_coarse_smoothing .and. & 
-               ((coarse_window_size + nsmooth) > domain%nest_layer_width )) ) then
-            write(log_output_unit, *) &
-                'WARNING: elevation smoothing may affect an area that exceeds the nesting layer thickness. ', &
-                'If smoothing occurs near domain boundaries, then elevations may be sensitive to the domain partition.'
+        if( smooth_footprint_exceeded_boundary ) then  
+            write(log_output_unit, *) 'WARNING: ', &
+            'Elevation smoothing should have been affected by regions outside the domain. ', &
+            'Thus the smooth elevation may differ using a different domain partition. ', &
+            'This may not matter - but could be significant if comparing models with different domain partitions.'
         end if
 
 
