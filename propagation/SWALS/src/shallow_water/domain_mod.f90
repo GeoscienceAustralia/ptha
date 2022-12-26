@@ -1261,7 +1261,7 @@ TIMER_STOP("compute_statistics")
             write(domain%logfile_unit, *) 'upper-right:', domain%lower_left + domain%lw
             write(domain%logfile_unit, *) 'Total area: ', sum(domain%area_cell_y)
             write(domain%logfile_unit, *) 'distance_bottom_edge(1): ', domain%distance_bottom_edge(1)
-            write(domain%logfile_unit, *) 'distange_left_edge(1)', domain%distance_left_edge(1)
+            write(domain%logfile_unit, *) 'distance_left_edge(1): ', domain%distance_left_edge(1)
             write(domain%logfile_unit, *) ''
         end if
 
