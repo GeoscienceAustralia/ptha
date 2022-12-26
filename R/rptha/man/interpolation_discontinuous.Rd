@@ -8,7 +8,9 @@ interpolation_discontinuous(
   xy,
   vals,
   newPts,
-  category_function = function(xy) {     xy[, 1] * 0 + 1 },
+  category_function = function(xy) {
+     xy[, 1] * 0 + 1
+ },
   interpolator = triangular_interpolation,
   ...
 )
