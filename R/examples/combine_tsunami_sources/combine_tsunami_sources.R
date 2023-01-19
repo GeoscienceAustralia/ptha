@@ -155,3 +155,15 @@ for(i in 1:3) {
         border=NA, phi=30, theta=-90, scale=FALSE, expand=0.2)
 }
 dev.off()
+
+
+write_source_rasters_as_tif = FALSE
+if(write_source_rasters_as_tif){
+    #
+    # Export each source_raster_smooth as GTiff
+    #
+    for(i in 1:length(stochastic_slip_events)){
+        filename = paste0('source_raster_smooth_', substring(1e+05 + i, 2, 6), '.tif') 
+        writeRaster(stochastic_slip_events[[i]]$source_raster_smooth, file=filename, options=c('COMPRESS=DEFLATE'))
+    }
+}
