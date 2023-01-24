@@ -1926,6 +1926,8 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
     # For each point, find which domain(s) it is in
     point_domain = rep(NA, nrow(xy_mat))
     point_dir = rep(NA, nrow(xy_mat))
+    number_of_possible_domains = rep(0, nrow(xy_mat))
+    all_possible_domain_dirs = vector(mode='list', length=nrow(xy_mat))
     for(i in 1:nrow(xy_mat)){
         xy = xy_mat[i,1:2]
         point_in_domain = (xy[1] >= md_cell_xmin) & (xy[1] <= md_cell_xmax) & 
@@ -1938,13 +1940,24 @@ find_domain_containing_point<-function(xy_mat, md=NULL, multidomain_dir=NULL){
             # always the priority domain].
             local_areas = md_cell_areas
             local_areas[!point_in_domain] = Inf
-            point_domain[i] = which.min(local_areas)
+            point_domain[i] = which.min(local_areas) # If repeated minima, uses first
             point_dir[i] = md[[point_domain[i]]]$output_folder
+
+            # UNUSUAL CASE
+            # It is possible for the point to be on a boundary, and it might not be stored
+            # in all the domains. Hold enough information to treat this case.
+            k = which(local_areas == min(local_areas))
+            number_of_possible_domains[i] = length(k)
+            all_possible_domain_dirs[[i]] = sapply(k, function(x) md[[x]]$output_folder)
+
         }
     }
 
     output = list(points = xy_mat, domain_index=point_domain, 
-                  domain_dir=point_dir)
+                  domain_dir=point_dir, 
+                  # Additional info for boundary cases below
+                  number_of_possible_domains=number_of_possible_domains,
+                  all_possible_domain_dirs = all_possible_domain_dirs)
 
     return(output)
 
@@ -2139,6 +2152,13 @@ get_gauges_near_xy<-function(multidomain_dir, xy_sites, lonlat_coords=FALSE,
 
     target_gauge_domains = find_domain_containing_point(xy_sites[,1:2], md=NULL, 
         multidomain_dir=multidomain_dir)
+
+    if(verbose){
+        if(any(target_gauge_domains$number_of_possible_domains > 1)){
+            print(c("WARNING: Some gauges are on domain boundaries - results here only search the first matching domain.\n",
+                    "         In case of failure, try shifting the requested point off the boundary"))
+        }
+    }
 
     unique_gauge_domains = na.omit(unique(target_gauge_domains$domain_dir))
     if(length(unique_gauge_domains) == 0) stop('No gauges are in the multidomain')
