@@ -1,7 +1,5 @@
 timestepping_method = commandArgs(trailingOnly=TRUE)[1]
 
-#library(rptha)
-library(geosphere)
 source('../../plot.R')
 md_dir = rev(Sys.glob('OUTPUTS/RUN*'))[1]
 x = get_multidomain(md_dir)
@@ -10,10 +8,8 @@ x = get_multidomain(md_dir)
 md_file_lines = readLines(Sys.glob(paste0(md_dir, '/multidom*.log'))[1])
 
 # Get dx/dy in cartesian-like coordinates
-nx = length(x[[1]]$xs)
-ny = length(x[[1]]$ys)
-dx = distHaversine(cbind(x[[1]]$xs[1], x[[1]]$ys[1]), cbind(x[[1]]$xs[nx], x[[1]]$ys[1]), r=6371000)/(nx-1)
-dy = distHaversine(cbind(x[[1]]$xs[1], x[[1]]$ys[1]), cbind(x[[1]]$xs[1], x[[1]]$ys[ny]), r=6371000)/(ny-1)
+dx = as.numeric(strsplit(md_file_lines[grep('_bottom_edge(1)', md_file_lines, fixed=TRUE)], '   ')[[1]][2])
+dy = as.numeric(strsplit(md_file_lines[grep('_left_edge(1)'  , md_file_lines, fixed=TRUE)], '   ')[[1]][2])
 
 # Get coordinates x/y, in cartesian 
 xmid = length(x[[1]]$xs)/2 + 0.5

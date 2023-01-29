@@ -530,9 +530,6 @@ module domain_mod
         procedure:: nesting_flux_correction_everywhere => nesting_flux_correction_everywhere
         ! -- Determine if a given point is in the 'priority domain'
         procedure:: is_in_priority_domain => is_in_priority_domain
-        ! -- If the current grid communicates to a coarser grid, this routine can make elevation constant within each coarse-grid
-        ! cell in the send-region. Useful to make elevation consistent in a nesting situation
-        procedure:: use_constant_wetdry_send_elevation => use_constant_wetdry_send_elevation
         ! -- When initialising nested domains, set lower-left/upper-right/resolution near the desired locations,
         ! adjusting as required to support nesting (e.g. so that edges align with parent domain, and cell size is an integer divisor
         ! of the parent domain, etc).
@@ -1261,7 +1258,7 @@ TIMER_STOP("compute_statistics")
             write(domain%logfile_unit, *) 'upper-right:', domain%lower_left + domain%lw
             write(domain%logfile_unit, *) 'Total area: ', sum(domain%area_cell_y)
             write(domain%logfile_unit, *) 'distance_bottom_edge(1): ', domain%distance_bottom_edge(1)
-            write(domain%logfile_unit, *) 'distange_left_edge(1)', domain%distance_left_edge(1)
+            write(domain%logfile_unit, *) 'distance_left_edge(1): ', domain%distance_left_edge(1)
             write(domain%logfile_unit, *) ''
         end if
 
@@ -3365,71 +3362,6 @@ TIMER_STOP('nesting_flux_correction')
                 end if
 
             end subroutine
-
-    end subroutine
-
-    ! Make elevation constant in nesting send_regions that go to a single coarser cell, if the maximum elevation is above
-    ! elevation_threshold
-    !
-    ! This was done (in the past) to avoid wet-dry instabilities, caused by aggregating over wet-and-dry cells on a finer domain,
-    ! which is then sent to a coarser domain.  Such an operation will break the hydrostatic balance, unless the elevation in the
-    ! fine cells is constant
-    !
-    ! NOTE: Instead of using this, a better approach is to send the data from the centre cell to the coarse grid. That way we do not
-    ! need to hack the elevation data to avoid these instabilities. With the latter approach, this routine seems defunct.
-    !
-    subroutine use_constant_wetdry_send_elevation(domain, elevation_threshold)
-
-        class(domain_type), intent(inout) :: domain
-        real(dp), intent(in) :: elevation_threshold
-
-        integer(ip) :: i, ic, jc
-        integer(ip) :: send_inds(2,3), cr(2)
-        real(dp) :: mean_elev, max_elev
-
-        ! Move on if we do not send data
-        if(.not. allocated(domain%nesting%send_comms) ) return
-
-        ! Loop over all 'send' regions
-        do i = 1, size(domain%nesting%send_comms, kind=ip)
-
-            ! Only operate on finer domains
-            if(.not. domain%nesting%send_comms(i)%my_domain_is_finer) cycle
-
-            ! [num_x, num_y] cells per coarse domain cell
-            cr = nint(ONE_dp/domain%nesting%send_comms(i)%cell_ratios)
-
-            send_inds = domain%nesting%send_comms(i)%send_inds
-
-            ! Loop over j cells that are sent, in steps corresponding to
-            ! the coarse j cells
-            do jc = send_inds(1,2) - 1, send_inds(2,2) - cr(2), cr(2)
-
-                ! Loop over i cells that are sent, in steps corresponding
-                ! to the coarse i cells
-                do ic = send_inds(1,1) - 1, send_inds(2,1) - cr(1), cr(1)
-
-                    ! Maximum elevation of cells which will be aggregated
-                    ! and sent to the coarser domain
-                    max_elev = maxval( &
-                        domain%U((ic+1):(ic+cr(1)), (jc+1):(jc+cr(2)), ELV) )
-                    ! Mean elevation of cells which will be aggregated and
-                    ! sent to the coarser domain
-                    mean_elev = sum( &
-                        domain%U((ic+1):(ic+cr(1)), (jc+1):(jc+cr(2)), ELV) )/&
-                        (product(cr))
-
-                    ! Replace all elevation values with well behaved solution, if
-                    ! (max_elevation > threshold)
-                    if(max_elev > elevation_threshold) then
-                        domain%U((ic+1):(ic+cr(1)), (jc+1):(jc+cr(2)), ELV) = mean_elev
-                    end if
-
-                end do
-            end do
-
-        end do
-
 
     end subroutine
 
