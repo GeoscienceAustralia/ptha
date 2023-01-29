@@ -236,7 +236,6 @@ module multidomain_mod
         procedure :: evolve_one_step => evolve_multidomain_one_step
         ! Utilities to ensure consistency of nesting areas prior to main computation
         procedure :: set_null_regions_to_dry => set_null_regions_to_dry
-        procedure :: use_constant_wetdry_send_elevation => use_constant_wetdry_send_elevation
         procedure :: make_initial_conditions_consistent => make_initial_conditions_consistent
         ! Mass tracking
         procedure :: get_flow_volume => get_flow_volume
@@ -3188,42 +3187,6 @@ module multidomain_mod
         end do
 
     end function
-
-    ! Make elevation constant in send_regions that go to a single coarser cell,
-    ! if the maximum elevation is above elevation_threshold
-    !
-    ! This is done to avoid wet-dry instabilities, caused by aggregating over
-    ! wet-and-dry cells on a finer domain, which is then sent to a coarser domain.
-    ! Such an operation will break the hydrostatic balance, unless the elevation
-    ! in the fine cells is constant
-    !
-    ! NOTE: CURRENTLY DEFUNCT -- we just send a central fine cell instead of aggregating,
-    ! simpler solution to the issues
-    !
-    ! @param md multidomain
-    ! @param elevation_threshold constant -- only do the aggregation if the
-    !     elevation is above this threshold. The idea is to make this small enough
-    !     to encompass all potentially wet-dry regions, while not affecting deep
-    !     cells. [e.g, a typical value might be -10.0 m or similar]
-    !
-    subroutine use_constant_wetdry_send_elevation(&
-        md, elevation_threshold)
-
-        class(multidomain_type), intent(inout) :: md
-        ! Only enforce consistency in regions with (elevation > elevation_threshold)
-        ! This should help to better focus on possibly wet-dry regions
-        real(dp), intent(in) :: elevation_threshold
-
-        integer(ip) :: nd, j
-
-        nd = size(md%domains, kind=ip)
-
-        ! Loop over domains
-        do j = 1, nd
-            call md%domains(j)%use_constant_wetdry_send_elevation(elevation_threshold)
-        end do
-
-    end subroutine
 
     ! Print all domain timers, as well as the multidomain timer itself, finalise the domains,
     ! and write max quantities. This is a typical step at the end of a program
