@@ -34,6 +34,7 @@ An earlier version of Ubuntu shipped netcdf with an opendap bug, which caused
 problems with ptha data access. To confirm that your `ncdf4` installation is
 using a suitably recent netcdf-c library, please run the following code:
 
+
 ```r
 library(ncdf4)
 
@@ -72,6 +73,7 @@ etc).
 If your internet is not working perfectly, or the NCI server is down, you will see an
 message like this:
 
+
 ```r
 #    Error in Rsx_nc4_get_vara_double: NetCDF: DAP failure
 #    Var: gaugeID  Ndims: 1   Start: 0 Count: 20185
@@ -82,6 +84,7 @@ In this case, just try again -- after a few attempts it usually works. If not,
 then check if your internet is working. Also check whether the NCI THREDDS
 server is running (occasionally it goes down for maintainence or technical
 problems).
+
 
 ### **Installing rptha**
 
