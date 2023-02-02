@@ -96,7 +96,7 @@ Our validation test R scripts are also reliant on a number of packages. These
 can be installed from inside R with the following command:
     
     # Start R and then execute this command
-    install.packages(c('ncdf4', 'fields', 'raster', 'sp', 'rgdal'))
+    install.packages(c('ncdf4', 'fields', 'raster', 'sp'))
 
 
 # Compiling and testing
