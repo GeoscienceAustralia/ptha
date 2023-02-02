@@ -8,7 +8,6 @@ Maintainer: Gareth Davies <gareth.davies.ga.code@gmail.com>
 Depends:
     utils,
     rgeos,
-    rgdal,
     geosphere,
     sp,
     raster,

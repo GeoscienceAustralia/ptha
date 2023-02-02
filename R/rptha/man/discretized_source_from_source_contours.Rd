@@ -21,7 +21,7 @@ discretized_source_from_source_contours(
 \item{source_shapefile}{character filename of the line shapefile defining the
 subduction interface contours. It should have an attribute giving the depth.
 Alternatively, source_shapefile can be a \code{SpatialLinesDataFrame} obtained
-by reading the file with \code{rgdal::readOGR}.}
+by reading the file with \code{readOGR}.}
 
 \item{desired_subfault_length}{numeric desired length of subfaults (km)}
 
