@@ -50,8 +50,7 @@ cut_hazpts_in_poly<-function(haz_orig,
                              lower_left=-65,
                              outdir='OUTPUTS'
                              ){
-    library(sp)
-    library(rgdal)
+    library(rptha)
     set_ll_TOL(5000.0) # Don't worry if long < -180
     set_ll_warn(TRUE) # Avoid errors related to long < -180
 

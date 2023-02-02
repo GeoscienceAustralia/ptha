@@ -23,7 +23,7 @@ for(i in 1:length(sources)){
 
 # Flip Azimuth in some regions. This is done because Bird (2003) does not always put the arrows
 # in the up-dip direction. We want consistency for plotting, so make this change.
-library(rgdal)
+library(rptha) # Provides readOGR, writeOGR
 library(geosphere)
 flip_regions = readOGR('Bird_reverse_vector_regions', layer='Bird_reverse_vector_regions')
 pointloc = cbind(0.5*(bigtab$Long1 + bigtab$Long2), 0.5*(bigtab$Lat1 + bigtab$Lat2))

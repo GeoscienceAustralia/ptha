@@ -31,7 +31,7 @@
 # Also, in any case, we need to implement an algorithm in the data getting routines,
 # which can split indices of points into 'nearly contiguous chunks' and read that way.
 #
-library(rgdal)
+library(rptha) # provides readOGR, writeOGR
 
 hp = read.csv('merged_hazard_points.csv')
 
@@ -150,13 +150,11 @@ dev.off()
 # Save as shapefiles
 hp_lines1 = SpatialLines(LinesList_orig, proj4string=CRS("+init=epsg:4326"))
 hp_lines1b = SpatialLinesDataFrame(hp_lines1, data=data.frame(ID=1:length(hp_lines1)))
-library(rgdal)
 writeOGR(hp_lines1b, dsn='hp_before_ordering', layer='hp_before_ordering', 
     driver='ESRI Shapefile', overwrite=TRUE)
 
 hp_lines2 = SpatialLines(LinesList_new, proj4string=CRS("+init=epsg:4326"))
 hp_lines2b = SpatialLinesDataFrame(hp_lines2, data=data.frame(ID=1:length(hp_lines1)))
-library(rgdal)
 writeOGR(hp_lines2b, dsn='hp_after_ordering', layer='hp_after_ordering', 
     driver='ESRI Shapefile', overwrite=TRUE)
 
