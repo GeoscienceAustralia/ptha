@@ -47,7 +47,6 @@ module coarray_intrinsic_alternatives
 #elif defined(COARRAY)
         sync all
 #endif
-
     end subroutine
 
     integer function this_image2()

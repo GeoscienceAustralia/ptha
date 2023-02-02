@@ -1926,6 +1926,7 @@ TIMER_STOP('compute_volume_in_priority_domain')
         character(len=charlen):: mkdir_command, cp_command, t1, t2, t3, t4, &
                                  output_folder_name, code_folder
         logical :: copy_code_local
+        integer :: local_status
 
         ! Quick exit if folders already exist
         if(domain%output_folders_were_created) return
@@ -1953,8 +1954,8 @@ TIMER_STOP('compute_volume_in_priority_domain')
             call mkdir_p(code_folder)
 
             cp_command = 'cp *.f* make* ' // trim(domain%output_folder_name) // '/Code'
-            !call execute_command_line(trim(cp_command))
-            call system(trim(cp_command))
+            call execute_command_line(trim(cp_command), exitstat=local_status)
+            !call system(trim(cp_command))
         end if
         domain%output_folders_were_created = .TRUE.
 
