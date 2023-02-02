@@ -12,12 +12,12 @@
 #'
 #' @param dsn Data source destination (often a folder, or for shapefiles can be "name_of_shapefile.shp")
 #' @param layer data layer (e.g. for a shapefile "myfile" inside dsn, it is probably "myfile")
-#' @param verbose 
+#' @param verbose print more
 #' @return An object with class of some sp::SpatialXXX object (e.g.
 #' SpatialPolygonsDataFrame, SpatialLinesDataFrame, SpatialPointsDataFrame)
 #' @export
 #' @import sf sp
-readOGR<-function(dsn, layer, verbose = TRUE){
+readOGR<-function(dsn, layer, verbose = TRUE, stringsAsFactors=FALSE){
 # Other arguments from rgdal::readOGR were:
 #    p4s=NULL, 
 #    stringsAsFactors=as.logical(NA), 
@@ -27,7 +27,7 @@ readOGR<-function(dsn, layer, verbose = TRUE){
 #    encoding=NULL, use_iconv=FALSE, swapAxisOrder=FALSE, require_geomType = NULL,
 #    integer64="no.loss", GDAL1_integer64_policy=FALSE, morphFromESRI = NULL,
 #    dumpSRS = FALSE, enforce_xy = NULL, D3_if_2D3D_points=FALSE, missing_3D=0)
-    x = as(read_sf(dsn=dsn, layer=layer, quiet = (!verbose)), 'Spatial')
+    x = as(read_sf(dsn=dsn, layer=layer, quiet = (!verbose), stringsAsFactors=stringsAsFactors), 'Spatial')
     return(x)
 }
 

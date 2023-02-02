@@ -4,14 +4,14 @@
 \alias{readOGR}
 \title{Read OGR supported file as an sp::SpatialXXXXX object}
 \usage{
-readOGR(dsn, layer, verbose = TRUE)
+readOGR(dsn, layer, verbose = TRUE, stringsAsFactors = FALSE)
 }
 \arguments{
 \item{dsn}{Data source destination (often a folder, or for shapefiles can be "name_of_shapefile.shp")}
 
 \item{layer}{data layer (e.g. for a shapefile "myfile" inside dsn, it is probably "myfile")}
 
-\item{verbose}{}
+\item{verbose}{print more}
 }
 \value{
 An object with class of some sp::SpatialXXX object (e.g.

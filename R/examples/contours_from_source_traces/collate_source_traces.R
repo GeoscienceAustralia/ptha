@@ -3,7 +3,6 @@
 ## data
 ##
 
-library(rgdal)
 library(sp)
 library(geosphere)
 library(raster)
