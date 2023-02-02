@@ -67,13 +67,31 @@ for(i in 1:length(dart_files)){
 
 saveRDS(dart_series, 'dart_historical/dart_series.RDS')
 
+# Get a world map polygon as a SpatialPolygonsDataFrame. 
+# Originally I got this from the 'maptools' package, but that is retiring as of 2023, 
+# so we make a work-around.
+get_wrld_simpl<-function(use_maptools = FALSE){
+
+    if(use_maptools){
+        require(maptools, quietly=TRUE)
+        data(wrld_simpl)
+    }else{
+        require(spData)
+        require(sp)
+        require(sf)
+        data(world)
+        wrld_simpl = as(world, 'Spatial')
+    }
+    return(wrld_simpl)
+}
+
 # Convenience plotting routine
 plot_dart_series<-function(dart_series, start_date, end_date){
     dir.create('FIG', showWarnings=FALSE)
 
     pdf_out = paste0('FIG/event_', start_date, '.pdf')
-    library(maptools)
-    data(wrld_simpl)
+
+    wrld_simpl = get_wrld_simpl()
 
     pdf(pdf_out, width=15, height=12)
     for(i in 1:length(dart_series)){
