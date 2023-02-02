@@ -1773,7 +1773,6 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
     names(merged_domain_ibb) = as.character(merged_domain_indices)
 
     if(include_SpatialPolygonsDataFrame){
-        .library_quiet(rgdal)
         .library_quiet(sp)
         #
         # Convert merged domain extents to a spatial polygons data frame
