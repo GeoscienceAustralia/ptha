@@ -7,7 +7,7 @@ input_args = c(
     '../GEBCO_2014_1m/GEBCO_2014_1minx1min_W-39.9958333-E320.0041667.tif', 
     'patch_polygon')
 
-library(rgdal)
+library(rptha)
 library(raster)
 
 # Tricks to avoid blowing out the JOBFS space on NCI
