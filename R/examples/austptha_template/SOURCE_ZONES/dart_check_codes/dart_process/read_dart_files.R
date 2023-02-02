@@ -3,7 +3,7 @@
 # This can be run after 'read_dart_metadata.R', as it relies on a shapefile
 # created by the latter.
 
-library(rgdal)
+library(rptha) # provides readOGR, writeOGR
 dart_metadata = readOGR('dart_locations', layer='dart_locations')
 
 dart_files = list()
