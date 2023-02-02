@@ -920,7 +920,6 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA,
     .library_quiet('ncdf4')
     .library_quiet('raster')
     .library_quiet('sp')
-    .library_quiet('rgdal')
 
     # Check input makes sense
     if(all(is.null(nc_grid_files)) & 

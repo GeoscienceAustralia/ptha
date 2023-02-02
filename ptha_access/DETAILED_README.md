@@ -108,8 +108,7 @@ source('test_all.R')
 ```
 
 ```
-## Warning in proj4string(region_poly): CRS object has comment, which is lost in
-## output
+## Warning: GEOS support is provided by the sf and terra packages among others
 ```
 
 ```

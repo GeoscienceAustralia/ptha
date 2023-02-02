@@ -83,7 +83,7 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' @param source_shapefile character filename of the line shapefile defining the
 #' subduction interface contours. It should have an attribute giving the depth.
 #' Alternatively, source_shapefile can be a \code{SpatialLinesDataFrame} obtained
-#' by reading the file with \code{rgdal::readOGR}. 
+#' by reading the file with \code{readOGR}. 
 #' @param desired_subfault_length numeric desired length of subfaults (km)
 #' @param desired_subfault_width numeric desired width of subfaults (km)
 #' @param make_plot logical Make a plot?
@@ -119,7 +119,6 @@ orthogonal_near_trench<-function(top_line, second_line){
 #' number-of-sources-along-strike; fine_downdip_transects A 3 dimensional array
 #' containing densly spaced points along the down-dip transects, which might be
 #' useful for defining sub-unit-source points for tsunami source integration
-#' @import rgdal
 #' @importFrom stats approx approxfun dexp dpois fft optim optimize pexp rnorm runif sd splinefun
 #' @importFrom utils example sessionInfo
 #'
@@ -156,7 +155,7 @@ discretized_source_from_source_contours<-function(
         source_contours = source_shapefile
     }else{
         if(!file.exists(source_shapefile)) stop('cannot find shapefile')
-        source_contours = rgdal::readOGR(
+        source_contours = readOGR(
             dsn = dirname(source_shapefile),
             layer=gsub('.shp', '', basename(source_shapefile)),
             verbose=FALSE)

@@ -4,7 +4,7 @@
 #
 # Why? So that we don't cut out any countries when simplifying polygons
 
-library(rgdal)
+library(rptha) # provides readOGR, writeOGR
 library(geosphere)
 
 wb = readOGR('TM_WORLD_BORDERS-0.3', layer='TM_WORLD_BORDERS-0.3')

@@ -714,7 +714,7 @@ sffm_make_random_lwkc_function<-function(
     relation='Strasser',
     force_deterministic = FALSE){
 
-    library(rptha)
+    #library(rptha)
 
     relation = relation
 
