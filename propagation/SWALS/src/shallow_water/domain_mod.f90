@@ -3388,8 +3388,8 @@ TIMER_STOP('nesting_flux_correction')
             !! How many time-steps should the new domain take, for each global time-step in the multidomain.
         character(*), intent(in), optional :: rounding_method
             !! optional character controlling how we adjust lower-left/upper-right.
-            !! If rounding_method = 'expand' (DEFAULT), then we adjust the new domain lower-left/upper-right so that the provided
-            !! lower-left/upper-right are definitely contained in the new domain. If rounding_method = 'nearest', we move
+            !! If rounding_method = 'expand', then we adjust the new domain lower-left/upper-right so that the provided
+            !! lower-left/upper-right are definitely contained in the new domain. If rounding_method = 'nearest' (DEFAULT), we move
             !! lower-left/upper-right onto the nearest cell corner of the parent domain. This can be preferable if we want to have
             !! multiple child domains which share boundaries with each other -- but does not ensure the provided
             !! lower-left/upper-right are within the new domain
@@ -3405,18 +3405,12 @@ TIMER_STOP('nesting_flux_correction')
         real(dp) :: ur(2), parent_domain_dx(2)
         character(len=charlen) :: rounding
         logical :: recursive_nest
+    
+        rounding = 'nearest'
+        if(present(rounding_method)) rounding = rounding_method
 
-        if(present(rounding_method)) then
-            rounding = rounding_method
-        else
-            rounding = 'expand'
-        end if
-
-        if(present(recursive_nesting)) then
-            recursive_nest = recursive_nesting
-        else
-            recursive_nest = .true.
-        end if
+        recursive_nest = .true.
+        if(present(recursive_nesting)) recursive_nest = recursive_nesting
 
         ! Check the parent_domain was setup ok
         if(any(parent_domain%nx <= 0) .or. any(parent_domain%lw <= 0) .or. &
