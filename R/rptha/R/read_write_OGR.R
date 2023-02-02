@@ -16,6 +16,7 @@
 #' @return An object with class of some sp::SpatialXXX object (e.g.
 #' SpatialPolygonsDataFrame, SpatialLinesDataFrame, SpatialPointsDataFrame)
 #' @export
+#' @import sf sp
 readOGR<-function(dsn, layer, verbose = TRUE){
 # Other arguments from rgdal::readOGR were:
 #    p4s=NULL, 
@@ -26,8 +27,6 @@ readOGR<-function(dsn, layer, verbose = TRUE){
 #    encoding=NULL, use_iconv=FALSE, swapAxisOrder=FALSE, require_geomType = NULL,
 #    integer64="no.loss", GDAL1_integer64_policy=FALSE, morphFromESRI = NULL,
 #    dumpSRS = FALSE, enforce_xy = NULL, D3_if_2D3D_points=FALSE, missing_3D=0)
-    require(sf)
-    require(sp) 
     x = as(read_sf(dsn=dsn, layer=layer, quiet = (!verbose)), 'Spatial')
     return(x)
 }
@@ -45,6 +44,7 @@ readOGR<-function(dsn, layer, verbose = TRUE){
 #' @param overwrite_layer If FALSE and the file exists, then this will throw an error. Will overwrite if TRUE.
 #' @return Invisibly returns the object in sf format (from st_as_sf(obj) )
 #' @export
+#' @import sf
 writeOGR<-function(obj, dsn, layer, driver, verbose=FALSE, overwrite_layer=FALSE){
 # Arguments from rgdal::writeOGR were
 #      (obj, dsn, layer, driver, dataset_options = NULL,
@@ -52,9 +52,7 @@ writeOGR<-function(obj, dsn, layer, driver, verbose=FALSE, overwrite_layer=FALSE
 #      overwrite_layer=FALSE, delete_dsn=FALSE, morphToESRI=NULL,
 #      encoding=NULL, shp_edge_case_fix=FALSE, dumpSRS = FALSE)
 
-    require(sf)
-    require(sp)
     # Convert from sp::SpatialXXX to sf format    
-    y = st_as_sf(obj)
+    y = sf::st_as_sf(obj)
     st_write(y, dsn=dsn, layer=layer, driver=driver, verbose=verbose, delete_layer=overwrite_layer)
 }

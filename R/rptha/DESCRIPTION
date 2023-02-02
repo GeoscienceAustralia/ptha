@@ -10,6 +10,7 @@ Depends:
     rgeos,
     geosphere,
     sp,
+    sf,
     raster,
     FNN,
     minpack.lm,
