@@ -28,7 +28,7 @@ readOGR<-function(dsn, layer, verbose = TRUE){
 #    dumpSRS = FALSE, enforce_xy = NULL, D3_if_2D3D_points=FALSE, missing_3D=0)
     require(sf)
     require(sp) 
-    x = as(read_sf(dsn, layer, quiet = (!verbose)), 'Spatial')
+    x = as(read_sf(dsn=dsn, layer=layer, quiet = (!verbose)), 'Spatial')
     return(x)
 }
 
@@ -37,6 +37,14 @@ readOGR<-function(dsn, layer, verbose = TRUE){
 #' This function was previously provided by rgdal::writeOGR. But rgdal is retiring in 2023
 #' so we use as a workaround for the rptha package.
 #'
+#' @param obj An object of class sf::SpatialXXXXX (e.g. SpatialPolygonsDataFrame)
+#' @param dsn Output folder for the data
+#' @param layer Layer name for the data
+#' @param driver for the output data
+#' @param verbose print more info
+#' @param overwrite_layer If FALSE and the file exists, then this will throw an error. Will overwrite if TRUE.
+#' @return Invisibly returns the object in sf format (from st_as_sf(obj) )
+#' @export
 writeOGR<-function(obj, dsn, layer, driver, verbose=FALSE, overwrite_layer=FALSE){
 # Arguments from rgdal::writeOGR were
 #      (obj, dsn, layer, driver, dataset_options = NULL,
@@ -48,5 +56,5 @@ writeOGR<-function(obj, dsn, layer, driver, verbose=FALSE, overwrite_layer=FALSE
     require(sp)
     # Convert from sp::SpatialXXX to sf format    
     y = st_as_sf(obj)
-    write_sf(y, dsn, layer, driver, verbose=verbose, append=(!overwrite_layer))  
+    st_write(y, dsn=dsn, layer=layer, driver=driver, verbose=verbose, delete_layer=overwrite_layer)
 }
