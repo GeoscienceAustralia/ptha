@@ -24,7 +24,7 @@ On recent versions of Ubuntu (18.04 and greater) you can probably install netcdf
 sudo apt-get install netcdf-bin libnetcdf-dev libnetcdff-dev
 ```
 and then install netcdf4 from inside R.
-```
+```r
 # Run this from inside R.
 # You may need to start R with "sudo R" to get permissions to install
 install.packages('ncdf4')
