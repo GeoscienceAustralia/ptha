@@ -121,6 +121,33 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
     
 }
 
+#' limited replacement for rgeos::gIntersects using sf functionality
+#'
+#' @export
+gIntersects<-function(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense=TRUE){
+
+    # RGEOS assumed planar coordinates. Enforce that behaviour in sf
+    using_s2 = sf_use_s2()
+    sf_use_s2(FALSE)    
+    on.exit(sf_use_s2(using_s2))
+
+    # Convert geometry from sp to sf
+    geom1 = st_as_sf(spgeom1)
+    if(is.null(spgeom2)){
+        geom2 = NULL
+    }else{
+        geom2 = st_as_sf(spgeom2)
+    }
+
+    result = st_intersects(geom1, geom2, sparse=(!returnDense)) 
+    result = t(result)
+
+    if(!byid){
+        result = any(apply(result, 1, any)) 
+    }
+
+    return(result)
+}
 
 #' limited replacement for rgeos::gArea using sf functionality
 #'

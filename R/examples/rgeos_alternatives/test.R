@@ -75,6 +75,7 @@ y1 = as(st_geometry(x) + 1, 'Spatial')
 proj4string(y1) = proj4string(y)
 t1 = rgeos::gIntersects(y, y1)
 t2 = gIntersects(y, y1)
+stopifnot(all(t1 == t2) & t1)
 
 # gIntersects by id
 y1 = as(st_geometry(x) + 1, 'Spatial')
