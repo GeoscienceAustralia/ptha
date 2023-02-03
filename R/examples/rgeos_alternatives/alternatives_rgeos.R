@@ -110,7 +110,11 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
     }
 
     newgeom = suppressMessages(st_intersection(geom1, geom2))
-    newgeom = st_geometry(newgeom)
+    if(nrow(newgeom) == 0){
+        return(NULL)
+    }else{
+        newgeom = st_geometry(newgeom)
+    }
 
     if(!byid){
         newgeom = suppressMessages(st_union(newgeom))

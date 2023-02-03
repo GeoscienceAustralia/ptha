@@ -60,6 +60,18 @@ t2 = gIntersection(y, y1, byid=TRUE)
 plot(t1)
 plot(t2, add=TRUE, border='red', lty='dotted')
 
+# gIntersection when there is no intersecting!!
+y2 = as(st_geometry(x) + 2, 'Spatial')
+proj4string(y2) = proj4string(y)
+y2 = y2[1:2,]
+t1 = rgeos::gIntersection(y, y2)
+t2 = gIntersection(y, y2)
+stopifnot(is.null(t1) & is.null(t2))
+# As above with byid
+t1 = rgeos::gIntersection(y, y2, byid=TRUE)
+t2 = gIntersection(y, y2, byid=TRUE)
+
+
 # gArea
 t1 = rgeos::gArea(y)
 t2 = gArea(y)
