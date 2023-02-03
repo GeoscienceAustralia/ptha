@@ -245,9 +245,12 @@ gUnaryUnion<-function(spgeom, id=NULL){
     # for each value of id, c(st_union(geom[k1, ]), st_union(geom[k2, ]), ...)   
     if(!is.null(id)){
         tmp = aggregate(geom, by=list(id), FUN=head, dissolve=TRUE)
+        tmp = st_geometry(tmp) # For consistency with gUnaryUnion
     }else{
         tmp = st_union(geom)
     }
 
-    return(tmp)
+    # Convert geometry from sf to sp
+    outgeom = as(tmp, 'Spatial')
+    return(outgeom)
 }
