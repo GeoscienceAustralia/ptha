@@ -29,3 +29,18 @@ t1 = rgeos::gCentroid(y, byid=TRUE)
 t2 = gCentroid(y, byid=TRUE)
 plot(t1, col='black', pch=19)
 plot(t2, col='red', pch=1, add=TRUE)
+
+# gDistance
+y2 = as(st_geometry(x) + 2, 'Spatial')
+proj4string(y2) = proj4string(y)
+t1 = rgeos::gDistance(y, y2)
+t2 = gDistance(y, y2)
+stopifnot(abs(t1 - t2) < 1e-08)
+
+# gDistance byID
+y2 = as(st_geometry(x) + 2, 'Spatial')
+proj4string(y2) = proj4string(y)
+t1 = rgeos::gDistance(y, y2, byid=TRUE)
+t2 = gDistance(y, y2, byid=TRUE)
+stopifnot(all(abs(t1 - t2) < 1e-08))
+

@@ -41,3 +41,28 @@ gCentroid<-function(spgeom, byid=FALSE){
     outgeom = as(newgeom, 'Spatial')
     return(outgeom)
 }
+
+gDistance<-function(spgeom1, spgeom2=NULL, byid=FALSE){
+
+    # RGEOS assumed planar coordinates. Enforce that behaviour in sf
+    using_s2 = sf_use_s2()
+    sf_use_s2(FALSE)    
+    on.exit(sf_use_s2(using_s2))
+
+    # Convert geometry from sp to sf
+    geom1 = st_as_sf(spgeom1)
+    if(is.null(spgeom2)){
+        geom2 = NULL
+    }else{
+        geom2 = st_as_sf(spgeom2)
+    }
+
+    # st_distance always has byid=TRUE
+    result = drop_units(st_distance(geom1, geom2, which='Euclidean'))
+    if(!byid){
+        result = min(result)
+    }else{
+        result = t(result)
+    }
+    return(result)
+}
