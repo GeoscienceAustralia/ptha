@@ -92,9 +92,6 @@ gDistance<-function(spgeom1, spgeom2=NULL, byid=FALSE){
 #'
 #' @export
 gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
-    # Note drop_lower_td is not used here. 
-    # From the documentation it looks like st_intersection always has the
-    # equivalent of drop_lower_td=TRUE.
 
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
     using_s2 = suppressMessages(sf_use_s2())
@@ -114,6 +111,16 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
         return(NULL)
     }else{
         newgeom = st_geometry(newgeom)
+    }
+    
+    if(drop_lower_td){
+        # if drop_lower_td == TRUE, objects will be dropped from
+        #  output GEOMETRYCOLLECTION objects to simplify output if their
+        #  topological dinension is less than the minimum topological
+        #  dinension of the input objects.
+        st_dimension_flag = sapply(newgeom, function(x) st_dimension(x)) 
+        k = which(st_dimension_flag == max(st_dimension_flag))
+        newgeom = newgeom[k]
     }
 
     if(!byid){
