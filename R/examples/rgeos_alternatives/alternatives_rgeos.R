@@ -74,9 +74,11 @@ gDistance<-function(spgeom1, spgeom2=NULL, byid=FALSE){
     }else{
         geom2 = st_as_sf(spgeom2)
     }
+    st_crs(geom1) = NA
+    st_crs(geom2) = NA
 
     # st_distance always has byid=TRUE
-    result = drop_units(st_distance(geom1, geom2, which='Euclidean'))
+    result = st_distance(geom1, geom2, which='Euclidean')
     if(!byid){
         result = min(result)
     }else{
