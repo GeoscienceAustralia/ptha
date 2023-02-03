@@ -1194,7 +1194,8 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
     areas = unlist(lapply(p_intersect@polygons, 
         function(x) x@Polygons[[1]]@area))
     indices = unlist(lapply(p_intersect@polygons, function(x) x@ID))
-    indices = as.numeric(gsub('P', '', indices))
+    #indices = as.numeric(gsub('P', '', indices))
+    indices = as.numeric(gsub('[A-Z]', '', indices)) # Required when removing rgeos
 
     centroids = coordinates(p_intersect)
 
