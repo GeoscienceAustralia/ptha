@@ -1053,7 +1053,6 @@ unit_source_interior_points_cartesian<-function(
 #' need to find sub-grid points inside neighbouring polygons. 
 #' @return A list containing grid points in the polygon and other useful information.
 #' @import sp
-#' @import rgeos
 #' @import methods
 #' @export
 compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
@@ -1206,7 +1205,7 @@ compute_grid_point_areas_in_polygon<-function(polygon, approx_dx, approx_dy,
 
     # Find fraction of each 'buffer' point area that is inside the original
     # unit source region
-    # gBuffer calls are used to try to work around topology exceptions from rgeos
+    # gBuffer calls are used to try to work around topology exceptions
     #unit_source_region = gUnaryUnion(gBuffer(gBuffer(p_intersect,
     #    width=1.0e-06), width=-1e-06))
     unit_source_region = p0

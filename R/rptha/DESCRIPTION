@@ -7,7 +7,6 @@ Author: Gareth Davies, uses fortran code from Y. Okada
 Maintainer: Gareth Davies <gareth.davies.ga.code@gmail.com>
 Depends:
     utils,
-    rgeos,
     geosphere,
     sp,
     sf,
