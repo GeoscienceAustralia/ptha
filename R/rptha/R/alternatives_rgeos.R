@@ -12,18 +12,18 @@
 #' @export
 gBuffer<-function(spgeom, width, quadsegs=5, byid=FALSE){
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom = st_as_sf(spgeom)
 
     # st_buffer seems to be always applied on a per-id basis
-    newgeom = st_buffer(geom, dist=width, quadsegs=quadsegs)
+    newgeom = suppressMessages(st_buffer(geom, dist=width, quadsegs=quadsegs))
     # If we didn't want byID results, then merge
     if(!byid){
-        newgeom = st_union(newgeom) 
+        newgeom = suppressMessages(st_union(newgeom))
     }
 
     # Convert geometry from sf to sp
@@ -37,19 +37,19 @@ gBuffer<-function(spgeom, width, quadsegs=5, byid=FALSE){
 #' @export
 gCentroid<-function(spgeom, byid=FALSE){
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom = st_as_sf(spgeom)
 
     if(byid){
-        newgeom = st_centroid(geom)
+        newgeom = suppressMessages(st_centroid(geom))
     }else{
        #https://gis.stackexchange.com/questions/451041/equivalent-of-gcentroidx-byid-false-in-sf-system 
-        newgeom = st_union(geom)
-        newgeom = st_centroid(newgeom)
+        newgeom = suppressMessages(st_union(geom))
+        newgeom = suppressMessages(st_centroid(newgeom))
     }
 
     # Convert geometry from sf to sp
@@ -63,9 +63,9 @@ gCentroid<-function(spgeom, byid=FALSE){
 gDistance<-function(spgeom1, spgeom2=NULL, byid=FALSE){
 
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom1 = st_as_sf(spgeom1)
@@ -78,7 +78,7 @@ gDistance<-function(spgeom1, spgeom2=NULL, byid=FALSE){
     st_crs(geom2) = NA
 
     # st_distance always has byid=TRUE
-    result = st_distance(geom1, geom2, which='Euclidean')
+    result = suppressMessages(st_distance(geom1, geom2, which='Euclidean'))
     if(!byid){
         result = min(result)
     }else{
@@ -97,9 +97,9 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
     # equivalent of drop_lower_td=TRUE.
 
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom1 = st_as_sf(spgeom1)
@@ -109,10 +109,10 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
         geom2 = st_as_sf(spgeom2)
     }
 
-    newgeom = st_intersection(geom1, geom2)
+    newgeom = suppressMessages(st_intersection(geom1, geom2))
 
     if(!byid){
-        newgeom = st_union(newgeom)
+        newgeom = suppressMessages(st_union(newgeom))
     }
 
     # Convert geometry from sf to sp
@@ -127,9 +127,9 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
 gIntersects<-function(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense=TRUE){
 
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom1 = st_as_sf(spgeom1)
@@ -139,7 +139,7 @@ gIntersects<-function(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense=TRUE){
         geom2 = st_as_sf(spgeom2)
     }
 
-    result = st_intersects(geom1, geom2, sparse=(!returnDense)) 
+    result = suppressMessages(st_intersects(geom1, geom2, sparse=(!returnDense)))
     result = t(result)
 
     if(!byid){
@@ -155,9 +155,9 @@ gIntersects<-function(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense=TRUE){
 gArea<-function(spgeom, byid=FALSE){
 
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom = st_as_sf(spgeom)
@@ -166,7 +166,7 @@ gArea<-function(spgeom, byid=FALSE){
     # by throwing away the CRS
     st_crs(geom) = NA
 
-    area = st_area(geom)
+    area = suppressMessages(st_area(geom))
 
     if(!byid) area = sum(area)
 
@@ -179,9 +179,9 @@ gArea<-function(spgeom, byid=FALSE){
 gContains<-function(spgeom1, spgeom2, byid=FALSE, prepared=TRUE, returnDense=TRUE){
 
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom1 = st_as_sf(spgeom1)
@@ -191,7 +191,7 @@ gContains<-function(spgeom1, spgeom2, byid=FALSE, prepared=TRUE, returnDense=TRU
         geom2 = st_as_sf(spgeom2)
     }
 
-    result = st_contains(geom1, geom2, prepared=prepared, sparse=(!returnDense)) 
+    result = suppressMessages(st_contains(geom1, geom2, prepared=prepared, sparse=(!returnDense)))
     result = t(result)
 
     if(!byid){
@@ -207,9 +207,9 @@ gContains<-function(spgeom1, spgeom2, byid=FALSE, prepared=TRUE, returnDense=TRU
 gCovers<-function(spgeom1, spgeom2 = NULL, byid=FALSE, returnDense=TRUE){
 
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom1 = st_as_sf(spgeom1)
@@ -219,7 +219,7 @@ gCovers<-function(spgeom1, spgeom2 = NULL, byid=FALSE, returnDense=TRUE){
         geom2 = st_as_sf(spgeom2)
     }
 
-    result = st_covers(geom1, geom2, sparse=(!returnDense))
+    result = suppressMessages(st_covers(geom1, geom2, sparse=(!returnDense)))
     result = t(result)
 
     if(!byid){
@@ -235,19 +235,19 @@ gCovers<-function(spgeom1, spgeom2 = NULL, byid=FALSE, returnDense=TRUE){
 gUnaryUnion<-function(spgeom, id=NULL){
 
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
-    using_s2 = sf_use_s2()
-    sf_use_s2(FALSE)    
-    on.exit(sf_use_s2(using_s2))
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
 
     # Convert geometry from sp to sf
     geom = st_as_sf(spgeom)
 
     # for each value of id, c(st_union(geom[k1, ]), st_union(geom[k2, ]), ...)   
     if(!is.null(id)){
-        tmp = aggregate(geom, by=list(id), FUN=head, dissolve=TRUE)
-        tmp = st_geometry(tmp) # For consistency with gUnaryUnion
+        tmp = suppressMessages(aggregate(geom, by=list(id), FUN=head, dissolve=TRUE))
+        tmp = suppressMessages(st_geometry(tmp)) # For consistency with gUnaryUnion
     }else{
-        tmp = st_union(geom)
+        tmp = suppressMessages(st_union(geom))
     }
 
     # Convert geometry from sf to sp
