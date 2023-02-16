@@ -74,7 +74,7 @@ These notes apply to linux.
 To build rptha, you firstly need to install the R packages that it depends on.
 The usual way to get these is to start R, and do:
 
-    install.packages(c('sp', 'sf', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'ncdf4', 'testthat', 'devtools', 'roxygen2'))
+    install.packages(c('sp', 'sf', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'ncdf4', 'testthat', 'devtools', 'roxygen2'))
 
 This will ask you to choose a mirror to download from. Just choose something that
 is close to your location -- for example in Canberra, Australia, you can first select
