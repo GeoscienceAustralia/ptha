@@ -152,3 +152,18 @@ t1 = rgeos::gUnaryUnion(y, id=y$dwndp_n)
 t2 = gUnaryUnion(y, id=y$dwndp_n)
 plot(t1)
 plot(t2, add=TRUE, border='red', lty='dotted')
+
+# gUnion
+f1 = y[c(1,2),]
+f2 = y[c(3,4),]
+t1 = rgeos::gUnion(f1, f2)
+t2 = gUnion(f1, f2)
+plot(t1, border='black')
+plot(t2, border='red', lty='dashed', add=TRUE)
+
+# gUnion, byid=TRUE
+t1 = rgeos::gUnion(f1, f2, byid=TRUE)
+t2 = gUnion(f1, f2, byid=TRUE)
+plot(t1, border='black')
+plot(t2, border='red', lty='dashed', add=TRUE)
+

@@ -25,6 +25,8 @@ gBuffer<-function(spgeom, width, quadsegs=5, byid=FALSE){
     if(!byid){
         newgeom = suppressMessages(st_union(newgeom))
     }
+    # Ensure that we return geometries only
+    newgeom = st_geometry(newgeom)
 
     # Convert geometry from sf to sp
     outgeom = as(newgeom, 'Spatial')
@@ -54,6 +56,8 @@ gCentroid<-function(spgeom, byid=FALSE){
         newgeom = suppressMessages(st_union(geom))
         newgeom = suppressMessages(st_centroid(newgeom))
     }
+
+    newgeom = st_geometry(newgeom)
 
     # Convert geometry from sf to sp
     outgeom = as(newgeom, 'Spatial')
@@ -281,15 +285,52 @@ gUnaryUnion<-function(spgeom, id=NULL){
     # for each value of id, c(st_union(geom[k1, ]), st_union(geom[k2, ]), ...)   
     if(!is.null(id)){
         tmp = suppressMessages(aggregate(geom, by=list(id), FUN=head, dissolve=TRUE))
-        tmp = suppressMessages(st_geometry(tmp)) # For consistency with gUnaryUnion
     }else{
         tmp = suppressMessages(st_union(geom))
     }
+    tmp = suppressMessages(st_geometry(tmp)) # For consistency with gUnaryUnion
 
     # Convert geometry from sf to sp
     outgeom = as(tmp, 'Spatial')
 
     # Here rgeos would add row.names( .. ) that I haven't fixed here.
 
+    return(outgeom)
+}
+
+
+#' limited replacement for rgeos::gUnion using sf functionality
+#'
+#' @export
+gUnion<-function(spgeom1, spgeom2, byid = FALSE, id = NULL){
+    #, drop_lower_td = FALSE, 
+    #  unaryUnion_if_byid_false = TRUE, 
+    #  checkValidity = NULL
+
+    # RGEOS assumed planar coordinates. Enforce that behaviour in sf
+    using_s2 = suppressMessages(sf_use_s2())
+    suppressMessages(sf_use_s2(FALSE))
+    on.exit(suppressMessages(sf_use_s2(using_s2)))
+
+    if(!byid){
+        # By default unaryUnion_if_byid_false = TRUE
+        spgeom1 = gUnaryUnion(spgeom1)
+        if(!is.null(spgeom2)){
+            spgeom2 = gUnaryUnion(spgeom2)
+        }
+    }
+
+    # Convert geometry from sp to sf
+    geom1 = st_as_sf(spgeom1)
+    if(is.null(spgeom2)){
+        geom2 = NULL
+    }else{
+        geom2 = st_as_sf(spgeom2)
+    }
+
+    newgeom = suppressMessages(st_union(geom1, geom2, by_feature=byid) )
+    newgeom = st_geometry(newgeom)
+
+    outgeom = as(newgeom, 'Spatial')
     return(outgeom)
 }
