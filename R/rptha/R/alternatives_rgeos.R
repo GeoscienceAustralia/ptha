@@ -302,8 +302,9 @@ gUnaryUnion<-function(spgeom, id=NULL){
 #' limited replacement for rgeos::gUnion using sf functionality
 #'
 #' @export
-gUnion<-function(spgeom1, spgeom2, byid = FALSE, id = NULL){
-    #, drop_lower_td = FALSE, 
+gUnion<-function(spgeom1, spgeom2, byid = FALSE){
+    #, id = NULL,
+    #  drop_lower_td = FALSE, 
     #  unaryUnion_if_byid_false = TRUE, 
     #  checkValidity = NULL
 
