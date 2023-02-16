@@ -28,6 +28,9 @@ gBuffer<-function(spgeom, width, quadsegs=5, byid=FALSE){
 
     # Convert geometry from sf to sp
     outgeom = as(newgeom, 'Spatial')
+    # The following is for consistency with rgeos
+    if( (!byid) & (length(outgeom) == 1) ) row.names(outgeom) = 'buffer'
+
     return(outgeom)
 }
 
