@@ -7,5 +7,6 @@
 gIntersection(spgeom1, spgeom2, byid = FALSE, drop_lower_td = FALSE)
 }
 \description{
-limited replacement for rgeos::gIntersection using sf functionality
+Beware this can lead to different ordering of the geometries as compared to
+rgeos::gIntersection
 }
