@@ -106,12 +106,16 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
         geom2 = st_as_sf(spgeom2)
     }
 
+    geom1$TEMPLOCALVARTOREMOVE_id1 = row.names(spgeom1)
+    geom2$TEMPLOCALVARTOREMOVE_id2 = row.names(spgeom2)
+
     newgeom = suppressMessages(st_intersection(geom1, geom2))
     if(nrow(newgeom) == 0){
         return(NULL)
-    }else{
-        newgeom = st_geometry(newgeom)
     }
+    # Fix rownames based on code in rgeos:::RGEOSBinTopoFunc
+    newgeom_rownames = paste(newgeom$TEMPLOCALVARTOREMOVE_id1, newgeom$TEMPLOCALVARTOREMOVE_id2)
+    newgeom = st_geometry(newgeom)
     
     if(drop_lower_td){
         # if drop_lower_td == TRUE, objects will be dropped from
@@ -121,14 +125,21 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
         st_dimension_flag = sapply(newgeom, function(x) st_dimension(x)) 
         k = which(st_dimension_flag == max(st_dimension_flag))
         newgeom = newgeom[k]
+        newgeom_rownames = newgeom_rownames[k]
     }
 
     if(!byid){
         newgeom = suppressMessages(st_union(newgeom))
+        # Fix rownames based on code in rgeos:::RGEOSBinTopoFunc
+        newgeom_rownames = "1"
     }
 
     # Convert geometry from sf to sp
     outgeom = as(newgeom, 'Spatial')
+    if(length(outgeom) == length(newgeom_rownames)){
+        row.names(outgeom) = newgeom_rownames
+    }
+
     return(outgeom)
     
 }
