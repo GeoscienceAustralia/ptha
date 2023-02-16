@@ -93,6 +93,9 @@ gDistance<-function(spgeom1, spgeom2=NULL, byid=FALSE){
 
 #' limited replacement for rgeos::gIntersection using sf functionality
 #'
+#' Beware this can lead to different ordering of the geometries as compared to
+#' rgeos::gIntersection
+#'
 #' @export
 gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
 
@@ -167,6 +170,9 @@ gIntersects<-function(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense=TRUE){
 
     result = suppressMessages(st_intersects(geom1, geom2, sparse=(!returnDense)))
     result = t(result)
+    # Here rgeos would add row.names, like row.names(result) = row.names(spgeom2)
+    # For now I don't think we need this and would need to check corner cases,
+    # so not implementing for now.
 
     if(!byid){
         result = any(apply(result, 1, any)) 
@@ -219,6 +225,9 @@ gContains<-function(spgeom1, spgeom2, byid=FALSE, prepared=TRUE, returnDense=TRU
 
     result = suppressMessages(st_contains(geom1, geom2, prepared=prepared, sparse=(!returnDense)))
     result = t(result)
+    # Here rgeos would add row.names, like row.names(result) = row.names(spgeom2)
+    # For now I don't think we need this and would need to check corner cases,
+    # so not implementing for now.
 
     if(!byid){
         result = any(apply(result, 1, any)) 
@@ -247,6 +256,7 @@ gCovers<-function(spgeom1, spgeom2 = NULL, byid=FALSE, returnDense=TRUE){
 
     result = suppressMessages(st_covers(geom1, geom2, sparse=(!returnDense)))
     result = t(result)
+    # Here rgeos would add row.names( .. ) that I haven't fixed here.
 
     if(!byid){
         result = any(apply(result, 1, any)) 
@@ -278,5 +288,8 @@ gUnaryUnion<-function(spgeom, id=NULL){
 
     # Convert geometry from sf to sp
     outgeom = as(tmp, 'Spatial')
+
+    # Here rgeos would add row.names( .. ) that I haven't fixed here.
+
     return(outgeom)
 }
