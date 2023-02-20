@@ -7,5 +7,6 @@
 gDistance(spgeom1, spgeom2 = NULL, byid = FALSE)
 }
 \description{
-limited replacement for rgeos::gDistance using sf functionality
+Like rgeos, this treats all datasets as Cartesian. Use sf::st_distance
+for non-legacy applications.
 }

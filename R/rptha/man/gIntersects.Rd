@@ -7,5 +7,5 @@
 gIntersects(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense = TRUE)
 }
 \description{
-limited replacement for rgeos::gIntersects using sf functionality
+Suggest to use sf::st_intersects for non-legacy applications.
 }

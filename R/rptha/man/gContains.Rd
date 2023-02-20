@@ -7,5 +7,6 @@
 gContains(spgeom1, spgeom2, byid = FALSE, prepared = TRUE, returnDense = TRUE)
 }
 \description{
-limited replacement for rgeos::gContains using sf functionality
+Like rgeos this assumes all coordinates are Cartesian. Suggest to use
+sf::st_contains for non-legacy applications.
 }

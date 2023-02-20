@@ -8,5 +8,5 @@ gIntersection(spgeom1, spgeom2, byid = FALSE, drop_lower_td = FALSE)
 }
 \description{
 Beware this can lead to different ordering of the geometries as compared to
-rgeos::gIntersection
+rgeos::gIntersection. Suggest to use sf::st_intersection for non-legacy applications.
 }

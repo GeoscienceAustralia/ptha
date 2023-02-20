@@ -7,5 +7,6 @@
 gCovers(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense = TRUE)
 }
 \description{
-limited replacement for rgeos::gCovers using sf functionality
+Like rgeos this assumes all geometries are Cartesian. Suggest to use
+sf::st_covers for non-legacy applications.
 }

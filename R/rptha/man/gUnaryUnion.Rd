@@ -7,5 +7,5 @@
 gUnaryUnion(spgeom, id = NULL)
 }
 \description{
-limited replacement for rgeos::gUnaryUnion using sf functionality
+Suggest to use sf::aggregate(..., dissolve=TRUE) and/or sf::st_union for non-legacy applications.
 }

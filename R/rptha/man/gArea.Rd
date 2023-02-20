@@ -7,5 +7,6 @@
 gArea(spgeom, byid = FALSE)
 }
 \description{
-limited replacement for rgeos::gArea using sf functionality
+Like rgeos this treats all geometries as Cartesian. Suggest to use
+sf::st_area for non-legacy applications.
 }

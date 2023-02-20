@@ -7,5 +7,6 @@
 gCentroid(spgeom, byid = FALSE)
 }
 \description{
-limited replacement for rgeos::gCentroid using sf functionality
+Like rgeos, this treats all datasets as Cartesian. Use sf::st_centroid
+for non-legacy applications.
 }

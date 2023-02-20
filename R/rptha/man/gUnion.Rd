@@ -7,5 +7,7 @@
 gUnion(spgeom1, spgeom2, byid = FALSE)
 }
 \description{
-limited replacement for rgeos::gUnion using sf functionality
+Suggest to use sf::st_union for non-legacy applications, perhaps
+with prior calls to sf::aggregate(..., dissolve=TRUE) in the case
+where byid=FALSE.
 }
