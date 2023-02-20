@@ -7,7 +7,7 @@
 gBuffer(spgeom, width, quadsegs = 5, byid = FALSE)
 }
 \description{
-Like rgeos, this treads all datasets as Cartesian. It can give small
+Like rgeos, this treats all datasets as Cartesian. It can give small
 differences in the results of buffered polygons compared to rgeos::gBuffer,
 due to the internals of "sf::st_buffer".  While unimportant in most
 circumstances, it can change results, e.g.  if it leads to a point near the
