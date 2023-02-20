@@ -32,7 +32,7 @@ readOGR<-function(dsn, layer, verbose = TRUE, stringsAsFactors=FALSE){
 
     # The sf object can include 'empty geometries, which we need to remove, or else it fails
     to_keep = which(!st_is_empty(sf_geo))
-    sf_geo = sf_geo[tokeep,]
+    sf_geo = sf_geo[to_keep,]
     x = as(sf_geo, 'Spatial')
     return(x)
 }

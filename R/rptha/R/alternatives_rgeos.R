@@ -9,6 +9,12 @@
 
 #' limited replacement for rgeos::gBuffer using sf functionality
 #'
+#' Like rgeos, this treads all datasets as Cartesian. It can give small
+#' differences in the results of buffered polygons compared to rgeos::gBuffer,
+#' due to the internals of "sf::st_buffer".  While unimportant in most
+#' circumstances, it can change results, e.g.  if it leads to a point near the
+#' boundary being included/excluded. Suggest to use sf::st_buffer for non-legacy applications.
+#'
 #' @export
 gBuffer<-function(spgeom, width, quadsegs=5, byid=FALSE){
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
@@ -39,6 +45,9 @@ gBuffer<-function(spgeom, width, quadsegs=5, byid=FALSE){
 
 #' limited replacement for rgeos::gCentroid using sf functionality
 #'
+#' Like rgeos, this treats all datasets as Cartesian. Use sf::st_centroid
+#' for non-legacy applications.
+#'
 #' @export
 gCentroid<-function(spgeom, byid=FALSE){
     # RGEOS assumed planar coordinates. Enforce that behaviour in sf
@@ -65,6 +74,9 @@ gCentroid<-function(spgeom, byid=FALSE){
 }
 
 #' limited replacement for rgeos::gDistance using sf functionality
+#'
+#' Like rgeos, this treats all datasets as Cartesian. Use sf::st_distance
+#' for non-legacy applications.
 #'
 #' @export
 gDistance<-function(spgeom1, spgeom2=NULL, byid=FALSE){
@@ -98,7 +110,7 @@ gDistance<-function(spgeom1, spgeom2=NULL, byid=FALSE){
 #' limited replacement for rgeos::gIntersection using sf functionality
 #'
 #' Beware this can lead to different ordering of the geometries as compared to
-#' rgeos::gIntersection
+#' rgeos::gIntersection. Suggest to use sf::st_intersection for non-legacy applications.
 #'
 #' @export
 gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
@@ -156,6 +168,8 @@ gIntersection<-function(spgeom1, spgeom2, byid=FALSE, drop_lower_td=FALSE){
 
 #' limited replacement for rgeos::gIntersects using sf functionality
 #'
+#' Suggest to use sf::st_intersects for non-legacy applications.
+#'
 #' @export
 gIntersects<-function(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense=TRUE){
 
@@ -187,6 +201,9 @@ gIntersects<-function(spgeom1, spgeom2 = NULL, byid = FALSE, returnDense=TRUE){
 
 #' limited replacement for rgeos::gArea using sf functionality
 #'
+#' Like rgeos this treats all geometries as Cartesian. Suggest to use
+#' sf::st_area for non-legacy applications.
+#'
 #' @export
 gArea<-function(spgeom, byid=FALSE){
 
@@ -210,6 +227,9 @@ gArea<-function(spgeom, byid=FALSE){
 }
 
 #' limited replacement for rgeos::gContains using sf functionality
+#'
+#' Like rgeos this assumes all coordinates are Cartesian. Suggest to use
+#' sf::st_contains for non-legacy applications.
 #'
 #' @export
 gContains<-function(spgeom1, spgeom2, byid=FALSE, prepared=TRUE, returnDense=TRUE){
@@ -242,6 +262,9 @@ gContains<-function(spgeom1, spgeom2, byid=FALSE, prepared=TRUE, returnDense=TRU
 
 #' limited replacement for rgeos::gCovers using sf functionality
 #'
+#' Like rgeos this assumes all geometries are Cartesian. Suggest to use
+#' sf::st_covers for non-legacy applications.
+#'
 #' @export
 gCovers<-function(spgeom1, spgeom2 = NULL, byid=FALSE, returnDense=TRUE){
 
@@ -270,6 +293,8 @@ gCovers<-function(spgeom1, spgeom2 = NULL, byid=FALSE, returnDense=TRUE){
 }
 
 #' limited replacement for rgeos::gUnaryUnion using sf functionality
+#'
+#' Suggest to use sf::aggregate(..., dissolve=TRUE) and/or sf::st_union for non-legacy applications.
 #'
 #' @export
 gUnaryUnion<-function(spgeom, id=NULL){
@@ -300,6 +325,10 @@ gUnaryUnion<-function(spgeom, id=NULL){
 
 
 #' limited replacement for rgeos::gUnion using sf functionality
+#'
+#' Suggest to use sf::st_union for non-legacy applications, perhaps
+#' with prior calls to sf::aggregate(..., dissolve=TRUE) in the case
+#' where byid=FALSE.
 #'
 #' @export
 gUnion<-function(spgeom1, spgeom2, byid = FALSE){
