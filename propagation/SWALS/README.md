@@ -3,8 +3,8 @@
 
 Shallow WAter Like Solvers (SWALS) computes solutions to several [variants of
 the 2D shallow-water equations](./SOLVERS.md) (linear/nonlinear) in Cartesian
-and Spherical coordinates, on "multidomains" represented as a connected set of
-rectangular grid domains.
+and Spherical coordinates, on "multidomains" represented as a set of connected and/or
+nested rectangular grid domains.
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
@@ -15,12 +15,14 @@ problems. This includes:
 which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-src). CLIFFS is similar to the well-known MOST tsunami solver, but uses a different wetting and drying scheme. 
 
 Two-way nesting allows for the use of higher-resolution domains in specified
-areas. Nested domains may use different numerical solvers, and take different
-timesteps. In models with multiple domains, the finest-resolution domain at any
-particular point is the "priority domain" at that point, and is interpreted as
-containg the SWALS numerical solution. Information on the priority domain
-solution is communicated between domains as required to enable seamless
-evolution of the flow. 
+areas. Nested domains may use different numerical solvers, take different
+timesteps, and have grid sizes that are any integer divisor of the coarser
+domain(s) they communicate with. There are no hard limits on the number of
+domains or the depth of refinement. In models with multiple domains, the
+finest-resolution domain at any particular point is the "priority domain" and
+is interpreted as containg the SWALS numerical solution. Information on the
+priority domain solution is communicated between domains as required to enable
+seamless evolution of the flow. 
 
 Flux correction is used to enforce the conservation of mass and advected
 momentum through nested domain interfaces, for schemes that would conserve
