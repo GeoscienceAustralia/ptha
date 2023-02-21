@@ -8,10 +8,11 @@ rectangular grid domains.
 
 A number of [different numerical methods](./SOLVERS.md) are implemented,
 suitable for a range of flow regimes, with particular emphasis on tsunami-like
-problems. This includes classical leapfrog schemes, shock-capturing finite
-volume schemes, and the [CLIFFS](https://github.com/Delta-function/cliffs-src)
-solver developed by Elena Tolkova (which is similar to the well-known MOST
-tsunami solver, but uses a different wetting and drying scheme). 
+problems. This includes: 
+* [shock-capturing finite volume schemes](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-finite-volume-solvers)
+* [classical leapfrog schemes](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-leapfrog-schemes ),
+* The [CLIFFS scheme](https://github.com/GeoscienceAustralia/ptha/blob/master/propagation/SWALS/SOLVERS.md#the-cliffs-solver)
+which was [developed by Elena Tolkova](https://github.com/Delta-function/cliffs-src). CLIFFS is similar to the well-known MOST tsunami solver, but uses a different wetting and drying scheme. 
 
 Two-way nesting allows for the use of higher-resolution domains in specified
 areas. Nested domains may use different numerical solvers, and take different
