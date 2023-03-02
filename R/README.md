@@ -74,7 +74,7 @@ These notes apply to linux.
 To build rptha, you firstly need to install the R packages that it depends on.
 The usual way to get these is to start R, and do:
 
-    install.packages(c('sp', 'sf', 'rgeos', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'ncdf4', 'testthat', 'devtools', 'roxygen2'))
+    install.packages(c('sp', 'sf', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'ncdf4', 'testthat', 'devtools', 'roxygen2'))
 
 This will ask you to choose a mirror to download from. Just choose something that
 is close to your location -- for example in Canberra, Australia, you can first select
@@ -128,4 +128,11 @@ To learn to use rptha, you can look at the [examples](examples) directory, as
 well as the package documentation
 
 
+Migration to new spatial packages
+---------------------------------
 
+In 2023 there was a planned deprecation of several R packages used by `rptha` (`rgeos, rgdal`). The code was updated by writing functions that use the `sf` package to provide the same functionality. For instance we wrote `readOGR` to replace `rgdal::readOGR`, and `gBuffer` to replace `rgeos::gBuffer`.
+
+Our versions of these functions just provide enough functionality for `rptha`. They do not support all options of the original routines. 
+
+The update can cause minor changes in the results, due to small changes in geometric operations provided by `sf` versus the earlier packages. For example, geometries produced by `rptha::gBuffer` are slightly different to those from `rgeos::gBuffer`. This leads to small changes in the unit source interior points when using edge tapering in [this example](examples/source_contours_2_unit_sources), thus changing the unit source vertical displacement. In the latter example the changes are at most a few mm (and usually much less), which is unimportant.

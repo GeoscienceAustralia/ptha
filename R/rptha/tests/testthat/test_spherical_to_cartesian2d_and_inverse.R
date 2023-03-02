@@ -63,7 +63,10 @@ test_that('test_spherical_to_cartesian2d_and_inverse', {
         # Convert to UTM coordinates
         lonlat_wgs84 = SpatialPoints(lonlat, proj4string=CRS("+init=epsg:4326"))
         local_utm_proj4string = lonlat2utm(origin) 
-        lonlat_utm = spTransform(lonlat_wgs84, CRS(local_utm_proj4string))
+
+	## Remove rgdal::spTransform
+        #lonlat_utm = spTransform(lonlat_wgs84, CRS(local_utm_proj4string))
+        lonlat_utm = as(st_transform(st_as_sf(lonlat_wgs84), st_crs(local_utm_proj4string)), 'Spatial')
         lonlat_utm_c = coordinates(lonlat_utm)
 
         # Compute distance matrix for UTM version

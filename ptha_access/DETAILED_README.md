@@ -105,13 +105,6 @@ source('test_all.R')
 
 ```
 ## [1] "PASS"
-```
-
-```
-## Warning: GEOS support is provided by the sf and terra packages among others
-```
-
-```
 ## [1] "PASS"
 ## [1] "PASS"
 ## [1] "PASS"

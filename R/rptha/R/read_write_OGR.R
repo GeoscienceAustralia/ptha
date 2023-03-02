@@ -27,7 +27,13 @@ readOGR<-function(dsn, layer, verbose = TRUE, stringsAsFactors=FALSE){
 #    encoding=NULL, use_iconv=FALSE, swapAxisOrder=FALSE, require_geomType = NULL,
 #    integer64="no.loss", GDAL1_integer64_policy=FALSE, morphFromESRI = NULL,
 #    dumpSRS = FALSE, enforce_xy = NULL, D3_if_2D3D_points=FALSE, missing_3D=0)
-    x = as(read_sf(dsn=dsn, layer=layer, quiet = (!verbose), stringsAsFactors=stringsAsFactors), 'Spatial')
+
+    sf_geo = read_sf(dsn=dsn, layer=layer, quiet = (!verbose), stringsAsFactors=stringsAsFactors) 
+
+    # The sf object can include 'empty geometries, which we need to remove, or else it fails
+    to_keep = which(!st_is_empty(sf_geo))
+    sf_geo = sf_geo[to_keep,]
+    x = as(sf_geo, 'Spatial')
     return(x)
 }
 

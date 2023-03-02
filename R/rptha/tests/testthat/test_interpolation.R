@@ -104,8 +104,8 @@ test_that('test_contour_interpolation', {
     m1 = raster::rasterFromXYZ(xyz=cbind(gp, gpd))
     # Check that points inside the contours are between the min and max depth (6 and 55.999 res)
     ug = unit_source_grid_to_SpatialPolygonsDataFrame(dsc$unit_source_grid)
-    ugU = rgeos::gUnaryUnion(ug)
-    kk = which(rgeos::gContains(ugU, SpatialPoints(coords=gp), byid=TRUE))    
+    ugU = gUnaryUnion(ug)
+    kk = which(gContains(ugU, SpatialPoints(coords=gp), byid=TRUE))    
     expect_true(min(gpd[kk]) >= min(as.numeric(as.character(dsc$depth_contours$level)))) 
     expect_true(max(gpd[kk]) <= max(as.numeric(as.character(dsc$depth_contours$level))))
     
