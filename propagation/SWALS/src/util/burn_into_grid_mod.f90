@@ -122,8 +122,11 @@ module burn_into_grid_mod
         real(dp), intent(inout) :: grid(:,:) !! rank-2 array with grid values
         real(dp), intent(in) :: lower_left(2), upper_right(2) !! coordinates defining the grid extent
         character(len=*), optional, intent(in) :: burn_type
-        !! character controlling when we burn -- either 'point_value' (default, always burn), or 'max' (only burn if z >
-        !! grid value) or 'min' (only burn if z < grid_value)
+            !! character controlling when we burn -- either 
+            !! 'point_value' (default, always burn poly_value into the grid), or 
+            !! 'max' (only burn if poly_value > grid value), or 
+            !! 'min' (only burn if poly_value < grid_value), or
+            !! 'add' (add poly_value to grid_value)
 
         real(dp) :: dx(2)
         integer(ip) :: i, i0, j0
@@ -158,6 +161,8 @@ module burn_into_grid_mod
                     grid(i0, j0) = max(grid(i0, j0), z(i))
                 case('min')
                     grid(i0, j0) = min(grid(i0, j0), z(i))
+                case('add')
+                    grid(i0, j0) = grid(i0, j0) + z(i)
                 case default
                     write(log_output_unit, *) "Error in burn_xyz_into_grid: unknown value of burn_type ", trim(burnt)
                     call generic_stop
@@ -175,8 +180,11 @@ module burn_into_grid_mod
         real(dp), intent(inout) :: grid(:,:) !! Grid into which we burn the elevations
         real(dp), intent(in) :: lower_left(2), upper_right(2) !! Coordinates of the grid
         character(len=*), optional, intent(in) :: burn_type
-        !! character controlling when we burn -- either 'point_value' (default, always burn), or 'max' (only burn if z >
-        !! grid value) or 'min' (only burn if z < grid_value)
+            !! character controlling when we burn -- either 
+            !! 'point_value' (default, always burn poly_value into the grid), or 
+            !! 'max' (only burn if poly_value > grid value), or 
+            !! 'min' (only burn if poly_value < grid_value), or
+            !! 'add' (add poly_value to grid_value)
 
         real(dp) :: dx(2), xi, yi, zi, xip1, yip1, zip1, xj(1), yj(1), zj(1)
         integer(ip) :: i, i0, j0, np, j
@@ -232,8 +240,11 @@ module burn_into_grid_mod
         real(dp), intent(inout) :: grid(:,:) !! The grid
         real(dp), intent(in) :: lower_left(2), upper_right(2) !! The grid extent
         character(len=*), optional, intent(in) :: burn_type
-        !! character controlling when we burn -- either 'point_value' (default, always burn the z value into the grid), or 'max'
-        !! (only burn if z > grid value) or 'min' (only burn if z < grid_value)
+            !! character controlling when we burn -- either 
+            !! 'point_value' (default, always burn poly_value into the grid), or 
+            !! 'max' (only burn if poly_value > grid value), or 
+            !! 'min' (only burn if poly_value < grid_value), or
+            !! 'add' (add poly_value to grid_value)
 
         character(len=charlen) :: burnt
         integer(ip) :: i
@@ -257,9 +268,11 @@ module burn_into_grid_mod
         real(dp), intent(inout) :: grid(:,:) !! The grid -- first dimension ranges from lower_left(1) to upper_right(1).
         real(dp), intent(in) :: lower_left(2), upper_right(2) !! The grid extent (coordinate range for each dimension).
         character(len=*), optional, intent(in) :: burn_type
-        !! character controlling when we burn -- either 'point_value'
-        !! (default, always burn the z value into the grid), or 'max'
-        !! (only burn if z > grid value) or 'min' (only burn if z < grid_value)
+            !! character controlling when we burn -- either 
+            !! 'point_value' (default, always burn poly_value into the grid), or 
+            !! 'max' (only burn if poly_value > grid value), or 
+            !! 'min' (only burn if poly_value < grid_value), or
+            !! 'add' (add poly_value to grid_value)
 
         character(len=charlen) :: burnt
         real(dp) :: x, y, min_x, max_x, min_y, max_y
@@ -313,6 +326,8 @@ module burn_into_grid_mod
                         grid(i, j) = max(grid(i, j), poly_value)
                     case('min')
                         grid(i, j) = min(grid(i, j), poly_value)
+                    case('add')
+                        grid(i, j) = grid(i, j) + poly_value
                     case default
                         write(log_output_unit, *) &
                             "Error in burn_polyvalue_into_grid: unknown value of burn_type ", trim(burnt)
@@ -336,9 +351,11 @@ module burn_into_grid_mod
         real(dp), intent(in) :: lower_left(2), upper_right(2)
             !! The grid extent, i.e. coordinate range for the first and second dimensions.
         character(len=*), optional, intent(in) :: burn_type
-            !! character controlling when we burn -- either 'point_value'
-            !! (default, always burn the z value into the grid), or 'max'
-            !! (only burn if z > grid value) or 'min' (only burn if z < grid_value)
+            !! character controlling when we burn -- either 
+            !! 'point_value' (default, always burn poly_value into the grid), or 
+            !! 'max' (only burn if poly_value > grid value), or 
+            !! 'min' (only burn if poly_value < grid_value), or
+            !! 'add' (add poly_value to grid_value)
 
         integer :: k
 
@@ -535,6 +552,40 @@ module burn_into_grid_mod
         else
             print*, 'FAIL'
         end if
+
+        !
+        ! Polygon version, test 4 -- use 'add' burning
+        !
+        grid = 0.0_dp
+        call pvt%burn_into_grid(grid, lower_left, upper_right, burn_type='add') 
+        ! Plot this situation to see where the tests below come from.
+        if(abs(sum(grid) - 18.0_dp) < 3*spacing(18.0_dp)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+        ! Sites covered by both polygons should have the value 3.0
+        if(all(grid(4:5, 4:5) == 3.0_dp)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+        ! Remaining polygon 1 sites should have the value 2.0
+        if(grid(4,3) == 2.0_dp .and. grid(6,5) == 2.0_dp) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+        ! Remaining polygon 2 sites should have the value 1.0
+        if(grid(3,4) == 1.0_dp .and. grid(5,6) == 1.0_dp) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
         
     end subroutine
 
