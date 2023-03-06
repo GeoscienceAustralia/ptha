@@ -2524,7 +2524,7 @@ TIMER_START('nesting_boundary_flux_integral_multiply')
             do i = 1, size(domain%nesting%send_comms, kind=ip)
                 call domain%nesting%send_comms(i)%boundary_flux_integral_multiply(c)
             end do
-            !$OMP END DO
+            !$OMP END DO NOWAIT
         end if
 
 
