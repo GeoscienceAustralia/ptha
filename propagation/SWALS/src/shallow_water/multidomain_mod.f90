@@ -2087,17 +2087,11 @@ module multidomain_mod
         logical :: sync_before_local, sync_after_local
 
         ! By default do not sync before or after
-        if(present(sync_before)) then
-            sync_before_local = sync_before
-        else
-            sync_before_local = .false.
-        end if
+        sync_before_local = .false.
+        if(present(sync_before)) sync_before_local = sync_before
 
-        if(present(sync_after)) then
-            sync_after_local = sync_after
-        else
-            sync_after_local = .false.
-        end if
+        sync_after_local = .false.
+        if(present(sync_after)) sync_after_local = sync_after
 
 #if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         if(sync_before_local .and. ni > 1) then
