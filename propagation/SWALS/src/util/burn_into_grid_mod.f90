@@ -1,8 +1,13 @@
 module burn_into_grid_mod
     !!
-    !! Allows definition of 'xyz lines' which can denote the elevation of linear features, and
-    !! provides routines to burn these into grids. For example, this can be used to ensure that
-    !! an elevation grid includes a continuous representation of a breakwall or riverwall.
+    !! Define 'xyz_lines_type' for burning linear features into grids, and
+    !! 'polygons_values_type' for burning values inside polygons into a grid.
+    !! In the latter case there is also a simple subroutine for the
+    !! single-polygon case (burn_polygon_value_into_grid).
+    !!
+    !! These routines are often useful, for example, to make elevation grids
+    !! have a continuous representation of a breakwall, or set different
+    !! initial stage values in different parts of the domain.
     !!
     use global_mod, only: ip, dp, charlen, force_double
     use logging_mod
