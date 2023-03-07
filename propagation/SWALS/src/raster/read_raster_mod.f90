@@ -384,7 +384,7 @@ module read_raster_mod
         integer(ip) :: n, i
 
         if(allocated(multi_raster%raster_datasets)) then
-            write(log_output_unit, *) 'multi_raster already allocated'
+            write(log_output_unit, *) 'Error initialising multi_raster_type: the multi_raster was already allocated'
             call generic_stop
         end if
 
