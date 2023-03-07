@@ -308,7 +308,7 @@ module burn_into_grid_mod
 
         ! Search each grid point
         !$OMP PARALLEL DO DEFAULT(PRIVATE) &
-        !$OMP SHARED(poly_x, poly_y, poly_value, grid, upper_right, lower_left, burnt, min_y, min_x, max_y, max_x)
+        !$OMP SHARED(poly_x, poly_y, poly_value, grid, upper_right, lower_left, burnt, min_y, min_x, max_y, max_x, log_output_unit)
         do j = 1, size(grid, 2)
             ! Get y coord
             y = lower_left(2) + ((j - 0.5_dp)/size(grid, 2))*(upper_right(2) - lower_left(2))
