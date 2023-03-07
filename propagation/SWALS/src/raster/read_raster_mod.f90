@@ -11,6 +11,7 @@ module read_raster_mod
     !! the files" from "reading the data". But see 'read_gdal_raster' and 'get_raster_dimensions'.
     !!
     use global_mod, only: charlen, ip, dp
+    use stop_mod, only: generic_stop
     use logging_mod, only: log_output_unit
     use iso_c_binding
 
@@ -383,8 +384,8 @@ module read_raster_mod
         integer(ip) :: n, i
 
         if(allocated(multi_raster%raster_datasets)) then
-            print*, 'multi_raster already allocated'
-            stop
+            write(log_output_unit, *) 'multi_raster already allocated'
+            call generic_stop
         end if
 
         n = size(raster_files, kind=ip)
