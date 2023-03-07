@@ -1978,11 +1978,6 @@ TIMER_STOP('compute_volume_in_priority_domain')
         ! Get domain id as a character
         write(t3, domain_myid_char_format) domain%myid
 
-
-        ! Make a time file_name. Store as ascii
-        t1 = trim(domain%output_folder_name) // '/' // 'Time_ID' // trim(t3) // '.txt'
-        open(newunit = domain%output_time_unit_number, file = t1)
-
         ! Make a filename to hold domain metadata, and write the metadata
         t1 = trim(domain%output_folder_name) // '/' // 'Domain_info_ID' // trim(t3) // '.txt'
         domain%metadata_ascii_filename = t1
@@ -1996,8 +1991,14 @@ TIMER_STOP('compute_volume_in_priority_domain')
         write(metadata_unit, *) 'output_precision: ', output_precision
         close(metadata_unit)
 
+
 #ifdef NONETCDF
         ! Write to a home-brew binary format
+
+        ! Make a time file_name. Store as ascii
+        t1 = trim(domain%output_folder_name) // '/' // 'Time_ID' // trim(t3) // '.txt'
+        open(newunit = domain%output_time_unit_number, file = t1)
+
         allocate(domain%output_variable_unit_number(domain%nvar))
         do i=1, domain%nvar
             ! Make output_file_name
@@ -2095,6 +2096,9 @@ TIMER_START('fileIO')
                     write(domain%output_variable_unit_number(i)) real(domain%U(:,j,i), output_precision)
                 end do
             end do
+
+        ! Time too, as ascii
+        write(domain%output_time_unit_number, *) domain%time
 #else
 
 #ifdef DEBUG_ARRAY
@@ -2107,9 +2111,6 @@ TIMER_START('fileIO')
 
 #endif
         end if
-
-        ! Time too, as ascii
-        write(domain%output_time_unit_number, *) domain%time
 
 TIMER_STOP('fileIO')
 

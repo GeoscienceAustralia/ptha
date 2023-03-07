@@ -29,9 +29,21 @@ get_recent_output_folder<-function(){
 #' @param output_folder the output folder for a domain (not a multidomain)
 #' @return the times
 get_time<-function(output_folder){
+
+    # Try the ascii format
     model_time = try(
         scan(Sys.glob(paste0(output_folder, '/', 'Time_*'))[1], quiet=TRUE), 
         silent=TRUE)
+
+    if(is(model_time, 'try-error')){
+        # Try the netcdf format
+        .library_quiet('ncdf4')
+        nc_file = Sys.glob(paste0(output_folder, '/Grid_output_*.nc'))
+        fid = nc_open(nc_file, readunlim=FALSE)
+        model_time = as.numeric(ncvar_get(fid, 'time'))
+        nc_close(fid)
+    }
+
     return(model_time)
 }
 
