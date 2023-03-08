@@ -88,7 +88,7 @@ module file_io_mod
         num_lines=count_file_lines(input_file_unit_no)
         allocate(output_lines(num_lines))
 
-        print*, 'reading file ...'
+        !print*, 'reading file ...'
 
         do i=1,num_lines
             read(input_file_unit_no, format_string, iostat=io_test) output_lines(i)
