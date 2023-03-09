@@ -10,6 +10,12 @@ module file_io_mod
     ! Size of buffers used to read a file line with a-priori unknown size
     integer, parameter :: bigcharlen = 65536
 
+    interface read_character_file
+        ! Allow to read a character file into an allocatable character array, where
+        ! the file is passed either by filename, or file unit number
+        module procedure read_character_file_by_unit, read_character_file_by_filename
+    end interface
+
     contains
 
     function count_file_lines(input_file_unit_no)
@@ -70,7 +76,7 @@ module file_io_mod
 
     !@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    subroutine read_character_file(input_file_unit_no, output_lines, format_string)
+    subroutine read_character_file_by_unit(input_file_unit_no, output_lines, format_string)
         !! Read the entire contents of input_file_unit_no into the allocatable
         !! character array 'output_lines'. Use format_string in the read
         integer(ip), intent(in):: input_file_unit_no
@@ -94,6 +100,23 @@ module file_io_mod
             read(input_file_unit_no, format_string, iostat=io_test) output_lines(i)
         end do
         rewind(input_file_unit_no)
+
+    end subroutine
+
+    !@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    subroutine read_character_file_by_filename(input_file_name, output_lines, format_string)
+        !! Read the entire contents of file with name input_file_name into the allocatable
+        !! character array 'output_lines'. Use format_string in the read
+        character(*), intent(in):: input_file_name
+        character(*), intent(in):: format_string
+        character(len=charlen), allocatable, intent(inout):: output_lines(:)
+
+        integer(ip):: fid
+
+        open(newunit=fid, file=input_file_name, status="old", action="read")
+        call read_character_file_by_unit(fid, output_lines, format_string)
+        close(fid)
 
     end subroutine
 

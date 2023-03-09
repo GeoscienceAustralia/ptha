@@ -69,9 +69,7 @@ module local_routines
         write(log_output_unit, *) 'Elevation range: ', minval(domain%U(:,:,ELV)), maxval(domain%U(:,:,ELV))
 
         ! Add house heights to elevation
-        open(newunit = house_file_unit, file='houses_filenames.txt') ! Names of house polygons
-        call read_character_file(house_file_unit, house_filenames, "(A)")
-        close(house_file_unit)
+        call read_character_file('houses_filenames.txt', house_filenames, "(A)")
         allocate(house_heights(size(house_filenames)))
         house_heights = house_height ! Height of each house above the DEM
         call house_pvt%setup(house_filenames, house_heights) ! Type for setting grid values in polygons
