@@ -11,7 +11,7 @@ The problems are:
 
 * BP04 -- This is a [laboratory counterpart of BP01](https://github.com/rjleveque/nthmp-benchmark-problems/blob/master/BP04-JosephZ-Single_wave_on_simple_beach/Benchmark4_description.pdf). The `run_model.sh` script compares the model with observations for a number of scenarios, and the code makes a plot comparing the wave-height vs runup relation (both divided by the depth) in the models and data.
 
-* BP06 -- This is an experiment with [three cases of wave runup on a conical island](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP06-FrankG-Solitary_wave_on_a_conical_island). The `run_model.sh` script compares the modelled and observed wave time-series at a number of points, and the modelled and observed runup around the island. We also include results from other models using the same initial condition.
+* BP06 -- This is an experiment with [three cases of wave runup on a conical island](https://github.com/rjleveque/nthmp-benchmark-problems/tree/master/BP06-FrankG-Solitary_wave_on_a_conical_island). The `run_model.sh` script compares the modelled and observed wave time-series at a number of points, and the modelled and observed runup around the island. We also include results from other models.
 
 * BP07 -- This is [an experiment that was used to understand the surprisingly high runup of the 1993 Okushiri tsunami around Monai Valley](https://github.com/rjleveque/nthmp-benchmark-problems/blob/master/BP07-DmitryN-Monai_valley_beach/Matsuyama_Tanaka2001.pdf). The `run_model.sh` script compares modelled and observed wave time-series at a number of sites, and also compares the runup maxima, and several snapshots of the wave during runup.
 
