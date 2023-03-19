@@ -2613,6 +2613,10 @@ module multidomain_mod
                         'Error: priority_domain_index contains areas that are not inside any domain. ', &
                         'This can happen if domains are small and have nesting buffers large enough ', &
                         'to spill outside their neighbours (e.g. using too much parallel refinement)'
+                    ! Store some other useful info before exiting
+                    tmp = findloc(domains(j)%nesting%priority_domain_index(:,jj) < 0, .true., dim=1)
+                    write(md_log_output_unit, *) 'domain=', j, '; yc_tmp=', yc_tmp(jj), '; xc_tmp=', xc_tmp(tmp)
+                    flush(md_log_output_unit)
                     call generic_stop
                 end if
 
