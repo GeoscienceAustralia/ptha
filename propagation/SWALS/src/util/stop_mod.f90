@@ -13,9 +13,9 @@ module stop_mod
 
         print*, 'FAIL -- call to generic stop'
 
-        ! Search for file units in the first 100 files, and flush if open
+        ! Search for file units and flush if open. Note negative file units come from "open(newunit=...)"
         ! A better but more complex approach would be to track open file units
-        do i = 1, 10000
+        do i = -10000, 10000
             inquire(unit=i, opened=is_open_file_unit)
             if(is_open_file_unit) call flush(i)
         end do

@@ -1,5 +1,5 @@
 #
-library(rgdal)
+library(rptha) # for readOGR
 library(raster)
 
 # Background data 
@@ -43,7 +43,7 @@ dev.off()
 #
 # Make a satellite plot with Tongatapu and sites of interest.
 #
-library(OpenStreetMap); library(rgdal); library(sp)
+library(OpenStreetMap); library(sp)
 
 upperLeft  = c(-20.8, 184.0)
 lowerRight = c(-21.8, 185.4)

@@ -29,9 +29,21 @@ get_recent_output_folder<-function(){
 #' @param output_folder the output folder for a domain (not a multidomain)
 #' @return the times
 get_time<-function(output_folder){
+
+    # Try the ascii format
     model_time = try(
         scan(Sys.glob(paste0(output_folder, '/', 'Time_*'))[1], quiet=TRUE), 
         silent=TRUE)
+
+    if(is(model_time, 'try-error')){
+        # Try the netcdf format
+        .library_quiet('ncdf4')
+        nc_file = Sys.glob(paste0(output_folder, '/Grid_output_*.nc'))
+        fid = nc_open(nc_file, readunlim=FALSE)
+        model_time = as.numeric(ncvar_get(fid, 'time'))
+        nc_close(fid)
+    }
+
     return(model_time)
 }
 
@@ -920,7 +932,6 @@ merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA,
     .library_quiet('ncdf4')
     .library_quiet('raster')
     .library_quiet('sp')
-    .library_quiet('rgdal')
 
     # Check input makes sense
     if(all(is.null(nc_grid_files)) & 
@@ -1774,7 +1785,6 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
     names(merged_domain_ibb) = as.character(merged_domain_indices)
 
     if(include_SpatialPolygonsDataFrame){
-        .library_quiet(rgdal)
         .library_quiet(sp)
         #
         # Convert merged domain extents to a spatial polygons data frame

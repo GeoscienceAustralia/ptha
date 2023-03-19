@@ -1926,6 +1926,7 @@ TIMER_STOP('compute_volume_in_priority_domain')
         character(len=charlen):: mkdir_command, cp_command, t1, t2, t3, t4, &
                                  output_folder_name, code_folder
         logical :: copy_code_local
+        integer :: local_status
 
         ! Quick exit if folders already exist
         if(domain%output_folders_were_created) return
@@ -1953,8 +1954,8 @@ TIMER_STOP('compute_volume_in_priority_domain')
             call mkdir_p(code_folder)
 
             cp_command = 'cp *.f* make* ' // trim(domain%output_folder_name) // '/Code'
-            !call execute_command_line(trim(cp_command))
-            call system(trim(cp_command))
+            call execute_command_line(trim(cp_command), exitstat=local_status)
+            !call system(trim(cp_command))
         end if
         domain%output_folders_were_created = .TRUE.
 
@@ -1977,11 +1978,6 @@ TIMER_STOP('compute_volume_in_priority_domain')
         ! Get domain id as a character
         write(t3, domain_myid_char_format) domain%myid
 
-
-        ! Make a time file_name. Store as ascii
-        t1 = trim(domain%output_folder_name) // '/' // 'Time_ID' // trim(t3) // '.txt'
-        open(newunit = domain%output_time_unit_number, file = t1)
-
         ! Make a filename to hold domain metadata, and write the metadata
         t1 = trim(domain%output_folder_name) // '/' // 'Domain_info_ID' // trim(t3) // '.txt'
         domain%metadata_ascii_filename = t1
@@ -1995,8 +1991,14 @@ TIMER_STOP('compute_volume_in_priority_domain')
         write(metadata_unit, *) 'output_precision: ', output_precision
         close(metadata_unit)
 
+
 #ifdef NONETCDF
         ! Write to a home-brew binary format
+
+        ! Make a time file_name. Store as ascii
+        t1 = trim(domain%output_folder_name) // '/' // 'Time_ID' // trim(t3) // '.txt'
+        open(newunit = domain%output_time_unit_number, file = t1)
+
         allocate(domain%output_variable_unit_number(domain%nvar))
         do i=1, domain%nvar
             ! Make output_file_name
@@ -2094,6 +2096,9 @@ TIMER_START('fileIO')
                     write(domain%output_variable_unit_number(i)) real(domain%U(:,j,i), output_precision)
                 end do
             end do
+
+        ! Time too, as ascii
+        write(domain%output_time_unit_number, *) domain%time
 #else
 
 #ifdef DEBUG_ARRAY
@@ -2106,9 +2111,6 @@ TIMER_START('fileIO')
 
 #endif
         end if
-
-        ! Time too, as ascii
-        write(domain%output_time_unit_number, *) domain%time
 
 TIMER_STOP('fileIO')
 
@@ -2523,7 +2525,7 @@ TIMER_START('nesting_boundary_flux_integral_multiply')
             do i = 1, size(domain%nesting%send_comms, kind=ip)
                 call domain%nesting%send_comms(i)%boundary_flux_integral_multiply(c)
             end do
-            !$OMP END DO
+            !$OMP END DO NOWAIT
         end if
 
 
@@ -3387,8 +3389,8 @@ TIMER_STOP('nesting_flux_correction')
             !! How many time-steps should the new domain take, for each global time-step in the multidomain.
         character(*), intent(in), optional :: rounding_method
             !! optional character controlling how we adjust lower-left/upper-right.
-            !! If rounding_method = 'expand' (DEFAULT), then we adjust the new domain lower-left/upper-right so that the provided
-            !! lower-left/upper-right are definitely contained in the new domain. If rounding_method = 'nearest', we move
+            !! If rounding_method = 'expand', then we adjust the new domain lower-left/upper-right so that the provided
+            !! lower-left/upper-right are definitely contained in the new domain. If rounding_method = 'nearest' (DEFAULT), we move
             !! lower-left/upper-right onto the nearest cell corner of the parent domain. This can be preferable if we want to have
             !! multiple child domains which share boundaries with each other -- but does not ensure the provided
             !! lower-left/upper-right are within the new domain
@@ -3404,18 +3406,12 @@ TIMER_STOP('nesting_flux_correction')
         real(dp) :: ur(2), parent_domain_dx(2)
         character(len=charlen) :: rounding
         logical :: recursive_nest
+    
+        rounding = 'nearest'
+        if(present(rounding_method)) rounding = rounding_method
 
-        if(present(rounding_method)) then
-            rounding = rounding_method
-        else
-            rounding = 'expand'
-        end if
-
-        if(present(recursive_nesting)) then
-            recursive_nest = recursive_nesting
-        else
-            recursive_nest = .true.
-        end if
+        recursive_nest = .true.
+        if(present(recursive_nesting)) recursive_nest = recursive_nesting
 
         ! Check the parent_domain was setup ok
         if(any(parent_domain%nx <= 0) .or. any(parent_domain%lw <= 0) .or. &

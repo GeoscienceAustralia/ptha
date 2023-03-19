@@ -195,7 +195,7 @@ module nested_grid_comms_mod
             !! nesting buffer regions). However, on the priority domain, it will be
             !! realistic.
         integer(ip), allocatable :: is_priority_domain_not_periodic(:,:)
-            !! This will be 1.0 where the domain is priority and not in a periodic region, and 0.0 otherwise.
+            !! This will be 1 where the domain is priority and not in a periodic region, and 0 otherwise.
         integer(ip) :: my_index = 0_ip
         integer(ip) :: my_image = 0_ip
 

@@ -1,5 +1,5 @@
 library(raster)
-library(rgdal)
+library(rptha) # provides readOGR
  
 #' Contouring with gdal_contour
 #'   

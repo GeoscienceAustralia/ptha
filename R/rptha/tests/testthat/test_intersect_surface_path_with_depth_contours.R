@@ -18,7 +18,7 @@ test_that('test_intersect_surface_path_with_depth_contours', {
     # Should get the same result
     line3_3D = intersect_surface_path_with_depth_contours(line1[2:1,], contour1)
 
-    expect_that(all(abs(line1_3D - line3_3D) == 0.0), is_true())
+    expect_that(all(abs(line1_3D - line3_3D) < 1e-09*abs(line1_3D) ), is_true())
 
     ## This case was troublesome originally 
     ## The intersection point with the shallowest contour was missed

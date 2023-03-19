@@ -1707,7 +1707,7 @@ module multidomain_mod
     subroutine partition_domains(md)
         class(multidomain_type), intent(inout) :: md
 
-        integer(ip) :: nd, next_d, i, j, ni, ti, ii, i0, i1
+        integer(ip) :: nd, next_d, i, j, ni, ti, ii, i0
         integer(ip) :: local_ti, local_ni, local_co_size_xy(2), local_co_index(2)
         integer(ip) :: domain_nx(2), nx(2), lower_left_nx(2), upper_right_nx(2)
         integer(ip) :: domain_dx_refinement_factor(2), dx_refine_X_co_size_xy(2)
@@ -1940,7 +1940,7 @@ module multidomain_mod
         logical, optional, intent(in) :: global_stats_only
         logical, optional, intent(out) :: energy_is_finite
 
-        integer(ip) :: i, j, k, ecw
+        integer(ip) :: k
         real(dp) :: minstage, maxstage, minspeed, maxspeed, stg1, speed_sq, depth_C, depth_E, depth_N
         real(dp) :: energy_potential_on_rho, energy_kinetic_on_rho, energy_total_on_rho
         logical :: is_nesting, only_global_stats
@@ -2087,17 +2087,11 @@ module multidomain_mod
         logical :: sync_before_local, sync_after_local
 
         ! By default do not sync before or after
-        if(present(sync_before)) then
-            sync_before_local = sync_before
-        else
-            sync_before_local = .false.
-        end if
+        sync_before_local = .false.
+        if(present(sync_before)) sync_before_local = sync_before
 
-        if(present(sync_after)) then
-            sync_after_local = sync_after
-        else
-            sync_after_local = .false.
-        end if
+        sync_after_local = .false.
+        if(present(sync_after)) sync_after_local = sync_after
 
 #if defined(COARRAY) && !defined(COARRAY_USE_MPI_FOR_INTENSIVE_COMMS)
         if(sync_before_local .and. ni > 1) then
@@ -2619,6 +2613,10 @@ module multidomain_mod
                         'Error: priority_domain_index contains areas that are not inside any domain. ', &
                         'This can happen if domains are small and have nesting buffers large enough ', &
                         'to spill outside their neighbours (e.g. using too much parallel refinement)'
+                    ! Store some other useful info before exiting
+                    tmp = findloc(domains(j)%nesting%priority_domain_index(:,jj) < 0, .true., dim=1)
+                    write(md_log_output_unit, *) 'domain=', j, '; yc_tmp=', yc_tmp(jj), '; xc_tmp=', xc_tmp(tmp)
+                    flush(md_log_output_unit)
                     call generic_stop
                 end if
 
@@ -3930,7 +3928,7 @@ __FILE__
 
         ! Useful misc variables
         integer(ip):: j, i, k, i0, j0, centoff, nd, test_set
-        real(dp):: last_write_time, gx(4), gy(4), stage_err, max_residual, roundoff_tol, ci, cj
+        real(dp):: gx(4), gy(4), stage_err, max_residual, roundoff_tol, ci, cj
         character(len=charlen) :: md_file, ti_char
         logical :: has_passed
         real(dp), allocatable :: residual(:)
@@ -4168,7 +4166,8 @@ __FILE__
             lower_left=high_res_ll, &
             upper_right=high_res_ur, &
             dx_refinement_factor=nest_ratio, &
-            timestepping_refinement_factor=nest_ratio)
+            timestepping_refinement_factor=nest_ratio, &
+            rounding_method = 'nearest')
         md%domains(2)%timestepping_method = 'rk2'
 
         ! For debugging, helps to flush file often

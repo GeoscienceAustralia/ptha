@@ -27,7 +27,7 @@ dart_dat = cbind(data.frame(lon=lon, lat=lat), dart_dat)
 dir.create('dart_metadata', showWarnings=FALSE)
 write.csv(dart_dat, 'dart_metadata/dart_metadata.csv', row.names=FALSE)
 
-library(rgdal)
+library(rptha)
 coordinates(dart_dat) = cbind(lon, lat)
 proj4string(dart_dat) = "+init=epsg:4326"
 

@@ -61,7 +61,9 @@ test_that('test_unit_source_interior_points_cartesian', {
     expect_true(all(abs(us$grid_points[,'dip'] - dip)<0.02))
 
     expect_true(all(us$grid_points[,'unit_slip_scale'] == 1))
-    expect_true(all(us$grid_points[,'fraction_area_inside_unit_source'] == 1))
+    #expect_true(all(us$grid_points[,'fraction_area_inside_unit_source'] == 1))
+    # Following updated rgeos functions
+    expect_true(all(abs(us$grid_points[,'fraction_area_inside_unit_source'] - 1) < 1e-10))
 
     # Check depth (small inaccuracies allowed due to numerical optimization)
     pred_depth = (us$grid_points[,'y']/width)*(d1 - d0) + d0

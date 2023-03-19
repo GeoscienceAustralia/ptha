@@ -4,7 +4,7 @@ are reported in various other papers, but there is some inconsistency in the
 island runup values.
 - The Briggs et al. (1995) runup results are reported by Liu et al (1995) in
   terms of "R/A" where R is runup (cm), and A is a target wave amplitude (0.016
-  cm for Case A, 0.032 cm for Case B, 0.064 cm for Case C). The same results
+  m for Case A, 0.032 m for Case B, 0.064 m for Case C). The same results
   are reported in tabular form in Ma et al. (2019), and Choi et al. (2007)
     - These 3 studies each compare these observations with models (2d or 3d)
       -- and their models agree with the data fairly well. 
