@@ -96,6 +96,7 @@ endif
 # they can be sub-optimal in some situations (e.g. when compiling on one
 # machine and running on another)
 SWALS_FC_ARCH_FLAGS ?= -march=native
+#SWALS_FC_ARCH_FLAGS ?= 
 SWALS_FC_FLAGS := $(SWALS_FC_FLAGS) $(SWALS_FC_ARCH_FLAGS)
 
 

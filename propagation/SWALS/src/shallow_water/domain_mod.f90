@@ -1265,7 +1265,7 @@ TIMER_STOP("compute_statistics")
                 write(log_output_unit, *) 'Dispersion not supported for timestepping_method: ', trim(domain%timestepping_method)
                 call generic_stop
             end if
-            call domain%ds%setup(nx, ny)
+            call domain%ds%setup(nx, ny, domain%is_staggered_grid)
         end if
 
 

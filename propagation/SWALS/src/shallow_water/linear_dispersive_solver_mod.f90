@@ -85,19 +85,21 @@ module linear_dispersive_solver_mod
     real(dp), parameter :: jacobi_overrelax = 0.0_dp, tridiagonal_overrelax = 0.3_dp
 
     type dispersive_solver_type
-        !! Holds work arrays
-        real(dp), allocatable :: RHS(:,:,:), last_U(:,:,:)
-        real(dp), allocatable :: offdiagonalAx(:,:,:), diagonalA(:,:,:)
+
+        logical :: is_staggered_grid 
+            !! Different solvers for staggered vs cell-centred grids
+        real(dp), allocatable :: RHS(:,:,:), last_U(:,:,:), offdiagonalAx(:,:,:), diagonalA(:,:,:)
+            !! Work arrays
 
 #ifdef DISPERSIVE_JACOBI_ADAPTIVE        
         ! These help with spatially variable jacobi iteration
         real(dp), allocatable :: local_err(:,:)
         logical, allocatable :: needs_update(:,:)
         integer(ip), allocatable :: i0(:), i1(:)
-        ! To stop iterating locally we require the change in the solution to be less
-        ! than "local_tol_factor * (the solver tolerance)", i.e., substantially less than the 
-        ! tolerance. 
         real(dp) :: local_tol_factor = 0.5_dp
+                !! To stop iterating locally we require the change in the solution to be less
+                !! than "local_tol_factor * (the solver tolerance)", i.e., substantially less than the 
+                !! tolerance. 
 #endif
 
 #ifdef REALFLOAT
@@ -105,12 +107,14 @@ module linear_dispersive_solver_mod
 #else
         real(dp) :: tol = 1.0e-08_dp ! Solver tolerance -- iteration until this accuracy is reached
 #endif
-        integer(ip) :: max_iter = 2000 ! Maximum number of iterations
-        integer(ip) :: last_iter = 0 ! Iteration count at convergence
+        integer(ip) :: max_iter = 2000 !! Maximum number of iterations in a single call to ds%solve
+        integer(ip) :: last_iter = 0 !! Iteration count at convergence
+        real(dp) :: max_err = -HUGE(1.0_dp) !! Store the max error on the last iteration
 
         contains
         procedure :: store_last_U => store_last_U
         procedure :: setup => setup_dispersive_solver
+        procedure :: solve => linear_dispersive_solve
 
 #ifdef DISPERSIVE_JACOBI
         procedure :: solve_staggered_grid => linear_dispersive_solve_staggered_grid_JACOBI
@@ -143,12 +147,15 @@ module linear_dispersive_solver_mod
 
     end subroutine
 
-    subroutine setup_dispersive_solver(ds, nx, ny)
+    subroutine setup_dispersive_solver(ds, nx, ny, is_staggered_grid)
         !! Allocate workspace
         class(dispersive_solver_type), intent(inout) :: ds
         integer(ip), intent(in) :: nx, ny
+        logical, intent(in) :: is_staggered_grid
 
         integer(ip) :: i, j
+
+        ds%is_staggered_grid = is_staggered_grid
 
         if(allocated(ds%RHS)) deallocate(ds%RHS)
         if(allocated(ds%last_U)) deallocate(ds%last_U)
@@ -189,6 +196,28 @@ module linear_dispersive_solver_mod
 
     end subroutine
 
+    subroutine linear_dispersive_solve(ds, U, &
+            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear)
+        !! Convenience wrapper which gives a consistent interface for both staggered and cell-centred solvers
+        class(dispersive_solver_type), intent(inout) :: ds
+        real(dp), intent(inout) :: U(:,:,:)
+            ! domain%U after an explicit shallow water update
+        real(dp), intent(in) :: dlon, dlat, distance_bottom_edge(:), distance_left_edge(:), msl_linear
+            ! cell dx, dy, edge distances, and mean-sea-level for the linear solver
+
+        if(ds%is_staggered_grid) then
+            ! Staggered grid dispersive solve
+            call ds%solve_staggered_grid(U, dlon, dlat, &
+                distance_bottom_edge, distance_left_edge, &
+                msl_linear)
+        else
+            ! Cell-centred dispersive solve
+            call ds%solve_cellcentred_grid(U, dlon, dlat, &
+                distance_bottom_edge, distance_left_edge, &
+                msl_linear)
+        end if
+
+    end subroutine
 
     !
     !
@@ -1174,6 +1203,8 @@ module linear_dispersive_solver_mod
             end do
             !$OMP END PARALLEL DO
 
+            ds%max_err = max_err
+
             ! Check for tolerance
             if(max_err < ds%tol) then
                 if(allowed_to_exit) exit jacobi_iter
@@ -1383,6 +1414,8 @@ module linear_dispersive_solver_mod
                 end do
             end do
             !$OMP END PARALLEL DO
+
+            ds%max_err = max_err
 
             ! Check for tolerance
             if(max_err < ds%tol) then
