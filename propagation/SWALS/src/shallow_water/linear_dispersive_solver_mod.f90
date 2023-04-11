@@ -197,24 +197,25 @@ module linear_dispersive_solver_mod
     end subroutine
 
     subroutine linear_dispersive_solve(ds, U, &
-            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear)
+            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear, rhs_is_up_to_date)
         !! Convenience wrapper which gives a consistent interface for both staggered and cell-centred solvers
         class(dispersive_solver_type), intent(inout) :: ds
         real(dp), intent(inout) :: U(:,:,:)
             ! domain%U after an explicit shallow water update
         real(dp), intent(in) :: dlon, dlat, distance_bottom_edge(:), distance_left_edge(:), msl_linear
             ! cell dx, dy, edge distances, and mean-sea-level for the linear solver
+        logical, optional, intent(in) :: rhs_is_up_to_date
 
         if(ds%is_staggered_grid) then
             ! Staggered grid dispersive solve
             call ds%solve_staggered_grid(U, dlon, dlat, &
                 distance_bottom_edge, distance_left_edge, &
-                msl_linear)
+                msl_linear, rhs_is_up_to_date)
         else
             ! Cell-centred dispersive solve
             call ds%solve_cellcentred_grid(U, dlon, dlat, &
                 distance_bottom_edge, distance_left_edge, &
-                msl_linear)
+                msl_linear, rhs_is_up_to_date)
         end if
 
     end subroutine
@@ -1083,7 +1084,7 @@ module linear_dispersive_solver_mod
     end subroutine
 
     subroutine linear_dispersive_solve_staggered_grid_JACOBI_ADAPTIVE(ds, U, &
-            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear)
+            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear, rhs_is_up_to_date)
         ! Use Jacobi iteration to solve the linear dispersive discretization presented in
         ! Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
         ! Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
@@ -1095,47 +1096,54 @@ module linear_dispersive_solver_mod
             ! domain%U after an explicit shallow water update
         real(dp), intent(in) :: dlon, dlat, distance_bottom_edge(:), distance_left_edge(:), msl_linear
             ! cell dx, dy, edge distances, and mean-sea-level for the linear solver
+        logical, optional, intent(in) :: rhs_is_up_to_date
 
         integer :: i, j, iter, i0, j0, i1, j1, ii0, ii1, l0, l1
         real(dp) :: max_err, last_U
         integer, parameter :: min_jacobi_iterations = 1, bw = 2
-        logical :: allowed_to_exit
+        logical :: allowed_to_exit, rhs_ready
 
-        ! Get the explicit part of the dispersive terms
-        call linear_dispersive_staggered_matmult_JACOBI(&
-            ds%last_U(:,:,ELV), ds%last_U(:,:,UH), ds%last_U(:,:,VH), &
-            msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
-            ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
-            ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-            update_UH=.true., update_VH=.true.)
+        rhs_ready = .FALSE.
+        if(present(rhs_is_up_to_date)) rhs_ready = rhs_is_up_to_date
 
-        ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
-        ! of the dispersive term
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(ds, U)
-        !$OMP DO
-        do j = 2, size(U,2) - 1
-            ds%RHS(:,j,UH) = U(:,j,UH) - (ds%offdiagonalAx(:,j,UH) + ds%diagonalA(:,j,UH) * ds%last_U(:,j,UH))
-        end do
-        !$OMP END DO NOWAIT
-        !$OMP DO
-        do j = 2, size(U,2) - 1
-            ds%RHS(:,j,VH) = U(:,j,VH) - (ds%offdiagonalAx(:,j,VH) + ds%diagonalA(:,j,VH) * ds%last_U(:,j,VH))
-        end do
-        !$OMP END DO NOWAIT
+        if(.not. rhs_ready) then
 
-        !$OMP DO
-        do j = 1, size(U,2)
-            ! Ensure that some iteration is performed
-            ds%needs_update(:,j) = .true.
-            ds%local_err(:,j) = 0.0_dp
+            ! Get the explicit part of the dispersive terms
+            call linear_dispersive_staggered_matmult_JACOBI(&
+                ds%last_U(:,:,ELV), ds%last_U(:,:,UH), ds%last_U(:,:,VH), &
+                msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
+                ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
+                ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
+                update_UH=.true., update_VH=.true.)
 
-            ! i indices to update for each j -- initially look at all cells where we can compute central differences.
-            ds%i0(j) = 2
-            ds%i1(j) = size(U,1) - 1
-        end do
-        !$OMP END DO
+            ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
+            ! of the dispersive term
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(ds, U)
+            !$OMP DO
+            do j = 2, size(U,2) - 1
+                ds%RHS(:,j,UH) = U(:,j,UH) - (ds%offdiagonalAx(:,j,UH) + ds%diagonalA(:,j,UH) * ds%last_U(:,j,UH))
+            end do
+            !$OMP END DO NOWAIT
+            !$OMP DO
+            do j = 2, size(U,2) - 1
+                ds%RHS(:,j,VH) = U(:,j,VH) - (ds%offdiagonalAx(:,j,VH) + ds%diagonalA(:,j,VH) * ds%last_U(:,j,VH))
+            end do
+            !$OMP END DO NOWAIT
 
-        !$OMP END PARALLEL
+            !$OMP DO
+            do j = 1, size(U,2)
+                ! Ensure that some iteration is performed
+                ds%needs_update(:,j) = .true.
+                ds%local_err(:,j) = 0.0_dp
+
+                ! i indices to update for each j -- initially look at all cells where we can compute central differences.
+                ds%i0(j) = 2
+                ds%i1(j) = size(U,1) - 1
+            end do
+            !$OMP END DO
+
+            !$OMP END PARALLEL
+        end if
 
         !call ds%store_last_U(U)
 
@@ -1292,7 +1300,7 @@ module linear_dispersive_solver_mod
     end subroutine
 
     subroutine linear_dispersive_solve_cellcentred_JACOBI_ADAPTIVE(ds, U, &
-            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear)
+            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear, rhs_is_up_to_date)
         ! Use Jacobi iteration to solve the linear dispersive discretization presented in
         ! Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
         ! Modeling with a Nesting Algorithm for the 2011 Tohoku Tsunami Pure and Applied Geophysics, 2015, 172, 3455-3472
@@ -1306,49 +1314,54 @@ module linear_dispersive_solver_mod
             ! domain%U after an explicit shallow water update
         real(dp), intent(in) :: dlon, dlat, distance_bottom_edge(:), distance_left_edge(:), msl_linear
             ! cell dx, dy, edge distances, and mean-sea-level for the linear solver
+        logical, optional, intent(in) :: rhs_is_up_to_date
 
         integer :: i, j, iter, i0, j0, i1, j1, ii0, ii1, l0, l1
         real(dp) :: max_err, last_U
         integer, parameter :: min_jacobi_iterations = 1, bw = 2
-        logical :: allowed_to_exit
+        logical :: allowed_to_exit, rhs_ready
 
+        rhs_ready = .FALSE.
+        if(present(rhs_is_up_to_date)) rhs_ready = rhs_is_up_to_date
 
-        !$OMP PARALLEL DO
-        do j = 1, size(U,2)
-            ! Ensure that some iteration is performed
-            ds%needs_update(:,j) = .true.
-            ds%local_err(:,j) = 0.0_dp
+        if(.not. rhs_ready) then
 
-            ! i indices to update for each j -- initially look at all cells where we can compute central differences.
-            ds%i0(j) = 2
-            ds%i1(j) = size(U,1) - 1
-        end do
-        !$OMP END PARALLEL DO
+            !$OMP PARALLEL DO
+            do j = 1, size(U,2)
+                ! Ensure that some iteration is performed
+                ds%needs_update(:,j) = .true.
+                ds%local_err(:,j) = 0.0_dp
 
-        ! Get the explicit part of the dispersive terms
-        call linear_dispersive_cellcentred_matmult_JACOBI_ADAPTIVE(&
-            ds%last_U(:,:,ELV), ds%last_U(:,:,UH), ds%last_U(:,:,VH), &
-            msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
-            ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
-            ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-            update_UH=.true., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1)
+                ! i indices to update for each j -- initially look at all cells where we can compute central differences.
+                ds%i0(j) = 2
+                ds%i1(j) = size(U,1) - 1
+            end do
+            !$OMP END PARALLEL DO
 
-        ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
-        ! of the dispersive term
-        !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(ds, U)
-        !$OMP DO
-        do j = 2, size(U,2) - 1
-            ds%RHS(:,j,UH) = U(:,j,UH) - (ds%offdiagonalAx(:,j,UH) + ds%diagonalA(:,j,UH) * ds%last_U(:,j,UH))
-        end do
-        !$OMP END DO NOWAIT
-        !$OMP DO
-        do j = 2, size(U,2) - 1
-            ds%RHS(:,j,VH) = U(:,j,VH) - (ds%offdiagonalAx(:,j,VH) + ds%diagonalA(:,j,VH) * ds%last_U(:,j,VH))
-        end do
-        !$OMP END DO NOWAIT
+            ! Get the explicit part of the dispersive terms
+            call linear_dispersive_cellcentred_matmult_JACOBI_ADAPTIVE(&
+                ds%last_U(:,:,ELV), ds%last_U(:,:,UH), ds%last_U(:,:,VH), &
+                msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
+                ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
+                ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
+                update_UH=.true., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1)
 
-        !$OMP END PARALLEL
+            ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
+            ! of the dispersive term
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(ds, U)
+            !$OMP DO
+            do j = 2, size(U,2) - 1
+                ds%RHS(:,j,UH) = U(:,j,UH) - (ds%offdiagonalAx(:,j,UH) + ds%diagonalA(:,j,UH) * ds%last_U(:,j,UH))
+            end do
+            !$OMP END DO NOWAIT
+            !$OMP DO
+            do j = 2, size(U,2) - 1
+                ds%RHS(:,j,VH) = U(:,j,VH) - (ds%offdiagonalAx(:,j,VH) + ds%diagonalA(:,j,VH) * ds%last_U(:,j,VH))
+            end do
+            !$OMP END DO NOWAIT
 
+            !$OMP END PARALLEL
+        end if
         !call ds%store_last_U(U)
 
         allowed_to_exit = .FALSE.

@@ -1194,9 +1194,10 @@ TRACK_STABILITY('step-after-flux-correction')
                     ! B) The iteration count reaches ds%max_iter,
                     ! Also sets ds%max_err on the final iteration
                     call md%domains(j)%ds%solve(&
-                       md%domains(j)%U, md%domains(j)%dx(1), md%domains(j)%dx(2), &
-                       md%domains(j)%distance_bottom_edge, md%domains(j)%distance_left_edge, &
-                       md%domains(j)%msl_linear)
+                        md%domains(j)%U, md%domains(j)%dx(1), md%domains(j)%dx(2), &
+                        md%domains(j)%distance_bottom_edge, md%domains(j)%distance_left_edge, &
+                        md%domains(j)%msl_linear, &
+                        rhs_is_up_to_date = (dispersive_outer_iterations > 1))
 
                     ! Send the halos only for domain j. Timing code inside
                     call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately)
