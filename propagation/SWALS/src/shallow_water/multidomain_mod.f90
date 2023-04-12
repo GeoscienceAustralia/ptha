@@ -1064,6 +1064,7 @@ module multidomain_mod
         integer(ip) :: j, i, nt, dispersive_outer_iterations
         real(dp) :: dt_local, max_dt_store, tend
         integer :: md_dispersion_not_converged_on_this_image, md_dispersion_not_converged
+        integer, parameter :: max_dispersive_outer_iterations = 500
 
         ! All the domains will evolve to this time
         tend = md%domains(1)%time + dt
@@ -1172,7 +1173,7 @@ TRACK_STABILITY('step-after-flux-correction')
 
             dispersive_outer_iterations = 0_ip
             md_dispersion_not_converged_on_this_image = 1 ! 1 = Not converged, 0 = converged
-            dispersive_outer_loop: do while (dispersive_outer_iterations < 100)
+            dispersive_outer_loop: do while (dispersive_outer_iterations < max_dispersive_outer_iterations)
 
                 dispersive_outer_iterations = dispersive_outer_iterations + 1
 
@@ -1186,8 +1187,9 @@ TRACK_STABILITY('step-after-flux-correction')
                     if(md%domains(j)%ds%max_err < md%domains(j)%ds%tol) cycle domain_loop
 
                     ! Specify how many jacobi iterations we can do, before invalid halos affect the solution
-                    md%domains(j)%ds%max_iter = md%domains(j)%nest_layer_width - 1 
-                    ! FIXME: Check this. Recall we need 1-layer of valid halo for the extrapolation routine
+                    md%domains(j)%ds%max_iter = md%domains(j)%nest_layer_width - 1
+                    ! FIXME: Check this, also considering what happens in cases without actual nesting, where we
+                    ! may as well iterate as much as possible.
                     
                     ! Run jacobi iterations until either 
                     ! A) The max error is within ds%tol, or
@@ -1232,7 +1234,16 @@ TRACK_STABILITY('dispersive-step-after-recv_halos')
 #ifdef COARRAY
                 call co_sum(md_dispersion_not_converged)
 #endif
-                if(md_dispersion_not_converged == 0) exit dispersive_outer_loop
+
+                if(md_dispersion_not_converged == 0) then
+                    ! The solve has converged everywhere
+                    exit dispersive_outer_loop
+                else
+                    ! More iterations unless we've already done the maxima, in which case a warning is in order
+                    if(dispersive_outer_iterations == max_dispersive_outer_iterations) then
+                        write(log_output_unit, *) 'Hit max outer iterations in dispersive solver'
+                    end if
+                end if
 
             end do dispersive_outer_loop
         end if

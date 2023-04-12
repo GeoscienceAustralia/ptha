@@ -758,10 +758,10 @@ module linear_dispersive_solver_mod
 
         end do jacobi_iter
 
-        !print*, 'Jacobi iter: ', ds%last_iter, max_err!, maxval(abs(U(:,:,UH:VH) - ds%last_U(:,:,UH:VH)))
-        if(ds%last_iter == ds%max_iter) then
-            write(log_output_unit, *) 'Jacobi iteration hit max iterations (', ds%max_iter, ') with error ', max_err
-        end if
+        !!print*, 'Jacobi iter: ', ds%last_iter, max_err!, maxval(abs(U(:,:,UH:VH) - ds%last_U(:,:,UH:VH)))
+        !if(ds%last_iter == ds%max_iter) then
+        !    write(log_output_unit, *) 'Jacobi iteration hit max iterations (', ds%max_iter, ') with error ', max_err
+        !end if
 
     end subroutine
 
@@ -1292,10 +1292,10 @@ module linear_dispersive_solver_mod
 
         end do jacobi_iter
 
-        !print*, 'Jacobi iter: ', ds%last_iter, max_err, '; shape(U) = ', shape(U) !count(ds%needs_update)*1.0_dp/(size(U,1)*size(U,2))
-        if(ds%last_iter == ds%max_iter) then
-            write(log_output_unit, *) 'Jacobi iteration hit max iterations (', ds%max_iter, ') with error ', max_err
-        end if
+        !!print*, 'Jacobi iter: ', ds%last_iter, max_err, '; shape(U) = ', shape(U) !count(ds%needs_update)*1.0_dp/(size(U,1)*size(U,2))
+        !if(ds%last_iter == ds%max_iter) then
+        !    write(log_output_unit, *) 'Jacobi iteration hit max iterations (', ds%max_iter, ') with error ', max_err
+        !end if
 
     end subroutine
 
@@ -1511,9 +1511,9 @@ module linear_dispersive_solver_mod
         end do jacobi_iter
 
         !print*, 'Jacobi iter: ', ds%last_iter, max_err, ', shape(U): ', shape(U) !, count(ds%needs_update)*1.0_dp/(size(U,1)*size(U,2))
-        if(ds%last_iter == ds%max_iter) then
-            write(log_output_unit, *) 'Jacobi iteration hit max iterations (', ds%max_iter, ') with error ', max_err
-        end if
+        !if(ds%last_iter == ds%max_iter) then
+        !    write(log_output_unit, *) 'Jacobi iteration hit max iterations (', ds%max_iter, ') with error ', max_err
+        !end if
 
     end subroutine
 #endif
