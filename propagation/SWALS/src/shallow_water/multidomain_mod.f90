@@ -1064,7 +1064,7 @@ module multidomain_mod
         integer(ip) :: j, i, nt, dispersive_outer_iterations
         real(dp) :: dt_local, max_dt_store, tend
         integer :: md_dispersion_not_converged_on_this_image, md_dispersion_not_converged
-        integer, parameter :: max_dispersive_outer_iterations = 500
+        integer, parameter :: max_dispersive_outer_iterations = 100
 
         ! All the domains will evolve to this time
         tend = md%domains(1)%time + dt
@@ -1176,7 +1176,7 @@ TRACK_STABILITY('step-after-flux-correction')
             dispersive_outer_loop: do while (dispersive_outer_iterations < max_dispersive_outer_iterations)
 
                 dispersive_outer_iterations = dispersive_outer_iterations + 1
-
+TIMER_START('dispersive_iterations')
                 ! Do some dispersive term iterations on each domain that needs it
                 domain_loop: do j = 1, size(md%domains)
 
@@ -1184,12 +1184,14 @@ TRACK_STABILITY('step-after-flux-correction')
                     if(.not. md%domains(j)%use_dispersion) cycle domain_loop
 
                     ! Skip domains for which we already converged
-                    if(md%domains(j)%ds%max_err < md%domains(j)%ds%tol) cycle domain_loop
+                    !if(md%domains(j)%ds%max_err < md%domains(j)%ds%tol) cycle domain_loop
 
                     ! Specify how many jacobi iterations we can do, before invalid halos affect the solution
-                    md%domains(j)%ds%max_iter = md%domains(j)%nest_layer_width - 1
+                    !md%domains(j)%ds%max_iter = md%domains(j)%nest_layer_width - 4
                     ! FIXME: Check this, also considering what happens in cases without actual nesting, where we
                     ! may as well iterate as much as possible.
+                    ! Note if the boundary conditions are up to date when we
+                    ! start, then this may be OK (since we do outer-iterations too).
                     
                     ! Run jacobi iterations until either 
                     ! A) The max error is within ds%tol, or
@@ -1204,14 +1206,15 @@ TRACK_STABILITY('step-after-flux-correction')
                     ! Send the halos only for domain j. Timing code inside
                     call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately)
                 end do domain_loop
+TIMER_STOP('dispersive_iterations')
 
                 if(.not. send_halos_immediately) then
                     ! Do all the coarray communication in one hit
                     ! This lets us 'collapse' multiple sends to a single image,
                     ! and is more efficient in a bunch of cases.
-TIMER_START('comms2')
+TIMER_START('dispersive_comms2')
                     call communicate_p2p(md%p2p)
-TIMER_STOP('comms2')
+TIMER_STOP('dispersive_comms2')
                 end if
 
                 ! Get the halo information from neighbours
@@ -1234,14 +1237,22 @@ TRACK_STABILITY('dispersive-step-after-recv_halos')
 #ifdef COARRAY
                 call co_sum(md_dispersion_not_converged)
 #endif
+                write(log_output_unit, *) '     Dispersive outer iterations: ', dispersive_outer_iterations
+                write(log_output_unit, *) '         Last step iter: ', md%domains(:)%ds%last_iter
 
-                if(md_dispersion_not_converged == 0) then
-                    ! The solve has converged everywhere
+                if(md_dispersion_not_converged == 0 .and. &
+                    all(md%domains(:)%ds%last_iter < md%domains(:)%nest_layer_width - 2)) then
+                    ! The solve has converged everywhere, with too few inner iterations to invalidate the halos
                     exit dispersive_outer_loop
                 else
                     ! More iterations unless we've already done the maxima, in which case a warning is in order
                     if(dispersive_outer_iterations == max_dispersive_outer_iterations) then
                         write(log_output_unit, *) 'Hit max outer iterations in dispersive solver'
+                        write(log_output_unit, *) 'Convergence for domains 1 - N: '
+                        do j = 1, size(md%domains)
+                            write(log_output_unit, *) '   ', j, &
+                                (md%domains(j)%ds%max_err < md%domains(j)%ds%tol), md%domains(j)%ds%max_err
+                        end do
                     end if
                 end if
 

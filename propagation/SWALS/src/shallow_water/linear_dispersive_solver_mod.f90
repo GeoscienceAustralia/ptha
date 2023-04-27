@@ -1106,6 +1106,18 @@ module linear_dispersive_solver_mod
         rhs_ready = .FALSE.
         if(present(rhs_is_up_to_date)) rhs_ready = rhs_is_up_to_date
 
+        !$OMP PARALLEL DO DEFAULT(SHARED)
+        do j = 1, size(U,2)
+            ! Ensure that some iteration is performed
+            ds%needs_update(:,j) = .true.
+            ds%local_err(:,j) = 0.0_dp
+
+            ! i indices to update for each j -- initially look at all cells where we can compute central differences.
+            ds%i0(j) = 2
+            ds%i1(j) = size(U,1) - 1
+        end do
+        !$OMP END PARALLEL DO
+
         if(.not. rhs_ready) then
 
             ! Get the explicit part of the dispersive terms
@@ -1130,24 +1142,12 @@ module linear_dispersive_solver_mod
             end do
             !$OMP END DO NOWAIT
 
-            !$OMP DO
-            do j = 1, size(U,2)
-                ! Ensure that some iteration is performed
-                ds%needs_update(:,j) = .true.
-                ds%local_err(:,j) = 0.0_dp
-
-                ! i indices to update for each j -- initially look at all cells where we can compute central differences.
-                ds%i0(j) = 2
-                ds%i1(j) = size(U,1) - 1
-            end do
-            !$OMP END DO
-
             !$OMP END PARALLEL
         end if
 
         !call ds%store_last_U(U)
 
-        allowed_to_exit = .FALSE.
+        allowed_to_exit = .FALSE. ! FIXME -- do we need this?
 
         jacobi_iter: do iter = 1, ds%max_iter
 
@@ -1324,19 +1324,19 @@ module linear_dispersive_solver_mod
         rhs_ready = .FALSE.
         if(present(rhs_is_up_to_date)) rhs_ready = rhs_is_up_to_date
 
+        !$OMP PARALLEL DO DEFAULT(SHARED)
+        do j = 1, size(U,2)
+            ! Ensure that some iteration is performed
+            ds%needs_update(:,j) = .true.
+            ds%local_err(:,j) = 0.0_dp
+
+            ! i indices to update for each j -- initially look at all cells where we can compute central differences.
+            ds%i0(j) = 2
+            ds%i1(j) = size(U,1) - 1
+        end do
+        !$OMP END PARALLEL DO
+
         if(.not. rhs_ready) then
-
-            !$OMP PARALLEL DO
-            do j = 1, size(U,2)
-                ! Ensure that some iteration is performed
-                ds%needs_update(:,j) = .true.
-                ds%local_err(:,j) = 0.0_dp
-
-                ! i indices to update for each j -- initially look at all cells where we can compute central differences.
-                ds%i0(j) = 2
-                ds%i1(j) = size(U,1) - 1
-            end do
-            !$OMP END PARALLEL DO
 
             ! Get the explicit part of the dispersive terms
             call linear_dispersive_cellcentred_matmult_JACOBI_ADAPTIVE(&
@@ -1364,7 +1364,7 @@ module linear_dispersive_solver_mod
         end if
         !call ds%store_last_U(U)
 
-        allowed_to_exit = .FALSE.
+        allowed_to_exit = .FALSE. ! FIXME: do we need this?
 
         jacobi_iter: do iter = 1, ds%max_iter
 
