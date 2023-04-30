@@ -1241,7 +1241,10 @@ TRACK_STABILITY('dispersive-step-after-recv_halos')
                 write(log_output_unit, *) '         Last step iter: ', md%domains(:)%ds%last_iter
 
                 if(md_dispersion_not_converged == 0 .and. &
-                    all(md%domains(:)%ds%last_iter < md%domains(:)%nest_layer_width - 2)) then
+                    ! Converged if all domains iterated too few times to
+                    ! invalidate their halos, or if there is only 1 domain.
+                    ( (size(md%domains) == 1) .or. &
+                        all(md%domains(:)%ds%last_iter < md%domains(:)%nest_layer_width - 2))) then
                     ! The solve has converged everywhere, with too few inner iterations to invalidate the halos
                     exit dispersive_outer_loop
                 else

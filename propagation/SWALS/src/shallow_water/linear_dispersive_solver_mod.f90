@@ -83,6 +83,8 @@ module linear_dispersive_solver_mod
 
     integer, parameter :: STG=1, UH=2, VH=3, ELV=4
     real(dp), parameter :: jacobi_overrelax = 0.0_dp, tridiagonal_overrelax = 0.3_dp
+    !real(dp), parameter :: td1 = 0.1_dp, td2 = 0.09999_dp ! Linear taper of dispersive terms at depth
+    ! real(dp), parameter :: td1 = 0._dp, td2 = -1.0_dp ! TURN OFF LINEAR TAPER of dispersive terms at depth
 
     type dispersive_solver_type
 
@@ -103,13 +105,18 @@ module linear_dispersive_solver_mod
 #endif
 
 #ifdef REALFLOAT
-        real(dp) :: tol = 1.0e-06_dp ! Solver tolerance -- iteration until this accuracy is reached
+        real(dp) :: tol = 1.0e-06_dp !! Solver tolerance -- iteration until this accuracy is reached
 #else
-        real(dp) :: tol = 1.0e-08_dp ! Solver tolerance -- iteration until this accuracy is reached
+        real(dp) :: tol = 1.0e-08_dp !! Solver tolerance -- iteration until this accuracy is reached
 #endif
         integer(ip) :: max_iter = 2000 !! Maximum number of iterations in a single call to ds%solve
         integer(ip) :: last_iter = 0 !! Iteration count at convergence
         real(dp) :: max_err = -HUGE(1.0_dp) !! Store the max error on the last iteration
+
+        real(dp) :: td1 = 0.0_dp, td2 = -1.0_dp 
+            !! Depths (below MSL) used to linearly taper-off dispersion. 
+            !! Default corresponds to no tapering. 
+            !! Set td1 > td2 to linearly reduce dispersive terms to zero between depths of td1 --> td2
 
         contains
         procedure :: store_last_U => store_last_U
@@ -771,7 +778,7 @@ module linear_dispersive_solver_mod
     subroutine linear_dispersive_staggered_matmult_JACOBI_ADAPTIVE(elev, uh, vh, msl_linear, &
             distance_bottom_edge, distance_left_edge, &
             dlon, dlat, offdiagonalAx_uh, offdiagonalAx_vh, diagonalA_uh, diagonalA_vh, &
-            update_UH, update_VH, needs_update, i0, i1)
+            update_UH, update_VH, needs_update, i0, i1, td1, td2)
         !
         ! Towards solving the linear dispersive equation as per:
         !   Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
@@ -825,6 +832,7 @@ module linear_dispersive_solver_mod
         real(dp), intent(out) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
         logical, intent(in) :: update_UH, update_VH, needs_update(:,:)
         integer(ip), intent(in) :: i0(:), i1(:)
+        real(dp), intent(in) :: td1, td2 ! "Depths below msl" used to taper off dispersion
 
         integer(ip) :: i, j
         real(dp) :: r_coslat_dlat, r_coslat_dlon, coslat_jph, coslat_jmh, d_iph_j, d_i_jph, dispersive_premult
@@ -835,7 +843,7 @@ module linear_dispersive_solver_mod
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, msl_linear, offdiagonalAx_uh, offdiagonalAx_vh, &
         !$OMP                                  diagonalA_uh, diagonalA_vh, dlat, dlon, needs_update, i0, i1, &
-        !$OMP                                  distance_left_edge, distance_bottom_edge, update_UH, update_VH)
+        !$OMP                                  distance_left_edge, distance_bottom_edge, update_UH, update_VH, td1, td2)
 
         if(update_UH) then
             !$OMP DO SCHEDULE(DYNAMIC, 10)
@@ -859,7 +867,9 @@ module linear_dispersive_solver_mod
                     d_iph_j = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i+1,j)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
 
-                    dispersive_premult = d_iph_j*d_iph_j / (3.0_dp * r_coslat_dlon)
+                    dispersive_premult = d_iph_j*d_iph_j / (3.0_dp * r_coslat_dlon) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_iph_j - td2)/(td1 - td2)))
 
                     ! The diagonal component of A_uh (related to uh(i,j) )
                     diagonalA_uh(i,j) = dispersive_premult * 1.0_dp/r_coslat_dlon * (-2.0_dp)
@@ -905,7 +915,10 @@ module linear_dispersive_solver_mod
                     d_i_jph = merge(0.5_dp * (msl_linear - elev(i,j) + msl_linear - elev(i,j+1)), 0.0_dp, &
                         elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
 
-                    dispersive_premult = d_i_jph*d_i_jph / (3.0_dp * r_dlat)
+                    dispersive_premult = d_i_jph*d_i_jph / (3.0_dp * r_dlat) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_jph - td2)/(td1 - td2)))
+
 
                     ! The diagonal component of A_vh (related to vh(i,j))
                     diagonalA_vh(i,j) = -dispersive_premult * (1.0_dp / r_coslat_dlat_jp1 * coslat_jph + &
@@ -934,7 +947,7 @@ module linear_dispersive_solver_mod
     subroutine linear_dispersive_cellcentred_matmult_JACOBI_ADAPTIVE(elev, uh, vh, msl_linear, &
             distance_bottom_edge, distance_left_edge, &
             dlon, dlat, offdiagonalAx_uh, offdiagonalAx_vh, diagonalA_uh, diagonalA_vh, &
-            update_UH, update_VH, needs_update, i0, i1)
+            update_UH, update_VH, needs_update, i0, i1, td1, td2)
         !
         ! Towards solving the linear dispersive equation as per:
         !   Baba, T.; Takahashi, N.; Kaneda, Y.; Ando, K.; Matsuoka, D. & Kato, T. Parallel Implementation of Dispersive Tsunami Wave
@@ -956,6 +969,7 @@ module linear_dispersive_solver_mod
         real(dp), intent(out) :: offdiagonalAx_uh(:,:), offdiagonalAx_vh(:,:), diagonalA_uh(:,:), diagonalA_vh(:,:)
         logical, intent(in) :: update_UH, update_VH, needs_update(:,:)
         integer(ip), intent(in) :: i0(:), i1(:)
+        real(dp), intent(in) :: td1, td2 ! "Depth below MSL" used to linear taper off dispersive terms
 
         integer(ip) :: i, j
         real(dp) :: r_coslat_dlat, r_coslat_dlon, coslat_jp1, coslat_j, coslat_jm1, d_i_j, dispersive_premult
@@ -966,7 +980,7 @@ module linear_dispersive_solver_mod
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(uh, vh, elev, msl_linear, offdiagonalAx_uh, offdiagonalAx_vh, &
         !$OMP                                  diagonalA_uh, diagonalA_vh, dlat, dlon, needs_update, i0, i1, &
-        !$OMP                                  distance_left_edge, distance_bottom_edge, update_UH, update_VH)
+        !$OMP                                  distance_left_edge, distance_bottom_edge, update_UH, update_VH, td1, td2)
 
         if(update_UH) then
             !$OMP DO SCHEDULE(DYNAMIC, 10)
@@ -997,8 +1011,9 @@ module linear_dispersive_solver_mod
                     !    elev(i,j) < msl_linear .and. elev(i+1, j) < msl_linear)
                     d_i_j = merge(msl_linear - elev(i, j), 0.0_dp, elev(i,j) < msl_linear)
 
-                    !dispersive_premult = d_iph_j*d_iph_j / (3.0_dp * r_coslat_dlon)
-                    dispersive_premult = d_i_j*d_i_j / (3.0_dp * r_coslat_dlon)
+                    dispersive_premult = d_i_j*d_i_j / (3.0_dp * r_coslat_dlon) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
 
                     ! The diagonal component of A_uh (related to uh(i,j) )
                     diagonalA_uh(i,j) = dispersive_premult * 1.0_dp/r_coslat_dlon * (-2.0_dp)
@@ -1050,7 +1065,9 @@ module linear_dispersive_solver_mod
                     !    elev(i,j) < msl_linear .and. elev(i, j+1) < msl_linear)
                     d_i_j = merge(msl_linear - elev(i,j), 0.0_dp, elev(i,j) < msl_linear)
 
-                    dispersive_premult = d_i_j*d_i_j / (3.0_dp * r_dlat)
+                    dispersive_premult = d_i_j*d_i_j / (3.0_dp * r_dlat) * &
+                        ! Linear taper
+                        min(1.0_dp, max(0.0_dp, (d_i_j - td2)/(td1 - td2)))
 
                     ! The diagonal component of A_vh (related to vh(i,j))
                     !diagonalA_vh(i,j) = -dispersive_premult * (1.0_dp / r_coslat_dlat_jp1 * coslat_jph + &
@@ -1121,12 +1138,13 @@ module linear_dispersive_solver_mod
         if(.not. rhs_ready) then
 
             ! Get the explicit part of the dispersive terms
-            call linear_dispersive_staggered_matmult_JACOBI(&
+            call linear_dispersive_staggered_matmult_JACOBI_ADAPTIVE(&
                 ds%last_U(:,:,ELV), ds%last_U(:,:,UH), ds%last_U(:,:,VH), &
                 msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
                 ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
                 ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-                update_UH=.true., update_VH=.true.)
+                update_UH=.true., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1, &
+                td1 = ds%td1, td2=ds%td2)
 
             ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
             ! of the dispersive term
@@ -1161,7 +1179,8 @@ module linear_dispersive_solver_mod
                 msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
                 ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
                 ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-                update_UH=.true., update_VH=.false., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1)
+                update_UH=.true., update_VH=.false., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1, &
+                td1 = ds%td1, td2 = ds%td2)
 
             max_err = 0.0_dp
             !$OMP PARALLEL DO SCHEDULE(DYNAMIC, 10) DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
@@ -1190,7 +1209,8 @@ module linear_dispersive_solver_mod
                 msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
                 ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
                 ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-                update_UH=.false., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1)
+                update_UH=.false., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1, &
+                td1 = ds%td1, td2 = ds%td2)
 
             !$OMP PARALLEL DO SCHEDULE(DYNAMIC, 10) DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
             !!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
@@ -1344,7 +1364,8 @@ module linear_dispersive_solver_mod
                 msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
                 ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
                 ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-                update_UH=.true., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1)
+                update_UH=.true., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1, &
+                td1 = ds%td1, td2 = ds%td2)
 
             ! Setup the right-hand-side term, combining the shallow-water solution with the explicit part
             ! of the dispersive term
@@ -1378,7 +1399,8 @@ module linear_dispersive_solver_mod
                 msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
                 ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
                 ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-                update_UH=.true., update_VH=.false., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1)
+                update_UH=.true., update_VH=.false., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1, &
+                td1 = ds%td1, td2 = ds%td2)
 
             max_err = 0.0_dp
             !$OMP PARALLEL DO SCHEDULE(DYNAMIC, 10) DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
@@ -1407,7 +1429,8 @@ module linear_dispersive_solver_mod
                 msl_linear, distance_bottom_edge, distance_left_edge, dlon, dlat, &
                 ds%offdiagonalAx(:,:,UH), ds%offdiagonalAx(:,:,VH), &
                 ds%diagonalA(:,:,UH), ds%diagonalA(:,:,VH), &
-                update_UH=.false., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1)
+                update_UH=.false., update_VH=.true., needs_update=ds%needs_update, i0=ds%i0, i1=ds%i1, &
+                td1 = ds%td1, td2 = ds%td2)
 
             !$OMP PARALLEL DO SCHEDULE(DYNAMIC, 10) DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
             !!$OMP PARALLEL DO SCHEDULE(STATIC) DEFAULT(PRIVATE) SHARED(ds, U, msl_linear) REDUCTION(max: max_err)
