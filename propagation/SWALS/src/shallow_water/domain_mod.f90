@@ -439,8 +439,8 @@ module domain_mod
         real(dp), allocatable :: flux_EW(:,:,:)  !! EW fluxes
         real(dp), allocatable :: depth(:,:) !! Depths at cell centre
         real(dp), allocatable :: velocity(:,:, :) !! Velocity
-        real(dp), allocatable :: explicit_source(:,:,:) !! Used for pressure gradient terms
-        real(dp), allocatable :: explicit_source_VH_j_minus_1(:,:) !! Separate from explicit_source for OPENMP parallel logic
+        real(force_double), allocatable :: explicit_source(:,:,:) !! Used for pressure gradient terms
+        real(force_double), allocatable :: explicit_source_VH_j_minus_1(:,:) !! Separate from explicit_source for OPENMP parallel logic
         real(dp), allocatable :: manning_squared(:,:) !! Friction
         real(dp), allocatable :: backup_U(:,:,:) !! Needed for some timestepping methods
         real(dp), allocatable :: friction_work(:,:,:) !! Friction for leapfrog_nonlinear and leapfrog_linear_plus_nonlinear_friction
@@ -1753,7 +1753,7 @@ TIMER_STOP('evolve_one_step')
         class(domain_type), intent(inout):: domain
         real(force_double), intent(inout) :: domain_volume
         integer(ip) :: n_ext, ny, nx, j
-        real(dp) :: local_sum
+        real(force_double) :: local_sum
 
 TIMER_START('compute_volume_in_priority_domain')
 
@@ -3403,7 +3403,7 @@ TIMER_STOP('nesting_flux_correction')
             !! This is less likely to allow communicating with grandparent domains, but might allow for a more efficient split-up
             !! of the domain.
 
-        real(dp) :: ur(2), parent_domain_dx(2)
+        real(force_double) :: ur(2), parent_domain_dx(2), ll(2)
         character(len=charlen) :: rounding
         logical :: recursive_nest
     
@@ -3428,19 +3428,19 @@ TIMER_STOP('nesting_flux_correction')
             ! Ensure that after rounding, the originally requested domain is contained in the final domain
 
             !  domain%lower_left is on a cell boundary of the parent domain -- and is further 'west/south' than 'lower_left'
-            domain%lower_left = parent_domain%lower_left + &
+            ll = real(parent_domain%lower_left, force_double) + &
                 floor((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
             ! upper_right = (domain%lower_left + domain%lw) is on a cell boundary of the parent domain
-            ur = parent_domain%lower_left + &
+            ur = real(parent_domain%lower_left, force_double) + &
                 ceiling((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case('nearest')
             ! Find the 'nearest' match in parent domain. This might mean we reduce the requested size of the domain
-            domain%lower_left = parent_domain%lower_left + &
+            ll = real(parent_domain%lower_left, force_double) + &
                 nint((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
-            ur = parent_domain%lower_left + &
+            ur = real(parent_domain%lower_left, force_double) + &
                 nint((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case default
@@ -3451,7 +3451,8 @@ TIMER_STOP('nesting_flux_correction')
         end select
 
         ! Now we can set the child domain's properties
-        domain%lw =  ur - domain%lower_left
+        domain%lower_left = ll
+        domain%lw =  ur - ll
         domain%dx = parent_domain_dx/dx_refinement_factor
         domain%nx = nint(domain%lw / domain%dx) ! Is a multiple of dx_refinement_factor
         domain%timestepping_refinement_factor = timestepping_refinement_factor
