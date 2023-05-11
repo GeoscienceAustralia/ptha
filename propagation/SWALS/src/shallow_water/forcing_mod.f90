@@ -46,9 +46,9 @@ module forcing_mod
             !! If not specified then the identify function is used (i.e. constant 
             !! rate of forcing between start_time and end_time).
         contains
-        procedure:: setup => setup_forcing_patch
+        procedure, non_overridable :: setup => setup_forcing_patch
             !! Allocate forcing_patch%forcing_work and set start_time, end_time, and spatial indices
-        procedure:: finalise => deallocate_forcing_patch
+        procedure, non_overridable :: finalise => deallocate_forcing_patch
             !! Deallocate forcing_patch%forcing_work and revert to default start_time, end_time, and spatial indices
     end type
 

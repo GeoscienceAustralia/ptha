@@ -109,11 +109,11 @@ module netcdf_util
             !! We can then use that to make spatial_start consistent among all domains
 
         contains
-        procedure :: initialise => initialise
-        procedure :: write_grids => write_grids
-        procedure :: store_static_variable => store_static_variable
-        procedure :: store_priority_domain_cells => store_priority_domain_cells
-        procedure :: finalise => finalise
+        procedure, non_overridable :: initialise => initialise
+        procedure, non_overridable :: write_grids => write_grids
+        procedure, non_overridable :: store_static_variable => store_static_variable
+        procedure, non_overridable :: store_priority_domain_cells => store_priority_domain_cells
+        procedure, non_overridable :: finalise => finalise
 
     end type
 

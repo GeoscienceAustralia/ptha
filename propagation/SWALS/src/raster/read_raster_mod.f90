@@ -45,10 +45,10 @@ module read_raster_mod
         real(C_DOUBLE) :: nodata_value !! The raster's nodata value
 
         contains
-        procedure:: initialise => initialise_gdal_raster_dataset !! Initialise the object
-        procedure:: get_xy => get_xy_values !! Interpolate at coordinates
-        procedure:: finalise => close_gdal_raster !! Close the object
-        procedure:: print => print_summary_gdal_raster_dataset !! Print summary information
+        procedure, non_overridable :: initialise => initialise_gdal_raster_dataset !! Initialise the object
+        procedure, non_overridable :: get_xy => get_xy_values !! Interpolate at coordinates
+        procedure, non_overridable :: finalise => close_gdal_raster !! Close the object
+        procedure, non_overridable :: print => print_summary_gdal_raster_dataset !! Print summary information
 
     end type
 
@@ -71,9 +71,9 @@ module read_raster_mod
         real(C_DOUBLE) :: upperright(2) !! maximum upper right (corner) of all rasters combined
 
         contains
-        procedure:: initialise => initialise_multi_raster !! Initialise the object
-        procedure:: get_xy => get_xy_values_multi_raster !! Interpolate at coordinates
-        procedure:: finalise => close_multi_raster !! Close the object
+        procedure, non_overridable :: initialise => initialise_multi_raster !! Initialise the object
+        procedure, non_overridable :: get_xy => get_xy_values_multi_raster !! Interpolate at coordinates
+        procedure, non_overridable :: finalise => close_multi_raster !! Close the object
 
     end type
 

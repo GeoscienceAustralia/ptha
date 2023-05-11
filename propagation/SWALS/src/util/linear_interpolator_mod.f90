@@ -20,18 +20,18 @@ module linear_interpolator_mod
             !! Size of xs/ys
 
         contains
-        procedure:: initialise => initialise_linear_interpolator
+        procedure, non_overridable :: initialise => initialise_linear_interpolator
             !! To build the an interpolator from x,y data (with x monotonic
             !!   increasing, NO REPEATED VALUES), we do
             !! CALL linear_interpolator%initialise(x,y)
             !! or to not copy x,y
             !! CALL linear_interpolator%initialise(x,y, copy_data=.FALSE.)
 
-        procedure:: eval => eval_linear_interpolator
+        procedure, non_overridable :: eval => eval_linear_interpolator
             !! CALL linear_interpolator%eval(xout, yout)
             !! will update yout with values interpolated at xout
 
-        procedure:: finalise => finalise_linear_interpolator
+        procedure, non_overridable :: finalise => finalise_linear_interpolator
             !! CALL linear_interpolator%finalise()
             !! to clear pointers, deallocate data, etc
 
