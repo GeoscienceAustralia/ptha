@@ -31,10 +31,10 @@ module timer_mod
 
         contains
 
-        procedure:: timer_start => timer_start !! Start the timer for a given named section of code.
-        procedure:: timer_end => timer_end !! Stop the timer for a given named section of code, and add the time taken to its overall time.
-        procedure:: print => timer_print !! Print timing information.
-        procedure:: reset => reset_timer !! Clear the timer.
+        procedure, non_overridable :: timer_start => timer_start !! Start the timer for a given named section of code.
+        procedure, non_overridable :: timer_end => timer_end !! Stop the timer for a given named section of code, and add the time taken to its overall time.
+        procedure, non_overridable :: print => timer_print !! Print timing information.
+        procedure, non_overridable :: reset => reset_timer !! Clear the timer.
 
     end type
 

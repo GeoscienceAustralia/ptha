@@ -81,11 +81,11 @@ module point_gauge_mod
 
         contains
 
-        procedure :: allocate_gauges => allocate_gauges
-        procedure :: initialise_gauges => initialise_gauges
-        procedure :: update_gauge_var => update_gauge_var
-        procedure :: write_current_time_series => write_current_time_series
-        procedure :: finalise => finalise_point_gauges
+        procedure, non_overridable :: allocate_gauges => allocate_gauges
+        procedure, non_overridable :: initialise_gauges => initialise_gauges
+        procedure, non_overridable :: update_gauge_var => update_gauge_var
+        procedure, non_overridable :: write_current_time_series => write_current_time_series
+        procedure, non_overridable :: finalise => finalise_point_gauges
 
     end type
 

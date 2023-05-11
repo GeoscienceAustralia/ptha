@@ -241,30 +241,30 @@ module multidomain_mod
         contains
 
         ! Main initialisation routine
-        procedure :: setup => setup_multidomain
-        procedure :: partition_domains => partition_domains
+        procedure, non_overridable :: setup => setup_multidomain
+        procedure, non_overridable :: partition_domains => partition_domains
         ! Main time-stepper
-        procedure :: evolve_one_step => evolve_multidomain_one_step
+        procedure, non_overridable :: evolve_one_step => evolve_multidomain_one_step
         ! Utilities to ensure consistency of nesting areas prior to main computation
-        procedure :: set_null_regions_to_dry => set_null_regions_to_dry
-        procedure :: make_initial_conditions_consistent => make_initial_conditions_consistent
+        procedure, non_overridable :: set_null_regions_to_dry => set_null_regions_to_dry
+        procedure, non_overridable :: make_initial_conditions_consistent => make_initial_conditions_consistent
         ! Mass tracking
-        procedure :: get_flow_volume => get_flow_volume
-        procedure :: record_initial_volume => record_initial_volume
-        procedure :: report_mass_conservation_statistics => report_mass_conservation_statistics
+        procedure, non_overridable :: get_flow_volume => get_flow_volume
+        procedure, non_overridable :: record_initial_volume => record_initial_volume
+        procedure, non_overridable :: report_mass_conservation_statistics => report_mass_conservation_statistics
         ! Inter-domain communication
-        procedure :: send_halos => send_multidomain_halos
-        procedure :: recv_halos => receive_multidomain_halos
-        procedure :: communicate_max_U => communicate_max_U
+        procedure, non_overridable :: send_halos => send_multidomain_halos
+        procedure, non_overridable :: recv_halos => receive_multidomain_halos
+        procedure, non_overridable :: communicate_max_U => communicate_max_U
         ! Memory tracking
-        procedure :: memory_summary => memory_summary
+        procedure, non_overridable :: memory_summary => memory_summary
         ! Convenience
-        procedure :: print => print_multidomain
-        procedure :: finalise_and_print_timers => finalise_and_print_timers
-        procedure :: set_point_gauges_from_csv => set_point_gauges_from_csv
-        procedure :: stationary_timestep_max => stationary_timestep_max
+        procedure, non_overridable :: print => print_multidomain
+        procedure, non_overridable :: finalise_and_print_timers => finalise_and_print_timers
+        procedure, non_overridable :: set_point_gauges_from_csv => set_point_gauges_from_csv
+        procedure, non_overridable :: stationary_timestep_max => stationary_timestep_max
         ! IO
-        procedure :: write_outputs_and_print_statistics => write_outputs_and_print_statistics
+        procedure, non_overridable :: write_outputs_and_print_statistics => write_outputs_and_print_statistics
 
     end type
 
