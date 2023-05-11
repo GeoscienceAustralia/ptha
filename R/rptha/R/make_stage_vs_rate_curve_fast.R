@@ -177,10 +177,10 @@ fortran_convert_Mw_vs_exceedance_rate_2_stage_vs_exceedance_rate<-function(
 #'     output_stages, 
 #'     drop_small_events=TRUE)
 #' 
-#' # They should be 'the same' up to floating point reordering
-#' ## Small absolute error
+#' # Should be the same as the first example
+#' ## Zero absolute error
 #' stopifnot(all(abs(results - results_F2) == 0))
-#' ## Small relative error (1e-20 zero divide protection)
+#' ## Zero relative error (1e-20 zero divide protection)
 #' stopifnot(all( ((results + 1e-20)/(results_F2+1e-20) - 1) == 0))
 convert_Mw_vs_exceedance_rates_2_stage_vs_exceedance_rates<-function(
     logic_tree_rate_curve_Mw,

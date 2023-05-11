@@ -4,7 +4,7 @@
 # Jonathan Griffin for eastern Indonesia and other new source zones, for this project. 
 #
 
-library(rgdal)
+library(rptha) # provides readOGR, writeOGR
 
 ptha_conv = readOGR('PTHA_convergence', layer='PTHA_convergence')
 

@@ -92,7 +92,7 @@ test_that('test_unit_source_cartesian_to_okada_tsunami_source', {
     tsunami1 = make_tsunami_unit_source(2, 1, ds, rake=90,
         tsunami_surface_points_lonlat, approx_dx = 3000, approx_dy=3000,
         tsunami_function = unit_source_cartesian_to_okada_tsunami_source)
-    expect_true(all(tsunami1$unit_source_interior_points$grid_points[,'unit_slip_scale'] == 1))
+    expect_true(all(abs(tsunami1$unit_source_interior_points$grid_points[,'unit_slip_scale'] - 1) < 1e-15))
 
     # Simple check -- edge_tapering decreases the extremes of the displacement
     r1 = diff(range(tsunami1$smooth_tsunami_displacement))

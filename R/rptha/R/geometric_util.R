@@ -218,7 +218,7 @@ intersect_surface_path_with_depth_contours<-function(
         proj4string=depth_contours@proj4string)
 
     # Compute intersection
-    path_contour_intersect = rgeos::gIntersection(new_path_sp, depth_contours, 
+    path_contour_intersect = gIntersection(new_path_sp, depth_contours, 
         byid=TRUE)
 
     pci_indices = match( 

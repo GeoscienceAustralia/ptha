@@ -24,26 +24,29 @@
 
     ! wavespeeds
     real(dp):: s_max, s_min, gs_pos, gs_neg, sminsmax
-    ! stage/depth at + and - side of edge
+    ! stage/bed at various locations around an edge
     real(dp):: stage_pos, stage_neg, stage_pos_star, stage_neg_star, &
-               depth_pos, depth_pos_star, depth_pos_c,&
-               depth_neg, depth_neg_star, depth_neg_c,&
                z_half, z_neg, z_pos
-    ! velocities and momenta at + and - sides of edge
+    ! velocities and momenta at various locations around an edge
     real(dp):: u_pos, v_pos, u_neg, v_neg, ud_neg, vd_neg, ud_pos, vd_pos, vel_beta_neg, vel_beta_pos, &
         uh_neg, uh_pos, vh_neg, vh_pos
+
+    ! The following pressure-gradient-related terms should have double precision even if reals are single precision elsewhere,
+    ! to avoid too much round-off in pressure-gradient calculations
+    real(force_double), parameter:: half_gravity = HALF_dp * gravity
+    real(force_double):: bed_slope_pressure_s, bed_slope_pressure_n, bed_slope_pressure_e, bed_slope_pressure_w
+    real(force_double) :: half_g_hh_edge, depth_pos, depth_pos_star, depth_pos_c, depth_neg, depth_neg_star, depth_neg_c
+    real(force_double):: denom, inv_denom, max_speed, max_dt, dx_cfl_half_inv(2), stg_b, stg_a
+
     ! convenience variables
     integer(ip):: i, j, nx, ny, jlast
-    real(dp):: denom, inv_denom, max_speed, max_dt, dx_cfl_half_inv(2), z_pos_b, z_neg_b, stg_b, stg_a
-    real(dp):: bed_slope_pressure_s, bed_slope_pressure_n, bed_slope_pressure_e, bed_slope_pressure_w
-    real(dp):: half_g_hh_edge, precision_factor, half_g_hh_edge_a, half_g_hh_edge_b
     real(dp):: half_cfl, max_dt_inv, dxb, common_multiple, fr2
     real(dp):: diffusion_hll, diffusion_turbulent, diffusion_total, diffusion_max
-    character(len=charlen):: timer_name
     real(dp), parameter :: diffusion_scale = ONE_dp
     real(dp), parameter :: EPS = 1.0e-12_dp
     real(dp), parameter :: EPS_gs = sqrt(gravity * minimum_allowed_depth)  ! EPS relevant to sqrt(gH)
-    real(dp), parameter:: half_gravity = HALF_dp * gravity
+
+    character(len=charlen):: timer_name
     integer(ip):: n_ext, loop_work_count, j_low, j_high, my_omp_id, n_omp_threads
     ! Option to use experimental non-conservative pressure gradient term (with .false.)
     logical, parameter :: flux_conservative_pressure = .true.
@@ -64,7 +67,8 @@
     real(dp) :: dstage_EW(domain%nx(1)), ddepth_EW(domain%nx(1)), du_EW(domain%nx(1)), &
         dv_EW(domain%nx(1)), theta_wd_EW(domain%nx(1)), duh_EW(domain%nx(1)), dvh_EW(domain%nx(1))
 
-    real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1)), explicit_source_im1_work(domain%nx(1))
+    real(dp) :: bed_j_minus_1(domain%nx(1)), max_dt_inv_work(domain%nx(1))
+    real(force_double) :: explicit_source_im1_work(domain%nx(1))
 
     ! Should we reduce the hll numerical diffusion (if possible) when applying the physical diffusion? 
     ! If .true., then if numerical and turbulent have the same sign, only use the one with largest absolute value

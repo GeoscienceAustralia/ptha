@@ -2,9 +2,6 @@
 # Code to plot earthquake slip and vertical deformation
 #
 
-library(rgdal)
-library(raster)
-library(rgeos)
 library(rptha)
 
 # Inputs

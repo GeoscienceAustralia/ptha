@@ -113,7 +113,7 @@ module nested_grid_comms_mod
             !! Like nrecv, if we don't need to send boundary flux data
         logical :: recv_active = .true. 
             !! Can use to switch off 'recv' (so only sends occur)
-        type(array_rank2_dp_type) :: recv_box_flux_integral(4)
+        type(array_rank2_force_double_type) :: recv_box_flux_integral(4)
             !! Store the flux integral around the recv_inds bbox boundary
             !! length(4) = NORTH, SOUTH, EAST, WEST
         type(array_rank2_force_double_type) :: recv_box_flux_error(4)
@@ -195,7 +195,7 @@ module nested_grid_comms_mod
             !! nesting buffer regions). However, on the priority domain, it will be
             !! realistic.
         integer(ip), allocatable :: is_priority_domain_not_periodic(:,:)
-            !! This will be 1.0 where the domain is priority and not in a periodic region, and 0.0 otherwise.
+            !! This will be 1 where the domain is priority and not in a periodic region, and 0 otherwise.
         integer(ip) :: my_index = 0_ip
         integer(ip) :: my_image = 0_ip
 

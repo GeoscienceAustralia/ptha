@@ -13,7 +13,9 @@ kajiura_filter(
   edge_effect_correction_scale = 1.5,
   kajiuraGmax = 9,
   interpolator = "linear",
-  interpolator_categories = function(xy) {     xy[, 1] * 0 },
+  interpolator_categories = function(xy) {
+     xy[, 1] * 0
+ },
   volume_change_error_threshold = 0.02,
   volume_change_MSL = 0,
   verbose = FALSE,

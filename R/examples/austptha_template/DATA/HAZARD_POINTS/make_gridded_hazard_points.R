@@ -1,4 +1,5 @@
 # Add some gridded hazard points
+library(rptha) # provides readOGR, writeOGR
 library(raster)
 r1 = raster('../ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif')
 
@@ -29,7 +30,6 @@ hp_keep = (haz_GEBCO2014_100[,1] > 70 & haz_GEBCO2014_100[,1] < 75 &
 existing_hp = rbind(existing_hp_GA250, haz_GEBCO2014_100[hp_keep,])
 
 # We have too many points around the other 'GA250' regions, so lets remove them
-library(rgdal)
 removal_polygon = readOGR(dsn='INPUTS/GRID_CLIP_LAYER/grid_clip_layer.shp', 
     layer='grid_clip_layer')
 removal_polygon = removal_polygon@polygons[[1]]@Polygons[[1]]@coords

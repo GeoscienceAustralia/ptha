@@ -96,6 +96,8 @@ module boundary_mod
         integer(ip):: i, j, k
         real(dp):: bc_values(4)
 
+        ! FIXME: Check that domain%boundary_function is associated
+
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         !$OMP DO SCHEDULE(STATIC)
         do j = 1, domain%nx(2)
@@ -334,6 +336,8 @@ module boundary_mod
 
         integer(ip):: i, j, k
         real(dp):: bc_values(4)
+
+        ! FIXME: Check that domain%boundary_function is associated
 
         !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
         !$OMP DO SCHEDULE(STATIC)

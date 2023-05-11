@@ -16,11 +16,16 @@ The methodologies used in this study, and associated testing, are discussed in
 [this GJI publication](https://doi.org/10.1093/gji/ggz260) and 
 [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w)
 and [this talk](https://www.youtube.com/watch?v=brRy6YjwnlA&list=PL0jP_ahe-BFk3499UEvm-YdlOiE9HFbCg&index=4&t=0s).
+
+For ideas on how to use the PTHA18 results for inundation hazard assessment, see [this paper on efficient Monte Carlo methods](https://doi.org/10.1093/gji/ggac140) and [this report covering both scenario-based and Monte Carlo approaches](https://repository.oceanbestpractices.org/handle/11329/2062).
+
 Code used to conduct the analysis is available open-source
 in the [ptha package](https://github.com/GeoscienceAustralia/ptha). This includes
 generic software for PTHA, and also a folder with [project specific
 scripts](https://github.com/GeoscienceAustralia/ptha/tree/master/R/examples/austptha_template)
-used for the PTHA18.
+used for the PTHA18. Additional scripts that may be useful in working with the
+PTHA results are available in
+[example_event_access_scripts](example_event_access_scripts). 
 
 The study results are provided under a [Creative Commons 4.0 International
 Licence](http://creativecommons.org/licenses/by/4.0/legalcode), while the

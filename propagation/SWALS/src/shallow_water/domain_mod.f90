@@ -449,8 +449,8 @@ module domain_mod
         real(dp), allocatable :: flux_EW(:,:,:)  !! EW fluxes
         real(dp), allocatable :: depth(:,:) !! Depths at cell centre
         real(dp), allocatable :: velocity(:,:, :) !! Velocity
-        real(dp), allocatable :: explicit_source(:,:,:) !! Used for pressure gradient terms
-        real(dp), allocatable :: explicit_source_VH_j_minus_1(:,:) !! Separate from explicit_source for OPENMP parallel logic
+        real(force_double), allocatable :: explicit_source(:,:,:) !! Used for pressure gradient terms
+        real(force_double), allocatable :: explicit_source_VH_j_minus_1(:,:) !! Separate from explicit_source for OPENMP parallel logic
         real(dp), allocatable :: manning_squared(:,:) !! Friction
         real(dp), allocatable :: backup_U(:,:,:) !! Needed for some timestepping methods
         real(dp), allocatable :: friction_work(:,:,:) !! Friction for leapfrog_nonlinear and leapfrog_linear_plus_nonlinear_friction
@@ -540,9 +540,6 @@ module domain_mod
         procedure:: nesting_flux_correction_everywhere => nesting_flux_correction_everywhere
         ! -- Determine if a given point is in the 'priority domain'
         procedure:: is_in_priority_domain => is_in_priority_domain
-        ! -- If the current grid communicates to a coarser grid, this routine can make elevation constant within each coarse-grid
-        ! cell in the send-region. Useful to make elevation consistent in a nesting situation
-        procedure:: use_constant_wetdry_send_elevation => use_constant_wetdry_send_elevation
         ! -- When initialising nested domains, set lower-left/upper-right/resolution near the desired locations,
         ! adjusting as required to support nesting (e.g. so that edges align with parent domain, and cell size is an integer divisor
         ! of the parent domain, etc).
@@ -1282,7 +1279,7 @@ TIMER_STOP("compute_statistics")
             write(domain%logfile_unit, *) 'upper-right:', domain%lower_left + domain%lw
             write(domain%logfile_unit, *) 'Total area: ', sum(domain%area_cell_y)
             write(domain%logfile_unit, *) 'distance_bottom_edge(1): ', domain%distance_bottom_edge(1)
-            write(domain%logfile_unit, *) 'distange_left_edge(1)', domain%distance_left_edge(1)
+            write(domain%logfile_unit, *) 'distance_left_edge(1): ', domain%distance_left_edge(1)
             write(domain%logfile_unit, *) ''
         end if
 
@@ -1777,7 +1774,7 @@ TIMER_STOP('evolve_one_step')
         class(domain_type), intent(inout):: domain
         real(force_double), intent(inout) :: domain_volume
         integer(ip) :: n_ext, ny, nx, j
-        real(dp) :: local_sum
+        real(force_double) :: local_sum
 
 TIMER_START('compute_volume_in_priority_domain')
 
@@ -1950,6 +1947,7 @@ TIMER_STOP('compute_volume_in_priority_domain')
         character(len=charlen):: mkdir_command, cp_command, t1, t2, t3, t4, &
                                  output_folder_name, code_folder
         logical :: copy_code_local
+        integer :: local_status
 
         ! Quick exit if folders already exist
         if(domain%output_folders_were_created) return
@@ -1977,8 +1975,8 @@ TIMER_STOP('compute_volume_in_priority_domain')
             call mkdir_p(code_folder)
 
             cp_command = 'cp *.f* make* ' // trim(domain%output_folder_name) // '/Code'
-            !call execute_command_line(trim(cp_command))
-            call system(trim(cp_command))
+            call execute_command_line(trim(cp_command), exitstat=local_status)
+            !call system(trim(cp_command))
         end if
         domain%output_folders_were_created = .TRUE.
 
@@ -2001,11 +1999,6 @@ TIMER_STOP('compute_volume_in_priority_domain')
         ! Get domain id as a character
         write(t3, domain_myid_char_format) domain%myid
 
-
-        ! Make a time file_name. Store as ascii
-        t1 = trim(domain%output_folder_name) // '/' // 'Time_ID' // trim(t3) // '.txt'
-        open(newunit = domain%output_time_unit_number, file = t1)
-
         ! Make a filename to hold domain metadata, and write the metadata
         t1 = trim(domain%output_folder_name) // '/' // 'Domain_info_ID' // trim(t3) // '.txt'
         domain%metadata_ascii_filename = t1
@@ -2019,8 +2012,14 @@ TIMER_STOP('compute_volume_in_priority_domain')
         write(metadata_unit, *) 'output_precision: ', output_precision
         close(metadata_unit)
 
+
 #ifdef NONETCDF
         ! Write to a home-brew binary format
+
+        ! Make a time file_name. Store as ascii
+        t1 = trim(domain%output_folder_name) // '/' // 'Time_ID' // trim(t3) // '.txt'
+        open(newunit = domain%output_time_unit_number, file = t1)
+
         allocate(domain%output_variable_unit_number(domain%nvar))
         do i=1, domain%nvar
             ! Make output_file_name
@@ -2118,6 +2117,9 @@ TIMER_START('fileIO')
                     write(domain%output_variable_unit_number(i)) real(domain%U(:,j,i), output_precision)
                 end do
             end do
+
+        ! Time too, as ascii
+        write(domain%output_time_unit_number, *) domain%time
 #else
 
 #ifdef DEBUG_ARRAY
@@ -2130,9 +2132,6 @@ TIMER_START('fileIO')
 
 #endif
         end if
-
-        ! Time too, as ascii
-        write(domain%output_time_unit_number, *) domain%time
 
 TIMER_STOP('fileIO')
 
@@ -2547,7 +2546,7 @@ TIMER_START('nesting_boundary_flux_integral_multiply')
             do i = 1, size(domain%nesting%send_comms, kind=ip)
                 call domain%nesting%send_comms(i)%boundary_flux_integral_multiply(c)
             end do
-            !$OMP END DO
+            !$OMP END DO NOWAIT
         end if
 
 
@@ -3389,71 +3388,6 @@ TIMER_STOP('nesting_flux_correction')
 
     end subroutine
 
-    ! Make elevation constant in nesting send_regions that go to a single coarser cell, if the maximum elevation is above
-    ! elevation_threshold
-    !
-    ! This was done (in the past) to avoid wet-dry instabilities, caused by aggregating over wet-and-dry cells on a finer domain,
-    ! which is then sent to a coarser domain.  Such an operation will break the hydrostatic balance, unless the elevation in the
-    ! fine cells is constant
-    !
-    ! NOTE: Instead of using this, a better approach is to send the data from the centre cell to the coarse grid. That way we do not
-    ! need to hack the elevation data to avoid these instabilities. With the latter approach, this routine seems defunct.
-    !
-    subroutine use_constant_wetdry_send_elevation(domain, elevation_threshold)
-
-        class(domain_type), intent(inout) :: domain
-        real(dp), intent(in) :: elevation_threshold
-
-        integer(ip) :: i, ic, jc
-        integer(ip) :: send_inds(2,3), cr(2)
-        real(dp) :: mean_elev, max_elev
-
-        ! Move on if we do not send data
-        if(.not. allocated(domain%nesting%send_comms) ) return
-
-        ! Loop over all 'send' regions
-        do i = 1, size(domain%nesting%send_comms, kind=ip)
-
-            ! Only operate on finer domains
-            if(.not. domain%nesting%send_comms(i)%my_domain_is_finer) cycle
-
-            ! [num_x, num_y] cells per coarse domain cell
-            cr = nint(ONE_dp/domain%nesting%send_comms(i)%cell_ratios)
-
-            send_inds = domain%nesting%send_comms(i)%send_inds
-
-            ! Loop over j cells that are sent, in steps corresponding to
-            ! the coarse j cells
-            do jc = send_inds(1,2) - 1, send_inds(2,2) - cr(2), cr(2)
-
-                ! Loop over i cells that are sent, in steps corresponding
-                ! to the coarse i cells
-                do ic = send_inds(1,1) - 1, send_inds(2,1) - cr(1), cr(1)
-
-                    ! Maximum elevation of cells which will be aggregated
-                    ! and sent to the coarser domain
-                    max_elev = maxval( &
-                        domain%U((ic+1):(ic+cr(1)), (jc+1):(jc+cr(2)), ELV) )
-                    ! Mean elevation of cells which will be aggregated and
-                    ! sent to the coarser domain
-                    mean_elev = sum( &
-                        domain%U((ic+1):(ic+cr(1)), (jc+1):(jc+cr(2)), ELV) )/&
-                        (product(cr))
-
-                    ! Replace all elevation values with well behaved solution, if
-                    ! (max_elevation > threshold)
-                    if(max_elev > elevation_threshold) then
-                        domain%U((ic+1):(ic+cr(1)), (jc+1):(jc+cr(2)), ELV) = mean_elev
-                    end if
-
-                end do
-            end do
-
-        end do
-
-
-    end subroutine
-
     subroutine match_geometry_to_parent(domain, parent_domain, lower_left, &
         upper_right, dx_refinement_factor, timestepping_refinement_factor, &
         rounding_method, recursive_nesting)
@@ -3476,8 +3410,8 @@ TIMER_STOP('nesting_flux_correction')
             !! How many time-steps should the new domain take, for each global time-step in the multidomain.
         character(*), intent(in), optional :: rounding_method
             !! optional character controlling how we adjust lower-left/upper-right.
-            !! If rounding_method = 'expand' (DEFAULT), then we adjust the new domain lower-left/upper-right so that the provided
-            !! lower-left/upper-right are definitely contained in the new domain. If rounding_method = 'nearest', we move
+            !! If rounding_method = 'expand', then we adjust the new domain lower-left/upper-right so that the provided
+            !! lower-left/upper-right are definitely contained in the new domain. If rounding_method = 'nearest' (DEFAULT), we move
             !! lower-left/upper-right onto the nearest cell corner of the parent domain. This can be preferable if we want to have
             !! multiple child domains which share boundaries with each other -- but does not ensure the provided
             !! lower-left/upper-right are within the new domain
@@ -3490,21 +3424,15 @@ TIMER_STOP('nesting_flux_correction')
             !! This is less likely to allow communicating with grandparent domains, but might allow for a more efficient split-up
             !! of the domain.
 
-        real(dp) :: ur(2), parent_domain_dx(2)
+        real(force_double) :: ur(2), parent_domain_dx(2), ll(2)
         character(len=charlen) :: rounding
         logical :: recursive_nest
+    
+        rounding = 'nearest'
+        if(present(rounding_method)) rounding = rounding_method
 
-        if(present(rounding_method)) then
-            rounding = rounding_method
-        else
-            rounding = 'expand'
-        end if
-
-        if(present(recursive_nesting)) then
-            recursive_nest = recursive_nesting
-        else
-            recursive_nest = .true.
-        end if
+        recursive_nest = .true.
+        if(present(recursive_nesting)) recursive_nest = recursive_nesting
 
         ! Check the parent_domain was setup ok
         if(any(parent_domain%nx <= 0) .or. any(parent_domain%lw <= 0) .or. &
@@ -3521,19 +3449,19 @@ TIMER_STOP('nesting_flux_correction')
             ! Ensure that after rounding, the originally requested domain is contained in the final domain
 
             !  domain%lower_left is on a cell boundary of the parent domain -- and is further 'west/south' than 'lower_left'
-            domain%lower_left = parent_domain%lower_left + &
+            ll = real(parent_domain%lower_left, force_double) + &
                 floor((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
             ! upper_right = (domain%lower_left + domain%lw) is on a cell boundary of the parent domain
-            ur = parent_domain%lower_left + &
+            ur = real(parent_domain%lower_left, force_double) + &
                 ceiling((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case('nearest')
             ! Find the 'nearest' match in parent domain. This might mean we reduce the requested size of the domain
-            domain%lower_left = parent_domain%lower_left + &
+            ll = real(parent_domain%lower_left, force_double) + &
                 nint((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
-            ur = parent_domain%lower_left + &
+            ur = real(parent_domain%lower_left, force_double) + &
                 nint((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case default
@@ -3544,7 +3472,8 @@ TIMER_STOP('nesting_flux_correction')
         end select
 
         ! Now we can set the child domain's properties
-        domain%lw =  ur - domain%lower_left
+        domain%lower_left = ll
+        domain%lw =  ur - ll
         domain%dx = parent_domain_dx/dx_refinement_factor
         domain%nx = nint(domain%lw / domain%dx) ! Is a multiple of dx_refinement_factor
         domain%timestepping_refinement_factor = timestepping_refinement_factor
