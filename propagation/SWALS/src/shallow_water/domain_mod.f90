@@ -243,7 +243,7 @@ module domain_mod
         !
         ! Dispersion
         !
-        logical :: use_dispersion = .false.
+        logical :: use_dispersion = .FALSE.
         type(dispersive_solver_type) :: ds
 
         !
@@ -3906,6 +3906,7 @@ TIMER_STOP('send_halos')
         smooth_footprint = 3 + (nsmooth-1)
 
         ! Store the non-smooth elevation
+        allocate(temp_elev(domain%nx(1), domain%nx(2)))
         temp_elev = domain%U(:,:,ELV)
 
         ! Smooth elevation everywhere.

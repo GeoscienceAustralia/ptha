@@ -1165,7 +1165,7 @@ module linear_dispersive_solver_mod
 
         !call ds%store_last_U(U)
 
-        allowed_to_exit = .FALSE. ! FIXME -- do we need this?
+        !allowed_to_exit = .FALSE. ! FIXME -- do we need this?
 
         jacobi_iter: do iter = 1, ds%max_iter
 
@@ -1235,23 +1235,24 @@ module linear_dispersive_solver_mod
 
             ! Check for tolerance
             if(max_err < ds%tol) then
-                if(allowed_to_exit) exit jacobi_iter
-                ! Once the error is less than the tolerance, we 
-                ! start doing full grid iterations again. 
-                ! Ideally we still meet the tolerance after one, and ensure 
-                ! the tolerance is met everywhere.
-                ! 
-                allowed_to_exit = .true.
-                ds%i0 = 2
-                ds%i1 = size(U, 1)-1
-                !$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds)
-                do j = 1, size(U,2)
-                    ds%needs_update(:,j) = .true.
-                end do
-                !$OMP END PARALLEL DO
+                exit jacobi_iter
+                !if(allowed_to_exit) exit jacobi_iter
+                !! Once the error is less than the tolerance, we 
+                !! start doing full grid iterations again. 
+                !! Ideally we still meet the tolerance after one, and ensure 
+                !! the tolerance is met everywhere.
+                !! 
+                !allowed_to_exit = .true.
+                !ds%i0 = 2
+                !ds%i1 = size(U, 1)-1
+                !!$OMP PARALLEL DO DEFAULT(PRIVATE) SHARED(ds)
+                !do j = 1, size(U,2)
+                !    ds%needs_update(:,j) = .true.
+                !end do
+                !!$OMP END PARALLEL DO
             end if
 
-            if(iter > (min_jacobi_iterations - 1) .and. (.not. allowed_to_exit)) then
+            !if(iter > (min_jacobi_iterations - 1) .and. (.not. allowed_to_exit)) then
                 ! Determine which areas need updates.
                 ! We record cells if cells are 'near' a cell that has error > "some fraction of tol" (ds%needs_update(:,:)).
                 ! We also record, for each j, a range of i-indices that include all those needing updates.
@@ -1308,7 +1309,7 @@ module linear_dispersive_solver_mod
                     end do
                 end do
                 !$OMP END PARALLEL
-            end if
+            !end if
 
         end do jacobi_iter
 
@@ -1723,6 +1724,7 @@ module linear_dispersive_solver_mod
 
             ds%last_iter = iter
 
+            ! FIXME: This will need updating to generalise to multiple shallow water steps
             call ds%store_last_U(U)
 
             !

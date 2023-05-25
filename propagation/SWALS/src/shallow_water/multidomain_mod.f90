@@ -1079,9 +1079,6 @@ TRACK_STABILITY('start')
 
 TIMER_START('domain_evolve')
 
-            ! If using dispersive terms, we need to store the flow state prior to evolving the explicit shallow water terms
-            if(md%domains(j)%use_dispersion) call md%domains(j)%ds%store_last_U(md%domains(j)%U)
-
             ! Re-set the nesting boundary flux integrals
             ! These will be used to determine how much flux-correction to apply
             ! following these evolve steps
@@ -1110,6 +1107,7 @@ TIMER_START('domain_evolve')
             dt_local = dt/(1.0_dp * nt)
 
             ! Step once
+            if(md%domains(j)%use_dispersion) call md%domains(j)%ds%store_last_U(md%domains(j)%U)
             call md%domains(j)%evolve_one_step(dt_local)
 TRACK_STABILITY_J('inner')
 
@@ -1119,9 +1117,24 @@ TRACK_STABILITY_J('inner')
 
             ! Do the remaining sub-steps
             do i = 2, nt ! Loop never runs if nt < 2
+
+                if(md%domains(j)%use_dispersion) then
+                    ! Apply dispersion on all but the final sub-step.
+                    ! On the final sub-step we first communicate the shallow water solution at
+                    ! time tend, then do a final dispersive solve that involves all multidomains.
+                    !write(log_output_unit, *) 'DISPERSIVE SOLVE ', i-1
+                    call md%domains(j)%ds%solve(&
+                        md%domains(j)%U, md%domains(j)%dx(1), md%domains(j)%dx(2), &
+                        md%domains(j)%distance_bottom_edge, md%domains(j)%distance_left_edge, &
+                        md%domains(j)%msl_linear, rhs_is_up_to_date = .FALSE.)
+                    !write(log_output_unit, *) '         Last iter: ', md%domains(:)%ds%last_iter
+                    call md%domains(j)%ds%store_last_U(md%domains(j)%U)
+                end if
                 call md%domains(j)%evolve_one_step(dt_local)
+
 TRACK_STABILITY_J('innerB')
             end do
+
             md%domains(j)%max_dt = max_dt_store
 
 TIMER_STOP('domain_evolve')
@@ -1167,8 +1180,8 @@ TRACK_STABILITY('step-after-flux-correction')
         ! up-to-date. But we might need to solve for implicit dispersive terms. 
         if(md%use_dispersion) then
             
-            md%domains(:)%ds%max_err = HUGE(1.0_dp) 
-                ! Force at least 1 call to the dispersive solve routine
+            !md%domains(:)%ds%max_err = HUGE(1.0_dp) 
+            !    ! Force at least 1 call to the dispersive solve routine
 
             dispersive_outer_iterations = 0_ip
             md_dispersion_not_converged_on_this_image = 1 ! 1 = Not converged, 0 = converged
@@ -1196,6 +1209,7 @@ TIMER_START('dispersive_iterations')
                     ! A) The max error is within ds%tol, or
                     ! B) The iteration count reaches ds%max_iter,
                     ! Also sets ds%max_err on the final iteration
+                    !write(log_output_unit, *) 'OUTER_DISPERSIVE_SOLVE'
                     call md%domains(j)%ds%solve(&
                         md%domains(j)%U, md%domains(j)%dx(1), md%domains(j)%dx(2), &
                         md%domains(j)%distance_bottom_edge, md%domains(j)%distance_left_edge, &
