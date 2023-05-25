@@ -50,6 +50,7 @@ program radial_potential
     use multidomain_mod, only: multidomain_type
     use domain_mod, only: UH, VH
     use boundary_mod, only: flather_boundary
+    use logging_mod, only: log_output_unit
     use local_routines
     use coarray_intrinsic_alternatives, only: swals_mpi_init, swals_mpi_finalize
     implicit none
@@ -69,7 +70,10 @@ program radial_potential
     ! grid size (number of x/y cells)
     integer(ip), parameter, dimension(2):: global_nx = [100, 50]*2 + 1 ! Deliberately uneven
 
-    real(dp) :: global_dt = 1.25_dp * 401.0_dp/global_nx(1)
+    ! Values > 1 useful for testing the solver with timestepping-refinement
+    integer, parameter :: timestepping_refinement_factor = 1_ip
+
+    real(dp) :: global_dt = 1.2_dp * 401.0_dp/global_nx(1) * timestepping_refinement_factor
 
     ! Misc
     integer :: j, nd
@@ -82,7 +86,7 @@ program radial_potential
     !
     ! Set the domain properties
     !
-    md%domains(1)%timestepping_method = default_nonlinear_timestepping_method
+    md%domains(1)%timestepping_method = 'leapfrog_nonlinear' ! default_linear_timestepping_method
 
     ! Domain Geometry
     md%domains(1)%lw = global_lw
@@ -91,12 +95,16 @@ program radial_potential
     md%domains(1)%msl_linear = 0.0_dp
     md%domains(1)%use_dispersion = .true.
     md%domains(1)%minimum_nesting_layer_thickness = 20_ip
+    md%domains(1)%theta = 4.0_dp
+    md%domains(1)%timestepping_refinement_factor = timestepping_refinement_factor
+    !md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip
 
     ! Output variables to store
     md%domains(1)%time_grids_to_store = [character(len=charlen):: 'stage', 'uh', 'vh']
     md%domains(1)%nontemporal_grids_to_store = [character(len=charlen):: 'max_stage', 'max_speed', 'max_flux', &
         'arrival_time', 'elevation0', 'manning_squared']
 
+    md%domains(1)%boundary_subroutine => flather_boundary
     !md%load_balance_file = 'load_balance_partition.txt'
 
     call md%setup()
@@ -109,6 +117,8 @@ program radial_potential
     call md%make_initial_conditions_consistent()
 
     md%domains(1)%boundary_subroutine => flather_boundary
+
+    write(log_output_unit, *) 'Max timestep: ', md%stationary_timestep_max()
 
     ! Evolve the solution
     do while (.TRUE.)

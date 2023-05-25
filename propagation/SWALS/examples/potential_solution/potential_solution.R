@@ -43,7 +43,7 @@ free_surface_solution<-function(t){
         d_fft = fft(d)
         inv_fft = 1/prod(dim(d)) * Re( fft(d_fft/cosh(k*h0) * cos(w0*t), inverse=TRUE) )
     }else{
-        inv_fft = Re(d_fft)*0
+        stop('Not implemented for t <= 0')
     }
     return(inv_fft)
 }
@@ -86,7 +86,7 @@ pressure_residual_bed_solution<-function(t, rho0 = 1024){
         d_fft = fft(d)
         inv_fft = rho0 * g/prod(dim(d)) * Re( fft(d_fft/(cosh(k*h0)**2) * cos(w0*t), inverse=TRUE) )
     }else{
-        inv_fft = Re(d_fft)*0
+        stop('Not implemented for t <= 0')
     }
     return(inv_fft)
 }
@@ -108,18 +108,20 @@ sol0 = free_surface_solution(0.0001)
 #     }
 # }
 
-# Solution to compare against
-# Ensure the solution at the end time is small enough that the flow has not reached
-# the boundary -- because these analytical calcuations are using periodic boundary
-# conditions, whereas SWALS will not be.
-comptime = 100 
-solend = free_surface_solution(comptime)
-
 #
 suppressMessages(library(raster))
 r1 = raster(sol0, xmn=min(xs), xmx=max(xs), ymn=min(ys), ymx=max(ys))
 writeRaster(r1, file='initial_condition_file.tif', overwrite=TRUE, options=c('COMPRESS=DEFLATE'))
 
-r1 = raster(solend, xmn=min(xs), xmx=max(xs), ymn=min(ys), ymx=max(ys))
-writeRaster(r1, file=paste0('solution_time_', comptime, '.tif'), overwrite=TRUE, options=c('COMPRESS=DEFLATE'))
+make_final_solution<-function(comptime){
+    # Solution to compare against
+    # Ensure the solution at the end time is small enough that the flow has not reached
+    # the boundary -- because these analytical calcuations are using periodic boundary
+    # conditions, whereas SWALS will not be.
+    #comptime = 100 
+    solend = free_surface_solution(comptime)
 
+    #r1 = raster(solend, xmn=min(xs), xmx=max(xs), ymn=min(ys), ymx=max(ys))
+    #writeRaster(r1, file=paste0('solution_time_', comptime, '.tif'), overwrite=TRUE, options=c('COMPRESS=DEFLATE'))
+    return(solend)
+}
