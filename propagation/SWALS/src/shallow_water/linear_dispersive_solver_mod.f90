@@ -109,7 +109,7 @@ module linear_dispersive_solver_mod
 #else
         real(dp) :: tol = 1.0e-08_dp !! Solver tolerance -- iteration until this accuracy is reached
 #endif
-        integer(ip) :: max_iter = 2000 !! Maximum number of iterations in a single call to ds%solve
+        integer(ip) :: max_iter = 20000 !! Maximum number of iterations in a single call to ds%solve
         integer(ip) :: last_iter = 0 !! Iteration count at convergence
         real(dp) :: max_err = -HUGE(1.0_dp) !! Store the max error on the last iteration
 
@@ -119,21 +119,20 @@ module linear_dispersive_solver_mod
             !! Set td1 > td2 to linearly reduce dispersive terms to zero between depths of td1 --> td2
 
         contains
-        procedure :: store_last_U => store_last_U
-        procedure :: setup => setup_dispersive_solver
-        procedure :: solve => linear_dispersive_solve
+        procedure, non_overridable :: store_last_U => store_last_U
+        procedure, non_overridable :: setup => setup_dispersive_solver
 
 #ifdef DISPERSIVE_JACOBI
-        procedure :: solve_staggered_grid => linear_dispersive_solve_staggered_grid_JACOBI
+        procedure, non_overridable :: solve_staggered_grid => linear_dispersive_solve_staggered_grid_JACOBI
 #endif
 
 #ifdef DISPERSIVE_JACOBI_ADAPTIVE
-        procedure :: solve_staggered_grid => linear_dispersive_solve_staggered_grid_JACOBI_ADAPTIVE
-        procedure :: solve_cellcentred_grid => linear_dispersive_solve_cellcentred_JACOBI_ADAPTIVE
+        procedure, non_overridable :: solve_staggered_grid => linear_dispersive_solve_staggered_grid_JACOBI_ADAPTIVE
+        procedure, non_overridable :: solve_cellcentred_grid => linear_dispersive_solve_cellcentred_JACOBI_ADAPTIVE
 #endif
 
 #ifdef DISPERSIVE_TRIDIAG
-        procedure :: solve_staggered_grid => linear_dispersive_solve_staggered_grid_TRIDIAG
+        procedure, non_overridable :: solve_staggered_grid => linear_dispersive_solve_staggered_grid_TRIDIAG
 #endif
 
     end type
@@ -200,30 +199,6 @@ module linear_dispersive_solver_mod
         end do
         !$OMP END PARALLEL DO
 #endif
-
-    end subroutine
-
-    subroutine linear_dispersive_solve(ds, U, &
-            dlon, dlat, distance_bottom_edge, distance_left_edge, msl_linear, rhs_is_up_to_date)
-        !! Convenience wrapper which gives a consistent interface for both staggered and cell-centred solvers
-        class(dispersive_solver_type), intent(inout) :: ds
-        real(dp), intent(inout) :: U(:,:,:)
-            ! domain%U after an explicit shallow water update
-        real(dp), intent(in) :: dlon, dlat, distance_bottom_edge(:), distance_left_edge(:), msl_linear
-            ! cell dx, dy, edge distances, and mean-sea-level for the linear solver
-        logical, optional, intent(in) :: rhs_is_up_to_date
-
-        if(ds%is_staggered_grid) then
-            ! Staggered grid dispersive solve
-            call ds%solve_staggered_grid(U, dlon, dlat, &
-                distance_bottom_edge, distance_left_edge, &
-                msl_linear, rhs_is_up_to_date)
-        else
-            ! Cell-centred dispersive solve
-            call ds%solve_cellcentred_grid(U, dlon, dlat, &
-                distance_bottom_edge, distance_left_edge, &
-                msl_linear, rhs_is_up_to_date)
-        end if
 
     end subroutine
 

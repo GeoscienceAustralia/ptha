@@ -497,6 +497,11 @@ module domain_mod
         procedure, non_overridable :: apply_forcing => apply_forcing
         procedure, non_overridable :: store_forcing => store_forcing
 
+        ! Dispersive terms
+        procedure, non_overridable :: copy_U_to_dispersive_last_timestep => copy_U_to_dispersive_last_timestep
+        procedure, non_overridable :: solve_dispersive_terms => solve_dispersive_terms
+        
+
         ! IO
         procedure, non_overridable :: create_output_folders => create_output_folders
         procedure, non_overridable :: create_output_files => create_output_files
@@ -4046,6 +4051,62 @@ TIMER_STOP('send_halos')
 
     end subroutine
 
+    subroutine copy_U_to_dispersive_last_timestep(domain)
+        !! Copy domain%U to the variable domain%ds%last_U, and record timing info.
+        !!
+        !! See documentation blurb in domain%solve_dispersive_terms for more info. 
+        !!
+        class(domain_type), intent(inout) :: domain
+
+        if(domain%use_dispersion) then
+TIMER_START('dispersive_store')
+            call domain%ds%store_last_U(domain%U)
+TIMER_STOP('dispersive_store')
+        end if
+    end subroutine
+
+    subroutine solve_dispersive_terms(domain, rhs_is_up_to_date)
+        !! Solve the dispersive terms.
+        !!
+        !! In practice we evolve models with dispersive terms by:
+        !!    1. Store domain%U in domain%ds%last_U (via domain%copy_U_to_dispersive_last_timestep). Say this time is tLast
+        !!    2. Evolve one or more shallow water steps (finishing at time tNew)
+        !!    3. Solve the dispersive terms with domain%solve_dispersive_terms (which this routine does). 
+        !!       This updates the solution with dispersive terms, with the time discretization centred from 
+        !!       tLast to tNew (assuming U at tLast is stored in domain%ds%last_U).
+        !!
+        class(domain_type), intent(inout) :: domain
+        logical, intent(in) :: rhs_is_up_to_date
+            !! Are the RHS terms in the dispersive solve already up to date? This is useful in the multidomain
+            !! context when using iteration to make the solution consistent between domains, as the RHS does
+            !! not change between these iterations.
+
+        if(domain%use_dispersion .and. (domain%time >= domain%static_before_time)) then
+TIMER_START('dispersive_solve')
+            if(domain%is_staggered_grid) then
+                ! Staggered grids
+                call domain%ds%solve_staggered_grid(&
+                    domain%U, domain%dx(1), domain%dx(2), &
+                    domain%distance_bottom_edge, domain%distance_left_edge, &
+                    domain%msl_linear, &
+                    rhs_is_up_to_date = rhs_is_up_to_date)
+            else
+                ! Cell-centred grids
+                call domain%ds%solve_cellcentred_grid(&
+                    domain%U, domain%dx(1), domain%dx(2), &
+                    domain%distance_bottom_edge, domain%distance_left_edge, &
+                    domain%msl_linear, &
+                    rhs_is_up_to_date = rhs_is_up_to_date)
+            end if
+
+
+            !write(log_output_unit, *) 'domain ID: ', domain%myid,  '; DS iter: ', domain%ds%last_iter, &
+            !    '; max-err: ', domain%ds%max_err
+            !flush(log_output_unit)
+
+TIMER_STOP('dispersive_solve')
+        end if
+    end subroutine
 
     subroutine test_domain_mod
         ! Unit-tests (basic stuff only -- the solver quality is checked by the validation tests)

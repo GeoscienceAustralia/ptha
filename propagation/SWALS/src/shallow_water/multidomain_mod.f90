@@ -1088,7 +1088,7 @@ TIMER_START('domain_evolve')
             nt = md%domains(j)%timestepping_refinement_factor
 
             if(local_timestep_partitioned_domains .and. (.not. md%domains(j)%is_staggered_grid)) then
-                ! For nonlinear domains, allow fewer timesteps, if it won't cause blowup.
+                ! For nonlinear domains, allow fewer timesteps if it won't cause blowup.
                 ! Do not do this for staggered-grid domains, because the leap-frog numerical method needs
                 ! a constant time-step
                 !
@@ -1098,7 +1098,7 @@ TIMER_START('domain_evolve')
                 !
                 ! NOTE: This will lead to different timestepping with different domain partitions,
                 ! so the results should depend on the number of cores unless we specify the partition
-                ! via a load_balance_file.
+                ! via a load_balance_file (which is good practice).
                 if(md%domains(j)%max_dt > 0.0_dp) then
                     nt = max(1, min(nt, ceiling(dt/(md%domains(j)%local_timestepping_scale * md%domains(j)%max_dt) )))
                 end if
@@ -1106,8 +1106,10 @@ TIMER_START('domain_evolve')
 
             dt_local = dt/(1.0_dp * nt)
 
-            ! Step once
-            if(md%domains(j)%use_dispersion) call md%domains(j)%ds%store_last_U(md%domains(j)%U)
+            ! If dispersion is used then backup the flow state
+            call md%domains(j)%copy_U_to_dispersive_last_timestep()
+
+            ! Take a shallow water step
             call md%domains(j)%evolve_one_step(dt_local)
 TRACK_STABILITY_J('inner')
 
@@ -1122,13 +1124,10 @@ TRACK_STABILITY_J('inner')
                     ! Apply dispersion on all but the final sub-step.
                     ! On the final sub-step we first communicate the shallow water solution at
                     ! time tend, then do a final dispersive solve that involves all multidomains.
-                    !write(log_output_unit, *) 'DISPERSIVE SOLVE ', i-1
-                    call md%domains(j)%ds%solve(&
-                        md%domains(j)%U, md%domains(j)%dx(1), md%domains(j)%dx(2), &
-                        md%domains(j)%distance_bottom_edge, md%domains(j)%distance_left_edge, &
-                        md%domains(j)%msl_linear, rhs_is_up_to_date = .FALSE.)
-                    !write(log_output_unit, *) '         Last iter: ', md%domains(:)%ds%last_iter
-                    call md%domains(j)%ds%store_last_U(md%domains(j)%U)
+                    call md%domains(j)%solve_dispersive_terms(rhs_is_up_to_date = .FALSE.)
+                    call md%domains(j)%copy_U_to_dispersive_last_timestep()
+                    !write(log_output_unit, *) '    domain ', j, '; DS iter: ', md%domains(j)%ds%last_iter
+                    !flush(log_output_unit)
                 end if
                 call md%domains(j)%evolve_one_step(dt_local)
 
@@ -1209,12 +1208,7 @@ TIMER_START('dispersive_iterations')
                     ! A) The max error is within ds%tol, or
                     ! B) The iteration count reaches ds%max_iter,
                     ! Also sets ds%max_err on the final iteration
-                    !write(log_output_unit, *) 'OUTER_DISPERSIVE_SOLVE'
-                    call md%domains(j)%ds%solve(&
-                        md%domains(j)%U, md%domains(j)%dx(1), md%domains(j)%dx(2), &
-                        md%domains(j)%distance_bottom_edge, md%domains(j)%distance_left_edge, &
-                        md%domains(j)%msl_linear, &
-                        rhs_is_up_to_date = (dispersive_outer_iterations > 1))
+                    call md%domains(j)%solve_dispersive_terms(rhs_is_up_to_date = (dispersive_outer_iterations > 1))
 
                     ! Send the halos only for domain j. Timing code inside
                     call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately)
@@ -1252,6 +1246,7 @@ TRACK_STABILITY('dispersive-step-after-recv_halos')
 #endif
                 write(log_output_unit, *) '     Dispersive outer iterations: ', dispersive_outer_iterations
                 write(log_output_unit, *) '         Last step iter: ', md%domains(:)%ds%last_iter
+                flush(log_output_unit)
 
                 if(md_dispersion_not_converged == 0 .and. &
                     ! Converged if all domains iterated too few times to
