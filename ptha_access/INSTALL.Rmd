@@ -1,38 +1,45 @@
 ## **Installation**
 
-It is strongly suggested that the installation is undertaken on a Linux
-operating system. The author is using Ubuntu 18.04 (and previously used 16.04
-with an updated netcdf-c build). The install should also work on more recent
-versions. If you are running Windows or Mac, it will probably be easiest to use
-a virtual machine (e.g. via [VirtualBox](https://www.virtualbox.org) or similar).
+The ptha package is most often used on Linux. More recently (2023/05) the
+author has successfully installed it on Windows following the standard instructions.
+
+Alternatively, users running Windows or Mac could try using a virtual machine
+to run Linux (e.g. via [VirtualBox](https://www.virtualbox.org) or similar).
+Before 2023 this was thought to be the only approach that worked.
 
 ### **Installing R**
 If you don't already have R installed, the you need to get it by following the
 instructions on the [R website](https://www.r-project.org/). Use the most recent
-version.
+version. 
+
+If you are running Windows then you'll also need to 
+[install the appropriate version of Rtools](https://cran.r-project.org/bin/windows/Rtools/)
 
 ### **Installing netcdf**
 
-You need to install the R package `ncdf4` with OPeNDAP support. This may be
-difficult unless you are running Linux (although you can do this using a
-virtual machine). Non-Linux users are encouraged to install an Ubuntu virtual
-machine (e.g. using [VirtualBox](https://www.virtualbox.org) or some other
-virtualization software). 
+You need to install the R package `ncdf4` with OPeNDAP support.
 
-On recent versions of Ubuntu (18.04 and greater) you can probably install netcdf libraries like this
+On Linux, this requires pre-installing the netcdf libraries. 
 ```
 sudo apt-get install netcdf-bin libnetcdf-dev libnetcdff-dev
 ```
-and then install netcdf4 from inside R.
+
+On all platforms it should then be possible to install netcdf4 from inside R.
 ```r
 # Run this from inside R.
-# You may need to start R with "sudo R" to get permissions to install
+# Ubuntu users may need to start R with "sudo R" to get permissions to install
 install.packages('ncdf4')
 ```
 
-An earlier version of Ubuntu shipped netcdf with an opendap bug, which caused
-problems with ptha data access. To confirm that your `ncdf4` installation is
-using a suitably recent netcdf-c library, please run the following code:
+#### **Troubleshooting netcdf**
+
+For many years it was difficult to get opendap support in Windows (preventing
+installation on that platform), although this issue seems to be resolved as of
+2023/05. An earlier version of Ubuntu also shipped netcdf with an opendap bug which
+caused problems with ptha data access, but this is also resolevd nowadays. 
+
+To confirm that your `ncdf4` installation is using a suitably recent netcdf-c
+library, please run the following code:
 
 ```{r checkncdf, eval=FALSE}
 library(ncdf4)
@@ -91,8 +98,7 @@ source, after obtaining the code from Geoscience Australia's the `PTHA` github
 repository. [See instructions here](https://github.com/GeoscienceAustralia/ptha/blob/master/R/README.md).
 
 ### **Installing mapview**
-Finally you should install the `mapview` package (to enable some interactive
-plots shown in the main README)
+You may optionally install the `mapview` package. This is not critical but can enable some interactive plots shown in the main README.
 ```{r installme, eval=FALSE}
 install.packages('mapview')
 ```
