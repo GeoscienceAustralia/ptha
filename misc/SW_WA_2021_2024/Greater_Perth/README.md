@@ -8,5 +8,4 @@ Key folders are:
 * [./multidomain_design](./multidomain_design) - Create the boxes defining domains in the multidomain
 * [./sources](./sources) - Tsunami source models
 * [./swals](./swals) - Hydrodynamic model and outputs
-* [./sealevels](./sealevels) - Basic analysis of sea-level exceedances in the modelling region, to justify the choice of background sea-level.
 
