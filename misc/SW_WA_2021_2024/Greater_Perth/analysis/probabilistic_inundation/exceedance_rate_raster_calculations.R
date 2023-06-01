@@ -405,7 +405,8 @@ compute_exceedance_rates_and_error_variance_on_tile<-function(
 
     #
     tarred_multidomain_dirs = Sys.glob(
-        '../../swals/OUTPUTS/ptha18-GreaterPerth-sealevel60cm/random_sunda2/ptha*/RUN*.tar.bz2')
+        '../../swals/OUTPUTS/ptha18-GreaterPerth-sealevel60cm-reviseddomain-highres/random_sunda2/ptha*/RUN*.tar.bz2')
+
 
     for(i in 1:length(scenario_databases)){
         scenario_databases[[i]]$md_dir = .local_find_matching_md_dir(
