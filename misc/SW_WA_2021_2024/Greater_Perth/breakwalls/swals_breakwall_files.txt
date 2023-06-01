@@ -1,0 +1,16 @@
+perth/hillaries2.csv
+perth/hillarys1.csv
+perth/mandurah1.csv
+perth/mandurah2.csv
+perth/southperth2.csv
+perth/southperth3.csv
+perth/southperth4.csv
+perth/southperth5.csv
+perth/southperth6.csv
+perth/southperth7.csv
+perth/southperth.csv
+perth/swanCanning1.csv
+perth/swanCanning2.csv
+perth/swanCanning3.csv
+perth/swanCanning4.csv
+perth/swanCanning5.csv
