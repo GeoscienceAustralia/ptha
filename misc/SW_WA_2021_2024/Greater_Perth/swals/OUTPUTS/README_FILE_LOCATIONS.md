@@ -22,8 +22,8 @@ To re-run the analysis scripts, or do other analysis with the scenario files, yo
 ## An important note on the multidomain log files.
 
 The folder `ptha18-GreaterPerth-sealevel60cm-reviseddomain-highres` contains subfolders for the outerrise-sunda (`random_outerrisesunda`) and sunda2 (`random_sunda2`) sources. 
-    * Each contains hundreds of sub-folders corresponding to unique model scenarios. 
-    * Inside those subfolders are tarred model output directories (each containing a multidomain). 
+* Each contains hundreds of sub-folders corresponding to unique model scenarios. 
+* Inside those subfolders are tarred model output directories (each containing a multidomain). 
 
 An example subfolder is `ptha18-GreaterPerth-sealevel60cm-reviseddomain-highres/random_sunda2/ptha18_random_scenarios_sunda2_row_0111332_Mw_96_HS-full-ambient_sea_level_0.6`, representing a magnitude 9.6 scenario on the Sunda Arc thrust source. It contains the following files:
 ```
