@@ -21,7 +21,7 @@ This folder contains the following data, along with some related scripts:
         * (Not currently supported by JATWC) Minor land warning (0.55 <= H <= 1.5)
         * (Not currently supported by JATWC) Major land warning (1.5 >= H)
     * The above thresholds are suggested in the paper by Greenslade et al. (2020) - (see https://doi.org/10.1007/s00024-019-02377-z)
-    * The zones are limited to be inside the PTHA 1/10000 exceedance-rate (84th percentile epistemic uncertainty). This ensures the upper limit is not an unstable random quantity, and gives a uniform degree of conservatism at different sites.
+    * The zones are limited to be inside the PTHA 1/10000 exceedance-rate (84th percentile epistemic uncertainty). This ensures the upper limit is not an unstable random quantity, and gives a uniform degree of conservatism at different sites. Note later on these maps were manually edited to produce the final zones (see description in AJEM manuscript), and at that point we chose to use a 1/2500 (84th pc) limit, which is more standard.
 
 * ./elevation_contours
     * Elevation contours (0, 1, 2, ... 10 m) for ATWS zones, derived from the inundation model elevation grid. 
@@ -42,7 +42,7 @@ Rscript map_threat_levels_in_zone.R 'Perth Coast'
 ```
 
 ## Step 3
-Finally we limit the onshore zone to a rare PTHA exceedance-rate, and then export to shapefile. The script [convert_raster_zones_to_polygons_with_PTHA_limits.R](convert_raster_zones_to_polygons_with_PTHA_limits.R) does this, with exceedance rate of 1/10000 at the 84th percentile of the epistemic uncertainty. It can be run for all warning types with:
+Finally we limit the onshore zone to a rare PTHA exceedance-rate, and then export to shapefile. The script [convert_raster_zones_to_polygons_with_PTHA_limits.R](convert_raster_zones_to_polygons_with_PTHA_limits.R) does this, with exceedance rate of 1/10000 at the 84th percentile of the epistemic uncertainty (NB: during later edits this was changed to 1/2500 @ 84th pc). It can be run for all warning types with:
 ```
 #!/bin/bash
 for warning_type in 'no_threat' 'marine_warning' 'land_warning' 'minor_land_warning' \
