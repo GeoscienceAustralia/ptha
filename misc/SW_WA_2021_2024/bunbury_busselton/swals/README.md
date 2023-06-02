@@ -23,8 +23,7 @@ The key codes are described below; consult comments in the code itself for furth
         * `Rscript create_random_ptha_qsub_scripts_sealevel60cm.R`.
     * It produces approximately 50 qsub scripts which can be separately submitted. One can also submit all the scripts at once using shell commands such as: 
         * `for i in run_BunburyBusselton_sealevel60cm_*.sh; do qsub $i; mv $i submitted_qsub_jobs; done`. 
-* [FIXME LOWRES RUNS](create_random_ptha_qsub_scripts_sealevel60cm_lowres.R) is similar to above, but used to submit low-resolution versions of the models (for convergence testing). 
-    * Before this is run, the model should be recompiled to use coarser resolution (using `mesh_refine=2_ip` in [model.f90](model.f90) ). 
+
 * [DEBUG_run_with_old_nesting.sh](DEBUG_run_with_old_nesting.sh) was used to run a scenario that went unstable after I updated to the new Busselton data in March 2023. Of the 369 scenarios, only one was unstable. As a workaround I compiled SWALS with the old nesting algorithm using [make_model_ifort_OLD_NESTING](make_model_ifort_OLD_NESTING), and reran the scenario. It did not go unstable with the old nesting approach (in general, that approach isn't better -- but nesting instabilities are rare and fragile, so often changing the details will fix issues). I manually removed the old run, copied the `multidomain_*0001.log` file to the right place, and re-ran the script to create rasters. At this point the model appears just like the other scenarios; for our purposes, no more workarounds are required.
 
 ## Creating rasters from the hydrodynamic model results
