@@ -13,7 +13,7 @@ for the WA model.
 
 
 
-## Example of the logic to seting-up complicated nesting:
+## Example of the logic to setting up complicated nesting:
 --------------------------------------------------------
 
 It requires care to setup nesting while respecting the SWALS constraint that,
