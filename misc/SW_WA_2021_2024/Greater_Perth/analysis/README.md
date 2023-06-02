@@ -1,4 +1,7 @@
-This folder contains code to test and post-process the random PTHA inundation scenarios. 
+This folder contains code to test and post-process the random PTHA inundation scenarios.
+
+In general the codes require that all model runs in [../swals/](../swals) are done.
+
 * [check_log_files](check_log_files) is used to sanity check model runs from their log-files.
 * [max_flow_plots](max_flow_plots) was used to store some plots, and refers to related code.
 * [max_stage_at_a_point](max_stage_at_a_point) is used to check consistency between the PTHA18 results and the results of our inundation simulations. The idea is that both approaches should agree fairly well in deep water sufficiently far from the coast, although this is not expected nearshore (hence why we do inundation modelling!). 
