@@ -14,6 +14,7 @@ Fuji_sumatra2005_domains010322_newProcessDataToSend-full-ambient_sea_level_0.0
 ptha18-GreaterPerth-sealevel60cm-lowres
 ptha18-GreaterPerth-sealevel60cm-reviseddomain-highres
 ```
+I did many other runs while developing and testing the analysis (see various `run_*.sh` scripts in the parent directory) but didn't consider it important to store those.
 
 The folders starting with `Fuji_` contain simulations like tsunamis due to historical earthquakes in Sumatra 2004 (in low resolution, and regular resolution) and Sumatra 2005. The other folders contain inundation models for random ptha scenarios, with the main results being `ptha18-GreaterPerth-sealevel60cm-reviseddomain-highres` (and the other being used for convergence testing).
 
