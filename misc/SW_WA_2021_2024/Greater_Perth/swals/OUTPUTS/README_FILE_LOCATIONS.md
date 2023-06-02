@@ -1,6 +1,6 @@
-# The files that were in this folder on NCI (Gadi) have been moved to NCI's MDSS, under project w85
+# The files that were in this folder on NCI (Gadi) have been moved to NCI's MDSS (a tape archive), under project w85
 
-The location in mdss is "tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/Greater_Perth/swals/OUTPUTS"
+The location in `mdss` is "tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/Greater_Perth/swals/OUTPUTS"
 
 To view the files (top level) we can do: 
 ```
@@ -15,9 +15,9 @@ ptha18-GreaterPerth-sealevel60cm-lowres
 ptha18-GreaterPerth-sealevel60cm-reviseddomain-highres
 ```
 
-The folders starting with `Fuji_` contain simulations like tsunamis due to historical earthquakes in Sumatra 2004 (in lowresolution, and regular resolution) and Sumatra 2005. The other folders contain inundation models for random ptha scenarios, with the main results being `ptha18-GreaterPerth-sealevel60cm-reviseddomain-highres` (and the other being used for convergence testing).
+The folders starting with `Fuji_` contain simulations like tsunamis due to historical earthquakes in Sumatra 2004 (in low resolution, and regular resolution) and Sumatra 2005. The other folders contain inundation models for random ptha scenarios, with the main results being `ptha18-GreaterPerth-sealevel60cm-reviseddomain-highres` (and the other being used for convergence testing).
 
-To re-run the analysis scripts, or do other analysis with the scenario files, you will have to copy the required data from mdss to the current directory.
+To re-run the analysis scripts, or do other analysis with the scenario files, you will have to copy the required data from `mdss` to the current directory.
 
 ## An important note on the multidomain log files.
 
@@ -43,4 +43,4 @@ rm -r ./RUN_20220402_065604331/
 ```
 and similarly for all other scenario folders. 
 
-If you want to run analyses that assume the existance of these log files, you'll have to recreate them after manually copying from MDSS.
+If you want to run analyses that assume the existence of these log files, you'll have to recreate them after manually copying from `mdss`.
