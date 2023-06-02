@@ -5,7 +5,7 @@ This folder contains code to run the tsunami models, including:
 * Scenarios like historical events [(see here)](../sources/like_historic/)
 * Random PTHA18 scenarios [(see here)](../sources/hazard/)
 
-The tsunami model was setup to assume the Bunbury floodgate was open. Notice the Bunbury floodgate is created in the folder [../breakwalls](../breakwalls), but it isn't added to the default list of breakwalls. Instead there is a parameter `logical, parameter :: close_bunbury_floodgate = .FALSE.` in [model_local_routines.f90](model_local_routines.f90) that determines if it is used.
+The tsunami model was setup to assume the Bunbury floodgate was open (instruction from DFES, based on their discussions with engineers). Notice the Bunbury floodgate is created in the folder [../breakwalls](../breakwalls), but it isn't added to the default list of breakwalls. Instead there is a parameter `logical, parameter :: close_bunbury_floodgate = .FALSE.` in [model_local_routines.f90](model_local_routines.f90) that determines if it is used.
 
 The key codes are described below; consult comments in the code itself for further documentation.
 
