@@ -9,7 +9,7 @@ The tsunami depth maxima results are rounded down to these values.
 
 ## Key files and folders:
 
-* The input datasets are in folders beginning with `ptha18`, and depict exceedance-rate maps for the different depth thresholds. They were created with the script in [../../run_compute_exceedance_rates_for_multiple_threshold_depths_logic_tree_mean_newParallelPartition.sh](../run_compute_exceedance_rates_for_multiple_threshold_depths_logic_tree_mean_newParallelPartition.sh) and then manually moved to this location.
+* The input datasets are in folders beginning with `ptha18`, and depict exceedance-rate maps for the different depth thresholds. They were created with the script in [../../run_compute_exceedance_rates_for_multiple_threshold_depths_logic_tree_mean_newParallelPartition.sh](../../run_compute_exceedance_rates_for_multiple_threshold_depths_logic_tree_mean_newParallelPartition.sh) and then manually moved to this location.
 * To combine the unsegmented and segmented model results we use the script [compute_exrates_multiple_depths.R](compute_exrates_multiple_depths.R). 
     * Run with `Rscript compute_exrates_with_multiple_depths.R`. 
     * This will make folders like `summed_results_XX` where `xx` is the maximum depth. These contain exceedance-rate rasters
