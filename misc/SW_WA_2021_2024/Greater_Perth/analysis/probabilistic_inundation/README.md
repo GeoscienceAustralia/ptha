@@ -1,8 +1,8 @@
 # Probabilistic Inundation calculations
 
-There is a updated version of these codes in the "BunburyBusselton" folder that are somewhat better structured and documented. They will be easier to modify for other applications.
+An updated version of these codes exists in the "BunburyBusselton" folder. That version is better structured and better documented, so preferable for further work.
 
-This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated.
+This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated. 
 
 ## Key files
 
@@ -12,7 +12,7 @@ This folder contains scripts for probabilistic inundation calculation, which can
       * Results of source-zones must be later summed with [compute_mean_exrate_upper_CI.R](compute_mean_exrate_upper_CI.R). This also computes the upper limit of an approximate 95% confidence-interval for the all scenarios logic-tree-mean-exceedance-rate. The confidence interval does not account for epistemic uncertainties, just use of limited Monte-Carlo sampling.
     * The computational core underlying these calculations is in [exceedance_rate_raster_calculations.R](exceedance_rate_raster_calculations.R).
     * The calculations follow Davies et al. (2022) "From offshore to onshore PTHA via efficient Monte-Carlo sampling", for the case of stratified/importance sampling (Equations 17 and 20 in that paper).
-    * An older code with similar functionality (but no variance calculations) is in [compute_exceedance_rates_for_threshold_depth_logic_tree_mean.R](compute_exceedance_rates_for_threshold_depth_logic_tree_mean.R). This has a finer-grained parallel approach which is much less efficient for the current problem, but in general it could be useful.
+    * An older code with similar functionality (but no variance calculations) is in [compute_exceedance_rates_for_threshold_depth_logic_tree_mean.R](compute_exceedance_rates_for_threshold_depth_logic_tree_mean.R). This has a finer-grained parallel approach which is much less efficient for the current problem, but in general could be useful.
 
 * [compute_exceedance_rates_for_threshold_stage_logic_tree_mean_newParallelPartition.R](compute_exceedance_rates_for_threshold_stage_logic_tree_mean_newParallelPartition.R) is similar to the above, but computes max-stage exceedance-rates (rather than depth exceedance-rates). 
     * After calculation the results were manually moved to [reviseddomains_080422/exrates_for_multiple_stages/](reviseddomains_080422/exrates_for_multiple_stages/) for further processing, as documented therein.
