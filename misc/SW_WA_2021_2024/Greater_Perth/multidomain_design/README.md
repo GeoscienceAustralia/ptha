@@ -13,14 +13,14 @@ for the WA model.
 
 
 
-## Example of the logic to setting up complicated nesting:
---------------------------------------------------------
+## Example of the logic to setting up complicated nesting
+---------------------------------------------------------
 
 It requires care to setup nesting while respecting the SWALS constraint that,
 when 2 domains overlap, the coarser domain cells must be completely covered by
-finer domain cells. 
+finer domain cells. Below is an example that explains the reasoning and possible pitfalls.
 
-* We have 1-arcmin outer grids with boundaries aligned to integer degrees or half degrees.
+* Say have 1-arcmin resolution outer grids with boundaries aligned to integer degrees or half degrees.
     * These have 60 cells/degree
 * Next finer level is chosen to have 9x refinement and 0.5x0.5deg patches
     * This implies each patch would enclose 30x30 parent-grid cells. These numbers are integers, so it will work -- non-integers would cause problems. 
