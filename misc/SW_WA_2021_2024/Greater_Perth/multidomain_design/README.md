@@ -3,7 +3,7 @@
 
 The command
     `Rscript create_boxes.R`
-will run code to create the domain bounding boxes.
+will run code to create the domain bounding boxes. It uses various input datasets defining the nested domain regions, see the code for more details.
 
 The command
     `Rscript edit_boxes.R`
