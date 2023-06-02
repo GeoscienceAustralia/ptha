@@ -1,8 +1,8 @@
 # Probabilistic Inundation calculations
 
-This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated.
-
 There is a updated version of these codes in the "BunburyBusselton" folder that are somewhat better structured and documented. They will be easier to modify for other applications.
+
+This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated.
 
 ## Key files
 
@@ -14,7 +14,7 @@ There is a updated version of these codes in the "BunburyBusselton" folder that 
     * The calculations follow Davies et al. (2022) "From offshore to onshore PTHA via efficient Monte-Carlo sampling", for the case of stratified/importance sampling (Equations 17 and 20 in that paper).
     * An older code with similar functionality (but no variance calculations) is in [compute_exceedance_rates_for_threshold_depth_logic_tree_mean.R](compute_exceedance_rates_for_threshold_depth_logic_tree_mean.R). This has a finer-grained parallel approach which is much less efficient for the current problem, but in general it could be useful.
 
-* [compute_exceedance_rates_for_threshold_stage_logic_tree_mean_newParallelPartition.R](compute_exceedance_rates_for_threshold_stage_logic_tree_mean_newParallelPartition.R) is similar to the above, but computes max-stage exceedance-rates, rather than depth exceedance-rates. 
+* [compute_exceedance_rates_for_threshold_stage_logic_tree_mean_newParallelPartition.R](compute_exceedance_rates_for_threshold_stage_logic_tree_mean_newParallelPartition.R) is similar to the above, but computes max-stage exceedance-rates (rather than depth exceedance-rates). 
     * After calculation the results were manually moved to [reviseddomains_080422/exrates_for_multiple_stages/](reviseddomains_080422/exrates_for_multiple_stages/) for further processing, as documented therein.
 
 * [compute_exceedance_rates_at_epistemic_uncertainty_percentile.R](compute_exceedance_rates_at_epistemic_uncertainty_percentile.R) This computes the depth exceedance-rates at a given epistemic uncertainty percentile (e.g. 84%, or 16%). It only operates on one source-zone at a time, so results of source-zones must be later summed.
