@@ -1,6 +1,6 @@
 # Probabilistic Inundation calculations
 
-An updated version of these codes exists in the "BunburyBusselton" folder. That version is better structured and better documented, so preferable for further work.
+An updated version of these codes exists in the [Bunbury-Busselton folder](../../../bunbury_busselton). That version is better structured and better documented, so preferable for further work.
 
 This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated. 
 
