@@ -92,7 +92,7 @@ ignored.
 On Windows, before proceeding further, you need to 
 [install the version of Rtools corresponding to your R install](https://cran.r-project.org/bin/windows/Rtools/).
 
-Once the packages have installed, you should start R inside the ptha/R/rptha directory (within in a local copy of this repository).
+Once the packages have installed, you should start R inside the ptha/R/rptha directory (within a local copy of this repository).
 Run the following from within R:
 
     source('build_package.R')
