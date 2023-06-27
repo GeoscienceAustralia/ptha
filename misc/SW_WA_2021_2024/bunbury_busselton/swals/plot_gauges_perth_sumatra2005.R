@@ -19,6 +19,7 @@ target_sites_in_order = c(
     "GeraldtonAlternate_WADoT_5min_2004",
     "JurianBay_WADoT_5min_2004",
     "Lancelin_WADoT_5min_2004",
+    "Hillarys_BOM_1min_2004",
     "BarrackStreet_WADoT_5min_2004",
     "FreemantleAlternate_WADoT_5min_2004",
     "ManglesBay_WADoT_5min_2004",
