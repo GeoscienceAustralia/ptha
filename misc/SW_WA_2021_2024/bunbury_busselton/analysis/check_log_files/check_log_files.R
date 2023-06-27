@@ -216,7 +216,8 @@ check_log<-function(log_data){
 #all_log_files = Sys.glob('../../swals/OUTPUTS/ptha18-GreaterPerth-sealevel60cm-revised/random_*/ptha*/multidomain*0001.log')
 #all_log_files = Sys.glob('../../swals/OUTPUTS/ptha18-GreaterPerth-sealevel60cm-lowres/random_*/ptha*/multidomain*0001.log')
 #all_log_files = Sys.glob('../../swals/OUTPUTS/ptha18-BunburyBusselton-sealevel60cm/random_*/ptha*/multidomain*0001.log')
-all_log_files = Sys.glob('../../swals/OUTPUTS/ptha18-BunburyBusseltonRevised-sealevel60cm/random_*/ptha*/multidomain*0001.log')
+#all_log_files = Sys.glob('../../swals/OUTPUTS/ptha18-BunburyBusseltonRevised-sealevel60cm/random_*/ptha*/multidomain*0001.log')
+all_log_files = Sys.glob('../../swals/OUTPUTS/ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm/random_*/ptha*/multidomain*0001.log')
 
 library(parallel)
 MC_CORES = 1 #48
@@ -233,44 +234,39 @@ all_checks$ic_name = substring(basename(dirname(all_log_files)), 1, 59)
 
 # Confirm that all the model runs finished
 summary(all_checks$run_finished)
+## Shut bunbury floodgate
+#   Mode    TRUE 
+# logical     369 
+
+## Open bunbury floodgate
 #   Mode    TRUE 
 # logical     369 
 
 
-# Revised BunburyBusselton runs -- NaN energies here: 
-#     ptha18-BunburyBusseltonRevised-sealevel60cm/random_sunda2/ptha18_random_scenarios_sunda2_row_0107982_Mw_94_HS-full-ambient_sea_level_0.6
-# This was later fixed in the "DEBUG" run by using the older nesting scheme -- see discussed in the ../../swals folder README 
-
 # Check the mass conservation errors are very small and consistent with
 # double-precision round-off error
 summary(all_checks$mass_error/all_checks$initial_volume)
+## Shut bunbury floodgate
 #     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-#6.899e-17 8.073e-17 8.532e-17 8.838e-17 9.231e-17 1.640e-16 
+# 7.222e-17 8.072e-17 8.431e-17 8.794e-17 9.081e-17 1.646e-16 
 
-## For comparison, here's the version before adding of new Busselton data [runs Dec 2022]
+## Open bunbury Floodgate
 #     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-# 7.484e-17 8.795e-17 9.166e-17 5.813e-16 9.679e-17 1.301e-13 
-#
+# 6.899e-17 8.073e-17 8.532e-17 8.838e-17 9.231e-17 1.640e-16 
+
 
 
 # Here we compare the maximum mass error with the maximum abs(boundary_flux_integral),
 # confirming it is always a negligible fraction of the changes in mass due to fluxes through
 # the boundaries.
 summary(all_checks$mass_error/all_checks$max_abs_boundary_flux_integral)
+## Shut bunbury floodgate
 #     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-#3.750e-11 7.690e-11 1.703e-10 9.025e-09 7.780e-10 4.978e-07 
+#3.680e-11 7.870e-11 1.578e-10 8.975e-09 7.981e-10 4.958e-07 
 
-## For comparison, results prior to Busselton elevation data updates [from Dec 2022]
-#> summary(all_checks$mass_error/all_checks$initial_volume)
-#    Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-#3.300e-11 7.710e-11 1.649e-10 8.963e-09 8.275e-10 5.773e-07 
-
-
-## FOR COMPARISON, OLD GREATER-PERTH RESULTS -- larger errors, perhaps
-## reflecting the (lack of) elevation smoothing at coarse-2-fine nests?
-##    Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-## 3.240e-11 8.430e-11 1.821e-10 1.055e-08 9.400e-10 6.143e-07 
-
+## Open bunbury floodgate
+#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max.
+#3.750e-11 7.690e-11 1.703e-10 9.025e-09 7.780e-10 4.978e-07
 
 
 # Theoretically we expect energy to decay over time when there are no fluxes in
@@ -280,30 +276,24 @@ summary(all_checks$mass_error/all_checks$max_abs_boundary_flux_integral)
 # that the algorithms used herein are not precisely energy conservative. But that
 # should be small relative to the available energy (estimated here as 2x'max-kinetic-energy')
 summary((all_checks$energy_max_while_closed - all_checks$energy_start)/(2*all_checks$kinetic_energy_max))
-#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-#0.000e+00 5.272e-05 2.966e-04 2.843e-04 4.598e-04 7.459e-04 
+## Shut bunbury floodgate
+#    Min.   1st Qu.    Median      Mean   3rd Qu.      Max.
+#0.000e+00 5.272e-05 2.966e-04 2.843e-04 4.598e-04 7.459e-04
 
-# For comparison, results prior to Busselton elevation updates [Dec 2022]
-#    Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-#0.000e+00 5.272e-05 2.966e-04 2.843e-04 4.598e-04 7.459e-04 
-
-## FOR COMPARISON, OLD GREATER-PERTH RESULTS -- almost identical
-##    Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-## 0.000e+00 5.273e-05 2.966e-04 2.842e-04 4.598e-04 7.459e-04 
+## Open bunbury floodgate
+#    Min.   1st Qu.    Median      Mean   3rd Qu.      Max.
+#0.000e+00 5.272e-05 2.966e-04 2.843e-04 4.598e-04 7.459e-04
 
 
-# We expect the maximum kinetic energy to occur near the start of the simulation
+# We expect the maximum kinetic energy to occur near the start of the simulation (usually second time-step)
 summary(all_checks$kinetic_energy_max_index)
-#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#  2.000   2.000   3.000   3.477   4.000  11.000 
+## Shut bunbury floodgate
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#  2.000   2.000   3.000   3.477   4.000  11.000
 
-# For comparison, results prior to Busselton elevation updates [Dec 2022]
-#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-#  2.000   2.000   3.000   3.477   4.000  11.000 
-
-## FOR COMPARISON, OLD GREATER PERTH RESULTS -- identical
-##   Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-##  2.000   2.000   3.000   3.477   4.000  11.000 
+## Open bunbury floodgate
+#   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#  2.000   2.000   3.000   3.477   4.000  11.000
 
 
 # When there are fluxes in and out of the domain, we lose the typical energy
@@ -314,23 +304,13 @@ summary(all_checks$kinetic_energy_max_index)
 # true for runs with nonzero MSL, as it also depends on the volume change over
 # time). 
 summary(all_checks$normalised_energy_diff_max/(2*all_checks$kinetic_energy_max)) 
-#      Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
-#-0.0003201  0.0001092  0.0003299  0.0003297  0.0004850  0.0038261 
+## Shut bunbury floodgate
+#      Min.    1st Qu.     Median       Mean    3rd Qu.       Max.
+# -0.0003201  0.0001092  0.0003299  0.0003299  0.0004850  0.0035417
 
-# Results prior to Busselton elevation updates [Dec 2022]
-#      Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
-#-0.0003201  0.0001092  0.0003299  0.0003296  0.0004850  0.0035444 
-
-
-## FOR COMPARISON, OLD GREATER PERTH RESULTS -- ALMOST THE SAME
-#> summary(all_checks$normalised_energy_diff_max/(2*all_checks$kinetic_energy_max))
-#      Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
-# -0.0003201  0.0001092  0.0003299  0.0003352  0.0004850  0.0041341 
-#
-# Again not too bad, but worth checking out the extreme cases.
-#    Note here, the most extreme cases are small earthquakes!
-#  "../../swals/OUTPUTS/ptha18-GreaterPerth-sealevel60cm/random_outerrisesunda/ptha18_random_scenarios_outerrisesunda_row_0000760_Mw_72_HS-full-ambient_sea_level_0.6/multidomain_log_image_00000000000000000001.log"
-# "../../swals/OUTPUTS/ptha18-GreaterPerth-sealevel60cm/random_sunda2/ptha18_random_scenarios_sunda2_row_0010148_Mw_73_HS-full-ambient_sea_level_0.6/multidomain_log_image_00000000000000000001.log"
+## Open bunbury floodgate
+#      Min.    1st Qu.     Median       Mean    3rd Qu.       Max.
+#-0.0003201  0.0001092  0.0003299  0.0003297  0.0004850  0.0038261
 
 
 
