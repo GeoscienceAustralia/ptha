@@ -4,7 +4,7 @@
 
 if(!file.exists(.OTPS_directory)){
     msg = paste0('Cannot file OTPS_directory: ',
-        .OTPS_directory, '\n Please edit the OTPS_directory_name.R script \n',
-        'to ensure that the ".OTPS_directory" variable points to the OTPS folder in your tpxo72 install')
+        .OTPS_directory, '\n Please edit the OTPS_directory_name_TPXO9.R script \n',
+        'to ensure that the ".OTPS_directory" variable points to the OTPS folder in your tpxo9 install')
     stop(msg)
 }

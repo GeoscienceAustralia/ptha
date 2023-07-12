@@ -200,8 +200,6 @@ for(i in 1:length(all_mslp)){
 
 # Compare the 'time of peak' to the 'expected arrival time'.
 time_difference_min = (as.numeric(24*60*(lamb_peak_jtime - j_arrival)))
-#sort(time_difference_min, decreasing=TRUE)[1:5]
-#[1] 45.13686 15.76457 14.23174 13.10642 12.31802
 
 XLAB_JULIAN = seq(19007, 19008, by=1/12)
 XLAB_JULIAN_label = as.difftime(XLAB_JULIAN, units='days') +  R_JULIAN_ORIGIN
@@ -285,28 +283,8 @@ legend('bottomright', c('Lamb peak', 'Lamb trough'), col=c('black', 'blue'), pch
 dev.off()
 
 ## Linear regression to estimate speeds
-#> lm(observed_peak_arrival_secs ~ distance_mslp_tonga)
-#
-#Call:
-#lm(formula = observed_peak_arrival_secs ~ distance_mslp_tonga)
-#
-#Coefficients:
-#        (Intercept)  distance_mslp_tonga  
-#          8.455e+02            3.111e-03  
-#
-#> 1/3.111e-03
-#[1] 321.4401
-#> 
-#> lm(observed_trough_arrival_secs ~ distance_mslp_tonga)
-#
-#Call:
-#lm(formula = observed_trough_arrival_secs ~ distance_mslp_tonga)
-#
-#Coefficients:
-#        (Intercept)  distance_mslp_tonga  
-#          1.518e+03            3.486e-03  
-
-
+#lm(observed_peak_arrival_secs ~ distance_mslp_tonga)
+#lm(observed_trough_arrival_secs ~ distance_mslp_tonga)
 
 png(paste0(OUTPUT_GRAPHICS_DIR, '/lamb_wave_time_from_peak_to_trough.png'), width=8, height=5.5, units='in', res=300)
 peak_to_trough_time = as.numeric(observed_trough_arrival_secs - observed_peak_arrival_secs)

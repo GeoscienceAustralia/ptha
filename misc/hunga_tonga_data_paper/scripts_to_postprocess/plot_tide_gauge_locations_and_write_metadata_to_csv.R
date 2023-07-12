@@ -29,7 +29,7 @@ extract_tas_revised_tide_gauge_locations<-function(){
     names(all_TAS_headers) = gsub('.csv', '', basename(all_TAS_files), fixed=TRUE)
     lon = unlist(lapply(all_TAS_headers, function(x) as.numeric(strsplit(x[4], split=",")[[1]][2]) ))
     lat = unlist(lapply(all_TAS_headers, function(x) as.numeric(strsplit(x[3], split=",")[[1]][2]) ))
-    # Lats are mostly missing the minus sign, correct this
+    # In the "initial" original data, some (but not all) lats were missing the minus sign. Now they all are.
     k = which(lat > 0)
     if(length(k) > 0) lat[k] = -lat[k]
 
@@ -122,8 +122,11 @@ extract_ioc_tide_gauge_locations<-function(){
 
 extract_BOM_and_MHL_tide_gauge_locations<-function(){
 
-    # This file initially contained an incorrect location for Thursday Island (original file fixed during QC)
+    # This file includes coordinates for stations from both BOM and MHL. 
     bom_mhl_tide_gauge_locations = read.csv('../original/01_tide_gauges/BOM_and_MHL_tide_gauge_metadata_Table.csv')
+    # Initially the above file also included many more gauges from BOM. But during
+    # development we noticed various issues, and after much discussion decided to
+    # remove many that had double-ups with IOC data and/or an uncertain source. 
     n = ncol(bom_mhl_tide_gauge_locations)
     names(bom_mhl_tide_gauge_locations)[2:n] = tolower(names(bom_mhl_tide_gauge_locations)[2:n])
     rownames(bom_mhl_tide_gauge_locations) = NULL
@@ -141,8 +144,12 @@ extract_BOM_and_MHL_tide_gauge_locations<-function(){
     target_files_endname = gsub('.csv', '', unlist(lapply(target_files_tag, function(x) x[2])) )
     target_files_endname = gsub('-', ' ', target_files_endname) # Empty for corrected MHL files
 
-    # NOTE: This function is potentially fragile -- it need to be checked if any input files change!
-    # This partly reflects that the data organisation is not so clean.
+    # NOTE: This function is potentially fragile -- it need to be checked if
+    # any input files change! This partly reflects that the data organisation
+    # is not so clean. To check, just ensure that in the post-processed
+    # metadata, there is a correspondance between the site names and the file
+    # names -- minor inconsistencies exist between these two, but for a human
+    # it is obvious.
     match_file_to_name = function(endname, startname){
 
             if(grepl('Level1', startname)){
@@ -159,7 +166,7 @@ extract_BOM_and_MHL_tide_gauge_locations<-function(){
 
                 possible_match = grep(endname, tolower(bom_mhl_tide_gauge_locations$name), fixed=TRUE)
 
-                # Workarounds for some special cases
+                # Workarounds for some special cases (some were later removed)
                 if(endname == 'sydney'){
                     # Sydney workaround
                     possible_match = which("Sydney" == bom_mhl_tide_gauge_locations$name)                
@@ -213,12 +220,12 @@ plot_tide_gauges<-function(){
 
     # Combine the gauge lcoations
     all_gauge_locations = rbind(
-        bom_mhl_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
-        tas_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
+                bom_mhl_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
+                    tas_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
         macquarieisland_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
-        des_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
-        ioc_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
-        nswPorts_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')]
+                    des_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
+                    ioc_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
+               nswPorts_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')]
         )
 
     # Rename 'data_file' to 'original_data_file' for clarity in the output
@@ -238,8 +245,8 @@ plot_tide_gauges<-function(){
     all_gauge_locations$name = gsub('/', '_', all_gauge_locations$name, fixed=TRUE) # Remove '/'
 
     # Remove gauges that are missing data files. This happens due to a mismatch
-    # between stations recorded in some metadata files, and the data we
-    # actually receive.
+    # between station recorded in some metadata files, and the data we
+    # actually receive. For instance, some sites had old stations, but not obs during Hunga Tonga.
     to_remove = which(all_gauge_locations$original_data_file == "")
     print(c('Removing rows without matching files: ', 
         paste0("    ", all_gauge_locations$name[to_remove])))

@@ -1,6 +1,6 @@
 #
-# Check the time interval for each gauge, and count the number of tide-gauges
-# that have missing stage data (due to licencing)
+# Compute various summary statistics about the data, such as the station sampling frequency,
+# but now also many other things.
 #
 
 source('global_variables.R')

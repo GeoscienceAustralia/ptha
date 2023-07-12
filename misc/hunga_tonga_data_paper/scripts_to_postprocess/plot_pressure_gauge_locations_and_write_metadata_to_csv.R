@@ -21,7 +21,6 @@ writeLines("List of MSLP sensor time-series files that were skipped in post-proc
 get_BOM_gauge_locations<-function(){
 
     gauge_locations = read.csv('../original/02_mslp_sensors/HD01D_StnDet.csv', header=FALSE)
-    # Not clear what all the metadata is, but
     names(gauge_locations)[4] = 'station'
     names(gauge_locations)[7] = 'lat'
     names(gauge_locations)[8] = 'lon'
