@@ -69,7 +69,7 @@ Installation from source
 
 ### Standard install
 
-These notes apply to linux. 
+These notes apply to both Linux and Windows (currently untested on Mac). 
 
 To build rptha, you firstly need to install the R packages that it depends on.
 The usual way to get these is to start R, and do:
@@ -89,8 +89,11 @@ the NCI). Note that the `rgl` install is not essential, as it is only used for
 3d interactive graphics, so errors associated with this can optionally be
 ignored.
 
-Once the packages have installed, you should cd into the ptha/R/rptha directory, start
-R, and then do:
+On Windows, before proceeding further, you need to 
+[install the version of Rtools corresponding to your R install](https://cran.r-project.org/bin/windows/Rtools/).
+
+Once the packages have installed, you should start R inside the ptha/R/rptha directory (within a local copy of this repository).
+Run the following from within R:
 
     source('build_package.R')
 
@@ -99,28 +102,14 @@ This will make an R package file in the same directory as this README.md
 
     R CMD INSTALL rptha_XXXXX.tar.gz
 
-where the XXXX are adapted to match the file name (and on Ubuntu, you would add
-'sudo' to the start). 
+where the XXXX are adapted to match the file name. On Ubuntu you need to add
+'sudo' to the start of the previous command. On Windows you could instead use
+the R GUI option `Packages/Install package(s) from local files` to achieve the
+last step.
 
 You can also give other people copies of the rptha_XXXXX.tar.gz file to install
-themselves (provided they are running a similar environment to you, and have
-the package dependencies installed).
-
-### Windows 
-
-On Windows, building R packages is more challenging, and the developer has
-never built a native Windows install. 
-
-Instead we suggest that Windows users run the code on a Windows machine by
-using a linux virtual machine (e.g. using
-[virtualbox](https://www.virtualbox.org/) to run a linux operating system
-inside your Windows machine). 
-
-### Install on NCI
-
-* This may differ from the above instructions -- the approach has varied over
-  the years. See some detailed notes in the [install](install) directory
-
+themselves (provided they are running a similar OS to you and have the package
+dependencies installed).
 
 Usage
 -----

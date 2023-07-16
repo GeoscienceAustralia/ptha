@@ -30,8 +30,8 @@ module burn_into_grid_mod
         !! the lines)
         type(rank2_allocatable_type), allocatable :: lines(:)
         contains
-        procedure :: read_from_csv => read_xyz_lines_from_csv
-        procedure :: burn_into_grid => burn_lines_into_grid
+        procedure, non_overridable :: read_from_csv => read_xyz_lines_from_csv
+        procedure, non_overridable :: burn_into_grid => burn_lines_into_grid
     end type
 
     type polyvalue_type
@@ -46,8 +46,8 @@ module burn_into_grid_mod
         !! the values into a grid at points inside the respective polygons
         type(polyvalue_type), allocatable :: polyvalue(:)
         contains
-        procedure :: setup => setup_polygons_values_type_from_csv_and_value
-        procedure :: burn_into_grid => burn_polygons_values_type_into_grid
+        procedure, non_overridable :: setup => setup_polygons_values_type_from_csv_and_value
+        procedure, non_overridable :: burn_into_grid => burn_polygons_values_type_into_grid
     end type
 
     contains

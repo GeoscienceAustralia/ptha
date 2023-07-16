@@ -367,8 +367,10 @@ EVOLVE_TIMER_START('LF_update_UHVH')
                     (( domain%U(xL:(xU-1),j,ELV) < -minimum_allowed_depth + domain%msl_linear).AND.&
                      ( domain%U((xL+1):xU,j,ELV) < -minimum_allowed_depth + domain%msl_linear)))
 
-                ! These variables can be used to zero UH/VH when stage < bed. However, this would introduce a nonlinearity into the
-                ! equations, which seems undesirable for a 'truely-linear' approach.
+                ! These variables are used for nonlinear variants of the shallow water equations 
+                ! to zero velocities in dry cells. But for the linear shallow water equations 
+                ! we don't need that (mathematically there is no wetting/drying, the 'active' domain doesn't
+                ! change over time even if stage < bed).
                 h_jph_wet(xL:xU    ) = ONE_dp
                 h_iph_wet(xL:(xU-1)) = ONE_dp
             else

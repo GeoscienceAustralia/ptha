@@ -113,7 +113,7 @@ module nested_grid_comms_mod
             !! Like nrecv, if we don't need to send boundary flux data
         logical :: recv_active = .true. 
             !! Can use to switch off 'recv' (so only sends occur)
-        type(array_rank2_dp_type) :: recv_box_flux_integral(4)
+        type(array_rank2_force_double_type) :: recv_box_flux_integral(4)
             !! Store the flux integral around the recv_inds bbox boundary
             !! length(4) = NORTH, SOUTH, EAST, WEST
         type(array_rank2_force_double_type) :: recv_box_flux_error(4)
@@ -156,19 +156,19 @@ module nested_grid_comms_mod
 
         contains
 
-        procedure :: initialise => initialise_two_way_nesting_comms
+        procedure, non_overridable :: initialise => initialise_two_way_nesting_comms
 #if defined(OLD_PROCESS_DATA_TO_SEND_B4FEB22)
-        procedure :: process_data_to_send => process_data_to_send_ORIGINAL
+        procedure, non_overridable :: process_data_to_send => process_data_to_send_ORIGINAL
 #else
-        procedure :: process_data_to_send => process_data_to_send_NEW
+        procedure, non_overridable :: process_data_to_send => process_data_to_send_NEW
 #endif
-        procedure :: send_data => send_data
-        procedure :: process_received_data => process_received_data
+        procedure, non_overridable :: send_data => send_data
+        procedure, non_overridable :: process_received_data => process_received_data
         ! Routines to allow time-stepping of boundary flux integral terms
-        procedure :: boundary_flux_integral_multiply => boundary_flux_integral_multiply
-        procedure :: boundary_flux_integral_tstep => boundary_flux_integral_tstep
+        procedure, non_overridable :: boundary_flux_integral_multiply => boundary_flux_integral_multiply
+        procedure, non_overridable :: boundary_flux_integral_tstep => boundary_flux_integral_tstep
         ! Memory summary
-        procedure :: memory_summary => two_way_nesting_comms_memory_summary
+        procedure, non_overridable :: memory_summary => two_way_nesting_comms_memory_summary
 
     end type
 
@@ -201,8 +201,8 @@ module nested_grid_comms_mod
 
         contains
 
-        !procedure:: print => print_nesting_fluxes
-        procedure:: memory_size => domain_nesting_type_memory_size
+        !procedure, non_overridable :: print => print_nesting_fluxes
+        procedure, non_overridable :: memory_size => domain_nesting_type_memory_size
 
     end type
 

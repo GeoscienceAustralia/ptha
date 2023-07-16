@@ -37,11 +37,11 @@ module grid_spacetime_interpolator_mod
 
         contains
 
-        procedure :: initialise => initialise_grid_spacetime_interpolator
-        procedure :: setup_to_read_at_time => setup_to_read_at_time
-        procedure :: interpolate => interpolate_from_grid_spacetime
-        procedure :: interpolate_grid_in_time => interpolate_full_grids_time_only
-        procedure :: finalise => finalise_grid_spacetime_interpolator
+        procedure, non_overridable :: initialise => initialise_grid_spacetime_interpolator
+        procedure, non_overridable :: setup_to_read_at_time => setup_to_read_at_time
+        procedure, non_overridable :: interpolate => interpolate_from_grid_spacetime
+        procedure, non_overridable :: interpolate_grid_in_time => interpolate_full_grids_time_only
+        procedure, non_overridable :: finalise => finalise_grid_spacetime_interpolator
 
     end type
 

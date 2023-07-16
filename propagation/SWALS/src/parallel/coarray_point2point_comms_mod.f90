@@ -1195,18 +1195,15 @@ module coarray_point2point_comms_mod
     end subroutine
 #endif
 
-    !
-    ! Copy data from the recv buffer to 'recv_array'
-    !
-    ! @param recv_array rank 1 array of kind dp, into which we wish to copy data
-    !     associated with the label
-    ! @param buffer_label character string giving a label to the communication
-    !     (same as mentioned earlier)
     pure subroutine recv_from_p2p_comms_rank1(p2p, recv_array, buffer_label)
-
+        !!
+        !! Copy data from the recv buffer to 'recv_array'
+        !!
         type(p2p_comms_type), intent(in) :: p2p
         real(dp), intent(inout) :: recv_array(:)
+            !! rank 1 array of kind dp, into which we wish to copy data associated with the label
         character(len=p2p_id_len), intent(in) :: buffer_label
+            !!character string giving a label to the communication
 
         include 'point2point_include_recv_p2p.f90'
 

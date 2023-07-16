@@ -1,3 +1,13 @@
+#
+# Run the test suite and build
+#
+# This currently doesn't work on Windows (as it requires unix shell commands). But the tests can
+# be run in Windows once everything is installed by starting R in the 'tests' directory and running:
+#
+#     source('testthat.R')
+#
+
+
 library(devtools)
 
 # Modify the 'version'

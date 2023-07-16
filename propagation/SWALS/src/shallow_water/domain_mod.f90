@@ -439,8 +439,8 @@ module domain_mod
         real(dp), allocatable :: flux_EW(:,:,:)  !! EW fluxes
         real(dp), allocatable :: depth(:,:) !! Depths at cell centre
         real(dp), allocatable :: velocity(:,:, :) !! Velocity
-        real(dp), allocatable :: explicit_source(:,:,:) !! Used for pressure gradient terms
-        real(dp), allocatable :: explicit_source_VH_j_minus_1(:,:) !! Separate from explicit_source for OPENMP parallel logic
+        real(force_double), allocatable :: explicit_source(:,:,:) !! Used for pressure gradient terms
+        real(force_double), allocatable :: explicit_source_VH_j_minus_1(:,:) !! Separate from explicit_source for OPENMP parallel logic
         real(dp), allocatable :: manning_squared(:,:) !! Friction
         real(dp), allocatable :: backup_U(:,:,:) !! Needed for some timestepping methods
         real(dp), allocatable :: friction_work(:,:,:) !! Friction for leapfrog_nonlinear and leapfrog_linear_plus_nonlinear_friction
@@ -461,79 +461,80 @@ module domain_mod
         CONTAINS
 
         ! Initialisation
-        procedure:: allocate_quantities => allocate_quantities
+        procedure, non_overridable :: allocate_quantities => allocate_quantities
 
         ! Reporting
-        procedure:: print => print_domain_statistics
+        procedure, non_overridable :: print => print_domain_statistics
 
         ! Core routines that occur within a timestep
         ! (consider making these not type bound -- since the user should not really call them)
-        procedure:: compute_depth_and_velocity => compute_depth_and_velocity
-        procedure:: compute_fluxes => compute_fluxes
-        !procedure:: compute_fluxes => compute_fluxes_vectorized !! Slower than un-vectorized version on GD home machine
-        procedure:: update_U => update_U  ! Slower or faster, depending on wet/dry areas
-        !procedure:: update_U => update_U_restructured  ! Slower or faster, depending on wet/dry areas
-        !procedure:: update_U => update_U_vectorized !! Slower on an NCI test
-        procedure:: backup_quantities => backup_quantities
+        procedure, non_overridable :: compute_depth_and_velocity => compute_depth_and_velocity
+        procedure, non_overridable :: compute_fluxes => compute_fluxes
+        !procedure, non_overridable :: compute_fluxes => compute_fluxes_vectorized !! Slower than un-vectorized version on GD home machine
+        procedure, non_overridable :: update_U => update_U  ! Slower or faster, depending on wet/dry areas
+        !procedure, non_overridable :: update_U => update_U_restructured  ! Slower or faster, depending on wet/dry areas
+        !procedure, non_overridable :: update_U => update_U_vectorized !! Slower on an NCI test
+        procedure, non_overridable :: backup_quantities => backup_quantities
 
         ! Timestepping (consider making only 'evolve_one_step' type bound -- since the user should not really call others)
-        procedure:: evolve_one_step => evolve_one_step
-        procedure:: update_max_quantities => update_max_quantities
+        procedure, non_overridable :: evolve_one_step => evolve_one_step
+        procedure, non_overridable :: update_max_quantities => update_max_quantities
 
         ! Boundary conditions. This just calls whatever domain%boundary_subroutine points to (consider making not type bound)
-        procedure:: update_boundary => update_boundary
+        procedure, non_overridable :: update_boundary => update_boundary
 
         ! Forcing term
-        procedure :: apply_forcing => apply_forcing
-        procedure :: store_forcing => store_forcing
+        procedure, non_overridable :: apply_forcing => apply_forcing
+        procedure, non_overridable :: store_forcing => store_forcing
 
         ! IO
-        procedure:: create_output_folders => create_output_folders
-        procedure:: create_output_files => create_output_files
-        procedure:: write_to_output_files => write_to_output_files
-        procedure:: write_max_quantities => write_max_quantities
-        procedure:: log_outputs => divert_logfile_unit_to_file
+        procedure, non_overridable :: create_output_folders => create_output_folders
+        procedure, non_overridable :: create_output_files => create_output_files
+        procedure, non_overridable :: write_to_output_files => write_to_output_files
+        procedure, non_overridable :: write_max_quantities => write_max_quantities
+        procedure, non_overridable :: log_outputs => divert_logfile_unit_to_file
 
         ! Mass conservation and other reporting
-        procedure:: mass_balance_interior => mass_balance_interior
-        procedure:: volume_interior => volume_interior
-        procedure:: volume_in_priority_domain => volume_in_priority_domain
-        procedure:: compute_domain_statistics => compute_domain_statistics_new
+        procedure, non_overridable :: mass_balance_interior => mass_balance_interior
+        procedure, non_overridable :: volume_interior => volume_interior
+        procedure, non_overridable :: volume_in_priority_domain => volume_in_priority_domain
+        procedure, non_overridable :: compute_domain_statistics => compute_domain_statistics_new
 
         ! Functions to estimate gravity-wave time-step (often useful to call at the start of a model run). These are not used
         ! in the flow-algorithms, they are just for convenience.
-        procedure:: linear_timestep_max => linear_timestep_max
-        procedure:: nonlinear_stationary_timestep_max => nonlinear_stationary_timestep_max
-        procedure:: stationary_timestep_max => stationary_timestep_max
+        procedure, non_overridable :: linear_timestep_max => linear_timestep_max
+        procedure, non_overridable :: nonlinear_stationary_timestep_max => nonlinear_stationary_timestep_max
+        procedure, non_overridable :: stationary_timestep_max => stationary_timestep_max
 
         ! Setup and store point-gauge outputs
-        procedure:: setup_point_gauges => setup_point_gauges
-        procedure:: write_gauge_time_series => write_gauge_time_series
+        procedure, non_overridable :: setup_point_gauges => setup_point_gauges
+        procedure, non_overridable :: write_gauge_time_series => write_gauge_time_series
 
         ! finalization (e.g. close netcdf files)
-        procedure:: finalise => finalise_domain
+        procedure, non_overridable :: finalise => finalise_domain
 
         ! Smoothing of elevation. Not recommended in general, but with poor elevation data it might reduce artefacts.
-        procedure :: smooth_elevation => smooth_elevation
+        procedure, non_overridable :: smooth_elevation => smooth_elevation
         ! Sometimes local smoothing near nesting boundaries can aid stability
-        procedure :: smooth_elevation_near_point => smooth_elevation_near_point
-        procedure :: smooth_elevation_near_nesting_fine2coarse_boundaries => smooth_elevation_near_nesting_fine2coarse_boundaries
+        procedure, non_overridable :: smooth_elevation_near_point => smooth_elevation_near_point
+        procedure, non_overridable :: smooth_elevation_near_nesting_fine2coarse_boundaries => &
+            smooth_elevation_near_nesting_fine2coarse_boundaries
 
         ! Sending and receiving halos
-        procedure :: send_halos => send_halos
-        procedure :: receive_halos => receive_halos
+        procedure, non_overridable :: send_halos => send_halos
+        procedure, non_overridable :: receive_halos => receive_halos
 
         ! Nesting.
         ! -- Keep track of fluxes for mass-conservation tracking
-        procedure:: nesting_boundary_flux_integral_multiply => nesting_boundary_flux_integral_multiply
-        procedure:: nesting_boundary_flux_integral_tstep => nesting_boundary_flux_integral_tstep
-        procedure:: nesting_flux_correction_everywhere => nesting_flux_correction_everywhere
+        procedure, non_overridable :: nesting_boundary_flux_integral_multiply => nesting_boundary_flux_integral_multiply
+        procedure, non_overridable :: nesting_boundary_flux_integral_tstep => nesting_boundary_flux_integral_tstep
+        procedure, non_overridable :: nesting_flux_correction_everywhere => nesting_flux_correction_everywhere
         ! -- Determine if a given point is in the 'priority domain'
-        procedure:: is_in_priority_domain => is_in_priority_domain
+        procedure, non_overridable :: is_in_priority_domain => is_in_priority_domain
         ! -- When initialising nested domains, set lower-left/upper-right/resolution near the desired locations,
         ! adjusting as required to support nesting (e.g. so that edges align with parent domain, and cell size is an integer divisor
         ! of the parent domain, etc).
-        procedure:: match_geometry_to_parent => match_geometry_to_parent
+        procedure, non_overridable :: match_geometry_to_parent => match_geometry_to_parent
 
 
     end type domain_type
@@ -1753,7 +1754,7 @@ TIMER_STOP('evolve_one_step')
         class(domain_type), intent(inout):: domain
         real(force_double), intent(inout) :: domain_volume
         integer(ip) :: n_ext, ny, nx, j
-        real(dp) :: local_sum
+        real(force_double) :: local_sum
 
 TIMER_START('compute_volume_in_priority_domain')
 
@@ -3403,7 +3404,7 @@ TIMER_STOP('nesting_flux_correction')
             !! This is less likely to allow communicating with grandparent domains, but might allow for a more efficient split-up
             !! of the domain.
 
-        real(dp) :: ur(2), parent_domain_dx(2)
+        real(force_double) :: ur(2), parent_domain_dx(2), ll(2)
         character(len=charlen) :: rounding
         logical :: recursive_nest
     
@@ -3428,19 +3429,19 @@ TIMER_STOP('nesting_flux_correction')
             ! Ensure that after rounding, the originally requested domain is contained in the final domain
 
             !  domain%lower_left is on a cell boundary of the parent domain -- and is further 'west/south' than 'lower_left'
-            domain%lower_left = parent_domain%lower_left + &
+            ll = real(parent_domain%lower_left, force_double) + &
                 floor((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
             ! upper_right = (domain%lower_left + domain%lw) is on a cell boundary of the parent domain
-            ur = parent_domain%lower_left + &
+            ur = real(parent_domain%lower_left, force_double) + &
                 ceiling((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case('nearest')
             ! Find the 'nearest' match in parent domain. This might mean we reduce the requested size of the domain
-            domain%lower_left = parent_domain%lower_left + &
+            ll = real(parent_domain%lower_left, force_double) + &
                 nint((lower_left - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
-            ur = parent_domain%lower_left + &
+            ur = real(parent_domain%lower_left, force_double) + &
                 nint((upper_right - parent_domain%lower_left)/parent_domain_dx)*parent_domain_dx
 
         case default
@@ -3451,7 +3452,8 @@ TIMER_STOP('nesting_flux_correction')
         end select
 
         ! Now we can set the child domain's properties
-        domain%lw =  ur - domain%lower_left
+        domain%lower_left = ll
+        domain%lw =  ur - ll
         domain%dx = parent_domain_dx/dx_refinement_factor
         domain%nx = nint(domain%lw / domain%dx) ! Is a multiple of dx_refinement_factor
         domain%timestepping_refinement_factor = timestepping_refinement_factor
