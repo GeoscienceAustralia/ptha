@@ -26,6 +26,6 @@ This folder contains observations at a number of tide-gauges, from a number of d
 * [NSW_Port_Authority_DO_NOT_DISTRIBUTE](NSW_Port_Authority_DO_NOT_DISTRIBUTE) is an empty folder because it contained data that we do not have permission to distribute, collected by the Port Authority of NSW. 
     * However, we do have permission to distribute de-tided versions of the data. 
     * In practice the restricted data was stored in this folder for processing, and then removed prior to distribution. 
-    * The tide gauges employ a range of sampling methods, and we do not have details for all stations. 
+    * The tide gauges employ a range of sampling methods, and we do not have details for all stations. From communications with the Port Authority we know that:
         * At Fort Denison, Sydney, an acoustic pulse measures water levels in a stilling well every second. Measurements are derived by averageing 60 of these over 1 minute. 
-        * At the Cruise Wharf, Eden, there is no stilling well and a Vega radar gauge measures an average water level every 5 seconds, with 12 of these averaged to produce the 1 minute data. In addition the instrument uses an in-built algorithm to smooth out large fluctiotions between readings, which can attenuate large water level shifts with short periods.
+        * At the Cruise Wharf, Eden, there is no stilling well and a VegaPulse C23 radar gauge measures an average water level every 5 seconds, with 12 of these averaged to produce the 1 minute data. In addition the instrument uses an in-built algorithm to smooth out large fluctiotions between readings, which can attenuate large water level shifts with short periods.
