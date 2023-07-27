@@ -16,7 +16,7 @@ source('global_variables.R')
 #     DES
 #     IOC
 #     NSW Port Authority [in this case we cannot release the original data, just de-tided data]
-#     AAD
+#     AAD (both Macquarie Island, and separately Casey+Davis+Mawson)
 #
 
 # Open a file connection to report on skipped gauges
@@ -51,6 +51,28 @@ extract_macquarie_island_tide_gauge_locations<-function(){
     output = data.frame(name='Macquarie_Island', lon=lon, lat=lat, file=mac_file, Dataset='AAD',
             data_file=mac_file)
     rownames(output) = NULL
+    return(output)
+}
+
+extract_AAD_other_tide_gauge_locations<-function(){
+    # 3 files, use reformatted versions
+    aad_other_files = Sys.glob('../original/01_tide_gauges/AAD_2022_tidegauge/*reformatted.csv')
+    metadata = vector(mode='list', length=length(aad_other_files))   
+    for(i in 1:length(aad_other_files)){
+        metadata[[i]]$data_file = aad_other_files[i]
+        metadata[[i]]$file = aad_other_files[i]
+        name_start = strsplit(basename(aad_other_files[i]), split="_reformatted")[[1]][1]
+        metadata[[i]]$name = gsub('202201', '', name_start)
+        metadata[[i]]$Dataset = 'AAD'
+
+        # Get lon/lat
+        filetxt = readLines(aad_other_files[i], n=20) 
+        klon = grep('Longitude', filetxt); stopifnot(length(klon) == 1)
+        metadata[[i]]$lon = as.numeric(strsplit(filetxt[klon], split=" ")[[1]][3])
+        klat = grep('Latitude', filetxt); stopifnot(length(klat) == 1)
+        metadata[[i]]$lat = as.numeric(strsplit(filetxt[klat], split=" ")[[1]][3])
+    }
+    output = do.call(rbind, lapply(metadata, as.data.frame))
     return(output)
 }
 
@@ -217,12 +239,14 @@ plot_tide_gauges<-function(){
     ioc_tide_gauge_locations = extract_ioc_tide_gauge_locations()
     nswPorts_tide_gauge_locations = extract_NSWPortAuth_tide_gauge_locations()
     macquarieisland_tide_gauge_locations = extract_macquarie_island_tide_gauge_locations()
+    aad_other_tide_gauge_locations = extract_AAD_other_tide_gauge_locations()
 
     # Combine the gauge lcoations
     all_gauge_locations = rbind(
                 bom_mhl_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
                     tas_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
         macquarieisland_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
+              aad_other_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
                     des_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
                     ioc_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')],
                nswPorts_tide_gauge_locations[c('name', 'lon', 'lat', 'Dataset', 'data_file')]
