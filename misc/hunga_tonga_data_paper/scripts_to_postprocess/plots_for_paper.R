@@ -393,7 +393,7 @@ tg_pairs = list(
     list(
         g1 = "Rosslyn_Bay_IOC",
         g2 = "Rosslyn_Bay_DES",
-        title = 'Rossyln Bay, two nearby gauges'
+        title = 'Rosslyn Bay, two nearby gauges'
     ),
     list(
         g1 = "Gold_Coast_Sand_Bypass_Jetty_IOC",
