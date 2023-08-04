@@ -16,6 +16,18 @@ all_pressure_files = pressure_metadata$original_data_file
 all_pressure_data = lapply(all_pressure_files, function(x) try(read_pressure_gauge_any(x)))
 names(all_pressure_data) = gsub('.csv', '', basename(all_pressure_files))
 
+for(i in 1:length(all_pressure_data)){
+    # Remove any data outside a specified window. This matters for the tide gauge data (for speed and for artefact removal) 
+    # -- for the MSLP data here it is just applied for consistency. 
+    start_limit = julian(START_TIME_LIMIT_GAUGE_DATA)
+    end_limit   = julian(END_TIME_LIMIT_GAUGE_DATA)
+    k = which((all_pressure_data[[i]]$juliant < start_limit) | (all_pressure_data[[i]]$juliant > end_limit))
+    if(length(k) > 0){
+        all_pressure_data[[i]] = all_pressure_data[[i]][-k,]
+    }
+}
+
+
 # Plot every station (if possible)
 pdf(paste0(OUTPUT_GRAPHICS_DIR, '/highpass_filtered_plot_pressure_gauges.pdf'), width=10, height=8)
 for(i in 1:length(all_pressure_data)){
