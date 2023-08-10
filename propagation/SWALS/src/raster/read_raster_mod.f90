@@ -489,8 +489,14 @@ module read_raster_mod
                 end if
 
                 ! Set 'nodata' values back to empty values
-                if(z(i) == real(multi_raster%raster_datasets(j)%nodata_value, dp)) z(i) = empty_value
-                if(z(i) < lower_limit_l) z(i) = empty_value
+                if(z(i) == real(multi_raster%raster_datasets(j)%nodata_value, dp)) then
+                    z(i) = empty_value
+                else if(z(i) < lower_limit_l) then
+                    z(i) = empty_value
+                else if(z(i) /= z(i) ) then
+                    ! Genuine NaN
+                    z(i) = empty_value 
+                end if
 
             end do
 
