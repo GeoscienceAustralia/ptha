@@ -483,7 +483,7 @@ module read_raster_mod
                 ! If z is populated with a value, we are done
                 if(z(i) /= empty_value) cycle
 
-                ! Read values inside the raster extent
+                ! Read values inside the raster extent (and try even right on the boundaries)
                 if(x(i) >= ll(1) .and. x(i) <= ur(1) .and. y(i) >= ll(2) .and. y(i) <= ur(2)) then
                     call multi_raster%raster_datasets(j)%get_xy(x(i), y(i), z(i), 1, verbose_l, bilinear_l, band_l)
                 end if
