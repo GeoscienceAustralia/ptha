@@ -593,7 +593,7 @@ get_multidomain_output_times<-function(multidomain_dir, output_type='grids'){
 #' interpretation.
 #' @return Either the max_stage_raster (if return_elevation=FALSE), or a list
 #' with both the max_stage and elevation rasters.
-make_max_stage_raster<-function(swals_out, proj4string='epsg:4326', 
+make_max_stage_raster<-function(swals_out, proj4string='EPSG:4326', 
     na_above_zero=FALSE, return_elevation=FALSE, 
     na_outside_priority_domain=FALSE){
 
@@ -928,7 +928,7 @@ nearest_point_in_multidomain<-function(x, y, md){
 #'
 merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, 
     domain_index = NA, desired_var = 'max_stage', desired_time_index = NA,
-    return_raster=FALSE, proj4string="epsg:4326"){
+    return_raster=FALSE, proj4string="EPSG:4326"){
     .library_quiet('ncdf4')
     .library_quiet('raster')
     .library_quiet('sp')
@@ -1728,7 +1728,7 @@ get_domain_indices_in_multidomain<-function(multidomain_dir){
 #'
 get_domain_interior_bbox_in_multidomain<-function(multidomain_dir, 
     include_SpatialPolygonsDataFrame=FALSE, 
-    spdf_proj4string="epsg:4326"){
+    spdf_proj4string="EPSG:4326"){
 
     .library_quiet(ncdf4)
 
