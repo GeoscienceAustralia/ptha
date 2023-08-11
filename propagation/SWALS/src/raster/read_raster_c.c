@@ -111,6 +111,12 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
         xindex = (x_local - xleft)/dx ;
         yindex = (y_local - ytop)/dy ;
 
+        if(xindex < 0 | xindex > (nXSize - 1) | yindex < 0 | yindex > (nYSize - 1)){
+            // Point is not on the raster
+            z[j] = nodata_value ;
+            continue;
+        }
+
         // Read a line at xindex, yindex
         Err = GDALRasterIO(hBand, GF_Read, xindex, yindex, 1, 1, 
                       pafScanline, 1, 1, GDT_Float64, 
@@ -214,14 +220,6 @@ void get_values_at_xy(GDALDatasetH *hDataset, double adfGeoTransform[],
         }else{
             // Nearest cell interpolation
             z[j] = *(pafScanline);
-        }
-
-
-        if(z[j] != z[j]){
-            if(verbose){
-                printf("NA values found in raster \n");
-            }
-            exit(0);
         }
 
     }

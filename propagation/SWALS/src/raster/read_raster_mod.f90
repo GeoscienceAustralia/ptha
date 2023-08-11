@@ -483,14 +483,20 @@ module read_raster_mod
                 ! If z is populated with a value, we are done
                 if(z(i) /= empty_value) cycle
 
-                ! Read values inside the raster extent
+                ! Read values inside the raster extent (and try even right on the boundaries)
                 if(x(i) >= ll(1) .and. x(i) <= ur(1) .and. y(i) >= ll(2) .and. y(i) <= ur(2)) then
                     call multi_raster%raster_datasets(j)%get_xy(x(i), y(i), z(i), 1, verbose_l, bilinear_l, band_l)
                 end if
 
                 ! Set 'nodata' values back to empty values
-                if(z(i) == real(multi_raster%raster_datasets(j)%nodata_value, dp)) z(i) = empty_value
-                if(z(i) < lower_limit_l) z(i) = empty_value
+                if(z(i) == real(multi_raster%raster_datasets(j)%nodata_value, dp)) then
+                    z(i) = empty_value
+                else if(z(i) < lower_limit_l) then
+                    z(i) = empty_value
+                else if(z(i) /= z(i) ) then
+                    ! Genuine NaN
+                    z(i) = empty_value 
+                end if
 
             end do
 
