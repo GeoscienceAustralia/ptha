@@ -308,10 +308,9 @@ module nested_grid_comms_mod
         integer(ip), optional, intent(in) :: my_domain_staggered_grid
             !! integer flag, 1 means my_domain has a staggered grid, 0 otherwise
         character(len=*), optional, intent(in) :: comms_tag_prefix
-            !! A string that will be prepended to the point2point communication tags (required
-            !! in models with more than one multidomain, to avoid name clashes in communication.
-            !! FIXME: This seems no longer required, now that we use p2p_comms_type to encapsulate
-            !! the comms data. But no immediate need to remove it -- it could come in handy?
+            !! A string that will be prepended to the point2point communication tags. This seems no
+            !! longer required. Historically was needed for models with more than one multidomain,
+            !! but now the parallel comms is done via a type inside the multidomain.
 
         ! Local variables
         real(dp) :: cell_ratios(SPATIAL_DIM), prod_cell_ratios

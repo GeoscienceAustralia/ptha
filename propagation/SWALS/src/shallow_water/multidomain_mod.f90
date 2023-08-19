@@ -217,10 +217,10 @@ module multidomain_mod
         real(dp) :: last_write_time = -HUGE(1.0_dp)
             !! Convenience variables controlling writeout
         character(len=charlen) :: label = ''
-            !! Label for the multidomain. When running models with more than one multidomain,
-            !! unique labels should be used for each, to avoid problems in parallel communication.
-            !! (Note: This could be avoided by converting the main data in p2p_comms_mod into a derived
-            !! type, one per multidomain, and that should be a better approach).
+            !! Label for the multidomain. This is no longer required, but can be useful for print-outs.
+            !! Historically it was necessary when running models with >1 multidomain in parallel, but nowadays
+            !! the parallel comms are done in a derived type inside the multidomain, such that there is no need to
+            !! use distinct labels.
         integer(ip) :: log_output_unit = -HUGE(1_ip)
             ! File unit for logging. If more than one multidomain is used (relatively uncommon)
             ! we can put the most common log output for each multidomain in separate files. 
@@ -2454,8 +2454,7 @@ module multidomain_mod
         integer(ip), allocatable, intent(inout) :: all_timestepping_methods_md(:,:)
             !! stores the all_timestepping_methods variable in the multidomain.
         character(len=charlen) :: md_label
-            !! md_label a character label for the multidomain. If there is more than one multidomain, they should have unique labels.
-            !! (set via md%label) to avoid problems in parallel communication.
+            !! md_label a character label for the multidomain, which will be included in the parallel communication tags.
         type(p2p_comms_type), intent(inout) :: md_p2p
             !! The point2point communicator used for this multidomain.
         integer(ip), intent(in) :: md_log_output_unit
