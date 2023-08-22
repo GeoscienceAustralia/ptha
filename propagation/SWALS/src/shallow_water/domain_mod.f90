@@ -664,7 +664,7 @@ TIMER_START("compute_statistics")
         maxstage = -HUGE(1.0_dp)
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
-        minspeed = 0.0_dp ! speed is always > 0
+        minspeed = HUGE(1.0_dp) ! speed is always > 0
 
         ecw = domain%exterior_cells_width
 
@@ -681,7 +681,7 @@ TIMER_START("compute_statistics")
         maxstage = -HUGE(1.0_dp)
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
-        minspeed = 0.0_dp ! speed is always > 0
+        minspeed = HUGE(1.0_dp) ! speed is always > 0
 
         ! If we are using a 'truely-linear' solver then the depth is always recorded from MSL for certain
         ! calculations (pressure gradient term, and wetting/drying)
@@ -3892,6 +3892,8 @@ TIMER_STOP('send_halos')
         do j = 1, nsmooth
             call domain%smooth_elevation('9pt_average')
         end do
+
+        smooth_footprint_exceeded_boundary = .false. 
 
         !$OMP PARALLEL DEFAULT(PRIVATE),&
         !$OMP SHARED(domain, temp_elev, all_dx_md, coarse_window_size, fine_window_size, nsmooth, smooth_footprint), &
