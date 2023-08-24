@@ -61,7 +61,8 @@ module local_routines
             where(domain%U(:,j,STG) <= -1.0e+20_dp ) domain%U(:,j,STG) = 0.0_dp 
 
             ! Set elevation -- no need to clip NA.
-            call elevation_data%get_xy(x,y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip)
+            call elevation_data%get_xy(x,y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip, &
+                raster_index=domain%elevation_source_file_index(:,j))
 
             ! Here we can experiment with the random perturbation
             call random_number(random_uniform)
@@ -278,6 +279,11 @@ program BP09
     !    ! in the evolve loop on the basis of this value
     !    md%domains(7)%static_before_time = very_high_res_static_before_time
     !end if
+
+    do j = 1, size(md%domains)
+        md%domains(j)%nontemporal_grids_to_store = [character(len=charlen) :: &
+            'max_stage', 'elevation0', 'manning_squared', 'elevation_source_file_index']
+    end do
 
     ! Allocate domains and prepare comms
     call md%setup()

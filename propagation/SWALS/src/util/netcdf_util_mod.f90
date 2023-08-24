@@ -40,9 +40,15 @@ module netcdf_util
         [character(len=charlen) :: 'max_stage', 'max_speed', 'max_flux', 'arrival_time']
         !! Gridded variables that can be output, are not time-series, but require tracking flow maxima.
         !! Keep 'max_stage' as the first entry (for now) to support code that assumes domain%max_U(:,:,1) contains the max-stage.
-    character(len=charlen), parameter :: gridded_output_variables_other(2) = &
-        [character(len=charlen) :: 'manning_squared', 'elevation0']
+    character(len=charlen), parameter :: gridded_output_variables_other(3) = &
+        [character(len=charlen) :: 'manning_squared', 'elevation0', 'elevation_source_file_index']
         !! Other gridded variables that can be output and are not time-series
+
+    integer, parameter :: max_temporal_var = size(gridded_output_variables_time)
+        !! Maximum number of temporal variables we could possibly store (in practice we might store less)
+    integer, parameter :: max_static_var = size(gridded_output_variables_max_U) + &
+                                           size(gridded_output_variables_other)
+        !! Maximum number of static variables we could possibly store (in practice we might store less)
 
     type :: nc_grid_output_type
         !!
@@ -74,12 +80,12 @@ module netcdf_util
         !
         ! Time-varying variables to store.
         !
-        integer :: time_var_id(4)
+        integer :: time_var_id(max_temporal_var)
             !! netcdf variable id's for stage, uh, vh, elev
-        character(len=charlen) :: time_var_names(4) = gridded_output_variables_time
+        character(len=charlen) :: time_var_names(max_temporal_var) = gridded_output_variables_time
             !! Names of the time-varying variables - do not change this. We turn on/off storage by
             !! adjusting the corresponding entry of time_var_store_flag
-        logical :: time_var_store_flag(4) = .true. 
+        logical :: time_var_store_flag(max_temporal_var) = .true. 
             !! Options to store stage/uh/vh/elev over time.
             !! .true. or .false. for STG, UH, VH, ELV
             !! For example, if we didn't want to store ELV every time-step, we
@@ -89,12 +95,12 @@ module netcdf_util
         ! Static variables that can be stored. These describe the solution, are real, and are only
         ! stored once (i.e. no time evolution)
         !
-        integer :: static_var_id(6)
-        character(len=charlen) :: static_var_names(6) = &
+        integer :: static_var_id(max_static_var)
+        character(len=charlen) :: static_var_names(max_static_var) = &
             [gridded_output_variables_max_U, gridded_output_variables_other]
             !! Names of solution variables that can be stored once. We turn on/off storeage
             !! by adjusting the static_var_store_flag
-        logical :: static_var_store_flag(6) = .true.
+        logical :: static_var_store_flag(max_static_var) = .true.
             !! True if we want to store the corresponding variable in static_var_names, false otherwise.
 
         integer :: spatial_stride = 1
