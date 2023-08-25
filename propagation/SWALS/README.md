@@ -20,7 +20,7 @@ timesteps, and have grid sizes that are any integer divisor of the coarser
 domain(s) they communicate with. There are no hard limits on the number of
 domains or the depth of refinement. In models with multiple domains, the
 finest-resolution domain at any particular point is the "priority domain" and
-is interpreted as containg the SWALS numerical solution. Information on the
+is interpreted as containing the SWALS numerical solution. Information on the
 priority domain solution is communicated between domains as required to enable
 seamless evolution of the flow. 
 
@@ -257,7 +257,7 @@ Other options that are less often useful include:
 - `-DNONETCDF` Do not use netcdf for model outputs. This is occasionally useful if you cannot build with netcdf for some reason and want to test something else; however the output format is poorly supported and the validation tests will not pass. While occasionally useful this is NOT a sustainable way to use the code.
 - `-DCOARRAY_MPI_USE_ALLTOALLV` This has an effect if used in conjunction with `-DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS`. It makes the code use Mpi_AlltoAllv to do communication in the main timestepping routine, instead of point-to-point Mpi_isend/Mpi_ireceive calls. Typically this is slower, but I have seen some problems where it was faster.
 - `-DLEGACY_CORIOLIS_PARAMETER` Previously SWALS use a value for the earth's angular frequency assuming one rotation per day. Although this matches several other tsunami codes, it is slightly incorrect so was updated (the previous value was about 0.3% too small, because the earth rotates once in a sidereal day, which is slightly less than 24 hours). This flag makes SWALS use the slightly-too-small value. In principle this might help to compare with a previous run, or another model that uses the same treatment, although in practice I haven't seen a case where it matters. 
-- `-DEVOLVE_TIMER` This adds an addition timer to every domain object, which times different parts of code within its time-stepping routine. This level of timing granulairity isn't needed in general, but may be useful in understanding the performance of the code. The timer results are written to a domain-specific file within the domain output directory, named `Evolve_timer_details.txt`.
+- `-DEVOLVE_TIMER` This adds an addition timer to every domain object, which times different parts of code within its time-stepping routine. This level of timing granularity isn't needed in general, but may be useful in understanding the performance of the code. The timer results are written to a domain-specific file within the domain output directory, named `Evolve_timer_details.txt`.
 - `-DOLD_PROCESS_DATA_TO_SEND_B4FEB22` Use an older version of nesting, implemented prior to Feb 2022 (changes `two_way_nesting_comms_mod::process_data_to_send`). The newer version seems better for communication when a fine staggered-grid solver receives from a coarser solver, and similar in other cases.
 
 ## Source-code html documentation
