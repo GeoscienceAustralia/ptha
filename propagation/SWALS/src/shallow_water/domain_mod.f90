@@ -383,7 +383,7 @@ module domain_mod
             !! If unallocated then it will be set in domain%nc_grid_output%initialise
         character(len=charlen), allocatable :: nontemporal_grids_to_store(:)
             !! Specify which 'nontemporal' variables to store. For example:
-            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0']
+            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index']
             !! to store everything;
             !!   [''] to store nothing;
             !!   ['max_stage'] to just store the maximum stage.
@@ -452,11 +452,17 @@ module domain_mod
             !! For debugging it can be helpful to have this array.  If DEBUG_ARRAY is defined, then it will be allocated with
             !! dimensions (nx, ny), and will be written to the netcdf file at each time.
 #endif
-        ! Optionally include other currents (e.g. tides) in the friction term. This is an experiment, currently only supported for
-        ! leapfrog_linear_with_nonlinear_friction
         logical :: friction_with_ambient_fluxes = .false.
-        ! Ambient (e.g. tidal) depth-integrated velocities with easting/northing, used if friction_with_ambient_fluxes=.true.
+            !! Optionally include other currents (e.g. tides) in the friction term. This is an experiment, currently only supported for
+            !! leapfrog_linear_with_nonlinear_friction
         real(dp), allocatable :: ambient_flux(:,:,:)
+            !! Ambient (e.g. tidal) depth-integrated velocities with easting/northing, used if friction_with_ambient_fluxes=.true.
+            !! FIXME: Consider removing this.
+        real(dp), allocatable :: elevation_source_file_index(:,:)
+            !! Store the file index used to set the elevation data at each point. 
+            !! This can be recorded when using the multi_raster_type
+            !! to set the elevation. Although conceptually an integer, it is real 
+            !! because less code modification was required.
 
         CONTAINS
 
@@ -817,17 +823,11 @@ TIMER_STOP("compute_statistics")
         ! Send domain print statements to the default log. Over-ridden later if we send the domain log to its own file.
         domain%logfile_unit = log_output_unit
 
-        if(present(create_output_files)) then
-            create_output = create_output_files
-        else
-            create_output = .TRUE.
-        end if
+        create_output = .TRUE.
+        if(present(create_output_files)) create_output = create_output_files
 
-        if(present(verbose)) then
-            verbose_ = verbose
-        else
-            verbose_ = .true.
-        end if
+        verbose_ = .true.
+        if(present(verbose)) verbose_ = verbose
 
         ! Set default parameters for different timestepping methods
         ! First get the index corresponding to domain%timestepping_method in the timestepping_metadata
@@ -836,7 +836,7 @@ TIMER_STOP("compute_statistics")
         if(domain%theta == -HUGE(1.0_dp)) domain%theta = timestepping_metadata(tsi)%default_theta
         ! Set CFL number
         if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = timestepping_metadata(tsi)%default_cfl
-        ! Flag to note if the grid should be interpreted as staggered
+        ! Flag to note if the grid should be interpreted as staggered or cell-centred
         domain%is_staggered_grid = (timestepping_metadata(tsi)%is_staggered_grid == 1)
         domain%adaptive_timestepping = timestepping_metadata(tsi)%adaptive_timestepping
         domain%eddy_viscosity_is_supported = timestepping_metadata(tsi)%eddy_viscosity_is_supported
@@ -1245,10 +1245,17 @@ TIMER_STOP("compute_statistics")
             !$OMP END PARALLEL
         end if
 
-
-        if(create_output) then
-            CALL domain%create_output_files()
+        if(any(domain%nontemporal_grids_to_store == 'elevation_source_file_index')) then
+            ! Include space to record which file was used to set the elevation at each site.
+            ! The resulting array can be passed as an optional argument to 
+            ! read_raster_mod::multi_raster_type%get_values. 
+            allocate(domain%elevation_source_file_index(nx, ny))
+            ! Typically only used once in serial, so no need for "first touch" openmp.
+            domain%elevation_source_file_index = -1.0_dp
         end if
+
+
+        if(create_output) call domain%create_output_files()
 
         if(verbose_) then
             write(domain%logfile_unit, *) ''
@@ -2312,6 +2319,13 @@ EVOLVE_TIMER_STOP('update_max_quantities')
             ! Save elevation
             if(any(domain%nontemporal_grids_to_store == 'elevation0')) then
                 call domain%nc_grid_output%store_static_variable('elevation0', domain%U(:,:,ELV))
+            end if
+
+            ! Save the elevation source file index
+            if(allocated(domain%elevation_source_file_index) .and. &
+               any(domain%nontemporal_grids_to_store == 'elevation_source_file_index')) then
+                call domain%nc_grid_output%store_static_variable('elevation_source_file_index', &
+                    domain%elevation_source_file_index)
             end if
 
 #endif
