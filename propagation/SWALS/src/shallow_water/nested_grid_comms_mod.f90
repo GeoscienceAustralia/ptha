@@ -616,10 +616,8 @@ module nested_grid_comms_mod
 
 
 
-    !
-    ! Report on amount of memory used in nesting
-    !
     pure subroutine two_way_nesting_comms_memory_summary(two_way_nesting_comms, buffer_size)
+        !! Report on amount of memory used in nesting
         class(two_way_nesting_comms_type), intent(in) :: two_way_nesting_comms
         integer(ip), intent(out) :: buffer_size
         integer(ip) :: i
@@ -641,7 +639,7 @@ module nested_grid_comms_mod
 
         do i = 1, size(two_way_nesting_comms%recv_box_flux_integral)
             if(.not. allocated(two_way_nesting_comms%recv_box_flux_integral(i)%x)) continue
-            buffer_size = buffer_size + size(two_way_nesting_comms%recv_box_flux_integral(i)%x, kind=ip)*real_bytes
+            buffer_size = buffer_size + size(two_way_nesting_comms%recv_box_flux_integral(i)%x, kind=ip)*force_double_bytes
         end do
 
         do i = 1, size(two_way_nesting_comms%recv_box_flux_error)
