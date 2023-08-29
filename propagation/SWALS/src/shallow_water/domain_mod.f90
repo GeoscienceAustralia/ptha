@@ -383,7 +383,7 @@ module domain_mod
             !! If unallocated then it will be set in domain%nc_grid_output%initialise
         character(len=charlen), allocatable :: nontemporal_grids_to_store(:)
             !! Specify which 'nontemporal' variables to store. For example:
-            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index']
+            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage']
             !! to store everything;
             !!   [''] to store nothing;
             !!   ['max_stage'] to just store the maximum stage.

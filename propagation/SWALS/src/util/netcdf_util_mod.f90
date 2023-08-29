@@ -355,7 +355,7 @@ module netcdf_util
             if(.not. (nontemporal_grids_to_store(i) == '' .or. &
                   any(nontemporal_grids_to_store(i) == nc_grid_output%static_var_names))) then
                 write(log_output_unit, *)&
-                    "Unknown value in nontemporal_grids_to_store:", trim(time_grids_to_store(i))
+                    "Unknown value in nontemporal_grids_to_store:", trim(nontemporal_grids_to_store(i))
                 call generic_stop
             end if
         end do
