@@ -282,7 +282,8 @@ program BP09
 
     do j = 1, size(md%domains)
         md%domains(j)%nontemporal_grids_to_store = [character(len=charlen) :: &
-            'max_stage', 'elevation0', 'manning_squared', 'elevation_source_file_index']
+            'max_stage', 'elevation0', 'manning_squared', 'elevation_source_file_index', &
+            'time_of_max_stage']
     end do
 
     ! Allocate domains and prepare comms
