@@ -439,7 +439,7 @@ module multidomain_mod
         ! If they are not, do a quick exit
         do j = 1, size(md%domains)
             if(.not. md%domains(j)%record_max_U) then
-                write(md%log_output_unit) 'Note: Not communicating max_U values because not all domains record_max_U.'
+                write(md%log_output_unit,*) 'Note: Not communicating max_U values because not all domains record_max_U.'
                 return
             end if
         end do
@@ -448,15 +448,15 @@ module multidomain_mod
         do j = 1, size(md%domains)
             n = size(md%domains(j)%max_U, 3)
             if(n > size(md%domains(j)%U, 3)) then
-                write(md%log_output_unit) 'Error (not fatal): Will not communicate max_U values because it contains '
-                write(md%log_output_unit) 'more variables than domain%U, which we use as a scratch space. Skipping'
+                write(md%log_output_unit,*) 'Error (not fatal): Will not communicate max_U values because it contains '
+                write(md%log_output_unit,*) 'more variables than domain%U, which we use as a scratch space. Skipping'
                 return
             end if
 
             if( (size(md%domains(j)%max_U, 1) /= size(md%domains(j)%U, 1)) .or. &
                 (size(md%domains(j)%max_U, 2) /= size(md%domains(j)%U, 2)) ) then
-                write(md%log_output_unit) 'Error (not fatal): Will not communicate max_U values because its dimensions '
-                write(md%log_output_unit) 'are not consistent with domain%U, which we use as a scratch space. Skipping'
+                write(md%log_output_unit,*) 'Error (not fatal): Will not communicate max_U values because its dimensions '
+                write(md%log_output_unit,*) 'are not consistent with domain%U, which we use as a scratch space. Skipping'
                 return
             end if
         end do
