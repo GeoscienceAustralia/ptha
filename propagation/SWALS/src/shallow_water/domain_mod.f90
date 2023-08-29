@@ -1023,6 +1023,14 @@ TIMER_STOP("compute_statistics")
                 write(log_output_unit, *) 'domain%max_U is allocated, then domain%max_U(:,:,1) has max-stage'
                 call generic_stop
             end if
+
+            ! Ensure that if we store "time_of_max_stage", then we also store "max_stage". This is 
+            ! required with the current calculation method (although in principle isn't necessary).
+            if(any(domain%max_U_variables == 'time_of_max_stage') .and. &
+               all(domain%max_U_variables /= 'max_stage')) then
+                write(log_output_unit,*) 'Error: if "time_of_max_stage" is being stored then "max_stage"'
+                write(log_output_unit,*) 'must be stored too (limitation of current implementation).'
+            end if
         end if
 
         !
@@ -2148,7 +2156,7 @@ TIMER_STOP('fileIO')
         !! Keep track of the maxima of stage, i.e. domain%U(:,:,STG)
         !!
         class(domain_type), intent(inout):: domain
-        integer(ip):: j, k, i, ip1, jp1
+        integer(ip):: j, k, i, ip1, jp1, toms
 
         real(dp) :: local_depth, local_depth_inv, arrival_stage, &
             depth_E, depth_N, depth_E_inv, depth_N_inv
@@ -2157,22 +2165,40 @@ TIMER_STOP('fileIO')
         if(domain%record_max_U) then
 EVOLVE_TIMER_START('update_max_quantities')
 
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+            toms = findloc(domain%max_U_variables, value='time_of_max_stage', dim=1) ! 0 if not present
 
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, toms)
             do k = 1, size(domain%max_U_variables)
 
                 select case(domain%max_U_variables(k))
 
                 case('max_stage')
 
-                    ! Track max stage
-                    !$OMP DO SCHEDULE(STATIC)
-                    do j = domain%yL, domain%yU !1, domain%nx(2)
-                        do i = domain%xL, domain%xU !1, domain%nx(1)
-                            domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                    if(toms > 0) then
+                        ! Store max-stage and the time of max-stage
+                        !$OMP DO SCHEDULE(STATIC)
+                        do j = domain%yL, domain%yU !1, domain%nx(2)
+                            do i = domain%xL, domain%xU !1, domain%nx(1)
+                                if(domain%U(i,j,STG) > domain%max_U(i,j,k)) then
+                                    domain%max_U(i,j,k) = domain%U(i,j,STG)
+                                    domain%max_U(i,j,toms) = domain%time
+                                end if
+                            end do
                         end do
-                    end do
-                    !$OMP END DO
+                        !$OMP END DO
+                    else
+                        ! Only store max stage
+                        !$OMP DO SCHEDULE(STATIC)
+                        do j = domain%yL, domain%yU !1, domain%nx(2)
+                            do i = domain%xL, domain%xU !1, domain%nx(1)
+                                domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                            end do
+                        end do
+                        !$OMP END DO
+                    end if
+
+                case('time_of_max_stage')
+                    ! Treated in case('max_stage'), do nothing else.
 
                 case('max_speed')
 
