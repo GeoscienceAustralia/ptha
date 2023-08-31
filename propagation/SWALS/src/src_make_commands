@@ -1,7 +1,8 @@
-# Script which is included in application makefiles, to compile things in SRC.
+# Script which is included in application makefiles, to compile things in the
+# folder containing this file.
 #
 # It is assumed that several variables are defined, including the location of
-# the folder where this file lives as $(SWALS_SRC).
+# this folder as $(SWALS_SRC).
 # See the files named src_standard_compiler_var_{compilerinfo} for variable definitions.
 #
 
