@@ -96,13 +96,16 @@ On Windows, before proceeding further, you need to
 
 Once the packages have installed, you should start R inside the ptha/R/rptha directory (within a local copy of this repository).
 Run the following from within R:
-
-    source('build_package.R')
+```r
+source('build_package.R')
+```
 
 This will make an R package file in the same directory as this README.md
 (ptha/R/). That package can be installed on the command line with:
 
-    R CMD INSTALL rptha_XXXXX.tar.gz
+```
+R CMD INSTALL rptha_XXXXX.tar.gz
+```
 
 where the XXXX are adapted to match the file name. On Ubuntu you need to add
 'sudo' to the start of the previous command. On Windows you could instead use
