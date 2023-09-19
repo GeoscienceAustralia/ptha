@@ -99,7 +99,9 @@ It contains the following columns:
 
 Note 'max stage' values below 2cm (or above 20m) are treated as missing data
 (NA). Such values are unlikely to be of interest, but if necessary they can be
-reconstructed from the [detailed information](DETAILED_README.md).
+reconstructed from the [detailed information](DETAILED_README.md). The latter
+also shows how to access the exceedance-rates for the "constant rigidity
+model" (rather than the "variable rigidity" model used for the above CSV file).
 
 [Similar data is available in shapefile format here](https://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.zip). You must unzip the file after download.
 Shapefiles have a weakness; attribute names must not exceed 10 characters. 
