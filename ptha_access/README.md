@@ -90,7 +90,7 @@ It contains the following columns:
 * `lon`, `lat` give the hazard point location in longitude/latitude (degrees). 
 * `elev` is the bathymetry at the hazard point (negative = below MSL)
 * `gaugeID` is a hazard point ID (real number).
-* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These corresponds to the tsunami maximum-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami maximum-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree.
+* multiple columns with names like `STAGE_XXXX` where XXXX is a number, and 1/XXXX is the exceedance-rate. These corresponds to the tsunami maximum-stage which has mean exceedance-rate = 1/XXXX. For example, the column `STAGE_100` gives the tsunami maximum-stage that is exceeded once every 100 years on average, according to the mean of all the rate models in our logic-tree. The variable-rigidity earthquake model is assumed.
 * multiple columns with names like `STAGE_upper_ci_XXXX`. These values are similar to the above, but describe the upper limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 97.5 percentile)
 * multiple columns with names like `STAGE_lower_ci_XXXX`. These are similar to the above, but describe the lower limit of the 95% credible interval for the stage with the specified exceedance-rate. (i.e. 2.5 percentile)
 * multiple columns with names like `STAGE_median_XXXX`. These are similar to the above, but describe the 'epistemic median' stage with the specified exceedance-rate (i.e. 50th percentile)
@@ -100,8 +100,8 @@ It contains the following columns:
 Note 'max stage' values below 2cm (or above 20m) are treated as missing data
 (NA). Such values are unlikely to be of interest, but if necessary they can be
 reconstructed from the [detailed information](DETAILED_README.md). The latter
-also shows how to access the exceedance-rates for the "constant rigidity
-model" (rather than the "variable rigidity" model used for the above CSV file).
+also shows how to access exceedance-rates for the "constant rigidity
+model" (rather than the "variable rigidity model" used for the above CSV file).
 
 [Similar data is available in shapefile format here](https://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.zip). You must unzip the file after download.
 Shapefiles have a weakness; attribute names must not exceed 10 characters. 
