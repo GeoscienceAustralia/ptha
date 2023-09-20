@@ -10,7 +10,7 @@
 module multidomain_mod
 !! Contains a multidomain_type, to hold multiple rectangular domains which
 !! communicate with each other (i.e. for nesting).
-
+!!
 !! The idea of the multidomain type is that it contains multiple domains that communicate with each other:
 !!
 !!   * Finer resolution domains may overlap coarser domains.
