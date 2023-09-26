@@ -10,7 +10,7 @@ More importantly, the code here has been substantially improved and simplified
 to make additional adaptation easier. 
 
 An outline of how to setup the model is provided in
-[GENERAL_GUIDENCE_ON_MODEL_SETUP.md](GENERAL_GUIDENCE_ON_MODEL_SETUP.md). A
+[GENERAL_GUIDANCE_ON_MODEL_SETUP.md](GENERAL_GUIDANCE_ON_MODEL_SETUP.md). A
 summary of software that might help is in [USEFUL_TOOLS.md](USEFUL_TOOLS.md).
 They can be converted to pdf format with [make_pdf.sh](make_pdf.sh).
 
