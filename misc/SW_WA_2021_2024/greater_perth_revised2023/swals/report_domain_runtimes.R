@@ -9,7 +9,7 @@ source(ifelse(file.exists(file_home), file_home, file_nci))
 
 all_logs = Sys.glob('multi*.log')
 
-domain_run_times = lapply(all_logs, function(x) get_domain_wallclock_times_in_log(x, wallclock_time_line_spacing=17))
+domain_run_times = lapply(all_logs, function(x) get_domain_wallclock_times_in_log(x))
 
 all_domain_run_times = do.call(rbind, domain_run_times)
 

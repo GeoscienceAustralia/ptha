@@ -10,5 +10,7 @@ if(!grepl('RUN_', basename(mydir))){
 }
 
 source('/g/data/w85/tsunami/CODE/gadi/ptha/propagation/SWALS/plot.R')
+# Assume we want every processor to have part of domain 1. This makes sense
+# if domain 1 is a global domain, and the other domains may utilise static_before_time.
 x = make_load_balance_partition('.', domain_index_groups=list(1, 2:9999))
 
