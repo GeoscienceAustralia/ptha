@@ -4,7 +4,7 @@ The suggestions below are arranged according to subdirectories where the inputs 
 
 Each subdirectory should contain a README.md file that gives a more detailed "how-to" explanation.
 
-## `./elevation`: 
+## [./elevation](./elevation): 
 
 Collate elevation data for the model in raster format and make a file that lists the rasters in order of preference.
 * The model works with a set of one or more rasters, overlapped with a preference order. 
@@ -14,13 +14,13 @@ Collate elevation data for the model in raster format and make a file that lists
   * Check this in GIS.
 * The model elevation is set from these rasters with bilinear interpolation, using lower preference rasters at sites where higher preference rasters were missing data.
 
-## `./point_gauges`: 
+## [./point_gauges](./point_gauges): 
 
 Make a point gauges csv file
 * This defines locations where we store flow time-series
 * Each gauge is assigned an ID. It should be unique when stored as a single precision real.
 
-## `./multidomain_design`: 
+## [./multidomain_design](./multidomain_design): 
 
 Define the model extent and create polygons showing where different nesting levels apply. 
 * For each nesting level, you make polygonal regions to be covered by rectangular domains (with a chosen size).
@@ -33,24 +33,24 @@ Define the model extent and create polygons showing where different nesting leve
     * Hypothesis: If there's an effect, it might matter most in the x-direction.
   * It's fine to have some domains with few cells, so long as most computational work isn't spent there. 
 
-## `./sources`: 
+## [./sources](./sources): 
 
 Optionally put files that define tsunami sources here
 
-## `./breakwalls`: 
+## [./breakwalls](./breakwalls): 
 
 Optionally put files that define breakwalls here.
 * These are 3d lines that will be burned into the model elevation. They are defined in CSV format.
 * They are useful to ensure that flow barriers are represented in the model's elevation.
 * We burn the maxima of the breakwall elevation and the raster-derived elevation into the model.
 
-## `./inverts`:
+## [./inverts](./inverts):
 
 Just like `./breakwalls` but for elevation minima, rather than elevation maxima. 
 * Inverts are typically used to ensure minor flow paths are represented in the model.
 
 
-## `./swals`: 
+## [./swals](./swals): 
 
 Contains code to run the tsunami model for hazard scenarios and testing, and produce raster outputs and basic plots.
 
@@ -232,7 +232,7 @@ If the blow-up is sudden, without prior problematic behaviour, then it might hel
 * Assuming you've got the computational resources.
 * I did this for the Tongatapu study, and it worked well.
 
-## `./analysis`:
+## [./analysis](./analysis):
 
 Contains code to check model results and do hazard calculations.
 
