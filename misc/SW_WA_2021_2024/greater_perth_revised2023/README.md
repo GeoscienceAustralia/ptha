@@ -6,7 +6,12 @@ models](../Greater_Perth) after we obtained improved elevation
 data for a few sites of interest. The results are almost identical to the previous
 models at most sites, but have small changes near the updated elevation. 
 
-But the code here has been substantially improved and simplified to make additional adaptation easier.
+More importantly, the code here has been substantially improved and simplified
+to make additional adaptation easier. 
+
+An outline of how to setup the model is provided in
+[GENERAL_GUIDENCE_ON_MODEL_SETUP.md](GENERAL_GUIDENCE_ON_MODEL_SETUP.md). A
+summary of software that might help is in [USEFUL_TOOLS.md](USEFUL_TOOLS.md).
 
 Additional useful content may be found in the [Greater Perth Modelling
 files](../Greater_Perth). For instance that includes checks of
