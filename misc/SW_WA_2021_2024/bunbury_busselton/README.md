@@ -1,6 +1,6 @@
 Tsunami modelling for Busselton and Bunbury.
 
-Most of these codes are adaptations of those in the [Greater Perth](../Greater_Perth) folder. When differences exist, often the code in this folder is slightly cleaner or better documented. 
+Updated variants of these codes were developed [in subsequent revisions](../greater_perth_revised2023). The latter are improved and simplified, so and likely provide a better starting point for further adaptation.
 
 Key folders are:
 * [./analysis](./analysis) - Computations that use multiple simulated scenarios to produce outputs. Such as hazard products, and inundation maps that correspond to JATWC categories.
