@@ -25,6 +25,6 @@ Key folders are:
 * [./inverts](./inverts) - Create 3d lines that are burned into the elevation model, to enforce channels and other local low-points irrespective of model resolution. 
 * [./gauges](./gauges) - Locations of point-gauge output used in the SWALS model
 * [./multidomain_design](./multidomain_design) - Create the boxes defining domains in the multidomain
-* [../Greater_Perth/sources](../Greater_Perth/sources) - Tsunami source models
+* [./sources](../Greater_Perth/sources) - Tsunami source models
 * [./swals](./swals) - Hydrodynamic model and outputs
 
