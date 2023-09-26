@@ -18,8 +18,8 @@ up models (to prevent overly fine domains in deep areas).
 
 
 
-## Example of the logic to seting-up complicated nesting:
---------------------------------------------------------
+## Example of the logic to setting up complicated nesting:
+----------------------------------------------------------
 
 It requires care to setup nesting while respecting the SWALS constraint that,
 when 2 domains overlap, the coarser domain cells must be completely covered by
@@ -37,7 +37,7 @@ Here is an example that shows reasoning (might not correspond to our actual mode
     * There would be 810x810 refined cells there (or 270x270 for coarsen-cells)
     * Notice that here we could NOT have set the patch size to be (0.1/4)x(0.1/4) -- because it would not contain an integer number of parent grid cells. 
 * Next finer level is chosen to have 3x refinement in (0.1/3)x(0.1/3) degree patches
-    * This implies each patch would enclose 162x162 parent-grid cells, or 54x54 coarsend-cells. Both are integers, so we are good --non-integers would cause problems.
+    * This implies each patch would enclose 162x162 parent-grid cells, or 54x54 coarsened-cells. Both are integers, so we are good --non-integers would cause problems.
     * Notice that here we could NOT have set the patch size to be (0.1/4)x(0.1/4) -- because it would not contain an integer number of parent grid cells.
 
 
