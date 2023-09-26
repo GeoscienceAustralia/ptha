@@ -14,7 +14,7 @@ Collate elevation data for the model in raster format and make a file that lists
   * Check this in GIS.
 * The model elevation is set from these rasters with bilinear interpolation, using lower preference rasters at sites where higher preference rasters were missing data.
 
-## [./point_gauges](./point_gauges): 
+## [./gauges](./gauges): 
 
 Make a point gauges csv file
 * This defines locations where we store flow time-series
