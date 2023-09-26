@@ -1,5 +1,5 @@
-# Create domains
-----------------
+# Define the multidomain nesting geometry
+----------------------------------------
 
 If everything is correctly setup, then run with:
 ```
