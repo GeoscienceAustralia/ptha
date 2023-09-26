@@ -2,8 +2,8 @@ Tsunami model runs for Greater Perth, 2023 version
 --------------------------------------------------
 
 This folder contains code to run the tsunami models, including:
-* Scenarios like historical events [(see here)](../sources/like_historic/)
-* Random PTHA18 scenarios [(see here)](../sources/hazard/)
+* Scenarios like historical events [(see here)](../../Greater_Perth/sources/like_historic/)
+* Random PTHA18 scenarios [(see here)](../../Greater_Perth/sources/hazard/)
 
 The tsunami model includes the Greater Perth area in high resolution. It is 
 similar to earlier work on the Greater Perth area, but here we were able to 
