@@ -1,4 +1,4 @@
-# Ideas for model setup 
+# Guidance on model setup 
 
 The suggestions below are arranged according to subdirectories where the inputs are created. The order is roughly sequential, although when troubleshooting the model it is often necessary to revise earlier steps.
 
@@ -73,7 +73,7 @@ Contains code to run the tsunami model for hazard scenarios and testing, and pro
 * Check the other model outputs
   * e.g., Is the correct timestepping method used? Are gauges in the right place? Does manning friction match expectations?
 * Consider adjusting the domain placement and/or coarsening some domains. 
-  * Eyeball the model and think what you need.
+  * Eyeball the model and think about what you need.
   * Have a look at the time required by each domain using `report_domain_runtimes.R`. 
     * Domains taking much more time than others are candidates for coarsening/splitting/removing, as they might interfere running the model efficiently (load balancing, see below). 
 
@@ -159,7 +159,7 @@ until you have a model that is stable, reasonably efficient, and seems to have r
   * I have seen very small scenarios where energy increased over time once flow was interacting with the model boundaries. While we expect energy conservation in closed domains (and energy decay with friction), if the domain is open then the energy may increase or decrease with flows in and out of the domain.
 
 ### Check the convergence of the model
-Re-run one or more of the above tests above using a finer grid, or a coarser grid if you think that is sufficient
+Re-run one or more of the above tests using a finer grid, or a coarser grid if you think that is sufficient
   * i.e. halving or doubling `global_dx_arcmin` and `global_dt`. 
 * Are the results the same in all important respects? 
   * If yes, the default grid is probably fine enough. 
@@ -242,12 +242,12 @@ Contains code to check model results and do hazard calculations.
 
 ### Compare the high-resolution hazard model results with the offshore PTHA in  `analysis/max_stage_at_a_point`
 * They should agree quite well in deep water far from the coast
-  * i.e. Sites at which differences between the offshore PTHA solver and the high resolution model are not important.
+  * i.e. Sites at which differences between the offshore PTHA hydrodynamic model and the high resolution model are not important.
 * This can help to show that you've simulated enough scenarios at high resolution, and haven't made other calculation blunders.
 * Some differences are expected
   * The Monte Carlo method implies some variability in the high-resolution solution.
   * There are fundamental differences in the hydrodynamics
-    * The offshore PTHA solver uses the linear shallow water equations, without any friction, on a 1 arcmin grid.
+    * The offshore PTHA uses the linear shallow water equations, without any friction, on a 1 arcmin grid.
     * The nonlinear model is expected to deviate from this at sites where:
       * Nonlinearity matters (typically shallow sites, or sites that are affected by waves from shallow sites). 
       * The improved elevation data or resolution have an important effect.
