@@ -56,7 +56,7 @@ Contains code to run the tsunami model for hazard scenarios and testing, and pro
 
 ### Setup the hydrodynamic model
 * Start by modifying the `model_multidomain_design_mod.f90` to mostly match what you want. 
-  * Variables can be set at run time via two namelists. These are defined in an input file that is passed to the main program.
+  * Variables can be set at run time via two namelists. These are defined in an input file that is passed to the main program (e.g. `multidomain_design_control_NNL4_defaultres.nml`).
   * For more control you may modify `model_initial_conditions_mod.f90` (initial conditions) or `model.f90` (everything else).
 * Get a model to compile correctly with your design and input data.
 * Try to run it in `test` mode (for a short but non-negligible time). 
