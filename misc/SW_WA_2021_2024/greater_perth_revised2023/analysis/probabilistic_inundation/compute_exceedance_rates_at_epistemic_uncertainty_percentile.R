@@ -201,7 +201,7 @@ if(SUB_SAMPLE > 1){
 output_raster = setValues(template_raster, c(t(output_matrix)))
 output_raster_filename = paste0(OUTPUT_DIR, '/', 
     source_info, '_', VARIABLE_NAME,
-    '_rast_threshold_', round(EXCEEDANCE_THRESHOLD), 
+    '_rast_threshold_', EXCEEDANCE_THRESHOLD, 
     '_percentile_', 100*PERCENTILE_TO_USE, 
     '_subsam_', SUB_SAMPLE,
     '_Nrand_', NRAND,

@@ -1,34 +1,48 @@
+# Compute the logic-tree-mean exceedance-rate and its Monte Carlo uncertainty
+# by summing over existing rasters for the unsegmented/segmented models for
+# each source zone.
+#
+# Usage: Must run from directory containing "application_specific_file_metadata.R"
+#   Rscript compute_mean_exrate_upper_CI.R path/to/folder/with_subfolders_containing_results_on_each_source_zone/ variable threshold
+# e.g. 
+#   Rscript compute_mean_exrate_upper_CI.R ptha18-GreaterPerth2023-sealevel60cm/highres_with_variance depth 0.001
+#
 library(terra)
 
 asfm = new.env()
 source('application_specific_file_metadata.R', local=asfm)
 
+# INPUT ARGUMENTS
+folder_with_source_zone_logic_tree_mean_results = commandArgs(trailingOnly=TRUE)[1]
+variable_of_interest = commandArgs(trailingOnly=TRUE)[2]
+threshold_of_interest = commandArgs(trailingOnly=TRUE)[3]
+
 source_zones = names(asfm$source_zone_modelled_tsunami_scenario_basedirs) # c('outerrisesunda', 'sunda2')
 
-# Go to the folder containing logic-tree-mean results in sub-folders
-folder_with_source_zone_logic_tree_mean_results = commandArgs(trailingOnly=TRUE)[1]
-stopifnot(file.exists(folder_with_source_zone_logic_tree_mean_results))
-setwd(folder_with_source_zone_logic_tree_mean_results)
-
 #
-# Run from inside folders of the form
+# Go to the folder containing logic-tree-mean results in sub-folders
+# This might be a folder of the form
 #   ptha18-BunburyBusseltonRevised-sealevel60cm/highres_with_variance
 # created with make_directory_structure.sh
 #
-#source_zone_dirs = paste0('ptha18-BunburyBusseltonRevised-sealevel60cm-random_', source_zones, '-')
-matching_source_zone_dirs = lapply(source_zones, function(x) Sys.glob(paste0('*-LogicTreeMean-', x)))
+stopifnot(file.exists(folder_with_source_zone_logic_tree_mean_results))
+setwd(folder_with_source_zone_logic_tree_mean_results)
+
+matching_source_zone_dirs = lapply(source_zones, 
+    function(x) Sys.glob(paste0('*-', variable_of_interest, '-LogicTreeMean-', x)))
 source_zone_dirs = unlist(matching_source_zone_dirs)
 stopifnot(all(unlist(lapply(matching_source_zone_dirs, length)) == 1)) # One directory per source-zone
 
 # Make a directory to hold the summed results
 summed_results_dir = gsub(source_zones[1], 'sum_of_source_zones', matching_source_zone_dirs[[1]])
-dir.create(summed_results_dir)
+dir.create(summed_results_dir, showWarnings=FALSE)
 
 # Find the raster files and other relevant info
 # @param sz_dir a source-zone dir, containing tifs to be used for calculations.
-setup_files<-function(sz_dir){
+setup_files<-function(sz_dir, threshold_of_interest){
 
-    all_rasters = Sys.glob(paste0(sz_dir, '/*.tif'))
+    all_rasters = Sys.glob(
+        paste0(sz_dir, '/*exceedance_rate_with_threshold_', threshold_of_interest, '.tif'))
 
     raster_start = sapply(basename(all_rasters), 
         function(x) paste(strsplit(x, split="_")[[1]][1:2], collapse="_"), USE.NAMES=FALSE)
@@ -168,9 +182,9 @@ sum_rasters_for_domain_i<-function(unique_domain_flag_i, sz_files, output_dir){
 
 # Get file info for the source zone
 sz_files = list()
-for(i in 1:length(source_zones)) sz_files[[source_zones[i]]] = setup_files(source_zone_dirs[i])
+for(i in 1:length(source_zones)) sz_files[[source_zones[i]]] = setup_files(source_zone_dirs[i], threshold_of_interest)
 
 library(parallel)
-mclapply(sz_files[[1]]$unique_domain_flags, sum_rasters_for_domain_i, 
+result = mclapply(sz_files[[1]]$unique_domain_flags, sum_rasters_for_domain_i, 
     sz_files=sz_files, output_dir=summed_results_dir,
     mc.cores=asfm$DEFAULT_MC_CORES)

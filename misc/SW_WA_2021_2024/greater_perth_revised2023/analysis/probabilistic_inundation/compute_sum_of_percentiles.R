@@ -3,9 +3,9 @@
 # can sum them
 # 
 #     # 84th percentile calc
-#     Rscript compute_sum_of_percentiles.R ptha18-BunburyBusseltonRevised-sealevel60cm/highres_epistemic_uncertainty 84
+#     Rscript compute_sum_of_percentiles.R ptha18-BunburyBusseltonRevised-sealevel60cm/highres_depth_epistemic_uncertainty 84 depth 0.001
 #     # 16th percentile calc
-#     Rscript compute_sum_of_percentiles.R ptha18-BunburyBusseltonRevised-sealevel60cm/highres_epistemic_uncertainty 16
+#     Rscript compute_sum_of_percentiles.R ptha18-BunburyBusseltonRevised-sealevel60cm/highres_depth_epistemic_uncertainty 16 depth 0.001
 #
 library(terra)
 asfm = new.env()
@@ -16,6 +16,10 @@ results_folder = commandArgs(trailingOnly=TRUE)[1]
 
 # The percentile we operate on (must match a percentile already created)
 percentile_choice = commandArgs(trailingOnly=TRUE)[2]
+
+# The variable and threshold we operate on
+variable_of_interest = commandArgs(trailingOnly=TRUE)[3] # depth
+threshold_of_interest = commandArgs(trailingOnly=TRUE)[4] # 0.001
 
 source_zones = names(asfm$source_zone_modelled_tsunami_scenario_basedirs) # c('outerrisesunda', 'sunda2')
 
@@ -33,9 +37,13 @@ dir.create(summed_results_dir, showWarnings=FALSE)
 
 # Find the raster files and other relevant info
 # @param sz_dir a source-zone dir, containing tifs to be used for calculations.
-setup_files<-function(sz_dir){
+setup_files<-function(sz_dir, variable_of_interest, threshold_of_interest, percentile_choice){
 
-    percentile_exrate_rasters = Sys.glob(paste0(sz_dir, '/*.tif'))
+    percentile_exrate_rasters = Sys.glob(
+        paste0(sz_dir, '/*_', variable_of_interest, 
+        '_rast_threshold_', threshold_of_interest, 
+        '_percentile_', percentile_choice, 
+        '_*.tif'))
 
     # How many domains? Count the unsegmented model (which occurs on all source-zones)
     ND = length(percentile_exrate_rasters)
@@ -119,7 +127,10 @@ sum_rasters_for_domain_i<-function(unique_domain_flag_i, sz_files, output_dir){
 
 # Get file info for the source zone
 sz_files = list()
-for(i in 1:length(source_zones)) sz_files[[source_zones[i]]] = setup_files(source_zone_dirs[i])
+for(i in 1:length(source_zones)){
+    sz_files[[source_zones[i]]] = setup_files(
+        source_zone_dirs[i], variable_of_interest, threshold_of_interest, percentile_choice)
+}
 
 # Sanity check
 if(length(source_zones) > 1){
@@ -130,6 +141,6 @@ if(length(source_zones) > 1){
     }
 }
 library(parallel)
-mclapply(sz_files[[1]]$unique_domain_flags, sum_rasters_for_domain_i, 
+result = mclapply(sz_files[[1]]$unique_domain_flags, sum_rasters_for_domain_i, 
     sz_files=sz_files, output_dir=summed_results_dir,
     mc.cores=asfm$DEFAULT_MC_CORES)

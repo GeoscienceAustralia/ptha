@@ -8,14 +8,16 @@
 # This should match the beginning of the folders that will be moved to better locations
 runname='ptha18-GreaterPerth2023-sealevel60cm'
 
-# Move logic-tree-mean hazard & variance rasters to a clean location
-mkdir -p $runname/highres_with_variance
-mv $runname*LogicTreeMean* $runname/highres_with_variance    
-
-# Move epistemic uncertainty rasters to a clean location
-# 16th percentile
-mkdir -p $runname/highres_epistemic_uncertainty/16pc  
-mv $runname-depth_exrate_*_0.16_* $runname/highres_epistemic_uncertainty/16pc/
-# 84th percentile
-mkdir -p $runname/highres_epistemic_uncertainty/84pc  
-mv $runname-depth_exrate_*_0.84_* $runname/highres_epistemic_uncertainty/84pc/
+for variable in depth max_stage; do
+  # Move logic-tree-mean hazard & variance rasters to a clean location
+  mkdir -p ${runname}/highres_${variable}_with_variance ;
+  mv ${runname}-${variable}-LogicTreeMean* ${runname}/highres_${variable}_with_variance;
+  
+  # Move epistemic uncertainty rasters to a clean location
+  # 16th percentile
+  mkdir -p ${runname}/highres_${variable}_epistemic_uncertainty/16pc; 
+  mv ${runname}-${variable}_exrate_*_0.16_* ${runname}/highres_${variable}_epistemic_uncertainty/16pc/;
+  # 84th percentile
+  mkdir -p ${runname}/highres_${variable}_epistemic_uncertainty/84pc;
+  mv ${runname}-${variable}_exrate_*_0.84_* ${runname}/highres_${variable}_epistemic_uncertainty/84pc/;
+done
