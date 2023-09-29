@@ -2,6 +2,18 @@
 
 This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated.
 
+Below we show how to compute rasters depicting:
+* The logic-tree-mean rate of inundation (depth > 1mm).
+* The rate of inundation (depth > 1mm) at the 16th and 84th percentile epistemic uncertainty
+* The logic-tree-mean exceedance-rate for a range of max-stage values (0.6, 1.6, 2.6, ...)
+* The (approximate) max-stage with a given exceedance-rate. 
+  * It is approximate because we only use the max-stage values computed previously (0.6, 1.6, 2.6, ...).
+    * The computed solution is 'rounded down' from the exact solution to the nearest binned value
+  * This is a simple approach to computing a quantity of interest at a given exceedance-rate.
+    * For a more exact approach see [here](https://github.com/GeoscienceAustralia/ptha/tree/master/misc/monte_carlo_paper_2021/analysis/probabilistic_inundation).
+
+Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
+
 ## How to run
 
 ```bash
@@ -81,6 +93,13 @@ for stage_threshold in 0.601 1.6 2.6 3.6 4.6 5.6 6.6 7.6 8.6 9.6 10.6 ; do
     Rscript compute_mean_exrate_upper_CI.R ptha18-GreaterPerth2023-sealevel60cm/highres_max_stage_with_variance max_stage $stage_threshold ;
   done
 
+# Convert the files just created into maps showing the max-stage threshold just
+# below a given exceedance-rate (among the stage_threshold values considered
+# above). This is a cheap way to make plots of the wave size matching a given
+# exceedance-rate (rounded down to one of the thresholds above). 
+# Example here for max_stage at an exceedance-rate of 1/500 = 0.002
+Rscript compute_binned_thresholds_matching_exrate_from_set_of_exrate_rasters.R ptha18-GreaterPerth2023-sealevel60cm/highres_max_stage_with_variance/ptha18-GreaterPerth2023-sealevel60cm-max_stage-LogicTreeMean-sum_of_source_zones max_stage 0.002
+
 # Get the inundation exceedance-rates at different epistemic uncertainty percentiles, summed over source-zones.
 # This assumes co-monotonic epistemic uncertainties between the sources (conservative).
 # (Runs in parallel)
@@ -89,7 +108,8 @@ Rscript compute_sum_of_percentiles.R ptha18-GreaterPerth2023-sealevel60cm/highre
 # This created folders containing sums over source zones, with names like:
 # ptha18-GreaterPerth2023-sealevel60cm/highres_depth_epistemic_uncertainty/84pc/ptha18-GreaterPerth2023-sealevel60cm-depth_exrate_0.001_0.84_sum_of_source_zones/
 
-# At this point you should compress the output folders, as they contain many many files.
+# At this point (or before) you should compress the output folders, as they can
+# contain many many files (e.g. 10^5 for Greater Perth). 
 
 ```
 
