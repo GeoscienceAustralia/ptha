@@ -12,7 +12,7 @@ all_scenario_raster_tars = normalizePath(Sys.glob(
 # inundated at a given exceedance-rate.
 #
 # The exceedance-rate defining the upper limit of the inundation zone.
-PTHA_EXRATE_TOL = 1/10000 
+PTHA_EXRATE_TOL = 1/10000  # At least 1/2500
 # The rasters used to determine the area inundated within this exceedance-rate
 ptha_exceedance_rate_rasts = normalizePath(Sys.glob('../probabilistic_inundation/ptha18-GreaterPerth2023-sealevel60cm/highres_depth_epistemic_uncertainty/84pc/ptha18-GreaterPerth2023-sealevel60cm-depth_exrate_0.001_0.84_sum_of_source_zones/*.tif'))
 # A name for the PTHA rasters above. Used in output folder name to give
