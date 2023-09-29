@@ -57,4 +57,4 @@ parallel_fun<-function(i){
 
 # Run it.
 library(parallel)
-mclapply(1:length(all_marine_warning_tifs), parallel_fun, mc.cores=asfm$DEFAULT_MC_CORES, mc.preschedule=TRUE)
+results = mclapply(1:length(all_marine_warning_tifs), parallel_fun, mc.cores=asfm$DEFAULT_MC_CORES, mc.preschedule=TRUE)
