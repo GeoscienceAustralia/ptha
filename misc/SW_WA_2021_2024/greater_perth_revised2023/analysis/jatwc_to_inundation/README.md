@@ -36,6 +36,8 @@ Copy one example of the elevation raster files to a local directory using [copy_
 Rscript copy_elevation_rasters_locally.R
 ```
 
+Then edit [application_specific_metadata.R](application_specific_metadata.R) to match the model setup.
+
 ## Step 1
 The script [compute_scenario_statistics_in_zone.R](compute_scenario_statistics_in_zone.R) is used to compute the JATWC H parameter for each scenario in a specified warning zone. For instance the computations in the "Perth Coast" zone are executed with:
 ```r
