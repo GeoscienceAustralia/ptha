@@ -1,11 +1,13 @@
+# Suppose we have computed rasters with exceedance-rates for max-stage in 0.601, 1.6, 2.6, 3.6, ... 10.6
+# For any specified exceedance-rate ER, we can compute an "approximate" corresponding max-stage by searching
+# the above rasters for the largest max-stage with exceedance-rate exceeding ER. 
 #
-# We have computed rasters with exceedance-rates for max-stage in
-# 0.6 + c(0.001, 1:10)
+# This script does that (and similarly for other variables and sets of thresholds)
+# Run with
+#   Rscript compute_binned_thresholds_matching_exrate_from_set_of_exrate_rasters.R directory/with/rasters variable exceedance_rate
+# e.g. (for 1/500 max-stage)
+#   Rscript compute_binned_thresholds_matching_exrate_from_set_of_exrate_rasters.R ptha18-GreaterPerth2023-sealevel60cm/highres_max_stage_with_variance/ptha18-GreaterPerth2023-sealevel60cm-max_stage-LogicTreeMean-sum_of_source_zones max_stage 0.002
 #
-# In this script, for each domain, we count the rasters where that exceedance-rate
-# is greater than some threshold. This lets us approximate the stage with the given exceedance-rate
-#
-#library(raster)
 library(terra)
 asfm = new.env()
 source('application_specific_file_metadata.R', local=asfm)
