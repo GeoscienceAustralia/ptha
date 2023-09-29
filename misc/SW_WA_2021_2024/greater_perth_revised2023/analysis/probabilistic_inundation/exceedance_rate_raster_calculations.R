@@ -145,7 +145,7 @@ compute_exceedance_rates_on_tile<-function(
 
 
         # For the raster output, it is nice to set regions that are never
-        # inundated to NA (genuinely NA regions that are not priority
+        # above the threshold to NA (genuinely NA regions that are not priority
         # domain will also be NA)
         tile_exceedance_rates[tile_exceedance_rates == 0] = NA
 
@@ -335,7 +335,7 @@ compute_exceedance_rates_and_error_variance_on_tile<-function(
             print_progress=print_progress_debug)
 
         # For the raster output, it is nice to set regions that are never
-        # inundated to NA (genuinely NA regions that are not priority
+        # above the threshold to NA (genuinely NA regions that are not priority
         # domain will also be NA)
         null_regions = (tile_exceedance_rates_and_error_variance$exrate == 0)
         tile_exceedance_rates_and_error_variance$exrate[null_regions] = NA
