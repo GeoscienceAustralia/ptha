@@ -42,7 +42,7 @@ WETTOL = 0.001
 # results that are based on coarse resolution domains.
 skip_if_cellsize_above_threshold = 0.9/(60*9)
 
-# JATWC MOST model (T3) excludes depth shallower than this (in meters)
+# JATWC MOST model (T2) excludes depth shallower than this (in meters)
 jatwc_depth_limit = 20 
 jatwc_dlon_dlat = 1/15 # 4 arcmin cell-size in JATWC model
 
