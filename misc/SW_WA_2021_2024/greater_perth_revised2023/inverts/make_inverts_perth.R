@@ -41,7 +41,7 @@ all_shp = Sys.glob('*/*.shp')
 local_raster = bathy2018
 # Points with this spacing along the line
 line_spacing = 3
-# Point elevation based on maxima inside this radius
+# Point elevation based on minima inside this radius
 buffer_size = 15
 make_lines_with_min_buffer(all_shp, local_raster, line_spacing, buffer_size)
 
