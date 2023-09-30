@@ -100,8 +100,9 @@ for stage_threshold in 0.601 1.6 2.6 3.6 4.6 5.6 6.6 7.6 8.6 9.6 10.6 ; do
 # Example here for max_stage at an exceedance-rate of 1/500 = 0.002
 Rscript compute_binned_thresholds_matching_exrate_from_set_of_exrate_rasters.R ptha18-GreaterPerth2023-sealevel60cm/highres_max_stage_with_variance/ptha18-GreaterPerth2023-sealevel60cm-max_stage-LogicTreeMean-sum_of_source_zones max_stage 0.002
 
-# Get the inundation exceedance-rates at different epistemic uncertainty percentiles, summed over source-zones.
-# This assumes co-monotonic epistemic uncertainties between the sources (conservative).
+# Use calculations above to get the inundation exceedance-rates at different
+# epistemic uncertainty percentiles, summed over source-zones. This assumes
+# co-monotonic epistemic uncertainties between the sources (conservative).
 # (Runs in parallel)
 Rscript compute_sum_of_percentiles.R ptha18-GreaterPerth2023-sealevel60cm/highres_depth_epistemic_uncertainty/ 84 depth 0.001
 Rscript compute_sum_of_percentiles.R ptha18-GreaterPerth2023-sealevel60cm/highres_depth_epistemic_uncertainty/ 16 depth 0.001
