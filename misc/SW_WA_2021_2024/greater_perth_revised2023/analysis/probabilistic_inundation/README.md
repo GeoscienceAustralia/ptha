@@ -85,9 +85,9 @@ Rscript compute_mean_exrate_upper_CI.R ptha18-GreaterPerth2023-sealevel60cm/high
 # The folder name is like:
 # ./ptha18-GreaterPerth2023-sealevel60cm/highres_depth_with_variance/ptha18-GreaterPerth2023-sealevel60cm-depth-LogicTreeMean-sum_of_source_zones
 
-# Get the logic-tree mean exceedance-rates for all the alternative max-stage
-# thresholds (as specified in the earlier qsub script). This uses parallel
-# computing.
+# Use calculations above to get the logic-tree mean exceedance-rates for all
+# the alternative max-stage thresholds. The thresholds must be the same as
+# specified in the earlier qsub script. This uses parallel computing.
 for stage_threshold in 0.601 1.6 2.6 3.6 4.6 5.6 6.6 7.6 8.6 9.6 10.6 ; do
     echo $stage_threshold ;
     Rscript compute_mean_exrate_upper_CI.R ptha18-GreaterPerth2023-sealevel60cm/highres_max_stage_with_variance max_stage $stage_threshold ;
