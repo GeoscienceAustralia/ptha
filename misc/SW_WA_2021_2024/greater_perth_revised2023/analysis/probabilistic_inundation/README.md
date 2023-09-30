@@ -76,7 +76,7 @@ source make_directory_structure.sh
 #    EMPTY FOLDERS FOR MAX STAGE EPISTEMIC UNCERTAINTIES
 #
 
-# Get the logic-tree-mean inundation exceedance-rate and variance, summed over sources.
+# Use calculations above to make the logic-tree-mean inundation exceedance-rate and variance, summed over sources.
 # The command line argument gives the path to the logic-tree-mean results above,
 # the variable (depth) and the exceedance-threshold (0.001). This uses parallel computing.
 Rscript compute_mean_exrate_upper_CI.R ptha18-GreaterPerth2023-sealevel60cm/highres_depth_with_variance depth 0.001
@@ -93,7 +93,7 @@ for stage_threshold in 0.601 1.6 2.6 3.6 4.6 5.6 6.6 7.6 8.6 9.6 10.6 ; do
     Rscript compute_mean_exrate_upper_CI.R ptha18-GreaterPerth2023-sealevel60cm/highres_max_stage_with_variance max_stage $stage_threshold ;
   done
 
-# Convert the files just created into maps showing the max-stage threshold just
+# Convert the files just created into a raster showing the max-stage threshold just
 # below a given exceedance-rate (among the stage_threshold values considered
 # above). This is a cheap way to make plots of the wave size matching a given
 # exceedance-rate (rounded down to one of the thresholds above). 
