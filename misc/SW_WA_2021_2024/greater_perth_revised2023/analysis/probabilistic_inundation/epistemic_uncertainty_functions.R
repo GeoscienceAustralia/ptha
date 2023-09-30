@@ -90,7 +90,8 @@ make_all_pixel_data<-function(scenario_row_index, raster_tar_files,
     raster_tar_file_row = asfm$find_matching_md_data(scenario_row_index, 
         raster_tar_files, source_zone, return_index=TRUE)
 
-    scenarios_to_results_inds = match(scenario_row_index, raster_tar_file_row)
+    scenarios_to_results_inds = raster_tar_file_row
+    names(scenarios_to_results_inds) = ""
     stopifnot(!any(is.na(scenarios_to_results_inds)))
 
     # Read all the rasters as matrices, in parallel for speed

@@ -111,7 +111,7 @@ for(nm_i in all_source_names){
             nm_i, all_samples[[nm_i]], ptha18, ptha18_source_rate_env)
 }
 
-# Convert the data to a structure suitable for pixel-by-piexl parallel calculation.
+# Convert the data to a structure suitable for pixel-by-pixel parallel calculation.
 outputs = euf$make_all_pixel_data(all_samples[[1]]$inds, raster_tar_files, source_zone, 
     DOMAIN_INDEX, raster_name_stub, MC_CORES)
 # Unpack the variables we use 
@@ -122,7 +122,7 @@ template_raster = outputs$template_raster # Template raster to store outputs
 rm(outputs)
 gc(verbose=FALSE)
 
-# Compute the exrate for a hypothetical site (pixel) that is above the EXCEDANCE_THRESHOLD for every
+# Compute the exrate for a hypothetical site (pixel) that is above the EXCEEDANCE_THRESHOLD for every
 # scenario. This is a common case (e.g. in the ocean) and will be used in the parallel euf$get_exrate_percentile_at_pixel
 # calculations to quickly get the solution (which improves the speed).
 #

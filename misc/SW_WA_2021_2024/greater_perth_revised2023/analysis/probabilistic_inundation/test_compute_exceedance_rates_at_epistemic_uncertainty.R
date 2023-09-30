@@ -23,6 +23,13 @@ stage_threshold = 1.6
 epistemic_uncertainty_percentile = 0.84
 sourcezone_runs_base_dir = '../../swals/OUTPUTS/ptha18-GreaterPerth2023-sealevel60cm/random_sunda2/'
 comparison_calculation_RDS = '../max_stage_at_a_point/epistemic_percentile_uncertainties_nonlinear_model_113.0708_-28.5679.RDS'
+tmp_output_dir = 'tmpdir_sunda2'
+
+# Remove any tifs from the tmp_output_dir (since the test will make 1, which should be the only tif in the directory)
+existing_tifs = Sys.glob(paste0(tmp_output_dir, '/*.tif'))
+if(length(existing_tifs) > 0){
+    clear_file = file.remove(existing_tifs)
+}
 
 domain_containing_point = swals$find_domain_containing_point(matrix(target_point, nrow=1, ncol=2), 
     multidomain_dir=asfm$reference_multidomain_dir)
@@ -34,12 +41,12 @@ run_command = paste0('Rscript compute_exceedance_rates_at_epistemic_uncertainty_
     domain_index, ' ', 
     epistemic_uncertainty_percentile, ' ',
     stage_threshold, ' ',
-    'tmpdir_sunda2')
+    tmp_output_dir)
 system(run_command)
 
 # Extract the value at the point of interest
 library(raster)
-test_raster = Sys.glob('tmpdir_sunda2/*.tif')
+test_raster = Sys.glob(paste0(tmp_output_dir, '/*.tif'))
 stopifnot(length(test_raster) == 1) # There should only be 1 raster here
 x = raster(test_raster[1])
 result = extract(x, matrix(target_point, ncol=2))
