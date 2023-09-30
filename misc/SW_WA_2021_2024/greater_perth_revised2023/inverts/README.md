@@ -8,5 +8,5 @@ The code is very similar to that in ../breakwalls
 
 Run with
 
-    Rscript make_inverts_eastcoast.R
+    Rscript make_inverts_perth.R
     Rscript make_inverts_list_have_fullpath.R
