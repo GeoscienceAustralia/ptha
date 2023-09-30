@@ -57,6 +57,9 @@ for(i in 1:length(scenario_databases)){
 }
 
 dir.create(output_directory, showWarnings=FALSE)
+# Remove any rasters from old tests
+existing_rasters = Sys.glob(paste0(output_directory, '/*.tif'))
+if(length(existing_rasters) > 0) tmp = file.remove(existing_rasters)
 
 #
 # Test 1 -- basic exceedance-rate calculation
@@ -114,6 +117,9 @@ if(abs(result - expected_result$exrate) < 1e-10){
 # reordering of a sum, and we also get the error variance
 output_directory = 'test_dir_2'
 dir.create(output_directory, showWarnings=FALSE)
+# Remove any rasters from old tests
+existing_rasters = Sys.glob(paste0(output_directory, '/*.tif'))
+if(length(existing_rasters) > 0) tmp = file.remove(existing_rasters)
 
 make_raster = errc$compute_exceedance_rates_and_error_variance_on_tile(
     input_domain_index_and_scenarios_name,
