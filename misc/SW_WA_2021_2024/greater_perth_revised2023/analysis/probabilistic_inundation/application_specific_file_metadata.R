@@ -139,7 +139,7 @@ find_matching_md_data<-function(row_indices, tarred_multidomain_data, source_zon
         substring(as.character(1e+07 + row_indices), 2, 8), '_')
 
     # Match with the tarred_multidomain_data, with NA if we don't match or get multiple matches
-    matching_ind = sapply(matching_string, f<-function(x){
+    matching_ind = sapply(matching_string, function(x){
         p = grep(x, tarred_multidomain_data)
         if(length(p) != 1) p = NA 
         return(p)})

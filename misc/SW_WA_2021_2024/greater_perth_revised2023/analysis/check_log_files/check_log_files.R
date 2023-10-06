@@ -229,7 +229,7 @@ stopifnot(is.finite(MSL_LINEAR_DEFAULT) & is.finite(EXPECTED_FINAL_TIME))
 
 library(parallel)
 MC_CORES = 1 #48
-check_data = mclapply(all_log_files, f<-function(logfile){
+check_data = mclapply(all_log_files, function(logfile){
     tmp=get_time_energy_stagerange_from_log(logfile, msl_linear = MSL_LINEAR_DEFAULT)
     output = check_log(tmp, expected_final_time=EXPECTED_FINAL_TIME)
     rm(tmp)
