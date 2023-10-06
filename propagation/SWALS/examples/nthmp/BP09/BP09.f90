@@ -83,10 +83,10 @@ module local_routines
         ! Smooth near fine-to-coarse boundaries. Must do this BEFORE adjusting the stage to be >= elevation.
         if(present(all_dx_md)) call domain%smooth_elevation_near_nesting_fine2coarse_boundaries(all_dx_md)
 
-        if(allocated(domain%manning_squared)) then
+        if(domain%timestepping_method /= 'linear') then
             domain%manning_squared = 0.02_dp * 0.02_dp
         else
-            ! Clip depths in linear solver, to avoid 'stage below the bed'
+            ! Avoid very shallow depths below MSL in linear solver
             where(domain%U(:,:,ELV) < 0.0_dp .and. domain%U(:,:,ELV) > -5.0_dp) domain%U(:,:,ELV) = -5.0_dp
         end if
 
