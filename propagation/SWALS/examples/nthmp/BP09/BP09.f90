@@ -12,7 +12,7 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions_BP09(domain, all_dx_md)
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
             !! The domain
         real(dp), intent(in), optional :: all_dx_md(:,:,:)
             !! Metadata on multidomain grid sizes, used to smooth along multidomain boundaries.
@@ -86,7 +86,7 @@ module local_routines
         if(domain%timestepping_method /= 'linear') then
             domain%manning_squared = 0.02_dp * 0.02_dp
         else
-            ! Clip depths in linear solver, to avoid 'stage below the bed'
+            ! Avoid very shallow depths below MSL in linear solver
             where(domain%U(:,:,ELV) < 0.0_dp .and. domain%U(:,:,ELV) > -5.0_dp) domain%U(:,:,ELV) = -5.0_dp
         end if
 

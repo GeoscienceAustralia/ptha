@@ -10,7 +10,7 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
 
         integer(ip):: i, j
         character(len=charlen):: initial_stage
@@ -163,7 +163,7 @@ program nesting_reflection
         md%domains(2)%timestepping_method = ts_method
         
         ! Right domain
-        md%domains(3)%lower_left = [global_ll(1) + global_lw(1)*2.0/3.0, global_ll(2)]
+        md%domains(3)%lower_left = [global_ll(1) + global_lw(1)*2.0_dp/3.0_dp, global_ll(2)]
         md%domains(3)%lw = [global_lw(1)/3.0_dp, global_lw(2)]
         md%domains(3)%nx = nint(md%domains(1)%lw/res_d1)
         md%domains(3)%dx = md%domains(1)%lw/md%domains(1)%nx

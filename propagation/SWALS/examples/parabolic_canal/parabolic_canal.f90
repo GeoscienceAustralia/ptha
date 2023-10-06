@@ -19,7 +19,7 @@ module local_routines
         !
         ! Initial conditions
         !
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
 
         integer(ip):: i,j
         real(dp):: x, y, cx, cy, initial_stage_1, initial_stage_2, radius
@@ -106,7 +106,7 @@ program parabolic_canal
 
     real(dp), parameter :: mesh_refine = 3.0_dp
 
-    real(dp), parameter, dimension(2):: global_ll = [0.0_dp, 30.0_dp] ! Latitude so we have Coriolis
+    real(dp), parameter :: global_ll(2) = [0.0_dp, 30.0_dp] ! Latitude so we have Coriolis
         ! lower-left corner coordinate
 
     ! A 'wide' setup in the NS direction. This performs poorly for the VH component -- perhaps because of
@@ -119,9 +119,9 @@ program parabolic_canal
     !    ! grid size (number of x/y cells)
 
     ! A 'narrow' setup in the NS direction.
-    real(dp), parameter, dimension(2):: global_lw = [0.10372884337_dp, 0.0044915764_dp]
+    real(dp), parameter :: global_lw(2) = [0.10372884337_dp, 0.0044915764_dp]
         ! length/width (10 km x 500 m @ 30 degrees latitude)
-    integer(ip), parameter, dimension(2):: global_nx = nint([200, 5]*mesh_refine) !
+    integer(ip), parameter :: global_nx(2) = nint([200, 5]*mesh_refine) !
         ! grid size (number of x/y cells)
 
     real(dp) :: non_adaptive_ts 

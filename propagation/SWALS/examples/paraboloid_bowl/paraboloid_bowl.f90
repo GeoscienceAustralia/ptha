@@ -11,7 +11,7 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions_paraboloid_bowl(domain)            
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: i, j
         real(dp) :: x, y, L, D, r0, r, A
 
@@ -86,15 +86,15 @@ program run_paraboloid_basin
     real(dp) ::  global_dt ! = (0.23_dp/mesh_refine) * 1.0_dp
 
     ! Approx timestep between outputs
-    real(dp) :: approximate_writeout_frequency = 1.0_dp
-    real(dp) :: final_time = 300.0_dp * 1.0_dp
+    real(dp), parameter :: approximate_writeout_frequency = 1.0_dp
+    real(dp), parameter :: final_time = 300.0_dp * 1.0_dp
 
     ! Length/width
-    real(dp), parameter, dimension(2):: global_lw = 8000.0_dp * [1.0_dp, 1.0_dp]
+    real(dp), parameter :: global_lw(2) = 8000.0_dp * [1.0_dp, 1.0_dp]
     ! Lower-left corner coordinate
-    real(dp), parameter, dimension(2):: global_ll = -global_lw/2.0_dp
+    real(dp), parameter :: global_ll(2) = -global_lw/2.0_dp
     ! grid size (number of x/y cells)
-    integer(ip), parameter, dimension(2):: global_nx = [100, 100]*mesh_refine + 1
+    integer(ip), parameter :: global_nx(2) = [100, 100]*mesh_refine + 1
 
     ! Useful misc variables
     integer(ip):: nd, j

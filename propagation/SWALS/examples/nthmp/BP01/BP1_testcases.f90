@@ -13,7 +13,7 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions_BP1(domain, d, beach_slope, land_length, sea_length, X0, X1, H, gamma0)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in) :: d, beach_slope, land_length, sea_length, X0, X1, H, gamma0 
 
         integer(ip) :: i,j, ngauge

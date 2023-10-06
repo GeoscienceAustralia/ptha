@@ -153,15 +153,13 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: i, j
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)
         logical, allocatable:: is_inside(:)
         type(multi_raster_type):: elevation_data
-        real(dp) :: wall, w
-        real(dp) :: gauge_xy(3,6)
-        real(dp) :: pol1(4,2), pol2(4,2)
+        real(dp) :: wall, gauge_xy(3,6), pol1(4,2), pol2(4,2)
         logical :: flatten_bathymetry_near_boundary
 
         ! Stage
@@ -260,7 +258,7 @@ program Tauranga
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, flather_boundary, &
         boundary_stage_transmissive_momentum, boundary_stage_radiation_momentum
     use local_routines

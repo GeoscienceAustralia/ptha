@@ -136,7 +136,7 @@ module local_routines
    
     ! Main geometry setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
 
         type(multi_raster_type):: elevation_data
         real(dp), allocatable:: x(:), y(:)
@@ -205,7 +205,7 @@ program Seaside_OSU
 
     use global_mod, only: ip, dp, minimum_allowed_depth, &
         default_nonlinear_timestepping_method
-    use multidomain_mod, only: multidomain_type, setup_multidomain
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: boundary_stage_transmissive_normal_momentum, boundary_stage_radiation_momentum, flather_boundary
     use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit

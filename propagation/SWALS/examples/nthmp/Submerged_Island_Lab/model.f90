@@ -42,13 +42,11 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
 
         integer(ip):: i, j
         real(dp), allocatable:: x(:), y(:)
-        real(dp) :: gauges_1_to_4_x_coord, dd
-        real(dp) :: gauge_xy(3,2)
-        
+        real(dp) :: gauges_1_to_4_x_coord, dd, gauge_xy(3,2)
 
         ! Stage
         domain%U(:,:,STG) = 0.0e-0_dp
@@ -138,7 +136,7 @@ program Submerged_Island
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: flather_boundary
     use timer_mod
     use logging_mod, only: log_output_unit
