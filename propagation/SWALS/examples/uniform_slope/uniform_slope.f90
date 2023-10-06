@@ -12,17 +12,17 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions_uniform_slope(domain)            
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: i,j
         real(dp):: x, y, cx, cy, slope
 
         ! Set elevation
         slope = bed_slope 
 
-        cx = (domain%lw(1))*0.5
-        cy = (domain%lw(2))*0.5
-        do i = 1,domain%nx(1)
-            do j = 1, domain%nx(2)
+        cx = (domain%lw(1))*0.5_dp
+        cy = (domain%lw(2))*0.5_dp
+        do j = 1, domain%nx(2)
+            do i = 1,domain%nx(1)
                 x = (i-0.5_dp)*domain%dx(1) - cx
                 y = (j-0.5_dp)*domain%dx(2) - cy 
                 domain%U(i,j,ELV) = y*slope

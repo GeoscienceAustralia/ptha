@@ -95,9 +95,9 @@ module forcing_mod
             !! Update the domain for a time-step from (time-dt, time). Note "time" is the END of the timestep
         real(dp), intent(in) :: start_time, end_time
             !! Apply the entire forcing at a steady rate between start_time and end_time
-        procedure(forcing_time), pointer :: forcing_time_function
+        procedure(forcing_time), pointer, intent(in) :: forcing_time_function
 
-        real(dp) :: update_fraction, local_dt, p1, p2
+        real(dp) :: update_fraction, p1, p2
         integer(ip) :: i, j, k
 
         if( ((time - dt) <= end_time) .and. (time >= start_time) ) then

@@ -73,9 +73,11 @@ These notes apply to both Linux and Windows (currently untested on Mac).
 
 To build rptha, you firstly need to install the R packages that it depends on.
 The usual way to get these is to start R, and do:
-
-    install.packages(c('sp', 'sf', 'FNN', 'raster', 'minpack.lm', 'geometry', 'geosphere', 'rgl', 'ncdf4', 'testthat', 'devtools', 'roxygen2'))
-
+```r
+install.packages(c('sp', 'sf', 'FNN', 'raster', 'minpack.lm', 'geometry', 
+                   'geosphere', 'ncdf4', 'testthat', 'devtools', 'roxygen2'))
+install.packages('rgl') # Optional and may fail on NCI
+```
 This will ask you to choose a mirror to download from. Just choose something that
 is close to your location -- for example in Canberra, Australia, you can first select
 'http mirrors' and then select the Canberra-Australia mirror. 
@@ -94,13 +96,16 @@ On Windows, before proceeding further, you need to
 
 Once the packages have installed, you should start R inside the ptha/R/rptha directory (within a local copy of this repository).
 Run the following from within R:
-
-    source('build_package.R')
+```r
+source('build_package.R')
+```
 
 This will make an R package file in the same directory as this README.md
 (ptha/R/). That package can be installed on the command line with:
 
-    R CMD INSTALL rptha_XXXXX.tar.gz
+```
+R CMD INSTALL rptha_XXXXX.tar.gz
+```
 
 where the XXXX are adapted to match the file name. On Ubuntu you need to add
 'sudo' to the start of the previous command. On Windows you could instead use

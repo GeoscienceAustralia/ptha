@@ -48,7 +48,7 @@ module local_routines
     subroutine set_initial_conditions_circular_island(domain, offshore_depth, island_radius, slope_radius)
         !! Setup initial conditions + locations of gauges
 
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in) :: offshore_depth, island_radius, slope_radius
 
         ! Local variables
@@ -154,7 +154,7 @@ program circular_island
         ! Single domain model
         allocate(md%domains(1))
         dx = 2000.00_dp/mesh_refine
-        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03
+        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03_dp
         md%domains(1)%lower_left = -md%domains(1)%lw/2.0_dp
         md%domains(1)%nx = nint(md%domains(1)%lw/dx)
         md%domains(1)%timestepping_method = timestepping_method
@@ -165,7 +165,7 @@ program circular_island
         ! Coarser outer domain
         allocate(md%domains(2))
         dx = 4000.00_dp/mesh_refine
-        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03 
+        md%domains(1)%lw = [2000.0_dp , 3000.0_dp]*1e+03_dp 
         md%domains(1)%lower_left = -md%domains(1)%lw/2.0_dp
         md%domains(1)%nx = nint(md%domains(1)%lw/dx)
         md%domains(1)%timestepping_method = timestepping_method

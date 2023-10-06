@@ -10,7 +10,7 @@
 module multidomain_mod
 !! Contains a multidomain_type, to hold multiple rectangular domains which
 !! communicate with each other (i.e. for nesting).
-
+!!
 !! The idea of the multidomain type is that it contains multiple domains that communicate with each other:
 !!
 !!   * Finer resolution domains may overlap coarser domains.
@@ -217,10 +217,10 @@ module multidomain_mod
         real(dp) :: last_write_time = -HUGE(1.0_dp)
             !! Convenience variables controlling writeout
         character(len=charlen) :: label = ''
-            !! Label for the multidomain. When running models with more than one multidomain,
-            !! unique labels should be used for each, to avoid problems in parallel communication.
-            !! (Note: This could be avoided by converting the main data in p2p_comms_mod into a derived
-            !! type, one per multidomain, and that should be a better approach).
+            !! Label for the multidomain. This is no longer required, but can be useful for print-outs.
+            !! Historically it was necessary when running models with >1 multidomain in parallel, but nowadays
+            !! the parallel comms are done in a derived type inside the multidomain, such that there is no need to
+            !! use distinct labels.
         integer(ip) :: log_output_unit = -HUGE(1_ip)
             ! File unit for logging. If more than one multidomain is used (relatively uncommon)
             ! we can put the most common log output for each multidomain in separate files. 
@@ -434,73 +434,77 @@ module multidomain_mod
 
         integer(ip) :: j, i, k, n, j1
         real(dp) :: swapper
+        logical :: t1, t2, t3 ! Logical checks to ensure communication makes sense
 
         ! Preliminaries: Check that all domains are storing max_U.
         ! If they are not, do a quick exit
         do j = 1, size(md%domains)
             if(.not. md%domains(j)%record_max_U) then
-                write(md%log_output_unit) 'Note: Not communicating max_U values because not all domains record_max_U.'
+                write(md%log_output_unit,*) 'Note: Not communicating max_U values because not all domains record_max_U.'
                 return
             end if
         end do
 
         ! Check the array dimensions are compatible with our logic
         do j = 1, size(md%domains)
-            n = size(md%domains(j)%max_U, 3)
-            if(n > size(md%domains(j)%U, 3)) then
-                write(md%log_output_unit) 'Error (not fatal): Will not communicate max_U values because it contains '
-                write(md%log_output_unit) 'more variables than domain%U, which we use as a scratch space. Skipping'
-                return
-            end if
-
             if( (size(md%domains(j)%max_U, 1) /= size(md%domains(j)%U, 1)) .or. &
                 (size(md%domains(j)%max_U, 2) /= size(md%domains(j)%U, 2)) ) then
-                write(md%log_output_unit) 'Error (not fatal): Will not communicate max_U values because its dimensions '
-                write(md%log_output_unit) 'are not consistent with domain%U, which we use as a scratch space. Skipping'
+                write(md%log_output_unit,*) 'Warning: Will not communicate max_U values because its dimensions '
+                write(md%log_output_unit,*) 'are not consistent with domain%U, which we use as a scratch space.'
                 return
             end if
         end do
 
-        ! Swap max_U and domain%U, without using signifiant extra memory
-        do j = 1, size(md%domains)
-            n = size(md%domains(j)%max_U, 3)
-            do k = 1, n
+        ! Ensure the max_U variables are all the same between domains.
+        n = size(md%domains(1)%max_U, 3)
+        do j = 2, size(md%domains)
+            t1 = (n == size(md%domains(j)%max_U, 3)) ! Same number of max_U variables
+            t2 = (size(md%domains(j)%max_U_variables) == size(md%domains(1)%max_U_variables)) ! As above
+            t3 = all(md%domains(j)%max_U_variables == md%domains(1)%max_U_variables) ! Variables are the same
+            if(.not. (t1 .and. t2 .and. t3)) then
+                write(md%log_output_unit,*) 'Warning: Will not communicate max_U values because different variables'
+                write(md%log_output_unit,*) 'are stored on different domains.'
+                return
+            end if
+        end do
+
+        ! Swap max_U and domain%U, without using signifiant extra memory, one variable at a time
+        do k = 1, n
+            ! For each domain, copy the k'th variable in domain%max_U(:,:,k) into domain%U(:,:,1)
+            do j = 1, size(md%domains)
                 do j1 = 1, size(md%domains(j)%max_U, 2)
                     do i = 1, size(md%domains(j)%max_U, 1)
-                        swapper = md%domains(j)%U(i, j1, k)
-                        md%domains(j)%U(i, j1, k) = md%domains(j)%max_U(i, j1, k)
+                        swapper = md%domains(j)%U(i, j1, 1)
+                        md%domains(j)%U(i, j1, 1) = md%domains(j)%max_U(i, j1, k)
                         md%domains(j)%max_U(i, j1, k) = swapper
                     end do
                 end do
             end do
-        end do
 
-        ! Communicate between domains
-        call md%send_halos(send_to_recv_buffer = send_halos_immediately)
+            ! Communicate between domains
+            call md%send_halos(send_to_recv_buffer = send_halos_immediately)
 
-        if(.not. send_halos_immediately) then
-            ! Do all the coarray communication in one hit
-            ! This lets us 'collapse' multiple sends to a single image,
-            ! and is more efficient in a bunch of cases.
-            TIMER_START('comms1')
-            call communicate_p2p(md%p2p)
-            TIMER_STOP('comms1')
-        end if
+            if(.not. send_halos_immediately) then
+                ! Do all the coarray communication in one hit
+                ! This lets us 'collapse' multiple sends to a single image,
+                ! and is more efficient in a bunch of cases.
+                TIMER_START('comms1')
+                call communicate_p2p(md%p2p)
+                TIMER_STOP('comms1')
+            end if
 
-        ! Get the halo information from neighbours
-        ! For coarray comms, we need to sync before to ensure the information is sent, and
-        ! also sync after to ensure it is not overwritten before it is used
-        call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
+            ! Get the halo information from neighbours
+            ! For coarray comms, we need to sync before to ensure the information is sent, and
+            ! also sync after to ensure it is not overwritten before it is used
+            call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
 
-        ! Now domain%U contains the max_U variable, updated consistently between domains,
-        ! whereas the max_U variable contains the value of domain%U. Swap them
-        do j = 1, size(md%domains)
-            n = size(md%domains(j)%max_U, 3)
-            do k = 1, n
+            ! Now domain%U(:,:,1) contains domain%max_U(:,:,k), updated consistently between domains,
+            ! whereas domain%max_U(:,:,k) contains domain%U(:,:,1). Swap them
+            do j = 1, size(md%domains)
                 do j1 = 1, size(md%domains(j)%max_U, 2)
                     do i = 1, size(md%domains(j)%max_U, 1)
-                        swapper = md%domains(j)%U(i, j1, k)
-                        md%domains(j)%U(i, j1, k) = md%domains(j)%max_U(i, j1, k)
+                        swapper = md%domains(j)%U(i, j1, 1)
+                        md%domains(j)%U(i, j1, 1) = md%domains(j)%max_U(i, j1, k)
                         md%domains(j)%max_U(i, j1, k) = swapper
                     end do
                 end do
@@ -2454,8 +2458,7 @@ module multidomain_mod
         integer(ip), allocatable, intent(inout) :: all_timestepping_methods_md(:,:)
             !! stores the all_timestepping_methods variable in the multidomain.
         character(len=charlen) :: md_label
-            !! md_label a character label for the multidomain. If there is more than one multidomain, they should have unique labels.
-            !! (set via md%label) to avoid problems in parallel communication.
+            !! md_label a character label for the multidomain, which will be included in the parallel communication tags.
         type(p2p_comms_type), intent(inout) :: md_p2p
             !! The point2point communicator used for this multidomain.
         integer(ip), intent(in) :: md_log_output_unit

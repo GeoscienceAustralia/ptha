@@ -1,6 +1,6 @@
 #
-# Functions for reading diverse tide-gauge formats (and the single mean sea
-# level pressure gauge format)
+# Functions for reading diverse tide gauge and mean sea level pressure sensor
+# formats
 #
 
 
@@ -100,6 +100,14 @@ read_tide_gauge_macquarieisland<-function(filename){
     return(output)
 }
 
+read_tide_gauge_AAD_other<-function(filename){
+    x = read.csv(filename, header=TRUE, comment.char='#')
+    time = strptime(x$time, format='%Y-%m-%d %H:%M:%S', tz='Etc/UTC')
+    stage = x$ocean_pressure_with_inv_barometric_adjustment
+    output = data.frame(time=time, juliant=julian(time), stage=stage)
+    return(output) 
+}
+
 # This is for the MHL tide-gauge data
 read_tide_gauge_MHL<-function(filename){
     x = read.csv(filename, skip=30, header=TRUE, na.strings='---')
@@ -167,6 +175,8 @@ read_tide_gauge_any<-function(data_file){
         read_tg = read_tide_gauge_TAS_revised
     }else if(grepl('Macquarie_Island', data_file)){
         read_tg = read_tide_gauge_macquarieisland
+    }else if(grepl('AAD_2022_tidegauge', data_file)){
+        read_tg = read_tide_gauge_AAD_other
     }else if(grepl('DES_QGHL', data_file)){
         read_tg = read_tide_gauge_DES
     }else if(grepl('ioc_sealevelmonitoring', data_file)){

@@ -26,7 +26,7 @@ module local_routines
         !
         ! Initialise the domain elevation, stage, flux, manning roughness, and forcing term
         !
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
 
         integer(ip):: i, j, k, house_file_unit
         real(dp), allocatable:: x(:), y(:)
@@ -175,11 +175,11 @@ program merewether
     real(dp), parameter :: final_time = 900.0_dp
 
     ! Length/width
-    real(dp), parameter, dimension(2):: global_lw = [320.0_dp, 415.0_dp]
+    real(dp), parameter :: global_lw(2) = [320.0_dp, 415.0_dp]
     ! Lower-left corner coordinate
-    real(dp), parameter, dimension(2):: global_ll = [382251.0_dp, 6354266.5_dp]
+    real(dp), parameter :: global_ll(2) = [382251.0_dp, 6354266.5_dp]
     ! grid size (number of x/y cells)
-    integer(ip), parameter, dimension(2):: global_nx = [320_ip, 415_ip] ![160_ip, 208_ip] ![321_ip, 416_ip]
+    integer(ip), parameter :: global_nx(2) = [320_ip, 415_ip] ![160_ip, 208_ip] ![321_ip, 416_ip]
     ! Track mass
     real(force_double) :: volume_added
 

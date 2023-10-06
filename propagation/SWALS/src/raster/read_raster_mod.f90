@@ -425,7 +425,7 @@ module read_raster_mod
 
     end subroutine
 
-    subroutine get_xy_values_multi_raster(multi_raster, x, y, z, N, verbose, bilinear, band, na_below_limit)
+    subroutine get_xy_values_multi_raster(multi_raster, x, y, z, N, verbose, bilinear, band, na_below_limit, raster_index)
         !!
         !! Interpolation from multi_raster
         !!
@@ -437,40 +437,33 @@ module read_raster_mod
         integer(ip), optional, intent(in) :: bilinear !! Use bilinear interpolation (1) or nearest-cell interpolation (0)
         integer(ip), optional, intent(in) :: band !! Integer giving the raster band to interpolate from
         real(dp), optional, intent(in) :: na_below_limit
-        !! Treat raster values below this number as NA. This can be useful if nodata values are not preserved exactly (e.g. due to
-        !! changes in precision). Often nodata values are large negative numbers, in which case we can be sure that all numbers below
-        !! some threshold (e.g. `na_below_limit = -1.0e+10`) should be treated as NA.
+            !! Treat raster values below this number as NA. This can be useful if nodata values are not preserved exactly 
+            !! (e.g. due to changes in precision). Often nodata values are large negative numbers, in which case we can 
+            !! be sure that all numbers below some threshold (e.g. `na_below_limit = -1.0e+10`) should be treated as NA.
+        real(dp), optional, intent(out) :: raster_index(N) 
+            !! Store preference order of the raster file that was used to populate z. Negative values imply no raster.
+            !! Store as real (rather than integer) because less code modification was required on the netcdf side.
 
-        real(dp) :: empty_value, ll(2), ur(2), lower_limit_l
+        real(dp) :: ll(2), ur(2), lower_limit_l
+        real(dp), parameter :: empty_value = -huge(1.0_dp)
         integer(ip) :: i, j, verbose_l, bilinear_l, band_l
+        logical :: did_read_data
 
-        if(present(verbose)) then
-            verbose_l = verbose
-        else
-            verbose_l = 0
-        end if
+        verbose_l = 0
+        if(present(verbose)) verbose_l = verbose
 
-        if(present(bilinear)) then
-            bilinear_l = bilinear
-        else
-            bilinear_l = use_bilinear_default
-        end if
+        bilinear_l = use_bilinear_default
+        if(present(bilinear)) bilinear_l = bilinear
 
-        if(present(band)) then
-            band_l = band
-        else
-            band_l = 1
-        end if
+        band_l = 1
+        if(present(band)) band_l = band
+        
+        lower_limit_l = -HUGE(1.0_dp)
+        if(present(na_below_limit)) lower_limit_l = na_below_limit
 
-        if(present(na_below_limit)) then
-            lower_limit_l = na_below_limit
-        else
-            lower_limit_l = -HUGE(1.0_dp)
-        end if
-
-        ! Flag for unset 'z'
-        empty_value = -huge(1.0_dp)
+        ! Preset values to be updated in loop
         z = empty_value
+        if(present(raster_index)) raster_index = -1.0_dp
 
         ! Read rasters until no values are missing
         do j = 1, size(multi_raster%raster_datasets, kind=ip)
@@ -483,14 +476,26 @@ module read_raster_mod
                 ! If z is populated with a value, we are done
                 if(z(i) /= empty_value) cycle
 
-                ! Read values inside the raster extent
+                did_read_data = .FALSE. 
+
+                ! Read values inside the raster extent (and try even right on the boundaries)
                 if(x(i) >= ll(1) .and. x(i) <= ur(1) .and. y(i) >= ll(2) .and. y(i) <= ur(2)) then
                     call multi_raster%raster_datasets(j)%get_xy(x(i), y(i), z(i), 1, verbose_l, bilinear_l, band_l)
+                    did_read_data = .TRUE.
                 end if
 
                 ! Set 'nodata' values back to empty values
-                if(z(i) == real(multi_raster%raster_datasets(j)%nodata_value, dp)) z(i) = empty_value
-                if(z(i) < lower_limit_l) z(i) = empty_value
+                if(z(i) == real(multi_raster%raster_datasets(j)%nodata_value, dp)) then
+                    z(i) = empty_value
+                else if(z(i) < lower_limit_l) then
+                    z(i) = empty_value
+                else if(z(i) /= z(i) ) then
+                    ! Genuine NaN
+                    z(i) = empty_value 
+                else if(present(raster_index)) then
+                    ! Store the raster index if we read the value. (It is a real for convenience of storage.)
+                    if(did_read_data) raster_index(i) = j*1.0_dp
+                end if
 
             end do
 

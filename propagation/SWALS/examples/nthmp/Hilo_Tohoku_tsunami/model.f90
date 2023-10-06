@@ -123,7 +123,7 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: j
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)
@@ -185,7 +185,7 @@ program Hilo_harbour_Tohoku
     use global_mod, only: ip, dp, minimum_allowed_depth, &
         default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: flather_boundary, boundary_stage_radiation_momentum
     use local_routines
     use timer_mod

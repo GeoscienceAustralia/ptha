@@ -275,7 +275,7 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain, forcing_case)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip), intent(in) :: forcing_case
 
         integer(ip):: i, j
@@ -393,7 +393,7 @@ program BP06
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: flather_boundary, transmissive_boundary
     use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit

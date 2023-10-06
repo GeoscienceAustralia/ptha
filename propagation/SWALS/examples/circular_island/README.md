@@ -2,7 +2,7 @@
 
 This problem simulates the periodic wave-field around a conical island. The
 island is contained within in a uniform depth ocean containing
-eastward-propagating monochromatic plane waves. The waves are modified by the
+westward propagating monochromatic plane waves. The waves are modified by the
 island topography. For the linear shallow water equations, there is an
 analytical solution described by
 [Zhang and Zhu (1994)](https://doi.org/10.1017/S0022112094003769).

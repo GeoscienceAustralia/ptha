@@ -114,7 +114,9 @@ EVOLVE_TIMER_START('LF_update_stage')
         !$OMP END DO
         !$OMP END PARALLEL
 
-        domain%time = domain%time + dt * HALF_dp
+        ! For leapfrog, stage is staggered so takes values at
+        ! .... t-3dt/2, t-dt/2, t+dt/2, t+3dt/2, ...
+        domain%time = domain%time + dt * HALF_dp 
 EVOLVE_TIMER_STOP('LF_update_stage')
 
         call domain%update_boundary()

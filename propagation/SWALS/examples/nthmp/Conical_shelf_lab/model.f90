@@ -23,7 +23,7 @@ module local_routines
 
     ! Main geometry setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
 
         type(multi_raster_type):: elevation_data
         real(dp), allocatable:: x(:), y(:)
@@ -87,7 +87,7 @@ program Conical_shelf
     !!
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
-    use multidomain_mod, only: multidomain_type, setup_multidomain
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: flather_boundary
     use timer_mod, only: timer_type
     use logging_mod, only: log_output_unit
@@ -139,7 +139,7 @@ program Conical_shelf
         call set_initial_conditions(md%domains(j))
     end do
 
-    ! FIXME: Add point gauges
+    ! Add point gauges
     call md%set_point_gauges_from_csv('point_gauge_locations.csv', skip_header=1_ip)
 
     ! Boundary conditions

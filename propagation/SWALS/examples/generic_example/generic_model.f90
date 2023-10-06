@@ -18,7 +18,7 @@ module local_routines
         input_stage_raster, hazard_points_file, skip_header,&
         adaptive_computational_extents, negative_elevation_raster, manning_n, rise_time)
 
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         character(len=charlen), intent(in):: input_elevation_raster, &
             input_stage_raster, hazard_points_file
         integer(ip), intent(in):: skip_header

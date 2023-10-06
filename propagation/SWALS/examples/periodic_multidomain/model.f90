@@ -13,7 +13,7 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions(domain, stage_file, rise_time, global_dt)
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         character(len=charlen), intent(in) :: stage_file
         real(dp), intent(in) :: rise_time
         real(dp), intent(in) :: global_dt
@@ -172,12 +172,11 @@ program periodic_multidomain
     real(dp) :: final_time = 3600.0_dp * 24.0_dp
 
     ! Length/width
-    real(dp), parameter, dimension(2):: global_lw = [360.0_dp, 135.0_dp]
+    real(dp), parameter :: global_lw(2) = [360.0_dp, 135.0_dp]
     ! Lower-left corner coordinate
-    !real(dp), parameter, dimension(2):: global_ll = [-180.0_dp, -70.0_dp]
-    real(dp), parameter, dimension(2):: global_ll = [-40.0_dp, -70.0_dp]
+    real(dp), parameter :: global_ll(2) = [-40.0_dp, -70.0_dp]
     ! grid size (number of x/y cells)
-    integer(ip), parameter, dimension(2):: global_nx = nint(global_lw*15*mesh_refine)
+    integer(ip), parameter :: global_nx(2) = nint(global_lw*15*mesh_refine)
 
     ! Inner domain 
     integer(ip), parameter :: nest_ratio = 5_ip

@@ -593,7 +593,7 @@ get_multidomain_output_times<-function(multidomain_dir, output_type='grids'){
 #' interpretation.
 #' @return Either the max_stage_raster (if return_elevation=FALSE), or a list
 #' with both the max_stage and elevation rasters.
-make_max_stage_raster<-function(swals_out, proj4string='+init=epsg:4326', 
+make_max_stage_raster<-function(swals_out, proj4string='EPSG:4326', 
     na_above_zero=FALSE, return_elevation=FALSE, 
     na_outside_priority_domain=FALSE){
 
@@ -928,7 +928,7 @@ nearest_point_in_multidomain<-function(x, y, md){
 #'
 merge_domains_nc_grids<-function(nc_grid_files = NULL,  multidomain_dir=NA, 
     domain_index = NA, desired_var = 'max_stage', desired_time_index = NA,
-    return_raster=FALSE, proj4string="+init=epsg:4326"){
+    return_raster=FALSE, proj4string="EPSG:4326"){
     .library_quiet('ncdf4')
     .library_quiet('raster')
     .library_quiet('sp')
@@ -1728,7 +1728,7 @@ get_domain_indices_in_multidomain<-function(multidomain_dir){
 #'
 get_domain_interior_bbox_in_multidomain<-function(multidomain_dir, 
     include_SpatialPolygonsDataFrame=FALSE, 
-    spdf_proj4string="+init=epsg:4326"){
+    spdf_proj4string="EPSG:4326"){
 
     .library_quiet(ncdf4)
 
@@ -1862,28 +1862,154 @@ get_domain_interior_bbox_in_multidomain<-function(multidomain_dir,
 #' individual domain, as recorded in the md log file
 #'
 #' @param md_log_file filename
-#' @param wallclock_time_line_spacing Number of lines after the RUN_ID00
-#' filename that the wallclock-time line appears
-#' @param a data.frame containing the domain ID info, the wallclock time, and
+#' @param include_incremental_time If true, ESTIMATE the computational time required for each domain
+#' between each printout time. Beware this doesn't account for 'static_before_time' so could be
+#' wrong if that was applied.
+#' @param ... unimplemented optional arguments. This is used to cleanly workaround the
+#' removal of an argument wallclock_time_line_spacing (which is now calculated internally).
+#' @return a data.frame containing the domain ID info, the wallclock time, and
 #' the domain index according to the model setup
-get_domain_wallclock_times_in_log<-function(md_log_file, 
-    wallclock_time_line_spacing = 15){
+get_domain_wallclock_times_in_log<-function(md_log_file, include_incremental_time = FALSE, ...){
 
     x = readLines(md_log_file)
+
     # The timer information is preceeded by statement of the output directory,
     # which will match this
     inds = grep('RUN_ID00', x)
     # Get the domain information
     domains = basename(x[inds])
     domains = unlist(lapply(strsplit(domains, '_'), function(x) x[2]))
-    # Get the time
-    times = as.numeric(gsub('Total WALLCLOCK time: ', '', 
-                            x[inds+wallclock_time_line_spacing]))
     # Get the domain number corresponding to the original
     domain_number = as.numeric(gsub('ID', '', domains))%%100000
 
+    # Find the line index containing the run time (as an offset from the 'inds' line)
+    if(length(inds) > 1){
+        i1 = inds[2]
+    }else{
+        i1 = length(x)
+    }
+    local_wallclock_time_line_spacing = grep('Total WALLCLOCK time: ', 
+        x[inds[1]:i1])[1] - 1
+
+    # Get the time
+    times = as.numeric(gsub('Total WALLCLOCK time: ', '', 
+                            x[inds+local_wallclock_time_line_spacing]))
+
     output = data.frame(domains=domains, times=times, index=domain_number)
+    if(include_incremental_time){
+        # Include an estimate of how the computation time varies between each output step
+        # which can matter when local timestepping is used
+        tmp = get_domain_time_varying_substeps_in_log(md_log_file)
+        incremental_times = vector(mode='list', length=length(domains))
+        for(i in 1:length(domains)){
+            incremental_times[[i]] = times[i] * 
+                (tmp$nsteps_advanced_increment[,i]/sum(tmp$nsteps_advanced_increment[,i]))
+        }
+        incremental_times = do.call(rbind, incremental_times)
+        output = as.list(output)
+    
+        output$incremental_times = incremental_times
+        output$domain_names = tmp$domain_colname
+        output$domain_folders = tmp$domain_folders
+    }
     return(output)
+}
+
+#' Combine wallclock time information in all logs in the multidomain
+#' 
+#' This can includes the incremental time. It can help to explore load balancing
+#' in parallel models, but see caveats below.
+#'
+#' @param md_dir the multidomain directory
+#' @param include_incremental_time Should we include approximate information on 
+#' the domain compute time between printout steps?
+#' @return If include_incremental_time=FALSE then return a data.frame with total time
+#' for each domain. Otherwise, return a list that has the same information AND also includes
+#' a matrix that estimates the computational effort of each domain over time, based on the 
+#' nsteps_advanced that it did. This could account for local timestepping. But beware that
+#' the code doesn't account for use of nonzero static_before_time (which could mean that steps
+#' prior to that time are extremely cheap). 
+#'
+get_domain_wallclock_times_in_multidomain<-function(md_dir, include_incremental_time=TRUE){
+
+    # Several log files in a mutlidomain in parallel
+    md_log_files = Sys.glob(paste0(md_dir, '/multi*.log'))
+
+    # For each, get the domain run times, and an estimate of the incremental
+    # time between each log printout
+    increm = include_incremental_time
+    all_log_info = lapply(md_log_files, 
+        function(x) get_domain_wallclock_times_in_log(x, include_incremental_time = increm))
+
+    # Combine the information into a single data structure
+
+    if(increm){
+        # In this case all_log_info[[i]] is a list with some vectors and a matrix
+        output = all_log_info[[1]]
+        for(nm in names(all_log_info[[1]])){
+            # Combine into a single data structure
+            if(all(is.null(dim(output[[nm]])))){
+                # Variable "nm" is a vector, concatenate them
+                output[[nm]] = do.call(c, lapply(all_log_info, function(x) x[[nm]]))
+            }else{
+                # Variable "nm" is a matrix, rbind them
+                output[[nm]] = do.call(rbind, lapply(all_log_info, function(x) x[[nm]]))
+            }
+        }
+    }else{
+        # In this case all_log_info[[i]] is a data.frame
+        output = do.call(rbind, all_log_info)
+    }
+    return(output)
+}
+
+#' Get the 'number_of_substeps' for each domain over time, as reported in the log file.
+#'
+#' Beware that this will count steps even if 'static_before_time' is in operation (in
+#' which case the cost of those steps is near zero).
+#'
+get_domain_time_varying_substeps_in_log<-function(md_log_file){
+    x = readLines(md_log_file)
+
+    inds = grep('nsteps_advanced', x)
+
+    # How how many steps a domain has advanced (for the entire simulation)
+    nsteps_advanced = as.numeric( x[ inds + 1 ] )
+
+    # Domain ID's (e.g."            20000000001")
+    domain_ids = x[ inds - 3 ]
+
+    # Associated times
+    model_times = as.numeric( x[ inds - 1 ] )
+
+    # Matrix with number of steps advanced
+    number_of_domains = sum(model_times == model_times[1])
+    domain_ids = domain_ids[1:number_of_domains]
+    unique_times = model_times[seq(1, length(model_times), by = number_of_domains)]
+    nsteps_advanced = matrix(nsteps_advanced, ncol=number_of_domains, nrow=length(unique_times), byrow=TRUE)
+
+    # Get the domain number corresponding to the original
+    domain_number = as.numeric(domain_ids)%%100000
+    # Folders for each domain
+    domain_folders = x[ grep('RUN_ID00', x) ]
+    # Workaround for incomplete log files
+    if(length(domain_folders) > 0){
+        domain_colname = sapply(domain_folders, 
+            function(x) paste0(strsplit(basename(x), split="_")[[1]][1:3], collapse='_'), USE.NAMES=FALSE)
+    }else{
+        domain_colname = rep("", length(domain_folders))
+    }
+
+    colnames(nsteps_advanced) = domain_colname
+    # Incremental version is most useful.
+    nr = nrow(nsteps_advanced)
+    nsteps_advanced_increment = nsteps_advanced[2:nr,] - nsteps_advanced[1:(nr-1),]
+
+    outputs = list(domain_ids = domain_ids, domain_number = domain_number, 
+        domain_folders = domain_folders, domain_colname=domain_colname,
+        model_times = unique_times, nsteps_advanced=nsteps_advanced, 
+        nsteps_advanced_increment = nsteps_advanced_increment)
+    return(outputs)
 }
 
 #' Find the domain thas has a given point in its priority domain, 

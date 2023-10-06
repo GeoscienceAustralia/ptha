@@ -383,7 +383,7 @@ module domain_mod
             !! If unallocated then it will be set in domain%nc_grid_output%initialise
         character(len=charlen), allocatable :: nontemporal_grids_to_store(:)
             !! Specify which 'nontemporal' variables to store. For example:
-            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0']
+            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage']
             !! to store everything;
             !!   [''] to store nothing;
             !!   ['max_stage'] to just store the maximum stage.
@@ -452,11 +452,17 @@ module domain_mod
             !! For debugging it can be helpful to have this array.  If DEBUG_ARRAY is defined, then it will be allocated with
             !! dimensions (nx, ny), and will be written to the netcdf file at each time.
 #endif
-        ! Optionally include other currents (e.g. tides) in the friction term. This is an experiment, currently only supported for
-        ! leapfrog_linear_with_nonlinear_friction
         logical :: friction_with_ambient_fluxes = .false.
-        ! Ambient (e.g. tidal) depth-integrated velocities with easting/northing, used if friction_with_ambient_fluxes=.true.
+            !! Optionally include other currents (e.g. tides) in the friction term. This is an experiment, currently only supported for
+            !! leapfrog_linear_with_nonlinear_friction
         real(dp), allocatable :: ambient_flux(:,:,:)
+            !! Ambient (e.g. tidal) depth-integrated velocities with easting/northing, used if friction_with_ambient_fluxes=.true.
+            !! FIXME: Consider removing this.
+        real(dp), allocatable :: elevation_source_file_index(:,:)
+            !! Store the file index used to set the elevation data at each point. 
+            !! This can be recorded when using the multi_raster_type
+            !! to set the elevation. Although conceptually an integer, it is real 
+            !! because less code modification was required.
 
         CONTAINS
 
@@ -664,7 +670,7 @@ TIMER_START("compute_statistics")
         maxstage = -HUGE(1.0_dp)
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
-        minspeed = 0.0_dp ! speed is always > 0
+        minspeed = HUGE(1.0_dp) ! speed is always > 0
 
         ecw = domain%exterior_cells_width
 
@@ -681,7 +687,7 @@ TIMER_START("compute_statistics")
         maxstage = -HUGE(1.0_dp)
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
-        minspeed = 0.0_dp ! speed is always > 0
+        minspeed = HUGE(1.0_dp) ! speed is always > 0
 
         ! If we are using a 'truely-linear' solver then the depth is always recorded from MSL for certain
         ! calculations (pressure gradient term, and wetting/drying)
@@ -817,17 +823,11 @@ TIMER_STOP("compute_statistics")
         ! Send domain print statements to the default log. Over-ridden later if we send the domain log to its own file.
         domain%logfile_unit = log_output_unit
 
-        if(present(create_output_files)) then
-            create_output = create_output_files
-        else
-            create_output = .TRUE.
-        end if
+        create_output = .TRUE.
+        if(present(create_output_files)) create_output = create_output_files
 
-        if(present(verbose)) then
-            verbose_ = verbose
-        else
-            verbose_ = .true.
-        end if
+        verbose_ = .true.
+        if(present(verbose)) verbose_ = verbose
 
         ! Set default parameters for different timestepping methods
         ! First get the index corresponding to domain%timestepping_method in the timestepping_metadata
@@ -836,7 +836,7 @@ TIMER_STOP("compute_statistics")
         if(domain%theta == -HUGE(1.0_dp)) domain%theta = timestepping_metadata(tsi)%default_theta
         ! Set CFL number
         if(domain%cfl == -HUGE(1.0_dp)) domain%cfl = timestepping_metadata(tsi)%default_cfl
-        ! Flag to note if the grid should be interpreted as staggered
+        ! Flag to note if the grid should be interpreted as staggered or cell-centred
         domain%is_staggered_grid = (timestepping_metadata(tsi)%is_staggered_grid == 1)
         domain%adaptive_timestepping = timestepping_metadata(tsi)%adaptive_timestepping
         domain%eddy_viscosity_is_supported = timestepping_metadata(tsi)%eddy_viscosity_is_supported
@@ -1022,6 +1022,14 @@ TIMER_STOP("compute_statistics")
                 write(log_output_unit, *) 'While not logically essential, some older code assumes that if'
                 write(log_output_unit, *) 'domain%max_U is allocated, then domain%max_U(:,:,1) has max-stage'
                 call generic_stop
+            end if
+
+            ! Ensure that if we store "time_of_max_stage", then we also store "max_stage". This is 
+            ! required with the current calculation method (although in principle isn't necessary).
+            if(any(domain%max_U_variables == 'time_of_max_stage') .and. &
+               all(domain%max_U_variables /= 'max_stage')) then
+                write(log_output_unit,*) 'Error: if "time_of_max_stage" is being stored then "max_stage"'
+                write(log_output_unit,*) 'must be stored too (limitation of current implementation).'
             end if
         end if
 
@@ -1245,10 +1253,17 @@ TIMER_STOP("compute_statistics")
             !$OMP END PARALLEL
         end if
 
-
-        if(create_output) then
-            CALL domain%create_output_files()
+        if(any(domain%nontemporal_grids_to_store == 'elevation_source_file_index')) then
+            ! Include space to record which file was used to set the elevation at each site.
+            ! The resulting array can be passed as an optional argument to 
+            ! read_raster_mod::multi_raster_type%get_values. 
+            allocate(domain%elevation_source_file_index(nx, ny))
+            ! Typically only used once in serial, so no need for "first touch" openmp.
+            domain%elevation_source_file_index = -1.0_dp
         end if
+
+
+        if(create_output) call domain%create_output_files()
 
         if(verbose_) then
             write(domain%logfile_unit, *) ''
@@ -2141,7 +2156,7 @@ TIMER_STOP('fileIO')
         !! Keep track of the maxima of stage, i.e. domain%U(:,:,STG)
         !!
         class(domain_type), intent(inout):: domain
-        integer(ip):: j, k, i, ip1, jp1
+        integer(ip):: j, k, i, ip1, jp1, toms
 
         real(dp) :: local_depth, local_depth_inv, arrival_stage, &
             depth_E, depth_N, depth_E_inv, depth_N_inv
@@ -2150,22 +2165,40 @@ TIMER_STOP('fileIO')
         if(domain%record_max_U) then
 EVOLVE_TIMER_START('update_max_quantities')
 
-            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain)
+            toms = findloc(domain%max_U_variables, value='time_of_max_stage', dim=1) ! 0 if not present
 
+            !$OMP PARALLEL DEFAULT(PRIVATE) SHARED(domain, toms)
             do k = 1, size(domain%max_U_variables)
 
                 select case(domain%max_U_variables(k))
 
                 case('max_stage')
 
-                    ! Track max stage
-                    !$OMP DO SCHEDULE(STATIC)
-                    do j = domain%yL, domain%yU !1, domain%nx(2)
-                        do i = domain%xL, domain%xU !1, domain%nx(1)
-                            domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                    if(toms > 0) then
+                        ! Store max-stage and the time of max-stage
+                        !$OMP DO SCHEDULE(STATIC)
+                        do j = domain%yL, domain%yU !1, domain%nx(2)
+                            do i = domain%xL, domain%xU !1, domain%nx(1)
+                                if(domain%U(i,j,STG) > domain%max_U(i,j,k)) then
+                                    domain%max_U(i,j,k) = domain%U(i,j,STG)
+                                    domain%max_U(i,j,toms) = domain%time
+                                end if
+                            end do
                         end do
-                    end do
-                    !$OMP END DO
+                        !$OMP END DO
+                    else
+                        ! Only store max stage
+                        !$OMP DO SCHEDULE(STATIC)
+                        do j = domain%yL, domain%yU !1, domain%nx(2)
+                            do i = domain%xL, domain%xU !1, domain%nx(1)
+                                domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
+                            end do
+                        end do
+                        !$OMP END DO
+                    end if
+
+                case('time_of_max_stage')
+                    ! Treated in case('max_stage'), do nothing else.
 
                 case('max_speed')
 
@@ -2312,6 +2345,13 @@ EVOLVE_TIMER_STOP('update_max_quantities')
             ! Save elevation
             if(any(domain%nontemporal_grids_to_store == 'elevation0')) then
                 call domain%nc_grid_output%store_static_variable('elevation0', domain%U(:,:,ELV))
+            end if
+
+            ! Save the elevation source file index
+            if(allocated(domain%elevation_source_file_index) .and. &
+               any(domain%nontemporal_grids_to_store == 'elevation_source_file_index')) then
+                call domain%nc_grid_output%store_static_variable('elevation_source_file_index', &
+                    domain%elevation_source_file_index)
             end if
 
 #endif
@@ -3892,6 +3932,8 @@ TIMER_STOP('send_halos')
         do j = 1, nsmooth
             call domain%smooth_elevation('9pt_average')
         end do
+
+        smooth_footprint_exceeded_boundary = .false. 
 
         !$OMP PARALLEL DEFAULT(PRIVATE),&
         !$OMP SHARED(domain, temp_elev, all_dx_md, coarse_window_size, fine_window_size, nsmooth, smooth_footprint), &
