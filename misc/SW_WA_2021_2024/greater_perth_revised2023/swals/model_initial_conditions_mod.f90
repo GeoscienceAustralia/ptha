@@ -196,7 +196,7 @@ end subroutine
 subroutine set_initial_conditions(domain, stage_file, global_dt, all_dx_md)
     !! Setup initial conditions and earthquake forcing
 
-    class(domain_type), intent(inout):: domain
+    type(domain_type), intent(inout):: domain
         ! We initialise domain%U and domain%manning_squared, and
         ! setup the forcing term if rise_time > 0
     character(len=charlen), intent(in) :: stage_file
@@ -375,7 +375,7 @@ subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
     !! Set the domain's stage in domain%U(:,:,STG). If the rise_time is
     !! greater than zero, then also setup the rise_time forcing.
 
-    class(domain_type), intent(inout):: domain
+    type(domain_type), intent(inout):: domain
         !! This routine sets domain%U(:,:,STG), and may set
         !! domain%forcing_context_cptr and domain%forcing_subroutine
     character(len=charlen), intent(in) :: stage_file
@@ -515,7 +515,7 @@ subroutine setup_forcing_with_rise_time(domain, stage_file, slip, start_time, en
     !! If the stage-perturbation is applied over a non-zero rise-time
     !! (i.e. not instantaneous), then this routine will set up the forcing
     !! terms.
-    class(domain_type), intent(inout):: domain
+    type(domain_type), intent(inout):: domain
         !! If the stage-perturbation affects the doman, then this routine
         !! will append a forcing term to that domain.
     character(len=charlen), intent(in) :: stage_file
