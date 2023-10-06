@@ -121,6 +121,8 @@ program radial_dam_break
         call set_initial_conditions_radial_dam(md%domains(j))
     end do
 
+    call md%make_initial_conditions_consistent
+
     ! Time-step at which we evolve the solution
     global_dt = 0.75_dp * md%stationary_timestep_max()
 

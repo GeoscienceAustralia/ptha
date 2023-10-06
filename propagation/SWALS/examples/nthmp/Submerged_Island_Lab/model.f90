@@ -136,7 +136,7 @@ program Submerged_Island
 
     use global_mod, only: ip, dp, minimum_allowed_depth, default_nonlinear_timestepping_method
     use domain_mod, only: domain_type
-    use multidomain_mod, only: multidomain_type, setup_multidomain, test_multidomain_mod
+    use multidomain_mod, only: multidomain_type
     use boundary_mod, only: flather_boundary
     use timer_mod
     use logging_mod, only: log_output_unit
