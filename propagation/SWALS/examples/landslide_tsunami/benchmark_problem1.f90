@@ -15,7 +15,7 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions(domain, wall_width)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in) :: wall_width
 
         integer(ip):: i, j, initial_stage_unit, file_header_lines

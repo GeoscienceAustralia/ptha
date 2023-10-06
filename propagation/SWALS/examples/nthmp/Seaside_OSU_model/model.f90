@@ -136,7 +136,7 @@ module local_routines
    
     ! Main geometry setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
 
         type(multi_raster_type):: elevation_data
         real(dp), allocatable:: x(:), y(:)

@@ -66,7 +66,7 @@ module local_routines
     end function
 
     subroutine set_initial_conditions_bp2(domain, tank_bases, tank_slopes, tank_width, initial_depth)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in) :: tank_bases(4), tank_slopes(4), tank_width, initial_depth
 
         real(dp):: tank_x(5)
@@ -150,8 +150,8 @@ program BP02
     character(charlen) :: timestepping_method
     
     ! length/width
-    real(dp), dimension(2) :: global_lw, global_ll
-    integer(ip), dimension(2) :: global_nx 
+    real(dp) :: global_lw(2), global_ll(2)
+    integer(ip) :: global_nx(2) 
 
     ! Local variables 
     real(dp) :: timestep, base_l, dx, tank_width, tank_length, initial_depth

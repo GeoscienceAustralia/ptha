@@ -84,13 +84,12 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: i, j
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)
         type(multi_raster_type):: elevation_data
-        real(dp) :: wall
-        real(dp) :: gauge_xy(3,3)
+        real(dp) :: wall, gauge_xy(3,3)
 
         ! Stage
         domain%U(:,:,STG) = 0.0e-0_dp
@@ -119,7 +118,7 @@ module local_routines
         domain%U(:,domain%nx(2),ELV) = wall
         domain%U(domain%nx(1),:,ELV) = wall
 
-        if(domain%timestepping_method /= 'linear') then
+        if(allocated(domain%manning_squared)) then
             domain%manning_squared = 0.01_dp * 0.01_dp
         end if
 

@@ -10,7 +10,7 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions(domain, grid_smooth_iterations)            
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip), intent(in) :: grid_smooth_iterations
 
         integer(ip):: j

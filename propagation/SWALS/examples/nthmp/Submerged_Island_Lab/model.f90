@@ -42,13 +42,11 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
 
         integer(ip):: i, j
         real(dp), allocatable:: x(:), y(:)
-        real(dp) :: gauges_1_to_4_x_coord, dd
-        real(dp) :: gauge_xy(3,2)
-        
+        real(dp) :: gauges_1_to_4_x_coord, dd, gauge_xy(3,2)
 
         ! Stage
         domain%U(:,:,STG) = 0.0e-0_dp

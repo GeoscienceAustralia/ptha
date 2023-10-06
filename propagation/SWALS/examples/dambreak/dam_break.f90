@@ -12,7 +12,7 @@ module local_routines
         !!
         !! Initial conditions for the dam-break problem
         !!
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         real(dp), intent(in) :: h_upstream, h_downstream
 
         integer(ip):: i,j

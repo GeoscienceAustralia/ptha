@@ -12,7 +12,7 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions_BP09(domain, all_dx_md)
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
             !! The domain
         real(dp), intent(in), optional :: all_dx_md(:,:,:)
             !! Metadata on multidomain grid sizes, used to smooth along multidomain boundaries.
@@ -83,7 +83,7 @@ module local_routines
         ! Smooth near fine-to-coarse boundaries. Must do this BEFORE adjusting the stage to be >= elevation.
         if(present(all_dx_md)) call domain%smooth_elevation_near_nesting_fine2coarse_boundaries(all_dx_md)
 
-        if(domain%timestepping_method /= 'linear') then
+        if(allocated(domain%manning_squared)) then
             domain%manning_squared = 0.02_dp * 0.02_dp
         else
             ! Clip depths in linear solver, to avoid 'stage below the bed'

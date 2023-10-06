@@ -275,7 +275,7 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain, forcing_case)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip), intent(in) :: forcing_case
 
         integer(ip):: i, j

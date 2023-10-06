@@ -153,15 +153,13 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: i, j
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)
         logical, allocatable:: is_inside(:)
         type(multi_raster_type):: elevation_data
-        real(dp) :: wall, w
-        real(dp) :: gauge_xy(3,6)
-        real(dp) :: pol1(4,2), pol2(4,2)
+        real(dp) :: wall, gauge_xy(3,6), pol1(4,2), pol2(4,2)
         logical :: flatten_bathymetry_near_boundary
 
         ! Stage

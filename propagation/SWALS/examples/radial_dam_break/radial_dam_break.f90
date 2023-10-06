@@ -12,7 +12,7 @@ module local_routines
         !
         ! This function sets the initial conditions in a domain
         !
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: i,j
         real(dp):: x, y, cx, cy, initial_stage_1, initial_stage_2, radius
 
@@ -29,7 +29,7 @@ module local_routines
         domain%U(:,:,ELV) = 0._dp
         ! Wall boundaries (without boundary conditions)
         domain%U(1,:,ELV) = 20.0_dp
-        domain%U(domain%nx(1),:,4) = 20.0_dp
+        domain%U(domain%nx(1),:,ELV) = 20.0_dp
         domain%U(:,1,ELV) = 20.0_dp
         domain%U(:,domain%nx(2),ELV) = 20.0_dp
 
@@ -37,10 +37,10 @@ module local_routines
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
 
         ! Add a stage perturbation
-        cx = (domain%lw(1))*0.5
-        cy = (domain%lw(2))*0.5
-        do i = 1,domain%nx(1)
-            do j = 1, domain%nx(2)
+        cx = (domain%lw(1))*0.5_dp
+        cy = (domain%lw(2))*0.5_dp
+        do j = 1, domain%nx(2)
+            do i = 1,domain%nx(1)
                 ! Set perturbation based on distance to the centre
                 x = (i-0.5_dp)*domain%dx(1) - cx
                 y = (j-0.5_dp)*domain%dx(2) - cy 
@@ -79,11 +79,11 @@ program radial_dam_break
     real(dp), parameter :: final_time = 2.0_dp * 1
 
     ! length/width
-    real(dp), parameter, dimension(2):: global_lw = [400._dp, 400._dp] 
+    real(dp), parameter :: global_lw(2) = [400._dp, 400._dp] 
     ! lower-left corner coordinate
-    real(dp), parameter, dimension(2):: global_ll = [0._dp, 0._dp]
+    real(dp), parameter :: global_ll(2) = [0._dp, 0._dp]
     ! grid size (number of x/y cells)
-    integer(ip), parameter, dimension(2):: global_nx = [400, 400] * 2 + 1
+    integer(ip), parameter :: global_nx(2) = [400, 400] * 2 + 1
 
     ! Misc
     integer :: j, nd

@@ -123,7 +123,7 @@ module local_routines
 
     ! Main setup routine
     subroutine set_initial_conditions(domain)
-        class(domain_type), target, intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: j
         character(len=charlen):: input_elevation, input_stage
         real(dp), allocatable:: x(:), y(:)

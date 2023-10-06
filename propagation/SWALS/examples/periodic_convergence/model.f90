@@ -9,7 +9,7 @@ module local_routines
     contains 
 
     subroutine set_initial_conditions(domain)            
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
         integer(ip):: i, j
         real(dp), allocatable:: x(:), y(:)
 
@@ -62,16 +62,16 @@ program periodic_convergence
     integer(ip) :: mesh_refine
 
     ! Approx timestep between outputs
-    real(dp) :: approximate_writeout_frequency = 0.005_dp
+    real(dp) :: approximate_writeout_frequency = 4.0e-04_dp
     real(dp) :: final_time = 0.06_dp
     real(dp) :: my_dt 
 
     ! Length/width
-    real(dp), parameter, dimension(2):: global_lw = [1.0_dp, 1.0_dp]
+    real(dp), parameter :: global_lw(2) = [1.0_dp, 1.0_dp]
     ! Lower-left corner coordinate
-    real(dp), parameter, dimension(2):: global_ll = [0.0_dp, 0.0_dp]
+    real(dp), parameter :: global_ll(2) = [0.0_dp, 0.0_dp]
     ! grid size (number of x/y cells)
-    integer(ip), dimension(2):: global_nx
+    integer(ip) :: global_nx(2)
 
     ! Number of domains in model; loop variable
     integer(ip):: nd, j
@@ -142,7 +142,9 @@ program periodic_convergence
     !
     do while (.true.)
 
-        call md%write_outputs_and_print_statistics(approximate_writeout_frequency = 4.0e-04_dp, timing_tol=my_dt/3.0_dp)
+        call md%write_outputs_and_print_statistics(&
+            approximate_writeout_frequency = approximate_writeout_frequency, &
+            timing_tol=my_dt/3.0_dp)
 
         if (md%domains(1)%time > final_time) exit
 
