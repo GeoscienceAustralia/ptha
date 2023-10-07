@@ -35,7 +35,7 @@ module local_routines
     real(dp), parameter :: island_max_height = 0.625_dp
 
     ! For Funwave comparison
-    real(dp), parameter :: initial_wave_maxima_x_coordinate = island_centre(1) - 15.075 
+    real(dp), parameter :: initial_wave_maxima_x_coordinate = island_centre(1) - 15.075_dp
 
     ! Wavemaker x position
     real(dp), parameter :: wavemaker_x_start = 0.0_dp
@@ -88,8 +88,6 @@ module local_routines
         integer(ip), intent(in) :: forcing_case
 
         integer(ip):: bc_unit, nr, nc, skip, i, extra, j
-        ! Checks
-        real(dp) :: test_times(4) = [0.0, 1.0, 2.0, 3.0], test_vels(4)
 
         boundary_information%forcing_case = forcing_case
 
@@ -230,7 +228,7 @@ module local_routines
             do i = 1, domain%nx(1)
                 if( &
                     ! X coordinate within some distance of wavemaker position
-                    (abs(domain%x(i) - wavemaker_x_start - pos_x(1)) < 0.5*domain%dx(1)) .and. &
+                    (abs(domain%x(i) - wavemaker_x_start - pos_x(1)) < 0.5_dp*domain%dx(1)) .and. &
                     ! Y coordinate is not too close to edge, as specified by geometry
                     (domain%y(j) - global_ll(2) > wavemaker_edge_offset) .and. & 
                     (domain%y(j) - global_ll(2) < global_lw(2) - wavemaker_edge_offset) &
