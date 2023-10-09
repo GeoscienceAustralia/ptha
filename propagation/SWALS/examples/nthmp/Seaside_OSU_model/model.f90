@@ -108,29 +108,30 @@ module local_routines
         type(domain_type), intent(in):: domain
         real(dp), intent(in):: t
         integer(ip), intent(in) :: i, j
-        real(dp):: stage_uh_vh_elev(4)
+        real(dp):: stage_uh_vh_elev(STG:ELV)
         real(dp) :: local_elev
 
         call boundary_information%gauge_stage_forcing%eval(&
-            [t + boundary_information%t0], stage_uh_vh_elev(1:1))
+            [t + boundary_information%t0], stage_uh_vh_elev(STG:STG))
         
-        local_elev = domain%U(i,j,4)
-        if(local_elev > stage_uh_vh_elev(1)) then
-            stage_uh_vh_elev(1) = local_elev
+        local_elev = domain%U(i,j,ELV)
+        if(local_elev > stage_uh_vh_elev(STG)) then
+            ! Dry
+            stage_uh_vh_elev(STG) = local_elev
+            stage_uh_vh_elev(UH) = 0.0_dp
+        else if(initial_sea_level <= local_elev) then
+            ! Here our plane wave approximation for the flux (below) would be NaN
+            stage_uh_vh_elev(UH) = 0.0_dp
+        else
+            ! With flather boundary we need to well approximate the UH value
+            ! Estimate from plane wave equation
+            stage_uh_vh_elev(UH) = (stage_uh_vh_elev(STG) - initial_sea_level) * &
+                sqrt(gravity/(initial_sea_level-local_elev)) * &
+                (stage_uh_vh_elev(STG) - local_elev)
         end if
-        ! Semi-transmissive boundary condition will provide uh/vh values
-        !stage_uh_vh_elev(2:3) = 0.0_dp 
 
-        ! With flather boundary we need to well approximate the UH value
-        ! Estimate from plane wave equation
-        !stage_uh_vh_elev(2) = (stage_uh_vh_elev(1) - initial_sea_level) * sqrt(gravity * initial_sea_level)
-        !stage_uh_vh_elev(2) = (stage_uh_vh_elev(1) - initial_sea_level) * sqrt(gravity * (stage_uh_vh_elev(1) - local_elev))
-        stage_uh_vh_elev(2) = (stage_uh_vh_elev(1) - initial_sea_level) * sqrt(gravity/(initial_sea_level-local_elev)) * &
-            (stage_uh_vh_elev(1) - local_elev)
-
-        stage_uh_vh_elev(3) = 0.0_dp
-
-        stage_uh_vh_elev(4) = local_elev
+        stage_uh_vh_elev(VH) = 0.0_dp
+        stage_uh_vh_elev(ELV) = local_elev
 
     end function
    
