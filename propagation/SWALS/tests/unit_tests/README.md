@@ -8,7 +8,7 @@ The unit tests do not check the performance of the flow algorithms. That is done
 
 Compile with:
 
-    make -B -f make_tests
+    make -B -f make_test
 
 and run with:
 
