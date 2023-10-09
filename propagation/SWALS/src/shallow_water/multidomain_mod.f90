@@ -3404,8 +3404,9 @@ module multidomain_mod
             ! This is not the 'true' write time, but keeps writing regular
             md%last_write_time = md%last_write_time + approx_writeout_freq
 
-            if(model_time > md%last_write_time + approx_writeout_freq) then
-                ! If the model time-steps are longer than approx_writeout_freq,
+            if((model_time > md%last_write_time + approx_writeout_freq) .and. &
+               (approx_writeout_freq > 0.0_dp)) then
+                ! If the model time-steps are longer than approx_writeout_freq (> 0),
                 ! then we could get a big lag between the model time and md%last_write_time.
                 ! If the time-steps later reduce, that could lead to overly-frequent write-outs
                 ! without this correction.
