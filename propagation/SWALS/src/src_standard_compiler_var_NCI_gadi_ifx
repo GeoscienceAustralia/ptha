@@ -119,8 +119,9 @@ SWALS_FORTRAN := $(SWALS_FC) $(SWALS_FC_FLAGS) $(SWALS_PREPROCESSOR_FLAGS) $(SWA
 
 # Use this to make the $(SWALS_LIBRARY)
 SWALS_LIBRARY ?= libSWE.a
-SWALS_AR ?= xiar rcs
+#SWALS_AR ?= xiar rcs
 # Avoid errors when bundling as a library (not that we use the resulting library)
 #SWALS_AR :=/apps/intel-oneapi/compiler/2023.2.0/linux/bin-llvm/llvm-ar rcs
+SWALS_AR :=llvm-ar rcs
 #
 
