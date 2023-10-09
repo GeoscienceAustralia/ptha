@@ -14,6 +14,6 @@ time OMP_NUM_THREADS=1 $MPIEXEC -n 4 ./parallel_unit_tests
 time OMP_NUM_THREADS=1 $MPIEXEC -n 6 ./parallel_unit_tests
 time OMP_NUM_THREADS=1 $MPIEXEC -n 8 ./parallel_unit_tests
 time OMP_NUM_THREADS=1 $MPIEXEC -n 12 ./parallel_unit_tests
-time OMP_NUM_THREADS=1 $MPIEXEC -n 16 --oversubscribe ./parallel_unit_tests
+time OMP_NUM_THREADS=1 $MPIEXEC -n 16 ./parallel_unit_tests
 #time mpiexec -n 32 ./parallel_unit_tests
 #time mpiexec -n 64 ./parallel_unit_tests
