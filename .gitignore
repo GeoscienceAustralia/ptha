@@ -9,13 +9,18 @@ propagation/SWALS/tests/unit_tests/*.csv
 propagation/SWALS/tests/unit_tests/*.nc
 
 # Example outputs
+# NB: a/**/b matches a/b, a/x/b, a/x/y/b, ...
 propagation/SWALS/examples/**/OUTPUTS
 propagation/SWALS/examples/**/*.png
 propagation/SWALS/examples/**/*.log
 propagation/SWALS/examples/**/*.csv
-# Trick to ignore all (binary) files without an extension
+
+# Next 3 lines are a trick to ignore all files without an extension
+# ignore everything in examples
 propagation/SWALS/examples/*
+# then include all folders
 propagation/SWALS/examples/!/**/
+# then include everything with a dot in the filename
 propagation/SWALS/examples/!*.*
 
 
