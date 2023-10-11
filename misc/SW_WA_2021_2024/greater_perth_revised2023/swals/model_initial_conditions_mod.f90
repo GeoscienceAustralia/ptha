@@ -266,11 +266,19 @@ subroutine setup_elevation(domain, all_dx_md)
 
     do j = 1, domain%nx(2)
         y = domain%y(j)
-        call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip, &
-            ! Cells below a threshold are treated as NA
-            na_below_limit=raster_na_below_limit, &
-            ! The next argument might be unallocated (OK, treated as not present)
-            raster_index=domain%elevation_source_file_index)
+
+        if(allocated(domain%elevation_source_file_index)) then
+            ! Read the elevation and record the file-index that it came from
+            call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip, &
+                ! Cells below a threshold are treated as NA
+                na_below_limit=raster_na_below_limit, &
+                raster_index=domain%elevation_source_file_index(:,j))
+        else
+            ! Read the elevation (only)
+            call elevation_data%get_xy(x, y, domain%U(:,j,ELV), domain%nx(1), bilinear=1_ip, &
+                ! Cells below a threshold are treated as NA
+                na_below_limit=raster_na_below_limit)
+        end if
 
         ! Sanity check
         if(any(domain%U(:,j,ELV) /= domain%U(:,j,ELV))) then
