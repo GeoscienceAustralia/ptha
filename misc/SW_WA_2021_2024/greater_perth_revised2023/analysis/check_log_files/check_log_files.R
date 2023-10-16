@@ -153,7 +153,7 @@ get_time_energy_stagerange_from_log<-function(log_file, msl_linear = 0.0, flux_t
     # the wave reaches a model boundary]. After the model starts having
     # boundary fluxes, we can't guarentee anything about energy conservation.
     before_bc = min(which(abs(boundary_flux_integral) > flux_threshold)) - 1
-    if(!is.finite(before_bc)) before_bc = n
+    if(!is.finite(before_bc)) before_bc = length(time)
     before_bc_limit = before_bc
     if(before_bc <= 1) before_bc = 3
 
