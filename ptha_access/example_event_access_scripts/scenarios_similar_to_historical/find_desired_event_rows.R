@@ -15,6 +15,7 @@
 
 slip_type = 'stochastic' 
 #slip_type = 'variable_uniform'
+#slip_type = 'uniform'
 
 number_best_scenarios = 3
 
@@ -41,6 +42,8 @@ for(i in 1:length(event_stats_rds_files)){
         slip_stats = event_env$stochastic_slip_stats
     }else if(slip_type == 'variable_uniform'){
         slip_stats = event_env$variable_uniform_slip_stats
+    }else if(slip_type == 'uniform'){
+        slip_stats = event_env$uniform_slip_stats
     }else{
         stop('unrecognized slip type')
     }

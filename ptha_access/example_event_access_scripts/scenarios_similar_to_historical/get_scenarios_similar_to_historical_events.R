@@ -12,13 +12,16 @@ source('../../get_PTHA_results.R', chdir=TRUE)
 # There can be repetition [especially for VAUS, as it's easy to randomly repeat VAUS rupture]
 source('best_fitting_HS.R')
 source('best_fitting_VAUS.R')
+source('best_fitting_FAUS.R')
 
-for(slip_type in c('stochastic', 'variable_uniform')){
+for(slip_type in c('uniform', 'stochastic', 'variable_uniform')){
 
     if(slip_type == 'stochastic'){
         scenarios_like_events = scenarios_like_events_HS
     }else if(slip_type == 'variable_uniform'){
         scenarios_like_events = scenarios_like_events_VAUS
+    }else if(slip_type == 'uniform'){
+        scenarios_like_events = scenarios_like_events_FAUS
     }
 
     source_zone_data = vector(mode='list', length=length(scenarios_like_events))
