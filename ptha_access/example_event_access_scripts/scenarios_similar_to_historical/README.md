@@ -9,7 +9,8 @@ scenarios, which can easily happen with uniform-slip).
 It uses a hard-coded record of the 'best scenarios' that was created with
 [find_desired_event_rows.R](find_desired_event_rows.R), and is stored in (for
 heterogeneous-slip) [best_fitting_HS.R](best_fitting_HS.R) and (for
-variable-area-uniform-slip) [best_fitting_VAUS.R](best_fitting_VAUS.R). 
+variable-area-uniform-slip) [best_fitting_VAUS.R](best_fitting_VAUS.R) and 
+(for uniform-slip) [best_fitting_FAUS.R](best_fitting_FAUS.R). 
 
 There is no guarentee that these scenarios will match the tsunami as observed
 elsewhere -- sometimes they will, but not always. In principle one should
