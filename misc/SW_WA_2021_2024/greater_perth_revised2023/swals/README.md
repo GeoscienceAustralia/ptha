@@ -176,7 +176,7 @@ Rscript plot_gauges_perth_sumatra2004.R OUTPUTS/path_to_multidomain_dir_sumatra2
 
 # As above, Sumatra 2005
 cd plots
-Rscript plots/process_gauges_sumatra2005.R ../OUTPUTS/path_to_multidomain_dir_sumatra2005
+Rscript process_gauges_sumatra2005.R ../OUTPUTS/path_to_multidomain_dir_sumatra2005
 cd ..
 # varying y range
 Rscript plot_gauges_perth_sumatra2005.R OUTPUTS/path_to_multidomain_dir_sumatra2005/gauge_RDS_file_name.RDS
