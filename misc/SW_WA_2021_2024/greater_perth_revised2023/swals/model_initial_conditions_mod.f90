@@ -30,6 +30,7 @@ use file_io_mod, only: read_character_file, count_file_lines, read_csv_into_arra
 use multidomain_design_mod, only: &
     global_lw, global_ll, use_periodic_EW_multidomain, &
     swals_elevation_files_in_preference_order, &
+    override_initial_stage_polygons_values_file, &
     raster_na_below_limit, smooth_elevation_along_nesting_boundaries, &
     breakwalls_file_list, inverts_file_list, &
     final_time_full_runs, final_time_test_runs, &
@@ -68,11 +69,10 @@ type(xyz_lines_type) :: breakwalls_forced, inverts_forced
     !! These features are "burned" into the elevation so that on coarser
     !! grids, we don't accidently miss key flow features. 
 
-!type(polygons_values_type) :: vasse_estuary_pvt, clip_elevation_above_zero_pvt, high_friction_jetty_pvt
-!    !! Set values inside a polygon to:
-!    !! - Set the initial stage in the Vasse estuary
-!    !! - Remove a few bridges from the DEM around Busselton, and clear artefacts around the coast and estuary entrances.
-!    !! - Apply high-friction at a jetty (optional)
+type(polygons_values_type) :: override_initial_stage_polygons
+    !! Used to set the initial stage in polygons. This will override the 'ambient_sea_level' and any
+    !! static initial condition. 
+
 !
 !logical, parameter :: close_bunbury_floodgate = .FALSE.
 !    !! If .TRUE., this will insert "closed-gate" elevations along the Bunbury "plug" floodgate.
@@ -401,8 +401,10 @@ subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
         ! Coordinates for stage lookup
     integer(ip):: j, n, fid
         ! Convenience integers
-    character(len=charlen), allocatable :: stage_files(:)
-    real(dp), allocatable :: slips(:), start_times(:), end_times(:)
+    character(len=charlen), allocatable :: stage_files(:), &
+        polygons_values_lines(:), polygons_csv_files(:)
+    real(dp), allocatable :: slips(:), start_times(:), end_times(:), &
+        polygons_values(:)
     integer, parameter :: csv_header_size = 1
 
     if(stage_file /= "") then
@@ -503,10 +505,35 @@ subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
     domain%U(:,:,STG) = domain%U(:,:,STG) + ambient_sea_level
     domain%msl_linear = ambient_sea_level ! Influences linear solvers & potential-energy calculation.
 
-    !! Stage in the Vasse estuary polygon has a different value
-    !if(.not. allocated(vasse_estuary_pvt%polyvalue)) &
-    !    call vasse_estuary_pvt%setup([vasse_estuary_polygon], [initial_stage_40cm_AHD], skip_header=1_ip)
-    !call vasse_estuary_pvt%burn_into_grid(domain%U(:,:,STG), domain%lower_left, domain%lower_left+domain%lw)
+    ! Optionally override the initial stage in user-provided polygons
+    if(override_initial_stage_polygons_values_file /= "") then
+
+        ! Setup the polygons_values data structure the first time this is called
+        if(.not. allocated(override_initial_stage_polygons%polyvalue)) then
+        
+            ! Read the file with polygons,values
+            call read_character_file(&
+                override_initial_stage_polygons_values_file, &
+                polygons_values_lines, '(A)')
+            n = size(polygons_values_lines)
+            ! Convert to 2 arrays -- one for the files, one for the values
+            allocate(polygons_csv_files(n), polygons_values(n))
+            do j = 1, n
+                read(polygons_values_lines(j), *) polygons_csv_files(j), &
+                    polygons_values(j)
+            end do
+
+            call override_initial_stage_polygons%setup(polygons_csv_files, &
+                polygons_values, skip_header=1_ip)
+        end if
+
+        ! Set stage
+        call override_initial_stage_polygons%burn_into_grid(domain%U(:,:,STG), &
+            domain%lower_left, domain%lower_left + domain%lw)
+
+    end if
+    
+
 
     ! Alway need stage >= elevation.
     domain%U(:,:,STG) = max(domain%U(:,:,STG), &
