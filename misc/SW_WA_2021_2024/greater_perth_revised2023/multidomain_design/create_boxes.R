@@ -120,6 +120,8 @@ for(i in seq(length(nesting), 1, by=-1)){
             grid_alignment_point=GLOBAL_DOMAIN_LOWER_LEFT, make_plot=FALSE)
         })
     region_boundaries = do.call(rbind, region_boundaries)
+    # Ensure each box only occurs once (could be more than once with multi-part polygons).
+    region_boundaries = unique(region_boundaries)
 
     # NOTE: Consider removing boxes that are entirely covered by finer domains
 
