@@ -228,6 +228,7 @@ namelist /MULTIDOMAIN_GLOBAL_PROPERTIES/ &
     global_dx_arcmin, global_dt, &
     final_time_full_runs, final_time_test_runs, &
     swals_elevation_files_in_preference_order, &
+    override_initial_stage_polgons_values_file, &
     raster_na_below_limit, &
     smooth_elevation_along_nesting_boundaries, &
     breakwalls_file_list, inverts_file_list, swals_point_gauge_file, &
