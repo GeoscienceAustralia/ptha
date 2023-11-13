@@ -399,13 +399,14 @@ subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
         ! Object to interpolate from stage file
     real(dp), allocatable:: x(:), y(:)
         ! Coordinates for stage lookup
-    integer(ip):: j, n, fid
+    integer(ip):: j, n, fid, cma
         ! Convenience integers
     character(len=charlen), allocatable :: stage_files(:), &
         polygons_values_lines(:), polygons_csv_files(:)
     real(dp), allocatable :: slips(:), start_times(:), end_times(:), &
         polygons_values(:)
     integer, parameter :: csv_header_size = 1
+    character(len=charlen) :: buffer
 
     if(stage_file /= "") then
         if(stage_file_is_raster .and. rise_time == 0.0_dp) then
@@ -518,10 +519,17 @@ subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
             n = size(polygons_values_lines)
             ! Convert to 2 arrays -- one for the files, one for the values
             allocate(polygons_csv_files(n), polygons_values(n))
+            write(log_output_unit, *) 'Overriding initial stage in polygons, number of files =', n
+            write(log_output_unit, *) '    Files, values'
             do j = 1, n
-                read(polygons_values_lines(j), *) polygons_csv_files(j), &
-                    polygons_values(j)
+                ! Read each part separately (? necessary with different data types ?)
+                buffer = polygons_values_lines(j)
+                cma = index(buffer, ",") ! Comma index
+                polygons_csv_files(j) = buffer(1:cma-1) ! Set the polygon file
+                read(buffer(cma+1:), *) polygons_values(j) ! Set the value
+                write(log_output_unit, *) '    ', trim(polygons_csv_files(j)), polygons_values(j)
             end do
+            flush(log_output_unit)
 
             call override_initial_stage_polygons%setup(polygons_csv_files, &
                 polygons_values, skip_header=1_ip)
