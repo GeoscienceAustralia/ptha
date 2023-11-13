@@ -522,7 +522,7 @@ subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
             write(log_output_unit, *) 'Overriding initial stage in polygons, number of files =', n
             write(log_output_unit, *) '    Files, values'
             do j = 1, n
-                ! Read each part separately (? necessary with different data types ?)
+                ! Read each part separately
                 buffer = polygons_values_lines(j)
                 cma = index(buffer, ",") ! Comma index
                 polygons_csv_files(j) = buffer(1:cma-1) ! Set the polygon file
