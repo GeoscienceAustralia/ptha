@@ -399,14 +399,11 @@ subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
         ! Object to interpolate from stage file
     real(dp), allocatable:: x(:), y(:)
         ! Coordinates for stage lookup
-    integer(ip):: j, n, fid, cma
+    integer(ip):: j, n, fid
         ! Convenience integers
-    character(len=charlen), allocatable :: stage_files(:), &
-        polygons_values_lines(:), polygons_csv_files(:)
-    real(dp), allocatable :: slips(:), start_times(:), end_times(:), &
-        polygons_values(:)
+    character(len=charlen), allocatable :: stage_files(:)
+    real(dp), allocatable :: slips(:), start_times(:), end_times(:)
     integer, parameter :: csv_header_size = 1
-    character(len=charlen) :: buffer
 
     if(stage_file /= "") then
         if(stage_file_is_raster .and. rise_time == 0.0_dp) then
@@ -511,28 +508,14 @@ subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
 
         ! Setup the polygons_values data structure the first time this is called
         if(.not. allocated(override_initial_stage_polygons%polyvalue)) then
-        
-            ! Read the file with polygons,values
-            call read_character_file(&
-                override_initial_stage_polygons_values_file, &
-                polygons_values_lines, '(A)')
-            n = size(polygons_values_lines)
-            ! Convert to 2 arrays -- one for the files, one for the values
-            allocate(polygons_csv_files(n), polygons_values(n))
-            write(log_output_unit, *) 'Overriding initial stage in polygons, number of files =', n
-            write(log_output_unit, *) '    Files, values'
-            do j = 1, n
-                ! Read each part separately
-                buffer = polygons_values_lines(j)
-                cma = index(buffer, ",") ! Comma index
-                polygons_csv_files(j) = buffer(1:cma-1) ! Set the polygon file
-                read(buffer(cma+1:), *) polygons_values(j) ! Set the value
-                write(log_output_unit, *) '    ', trim(polygons_csv_files(j)), polygons_values(j)
-            end do
-            flush(log_output_unit)
 
-            call override_initial_stage_polygons%setup(polygons_csv_files, &
-                polygons_values, skip_header=1_ip)
+            call override_initial_stage_polygons%setup_from_csv_with_file_value_columns(&
+                override_initial_stage_polygons_values_file, &
+                skip_header_file_value_csv=0_ip, &  ! Assume no header in the main csv
+                skip_header_polygons=1_ip, & ! Assume a single header in the polygon geometries
+                verbose=.TRUE.)
+            flush(log_output_unit)
+        
         end if
 
         ! Set stage
