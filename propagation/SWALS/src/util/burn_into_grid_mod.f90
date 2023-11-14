@@ -12,7 +12,7 @@ module burn_into_grid_mod
     use global_mod, only: ip, dp, charlen, force_double
     use logging_mod
     use stop_mod
-    use file_io_mod, only: read_csv_into_array
+    use file_io_mod, only: read_csv_into_array, read_character_file
     use points_in_poly_mod, only: point_in_poly
     implicit none
 
@@ -47,10 +47,78 @@ module burn_into_grid_mod
         type(polyvalue_type), allocatable :: polyvalue(:)
         contains
         procedure, non_overridable :: setup => setup_polygons_values_type_from_csv_and_value
+        procedure, non_overridable :: setup_from_csv_with_file_value_columns => &
+            setup_pvt_from_csv_with_file_value_columns
         procedure, non_overridable :: burn_into_grid => burn_polygons_values_type_into_grid
     end type
 
     contains
+
+    subroutine setup_pvt_from_csv_with_file_value_columns(pvt, file_value_csv, &
+        skip_header_file_value_csv, skip_header_polygons, verbose)
+        !! Use a two-column csv file containing
+        !!    "polygon_filename", polygon_value
+        !! to setup a polygons_values_type
+        class(polygons_values_type), intent(inout) :: pvt !! The polygons_values_type to be initialised
+        character(len=*), intent(in) :: file_value_csv
+            !! A csv file with two columns ("file", "value"). 
+            !! In each row, the "file" entry is a filename with the polygon geometry (2 column csv file)
+            !! while the "value" entry is a real number (value to set)
+        integer, optional, intent(in) :: skip_header_file_value_csv
+            !! Number of header rows in "file_value_csv" that should be skipped before reading
+        integer, optional, intent(in) :: skip_header_polygons
+            !! Number of header rows in the files containing the polygon geometries
+        logical, optional, intent(in) :: verbose
+            !! Print more info on the files
+
+        integer(ip) :: skip_header_f, skip_header_p, n, nfiles, cma, i
+        character(len=charlen) :: buffer
+        character(len=charlen), allocatable :: polygon_files(:), file_lines(:)
+        real(dp), allocatable :: polygon_values(:)
+        logical :: verbose_messages
+
+        skip_header_f = 0_ip
+        if(present(skip_header_file_value_csv)) skip_header_f = skip_header_file_value_csv
+        
+        skip_header_p = 0_ip
+        if(present(skip_header_polygons)) skip_header_p = skip_header_polygons
+
+        verbose_messages = .FALSE.
+        if(present(verbose)) verbose_messages = verbose
+
+        ! Read the input file as an array of characters
+        call read_character_file(file_value_csv, file_lines, '(A)')
+        n = size(file_lines)
+        nfiles = n - skip_header_f ! Number of files
+        allocate(polygon_values(nfiles), polygon_files(nfiles))
+
+        if(verbose_messages) then
+            write(log_output_unit, "(A)") 'Setting up polygons_values_type using ' // trim(file_value_csv)
+            write(log_output_unit, "(A, I8)") '    Number of files =', nfiles
+            write(log_output_unit, "(A)") '    Files, values'
+            flush(log_output_unit)
+        end if
+
+        do i = 1, nfiles
+            ! Read each part separately
+            buffer = file_lines(i + skip_header_f)
+            cma = index(buffer, ",") ! Comma index
+            if(cma <= 0) then
+                write(log_output_unit, *) 'Error reading ', trim(file_value_csv)
+                write(log_output_unit, *) 'No comma on line ', i+skip_header_f
+                flush(log_output_unit)
+                call generic_stop
+            end if
+            polygon_files(i) = adjustl(buffer(:cma-1)) ! Set the polygon file
+            read(buffer(cma+1:), *) polygon_values(i) ! Set the value
+            if(verbose_messages) then 
+                write(log_output_unit, "(A, ES25.12E3)") '    ' // trim(polygon_files(i)) // ',',  polygon_values(i)
+            end if
+        end do
+
+        call pvt%setup(polygon_files, polygon_values, skip_header=skip_header_p)
+        
+    end subroutine
 
     subroutine setup_polygons_values_type_from_csv_and_value(pvt, polygon_files, polygon_values, skip_header)
         !! Use a set of polygon_files (each containing x,y vertices in csv format) and associated values
@@ -192,7 +260,7 @@ module burn_into_grid_mod
             !! 'add' (add poly_value to grid_value)
 
         real(dp) :: dx(2), xi, yi, zi, xip1, yip1, zip1, xj(1), yj(1), zj(1)
-        integer(ip) :: i, i0, j0, np, j
+        integer(ip) :: i, np, j
         real(force_double) :: n1, n2
         character(len=charlen) :: burnt
 
@@ -386,7 +454,7 @@ module burn_into_grid_mod
 
     subroutine test_burn_into_grid_mod()
         !! Unit tests
-        real(dp) :: grid(10,10)
+        real(dp) :: grid(10,10), grid_store(10,10)
         real(dp) :: lower_left(2), upper_right(2)
         real(dp) :: x(5), y(5), z(5)
         real(dp) :: expected_grid(10,10)
@@ -394,7 +462,7 @@ module burn_into_grid_mod
         real(dp) :: px(4), py(4), pv
         integer(ip) :: i, fid
         real(dp), parameter :: eps = 1.0e-03_dp
-        type(polygons_values_type) :: pvt
+        type(polygons_values_type) :: pvt, pvt2
 
         lower_left = [0.0_dp, 0.0_dp]
         upper_right = [10.0_dp, 10.0_dp]
@@ -532,14 +600,17 @@ module burn_into_grid_mod
             write(fid, *) px(i), ', ', py(i)
         end do
         close(fid)
-        
+       
         !
         ! Polygon version, test 3 -- use the polygons_values_type with 2 polygons
         !
+        ! Provide the polygon files and values in 1D arrays
         call pvt%setup([character(len=charlen) :: 'polygon_test_file_1.csv', 'polygon_test_file_2.csv'], &
                        [2.0_dp, 1.0_dp], skip_header=1_ip)
         grid = 0.0_dp
         call pvt%burn_into_grid(grid, lower_left, upper_right, burn_type='max') 
+
+        grid_store = grid ! For later comparison in test 5
 
         ! Plot this situation to see where the tests below come from.
         if(abs(sum(grid) - 14.0_dp) < 3*spacing(14.0_dp)) then
@@ -560,6 +631,7 @@ module burn_into_grid_mod
         else
             print*, 'FAIL'
         end if
+
 
         !
         ! Polygon version, test 4 -- use 'add' burning
@@ -594,7 +666,33 @@ module burn_into_grid_mod
             print*, 'FAIL'
         end if
 
-        
-    end subroutine
+        !
+        ! Test 5 - a different interface for reading in the polygon value pairs
+        !
+
+        ! Provide them in a separate csv file
+        open(newunit=fid, file='polygon_value_pairs_list.csv', form='formatted', action='write')
+        write(fid, "(A)") 'File, value'
+        write(fid, "(A)") "polygon_test_file_1.csv, 2.0"
+        write(fid, "(A)") "polygon_test_file_2.csv, 1.0"
+        close(fid)
+
+        ! Result should be the same as the other version
+        call pvt2%setup_from_csv_with_file_value_columns(&
+            file_value_csv='polygon_value_pairs_list.csv', &
+            skip_header_file_value_csv=1_ip, &
+            skip_header_polygons = 1_ip, &
+            verbose=.FALSE.)
+
+        grid = 0.0_dp
+        call pvt2%burn_into_grid(grid, lower_left, upper_right, burn_type='max') 
+
+        if(all(grid == grid_store)) then
+            print*, 'PASS'
+        else
+            print*, 'FAIL'
+        end if
+
+        end subroutine
 
 end module

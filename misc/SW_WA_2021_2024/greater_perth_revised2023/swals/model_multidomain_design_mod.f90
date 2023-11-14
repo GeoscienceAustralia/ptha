@@ -49,6 +49,16 @@ real(dp) ::  final_time_test_runs = 360.0_dp
 character(len=charlen) :: swals_elevation_files_in_preference_order = &
     "../elevation/swals_elevation_files_in_preference_order.txt"
 
+! Override the initial stage in user provided polygons. If non-empty, this
+! should link to a csv file with 2 columns (and no header), being the polygon
+! csv file, and the value to set. e.g.:
+!     full_path_to_polygon_file_1.csv, -0.2 
+!     full_path_to_polygon_file_2.csv, 1.2 
+!     ....
+! where the format of files like "full_path_to_polygon_file_1.csv" is the same
+! as files specifying the breakwalls/inverts etc.
+character(len=charlen) :: override_initial_stage_polygons_values_file = ""
+
 ! Workaround for raster missing data. 
 ! Many rasters denote NA with a large negative value, but it often becomes 
 ! slightly mangled (e.g. by precision transformations) and then may not be correctly 
@@ -218,6 +228,7 @@ namelist /MULTIDOMAIN_GLOBAL_PROPERTIES/ &
     global_dx_arcmin, global_dt, &
     final_time_full_runs, final_time_test_runs, &
     swals_elevation_files_in_preference_order, &
+    override_initial_stage_polgons_values_file, &
     raster_na_below_limit, &
     smooth_elevation_along_nesting_boundaries, &
     breakwalls_file_list, inverts_file_list, swals_point_gauge_file, &
