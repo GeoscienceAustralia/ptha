@@ -93,9 +93,9 @@ module burn_into_grid_mod
         allocate(polygon_values(nfiles), polygon_files(nfiles))
 
         if(verbose_messages) then
-            write(log_output_unit, *) 'Setting up polygons_values_type using ', trim(file_value_csv)
-            write(log_output_unit, *) '    Number of files =', nfiles
-            write(log_output_unit, *) '    Files, values'
+            write(log_output_unit, "(A)") 'Setting up polygons_values_type using ' // trim(file_value_csv)
+            write(log_output_unit, "(A, I8)") '    Number of files =', nfiles
+            write(log_output_unit, "(A)") '    Files, values'
             flush(log_output_unit)
         end if
 
@@ -112,7 +112,7 @@ module burn_into_grid_mod
             polygon_files(i) = adjustl(buffer(:cma-1)) ! Set the polygon file
             read(buffer(cma+1:), *) polygon_values(i) ! Set the value
             if(verbose_messages) then 
-                write(log_output_unit, *) '    ' // trim(polygon_files(i)) // ',',  polygon_values(i)
+                write(log_output_unit, "(A, ES25.12E3)") '    ' // trim(polygon_files(i)) // ',',  polygon_values(i)
             end if
         end do
 
