@@ -71,7 +71,7 @@ module burn_into_grid_mod
         logical, optional, intent(in) :: verbose
             !! Print more info on the files
 
-        integer(ip) :: skip_header_f, skip_header_p, fid, n, nfiles, cma, i
+        integer(ip) :: skip_header_f, skip_header_p, n, nfiles, cma, i
         character(len=charlen) :: buffer
         character(len=charlen), allocatable :: polygon_files(:), file_lines(:)
         real(dp), allocatable :: polygon_values(:)
@@ -260,7 +260,7 @@ module burn_into_grid_mod
             !! 'add' (add poly_value to grid_value)
 
         real(dp) :: dx(2), xi, yi, zi, xip1, yip1, zip1, xj(1), yj(1), zj(1)
-        integer(ip) :: i, i0, j0, np, j
+        integer(ip) :: i, np, j
         real(force_double) :: n1, n2
         character(len=charlen) :: burnt
 
