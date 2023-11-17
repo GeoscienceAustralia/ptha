@@ -27,43 +27,9 @@ module qsort_mod
     !! allows sorting anything with a user-defined compare function. Originally
     !! the sorting routines were based on this, using locally defined compare
     !! functions (generally contained inside the subroutine that called `qsort_C`).
-    !! However this approach was not supported with PGI the compiler, so was
-    !! changed.
-    !! Calling `qsort_C` is unusual by Fortran standards, because one needs to
-    !! provide pointers. An example of using `qsort_C` is below.
-    !!
-    !!    subroutine sort_index_cint(inds, array, n)
-    !!        ! Example of using qsort_C
-    !!        ! The subroutine returns inds(n) such that array(inds) is sorted
-    !!        use iso_c_binding
-    !!        use qsort_mod, only : qsort_C ! From the current module
-    !!        integer(c_int), intent(in) :: n
-    !!        integer(c_int), intent(in) :: array(n)
-    !!        integer(c_int), intent(inout), target :: inds(n)
-    !!
-    !!        integer(c_size_t) :: elem_count, elem_size ! kind MUST be c_size_t
-    !!        integer(c_int) :: i
-    !!
-    !!        inds = (/ (i, i=1, n) /)
-    !!
-    !!        elem_count = int(n, c_size_t)
-    !!        elem_size = int( storage_size(inds(1))/8, c_size_t)
-    !!
-    !!        ! Note how we have to call qsort_C here -- explicitly using pointers
-    !!        call qsort_C(c_loc(inds(1)), elem_count, elem_size, c_funloc(compar3))
-    !!
-    !!        contains
-    !!            ! Comparison function, uses 'array(n)' by host association
-    !!            integer(c_int) function compar3(i1, i2) bind(C)
-    !!                integer(c_int) :: i1, i2
-    !!
-    !!                if(array(i1) > array(i2)) compar3 = 1_c_int
-    !!                if(array(i1) == array(i2)) compar3 = 0_c_int
-    !!                if(array(i1) < array(i2)) compar3 = -1_c_int
-    !!
-    !!            end function
-    !!
-    !!    end subroutine
+    !! 
+    !! An example of using qsort_C is in subroutine test_qsort_C below. Note it uses the
+    !! comparison function test_integer_compare, which takes c_ptr as input.
     !!
     !!
     use iso_c_binding
