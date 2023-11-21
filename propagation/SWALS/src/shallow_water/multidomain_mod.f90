@@ -408,7 +408,9 @@ module multidomain_mod
                 call md%domains(j)%write_max_quantities()
                 call md%domains(j)%write_gauge_time_series()
             end do
-            call md%finalise_and_print_timers()
+            ! Force file write-out without any parallel communication (because
+            ! other processes probably won't reach this part of the code).
+            call md%finalise_and_print_timers(communicate_max_U = .FALSE.)
             call generic_stop
         end if
 
@@ -3189,17 +3191,25 @@ module multidomain_mod
 
     end function
 
-    ! Print all domain timers, as well as the multidomain timer itself, finalise the domains,
-    ! and write max quantities. This is a typical step at the end of a program
-    !
-    subroutine finalise_and_print_timers(md)
+    subroutine finalise_and_print_timers(md, communicate_max_U)
+        !! Print all domain timers, as well as the multidomain timer itself, finalise the domains,
+        !! and write max quantities. This is a typical step at the end of a program.
         class(multidomain_type), intent(inout) :: md
+        logical, optional, intent(in) :: communicate_max_U
+            !! Default value of .TRUE. ensures that the max_U variables are communicated in parallel
+            !! prior to writing, to make max_U valid in halo regions. This can be skipped by providing
+            !! the value .FALSE., which makese sense if calling this routine following an error
+            !! condition (i.e. code that might not be reached by other parallel processes).
 
         integer(ip) :: i, evolve_timer_file_unit
         character(len=charlen) :: timer_log_filename
+        logical :: comm_max_U
+
+        comm_max_U = .true.
+        if(present(communicate_max_U)) comm_max_U = communicate_max_U
 
         ! Make the max_U values in each domain consistent across halos
-        call md%communicate_max_U
+        if(comm_max_U) call md%communicate_max_U
 
         ! Print out timing info for each
         do i = 1, size(md%domains, kind=ip)
