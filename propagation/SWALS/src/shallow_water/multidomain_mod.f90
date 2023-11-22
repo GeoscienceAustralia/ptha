@@ -473,6 +473,8 @@ module multidomain_mod
         ! Swap max_U and domain%U, without using signifiant extra memory, one variable at a time
         do k = 1, n
             ! For each domain, copy the k'th variable in domain%max_U(:,:,k) into domain%U(:,:,1)
+            ! Don't try to pack multiple variables at once, to avoid possible
+            ! modification of UH/VH variables in domain_mod::receive_halos
             do j = 1, size(md%domains)
                 do j1 = 1, size(md%domains(j)%max_U, 2)
                     do i = 1, size(md%domains(j)%max_U, 1)
