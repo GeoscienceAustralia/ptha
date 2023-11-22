@@ -1940,13 +1940,24 @@ module multidomain_mod
     end subroutine
 
 
-    !
-    ! Convenience print routine
-    !
     subroutine print_multidomain(md, global_stats_only, energy_is_finite)
-        class(multidomain_type), intent(inout) :: md ! inout allows for timer to run
+        !! Print multidomain summary statistics. 
+        !! Statistics are computed using "priority domain" parts of each domain.
+        !! NOTE: It is **possible** (but probably unusual) for these statistics to be
+        !! inconsistent with the statistics stored in domain%max_U (and the netcdf files).
+        !! The reason is that max_U is computed after each domain time-step, but always
+        !! before parallel communication and flux correction. In contrast, this routine is
+        !! usually called just after parallel communication and flux correction. So for
+        !! example, if the stage (or max-speed) occurs in a region where flux-correction
+        !! was applied, the stage (or max-speed) will be different.
+        class(multidomain_type), intent(inout) :: md 
+            !! multidomain. This is inout to allow the timer to run
         logical, optional, intent(in) :: global_stats_only
+            !! If .true. then only print global multidomain statistics. By default (.FALSE.) print
+            !! statistics for every domain
         logical, optional, intent(out) :: energy_is_finite
+            !! Record whether the energy is finite. This can be useful to terminate models
+            !! that attain NaN energy.
 
         integer(ip) :: k
         real(dp) :: minstage, maxstage, minspeed, maxspeed, stg1, speed_sq, depth_C, depth_E, depth_N
