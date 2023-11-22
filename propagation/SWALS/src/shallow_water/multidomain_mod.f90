@@ -1971,7 +1971,7 @@ module multidomain_mod
         global_max_stage = -HUGE(1.0_dp)
         global_min_stage = HUGE(1.0_dp)
         global_max_speed = 0.0_dp
-        global_min_speed = 0.0_dp
+        global_min_speed = HUGE(1.0_dp) !0.0_dp
         global_energy_potential_on_rho = 0.0_dp
         global_energy_kinetic_on_rho = 0.0_dp
         global_energy_total_on_rho = 0.0_dp
