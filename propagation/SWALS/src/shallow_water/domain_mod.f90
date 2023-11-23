@@ -687,7 +687,7 @@ TIMER_START("compute_statistics")
         maxstage = -HUGE(1.0_dp)
         maxspeed = 0.0_dp ! speed is always > 0
         minstage = HUGE(1.0_dp)
-        minspeed = HUGE(1.0_dp) ! speed is always > 0
+        minspeed = HUGE(1.0_dp)
 
         ! If we are using a 'truely-linear' solver then the depth is always recorded from MSL for certain
         ! calculations (pressure gradient term, and wetting/drying)
@@ -780,7 +780,7 @@ TIMER_START("compute_statistics")
                         ! The kinetic energy is integral of ( 1/2 depth speed^2)
                         domain%energy_kinetic_on_rho_work(j) = domain%energy_kinetic_on_rho_work(j) + &
                             real(domain%area_cell_y(j) * 0.5_dp * depth_C * speed_sq, force_double)
-                     end if
+                    end if
 
                     maxspeed = max(maxspeed, speed_sq) ! Will undo the sqrt later.
                     minspeed = min(minspeed, speed_sq) ! Will undo the sqrt later

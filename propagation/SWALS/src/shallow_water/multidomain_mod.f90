@@ -473,6 +473,8 @@ module multidomain_mod
         ! Swap max_U and domain%U, without using signifiant extra memory, one variable at a time
         do k = 1, n
             ! For each domain, copy the k'th variable in domain%max_U(:,:,k) into domain%U(:,:,1)
+            ! Don't try to pack multiple variables at once, to avoid possible
+            ! modification of UH/VH variables in domain_mod::receive_halos
             do j = 1, size(md%domains)
                 do j1 = 1, size(md%domains(j)%max_U, 2)
                     do i = 1, size(md%domains(j)%max_U, 1)
@@ -1938,13 +1940,24 @@ module multidomain_mod
     end subroutine
 
 
-    !
-    ! Convenience print routine
-    !
     subroutine print_multidomain(md, global_stats_only, energy_is_finite)
-        class(multidomain_type), intent(inout) :: md ! inout allows for timer to run
+        !! Print multidomain summary statistics. 
+        !! Statistics are computed using "priority domain" parts of each domain.
+        !! NOTE: It is **possible** (but probably unusual) for these statistics to be
+        !! inconsistent with the statistics stored in domain%max_U (and the netcdf files).
+        !! The reason is that max_U is computed after each domain time-step, but always
+        !! before parallel communication and flux correction. In contrast, this routine is
+        !! usually called just after parallel communication and flux correction. So for
+        !! example, if the stage (or max-speed) occurs in a region where flux-correction
+        !! was applied, the stage (or max-speed) will be different.
+        class(multidomain_type), intent(inout) :: md 
+            !! multidomain. This is inout to allow the timer to run
         logical, optional, intent(in) :: global_stats_only
+            !! If .true. then only print global multidomain statistics. By default (.FALSE.) print
+            !! statistics for every domain
         logical, optional, intent(out) :: energy_is_finite
+            !! Record whether the energy is finite. This can be useful to terminate models
+            !! that attain NaN energy.
 
         integer(ip) :: k
         real(dp) :: minstage, maxstage, minspeed, maxspeed, stg1, speed_sq, depth_C, depth_E, depth_N
@@ -1971,7 +1984,7 @@ module multidomain_mod
         global_max_stage = -HUGE(1.0_dp)
         global_min_stage = HUGE(1.0_dp)
         global_max_speed = 0.0_dp
-        global_min_speed = 0.0_dp
+        global_min_speed = HUGE(1.0_dp) !0.0_dp
         global_energy_potential_on_rho = 0.0_dp
         global_energy_kinetic_on_rho = 0.0_dp
         global_energy_total_on_rho = 0.0_dp
