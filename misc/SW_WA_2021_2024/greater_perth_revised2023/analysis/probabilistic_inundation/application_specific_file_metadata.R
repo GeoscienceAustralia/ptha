@@ -45,7 +45,7 @@ source_zone_modelled_tsunami_scenario_basedirs = list(
 #' @param MD_BASE_DIR is a folder containing many random model runs for a single source zone, e.g.
 #' '../../swals/OUTPUTS/ptha18-GreaterPerth-sealevel60cm/random_outerrisesunda/' 
 #' @return The function environment, containing variables 
-get_scenario_metadata_from_MD_BASE_DIR<-function(MD_BASE_DIR){
+get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
 
     source_info = basename(MD_BASE_DIR)
     stopifnot(startsWith(source_info, 'random_'))
