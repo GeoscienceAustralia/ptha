@@ -3,7 +3,7 @@
 # Run like:
 #   Rscript compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R VARIABLE_NAME DOMAIN_INDEX PERCENTILE_TO_USE EXCEEDANCE_RATE MINIMUM_DEPTH MAXIMUM_DEPTH DEPTH_TOL OUTPUT_DIR
 # e.g.:
-#   Rscript compute_exceedance_rates_at_epistemic_uncertainty_percentile.R depth 450 0.84 0.0004 0.005 10.0 0.004 directory_to_hold_results
+#   Rscript compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R depth 450 0.84 0.0004 0.005 10.0 0.004 directory_to_hold_results
 #
 library(utils)
 suppressPackageStartupMessages(library(rptha))
@@ -219,7 +219,15 @@ rootfun<-function(depth, source_zone_pixel_data){
             # Case that the pixel should be interpolated from neighbours
             return(NEEDS_INTERPOLATING)
         }
+    }else{
+        # There is at least one NA exrate
+        #
+        # It is possible that one source zone has exrates[i] = NA (i.e. dry all the time)   
+        # but another does not. In that case, we should treat the exceedance-rate on the 'dry'
+        # source zone as zero.
+        if(any(is.finite(exrates))) exrates[is.na(exrates)] = 0
     }
+
 
     # Comontonic assumption to justify the sum(exrates) here.
     result = sum(exrates) - EXCEEDANCE_RATE 
