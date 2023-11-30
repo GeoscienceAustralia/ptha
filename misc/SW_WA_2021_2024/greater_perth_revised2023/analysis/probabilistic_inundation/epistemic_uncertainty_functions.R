@@ -101,7 +101,8 @@ make_all_pixel_data<-function(scenario_row_index, raster_tar_files,
         library(utils); suppressPackageStartupMessages(library(raster)) })
     all_raster_files = paste0('/vsitar/', raster_tar_files, '/', 
         raster_name_stub, DOMAIN_INDEX, ".tif")
-    all_depth_rasters_as_matrices = parLapply(local_cluster,
+    #all_depth_rasters_as_matrices = parLapply(local_cluster,
+    all_depth_rasters_as_matrices = parLapplyLB(local_cluster,
         all_raster_files,
         function(x) as.matrix(raster(x)))
     stopCluster(local_cluster)
@@ -292,7 +293,9 @@ get_exrate_at_depth_and_percentile<-function(
 #' @param SUB_SAMPLE Integer -- e.g. a value of 3 means that we only compute 1 pixel for every 3x3 block of cells.
 #' @param NEEDS_INTERPOLATING If SUB_SAMPLE>1 then this value is assigned to 'skipped pixels' to denote that they should
 #' be interpolated later.
-#' @param ALWAYS_WET_EXRATE The solution for a cell that is always wet -- this is a common case so is provided for optimization.
+#' @param ALWAYS_WET_EXRATE The solution for a cell that is always "wet" (i.e.
+#' always above EXCEEDANCE_THRESHOLD) -- this is a common case so is provided for
+#' optimization.
 #' @param UNSEGMENTED_INDEX Index in all_samples[[ ]] holding the unsegmented source scenarios
 #' @param SEGMENTED_INDICES vector of integers corresponding to indices in all_samples[[ ]] holdinig the segmented source scenarios
 #' @param unsegmented_wt The weight assigned to the unsegmented model by the logic-tree
@@ -361,4 +364,3 @@ get_exrate_percentile_at_pixel<-function(pixel_data, all_samples, all_source_rat
 
     return(exrate_at_percentile[1,1])
 }
-
