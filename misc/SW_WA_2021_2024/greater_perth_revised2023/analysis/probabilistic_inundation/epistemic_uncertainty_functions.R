@@ -313,15 +313,15 @@ get_exrate_percentile_at_pixel<-function(pixel_data, all_samples, all_source_rat
     ptha18,
     REPRODUCIBLE_SEED){
 
-    if(all(is.na(pixel_data$model_runs_max_value))) return(NA)
-
-    stopifnot(length(PERCENTILE_TO_USE) == 1)
-
     # Do not operate on every pixel -- aggregate
     if( ((pixel_data$i-1)%%SUB_SAMPLE != floor(SUB_SAMPLE/2)) |
         ((pixel_data$j-1)%%SUB_SAMPLE != floor(SUB_SAMPLE/2)) ){
         return(NEEDS_INTERPOLATING)
     }
+
+    if(all(is.na(pixel_data$model_runs_max_value))) return(NA)
+
+    stopifnot(length(PERCENTILE_TO_USE) == 1)
 
     # If not all pixel_data is NA, then remaining NA's represent dry values.
     # (This is how the rasters herein were created). In that case they won't count
