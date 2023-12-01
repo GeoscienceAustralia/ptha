@@ -10,8 +10,9 @@ Below we show how to compute rasters depicting:
   * It is approximate because we only use the max-stage values computed previously (0.6, 1.6, 2.6, ...).
     * The computed solution is 'rounded down' from the exact solution to the nearest binned value
   * This is a simple approach to computing a quantity of interest at a given exceedance-rate.
-    * For a more exact approach see [here](https://github.com/GeoscienceAustralia/ptha/tree/master/misc/monte_carlo_paper_2021/analysis/probabilistic_inundation).
+    * For a more exact approach see the code below 
 * The depth at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
+  * This uses root-finding to compute the depth (or max-stage) within a prescribed tolerance.
 
 Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
 
