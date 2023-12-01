@@ -11,6 +11,7 @@ Below we show how to compute rasters depicting:
     * The computed solution is 'rounded down' from the exact solution to the nearest binned value
   * This is a simple approach to computing a quantity of interest at a given exceedance-rate.
     * For a more exact approach see [here](https://github.com/GeoscienceAustralia/ptha/tree/master/misc/monte_carlo_paper_2021/analysis/probabilistic_inundation).
+* The depth at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
 
 Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
 
@@ -114,3 +115,19 @@ Rscript compute_sum_of_percentiles.R ptha18-GreaterPerth2023-sealevel60cm/highre
 
 ```
 
+Below we show calculation of depth at a given exceedance-rate and epistemic uncertainty percentile.
+```bash
+
+# Modify compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R for your case.
+# Note sub-sampling can be used to speed up the calculations (e.g. only computing the middle pixel
+# in the 3x3 grid, and defining the other cells from this).
+
+# Modify the test code below to suit your case, then run it and check that it prints PASS.
+# This will require a node, with as many cores needed in application_specific_inputs.R::MC_CORES.
+Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
+
+# If the test works, proceed with calculations of interest.
+# I wrote a (non-generic) script to run highres domains only
+qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
+
+```
