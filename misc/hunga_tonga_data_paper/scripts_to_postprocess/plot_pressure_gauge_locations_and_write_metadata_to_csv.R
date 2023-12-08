@@ -6,6 +6,7 @@ library(sp)
 source('get_simple_world_map_data.R')
 source('global_variables.R')
 source('create_README_in_postprocessed_folder.R')
+source('create_README_in_postprocessed_graphical_checks_folder.R')
 
 # Make the output folders
 dir.create(OUTPUT_DIR, showWarnings=FALSE)
@@ -217,7 +218,22 @@ plot_pressure_gauges<-function(){
          main='A) MSLP sensors', cex.main = 2.5)
     points(gauge_locations$lon, gauge_locations$lat, col='darkred', pch=19, cex=0.8)
     points(hunga_tonga_volcano[1], hunga_tonga_volcano[2], pch=17, col='red', cex=3)
+
+    # Add location of Broome Airport
+    ba_i = grep('BROOME AIRPORT', gauge_locations$station)
+    lonlat = c(gauge_locations$lon[ba_i], gauge_locations$lat[ba_i])
+    arrows(lonlat[1], lonlat[2], 110, -17, len=0)
+    text(110, -17, 'Broome Airport', adj=1, cex=1.8)
+
+    # Add location of gauge with outlier pressure maxima time (due to oscillations)
+    dw_i = grep("DWELLINGUP", gauge_locations$station)     
+    lonlat = c(gauge_locations$lon[dw_i], gauge_locations$lat[dw_i])
+    arrows(lonlat[1], lonlat[2], 108, -35, len=0)
+    text(108, -35, 'Dwellingup', adj=1, cex=1.8)
+
+
     dev.off()
+
 
     return(gauge_locations)
 }
@@ -229,6 +245,7 @@ write.csv(pressure_gauge_locations, MSLP_METADATA_TABLE_FILE, row.names=FALSE)
 
 # Make the README
 make_OUTPUT_DIR_README()
+make_OUTPUT_GRAPHICS_DIR_README()
 
 # Finish writing the file with skipped pressure gauges
 close(SKIPPED_GAUGES_FILECON)

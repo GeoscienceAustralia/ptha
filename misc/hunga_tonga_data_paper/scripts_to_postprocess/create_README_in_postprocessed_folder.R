@@ -1,5 +1,5 @@
 #
-# Create the metadata in the OUTPUT_DIR folder.
+# Create the metadata in the OUTPUT_DIR/
 # Easiest to do this programatically so I don't need to manually create it every time something is changed.
 #
 make_OUTPUT_DIR_README<-function(){
@@ -40,3 +40,4 @@ under the comment:
     writeLines(README_TEMPLATE, README_FILENAME)
     return(invisible(0))
 }
+
