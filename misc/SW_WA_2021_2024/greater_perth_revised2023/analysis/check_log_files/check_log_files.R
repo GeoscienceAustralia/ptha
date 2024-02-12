@@ -146,7 +146,9 @@ get_time_energy_stagerange_from_log<-function(log_file, msl_linear = 0.0, flux_t
     # by transforming them to something closer to the available potential energy in
     # the no-wetting-drying case
     grav = 9.8
-    normalised_energy_on_rho = energy_on_rho + grav * msl_linear * (md_volume[1] - md_volume)
+    #normalised_energy_on_rho = energy_on_rho + grav * msl_linear * (md_volume[1] - md_volume)
+    normalised_energy_on_rho = energy_on_rho + grav * msl_linear * (volume_change[1] - volume_change) # Less roundoff
+
 
     
     # Ad-hoc indicator for the time when boundary-fluxes are zero [i.e.  before
