@@ -1,0 +1,21 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=04:00:00
+#PBS -lmem=1000GB
+#PBS -lncpus=208
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+#PBS -o run/log/extreme_source.o
+#PBS -e run/log/extreme_source.e
+
+source SWALS_ifort_modules_2023_B.sh
+
+# Run with sea level = 0.6 m
+mpirun -n 16 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    ./model_sapphirerapids \
+    '../sources/testing/VAUS_Mw92_sunda_arc/five_times_10231_for_extreme_testing.tif' \
+    multidomain_design_control_NNL4_defaultres.nml \
+    extreme_source \
+    full \
+    0.6 > run/log/extreme_source.log

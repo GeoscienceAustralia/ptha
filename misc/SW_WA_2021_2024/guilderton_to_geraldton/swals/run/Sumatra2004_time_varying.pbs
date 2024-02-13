@@ -1,0 +1,21 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=04:00:00
+#PBS -lmem=1000GB
+#PBS -lncpus=208
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+#PBS -e run/log/Sumatra2004_time_varying.e
+#PBS -o run/log/Sumatra2004_time_varying.o
+
+source SWALS_ifort_modules_2023_B.sh
+
+# Run with sea level = 0.0 m
+mpirun -n 16 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    ./model_sapphirerapids \
+    FujiSatake2007_time_varying_forcing_realistic.csv \
+    multidomain_design_control_NNL4_defaultres.nml \
+    Sumatra2004_FujiiSatake2007_timevarying \
+    full \
+    0.0 > run/log/Sumatra2004_time_varying.log

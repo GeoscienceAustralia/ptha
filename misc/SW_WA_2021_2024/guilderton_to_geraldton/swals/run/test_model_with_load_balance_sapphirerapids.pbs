@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=00:20:00
+#PBS -lmem=1000GB
+#PBS -lncpus=208
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+#PBS -e run/log/test_model_with_load_balance_sapphirerapids.e
+#PBS -o run/log/test_model_with_load_balance_sapphirerapids.o
+
+path_swals=/g/data/w85/tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/midwest/swals
+cd $path_swals
+
+source SWALS_ifort_modules_2023_B.sh
+
+# Run with sea level = 0.6 m
+mpirun -n 16 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    model_sapphirerapids \
+    ../sources/like_historic/FujiSatake2007/Fuji_andaman2004_unit_sources_SUM_KAJIURA_SMOOTHED.tif \
+    multidomain_design_control_NNL4_defaultres.nml \
+    short_test_run \
+    test_load_balance \
+    0.6 > run/log/test_model_with_load_balance_sapphirerapids.log

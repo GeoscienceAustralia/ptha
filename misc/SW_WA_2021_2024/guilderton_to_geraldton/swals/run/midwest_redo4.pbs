@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=04:00:00
+#PBS -lmem=1000GB
+#PBS -lncpus=208
+#PBS -l wd
+#PBS -l storage=gdata/w85+scratch/w85
+
+# Redo 1 simulation again.
+# This now has aggressive smoothing near near Dunsborough/Yallingup.
+failed=(sunda2_row_0109366_Mw_95_HS)
+
+source modules_SWALS_ifort_2023_B.sh
+# Load R as well (just for tarring directories)
+module load R/4.3.1
+
+for failed_sim in "${failed[@]}"; do
+    mpirun -n 16 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+        ./model_sapphirerapids  \
+        /g/data/w85/tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/Greater_Perth/sources/hazard/random_sunda2/scenario_initial_conditions/$failed_sim.tif \
+        ./multidomain_design_control_NNL4_defaultres.nml \
+        ptha18-midwest-sealevel60cm/random_sunda2/ptha18_random_scenarios_$failed_sim \
+        full \
+        0.6 > ./run/log/ptha18-midwest-sealevel60cm/$PBS_JOBID.log
+
+    # Tar the results 
+    Rscript ./post_process/tar_and_remove_matching_dir.R ./OUTPUTS/ptha18-midwest-sealevel60cm/random_sunda2/ptha18_random_scenarios_$failed_sim 
+done
