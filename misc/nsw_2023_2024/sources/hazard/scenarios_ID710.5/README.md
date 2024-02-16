@@ -27,7 +27,7 @@ Rscript create_initial_conditions_for_scenarios.R
 
 ## Key codes
 
-* sampling_config.R - Edit this to control the sampling approach
-* importance_sampling_utilities.R - Useful functions for importance sampling
-* create_scenarios.R - Main script for sampling scenarios and making test plots.
-* create_initial_conditions_for_scenarios.R - Make initial condition rasters once scenarios have been created.
+* `sampling_config.R` - Edit this to control the sampling approach
+* `../importance_sampling_utilities.R` - Useful functions for importance sampling
+* `create_scenarios.R` - Main script for sampling scenarios and making test plots.
+* `create_initial_conditions_for_scenarios.R` - Make initial condition rasters once scenarios have been created.

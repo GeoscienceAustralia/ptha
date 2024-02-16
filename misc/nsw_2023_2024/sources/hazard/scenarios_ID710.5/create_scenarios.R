@@ -16,7 +16,7 @@ source(sc$get_ptha_results_script_file, local=ptha18, chdir=TRUE)
 
 # Importance sampling calculations
 isu = new.env()
-source('importance_sampling_utilities.R', local=isu)
+source('../importance_sampling_utilities.R', local=isu)
 
 # Names of the source zones
 source_zones = names(sc$source_zones_and_samples)
