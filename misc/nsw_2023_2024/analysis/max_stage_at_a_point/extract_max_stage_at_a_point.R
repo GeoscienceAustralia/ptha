@@ -69,48 +69,6 @@ EXRATE_PLOT_YLIM = c(1.0e-05, 0.1)
 # Turn on/off the epistemic uncertainty calculations.
 DO_EPISTEMIC_UNCERTAINTY_CALCULATIONS = TRUE #FALSE
 
-# FIXME -- noting this isn't used until the epistemic uncertainty bit
-#
-# Files with scenarios used for epistemic uncertainties -- split up by source-zone and unsegmented/segmented
-importance_sampling_scenarios_detailed = list(
-# FIXME: FIX THIS LATER
-#    # Each entry is a list (one per source_zone) with
-#    #    - random_scenarios:
-#    #        List of data.frames with the random_scenarios, with weights based
-#    #        on the unsegmented source and each segment. The names of this list
-#    #        must match the source names in PTHA18.
-#    #    - segment_names:
-#    #        Character vector with segment name for each entry of random_scenarios,
-#    #        ordered in the same way. For the unsegmented source, the entry should be "".
-#    #
-#    outerrisesunda = list(
-#        random_scenarios = list(
-#            outerrisesunda_unsegmented = read.csv(
-#                '../../sources/hazard/random_outerrisesunda/random_scenarios_outerrisesunda_unsegmented_HS.csv')
-#            ),
-#        # segment_names must be ordered as above, with empty string for unsegmented source
-#        segment_names = ""
-#        ),
-#    sunda2 = list(
-#        random_scenarios = list(
-#            # In these data.frames, the scenarios are the same in all cases. But
-#            # the scenario_weights/rates change, depending on the source_zone segmentation
-#            sunda2_unsegmented = read.csv(
-#                '../../sources/hazard/random_sunda2/random_scenarios_sunda2_unsegmented_HS.csv'),
-#            sunda2_arakan_segment = read.csv(
-#                '../../sources/hazard/random_sunda2/random_scenarios_sunda2_arakan_segment_HS.csv'),
-#            sunda2_andaman_segment = read.csv(
-#                '../../sources/hazard/random_sunda2/random_scenarios_sunda2_andaman_segment_HS.csv'),
-#            sunda2_sumatra_segment = read.csv(
-#                '../../sources/hazard/random_sunda2/random_scenarios_sunda2_sumatra_segment_HS.csv'),
-#            sunda2_java_segment = read.csv(
-#                '../../sources/hazard/random_sunda2/random_scenarios_sunda2_java_segment_HS.csv')
-#        ),
-#        # segment_names must be ordered as above, with empty string for unsegmented source
-#        segment_names = c('', 'arakan', 'andaman', 'sumatra', 'java')
-#        )
-    )
-
 # Random sampling is used to compute percentiles from combined probability
 # distributions -- how many random samples should be used?
 epistemic_uncertainty_Nsamples = 1e+04
@@ -126,6 +84,15 @@ epistemic_uncertainty_threshold_stage_values = nonlinear_model_MSL +
 if(point_code == 1){
     # Well offshore of Ulladulla, 4850m water depth
     target_point =c(151.3333, -35.6666) # gauge ID 710.5 
+}else if(point_code == 2){
+    # Well offshore of Tweed river entrance, 4500 m water depth.
+    target_point = c(155.0, -28.33333)
+}else if(point_code == 3){
+    # Well offshore of Eden, ~ 4600m water depth
+    target_point = c(151.33333, -37.66666)
+}else if(point_code == 4){
+    # Well offshore of Port Stephens, ~ 4700m water depth
+    target_point = c(154, -32.66666)
 }else{
     stop('unknown point code')
 }

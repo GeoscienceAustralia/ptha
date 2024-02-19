@@ -190,7 +190,15 @@ get_unsegmented_and_segmented_source_names_on_source_zone<-function(source_zone,
     return(output)
 }
 
-# Compute stage exceedance-rate curves using importance sampling for all logic-tree-branches
+# Compute stage exceedance-rate curves using importance sampling for all
+# logic-tree-branches, ASSUMING heterogeneous slip scenarios with constant rigidity.
+# 
+# The function output lists have entries similar enough to those of a routine
+# for stratified-importance sampling
+#   get_detailed_PTHA18_source_zone_info.R::random_scenario_exceedance_rates_all_logic_tree_branches
+# that we can run the code (previously used for stratified-importance-sampling)
+#   get_PTHA_results.R::compute_exceedance_rate_percentiles_with_random_sampling
+# to compute percentile uncertainties.
 #
 estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches<-function(
     ptha18_detailed,
@@ -220,8 +228,10 @@ estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches<-function(
         source_seg_name = source_zone
     }
     stopifnot(source_seg_name %in% names(ptha18_detailed$crs_data$source_envs))
-    # This has different posteriod weights for models with constant or variable rigidity,
-    # here we will only use constant rigidity.
+
+    # Get rate models with constant rigidity for all logic tree branches
+    # (There are different posterior weights for models with variable rigidity,
+    # here we will only use constant rigidity).
     rate_models_all_branches = ptha18_detailed$crs_data$source_envs[[source_seg_name]]$mw_rate_function(
             NA, return_all_logic_tree_branches=TRUE)
 
@@ -283,6 +293,7 @@ estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches<-function(
         logic_tree_branch_posterior_prob = rate_models_all_branches$all_par_prob)
 }
 
+# Plot the exceedance-rates for each source-zone separately in the PTHA18 and nonlinear model.
 plot_epistemic_uncertainties_in_PTHA18_and_nonlinear_model_by_source_zone<-function(
     target_point,
     percentile_uncertainty_results,
@@ -341,6 +352,7 @@ plot_epistemic_uncertainties_in_PTHA18_and_nonlinear_model_by_source_zone<-funct
     dev.off()
 }
 
+# Plot the exceedance-rates summed over all source zones in the PTHA18 and the nonlinear model.
 plot_summed_exrates_with_epistemic_uncertainty_in_PTHA18_and_nonlinear_model<-function(
     target_point,
     percentile_uncertainty_results,
