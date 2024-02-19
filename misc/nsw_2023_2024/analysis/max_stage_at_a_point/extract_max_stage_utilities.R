@@ -356,6 +356,7 @@ plot_summed_exrates_with_epistemic_uncertainty_in_PTHA18_and_nonlinear_model<-fu
     HT = 7.5
     png(out_file, width=HT*1.2, height=HT, units='in', res=300)
     options(scipen=5)
+    nr = nrow(percentile_uncertainty_results[[source_zone]]$percentile_exrate)
 
     plot(percentile_uncertainty_results[[source_zone]]$threshold_stages - nonlinear_model_MSL, 
          nonlinear_model_percentile_uncertainty[nr,], 
