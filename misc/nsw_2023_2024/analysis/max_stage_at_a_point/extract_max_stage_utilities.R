@@ -28,12 +28,24 @@ get_indices_of_target_point_on_raster_file<-function(tarred_raster_file, raster_
 get_max_stage_at_target_point<-function(tarred_raster_file, raster_filename, XIND, YIND, target_point, coordinate_errtol){
 
     # Read the file
-    r1 = read_stars(paste0('/vsitar/', tarred_raster_file, '/', raster_filename))
+    raster_file = paste0('/vsitar/', tarred_raster_file, '/', raster_filename)
+    r1 = read_stars(raster_file)
     coordinate_vals = c(
         st_get_dimension_values(r1, 'x', where='center')[XIND],
         st_get_dimension_values(r1, 'y', where='center')[YIND])
 
-    val = r1[[1]][XIND, YIND]
+    segfault_workaround=TRUE # Avoid some segfaults with stars
+    if(!segfault_workaround){
+        # This was throwing segfaults on NCI on 19/02/2024 for NSW run. 
+        # Didn't see this issue previously (many WA model runs).
+        val = r1[[1]][XIND, YIND]
+    }else{
+        # Use terra to avoid segfaults
+        library(terra)
+        r2 = rast(raster_file)
+        val = extract(r2, matrix(coordinate_vals, ncol=2, nrow=1))[1,1]
+        rm(r2)
+    }
 
     rm(r1); gc()
 
@@ -97,7 +109,7 @@ plot_tsunami_maxima_in_nonlinear_model_and_PTHA18<-function(target_point, scenar
 plot_logic_tree_mean_exrate_curves_from_nonlinear_model_and_PTHA18<-function(
     target_point, 
     nonlinear_model_curves, nonlinear_model_combined_curve, nonlinear_model_MSL, 
-    ptha18_curves, ptha18_combined_curve){
+    ptha18_curves, ptha18_combined_curve, EXRATE_PLOT_YLIM){
 
     out_file = paste0('Exceedance_Rates_in_PTHA18_and_Nonlinear_Model_', 
         target_point[1], '_', target_point[2], '.png')

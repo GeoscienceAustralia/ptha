@@ -67,7 +67,7 @@ STAGE_POINTS_FOR_EXRATE_CURVE = seq(0.01, 5.01, len=1001)
 EXRATE_PLOT_YLIM = c(1.0e-05, 0.1)
 
 # Turn on/off the epistemic uncertainty calculations.
-DO_EPISTEMIC_UNCERTAINTY_CALCULATIONS = TRUE #FALSE
+DO_EPISTEMIC_UNCERTAINTY_CALCULATIONS = TRUE # FALSE
 
 # Random sampling is used to compute percentiles from combined probability
 # distributions -- how many random samples should be used?
@@ -80,13 +80,14 @@ epistemic_uncertainty_threshold_stage_values = nonlinear_model_MSL +
 #
 # Choose site
 #
-
+# FIXME: Might need to avoid points exactly on domain bin boundaries -- currently
+# confusing the raster lookup
 if(point_code == 1){
     # Well offshore of Ulladulla, 4850m water depth
     target_point =c(151.3333, -35.6666) # gauge ID 710.5 
 }else if(point_code == 2){
     # Well offshore of Tweed river entrance, 4500 m water depth.
-    target_point = c(155.0, -28.33333)
+    target_point = c(154.6666, -28.33333)
 }else if(point_code == 3){
     # Well offshore of Eden, ~ 4600m water depth
     target_point = c(151.33333, -37.66666)
@@ -124,6 +125,15 @@ all_max_stage = mclapply(tarred_raster_files,
     mc.cores=MC_CORES)
 # Convert to a data.frame
 run_stage_at_target_point = data.frame(file=tarred_raster_files, max_stage=unlist(all_max_stage))
+
+if(any(is.na(run_stage_at_target_point$max_stage))){
+    stop(paste0("Finding NA max-stage values. ",
+        "This can happen if target_point is right on the boundary of two domains, ",
+        "given how the raster lookup works here. The simplest workaround is to use a nearby ",
+        "point that isn't right on the boundary. A more complex fix would be to make a ",
+        "vrt file with multiple neighbouring tifs, and extract from that."))
+}
+
 rm(all_max_stage)
 # Save for easier use later
 output_RDS = paste0('run_stage_at_target_point_', target_point[1], '_', target_point[2], '.RDS')
@@ -278,7 +288,7 @@ for(nm in names(nonlinear_model_curves)){
 # Make plots
 plot_logic_tree_mean_exrate_curves_from_nonlinear_model_and_PTHA18(
     target_point, nonlinear_model_curves, nonlinear_model_combined_curve, nonlinear_model_MSL,
-    ptha18_curves, ptha18_combined_curve)
+    ptha18_curves, ptha18_combined_curve, EXRATE_PLOT_YLIM)
 
 
 if(DO_EPISTEMIC_UNCERTAINTY_CALCULATIONS){
@@ -292,25 +302,22 @@ if(DO_EPISTEMIC_UNCERTAINTY_CALCULATIONS){
     file_home = '../../../../../../../AustPTHA/CODE/ptha/ptha_access/get_detailed_PTHA18_source_zone_info.R'
     source(ifelse(file.exists(file_nci), file_nci, file_home), local=ptha18_detailed, chdir=TRUE)
 
-
-    #
-    #
-    #
-    stop('FIXME')
-
     # For each source zone we have "unsegmented" and (possibly) "union-of-segments" models.
     # For the unsegmented model and each segment, the PTHA18 scenario conditional probability (given Mw)
     # is available from e.g.
-    # x = ptha18_detailed$get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
-    #    'kermadectonga2', 'hikurangi')
-    # where the second argument is "" for the unsegmented source. The scenario probabilities (conditional on Mw) are in 
-    # x$HS_prob_given_Mw
-    # and we can use just the values for the sampled scenarios. The logic tree branches and probabilities are under, e.g., 
+    #   x = ptha18_detailed$get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
+    #      'kermadectonga2', 'hikurangi')
+    # where the second argument is "" for the unsegmented source. 
+    # The scenario probabilities (conditional on Mw) are in 
+    #   x$HS_prob_given_Mw
+    # and we will use the values for the sampled scenarios only. 
+    # The logic tree branches and probabilities are under, e.g., 
     # tmp = ptha18_detailed$crs_data$source_envs$kermadectonga2_hikurangi$mw_rate_function(NA, 
     #    return_all_logic_tree_branches=TRUE)
     # From this we only need the Mw bin rate for each logic-tree branch, and so can calculate
-    # r_i(e) from that and the conditional probability [r_i(e) = scenario-e-mwbin-rate_model_i * scenario-e-cond-prob-given-Mw]
-    # Then for each r_i(e) we can directly compute the Monte Carlo exceedance-rate -vs- stage-threshold curves. 
+    # r_i(e) from that and the conditional probability 
+    #   [r_i(e) = scenario-e-mwbin-rate_model_i * scenario-e-cond-prob-given-Mw]
+    # Then for each logic-tree branch we can directly compute the Monte Carlo exceedance-rate -vs- stage-threshold curves. 
     # Combined with the weights for each rate model we have a distribution of exceedance rates for any stage threshold.
     # - The distribution F^{-1} (percentile --> exceedance-rate) can be evaluated using rptha::weighted_percentile
     # - We can then sample from F^{-1} using interpolation at random percentiles (random_percentile --> random_exceedance-rate)
