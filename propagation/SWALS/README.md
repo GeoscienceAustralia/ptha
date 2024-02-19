@@ -48,8 +48,9 @@ on tsunami type problems; see [here for various NTHMP tests](./examples/nthmp)
 A paper using SWALS to model historic tsunamis in Australia is [available
 here](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) -
 this includes discussion of the range of equations that are solved, and the energy
-conservation properties of different solvers. [Another paper](https://doi.org/10.1093/gji/ggac140) 
-uses it to model historic tsunamis and inundation hazards in Tongatapu. The
+conservation properties of different solvers. It has been used to 
+model historic tsunamis and inundation hazards [in Tongatapu](https://doi.org/10.1093/gji/ggac140),
+and [in Western Australia](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930). The
 linear solver in SWALS was also used extensively for the 
 [2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041)
 and two associated papers: [this one in GJI](https://doi.org/10.1093/gji/ggz260) and 
@@ -224,6 +225,7 @@ The validation tests  in [./examples/](./examples) provide templates for develop
 * [./examples/nthmp/Tauranga_harbour_Tohoku_tsunami/](./examples/nthmp/Tauranga_harbour_Tohoku_tsunami) which simulates the Tohoku tsunami at Tauranga harbour, NZ, and compares with velocity and tide-gauge observations. 
 * [./examples/periodic_multidomain/](./examples/periodic_multidomain) which illustrates a global multidomain with periodic east-west boundaries. This also optionally permits a rise-time to be used in the earthquake co-seismic deformation.
 * The model code used in [this study modelling historic tsunamis in Australia](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) can be [found here](../../misc/nearshore_testing_2020/). It implements a global-to-local scale model with an initial earthquake forcing.
+* A model used for [work in Western Australia](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) that makes complicated nesting relatively easy can be [found here](https://github.com/GeoscienceAustralia/ptha/tree/master/misc/SW_WA_2021_2024/greater_perth_revised2023).
 
 The above models can be run with OpenMP and/or MPI (or coarrays), and illustrate use of the multidomain class. 
 
