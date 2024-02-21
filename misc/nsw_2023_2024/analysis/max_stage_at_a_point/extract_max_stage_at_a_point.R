@@ -338,8 +338,8 @@ if(DO_EPISTEMIC_UNCERTAINTY_CALCULATIONS){
     for(source_zone in names(importance_sampling_scenarios_logic_tree_mean)){
 
         # Get names of the segmented sub-sources (which could be empty on sources without segmentation)
-        source_segmentation_info = get_unsegmented_and_segmented_source_names_on_source_zone(
-            source_zone, ptha18_detailed)
+        source_segmentation_info = ptha18_detailed$get_unsegmented_and_segmented_source_names_on_source_zone(
+            source_zone)
         segmented_source_names = source_segmentation_info$segments
         segment_names = gsub(paste0(source_zone, '_'), '', segmented_source_names)
         unsegmented_source_name = source_segmentation_info$unsegmented_name

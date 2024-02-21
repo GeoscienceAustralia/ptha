@@ -167,41 +167,6 @@ plot_logic_tree_mean_exrate_curves_from_nonlinear_model_and_PTHA18<-function(
     dev.off()
 }
 
-
-# Get all available PTHA18 source names, including the unsegmented models
-# (where names = source_zone) and the segmented models (where names
-# are paste0(source_zone, '_', segment_name) ), and their respective weights.
-get_unsegmented_and_segmented_source_names_on_source_zone<-function(source_zone, ptha18_detailed){
-
-    all_source_names_unseg_and_seg = names(ptha18_detailed$crs_data$source_envs)
-
-    unsegmented_source_zone = source_zone
-    # Ensure unique match
-    stopifnot(sum(unsegmented_source_zone == all_source_names_unseg_and_seg) == 1)
-
-    k = startsWith(all_source_names_unseg_and_seg, paste0(source_zone, '_'))
-    segmented_source_zones = all_source_names_unseg_and_seg[k]
-
-    # If there are segments then PTHA18 assigns 50:50 weight to unsegmented:segments
-    # Otherwise PTHA18 assigns 100% weight to the unsegmented model.
-    has_segments = (length(segmented_source_zones) > 0)
-    if(has_segments){
-        unsegmented_weight = 0.5
-        union_of_segments_weight = 0.5
-    }else{
-        unsegmented_weight = 1
-        union_of_segments_weight = 0
-    } 
-
-    stopifnot(isTRUE(all.equal(unsegmented_weight + union_of_segments_weight, 1.0)))
-
-    output = list(unsegmented_name = unsegmented_source_zone,
-        unsegmented_weight = unsegmented_weight,
-        segments = segmented_source_zones,
-        union_of_segments_weight=union_of_segments_weight)
-    return(output)
-}
-
 # Compute stage exceedance-rate curves using importance sampling for all
 # logic-tree-branches, ASSUMING heterogeneous slip scenarios with constant rigidity.
 # 
