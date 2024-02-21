@@ -166,6 +166,49 @@ get_PTHA18_scenario_conditional_probability_and_rates_on_segment<-function(
 
 }
 
+#' Get information on unsegmented/segmented models on a source zone
+#'
+#' Convenience function to get names of unsegmented/segmented source representations,
+#' and their weights. This can be helpful for epistemic uncertainty calculations
+#' where we want to work with logic-tree-branches in crs_data$source_envs[[NAME]].
+#' 
+#'
+#' @param source_zone The name of a source zone in the PTHA18
+#' @return a list with the unsegmented source name, it's weight, the segmented
+#' source names and the weight assigned to the union-of-segments model
+#' 
+get_unsegmented_and_segmented_source_names_on_source_zone<-function(source_zone){
+
+    all_source_names_unseg_and_seg = names(crs_data$source_envs)
+
+    unsegmented_source_zone = source_zone
+    # Ensure unique match
+    stopifnot(sum(unsegmented_source_zone == all_source_names_unseg_and_seg) == 1)
+
+    k = startsWith(all_source_names_unseg_and_seg, paste0(source_zone, '_'))
+    segmented_source_zones = all_source_names_unseg_and_seg[k]
+
+    # If there are segments then PTHA18 assigns 50:50 weight to unsegmented:segments
+    # Otherwise PTHA18 assigns 100% weight to the unsegmented model.
+    has_segments = (length(segmented_source_zones) > 0)
+    if(has_segments){
+        unsegmented_weight = 0.5
+        union_of_segments_weight = 0.5
+    }else{
+        unsegmented_weight = 1
+        union_of_segments_weight = 0
+    } 
+
+    stopifnot(isTRUE(all.equal(unsegmented_weight + union_of_segments_weight, 1.0)))
+
+    output = list(unsegmented_name = unsegmented_source_zone,
+        unsegmented_weight = unsegmented_weight,
+        segments = segmented_source_zones,
+        union_of_segments_weight=union_of_segments_weight)
+    return(output)
+}
+
+
 #' Random scenario exceedance-rates over all logic-tree branches.
 #'
 #' Given random scenarios and their stage values on a source-zone/segment,
