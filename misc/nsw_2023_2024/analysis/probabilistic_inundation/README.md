@@ -14,7 +14,7 @@ Below we show how to compute rasters depicting:
 * The depth at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
   * This uses root-finding to compute the depth (or max-stage) within a prescribed tolerance.
 
-Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
+Before running anything you'll need to modify [application_specific_file_metadata.R](application_specific_file_metadata.R) for your case.
 
 ## How to run
 
