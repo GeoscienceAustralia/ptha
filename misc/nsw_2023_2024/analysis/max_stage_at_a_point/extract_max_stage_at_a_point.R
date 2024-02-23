@@ -114,7 +114,9 @@ YIND=tmp$YIND
 coordinate_errtol = tmp$coordinate_errtol
 rm(tmp)
 
-# Get all max-stage values from the nonlinear model runs
+# Get all max-stage values from the nonlinear model runs.
+# This only includes each unique scenario. Some scenarios may have been sampled twice,
+# but the model is run only once.
 library(parallel)
 all_max_stage = mclapply(tarred_raster_files,
     get_max_stage_at_target_point,
@@ -230,6 +232,8 @@ nonlinear_model_curves = list()
 for(nm in names(importance_sampling_scenarios_logic_tree_mean)){
 
     k = which(scenario_max_stages$nonlinear_source_name == nm)
+    # Index from the randomly sampled scenarios (which can include repeated scenarios)
+    # to the scenario_max_stages (which only include each scenario once)
     mtch = match(importance_sampling_scenarios_logic_tree_mean[[nm]]$inds,
         scenario_max_stages$nonlinear_scenario_row[k])
 

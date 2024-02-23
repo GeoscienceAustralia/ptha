@@ -9,6 +9,10 @@ get_indices_of_target_point_on_raster_file<-function(tarred_raster_file, raster_
     # Get the indices of interest by checking one tif
     # Here I assume all tifs with the same raster_filename have the same extent (but that will be checked)
     r1 = read_stars(paste0('/vsitar/', tarred_raster_file, '/', raster_filename))
+
+    # Get XIND,YIND such that the value of interest is r1[[1]][XIND, YIND]
+    # Beware: If the raster had been read with terra then these indices are reversed
+    #   i.e. r1_stars[[1]][XIND, YIND] = r1_terra[YIND, XIND]
     XIND = which.min(abs( st_get_dimension_values(r1, 'x', where='center') - target_point[1]))
     YIND = which.min(abs( st_get_dimension_values(r1, 'y', where='center') - target_point[2]))
     XCOORD = st_get_dimension_values(r1, 'x', where='center')[XIND]
@@ -212,13 +216,15 @@ estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches<-function(
     rate_models_all_branches = ptha18_detailed$crs_data$source_envs[[source_seg_name]]$mw_rate_function(
             NA, return_all_logic_tree_branches=TRUE)
 
-    # Get the PTHA18 scenario conditional probability and rates (for ALL SCENARIOS) according to the
-    # logic-tree-mean model over the segment. 
+    # Get the PTHA18 scenario conditional probability (for ALL SCENARIOS)
+    # according to the logic-tree-mean model over the segment. This also
+    # includes information on PTHA18 LTM rates, but we don't need to use that.
     ptha18_conditional_probability_and_rates = 
         ptha18_detailed$get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
             source_zone=source_zone, segment=source_zone_segment)
 
-    # The scenario conditional probability does not change between logic-tree-branches on the source_zone and segment.
+    # The scenario conditional probability does not change between
+    # logic-tree-branches on the source_zone and segment.
     # NOTE WE ASSUME CONSTANT RIGIDITY HS SCENARIOS
     ptha18_conditional_prob_given_mw_sampled_scenarios = 
         ptha18_conditional_probability_and_rates$HS_prob_given_Mw[row_ind_sampled_scenarios]
@@ -243,12 +249,17 @@ estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches<-function(
     for(i in 1:NLTB){
 
         # Exceedance-rate at mw-bin boundaries
+        # Must interpolate with rule=1 because even at the highest value of Mw_seq, all_rate_matrix[i,] 
+        # may not be zero.
         mw_bb_exrate = approx(rate_models_all_branches$Mw_seq, rate_models_all_branches$all_rate_matrix[i,],
-            xout=ptha18_unique_mw_bb, rule=2)$y
+            xout=ptha18_unique_mw_bb, rule=1)$y
+        k = is.na(mw_bb_exrate)
+        if(any(k)) mw_bb_exrate[k] = 0
 
         # Rate of scenarios in each mw bin (corresponding to ptha18_unique_mw_values)
         mw_bin_rate = -diff(mw_bb_exrate)
 
+        # map onto sampled scenarios
         sampled_scenario_mw_bin_rate = mw_bin_rate[sampled_scenario_Mw_bin]
 
         # r_i(e) for sampled scenrios e
@@ -256,13 +267,18 @@ estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches<-function(
         sampled_scenario_rate = sampled_scenario_mw_bin_rate * ptha18_conditional_prob_given_mw_sampled_scenarios
 
         # Get the importance-sampling-based exceedance rates, and an approximate variance
-        exrates_with_uncertainty = isu$estimate_exrate_and_variance_sampled_scenarios(
-                rates_sampled_scenarios=sampled_scenario_rate,
-                sampling_prob_sampled_scenarios=sampling_prob_sampled_scenarios,
-                stage_sampled_scenarios = sampled_scenarios_max_stage,
-                desired_stage_thresholds = threshold_stage_values)
+        #exrates_with_uncertainty = isu$estimate_exrate_and_variance_sampled_scenarios(
+        #        rates_sampled_scenarios=sampled_scenario_rate,
+        #        sampling_prob_sampled_scenarios=sampling_prob_sampled_scenarios,
+        #        stage_sampled_scenarios = sampled_scenarios_max_stage,
+        #        desired_stage_thresholds = threshold_stage_values)
+        #exrate_by_stage_threshold[,i] = exrates_with_uncertainty[,1]
 
-        exrate_by_stage_threshold[,i] = exrates_with_uncertainty[,1]
+        for(j in 1:length(threshold_stage_values)){
+            exrate_by_stage_threshold[j,i] = sum(
+                sampled_scenario_rate * (sampled_scenarios_max_stage > threshold_stage_values[j])/
+                (length(sampled_scenario_rate) * sampling_prob_sampled_scenarios))
+        }
     }
 
     output = list(logic_tree_branch_exceedance_rates = exrate_by_stage_threshold, 
