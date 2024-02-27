@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P w85
 #PBS -q normal
-#PBS -l walltime=08:00:00
+#PBS -l walltime=24:00:00
 #PBS -lmem=190GB
 #PBS -lncpus=48
 #PBS -ljobfs=20GB
@@ -27,18 +27,11 @@ first_run=${all_runnames[0]}
 # Find the raster outputs from one run (we assume all model runs have the same number of domains).
 testfile=$(ls $first_run'ptha18_random_scenarios'_*/raster*.tar | head -n1)
 # Count the rasters in the multidomain outputs
-maxrasts=$(tar --list -f $testfile | grep "depth_" | wc -w)
+maxrasts=$(tar --list -f $testfile | grep "max_stage_" | wc -w)
 
 # Do the calculations for each source
 for runname in ${all_runnames[@]}; do
   echo 'RUNNAME:' $runname $maxrasts;
-  Rscript compute_exceedance_rates_at_logic_tree_mean.R $runname $maxrasts depth 0.001;
-  # NOTE: If you want to do calculations with multiple depth thresholds, just
-  # append them to the above command, e.g.
-  #     Rscript compute_exceedance_rates_at_logic_tree_mean.R $runname $maxrasts depth 0.001 0.01 0.1 1 10;
-  # would compute results for the five different depth thresholds 0.001 0.01
-  # 0.1 1 10 (and is much more computationally efficient than running them all
-  # separately)
-
+  Rscript compute_exceedance_rates_at_logic_tree_mean.R $runname $maxrasts max_stage 1.101 2.1 3.1 4.1 5.1 6.1 7.1 8.1 9.1 10.1;
 done
 
