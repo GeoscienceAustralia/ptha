@@ -201,13 +201,13 @@ prepare_source_zone_data<-function(MD_BASE_DIR){
     # Make some fake 'pixel' data 
     fake_wet_pixel_data = list(
         # Value is always > threshold
-        model_runs_max_value = rep(EXCEEDANCE_THRESHOLD+1, length(all_samples[[1]]$inds)),
+        model_runs_max_value = rep(MAXIMUM_DEPTH+1, length(all_samples[[1]]$inds)),
         # Pixel i/j indices ensure it is not skipped; counter unused here.
         i = floor(SUB_SAMPLE/2)+1, j = floor(SUB_SAMPLE/2)+1, counter=NA) 
     # Get the rate for an "always wet" pixel
     ALWAYS_WET_EXRATE = euf$get_exrate_percentile_at_pixel(fake_wet_pixel_data,
         all_samples, all_source_rate_info, scenarios_to_results_inds,
-        EXCEEDANCE_THRESHOLD, PERCENTILE_TO_USE,
+        MAXIMUM_DEPTH, PERCENTILE_TO_USE,
         NRAND, SUB_SAMPLE, NEEDS_INTERPOLATING,
         NULL,  # Deliberate NULL where we'd usually pass ALWAYS_WET_EXRATE to trigger the calculation.
         UNSEGMENTED_INDEX, SEGMENTED_INDICES,
@@ -241,14 +241,15 @@ prepare_source_zone_data<-function(MD_BASE_DIR){
     ## stopifnot(is.finite(ALWAYS_WET_EXRATE) & (ALWAYS_WET_EXRATE > 0))
 
     # Fail-safe for parallel calculation of exceedance-rates for a single pixel
-    try_get_exrate_percentile_at_pixel<-function(pixel_data) try(euf$get_exrate_percentile_at_pixel(pixel_data,
-        all_samples, all_source_rate_info, scenarios_to_results_inds,
-        EXCEEDANCE_THRESHOLD, PERCENTILE_TO_USE,
-        NRAND, SUB_SAMPLE, NEEDS_INTERPOLATING, ALWAYS_WET_EXRATE,
-        UNSEGMENTED_INDEX, SEGMENTED_INDICES,
-        unsegmented_wt, union_of_segments_wt,
-        ptha18,
-        REPRODUCIBLE_SEED))
+    try_get_exrate_percentile_at_pixel<-function(pixel_data, chosen_threshold) try(
+        euf$get_exrate_percentile_at_pixel(pixel_data,
+            all_samples, all_source_rate_info, scenarios_to_results_inds,
+            chosen_threshold, PERCENTILE_TO_USE,
+            NRAND, SUB_SAMPLE, NEEDS_INTERPOLATING, ALWAYS_WET_EXRATE,
+            UNSEGMENTED_INDEX, SEGMENTED_INDICES,
+            unsegmented_wt, union_of_segments_wt,
+            ptha18,
+            REPRODUCIBLE_SEED))
 
     ## # Fail-safe for calculation of exceedance-rates for a single pixel
     ## try_get_exrate_percentile_at_pixel<-function(pixel_data, chosen_threshold) try(

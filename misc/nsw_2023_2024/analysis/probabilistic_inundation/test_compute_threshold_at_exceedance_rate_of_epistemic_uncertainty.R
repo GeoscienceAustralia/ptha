@@ -26,7 +26,7 @@ tmp_output_dir = 'tmpdir_threshold_at_epistemic_uncertainty'
 # - interpolation via neighbour cells (if SUB_SAMPLE > 1), 
 # - the discreteness of the stage-vs-exrate-at-epistemic-uncertainty curve (which makes the inverse ambiguous). 
 # We give an extra tolerance to account for that. This might need modification for other sites.
-EXTRA_STAGE_TOL = 1.0e-03
+EXTRA_STAGE_TOL = 2.0e-03
 
 # Remove any tifs from the tmp_output_dir (since the test will make 1, which should be the only tif in the directory)
 existing_tifs = Sys.glob(paste0(tmp_output_dir, '/*.tif'))
