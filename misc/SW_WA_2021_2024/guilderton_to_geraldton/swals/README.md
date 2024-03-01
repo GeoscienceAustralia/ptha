@@ -7,7 +7,7 @@ This folder contains code to run the tsunami models for earthquake sources defin
 
 The tsunami model includes the area from Guilderton to Geraldton in high resolution. The model setup is similar to the [2023 version fo the Greater Perth model codes](../../greater_perth_revised2023/) but here we were able to use some new elevation datasets, refined breakwalls, better representations of some rivers, and include some previously excluded areas.
 
-The individual codes are mostly similar to the [2023 version of the Greater Perth model codes](../../greater_perth_revised2023/). But the file structure has been substantially updated by using subfolders to make a clearer conceptual separation between different modelling steps. This should make it easier use and modify. The scripts are setup to use the SapphireRapids nodes on Gadi.
+The individual codes are mostly similar to the [2023 version of the Greater Perth model codes](../../greater_perth_revised2023/). But the file structure has been substantially updated by using subfolders to make a clearer conceptual separation between different modelling steps. The documentation has also been significantly updated and split into separate files. In combination this should make it easier reuse and modify the codes. The scripts are setup to use the SapphireRapids nodes on Gadi.
 
 ## Help with running the model
 - An outline of the steps to run on the National Computational Infrastucture (NCI) cluster is provided in [README.HOW_TO_RUN.md](README.HOW_TO_RUN.md).
