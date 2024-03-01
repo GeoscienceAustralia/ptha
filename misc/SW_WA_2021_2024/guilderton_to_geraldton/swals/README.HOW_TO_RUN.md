@@ -28,6 +28,7 @@ grep NaN multi*.log
 
 ## Post-process the simulation with R
 ```bash
+# Here we are still inside the model output directory (as above)
 module clear
 source ../../../modules_R_431.sh
 
@@ -162,18 +163,18 @@ cd plots
 Rscript process_gauges_sumatra2004.R ../OUTPUTS/path_to_multidomain_dir_sumatra2004
 cd ..
 # plot with varying y-scale
-Rscript plot_gauges_perth_sumatra2004.R OUTPUTS/path_to_multidomain_dir_sumatra2004/gauge_RDS_file_name.RDS
+Rscript plots/plot_gauges_perth_sumatra2004.R OUTPUTS/path_to_multidomain_dir_sumatra2004/gauge_RDS_file_name.RDS
 # uniform y range of 1m
-Rscript plot_gauges_perth_sumatra2004.R OUTPUTS/path_to_multidomain_dir_sumatra2004/gauge_RDS_file_name.RDS 1.0
+Rscript plots/plot_gauges_perth_sumatra2004.R OUTPUTS/path_to_multidomain_dir_sumatra2004/gauge_RDS_file_name.RDS 1.0
 
 # As above, Sumatra 2005
 cd plots
 Rscript plots/process_gauges_sumatra2005.R ../OUTPUTS/path_to_multidomain_dir_sumatra2005
 cd ..
 # varying y range
-Rscript plot_gauges_perth_sumatra2005.R OUTPUTS/path_to_multidomain_dir_sumatra2005/gauge_RDS_file_name.RDS
+Rscript plots/plot_gauges_perth_sumatra2005.R OUTPUTS/path_to_multidomain_dir_sumatra2005/gauge_RDS_file_name.RDS
 # uniform y range of 0.3m
-Rscript plot_gauges_perth_sumatra2005.R OUTPUTS/path_to_multidomain_dir_sumatra2005/gauge_RDS_file_name.RDS 0.3
+Rscript plots/plot_gauges_perth_sumatra2005.R OUTPUTS/path_to_multidomain_dir_sumatra2005/gauge_RDS_file_name.RDS 0.3
 ```
 
 
@@ -240,6 +241,7 @@ Look at the resulting pdf plot, and the summary statistics (example below)
 - The max-stage and max-speed can vary, but beware crazy oscillations or very
   extreme values.
 
+```
 [gxd547@gadi-login-04 check_log_files]$ Rscript check_log_files.R 0.6 24 "../../swals/OUTPUTS/ptha18-midwest-sealevel60cm/*/*/multi*00001.log"
 [1] "Did the model runs finish?"
    Mode    TRUE 
@@ -261,6 +263,7 @@ logical     369
 [1] "(typically very small unless the source is time-varying)"
       Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
 -0.0004571  0.0003264  0.0007534  0.0007239  0.0010201  0.0038118 
+```
 
 At this point you might need to further investigate and fix any problematic runs.
 
