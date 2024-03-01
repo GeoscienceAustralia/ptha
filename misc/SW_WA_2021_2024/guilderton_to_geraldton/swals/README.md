@@ -1,7 +1,7 @@
 # Tsunami model runs for Midwest region of WA, FY2023-2024
 --------------------------------------------------
 
-This folder contains code to run the tsunami models, including:
+This folder contains code to run the tsunami models for earthquake sources defined in:
 * Scenarios like historical events [(see here)](../../Greater_Perth/sources/like_historic/)
 * Random PTHA18 scenarios [(see here)](../../Greater_Perth/sources/hazard/)
 
