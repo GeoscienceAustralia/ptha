@@ -1,6 +1,6 @@
 # Tsunami modelling for the Guilderton to Geraldton area in 2023-2024
 
-This folder contains code used to model the region from Guilderton (which just north of Perth) to Geraldton. The codes are mostly derived from the [2023 version of the Greater Perth Modelling files](../greater_perth_revised2023/) with some modifications to the folder structure and the model setup. 
+This folder contains code used to model the region from Guilderton (which just north of Perth) to Geraldton. The codes are mostly derived from the [2023 version of the Greater Perth Modelling files](../greater_perth_revised2023/) with various modifications. 
 
 The domain structure, elevation data, breakwalls, and initial-stage regions have been updated and improved in the Guilderton to Geraldton area. Towns in this region are now more consistently modelled at high resolution (previously, this was only done at sites containing a tide gauge). We also included several large buildings in the elevation data at Geraldton, to check the sensitivity of the results to the associated flow obstructions - the effect turned out to be minor for the products of interest.
 
