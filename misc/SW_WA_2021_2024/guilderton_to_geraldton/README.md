@@ -16,6 +16,7 @@ Key folders are:
 * [./breakwalls](./breakwalls) - Create 3d lines that are burned into the elevation model, to enforce breakwalls and other local high-points irrespective of model resolution.
 * [./elevation](./elevation) - Elevation data + preference order for the SWALS model
 * [./inverts](./inverts) - Create 3d lines that are burned into the elevation model, to enforce channels and other local low-points irrespective of model resolution.
+* [./initial_stage](./initial_stage) - Create polygons within which the initial stage is set to a non-default value. This is useful for treating onshore lakes.
 * [./gauges](./gauges) - Locations of point-gauge output used in the SWALS model
 * [./multidomain_design](./multidomain_design) - Create the boxes defining domains in the multidomain
 * [./sources](./sources) - Tsunami source models
