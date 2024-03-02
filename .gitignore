@@ -1,0 +1,60 @@
+# Compiled documentation
+propagation/SWALS/doc
+
+# Test outputs
+propagation/SWALS/tests/*/OUTPUTS
+propagation/SWALS/tests/*/*.log
+propagation/SWALS/tests/*/*unit_tests
+propagation/SWALS/tests/unit_tests/*.csv
+propagation/SWALS/tests/unit_tests/*.nc
+
+# Example outputs
+# NB: a/**/b matches a/b, a/x/b, a/x/y/b, ...
+propagation/SWALS/examples/**/OUTPUTS
+propagation/SWALS/examples/**/*.png
+propagation/SWALS/examples/**/*.log
+propagation/SWALS/examples/**/*.csv
+
+# Next 3 lines are a trick to ignore all files without an extension
+# ignore everything in examples
+propagation/SWALS/examples/*
+# then include all folders
+propagation/SWALS/examples/!/**/
+# then include everything with a dot in the filename
+propagation/SWALS/examples/!*.*
+
+
+# Below are generic file types to ignore for fortan code 
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
+
+# Executables
+*.exe
+*.out
+*.app

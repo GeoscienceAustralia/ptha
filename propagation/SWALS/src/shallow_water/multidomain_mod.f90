@@ -408,7 +408,9 @@ module multidomain_mod
                 call md%domains(j)%write_max_quantities()
                 call md%domains(j)%write_gauge_time_series()
             end do
-            call md%finalise_and_print_timers()
+            ! Force file write-out without any parallel communication (because
+            ! other processes probably won't reach this part of the code).
+            call md%finalise_and_print_timers(communicate_max_U = .FALSE.)
             call generic_stop
         end if
 
@@ -471,6 +473,8 @@ module multidomain_mod
         ! Swap max_U and domain%U, without using signifiant extra memory, one variable at a time
         do k = 1, n
             ! For each domain, copy the k'th variable in domain%max_U(:,:,k) into domain%U(:,:,1)
+            ! Don't try to pack multiple variables at once, to avoid possible
+            ! modification of UH/VH variables in domain_mod::receive_halos
             do j = 1, size(md%domains)
                 do j1 = 1, size(md%domains(j)%max_U, 2)
                     do i = 1, size(md%domains(j)%max_U, 1)
@@ -1936,13 +1940,24 @@ module multidomain_mod
     end subroutine
 
 
-    !
-    ! Convenience print routine
-    !
     subroutine print_multidomain(md, global_stats_only, energy_is_finite)
-        class(multidomain_type), intent(inout) :: md ! inout allows for timer to run
+        !! Print multidomain summary statistics. 
+        !! Statistics are computed using "priority domain" parts of each domain.
+        !! NOTE: It is **possible** (but probably unusual) for these statistics to be
+        !! inconsistent with the statistics stored in domain%max_U (and the netcdf files).
+        !! The reason is that max_U is computed after each domain time-step, but always
+        !! before parallel communication and flux correction. In contrast, this routine is
+        !! usually called just after parallel communication and flux correction. So for
+        !! example, if the stage (or max-speed) occurs in a region where flux-correction
+        !! was applied, the stage (or max-speed) will be different.
+        class(multidomain_type), intent(inout) :: md 
+            !! multidomain. This is inout to allow the timer to run
         logical, optional, intent(in) :: global_stats_only
+            !! If .true. then only print global multidomain statistics. By default (.FALSE.) print
+            !! statistics for every domain
         logical, optional, intent(out) :: energy_is_finite
+            !! Record whether the energy is finite. This can be useful to terminate models
+            !! that attain NaN energy.
 
         integer(ip) :: k
         real(dp) :: minstage, maxstage, minspeed, maxspeed, stg1, speed_sq, depth_C, depth_E, depth_N
@@ -1969,7 +1984,7 @@ module multidomain_mod
         global_max_stage = -HUGE(1.0_dp)
         global_min_stage = HUGE(1.0_dp)
         global_max_speed = 0.0_dp
-        global_min_speed = 0.0_dp
+        global_min_speed = HUGE(1.0_dp) !0.0_dp
         global_energy_potential_on_rho = 0.0_dp
         global_energy_kinetic_on_rho = 0.0_dp
         global_energy_total_on_rho = 0.0_dp
@@ -3189,17 +3204,25 @@ module multidomain_mod
 
     end function
 
-    ! Print all domain timers, as well as the multidomain timer itself, finalise the domains,
-    ! and write max quantities. This is a typical step at the end of a program
-    !
-    subroutine finalise_and_print_timers(md)
+    subroutine finalise_and_print_timers(md, communicate_max_U)
+        !! Print all domain timers, as well as the multidomain timer itself, finalise the domains,
+        !! and write max quantities. This is a typical step at the end of a program.
         class(multidomain_type), intent(inout) :: md
+        logical, optional, intent(in) :: communicate_max_U
+            !! Default value of .TRUE. ensures that the max_U variables are communicated in parallel
+            !! prior to writing, to make max_U valid in halo regions. This can be skipped by providing
+            !! the value .FALSE., which makese sense if calling this routine following an error
+            !! condition (i.e. code that might not be reached by other parallel processes).
 
         integer(ip) :: i, evolve_timer_file_unit
         character(len=charlen) :: timer_log_filename
+        logical :: comm_max_U
+
+        comm_max_U = .true.
+        if(present(communicate_max_U)) comm_max_U = communicate_max_U
 
         ! Make the max_U values in each domain consistent across halos
-        call md%communicate_max_U
+        if(comm_max_U) call md%communicate_max_U
 
         ! Print out timing info for each
         do i = 1, size(md%domains, kind=ip)
@@ -3404,8 +3427,9 @@ module multidomain_mod
             ! This is not the 'true' write time, but keeps writing regular
             md%last_write_time = md%last_write_time + approx_writeout_freq
 
-            if(model_time > md%last_write_time + approx_writeout_freq) then
-                ! If the model time-steps are longer than approx_writeout_freq,
+            if((model_time > md%last_write_time + approx_writeout_freq) .and. &
+               (approx_writeout_freq > 0.0_dp)) then
+                ! If the model time-steps are longer than approx_writeout_freq (> 0),
                 ! then we could get a big lag between the model time and md%last_write_time.
                 ! If the time-steps later reduce, that could lead to overly-frequent write-outs
                 ! without this correction.

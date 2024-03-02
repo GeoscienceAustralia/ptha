@@ -146,14 +146,16 @@ get_time_energy_stagerange_from_log<-function(log_file, msl_linear = 0.0, flux_t
     # by transforming them to something closer to the available potential energy in
     # the no-wetting-drying case
     grav = 9.8
-    normalised_energy_on_rho = energy_on_rho + grav * msl_linear * (md_volume[1] - md_volume)
+    #normalised_energy_on_rho = energy_on_rho + grav * msl_linear * (md_volume[1] - md_volume)
+    normalised_energy_on_rho = energy_on_rho + grav * msl_linear * (volume_change[1] - volume_change) # Less roundoff
+
 
     
     # Ad-hoc indicator for the time when boundary-fluxes are zero [i.e.  before
     # the wave reaches a model boundary]. After the model starts having
     # boundary fluxes, we can't guarentee anything about energy conservation.
     before_bc = min(which(abs(boundary_flux_integral) > flux_threshold)) - 1
-    if(!is.finite(before_bc)) before_bc = n
+    if(!is.finite(before_bc)) before_bc = length(time)
     before_bc_limit = before_bc
     if(before_bc <= 1) before_bc = 3
 

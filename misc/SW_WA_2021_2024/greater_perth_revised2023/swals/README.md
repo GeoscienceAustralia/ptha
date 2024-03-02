@@ -132,7 +132,8 @@ Rscript ../../../report_domain_runtimes.R
 
 # Run some validation tests, and low-resolution variants to check convergence.
 # In the case with a time-varying source, the source file was created with
-# make_initial_conditions_complex_historical_events.R
+Rscript make_initial_conditions_complex_historical_events.R
+# Then you can run the historical events
 qsub run_Sumatra2004_time_varying.sh
 qsub run_Sumatra2004_time_varying_lowres.sh
 qsub run_Sumatra2005.sh
@@ -176,7 +177,7 @@ Rscript plot_gauges_perth_sumatra2004.R OUTPUTS/path_to_multidomain_dir_sumatra2
 
 # As above, Sumatra 2005
 cd plots
-Rscript plots/process_gauges_sumatra2005.R ../OUTPUTS/path_to_multidomain_dir_sumatra2005
+Rscript process_gauges_sumatra2005.R ../OUTPUTS/path_to_multidomain_dir_sumatra2005
 cd ..
 # varying y range
 Rscript plot_gauges_perth_sumatra2005.R OUTPUTS/path_to_multidomain_dir_sumatra2005/gauge_RDS_file_name.RDS

@@ -305,6 +305,32 @@ plot_tide_gauges<-function(){
          main='B) Tide gauges', cex.main = 2.5)
     points(all_gauge_locations$lon, all_gauge_locations$lat, col='darkred', pch=19, cex=0.8)
     points(hunga_tonga_volcano[1], hunga_tonga_volcano[2], pch=17, col='red', cex=3)
+
+    # Add location of sites mentioned in text
+    sites_in_text = list(
+        # See comments in code below for interpretation of these entries.
+        list('Crowdy_Head_Fishermans_Wharf_MHL', 'Crowdy Head', c(155, -30), c(155, -30)),
+        list('Rosslyn_Bay_DES', 'Rosslyn Bay', c(155, -18), c(155, -16)),
+        list('Gold_Coast_DES', 'Gold Coast', c(155, -24), c(155, -24)),
+        list('Sydney_Fort_Denison_BOMPorts', 'Fort Denison', c(155, -34), c(155, -34)),
+        list('Eden_MHL', 'Eden', c(153, -38), c(153, -39))
+        )
+    for(i in 1:length(sites_in_text)){
+        sit = sites_in_text[[i]]
+        grep_name = sit[[1]] # Used to grep for row-data on the station
+        title_name = sit[[2]] # Plot title words
+        line_coord = sit[[3]] # Line goes from gauge location to line_coord
+        title_coord = sit[[4]] # Placement of title words
+        ch_i = grep(grep_name, all_gauge_locations$name)
+        lonlat = c(all_gauge_locations$lon[ch_i], all_gauge_locations$lat[ch_i])
+        arrows(lonlat[1], lonlat[2], line_coord[1], line_coord[2], len=0)
+        text(title_coord[1], title_coord[2], title_name, adj=0, cex=1.8)
+    }
+
+    # Also add Port Phillip Bay
+    arrows(144.7, -38, 141, -45, len=0)
+    text(140, -47, 'Port Phillip Bay', adj=0, cex=1.8)
+
     dev.off()
     return(all_gauge_locations)
 

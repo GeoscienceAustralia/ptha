@@ -1,0 +1,55 @@
+# Script which is included in application makefiles, to compile things in the
+# folder containing this file.
+#
+# It is assumed that several variables are defined, including the location of
+# this folder as $(SWALS_SRC).
+# See the files named src_standard_compiler_var_{compilerinfo} for variable definitions.
+#
+
+#SWALS_SRC_GIT_VERSION := $(shell git --git-dir=$(SWALS_SRC)/../.git describe --abbrev=50 --always --tags)
+SWALS_SRC_GIT_VERSION := $(shell git log -n1 | head -n1 | tail -c41)
+
+
+# REGULAR OBJECTS
+SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) coarray_intrinsic_alternatives_mod.o logging_mod.o qsort_mod.o stop_mod.o reshape_array_mod.o which_mod.o date_to_numeric_mod.o linear_interpolator_mod.o grid_spacetime_interpolator_mod.o ragged_array_mod.o spherical_mod.o points_in_poly_mod.o file_io_mod.o timestepping_metadata_mod.o extrapolation_limiting_mod.o cliffs_tolkova_mod.o burn_into_grid_mod.o netcdf_util_mod.o point_gauge_mod.o timer_mod.o coarray_point2point_comms_mod.o nested_grid_comms_mod.o domain_mod.o forcing_mod.o boundary_mod.o multidomain_mod.o read_raster_c.o read_raster_mod.o
+
+
+# Make the library
+$(SWALS_LIBRARY): $(SWALS_OBJECTS)
+	$(SWALS_AR) $@ $^
+
+# This is the 'generic build rule' for fortran modules -- it is applied unless the
+# module file matches one of the 'specific' build rules below
+%_mod.o: $(SWALS_SRC)/*/%_mod.f90
+	$(SWALS_FORTRAN) -c $^
+
+# qsort can segfault on large problems if compiled with -Ofast (unless we
+# unlimit the stack size). Here we pass -O3 to the compiler [by default, if multiple
+# optimizations options are passed it uses the last one]
+qsort_mod.o : $(SWALS_SRC)/util/qsort_mod.f90
+	$(SWALS_FORTRAN) -O3 $(NO_LTO) -c $^
+
+#qsort_c.o : $(SWALS_SRC)/util/qsort_c.c
+#	gcc -O3 -c $^
+
+
+# read_raster_c relies on GDAL and the C compiler
+read_raster_c.o: $(SWALS_SRC)/raster/read_raster_c.c
+	$(SWALS_CC) -O2 -c $^ $(SWALS_GDAL_CFLAGS)
+# Heavy optimization of the read_raster_mod.f90 can cause issues
+read_raster_mod.o: $(SWALS_SRC)/raster/read_raster_mod.f90
+	$(SWALS_FORTRAN) -O2 $(NO_LTO) -c $^ $(SWALS_GDAL_CFLAGS)
+
+#
+# These rely on NETCDF, unless compiled with -DNONETCDF,
+# in which case NETCDF_FINCLUDE should be set to 'nothing' like:
+#     NETCDF_FINCLUDE=
+#
+point_gauge_mod.o: $(SWALS_SRC)/shallow_water/point_gauge_mod.f90 
+	$(SWALS_FORTRAN) $(NO_LTO) -DSRC_GIT_VERSION=\"$(SWALS_SRC_GIT_VERSION)\" -g -c $^ $(SWALS_NETCDF_FINCLUDE)
+netcdf_util_mod.o: $(SWALS_SRC)/util/netcdf_util_mod.f90 
+	$(SWALS_FORTRAN) $(NO_LTO) -DSRC_GIT_VERSION=\"$(SWALS_SRC_GIT_VERSION)\" -g -c $^ $(SWALS_NETCDF_FINCLUDE)
+
+# To support experiments with GPU interface (old, defunct).
+gpu_interface_cu.o: $(SWALS_SRC)/device/gpu_interface_cu.cu
+	$(SWALS_CUDA_CC) -c $^ $(SWALS_CUDA_CC_INCLUDE)

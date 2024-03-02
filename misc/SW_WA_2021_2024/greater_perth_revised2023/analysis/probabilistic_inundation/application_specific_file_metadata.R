@@ -42,12 +42,12 @@ source_zone_modelled_tsunami_scenario_basedirs = list(
 #' Given a folder containing many model runs from a single source zone, this function should define
 #' important variables.
 #'
-#' @param md_base_dir is a folder containing many random model runs for a single source zone, e.g.
+#' @param MD_BASE_DIR is a folder containing many random model runs for a single source zone, e.g.
 #' '../../swals/OUTPUTS/ptha18-GreaterPerth-sealevel60cm/random_outerrisesunda/' 
 #' @return The function environment, containing variables 
-get_scenario_metadata_from_md_base_dir<-function(md_base_dir){
+get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
 
-    source_info = basename(md_base_dir)
+    source_info = basename(MD_BASE_DIR)
     stopifnot(startsWith(source_info, 'random_'))
     source_zone = gsub('random_', '', source_info) # This should name the unsegmented source in ptha18
 
@@ -91,7 +91,7 @@ get_scenario_metadata_from_md_base_dir<-function(md_base_dir){
         UNSEGMENTED_INDEX = 1
         SEGMENTED_INDICES = c(2,3,4,5)
     }else{
-        stop(paste0('Unknown source zone: ', source_zone, ' from md_base_dir = ', md_base_dir))
+        stop(paste0('Unknown source zone: ', source_zone, ' from MD_BASE_DIR = ', MD_BASE_DIR))
     }
 
     unsegmented_wt = 1 - 0.5*(length(SEGMENTED_INDICES) > 0)

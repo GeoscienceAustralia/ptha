@@ -1,0 +1,23 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=10:00:00
+#PBS -lmem=190GB
+#PBS -lncpus=48
+#PBS -ljobfs=20GB
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+#PBS -o ../run/log/ptha18-midwest-sealevel60cm/create_tarred_rasters_from_tarred_multidomains.o
+#PBS -e ../run/log/ptha18-midwest-sealevel60cm/create_tarred_rasters_from_tarred_multidomains.e
+
+source ../modules_R_431.sh
+
+n_chunks=48
+
+for i in $(seq 1 $n_chunks)
+do
+    Rscript create_tarred_rasters_from_tarred_multidomains.R \
+    '../OUTPUTS/ptha18-midwest-sealevel60cm/random_*/ptha18_random_scenarios_*/RUN_*.tar' \
+    $i \
+    $n_chunks
+done

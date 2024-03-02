@@ -50,6 +50,7 @@ The above scripts make use of these helper routines:
 * [detiding.R](detiding.R) - Utilities for detiding the tide-gauge data.
 * [parse_gauge_data.R](parse_gauge_data.R) - Functions to parse the original pressure and tide-gauge data into a consistent format.
 * [create_README_in_postprocessed_folder.R](create_README_in_postprocessed_folder.R) - Make documentation in the postprocessed folder (avoiding manual updates when we change things).
+* [create_README_in_postprocessed_graphical_checks_folder.R](create_README_in_postprocessed_graphical_checks_folder.R) - Make documentation in the postprocessed graphical checks folder (avoiding manual updates when we change things).
 
 as well as the binary data [wrld_simpl.RDS](wrld_simpl.RDS) and codes in the [TPXO9_interface](TPXO9_interface) folder.
 

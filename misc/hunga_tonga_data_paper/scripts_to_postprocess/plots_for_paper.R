@@ -157,7 +157,6 @@ abline(v=julian(lamb_wave_arrival_ch), lty='dotted', col='blue')
 text(julian(lamb_wave_arrival_ch)+0.012, -1.0, '  LW', srt=0, col='blue', cex=1.3)
 dev.off()
 
-
 #
 # Pressure data with size of initial Lamb wave, and arrival time.
 #
@@ -201,6 +200,9 @@ for(i in 1:length(all_mslp)){
 # Compare the 'time of peak' to the 'expected arrival time'.
 time_difference_min = (as.numeric(24*60*(lamb_peak_jtime - j_arrival)))
 
+# Get the outlier index
+out_i = which.max(time_difference_min)
+
 XLAB_JULIAN = seq(19007, 19008, by=1/12)
 XLAB_JULIAN_label = as.difftime(XLAB_JULIAN, units='days') +  R_JULIAN_ORIGIN
 
@@ -217,6 +219,22 @@ abline(h=XLAB_JULIAN, col='orange', lty='dotted')
 abline(v=XLAB_JULIAN, col='orange', lty='dotted')
 abline(0, 1, col='red')
 abline(0, 1/(LAMB_WAVE_SPEED), col='red')
+
+# Highlight the outlier
+points(j_arrival[out_i], lamb_peak_jtime[out_i], pch=19, col='green')
+points(j_arrival[out_i], lamb_peak_jtime[out_i])
+dev.off()
+
+png(paste0(OUTPUT_GRAPHICS_DIR, '/outlier_pressure_time_series.png'), width=6, height=4, units='in', res=200)
+par(mar=c(3,4.3,2,1))
+plot(all_mslp[[out_i]]$juliant, all_mslp[[out_i]]$resid2h, t='l', xlim=c(19007.4, 19007.55), xlab="", ylab="Residual (hPa)",
+    main='Dwellingup high-pass filtered MSLP', col='green', cex.main=1.5, axes=FALSE, cex.axis=AXISSIZE, cex.lab=1.5,
+    cex.main=1.6)
+#grid(col='black')
+abline(h=seq(-2,2,by=0.5), col='black', lty='dotted')
+abline(h=0, col='black')
+axis(1, at=XLAB_JULIAN, labels=format(XLAB_JULIAN_label, format='%b%d %H:%M'), cex.axis=AXISSIZE)
+axis(side=2)
 dev.off()
 
 png(paste0(OUTPUT_GRAPHICS_DIR, '/distance_tonga_and_pressure_maxima_arrival.png'), width=9, height=7, units='in', res=200) 
