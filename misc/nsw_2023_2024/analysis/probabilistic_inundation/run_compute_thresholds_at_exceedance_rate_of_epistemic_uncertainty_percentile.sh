@@ -6,7 +6,7 @@
 #PBS -lncpus=48
 #PBS -ljobfs=20GB
 #PBS -l wd
-#PBS -l storage=scratch/w85+gdata/w85
+#PBS -l storage=scratch/w85+gdata/w85+gdata/fj6
 
 source R_431_NCI_modules.sh
 
