@@ -5,9 +5,9 @@ This folder contains scripts for probabilistic inundation calculation, which can
 Below we show how to compute rasters depicting:
 * The logic-tree-mean rate of inundation (depth > 1mm).
 * The rate of inundation (depth > 1mm) at the 16th and 84th percentile epistemic uncertainty
-* The logic-tree-mean exceedance-rate for a range of max-stage values (0.6, 1.6, 2.6, ...)
+* The logic-tree-mean exceedance-rate for a range of max-stage values (e.g. 1.1, 2.1, 3.1, ..., 10.1)
 * The (approximate) max-stage with a given exceedance-rate. 
-  * It is approximate because we only use the max-stage values computed previously (0.6, 1.6, 2.6, ...).
+  * It is approximate because we only use the max-stage values computed previously (1.1, 2.1, 3.1, ..., 10.1).
     * The computed solution is 'rounded down' from the exact solution to the nearest binned value
   * This is a simple approach to computing a quantity of interest at a given exceedance-rate.
     * For a more exact approach see the code below 
