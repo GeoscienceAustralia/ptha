@@ -135,9 +135,11 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 # I wrote a (non-generic) script to run highres domains only
 qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
 
-# If there is too much work for a single node, then you can split the work into pieces 
-# by editing make_threshold_epistemic_uncertainty_jobs.R
+# If there is too much work for a single node, you can split the work into pieces 
+# by editing 
+#   make_threshold_epistemic_uncertainty_jobs.R
 # This will produce a number of separate jobs, each working on a subset of domains, which
-# can be separately submitted
+# can be separately submitted like this:
+#   for i in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_[1-9]*.sh; do echo $i; qsub $i; mv $i submitted_epistemic_uncertainty_jobs; done
 
 ```
