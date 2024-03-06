@@ -121,6 +121,7 @@ Rscript compute_sum_of_percentiles.R ptha18-NSW2023b-ID710.5-sealevel110cm/highr
 ```
 
 Below we show calculation of depth at a given exceedance-rate and epistemic uncertainty percentile.
+The main computational scripts can equally well work on max-stage (the test cases does this).
 ```bash
 
 # Modify compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R for your case.
@@ -132,7 +133,7 @@ Below we show calculation of depth at a given exceedance-rate and epistemic unce
 Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 
 # If the test works, proceed with calculations of interest.
-# I wrote a (non-generic) script to run highres domains only
+# I wrote a (non-generic) script to run highres domains only.
 qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
 
 # If there is too much work for a single node, you can split the work into pieces 
