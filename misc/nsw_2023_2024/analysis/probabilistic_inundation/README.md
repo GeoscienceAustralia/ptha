@@ -144,3 +144,8 @@ qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percenti
 #   for i in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_[1-9]*.sh; do echo $i; qsub $i; mv $i submitted_epistemic_uncertainty_jobs; done
 
 ```
+
+## A few other random scripts are included
+
+* [estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R](estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R) shouldn't be used for serious work. I provide a cheap, rough estimate of the max-stage at the 84th percentile, using the depth at 84th percentile result. But it is limited because the depth results are clipped (0 - 10m) and so sometimes the stage cannot be represented. It is better (though much more expensive) to compute the max-stage percentiles directly by slightly modifying the epistemic uncertainty scripts above.
+* [compute_highres_domain_depth_above_initial_condition_at_epistemic_uncertainty_84pc.R](compute_highres_domain_depth_above_initial_condition_at_epistemic_uncertainty_84pc.R) computes the `depth above initial condition`. This is the same as the depth (`max-stage - elevation`) at sites that are initially dry. But at sites with elevation below the initial condition, it gives the `max-stage - initial_condition`. This provides one approach to adjusting the tsunami depths at sites that happen to be low-lying.
