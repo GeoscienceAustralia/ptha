@@ -135,18 +135,30 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 # If the test works, proceed with calculations of interest.
 # I wrote a (non-generic) script to run highres domains only.
 qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
-
-# If there is too much work for a single node, you can split the work into pieces 
-# by editing 
-#   make_threshold_epistemic_uncertainty_jobs.R
-# This will produce a number of separate jobs, each working on a subset of domains, which
-# can be separately submitted like this:
-#   for i in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_[1-9]*.sh; do echo $i; qsub $i; mv $i submitted_epistemic_uncertainty_jobs; done
-
 ```
+
+If there is too much work for a single node, you can split the work into pieces 
+by editing `make_threshold_epistemic_uncertainty_jobs.R`. 
+It can be used to produce a number of separate jobs for either depth or
+max-stage. Each job will work on a subset of domains, and can be separately
+submitted like this:
+```
+# Make the submission scripts
+Rscript make_threshold_epistemic_uncertainty_jobs.R
+# Manually check them before proceeding.
+
+# Submit once you're confident it's OK
+for i in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_[1-9]*.sh ;
+    do echo $i ;
+    qsub $i ;
+    mv $i submitted_epistemic_uncertainty_jobs ;
+    done
+```
+
 
 ## A few other random scripts are included
 
-* [estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R](estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R) shouldn't be used for serious work. It provides a cheap & rough estimate of the max-stage at the 84th percentile, using the depth at 84th percentile result. It is limited because the depth results are clipped (0 - 10m) and so sometimes the stage cannot be represented. It is better (though much more expensive) to compute the max-stage percentiles directly by slightly modifying the epistemic uncertainty scripts above.
 * [compute_highres_domain_depth_above_initial_condition_at_epistemic_uncertainty_84pc.R](compute_highres_domain_depth_above_initial_condition_at_epistemic_uncertainty_84pc.R) computes the `depth above initial condition`. This is the same as the depth (`max-stage - elevation`) at sites that are initially dry. But at sites with elevation below the initial condition, it gives the `max-stage - initial_condition`. This provides one approach to adjusting the tsunami depths at sites that happen to be low-lying.
 * [mask_depths_below_MSL.R](mask_depths_below_MSL.R) implements some light post-processing of the depth @ 84% raster to clip areas with elevation below MSL, and set "dry" areas (depth = 0) to NA.
+* [estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R](estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R) shouldn't be used for serious work. It provides a cheap & rough estimate of the max-stage at the 84th percentile, assuming the depth at 84th percentile result is available. It is limited because the depth results are clipped (0 - 10m) and so sometimes the stage cannot be represented. It is better (though much more expensive) to compute the max-stage percentiles directly by slightly modifying the epistemic uncertainty scripts above.
+
