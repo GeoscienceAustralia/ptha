@@ -142,7 +142,7 @@ by editing `make_threshold_epistemic_uncertainty_jobs.R`.
 It can be used to produce a number of separate jobs for either depth or
 max-stage. Each job will work on a subset of domains, and can be separately
 submitted like this:
-```
+```bash
 # Make the submission scripts
 Rscript make_threshold_epistemic_uncertainty_jobs.R
 # Manually check them before proceeding.
