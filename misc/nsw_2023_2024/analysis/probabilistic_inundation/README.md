@@ -137,11 +137,11 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
 ```
 
-If there is too much work for a single node, you can split the work into pieces 
+If the previous command includes too much work for a single node, you can instead split the work into pieces 
 by editing `make_threshold_epistemic_uncertainty_jobs.R`. 
 It can be used to produce a number of separate jobs for either depth or
-max-stage. Each job will work on a subset of domains, and can be separately
-submitted like this:
+max-stage thresholds with epistemic uncertainty. Each job will work on
+a subset of domains, and can be separately submitted like this:
 ```bash
 # Make the submission scripts
 Rscript make_threshold_epistemic_uncertainty_jobs.R
