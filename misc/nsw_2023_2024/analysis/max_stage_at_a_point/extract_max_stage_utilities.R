@@ -108,13 +108,18 @@ plot_tsunami_maxima_in_nonlinear_model_and_PTHA18<-function(target_point, scenar
 }
 
 # Plot logic-tree-mean exceedance-rate curves from PTHA18 and nonlinear model,
-# separately for each source-zone, and in combination
+# separately for each source-zone, and in combination. The differences reflect
+# both Monte Carlo sampling and differences in the hydrodynamic models. We
+# also make plots where the nonlinear-model results are derived using ptha18
+# max-stages, which is useful for testing since in this situation the
+# differences only reflect Monte Carlo sampling.
 #
 plot_logic_tree_mean_exrate_curves_from_nonlinear_model_and_PTHA18<-function(
     target_point, 
     nonlinear_model_curves, nonlinear_model_combined_curve, nonlinear_model_MSL, 
     ptha18_curves, ptha18_combined_curve, EXRATE_PLOT_YLIM){
 
+    # Plot the nonlinear model exceedance rates for each source zone.
     out_file = paste0('Exceedance_Rates_in_PTHA18_and_Nonlinear_Model_', 
         target_point[1], '_', target_point[2], '.png')
     NPANEL = length(names(nonlinear_model_curves))
@@ -146,6 +151,44 @@ plot_logic_tree_mean_exrate_curves_from_nonlinear_model_and_PTHA18<-function(
     }
     dev.off()
 
+    # Make a plot like the above, but replace the nonlinear model max-stages
+    # with the PTHA18 max-stages (adjusted for MSL). This is useful for
+    # testing, because with this approach, all differences in results are due
+    # to Monte Carlo sampling.
+    out_file = paste0('Exceedance_Rates_in_PTHA18_and_Sampled_Scenarios_using_PTHA18_max_stages_', 
+        target_point[1], '_', target_point[2], '.png')
+    NPANEL = length(names(nonlinear_model_curves))
+    HT = 7.5
+    WD = HT * NPANEL
+    png(out_file, width=WD, height=HT, units='in', res=300)
+    par(mfrow=c(1,NPANEL))
+    options(scipen=5)
+    for(nm in names(nonlinear_model_curves)){
+        plot(ptha18_curves[[nm]], t='l', log='xy', ylim=EXRATE_PLOT_YLIM, col='skyblue', lwd=3,
+            xlab='Max-stage above MSL (m)', ylab='Exceedance-rate (events/year)', cex.lab=1.4, cex.axis=1.4)
+        points(nonlinear_model_curves[[nm]]$max_stage - nonlinear_model_MSL,
+               nonlinear_model_curves[[nm]]$exrate_using_ptha18_stages_plus_nonlinear_model_MSL, col='black', t='l', lwd=2)
+        title(paste0('Exceedance-rate curves: ', nm), cex.main=1.5)
+
+        # Importance-sampling CIs
+        lower_CI = nonlinear_model_curves[[nm]]$exrate_using_ptha18_stages_plus_nonlinear_model_MSL + 
+            qnorm(0.025)*sqrt(nonlinear_model_curves[[nm]]$exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL)
+        upper_CI = nonlinear_model_curves[[nm]]$exrate_using_ptha18_stages_plus_nonlinear_model_MSL + 
+            qnorm(0.975)*sqrt(nonlinear_model_curves[[nm]]$exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL)
+        points(nonlinear_model_curves[[nm]]$max_stage - nonlinear_model_MSL,
+               pmax(lower_CI, 1e-200), col='black', t='l', lty='dashed') # Lower bound for log-log plot
+        points(nonlinear_model_curves[[nm]]$max_stage - nonlinear_model_MSL,
+               pmax(upper_CI, 1e-200), col='black', t='l', lty='dashed') # Lower bound for log-log plot
+
+        grid(col='orange')
+
+        legend('topright', c('PTHA18', 'sampled PTHA18', 'sampled PTHA18 95% CI'),
+               col=c('skyblue', 'black', 'black'), cex=1.7, bty='n',
+               pch=c(NA, NA, NA), lty=c('solid', 'solid', 'dashed'), lwd=c(2,2,1) )
+    }
+    dev.off()
+
+    # Plot the nonlinear model exceedance rates, summed over all source zones.
     out_file = paste0('Exceedance_Rates_Summed_in_PTHA18_and_Nonlinear_Model_',
         target_point[1], '_', target_point[2], '.png')
     png(out_file, width=HT, height=HT, units='in', res=300)
@@ -169,6 +212,37 @@ plot_logic_tree_mean_exrate_curves_from_nonlinear_model_and_PTHA18<-function(
            col=c('skyblue', 'black', 'black'), cex=1.7, bty='n',
            pch=c(NA, NA, NA), lty=c('solid', 'solid', 'dashed'), lwd=c(2,2,1) )
     dev.off()
+
+
+    # Plot like above, but replacing the nonlinear-model max-stages with the
+    # PTHA18 max-stages (adjusted for MSL). This is useful for testing, because
+    # with this approach, all differences in results are due to Monte Carlo
+    out_file = paste0('Exceedance_Rates_Summed_in_PTHA18_and_Sampled_scenarios_using_PTHA18_max_stages_',
+        target_point[1], '_', target_point[2], '.png')
+    png(out_file, width=HT, height=HT, units='in', res=300)
+    options(scipen=5)
+    plot(ptha18_combined_curve, t='l', log='xy', ylim=EXRATE_PLOT_YLIM, col='skyblue', lwd=3,
+        xlab='Max-stage above MSL (m)', ylab='Exceedance-rate (events/year)', cex.lab=1.4, cex.axis=1.4)
+    points(nonlinear_model_combined_curve$max_stage - nonlinear_model_MSL,
+           nonlinear_model_combined_curve$exrate_using_ptha18_stages_plus_nonlinear_model_MSL, col='black', t='l', lwd=2)
+    title(paste0('Exceedance-rate curves'), cex.main=1.5)
+    # Importance-sampling CIs
+    lower_CI = nonlinear_model_combined_curve$exrate_using_ptha18_stages_plus_nonlinear_model_MSL + 
+        qnorm(0.025)*sqrt(nonlinear_model_combined_curve$exrate_variance)
+    upper_CI = nonlinear_model_combined_curve$exrate_using_ptha18_stages_plus_nonlinear_model_MSL + 
+        qnorm(0.975)*sqrt(nonlinear_model_combined_curve$exrate_variance)
+    points(nonlinear_model_combined_curve$max_stage - nonlinear_model_MSL,
+           pmax(lower_CI, 1e-200), col='black', t='l', lty='dashed') # Lower bound for log-log plot
+    points(nonlinear_model_combined_curve$max_stage - nonlinear_model_MSL,
+           pmax(upper_CI, 1e-200), col='black', t='l', lty='dashed') # Lower bound for log-log plot
+
+    grid(col='orange')
+
+    legend('topright', c('PTHA18', 'sampled PTHA18', 'sampled PTHA18 95% CI'),
+           col=c('skyblue', 'black', 'black'), cex=1.7, bty='n',
+           pch=c(NA, NA, NA), lty=c('solid', 'solid', 'dashed'), lwd=c(2,2,1) )
+    dev.off()
+
 }
 
 # Compute stage exceedance-rate curves using importance sampling for all

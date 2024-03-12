@@ -239,6 +239,7 @@ for(nm in names(importance_sampling_scenarios_logic_tree_mean)){
 
     # Key terms used to calculate monte carlo exceedance rates with importance sampling.
     max_stages_sampled_scenarios = scenario_max_stages$max_stage[k[mtch]]
+    max_stages_PTHA18_sampled_scenarios = scenario_max_stages$ptha18_max_stage[k[mtch]]
     rates_sampled_scenarios = importance_sampling_scenarios_logic_tree_mean[[nm]]$event_rate_logic_tree_mean
     sampling_prob_sampled_scenarios = importance_sampling_scenarios_logic_tree_mean[[nm]]$sampling_prob
 
@@ -259,6 +260,25 @@ for(nm in names(importance_sampling_scenarios_logic_tree_mean)){
         exrate=exrates_with_uncertainty[,1],
         exrate_variance = exrates_with_uncertainty[,2])
 
+
+    # As above, but using the PTHA18 max-stages.
+    # This lets us see how good the approximation would be IF the nonlinear
+    # model tsunami agreed exactly with PTHA18 in terms of max-stage. This is
+    # useful because, with that assumption, we know all the error is due to
+    # Monte Carlo sampling.
+    exrates_with_uncertainty_using_PTHA18_max_stage = isu$estimate_exrate_and_variance_sampled_scenarios(
+            rates_sampled_scenarios=rates_sampled_scenarios,
+            sampling_prob_sampled_scenarios=sampling_prob_sampled_scenarios,
+            # Pass the PTHA18 max-stage, but add in the nonlinear model MSL so it's comparable to the real
+            # nonlinear model calculations
+            stage_sampled_scenarios = (max_stages_PTHA18_sampled_scenarios + nonlinear_model_MSL),
+            desired_stage_thresholds = output_max_stages_IS)
+
+    # Store results assuming the PTHA18 agrees exactly with the nonlinear model, for testing.
+    output_df = cbind(output_df, data.frame(
+        exrate_using_ptha18_stages_plus_nonlinear_model_MSL=exrates_with_uncertainty_using_PTHA18_max_stage[,1],
+        exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL=exrates_with_uncertainty_using_PTHA18_max_stage[,2]))
+
     nonlinear_model_curves[[nm]] = output_df
 }
 
@@ -275,7 +295,10 @@ rm(combined_output); gc()
 ptha18_combined_curve = ptha18_curves[[1]]
 ptha18_combined_curve[,2] = 0
 nonlinear_model_combined_curve = nonlinear_model_curves[[1]]
-nonlinear_model_combined_curve$exrate = 0; nonlinear_model_combined_curve$exrate_variance=0
+nonlinear_model_combined_curve$exrate = 0
+nonlinear_model_combined_curve$exrate_variance=0
+nonlinear_model_combined_curve$exrate_using_ptha18_stages_plus_nonlinear_model_MSL = 0
+nonlinear_model_combined_curve$exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL = 0
 for(nm in names(nonlinear_model_curves)){
     # Sum of PTHA18 curves
     stopifnot(all(ptha18_curves[[nm]][,1] == ptha18_combined_curve[,1]))
@@ -287,6 +310,18 @@ for(nm in names(nonlinear_model_curves)){
         nonlinear_model_combined_curve$exrate + nonlinear_model_curves[[nm]]$exrate
     nonlinear_model_combined_curve$exrate_variance =
         nonlinear_model_combined_curve$exrate_variance + nonlinear_model_curves[[nm]]$exrate_variance
+
+    # For testing, we also sum nonlinear_model_curves using the PTHA18 max-stages.
+    # This is useful for testing, since any difference purely reflects Monte-Carlo sampling, whereas
+    # for the "real" results the differences are a mixture of Monte Carlo sampling and differences
+    # in the linear/nonlinear models.
+    nonlinear_model_combined_curve$exrate_using_ptha18_stages_plus_nonlinear_model_MSL = 
+        nonlinear_model_combined_curve$exrate_using_ptha18_stages_plus_nonlinear_model_MSL +
+          nonlinear_model_curves[[nm]]$exrate_using_ptha18_stages_plus_nonlinear_model_MSL
+    nonlinear_model_combined_curve$exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL = 
+        nonlinear_model_combined_curve$exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL +
+          nonlinear_model_curves[[nm]]$exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL
+
 }
 
 # Make plots
