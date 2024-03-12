@@ -365,14 +365,25 @@ plot_epistemic_uncertainties_in_PTHA18_and_nonlinear_model_by_source_zone<-funct
     target_point,
     percentile_uncertainty_results,
     nonlinear_model_MSL,
-    ptha18_percentile_uncertainty_results
+    ptha18_percentile_uncertainty_results,
+    max_stage_type = 'nonlinear_model'
     ){
 
     #
     # Plot epistemic uncertainties in PTHA18 and nonlinear model, by source-zone
     #
-    out_file = paste0('Exceedance_Rates_with_epistemic_uncertainty_in_PTHA18_and_Nonlinear_Model_', 
-        target_point[1], '_', target_point[2], '.png')
+    if(max_stage_type == 'nonlinear_model'){
+        # Real case
+        out_file = paste0('Exceedance_Rates_with_epistemic_uncertainty_in_PTHA18_and_Nonlinear_Model_', 
+            target_point[1], '_', target_point[2], '.png')
+    }else if(max_stage_type == 'ptha18'){
+        # Useful test case
+        out_file = paste0('Exceedance_Rates_with_epistemic_uncertainty_in_PTHA18_and_sampled_ptha18_scenarios_', 
+            target_point[1], '_', target_point[2], '.png')
+    }else{
+        stop(paste0('unknown max_stage_type: ', max_stage_type))
+    }
+
 
     NPANEL = length(names(percentile_uncertainty_results))
     HT = 7.5
@@ -409,10 +420,15 @@ plot_epistemic_uncertainties_in_PTHA18_and_nonlinear_model_by_source_zone<-funct
                ptha18_percentile_uncertainty_results[[source_zone]]$stochastic_slip_rate_upper_ci, 
                t='l', lty='dotted')
 
-        title(
-            paste0('Max-stage exceedance-rate with epistemic uncertainty \n PTHA18 & nonlinear model: ', 
-                   source_zone), 
-            cex.main=1.6)
+        if(max_stage_type == 'nonlinear_model'){
+            mytitle = 'Max-stage exceedance-rate with epistemic uncertainty \n PTHA18 & nonlinear model: '
+        }else if(max_stage_type == 'ptha18'){
+            mytitle = 'Max-stage exceedance-rate with epistemic uncertainty \n PTHA18 & sampled ptha18: '
+        }else{
+            stop(paste0('unknown max_stage_type: ', max_stage_type))
+        }
+
+        title(paste0(mytitle, source_zone), cex.main=1.6)
         legend('topright', c('2.5%', '16%', '50%', '84%', '97.5%', 'PTHA18'), 
                col=c(1:nr, 1), lty=c(rep('solid', nr), 'dotted'), pch=c(rep(1, nr), NA))
     }
@@ -427,11 +443,23 @@ plot_summed_exrates_with_epistemic_uncertainty_in_PTHA18_and_nonlinear_model<-fu
     nonlinear_model_MSL,
     epistemic_uncertainty_threshold_stage_values,
     ptha18_percentile_uncertainty_results,
-    ptha18_vals
+    ptha18_vals,
+    max_stage_type
     ){
 
-    out_file = paste0('Exceedance_Rates_Summed_with_epistemic_uncertainty_in_PTHA18_and_Nonlinear_Model_', 
-        target_point[1], '_', target_point[2], '.png')
+    if(max_stage_type == 'nonlinear_model'){
+        # Real case
+        out_file = paste0('Exceedance_Rates_Summed_with_epistemic_uncertainty_in_PTHA18_and_Nonlinear_Model_', 
+            target_point[1], '_', target_point[2], '.png')
+    }else if(max_stage_type == 'ptha18'){
+        # Useful test case
+        out_file = paste0('Exceedance_Rates_Summed_with_epistemic_uncertainty_in_PTHA18_and_sampled_ptha18_scenarios_', 
+            target_point[1], '_', target_point[2], '.png')
+    }else{
+        stop(paste0('unknown max_stage_type: ', max_stage_type))
+    }
+
+
     HT = 7.5
     png(out_file, width=HT*1.2, height=HT, units='in', res=300)
     options(scipen=5)
@@ -453,9 +481,16 @@ plot_summed_exrates_with_epistemic_uncertainty_in_PTHA18_and_nonlinear_model<-fu
                ptha18_vals[[nm]], t='l', lty='dotted')
     }
 
-    title(
-        paste0('Max-stage exceedance-rate with epistemic uncertainties \n PTHA18 & nonlinear model, sum over source-zones'), 
-        cex.main=1.7)
+    if(max_stage_type == 'nonlinear_model'){
+        # Real case
+        mytitle = 'Max-stage exceedance-rate with epistemic uncertainties \n PTHA18 & nonlinear model, sum over source-zones'
+    }else if(max_stage_type == 'ptha18'){
+        mytitle = 'Max-stage exceedance-rate with epistemic uncertainties \n PTHA18 & sampled pth18 scenarios, sum over source-zones'
+    }else{
+        stop(paste0('unknown max_stage_type: ', max_stage_type))
+    }
+
+    title(mytitle, cex.main=1.7)
     legend('topright', c('2.5%', '16%', '50%', '84%', '97.5%', 'PTHA18'), 
            col=c(1:nr, 1), lty=c(rep('solid', nr), 'dotted'), pch=c(rep(1, nr), NA))
 

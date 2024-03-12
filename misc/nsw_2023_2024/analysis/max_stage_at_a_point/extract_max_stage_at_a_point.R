@@ -341,154 +341,182 @@ if(DO_EPISTEMIC_UNCERTAINTY_CALCULATIONS){
     file_home = '../../../../../../../AustPTHA/CODE/ptha/ptha_access/get_detailed_PTHA18_source_zone_info.R'
     source(ifelse(file.exists(file_nci), file_nci, file_home), local=ptha18_detailed, chdir=TRUE)
 
-    # For each source zone we have "unsegmented" and (possibly) "union-of-segments" models.
-    # For the unsegmented model and each segment, the PTHA18 scenario conditional probability (given Mw)
-    # is available from e.g.
-    #   x = ptha18_detailed$get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
-    #      'kermadectonga2', 'hikurangi')
-    # where the second argument is "" for the unsegmented source. 
-    # The scenario probabilities (conditional on Mw) are in 
-    #   x$HS_prob_given_Mw
-    # and we will use the values for the sampled scenarios only. 
-    # The logic tree branches and probabilities are under, e.g., 
-    # tmp = ptha18_detailed$crs_data$source_envs$kermadectonga2_hikurangi$mw_rate_function(NA, 
-    #    return_all_logic_tree_branches=TRUE)
-    # From this we only need the Mw bin rate for each logic-tree branch, and so can calculate
-    # r_i(e) from that and the conditional probability 
-    #   [r_i(e) = scenario-e-mwbin-rate_model_i * scenario-e-cond-prob-given-Mw]
-    # Then for each logic-tree branch we can directly compute the Monte Carlo exceedance-rate -vs- stage-threshold curves. 
-    # Combined with the weights for each rate model we have a distribution of exceedance rates for any stage threshold.
-    # - The distribution F^{-1} (percentile --> exceedance-rate) can be evaluated using rptha::weighted_percentile
-    # - We can then sample from F^{-1} using interpolation at random percentiles (random_percentile --> random_exceedance-rate)
-    # - On source zones where there is only an unsegmented model, the 84th percentile of F^{-1} is of interest
-    #   + We could compute it directly, or by randomly sampling from F^{-1} and taking the 84th percentile of that. 
-    #   + The latter approach generalises better in the more complex case below.
-    # - Consider a source-zone that combines unsegmented and 'union of segments' source representations. 
-    #   For each stage threshold, the union of segments result can be obtained by (repeatedly) sampling F^{-1} at
-    #   random_percentiles on each segment and summing over segments. To get co-monotonic
-    #   results, the sum involves the same random percentile on each segment (whereas
-    #   for independent results, the random percentile would be different).
-    # - When there is a 50:50 mixture of unsegmented and union-of-segments models, we use
-    #   the random approach with a 50:50 chance of each model.
-    
-    # Loop over each source zone
-    percentile_uncertainty_results = vector(mode='list', length=length(importance_sampling_scenarios_logic_tree_mean))
-    names(percentile_uncertainty_results) = names(importance_sampling_scenarios_logic_tree_mean)
-    for(source_zone in names(importance_sampling_scenarios_logic_tree_mean)){
+    # We do the calculations using the regular nonlinear model results, and separately, by
+    # replacing the nonlinear model stages by the PTHA18 value. The latter is useful for testing
+    # because it eliminates differences due to the different hydrodynamic approximations in PTHA18
+    # vs the nonlinear model. Thus we can consider differences due only to sampling.
+    for(max_stage_type in c('nonlinear_model', 'ptha18')){
 
-        # Get names of the segmented sub-sources (which could be empty on sources without segmentation)
-        source_segmentation_info = ptha18_detailed$get_unsegmented_and_segmented_source_names_on_source_zone(
-            source_zone)
-        segmented_source_names = source_segmentation_info$segments
-        segment_names = gsub(paste0(source_zone, '_'), '', segmented_source_names)
-        unsegmented_source_name = source_segmentation_info$unsegmented_name
-        stopifnot(unsegmented_source_name == source_zone)
 
-        # Get the max stage for each sampled scenario on the current source_zone, ordered
-        # in the same was as importance_sampling_scenarios_logic_tree_mean[[source_zone]]
-        k = which(scenario_max_stages$nonlinear_source_name == source_zone)
-        scenario_max_stages_SZ = scenario_max_stages[k,]
-        mtch = match(importance_sampling_scenarios_logic_tree_mean[[source_zone]]$inds,
-            scenario_max_stages_SZ$nonlinear_scenario_row)
-            # Note that mtch might contain repeated values because scenario_max_stages_SZ will only contain each scenario once,
-            # whereas importance_sampling_scenarios_logic_tree_mean might contain scenarios that have been sampled more than once.
-        max_stages_sampled_scenarios = scenario_max_stages_SZ$max_stage[mtch]
 
-        # For every unsegmented rate model, compute a monte carlo stage-vs-exrate curve
-        unsegmented_stage_vs_exrate_curves = estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches(
-            ptha18_detailed,
-            source_zone,
-            source_zone_segment="",
-            importance_sampling_scenarios_logic_tree_mean_on_source_zone=
-                importance_sampling_scenarios_logic_tree_mean[[source_zone]],
-            sampled_scenarios_max_stage=max_stages_sampled_scenarios,
-            threshold_stage_values = epistemic_uncertainty_threshold_stage_values)
+        # For each source zone we have "unsegmented" and (possibly) "union-of-segments" models.
+        # For the unsegmented model and each segment, the PTHA18 scenario conditional probability (given Mw)
+        # is available from e.g.
+        #   x = ptha18_detailed$get_PTHA18_scenario_conditional_probability_and_rates_on_segment(
+        #      'kermadectonga2', 'hikurangi')
+        # where the second argument is "" for the unsegmented source. 
+        # The scenario probabilities (conditional on Mw) are in 
+        #   x$HS_prob_given_Mw
+        # and we will use the values for the sampled scenarios only. 
+        # The logic tree branches and probabilities are under, e.g., 
+        # tmp = ptha18_detailed$crs_data$source_envs$kermadectonga2_hikurangi$mw_rate_function(NA, 
+        #    return_all_logic_tree_branches=TRUE)
+        # From this we only need the Mw bin rate for each logic-tree branch, and so can calculate
+        # r_i(e) from that and the conditional probability 
+        #   [r_i(e) = scenario-e-mwbin-rate_model_i * scenario-e-cond-prob-given-Mw]
+        # Then for each logic-tree branch we can directly compute the Monte Carlo exceedance-rate -vs- stage-threshold curves. 
+        # Combined with the weights for each rate model we have a distribution of exceedance rates for any stage threshold.
+        # - The distribution F^{-1} (percentile --> exceedance-rate) can be evaluated using rptha::weighted_percentile
+        # - We can then sample from F^{-1} using interpolation at random percentiles (random_percentile --> random_exceedance-rate)
+        # - On source zones where there is only an unsegmented model, the 84th percentile of F^{-1} is of interest
+        #   + We could compute it directly, or by randomly sampling from F^{-1} and taking the 84th percentile of that. 
+        #   + The latter approach generalises better in the more complex case below.
+        # - Consider a source-zone that combines unsegmented and 'union of segments' source representations. 
+        #   For each stage threshold, the union of segments result can be obtained by (repeatedly) sampling F^{-1} at
+        #   random_percentiles on each segment and summing over segments. To get co-monotonic
+        #   results, the sum involves the same random percentile on each segment (whereas
+        #   for independent results, the random percentile would be different).
+        # - When there is a 50:50 mixture of unsegmented and union-of-segments models, we use
+        #   the random approach with a 50:50 chance of each model.
+        
+        # Loop over each source zone
+        percentile_uncertainty_results = vector(mode='list', length=length(importance_sampling_scenarios_logic_tree_mean))
+        names(percentile_uncertainty_results) = names(importance_sampling_scenarios_logic_tree_mean)
+        for(source_zone in names(importance_sampling_scenarios_logic_tree_mean)){
 
-        # As above, segmented models
-        segmented_stage_vs_exrate_curves = vector(mode='list', length=length(segment_names))
-        if(length(segment_names) > 0){
-            names(segmented_stage_vs_exrate_curves) = segment_names
-            for(nm_i in segment_names){
-                segmented_stage_vs_exrate_curves[[nm_i]] =
-                    estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches(
-                        ptha18_detailed,
-                        source_zone,
-                        source_zone_segment=nm_i,
-                        importance_sampling_scenarios_logic_tree_mean_on_source_zone=
-                            importance_sampling_scenarios_logic_tree_mean[[source_zone]],
-                        sampled_scenarios_max_stage=max_stages_sampled_scenarios,
-                        threshold_stage_values = epistemic_uncertainty_threshold_stage_values)
+            # Get names of the segmented sub-sources (which could be empty on sources without segmentation)
+            source_segmentation_info = ptha18_detailed$get_unsegmented_and_segmented_source_names_on_source_zone(
+                source_zone)
+            segmented_source_names = source_segmentation_info$segments
+            segment_names = gsub(paste0(source_zone, '_'), '', segmented_source_names)
+            unsegmented_source_name = source_segmentation_info$unsegmented_name
+            stopifnot(unsegmented_source_name == source_zone)
+
+            # Get the max stage for each sampled scenario on the current source_zone, ordered
+            # in the same was as importance_sampling_scenarios_logic_tree_mean[[source_zone]]
+            k = which(scenario_max_stages$nonlinear_source_name == source_zone)
+            scenario_max_stages_SZ = scenario_max_stages[k,]
+            mtch = match(importance_sampling_scenarios_logic_tree_mean[[source_zone]]$inds,
+                scenario_max_stages_SZ$nonlinear_scenario_row)
+                # Note that mtch might contain repeated values because scenario_max_stages_SZ will only contain each scenario once,
+                # whereas importance_sampling_scenarios_logic_tree_mean might contain scenarios that have been sampled more than once.
+            if(max_stage_type == 'nonlinear_model'){
+                # Use the high-res nonlinear model
+                max_stages_sampled_scenarios = scenario_max_stages_SZ$max_stage[mtch]
+            }else if(max_stage_type == 'ptha18'){
+                # Use PTHA18 -- this enables us to isolate the effect of scenario sampling (i.e. no differences in
+                # the hydrodynamic models).
+                max_stages_sampled_scenarios = scenario_max_stages_SZ$ptha18_max_stage[mtch] + nonlinear_model_MSL
+            }else{
+                stop(paste0('unrecognized max_stage_type: ', max_stage_type))
+            }
+
+            # For every unsegmented rate model, compute a monte carlo stage-vs-exrate curve
+            unsegmented_stage_vs_exrate_curves = estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches(
+                ptha18_detailed,
+                source_zone,
+                source_zone_segment="",
+                importance_sampling_scenarios_logic_tree_mean_on_source_zone=
+                    importance_sampling_scenarios_logic_tree_mean[[source_zone]],
+                sampled_scenarios_max_stage=max_stages_sampled_scenarios,
+                threshold_stage_values = epistemic_uncertainty_threshold_stage_values)
+
+            # As above, segmented models
+            segmented_stage_vs_exrate_curves = vector(mode='list', length=length(segment_names))
+            if(length(segment_names) > 0){
+                names(segmented_stage_vs_exrate_curves) = segment_names
+                for(nm_i in segment_names){
+                    segmented_stage_vs_exrate_curves[[nm_i]] =
+                        estimate_stage_exrate_curves_with_IS_for_all_logic_tree_branches(
+                            ptha18_detailed,
+                            source_zone,
+                            source_zone_segment=nm_i,
+                            importance_sampling_scenarios_logic_tree_mean_on_source_zone=
+                                importance_sampling_scenarios_logic_tree_mean[[source_zone]],
+                            sampled_scenarios_max_stage=max_stages_sampled_scenarios,
+                            threshold_stage_values = epistemic_uncertainty_threshold_stage_values)
+                }
+            }
+
+            # Get exceedance-rate percentiles for the combination of sources above.
+            set.seed(epistemic_uncertainty_random_seed) # Reproducible randomness
+            percentile_uncertainty_results[[source_zone]] =
+                ptha18$compute_exceedance_rate_percentiles_with_random_sampling(
+                    unsegmented_stage_vs_exrate_curves,
+                    segmented_stage_vs_exrate_curves,
+                    N = epistemic_uncertainty_Nsamples,
+                    unsegmented_wt=0.5 + 0.5*(length(segment_names) == 0),
+                    union_of_segments_wt=0.5 - 0.5*(length(segment_names) == 0),
+                    segments_copula_type = 'comonotonic',
+                    print_progress_every_nth_threshold=99999)
+
+        }
+
+        if(max_stage_type == 'nonlinear_model'){
+            # Normal case
+            out_file = paste0('epistemic_percentile_uncertainties_nonlinear_model_',
+                target_point[1], '_', target_point[2], '.RDS')
+        }else if(max_stage_type == 'ptha18'){
+            # Test case
+            out_file = paste0('epistemic_percentile_uncertainties_replacing_nonlinear_model_with_ptha18_',
+                target_point[1], '_', target_point[2], '.RDS')
+        }
+        saveRDS(percentile_uncertainty_results, out_file)
+
+        # Get the PTHA18 results with epistemic uncertainty
+        ptha18_percentile_uncertainty_results = vector(mode='list', length=length(percentile_uncertainty_results))
+        names(ptha18_percentile_uncertainty_results) = names(percentile_uncertainty_results)
+        for(source_zone in names(ptha18_percentile_uncertainty_results)){
+
+            ptha18_percentile_uncertainty_results[[source_zone]] = 
+                ptha18$get_stage_exceedance_rate_curve_at_hazard_point(
+                    target_point =target_point, 
+                    source_name = source_zone,
+                    make_plot = FALSE,
+                    non_stochastic_slip_sources=FALSE,
+                    only_mean_rate_curve=FALSE)
+        }
+
+        # Plot the results by source zone
+        plot_epistemic_uncertainties_in_PTHA18_and_nonlinear_model_by_source_zone(
+            target_point,
+            percentile_uncertainty_results,
+            nonlinear_model_MSL,
+            ptha18_percentile_uncertainty_results,
+            max_stage_type)
+
+        #
+        # Compute epistemic uncertainties in PTHA18 and nonlinear model, summed over source-zones
+        #
+
+        # Get sum of nonlinear model percentile exrates
+        nonlinear_model_percentile_uncertainty = 0 * percentile_uncertainty_results[[source_zone]]$percentile_exrate
+        # Get sum of PTHA18 percentile exrates
+        ptha18_value_dummy = 0 * ptha18_percentile_uncertainty_results[[source_zone]]$stochastic_slip_rate 
+        ptha18_vals = list(
+            'stochastic_slip_rate_lower_ci' = ptha18_value_dummy,
+            'stochastic_slip_rate_16pc' = ptha18_value_dummy,
+            'stochastic_slip_rate_median' = ptha18_value_dummy,
+            'stochastic_slip_rate_84pc' = ptha18_value_dummy,
+            'stochastic_slip_rate_upper_ci' = ptha18_value_dummy)
+        for(source_zone in names(percentile_uncertainty_results)){
+            nonlinear_model_percentile_uncertainty = nonlinear_model_percentile_uncertainty + 
+                percentile_uncertainty_results[[source_zone]]$percentile_exrate
+
+            for(nm in names(ptha18_vals)){
+                ptha18_vals[[nm]] = ptha18_vals[[nm]] + ptha18_percentile_uncertainty_results[[source_zone]][[nm]]
             }
         }
 
-        # Get exceedance-rate percentiles for the combination of sources above.
-        set.seed(epistemic_uncertainty_random_seed) # Reproducible randomness
-        percentile_uncertainty_results[[source_zone]] =
-            ptha18$compute_exceedance_rate_percentiles_with_random_sampling(
-                unsegmented_stage_vs_exrate_curves,
-                segmented_stage_vs_exrate_curves,
-                N = epistemic_uncertainty_Nsamples,
-                unsegmented_wt=0.5 + 0.5*(length(segment_names) == 0),
-                union_of_segments_wt=0.5 - 0.5*(length(segment_names) == 0),
-                segments_copula_type = 'comonotonic',
-                print_progress_every_nth_threshold=99999)
+        plot_summed_exrates_with_epistemic_uncertainty_in_PTHA18_and_nonlinear_model(
+            target_point,
+            percentile_uncertainty_results,
+            nonlinear_model_percentile_uncertainty,
+            nonlinear_model_MSL,
+            epistemic_uncertainty_threshold_stage_values,
+            ptha18_percentile_uncertainty_results,
+            ptha18_vals,
+            max_stage_type)
 
     }
-    out_file = paste0('epistemic_percentile_uncertainties_nonlinear_model_',
-        target_point[1], '_', target_point[2], '.RDS')
-    saveRDS(percentile_uncertainty_results, out_file)
-
-    # Get the PTHA18 results with epistemic uncertainty
-    ptha18_percentile_uncertainty_results = vector(mode='list', length=length(percentile_uncertainty_results))
-    names(ptha18_percentile_uncertainty_results) = names(percentile_uncertainty_results)
-    for(source_zone in names(ptha18_percentile_uncertainty_results)){
-
-        ptha18_percentile_uncertainty_results[[source_zone]] = 
-            ptha18$get_stage_exceedance_rate_curve_at_hazard_point(
-                target_point =target_point, 
-                source_name = source_zone,
-                make_plot = FALSE,
-                non_stochastic_slip_sources=FALSE,
-                only_mean_rate_curve=FALSE)
-    }
-
-    # Plot the results by source zone
-    plot_epistemic_uncertainties_in_PTHA18_and_nonlinear_model_by_source_zone(
-        target_point,
-        percentile_uncertainty_results,
-        nonlinear_model_MSL,
-        ptha18_percentile_uncertainty_results)
-
-    #
-    # Compute epistemic uncertainties in PTHA18 and nonlinear model, summed over source-zones
-    #
-
-    # Get sum of nonlinear model percentile exrates
-    nonlinear_model_percentile_uncertainty = 0 * percentile_uncertainty_results[[source_zone]]$percentile_exrate
-    # Get sum of PTHA18 percentile exrates
-    ptha18_value_dummy = 0 * ptha18_percentile_uncertainty_results[[source_zone]]$stochastic_slip_rate 
-    ptha18_vals = list(
-        'stochastic_slip_rate_lower_ci' = ptha18_value_dummy,
-        'stochastic_slip_rate_16pc' = ptha18_value_dummy,
-        'stochastic_slip_rate_median' = ptha18_value_dummy,
-        'stochastic_slip_rate_84pc' = ptha18_value_dummy,
-        'stochastic_slip_rate_upper_ci' = ptha18_value_dummy)
-    for(source_zone in names(percentile_uncertainty_results)){
-        nonlinear_model_percentile_uncertainty = nonlinear_model_percentile_uncertainty + 
-            percentile_uncertainty_results[[source_zone]]$percentile_exrate
-
-        for(nm in names(ptha18_vals)){
-            ptha18_vals[[nm]] = ptha18_vals[[nm]] + ptha18_percentile_uncertainty_results[[source_zone]][[nm]]
-        }
-    }
-
-    plot_summed_exrates_with_epistemic_uncertainty_in_PTHA18_and_nonlinear_model(
-        target_point,
-        percentile_uncertainty_results,
-        nonlinear_model_percentile_uncertainty,
-        nonlinear_model_MSL,
-        epistemic_uncertainty_threshold_stage_values,
-        ptha18_percentile_uncertainty_results,
-        ptha18_vals)
-
 }
