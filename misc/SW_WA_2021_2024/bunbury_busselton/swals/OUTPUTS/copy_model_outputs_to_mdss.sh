@@ -9,5 +9,5 @@
 
 
 # Copy the OUTPUTS folder for all scenarios to mdss
-mdss put -r ptha18-BunburyBusseltonRevised-sealevel60 tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/bunbury_busselton/swals/OUTPUTS/
-mdss put -r ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60 tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/bunbury_busselton/swals/OUTPUTS/
+mdss put -r ptha18-BunburyBusseltonRevised-sealevel60cm tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/bunbury_busselton/swals/OUTPUTS/
+mdss put -r ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm tsunami/MODELS/inundation/WA_tsunami_inundation_DFES/bunbury_busselton/swals/OUTPUTS/
