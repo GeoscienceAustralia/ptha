@@ -11,11 +11,28 @@
 ##
 
 # Raster files containing Okada deformation
-raster_files = Sys.glob('../sources/hazard/scenarios_ID710.5/random_*/scenario_initial_conditions/*.tif')
+raster_files = Sys.glob('../sources/hazard/scenarios_ID1315.5/random_*/scenario_initial_conditions/*.tif')
 sourcezone_dirs = basename(dirname(dirname(raster_files)))
 
-model_names = paste0('ptha18-NSW2023b-ID710.5-sealevel110cm/', sourcezone_dirs, '/',
+model_names = paste0('ptha18-NSW2023-ID1315.5-sealevel110cm/', sourcezone_dirs, '/',
     'ptha18_random_scenarios_', gsub('.tif', '', basename(raster_files), fixed=TRUE))
+
+# Folders for scenarios we have already run. If any of these scenarios are the same
+# as the new scenarios then, to save computational effort, we can make a symbolic
+# link to the old runs (rather than re-running the inundation calculation).
+previous_scenarios_already_run_folders = Sys.glob(
+    './OUTPUTS/ptha18-NSW2023b-ID710.5-sealevel110cm/random_*/ptha18_*')
+
+match_to_previous_runs = sapply(
+    basename(model_names), # Names of new model with prefix removed
+    function(x){
+        mtch = grep(x, previous_scenarios_already_run_folders)
+        if(length(mtch) == 0){
+            return(NA)
+        }else{
+            return(mtch[1])
+        }}
+    )
 
 jobs_per_qsub_file = 3 # Run this many models in a single qsub file (or less), to stay within NCI walltime limits
 number_of_qsub_files = ceiling( length(raster_files)/jobs_per_qsub_file )
@@ -101,21 +118,59 @@ with(model_run_creation_env, {
 
 # Make the files
 for(i in 1:number_of_qsub_files){
-    output_qsub_filename = paste0('run_ptha18_NSW2023b_ID710.5_sealevel110cm_', 1000 + i, '.sh')
+    output_qsub_filename = paste0('run_ptha18_NSW2023_ID1315.5_sealevel110cm_', 1000 + i, '.sh')
 
     # Get all the individual model run commands
     jobs_to_run = which(job_to_qsub_file_index == i)
     job_run_commands = rep(NA, length(jobs_to_run))
     for(j in 1:length(jobs_to_run)){
         ind = jobs_to_run[j]
-        job_run_commands[j] = model_run_creation_env$make_job_command(raster_files[ind], model_names[ind])
-        # Make a newline
-        job_run_commands[j] = paste0(job_run_commands[j], '\n')
-        # FIXME: TAR THE FOLDER
-        #     - SWALS appends '-full-ambient_sea_level_0.6' to the model_name to make the output folder
-        run_output_folder_match = paste0('./OUTPUTS/', model_names[ind])
-        job_run_commands[j] = paste0(job_run_commands[j], '# Tar the results \n', 'Rscript tar_and_remove_matching_dir.R ', 
-            run_output_folder_match, ' \n')
+
+        if(is.na(match_to_previous_runs[ind])){
+            # Typical case for which initial condition has not been previously simulated to inundation.
+            # Create the commands that will do that.
+
+            job_run_commands[j] = model_run_creation_env$make_job_command(raster_files[ind], model_names[ind])
+            # Make a newline
+            job_run_commands[j] = paste0(job_run_commands[j], '\n')
+            # TAR THE FOLDER
+            run_output_folder_match = paste0('./OUTPUTS/', model_names[ind])
+            job_run_commands[j] = paste0(job_run_commands[j], '# Tar the results \n', 
+                'Rscript tar_and_remove_matching_dir.R ', 
+                run_output_folder_match, ' \n')
+
+        }else if(is.finite(match_to_previous_runs[ind])){
+            # Case where the initial condition has previously been simulated to inundation.
+            # In this case we should just make a symbolic link to the previous run
+            job_run_commands[j] = "" # No actual command
+
+            new_run_output_folder = paste0('./OUTPUTS/', model_names[ind])
+            previous_run_output_folder = previous_scenarios_already_run_folders[match_to_previous_runs[ind]]
+
+            # Make the parent folder needed to store the simulation
+            parent_folder_of_new_run = dirname(new_run_output_folder)
+            dir.create(parent_folder_of_new_run, recursive=TRUE, showWarnings=FALSE)
+
+            # Go into the simulation parent folder, make the symbolic link,
+            # then move back to the current folder
+            starting_dir = getwd()
+            setwd(parent_folder_of_new_run)
+            # The symbolic link needs to be relative to the
+            # "parent_folder_of_new_run"
+            folder_to_link_to = paste0('../../', gsub('./OUTPUTS/', '', previous_run_output_folder, fixed=TRUE))
+            folder_to_link_to_exists = file.exists(folder_to_link_to) 
+            if(!folder_to_link_to_exists){
+                # Error handling
+                setwd(starting_dir)
+                stop(paste0('could not link to folder ', folder_to_link_to, ' from inside ', parent_folder_of_new_run))
+            }
+            # Make the link [this will work even if the link already exists]
+            system(paste0('ln -sf ', folder_to_link_to))
+            setwd(starting_dir)
+
+        }else{
+            stop('Problem with matching previous runs')
+        }
     }
 
     all_run_commands = c(qsub_command_base, job_run_commands)
