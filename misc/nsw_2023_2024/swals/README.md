@@ -1,4 +1,7 @@
-```
+Below we show the initial model setup and running various historical scenarios
+and stress tests.
+
+```bash
 # Make a load balance file in the regular way
 qsub run_test_model_sapphirerapids
 # Then
@@ -39,7 +42,13 @@ qsub run_model_Newhebrides2021_Gusman_Kajiura.sh
 #
 # FIXME show code here
 
+```
 
+
+Here we show the process of running the first batch of random scenarios. They
+are associated with ID710.5, which is the PTHA18 hazard point ID that was used
+in the importance sampling.
+```bash
 #
 # Create PTHA scenario run qsub scripts
 #
