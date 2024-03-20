@@ -1,6 +1,6 @@
 # Compute the 'depth above the initial condition' raster, using the
-# - Max-stage @ 84 percentile rasters
-# - Elevation rasters
+# - depth @ 84 percentile rasters
+# - elevation rasters
 #
 # Why?
 # The initial condition for the NSW model is 1.1m. Some areas are flooded by
@@ -25,15 +25,21 @@ MODEL_AMBIENT_SEALEVEL = 1.1 # Static sea level in model
 
 IGNORE_SITES_WITH_ELEVATION_BELOW_M = 0.0 # Skip sites with elevation below this.
 
-# Rasters with the 84th percentile depth (clipped between 0 and 10m for
+MASK_DEPTHS_BELOW_THRESHOLD = 0.003 # Mask depths less than this depth {reflecting accuracy limits in the uniroot estimate of the depth}
+
+# Rasters with 84th percentile max-depth.
+depth_at_84pc_rasts = Sys.glob('highres_domains_depth_at_epistemic_uncertainty_84pc/sum_of_all_sources_depth_rast_exrate_4e-04_percentile_84_subsam_1_Nrand_10000_seed_123_domain_index_*.tif')
+
+# Rasters with the 84th percentile max_stage (clipped between 0 and 10m for
 # calculation efficiency).
-max_stage_at_84pc_rasts = Sys.glob(
-    'highres_domains_max_stage_at_epistemic_uncertainty_84pc/sum_of_all_sources_max_stage_rast_exrate_4e-04_percentile_84_subsam_1_Nrand_10000_seed_123_domain_index*.tif')
+#max_stage_at_84pc_rasts = Sys.glob(
+#    'highres_domains_max_stage_at_epistemic_uncertainty_84pc/sum_of_all_sources_max_stage_rast_exrate_4e-04_percentile_84_subsam_1_Nrand_10000_seed_123_domain_index*.tif')
+
 # Minimum/Maximum stage that the max_stage_at_84pc_rasts report
 # (they were clipped to a range for efficient root-finding -- need to use the
 # same parameters here).
-CLIP_STAGE_LOWER = 1.1
-CLIP_STAGE_UPPER = 10.0
+# CLIP_STAGE_LOWER = 1.1
+# CLIP_STAGE_UPPER = 10.0
 
 elevation_rasts = Sys.glob('../jatwc_to_inundation/elevation_in_model/elevation0_domain_*.tif')
 
@@ -50,38 +56,33 @@ stopifnot(length(unique(elevation_rasts_domain_index)) == length(elevation_rasts
 
 # Get domain index for the depth@84 percentile rasts (likely doesn't contain
 # every model domain, to reduce compute)
-max_stage_rasts_domain_index = sapply(max_stage_at_84pc_rasts, function(x){
+depth_rasts_domain_index = sapply(depth_at_84pc_rasts, function(x){
     s1 = strsplit(basename(x), '_domain_index_')[[1]][2]
     return(as.numeric(gsub(".tif", "", s1, fixed=TRUE)))
 })
-stopifnot(length(unique(max_stage_rasts_domain_index)) == length(max_stage_rasts_domain_index))
+stopifnot(length(unique(depth_rasts_domain_index)) == length(depth_rasts_domain_index))
 
 # Find matching indices
-m1 = match(max_stage_rasts_domain_index, elevation_rasts_domain_index)
-stopifnot(all(max_stage_rasts_domain_index == elevation_rasts_domain_index[m1]))
+m1 = match(depth_rasts_domain_index, elevation_rasts_domain_index)
+stopifnot(all(depth_rasts_domain_index == elevation_rasts_domain_index[m1]))
 
 # Split into a list with one entry per raster, to make it easier to run in parallel
-parallel_jobs = lapply(1:length(max_stage_at_84pc_rasts), 
-    function(x) list(max_stage_rast_file=max_stage_at_84pc_rasts[x], elevation_rast_file=elevation_rasts[m1[x]]))
+parallel_jobs = lapply(1:length(depth_at_84pc_rasts), 
+    function(x) list(depth_rast_file=depth_at_84pc_rasts[x], elevation_rast_file=elevation_rasts[m1[x]]))
 
 # Do the calculation of interest
 compute_depth_with_care<-function(parallel_job){
-    # Stage raster
-    sr = rast(parallel_job$max_stage_rast_file)
+    # depth raster
+    dr = rast(parallel_job$depth_rast_file)
     # elevation raster
     er = rast(parallel_job$elevation_rast_file)
 
     # First estimate of the depth
-    result = sr - er # Modified below
+    result = dr # Modified below
 
-    # Remove negative depths
-    negative = (result <= 0)
+    # Remove negative or zero depths (or depths within this range from the uniroot tolerance)
+    negative = (result < MASK_DEPTHS_BELOW_THRESHOLD)
     result[negative] = NA
-
-    # Make sure regions that didn't get wet show up as NA, rather than having
-    # max-stage = CLIP_STAGE_LOWER
-    zero_depth = (sr == CLIP_STAGE_LOWER)
-    result[zero_depth] = NA
 
     # Remove sites with elevation below MSL (or whatever cutoff was specified)    
     sites_to_ignore = (er < IGNORE_SITES_WITH_ELEVATION_BELOW_M)
@@ -102,6 +103,11 @@ compute_depth_with_care<-function(parallel_job){
         # This bit is the "depth above initial condition", masked to sites BELOW ambient sea level 
         depth_above_initial_cond*(sites_below_ambient_sl)
 
+    # Remove newly introduced negative or zero depths. Deliberately avoid MASK_DEPTHS_BELOW_THRESHOLD here,
+    # because we already accounted for it above.
+    negative = (result <= 0.0)
+    result[negative] = NA
+
     return(result)
 }
 
@@ -109,9 +115,9 @@ compute_depth_with_care<-function(parallel_job){
 library(parallel)
 #result = mclapply(parallel_jobs, compute_depth_with_care, mc.cores=16) # Problems for some reason....?
 result = lapply(parallel_jobs, compute_depth_with_care) # Serial
-names(result) = gsub('max_stage', 
+names(result) = gsub('depth', 
     'depth_above_initial_condition_where_elevation_exceeds_0',
-    basename(max_stage_at_84pc_rasts), fixed=TRUE)
+    basename(depth_at_84pc_rasts), fixed=TRUE)
 
 # Save the files
 dir.create(output_dir, showWarnings=FALSE)

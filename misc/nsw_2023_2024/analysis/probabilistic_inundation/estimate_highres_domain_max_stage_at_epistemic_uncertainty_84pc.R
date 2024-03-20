@@ -1,8 +1,8 @@
+#
 # Using the 'depth at 84 percentile' raster, estimate the 'max-stage at 84
 # percentile' raster.
 #
-# This is cheaper than actually computing it!
-#
+# This is cheaper than actually computing it, but NOT RECOMMENDED IN GENERAL.
 # The estimate is limited because the depth rasters are CLIPPED to between
 # 0-10m (for computational efficiency, since to calculate them we need root-finding).
 #

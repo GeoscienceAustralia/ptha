@@ -156,9 +156,17 @@ for i in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_perc
 ```
 
 
-## A few other random scripts are included
+## A few important post-processing scripts
 
-* [compute_highres_domain_depth_above_initial_condition_at_epistemic_uncertainty_84pc.R](compute_highres_domain_depth_above_initial_condition_at_epistemic_uncertainty_84pc.R) computes the `depth above initial condition`. This is the same as the depth (`max-stage - elevation`) at sites that are initially dry. But at sites with elevation below the initial condition, it gives the `max-stage - initial_condition`. This provides one approach to adjusting the tsunami depths at sites that happen to be low-lying.
-* [mask_depths_below_MSL.R](mask_depths_below_MSL.R) implements some light post-processing of the depth @ 84% raster to clip areas with elevation below MSL, and set "dry" areas (depth = 0) to NA.
-* [estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R](estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R) shouldn't be used for serious work. It provides a cheap & rough estimate of the max-stage at the 84th percentile, assuming the depth at 84th percentile result is available. It is limited because the depth results are clipped (0 - 10m) and so sometimes the stage cannot be represented. It is better (though much more expensive) to compute the max-stage percentiles directly by slightly modifying the epistemic uncertainty scripts above.
+* [mask_depths_below_MSL.R](mask_depths_below_MSL.R) implements some light post-processing of the depth @ 84% raster:
+  * It removes areas with elevation below MSL
+  * It removes "dry" or nearly-dry areas (depth < 3mm).
+* [compute_highres_domain_depth_above_initial_condition_at_epistemic_uncertainty_84pc.R](compute_highres_domain_depth_above_initial_condition_at_epistemic_uncertainty_84pc.R) computes the `depth above initial condition`, with masking in areas where the elevation is below MSL, or areas judged as nearly dry (depth < 3mm as above).
+  * The `depth_above_initial_condition` is the same as the depth (`max-stage - elevation`) at sites that are initially dry. But at sites with elevation below the initial condition, it gives the `max-stage - initial_condition`. 
+    * This provides one approach to adjusting the tsunami depths at sites that happen to be low-lying.
+* [mask_max_stage_in_dry_areas.R](mask_max_stage_in_dry_areas.R) implements some light post-processing of the max-stage @ 84% raster to remove cells that are dry or barely inundated. 
+  * For dry regions that are wet in at least 1 scenario, [compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R](compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R) will by default return the lower bound of its search space. For max-stage, this is typically equal to the ambient sea level. In practice we want to remove this for end-user products.
+* [estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R](estimate_highres_domain_max_stage_at_epistemic_uncertainty_84pc.R) shouldn't be used for serious work. 
+  * It provides a cheap & rough estimate of the max-stage at the 84th percentile, assuming the depth at 84th percentile result is available. 
+  * It is limited because the depth results are clipped (0 - 10m) and so sometimes the stage cannot be represented. It is better (though much more expensive) to compute the max-stage percentiles directly by slightly modifying the epistemic uncertainty scripts above.
 

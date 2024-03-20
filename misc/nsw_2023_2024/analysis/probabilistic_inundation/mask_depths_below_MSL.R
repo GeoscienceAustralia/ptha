@@ -3,12 +3,19 @@
 # 
 # This lets us restrict the depth to onshore sites.
 #
+# The script also sets sites with depth=0 to depth=NA, to prevent an "easy to
+# make mistake" in data visualisation. 
+#
+# Furthermore, because the uniroot function we use to compute depths has a few
+# mm of error-tolerance, we mask depths below 3mm.
+#
 
 library(terra)
 
 ## INPUTS
 
 IGNORE_SITES_WITH_ELEVATION_BELOW_M = 0.0 # Skip sites with elevation below this.
+MASK_DEPTHS_BELOW_THRESHOLD = 0.003 # Mask depths less than this depth {reflecting accuracy limits in the uniroot estimate of the depth}
 
 # Rasters with the 84th percentile depth (clipped between 0 and 10m for
 # calculation efficiency).
@@ -52,7 +59,7 @@ compute_masked_depth<-function(parallel_job){
     er = rast(parallel_job$elevation_rast_file)
 
     # Get rid of zero depths
-    dr[dr == 0] = NA
+    dr[dr < MASK_DEPTHS_BELOW_THRESHOLD] = NA
 
     # Get rid of results where the elevation is too low
     to_remove = (er < IGNORE_SITES_WITH_ELEVATION_BELOW_M)
@@ -64,7 +71,7 @@ compute_masked_depth<-function(parallel_job){
 
 result = lapply(parallel_jobs, compute_masked_depth)
 names(result) = gsub('depth', 
-    'depth_above_initial_condition_where_elevation_exceeds_0',
+    'depth_where_elevation_exceeds_zero',
     basename(depth_at_84pc_rasts), fixed=TRUE)
 
 # Save the files
