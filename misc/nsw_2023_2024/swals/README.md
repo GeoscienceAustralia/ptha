@@ -82,4 +82,14 @@ grep "Wall" *.sh.o*
 # Edit the script to create the rasters -- ensure the file path matches your runs
 # Then run it
 qsub run_create_tarred_rasters_from_tarred_multidomains.sh
+
+# At this point you can proceed with all calculations in ../analysis
 ```
+
+For the NSW model, we have ran multiple sets of scenarios (using different
+offshore sites to guide the importance sampling). These runs proceed similarly
+to above, but need some changes to the scripts. In particular:
+* [create_random_ptha_qsub_scripts_sealevel110cm_ID1315p5.R](create_random_ptha_qsub_scripts_sealevel110cm_ID1315p5.R) is a variant on the random scenario creation script for scenario batch ID1315.5.
+  * If any scenarios were already run in batch ID710.5, then this script will create outputs for scenarios ID1315.5 using a symbolic link to the existing runs.
+
+There is also a distinct script to run the raster creation [run_create_tarred_rasters_from_tarred_multidomains_ID1315.5.sh](run_create_tarred_rasters_from_tarred_multidomains_ID1315.5.sh).
