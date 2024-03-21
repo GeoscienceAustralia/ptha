@@ -14,6 +14,19 @@ Below we show how to compute rasters depicting:
 * The depth at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
   * This uses root-finding to compute the depth (or max-stage) within a prescribed tolerance.
 
+We also provide post-processing scripts to tidy products showing the depth and
+max-stage at a given exceedance-rate and epistemic uncertainty percentile. They deal
+with issues such as
+* Replacing "dry areas" with missing data. The original root-finding
+  calculations do not currently do consistently.
+* Removing "near-zero" depths that are consistent with "zero", given the
+  few mm of root-finding tolerance in the original calculation.
+* For depths only:
+  * Removing results at sites with elevation below MSL, to help focus visually on inundated areas.
+  * Deriving `depth_above_initial_condition`. 
+    * This is the same as the depth in areas that are initially dry. 
+    * For sites that are wet by the initial condition it uses `tsunami maxima - initial condition`, which better reflects the tsunami intensity at areas that were wet initially.
+
 Before running anything you'll need to modify [application_specific_file_metadata.R](application_specific_file_metadata.R) for your case.
 
 ## How to run
