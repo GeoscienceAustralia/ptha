@@ -18,7 +18,7 @@ We also provide post-processing scripts to tidy products showing the depth and
 max-stage at a given exceedance-rate and epistemic uncertainty percentile. They deal
 with issues such as
 * Replacing "dry areas" with missing data. The original root-finding
-  calculations do not currently do consistently.
+  calculations do not currently do this consistently.
 * Removing "near-zero" depths that are consistent with "zero", given the
   few mm of root-finding tolerance in the original calculation.
 * For depths only:
