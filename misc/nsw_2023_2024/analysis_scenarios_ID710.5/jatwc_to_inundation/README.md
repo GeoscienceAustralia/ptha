@@ -63,7 +63,17 @@ for warning_type in 'no_threat' 'marine_warning' 'land_warning' 'minor_land_warn
     done;
 ```
 
-### FIXME: Need to prevent broad shallow regions from flooding? For instance with an additional threshold on the max-stage?
+### Issues with flooding of low-lying areas
+
+The modelling uses a HAT sea-level at the open coast, which can flood some
+usually-dry areas in estuaries where the tide is attenuated.
+
+One way to recognize this is to look for sites in estuaries that are inside the no-threat polygon.
+
+To recognize these sites, one useful product is the
+`depth_above_initial_condition` created in the
+[../probabilistic_inundation](probabilistic_inundation) folder. At low-lying
+sites that only have a small modelled tsunami, this will be small.
 
 ## Why limit the onshore zone to a rare PTHA exceedance-rate?
 
