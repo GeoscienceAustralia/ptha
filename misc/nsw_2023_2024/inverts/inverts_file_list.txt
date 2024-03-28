@@ -1,0 +1,3 @@
+/media/gareth/Windows7_OS/Users/gareth/Documents/work/Inundation_tsunami/NSW/modelling/stage1/full_coast/inverts/coffs_harbour_inner_entrance/coffs_harbour_inner_entrance.csv
+/media/gareth/Windows7_OS/Users/gareth/Documents/work/Inundation_tsunami/NSW/modelling/stage1/full_coast/inverts/swr_channel/swr_channel.csv
+/media/gareth/Windows7_OS/Users/gareth/Documents/work/Inundation_tsunami/NSW/modelling/stage1/full_coast/inverts/ulladulla_entrance/ulladulla_entrance.csv

@@ -1,0 +1,65 @@
+!
+! Here we can override most variables in model_multidomain_design_mod.f90
+! (defaults are specified in the latter file).
+!
+
+&MULTIDOMAIN_GLOBAL_PROPERTIES
+
+! Initial testing showed that 1-arcmin offshore resolution was important
+! to represent late arriving waves in the Solomon 2007 example. I have reduced
+! dx_refinement_factors(2) (now 7, previously 9) to partly compensate. For now I'd
+! rather avoid using even number grid refinment (in principle less accurate, although
+! perhaps not in practice?)
+global_dx_arcmin = 0.5d0
+global_dt = 0.8d0
+
+! Final time for test/full runs (seconds)
+final_time_test_runs = 600.0d0
+final_time_full_runs = 144000.0d0
+
+! Gridded variables containing summary statistics to be stored. Allowed values are
+! [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', &
+!  'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage']
+! The first value should be 'max_stage' (unless it is empty)
+nontemporal_grids_to_store(1) = 'max_stage'
+nontemporal_grids_to_store(2) = 'max_flux'
+nontemporal_grids_to_store(3) = 'max_speed'
+nontemporal_grids_to_store(4) = 'arrival_time'
+nontemporal_grids_to_store(5) = 'elevation0'
+nontemporal_grids_to_store(6) = 'time_of_max_stage'
+
+! Number of nesting levels (including one for the global domain)
+! Must match the size of arrays defined below in &MULTIDOMAIN_NESTING_PROPERTIES
+NNL = 4
+/
+
+&MULTIDOMAIN_NESTING_PROPERTIES
+! Files with domain metadata for each nesting level (must have size=NNL)
+nesting_domain_extents_file(1) = "" ! Empty for global domain
+nesting_domain_extents_file(2) = "../multidomain_design/domains_2023_09_07_0.5_0.166666666666667_0.0333333333333333/first_level_nesting_edited.csv"
+nesting_domain_extents_file(3) = "../multidomain_design/domains_2023_09_07_0.5_0.166666666666667_0.0333333333333333/second_level_nesting_edited.csv"
+nesting_domain_extents_file(4) = "../multidomain_design/domains_2023_09_07_0.5_0.166666666666667_0.0333333333333333/third_level_nesting_edited.csv"
+
+! Spatial grid size refinement factors on each nesting level, relative to the
+! next coarsest level (must have size=NNL).
+dx_refinement_factors(1) = 1 ! Always 1 for global domain
+dx_refinement_factors(2) = 9
+dx_refinement_factors(3) = 9
+dx_refinement_factors(4) = 3
+
+! Coarsening factors on each nesting level (must have size=NNL). 
+! If the input file tells us to coarsen some domains in the nesting layer, then 
+! this value defines how much they coarsen. The coarsening_factors must be an integer
+! divisor of the corresponding entry in dx_refinement_factors. Coarsening can be 
+! useful to speed up some domains in deep water, which otherwise slow models down, if
+! they don't require high resolution for accuracy. 
+! Negative values imply no coarsening will be used. 
+coarsening_factors(1) = -1 ! No coarsening on global domain
+coarsening_factors(2) = -1
+coarsening_factors(3) = 3
+coarsening_factors(4) = 3
+
+! File with load balancing information.
+!load_balance_file = '../multidomain_design/domains_2023_09_07_0.5_0.166666666666667_0.0333333333333333/load_balance_default.txt'
+load_balance_file = './load_balance_files/load_balance_partition_96MPI_4NL_CONVERGENCE_DEFAULT.txt'
+/
