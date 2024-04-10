@@ -36,11 +36,11 @@
     real(force_double), parameter:: half_gravity = HALF_dp * gravity
     real(force_double):: bed_slope_pressure_s, bed_slope_pressure_n, bed_slope_pressure_e, bed_slope_pressure_w
     real(force_double) :: half_g_hh_edge, depth_pos, depth_pos_star, depth_pos_c, depth_neg, depth_neg_star, depth_neg_c
-    real(force_double):: denom, inv_denom, max_speed, max_dt, dx_cfl_half_inv(2), stg_b, stg_a
+    real(force_double):: denom, inv_denom, max_speed, max_dt, stg_b, stg_a
 
     ! convenience variables
     integer(ip):: i, j, nx, ny, jlast
-    real(dp):: half_cfl, max_dt_inv, dxb, common_multiple, fr2
+    real(dp):: half_cfl, max_dt_inv, dxb, common_multiple, fr2, dx_cfl_half_inv(2)
     real(dp):: diffusion_hll, diffusion_turbulent, diffusion_total, diffusion_max
     real(dp), parameter :: diffusion_scale = ONE_dp
     real(dp), parameter :: EPS = 1.0e-12_dp

@@ -2535,7 +2535,7 @@ TIMER_STOP('write_gauge_time_series')
         ! satisfied.
         do i = 1, 10000
             inquire(i, opened = is_open)
-            if(is_open) call flush(i)
+            if(is_open) flush(i)
         end do
 
 #ifndef NONETCDF
