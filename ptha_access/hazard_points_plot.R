@@ -128,7 +128,7 @@ unit_source_grids = .read_all_unit_source_grids()
         hazard_points = cbind(hazard_points, data.frame(point_category=hp_type_char))
 
         hazard_points_spdf = SpatialPointsDataFrame(coords = hazard_points[,1:2], 
-            data=hazard_points, proj4string=CRS('+init=epsg:4326'))
+            data=hazard_points, proj4string=CRS('EPSG:4326'))
 
         # Only display a subset of points -- we could do this in a more complex way easily
         #kk = which(hp_type_char != 'intermediateG')
