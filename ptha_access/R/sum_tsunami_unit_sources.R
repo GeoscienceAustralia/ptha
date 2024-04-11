@@ -214,7 +214,7 @@ get_netcdf_gauge_indices_in_polygon<-function(netcdf_file, region_poly){
 
         region_poly = SpatialPolygons(list(Polygons(list(
             Polygon(region_poly, hole=FALSE)), ID=1)),
-            proj4string=CRS("+init=epsg:4326"))
+            proj4string=CRS("EPSG:4326"))
     }
 
     gauge_points = get_netcdf_gauge_locations(netcdf_file)
@@ -237,7 +237,7 @@ get_netcdf_gauge_indices_in_polygon<-function(netcdf_file, region_poly){
     test_inds = c(1, length(gauge_points[,1]))
 
     test_poly = gBuffer(SpatialPoints(gauge_points[test_inds,1:2]), width=1.0e-03)
-    proj4string(test_poly) = '+init=epsg:4326'
+    proj4string(test_poly) = 'EPSG:4326'
    
     inside_points = get_netcdf_gauge_indices_in_polygon(netcdf_file, test_poly)
 
