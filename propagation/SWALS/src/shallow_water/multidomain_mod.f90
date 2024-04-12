@@ -3788,7 +3788,7 @@ __FILE__
                 end do
             end do
 #ifdef COARRAY
-            call flush(log_output_unit)
+            flush(log_output_unit)
             call sync_all_generic
 #endif
             ! Here if it's working, the 'err' will depend on the precision.

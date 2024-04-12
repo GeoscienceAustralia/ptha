@@ -12,9 +12,9 @@
     !   out of the standard loop, and use dedicated coding.
     ! __________________________________________________________
     ! __________________________________________________________
+    integer(c_int), intent(in) :: n
     SORT_INDEX_TYPE , Intent (In) :: array(n)
     Integer(c_int), Intent (Out) :: inds(n)
-    integer(c_int), intent(in) :: n
     ! __________________________________________________________
     SORT_INDEX_TYPE2 :: XVALA, XVALB
     !
