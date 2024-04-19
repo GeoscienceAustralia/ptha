@@ -95,7 +95,8 @@ module forcing_mod
             !! Update the domain for a time-step from (time-dt, time). Note "time" is the END of the timestep
         real(dp), intent(in) :: start_time, end_time
             !! Apply the entire forcing at a steady rate between start_time and end_time
-        procedure(forcing_time), pointer, intent(in) :: forcing_time_function
+        !procedure(forcing_time), pointer, intent(in) :: forcing_time_function
+        procedure(forcing_time), optional :: forcing_time_function ! Workaround for ifx segfaults [2024/04]
 
         real(dp) :: update_fraction, p1, p2
         integer(ip) :: i, j, k
@@ -117,7 +118,8 @@ module forcing_mod
             else
                 ! The time-step might not be completely between start_time and end_time.
                 ! Determine the fraction of the forcing we actually need to apply
-                if(.not. associated(forcing_time_function)) then
+                !if(.not. associated(forcing_time_function)) then ! Good approach but segfaults on ifx as of 2024/04
+                if(.not. present(forcing_time_function)) then ! This is a workaround for ifx segfaults
                     ! Default case: Constant forcing
                     update_fraction = (min(time, end_time) - max((time-dt), start_time))/(end_time - start_time)
                 else
@@ -201,9 +203,19 @@ module forcing_mod
             call generic_stop
         end if
 
-        ! All seems well so apply the forcing.
-        call add_forcing_work_to_U_over_time(domain%U(i0:i1, j0:j1, k0:k1), fp%forcing_work, domain%time, &
-            dt, fp%start_time, fp%end_time, fp%forcing_time_function)
+        ! All seems well so apply the forcing (fails with ifx as of April 2024)
+        !call add_forcing_work_to_U_over_time(domain%U(i0:i1, j0:j1, k0:k1), fp%forcing_work, domain%time, &
+        !    dt, fp%start_time, fp%end_time, fp%forcing_time_function)
+
+        ! Workaround for ifx segfaults as of April 2024 -- the final argument
+        ! of add_forcing_work_to_U_over_time is now optional (instead of a pointer)
+        if(associated(fp%forcing_time_function)) then
+            call add_forcing_work_to_U_over_time(domain%U(i0:i1, j0:j1, k0:k1), fp%forcing_work, domain%time, &
+                dt, fp%start_time, fp%end_time, fp%forcing_time_function)
+        else
+            call add_forcing_work_to_U_over_time(domain%U(i0:i1, j0:j1, k0:k1), fp%forcing_work, domain%time, &
+                dt, fp%start_time, fp%end_time)
+        end if
 
     end subroutine
 
