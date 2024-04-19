@@ -24,7 +24,7 @@ NO_LTO ?= -no-ipo
 SWALS_CC ?= gcc -O3
 # NCI staff suggested that on Gadi, it's better to link with -lgdal (not via gdal-config)
 SWALS_GDAL_LIBS ?= -lgdal
-# SWALS_GDAL_CFLAGS ?= `gdal-config --libs`
+#SWALS_GDAL_LIBS ?= `gdal-config --libs`
 SWALS_GDAL_CFLAGS ?= `gdal-config --cflags`
 
 #
