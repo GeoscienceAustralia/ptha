@@ -22,10 +22,10 @@ NO_LTO ?= -no-ipo
 # C compiler and gdal libraries
 #
 SWALS_CC ?= gcc -O3
-SWALS_GDAL_LIBS ?= `gdal-config --libs`
 # NCI staff suggested that on Gadi, it's better to link with -lgdal (not via gdal-config)
- SWALS_GDAL_CFLAGS ?= -lgdal
-# SWALS_GDAL_CFLAGS ?= `gdal-config --cflags`
+SWALS_GDAL_LIBS ?= -lgdal
+# SWALS_GDAL_CFLAGS ?= `gdal-config --libs`
+SWALS_GDAL_CFLAGS ?= `gdal-config --cflags`
 
 #
 # NVCC and associated flags
