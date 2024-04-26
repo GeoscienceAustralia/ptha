@@ -149,6 +149,16 @@ buffer_size = 2
 make_lines_with_max_buffer(all_shp, local_raster, line_spacing, buffer_size)
 
 
+# A 2024 addition to Port Geographe that wasn't include in the original models
+all_shp = Sys.glob('PortGeographUpdate/*.shp')
+local_raster = ALL_RASTERS[grep("Busselton_merged_20220330_Aerometrix_Lidar_1m_WGS84", ALL_RASTERS, fixed=TRUE)] # Newer DEM
+line_spacing = 2
+# Point elevation based on maxima inside this radius
+buffer_size = 2
+make_lines_with_max_buffer(all_shp, local_raster, line_spacing, buffer_size)
+
+
+
 #
 # Manual flood-gates
 #
