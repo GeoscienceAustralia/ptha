@@ -5,9 +5,15 @@ This folder contains code to run the tsunami models, including:
 * Scenarios like historical events [(see here)](../sources/like_historic/)
 * Random PTHA18 scenarios [(see here)](../sources/hazard/)
 
-The tsunami model was setup to assume the Bunbury floodgate was open. Notice the Bunbury floodgate is created in the folder [../breakwalls](../breakwalls), but it isn't added to the default list of breakwalls. Instead there is a parameter `logical, parameter :: close_bunbury_floodgate = .FALSE.` in [model_local_routines.f90](model_local_routines.f90) that determines if it is used.
-
 The key codes are described below; consult comments in the code itself for further documentation.
+
+## Three versions of this model
+
+1. The tsunami model was initially setup to assume the Bunbury floodgate was open. Notice the Bunbury floodgate is created in the folder [../breakwalls](../breakwalls), but it isn't added to the default list of breakwalls. Instead there is a parameter `logical, parameter :: close_bunbury_floodgate = .FALSE.` in [model_local_routines.f90](model_local_routines.f90) that determines if it is used.
+
+2. Later (mid 2023) the model was re-run with the Bunbury floodgate closed, by setting the parameter `close_bunbury_floodgate=.true.`.
+
+3. Later (April 2024) the model was re-run with improved data near the Vasse diversion drain (breakwalls and elevation patches). A new parameter `logical, parameter :: include_elevation_updates_2024 = .TRUE.` was added to the code so this could be done in a backward compatible manner. For this model we had the Bunbury floodgate open.
 
 ## Hydrodynamic model setup and compilation
 

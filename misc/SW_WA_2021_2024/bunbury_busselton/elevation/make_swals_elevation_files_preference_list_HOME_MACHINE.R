@@ -46,6 +46,9 @@ busselton_vasse_patch = '/media/gareth/Windows7_OS/Users/gareth/Documents/work/A
 # busselton_1m_SM = '/g/data/w85/tsunami/DATA/ELEVATION/WA/GA_modelling_before_2015/Busselton_StormSurge_ShaneMartin/Busselton_1m_full/Mosaic1mDEM163_WGS84_removeEdgeZeros.tif'
 busselton_1m_SM = '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/ELEV/WA/GA_modelling_before_2015/Busselton_StormSurge/Busselton_1m_full/Mosaic1mDEM163_WGS84_removeEdgeZeros.tif'
 
+# Improve the bed in the Vasse Diversion drain [update for 2024]
+Vasse_diversion_drain_bed_patch = '/media/gareth/Windows7_OS/Users/gareth/Documents/work/AustPTHA/DATA/ELEV/WA/Vasse_diversion_drain_bed_patch/Vasse_drain_patch.tif'
+
 # Subset of a patch-dem developed by Kaya Wilson, by patching over the coastal_merge_tiles with better data in Port Geographe. 
 # This subset is focussed around Port Geographe, and represents recent changes to the harbour.
 #portgeographe_patch = '../../../DATA/ELEV/WA/WA_Busselton_PortGeographe_merged_tile15/WA_Busselton_PortGeographe_merged_tile15/patch_near_portgeographe.tif'
@@ -79,6 +82,7 @@ files_in_preference_order = c(
     bunbury_floodgate_dem_extrahighres,
     bunbury_floodgate_dem,
     bunbury_dem, 
+    Vasse_diversion_drain_bed_patch, # Update for 2024
     busselton_1m_2022,
     busselton_vasse_patch,
     portgeographe_patch,
@@ -101,4 +105,9 @@ if(all(file.exists(files_in_preference_order))){
     stop('ERROR: Not all files exist')
 }
 
-cat(files_in_preference_order, file='swals_elevation_files_in_preference_order.txt', sep="\n")
+# For backward compatibility, give versions with/without a file we added in 2024
+k = grep('Vasse_diversion_drain_bed_patch/Vasse_drain_patch.tif', files_in_preference_order, fixed=TRUE)
+stopifnot(length(k) == 1)
+cat(files_in_preference_order[-k], file='swals_elevation_files_in_preference_order.txt', sep="\n")
+cat(files_in_preference_order, file='swals_elevation_files_in_preference_order_2024_update.txt', sep="\n")
+
