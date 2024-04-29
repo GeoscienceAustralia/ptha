@@ -10,7 +10,7 @@
 source SWALS_ifort_modules_2023.sh
 
 # New model, time-varying forcing
-OMP_NUM_THREADS=12 mpiexec -np 24 --map-by ppr:2:socket:PE=12 ./model \
+mpiexec -np 24 --map-by numa:SPAN --bind-to numa -x OMP_NUM_THREADS=12 -x OMP_PROC_BIND=true  ./model \
     'FujiSatake2007_time_varying_forcing_realistic.csv' \
     Fuji_andaman2004_24hrs_OpenFloodgate_NewVasseDrain_domain301122 \
     full \

@@ -10,7 +10,7 @@
 source SWALS_ifort_modules_2023.sh
 
 # Full model
-OMP_NUM_THREADS=12 mpiexec -np 24 --map-by ppr:2:socket:PE=12 ./model \
+mpiexec -np 24 --map-by numa:SPAN --bind-to numa -x OMP_NUM_THREADS=12 -x OMP_PROC_BIND=true  ./model \
     '../sources/like_historic/sumatra2005/Fuji_nias2005_unit_sources_SUM_KAJIURA_SMOOTHED.tif' \
     Fuji_sumatra2005_newVasseData_24hrs_domain301122 \
     full \
