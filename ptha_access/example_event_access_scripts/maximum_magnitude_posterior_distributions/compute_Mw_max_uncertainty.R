@@ -40,9 +40,13 @@ get_source_zone_Mw_max_CDF<-function(source_zone){
 all_results = lapply(source_zones, get_source_zone_Mw_max_CDF)
 names(all_results) = source_zones
 
+# Remove 0 length results [source-zones that were not used in PTHA18]
 result_length = unlist(lapply(all_results, length))
 keep_results = all_results[result_length > 0]
 
+# Convert to data.frame and order by source-zone
 output_df = do.call(rbind, keep_results)
+order = order(output_df$source_zone)
+output_df = output_df[order,]
 
 write.csv(output_df, file='Mw_max_percentiles_from_PTHA18.csv', row.names=FALSE)
