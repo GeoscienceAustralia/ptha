@@ -6,9 +6,9 @@ The file [Mw_max_percentiles_from_PTHA18.csv](Mw_max_percentiles_from_PTHA18.csv
 * `source_zone` - the name of the source-zone in PTHA18. This might represent a full unsegmented source-zone (e.g. `puysegur2`, `kurilsjapan`) or one of several segments on a source zone (e.g. `sunda2_java`, `southamerica_peru`). For segments, the leading part of the name corresponds to the source-zone. 
 * `is_a_segment` - TRUE/FALSE depending on whether the source representation is a segment. FALSE corresponds to unsegmented source representations.
 * Columns with names like `p_0`, `p_0.01`, ... `p_0.99`, `p_1` that collectively represent the cumulative distribution function of the maximum magnitudes. e.g.
-  * The column `p_0.1` contains, for each source-zone, the largest magnitude `X` such that `PR(Mw_max <= X) = 0.1` where `PR` denotes the posterior probability according to PTHA18. 
-  * The column `p_0.5` contains, for each source-zone, the largest magnitude `X` such that `PR(Mw_max <= X) = 0.5` where `PR` denotes the posterior probability according to PTHA18. 
-  * The column `p_0.9` contains, for each source-zone, the largest magnitude `X` such that `PR(Mw_max <= X) = 0.9` where `PR` denotes the posterior probability according to PTHA18. 
+  * The column `p_0.1` contains, for each source-zone, the smallest magnitude `X` such that `PR(Mw_max <= X) >= 0.1` where `PR` denotes the posterior probability according to PTHA18. 
+  * The column `p_0.5` contains, for each source-zone, the smallest magnitude `X` such that `PR(Mw_max <= X) >= 0.5` where `PR` denotes the posterior probability according to PTHA18. 
+  * The column `p_0.9` contains, for each source-zone, the smallest magnitude `X` such that `PR(Mw_max <= X) >= 0.9` where `PR` denotes the posterior probability according to PTHA18. 
   * ... and so on
 
 ## Background 
