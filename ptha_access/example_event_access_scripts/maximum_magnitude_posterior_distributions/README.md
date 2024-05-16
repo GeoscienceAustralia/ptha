@@ -1,8 +1,8 @@
-# Uncertainties in Maximum magnitude on each source zone
+# Uncertainties in maximum magnitude on each source zone
 
 ## Quickstart
 
-The file [Mw_max_percentiles_from_PTHA18.csv](Mw_max_percentiles_from_PTHA18.csv) provides a summary of the Maximum-magnitude distribution on each source-zone in PTHA18. It was generated using the script [compute_Mw_max_uncertainty.R](compute_Mw_max_uncertainty.R). It contains the following columns:
+The file [Mw_max_percentiles_from_PTHA18.csv](Mw_max_percentiles_from_PTHA18.csv) provides a summary of the maximum-magnitude distribution on each source-zone in PTHA18. It was generated using the script [compute_Mw_max_uncertainty.R](compute_Mw_max_uncertainty.R). It contains the following columns:
 * `source_zone` - the name of the source-zone in PTHA18. This might represent a full unsegmented source-zone (e.g. `puysegur2`, `kurilsjapan`) or one of several segments on a source zone (e.g. `sunda2_java`, `southamerica_peru`). For segments, the leading part of the name corresponds to the source-zone. 
 * `is_a_segment` - TRUE/FALSE depending on whether the source representation is a segment. FALSE corresponds to unsegmented source representations.
 * Columns with names like `p_0`, `p_0.01`, ... `p_0.99`, `p_1` that collectively represent the cumulative distribution function of the maximum magnitudes. e.g.
