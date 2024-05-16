@@ -26,7 +26,7 @@ get_source_zone_Mw_max_CDF<-function(source_zone){
 
     # Invert at the target percentiles
     target_percentiles = c(0, 0.01, 0.05, seq(0.1, 0.9, by=0.1), 0.95, 0.99, 1)
-    Mw_max_at_target_percentiles = approx(vars_cdf, vars, xout=target_percentiles, method='constant', f=0, rule=2)
+    Mw_max_at_target_percentiles = approx(vars_cdf, vars, xout=target_percentiles, method='constant', f=1, rule=2)
 
     # Output as a data.frame
     output_df = as.list(signif(Mw_max_at_target_percentiles$y, 4))
