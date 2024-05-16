@@ -29,7 +29,7 @@ get_source_zone_Mw_max_CDF<-function(source_zone){
     Mw_max_at_target_percentiles = approx(vars_cdf, vars, xout=target_percentiles, method='constant', f=0, rule=2)
 
     # Output as a data.frame
-    output_df = as.list(Mw_max_at_target_percentiles$y)
+    output_df = as.list(signif(Mw_max_at_target_percentiles$y, 4))
     names(output_df) = paste0('p_', as.character(Mw_max_at_target_percentiles$x))
     output_df = as.data.frame(output_df)
 
