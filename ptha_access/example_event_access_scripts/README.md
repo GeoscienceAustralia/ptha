@@ -30,3 +30,6 @@ See [extract_a_few_events_adhoc_approach](extract_a_few_events_adhoc_approach)
 
 See [./scenarios_similar_to_historical/](./scenarios_similar_to_historical/)
 
+## Maximum-magnitude summary information
+
+See [maximum_magnitude_posterior_distributions](maximum_magnitude_posterior_distributions)
