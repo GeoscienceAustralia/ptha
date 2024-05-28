@@ -34,7 +34,7 @@ if(!file.exists(compute_rates_session)){
 }
 if(!file.exists(compute_rates_session)){
     # If the file wasn't found in the above locations, then download it locally
-    compute_rates_session_download = paste0('https://dapds00.nci.org.au/',
+    compute_rates_session_download = paste0('https://thredds.nci.org.au/',
         'thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/',
         'compute_rates_all_sources_session.RData')
     download.file(compute_rates_session_download, compute_rates_session)

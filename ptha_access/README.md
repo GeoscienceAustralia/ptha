@@ -1,6 +1,6 @@
 # **Guide to accessing the 2018 Australian Probabilistic Tsunami Hazard Assessment (PTHA18) results**
 
-**Note to users -- a security update to the NCI THREDDS Server around 16/07/21 broke the codes here and caused the tests to fail. On 21/07/21 we implemented changes suggested by NCI to work-around the issues. Users will need to update their copy of the codes here in order to use the database.**
+**Note to users -- the NCI THREDDS Server URL has changed, and the old URL will be decommissioned on June 30 2024. The codes have been updated to use the new URL. Users will need to update their copy of the code to continue using the database.**
 
 This guide explains how to access basic tsunami hazard information in easy-to-use csv and
 shapefile formats. 
@@ -99,8 +99,8 @@ It contains the following columns:
 
 Note 'max stage' values below 2cm (or above 20m) are treated as missing data
 (NA). Such values are unlikely to be of interest, but if necessary they can be
-reconstructed from the [detailed information](DETAILED_README.md). The latter
-also shows how to access exceedance-rates for the "constant rigidity
+reconstructed from the [detailed information](DETAILED_README.md).
+The latter also shows how to access exceedance-rates for the "constant rigidity
 model" (rather than the "variable rigidity model" used for the above CSV file).
 
 [Similar data is available in shapefile format here](https://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.zip). You must unzip the file after download.

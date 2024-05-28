@@ -22,7 +22,7 @@ output_base_dir = './OUTPUTS/'
 dir.create(output_base_dir, recursive=TRUE, showWarnings=FALSE)
 
 # Directory with sourcezone contours used in Australian PTHA. Accessed from here (zip-file): 
-#    http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/DATA/catalog.xml
+#    https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/DATA/catalog.xml
 SOURCEZONE_CONTOURS_BASEDIR = './inputs_from_ptha18/SOURCEZONE_CONTOURS/'
 # Directory with sourcezone downdip lines used in Australian PTHA. Accessed
 # from the same location as SOURCEZONE_CONTOURS_BASEDIR (above)
