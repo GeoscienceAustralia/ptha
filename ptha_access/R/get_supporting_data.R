@@ -6,7 +6,7 @@ if(!exists('config_env')){
     source('R/config.R', local=config_env)
 }
 
-#nci_thredds_source_zones_base = 'http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/'
+#nci_thredds_source_zones_base = 'https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/'
 nci_thredds_source_zones_base = paste0(config_env$.GDATA_HTTP_BASE_LOCATION, 'SOURCE_ZONES/')
 
 install_base = getwd()
