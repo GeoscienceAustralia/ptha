@@ -1,9 +1,8 @@
 
 module boundary_mod
-    !
     !! Define subroutines that update the exterior boundaries
     !! of the domain.
-
+    !!
     !! In a typical application the user might provide their own, which
     !!  is passed to the procedure pointer 'domain%boundary_subroutine'.
     !! The only requirement on the boundary_subroutine is that it
@@ -21,24 +20,24 @@ module boundary_mod
 
     contains
 
-    !
-    ! Simple transmissive boundary condition.
-    !
-    ! Stage/velocity/elevation at the boundary cells
-    ! is set to the values at cells just inside the boundary
-    !
-    ! This boundary condition is theoretically only valid for supercritical outflow
-    ! If used for subcritical flows, it can have a tendency to drift or go unstable,
-    ! but not always. Theoretically, the problem would seem to be that there is
-    ! nothing to 'nudge' the boundary to the correct solution (e.g. consider open
-    ! ocean boundaries in tsunami models -- we might know that the stage will be close
-    ! to MSL -- but such information is not embedded in this boundary condition). Mathematically,
-    ! with subcritical flows there will be incoming characteristics, so we should
-    ! provide some information.
-    !
-    ! Considering the above, use with caution.
-    !
     subroutine transmissive_boundary(domain)
+    !!
+    !! Simple transmissive boundary condition.
+    !!
+    !! Stage/velocity/elevation at the boundary cells
+    !! is set to the values at cells just inside the boundary
+    !!
+    !! This boundary condition is theoretically only valid for supercritical outflow
+    !! If used for subcritical flows, it can have a tendency to drift or go unstable,
+    !! but not always. Theoretically, the problem would seem to be that there is
+    !! nothing to 'nudge' the boundary to the correct solution (e.g. consider open
+    !! ocean boundaries in tsunami models -- we might know that the stage will be close
+    !! to MSL -- but such information is not embedded in this boundary condition). Mathematically,
+    !! with subcritical flows there will be incoming characteristics, so we should
+    !! provide some information.
+    !!
+    !! Considering the above, use with caution.
+    !!
 
         type(domain_type), intent(inout):: domain
 
@@ -76,20 +75,20 @@ module boundary_mod
     end subroutine
 
 
-    !
-    ! Apply the boundary function domain%boundary_function at the boundaries.
-    ! The latter function must take as input (domain, time, i, j) and
-    ! return a vector of length 4 giving the [stage,uh,vh,elev] values at
-    ! boundary location domain%x(i),domain%y(j) at time t.
-    !
-    ! If a nonlinear solver is used, then the normal velocity is set equal
-    ! to the normal velocity inside the domain, and the transverse velocity
-    ! is set to zero.
-    !
-    ! If the linear solver is used, ony stage and elevation are set, since
-    ! with the staggered grid, that is enough to compute the interior UH/VH
-    !
     subroutine boundary_stage_transmissive_normal_momentum(domain)
+    !!
+    !! Apply the boundary function domain%boundary_function at the boundaries.
+    !! The latter function must take as input (domain, time, i, j) and
+    !! return a vector of length 4 giving the [stage,uh,vh,elev] values at
+    !! boundary location domain%x(i),domain%y(j) at time t.
+    !!
+    !! If a nonlinear solver is used, then the normal velocity is set equal
+    !! to the normal velocity inside the domain, and the transverse velocity
+    !! is set to zero.
+    !!
+    !! If the linear solver is used, ony stage and elevation are set, since
+    !! with the staggered grid, that is enough to compute the interior UH/VH
+    !!
 
         type(domain_type), intent(inout):: domain
 
@@ -164,10 +163,11 @@ module boundary_mod
     end subroutine
 
 
-    !
-    ! This is an alternative to "flather_boundary".
-    !
     subroutine boundary_stage_radiation_momentum(domain)
+    !!
+    !! A semi-radiative boundary condition that enforces a stage and estimates UH/VH 
+    !! to reduce boundary reflections. This is an alternative to "flather_boundary".
+    !!
 
         type(domain_type), intent(inout):: domain
 
@@ -318,19 +318,19 @@ module boundary_mod
     end subroutine
 
 
-    !
-    ! Apply the boundary function domain%boundary_function at the boundaries.
-    ! The latter function must take as input (domain, time, i, j) and
-    ! return a vector of length 4 giving the [stage,uh,vh,elev] values at
-    ! boundary location domain%x(i),domain%y(j) at time t.
-    !
-    ! If a nonlinear solver is used, then the velocity is set equal
-    ! to the velocity inside the domain
-    !
-    ! If the linear solver is used, ony stage and elevation are set, since
-    ! with the staggered grid, that is enough to compute the interior UH/VH
-    !
     subroutine boundary_stage_transmissive_momentum(domain)
+    !!
+    !! Apply the boundary function domain%boundary_function at the boundaries.
+    !! The latter function must take as input (domain, time, i, j) and
+    !! return a vector of length 4 giving the [stage,uh,vh,elev] values at
+    !! boundary location domain%x(i),domain%y(j) at time t.
+    !!
+    !! If a nonlinear solver is used, then the velocity is set equal
+    !! to the velocity inside the domain
+    !!
+    !! If the linear solver is used, ony stage and elevation are set, since
+    !! with the staggered grid, that is enough to compute the interior UH/VH
+    !!
 
         type(domain_type), intent(inout):: domain
 
@@ -499,17 +499,17 @@ module boundary_mod
 
     !end subroutine
 
-    !
-    ! Flather type boundary condition.
-    !
-    ! Based on ideas in Blayo and Debreu (2005) Ocean Modelling 9:231-252, their Eqn 26
-    !
-    ! In practice it seems good when the free surface perturbation is small compared
-    ! with the flow depth (e.g. domain of linear shallow water theory), but is partly reflective
-    ! in the nonlinear regime.
-    ! This seems consistent with the theory outlined by Blayo and Debreu (2005)
-    !
     subroutine flather_boundary(domain)
+    !!
+    !! Flather type boundary condition.
+    !!
+    !! Based on ideas in Blayo and Debreu (2005) Ocean Modelling 9:231-252, their Eqn 26
+    !!
+    !! In practice it seems good when the free surface perturbation is small compared
+    !! with the flow depth (e.g. domain of linear shallow water theory), but is partly reflective
+    !! in the nonlinear regime.
+    !! This seems consistent with the theory outlined by Blayo and Debreu (2005)
+    !!
 
         type(domain_type), intent(inout):: domain
 
@@ -729,12 +729,13 @@ module boundary_mod
         !$OMP END PARALLEL
     end subroutine
 
-    !
-    ! Impose Periodic EW boundaries, and reflective NS boundaries
-    ! This can be useful in global scale tsunami models with poles
-    ! cut off (although it would be better to use transmissive at north
-    !
     subroutine periodic_EW_reflective_NS(domain)
+    !! Old approach to impose Periodic EW, and reflective NS boundaries
+    !! This is used in older global scale tsunami models with poles
+    !! cut off. 
+    !! But for models using the multidomain type, this is superceeded by
+    !! the periodic boundary approach applied to the multidomain, which 
+    !! should be preferred for future models.
 
         type(domain_type), intent(inout) :: domain
 
