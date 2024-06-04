@@ -7,8 +7,9 @@ if(!exists('config_env')){
 }
 
 # If the following is TRUE, then the code will re-download key datasets. Otherwise,
-# it will read versions from cache, and download if they do not exist
-REFRESH_MAP = config_env$REFRESH_MAP
+# it will read versions from cache, and download if they do not exist.
+# As of 2024/06/05 the caching isn't working, see https://github.com/GeoscienceAustralia/ptha/issues/43#issuecomment-2148583647
+REFRESH_MAP = TRUE #config_env$REFRESH_MAP
 
 #
 # Get base datasets
