@@ -58,6 +58,27 @@ writeOGR<-function(obj, dsn, layer, driver, verbose=FALSE, overwrite_layer=FALSE
 #      overwrite_layer=FALSE, delete_dsn=FALSE, morphToESRI=NULL,
 #      encoding=NULL, shp_edge_case_fix=FALSE, dumpSRS = FALSE)
 
+    # Deal with shapefile limitations in field names, following the original writeOGR
+    fld_names = names(obj)
+    is_shpfile = (driver == 'ESRI Shapefile')
+    if (is_shpfile) {
+        if (any(nchar(fld_names) > 10)) {
+            # Try to shorten file names while maintaining unique names
+            fld_names = abbreviate(fld_names, minlength=7)
+            warning("Field names abbreviated for ESRI Shapefile driver")
+            if (any(nchar(fld_names) > 10)) 
+                fld_names = abbreviate(fld_names, minlength=5)
+        }
+        # fix for dots in DBF field names 121124
+        if (length(wh. <- grep("\\.", fld_names) > 0)) {
+            fld_names[wh.] = gsub("\\.", "_", fld_names[wh.])
+        }
+    }
+    if (length(fld_names) != length(unique(fld_names)))
+       stop("Non-unique field names")
+
+    names(obj) = fld_names
+
     # Convert from sp::SpatialXXX to sf format    
     y = sf::st_as_sf(obj)
     st_write(y, dsn=dsn, layer=layer, driver=driver, verbose=verbose, delete_layer=overwrite_layer)
