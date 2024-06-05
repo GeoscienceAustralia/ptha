@@ -38,7 +38,7 @@ download_unit_source_grid_shapefile<-function(source_names_all,
         download.file(all_shp_files[i], destfile = paste0(shp_dir, '/', basename(all_shp_files[i])), mode='wb')
         download.file(all_shx_files[i], destfile = paste0(shp_dir, '/', basename(all_shx_files[i])), mode='wb')
         download.file(all_prj_files[i], destfile = paste0(shp_dir, '/', basename(all_prj_files[i])))
-        download.file(all_dbf_files[i], destfile = paste0(shp_dir, '/', basename(all_dbf_files[i])))
+        download.file(all_dbf_files[i], destfile = paste0(shp_dir, '/', basename(all_dbf_files[i])), mode='wb')
     }
 }
 
