@@ -224,7 +224,7 @@ get_initial_condition_for_event<-function(source_zone_events_data, event_ID,
                 # This can happen if running code from NCI
                 file.copy(event_rasters_online[i], local_raster_name)
             }else{
-                download.file(event_rasters_online[i], local_raster_name)
+                download.file(event_rasters_online[i], local_raster_name, mode='wb')
             }
         }
     }
@@ -803,7 +803,7 @@ get_wet_or_dry_DEM<-function(force_download_again=FALSE){
         if(file.exists(wet_or_dry_DEM_file)){
             file.copy(wet_or_dry_DEM_file, output_file, overwrite=force_download_again)
         }else{
-            download.file(wet_or_dry_DEM_file, output_file)
+            download.file(wet_or_dry_DEM_file, output_file, mode='wb')
         }
         wd = raster(output_file)
         writeRaster(wd, file=output_file, options=c('COMPRESS=DEFLATE'), 
