@@ -149,10 +149,14 @@ unit_source_grids = .read_all_unit_source_grids()
             hazard_points_spdf = hazard_points_spdf[c(clip_region_keep, dartp),]
         }
 
-
-        writeOGR(hazard_points_spdf, dsn='DATA/hazard_points_spdf', 
-            layer='hazard_points_spdf', driver='ESRI Shapefile',
-            overwrite=TRUE)
+        ## This fails because the field names are too long for the 10 character shapefile
+        ## limit. It used to work, and the error is probably related to changes in the R
+        ## spatial ecosystem around 2023. These caused us to replace rgdal::writeOGR with a 
+        ## shallow replacement rptha::writeOGR. Underneath the latter uses sf::st_write. It
+        ## may be enforcing the limit on shapefile header names in a way that the rgdal package did not. 
+        #writeOGR(hazard_points_spdf, dsn='DATA/hazard_points_spdf', 
+        #    layer='hazard_points_spdf', driver='ESRI Shapefile',
+        #    overwrite=TRUE)
 
         # Faster read with RDS format
         saveRDS(hazard_points_spdf, hazard_points_spdf_RDS_file)
