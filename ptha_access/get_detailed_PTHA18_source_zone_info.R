@@ -37,7 +37,7 @@ if(!file.exists(compute_rates_session)){
     compute_rates_session_download = paste0('https://thredds.nci.org.au/',
         'thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/',
         'compute_rates_all_sources_session.RData')
-    download.file(compute_rates_session_download, compute_rates_session)
+    download.file(compute_rates_session_download, compute_rates_session, mode='wb')
 }
 crs_data = new.env()
 load(compute_rates_session, envir=crs_data)

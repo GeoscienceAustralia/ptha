@@ -91,26 +91,26 @@ module point_gauge_mod
 
     contains
 
-    !
-    ! Read gauge xy and allocate space for their data
-    !
-    ! @param point_gauges point_gauge_type
-    ! @param xy_coordinates array of rank 2 with size [2, n_gauges] giving x,y
-    !  coordinates of gauges
-    ! @param time_series_var_indices Indices of variables in domain%U that we
-    !  wish to store each time-step. e.g. [STG, UH, VH], or [STG]
-    ! @param static_var_indices Indices of variables in domain%U that we only
-    !  wish to store once. e.g. [ELV], or [UH, VH, ELV]
-    ! @param gauge_ids real array of size n_gauges giving an ID for each
-    !  gauge. Make it REAL to avoid truncation issues for large IDs
-    ! @param bounding_box If provided, only keep gauges inside a given bounding
-    ! box
-    ! @param priority_gauges If provided, a logical array with one entry per
-    ! gauge. Gauges with .TRUE. are retained, others are removed.
-    !
     subroutine allocate_gauges(point_gauges, xy_coordinates, &
         time_series_var_indices, static_var_indices, gauge_ids, &
         bounding_box, priority_gauges)
+        !!
+        !! Read gauge xy and allocate space for their data
+        !!
+        !! @param point_gauges point_gauge_type
+        !! @param xy_coordinates array of rank 2 with size [2, n_gauges] giving x,y
+        !!  coordinates of gauges
+        !! @param time_series_var_indices Indices of variables in domain%U that we
+        !!  wish to store each time-step. e.g. [STG, UH, VH], or [STG]
+        !! @param static_var_indices Indices of variables in domain%U that we only
+        !!  wish to store once. e.g. [ELV], or [UH, VH, ELV]
+        !! @param gauge_ids real array of size n_gauges giving an ID for each
+        !!  gauge. Make it REAL to avoid truncation issues for large IDs
+        !! @param bounding_box If provided, only keep gauges inside a given bounding
+        !! box
+        !! @param priority_gauges If provided, a logical array with one entry per
+        !! gauge. Gauges with .TRUE. are retained, others are removed.
+        !!
         class(point_gauge_type), intent(inout) :: point_gauges
         real(dp), intent(in) :: xy_coordinates(:,:)
         integer(ip), intent(in) :: time_series_var_indices(:), static_var_indices(:)
@@ -205,20 +205,20 @@ module point_gauge_mod
 
     end subroutine
 
-    ! Convenience subroutine to lookup variables in domain_U at point_gauges,
-    ! and populate time_series_values with the values of quantities var_inds
-    !
-    ! This can be used to populate either point_gauges%static_values or
-    ! point_gauges%time_series_values
-    !
-    ! @param point_gauges point_gauge_type
-    ! @param time_series_values array with size [n_gauges, size(var_inds)]
-    ! that holds the time series data
-    ! @param var_inds Array giving indices in the 3rd dimension of domain_U
-    ! that we write out. e.g. [STG, UH, VH], or [STG]
-    !
     subroutine update_gauge_var(point_gauges, time_series_values, domain_U, &
         var_inds)
+        !! Convenience subroutine to lookup variables in domain_U at point_gauges,
+        !! and populate time_series_values with the values of quantities var_inds
+        !!
+        !! This can be used to populate either point_gauges%static_values or
+        !! point_gauges%time_series_values
+        !!
+        !! @param point_gauges point_gauge_type
+        !! @param time_series_values array with size [n_gauges, size(var_inds)]
+        !! that holds the time series data
+        !! @param var_inds Array giving indices in the 3rd dimension of domain_U
+        !! that we write out. e.g. [STG, UH, VH], or [STG]
+        !!
 
         class(point_gauge_type), intent(inout):: point_gauges
         real(dp), intent(inout):: time_series_values(:,:)
@@ -244,14 +244,14 @@ module point_gauge_mod
 
     end subroutine
 
-    !
-    ! Write time snapshot at gauges to netcdf
-    !
-    ! @param point_gauges point_gauges_type
-    ! @param domain_U array from which we extract data at the gauges
-    ! @param domain_time the time as a real number
-    !
     subroutine write_current_time_series(point_gauges, domain_U, domain_time)
+        !!
+        !! Write time snapshot at gauges to netcdf
+        !!
+        !! @param point_gauges point_gauges_type
+        !! @param domain_U array from which we extract data at the gauges
+        !! @param domain_time the time as a real number
+        !!
         class(point_gauge_type), intent(inout):: point_gauges
         real(dp), intent(in):: domain_U(:,:,:), domain_time
         integer(ip) :: i
@@ -292,26 +292,26 @@ module point_gauge_mod
 
     end subroutine
 
-    ! Initialise the gauges data structure and output file
-    !
-    ! Find the indices in domain_U associated with each gauge, given the
-    ! lower left, dx, nx of the domain
-    !
-    ! @param point_gauges variable of type point_gauge_type
-    ! @param domain_dx cell size [dx,dy] in the domain
-    ! @param domain_nx number of cells [nx,ny] in the domain
-    ! @param domain_U the array with dimensions [nx, ny, :] in which we look
-    ! up values at the gauges
-    ! @param netcdf_gauge_output_file name of output file
-    ! @param attribute_names character vector of names for additional
-    ! attributes to add to the netcdf file
-    ! @param attribute_values character vector of values for the additional
-    ! attributes in the netcdf file
-    !
     subroutine initialise_gauges(point_gauges, domain_lower_left, domain_dx, &
         domain_nx, domain_U,&
         netcdf_gauge_output_file,&
         attribute_names, attribute_values)
+    !! Initialise the gauges data structure and output file
+    !!
+    !! Find the indices in domain_U associated with each gauge, given the
+    !! lower left, dx, nx of the domain
+    !!
+    !! @param point_gauges variable of type point_gauge_type
+    !! @param domain_dx cell size [dx,dy] in the domain
+    !! @param domain_nx number of cells [nx,ny] in the domain
+    !! @param domain_U the array with dimensions [nx, ny, :] in which we look
+    !! up values at the gauges
+    !! @param netcdf_gauge_output_file name of output file
+    !! @param attribute_names character vector of names for additional
+    !! attributes to add to the netcdf file
+    !! @param attribute_values character vector of values for the additional
+    !! attributes in the netcdf file
+    !!
 
         character(charlen), intent(in):: netcdf_gauge_output_file
         class(point_gauge_type), intent(inout):: point_gauges
@@ -407,13 +407,14 @@ module point_gauge_mod
     !
 #ifndef NONETCDF
     !
-    ! Create the gauge netcdf file and populate with key header information
-    !
-    ! @param point_gauges point_gauge_type
-    ! @param netcdf_gauge_output_file filename where the gauges output will be stored
-    !
     subroutine setup_gauge_netcdf_output(point_gauges, netcdf_gauge_output_file, &
         attribute_names, attribute_values)
+    !!
+    !! Create the gauge netcdf file and populate with key header information
+    !!
+    !! @param point_gauges point_gauge_type
+    !! @param netcdf_gauge_output_file filename where the gauges output will be stored
+    !!
 
         type(point_gauge_type), intent(inout):: point_gauges
         character(charlen), intent(in):: netcdf_gauge_output_file
@@ -636,10 +637,10 @@ SRC_GIT_VERSION ), __LINE__)
     end subroutine
 #endif
 
-    ! Cleanup point gauges
-    ! We particularly use this to close netcdf files, which is essential to ensure
-    ! they are fully written (unless we flush the file every timestep, which sounds inefficient)
     subroutine finalise_point_gauges(point_gauges)
+    !! Cleanup point gauges.
+    !! We particularly use this to close netcdf files, which is essential to ensure
+    !! they are fully written (unless we flush the file every timestep, which sounds inefficient)
         class(point_gauge_type), intent(inout):: point_gauges
 
         if (point_gauges%n_gauges > 0) then
