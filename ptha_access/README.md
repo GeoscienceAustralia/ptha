@@ -138,19 +138,19 @@ An example plot can be downloaded
 [here](https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/example_plot.pdf).
 Because there are thousands of hazard points, the plots at other sites are provided in a set
 of zip folders. Each zip folder contains around 200 sites in a particular
-longitude range. [The zip folders can be accessed here](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/catalog.xml).
+longitude range. [The zip folders can be accessed here](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/catalog.html).
 Follow the link to the http download to get the file. The zip folder names are
 of the form *revised1_station_summary_plots_longitudes_LOWER_UPPER.zip* where *LOWER* is
 the lower longitude limit, and *UPPER* is the upper longitude limit. 
 
 For example if I were searching for a hazard point at (lon,lat)= (151.408,
 -34.08), then by inspection of the *LOWER* and *UPPER* longitudes in files
-[here](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/catalog.xml),
+[here](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_station_summary_plots/catalog.html),
 it should be contained in the file *revised1_station_summary_plots_151.38_152.zip*
 (because the *LOWER* and *UPPER* longitudes bracket the value 151.408, which is
 the one I want).
 
-*Note:* The exceedance-rate percentile calculation has been revised follow the methodology in [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w), as discussed above for the csv and shapefile outputs. The updates are relatively minor, but [the older results are still available here](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.xml) in case you need to check them for some reason.
+*Note:* The exceedance-rate percentile calculation has been revised follow the methodology in [this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w), as discussed above for the csv and shapefile outputs. The updates are relatively minor, but [the older results are still available here](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/EVENT_RATES/station_summary_plots/catalog.html) in case you need to check them for some reason.
 
 ## Interpreting exceedance-rate information
 

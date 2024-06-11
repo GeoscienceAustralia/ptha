@@ -16,14 +16,14 @@ source('./find_unit_sources_near_hypocentre.R')
 source_zone = 'kermadectonga2'
 # The PTHA18 unit-sources shapefile. This can be downloaded from the NCI
 # THREDDS SERVER. The location is like this (using the example of alaskaaleutians -- other sources are analogous):
-# https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/alaskaaleutians/EQ_SOURCE/unit_source_grid/catalog.xml
+# https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/alaskaaleutians/EQ_SOURCE/unit_source_grid/catalog.html
 unit_source_polygon_shapefile = 
     '../../../../CODE/ptha/ptha_access/SOURCE_ZONES/kermadectonga2/EQ_SOURCE/unit_source_grid/kermadectonga2.shp'
 # Files with earthquake events for stochastic/variable-uniform/uniform slip, and the unit-source statistics
 # Download these from the NCI THREDDS SERVER and place in the current
 # directory (or edit the file name to include its full path). The download
 # location is like this (for alaskaaleutians -- other sources are analogous):
-# https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVENTS/catalog.xml
+# https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/alaskaaleutians/TSUNAMI_EVENTS/catalog.html
 stochastic_slip_events = 'all_stochastic_slip_earthquake_events_kermadectonga2.nc' 
 uniform_slip_events = 'all_uniform_slip_earthquake_events_kermadectonga2.nc' 
 variable_uniform_slip_events = 'all_variable_uniform_slip_earthquake_events_kermadectonga2.nc' 
