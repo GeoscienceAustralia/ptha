@@ -47,7 +47,7 @@ library(ncdf4)
 # This is a file from the PTHA, describing earthquake events on the Kermadec-Tonga
 # source-zone. Note I pre-pend [stringlength=4096], which prevents truncation of
 # long character strings. This functionality was broken in older netcdf-c versions
-test_file = paste0('[stringlength=4096]http://dapds00.nci.org.au/thredds/dodsC/fj6/',
+test_file = paste0('[stringlength=4096]http://thredds.nci.org.au/thredds/dodsC/fj6/',
     'PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/TSUNAMI_EVENTS/',
     'all_stochastic_slip_earthquake_events_kermadectonga2.nc')
 
