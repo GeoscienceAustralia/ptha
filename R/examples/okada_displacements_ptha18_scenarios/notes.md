@@ -359,7 +359,7 @@ In the PTHA18 we only do offshore waves, and we only have a few hazard points ar
 
 As a first step to understand the problem better, lets ignore these issues and work directly with modelled offshore waves.
 
-After perusing the [hazard points](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.csv), I decided to look at the gauge with ID=3458.3. We can get the max-stage values (over the 36 hour simulation) with:
+After perusing the [hazard points](https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/EVENT_RATES/revised1_tsunami_stages_at_fixed_return_periods.csv), I decided to look at the gauge with ID=3458.3. We can get the max-stage values (over the 36 hour simulation) with:
 
 ```r
 # This will read from the NCI THREDDS SERVER

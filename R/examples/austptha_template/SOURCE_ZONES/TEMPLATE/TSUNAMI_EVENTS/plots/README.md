@@ -26,13 +26,13 @@ The files produced by running [gauge_summary_statistics.R](gauge_summary_statist
 
 For example, the corresponding file paths from our original analysis are stored [here](../../../../EVENT_RATES/config_DART_test_files.R) and are used to examine the statistical properties of random tsunamis [here](../../../../EVENT_RATES/stage_range_summary.R) and [here](../../../../EVENT_RATES/event_properties_and_GOF.R) and [here](../../../../EVENT_RATES/event_dart_coverage_vs_distance.R) ). 
 
-For simplicity, these output files can be directly downloaded from the NCI THREDDS server at the following locations: [kermadectonga2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/TSUNAMI_EVENTS/plots/catalog.xml),
-[kurilsjapan](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.xml), 
-[newhebrides2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/newhebrides2/TSUNAMI_EVENTS/plots/catalog.xml), 
-[puysegur2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/TSUNAMI_EVENTS/plots/catalog.xml), 
-[solomon2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/solomon2/TSUNAMI_EVENTS/plots/catalog.xml), 
-[southamerica](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/plots/catalog.xml), and
-[sunda2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/plots/catalog.xml).
+For simplicity, these output files can be directly downloaded from the NCI THREDDS server at the following locations: [kermadectonga2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/TSUNAMI_EVENTS/plots/catalog.html),
+[kurilsjapan](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.html), 
+[newhebrides2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/newhebrides2/TSUNAMI_EVENTS/plots/catalog.html), 
+[puysegur2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/TSUNAMI_EVENTS/plots/catalog.html), 
+[solomon2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/solomon2/TSUNAMI_EVENTS/plots/catalog.html), 
+[southamerica](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/plots/catalog.html), and
+[sunda2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/plots/catalog.html).
 
 
 ## Details of gauge_summary_statistics.R
@@ -43,15 +43,15 @@ Beware [gauge_summary_statistics.R](gauge_summary_statistics.R) does not give an
 
 ### Structure of output files 
 
-Next we give a more concrete example of the output file structure using the `kurilsjapan` source-zone as an example. On the `kurilsjapan` source-zone we had two test events (both defined in [check_dart_kurilsjapan.R](../../../dart_check_codes/check_dart_kurilsjapan.R)). This means [gauge_summary_statistics.R](gauge_summary_statistics.R) produces 4 different R-workspace files that are [available here](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.xml) - two files per event, with constant and depth-varying rigidity respectively. The latter are distinguished by having `varyMu` in the filname. On other source-zones that have DART test data, there are analogous files, including on [kermadectonga2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/TSUNAMI_EVENTS/plots/catalog.xml),
-[kurilsjapan](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.xml), 
-[newhebrides2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/newhebrides2/TSUNAMI_EVENTS/plots/catalog.xml), 
-[puysegur2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/TSUNAMI_EVENTS/plots/catalog.xml), 
-[solomon2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/solomon2/TSUNAMI_EVENTS/plots/catalog.xml), 
-[southamerica](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/plots/catalog.xml), and
-[sunda2](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/plots/catalog.xml).
+Next we give a more concrete example of the output file structure using the `kurilsjapan` source-zone as an example. On the `kurilsjapan` source-zone we had two test events (both defined in [check_dart_kurilsjapan.R](../../../dart_check_codes/check_dart_kurilsjapan.R)). This means [gauge_summary_statistics.R](gauge_summary_statistics.R) produces 4 different R-workspace files that are [available here](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.html) - two files per event, with constant and depth-varying rigidity respectively. The latter are distinguished by having `varyMu` in the filname. On other source-zones that have DART test data, there are analogous files, including on [kermadectonga2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kermadectonga2/TSUNAMI_EVENTS/plots/catalog.html),
+[kurilsjapan](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.html), 
+[newhebrides2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/newhebrides2/TSUNAMI_EVENTS/plots/catalog.html), 
+[puysegur2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/puysegur2/TSUNAMI_EVENTS/plots/catalog.html), 
+[solomon2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/solomon2/TSUNAMI_EVENTS/plots/catalog.html), 
+[southamerica](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/southamerica/TSUNAMI_EVENTS/plots/catalog.html), and
+[sunda2](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/sunda2/TSUNAMI_EVENTS/plots/catalog.html).
 
-Going back to the `kurilsjapan` example: if we download any of the `*.Rdata` files [from this directory](http://dap.nci.org.au/thredds/remoteCatalogService?catalog=http://dapds00.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.xml) (say `gauge_summary_stats_session_kurilsjapan_tohoku_2011_03_11_Mw9.1.Rdata`), then it can be loaded from within R using:
+Going back to the `kurilsjapan` example: if we download any of the `*.Rdata` files [from this directory](https://thredds.nci.org.au/thredds/catalog/fj6/PTHA/AustPTHA_1/SOURCE_ZONES/kurilsjapan/TSUNAMI_EVENTS/plots/catalog.html) (say `gauge_summary_stats_session_kurilsjapan_tohoku_2011_03_11_Mw9.1.Rdata`), then it can be loaded from within R using:
     
     # Here we just pick one file as an example
     load('./gauge_summary_stats_session_kurilsjapan_tohoku_2011_03_11_Mw9.1.Rdata')

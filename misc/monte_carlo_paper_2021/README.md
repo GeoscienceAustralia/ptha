@@ -3,7 +3,7 @@ Code for the paper "[Davies et al., (2022) From offshore to onshore PTHA via eff
 
 This folder contains application code used for our manuscript on Monte-Carlo sampling for PTHA. It is released to show how the calculations in the paper were implemented (i.e. for transparency), and is not expected to be developed or maintained in the longer term. A snapshot of the code at the time of writing can be obtained [here](https://github.com/GeoscienceAustralia/ptha/releases/tag/09April2022).
 
-Note that a separate tutorial on using these sampling methods with PTHA18 is available [here](../../ptha_access/example_event_access_scripts/random_scenarios_non_uniform_and_importance_sampling). In addition, rasters showing the depth for a number of logic-tree-mean exceedance-rates can be [downloaded here](https://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_Monte_Carlo_PTHA_DaviesEtAl2022/Davies2022_GJI_paper_Tongatapu_inundation_hazard.zip).
+Note that a separate tutorial on using these sampling methods with PTHA18 is available [here](../../ptha_access/example_event_access_scripts/random_scenarios_non_uniform_and_importance_sampling). In addition, rasters showing the depth for a number of logic-tree-mean exceedance-rates can be [downloaded here](https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/Tonga_Monte_Carlo_PTHA_DaviesEtAl2022/Davies2022_GJI_paper_Tongatapu_inundation_hazard.zip).
 
 
 The directories are:

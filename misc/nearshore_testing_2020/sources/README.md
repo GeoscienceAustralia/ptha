@@ -1,7 +1,7 @@
 # How to download a version of this folder with all the source-inversions
 -------------------------------------------------------------------------
 
-A compressed version of these files has been posted to the NCI THREDDS Server here: http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2020/sources.zip
+A compressed version of these files has been posted to the NCI THREDDS Server here: https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2020/sources.zip
 
 The above link also contains some data that is needed to create the rasters and plots, but is too large to place in this repository. However we keep the codes + basic data here.
 
