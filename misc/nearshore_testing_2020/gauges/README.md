@@ -4,7 +4,7 @@ Tide-gauge data
 The script [gauge_data_links.R](gauge_data_links.R) is used in this study to provide a consistent interface to our tide-gauge data, and
  is repeatedly called in other scripts in [../swals](../swals) and [../analysis](../analysis). It makes sure all the data is converted to a consistent time-zone (GMT), and has consistent column names. It also stores the gauge coordinates, and gives us a convenient data-structure to look-up the data.
 
-The script [gauge_data_links.R](gauge_data_links.R) relies on processed tide-gauge data that can be [downloaded here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2020/DATA.zip). The resulting `DATA.zip` file needs to be unzipped into the current directory. At that point there should be a folder ./DATA inside this directory.
+The script [gauge_data_links.R](gauge_data_links.R) relies on processed tide-gauge data that can be [downloaded here](https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2020/DATA.zip). The resulting `DATA.zip` file needs to be unzipped into the current directory. At that point there should be a folder ./DATA inside this directory.
 
 In general the processed data files contain the time, the observed tidal-stage, and the inferred tsunami after removal of tides and long-period components (the latter computed by Gareth Davies as discussed in the paper). The time-zone varies but is always converted to GMT by [gauge_data_links.R](gauge_data_links.R), which also contains the gauge coordinates. The tidal-stage values are in meters with respect to some unspecified vertical datum.
 
