@@ -78,7 +78,7 @@ source make_directory_structure.sh
 #    EMPTY FOLDERS FOR MAX STAGE EPISTEMIC UNCERTAINTIES
 #
 
-# Use calculations above to make the logic-tree-mean inundation exceedance-rate and variance, summed over sources.
+# Now get the logic-tree-mean inundation exceedance-rate and variance, summed over sources.
 # The command line argument gives the path to the logic-tree-mean results above,
 # the variable (depth) and the exceedance-threshold (0.001). This uses parallel computing.
 Rscript compute_mean_exrate_upper_CI.R ptha18-GreaterPerth2023-sealevel60cm/highres_depth_with_variance depth 0.001
@@ -87,7 +87,7 @@ Rscript compute_mean_exrate_upper_CI.R ptha18-GreaterPerth2023-sealevel60cm/high
 # The folder name is like:
 # ./ptha18-GreaterPerth2023-sealevel60cm/highres_depth_with_variance/ptha18-GreaterPerth2023-sealevel60cm-depth-LogicTreeMean-sum_of_source_zones
 
-# Use calculations above to get the logic-tree mean exceedance-rates for all
+# Use calculations below to get the logic-tree mean exceedance-rates for all
 # the alternative max-stage thresholds. The thresholds must be the same as
 # specified in the earlier qsub script. This uses parallel computing.
 for stage_threshold in 0.601 1.6 2.6 3.6 4.6 5.6 6.6 7.6 8.6 9.6 10.6 ; do
@@ -102,9 +102,8 @@ for stage_threshold in 0.601 1.6 2.6 3.6 4.6 5.6 6.6 7.6 8.6 9.6 10.6 ; do
 # Example here for max_stage at an exceedance-rate of 1/500 = 0.002
 Rscript compute_binned_thresholds_matching_exrate_from_set_of_exrate_rasters.R ptha18-GreaterPerth2023-sealevel60cm/highres_max_stage_with_variance/ptha18-GreaterPerth2023-sealevel60cm-max_stage-LogicTreeMean-sum_of_source_zones max_stage 0.002
 
-# Use calculations above to get the inundation exceedance-rates at different
-# epistemic uncertainty percentiles, summed over source-zones. This assumes
-# co-monotonic epistemic uncertainties between the sources (conservative).
+# Get the inundation exceedance-rates at different epistemic uncertainty percentiles, summed over source-zones.
+# This assumes co-monotonic epistemic uncertainties between the sources (conservative).
 # (Runs in parallel)
 Rscript compute_sum_of_percentiles.R ptha18-GreaterPerth2023-sealevel60cm/highres_depth_epistemic_uncertainty/ 84 depth 0.001
 Rscript compute_sum_of_percentiles.R ptha18-GreaterPerth2023-sealevel60cm/highres_depth_epistemic_uncertainty/ 16 depth 0.001
