@@ -30,6 +30,16 @@ MC_CORES = 48 # Available cores when memory is not an issue
 # The rasters will be packed in a tar archive to help manage the file counts.
 RASTER_TAR_FILENAME_RELATIVE_TO_MULTIDOMAIN_TARFILE_DIR = 'raster_output_files.tar'
 
+# Which variables should be made into rasters
+VARIABLES_TO_WRITE_AS_RASTER = c('max_stage', 'max_depth', 'max_speed', 'max_flux', 'arrival_time', 'elevation0') # 'max_flux'
+
+# If the output tar file already exists, should we append the rasters to the
+# file? If FALSE we assume the existing files are up to date (and do not make
+# any new rasters for them) -- so if there are out of date files then you
+# should delete them separately before using this script.
+APPEND_IF_TAR_EXISTS = FALSE #TRUE
+
+
 STARTING_DIR = getwd() # Useful to prevent unexpected directory changes in case parts of the code fail.
 
 # Get the SWALS post-processing scripts
@@ -80,73 +90,84 @@ untar_tarred_multidomain_dir<-function(tarred_multidomain_dir){
 
 }
 
-#' Make raster for a single in a multidomain_directory.
+#' Make raster for a single variable in a multidomain_directory.
 #'
 #' In practice we call this in parallel.
 #'
 #' @param i domain index for which we create the raster
 #' @param multidomain_dir the multidomain directory
-single_multidomain_raster_creator<-function(i, multidomain_dir){
+#' @param raster_variable the variable to be turned into a raster
+#' @return 1
+single_multidomain_single_raster_creator<-function(i, multidomain_dir, raster_variable){
 
-    num_rasts = 0
+    print(paste0('Making ', raster_variable, ' raster for domain ', i))
 
-    print(c('Making raster for domain ', i))
-    # Max-stage
-    ms = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var='max_stage', 
-        domain_index=i, return_raster=TRUE)
-    # Elevation
-    elev = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var='elevation0', 
-        domain_index=i, return_raster=TRUE)
-    output_file = paste0(multidomain_dir, '/elevation0_domain_', i, '.tif')
-    writeRaster(elev, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
-    num_rasts = num_rasts + 1
+    if(raster_variable %in% c('max_stage', 'max_depth')){
+        # These also require elevation (to set max_stage to NA in dry areas, or
+        # to compute depth)
 
-    # Difference between max-stage and elevation
-    max_stg_less_elev = ms - elev
-    max_stg_less_elev[max_stg_less_elev < 1.0e-03] = NA
-    output_file = paste0(multidomain_dir, '/depth_as_max_stage_minus_elevation0_domain_', i, '.tif')
-    writeRaster(max_stg_less_elev, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
-    num_rasts = num_rasts + 1
-    rm(max_stg_less_elev)
-    gc()
+        # Max-stage
+        ms = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var='max_stage',
+            domain_index=i, return_raster=TRUE)
+        # Elevation
+        elev = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var='elevation0',
+            domain_index=i, return_raster=TRUE)
+        output_file = paste0(multidomain_dir, '/elevation0_domain_', i, '.tif')
 
-    ## Max stage, masked in dry areas
-    ms[ms < elev + 1.0e-03] = NA
-    output_file = paste0(multidomain_dir, '/max_stage_domain_', i, '.tif')
-    writeRaster(ms, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
-    num_rasts = num_rasts + 1
+        # Masked dry areas
+        ms[ms < elev + 1.0e-03] = NA
 
-    rm(ms, elev)
-    gc()
+        if(raster_variable == 'max_stage'){
+            output_file = paste0(multidomain_dir, '/max_stage_domain_', i, '.tif')
+            writeRaster(ms, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
+            rm(ms, elev); gc()
+        }else if(raster_variable == 'max_depth'){
+            depth = ms - elev
+            output_file = paste0(multidomain_dir, '/depth_as_max_stage_minus_elevation0_domain_', i, '.tif')
+            writeRaster(depth, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
+            rm(ms, elev, depth); gc()
+        }
 
-    #for(desired_var in c('arrival_time', 'max_speed', 'max_flux')){
-    for(desired_var in c('arrival_time', 'max_speed')){
-        ## Arrival time
-        gridded_var = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var=desired_var, 
+    }else if(raster_variable %in% c('last_timestep_UH', 'last_timestep_VH')){
+        # Export UH or VH at the last time.
+        # Idea is that we might notice nesting artefacts
+        all_times = get_multidomain_output_times(multidomain_dir)
+        N = length(all_times)
+        tm = round(all_times[N])
+
+        if(raster_variable == 'last_timestep_UH'){
+            output_file = paste0(multidomain_dir, '/UH_time_', round(tm), 's_domain_', i, '.tif')
+            ms = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var='uh',
+                desired_time_index=N, domain_index=i, return_raster=TRUE)
+        }else if(raster_variable == 'last_timestep_VH'){
+            output_file = paste0(multidomain_dir, '/VH_time_', round(tm), 's_domain_', i, '.tif')
+            ms = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var='vh',
+                desired_time_index=N, domain_index=i, return_raster=TRUE)
+        }
+
+        writeRaster(ms, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
+        rm(ms)
+        gc()
+
+    }else{
+        # Standard variables
+
+        desired_var = raster_variable
+        gridded_var = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var=desired_var,
             domain_index=i, return_raster=TRUE)
         output_file = paste0(multidomain_dir, '/', desired_var, '_domain_', i, '.tif')
         writeRaster(gridded_var, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
-        num_rasts = num_rasts + 1
         rm(gridded_var); gc()
+    
     }
+   
+    # The other function returns the number of rasters created. 
+    # Here we only created 1. 
+    return(1)
+}   
 
-    ## Export UH at the last time.
-    ## Idea is that we might notice nesting artefacts
-    #all_times = get_multidomain_output_times(multidomain_dir)
-    #N = length(all_times)
-    #tm = round(all_times[N])
-    #output_file = paste0(multidomain_dir, '/UH_time_', round(tm), 's_domain_', i, '.tif')
-    #ms = merge_domains_nc_grids(multidomain_dir = multidomain_dir, desired_var='uh',
-    #    desired_time_index=N, domain_index=i, return_raster=TRUE)
-    #writeRaster(ms, file=output_file, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
-    #rm(ms)
-    #gc()
-
-    return(num_rasts)
-}
-
-try_single_multidomain_raster_creator<-function(i, multidomain_dir){
-    try(single_multidomain_raster_creator(i, multidomain_dir))
+try_single_multidomain_single_raster_creator<-function(i, multidomain_dir, raster_variable){
+    try(single_multidomain_single_raster_creator(i, multidomain_dir, raster_variable))
 }
 
 
@@ -155,11 +176,11 @@ library(parallel)
 all_chunks = splitIndices(length(MULTIDOMAIN_TAR_FILES), NCHUNKS)
 MULTIDOMAIN_TAR_FILES = MULTIDOMAIN_TAR_FILES[all_chunks[[MYCHUNK]]]
 
-# Ensure that the output raster tar files do not already exist. If they do, remove the associated multidomains
-# from the vector naming those to be processed.
+# Check if the output raster tar files do already exist. If they do, and we are not appending to the tar files,
+# then remove the associated multidomains from the vector naming those to be processed.
 output_tarfiles = paste0(dirname(MULTIDOMAIN_TAR_FILES), '/', RASTER_TAR_FILENAME_RELATIVE_TO_MULTIDOMAIN_TARFILE_DIR)
 k = which(file.exists(output_tarfiles))
-if(length(k) > 0){
+if( (length(k) > 0) & (!APPEND_IF_TAR_EXISTS) ){
     print('Some output tarfiles (with rasters) already exist. Skipping the associated MULTIDOMAIN_TAR_FILES')
     MULTIDOMAIN_TAR_FILES = MULTIDOMAIN_TAR_FILES[-k]
 }
@@ -188,19 +209,35 @@ if(!all(file.exists(multidomain_dirs))){
 #
 # Make rasters 
 #
-make_the_rasters_parallel<-function(multidomain_dirs){
+make_the_rasters_parallel<-function(multidomain_dirs, cl){
     all_domain_inds = get_domain_indices_in_multidomain(multidomain_dirs[1])
-    all_inputs = expand.grid(all_domain_inds, multidomain_dirs, stringsAsFactors=FALSE)
-    raster_jobs = mcmapply(try_single_multidomain_raster_creator, 
+    all_raster_variables = VARIABLES_TO_WRITE_AS_RASTER 
+    all_inputs = expand.grid(all_domain_inds, multidomain_dirs, all_raster_variables, stringsAsFactors=FALSE)
+
+    ## This can have memory problems with dynamic scheduling
+    #raster_jobs = mcmapply(try_single_multidomain_single_raster_creator, 
+    #    i=all_inputs[,1], 
+    #    multidomain_dir=all_inputs[,2],
+    #    raster_variable=all_inputs[,3],
+    #    SIMPLIFY=FALSE,
+    #    mc.cores=MC_CORES_REDUCED, # Choose this to avoid running out of memory
+    #    mc.preschedule=TRUE) # Preschedule to reduce memory usage
+
+    # Alternative with dynamic scheduling
+    raster_jobs = clusterMap(cl, try_single_multidomain_single_raster_creator, 
         i=all_inputs[,1], 
         multidomain_dir=all_inputs[,2],
-        SIMPLIFY=FALSE,
-        mc.cores=MC_CORES_REDUCED, # Choose this to avoid running out of memory
-        mc.preschedule=TRUE) # Preschedule to reduce memory usage
+        raster_variable=all_inputs[,3],
+        .scheduling='dynamic')
+
     return(raster_jobs)
 }
-rasters_made = make_the_rasters_parallel(multidomain_dirs)
+# Setup cluster to make the rasters.
+cl = makeForkCluster(MC_CORES)
+clusterExport(cl, varlist=ls(all=TRUE))
+rasters_made = make_the_rasters_parallel(multidomain_dirs, cl)
 number_rasters_expected = sum(unlist(rasters_made))/length(multidomain_dirs)
+stopCluster(cl)
 
 #
 # Now rasters should have been created in multidomain_dirs.
@@ -230,6 +267,9 @@ tar_rasters_in_dir<-function(multidomain_dir){
 
     if(file.exists(output_tar_filename)){
         print(paste0(output_tar_filename, ' already exists'))
+        append_to_existing_tar_file = APPEND_IF_TAR_EXISTS
+    }else{
+        append_to_existing_tar_file = FALSE
     }
     
     # Move to the directory where we will make the tar file
@@ -238,8 +278,11 @@ tar_rasters_in_dir<-function(multidomain_dir){
     tif_files = Sys.glob('*.tif')
     ## For some reason this doesn't work
     #tarred_command = tar(output_tar_filename, tif_files, compression='none')
-    ## But this system call works
-    tarred_command = system(paste0('tar -cf ', output_tar_filename, ' *.tif'))
+    if(append_to_existing_tar_file){
+        tarred_command = system(paste0('tar -rf ', output_tar_filename, ' *.tif'))
+    }else{
+        tarred_command = system(paste0('tar -cf ', output_tar_filename, ' *.tif'))
+    }
 
     # Should be 0 on success
     tarred_successfully = (tarred_command == 0)
