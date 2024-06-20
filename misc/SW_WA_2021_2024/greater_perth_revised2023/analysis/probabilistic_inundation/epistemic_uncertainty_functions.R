@@ -337,6 +337,8 @@ get_exrate_percentile_at_pixel<-function(pixel_data, all_samples, all_source_rat
         # This is a common case so it's efficient to precompute it.
         if(all(pixel_data$model_runs_max_value > EXCEEDANCE_THRESHOLD)) return(ALWAYS_WET_EXRATE)
     }
+    # If all depths are <= the exceedance-threshold, return an always-dry value
+    if(all(pixel_data$model_runs_max_value <= EXCEEDANCE_THRESHOLD)) return(0)
 
     # The functions below require the 'random_scenario_depth' data is packed
     # into a data structure with one entry per PTHA18 scenario (which aligns with the
