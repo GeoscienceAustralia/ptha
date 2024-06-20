@@ -11,7 +11,7 @@ Below we show how to compute rasters depicting:
     * The computed solution is 'rounded down' from the exact solution to the nearest binned value
   * This is a simple approach to computing a quantity of interest at a given exceedance-rate.
     * For a more exact approach see the code below 
-* The depth at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
+* The depth / max-stage / max-flux / max-speed at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
   * This uses root-finding to compute the depth (or max-stage) within a prescribed tolerance.
 
 Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
@@ -116,7 +116,8 @@ Rscript compute_sum_of_percentiles.R ptha18-GreaterPerth2023-sealevel60cm/highre
 
 ```
 
-Below we show calculation of depth at a given exceedance-rate and epistemic uncertainty percentile.
+# Calculation of depth at a given exceedance-rate and epistemic uncertainty percentile.
+
 ```bash
 
 # Modify compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R for your case.
@@ -128,7 +129,36 @@ Below we show calculation of depth at a given exceedance-rate and epistemic unce
 Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 
 # If the test works, proceed with calculations of interest.
-# I wrote a (non-generic) script to run highres domains only
-qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
+# For example, you can use this script to run depth calculations for a subset of domains
+#   qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
+# However this tends to have problems with compute time and memory
+#
+# BELOW WE SHORE A MORE GENERIC AND PRACTICAL APPROACH
+# We compute depth/max-stage/max-flux/max-speed at a given percentile and exceedance-rate.
+# Because the calculations can be heavy we distribute them among multiple jobs. 
+#
+# First have a look at the template scripts named 
+#  run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_DEPTH___MIN_DOMAIN_INDEX_____MAX_DOMAIN_INDEX__.sh
+#  run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_MAX_FLUX___MIN_DOMAIN_INDEX_____MAX_DOMAIN_INDEX__.sh
+#  run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_MAX_SPEED___MIN_DOMAIN_INDEX_____MAX_DOMAIN_INDEX__.sh
+#  run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_MAX_STAGE___MIN_DOMAIN_INDEX_____MAX_DOMAIN_INDEX__.sh
+# and the script
+#   make_threshold_epistemic_uncertainty_jobs.R
+# 
+# The latter script is used to generate many scripts using the templates. Make
+# sure you are happy with the template scripts and the variables in
+# make_threshold_epistemic_uncertainty_jobs.R and then do
+#
+   Rscript make_threshold_epistemic_uncertainty_jobs.R
+#
+# to make a bunch of PBS job scripts that run everything. This will not submit
+# any calculations. But the resulting set of PBS job scripts will each do
+# calculations for subset of domains for one particular flow variable. The
+# number of jobs scripts per flow variable is specified inside the R script,
+# and might be edited depending on how much work there is.
+#
+# Before submitting those scripts, eyeball them to ensure they are doing what you want.
+# Then submit them
+# 
 
 ```
