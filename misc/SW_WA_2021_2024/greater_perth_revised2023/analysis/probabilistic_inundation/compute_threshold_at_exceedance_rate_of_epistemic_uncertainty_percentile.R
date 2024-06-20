@@ -51,7 +51,7 @@ OUTPUT_DIR = inargs[8] # 'my_output_directory_relative_to_here'
 # Optionally don't operate on every pixel (to speed calculations). E.g. a value
 # of 3 will do proper calculations for the middle pixel in a 3x3 subgrid. The
 # remaining pixels will later be filled using the middle pixel's value.
-SUB_SAMPLE = 3
+SUB_SAMPLE = 1 #3
 # How many random samples are used in the numerical percentile computation?
 NRAND = 1e+04 
 # Random seed used to make our 'random' function have deterministic results
