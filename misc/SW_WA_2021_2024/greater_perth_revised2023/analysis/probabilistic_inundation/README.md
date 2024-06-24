@@ -118,8 +118,7 @@ Rscript compute_sum_of_percentiles.R ptha18-GreaterPerth2023-sealevel60cm/highre
 
 # Calculation of depth / max-stage / max-flux / max-speed at a given exceedance-rate and epistemic uncertainty percentile.
 
-Here we show how to calculate the
-* The depth / max-stage / max-flux / max-speed at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
+Here we show how to calculate the depth / max-stage / max-flux / max-speed at a given exceedance-rate and epistemic uncertainty percentile.
 * Root-finding is used to compute the variable of interest within a prescribed tolerance.
 
 ```bash
@@ -153,7 +152,7 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 # sure you are happy with the template scripts and the variables in
 # make_threshold_epistemic_uncertainty_jobs.R and then do
 #
-   Rscript make_threshold_epistemic_uncertainty_jobs.R
+Rscript make_threshold_epistemic_uncertainty_jobs.R
 #
 # to make a bunch of PBS job scripts that run everything. This will not submit
 # any calculations. But the resulting set of PBS job scripts will each do
@@ -169,13 +168,16 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 
 # Calculation of arrival time minima and average for each source-zone
 
-* The arrival time (minimum and average) in seconds post-earthquake, for each source-zone (third set of code, below).
+* The arrival time (minimum and average) in seconds post-earthquake, for each source-zone.
   * Our SWALS calculations define the arrival time as the minimum time at which `max_stage > (0.01 + background_stage)` and the cell is wet. The latter constraint only matters on land where the elevation exceeds the background stage.
-  * The average arrival time is computed as a naive average over all modelled scenarios (ignoring scenario rates). If a scenario has cells with NA arrival times, then for those cells, the scenario is dropped from the average. This can happen because the tsunami does not exceed the threshold, or because the site is not inundated.
-  * We choose to ignore scenario rates when computing the average because, if the average were weighted by the scenario rates, then the results would be dominated by a few small scenarios.
-  * Arrival times defined in this way have the following potentially surprising properties.
+  * The average arrival time is computed as a naive average over all modelled scenarios (ignoring scenario rates). 
+    * If a scenario has cells with NA arrival times, then for those cells, the scenario is dropped from the average. This can happen because the tsunami does not exceed the threshold, or because the site is not inundated.
+  * We choose to ignore scenario rates when computing the average. If the average were weighted by the scenario rates, then the results would be dominated by a few small scenarios.
+  * Arrival times as defined here have the following potentially surprising properties.
     * The arrival times can have discontinuities (e.g. if a wave slightly exceeds the threshold at some sites and is slightly below at others). These propagate through to the minima and average arrival times.
-    * It is possible for the average arrival time on land to be earlier than the average arrival time closer to the ocean. For example, suppose only one scenario floods the landward site and has a relatively early arrival time, while sites closer to the coast are flooded by a range of scenarios including those with much later arrival times.
+    * It is possible for the average arrival time on land to be earlier than the average arrival time closer to the ocean. 
+      * For example, suppose only one scenario floods the landward site and has a relatively early arrival time, while sites closer to the coast are flooded by a range of scenarios including those with much later arrival times.
+      * This will not happen with minimum arrival times.
 
 ```
 # Modify compute_arrival_time_minima_and_scenario_average.R 
@@ -184,6 +186,4 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 # Then run with
 qsub run_compute_arrival_time_minima_and_scenario_average.sh
 #
-```
-
 ```
