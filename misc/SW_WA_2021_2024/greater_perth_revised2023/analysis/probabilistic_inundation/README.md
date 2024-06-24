@@ -17,7 +17,7 @@ All the calculations in this section are based around exceedance-rates. Below we
   * It is approximate because we only use the max-stage values computed previously (0.6, 1.6, 2.6, ...).
     * The computed solution is 'rounded down' from the exact solution to the nearest binned value
   * This is a simple approach to computing a quantity of interest at a given exceedance-rate.
-    * For a more exact approach see the code below 
+    * For a more exact approach see the next section (which applies to percentile uncertainties)
 
 ```bash
 
