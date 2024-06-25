@@ -6,7 +6,7 @@
 #
 
 # This should match the beginning of the folders that will be moved to better locations
-runname='ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm'
+runname='ptha18-BunburyBusseltonNewVasseDrainOpenBunburyFloodgate-sealevel60cm'
 
 for variable in depth max_stage; do
   # Move logic-tree-mean hazard & variance rasters to a clean location

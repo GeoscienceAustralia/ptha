@@ -15,7 +15,7 @@ source R_431_NCI_modules.sh
 #
 
 # The SWALS output directory, underneath ../../swals/OUTPUTS, where we check rasters from
-runname='../../swals/OUTPUTS/ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm/random_outerrisesunda/'
+runname='../../swals/OUTPUTS/ptha18-BunburyBusseltonNewVasseDrainOpenBunburyFloodgate-sealevel60cm/random_outerrisesunda/'
 # Find the raster outputs from one run (we assume all model runs have the same number of domains).
 testfile=$(ls $runname'ptha18_random_scenarios'_*/raster*.tar | head -n1)
 # Count the rasters in the multidomain outputs
@@ -28,7 +28,7 @@ Rscript compute_exceedance_rates_at_logic_tree_mean.R  $runname $maxrasts max_st
 #
 
 # The SWALS output directory, underneath ../../swals/OUTPUTS, where we check rasters from
-runname='../../swals/OUTPUTS/ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm/random_sunda2/'
+runname='../../swals/OUTPUTS/ptha18-BunburyBusseltonNewVasseDrainOpenBunburyFloodgate-sealevel60cm/random_sunda2/'
 # Find the raster outputs from one run (we assume all model runs have the same number of domains).
 testfile=$(ls $runname'ptha18_random_scenarios'_*/raster*.tar | head -n1)
 # Count the rasters in the multidomain outputs
