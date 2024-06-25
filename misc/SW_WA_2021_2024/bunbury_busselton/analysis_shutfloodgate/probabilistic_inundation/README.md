@@ -2,7 +2,14 @@
 
 This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated.
 
-Below we show how to compute rasters depicting:
+Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
+
+You will also have to hand-modify various scripts below. This is explained in comments but perhaps not comprehensively. It is always a good idea to read any script prior to submitting it.
+
+
+# Exceedance-rate calculations
+
+All the calculations in this section are based around exceedance-rates. Below we show how to compute rasters depicting:
 * The logic-tree-mean rate of inundation (depth > 1mm).
 * The rate of inundation (depth > 1mm) at the 16th and 84th percentile epistemic uncertainty
 * The logic-tree-mean exceedance-rate for a range of max-stage values (0.6, 1.6, 2.6, ...)
@@ -10,13 +17,7 @@ Below we show how to compute rasters depicting:
   * It is approximate because we only use the max-stage values computed previously (0.6, 1.6, 2.6, ...).
     * The computed solution is 'rounded down' from the exact solution to the nearest binned value
   * This is a simple approach to computing a quantity of interest at a given exceedance-rate.
-    * For a more exact approach see the code below 
-* The depth / max-stage / max-flux / max-speed at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
-  * This uses root-finding to compute the depth (or max-stage) within a prescribed tolerance.
-
-Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
-
-## How to run
+    * For a more exact approach see the next section (which applies to percentile uncertainties)
 
 ```bash
 
@@ -115,7 +116,10 @@ Rscript compute_sum_of_percentiles.R ptha18-BunburyBusseltonShutFloodgateRevised
 
 ```
 
-# Calculation of depth at a given exceedance-rate and epistemic uncertainty percentile.
+# Calculation of depth / max-stage / max-flux / max-speed at a given exceedance-rate and epistemic uncertainty percentile.
+
+Here we show how to calculate the depth / max-stage / max-flux / max-speed at a given exceedance-rate and epistemic uncertainty percentile.
+* Root-finding is used to compute the variable of interest within a prescribed tolerance.
 
 ```bash
 
@@ -148,7 +152,7 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 # sure you are happy with the template scripts and the variables in
 # make_threshold_epistemic_uncertainty_jobs.R and then do
 #
-   Rscript make_threshold_epistemic_uncertainty_jobs.R
+Rscript make_threshold_epistemic_uncertainty_jobs.R
 #
 # to make a bunch of PBS job scripts that run everything. This will not submit
 # any calculations. But the resulting set of PBS job scripts will each do
@@ -160,4 +164,36 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 # Then submit them
 # 
 
+# A shortcoming of the calculations above is that dry areas are not
+# consistently set to NA. For depth and max-stage, areas that are flooded by at
+# least one scenario but are dry at the specified exceedance-rate/percentile
+# will be set to the lower-limit of the root-finding space. For max-speed and
+# max-flux, even "always dry" areas will get zero values. This is easy to
+# misinterpret, so we use a separate script to clean up the wet-dry values.
+# 
+# Make sure you edit it to set the right folders/thresholds etc, then do
+Rscript tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R
+# I suggest using thresholds slightly larger than the lower-bound plus the tolerance.
+```
+
+# Calculation of arrival time minima and average for each source-zone
+
+* The arrival time (minimum and average) in seconds post-earthquake, for each source-zone.
+  * Our SWALS calculations define the arrival time as the minimum time at which `max_stage > (0.01 + background_stage)` and the cell is wet. The latter constraint only matters on land where the elevation exceeds the background stage.
+  * The average arrival time is computed as a naive average over all modelled scenarios (ignoring scenario rates). 
+    * If a scenario has cells with NA arrival times, then for those cells, the scenario is dropped from the average. This can happen because the tsunami does not exceed the threshold, or because the site is not inundated.
+  * We choose to ignore scenario rates when computing the average. If the average were weighted by the scenario rates, then the results would be dominated by a few small scenarios.
+  * Arrival times as defined here have the following potentially surprising properties.
+    * The arrival times can have discontinuities (e.g. if a wave slightly exceeds the threshold at some sites and is slightly below at others). These propagate through to the minima and average arrival times.
+    * It is possible for the average arrival time on land to be earlier than the average arrival time closer to the ocean. 
+      * For example, suppose only one scenario floods the landward site and has a relatively early arrival time, while sites closer to the coast are flooded by a range of scenarios including those with much later arrival times.
+      * This will not happen with minimum arrival times.
+
+```
+# Modify compute_arrival_time_minima_and_scenario_average.R 
+# to fit your case.
+#
+# Then run with
+qsub run_compute_arrival_time_minima_and_scenario_average.sh
+#
 ```
