@@ -24,7 +24,7 @@
 #
 # INPUTS
 #
-domain_indices_to_process = seq(293, 571)
+domain_indices_to_process = seq(1, 571)
 raster_output_dir = './greaterperth_2023_arrival_time_min_and_scenario_average'
 
 #
