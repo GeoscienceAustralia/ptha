@@ -22,14 +22,14 @@ This folder contains the following data, along with some related scripts:
         * (Not currently supported by JATWC) Minor land warning (0.55 <= H <= 1.5)
         * (Not currently supported by JATWC) Major land warning (1.5 >= H)
     * The above thresholds are suggested in the paper by Greenslade et al. (2020) - (see https://doi.org/10.1007/s00024-019-02377-z)
-    * The zones are limited to be inside the PTHA 1/10000 exceedance-rate (84th percentile epistemic uncertainty). This ensures the upper limit is not an unstable random quantity, and gives a uniform degree of conservatism at different sites. (During manual editing, this limit was slightly relaxed to 1/2500 @ 84th percentile, which is more in line with international standards.)
+    * The zones are limited to be inside a rare PTHA exceedance-rate (84th percentile epistemic uncertainty). This ensures the upper limit is not an unstable random quantity, and gives a uniform degree of conservatism at different sites. (Initially we tried 1/10000 84th percentile but ultimately settled on 1/2500 84th percentile).
 
 * ./elevation_contours
     * Elevation contours (0, 1, 2, ... 10 m) for ATWS zones, derived from the inundation model elevation grid. 
     * Useful reference to compare with other inundation zones.
 
 * ./domains_shapefile
-    * Shapefile showing locations of the SWALS model domains (each corresponding to a separate raster).
+    * Shapefile showing the locations of domains in the model. For outputs that consist of sets of rasters, this provides an overview of where each raster is located. It was created using the script [../../swals/make_domains_shapefile.R](../../swals/make_domains_shapefile.R) and manually copied here (for convenience only).
 
 # How to run the calculations
 
@@ -56,7 +56,7 @@ Rscript map_threat_levels_in_zone.R 'Bunbury Geographe Coast'
 ```
 
 ## Step 3
-Finally we limit the onshore zone to a rare PTHA exceedance-rate, and then export to shapefile. The script [convert_raster_zones_to_polygons_with_PTHA_limits.R](convert_raster_zones_to_polygons_with_PTHA_limits.R) does this, with exceedance rate of 1/10000 at the 84th percentile of the epistemic uncertainty (later relaxed to 1/2500 @ 84th percentile in the manual editing stage). It can be run for all warning types with:
+Finally we limit the onshore zone to a rare PTHA exceedance-rate, and then export to shapefile. The script [convert_raster_zones_to_polygons_with_PTHA_limits.R](convert_raster_zones_to_polygons_with_PTHA_limits.R) does this. It can be run for all warning types with:
 ```
 #!/bin/bash
 for warning_type in 'no_threat' 'marine_warning' 'land_warning' 'minor_land_warning' \
@@ -74,8 +74,7 @@ For the Bunbury/Busselton model, this script includes a special treatment for th
     * The "all scenarios" zone will be very conservative, but in a way that will vary from site to site, and is difficult to quantify. 
 
 * To make the results repeatable, and explicitly control the conservatism, we can instead limit the inundation zone to a rare exceedance-rate as defined by the PTHA results. 
-    * Here we used the 1/10,000 exceedance-rate for the 84th percentile epistemic uncertainty. Alternative choices could be made; in the manual editing phase it was taken back to 1/2500 @ 84pc.
-    * Visual inspection suggested that, in the Bunbury Geographe Coast zone, similar results would be obtained using the 1/10,000 exceedance-rate for the logic-tree-mean curve, rather than the 84th percentile, although the latter zone is often slightly larger. 
+    * Here we used the 1/2500 exceedance-rate for the 84th percentile epistemic uncertainty, after some initial experimentation with 1/10000 84th percentile.
     * Our tests to date (convergence, comparison with the offshore PTHA) suggest that this exceedance-rate is reasonably well approximated with our random scenarios (i.e. we would expect similar results if we re-ran the calculations with new random scenarios).
 
 
