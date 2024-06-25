@@ -164,6 +164,16 @@ Rscript make_threshold_epistemic_uncertainty_jobs.R
 # Then submit them
 # 
 
+# A shortcoming of the calculations above is that dry areas are not
+# consistently set to NA. For depth and max-stage, areas that are flooded by at
+# least one scenario but are dry at the specified exceedance-rate/percentile
+# will be set to the lower-limit of the root-finding space. For max-speed and
+# max-flux, even "always dry" areas will get zero values. This is easy to
+# misinterpret, so we use a separate script to clean up the wet-dry values.
+# 
+# Make sure you edit it to set the right folders/thresholds etc, then do
+Rscript tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R
+# I suggest using thresholds slightly larger than the lower-bound plus the tolerance.
 ```
 
 # Calculation of arrival time minima and average for each source-zone
