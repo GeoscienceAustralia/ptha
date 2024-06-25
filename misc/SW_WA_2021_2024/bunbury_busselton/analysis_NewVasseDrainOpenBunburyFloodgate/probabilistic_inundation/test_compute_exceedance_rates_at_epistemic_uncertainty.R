@@ -21,7 +21,7 @@ source(asfm$swals_plots_script_file, local=swals)
 target_point = c(113.0708, -28.5679)
 stage_threshold = 1.6
 epistemic_uncertainty_percentile = 0.84
-sourcezone_runs_base_dir = '../../swals/OUTPUTS/ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm/random_sunda2/'
+sourcezone_runs_base_dir = '../../swals/OUTPUTS/ptha18-BunburyBusseltonNewVasseDrainOpenBunburyFloodgate-sealevel60cm/random_sunda2/'
 comparison_calculation_RDS = '../max_stage_at_a_point/epistemic_percentile_uncertainties_nonlinear_model_113.0708_-28.5679.RDS'
 tmp_output_dir = 'tmpdir_sunda2'
 

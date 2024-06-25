@@ -23,18 +23,18 @@ DEFAULT_MC_CORES = 104 #48
 # Path to an untarred multidomain directory with the same setup as the hazard runs.
 # Used for occasional situations when we need to 
 reference_multidomain_dir = normalizePath(
-    '../../swals/OUTPUTS/Fuji_andaman2004_24hrs_ShutFloodgate_domain301122-full-ambient_sea_level_0.0/RUN_20230617_135726567/')
+    '../../swals/OUTPUTS/Fuji_andaman2004_24hrs_OpenFloodgate_NewVasseDrain_domain301122-full-ambient_sea_level_0.0/RUN_20240427_091057133/')
 
 # Path to a single raster_output_file.tar (having the same model setup as all
 # the random scenarios).
 reference_raster_tar_file = Sys.glob(paste0(
-    '../../swals/OUTPUTS/ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm/random*/ptha18*/raster_output_files.tar'))[1]
+    '../../swals/OUTPUTS/ptha18-BunburyBusseltonNewVasseDrainOpenBunburyFloodgate-sealevel60cm/random*/ptha18*/raster_output_files.tar'))[1]
 
 # Named list with directories containing random scenario runs for each source-zone.
 # Names must match ptha18 source-zone name
 source_zone_modelled_tsunami_scenario_basedirs = list(
-    'outerrisesunda' = '../../swals/OUTPUTS/ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm/random_outerrisesunda/',
-    'sunda2'         = '../../swals/OUTPUTS/ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm/random_sunda2/')
+    'outerrisesunda' = '../../swals/OUTPUTS/ptha18-BunburyBusseltonNewVasseDrainOpenBunburyFloodgate-sealevel60cm/random_outerrisesunda/',
+    'sunda2'         = '../../swals/OUTPUTS/ptha18-BunburyBusseltonNewVasseDrainOpenBunburyFloodgate-sealevel60cm/random_sunda2/')
 
 
 #' Get scenario metadata corresponding to a set of random model runs for a single source zone.

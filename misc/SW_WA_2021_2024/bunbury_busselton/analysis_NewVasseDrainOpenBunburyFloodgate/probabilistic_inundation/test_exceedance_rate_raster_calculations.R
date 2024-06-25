@@ -21,8 +21,8 @@ comparison_calculation_RDS = '../max_stage_at_a_point/nonlinear_model_curves_and
 
 source_zone = 'sunda2'
 # Tarred models
-tarred_multidomain_dirs = Sys.glob(
-    '../../swals/OUTPUTS/ptha18-BunburyBusseltonShutFloodgateRevised-sealevel60cm/random_sunda2/ptha*/RUN*.tar')
+tarred_multidomain_dirs = Sys.glob( ## Here we match both '.tar' and '.tar.bz2'
+    '../../swals/OUTPUTS/ptha18-BunburyBusseltonNewVasseDrainOpenBunburyFloodgate-sealevel60cm/random_sunda2/ptha*/RUN*.ta*')
 
 # Logic tree mean scenarios
 scenario_databases = list()
