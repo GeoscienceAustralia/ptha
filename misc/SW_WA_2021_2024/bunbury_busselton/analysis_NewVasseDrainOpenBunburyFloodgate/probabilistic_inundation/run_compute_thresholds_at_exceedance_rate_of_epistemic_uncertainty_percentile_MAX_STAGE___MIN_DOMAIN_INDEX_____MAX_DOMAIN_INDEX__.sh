@@ -15,7 +15,7 @@ EXRATE=0.0004 # events per year
 MINDEPTH=0.6 # Lower limit to uniroot search (for efficiency)
 MAXDEPTH=10.6 # Upper limit to uniroot search (for efficiency)
 DEPTHTOL=0.001 # Tolerance for uniroot search
-OUTPUTDIR=bunburyBusseltonShutBunburyFloodgate_revised_highres_domains_max_stage_at_epistemic_uncertainty_84pc
+OUTPUTDIR=bunburyBusseltonNewVasseDrainOpenBunburyFloodgate_revised_highres_domains_max_stage_at_epistemic_uncertainty_84pc
 
 # In my study the high-resolution domains have a sequence of indices between these.
 MIN_DOMAIN_INDEX=__MIN_DOMAIN_INDEX__
