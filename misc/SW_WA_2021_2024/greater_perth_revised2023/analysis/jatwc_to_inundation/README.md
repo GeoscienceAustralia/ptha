@@ -73,7 +73,6 @@ For the Bunbury/Busselton model, this script includes a special treatment for th
 
 * To make the results repeatable, and explicitly control the conservatism, we can instead limit the inundation zone to a rare exceedance-rate as defined by the PTHA results. 
     * Here we used the 1/2500 exceedance-rate for the 84th percentile epistemic uncertainty, after some initial experimentation with 1/10000 84th percentile.
-    * Visual inspection suggested that, in the Perth Coast zone, similar results would be obtained using the 1/10000 exceedance-rate for the logic-tree-mean curve, rather than the 84th percentile, although the latter zone is often slightly larger. 
     * Our tests to date (convergence, comparison with the offshore PTHA) suggest that this exceedance-rate is reasonably well approximated with our random scenarios (i.e. we would expect similar results if we re-ran the calculations with new random scenarios).
 
 
