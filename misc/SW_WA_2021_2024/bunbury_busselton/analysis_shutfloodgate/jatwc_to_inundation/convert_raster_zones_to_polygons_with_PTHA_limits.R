@@ -55,15 +55,6 @@ stopifnot(zone_type %in% allowed_zone_types)
 # Initial model sea level
 AMBIENT_SEA_LEVEL = asfm$SCENARIO_AMBIENT_SEA_LEVEL
 
-
-# We once used a special treatment of the initial stage in the Vasse estuary
-# FIXME: Generalise this in future applications if it is needed.
-VASSE_ESTUARY_SPECIAL_TREATMENT = TRUE # FALSE will skip these calculations
-if(VASSE_ESTUARY_SPECIAL_TREATMENT){
-    VASSE_ESTUARY_POLYGON = vect('../../elevation/initial_stage_40cmAHD/initial_stage_40cmAHD.shp')
-    VASSE_ESTUARY_INITIAL_STAGE = 0.4
-}
-
 # The upper limit of the zones is limited based on the PTHA inundation
 # exceedance-rate results.
 # This represents a probabilistic attempt to say "how big is the largest
@@ -88,8 +79,6 @@ setwd(working_dir)
 # At this stage, there is no limitation from PTHA.
 all_files = Sys.glob(paste0(zone_type, '_max_stage_domain_*.tif'))
 stopifnot(length(all_files) > 1)
-
-#jatwc_zones_all_scenarios = vrt(all_files, options=c('-resolution', 'highest'))
 jatwc_zones_all_scenarios = rast(make_vrt(all_files))
 
 # Get files in the PTHA raster that match these files.
@@ -100,8 +89,6 @@ matching_files = match(ptha_rasts_endofname, all_files_endofname)
 # Check we got a 1:1 match
 stopifnot(all(sort(na.omit(matching_files)) == (1:length(all_files))  ))
 k = which(!is.na(matching_files))
-
-#ptha_vrt = vrt(ptha_exceedance_rate_rasts[k], options=c('resolution', 'highest'))
 ptha_vrt = rast(make_vrt(ptha_exceedance_rate_rasts[k]))
 
 
@@ -110,12 +97,17 @@ ptha_vrt = rast(make_vrt(ptha_exceedance_rate_rasts[k]))
 # is not a random quantity.
 included_sites = ( jatwc_zones_all_scenarios >= (AMBIENT_SEA_LEVEL + WET_TOL) ) & (ptha_vrt >= PTHA_EXRATE_TOL)
 
-if(VASSE_ESTUARY_SPECIAL_TREATMENT){
-    # Special treatment for Vasse estuary, where we set the initial sea-level to a different value
-    vasse_sites = rasterize(VASSE_ESTUARY_POLYGON, jatwc_zones_all_scenarios, background=0)
+if(asfm$LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS){
+    # Special treatment for Vasse estuary, where we set the initial sea-level to a lower value
+    vasse_sites = rasterize(asfm$LOWER_AMBIENT_SEA_LEVEL_POLYGON, jatwc_zones_all_scenarios, background=0)
+
+    stopifnot(asfm$LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS < AMBIENT_SEA_LEVEL)
+
+    # Include sites that may have been ignored in the previous calculation
+    # because their sea level is too low.
     included_sites = included_sites | (
         (vasse_sites == 1) & 
-        (jatwc_zones_all_scenarios >= (VASSE_ESTUARY_INITIAL_STAGE + WET_TOL)) & 
+        (jatwc_zones_all_scenarios >= (asfm$LOWER_AMBIENT_SEA_LEVEL + WET_TOL)) & 
         (ptha_vrt >= PTHA_EXRATE_TOL)) 
 }
 
