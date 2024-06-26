@@ -56,7 +56,7 @@ get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
     stopifnot(all(file.exists(raster_tar_files)))
 
     # Tarred multidomin directories
-    tarred_multidomain_dirs = Sys.glob(paste0(MD_BASE_DIR, '/ptha18_*/RUN*.tar'))
+    tarred_multidomain_dirs = Sys.glob(paste0(MD_BASE_DIR, '/ptha18_*/RUN*.ta*')) # Match BOTH tar and tar.bz2
     stopifnot(all(file.exists(raster_tar_files)) & 
         (length(raster_tar_files) == length(tarred_multidomain_dirs) ))
 
@@ -131,7 +131,7 @@ get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
 find_matching_md_data<-function(row_indices, tarred_multidomain_data, source_zone, return_index=FALSE){
 
     # This test is true in my contexts (but not strictly needed)
-    stopifnot(all(endsWith(tarred_multidomain_data, '.tar'))) 
+    stopifnot(all(endsWith(tarred_multidomain_data, '.tar') | endsWith(tarred_multidomain_data, '.tar.bz2'))) 
 
     # Make a string with the start of the SWALS output folder name (beneath
     # ../../swals/OUTPUTS/random_sourcezone/...)
@@ -165,6 +165,10 @@ get_raster_name_stub_from_variable_name<-function(VARIABLE_NAME){
         raster_name_stub =  'depth_as_max_stage_minus_elevation0_domain_'
     }else if(VARIABLE_NAME == 'max_stage'){
         raster_name_stub = 'max_stage_domain_'
+    }else if(VARIABLE_NAME == 'max_flux'){
+        raster_name_stub = 'max_flux_domain_'
+    }else if(VARIABLE_NAME == 'max_speed'){
+        raster_name_stub = 'max_speed_domain_'
     }else if(VARIABLE_NAME == 'arrival_time'){
         raster_name_stub = 'arrival_time_domain_'
     }else{

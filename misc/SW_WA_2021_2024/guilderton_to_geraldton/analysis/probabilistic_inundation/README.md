@@ -14,14 +14,14 @@ Below we show how to compute rasters depicting:
 * The depth at a given exceedance-rate and epistemic uncertainty percentile (last set of code, below).
   * This uses root-finding to compute the depth (or max-stage) within a prescribed tolerance.
 
-Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
+Before running anything you'll need to modify [application_specific_file_metadata.R](application_specific_file_metadata.R) for your case.
 
 ## How to run
 
 ### Inundation exceedance-rate calculations (logic-tree-mean case) 1st step
 ```bash
 
-# Modify application_specific_inputs.R for your case
+# Modify application_specific_file_metadata.R for your case
 
 # Modify the test code to suit your case, then run it and check that all cases PASS
 Rscript test_exceedance_rate_raster_calculations.R # Should print a few "PASS"
@@ -132,7 +132,7 @@ Rscript compute_sum_of_percentiles.R ptha18-midwest-sealevel60cm/highres_depth_e
 # in the 3x3 grid, and defining the other cells from this).
 
 # Modify the test code below to suit your case, then run it and check that it prints PASS.
-# This will require a node, with as many cores needed in application_specific_inputs.R::MC_CORES.
+# This will require a node, with as many cores needed in application_specific_file_metadata.R::MC_CORES.
 Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 
 # If the test works, proceed with calculations of interest.
