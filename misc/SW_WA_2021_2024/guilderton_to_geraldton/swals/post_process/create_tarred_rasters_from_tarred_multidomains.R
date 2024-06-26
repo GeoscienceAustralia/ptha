@@ -32,6 +32,16 @@ MC_CORES = 48 # Available cores when memory is not an issue
 # The rasters will be packed in a tar archive to help manage the file counts.
 RASTER_TAR_FILENAME_RELATIVE_TO_MULTIDOMAIN_TARFILE_DIR = 'raster_output_files.tar'
 
+# Which variables should be made into rasters
+VARIABLES_TO_WRITE_AS_RASTER = c('max_stage', 'max_depth', 'max_speed', 'max_flux', 'arrival_time', 'elevation0') # 'max_flux'
+
+# If the output tar file already exists, should we append the rasters to the
+# file? If FALSE we assume the existing files are up to date (and do not make
+# any new rasters for them) -- so if there are out of date files then you
+# should delete them separately before using this script.
+APPEND_IF_TAR_EXISTS = FALSE #TRUE
+
+
 STARTING_DIR = getwd() # Useful to prevent unexpected directory changes in case parts of the code fail.
 
 # Get the SWALS post-processing scripts
@@ -168,11 +178,11 @@ library(parallel)
 all_chunks = splitIndices(length(MULTIDOMAIN_TAR_FILES), NCHUNKS)
 MULTIDOMAIN_TAR_FILES = MULTIDOMAIN_TAR_FILES[all_chunks[[MYCHUNK]]]
 
-# Ensure that the output raster tar files do not already exist. If they do, remove the associated multidomains
-# from the vector naming those to be processed.
+# Check if the output raster tar files do already exist. If they do, and we are not appending to the tar files,
+# then remove the associated multidomains from the vector naming those to be processed.
 output_tarfiles = paste0(dirname(MULTIDOMAIN_TAR_FILES), '/', RASTER_TAR_FILENAME_RELATIVE_TO_MULTIDOMAIN_TARFILE_DIR)
 k = which(file.exists(output_tarfiles))
-if(length(k) > 0){
+if( (length(k) > 0) & (!APPEND_IF_TAR_EXISTS) ){
     print('Some output tarfiles (with rasters) already exist. Skipping the associated MULTIDOMAIN_TAR_FILES')
     MULTIDOMAIN_TAR_FILES = MULTIDOMAIN_TAR_FILES[-k]
 }
@@ -203,7 +213,7 @@ if(!all(file.exists(multidomain_dirs))){
 #
 make_the_rasters_parallel<-function(multidomain_dirs, cl){
     all_domain_inds = get_domain_indices_in_multidomain(multidomain_dirs[1])
-    all_raster_variables = c('max_stage', 'max_depth', 'max_speed', 'arrival_time', 'elevation0')
+    all_raster_variables = VARIABLES_TO_WRITE_AS_RASTER 
     all_inputs = expand.grid(all_domain_inds, multidomain_dirs, all_raster_variables, stringsAsFactors=FALSE)
 
     ## This can have memory problems with dynamic scheduling
@@ -259,6 +269,9 @@ tar_rasters_in_dir<-function(multidomain_dir){
 
     if(file.exists(output_tar_filename)){
         print(paste0(output_tar_filename, ' already exists'))
+        append_to_existing_tar_file = APPEND_IF_TAR_EXISTS
+    }else{
+        append_to_existing_tar_file = FALSE
     }
     
     # Move to the directory where we will make the tar file
@@ -267,8 +280,11 @@ tar_rasters_in_dir<-function(multidomain_dir){
     tif_files = Sys.glob('*.tif')
     ## For some reason this doesn't work
     #tarred_command = tar(output_tar_filename, tif_files, compression='none')
-    ## But this system call works
-    tarred_command = system(paste0('tar -cf ', output_tar_filename, ' *.tif'))
+    if(append_to_existing_tar_file){
+        tarred_command = system(paste0('tar -rf ', output_tar_filename, ' *.tif'))
+    }else{
+        tarred_command = system(paste0('tar -cf ', output_tar_filename, ' *.tif'))
+    }
 
     # Should be 0 on success
     tarred_successfully = (tarred_command == 0)
