@@ -1,9 +1,9 @@
 #!/bin/bash
 #PBS -P w85
-#PBS -q normal
+#PBS -q normalsr
 #PBS -l walltime=08:00:00
-#PBS -lmem=190GB
-#PBS -lncpus=48
+#PBS -lmem=500GB
+#PBS -lncpus=104
 #PBS -ljobfs=20GB
 #PBS -l wd
 #PBS -l storage=scratch/w85+gdata/w85
