@@ -101,7 +101,7 @@ if(asfm$LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS){
     # Special treatment for Vasse estuary, where we set the initial sea-level to a lower value
     vasse_sites = rasterize(asfm$LOWER_AMBIENT_SEA_LEVEL_POLYGON, jatwc_zones_all_scenarios, background=0)
 
-    stopifnot(asfm$LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS < AMBIENT_SEA_LEVEL)
+    stopifnot(asfm$LOWER_AMBIENT_SEA_LEVEL < AMBIENT_SEA_LEVEL)
 
     # Include sites that may have been ignored in the previous calculation
     # because their sea level is too low.
