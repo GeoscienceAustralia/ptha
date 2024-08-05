@@ -24,12 +24,12 @@ DEFAULT_MC_CORES_SR = 104
 # Path to an untarred multidomain directory with the same setup as the hazard runs.
 # Used for occasional situations when we need to 
 reference_multidomain_dir = normalizePath(
-    '../../swals/OUTPUTS/Sumatra2004_FujiiSatake2007_timevarying-full-ambient_sea_level_0.0/RUN_20231122_120644963/')
+    '../../swals/OUTPUTS/extreme_source-full-ambient_sea_level_0.6/RUN_20231130_122017933/')
 
 # Path to a single raster_output_file.tar (having the same model setup as all
 # the random scenarios).
 reference_raster_tar_file = Sys.glob(paste0(
-    '../../swals/OUTPUTS/ptha18-midwest-sealevel60cm/random*/ptha18*/raster_output_files.tar'))[1]
+    '../../swals/OUTPUTS/ptha18-midwest-sealevel60cm/random*/ptha18*/raster_output_files', c('.tar', '.tar.bz2')))[1]
 
 # Named list with directories containing random scenario runs for each source-zone.
 # Names must match ptha18 source-zone name
@@ -53,11 +53,11 @@ get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
     source_zone = gsub('random_', '', source_info) # This should name the unsegmented source in ptha18
 
     # Tarfiles with output rasters for all runs
-    raster_tar_files = Sys.glob(paste0(MD_BASE_DIR, '/ptha18_*/raster_output_files.tar'))
+    raster_tar_files = Sys.glob(paste0(MD_BASE_DIR, '/ptha18_*/raster_output_files', c('.tar', '.tar.bz2')))
     stopifnot(all(file.exists(raster_tar_files)))
 
     # Tarred multidomin directories
-    tarred_multidomain_dirs = Sys.glob(paste0(MD_BASE_DIR, '/ptha18_*/RUN*.tar'))
+    tarred_multidomain_dirs = Sys.glob(paste0(MD_BASE_DIR, '/ptha18_*/RUN*', c('.tar', '.tar.bz2')))
     stopifnot(all(file.exists(raster_tar_files)) & 
         (length(raster_tar_files) == length(tarred_multidomain_dirs) ))
 
@@ -132,7 +132,7 @@ get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
 find_matching_md_data<-function(row_indices, tarred_multidomain_data, source_zone, return_index=FALSE){
 
     # This test is true in my contexts (but not strictly needed)
-    stopifnot(all(endsWith(tarred_multidomain_data, '.tar'))) 
+    stopifnot(all(endsWith(tarred_multidomain_data, '.tar') | endsWith(tarred_multidomain_data, '.tar.bz2')))
 
     # Make a string with the start of the SWALS output folder name (beneath
     # ../../swals/OUTPUTS/random_sourcezone/...)
@@ -166,6 +166,10 @@ get_raster_name_stub_from_variable_name<-function(VARIABLE_NAME){
         raster_name_stub =  'depth_as_max_stage_minus_elevation0_domain_'
     }else if(VARIABLE_NAME == 'max_stage'){
         raster_name_stub = 'max_stage_domain_'
+    }else if(VARIABLE_NAME == 'max_flux'){
+        raster_name_stub = 'max_flux_domain_'
+    }else if(VARIABLE_NAME == 'max_speed'){
+        raster_name_stub = 'max_speed_domain_'
     }else if(VARIABLE_NAME == 'arrival_time'){
         raster_name_stub = 'arrival_time_domain_'
     }else{
