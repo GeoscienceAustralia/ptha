@@ -27,7 +27,7 @@ SCENARIO_AMBIENT_SEA_LEVEL = 0.6
 # waterbodies that are not connected to the coast. At these sites our calculations
 # need to use an alternative ambient sea level when converting raster zones to polygons
 # with PTHA limits
-LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS = FALSE
+LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS = TRUE
 if(LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS){
     LOWER_AMBIENT_SEA_LEVEL_POLYGON = vect('../../elevation/initial_stage_40cmAHD/initial_stage_40cmAHD.shp')
     LOWER_AMBIENT_SEA_LEVEL = 0.4
