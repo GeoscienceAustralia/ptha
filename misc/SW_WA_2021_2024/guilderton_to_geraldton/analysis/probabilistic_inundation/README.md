@@ -2,7 +2,7 @@
 
 This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated.
 
-Before running anything you'll need to modify [application_specific_inputs.R](application_specific_inputs.R) for your case.
+Before running anything you'll need to modify [application_specific_file_metadata.R](application_specific_file_metadata.R) for your case.
 
 You will also have to hand-modify various scripts below. This is explained in comments but perhaps not comprehensively. It is always a good idea to read any script prior to submitting it.
 
@@ -21,7 +21,7 @@ All the calculations in this section are based around exceedance-rates. Below we
 
 ```bash
 
-# Modify application_specific_inputs.R for your case
+# Modify application_specific_file_metadata.R for your case
 
 # Inundation exceedance-rate calculations (logic-tree-mean case) 1st step
 #
@@ -131,7 +131,7 @@ Here we show how to calculate the depth / max-stage / max-flux / max-speed at a 
 # in the 3x3 grid, and defining the other cells from this).
 
 # Modify the test code below to suit your case, then run it and check that it prints PASS.
-# This will require a node, with as many cores needed in application_specific_inputs.R::MC_CORES_SR.
+# This will require a node, with as many cores needed in application_specific_file_metadata.R::MC_CORES_SR.
 Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 
 # If the test works, proceed with calculations of interest.
