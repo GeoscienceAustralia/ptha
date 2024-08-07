@@ -59,7 +59,7 @@ get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
     stopifnot(all(file.exists(raster_tar_files)))
 
     # Tarred multidomin directories
-    tarred_multidomain_dirs = Sys.glob(paste0(MD_BASE_DIR, '/ptha18_*/RUN*.tar'))
+    tarred_multidomain_dirs = Sys.glob(paste0(MD_BASE_DIR, '/ptha18_*/RUN*', c('.tar', '.tar.bz2'))) # Match BOTH .tar and .tar.bz2
     stopifnot(all(file.exists(raster_tar_files)) & 
         (length(raster_tar_files) == length(tarred_multidomain_dirs) ))
 
@@ -78,52 +78,6 @@ get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
     stopifnot(length(all_source_samples) == 1)
     stopifnot(length(all_source_samples[[1]]) == 1)
     stopifnot(file.exists(all_source_samples[[1]]))
-
-    #if(source_zone == 'outerrisesunda'){
-    #    # This source-zone doesn't have a segmented representation
-
-    #    scenario_base = '../../sources/hazard/scenarios_ID710.5/random_outerrisesunda/'
-    #    all_source_names = 'outerrisesunda'
-    #    all_source_samples = list(
-    #        'outerrisesunda' = paste0(scenario_base, 'random_scenarios_outerrisesunda_unsegmented_HS.csv'))
-    #    ## Categorise the files above as unsegmented or segmented.
-    #    ## The source-representations are either unsegmented, or union(segments)
-    #    #UNSEGMENTED_INDEX = 1
-    #    #SEGMENTED_INDICES = c( )
-
-    #}else if(source_zone == 'sunda2'){
-    #    # This source-zone has both an unsegmented and a "union-of-segments" representation
-
-    #    scenario_base = '../../sources/hazard/scenarios_ID710.5/random_sunda2/'
-
-    #    # Files with random_scenarios for all logic-tree-branches for the sunda2 unsegmented, and the segments
-    #    all_source_names = c('sunda2', 'sunda2_arakan', 'sunda2_andaman', 'sunda2_sumatra', 'sunda2_java')
-    #    all_source_samples = list(
-    #        'sunda2' = paste0(scenario_base, 'random_scenarios_sunda2_unsegmented_HS.csv'),
-    #        'sunda2_arakan' = paste0(scenario_base, 'random_scenarios_sunda2_arakan_segment_HS.csv'),
-    #        'sunda2_andaman' = paste0(scenario_base, 'random_scenarios_sunda2_andaman_segment_HS.csv'),
-    #        'sunda2_sumatra' = paste0(scenario_base, 'random_scenarios_sunda2_sumatra_segment_HS.csv'),
-    #        'sunda2_java' = paste0(scenario_base, 'random_scenarios_sunda2_java_segment_HS.csv')
-    #    )
-    #    ## Categorise the files above as unsegmented or segmented.
-    #    ## The source-representations are either unsegmented, or union(segments)
-    #    #UNSEGMENTED_INDEX = 1
-    #    #SEGMENTED_INDICES = c(2,3,4,5)
-    #}else{
-    #    stop(paste0('Unknown source zone: ', source_zone, ' from MD_BASE_DIR = ', MD_BASE_DIR))
-    #}
-
-    #unsegmented_wt = 1 - 0.5*(length(SEGMENTED_INDICES) > 0)
-    #segmented_wt   =     0.5*(length(SEGMENTED_INDICES) > 0)
-    #stopifnot(isTRUE(all.equal(unsegmented_wt + segmented_wt, 1.0)))
-
-    #stopifnot(UNSEGMENTED_INDEX == 1)
-    #if(length(SEGMENTED_INDICES) > 0){
-    #    stopifnot(length(all_source_samples) == max(SEGMENTED_INDICES) & min(SEGMENTED_INDICES) == 2) # Beware missing a segment
-    #}
-
-    #stopifnot(all(all_source_names == names(all_source_samples)))
-    #stopifnot(all(unlist(lapply(all_source_samples, file.exists))))
 
     return(environment())
 }
@@ -150,7 +104,8 @@ get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIR){
 find_matching_md_data<-function(row_indices, tarred_multidomain_data, source_zone, return_index=FALSE){
 
     # This test is true in my contexts (but not strictly needed)
-    stopifnot(all(endsWith(tarred_multidomain_data, '.tar'))) 
+    #stopifnot(all(endsWith(tarred_multidomain_data, '.tar'))) 
+    stopifnot(all(endsWith(tarred_multidomain_data, '.tar') | endsWith(tarred_multidomain_data, '.tar.bz2'))) 
 
     # Make a string with the start of the SWALS output folder name (beneath
     # ../../swals/OUTPUTS/random_sourcezone/...)
@@ -184,6 +139,10 @@ get_raster_name_stub_from_variable_name<-function(VARIABLE_NAME){
         raster_name_stub =  'depth_as_max_stage_minus_elevation0_domain_'
     }else if(VARIABLE_NAME == 'max_stage'){
         raster_name_stub = 'max_stage_domain_'
+    }else if(VARIABLE_NAME == 'max_flux'){
+        raster_name_stub = 'max_flux_domain_'
+    }else if(VARIABLE_NAME == 'max_speed'){
+        raster_name_stub = 'max_speed_domain_'
     }else if(VARIABLE_NAME == 'arrival_time'){
         raster_name_stub = 'arrival_time_domain_'
     }else{

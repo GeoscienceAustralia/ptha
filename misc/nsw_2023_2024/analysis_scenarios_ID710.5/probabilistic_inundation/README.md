@@ -2,6 +2,10 @@
 
 This folder contains scripts for probabilistic inundation calculation, which can be run after all the models in [../../swals](../../swals) have been simulated.
 
+Before running anything you'll need to modify [application_specific_file_metadata.R](application_specific_file_metadata.R) for your case.
+
+## Exceedance-rate calculations
+
 Below we show how to compute rasters depicting:
 * The logic-tree-mean rate of inundation (depth > 1mm).
 * The rate of inundation (depth > 1mm) at the 16th and 84th percentile epistemic uncertainty
@@ -11,25 +15,6 @@ Below we show how to compute rasters depicting:
     * The computed solution is 'rounded down' from the exact solution to the nearest binned value
   * This is a simple approach to computing a quantity of interest at a given exceedance-rate.
     * For a more exact approach see the code below 
-* The depth at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
-  * This uses root-finding to compute the depth (or max-stage) within a prescribed tolerance.
-
-We also provide post-processing scripts to tidy products showing the depth and
-max-stage at a given exceedance-rate and epistemic uncertainty percentile. They deal
-with issues such as
-* Replacing "dry areas" with missing data. The original root-finding
-  calculations do not currently do this consistently.
-* Removing "near-zero" depths that are consistent with "zero", given the
-  few mm of root-finding tolerance in the original calculation.
-* For depths only:
-  * Removing results at sites with elevation below MSL, to help focus visually on inundated areas.
-  * Deriving `depth_above_initial_condition`. 
-    * This is the same as the depth in areas that are initially dry. 
-    * For sites that are wet by the initial condition it uses `tsunami maxima - initial condition`, which better reflects the tsunami intensity at areas that were wet initially.
-
-Before running anything you'll need to modify [application_specific_file_metadata.R](application_specific_file_metadata.R) for your case.
-
-## How to run
 
 ```bash
 
@@ -133,8 +118,11 @@ Rscript compute_sum_of_percentiles.R ptha18-NSW2023b-ID710.5-sealevel110cm/highr
 
 ```
 
-Below we show calculation of depth at a given exceedance-rate and epistemic uncertainty percentile.
-The main computational scripts can equally well work on max-stage (the test cases does this).
+## Calculation of thresholds corresponding to an exceedance-rate and epistemic uncertainty percentile
+
+Here we provide code to compute the depth or max-speed or max-stage or max-flux at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
+* This uses root-finding with a prescribed tolerance.
+
 ```bash
 
 # Modify compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R for your case.
@@ -147,32 +135,42 @@ Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 
 # If the test works, proceed with calculations of interest.
 # I wrote a (non-generic) script to run highres domains only.
-qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
+# This doesn't scale well so it is better to use the other scripts below
+# qsub run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.sh
 ```
 
-If the previous command includes too much work for a single node, you can
-instead split the work into pieces by editing
+In general it is better to split the work into multiple jobs using the script
 `make_threshold_epistemic_uncertainty_jobs.R`. 
-It can be used to produce a number of separate jobs for either depth or
-max-stage thresholds with epistemic uncertainty. Each job will work on
-a subset of domains, and can be separately submitted like this:
+It produces a number of separate jobs for either depth, max-stage, max-flux, max-speed 
+thresholds with epistemic uncertainty. Each job will work on a subset of domains. The approach is:
 ```bash
 # Make the submission scripts
 Rscript make_threshold_epistemic_uncertainty_jobs.R
 # Manually check them before proceeding.
 
 # Submit once you're confident it's OK
-for i in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_[1-9]*.sh ;
+for i in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_[D-M]*[1-9]*.sh ;
     do echo $i ;
     qsub $i ;
     mv $i submitted_epistemic_uncertainty_jobs ;
     done
 ```
-With minor modifications
-[make_threshold_epistemic_uncertainty_jobs.R](make_threshold_epistemic_uncertainty_jobs.R)
-can create run scripts for similar calculations of `max_stage`.
 
 ## A few important post-processing scripts
+
+We also provide post-processing scripts to tidy products showing the depth and
+max-stage at a given exceedance-rate and epistemic uncertainty percentile. They deal
+with issues such as
+* Replacing "dry areas" with missing data. The original root-finding
+  calculations do not currently do this consistently.
+* Removing "near-zero" depths that are consistent with "zero", given the
+  few mm of root-finding tolerance in the original calculation.
+* For depths only:
+  * Removing results at sites with elevation below MSL, to help focus visually on inundated areas.
+  * Deriving `depth_above_initial_condition`. 
+    * This is the same as the depth in areas that are initially dry. 
+    * For sites that are wet by the initial condition it uses `tsunami maxima - initial condition`, which better reflects the tsunami intensity at areas that were wet initially.
+
 
 * [mask_depths_below_MSL.R](mask_depths_below_MSL.R) implements some light post-processing of the depth @ 84% raster:
   * It removes areas with elevation below MSL
