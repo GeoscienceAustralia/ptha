@@ -403,7 +403,7 @@ for(max_stage_type in c('nonlinear_model', 'ptha18')){
         # Create variables to plot
         if(max_stage_type == 'nonlinear_model'){    
             exrate_nm = nonlinear_model_curves[[nm]]$exrate
-            exrate_variance_nm = nonlinear_model_curves[[nm]]$exrate
+            exrate_variance_nm = nonlinear_model_curves[[nm]]$exrate_variance
             sampled_exrate_label = 'High-res nonlinear model'
             sampled_exrate_CI_label = 'High-res (95%)'
         }else if(max_stage_type == 'ptha18'){
