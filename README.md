@@ -7,7 +7,7 @@ analysis is several TB in size.
 
 The folder [misc](misc) contains data and code for related work, as detailed therein.
 
-The folder [propagation](propagation) contains a shallow water equations solver.
+The folder [propagation](propagation) contains the nested grid shallow water equations solver SWALS.
 
 The folder [R](R) includes the R package [rptha](R/rptha) along with
 [installation instructions](R/README.md). It also contains various 
