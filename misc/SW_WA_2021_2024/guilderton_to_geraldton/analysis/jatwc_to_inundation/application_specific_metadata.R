@@ -23,6 +23,33 @@ ptha_exceedance_rate_rast_tag = '84pc' # 'Logic_tree_mean'
 # JATWC_H values
 SCENARIO_AMBIENT_SEA_LEVEL = 0.6
 
+# For some models, we use a lower initial stage inside polygons defining 
+# waterbodies that are not connected to the coast. At these sites our calculations
+# need to use an alternative ambient sea level when converting raster zones to polygons
+# with PTHA limits
+LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS = TRUE
+if(LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS){
+    LOWER_AMBIENT_SEA_LEVEL_ZONES = list()
+    # Add the first polygon/sea-level pair
+    LOWER_AMBIENT_SEA_LEVEL_ZONES[[1]] = list(
+        polygon = vect('../../initial_stage/shapes/leeman.shp'),
+        sealevel = -10.0)
+    # Add additional polygon/sea-level pairs
+    LOWER_AMBIENT_SEA_LEVEL_ZONES[[2]] = list(
+        polygon = vect('../../initial_stage/shapes/sandy_cape.shp'),
+        sealevel = -1.0)
+    LOWER_AMBIENT_SEA_LEVEL_ZONES[[3]] = list(
+        polygon = vect('../../initial_stage/shapes/geraldton_shed.shp'),
+        sealevel = -5.0)
+
+    # Check that the provided sea levels are lower than the ambient sea level
+    # (assumed by the code logic)
+    for(i in 1:length(LOWER_AMBIENT_SEA_LEVEL_ZONES)){
+        stopifnot(LOWER_AMBIENT_SEA_LEVEL_ZONES[[i]]$sealevel < SCENARIO_AMBIENT_SEA_LEVEL)
+    }
+}
+
+
 # For computing the JATWC_H statistic, we only consider points reached by the
 # tsunami, defined as sites with 
 #     "max-stage" > ( max(SCENARIO_AMBIENT_SEA_LEVEL, ELEVATION) + WETTOL ).
