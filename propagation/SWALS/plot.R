@@ -666,6 +666,11 @@ make_max_stage_raster<-function(swals_out, proj4string='EPSG:4326',
 #' transform the variable before plotting
 #' @param NA_if_stage_not_above_elev logical. If TRUE, the set regions with
 #' stage <= (elev + dry_depth) to NA
+#' @param NA_if_max_flux_is_zero logical. If TRUE, then set regions with 
+#' max_flux == 0 to NA. This can be useful if you
+#' have a model with a time-varying earthquake source, where in subsiding areas
+#' that are dry the max_stage may be greater than the final elevation (=elevation0).
+#' These sites are distinguished by having zero max_flux.
 #' @param use_fields logical. If TRUE, use image.plot from the fields package.
 #' Otherwise use graphics::image
 #' @param clip_to_zlim logical. If TRUE, clip the variable limits to be within
@@ -683,7 +688,9 @@ make_max_stage_raster<-function(swals_out, proj4string='EPSG:4326',
 #' @return Nothing, but make the plot.
 multidomain_image<-function(multidomain_dir, variable, time_index, 
     xlim, ylim, zlim, cols, add=FALSE,
-    var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, 
+    var_transform_function = NULL, 
+    NA_if_stage_not_above_elev = FALSE, 
+    NA_if_max_flux_is_zero = FALSE, 
     use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list(), 
     dry_depth = 1.0e-03){
@@ -760,6 +767,20 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
 
             var[stage < elevation + dry_depth] = NA
         }
+
+        if(NA_if_max_flux_is_zero){
+            # Use NA values at sites where max_flux is zero. This can be useful if you
+            # have a model with a time-varying earthquake source, where in subsiding areas
+            # that are dry the max_stage may be greater than the final elevation (=elevation0).
+            # These sites are distinguished by having zero max_flux.
+            if('max_flux' %in% names(fid$var)){
+                max_flux = ncvar_get(fid, 'max_flux')
+                var[max_flux ==0] = NA
+            }else{
+                stop('max_flux not provided in output file, cannot use it for multidomain_image')
+            }
+        }
+
         nc_close(fid)
 
         if(!is.null(var_transform_function)) var = var_transform_function(var)
