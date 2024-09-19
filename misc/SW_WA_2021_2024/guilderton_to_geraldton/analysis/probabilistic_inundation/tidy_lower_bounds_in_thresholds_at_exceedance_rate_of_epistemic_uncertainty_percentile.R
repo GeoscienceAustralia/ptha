@@ -46,6 +46,33 @@ rasters_to_process = list(
 
 MC_CORES = 48
 
+print('WARNING: This code includes a hack to work around a problem with initial condition of the WA Midwest model at Sandy Cape, which leads to flow in a small patch of land far from the coast (that would definitely have no flow if the initial condition were set correctly). You do not want to include this in any other models!!!!')
+# This model has a minor problem where the initial stage at Sandy Cape is
+# set to a low value.  By mistake there were cells on land with low
+# elevation (far from wet areas) on the boundary of the polygon defining
+# the area with low max-stage. This led to a "dam-break" initial condition
+# at a site in domain 454! Hence there is non-zero flow that seems weird.  
+#
+# Because the area is on land, and completely disconnected from the real
+# model solutions, we can just remove these cells.
+raster_needs_fixing<-function(raster_name){
+    # Only domain 454. The first grep is just to reduce the risk of this hack being
+    # applied by accident in future models
+    (grepl('midwest_revised_highres', raster_name, fixed=TRUE) & 
+    grepl("domain_index_454.tif", raster_name, fixed=TRUE))
+}
+raster_cells_to_NA_in_domain_454_polygon = vect(
+    # Polygon containing cells in domain 454 that should be set to NA
+    matrix(c(
+            115.055702, -30.2864 ,
+            115.05709 , -30.2864 ,
+            115.05709 , -30.284936,
+            115.055702, -30.284936), 
+        ncol=2, byrow=TRUE),
+    type='polygons',
+    crs='EPSG:4326')
+
+
 #
 # END INPUTS
 #
@@ -62,6 +89,12 @@ for(varname in names(rasters_to_process)){
         r1 = rast(filename)
         output_file = paste0(output_dir, '/', basename(filename))        
         r1[r1 < NA_below] = NA
+
+        # Workaround for problem in domain 454
+        if(raster_needs_fixing(filename)){
+            r1 = mask(r1, raster_cells_to_NA_in_domain_454_polygon, inverse=TRUE)
+        }
+
         writeRaster(r1, file=output_file, gdal=c('COMPRESS=DEFLATE'), overwrite=TRUE)
         rm(r1); gc()
         return(output_file)

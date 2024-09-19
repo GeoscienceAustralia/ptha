@@ -173,6 +173,9 @@ Rscript make_threshold_epistemic_uncertainty_jobs.R
 # will be set to the lower-limit of the root-finding space. For max-speed and
 # max-flux, even "always dry" areas will get zero values. This is easy to
 # misinterpret, so we use a separate script to clean up the wet-dry values.
+# FOR THE WA MIDWEST MODEL ONLY, THIS CODE ALSO PATCHES OVER A PROBLEM CAUSED BY
+# THE INITIAL STAGE AT SANDY CAPE, REMOVING CELLS IN AN AREA WHERE THERE DEFINITELY
+# SHOULD NOT BE FLOW.
 # 
 # Make sure you edit it to set the right folders/thresholds etc, then do
 Rscript tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R
