@@ -24,7 +24,7 @@ rasters_to_process = list(
     # Max-stage rasters
     max_stage = list(
         rasters = Sys.glob('bunburyBusseltonNewVasseDrainOpenBunburyFloodgate_revised_highres_domains_max_stage_at_epistemic_uncertainty_84pc/*.tif'),
-        NA_below = 0.6 + 0.0015, # Lower limit was 0.6. Compare to root-finding tolerance of 1e-03
+        NA_below = -9999, # No need to clip this with the new approach #0.6 + 0.0015, # Lower limit was 0.6. Compare to root-finding tolerance of 1e-03
         output_dir = './bunburyBusseltonNewVasseDrainOpenBunburyFloodgate_max_stage_1in2500_84pc',
         output_vrt = 'bunburyBusseltonNewVasseDrainOpenBunburyFloodgate_max_stage_1in2500_84pc.vrt'),
 
@@ -44,7 +44,7 @@ rasters_to_process = list(
 
     )
 
-MC_CORES = 16
+MC_CORES = 48
 
 #
 # END INPUTS
