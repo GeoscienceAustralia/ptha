@@ -1,9 +1,13 @@
 #
-# Compute the depth associated with a given exceedance-rate and epistemic-uncertainty percentile, as a raster.
+# Compute the flow variable associated with a given exceedance-rate and epistemic-uncertainty percentile, as a raster.
 # Run like:
 #   Rscript compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R VARIABLE_NAME DOMAIN_INDEX PERCENTILE_TO_USE EXCEEDANCE_RATE MINIMUM_DEPTH MAXIMUM_DEPTH DEPTH_TOL OUTPUT_DIR
-# e.g.:
-#   Rscript compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R depth 450 0.84 0.0004 0.005 10.0 0.004 directory_to_hold_results
+# e.g. (depth @ 1/2500 84th percentile, 1mm tolerance, with specified lower and upper bounds for the uniroot search)
+#   Rscript compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R depth 450 0.84 0.0004 0.005 10.0 0.001 directory_to_hold_results
+# or (max_stage with a data-defined lower bound for the uniroot search)
+#   Rscript compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R max_stage 450 0.84 0.0004 adaptive_minimum 10.6 0.001 directory_to_hold_results
+# or (max_speed with a data-defined upper bound for the uniroot search)
+#   Rscript compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R max_speed 450 0.84 0.0004 0.0 adaptive_maximum 0.001 directory_to_hold_results
 #
 library(utils)
 suppressPackageStartupMessages(library(rptha))
@@ -40,8 +44,21 @@ VARIABLE_NAME = inargs[1] # 'depth' or 'max_stage'
 DOMAIN_INDEX = as.numeric(inargs[2]) # 450
 PERCENTILE_TO_USE = as.numeric(inargs[3]) # 0.84
 EXCEEDANCE_RATE = as.numeric(inargs[4]) # 1/2500
-MINIMUM_DEPTH = as.numeric(inargs[5]) # 0.0005
-MAXIMUM_DEPTH = as.numeric(inargs[6]) # 10.0
+if(inargs[5] == 'adaptive_minimum'){
+    # Infer MINIMUM DEPTH search range from the data. In this case, if the
+    # smallest non-NA tsunami in a given pixel corresponds to an exceedance-rate that is rarer than
+    # EXCEEDANCE_RATE, then returned pixel value will be NA. This is typically what we want for
+    # areas that are dry at the specified exceedance-rate.
+    MINIMUM_DEPTH = 'adaptive_minimum'
+}else{
+    MINIMUM_DEPTH = as.numeric(inargs[5]) # 0.0005
+}
+if(inargs[6] == 'adaptive_maximum'){
+    # Infer MAXIMUM DEPTH search range from the data.
+    MAXIMUM_DEPTH = 'adaptive_maximum'
+}else{
+    MAXIMUM_DEPTH = as.numeric(inargs[6]) # 10.0
+}
 DEPTH_TOL = as.numeric(inargs[7]) # 0.005 - Tolerance for the depth used in the root-finding function
 OUTPUT_DIR = inargs[8] # 'my_output_directory_relative_to_here'
 
@@ -74,7 +91,8 @@ MC_CORES = asfm$DEFAULT_MC_CORES
 raster_name_stub = asfm$get_raster_name_stub_from_variable_name(VARIABLE_NAME)
 
 stopifnot(PERCENTILE_TO_USE > 0 & PERCENTILE_TO_USE < 1)
-stopifnot(is.finite(c(EXCEEDANCE_RATE, DOMAIN_INDEX, MINIMUM_DEPTH, MAXIMUM_DEPTH, DEPTH_TOL)))
+stopifnot(all(is.finite(c(EXCEEDANCE_RATE, DOMAIN_INDEX, DEPTH_TOL))))
+stopifnot(all(!is.na(c(MINIMUM_DEPTH, MAXIMUM_DEPTH))))
 
 dir.create(OUTPUT_DIR, showWarnings=FALSE)
 
@@ -120,7 +138,7 @@ prepare_source_zone_data<-function(MD_BASE_DIR){
 
     # Convert the data to a structure suitable for pixel-by-pixel parallel calculation.
     outputs = euf$make_all_pixel_data(all_samples[[1]]$inds, raster_tar_files, source_zone, 
-        DOMAIN_INDEX, raster_name_stub, MC_CORES)
+        DOMAIN_INDEX, raster_name_stub, MC_CORES, MINIMUM_DEPTH, MAXIMUM_DEPTH)
     # Unpack the variables we use 
     all_pixel_data = outputs$all_pixel_data # List with one entry per pixel, giving cell indices and vector with depths for raster_tar_files
     scenarios_to_results_inds = outputs$scenarios_to_results_inds # Mapping between the scenario table and the raster results
@@ -134,15 +152,16 @@ prepare_source_zone_data<-function(MD_BASE_DIR){
     # calculations to quickly get the solution (which improves the speed).
     #
     # Make some fake 'pixel' data 
+    fake_threshold = 10
     fake_wet_pixel_data = list(
         # Value is always > threshold
-        model_runs_max_value = rep(MAXIMUM_DEPTH+1, length(all_samples[[1]]$inds)),
+        model_runs_max_value = rep(fake_threshold+1, length(all_samples[[1]]$inds)),
         # Pixel i/j indices ensure it is not skipped; counter unused here.
         i = floor(SUB_SAMPLE/2)+1, j = floor(SUB_SAMPLE/2)+1, counter=NA) 
     # Get the rate for an "always wet" pixel
     ALWAYS_WET_EXRATE = euf$get_exrate_percentile_at_pixel(fake_wet_pixel_data,
         all_samples, all_source_rate_info, scenarios_to_results_inds,
-        MAXIMUM_DEPTH, PERCENTILE_TO_USE,
+        fake_threshold, PERCENTILE_TO_USE,
         NRAND, SUB_SAMPLE, NEEDS_INTERPOLATING,
         NULL,  # Deliberate NULL where we'd usually pass ALWAYS_WET_EXRATE to trigger the calculation.
         UNSEGMENTED_INDEX, SEGMENTED_INDICES,
@@ -237,8 +256,14 @@ rootfun<-function(depth, source_zone_pixel_data){
 
 # Function to find the exceedance-rate of interest via root finding.
 find_threshold_at_exrate<-function(source_zone_pixel_data){
-    f_lower = rootfun(MINIMUM_DEPTH, source_zone_pixel_data)
-    f_upper = rootfun(MAXIMUM_DEPTH, source_zone_pixel_data)
+
+    # Minimum search depth over all source zones. Nontrivial if MINIMUM_DEPTH=='adaptive_minimum'
+    min_d = min(unlist(lapply(source_zone_pixel_data, function(x) x$min))) - DEPTH_TOL/3
+    # Maximum search depth over all source zones. Nontrivial if MAXIMUM_DEPTH=='adaptive_maximum'
+    max_d = max(unlist(lapply(source_zone_pixel_data, function(x) x$max))) + DEPTH_TOL/3
+
+    f_lower = rootfun(min_d, source_zone_pixel_data)
+    f_upper = rootfun(max_d, source_zone_pixel_data)
 
     if(is.na(f_lower) & is.na(f_upper)) return(NA)
 
@@ -254,13 +279,22 @@ find_threshold_at_exrate<-function(source_zone_pixel_data){
 
     # We expect (f_lower > 0) and (f_upper < 0). Otherwise the
     # value of interest is outside our bounds, so quick exit
-    if(f_lower < 0) return(MINIMUM_DEPTH)
-    if(f_upper > 0) return(MAXIMUM_DEPTH)
+    if(f_lower < 0){
+        if(MINIMUM_DEPTH == 'adaptive_minimum'){
+            # Most likely the cell is "dry" at this exceedance rate. Or we 
+            # requested an exceedance-rate such that our smallest scenario
+            # has an (individual) occurrence-rate that is larger than the exceedance-rate.
+            return(NA) 
+        }else{
+            return(min_d)
+        }
+    }
+    if(f_upper > 0) return(max_d) # The real maxima is higher, clipped
 
     # Find the root
     findroot = uniroot(rootfun, 
         source_zone_pixel_data = source_zone_pixel_data, 
-        lower=MINIMUM_DEPTH, upper=MAXIMUM_DEPTH, tol=DEPTH_TOL)
+        lower=min_d, upper=max_d, tol=DEPTH_TOL)
 
     return(findroot$root)
 }
