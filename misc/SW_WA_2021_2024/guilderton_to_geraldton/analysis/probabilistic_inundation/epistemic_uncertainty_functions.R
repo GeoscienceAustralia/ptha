@@ -83,8 +83,26 @@ get_logic_tree_branch_mw_bin_rates_and_posterior_probs<-function(
 #' @param raster_name_stub Inside each raster_tar_file, the raster of interest
 #' is named paste0(raster_name_stub, DOMAIN_INDEX, ".tif")
 #' @param MC_CORES How many cores to use
+#' @param MINIMUM_DEPTH value used to possibly constrain the threshold search later.
+#' Could be a numeric value, or 'adaptive_minimum'
+#' @param MAXIMUM_DEPTH value used to possibly constrain the threshold search later.
+#' Could be a numeric value, or 'adaptive_maximum'
 make_all_pixel_data<-function(scenario_row_index, raster_tar_files, 
-    source_zone, DOMAIN_INDEX, raster_name_stub, MC_CORES){
+    source_zone, DOMAIN_INDEX, raster_name_stub, MC_CORES, MINIMUM_DEPTH, 
+    MAXIMUM_DEPTH){
+
+    character_minimum_depth = is.character(MINIMUM_DEPTH)
+    if(character_minimum_depth){
+        if(MINIMUM_DEPTH != 'adaptive_minimum'){
+            stop(paste0('unknown character MINIMUM_DEPTH: ', MINIMUM_DEPTH))
+        }
+    }
+    character_maximum_depth = is.character(MAXIMUM_DEPTH)
+    if(character_maximum_depth){
+        if(MAXIMUM_DEPTH != 'adaptive_maximum'){
+            stop(paste0('unknown character MAXIMUM_DEPTH: ', MAXIMUM_DEPTH))
+        }
+    }
 
     # Make a mapping between the scenarios and the raster tar files
     raster_tar_file_row = asfm$find_matching_md_data(scenario_row_index, 
@@ -127,8 +145,16 @@ make_all_pixel_data<-function(scenario_row_index, raster_tar_files,
     for(j in 1:dim(big_depth_array)[3]){
         for(i in 1:dim(big_depth_array)[2]){
             counter = i + (j-1)*dim(big_depth_array)[2]
-            all_pixel_data[[counter]] = list(model_runs_max_value=big_depth_array[,i,j], 
-                                            i = i, j = j, counter=counter)
+            all_pixel_data[[counter]] = list(
+                model_runs_max_value=big_depth_array[,i,j], 
+                i = i, j = j, counter=counter,
+                min = ifelse(character_minimum_depth,
+                            min(big_depth_array[,i,j], na.rm=TRUE),
+                            MINIMUM_DEPTH),
+                max = ifelse(character_maximum_depth,
+                            max(big_depth_array[,i,j], na.rm=TRUE),
+                            MAXIMUM_DEPTH)
+            )
         }
     }
     rm(big_depth_array)
