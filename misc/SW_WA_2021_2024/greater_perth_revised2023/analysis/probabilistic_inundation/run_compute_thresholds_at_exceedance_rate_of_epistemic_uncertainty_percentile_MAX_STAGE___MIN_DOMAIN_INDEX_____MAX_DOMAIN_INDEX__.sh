@@ -1,9 +1,9 @@
 #!/bin/bash
 #PBS -P w85
-#PBS -q normal
-#PBS -l walltime=24:00:00
-#PBS -lmem=190GB
-#PBS -lncpus=48
+#PBS -q normalsr
+#PBS -l walltime=6:00:00
+#PBS -lmem=500GB
+#PBS -lncpus=104
 #PBS -ljobfs=20GB
 #PBS -l wd
 #PBS -l storage=scratch/w85+gdata/w85+gdata/fj6
@@ -12,8 +12,8 @@ source R_431_NCI_modules.sh
 
 PERCENTILE=0.84 # epistemic uncertainty percentile
 EXRATE=0.0004 # events per year 
-MINDEPTH=0.6 # Lower limit to uniroot search (for efficiency)
-MAXDEPTH=10.6 # Upper limit to uniroot search (for efficiency)
+MINDEPTH=adaptive_minimum # Lower limit to uniroot search (for efficiency)
+MAXDEPTH=adaptive_maximum # Upper limit to uniroot search (for efficiency)
 DEPTHTOL=0.001 # Tolerance for uniroot search
 OUTPUTDIR=greaterperth_2023_revised_highres_domains_max_stage_at_epistemic_uncertainty_84pc
 

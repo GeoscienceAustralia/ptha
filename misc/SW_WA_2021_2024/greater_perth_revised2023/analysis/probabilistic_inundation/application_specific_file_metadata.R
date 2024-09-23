@@ -19,6 +19,7 @@ swals_plots_script_file = paste0(dirname(dirname(get_ptha_results_script_file)),
 # Default number of cores for parallel calculations
 # Shared memory only. Too many cores may hit memory problems.
 DEFAULT_MC_CORES = 48
+DEFAULT_MC_CORES_SR = 104
 
 # Path to an untarred multidomain directory with the same setup as the hazard runs.
 # Used for occasional situations when we need to 
