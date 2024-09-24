@@ -1,7 +1,7 @@
 #!/bin/bash
 #PBS -P w85
 #PBS -q normalsr
-#PBS -l walltime=12:00:00
+#PBS -l walltime=6:00:00
 #PBS -lmem=500GB
 #PBS -lncpus=104
 #PBS -ljobfs=20GB
@@ -12,8 +12,8 @@ source R_431_NCI_modules.sh
 
 PERCENTILE=0.84 # epistemic uncertainty percentile
 EXRATE=0.0004 # events per year 
-MINDEPTH=0.0 # Lower limit to uniroot search (for efficiency)
-MAXDEPTH=10.0 # Upper limit to uniroot search (for efficiency)
+MINDEPTH=adaptive_minimum # Lower limit to uniroot search (for efficiency)
+MAXDEPTH=adaptive_maximum # Upper limit to uniroot search (for efficiency)
 DEPTHTOL=0.001 # Tolerance for uniroot search
 OUTPUTDIR=bunburyBusseltonNewVasseDrainOpenBunburyFloodgate_revised_highres_domains_depth_at_epistemic_uncertainty_84pc
 
