@@ -383,7 +383,7 @@ module domain_mod
             !! If unallocated then it will be set in domain%nc_grid_output%initialise
         character(len=charlen), allocatable :: nontemporal_grids_to_store(:)
             !! Specify which 'nontemporal' variables to store. For example:
-            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage']
+            !!   [character(len=charlen):: 'max_stage', 'min_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage']
             !! to store everything;
             !!   [''] to store nothing;
             !!   ['max_stage'] to just store the maximum stage.
@@ -2277,6 +2277,17 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 ( domain%max_U(i,j,k) < 0.0_dp ) ) then
                                 domain%max_U(i,j,k) = domain%time
                             end if
+                        end do
+                    end do
+                    !$OMP END DO
+
+                case('min_stage')
+
+                    !! Track the minimum stage
+                    !$OMP DO SCHEDULE(STATIC)
+                    do j = domain%yL, domain%yU !1, domain%nx(2)
+                        do i = domain%xL, domain%xU !1, domain%nx(1)
+                            domain%max_U(i,j,k) = min(domain%max_U(i,j,k), domain%U(i,j,STG))
                         end do
                     end do
                     !$OMP END DO
