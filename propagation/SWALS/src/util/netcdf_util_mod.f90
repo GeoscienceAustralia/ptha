@@ -37,7 +37,7 @@ module netcdf_util
         [character(len=charlen) :: 'stage', 'uh', 'vh', 'elev']
         !! Gridded variables that can be output as time-series. Must match [STG, UH, VH, ELV] in order.
     character(len=charlen), parameter :: gridded_output_variables_max_U(6) = &
-        [character(len=charlen) :: 'max_stage', 'min_stage', 'max_speed', 'max_flux', 'arrival_time', 'time_of_max_stage']
+        [character(len=charlen) :: 'max_stage', 'max_speed', 'max_flux', 'arrival_time', 'time_of_max_stage', 'min_stage']
         !! Gridded variables that can be output, are not time-series, but require tracking flow maxima.
         !! Keep 'max_stage' as the first entry (for now) to support code that assumes domain%max_U(:,:,1) contains the max-stage.
     character(len=charlen), parameter :: gridded_output_variables_other(3) = &

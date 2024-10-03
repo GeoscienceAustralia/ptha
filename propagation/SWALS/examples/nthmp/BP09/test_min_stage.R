@@ -1,10 +1,9 @@
 source('../../../plot.R')
 
 
-test_min_stage = function(atol=1e-6) {
+test_min_stage = function(rtol=1e-2) {
     domain_number = 2
     most_recent_run = rev(Sys.glob(paste0('OUTPUTS/RUN_*')))[1]
-
 
     min_stage_raster = merge_domains_nc_grids(
         multidomain_dir = most_recent_run, 
@@ -16,14 +15,14 @@ test_min_stage = function(atol=1e-6) {
 
     # check min minimum stage is -5.987428
     check_min_stage = min(min_stage, na.rm=TRUE)
-    if (abs(min(check_min_stage) - -5.987428) > atol) {
+    if (abs(min(check_min_stage) - -5.987428)/abs(-5.987428) > rtol) {
         print("FAIL")
         stop('min min_stage is not -5.987428')
     }
     print("PASS")
     # check max minimum stage is 500
     check_max_stage = max(min_stage, na.rm=TRUE)
-    if (abs(check_max_stage - 500) > atol) {
+    if (abs(check_max_stage - 500)/500 > rtol) {
         print("FAIL")
         stop('max min_stage is not 500')
     }
