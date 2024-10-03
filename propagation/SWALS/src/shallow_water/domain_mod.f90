@@ -1061,6 +1061,14 @@ TIMER_STOP("compute_statistics")
             end do
             !$OMP END DO
             !$OMP END PARALLEL
+
+            ! Set the initial values for the min_stage to a large number
+            do k = 1, size(domain%max_U_variables)
+                if (domain%max_U_variables(k) == 'min_stage') then
+                    ! No need to do this in parallel since already first touched
+                    domain%max_U(:,:,k) = 0.99_output_precision * huge(real(1.0, kind=output_precision))
+                end if
+            end do
         end if
 
         ! Many other variables are required for the non-staggered-grid solvers (i.e. the nonlinear finite-volume solvers)
