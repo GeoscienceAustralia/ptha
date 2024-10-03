@@ -15,32 +15,34 @@ test_min_stage = function(rtol=1e-2) {
 
     # check min minimum stage is -5.987428
     check_min_stage = min(min_stage, na.rm=TRUE)
-    if (abs(min(check_min_stage) - -5.987428)/abs(-5.987428) > rtol) {
-        print("FAIL")
-        stop('min min_stage is not -5.987428')
+    expected_val = -5.987428
+    if (abs(min(check_min_stage) - expected_val)/abs(expected_val) > rtol) {
+        print(paste0("FAIL - min min_stage is not within rtol of ", expected_val))
+    }else{
+        print("PASS")
     }
-    print("PASS")
     # check max minimum stage is 500
     check_max_stage = max(min_stage, na.rm=TRUE)
-    if (abs(check_max_stage - 500)/500 > rtol) {
-        print("FAIL")
-        stop('max min_stage is not 500')
+    expected_val = 500
+    if (abs(check_max_stage - expected_val)/abs(expected_val) > rtol) {
+        print(paste0("FAIL: max min_stage is not within rtol of ", expected_val))
+    }else{
+        print("PASS")
     }
-    print("PASS")
 
     # check no Inf
     if (any(is.infinite(min_stage))) {
-        print("FAIL")
-        stop('min_stage contains Inf')
+        print("FAIL - min_stage contains Inf")
+    }else{
+        print("PASS")
     }
-    print("PASS")
 
     # check no -Inf
     if (any(is.infinite(min_stage))) {
-        print("FAIL")
-        stop('min_stage contains -Inf')
+        print("FAIL - min_stage contains -Inf")
+    }else{
+        print("PASS")
     }
-    print("PASS")
 
 }
 
