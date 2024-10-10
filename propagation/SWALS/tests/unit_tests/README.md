@@ -22,7 +22,7 @@ to count failures (should be 0), and
 
     grep PASS outfile.log | wc -l
 
-to count passes (383 at the time of writing).
+to count passes (395 at the time of writing).
 
 You might want to adjust the preprocessing flags to check that the
 tests still pass with different compilation options.
