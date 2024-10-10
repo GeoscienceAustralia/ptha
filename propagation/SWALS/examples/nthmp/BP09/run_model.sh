@@ -26,6 +26,7 @@ eval "$OMP_RUN_COMMAND ./BP09 '' > outfile_omp.log"
 # Plot and report tests
 echo '# Testing openmp version '
 Rscript plot_results.R lowresolution_omp
+Rscript test_min_stage.R
 # Move the openmp results to a new folder
 mv $( dirname OUTPUTS/RUN*/multidomain_log.log ) OUTPUTS/openmp_results
 
@@ -45,6 +46,7 @@ eval "$CAF_RUN_COMMAND ./BP09 '' > outfile_ca.log"
 # Plot and report tests
 echo '# Testing coarray version '
 Rscript plot_results.R lowresolution_coarray
+Rscript test_min_stage.R
 # Move the coarray results to a new folder
 mv $( dirname OUTPUTS/RUN*/mu*001.log ) OUTPUTS/coarray_results
 
@@ -65,6 +67,7 @@ eval "$OMP_RUN_COMMAND ./BP09 'load_balance_6_trivial.txt' > outfile_omp.log"
 # Plot and report tests
 echo '# Testing openmp version '
 Rscript plot_results.R lowresolution_omp_localtimestep
+Rscript test_min_stage.R
 # Move the results to a new folder
 mv $( dirname OUTPUTS/RUN*/mu*001.log ) OUTPUTS/openmp_results_localtimestep
 

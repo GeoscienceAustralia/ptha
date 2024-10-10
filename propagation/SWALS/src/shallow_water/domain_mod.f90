@@ -383,7 +383,7 @@ module domain_mod
             !! If unallocated then it will be set in domain%nc_grid_output%initialise
         character(len=charlen), allocatable :: nontemporal_grids_to_store(:)
             !! Specify which 'nontemporal' variables to store. For example:
-            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage']
+            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage', 'min_stage']
             !! to store everything;
             !!   [''] to store nothing;
             !!   ['max_stage'] to just store the maximum stage.
@@ -1061,6 +1061,14 @@ TIMER_STOP("compute_statistics")
             end do
             !$OMP END DO
             !$OMP END PARALLEL
+
+            ! Set the initial values for the min_stage to a large number
+            do k = 1, size(domain%max_U_variables)
+                if (domain%max_U_variables(k) == 'min_stage') then
+                    ! No need to do this in parallel since already first touched
+                    domain%max_U(:,:,k) = 0.99_output_precision * huge(real(1.0, kind=output_precision))
+                end if
+            end do
         end if
 
         ! Many other variables are required for the non-staggered-grid solvers (i.e. the nonlinear finite-volume solvers)
@@ -2277,6 +2285,17 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 ( domain%max_U(i,j,k) < 0.0_dp ) ) then
                                 domain%max_U(i,j,k) = domain%time
                             end if
+                        end do
+                    end do
+                    !$OMP END DO
+
+                case('min_stage')
+
+                    !! Track the minimum stage
+                    !$OMP DO SCHEDULE(STATIC)
+                    do j = domain%yL, domain%yU !1, domain%nx(2)
+                        do i = domain%xL, domain%xU !1, domain%nx(1)
+                            domain%max_U(i,j,k) = min(domain%max_U(i,j,k), domain%U(i,j,STG))
                         end do
                     end do
                     !$OMP END DO
