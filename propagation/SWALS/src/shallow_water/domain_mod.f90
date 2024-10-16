@@ -2193,7 +2193,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 end if
                             end do
                         end do
-                        !$OMP END DO
+                        !$OMP END DO NOWAIT
                     else
                         ! Only store max stage
                         !$OMP DO SCHEDULE(STATIC)
@@ -2202,7 +2202,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
                             end do
                         end do
-                        !$OMP END DO
+                        !$OMP END DO NOWAIT
                     end if
 
                 case('time_of_max_stage')
@@ -2242,7 +2242,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                     domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv**2))
                             end do
                         end do
-                        !$OMP END DO
+                        !$OMP END DO NOWAIT
                     else
                         ! Speed on co-located grid
                         !$OMP DO SCHEDULE(STATIC)
@@ -2255,7 +2255,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                     sqrt((domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2)*local_depth_inv**2))
                             end do
                         end do
-                        !$OMP END DO
+                        !$OMP END DO NOWAIT
                     end if
 
                 case('max_flux')
@@ -2269,7 +2269,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 sqrt(domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2))
                         end do
                     end do
-                    !$OMP END DO
+                    !$OMP END DO NOWAIT
 
                 case('arrival_time')
 
@@ -2287,7 +2287,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                             end if
                         end do
                     end do
-                    !$OMP END DO
+                    !$OMP END DO NOWAIT
 
                 case('min_stage')
 
@@ -2298,7 +2298,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                             domain%max_U(i,j,k) = min(domain%max_U(i,j,k), domain%U(i,j,STG))
                         end do
                     end do
-                    !$OMP END DO
+                    !$OMP END DO NOWAIT
 
                 case default
                     write(log_output_unit, *) ' Unknown value in domain%max_U_variables '
