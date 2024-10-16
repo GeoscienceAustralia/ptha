@@ -4,7 +4,7 @@ Before running these tests you should check that the unit tests pass, see [here]
 
 The parallel unit tests can be run with
 
-    source run_model.sh > outfile.log
+    source run_test.sh > outfile.log
 
 This will run the same tests multiple times, with different numbers of MPI ranks, and write a large number of `PASS` or `FAIL` statements to `outfile.log`. We do not expect any `FAIL`s, but the log will contain a few other statements (e.g. multidomain summary information). 
 
