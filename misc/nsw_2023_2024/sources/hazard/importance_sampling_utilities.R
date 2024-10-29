@@ -1,4 +1,12 @@
 #' Compute basic importance sampling weights, given the event rate and sampling probabilities
+#'
+#' @param event_rate vector with the rate r(e) of any scenario e that might
+#' possibly be sampled.
+#' @param sampling_prob The chance of sampling scenario e in the Monte Carlo
+#' method.
+#' @return The basic importance sampling weights 
+#'     [ (event_rate/sum(event_rate))/sampling_prob ]
+#' ,with protection against zero division
 basic_importance_sampling_weights<-function(event_rate, sampling_prob){
 
     stopifnot(isTRUE(all.equal(sum(sampling_prob), 1)))
@@ -10,19 +18,20 @@ basic_importance_sampling_weights<-function(event_rate, sampling_prob){
     return(bis_wts)
 }
 
-#' Analytical exceedance rate and variance of Monte Carlo exceedance rates
+#' Analytical exceedance rate and variance of Monte Carlo exceedance rates with importance sampling
 #'
 #' Given a site in the offshore PTHA (where all event_stage values are known), compute
 #' the rate of exceedance of some threshold, and the variance of the Monte Carlo estimate.
+#' This assumes we will use basic importance sampling (no stratification).
 #'
-#' @param event_rate vector with occurrence rates for each scenario
+#' @param event_rate vector with occurrence rates for each scenario that could possibly be sampled
 #' @param event_stage vector with peak stage (or some other intensity measure) for each scenario
-#' @param sampling_prob vector with probabilities used for non-uniform sampling of scenarios with replacement
-#' @param bis_wts basic importance sampling weights
-#' @param stage_threshold the threshold (we compute the rate with which event_stage>stage_threshold)
-#' @param N_MC Number of monte carlo samples that would be taken (only used for MC_variance calculation)
-#' @return Vector of length 2 with the (exact) exceedance rate, and variance of
-#' Monte Carlo exceedance rates with N_MC samples.
+#' @param sampling_prob vector with probabilities used for (likely non-uniform) sampling of scenarios with replacement
+#' @param stage_threshold the threshold. We compute the rate with which [event_stage > stage_threshold].
+#' @param N_MC Number of monte carlo samples that will be taken (only used for MC_variance calculation)
+#' @return Vector of length 2 with the (exact) exceedance rate, and the variance of
+#' Monte Carlo exceedance rate when using N_MC samples.
+#'
 analytical_exrate_and_MC_variance<-function(event_rate, event_stage, stage_threshold, sampling_prob, N_MC){
 
     # The following use ALL PTHA scenarios -- they are exact results, not Monte Carlo estimates
@@ -40,6 +49,21 @@ analytical_exrate_and_MC_variance<-function(event_rate, event_stage, stage_thres
     return(c(output_exrate, output_var))
 }
 
+#' Randomly sample scenarios with importance sampling
+#'
+#' This routine randomly samples N_MC scenarios from among the provided 
+#' scenarios using importance sampling. It then computes empirical exceedance
+#' rates and their variance.
+#'
+#' @param event_rate the rate r(e) of each scenario e in the PTHA that could possibly be sampled
+#' @param event_stage the maximum stage (or some other intensity measure) for each scenrio e
+#' @param stage_thresholds the thresholds at which we will compute maximum-stage exceedance-rates for the
+#' random sample
+#' @param sampling_prob The chance of sampling each scenario. 
+#' @param N_MC the number of samples to take
+#' @param myseed optional random seed for reproducibility.
+#' @return a list including indices of the sampled scenarios, their stages and
+#' bis_weights, and exrates the given stage_thresholds.
 sample_scenarios_monte_carlo<-function(event_rate, event_stage, stage_thresholds, sampling_prob, N_MC, myseed=NULL){
 
     # Option to set the random seed
