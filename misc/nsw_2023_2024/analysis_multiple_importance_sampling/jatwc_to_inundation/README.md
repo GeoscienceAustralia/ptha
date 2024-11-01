@@ -1,5 +1,7 @@
 # Compute inundation zones corresponding to JATWC warning categories, with upper limits based on PTHA.
 
+This version for multiple importance sampling is quite similar to what you'd use for a single sample, but it is missing a few routines that aren't needed if you've already done single-sample calculations elsewhere (e.g. to copy the elevation data locally, etc).
+
 Once all scripts have been run, the key outputs are polygon shapefiles in folders named like `Inundation_zones/{zone_name}/{zone_name}_{warning_type}_with_PTHA-exrate-limit_{...}/`
 
 # Details of folder contents (once scripts have been run)
