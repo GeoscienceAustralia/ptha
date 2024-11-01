@@ -8,6 +8,8 @@ For the mean exceedance-rate and its uncertainty, we directly compute the weight
 
 See `compute_mean_rate_from_previous_calculations.R`.
 
+This is nothing like the single-sample code -- although it uses results of the single-sample code as input.
+
 
 ## 84th percentile exceedance-rate
 
@@ -18,6 +20,7 @@ The main code is `compute_exceedance_rates_at_epistemic_uncertainty_percentile.R
 
 We split the work into a number of single-node jobs with `make_exceedance_rate_jobs.R`, which use the template PBS script `run_compute_exceedance_rates_at_epistemic_uncertainty_VARIABLE_SOURCEZONE_PERCENTILE_LOWER_UPPER_EXCEEDANCETHRESHOLD.sh` to create many jobs.
 
+The associated code is quite similar to the single-sample code. But it is modified to compute the weights and sample-size associated with each sample, and integrated them into the rate calculation.
 
 ## Threshold at 1/2500 84th percentile
 
@@ -37,6 +40,8 @@ Then compute "depth above initial condition at sites with elevation > 0" with so
 ```
 Rscript make_depth_above_initial_condition.R 
 ```
+
+The associated code is quite similar to the single-sample code. But it is modified to compute the weights and sample-size associated with each sample, and integrated them into the rate calculation. It also integrates some unrelated updates which mean we don't have to pre-specify a search range for each variable.
 
 ## Threshold at 1/250 50th percentile
 

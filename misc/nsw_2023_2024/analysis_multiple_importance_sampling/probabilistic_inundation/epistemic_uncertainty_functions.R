@@ -153,8 +153,6 @@ make_all_pixel_data<-function(all_samples, raster_tar_files,
         }
     }
 
-    # FIXME: Get weights for each sample. Beware that raster_tar_files might
-    # point to a different sample.
     scenario_row_index = all_samples$inds
 
     # Make a mapping between the scenarios and the raster tar files

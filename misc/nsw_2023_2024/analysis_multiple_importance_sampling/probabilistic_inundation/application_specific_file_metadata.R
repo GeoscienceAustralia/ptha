@@ -162,55 +162,6 @@ get_scenario_metadata_from_md_base_dir<-function(MD_BASE_DIRS){
     return(environment())
 }
 
-##' Given a vector of source-model row indices in the PTHA18 scenario database, find the
-##' SWALS tarred multidomain_dir (or raster output files) that store the tsunami 
-##' model results for each scenario.
-##'
-##' This depends on the naming convention of the SWALS model output files, so 
-##' we make this function a user input. Likely one will just need to edit the
-##' "matching_string" definition to conform to the model setup.
-##'
-##' @param row_indices PTHA18 row index (integer)
-##' @param tarred_multidomain_data path of tarred multidomain directories OR tarred raster files. 
-##' Typically files of the form
-##'   ../../swals/OUTPUTS/ptha18-GreaterPerth2023-sealevel60cm/random_sunda2/ptha18_random_scenarios_sunda2_row_0024934_Mw_75_HS-full-ambient_sea_level_0.6/RUN_20230901_214821086.tar
-##' OR
-##'   ../../swals/OUTPUTS/ptha18-GreaterPerth2023-sealevel60cm/random_sunda2/ptha18_random_scenarios_sunda2_row_0024934_Mw_75_HS-full-ambient_sea_level_0.6/raster_output_files.tar
-##' @param source_zone PTHA18 source zone, without any segment information (e.g. sunda2)
-##' @param return_index If TRUE return the integer index of
-##' tarred_multidomain_data corresponding to each value of row_indices. If FALSE
-##' then return the corresponding entries of tarred_multidomain_data
-##' @return The entry of tarred_multidomain_data with the scenario on the given source_zone and row_index.
-#find_matching_md_data<-function(row_indices, tarred_multidomain_data, source_zone, return_index=FALSE){
-#
-#    # FIXME: For multiple importance sampling this could map a row to the "wrong" sample (although the scenario will be the same in these cases).
-#    # But we'll also need a way to store the weights for each sample.
-#
-#    # This test is true in my contexts (but not strictly needed)
-#    #stopifnot(all(endsWith(tarred_multidomain_data, '.tar'))) 
-#    stopifnot(all(endsWith(tarred_multidomain_data, '.tar') | endsWith(tarred_multidomain_data, '.tar.bz2'))) 
-#
-#    # Make a string with the start of the SWALS output folder name (beneath
-#    # ../../swals/OUTPUTS/random_sourcezone/...)
-#    matching_string = paste0('ptha18_random_scenarios_', source_zone, '_row_', 
-#        substring(as.character(1e+07 + row_indices), 2, 8), '_')
-#
-#    # Match with the tarred_multidomain_data, with NA if we don't match or get multiple matches
-#    matching_ind = sapply(matching_string, function(x){
-#        p = grep(x, tarred_multidomain_data)
-#        if(length(p) != 1) p = NA 
-#        return(p)})
-#    if(any(is.na(matching_ind))){
-#        stop('Could not find simulation matching scenario')
-#    }
-#
-#    if(return_index){
-#        return(matching_ind)
-#    }else{
-#        return(tarred_multidomain_data[matching_ind])
-#    }
-#}
-
 #' Associated variable names with raster tif names via "raster_name_stub"
 #'
 #' @param VARIABLE_NAME

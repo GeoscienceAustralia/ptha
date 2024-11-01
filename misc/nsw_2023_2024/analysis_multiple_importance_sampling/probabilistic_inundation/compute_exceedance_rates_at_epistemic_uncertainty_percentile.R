@@ -121,7 +121,6 @@ for(nm_i in all_source_names){
 }
 
 # Convert the data to a structure suitable for pixel-by-pixel parallel calculation.
-# FIXME: For multiple importance sampling, this should extract sample weights at each pixel.
 outputs = euf$make_all_pixel_data(all_samples[[1]], raster_tar_files, source_zone, 
     DOMAIN_INDEX, raster_name_stub, MC_CORES)
 # Unpack the variables we use 
