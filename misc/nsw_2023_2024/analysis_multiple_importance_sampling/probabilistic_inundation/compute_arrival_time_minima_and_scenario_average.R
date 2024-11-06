@@ -117,7 +117,12 @@ process_domain_index<-function(domain_index, raster_tar_files, output_dir){
 }
 
 # Prevent failures in parallel from causing the entire computation to fail
-try_process_domain_index<-function(domain_index, raster_tar_files, output_dir){
+try_process_domain_index<-function(parallel_data){
+    # Unpack list data
+    domain_index = parallel_data$domain_index_to_process
+    source_zone = parallel_data$source_zone
+    output_dir = parallel_data$output_dir
+    raster_tar_files = source_zones_metadata[[source_zone]]$raster_tar_files
     try(process_domain_index(domain_index, raster_tar_files, output_dir))
 }
 
@@ -151,27 +156,37 @@ ignore = clusterCall(local_cluster, fun=function(){
 vars_to_export = ls(all=TRUE)
 clusterExport(local_cluster, varlist=vars_to_export)
 
-# Run the calculation for all source-zones
+# Prepare calculations for all source zones
+parallel_data_list = vector(mode='list', 
+    length=length(names(source_zones_metadata))*length(domain_indices_to_process))
+
+# Construct data to run the calculation for all source-zones in parallel
+counter = 0
 for(i in 1:length(source_zones_metadata)){
     sz = names(source_zones_metadata)[i]
     output_dir_i = output_dir_sz[i] 
-
-    # Main parallel calculation
-    all_raster_calculations = parLapplyLB(cl = local_cluster, 
-        X = domain_indices_to_process, 
-        fun = try_process_domain_index, 
-        raster_tar_files = source_zones_metadata[[sz]]$raster_tar_files,
-        output_dir = output_dir_i,
-        chunk.size=1)
-
-    # Check for errors, and report if needed
-    any_failed = unlist(lapply(all_raster_calculations, function(x) is(x, 'try-error')))
-    if(any(any_failed)){
-        print(paste0('WARNING: calculations failed for the following domain indices on source_zone: ', sz))
-        k = which(any_failed)
-        print(domain_indices_to_process[k])
+    for(j in domain_indices_to_process){
+        counter = counter + 1
+        parallel_data_list[[counter]] = list(
+            domain_index_to_process = j,
+            source_zone = sz,
+            output_dir = output_dir_i)
     }
+
 }
 
+# Main parallel calculation
+all_raster_calculations = parLapplyLB(cl = local_cluster, 
+    X = parallel_data_list, 
+    fun = try_process_domain_index, 
+    chunk.size=1)
+
+# Check for errors, and report if needed
+any_failed = unlist(lapply(all_raster_calculations, function(x) is(x, 'try-error')))
+if(any(any_failed)){
+    print(paste0('WARNING: calculations failed for the following domain indices on source_zone: ', sz))
+    k = which(any_failed)
+    print(parallel_data_list[k])
+}
 # Shut down the cluster
 stopCluster(local_cluster)
