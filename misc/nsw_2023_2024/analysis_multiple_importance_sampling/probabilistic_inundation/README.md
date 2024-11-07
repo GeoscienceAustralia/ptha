@@ -6,14 +6,24 @@ The code here was modified from the single-importance-sample probabilistic inund
 
 For the mean exceedance-rate and its uncertainty, we directly compute the weighted sum (with square-weights for the variance) from previous logic-tree-mean results.
 
-See `compute_mean_rate_from_previous_calculations.R`.
+```
+# Uses a locally defined MC_CORES
+Rscript compute_mean_rate_from_previous_calculations.R
+```
 
 This is nothing like the single-sample code -- although it uses results of the single-sample code as input.
 
+Sum the results for each source zone with
+```
+Rscript compute_mean_exrate_upper_CI.R ptha18-NSW2023-MIS-sealevel110cm/highres_depth_with_variance/ depth 0.001
+```
 
-## 84th percentile exceedance-rate
+## 84th/16th percentile exceedance-rate
 
-Before running serious jobs, ensure the test passes (`test_compute_exceedance_rates_at_epistemic_uncertainty.R`).
+Before running serious jobs, modify the test script and ensure it passes 
+```
+Rscript test_compute_exceedance_rates_at_epistemic_uncertainty.R
+```
 
 The main code is `compute_exceedance_rates_at_epistemic_uncertainty_percentile.R`
 * Note: This could do with a refactor to share more code with `compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R`. The latter necessarily puts more of the functionality into functions.
@@ -22,9 +32,26 @@ We split the work into a number of single-node jobs with `make_exceedance_rate_j
 
 The associated code is quite similar to the single-sample code. But it is modified to compute the weights and sample-size associated with each sample, and integrated them into the rate calculation.
 
+Once the above runs have been done, use
+```
+source make_directory_structure.sh
+```
+to move them into a sensible directory structure.
+
+Then compute the sum-of-percentile results with commands like
+```
+# 16th percentile
+Rscript compute_sum_of_percentiles.R ptha18-NSW2023-MIS-sealevel110cm/highres_depth_epistemic_uncertainty 16 depth 0.001
+# 84th percentile
+Rscript compute_sum_of_percentiles.R ptha18-NSW2023-MIS-sealevel110cm/highres_depth_epistemic_uncertainty 84 depth 0.001
+```
+
 ## Threshold at 1/2500 84th percentile
 
-Before running serious jobs, ensure the test passes (`test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R`).
+Before running serious jobs, modify the test script and ensure it passes 
+```
+Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
+```
 
 The main code is `compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R`. 
 
@@ -33,28 +60,38 @@ We split the work into a number of single-node jobs with `make_threshold_epistem
 
 After running this, use the following to create new 84th percentile products where we remove values below the `uniroot` tolerance used to compute the above rasters. This is important to avoid having non-zero cells (within the uniroot tolerance) at sites that are dry at the 1/2500 84th percentile. The script will need editing first.
 ```
-Rscript tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R
+Rscript tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R 84pc
 ``` 
 
 Then compute "depth above initial condition at sites with elevation > 0" with something like this, after editing the script to ensure the parameter values are OK.
 ```
-Rscript make_depth_above_initial_condition.R 
+Rscript make_depth_above_initial_condition.R 1in2500_84pc
 ```
 
 The associated code is quite similar to the single-sample code. But it is modified to compute the weights and sample-size associated with each sample, and integrated them into the rate calculation. It also integrates some unrelated updates which mean we don't have to pre-specify a search range for each variable.
 
 ## Threshold at 1/250 50th percentile
 
-This is similar to the 1/2500 84th percentile case above, except the template scripts have names like `run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_median_1in250_[D-M]*.sh`.
+This is similar to the 1/2500 84th percentile case above. Here the template scripts have names like `run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_median_1in250_[D-M]*.sh`.
 * To create the run scripts, you need to modify `make_threshold_epistemic_uncertainty_jobs.R` to use these template scripts. The latter should be edited before running.
 
-After running this, use `tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R` to create new 50th percentile products where we remove values below the `uniroot` tolerance used to compute the above rasters. This is important to avoid having non-zero cells (within the uniroot tolerance) at sites that are dry at the 1/250 50th percentile.
+After running this, use 
+```
+Rscript tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R 50pc
+``` 
+to create new 50th percentile products where we remove values below the `uniroot` tolerance used to compute the above rasters. This is important to avoid having non-zero cells (within the uniroot tolerance) at sites that are dry at the 1/250 50th percentile.
 
+Similarly do
+```
+Rscript make_depth_above_initial_condition.R 1in250_50pc
+```
+to make depth above initial condition
 ## Flood hazard categories
 
 When the previous calculations are done, we can create flood hazard categories with something like this (after editing the input parameters to ensure they are OK):
 ```
-Rscript compute_flood_hazard_categories.R 
+Rscript compute_flood_hazard_categories.R 1in2500_84pc
+Rscript compute_flood_hazard_categories.R 1in250_50pc
 ```
 
 Notice this uses the depth above initial condition which has been limited to sites with elevation above 0. This places similar restrictions on the flood hazard category areas.
