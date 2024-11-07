@@ -41,7 +41,7 @@ if(input_parameters_group == '1in2500_84pc'){
 #string_matching_elevation_rasters = commandArgs(trailingOnly=TRUE)[2]
 #output_dir = commandArgs(trailingOnly=TRUE)[3]
 
-MODEL_AMBIENT_SEALEVEL = 1.1015 # Static sea level in model (plus a threshold to account for uniroot tolerance)
+MODEL_AMBIENT_SEALEVEL = 1.1 # Static sea level in model
 
 IGNORE_SITES_WITH_ELEVATION_BELOW_M = 0.0 # Skip sites with elevation below this.
 

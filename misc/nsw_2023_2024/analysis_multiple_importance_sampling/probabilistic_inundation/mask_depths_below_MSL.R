@@ -1,6 +1,6 @@
 # Compute "masked" depth rasters that only show the depth at sites above some elevation.
 # Run with
-#    Rscript "quoted_string_matching_domain_depth_threshold_at_1inXXX_YY_percentile_files*.tif" "quoted_string_matching_domain_elevation_files*.tif" output_dir_name
+#    Rscript mask_depths_below_MSL.R 1in2500_84pc
 # e.g.
 #    Rscript "nsw_full_coast_MIS_highres_domains_depth_at_epistemic_uncertainty_84pc/*_rast_exrate_4e-04_*.tif" "../../analysis_scenarios_ID710.5/jatwc_to_inundation/elevation_in_model/*.tif" nsw_full_coast_MIS_highres_domains_depth_where_elevation_exceeds_0_84pc_4e-04
 #
@@ -19,10 +19,20 @@
 library(terra)
 
 ## INPUTS
+input_par = commandArgs(trailingOnly=TRUE)[1]
+if(input_par == "") input_par = '1in2500_84pc'
 
-string_matching_depth_rasters = 'nsw_full_coast_MIS_max_depth_1in2500_84pc/*.tif' #commandArgs(trailingOnly=TRUE)[1]
-string_matching_elevation_rasters = "../../analysis_scenarios_ID710.5/jatwc_to_inundation/elevation_in_model/*.tif" #commandArgs(trailingOnly=TRUE)[2]
-output_dir = 'nsw_full_coast_MIS_max_depth_masked_at_elevation_below_0_1in2500_84pc/' #commandArgs(trailingOnly=TRUE)[3]
+if(input_par == '1in2500_84pc'){
+    string_matching_depth_rasters = 'nsw_full_coast_MIS_max_depth_1in2500_84pc/*.tif'
+    string_matching_elevation_rasters = "../../analysis_scenarios_ID710.5/jatwc_to_inundation/elevation_in_model/*.tif"
+    output_dir = 'nsw_full_coast_MIS_max_depth_masked_at_elevation_below_0_1in2500_84pc/'
+}else if(input_par == '1in250_50pc'){
+    string_matching_depth_rasters = 'nsw_full_coast_MIS_max_depth_1in250_50pc/*.tif'
+    string_matching_elevation_rasters = "../../analysis_scenarios_ID710.5/jatwc_to_inundation/elevation_in_model/*.tif"
+    output_dir = 'nsw_full_coast_MIS_max_depth_masked_at_elevation_below_0_1in250_50pc/'
+}else{
+    stop(paste0('unknown input_par ', input_par))
+}
 
 IGNORE_SITES_WITH_ELEVATION_BELOW_M = 0.0 # Skip sites with elevation below this.
 MASK_DEPTHS_BELOW_THRESHOLD = -10 # No longer needed since I use the 'tidy....' step previously #0.003 # Mask depths less than this depth {reflecting accuracy limits in the uniroot estimate of the depth}
