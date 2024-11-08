@@ -1,8 +1,6 @@
 # Compute "masked" depth rasters that only show the depth at sites above some elevation.
 # Run with
 #    Rscript mask_depths_below_MSL.R 1in2500_84pc
-# e.g.
-#    Rscript "nsw_full_coast_MIS_highres_domains_depth_at_epistemic_uncertainty_84pc/*_rast_exrate_4e-04_*.tif" "../../analysis_scenarios_ID710.5/jatwc_to_inundation/elevation_in_model/*.tif" nsw_full_coast_MIS_highres_domains_depth_where_elevation_exceeds_0_84pc_4e-04
 #
 # Be sure to use "quotes" to prevent the wildcards being expanded on the shell.
 # Also be sure to match only the tif files of interest (e.g. in case there are

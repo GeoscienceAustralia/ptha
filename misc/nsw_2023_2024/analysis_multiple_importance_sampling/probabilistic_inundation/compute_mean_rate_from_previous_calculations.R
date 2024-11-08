@@ -1,5 +1,8 @@
 #
-#
+# Compute the exceedance-rate (logic-tree-mean) and its Monte Carlo variance using multiple importance sampling.
+# Do this by using previous calculations of the exceedance rate (logic-tree-mean) and its Monte Carlo variance for individual Monte Carlo samples
+#   mean = sum_samples {weight_i * mean_sample_i}
+#   variance = sum_samples {weight_i^2 * variance_sample_i}
 #
 library(terra)
 library(parallel)
