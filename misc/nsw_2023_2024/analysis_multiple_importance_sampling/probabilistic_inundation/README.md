@@ -53,7 +53,8 @@ Before running serious jobs, modify the test script and ensure it passes
 Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R
 ```
 
-The main code is `compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R`. 
+The main code is `compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R`. The code is quite similar to the single-sample code. But it is modified to compute the weights and sample-size associated with each sample, and integrated them into the rate calculation. It also integrates some unrelated updates which mean we don't have to pre-specify a search range for each variable.
+
 
 We split the work into a number of single-node jobs with `make_threshold_epistemic_uncertainty_jobs.R`. 
 * This uses the template scripts `run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_[D-M]*.sh` that should be modified before creating the scripts to match what you need.
@@ -68,7 +69,10 @@ Then compute "depth above initial condition at sites with elevation > 0" with so
 Rscript make_depth_above_initial_condition.R 1in2500_84pc
 ```
 
-The associated code is quite similar to the single-sample code. But it is modified to compute the weights and sample-size associated with each sample, and integrated them into the rate calculation. It also integrates some unrelated updates which mean we don't have to pre-specify a search range for each variable.
+Also mask the depth at sites with elevation > 0 with
+```
+Rscript mask_depths_below_MSL.R 1in2500_84pc
+```
 
 ## Threshold at 1/250 50th percentile
 
@@ -86,6 +90,11 @@ Similarly do
 Rscript make_depth_above_initial_condition.R 1in250_50pc
 ```
 to make depth above initial condition
+
+Also mask the depth at sites with elevation > 0 with
+```
+Rscript mask_depths_below_MSL.R 1in250_50pc
+```
 ## Flood hazard categories
 
 When the previous calculations are done, we can create flood hazard categories with something like this (after editing the input parameters to ensure they are OK):

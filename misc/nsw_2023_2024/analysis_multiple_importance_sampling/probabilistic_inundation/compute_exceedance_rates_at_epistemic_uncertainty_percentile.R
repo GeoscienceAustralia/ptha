@@ -122,7 +122,7 @@ for(nm_i in all_source_names){
 
 # Convert the data to a structure suitable for pixel-by-pixel parallel calculation.
 outputs = euf$make_all_pixel_data(all_samples[[1]], raster_tar_files, source_zone, 
-    DOMAIN_INDEX, raster_name_stub, MC_CORES)
+    DOMAIN_INDEX, raster_name_stub, MC_CORES, 0, Inf)
 # Unpack the variables we use 
 all_pixel_data = outputs$all_pixel_data # List with one entry per pixel, giving cell indices and vector with depths for raster_tar_files
 scenarios_to_results_inds = outputs$scenarios_to_results_inds # Mapping between the scenario table and the raster results
