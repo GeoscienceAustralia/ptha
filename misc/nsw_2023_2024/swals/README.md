@@ -20,8 +20,12 @@ qsub run_model_small_source.sh
 qsub run_model_extreme_source.sh
 # Check the energy stats, max-stage/flux/speed & last_timestep UH/VH for the previous runs
 
-# Convergence testing was done with the initial model setup (for interim report)
-# Files are in the folder.
+#
+# Convergence testing
+#
+qsub run_model_kt43731_12hrs_convergence_final.sh
+qsub run_model_kt43731_12hrs_convergence.sh
+
 
 #
 # Historical tests
@@ -29,8 +33,7 @@ qsub run_model_extreme_source.sh
 #
 qsub run_model_chile1960_FujiiSatake.sh
 qsub run_model_chile1960_HoEtAl.sh
-qsub run_model_Puysegur2009_PTHA18.sh
-qsub run_model_Chile2010_Lorito11.sh
+qsub run_model_Puysegur2009_PTHA18_1788.sh
 qsub run_model_solomon2007.sh
 qsub run_model_Chile2015_Williamson17.sh
 qsub run_model_tohoku2011_Yamazaki.sh
