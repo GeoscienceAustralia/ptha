@@ -49,7 +49,7 @@ There were multiple 'batches' done over different quarters.
 3. Create the PBS scripts that are required to run all jobs. 
   * In practice I used multiple batches, due to both limitations in compute quota, and the relatively long time over which the study was implemented.
 ```
-Rscript create_qsub_commands.R
+Rscript create_random_ptha_qsub_scripts.R
 Rscript create_random_ptha_batch2_qsub_scripts.R
 Rscript create_random_ptha_batch3_qsub_scripts.R
 Rscript create_random_ptha_batch4_qsub_scripts.R
