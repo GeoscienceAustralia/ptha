@@ -30,4 +30,4 @@ mdss mkdir tsunami/MODELS/inundation/NSW_tsunami_inundation_with_NSWSES/stage1/f
 #mdss put -r run_solomon2007_1_19_22m_1arcminoffshore-full-ambient_sea_level_0.0 tsunami/MODELS/inundation/NSW_tsunami_inundation_with_NSWSES/stage1/full_coast/swals/OUTPUTS/
 #mdss put -r run_tohoku2011_Yamazaki_1arcminoffshore-full-ambient_sea_level_0.0 tsunami/MODELS/inundation/NSW_tsunami_inundation_with_NSWSES/stage1/full_coast/swals/OUTPUTS/
 #mdss put -r runs_before_Nov28_2023 tsunami/MODELS/inundation/NSW_tsunami_inundation_with_NSWSES/stage1/full_coast/swals/OUTPUTS/
-
+#mdss put -r run_Chile2014_PTHA18_HS80427_1arcminoffshore-full-ambient_sea_level_0.0 tsunami/MODELS/inundation/NSW_tsunami_inundation_with_NSWSES/stage1/full_coast/swals/OUTPUTS/
