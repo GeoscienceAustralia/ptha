@@ -24,7 +24,8 @@ target_sites_in_order = c(
 output_name_tag = paste0(basename(dirname(dirname(INPUT_RDS))), '_', basename(dirname(INPUT_RDS)))
 if(!is.na(YLIM_RANGE)) output_name_tag = paste0(output_name_tag, '_YLIM_', round(YLIM_RANGE, 4))
 
-png(paste0('Puysegur2009_east_coast_', output_name_tag, '.png'), width=12, height=9, units='in', res=300)
+#png(paste0('Puysegur2009_east_coast_', output_name_tag, '.png'), width=12, height=9, units='in', res=300)
+png(paste0('Puysegur2009_east_coast_', output_name_tag, '_wide.png'), width=24, height=9, units='in', res=300)
 par(mar=c(0, 3, 0, 0))
 par(mfrow=c(length(target_sites_in_order), 1))
 for(i in 1:length(target_sites_in_order)){

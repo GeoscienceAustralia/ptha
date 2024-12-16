@@ -11,19 +11,27 @@ if(length(inargs) > 1){
     YLIM_RANGE = NA
 }
 
+# Third and fourth arguments (optional) give the x-axis range in hours post earthquake
+if(length(inargs) > 2){
+    XLIM_RANGE_HRS = as.numeric(inargs[3:4])
+}else{
+    XLIM_RANGE_HRS = NA
+}
+
 x = readRDS(INPUT_RDS)
 
-target_sites_in_order = c(
-    "Eden_1min_DPIE",
+target_sites_in_order = rev(c(
     "TwofoldBay_1min_BOM",
+    "Eden_1min_DPIE",
     "PortKembla_1min_BOM",
-    "Sydney_FortDenison_1min_PA",
     "Sydney_BotanyBay_1min_PA",
+    "Sydney_FortDenison_1min_PA",
     "Newcastle_east_1min_PA"
-    )
+    ))
 
 output_name_tag = paste0(basename(dirname(dirname(INPUT_RDS))), '_', basename(dirname(INPUT_RDS)))
 if(!is.na(YLIM_RANGE)) output_name_tag = paste0(output_name_tag, '_YLIM_', round(YLIM_RANGE, 4))
+if(!is.na(XLIM_RANGE_HRS[1])) output_name_tag = paste0(output_name_tag, '_XLIM_', XLIM_RANGE_HRS[1], '_', XLIM_RANGE_HRS[2])
 
 png(paste0('Tohoku2011_east_coast_', output_name_tag, '.png'), width=12, height=9, units='in', res=300)
 par(mar=c(0, 3, 0, 0))
@@ -44,7 +52,13 @@ for(i in 1:length(target_sites_in_order)){
         YLIM = c(-YLIM_RANGE, YLIM_RANGE)
     }
 
-    plot(obs$juliant, obs$resid, t='l', ylim=YLIM, xlim=range(model_time), las=1)
+    if(is.na(XLIM_RANGE_HRS)[1]){
+        XLIM = range(model_time)
+    }else{
+        XLIM = min(model_time) + XLIM_RANGE_HRS/24
+    }
+
+    plot(obs$juliant, obs$resid, t='l', ylim=YLIM, xlim=XLIM, las=1)
     points(model_time, model_stage, t='l', col='red')
     points(obs$juliant, obs$resid, t='l')
     grid(col='orange')
@@ -54,7 +68,7 @@ for(i in 1:length(target_sites_in_order)){
 
     obs_spacing = paste0( round((obs$juliant[2] - obs$juliant[1])*24*60,1), ' min')
    
-    text(model_time[1] + 0.5/24, YLIM[1]*(0.4/0.7), paste0(plot_title, ' (', obs_spacing, ')'), cex=2, pos=4)
+    text(XLIM[1] + 0.5/24, YLIM[1]*(0.4/0.7), paste0(plot_title, ' (', obs_spacing, ')'), cex=2, pos=4)
 }
 dev.off()
 
