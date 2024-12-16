@@ -5,14 +5,16 @@
 library(stars)
 library(terra)
 
-desired_elevation_contour = 1
-desired_elevation_contour_name = '+1m'
-desired_elevation_contour_filename_stub = 'pos1m'
+desired_elevation_contour = 1.2
+initial_stage = 1.1
+desired_elevation_contour_name = '+1.2m'
+desired_elevation_contour_filename_stub = 'pos1.2m'
 
 
-# High resolution elevation rasters
-all_highres_elevation_rasts = Sys.glob(
-    'OUTPUTS/run_kt43731_12h_NNL4_CONVERGENCE-full-ambient_sea_level_1.0/RUN_20230925_163957728/elevation0_domain_*.tif')
+# High resolution elevation rasters on the mainland and Lord Howe Island
+all_highres_elevation_rasts = paste0(
+    './OUTPUTS/run_kt43731_12h_final_NNL4_CONVERGENCE-full-ambient_sea_level_1.1/RUN_20241112_173726773/elevation0_domain_', 
+    c(seq(261, 457), seq(476, 488)), '.tif')
 stopifnot(all(file.exists(all_highres_elevation_rasts)))
 
 # Get points on the desired elevation contour
@@ -30,28 +32,40 @@ merged_pts = do.call(rbind, all_contour_points[keep])
 
 # Get the max stage rasters
 # Use terra, because currently 'stars' has some problems in correctly interpreting NA values
-max_stage_rast_convergence = rast(
-    './OUTPUTS/run_kt43731_12h_NNL4_CONVERGENCE-full-ambient_sea_level_1.0/RUN_20230925_163957728/max_stage_all.vrt')
-max_stage_rast_regular = rast(
-    './OUTPUTS/run_kt43731_12h_NNL4_1arcminoffshore-full-ambient_sea_level_1.0/RUN_20230926_115330505/max_stage.vrt')
+max_stage_rast_convergence = rast(Sys.glob(
+    './OUTPUTS/run_kt43731_12h_final_NNL4_CONVERGENCE-full-ambient_sea_level_1.1/RUN_20241112_173726773/all_max_stage_CONVERGENCE.vrt'))
+max_stage_rast_regular = rast(Sys.glob(
+    './OUTPUTS/run_kt43731_12h_final_NNL4_1arcminoffshore-full-ambient_sea_level_1.1/RUN_20241112_155633335/all_max_stage.vrt'))
 
 max_stage_values_convergence = extract(max_stage_rast_convergence, merged_pts[,1:2], method='bilinear')
 max_stage_values_regular     = extract(max_stage_rast_regular    , merged_pts[,1:2], method='bilinear')
 
 outputs = cbind(merged_pts, max_stage_values_convergence, max_stage_values_regular)
 
-# NSW, points where the max-stage exceeded the initial stage
-k = which((outputs[,2] > -37.6) & (outputs[,2] < -28.16) & outputs[,4] > 1)
+# NSW mainland, points where the max-stage exceeded the initial stage
+k = which((outputs[,2] > -37.6) & (outputs[,2] < -28.16) & outputs[,4] > initial_stage)
 
 # Error statistics
 relerr = (outputs[k,4] - outputs[k,5])/(0.5*(outputs[k,4]+outputs[k,5]))
 err = (outputs[k,4] - outputs[k,5])
-## USEFUL STATISTICS
-#> mean(abs(err) < 0.05, na.rm=TRUE)
-#[1] 0.651313309839
-#> mean(abs(err) < 0.3, na.rm=TRUE)
-#[1] 0.949893193372
+print('> mean(abs(err) < 0.05, na.rm=TRUE)')
+print(mean(abs(err) < 0.05, na.rm=TRUE))
+print('> mean(abs(err) < 0.3, na.rm=TRUE)')
+print(mean(abs(err) < 0.3, na.rm=TRUE))
+print('> mean(abs(relerr) < 0.05, na.rm=TRUE)')
+print(mean(abs(relerr) < 0.05, na.rm=TRUE))
+print('> mean(abs(relerr) < 0.15, na.rm=TRUE)')
+print(mean(abs(relerr) < 0.15, na.rm=TRUE))
 
+## PRINT OUTS FROM 2024/11/22
+#[1] "> mean(abs(err) < 0.05, na.rm=TRUE)"
+#[1] 0.6954728
+#[1] "> mean(abs(err) < 0.3, na.rm=TRUE)"
+#[1] 0.9541697
+#[1] "> mean(abs(relerr) < 0.05, na.rm=TRUE)"
+#[1] 0.8369443
+#[1] "> mean(abs(relerr) < 0.15, na.rm=TRUE)"
+#[1] 0.9695503
 
 png(paste0('tsunami_maxima_error_statistics_', desired_elevation_contour_filename_stub, '_elevation.png'), 
     width=12, height=5, units='in', res=200)
@@ -93,23 +107,3 @@ mtext(side=1, 'Maximum water level (m)', cex=1.5, line=2.5)
 grid(col='orange')
 dev.off()
 
-#options(digits=12)
-#summary(outputs[,4] - outputs[,5])
-#     Min.   1st Qu.    Median      Mean   3rd Qu.      Max.      NA's 
-#-4.015435 -0.005974  0.003686  0.020197  0.039409  5.553065   1464599 
-
-#
-## Check we really are on the desired contour
-#elev_rast = read_stars(st_mosaic(all_highres_elevation_rasts, 
-#    options=c('-resolution', 'highest')))
-#elev_values = st_extract(elev_rast, merged_pts[,1:2])
-#
-## Fix NA values (which are interpreted as numeric)
-#elev_values[elev_values < -3.3e+38] = NA
-#summary(elev_values) 
-#
-### For a contour of -5m, these should be clustered near -5, with some deviations
-### due to contour lines crossing other cells. I get sensible results:
-##   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-##-35.244  -5.084  -5.003  -5.045  -4.939  24.545   17572 
-#
