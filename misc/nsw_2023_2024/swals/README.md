@@ -1,6 +1,8 @@
 # Running the initial model setup, historical scenarios and stress tests. 
 
-The instructions here are indicative only.
+The instructions here are indicative only - they will help to reuse the code but you should ensure all scripts are understood prior to submission. Some scripts require manual modification to point to the required files. Others require command-line arguments which do the same. 
+
+In reality the calculations were implemented and checked over time, not run as a single script.
 
 ```bash
 # Make a load balance file in the regular way
