@@ -1,6 +1,6 @@
 #
-# Make rasters in the multidomain directory. Run as
-#    Rscript make_rasters.R path_to_multidomain_directory
+# Make a shapefile depicting the multidomain structure. Run as
+#    Rscript make_domains_shapefile.R path_to_multidomain_directory
 #
 
 file_home = '/home/gareth/Code_Experiments/fortran/Structured_shallow_water/plot.R'
