@@ -26,7 +26,7 @@ qsub run_model_extreme_source.sh
 #
 qsub run_model_kt43731_12hrs_convergence_final.sh
 qsub run_model_kt43731_12hrs_final.sh
-
+# plot with plot_convergence_test.R
 
 #
 # Historical tests
