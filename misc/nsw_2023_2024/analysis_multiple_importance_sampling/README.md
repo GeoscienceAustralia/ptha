@@ -9,3 +9,5 @@ enable MIS.
 * `jatwc_to_inundation` computes zones corresponding to JATWC tsunami warning categories  
 
 In addition there is a script `make_data_package.R` which combines specific outputs with documentation in `template_data_package` to create a folder with the final outputs.
+
+There is also a folder `extra_plots` with code used to make some figures for the report, which might be useful to adapt in other projects. 
