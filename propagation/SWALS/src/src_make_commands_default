@@ -16,7 +16,7 @@ SWALS_OBJECTS :=global_mod.o $(SWALS_DEVICE_OBJECTS) coarray_intrinsic_alternati
 
 # Make the library
 $(SWALS_LIBRARY): $(SWALS_OBJECTS)
-	$(SWALS_AR) $@ $^
+	rm $(SWALS_LIBRARY); $(SWALS_AR) $@ $^
 
 # This is the 'generic build rule' for fortran modules -- it is applied unless the
 # module file matches one of the 'specific' build rules below
