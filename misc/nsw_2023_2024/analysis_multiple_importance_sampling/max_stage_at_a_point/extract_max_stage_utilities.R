@@ -230,9 +230,9 @@ plot_logic_tree_mean_exrate_curves_from_nonlinear_model_and_PTHA18<-function(
     title(paste0('Exceedance-rate curves'), cex.main=1.5)
     # Importance-sampling CIs
     lower_CI = nonlinear_model_combined_curve$exrate_using_ptha18_stages_plus_nonlinear_model_MSL + 
-        qnorm(0.025)*sqrt(nonlinear_model_combined_curve$exrate_variance)
+        qnorm(0.025)*sqrt(nonlinear_model_combined_curve$exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL)
     upper_CI = nonlinear_model_combined_curve$exrate_using_ptha18_stages_plus_nonlinear_model_MSL + 
-        qnorm(0.975)*sqrt(nonlinear_model_combined_curve$exrate_variance)
+        qnorm(0.975)*sqrt(nonlinear_model_combined_curve$exrate_variance_using_ptha18_stages_plus_nonlinear_model_MSL)
     points(nonlinear_model_combined_curve$max_stage - nonlinear_model_MSL,
            pmax(lower_CI, 1e-200), col='black', t='l', lty='dashed') # Lower bound for log-log plot
     points(nonlinear_model_combined_curve$max_stage - nonlinear_model_MSL,
