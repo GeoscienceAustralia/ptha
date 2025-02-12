@@ -35,6 +35,7 @@ plot(model_time[k], gauges$time_var$stage[1,k], t='l',
     cex.lab=1.5, cex.main=1.5, cex.axis=1.5)
 points(model_time[k], gauges$time_var$stage[2,k], t='l', col='green')
 points(model_time[k], gauges$time_var$stage[3,k], t='l', col='purple')
+legend('bottomleft', c('Site 1', 'Site 2', 'Site 3'), lty=rep('solid', 3), col=c('black', 'green', 'purple'), bty='n', cex=1.8)
 
 abline(v=as.difftime(0, units='secs') + observer_start_time, col='red', lwd=3) # For some reason the 'as.difftime' part is needed
 abline(h=seq(-2,2,by=0.25), lty='dotted', col='orange')
