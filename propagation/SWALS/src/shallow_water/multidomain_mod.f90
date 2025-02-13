@@ -549,7 +549,7 @@ module multidomain_mod
         real(dp), allocatable:: nbr_domain_dx_local(:,:)
         logical, allocatable :: is_nesting_boundary(:,:)
 
-        real(dp) :: max_parent_dx_ratio
+        real(dp) :: max_parent_dx_ratio, dxtmp(2), nrtmp(2)
         logical :: verbose1
 
         if(present(verbose)) then
@@ -631,12 +631,11 @@ module multidomain_mod
                 !
                 ! Ultimately this will be (Maximum value of 'parent domain dx' / 'my dx')
                 !
-                ! x-direction
-                max_parent_dx_ratio = max(max_parent_dx_ratio, real(nint(&
-                    maxval(nbr_domain_dx_local(:,1)/domains(j)%dx(1))), dp) )
-                ! y-direction
-                max_parent_dx_ratio = max(max_parent_dx_ratio, real(nint(&
-                    maxval(nbr_domain_dx_local(:,2)/domains(j)%dx(2))), dp) )
+                dxtmp = maxval(nbr_domain_dx_local, dim=1) ! Negative without neighbour
+                if(all(dxtmp > 0)) then
+                    nrtmp = real(nint(dxtmp/domains(j)%dx), dp) ! nesting ratio
+                    max_parent_dx_ratio = max(max_parent_dx_ratio, maxval(nrtmp))
+                endif
 
             end do
 
@@ -1177,14 +1176,14 @@ module multidomain_mod
 
         real(dp), intent(in) :: xs(:), ys(:)
             !! Coordinates of test points
-        integer(ip), intent(inout) :: nbr_domain_ind(:)
+        integer(ip), intent(out) :: nbr_domain_ind(:)
             !! array with the same length as xs. Will be filled with the index
             !! of the domain that contains the points, or (-1) for points not inside any domain
-        integer(ip), intent(inout) :: nbr_image_ind(:)
+        integer(ip), intent(out) :: nbr_image_ind(:)
             !! nbr_image_ind integer array with the same length as xs. Will
             !! be filled with the image_index of the domain that contains the points
             !! or (-1) for points not inside any domain
-        real(dp), intent(inout) :: nbr_domain_dx(:,:)
+        real(dp), intent(out) :: nbr_domain_dx(:,:)
             !! nbr_domain_dx real rank2 array with first dimension the same
             !! length as xs. Will be filled with the dx values of the domain that
             !! contains the points, or a large negative number for points not in any domain
@@ -1212,7 +1211,7 @@ module multidomain_mod
         ! Default values for 'not contained by any other bbox' points
         nbr_domain_ind = -1_ip
         nbr_image_ind = -1_ip
-        ! Default neighbour cell area = very large negative number
+        ! Default neighbour cell area = very large negative number (with dx^2 finite)
         nbr_domain_dx = -sqrt(HUGE(1.0_dp) - 1.0e+06_dp)
 
         !
