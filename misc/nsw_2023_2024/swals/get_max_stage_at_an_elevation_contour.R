@@ -68,7 +68,7 @@ print(mean(abs(relerr) < 0.15, na.rm=TRUE))
 #[1] 0.9695503
 
 png(paste0('tsunami_maxima_error_statistics_', desired_elevation_contour_filename_stub, '_elevation.png'), 
-    width=12, height=5, units='in', res=200)
+    width=12, height=6, units='in', res=200)
 par(mfrow=c(1,2))
 #hist(relerr, breaks=201); abline(v=seq(-1,1, by=0.1), col='orange', lty='dotted')
 hist(err, breaks=201, xlim=c(-2,2), freq=FALSE,
@@ -78,11 +78,20 @@ hist(err, breaks=201, xlim=c(-2,2), freq=FALSE,
     cex.main=1.2, cex.axis=1.5, cex.lab=1.5); abline(v=seq(-5,5, by=0.25), col='orange', lty='dotted') #grid(col='orange')
 #plot(outputs[k,4], outputs[k,5], asp=1, pch='.', col=rgb(0, 0, 0, alpha=0.05, maxColorValue=1))
 plot(outputs[k,4], outputs[k,5], asp=1, pch='.', col=rgb(0, 0, 0, alpha=0.2, maxColorValue=1), cex=2,
-    xlim=c(0, max(outputs[k,4:5], na.rm=TRUE)), 
+    xlim=c(0, max(outputs[k,4:5], na.rm=TRUE)), ylim=c(0, max(outputs[k,4:5], na.rm=TRUE)),
     xlab='High-resolution max water level (m)', ylab='Regular resolution max water level (m)',
-    main='Maximum water level along +1m elevation contour', cex.main=1.3, cex.axis=1.3, cex.lab=1.3)
-grid(col='orange')
-abline(0, 1, col='red')
+    main=paste0('Maximum water level along ', desired_elevation_contour_name, ' elevation contour'), 
+    cex.main=1.3, cex.axis=1.3, cex.lab=1.3)
+# Compute the coefficient of determination R2 ( = ( 1 - (sum-of-squares-residual / sum_of_squares_total) ) ) at points where neither model is missing data
+k1 = k[!is.na(outputs[k,4]) & !is.na(outputs[k,5])]
+R2 = 1 - sum((outputs[k1,4]-outputs[k1,5])^2)/sum((outputs[k1,4]-mean(outputs[k1,4]))^2 )
+
+text(0, 12, paste0('R-squared = ', round(R2, 3)), cex=1.8, pos=4)
+#grid(col='orange')
+abline(v=seq(0, 15, by=5), col='orange', lty='dotted')
+abline(h=seq(0, 15, by=5), col='orange', lty='dotted')
+abline(0, 1, col='red', lwd=2)
+legend('bottomright', 'y=x', lty='solid', col='red', lwd=2, bty='n', cex=2)
 dev.off()
 
 png(paste0('tsunami_maxima_at_', desired_elevation_contour_filename_stub, '_elevation.png'), 
