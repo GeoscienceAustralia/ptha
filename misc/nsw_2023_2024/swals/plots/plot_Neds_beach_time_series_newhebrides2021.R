@@ -29,8 +29,8 @@ png(paste0('Neds_beach_timeseries_', basename(dirname(md_dir)), '-', basename(md
     width=10, height=5, units='in', res=200)
 plot(model_time[k], gauges$time_var$stage[1,k], t='l', 
     ylim=c(-1.2, 1.2),
-    main="Modelled tsunami for 3 sites at Ned's beach, Lord Howe Is. \n 2021-02-10 Loyalty Islands tsunami",
-    xlab='GMT Time (add 11 hrs to get time at Lord Howe)', 
+    main="Modelled tsunami for 3 sites at Ned's Beach, Lord Howe Is. \n 2021-02-10 Loyalty Islands tsunami",
+    xlab='Time (GMT - add 11 hrs to get time at Lord Howe)', 
     ylab='Modelled tsunami water level, no tides (m)', 
     cex.lab=1.5, cex.main=1.5, cex.axis=1.5)
 points(model_time[k], gauges$time_var$stage[2,k], t='l', col='green')
