@@ -26,6 +26,8 @@ atws_zones = asfm$atws_zones
 warning_zone = atws_zones[which(atws_zones$ATWS_Zones == ATWS_ZONE_NAME),]
 if(nrow(warning_zone) != 1) stop('ATWS_ZONE_NAME should match exactly one value in attribute ATWS_Zones')
 
+is_offshore_island = any(ATWS_ZONE_NAME == asfm$JATWC_offshore_island_zones)
+
 # How many cores to use?
 MC_CORES = asfm$DEFAULT_MC_CORES
 
@@ -183,9 +185,16 @@ tile_function<-function(raster_tile, operation, jatwc_h_ranges_index){
 
     #for(i in 1:length(asfm$JATWC_H_ranges)){
     i = jatwc_h_ranges_index
-
-    domain_warning = get_raster_extremes_stratified_by_H(
-        raster_tile, all_scenario_JATWC_H, asfm$JATWC_H_ranges[[i]], operation=operation)
+    
+    if(is_offshore_island){
+        # Different JATWC thresholds apply to the offshore islands
+        domain_warning = get_raster_extremes_stratified_by_H(
+            raster_tile, all_scenario_JATWC_H, asfm$JATWC_H_ranges_offshore_islands[[i]], operation=operation)
+    }else{
+        # Regular JATWC thresholds
+        domain_warning = get_raster_extremes_stratified_by_H(
+            raster_tile, all_scenario_JATWC_H, asfm$JATWC_H_ranges[[i]], operation=operation)
+    }
     output_raster = paste0(names(asfm$JATWC_H_ranges)[i], '_', raster_tile)
     writeRaster(domain_warning, output_raster, options=c('COMPRESS=DEFLATE'), overwrite=TRUE)
     #}
