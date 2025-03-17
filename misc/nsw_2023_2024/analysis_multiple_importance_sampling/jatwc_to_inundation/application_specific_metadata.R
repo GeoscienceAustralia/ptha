@@ -110,6 +110,20 @@ JATWC_H_ranges = list(land_warning = c(0.55, 999999),
                       no_threat = c(-1, 0.2), 
                       major_land_warning = c(1.5, 999999),
                       minor_land_warning = c(0.55, 1.5))
+#
+# But at offshore sites there are different thresholds
+# - Marine starts at 0.1
+# - Land starts at 0.5 (not 0.55 as above)
+JATWC_H_ranges_offshore_islands = list(
+    land_warning = c(0.50, 999999),
+    marine_warning = c(0.1, 0.50),
+    no_threat = c(-1, 0.1), 
+    major_land_warning = c(1.5, 999999),
+    minor_land_warning = c(0.50, 1.5))
+JATWC_offshore_island_zones = c('Cocos Island', 'Christmas Island', 
+    'Willis Island', 'Norfolk Island', 'Lord Howe Island')
+# The code assumes these have the same warning categories
+stopifnot(all(names(JATWC_H_ranges_offshore_islands) == names(JATWC_H_ranges))) 
 
 # How many cores for parallel computation?
 DEFAULT_MC_CORES = 104
