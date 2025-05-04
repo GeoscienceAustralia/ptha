@@ -38,12 +38,12 @@ module nested_grid_comms_mod
     real(dp), parameter :: EPS = 1.0e-06_dp
 
     integer(ip), parameter, public :: SPATIAL_DIM = 2
-    !! Spatial dimensions of the problem -- we solve the 2D shallow water equations
+        !! Spatial dimensions of the problem -- we solve the 2D shallow water equations
 
     integer(ip), parameter :: number_of_gradients_coarse_to_fine = 4_ip
-    !! In a coarse-to-fine send, we send the coarse data, and a number of gradient terms
-    !! which the fine domain can use to interpolate the result. For instance we might send
-    !! 2 x-gradients (forward and backward) and 2 y-gradients (forward and backward)
+        !! In a coarse-to-fine send, we send the coarse data, and a number of gradient terms
+        !! which the fine domain can use to interpolate the result. For instance we might send
+        !! 2 x-gradients (forward and backward) and 2 y-gradients (forward and backward)
 
     ! Indices into boundary flux tracking arrays
     integer(ip), parameter :: NORTH=1_ip, SOUTH=2_ip, EAST=3_ip, WEST=4_ip
@@ -308,7 +308,7 @@ module nested_grid_comms_mod
             !! but now the parallel comms is done via a type inside the multidomain.
 
         ! Local variables
-        real(dp) :: cell_ratios(SPATIAL_DIM), prod_cell_ratios
+        real(dp) :: cell_ratios(SPATIAL_DIM), prod_cell_ratios, tol
         integer(ip):: iL, iU, jL, jU , kL, kU, sbs, rbs, bl, bw, bd, i, four_ip(4), dir_ip(4), &
             flux_integral_size
         character(charlen) :: n_char1, n_char2, n_char3, char1, char2, char3, comms_tag
@@ -404,8 +404,12 @@ module nested_grid_comms_mod
                 call generic_stop()
             end if
 
-            ! 1/cell_ratios  should be an integer (up to floating point)
-            if(any(abs(ONE_dp/cell_ratios - nint(ONE_dp/cell_ratios)) > EPS)) then
+            ! 1/cell_ratios should be an integer (up to floating point)
+            ! Check this, with error tolerance potentially > EPS, to
+            ! prevent issues in some single precision tests while 
+            ! ensuring 1/cell_ratios will round correctly
+            tol = min(0.499_dp, max(EPS, 100*spacing(maxval(ONE_dp/cell_ratios)))) 
+            if(any(abs(ONE_dp/cell_ratios - nint(ONE_dp/cell_ratios)) > tol)) then
                 write(log_output_unit,*) 'Apparent non-integer cell ratios (finer) ', cell_ratios, ONE_dp/cell_ratios, &
                     my_dx, neighbour_dx
                 call generic_stop()

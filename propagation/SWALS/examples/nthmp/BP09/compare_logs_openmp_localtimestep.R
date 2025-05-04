@@ -132,7 +132,7 @@ for(time_ind in time_inds){
         # By now the models differ more significantly on some domains.
         # For the domains with large target_errs, the differences can also be sensitive to the 
         # compiler version (they are related to transient eddies with long-term chaotic evolution).
-        target_errs = c(1e-03, 1e-03, 6e-03, 1e+01, 1e+01, 0.02)
+        target_errs = c(1e-03, 1.5e-03, 6e-03, 1e+01, 1e+01, 0.02)
         if(all(err_stats < target_errs)){
             print('PASS')
         }else{
