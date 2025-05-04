@@ -8,5 +8,5 @@
 #PBS -l storage=scratch/w85+gdata/w85
 
 source R_431_NCI_modules.sh
-Rscript extract_key_outputs_from_tarred_multidomain_2.R
+Rscript extract_key_outputs_from_tarred_multidomain_3.R
 
