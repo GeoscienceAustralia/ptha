@@ -10,7 +10,7 @@ module local_routines
     !
     ! SWALS objects below
     !
-    use global_mod, only: dp, ip, charlen
+    use global_mod, only: dp, ip, charlen, minimum_allowed_depth
         ! Default integer / real precision and character length
     use domain_mod, only: domain_type, STG, UH, VH, ELV
         ! domain type and indices of key variables in the array domain%U:
@@ -27,12 +27,15 @@ module local_routines
         ! Throw errors gracefully in parallel or serial
     use forcing_mod, only: forcing_patch_type, apply_forcing_patch
         ! Used to apply an Okada source over a finite time.
+    ! Used to read the elevation data filenames in preference order
+    use file_io_mod, only: count_file_lines
+
 
     implicit none
 
     private
 
-    public :: set_initial_conditions, parse_commandline_args
+    public :: set_initial_conditions, parse_commandline_args, highres_regions, included_regions
         !! These are called by the main program
 
     type(xyz_lines_type) :: breakwalls_forced
@@ -50,12 +53,20 @@ module local_routines
         !! Manning friction for nonlinear domains. Not changed in this study
     real(dp), parameter :: ambient_sea_level = 0.0_dp
         !! Background sea level. Not changed in this study
+    character(len=charlen) :: highres_regions
+        !! Denotes the configuration of high-res regions in the model. Either 'none' or 'australia' or 'perth' or 'australiaSWWA' or 'SWWA'
+    real(dp), parameter :: raster_na_below_limit = -1.0e+20_dp
+        !! Interpret raster values below this as NA
+
+    character(len=charlen), allocatable :: included_regions(:)
+        ! Define which high-res regions should be included in a more convenient way
+
 
     contains 
 
     subroutine parse_commandline_args(stage_file, run_type, final_time, &
             model_name, load_balance_file, offshore_solver_type, &
-            output_basedir, highres_regions)
+            output_basedir)
         !!
         !! Convenience routine to read the commandline arguments. As well as
         !! setting the input arguments, this routine sets "rise_time" and "offshore_manning".
@@ -63,7 +74,7 @@ module local_routines
 
         character(len=charlen), intent(inout) :: stage_file, run_type, &
             model_name, load_balance_file, offshore_solver_type, &
-            output_basedir, highres_regions
+            output_basedir
         real(dp), intent(inout) :: final_time
         
         character(len=charlen) :: rise_time_char, offshore_manning_char
@@ -82,8 +93,10 @@ module local_routines
             write(log_output_unit, *) "    'linear_with_no_friction' or 'leapfrog_nonlinear') )"
             write(log_output_unit, *) &
                 "  offshore_manning (manning coefficient for offshore solver if using 'linear_with_manning'/'leapfrog_nonlinear')"
-            write(log_output_unit, *) "  highres_regions (either 'none' [no highres domains] or 'australia' [all highres domains] "
-            write(log_output_unit, *) "    or 'NSW' [NSW high-res domains] or 'perth' [Perth high-res domains] )"
+            write(log_output_unit, *) "  highres_regions (either 'none' [no highres domains] or 'australia' [like nsw+perth] "
+            write(log_output_unit, *) "    or 'NSW' [NSW high-res domains] or 'perth' [Perth high-res domains] or "
+            write(log_output_unit, *) "    'SWWA' [South West WA highres domains] or 'australiaSWWA' [like nsw+SWWA] or"
+            write(log_output_unit, *) "    'NWWA' [Geraldton + Exmouth to just north of Dampier] or 'WA' [all WA] or 'australiaWA'[like nsw+WA]"
             write(log_output_unit, *) ""
             call generic_stop
         end if
@@ -132,8 +145,9 @@ module local_routines
         call get_command_argument(8, highres_regions)
         write(log_output_unit, *) 'highres_regions: ', highres_regions
         if(.not. any(highres_regions == [character(len=charlen) :: &
-            'none', 'australia', 'NSW', 'perth'])) then
-            write(log_output_unit, *) 'highres_regions should be either "none" or "australia" or "NSW" or "perth"'
+            'none', 'australia', 'NSW', 'perth', 'SWWA', 'australiaSWWA', 'NWWA', 'WA', 'australiaWA'])) then
+            write(log_output_unit, *) 'highres_regions should be either "none" or "australia" or '
+            write(log_output_unit, *) '  "NSW" or "perth" or "SWWA" or "australiaSWWA" or "NWWA" or "WA" or "australiaWA"'
             call generic_stop
         end if
 
@@ -147,11 +161,17 @@ module local_routines
         end if
         write(log_output_unit, *) 'final_time: ', final_time
 
+        !! Note this was changed over time when doing the runs
         !output_basedir = './OUTPUTS/' // &
         !output_basedir = './OUTPUTS_SCRATCH/' // &
         !output_basedir = './OUTPUTS_2021_march_sources/' // &
         !output_basedir = './OUTPUTS_2022_new_events/' // &
-        output_basedir = './OUTPUTS_2023_new_events/' // &
+        !output_basedir = './OUTPUTS_2023_new_events/' // &
+        !output_basedir = './OUTPUTS_2024_extend_SWWA/' // &
+        !output_basedir = './OUTPUTS_new_validation_events/' // &
+        !output_basedir = './OUTPUTS_2025_testing/' // &
+        !output_basedir = './OUTPUTS_2025_extend_WA/' // &
+        output_basedir = './OUTPUTS_2025_NWWA/' // &
             trim(model_name) // '-' // &
             'risetime_' // trim(rise_time_char) // '-'  // &
             trim(run_type)   // '-' // &
@@ -230,8 +250,26 @@ module local_routines
                 '../breakwalls/ulladulla/ulladulla2.csv', &
                 '../breakwalls/ulladulla/ulladulla.csv' ]
 
+            !if(highres_regions == 'SWWA' .or. highres_regions == 'australiaSWWA' .or. &
+            !    highres_regions == 'WA' .or. highres_regions == 'australiaWA') then
+            if(any(included_regions == 'swwa')) then
+                ! New breakwall near Port Geographe, only in the new models for backward compatability
+                breakwall_csv_lon_lat_z = [ character(len=charlen) :: breakwall_csv_lon_lat_z, &
+                    '../breakwalls/portgeographe_entrance/portgeographe_entrance.csv']
+            end if
+
+            !if(highres_regions == 'NWWA' .or. highres_regions == 'WA' .or. highres_regions == 'australiaWA') then
+            if(any(included_regions == 'nwwa')) then
+                ! Here the elevation data isn't as good, and we help give definition to key breakwalls
+                breakwall_csv_lon_lat_z = [character(len=charlen):: breakwall_csv_lon_lat_z, &
+                    '../breakwalls/exmouth_entrance_estimate/exmouth_entrance_breakwall_estimate.csv', &
+                    '../breakwalls/onslow_creek_entrance_estimate/onslow_creek_entrance_breakwall_estimate.csv', &
+                    '../breakwalls/dampier_causeway/dampier_causeway_breakwall_estimate.csv']
+            end if
+
             call breakwalls_forced%read_from_csv(breakwall_csv_lon_lat_z, &
                 skip_header=1_ip)
+
 
         end if
 
@@ -257,173 +295,292 @@ module local_routines
             !! Coordinates for elevation lookup
         integer(ip) :: j
 
-        input_elevation_files = [character(len=charlen) :: &
-            ! Initialised in order 'low-preferece to high-preference'
-            ! We have to reverse it later as required for the multi_raster_type
-             
+        ! For backwards compatability we use different datasets when
+        ! highres_regions includes the more extensive SWWA domains.
+        if(any(included_regions == 'swwa' .or. included_regions == 'nwwa')) then
             !
-            ! Large scale background raster data
+            ! These datasets are similar to data in Davies et al 2020, with updates in south-west WA, and in some cases NWWA
             !
+            input_elevation_files = [character(len=charlen) :: &
+              ! Initialised in order 'low-preferece to high-preference'
+              ! We have to reverse it later as required for the multi_raster_type
+               
+              !
+              ! Large scale background raster data
+              !
 
-            ! The PTHA18 DEM
-            ! !"/g/data/w85/tsunami/MODELS/AustPTHA_c/DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif", &
-            "../elevation/derived_for_model/global/ptha18/merged_gebco_ga250_dem_patched.tif", &
-            ! The GA250m data (It is clipped to nearer Australia, given various 
-            ! artefacts in the Pacific discussed in PTHA18 report)
-            !"/g/data/w85/tsunami/DATA/ELEVATION/GA250m/ER_Mapper_ers/ausbath_09_v4_ex_ex_106_157_-47_-8.tif", &
-            "../elevation/orig/GA250/ausbath_09_v4_ex_ex_106_157_-47_-8.tif", &
+              ! The PTHA18 DEM
+              "../elevation/derived_for_model/global/ptha18/merged_gebco_ga250_dem_patched.tif", &
+              ! The GA250m data (It is clipped to nearer Australia, given various 
+              ! artefacts in the Pacific discussed in PTHA18 report)
+              "../elevation/orig/GA250/ausbath_09_v4_ex_ex_106_157_-47_-8.tif", &
 
-            ! 
-            ! Offshore DEMs derived for this study, to transition smoothly between the global-scale 
-            ! data and the nearshore data
-            ! 
+              ! 
+              ! Offshore DEMs derived for this study, to transition smoothly between the global-scale 
+              ! data and the nearshore data
+              ! 
 
-            ! Victoria
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/Victoria_smooth_between_GA250m_and_HighresCoastalDem/" // &
-            !    "Victoria_smooth_between_GA250_and_Vic10m.tif", &
-            "../elevation/derived_for_model/vic/smooth_between_GA250m_and_coast/Victoria_smooth_between_GA250_and_Vic10m.tif", &
-            ! NSW
-            !'/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/ocean_smooth_transition/' // &
-            !    'transition_DEM_149_153_-38_-33.25.tif', &
-            '../elevation/derived_for_model/nsw/smooth_between_GA250m_and_coast/transition_DEM_149_153_-38_-33.25.tif', &
-            ! SW WA
-            !'/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/GA250m_contour_adjusted/' // &
-            !    'WA_smooth_between_GA250_and_Multibeam_LADS.tif', & 
-            '../elevation/derived_for_model/wa/smooth_between_GA250m_and_coast/WA_smooth_between_GA250_and_Multibeam_LADS.tif', & 
+              ! Victoria
+              "../elevation/derived_for_model/vic/smooth_between_GA250m_and_coast/Victoria_smooth_between_GA250_and_Vic10m.tif", &
+              ! NSW
+              '../elevation/derived_for_model/nsw/smooth_between_GA250m_and_coast/transition_DEM_149_153_-38_-33.25.tif', &
 
+              ! Updated transition DEM for SW WA
+              '../elevation/derived_for_model_SWWA_update/' // &
+                  'Transition_DEM_near_Perth_Oct2021/WA_smooth_between_GA250_and_MultibeamNearshore.tif', &
+
+              !
+              ! Good quality / high-res data below here
+              !
+
+              !
+              ! Southern half of NSW Onshore LIDAR.
+              ! This is good on land but not good in water areas - so is often 
+              ! our lowest-preference good-quality dataset.
+              !
+              '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_697266.tif', &
+              '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588162.tif', &
+              '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588152.tif', &
+              '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588113.tif', &
+
+              ! SYDNEY REGION.
+              ! Bathymetry from Wilson and Power (Scientific Data paper).
+              ! Beware in some regions this is lower resolution than the onshore 
+              ! lidar, and we could improve the use of the latter. But for our purposes, 
+              ! mostly the nearshore bathy-topo provides good quality data in such areas. 
+              '../elevation/orig/nsw/Sydney_Wilson_and_Power/botany_0.0001_gcs.txt.tif', &
+              '../elevation/orig/nsw/Sydney_Wilson_and_Power/syd_0.0001_gcs.txt.tif', &
+              '../elevation/orig/nsw/Sydney_Wilson_and_Power/hawkesbury_0.0005_gcs.txt.tif', &
+
+              ! Port Kembla -- will add in breakwalls
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/PortKembla_high_res.tif", & 
+
+              ! Jervis Bay
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/JervisBay_high_res.tif", & 
+
+              ! Ulladullah -- will add in breakwalls
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/Ulladullah_high_res.tif", & 
+
+              ! Batemans Bay
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/Batemans_high_res.tif", & 
+
+              ! Eden
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/Eden_high_res.tif", & 
+
+              ! 2018 Bathy-topo -- high-quality offshore/onshore LADS.
+              ! In general this is our first-preference NSW dataset
+              '../elevation/orig/nsw/bathytopo/DATA_338878/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_586366/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338874/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338859/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_340181/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338844/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338896/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338901/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_466210/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_466239/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+
+              ! VICTORIA -- will add in breakwalls for Portland harbour
+              '../elevation/orig/vic/vcdem2017/Victorian-coast_Bathy_10m_EPSG4326.tif', &
+              ! Updated and more extensive SWWA merged raster tiles
+              '../elevation/derived_for_model_SWWA_update/SWWA_nearshore_tifs_2021/merged_rasters/all_tiles.vrt', &
+              ! Patch at Bunbury
+              '../elevation/derived_for_model_SWWA_update/WA_Bunbury_revised_November2022/Bunbury_patch_tile.tif', &
+              ! Patch at Port Geographe
+              '../elevation/derived_for_model_SWWA_update/WA_Busselton_PortGeographe_merged_tile15/patch_near_portgeographe.tif']
+
+            if(any(included_regions == 'nwwa')) then
+                ! Add in NWWA datasets in a backward-compatible way
+                input_elevation_files = [character(len=charlen) :: input_elevation_files, &
+                    '../elevation/derived_for_model_NWWA_update/North_West_Shelf_DEM_v2_Bathymetry_2020_30m_MSL_cog_WGS84.tif', &
+                    '../elevation/derived_for_model_NWWA_update/Exmouth_5m_wgs84.tif', &
+                    '../elevation/derived_for_model_NWWA_update/Dampier_5m_WGS84.tif', &
+                    '../elevation/derived_for_model_NWWA_update/Onslow_5m_wgs84.tif', &
+                    '../elevation/derived_for_model_NWWA_update/PointSamson_5m_WGS84.tif']
+
+            end if              
+        else 
             !
-            ! Good quality / high-res data below here
+            ! Original datasets from Davies et al. (2020)
             !
+            input_elevation_files = [character(len=charlen) :: &
+              ! Initialised in order 'low-preferece to high-preference'
+              ! We have to reverse it later as required for the multi_raster_type
+               
+              !
+              ! Large scale background raster data
+              !
 
-            !
-            ! Southern half of NSW Onshore LIDAR.
-            ! This is good on land but not good in water areas - so is often 
-            ! our lowest-preference good-quality dataset.
-            !
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/coastal_lidar/NSW_5m_near_coast/tifs_masked_by_WOFS/CLIP_697266.tif', &
-            '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_697266.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/coastal_lidar/NSW_5m_near_coast/tifs_masked_by_WOFS/CLIP_588162.tif', &
-            '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588162.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/coastal_lidar/NSW_5m_near_coast/tifs_masked_by_WOFS/CLIP_588152.tif', &
-            '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588152.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/coastal_lidar/NSW_5m_near_coast/tifs_masked_by_WOFS/CLIP_588113.tif', &
-            '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588113.tif', &
+              ! The PTHA18 DEM
+              ! !"/g/data/w85/tsunami/MODELS/AustPTHA_c/DATA/ELEV/merged_dem/merged_gebco_ga250_dem_patched.tif", &
+              "../elevation/derived_for_model/global/ptha18/merged_gebco_ga250_dem_patched.tif", &
+              ! The GA250m data (It is clipped to nearer Australia, given various 
+              ! artefacts in the Pacific discussed in PTHA18 report)
+              !"/g/data/w85/tsunami/DATA/ELEVATION/GA250m/ER_Mapper_ers/ausbath_09_v4_ex_ex_106_157_-47_-8.tif", &
+              "../elevation/orig/GA250/ausbath_09_v4_ex_ex_106_157_-47_-8.tif", &
 
-            ! SYDNEY REGION.
-            ! Bathymetry from Wilson and Power (Scientific Data paper).
-            ! Beware in some regions this is lower resolution than the onshore 
-            ! lidar, and we could improve the use of the latter. But for our purposes, 
-            ! mostly the nearshore bathy-topo provides good quality data in such areas. 
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/SydneyRegion/botany_0.0001_gcs.txt.tif', &
-            '../elevation/orig/nsw/Sydney_Wilson_and_Power/botany_0.0001_gcs.txt.tif', &
-            !"/g/data/w85/tsunami/DATA/ELEVATION/NSW/SydneyRegion/syd_0.0001_gcs.txt.tif", &
-            '../elevation/orig/nsw/Sydney_Wilson_and_Power/syd_0.0001_gcs.txt.tif', &
-            !"/g/data/w85/tsunami/DATA/ELEVATION/NSW/SydneyRegion/hawkesbury_0.0005_gcs.txt.tif", & 
-            '../elevation/orig/nsw/Sydney_Wilson_and_Power/hawkesbury_0.0005_gcs.txt.tif', &
+              ! 
+              ! Offshore DEMs derived for this study, to transition smoothly between the global-scale 
+              ! data and the nearshore data
+              ! 
 
-            ! Port Kembla -- will add in breakwalls
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/PortKembla_high_res.tif", & 
-            "../elevation/derived_for_model/nsw/highres_coastal_merge/PortKembla_high_res.tif", & 
+              ! Victoria
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/Victoria_smooth_between_GA250m_and_HighresCoastalDem/" // &
+              !    "Victoria_smooth_between_GA250_and_Vic10m.tif", &
+              "../elevation/derived_for_model/vic/smooth_between_GA250m_and_coast/Victoria_smooth_between_GA250_and_Vic10m.tif", &
+              ! NSW
+              !'/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/ocean_smooth_transition/' // &
+              !    'transition_DEM_149_153_-38_-33.25.tif', &
+              '../elevation/derived_for_model/nsw/smooth_between_GA250m_and_coast/transition_DEM_149_153_-38_-33.25.tif', &
+              ! SW WA
+              !'/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/GA250m_contour_adjusted/' // &
+              !    'WA_smooth_between_GA250_and_Multibeam_LADS.tif', & 
+              '../elevation/derived_for_model/wa/smooth_between_GA250m_and_coast/WA_smooth_between_GA250_and_Multibeam_LADS.tif', & 
 
-            ! Jervis Bay
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/JervisBay_high_res.tif", & 
-            "../elevation/derived_for_model/nsw/highres_coastal_merge/JervisBay_high_res.tif", & 
+              !
+              ! Good quality / high-res data below here
+              !
 
-            ! Ulladullah -- will add in breakwalls
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/Ulladullah_high_res.tif", & 
-            "../elevation/derived_for_model/nsw/highres_coastal_merge/Ulladullah_high_res.tif", & 
+              !
+              ! Southern half of NSW Onshore LIDAR.
+              ! This is good on land but not good in water areas - so is often 
+              ! our lowest-preference good-quality dataset.
+              !
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/coastal_lidar/NSW_5m_near_coast/tifs_masked_by_WOFS/CLIP_697266.tif', &
+              '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_697266.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/coastal_lidar/NSW_5m_near_coast/tifs_masked_by_WOFS/CLIP_588162.tif', &
+              '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588162.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/coastal_lidar/NSW_5m_near_coast/tifs_masked_by_WOFS/CLIP_588152.tif', &
+              '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588152.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/coastal_lidar/NSW_5m_near_coast/tifs_masked_by_WOFS/CLIP_588113.tif', &
+              '../elevation/derived_for_model/nsw/onshore_lidar_masked_by_WOFS/CLIP_588113.tif', &
 
-            ! Batemans Bay
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/Batemans_high_res.tif", &
-            "../elevation/derived_for_model/nsw/highres_coastal_merge/Batemans_high_res.tif", & 
+              ! SYDNEY REGION.
+              ! Bathymetry from Wilson and Power (Scientific Data paper).
+              ! Beware in some regions this is lower resolution than the onshore 
+              ! lidar, and we could improve the use of the latter. But for our purposes, 
+              ! mostly the nearshore bathy-topo provides good quality data in such areas. 
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/SydneyRegion/botany_0.0001_gcs.txt.tif', &
+              '../elevation/orig/nsw/Sydney_Wilson_and_Power/botany_0.0001_gcs.txt.tif', &
+              !"/g/data/w85/tsunami/DATA/ELEVATION/NSW/SydneyRegion/syd_0.0001_gcs.txt.tif", &
+              '../elevation/orig/nsw/Sydney_Wilson_and_Power/syd_0.0001_gcs.txt.tif', &
+              !"/g/data/w85/tsunami/DATA/ELEVATION/NSW/SydneyRegion/hawkesbury_0.0005_gcs.txt.tif", & 
+              '../elevation/orig/nsw/Sydney_Wilson_and_Power/hawkesbury_0.0005_gcs.txt.tif', &
 
-            ! Eden
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/Eden_high_res.tif", &
-            "../elevation/derived_for_model/nsw/highres_coastal_merge/Eden_high_res.tif", & 
+              ! Port Kembla -- will add in breakwalls
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/PortKembla_high_res.tif", & 
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/PortKembla_high_res.tif", & 
 
-            ! 2018 Bathy-topo -- high-quality offshore/onshore LADS.
-            ! In general this is our first-preference NSW dataset
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338878/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_338878/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_586366/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_586366/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338874/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_338874/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338859/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_338859/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_340181/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_340181/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338844/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_338844/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338896/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_338896/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338901/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_338901/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_466210/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_466210/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_466239/NSW Government - DPIE/DEMs/' // &
-            !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
-            '../elevation/orig/nsw/bathytopo/DATA_466239/NSW Government - DPIE/DEMs/' // &
-                '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              ! Jervis Bay
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/JervisBay_high_res.tif", & 
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/JervisBay_high_res.tif", & 
 
-            ! VICTORIA -- will add in breakwalls for Portland harbour
-            !'/g/data/w85/tsunami/DATA/ELEVATION/Victoria/Vic/Victorian-coast_Bathy_10m_EPSG4326.tif', &
-            '../elevation/orig/vic/vcdem2017/Victorian-coast_Bathy_10m_EPSG4326.tif', &
+              ! Ulladullah -- will add in breakwalls
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/Ulladullah_high_res.tif", & 
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/Ulladullah_high_res.tif", & 
 
-            ! WA -- will add in breakwalls for Hillarys harbour
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_1.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_1.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_2.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_2.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_3.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_3.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_4.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_4.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_5.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_5.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_6.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_6.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_7.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_7.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_8.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_8.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_9.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_9.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_10.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_10.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_11.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_11.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_12.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_12.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_13.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_13.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_14.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_14.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_15.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_15.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_16.tif", &
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_16.tif", &
-            !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_17.tif" ]
-            "../elevation/derived_for_model/wa/nearshore_tifs/tile_17.tif" ]
-        
+              ! Batemans Bay
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/Batemans_high_res.tif", &
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/Batemans_high_res.tif", & 
+
+              ! Eden
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/NSW/highres_coastal_merge/Eden_high_res.tif", &
+              "../elevation/derived_for_model/nsw/highres_coastal_merge/Eden_high_res.tif", & 
+
+              ! 2018 Bathy-topo -- high-quality offshore/onshore LADS.
+              ! In general this is our first-preference NSW dataset
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338878/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338878/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_586366/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_586366/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338874/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338874/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338859/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338859/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_340181/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_340181/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338844/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338844/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338896/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338896/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_338901/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_338901/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_466210/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_466210/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              !'/g/data/w85/tsunami/DATA/ELEVATION/NSW/bathytopo/DATA_466239/NSW Government - DPIE/DEMs/' // &
+              !    '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+              '../elevation/orig/nsw/bathytopo/DATA_466239/NSW Government - DPIE/DEMs/' // &
+                  '5 Metre/NSW_Marine_5m_TopoBathy_DEM.tif', &
+
+              ! VICTORIA -- will add in breakwalls for Portland harbour
+              !'/g/data/w85/tsunami/DATA/ELEVATION/Victoria/Vic/Victorian-coast_Bathy_10m_EPSG4326.tif', &
+              '../elevation/orig/vic/vcdem2017/Victorian-coast_Bathy_10m_EPSG4326.tif', &
+
+              ! WA -- will add in breakwalls for Hillarys harbour
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_1.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_1.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_2.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_2.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_3.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_3.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_4.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_4.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_5.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_5.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_6.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_6.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_7.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_7.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_8.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_8.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_9.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_9.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_10.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_10.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_11.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_11.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_12.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_12.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_13.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_13.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_14.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_14.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_15.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_15.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_16.tif", &
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_16.tif", &
+              !"/g/data/w85/tsunami/MODELS/inundation/DATA/ELEV/WA/Perth_nearshore_tifs/merged_rasters/tile_17.tif" ]
+              "../elevation/derived_for_model/wa/nearshore_tifs/tile_17.tif" ]
+        end if
+    
         input_elevation_files = input_elevation_files(size(input_elevation_files):1:-1)
             ! Reverse file order (so high-preference files are first) as required by the
             ! multi_raster type
@@ -477,132 +634,256 @@ module local_routines
 
     end subroutine
 
-    subroutine setup_forcing_with_rise_time(domain, stage_data_lowerleft, &
-            stage_data_upperright)
-        !! If the stage-perturbation is applied over a non-zero rise-time 
-        !! (i.e. not instantaneous), then this routine will set up the forcing
-        !! terms.
-        class(domain_type), intent(inout):: domain
-            !! If the stage-perturbation affects the doman, then this routine 
-            !! will affect domain%U(:,:,STG), domain%forcing_context_cptr and 
-            !! domain%forcing_subroutine
-        real(c_double), intent(in) :: stage_data_lowerleft(2), &
-            stage_data_upperright(2)
-            !! xlimit and ylimit of the stage data: the forcing will only be
-            !! applied within this region. 
-
-        type(forcing_patch_type), pointer :: forcing_context
-            ! Use this to apply the Okada forcing with a prescribed rise-time.
-            ! It will be attached to the domain via a c_ptr.
-        integer(ip):: i0, i1, j0, j1, k0, k1
-            ! Convenience integers
-
-        ! Only need to apply the forcing over the stage file spatial domain 
-        i0 = count(domain%x < stage_data_lowerleft(1)) + 1
-        i1 = count(domain%x <= stage_data_upperright(1))
-        j0 = count(domain%y < stage_data_lowerleft(2)) + 1
-        j1 = count(domain%y <= stage_data_upperright(2))
-        k0 = STG ! Stage only
-        k1 = STG
-
-        if(i0 <= i1 .and. j0 <= j1) then
-            allocate(forcing_context)
-            call forcing_context%setup(&
-                start_time = 0.0_dp, end_time = rise_time, &
-                i0=i0, i1=i1, j0=j0, j1=j1, k0=k0, k1=k1)
-
-            forcing_context%forcing_work(i0:i1, j0:j1, STG) = &
-                domain%U(i0:i1, j0:j1, STG)
-                ! Forcing work = stage perturbation.
-            domain%U(i0:i1, j0:j1, STG) = 0.0_dp
-                ! Zero the initial stage, since now we apply it over a 
-                ! rise-time
-            domain%forcing_context_cptr = c_loc(forcing_context)
-            forcing_context => NULL()
-                ! Move the forcing_context into the domain
-            domain%forcing_subroutine => apply_forcing_patch
-                ! The domain will call apply_forcing_patch during each step
-        end if
-
-
-    end subroutine
-
-    subroutine setup_stage(domain, stage_file)
-        !! Set the domain's stage in domain%U(:,:,STG). If the rise_time is 
+    subroutine setup_stage_and_forcing(domain, stage_file, global_dt)
+        !! Set the domain's stage in domain%U(:,:,STG). If the rise_time is
         !! greater than zero, then also setup the rise_time forcing.
 
-        class(domain_type), intent(inout):: domain
-            !! This routine sets domain%U(:,:,STG), and may set 
+        type(domain_type), intent(inout):: domain
+            !! This routine sets domain%U(:,:,STG), and may set
             !! domain%forcing_context_cptr and domain%forcing_subroutine
         character(len=charlen), intent(in) :: stage_file
-            !! Raster filename with the Okada stage perturbation
+            !! Raster filename with the Okada stage perturbation, OR csv file with
+            !! information on time-varying source inversion.
+        real(dp), intent(in) :: global_dt
+            !! Model time-step. Useful in case we want to apply a rise-time forcing,
+            !! [we should not start the forcing right away, because it can cause
+            !!  conservation issues for rk2 -- rather we apply the forcing after a
+            !! time-step].
 
         type(multi_raster_type):: stage_data
             ! Object to interpolate from stage file
         real(dp), allocatable:: x(:), y(:)
             ! Coordinates for stage lookup
-        type(forcing_patch_type), pointer :: forcing_context
-            ! Use this to apply the Okada forcing with a prescribed rise-time
-        integer(ip):: j
+        integer(ip):: j, n, fid
             ! Convenience integers
+        character(len=charlen), allocatable :: stage_files(:)
+        real(dp), allocatable :: slips(:), start_times(:), end_times(:)
+        integer, parameter :: csv_header_size = 1
+        logical :: stage_file_is_raster
 
-        domain%U(:,:,STG) = 0.0_dp
-            ! This will be corrected later for the tsunami initial condition 
-            ! and sea-level
+        ! If stage_file ends in csv, assume it contains data for a 
+        ! multi-unit-source inversion. Otherwise assume it is a raster
+        n = len_trim(stage_file)
+        stage_file_is_raster = (stage_file( (n-3):n) /= '.csv')
+
+        if(stage_file /= "") then
+            if(stage_file_is_raster .and. rise_time == 0.0_dp) then
+                ! Set stage directly from the raster. We don't adjust elevation
+                ! so as to maintain backward compatibility with already run simulations.
+                call stage_data%initialise([stage_file])
+
+                ! Stage will be corrected later for the tsunami initial condition
+                ! and sea-level
+                domain%U(:,:,STG) = 0.0_dp
+
+                ! Set stage PERTURBATION row-by-row.
+                ! This saves memory compared to doing it all at once.
+                allocate(x(domain%nx(1)), y(domain%nx(1)))
+                x = domain%x
+                do j = 1, domain%nx(2)
+                    y = domain%y(j)
+
+                    ! Set stage PERTURBATION
+                    call stage_data%get_xy(x,y, domain%U(:,j,STG), domain%nx(1), &
+                        bilinear=1_ip, na_below_limit=raster_na_below_limit)
+
+                    ! Clip 'NA' regions (since the stage raster does not cover the
+                    ! entire domain). In this case revert to the "0" value, later
+                    ! we will add an ambient_sea_level offset
+                    where(domain%U(:,j,STG) < (raster_na_below_limit) ) &
+                        domain%U(:,j,STG) = 0.0_dp
+                end do
+                deallocate(x,y)
+                call stage_data%finalise()
+
+                !write(log_output_unit, *) 'INFLATING STAGE PERTURBATION'
+                !domain%U(:,:,STG) = 5.0_dp * domain%U(:,:,STG)
+
+                !!
+                !! Can add the stage perturbation to the elevation as well, like
+                !domain%U(:,:,ELV) = domain%U(:,:,ELV) + domain%U(:,:,STG)
+                !! That is good practice but not done here for backward compatibility with earlier runs.
+
+                !write(log_output_unit, *) 'Stage perturbation range:'
+                !write(log_output_unit, *) minval(domain%U(:,:,STG)), maxval(domain%U(:,:,STG))
+
+            else
+                ! Here we have a rise-time treatment, implemented with forcing terms.
+                ! There are 2 cases
+                ! - The stage_file is a raster
+                ! - The stage_file is a csv with metadata describing a unit-source inversion,
+                !   where the rows are:
+                !     "water-surface-unit-source rasters", "slip", 
+                !     "forcing_start_time", "forcing_end_time"
+                !
+                ! Do not start the forcing at start_time=0. Why not?
+                ! For 'rk2', it will mean the full forcing is not applied. This
+                ! is because of rk2's approach:
+                !     [start, advance 2-time-steps to end, then-average(start,end)].
+                ! If we don't have timestepping before the forcing start_time, we miss
+                ! out on part of the forcing that should have been obtained
+                ! (hypothetically if we had evolved from time=-dt to
+                ! time=0, we would have included the missing part of the forcing).
+                ! A safe workaround is to only start forcing when time >= global_dt,
+                ! because no domain will have a larger time-step.
+                !
+                if(stage_file_is_raster) then
+                    ! Mimic the data we would need in the unit source case
+                    n = 1
+                    stage_files = [stage_file]
+                    start_times = [global_dt] ! Avoid forcing in first time-step
+                    end_times   = [global_dt + rise_time]! Avoid forcing in first time-step
+                    slips       = [1.0_dp] ! Equivalent to using the raw raster values
+                else
+                    ! Read the data to perform the unit-source summation
+                    open(newunit=fid, file=stage_file)
+                    n = count_file_lines(fid) - csv_header_size
+                    allocate(stage_files(n), slips(n), start_times(n), end_times(n))
+                    ! Skip header
+                    do j = 1, csv_header_size
+                        read(fid, *)
+                    end do
+                    ! Read data
+                    do j = 1, n
+                        read(fid, *) stage_files(j), slips(j), start_times(j), end_times(j)
+                    end do
+                    close(fid)
+                    start_times = start_times + global_dt ! Avoid forcing in first time-step
+                    end_times = end_times + global_dt ! Avoid forcing in first time-step
+                end if
+
+                do j = 1, n
+                    !write(log_output_unit, *) 'Forcing metadata: ', trim(stage_files(j)), &
+                    !    slips(j), start_times(j), end_times(j)
+                    call setup_forcing_with_rise_time(domain, stage_files(j), slips(j), &
+                        start_times(j), end_times(j))
+                end do
+
+                deallocate(stage_files, slips, start_times, end_times)
+            end if
+        end if
+
+        ! Adjust for ambient sea-level
+        domain%U(:,:,STG) = domain%U(:,:,STG) + ambient_sea_level
+        domain%msl_linear = ambient_sea_level ! Influences linear solvers & potential-energy calculation.
+
+        ! Alway need stage >= elevation.
+        domain%U(:,:,STG) = max(domain%U(:,:,STG), &
+                                domain%U(:,:,ELV) + (minimum_allowed_depth/100.0_dp) )
+
+        !write(log_output_unit, *) 'Stage range:'
+        !write(log_output_unit, *) minval(domain%U(:,:,STG)), maxval(domain%U(:,:,STG))
+        !flush(log_output_unit)
+
+    end subroutine
+
+
+    subroutine setup_forcing_with_rise_time(domain, stage_file, slip, start_time, end_time)
+        !! If the stage-perturbation is applied over a non-zero rise-time
+        !! (i.e. not instantaneous), then this routine will set up the forcing
+        !! terms.
+        !! In this case we also force the elevation. Note the elevation is not perturbed for instantaneous
+        !! initial conditions, purely for backward compatibility with earlier runs. So there will be some
+        !! difference between using a rise time of zero, versus a vanishingly small rise time.
+        type(domain_type), intent(inout):: domain
+            !! If the stage-perturbation affects the doman, then this routine
+            !! will append a forcing term to that domain.
+        character(len=charlen), intent(in) :: stage_file
+            !! The unit-source ocean-surface perturbation (as a raster file)
+        real(dp), intent(in) :: slip
+            !! The slip on the unit source (m). A value of 1.0 will use the raster unchanged.
+        real(dp), intent(in) :: start_time
+            !! The start time over which slip occurs (seconds)
+        real(dp), intent(in) :: end_time
+            !! The end time of slip (seconds), with end_time >= start_time
+
+        type(forcing_patch_type), pointer :: forcing_context
+            ! Use this to apply the Okada forcing with a prescribed rise-time.
+            ! It will be attached to the domain via a c_ptr.
+        integer(ip):: i0, i1, j0, j1, k0, k1, j
+        real(dp), allocatable :: y(:)
+            ! Convenience integers
+        type(multi_raster_type):: stage_data
 
         call stage_data%initialise([stage_file])
 
-        ! Set stage PERTURBATION row-by-row.
-        ! This saves memory compared to doing it all at once.
-        allocate(x(domain%nx(1)), y(domain%nx(1)))
-        x = domain%x
-        do j = 1, domain%nx(2)
-            y = domain%y(j)
-            call stage_data%get_xy(x,y, domain%U(:,j,STG), domain%nx(1), &
-                bilinear=1_ip, na_below_limit=-1.0e+20_dp)
-                ! Set stage PERTURBATION
-            where(domain%U(:,j,STG) < (-1.0e+20_dp) ) domain%U(:,j,STG) = 0.0_dp
-                ! Clip 'NA' regions (since the stage raster does not cover the 
-                ! entire domain). In this case revert to the "0" value, later 
-                ! we will add an ambient_sea_level offset
-        end do
-        deallocate(x,y)
+        ! Only need to apply the forcing over the stage file spatial domain
+        i0 = count(domain%x < stage_data%lowerleft(1)) + 1
+        i1 = count(domain%x <= stage_data%upperright(1))
+        j0 = count(domain%y < stage_data%lowerleft(2)) + 1
+        j1 = count(domain%y <= stage_data%upperright(2))
+        k0 = STG
+        k1 = ELV ! Forcing the elevation will fail for some FV timestepping methods.
 
-        ! rise-time treatment here -- only applied if we actually need to.
-        if( (rise_time > 0.0_dp) .and. &
-            ( (maxval(domain%U(:,:,STG)) > 0.0_dp) .or. &
-              (minval(domain%U(:,:,STG)) < 0.0_dp) )) then
-            call setup_forcing_with_rise_time(domain, stage_data%lowerleft, &
-                stage_data%upperright)
+        if(i0 <= i1 .and. j0 <= j1) then
+            ! The stage data overlaps with this domain, so setup the forcing
+
+            if(start_time > end_time) then
+                write(log_output_unit, *) "Cannot have start_time > end_time"
+                call generic_stop
+            end if
+
+            allocate(forcing_context)
+            call forcing_context%setup(&
+                start_time = start_time, end_time = end_time, &
+                i0=i0, i1=i1, j0=j0, j1=j1, k0=k0, k1=k1)
+
+            ! Read the 'unit-source' forcing row-by-row
+            allocate(y(i0:i1))
+            do j = j0, j1
+                y = domain%y(j) ! Single y coordinate for each row
+                call stage_data%get_xy(domain%x(i0:i1), y, &
+                    forcing_context%forcing_work(i0:i1, j, STG), (i1-i0+1_ip),&
+                    bilinear = 1_ip, na_below_limit=raster_na_below_limit)
+                ! Clip NA regions
+                where(forcing_context%forcing_work(:,j,STG) < raster_na_below_limit) &
+                        forcing_context%forcing_work(:,j,STG) = 0.0_dp
+            end do
+            deallocate(y)
+
+            ! Multiply the 'unit-source' stage forcing by the slip
+            forcing_context%forcing_work(:,:,STG) = slip * forcing_context%forcing_work(:,:,STG)
+
+            ! No effect on UH/VH terms
+            forcing_context%forcing_work(:, :, UH:VH) = 0.0_dp
+
+            ! Force the elevation with the stage perturbation. This will
+            ! 'fail deliberately' for some finite-volume methods which are not
+            ! designed to do it.
+            forcing_context%forcing_work(:, :, ELV) = &
+                forcing_context%forcing_work(:, :, STG)
+
+            ! Ensure any previously defined forcing terms have been stored
+            call domain%store_forcing()
+            ! Move the forcing_context into the domain
+            domain%forcing_context_cptr = c_loc(forcing_context)
+            forcing_context => NULL() ! Not deallocated -- the memory is now in the domain
+            ! The domain will call apply_forcing_patch during each step
+            domain%forcing_subroutine => apply_forcing_patch
+            ! Store the forcing (so we can make new forcing terms by redefining domain%forcing_context_cptr and
+            ! domain%forcing_subroutine)
+            call domain%store_forcing()
+
         end if
 
         call stage_data%finalise()
 
-        domain%U(:,:,STG) = domain%U(:,:,STG) + ambient_sea_level
-            ! Adjust for ambient sea-level 
-        domain%msl_linear = ambient_sea_level
-            ! This is required for some linear solvers, and provides a baseline for potential energy
-            ! calculation.
-
-        domain%U(:,:,STG) = max(domain%U(:,:,STG), &
-                                domain%U(:,:,ELV) + 1.0e-07_dp)
-            ! Alway need stage >= elevation. 'Dry' if (depth < 1.0e-05_dp)
-
     end subroutine
 
-    subroutine set_initial_conditions(domain, stage_file)
+    subroutine set_initial_conditions(domain, stage_file, global_dt)
         !! Setup initial conditions. Also setup the stage-forcing if 
         !! rise_time > 0
 
-        class(domain_type), intent(inout):: domain
+        type(domain_type), intent(inout):: domain
             ! We initialise domain%U and domain%manning_squared, and 
             ! setup the forcing term if rise_time > 0
         character(len=charlen), intent(in) :: stage_file
             ! Raster filename with the Okada stage perturbation
+        real(dp), intent(in) :: global_dt
 
         call setup_elevation(domain)
 
-        call setup_stage(domain, stage_file)
+        call setup_stage_and_forcing(domain, stage_file, global_dt)
 
         if(allocated(domain%manning_squared)) then
             ! Friction 
