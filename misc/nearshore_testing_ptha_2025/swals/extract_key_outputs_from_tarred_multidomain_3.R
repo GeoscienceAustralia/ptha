@@ -21,7 +21,7 @@ TEMP_DIR_BASE = './UNTAR_PROCESSING'
 # Location of the plotting scripts for each historic event -- should be a directory inside the current folder.
 PLOT_SCRIPT_BASE = './plots/' 
 # Location where we put the outputs of interest. Should be one-level-up from the current folder.
-COPYOUT_DIR_BASE = '../analysis_ptha18_scenarios_2024/' 
+COPYOUT_DIR_BASE = '../analysis_ptha18_scenarios_2025/' 
 # If there are more than this many folders being extracted in TEMP_DIR_BASE, throw an error. 
 # This is to stop errors causing the runaway creation of very large file counts.
 MAX_UNTARRED_FOLDERS = 200 
@@ -142,9 +142,13 @@ create_gauges_and_possibly_pdf_plot<-function(md_dir){
         'Chile1960'         = 'plot_southamerica1960.R',
         'Chile2010'         = 'plot_southamerica2010.R',
         'SouthAmerica2015'  = 'plot_southamerica2015.R',
+        'Chile2015'         = 'plot_southamerica2015.R', # Different naming used for historical inversions
         'SouthAmerica2014'  = 'plot_southamerica2014.R',
+        'Chile2014'         = 'plot_southamerica2014.R', # Different naming used for historical inversions
         'Sumatra2004'       = 'plot_sumatra2004.R',
         'Sumatra2005'       = 'plot_sumatra2005.R',
+        'Java2006'          = 'plot_java2006.R',
+        'Sumatra2007'       = 'plot_sumatra2007.R',
         'Tohoku2011'        = 'plot_tohoku2011.R',
         'Puysegur2009'      = 'plot_puysegur2009.R',
         'Solomon2007'       = 'plot_solomon2007.R',
@@ -329,15 +333,30 @@ MC_CORES = 48 # Beware on Gadi, detectCores() will find 96 cores on a 48 core ma
 cl = makeCluster(MC_CORES)
 clusterExport(cl, varlist=ls(all=TRUE))
 
-# Find all the tarred multidomain files to operate on
-md_tar_dirs = unlist(lapply(c('OUTPUTS', 'OUTPUTS_SCRATCH', 'OUTPUTS_2022_new_events', 'OUTPUTS_2023_new_events'),
-    function(x){
-        Sys.glob(paste0(x, '/ptha18_random_like_historic*/RUN*'))
-    })
-)
+PROCESS_RANDOM_SCENARIOS = TRUE # TRUE for random scenarios, FALSE for validation events 
+
+if(PROCESS_RANDOM_SCENARIOS){
+    # Find all the tarred multidomain files with random scenarios to operate on
+    # I moved old runs [that covered smaller regions than newer runs] so the Sumatra events all use detailed SWWA info
+    md_tar_dirs = unlist(lapply(
+        c('OUTPUTS', 'OUTPUTS_SCRATCH', 'OUTPUTS_2022_new_events', 'OUTPUTS_2025_extend_WA', 'OUTPUTS_2025_NWWA'),
+        #c('OUTPUTS_2025_NWWA'),
+        function(x){
+            matching_files = Sys.glob(paste0(x, '/ptha18_random_like_historic*/RUN*'))
+            ## [The code below is now defunct, since we just move unwanted files to an OBSOLETE subdirectory]
+            ## For events from Sumatra, we only want to keep models with 'SWWA' in the title, since
+            ## previously the Sumatra models were run with a less extensive high-res zone in WA
+            #k = which(grepl('umatra', matching_files) & !grepl('SWWA', matching_files))
+            #if(length(k) > 0) matching_files = matching_files[-k]
+            return(matching_files)
+        })
+    )
+}else{
+    # Validation events only
+    md_tar_dirs =  Sys.glob('OUTPUTS_new_validation_events/*/RUN*')
+}
 
 # Run the calculations
-#all_runs = mclapply(md_tar_dirs, extract_key_outputs_from_tarred_multidomain, mc.cores=MC_CORES, mc.preschedule=FALSE)
 all_runs = parLapplyLB(cl, md_tar_dirs, extract_key_outputs_from_tarred_multidomain)
 print(all_runs)
 
