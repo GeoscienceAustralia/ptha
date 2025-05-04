@@ -6,6 +6,10 @@ received additional data during the study, some models were re-run with
 extended spatial extents, which made some of the initially run models obsolete,
 and slightly complicated the workflow.
 
+The code was run on NCI and makes assumptions specific to that environment
+(e.g. hard-coded locations of tide gauge data and local copy of `ptha` package)
+that would need updating to run elsewhere.
+
 # Notes on the runs
 
 The study includes a few thousand model runs which split into batches because
