@@ -22,7 +22,7 @@ source('gauge_data_links.R')
 ```
 
 Each tsunami is associated with a string giving the day it occurred in UTC time.
-  * For example, the 2021 Kermadec tsunami occurred on March 4 2021, and uses '2021-03-04'
+  * For example, the 2021 Kermadec tsunami occurred on March 4 2021, and uses `'2021-03-04'`
 
 Get the data for that event using `get_data_for_event`
 ```r
@@ -64,14 +64,15 @@ names(gauge_data_kermadec2021)
 # [26] "PortKembla_GrainTerminal_1min_PA"       
 ```
 
-For each gauge we can extract the key information like this (using `Eden_1min_DPIE` as an example):
+For each gauge we can extract the key information like this (using `'Eden_1min_DPIE'` as an example):
 ```r
 gn = 'Eden_1min_DPIE' # Gauge name
 
 gauge_data_kermadec2021[[gn]]$coord # Coordinate (lon, lat)
 # [1] 149.90829 -37.07124
 
-site_data = gauge_data_kermadec2021[[gn]]$obs # Observations, with detiding, UTC timezone
+
+site_data = gauge_data_kermadec2021[[gn]]$obs # this is a data.frame 
 
 options(digits=12) # Reduce rounding of printed output below
 head(site_data) # Print the first few rows
@@ -83,6 +84,11 @@ head(site_data) # Print the first few rows
 # 5 2021-01-31 14:04:00 18658.5861111  1.048 -0.00622501968654
 # 6 2021-01-31 14:05:00 18658.5868056  1.033 -0.01864899320414
 ```
-Notice the data contains the observation `time` (UTC), `juliant` (time in days
+The data contains the observation `time` (UTC), `juliant` (time in days
 since the start of 1970 UTC), `height` (the tide gauge value with an arbitrary
 datum) and `resid` (the detided record).
+
+The script ensures that all sites are in this format. If you just want to work with
+the csv files, they are in the `./DATA` archive, but don't have a consistent timezone
+or columns or coordinates. However, you can read `gauge_data_links.R` to figure out this
+information.
