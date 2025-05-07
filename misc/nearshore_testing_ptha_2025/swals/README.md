@@ -51,7 +51,7 @@ the script parameters correspond with what you want to extract).
 
 # HOW TO RUN THE MODELS
 
-1. Create all random scenarios (for all batches) in the folder [../ptha_scenarios_random](../ptha_scenarios_random) by following instructions therein.
+1. Create all random scenarios (for all batches) in the folder [../ptha18_scenarios_random](../ptha18_scenarios_random) by following instructions therein.
 
 2. Do a test run for the SWALS model in this folder, and use the results to create a SWALS load balance file. 
   * For any given model run, a load balance file can be created by running the [load_balance_script.R](load_balance_script.R) from inside the multidomain directory (something like `Rscript ../../../load_balance_script.R` ). That will make a file `load_balance_partition.txt` in the folder where it was run, which is then copied to the `load_balance_files` folder with an appropriate name.
@@ -60,7 +60,7 @@ the script parameters correspond with what you want to extract).
 
 3. Create the PBS scripts that are required to run all jobs. 
   * In practice I used multiple batches, due to both limitations in compute quota, and the relatively long time over which the study was implemented.
-  * Beware some of the scripts below run early versions of simulations that use less tide gauge data than the final version (e.g. early versions of the Sumatra simulations did not have such extensive tide gauge data in Western Australia, so were ultimately replaced with models that included more tide gauges). This is because we didn't have all the datasets when beginning the study.
+  * Beware some of the scripts below run early versions of simulations that use less tide gauge data than the final version (e.g. early versions of the Sumatra simulations did not have such extensive tide gauge data in Western Australia, so were ultimately replaced with models that included more tide gauges). This is because we didn't have all the datasets when beginning the study. These cases are run again by the scripts - but you wouldn't do this if starting from scratch with all the data.
 ```
 Rscript create_random_ptha_qsub_scripts.R
 Rscript create_random_ptha_batch2_qsub_scripts.R
@@ -76,7 +76,7 @@ Rscript create_random_ptha_batch6_qsub_scripts.R
   * Once each batch is finished, tar the directories with [run_tar_dir.sh](run_tar_dir.sh) to avoid exceeding the file-count qutota. 
     * To do this you'll need to edit the variable `all_md_dir` in [tar_multidomain_dirs.R](tar_multidomain_dirs.R) to ensure it globs the correct files.
 
-5. Run the test events. For all these runs the code was compiled with `output_basedir = './OUTPUTS_new_validation_events/' // &`
+5. Run the test events derived from source inversions. For all these runs the code was compiled with `output_basedir = './OUTPUTS_new_validation_events/' // &`
 ```
 # This script collates all the runs into a single source for convenience, but
 # it's an over-simplification of the process in which they were often run in
