@@ -6,24 +6,30 @@ Run with:
 Rscript parse_gauge_outputs.R > parse_gauge_outputs_log.log 
 
 # 2. Plot time-series of model-vs-data at selected gauges (based on the tsunami size)
+#    and report some summary statistics and ranks on the best gauge-specific scenario 
+#    GOF for each model type.
 Rscript plot_best_scenarios_large_and_small_waves.R > plot_best_scenarios_log.log 
 
-# 3. Make plots of "good" scenarios according to various GOF criteria (collapsed over tide gauges, e.g. by taking the median GOF over tide gauges), along with some GOF stats
+# 3. Make plots of "good" scenarios according to various GOF criteria
+#    collapsed over tide gauges (e.g. by taking the median GOF over tide gauges)
+#    along with some stats
 Rscript analysis_good_scenarios_plot.R
 
 # 4. Rank the different model types based on their GOF collapsed over tide gauges
 Rscript summary_statistics_median_GOF_over_gauges.R > summary_statistics_median_GOF_over_gauges_log.log
 
-# 5. Make boxplots showing random models vs observations for various tsunami size metrics
+# 5. Make boxplots showing random models vs observations for various tsunami
+#    size metrics
 Rscript boxplot_stats_and_scatterplots.R
 
-# 6. Compute tables of statistics
+# 6. Compute tables of statistics describing the modelled tsunami size range vs
+#   the observations.
 Rscript run_stats_under_null_hypothesis.R
 ```
 
-## Details
-
-* The parsing script may report errors related to tide-gauges which are included in the `gauge_data_links.R` database but not used in the analysis. That's OK and more convenient than modifying the database.
+## Notes
+* In these scripts, the statistic called `G_0` in the manuscript is `time_domain_hybrid_norm_stat3` while `G_1` is `time_domain_hybrid_norm_stat4`. 
+* The parsing script may report errors related to tide-gauges which are included in the `gauge_data_links.R` database but not used in the analysis. That's OK and was more convenient than modifying the database.
 * The CPU time required for all models can be computed with `sum_walltime_all_tsunami_models.R`
 * The time window used for comparison of models and data was computed using the function `.make_times_to_start_comparison()` in the script `create_times_to_start_tide_gauge_comparison_with_models.R`. 
   * This requires preliminary versions of files from `parse_gauge_outputs.R` to exist first 
