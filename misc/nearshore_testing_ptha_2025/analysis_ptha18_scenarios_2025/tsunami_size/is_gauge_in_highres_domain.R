@@ -17,11 +17,11 @@ library(sf)
 make_highres_domains<-function(){
     all_poly = list(
         # Here the names correspond to possible values of 'model_resolution_tag'
-        highres_australia = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_australia/domains_shapefile/domains_shapefile.shp'),
+        #highres_australia = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_australia/domains_shapefile/domains_shapefile.shp'),
         highres_NSW = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_NSW/domains_shapefile/domains_shapefile.shp'),
         highres_perth = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_perth/domains_shapefile/domains_shapefile.shp'),
-        highres_SWWA = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_SWWA/domains_shapefile/domains_shapefile.shp'),
-        highres_australiaSWWA = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_australiaSWWA/domains_shapefile/domains_shapefile.shp'),
+        #highres_SWWA = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_SWWA/domains_shapefile/domains_shapefile.shp'),
+        #highres_australiaSWWA = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_australiaSWWA/domains_shapefile/domains_shapefile.shp'),
         highres_australiaWA = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_australiaWA/domains_shapefile/domains_shapefile.shp'),
         highres_NWWA = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_NWWA/domains_shapefile/domains_shapefile.shp'),
         highres_WA = read_sf('../../swals/domain_shapefiles_by_highres_regions/highres_WA/domains_shapefile/domains_shapefile.shp')
