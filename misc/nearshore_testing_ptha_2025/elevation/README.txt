@@ -6,3 +6,5 @@ When the latter folder is extracted (e.g. using `tar -jxf elevation.tar.bz2`), t
     derived_for_model_SWWA_update
     orig
     README.md
+
+Although SWALS internally uses the above datasets to create the elevation seen by the model, you may be more interested to directly seeing the elevation in SWALS. For convenience it can be downloaded here: https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2025/full_resolution_model_elevation.tar.bz2
