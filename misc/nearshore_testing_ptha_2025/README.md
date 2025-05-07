@@ -14,6 +14,6 @@ level in the filesystem on those machines than the data provided here).
 ## Subfolders
 * `./breakwalls` - Information on small scale linear features that are burned into the model elevation, such as breakwalls that would not otherwise be captured at the SWALS model's native resolution.
 * `./elevation` - Links to input elevation data used by the model, and also the elevation as seen by the SWALS model (derived from the input elevation data using the model code in `./swals`)
-* `./gauges` - Tide gauge data and a script that provides a uniform interface. Beware that scripts in this project use a different file path to refer to interface script herein (since the data was stored in a central location, that cannot easily be represented in this repository, at the time the calculations were implemented). 
+* `./gauges` - Tide gauge data and a script that provides a uniform interface. Beware that scripts in this project use a different file path to refer to the tide gauge interface script (since when the calculations were implemented, this tide gauge data was stored in a central location that cannot easily be represented in this repository). 
 * `./ptha18_scenarios_random` - Link to code used to sample random scenarios from PTHA18, as well as the actual scenarios.
 * `./swals` - Code used to model the tsunami for all scenarios
