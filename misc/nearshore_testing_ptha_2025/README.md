@@ -4,8 +4,8 @@
 This folder contains code and links to data used for the paper INSERT-NAME-AND-LINK-WHEN-PUBLISHED.
 
 The information is provided for transparency and to assist future studies.
-However, the code was only designed to allow the author to implement the study
-- it wasn't designed to be user friendly or easy to run on other machines. It
+However, the code was only designed to allow the author to implement the study.
+It wasn't designed to be user friendly or easy to run on other machines. It
 was partly run on the NCI Gadi supercomputer, and partly on the authors local
 machine. The codes make assumptions about those environments that would need to
 be changed if you were trying to run the code elsewhere (e.g. the location of
