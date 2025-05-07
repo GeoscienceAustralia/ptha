@@ -71,7 +71,6 @@ gn = 'Eden_1min_DPIE' # Gauge name
 gauge_data_kermadec2021[[gn]]$coord # Coordinate (lon, lat)
 # [1] 149.90829 -37.07124
 
-
 site_data = gauge_data_kermadec2021[[gn]]$obs # this is a data.frame 
 
 options(digits=12) # Reduce rounding of printed output below
