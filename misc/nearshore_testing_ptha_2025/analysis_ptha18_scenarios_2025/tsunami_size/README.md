@@ -29,6 +29,14 @@ Rscript run_stats_under_null_hypothesis.R
 
 ## Notes
 * In these scripts, the statistic called `G_0` in the manuscript is `time_domain_hybrid_norm_stat3` while `G_1` is `time_domain_hybrid_norm_stat4`. 
+* The analysis is repeated with and without modification of the models to reflect tide-gauge smoothing and undersampling. 
+  * The parsing script computes statistics for both cases, with details for the non-trivial case in `downsample_and_smooth_model_at_nearshore_tide_gauge.R`.
+* The analysis is restricted to tide gauges meeting the following criteria (implemented in `is_gauge_in_highres_domain.R` and `good_nearshore_data_definition.R`):
+  * Inside high resolution areas of the model
+  * The observations have at least 5 min sampling rate
+  * The observations do not replicate another observation very nearby, or have major artefacts that cannot be corrected
+  * The observations have an observed abs(detided sea level) of at least 0.025 m
+  * There is a model gauge less than 200m from the tide gauge. Some tide gauges had coordinate errors during model development and did not satisfy the latter constraint. 
 * The parsing script may report errors related to tide-gauges which are included in the `gauge_data_links.R` database but not used in the analysis. That's OK and was more convenient than modifying the database.
 * The CPU time required for all models can be computed with `sum_walltime_all_tsunami_models.R`
 * The time window used for comparison of models and data was computed using the function `.make_times_to_start_comparison()` in the script `create_times_to_start_tide_gauge_comparison_with_models.R`. 
