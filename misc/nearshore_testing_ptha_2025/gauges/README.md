@@ -84,8 +84,8 @@ head(site_data) # Print the first few rows
 # 6 2021-01-31 14:05:00 18658.5868056  1.033 -0.01864899320414
 ```
 The data contains the observation `time` (UTC), `juliant` (time in days
-since the start of 1970 UTC), `height` (the tide gauge value with an arbitrary
-datum) and `resid` (the detided record).
+since the start of 1970 UTC), `height` (the tide gauge level in meters with an arbitrary
+datum) and `resid` (the detided record in meters).
 
 The script ensures that all sites are in this format. If you just want to work with
 the csv files, they are in the `./DATA` archive, but don't have a consistent timezone
