@@ -1,0 +1,1 @@
+The R scripts in this folder extract gauges from the model runs. They do not actually make plots (older versions did, hence the the naming) but are an intermediate step to support other analysis and plotting.

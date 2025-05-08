@@ -1,0 +1,1 @@
+This source file was constructed using code (provided by Fabrizo Romano) to generate deformations associated with triangular unit sources, with a Kajiura filter applied, which were then scaled and summed to make a static source.
