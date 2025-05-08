@@ -3,8 +3,8 @@
 The simulations for this study were implemented over a long time period
 (starting around 2020). Below I have condensed the process to run them. As I
 received additional data during the study, some models were re-run with
-extended spatial extents, which made some of the initially run models obsolete,
-and slightly complicated the workflow.
+extended spatial extents, which made some of the initially run models obsolete
+(but the obselete runs are not removed from the scripts below).
 
 The code was run on NCI and makes assumptions specific to that environment
 (e.g. hard-coded locations of tide gauge data and local copy of `ptha` package)
