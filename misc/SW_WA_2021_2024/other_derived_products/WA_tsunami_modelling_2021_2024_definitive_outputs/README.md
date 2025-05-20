@@ -63,4 +63,4 @@ Code used for this project is in Geoscience Australia's ptha repository:
 `https://github.com/GeoscienceAustralia/ptha/tree/master/misc/SW_WA_2021_2024`
   * For Greater Perth, see the subfolder `greater_perth_revised2023`
   * For Bunbury Busselton, see the subfolder `bunbury_busselton`
-  * For Midwest, see the subfolder `guilderton_to_geraldton`
+  * For Midwest, see the subfolder `midwest`
