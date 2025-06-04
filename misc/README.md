@@ -12,4 +12,4 @@ This folder contains:
 
 * [./probabilistic_inundation_tonga2020](./probabilistic_inundation_tonga2020) - A probabilistic inundation hazard analysis for Tongatapu. I suggest to use an improved variant of this analysis which is available in [./monte_carlo_paper_2021](./monte_carlo_paper_2021)
 
-
+* [./gladstone_2024_2025](./gladstone_2024_2025) - Code to run an inundation model in Gladstone, Queensland. The SWALS model showcases variable friction, makefiles to compile inputs, elevation adjustments for an uneven but quiscent initial water level, a domains nested with a tree structure, breakwalls, inverts, setting initial stages dry for inland areas below sea level, and running at various sea levels.
