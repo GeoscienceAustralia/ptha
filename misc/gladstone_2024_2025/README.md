@@ -1,12 +1,12 @@
 # Gladstone 2024/25 Tsunami Inundation
 
-This model is being developed for to develop probabilistic inundation hazards for the Gladstone region for Queensland Fire Department in 2024-25. This model places high-resolution grids in towns near Gladstone, from Baffle Creek to Yeppoon and includes several offshore islands. An outline of how to setup the model is provided in [doc/general_guidance_on_model_setup.md](doc/general_guideance_on_model_setup.md).
+The SWALS model in this project was developed for a probabilistic tsunami hazard assessment for the Gladstone region. The project was undertaken by Geoscience Australia for Queensland Fire Department in 2024-25. The model places high-resolution grids in towns near Gladstone, from Baffle Creek to Yeppoon and includes Heron Island, Lady Elliot Island and One Tree Island. An outline of how to setup the model is provided in [doc/general_guidance_on_model_setup.md](doc/general_guideance_on_model_setup.md). 
 
 The code for this project was in large part modified from previous projects in [NSW](../nsw_2023_2024) and [WA](../SW_WA_2021_2024).
 The scenario sampling method is more similar to the NSW study as it uses importance sampling based on offshore wave-heights in PTHA18.
 However, it only has results from a single batch so doesn't require multiple importance sampling like in NSW.
 
-The key innovations in this study were a) the treatment of spatially varying highest astronomical [tide](tides) (HAT), which adjusts the elevation to account for the unevenness in HAT while ensuring the initial water level is quiescent. This is the subject of a conference paper in [Coasts and Ports 2025](https://coastsandports2025.com.au/). b) Nesting domains with a [tree structure](swals/model_multidomain_design_mod.f90), rather than linear cascade. c) Using variable [friction](friction) based on land cover. 
+The key innovations in this study were a) the treatment of spatially varying highest astronomical [tide](tides) (HAT), which adjusts the elevation to account for the unevenness in HAT while ensuring the initial water level is quiescent. This is the subject of a conference paper in [Coasts and Ports 2025](https://coastsandports2025.com.au/). b) Nesting domains with a tree structure, rather than linear cascade. Customising the `nesting_level_parent_index` in [multidomain design mod](swals/model_multidomain_design_mod.f90) permits domains to nest inside any compatible parent domain. c) Using variable [friction](friction) based on land cover. 
 The project uses [makefiles](makefile) to compile the input files for SWALS (e.g. breakwalls, elevation, friction, ...). It also includes single scenario analysis for the effect of 0.8 m of sea level rise and the effect of the presence/absence of friction from mangroves. 
 
 
