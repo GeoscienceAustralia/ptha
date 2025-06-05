@@ -1,0 +1,1 @@
+Gauge locations at points of interest are compiled in [locations.csv](locations.csv) to be read by SWALS. The script [make_gauge_locations.R](make_gauge_locations.R) is used to create this file. Each time it's run it logs the date and any warnings to the file [make_gauge_locations.log](make_gauge_locations.log). 

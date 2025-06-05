@@ -1,0 +1,29 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=4:00:00
+#PBS -l mem=190GB
+#PBS -l ncpus=48
+#PBS -l jobfs=20GB
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85+gdata/fj6
+
+source R_431_NCI_modules.sh
+
+# Set the batchname to the directory containing the sampling configuration
+batchname="ptha_batch"
+
+# assert that the batchname directory exists
+if [ ! -d $batchname ]; then
+    echo "Error: directory $batchname does not exist"
+    exit 1
+fi
+
+cd $batchname
+
+# Make the scenarios. 
+# NB: if not on NCI with access to g/data/fj6 then needs internet to download the data.
+Rscript ../create_scenarios.R > create_scenarios.log 2>&1
+
+# Make the uplift/subsidence initial conditions
+Rscript ../create_initial_conditions_for_scenarios.R
