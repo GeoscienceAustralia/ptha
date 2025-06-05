@@ -13,3 +13,6 @@ Using JATWC warning rules, compute the footprint covering all modelled scenarios
 
 ## Arrival times
 Compute the mean and minimum tsunami arrival times.
+
+## Sea level rise
+Plot the difference in results for a single scenario under a sea level rise of 0.8m. The plots compare the max stage and max speed with and without sea level rise.

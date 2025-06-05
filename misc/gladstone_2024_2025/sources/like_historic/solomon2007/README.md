@@ -2,9 +2,9 @@
 
 ## 1. ptha_unit_source_scaled
 
-The four earthquake unit sources in PTHA18 closest to the global CMT reported centroid were fetched using `fetch_ptha_sources.R`. These are in the `ptha_unit_source` folder. The scipt then scales them to by magnitude 8.1 and saves them in `ptha_sources_scaled` with their scaling factor.
+The four earthquake unit sources in PTHA18 closest to the global CMT reported centroid were fetched using `fetch_ptha_sources.R`. These are in the `ptha_unit_source` folder. The script then scales them to by magnitude 8.1 and saves them in `ptha_sources_scaled` with their scaling factor. The scaled `solomon2_1_19` event works best for the tide gauges near Gladstone.
 
-## 2. solmon2007-batch2_variable_area_uniform_slop_11244_count1.tif
+## 2. solomon2007-batch2_variable_area_uniform_slop_11244_count1.tif
 
 This source model is from PTHA18
 * Solomon 2 source, VAUS slip model, row index 11244
@@ -13,7 +13,7 @@ My unpublished studies using an Australia wide model (setup as per the Global Di
 
 Extracted from here: `"/media/gareth/Windows7_OS/Users/gareth/Documents/work/Inundation_tsunami/2019_07_australia_wide_model/clean_model_files/ptha18_scenarios_random/set_range_of_mw_and_centroid_batch2"`
 
-Some summary statistiscs are below.
+Some summary statistics are below.
 ```r
 
 > # Running in this folder
@@ -52,7 +52,10 @@ Some summary statistiscs are below.
 26     3.485496e-05     4.019378e-05       3.057462e-05
 ```
 
-## 3. NOAA source downloaded from ComMIT 
+## 3. Wei 2015 published version
+
+
+## 4. NOAA source downloaded from ComMIT 
 
 The ComMIT software has two source solutions for this event. However, I have not been able to convert them into a raster format to read in swals. This is because the grid points are stored with uneven spacing. They need to be interpolated onto a regular grid to become a raster. The `commit_raster_conversion.R` is almost able to do it, just debugging.
 
@@ -77,5 +80,3 @@ It's a combination of 4 sources scaled by alpha:
 - 25% nv11a with alpha = 1.981
 - 25% nv12b with alpha = 1.981
 - 25% nv12a with alpha = 1.981
-
-# 3. Wei 2015 published version

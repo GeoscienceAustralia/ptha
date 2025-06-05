@@ -4,7 +4,7 @@
 This folder contains code to run the tsunami models, including:
 * Scenarios like [historical events](../sources/like_historic/)
 * [Random PTHA18 scenarios](../sources/hazard/)
-You might also want to review [../doc/general_guidance_on_model_setup.md](../doc/general_guidance_on_model_setup.md) for further guidance.
+You might also want to review [../doc/general_guidance_on_model_setup.md](../doc/general_guideance_on_model_setup.md) for further guidance.
 
 The key folders are:
 - [test](test) -- test cases
@@ -16,7 +16,7 @@ The key folders are:
 
 The model is specified with the following fortran files:
 - [model.f90](model.f90) -- main model code which is overridden by anything set in the following two included files
-- [model_initial_conditions_mod.f90](model_initial_conditions.f90) -- initial conditions
+- [model_initial_conditions_mod.f90](model_initial_conditions_mod.f90) -- initial conditions
 - [model_multidomain_design_mod.f90](model_multidomain_design_mod.f90) -- domain design
 
 ## Outline of steps to run on NCI
@@ -90,7 +90,7 @@ If the minimum global domain timestep is much larger than the chosen global_dt, 
 - [x] Here the global_dt is `1.6s` and the smallest global domain timestep is `1.639s` so we are good to go.
 
 ## Validation with Historic events
-Use source inversions to simulate [Tohoku 2011](validation/tohoku2011.pbs) and [Solomon Islands 2007](validation/solomon2007_1_19.pbs). The gauge records for the event are plotted in `validation/gauge_plots` using their respective `compute_gauges_*.R` and then `plot_gauges_*.R`.
+Use source inversions to simulate [Tohoku 2011](validation/tohoku2011.pbs) and [Solomon Islands 2007](validation/solomon2007.pbs). The gauge records for the event are plotted in `validation/gauge_plots` using their respective `compute_gauges_*.R` and then `plot_gauges_*.R`.
 
 
 ## Performance optimisation
@@ -120,7 +120,7 @@ grep " comms1:" *.log | awk 'NF>1{print $(NF-1)}' | awk '{sum += $1; count++} EN
 3. Run the [small source](test-full/small_source.pbs) which can detect instabilities in the nesting boundaries. Make the last_timestep_VH and last_timestep_UH rasters at the last timestep to ensure nothing at the nesting boundaries look out of sorts. 
 
 ## Debug any failed runs
-Also `grep NaN *.log` can help. One did and was [re-run](run_ptha_tidal_check/debug_failed_run.pbs) in debug mode using 2 nodes with 16 images (so I could get the result faster). The run time came down from 9 hours to 6 hours and wouldn't be significantly improved by load balancing (15 mins). It would be interesting to see if using 8 images over 2 nodes would be better. It revealed a river crossing the first level nesting boundary so I patched it at 100 m AHD. After fixing this issue the log file check printed:
+Also `grep NaN *.log` can help. One did and was re-run in debug mode using 2 nodes with 16 images (so I could get the result faster). The run time came down from 9 hours to 6 hours and wouldn't be significantly improved by load balancing (15 mins). It revealed a river crossing the first level nesting boundary so I patched it at 100 m AHD. After fixing this issue the log file check printed:
 ```
 [1] "Did the model runs finish?"
    Mode    TRUE 

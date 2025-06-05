@@ -28,7 +28,7 @@ This folder contains the following data, along with some related scripts:
     * Useful reference to compare with other inundation zones.
 
 * ./domains_shapefile
-    * Shapefile showing the locations of domains in the model. For outputs that consist of sets of rasters, this provides an overview of where each raster is located. It was created using the script [../../swals/make_domains_shapefile.R](../../swals/make_domains_shapefile.R) and manually copied here (for convenience only).
+    * Shapefile showing the locations of domains in the model. For outputs that consist of sets of rasters, this provides an overview of where each raster is located. It was created using the script [../../swals/make_domains_shapefile.R](../../swals/post_process/make_domains_shapefile.R) and manually copied here (for convenience only).
 
 # How to run the calculations
 
@@ -70,7 +70,7 @@ One way to recognize this is to look for sites in estuaries that are inside the 
 
 To recognize these sites, one useful product is the
 `depth_above_initial_condition` created in the
-[../probabilistic_inundation](probabilistic_inundation) folder. At low-lying
+[../probabilistic_inundation](../probabilistic_inundation) folder. At low-lying
 sites that only have a small modelled tsunami, this will be small.
 
 ## Why limit the onshore zone to a rare PTHA exceedance-rate?
