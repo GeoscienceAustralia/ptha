@@ -15,7 +15,7 @@ source ../../modules_SWALS_ifx_2024.sh
 # Initial stage test scenario
 stage_file=./../sources/test/large_kermadectonga2_43783/kermadectonga2_row_0043783_Mw_95_HS.tif
 # Default res and load balance. With tidal correction
- multidomain_design_namelists=$path_swals/multidomain_design_control/NNL4_defaultRes_no_mangroves.nml
+multidomain_design_namelists=$path_swals/multidomain_design_control/NNL4_defaultRes_no_mangroves.nml
 # Model name
 model_name=mangroves/kermadec_95_no_mangroves
 # Ambient sea level of 0.0m HAT
