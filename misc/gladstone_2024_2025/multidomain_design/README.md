@@ -11,7 +11,14 @@ The command `Rscript create_boxes.R` will run code to create the domain
 bounding boxes. Within that script you need to define some variables that
 describe the multidomain structure.
 
-The current domains have been setup to have 3 levels of nesting, reflected in the directory name `domains_1_3_15_15`. The outer level is 1-arcmin in each direction, the second level is 3x finer, and the next level is 5x finer than that. The fourth level is 5 times finer than its parent (the second level), like the third level. Note that the cell size in each domain is defined in the `../swals/multidomain_design` files, the corresponding refinement factors are 9 (from the global grid tp the first level), 6, 3. Which are defined relative to the global grid of 1-arcmin cells.
+The current domains have been setup to have 3 levels of nesting, reflected in
+the directory name `domains_1_3_15_15`. The outer level is 1-arcmin in each
+direction, the second level is 3x finer, and the next level is 5x finer than
+that. The fourth level is 5 times finer than its parent (the second level),
+like the third level. Note that the cell size in each domain is defined in the
+`../swals/multidomain_design` files, the corresponding refinement factors are 9
+(from the global grid tp the first level), 6, 3. Which are defined relative to
+the global grid of 1-arcmin cells.
 
 The command `Rscript edit_boxes.R` will create variants of the files created
 with the `create_boxes.R` script. The new files will contain information on
