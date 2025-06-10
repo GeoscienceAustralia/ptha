@@ -8,7 +8,7 @@ The region between Yeppoon and Burnet heads has a varying HAT level. This folder
     - QLD storm tide website, which comes from the tide tables. https://www.qld.gov.au/environment/coasts-waterways/beach/storm/storm-sites.
 
 ## Scripts
-Originally I startd making `interpolate_hat.R` (deleted) as we weren't going to use TPXO9 for licencing reasons, but we have since been given permission to use it. The script `adjust_tpxo9_for_gauges.R` is currently being used to adjust the TPXO9 predictions to the tide gauge records region.
+Originally I startd making `interpolate_hat.R` (deleted) as we weren't going to use TPXO9 for licencing reasons, but we have since been given permission to use it by the TPXO9 authors. The script `adjust_tpxo9_for_gauges.R` is currently being used to adjust the TPXO9 predictions to the tide gauge records region.
 
 ## Outputs
 The resulting geotif file will be read by the model to adjust the tides for the region. The model will add the geotif to the elevation data, so the results in `tpxo_adjusted_for_gauges.tif` are negated to add depth to the sea level.

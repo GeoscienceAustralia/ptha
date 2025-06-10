@@ -3,7 +3,7 @@
 Here we provide code to compute the depth or max-speed or max-stage or max-flux at a given exceedance-rate and epistemic uncertainty percentile (second set of code, below).
 * This uses root-finding with a prescribed tolerance.
 
-## Binned thresholds (avoid)
+## Binned thresholds (no longer recommended)
 The (approximate) max-stage with a given exceedance-rate. 
   * It is approximate because we only use the max-stage values computed previously (1.1, 2.1, 3.1, ..., 10.1).
   * The computed solution is 'rounded down' from the exact solution to the nearest binned value
