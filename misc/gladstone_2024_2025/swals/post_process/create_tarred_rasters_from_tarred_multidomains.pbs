@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=04:00:00
+#PBS -lmem=190GB
+#PBS -lncpus=48
+#PBS -ljobfs=20GB
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+# When setting the walltime in future, note it took 2:09 hours to process the 215 ptha_tidal_check scenarios
+# So about 1 hour per 100 scenariods
+
+source ../../modules_R_431.sh
+
+n_chunks=48
+
+for i in $(seq 1 $n_chunks)
+do
+    Rscript create_tarred_rasters_from_tarred_multidomains.R \
+    '../OUTPUTS/ptha/sea_level_vary/random_*/ptha18_random_scenarios_*/RUN_*.tar' \
+    $i \
+    $n_chunks
+done
