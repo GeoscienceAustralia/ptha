@@ -185,6 +185,9 @@ Once the model compiles and runs, use the following checklist to aid model devel
 - tohoku2011.pbs
     - [x] Inspect energy decay
     - [x] Inspect gauge plots
+- chile2010.pbs
+    - [x] Inspect energy decay
+    - [x] Inspect gauge plots
 - Solomon2007_1_19.pbs  
     - [x] Inspect energy decay
     - [x] Inspect gauge plots
