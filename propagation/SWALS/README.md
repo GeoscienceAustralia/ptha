@@ -50,7 +50,8 @@ here](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) -
 this includes discussion of the range of equations that are solved, and the energy
 conservation properties of different solvers. It has been used to 
 model historic tsunamis and inundation hazards [in Tongatapu](https://doi.org/10.1093/gji/ggac140),
-and [in Western Australia](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930). The
+and [in Western Australia](https://icce-ojs-tamu.tdl.org/icce/article/view/12657/11930) and in a [more
+detailed report on the Western Australian work](http://dx.doi.org/10.26186/150015). The
 linear solver in SWALS was also used extensively for the 
 [2018 Australian Probabilistic Tsunami Hazard Assessment](http://dx.doi.org/10.11636/Record.2018.041)
 and two associated papers: [this one in GJI](https://doi.org/10.1093/gji/ggz260) and 

@@ -1,8 +1,9 @@
 # Definitive outputs for the WA tsunami inundation modelling project, 2021-2024
 
-This folder contains code to collate outputs from multiple tsunami models
-developed during the project. The intention is to make it easier for future
-users to find the most up-to-date outputs of interest.
+This folder contains outputs from multiple tsunami models developed during the
+project, which is described in the report `WA_tsunami_modelling_final_report_GA_record.pdf`. 
+The intention is to make it easier for future users find the most up-to-date
+outputs of interest.
 
 The modelling was conducted in three phases, each with particular focus areas:
 * Phase 1, Greater Perth, see `./model_outputs/greater_perth`
@@ -25,8 +26,10 @@ the three models, and their results are typically quite consistent.
 We have also combined the inundation rates (84th percentile) from multiple
 models into a single output product. 
 * See `./combined_models`, with subfolders including 
-  * The inundation rates (84th percentile) in raster format in `./combined_models/merged_inundation_rate_84pc`
-  * Contours of the inundation rates (84th percentile) at 1/100, 1/500 and 1/2500 in line shapefile format in `./combined_models/merged_inundation_rate_contour_1in2500_1in500_1in100_84pc`
+  * The inundation rates (84th percentile) in raster format in:
+    * `./combined_models/merged_inundation_rate_84pc`
+  * Contours of the inundation rates (84th percentile) at 1/100, 1/500 and 1/2500 in line shapefile format in:
+    * `./combined_models/merged_inundation_rate_contour_1in2500_1in500_1in100_84pc`
 * For details on which model is used where, see `./combined_models/README.md`.
 
 ## Structure of the model output folders
@@ -60,4 +63,4 @@ Code used for this project is in Geoscience Australia's ptha repository:
 `https://github.com/GeoscienceAustralia/ptha/tree/master/misc/SW_WA_2021_2024`
   * For Greater Perth, see the subfolder `greater_perth_revised2023`
   * For Bunbury Busselton, see the subfolder `bunbury_busselton`
-  * For Midwest, see the subfolder `guilderton_to_geraldton`
+  * For Midwest, see the subfolder `midwest`
