@@ -11,13 +11,18 @@ For access to detailed PTHA18 information, you should instead consult the [detai
 * scenario wave time-series at 'hazard points'
 * additional average-return-interval calculations
 
-The methodologies used in this study, and associated testing, are discussed in
-[the project report](http://dx.doi.org/10.11636/Record.2018.041) and 
-[this GJI publication](https://doi.org/10.1093/gji/ggz260) and 
-[this PAGEOPH publication](https://link.springer.com/article/10.1007/s00024-019-02299-w)
+The methodologies used in this study, and associated testing, are discussed in:
+* [The project report](http://dx.doi.org/10.11636/Record.2018.041)
+* [This GJI paper](https://doi.org/10.1093/gji/ggz260)
+* [This PAGEOPH paper](https://link.springer.com/article/10.1007/s00024-019-02299-w)
+* [This conference paper](https://www.researchgate.net/publication/337228680_A_New_Probabilistic_Tsunami_Hazard_Assessment_for_Australia)
 and [this talk](https://www.youtube.com/watch?v=brRy6YjwnlA&list=PL0jP_ahe-BFk3499UEvm-YdlOiE9HFbCg&index=4&t=0s).
 
-For ideas on how to use the PTHA18 results for inundation hazard assessment, see [this paper on efficient Monte Carlo methods](https://doi.org/10.1093/gji/ggac140) and [this report covering both scenario-based and Monte Carlo approaches](https://repository.oceanbestpractices.org/handle/11329/2062).
+For ideas on how to use the PTHA18 results for inundation hazard assessment, see:
+* [Paper on efficient Monte Carlo methods with an application in Tongatapu](https://doi.org/10.1093/gji/ggac140) 
+* [Technical report covering both scenario-based and Monte Carlo approaches](https://repository.oceanbestpractices.org/handle/11329/2062)
+* [Conference paper on Monte Carlo methods with an application in Western Australia](http://dx.doi.org/10.9753/icce.v37.papers.18)
+* [Technical report on an inundation hazard assessment in Western Australia](http://dx.doi.org/10.26186/150015)
 
 Code used to conduct the analysis is available open-source
 in the [ptha package](https://github.com/GeoscienceAustralia/ptha). This includes
