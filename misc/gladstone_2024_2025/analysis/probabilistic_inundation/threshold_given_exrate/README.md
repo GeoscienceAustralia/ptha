@@ -22,7 +22,7 @@ This doesn't scale well so it is better to use the other scripts below
 ```
 
 In general it is better to split the work into multiple jobs using the script
-`make_threshold_epistemic_uncertainty_jobs.R`. 
+[make_threshold_epistemic_uncertainty_jobs.R](make_threshold_epistemic_uncertainty_jobs.R). 
 It produces a number of separate jobs for either depth, max-stage, max-flux, max-speed 
 thresholds with epistemic uncertainty. Each job will work on a subset of domains. The approach is:
 1. Make the submission scripts
@@ -41,9 +41,7 @@ for pbs_file in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertain
 done
 ```
 
-- For dry regions that are wet in at least 1 scenario, [compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R](compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R) will by default return the lower bound of its search space. For max-stage, this is typically equal to the ambient sea level. In practice we want to remove this for end-user products.
-
-4. Move only the successful logs, which can be useful to see if any of the jobs failed:
+4. A Move only the successful logs, which can be useful to see if any of the jobs failed:
 ```bash
 files=$(find . -type f -name "*.pbs.o*")
 for file in $files
@@ -59,4 +57,6 @@ do
 done
 ```
 
-Or simply move all the logs `mv *.pbs.e* log/` and `mv *.pbs.o* log/`
+4. B Or simply move all the logs `mv *.pbs.[e,o]* log/` and check which rasters are missing using [which_missing_tifs.R](which_missing_tifs.R), which will has the folder to check hard-coded as input, so adjust as fit.
+
+5. Post-process dry regions with [tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R] (tidy_lower_bounds_in_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.R) to omit values very close to the lower bound (i.e. zero). For dry regions that are wet in at least 1 scenario, step 3 will by default return the lower bound of its search space. For max-stage, this is typically equal to the ambient sea level. In practice we want to remove this for end-user products.
