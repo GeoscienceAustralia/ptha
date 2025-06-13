@@ -7,7 +7,7 @@ The scenario sampling method is more similar to the NSW study as it uses importa
 However, it only has results from a single batch so doesn't require multiple importance sampling like in NSW (because in this case the model resolves inundation over a smaller coastline).
 
 The key innovations in this study were a) the treatment of spatially varying highest astronomical [tide](tides) (HAT), which adjusts the elevation to account for the unevenness in HAT while ensuring the initial water level is quiescent. This is the subject of a conference paper in [Coasts and Ports 2025](https://coastsandports2025.com.au/). b) Nesting domains with a tree structure, rather than linear cascade. Customising the `nesting_level_parent_index` in [multidomain design mod](swals/model_multidomain_design_mod.f90) permits domains to nest inside any compatible parent domain. c) Using variable [friction](friction) based on land cover. 
-The project uses [makefiles](makefile) to compile the input files for SWALS (e.g. breakwalls, elevation, friction, ...). It also includes single scenario analysis for the effect of 0.8 m of sea level rise and the presence/absence of friction from mangroves. 
+The project uses [makefiles](makefile) to compile the input files for SWALS (e.g. breakwalls, elevation, friction, ...). It also includes single scenario analysis for the effect of 0.8 m of sea level rise and the presence/absence of friction from mangroves.
 
 
 ## Key folders
@@ -28,8 +28,15 @@ The project uses [makefiles](makefile) to compile the input files for SWALS (e.g
 **Analysis of SWALS simulations**
 * [analysis](analysis) - Computations that use multiple simulated hazard scenarios to produce outputs. The outputs include probabilistic hazard products, and inundation maps that correspond to JATWC categories.
 
+## Modules
+The project uses two sets of environment modules on NCI Gadi: [modules_R_431.sh](modules_R_431.sh) for working in R and with gdal; as well as [modules_SWALS_ifx_2024.sh](modules_SWALS_ifx_2024.sh) for compiling and running SWALS in fortran. Load them all as e.g.
+```bash
+source modules_R_431.sh
+```
+before running R scripts and likewise for fortran. The scripts may work for other versions of these software, but it's not guaranteed.
+
 ## Make SWALS inputs
 
-The [makefile](makefile) in this directory is designed to make almost all the inputs for the SWALS (Shallow WAter Like Solvers) model. Run `make` to ensure all inputs are up to date using GNU make. Also try `make --dry-run` or `make --debug` first if you want to see what's not up to date before running. Using the makefile ensures that many of the hundreds of inputs are up to date, if they or their dependencies are modified. Inspecting the log file from `make -p > make.log` reveals there's about 73 csv files, 5 txt file, 54 shp files, and 35 R files that `make` tracks.
+The [makefile](makefile) in this directory is designed to make almost all the inputs for the SWALS (Shallow WAter Like Solvers) model. Run `make` to ensure all inputs are up to date using GNU make. This requires the [SWALS modules](modules_SWALS_ifx_2024.sh) being loaded. Also try `make --dry-run` or `make --debug` first if you want to see what's not up to date before running. Using the makefile ensures that many of the hundreds of inputs are up to date, if they or their dependencies are modified. Inspecting the log file from `make -p > make.log` reveals there's about 73 csv files, 5 txt file, 54 shp files, and 35 R files that `make` tracks.
 
 Beware that the makefile does not check every input. For example, many rasters are generated in GIS software. These rasters are [listed](elevation/make_swals_elevation_files_preference_list.R) in another [text file](elevation/swals_elevation_files_in_preference_order.txt) for SWALS. `Make` only sees changes in the text file, not the rasters themselves. Also, it currently doesn't include [source generation](sources/hazard/create_initial_conditions_for_scenarios.R) because this may require non-trivial compute resources. It may also require compute to [generate the friction rasters](friction/make_friction_rasters.R) (if required to regenerate).
