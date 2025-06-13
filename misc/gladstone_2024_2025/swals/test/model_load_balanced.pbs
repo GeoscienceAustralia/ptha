@@ -1,0 +1,30 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=00:30:00
+#PBS -lmem=500GB
+#PBS -lncpus=104
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+path_swals=.
+source $path_swals/../modules_SWALS_ifx_2024.sh
+
+# Initial stage from Tohoku2011
+stage_file=$path_swals/../sources/like_historic/Tohoku2011/YamazakiEtAl2018/yamazaki18_Tohoku11_sources_SUM_KAJIURA_SMOOTHED.tif
+# Default res and load balance
+multidomain_design_namelists=$path_swals/multidomain_design_control/NNL4_defaultRes.nml
+# Model name
+model_name=model_load_balanced
+# Ambient sea level for HAT is 0.0 with tidal adjustment
+ambient_sea_level=0
+
+# Run the model
+mpiexec -n 8 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    $path_swals/model_debug \
+    $stage_file \
+    $multidomain_design_namelists \
+    $model_name \
+    test_load_balance \
+    $ambient_sea_level > $path_swals/test/log/$model_name.pbs.log$PBS_JOBID 
+

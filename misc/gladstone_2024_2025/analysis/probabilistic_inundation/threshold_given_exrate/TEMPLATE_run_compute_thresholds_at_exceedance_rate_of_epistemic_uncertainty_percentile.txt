@@ -1,0 +1,37 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normal
+#PBS -l walltime=2:00:00
+#PBS -lmem=190GB
+#PBS -lncpus=48
+#PBS -ljobfs=20GB
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85+gdata/fj6
+
+source ../../../modules_R_431.sh
+
+PERCENTILE=0.84 # epistemic uncertainty percentile
+EXRATE=0.0004 # events per year 
+MINSTAGE=adaptive_minimum # Lower limit to uniroot search (for efficiency)
+MAXSTAGE=adaptive_maximum # Upper limit to uniroot search (for efficiency)
+DEPTHTOL=0.001 # Tolerance for uniroot search
+
+# In my study the high-resolution domains have a sequence of indices between these.
+MIN_DOMAIN_INDEX=__MIN_DOMAIN_INDEX__
+MAX_DOMAIN_INDEX=__MAX_DOMAIN_INDEX__
+
+# The variable to compute the threshold for: depth, max_stage, min_stage, max_flux, max_speed
+FLOW_VARIABLE=__FLOW_VARIABLE__
+OUTPUTDIR=ptha_highres_domains_${FLOW_VARIABLE}_at_epistemic_uncertainty_percentile_${PERCENTILE}_exrate_${EXRATE}
+
+
+for domain_index in $(seq $MIN_DOMAIN_INDEX $MAX_DOMAIN_INDEX); do
+    tif_file=$OUTPUTDIR/sum_of_all_sources_min_stage_rast_exrate_4e-04_percentile_84_subsam_1_Nrand_10000_seed_123_domain_index_$domain_index.tif
+    if [ -e $tif_file ]; then
+        echo "File exists " $domain_index
+        continue
+    else
+        echo "Running " $domain_index
+        Rscript compute_threshold_at_exceedance_rate_of_epistemic_uncertainty_percentile.R $FLOW_VARIABLE $domain_index $PERCENTILE $EXRATE $MINSTAGE $MAXSTAGE $DEPTHTOL $OUTPUTDIR
+    fi
+done

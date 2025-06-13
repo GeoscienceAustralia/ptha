@@ -1,0 +1,24 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=12:00:00
+#PBS -lmem=500GB
+#PBS -lncpus=104
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+path_swals=.
+source ../../modules_SWALS_ifx_2024.sh
+
+multidomain_design_namelists=$path_swals/multidomain_design_control/NNL4_defaultRes_debug.nml
+stage_file=$path_swals/../sources/test/small_source_solomon2007_divided_by_1000/small_scenario_solomon2007_divided_by_1000.tif
+ambient_sea_level=0
+model_name=small_source
+
+mpirun -n 8 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    $path_swals/model_debug \
+    $stage_file \
+    $multidomain_design_namelists \
+    $model_name \
+    full \
+    $ambient_sea_level > $path_swals/test-full/log/$model_name.log$PBS_JOBID
