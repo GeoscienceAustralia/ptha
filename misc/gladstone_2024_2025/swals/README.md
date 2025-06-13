@@ -127,29 +127,29 @@ grep " comms1:" *.log | awk 'NF>1{print $(NF-1)}' | awk '{sum += $1; count++} EN
 3. Run the [small source](test-full/small_source.pbs) which can detect instabilities in the nesting boundaries. Make the last_timestep_VH and last_timestep_UH rasters at the last timestep to ensure nothing at the nesting boundaries is indicative of instability. 
 
 ## Debug any failed runs
-Also `grep NaN *.log` can help. An early version of a model showed instability and was re-run in debug mode using 2 nodes with 16 images (so I could get the result faster). The run time came down from 9 hours to 6 hours and wouldn't be significantly improved by load balancing (15 mins). This check revealed the instability was triggered by a river crossing the first level nesting boundary. So I patched it at 100 m AHD. After fixing this issue the log file check printed:
+Also `grep NaN *.log` can help. An early version of a model showed instability and was re-run in debug mode using 2 nodes with 16 images (so I could get the result faster). The run time came down from 9 hours to 6 hours and wouldn't be significantly improved by load balancing (15 mins). This check revealed the instability was triggered by a river crossing the first level nesting boundary. So I patched it at 100 m AHD. After fixing this issue the [post_process/check_log_files.R](post_process/check_log_files.R) check printed:
 ```
 [1] "Did the model runs finish?"
    Mode    TRUE 
-logical     184 
-character(0)
+logical     313 
 [1] "Mass conservation errors relative to initial volume"
      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-1.194e-16 1.638e-16 1.927e-16 2.067e-15 3.472e-16 3.064e-13 
+1.470e-16 1.766e-16 1.907e-16 2.657e-16 2.114e-16 2.022e-15 
 [1] "Mass conservation errors relative to boundary flux integral"
      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-9.550e-11 8.334e-10 2.462e-09 1.571e-08 4.750e-09 1.360e-06 
+1.480e-10 8.650e-10 2.856e-09 7.049e-08 7.080e-09 5.024e-06 
 [1] "(Maximum energy - initial energy) relative to (2x maximum kinetic energy), BEFORE BOUNDARY FLUXES"
 [1] "(typically very small unless the source is time-varying)"
      Min.   1st Qu.    Median      Mean   3rd Qu.      Max. 
-0.000e+00 7.116e-05 3.703e-04 3.452e-04 5.584e-04 8.754e-04 
+0.000e+00 7.479e-05 2.801e-04 3.233e-04 5.497e-04 9.263e-04 
 [1] "Time index with largest kinetic energy (usually near start)"
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-   2.00    2.00    3.00    3.44    5.00    8.00 
+  2.000   2.000   3.000   3.709   5.000  15.000 
 [1] "Maximum energy increase between timesteps, relative to (2x maximum kinetic energy)"
+[1] ", normalised for volume change but not wetting and drying."
 [1] "(typically very small unless the source is time-varying)"
       Min.    1st Qu.     Median       Mean    3rd Qu.       Max. 
--0.0002770  0.0006588  0.0013588  0.0036571  0.0031071  0.0927546 
+-0.0002932  0.0001223  0.0003070  0.0003331  0.0005616  0.0016091 
 ```
 
 ### Once you think all the runs are OK, make the rasters
