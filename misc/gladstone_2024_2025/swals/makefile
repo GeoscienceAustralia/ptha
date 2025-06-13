@@ -18,11 +18,11 @@ SWALS_SRC := /g/data/w85/tsunami/CODE/gadi/ptha_mm/propagation/SWALS/src
 include $(SWALS_SRC)/src_standard_compiler_var
 
 # wrapper to build and log the build 
-build debug oldnesting cascadelake broadwell skylake:
+build debug old_nesting cascadelake broadwell skylake:
 	$(MAKE) $@_target > $(mymodel)_$@.log 2>&1
 
 # Build the model of choice
-build_target debug_target oldnesting_target cascadelake_target broadwell_target skylake_target: clean $(SWALS_LIBRARY) $(mymodel).o
+build_target debug_target old_nesting_target cascadelake_target broadwell_target skylake_target: clean $(SWALS_LIBRARY) $(mymodel).o
 	$(SWALS_FORTRAN) $(mymodel).o -o $(mymodel)_$(subst _target,,$@) $(SWALS_OBJECTS) $(SWALS_FC_LIBS)
 	$(MAKE) clean
 

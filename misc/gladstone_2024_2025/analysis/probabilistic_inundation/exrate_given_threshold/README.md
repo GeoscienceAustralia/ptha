@@ -39,7 +39,7 @@ Rscript make_exceedance_rate_jobs.R
 ### Step 2b. Check a few of those qsub files (in case you made a mistake in setup)
 If they are OK then submit them, moving to a folder after submission.
 
-### Step 2c. Submit jobs to compute exceedance rates at epistmic uncertainty
+### Step 2c. Submit jobs to compute exceedance rates at epistemic uncertainty
 ```bash
 # mkdir -p submitted_exceedance_rate_at_epistemic_jobs
 for i in compute_exceedance_rates_at_epi*.pbs; do echo $i; qsub $i; mv $i submitted_exceedance_rate_at_epistemic_jobs/; done
@@ -85,7 +85,7 @@ Rscript compute_mean_exrate_upper_CI.R ptha/sea_level_vary/highres_max_speed_wit
 Rscript compute_mean_exrate_upper_CI.R ptha/sea_level_vary/highres_depth_with_variance/ depth 0.001
 ```
 This created a folder inside the 'highres_depth_with_variance' sub-folder above, containing
-results summed over source-zones (exceedance-rate, upper 95% CI for true exeedance-rate, variance). 
+results summed over source-zones (exceedance-rate, upper 95% CI for true exceedance-rate, variance). 
 The folder name is like:
 ./ptha/sea_level_vary/highres_depth_with_variance/ptha/sea_level_vary-depth-LogicTreeMean-sum_of_source_zones
 
