@@ -126,6 +126,13 @@ grep " comms1:" *.log | awk 'NF>1{print $(NF-1)}' | awk '{sum += $1; count++} EN
 
 3. Run the [small source](test-full/small_source.pbs) which can detect instabilities in the nesting boundaries. Make the last_timestep_VH and last_timestep_UH rasters at the last timestep to ensure nothing at the nesting boundaries is indicative of instability. 
 
+## Run the main PTHA simulations
+All the hazard runs for the main PTHA analysis can be made from the [run_ptha](run_ptha) folder. First make the pbs jobs using [run_ptha/create_ptha_qsub_jobs.R](run_ptha/create_ptha_qsub_jobs.R). These were designed with the hardware available on NCI Gadi in mind. Once the jobs are made submit one manually with e.g. `qsub run_ptha/gladstone_1001.pbs`. Make a new folder called `submitted_jobs` and move it inside. If you're happy it's working, then submit the rest with:
+ ```bash
+ cd run_ptha
+ . submit_jobs.sh
+ ```
+
 ## Debug any failed runs
 Also `grep NaN *.log` can help. An early version of a model showed instability and was re-run in debug mode using 2 nodes with 16 images (so I could get the result faster). The run time came down from 9 hours to 6 hours and wouldn't be significantly improved by load balancing (15 mins). This check revealed the instability was triggered by a river crossing the first level nesting boundary. So I patched it at 100 m AHD. After fixing this issue the [post_process/check_log_files.R](post_process/check_log_files.R) check printed:
 ```
