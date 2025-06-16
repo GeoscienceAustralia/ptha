@@ -34,7 +34,7 @@ Rscript make_threshold_epistemic_uncertainty_jobs.R
 
 3. Submit once you're confident it's OK
 ```bash
-for pbs_file in run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile_m*.pbs; do
+for pbs_file in *.pbs; do
   echo $pbs_file
   qsub $pbs_file
   mv $pbs_file submitted_jobs

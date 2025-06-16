@@ -64,7 +64,7 @@ OUTPUT_DIR = inargs[8] # 'my_output_directory_relative_to_here'
 
 # flag to negate data to find how often lower than threshold, e.g. min-stage not max-stage
 negate = FALSE
-if (VARIABLE_NAME %in% c('min_stage', 'min_depth')) {
+if (VARIABLE_NAME %in% c('min_stage', 'neg_max_stage')) {
     negate = TRUE
 }
 
@@ -102,7 +102,7 @@ stopifnot(all(!is.na(c(MINIMUM_DEPTH, MAXIMUM_DEPTH))))
 
 dir.create(OUTPUT_DIR, showWarnings=FALSE)
 
-prepare_source_zone_data<-function(MD_BASE_DIR){
+prepare_source_zone_data<-function(MD_BASE_DIR, negate){
     # On each source zone, set up the data required for exceedance-rate calculations with epistemic uncertainty,
     # and make functions that do that.
 
@@ -168,7 +168,8 @@ prepare_source_zone_data<-function(MD_BASE_DIR){
         raster_name_stub,
         MC_CORES,
         MINIMUM_DEPTH,
-        MAXIMUM_DEPTH
+        MAXIMUM_DEPTH,
+        negate
     )
     # Unpack the variables we use 
     all_pixel_data = outputs$all_pixel_data # List with one entry per pixel, giving cell indices and vector with depths for raster_tar_files
@@ -219,7 +220,7 @@ prepare_source_zone_data<-function(MD_BASE_DIR){
 
 # For each sourcezone, prepare the data/functions
 source_zone_data = lapply(asfm$source_zone_modelled_tsunami_scenario_basedirs,
-    function(x) prepare_source_zone_data(x))
+    function(x) prepare_source_zone_data(x, negate))
 
 # Remove "all_pixel_data" from each entry of source_zone_data (and move it to the current core)
 # This prevents memory blow-outs in parallel. We will distribute the data over all cores.

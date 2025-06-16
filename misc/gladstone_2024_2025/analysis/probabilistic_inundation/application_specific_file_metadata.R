@@ -157,6 +157,8 @@ get_raster_name_stub_from_variable_name<-function(VARIABLE_NAME){
         raster_name_stub = 'arrival_time_domain_'
     }else if(VARIABLE_NAME == 'min_stage'){
         raster_name_stub = 'min_stage_domain_'
+    }else if(VARIABLE_NAME == 'neg_max_stage') {
+        raster_name_stub = 'max_stage_domain_'
     }else{
         stop(paste0('unsupported VARIABLE NAME', VARIABLE_NAME))
     }

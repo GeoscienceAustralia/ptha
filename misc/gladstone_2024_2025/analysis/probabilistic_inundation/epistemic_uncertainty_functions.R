@@ -144,7 +144,7 @@ get_key_source_information_all_logic_tree_branches_IS<-function(
 #' testing.
 make_all_pixel_data<-function(scenario_row_index, raster_tar_files, 
     source_zone, DOMAIN_INDEX, raster_name_stub, MC_CORES,
-    MINIMUM_DEPTH='adaptive_minimum', MAXIMUM_DEPTH='adaptive_maximum'){
+    MINIMUM_DEPTH='adaptive_minimum', MAXIMUM_DEPTH='adaptive_maximum', negate=FALSE){
 
     character_minimum_depth = is.character(MINIMUM_DEPTH)
     if(character_minimum_depth){
@@ -191,10 +191,6 @@ make_all_pixel_data<-function(scenario_row_index, raster_tar_files,
             all_raster_files,
             function(x) as.matrix(raster(x)))
         stopCluster(local_cluster)
-    }
-    # negate data to find minimums
-    if (grep('min', raster_name_stub)) {
-        all_depth_rasters_as_matrices = lapply(all_depth_rasters_as_matrices, function(x) -x)
     }
 
     # The following are useful and will be returned to the main program

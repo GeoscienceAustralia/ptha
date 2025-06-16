@@ -1,6 +1,6 @@
-output_dirs <- Sys.glob("ptha_highres_domains_min_stage_at_epistemic_uncertainty_percentile_0.84_exrate_0.0004/")
+output_dirs <- Sys.glob("ptha_highres_domains_max_stage_at_epistemic_uncertainty_percentile_0.84_exrate_0.0004/")
 
-domains_to_cover <- seq(2, 133, by = 1)
+domains_to_cover <- seq(55, 133, by = 1)
 
 missing_dominains <- list()
 
