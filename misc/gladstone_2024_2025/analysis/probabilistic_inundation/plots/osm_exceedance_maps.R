@@ -559,9 +559,9 @@ make_region_plot<-function(i, out_dir='.', prep_dir='./prep'){
     dev.off()
 
     # Legend for inundation rate
-    # inundation_rate_legend_file = paste0(prep_dir, siteName, '_inundation_rate_legend.png')
-    # png(inundation_rate_legend_file, width=P_W, height=P_H, units='in', res=P_RES)
-    # plot(c(0,1), c(0, 1), col='white', axes=FALSE, frame.plot=FALSE, ann=FALSE) 
+    inundation_rate_legend_file = paste0(prep_dir, siteName, '_inundation_rate_legend.png')
+    png(inundation_rate_legend_file, width=P_W, height=P_H, units='in', res=P_RES)
+    plot(c(0,1), c(0, 1), col='white', axes=FALSE, frame.plot=FALSE, ann=FALSE) 
     k = 1:5 # Visible colour indices #which(!is.na(inundation_classmat_col))
     legend(
         'topright',
@@ -581,8 +581,8 @@ make_region_plot<-function(i, out_dir='.', prep_dir='./prep'){
     iminfo = image_info(three_images[1])
     combined_figs = image_montage(three_images, tile="3x1", geometry=paste0(iminfo$width, 'x', iminfo$height))
     # overlay the legend on top of the 16th percentile in the bottom left. Make it smaller as an inset
-    legend_image = image_scale(legend_image, '40%')
-    combined_figs = image_composite(combined_figs, legend_image, gravity = 'southwest', offset = '+100+100')
+    # legend_image = image_scale(legend_image, '40%')
+    # combined_figs = image_composite(combined_figs, legend_image, gravity = 'southwest', offset = '+100+100')
     inundation_dir = paste0(out_dir, 'inundation/')
     dir.create(inundation_dir, showWarnings=FALSE)
     image_write(combined_figs, path=paste0(inundation_dir, siteName, '_inundation_16_LTM_84.png'), format='png')
