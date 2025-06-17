@@ -20,7 +20,7 @@ job_minmax = lapply(jobinds, function(x) c(min(x), max(x)))
 
 
 # Loop over multiple template_script_name values
-flow_variables = c('min_stage')
+flow_variables = c('min_stage', 'max_stage', 'max_speed', 'max_flux', 'depth')
 
 template_script_name = 'TEMPLATE_run_compute_thresholds_at_exceedance_rate_of_epistemic_uncertainty_percentile.txt'
 
