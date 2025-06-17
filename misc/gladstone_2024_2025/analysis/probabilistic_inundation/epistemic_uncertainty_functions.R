@@ -193,6 +193,11 @@ make_all_pixel_data<-function(scenario_row_index, raster_tar_files,
         stopCluster(local_cluster)
     }
 
+    # Negate negative rasters if flagged
+    if (negate) {
+        all_depth_rasters_as_matrices = lapply(all_depth_rasters_as_matrices, function(x) -x)
+    }
+
     # The following are useful and will be returned to the main program
     output_matrix_dim = dim(all_depth_rasters_as_matrices[[1]])
     template_raster = raster(all_raster_files[1])
