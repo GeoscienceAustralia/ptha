@@ -6,9 +6,11 @@ library(terra)
 
 atol = 1e-6
 
-neg_max_stage = rast('../threshold_given_exrate/ptha_highres_domains_neg_max_stage_at_epistemic_uncertainty_percentile_0.84_exrate_0.0004/sum_of_all_sources_neg_max_stage_rast_exrate_4e-04_percentile_84_subsam_1_Nrand_10000_seed_12.vrt')
+# Before running this script you'll need to generate the max stage and negative max stage virtual rasters.
+# Follow along in the ../threshold_given_exrate/README.md. Generate the pbs scripts, run them and then tidy the bounds.
+neg_max_stage = rast('../threshold_given_exrate/ptha_max_stage_1in2500_84pc/ptha_neg_max_stage_1in2500_84pc.vrt')
 
-max_stage = rast('../threshold_given_exrate/ptha_highres_domains_max_stage_at_epistemic_uncertainty_percentile_0.84_exrate_0.0004/sum_of_all_sources_max_stage_rast_exrate_4e-04_percentile_84_subsam_1_Nrand_10000_seed_123.vrt')
+max_stage = rast('../analysis/probabilistic_inundation/threshold_given_exrate/ptha_max_stage_1in2500_84pc/ptha_max_stage_1in2500_84pc.vrt')
 
 neg_max_stage <- crop(neg_max_stage, max_stage, mask=TRUE)
 residual <- abs(max_stage + neg_max_stage)
