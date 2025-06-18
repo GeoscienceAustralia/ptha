@@ -64,10 +64,10 @@ Contains code to run the tsunami model for hazard scenarios and testing, and pro
 
 ### Once it runs:
 * Check that the domains are in the right place.
-  * The script `make_domains_shapefile.R` in the `swals` folder can make a single shapefile, showing all the domains, with attributes having information on output folder names etc. 
+  * The script `make_domains_shapefile.R` in the `swals/post_process` folder can make a single shapefile, showing all the domains, with attributes having information on output folder names etc. 
   * Run with `Rscript make_domains_shapefile.R path_to_the_multidomain_output_folder`. It will make a folder `domains_shapefile` in the multidomain output folder.
 * Check the elevation produced by the model, and update the model inputs as required.
-  * The script `make_rasters.R` in the `swals` folder can be used to make rasters (for each domain) in the model output folder. The rasters can be treated collectively by making a VRT file (e.g. `gdalbuildvrt -resolution highest combined_elevation.vrt elevation0_domain*.tif`).
+  * The script `make_rasters.R` in the `swals/post_process` folder can be used to make rasters (for each domain) in the model output folder. The rasters can be treated collectively by making a VRT file (e.g. `gdalbuildvrt -resolution highest combined_elevation.vrt elevation0_domain*.tif`). The script `make_all_rasters.sh` can be adjusted to semi-automate this.
 * Grep the log files for `NaN` values, or `UNSTABLE` (which indicates the timestep is too large). Edit the model inputs and/or the multidomain design as needed to ensure there are no unstable domains.
 * Check the namelist print outs in a log file (find them by searching for `&MULTIDOMAIN` in a log file). Do the variables match what you think you input?  
 * Check the other model outputs
@@ -98,9 +98,9 @@ by checking and improving the parallel load balancing.
   * If many images are spending a high fraction of time here (and one or more are not) you probably have a load balance problem, i.e., unequal work on the MPI processes. 
     * Images with less work end up wasting time in `MPI_Waitall` while they await data from other processes. 
 * To improve the load balancing, make a new `load_balance_file` by running the `load_balance_script.R` from inside a multidomain output directory 
-  * Go to the model output folder (e.g. `../swals/OUTPUTS/model_name_as_chosen/RUN_1234556677/`)
-  * Start `R` and run `source(".../.../.../load_balance_script.R")`.
-    * Alternatively use `Rscript ".../.../.../load_balance_script.R"`
+  * Go to the model output folder (e.g. `cd ../swals/OUTPUTS/model_name_as_chosen/RUN_1234556677/`)
+  * Start `R` and run `source("../../../post_process/load_balance_script.R")`.
+    * Alternatively use `Rscript "../../../post_process/load_balance_script.R"`
   * This will make a new `load_balance_file.txt` in the working directory that in principle will lead to more equal work.
     * It also prints statistics on the expected improvement (they are usually optimistic).
   * Copy the `load_balance_file.txt` to a new location, update the input namelist (or `multidomain_design_mod.f90`) to point to this file, and try running the short model again. If it works, you should find the time in `comms1:` is much smaller. If not, try again with the model you just ran - sometimes it takes a few tries.
@@ -108,9 +108,9 @@ by checking and improving the parallel load balancing.
   * The timestep required on each domain changes substantially during the simulation.
     * In practice I haven't found big problems. 
   * A single domain takes lots of time (e.g. more than the average model time). 
-    * To check if this is happening use `Rscript .../.../.../report_domain_runtimes.R` from inside the multidomain directory .
+    * To check if this is happening use `Rscript ../../../post_process/report_domain_runtimes.R` from inside the multidomain directory .
     * If a single domain is taking too much time, consider coarsening it, or removing it, or splitting it into smaller pieces.
-      * Coarsening or removal can be implemented in `.../multidomain_design`
+      * Coarsening or removal can be implemented in `../multidomain_design`
       * Splitting can be implemented via the load_balance_file (by using more images on the offending domain).
 
 In applications I am usually happy with `comms1` being around 10% of the `evolve:` time. 

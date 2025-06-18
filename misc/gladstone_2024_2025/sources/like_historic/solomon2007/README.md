@@ -54,10 +54,11 @@ Some summary statistics are below.
 
 ## 3. Wei 2015 published version
 
+The published source inversion from Wei, Y.; Fritz, H. M.; Titov, V. V.; Uslu, B.; Chamberlin, C. & Kalligeris, N. Source Models and Near-Field Impact of the 1 April 2007 Solomon Islands Tsunami Pure and Applied Geophysics, Springer Science and Business Media LLC, 2015, 172, 657–682 is used to create an initial condition in [Wei_2015/Okada_vertical_component.R](Wei_2015/Okada_vertical_component.R).
 
 ## 4. NOAA source downloaded from ComMIT 
 
-The ComMIT software has two source solutions for this event. However, I have not been able to convert them into a raster format to read in swals. This is because the grid points are stored with uneven spacing. They need to be interpolated onto a regular grid to become a raster. The `commit_raster_conversion.R` is almost able to do it, just debugging.
+The ComMIT software has two source solutions for this event. However, I have not been able to convert them into a raster format to read in SWALs. This is because the grid points are stored with uneven spacing. They need to be interpolated onto a regular grid to become a raster, which is a work in progress.
 
 ### linCo_source002h_max.nc
 This source was downloaded from noaa using ComMIT as one of their published sources for this event.

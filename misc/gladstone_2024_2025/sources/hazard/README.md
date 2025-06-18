@@ -22,7 +22,7 @@ Use the `run_create_scenarios.pbs` script which does the following:
 ```bash
 source R_431_NCI_modules.sh # On NCI only
 cd batch_1  # change to your directory name of your batch
-Rscript ../create_scenarios.R
+Rscript create_scenarios.R
 cd ..
 qsub run_create_scenarios.pbs  # edit
 ```

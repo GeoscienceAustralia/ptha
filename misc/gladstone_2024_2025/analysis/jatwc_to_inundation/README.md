@@ -28,7 +28,7 @@ This folder contains the following data, along with some related scripts:
     * Useful reference to compare with other inundation zones.
 
 * ./domains_shapefile
-    * Shapefile showing the locations of domains in the model. For outputs that consist of sets of rasters, this provides an overview of where each raster is located. It was created using the script [../../swals/make_domains_shapefile.R](../../swals/post_process/make_domains_shapefile.R) and manually copied here (for convenience only).
+    * Shapefile showing the locations of domains in the model. For outputs that consist of sets of rasters, this provides an overview of where each raster is located. It was created using the script [../../swals/post_process/make_domains_shapefile.R](../../swals/post_process/make_domains_shapefile.R) and manually copied here (for convenience only).
 
 # How to run the calculations
 

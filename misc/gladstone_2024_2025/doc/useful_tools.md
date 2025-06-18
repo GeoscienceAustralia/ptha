@@ -4,7 +4,7 @@ The following programs might be useful, although there can be many ways to do th
   * Many components within the language
   * Useful scripts in subdirectories, but might need modification.
   * Pretty good for GIS processing, scanning log files, plotting, etc
-  * `plot.R` (in the SWALS github head directory) has useful routines for working with SWALS outputs, creating load balance files, scanning logs, etc.
+  * [plot.R](../../../propagation/SWALS/plot.R) (in the SWALS github head directory) has useful routines for working with SWALS outputs, creating load balance files, scanning logs, etc.
 * Some kind of GIS for interactive work (I use QGIS)
 * `scp` to move files to/from NCI
 * `git` for version control:

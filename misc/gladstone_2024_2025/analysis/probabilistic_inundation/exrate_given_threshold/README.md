@@ -100,17 +100,7 @@ done
 ```
 Rscript compute_mean_exrate_upper_CI.R ptha/sea_level_vary/highres_max_stage_with_variance max_stage 0.001
 
-## 5. Convert the files just created into a raster showing the max-stage threshold (Optional)
-Optional now that we have more accurate version in ../threshold_given_exrate.
-Just below a given exceedance-rate (among the stage_threshold values considered above).
-This is a cheap way to make plots of the wave size matching a given
-exceedance-rate (rounded down to one of the thresholds above). 
-Example here for max_stage at an exceedance-rate of 1/500 = 0.002
-``` bash
-Rscript compute_binned_thresholds_matching_exrate_from_set_of_exrate_rasters.R ptha/sea_level_vary/highres_max_stage_with_variance/sea_level_vary-max_stage-LogicTreeMean-sum_of_source_zones max_stage 0.002
-```
-
-## 6. Use calculations above to get the inundation exceedance-rates at different epistemic uncertainty percentiles, summed over source-zones.
+## 5. Use calculations above to get the inundation exceedance-rates at different epistemic uncertainty percentiles, summed over source-zones.
 This assumes co-monotonic epistemic uncertainties between the sources (conservative).
 **Runs in parallel. Get compute.**
 ``` bash
@@ -123,5 +113,5 @@ Rscript compute_sum_of_percentiles.R ptha/sea_level_vary/highres_max_speed_epist
 This created folders containing sums over source zones, with names like:
 sea_level_vary/highres_depth_epistemic_uncertainty/84pc/sea_level_vary-depth_exrate_0.001_0.84_sum_of_source_zones/
 
-## 7. Compress the output folders
-At this point (or before) you should compress the output folders as they can contain many many files (e.g. 10^5 for Greater Perth).
+## 6. Compress the output folders
+At this point (or before) you should compress the output folders as they can contain many many files.
