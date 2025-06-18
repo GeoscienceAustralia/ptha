@@ -19,7 +19,7 @@ Should print "PASS"
 Modify the test code below to suit your case, then run it and check that it prints PASS.
 This will require a node, with as many cores needed in application_specific_inputs.R::MC_CORES.
 ```bash
-Rscript test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.R 2>&1 | tee log/test_compute_threshold_at_exceedance_rate_of_epistemic_uncertainty.log
+Rscript test_max_stage_exrate_at_epistemic_uncertainty.pbs.R 2>&1 | tee log/test_max_stage_exrate_at_epistemic_uncertainty.pbs.log
 ```
 If the test works, proceed with calculations of interest.
 
