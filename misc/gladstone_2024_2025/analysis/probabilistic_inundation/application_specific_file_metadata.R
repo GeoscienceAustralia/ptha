@@ -158,6 +158,7 @@ get_raster_name_stub_from_variable_name<-function(VARIABLE_NAME){
     }else if(VARIABLE_NAME == 'min_stage'){
         raster_name_stub = 'min_stage_domain_'
     }else if(VARIABLE_NAME == 'neg_max_stage') {
+        # Read from max_stage files, but the data must be negated. 
         raster_name_stub = 'max_stage_domain_'
     }else{
         stop(paste0('unsupported VARIABLE NAME', VARIABLE_NAME))
