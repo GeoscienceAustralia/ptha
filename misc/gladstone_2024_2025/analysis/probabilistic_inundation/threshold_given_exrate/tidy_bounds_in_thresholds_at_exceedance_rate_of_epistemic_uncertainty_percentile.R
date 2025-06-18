@@ -28,7 +28,7 @@ if(raster_data_list == '50pc'){
         # Max-stage rasters
         max_stage = list(
             rasters = Sys.glob('ptha_highres_domains_max_stage_at_epistemic_uncertainty_50pc/*.tif'),
-            NA_below = 0.015, # No lower limit required #0.6 + 0.0015, # Lower limit was 0.6. Compare to root-finding tolerance of 1e-03
+            NA_below = 0.0015, # No lower limit required #0.6 + 0.0015, # Lower limit was 0.6. Compare to root-finding tolerance of 1e-03
             output_dir = './ptha_max_stage_1in250_50pc',
             output_vrt = 'ptha_max_stage_1in250_50pc.vrt'),
 
@@ -47,7 +47,7 @@ if(raster_data_list == '50pc'){
         # Max-flux rasters
         max_flux = list(
             rasters = Sys.glob('ptha_highres_domains_max_flux_at_epistemic_uncertainty_50pc/*.tif'),
-            NA_below = 0.015, # Compare to root-finding tolerance of 1e-02
+            NA_below = 0.0015, # Compare to root-finding tolerance of 1e-02
             output_dir = './ptha_max_flux_1in250_50pc',
             output_vrt = 'ptha_max_flux_1in250_50pc.vrt'),
 
