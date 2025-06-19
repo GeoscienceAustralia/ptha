@@ -35,7 +35,7 @@ if(raster_data_list == '50pc'){
         # Neg-max-stage rasters
         neg_max_stage = list(
             rasters = Sys.glob('ptha_highres_domains_neg_max_stage_at_epistemic_uncertainty_50pc/*.tif'),
-            NA_below = -0.0015, 
+            NA_above = -0.0015, 
             output_dir = './ptha_neg_max_stage_1in2500_84pc'),
 
         min_stage = list(
@@ -82,7 +82,7 @@ if(raster_data_list == '50pc'){
         # Neg-max-stage rasters
         neg_max_stage = list(
             rasters = Sys.glob('ptha_highres_domains_neg_max_stage_at_epistemic_uncertainty_percentile_0.84_exrate_0.0004/*.tif'),
-            NA_below = -0.0015, 
+            NA_above = -0.0015, 
             output_dir = './ptha_neg_max_stage_1in2500_84pc',
             output_vrt = 'ptha_neg_max_stage_1in2500_84pc.vrt'),
 
