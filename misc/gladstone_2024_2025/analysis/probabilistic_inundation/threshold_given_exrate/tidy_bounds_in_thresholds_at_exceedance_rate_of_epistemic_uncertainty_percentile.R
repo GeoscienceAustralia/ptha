@@ -10,7 +10,7 @@ library(terra)
 library(parallel)
 
 raster_data_list = commandArgs(trailing=TRUE)[1]
-if(length(raster_data_list)==0) raster_data_list = '84pc'
+if(length(raster_data_list)==0 || is.na(raster_data_list)) raster_data_list = '84pc'
 
 if(raster_data_list == '50pc'){
     #
