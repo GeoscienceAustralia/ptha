@@ -17,7 +17,7 @@ Herein we ignore magnitude bins. Instead we sample scenarios to ensure roughly e
     * Even bin boundaries could easily lead to heavy sampling of very rare scenarios.
 
 ## How to run it
-First create a directory for you new batch. Copy a `sampling_config.R` file in and adjust as required.
+First create a directory for you new batch. Copy a `sampling_config.R` file in and adjust as required (*also change the reproducible seed*).
 Use the `run_create_scenarios.pbs` script which does the following:
 ```bash
 source R_431_NCI_modules.sh # On NCI only
