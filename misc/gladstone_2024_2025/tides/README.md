@@ -4,6 +4,7 @@ The region between Yeppoon and Burnet heads has a varying HAT level. This folder
 
 ## Data
 - Tidal model predictions stored in /g/data/w85/tsunami/MODELS/tidal_prediction/TPXO9
+    - Note we were given written permission by the TPXO9 authors to use it for this study
 - Tide gauge records of HAT stored in `x_y_z.csv` compiled from online sources:
     - QLD storm tide website, which comes from the tide tables. https://www.qld.gov.au/environment/coasts-waterways/beach/storm/storm-sites.
 
