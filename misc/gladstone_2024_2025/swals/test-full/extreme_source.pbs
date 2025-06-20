@@ -1,0 +1,27 @@
+#!/bin/bash
+#PBS -P w85
+#PBS -q normalsr
+#PBS -l walltime=12:00:00
+#PBS -lmem=500GB
+#PBS -lncpus=104
+#PBS -l wd
+#PBS -l storage=scratch/w85+gdata/w85
+
+path_swals=.
+source ../../modules_SWALS_ifx_2024.sh
+
+stage_file=$path_swals/../sources/test/extreme_source_kt43731_times_5/extreme_scenario_kt43731_times_5.tif
+multidomain_design_namelists=$path_swals/multidomain_design_control/NNL4_defaultRes_debug.nml
+model_name=extreme_source
+exec=$path_swals/model_debug
+# Ambient sea level for HAT is 0.0 with tidal adjustment
+ambient_sea_level=0
+
+
+mpirun -n 8 -map-by numa:SPAN -bind-to numa -x OMP_NUM_THREADS=13 -x OMP_PROC_BIND=TRUE \
+    $exec \
+    $stage_file \
+    $multidomain_design_namelists \
+    $model_name \
+    full \
+    $ambient_sea_level > $path_swals/test-full/log/$model_name.log$PBS_JOBID
