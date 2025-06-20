@@ -5,8 +5,8 @@ Start by running the tests in [probabilistic_inundation/test](probabilistic_inun
 
 ## Compute the probabilistic inundation
 These are split into:
-- [probabilistic_inundation/exrate_given_threshold](probabilistic_inundation/exrate_given_threshold) to compute how often a threshold is exceeded. E.G. depth>0.01m gives the rate of inundation.
-- [probabilistic_inundation/threshold_given_exrate](probabilistic_inundation/threshold_given_exrate) more arduously computes what threshold corresponds to a given exceedance rate. E.G. what's the depth for a 1/2500 exceedance rate.
+- [probabilistic_inundation/exrate_given_threshold](probabilistic_inundation/exrate_given_threshold) to compute how often a threshold is exceeded. E.G. depth>0.01m gives the rate of inundation, also depending on the epistemic uncertainty treatment (logic tree mean or percentiles)
+- [probabilistic_inundation/threshold_given_exrate](probabilistic_inundation/threshold_given_exrate) more arduously computes what threshold corresponds to a given exceedance rate. E.G. what's the depth for a 1/2500 exceedance rate and epistemic uncertainty percentile.
 
 ## JATWC to inundation
 Using JATWC warning rules, compute the footprint covering all modelled scenarios for each current JATWC warning. 
