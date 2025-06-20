@@ -11,7 +11,7 @@ contain scripts that do the sampling which are almost identical, except for the:
 
 ## Code in this folder
 * [get_parameters_for_events.R](get_parameters_for_events.R) extracts summary information for the historical events. Some scripts below rely on this having been run.
-* [get_target_scenario_focal_mechanism.R](get_target_scenario_focal_mechanism.R) extracts focal mechanism info from GCMT or ISC-GEM. Note is ONLY used for plotting, not specifically for defining the random scenarios that we model.
+* [get_target_scenario_focal_mechanism.R](get_target_scenario_focal_mechanism.R) extracts focal mechanism info from GCMT or ISC-GEM. Note this is ONLY used for plotting, not specifically for defining the random scenarios that we model.
 * [get_alongstrike_range_for_plotting.R](get_alongstrike_range_for_plotting.R) also extracts information that is helpful for plotting.
 * [plot_events.R](plot_events.R) makes a plot.
 
