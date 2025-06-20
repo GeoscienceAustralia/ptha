@@ -11,7 +11,7 @@ location of installed software, and the location of datasets that existed at a
 higher level in the filesystem than the data provided here).
 
 ## Subfolders
-* `./analysis_ptha18_scenarios_2025` - Analysis the tsunami models, which can run after all calculations in the `swals` folder are complete.
+* `./analysis_ptha18_scenarios_2025` - Analysis of the tsunami models, which can be run after all calculations in the `swals` folder are complete.
 * `./breakwalls` - Information on small scale linear features that are burned into the model elevation, such as breakwalls that would not otherwise be captured at the SWALS model's native resolution.
 * `./elevation` - Links to input elevation data used by the model, and also the elevation as seen by the SWALS model (derived from the input elevation data using the model code in `./swals`)
 * `./gauges` - Tide gauge data and a script that provides a uniform interface. Beware that scripts in this project use a different file path to refer to the tide gauge interface script (since when the calculations were implemented, this tide gauge data was stored in a central location that cannot easily be represented in this repository). 
