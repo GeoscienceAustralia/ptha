@@ -12,14 +12,16 @@ that would need updating to run elsewhere.
 
 # Notes on the runs
 
-The study includes a few thousand model runs which split into batches because
+The study includes a few thousand model runs which were split into batches because
 of limits in our supercomputer quota. 
 * Initially I ran random ptha scenarios with 30-per-source-model-per-event. This was what I could mangage with the compute quota in that quarter. 
 * In the subsequent quarter I had more quota and the opportunity to do another 30 runs for each of the previous events, inserting `batch2` in the filenames to avoid breaking things. 
 * Later I added more historical tsunami events by running `batch3`  and `batch4`, using 60 scenarios per source model per event. They are stored in `OUTPUTS_2022_new_events`.
-* Then I added yet another with `batch5`. The first versions of these runs were not used since they were later re-run in larger models with more data.
+* Then I added yet another with `batch5`. The first versions of these runs were not used since the scenarios were later re-run in larger models with more data.
 * In early 2025 I re-ran the events affecting WA with a greatly extended version of the model. I only did this for the Sumatra 2004 and Sumatra 2005 events (the South Sandwich 2021 event is only well resolved at the 1min Hillarys tide gauge, which is already covered in the previous model, so this was not rerun).
-* Then I added yet another with `batch6`.
+* Then I added some other historical events with `batch6`, as by this time I had the required data to model them.
+
+To be clear, no tsunami scenarios were discarded in the above process -- but some simulations were updated to leverage more elevation data and tide gauge observations.
 
 The batches used different base output directories, achieved by manually
 changing the value of `output_basedir` (defined in `model_local_routines.f90`)
