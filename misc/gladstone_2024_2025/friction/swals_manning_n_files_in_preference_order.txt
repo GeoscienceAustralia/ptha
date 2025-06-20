@@ -1,0 +1,2 @@
+/g/data/w85/tsunami/MODELS/inundation/QLD_tsunami_inundation_QFES/Gladstone_2024/friction/manning_n_from_DEA_Mangroves.tif
+/g/data/w85/tsunami/MODELS/inundation/QLD_tsunami_inundation_QFES/Gladstone_2024/friction/manning_n_from_fuels.tif

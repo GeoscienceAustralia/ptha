@@ -8,6 +8,7 @@ propagation/SWALS/tests/*/*unit_tests
 propagation/SWALS/tests/unit_tests/*.csv
 propagation/SWALS/tests/unit_tests/*.nc
 propagation/SWALS/tests/validation_tests/*.RDS
+ptha_access/compute_rates_all_sources_session.RData
 
 # Example outputs
 # NB: a/**/b matches a/b, a/x/b, a/x/y/b, ...
