@@ -1,0 +1,1 @@
+This directory contains files used to spread SWALS domains over MPI processes. Files with the word `default` in the title were used only to do preliminary (short) model runs for each model type. The outputs of these short runs were used to create load balance files with good performance (using `../load_balance_script.R`) which were used for the full simulations.
