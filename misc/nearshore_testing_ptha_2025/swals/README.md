@@ -88,7 +88,7 @@ Rscript create_random_ptha_batch6_qsub_scripts.R
 qsub run_inversions_for_each_event.sh
 ```
 
-They can then be plotted with code in `./source_inversion_model_performance/plot_gauges_XXXXXXX.R` scripts. Before this is done, use using the scripts in `./plots/plot_XXXX.R` to move the gauge data to an RDS file.
+Then use the scripts in `./plots/plot_XXXX.R` to move the gauge data to an RDS file, ready for later ploting.
 
 
 6. Extract tide gauge signals from the simulations using
