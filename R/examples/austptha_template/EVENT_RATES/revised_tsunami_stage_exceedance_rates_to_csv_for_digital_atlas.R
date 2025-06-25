@@ -12,6 +12,7 @@ shear_modulus_type = "" #c('', 'variable_mu_')
 event_type = 'stochastic'
 #value_type = c('', '_upper_ci', '_lower_ci', '_median', '_16pc', '_84pc')
 value_type = c('', '_84pc')
+value_type_name = c('_logictreemean', '_84thpercentile')
 
 input_file = 'revised1_tsunami_stage_exceedance_rates_sum_over_all_source_zones.nc'
 output_dir = '/g/data/fj6/PTHA/AustPTHA_1/EVENT_RATES/'
@@ -38,7 +39,7 @@ for(k in 1:length(shear_modulus_type)){
             all_rates = ncvar_get(fid, myvar_nc_name)
 
             myvar_output_names = paste0(shear_modulus_type[k], event_type[l], 
-                '_slip_stage', value_type[j], '_1in', (1/exceedance_rates))
+                '_slip_stage', value_type_name[j], '_1in', (1/exceedance_rates))
             print(myvar_output_names)
             local_stage = matrix(NA, nrow=ncol(all_rates), ncol=length(myvar_output_names))
             for(m in 1:nrow(local_stage)){
