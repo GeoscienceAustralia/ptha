@@ -66,6 +66,9 @@ output$gaugeID = round(output$gaugeID, 1)
 output_signif = output 
 output_signif[,5:ncol(output)] = signif(output[,5:ncol(output)], 3)
 
+# Store location info to 6 significant figures
+output_signif[,1:3] = signif(output_signif[,1:3], 6)
+
 #
 # Remove points that are not near Australia, or that are too shallow
 #
