@@ -8,8 +8,10 @@ This folder contains:
 
 * [./nearshore_testing_2020](./nearshore_testing_2020) - Code and links to data for [our paper](https://www.frontiersin.org/articles/10.3389/feart.2020.598235/full) which simulated tsunamis using various finite-fault inversions, and compares with nearshore tsunami data in Australia.
 
+* [./nearshore_testing_ptha_2025](./nearshore_testing_ptha_2025) - Code and links to data for a study which compares tsunamis observed at Australian tide gauges with stochastic tsunamis from the 2018 Australian Probabilistic Tsunami Hazard Assessment.
+
 * [./nsw_2023_2024](./nsw_2023_2024) - Code for the NSW broadscale model.
 
 * [./probabilistic_inundation_tonga2020](./probabilistic_inundation_tonga2020) - A probabilistic inundation hazard analysis for Tongatapu. I suggest to use an improved variant of this analysis which is available in [./monte_carlo_paper_2021](./monte_carlo_paper_2021)
 
-* [./gladstone_2024_2025](./gladstone_2024_2025) - Code to run an inundation model in Gladstone, Queensland. The SWALS model showcases variable friction, makefiles to compile inputs, elevation adjustments for an uneven but quiscent initial water level, a domains nested with a tree structure, breakwalls, inverts, setting initial stages dry for inland areas below sea level, and running at various sea levels.
+* [./gladstone_2024_2025](./gladstone_2024_2025) - Code to run an inundation model in Gladstone, Queensland. The SWALS model showcases variable friction, makefiles to compile inputs, elevation adjustments for an uneven but quiescent initial water level, a domains nested with a tree structure, breakwalls, inverts, setting initial stages dry for inland areas below sea level, and running at various sea levels.
