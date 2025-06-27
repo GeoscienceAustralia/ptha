@@ -5,10 +5,11 @@ This folder contains code and links to data used for the paper INSERT-NAME-AND-L
 
 The information is provided for transparency and to assist future studies.
 It was partly run on the NCI Gadi supercomputer, and partly on the authors
-local machine. The codes make assumptions about those environments that would
+local machine. The code makes assumptions about those environments that would
 need to be changed if you were trying to run the code elsewhere (mainly the
 location of installed software, and the location of datasets that existed at a
-higher level in the filesystem than the data provided here).
+higher level in the filesystem during the analysis, as compared to where it is
+provided here).
 
 ## Subfolders
 * `./analysis_ptha18_scenarios_2025` - Analysis of the tsunami models, which can be run after all calculations in the `swals` folder are complete.
