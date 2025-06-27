@@ -123,4 +123,4 @@ to above, but need some changes to the scripts. In particular:
   * If any scenarios were already run in batch ID710.5, then this script will create outputs for scenarios ID1315.5 using a symbolic link to the existing runs.
 * And as above for the other batch of scenarios, ID4186.3.
 
-There is also a distinct script to run the raster creation [run_create_tarred_rasters_from_tarred_multidomains_ID1315.5.sh](run_create_tarred_rasters_from_tarred_multidomains_ID1315.5.sh), and similarly for ID4186.3.
+There is also a distinct script to run the raster creation [run_create_tarred_rasters_from_tarred_multidomains_ID1315.5.sh](run_create_tarred_rasters_from_tarred_multidomains_ID1315.5.sh). For ID4186.3 there is a distinct R script, but not a separate run script (instead the original was modified).
