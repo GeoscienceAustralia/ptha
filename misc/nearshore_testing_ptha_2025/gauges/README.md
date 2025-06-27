@@ -7,17 +7,21 @@ The script `gauge_data_links.R` provides a uniform interface to detided tide-gau
 * A function which reads this data and converts it to a uniform format. This ensures a uniform time zone (UTC) and consistent column names, which the underlying data does not have.
 
 Summary information on the gauge locations, names and providers of the original
-data is in `gauge_coords.csv`. Note this table often includes multiple rows for
-a single site (e.g. due to multiple gauges at one site, or because we obtained
+data is in `gauge_coords.csv`. This table often includes multiple rows for a
+single site, e.g., due to multiple gauges at one site, or because we obtained
 data at the same gauge at different times and designed the script to preserve
-backward compatibility) and includes a few sites beyond those used in our
-study (reasons to include or excluded are discussed in the supplementary material).
+backward compatibility. It also includes a few sites beyond those used in our
+study; reasons we included or exclude sites are discussed in the supplementary
+material of the paper.
 
 To use the script you have to download and extract the associated data files here: https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2025/DATA.tar.bz2
 * They should be extracted in the current directory with (e.g.) `tar -jxf DATA.tar.bz2`
 * You should end up with a folder `./DATA/` containing all the files that `gauge_data_links.R` points to.
 
-Note that code inside `../swals` uses a different file path to refer to the `gauge_data_links.R` script, since on the machines used to run the analysis, the tide gauge data is stored in a central location (not here). 
+Note that code inside `../swals` uses a different file path to refer to the
+`gauge_data_links.R` script. That's because on the machines used to run the
+analysis, the tide gauge data was stored in a central location (not in this
+folder, although it's the same data).
 
 
 ## Usage
