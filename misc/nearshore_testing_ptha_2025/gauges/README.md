@@ -1,7 +1,7 @@
 # Uniform interface to a range of detided tide gauge data
 ---------------------------------------------------------
 
-The script `gauge_data_links.R` provides a uniform interface to detided tide-gauge data that we have obtained from many sources over the years. It contains a list of tide gauges with:
+The script `gauge_data_links.R` provides a uniform interface to detided tide-gauge data. It contains a list of tide gauges with:
 * Location information
 * A list of files containing tide gauge observations for different tsunami events. These were created by the author using datasets that were obtained as described in the `./DATA/` folder near each dataset (download as explained below).
 * A function which reads this data and converts it to a uniform format. This ensures a uniform time zone (UTC) and consistent column names, which the underlying data does not have.

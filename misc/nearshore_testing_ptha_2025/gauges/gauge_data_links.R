@@ -1239,10 +1239,129 @@ export_coordinates<-function(){
     all_coords = do.call(rbind, lapply(GAUGE_DATA, function(x) x$coord))
     colnames(all_coords) = c('lon', 'lat')
 
+    site_name = rep(NA, length(GAUGE_DATA))
+    for(i in 1:length(site_name)) site_name[i] = match_site_to_station_name[[names(GAUGE_DATA)[i]]]
+
     all_events = unlist(lapply(GAUGE_DATA, function(x) paste0(names(x$events), collapse=" & ")))
     stopifnot(length(all_events) == nrow(all_coords))
 
-    all_coords = cbind(all_coords, data.frame(site=rownames(all_coords), events=all_events))
+    all_coords = cbind(all_coords, data.frame(site_name = site_name, site_data_list_id=rownames(all_coords), events=all_events))
+
+    data_provided_by = sapply(all_coords$site_data_list_id, match_data_source_to_name, USE.NAMES=FALSE)
+    all_coords = cbind(all_coords, data.frame(data_provided_by=data_provided_by))
 
     write.csv(all_coords, file='gauge_coords.csv', row.names=FALSE, quote=TRUE)
 }
+
+match_data_source_to_name<-function(site_name){
+    # Here site_name is an entry of names(GAUGE_DATA)
+    if(grepl('WADOT', site_name) | grepl('WADoT', site_name)){
+        return('WA Department of Transport')
+    }else if(grepl('DPIE', site_name)){
+        return('NSW Department of Planning, Industry and Environment')
+    }else if(grepl('BOM', site_name)){
+        return('Bureau of Meteorology')
+    }else if(grepl('_PA', site_name)){
+        return('Port Authority of NSW')
+    }else if(grepl('FremantleInnerHarbour_5min', site_name)){
+        return("Fremantle Ports")
+    }else if(grepl("GoldCoastSandBypass", site_name)){
+        return('Bureau of Meteorology')
+    }else if(grepl("Sydney_FortDenison1960", site_name)){
+        return('Wilson et al. (2018) https://doi.org/10.1038/s41598-018-33156-w')
+    }else if(grepl("Cronulla_CSIRO_Fisheries_1960", site_name)){
+        return('Davies et al. (2020) https://www.frontiersin.org/article/10.3389/feart.2020.598235')
+    }else{
+        return(NA)
+    }
+}
+
+match_site_to_station_name = list(
+    "BallinaBreakwall_1min_DPIE" = 'Ballina Breakwall',
+    "Bermagui_1min_DPIE" = 'Bermagui',                    
+    "BrunswickHeads_1min_DPIE" = 'Brunswick Heads',               
+    "CoffsHarbourInnerPumpoutJetty_1min_DPIE" = 'Coffs Harbour Inner Pumpout Jetty',
+    "CrookhavenHeads_1min_DPIE" = 'Crookhaven Heads',              
+    "CrowdyHeadFishermansWharf_1min_DPIE" = 'Crowdy Head Fishermans Wharf',    
+    "Forster_1min_DPIE" = 'Forster',                      
+    "LordHoweIsland_1min_DPIE" = 'Lord Howe Island',               
+    "PortMacquarie_1min_DPIE" = 'Port Macquarie',                 
+    "ShoalBay_1min_DPIE" = 'Shoal Bay',                     
+    "TweedEntranceSouth_1min_DPIE" = 'Tweed Entrance South',           
+    "Yamba_1min_DPIE" = 'Yamba',                        
+    "Eden_1min_DPIE" = 'Eden',                          
+    "TwofoldBay_1min_BOM" = 'Twofold Bay',                    
+    "GoldCoastSandBypass" = 'Gold Coast Sand Bypass',                    
+    "BatemansBay_PrincessJetty_1min_DPIE" = 'Batemans Bay Princess Jetty',    
+    "Ulladulla_1min_DPIE" = 'Ulladulla',                    
+    "JervisBay_1min_DPIE" = 'Jervis Bay',                    
+    "Bundeena_1min_DPIE" = 'Bundeena',                     
+    "Sydney_MiddleHarbour_1min_DPIE" = 'Sydney Middle Harbour',         
+    "Sydney_FortDenison1960" = 'Sydney Fort Denison',                 
+    "Cronulla_CSIRO_Fisheries_1960" = 'Cronulla',          
+    "Sydney_FortDenison_1min_PA" = 'Sydney Fort Denison',             
+    "Sydney_FortDenison_1min_PA_b" = 'Sydney Fort Denison',           
+    "Sydney_BotanyBay_1min_PA" = 'Botany Bay Bulk Liquids Berth',                
+    "Sydney_Botany_Bay_Pilot_Jetty_1min_PA" = 'Botany Bay Pilot Jetty', 
+    "Sydney_Botany_Bay_Kurnell_Wharf_1min_PA" = 'Botany Bay Kurnell Wharf',
+    "Hawkesbury_Patonga_1min_DPIE" = 'Patonga',          
+    "Newcastle_east_1min_PA"  = 'Newcastle East',                
+    "PortKembla_BOM_1min_2004" = 'Port Kembla',                
+    "PortKembla_1min_BOM" = 'Port Kembla',                   
+    "PortKembla_GrainTerminal_1min_PA"  = 'Port Kembla Grain Terminal',      
+    "Portland_BOM_1min_2004"  = 'Portland',                
+    "Hillarys_BOM_1min_2004" = 'Hillarys',                
+    "Hillarys_BOM_1min_2005" = 'Hillarys',                
+    "Hillarys_BOM_1min" = 'Hillarys',                     
+    "Freemantle_WADoT_5min_2004" = 'Fremantle Boat Harbour',            
+    "FreemantleAlternate_WADoT_5min_2004" = 'Fremantle Boat Harbour',   
+    "FremantleInnerHarbour_5min" = 'Fremantle Inner Harbour',            
+    "ManglesBay_WADoT_5min_2004" = 'Mangles Bay',            
+    "BarrackStreet_WADoT_5min_2004" = 'Barrack Street',         
+    "MandurahFishermansJetty_WADoT_5min_2004" = "Mandurah Fishermans Jetty",
+    "PeelInlet_WADoT_5min_2004" = 'Peel Inlet',             
+    "CapeBouvard_WADoT_5min_2004" = 'Cape Bouvard',           
+    "Canarvon_WADoT_5min_2004" = 'Carnarvon',              
+    "Caddup_WADoT_5min_2004" = 'Caddup',                
+    "Harvey_WADoT_5min_2004" = 'Harvey',                
+    "Bunbury_WADoT_5min_2004" = 'Bunbury',                
+    "BunburyInner_WADoT_5min_2004" = 'Bunbury Inner Harbour',           
+    "BusseltonPortGeographe_WADoT_5min_2004" = 'Port Geographe', 
+    "Lancelin_WADoT_5min_2004" = 'Lancelin',               
+    "JurianBay_WADoT_5min_2004" = 'Jurien Bay',             
+    "Geraldton_WADoT_5min_2004" = 'Geraldton',             
+    "GeraldtonAlternate_WADoT_5min_2004" = 'Geraldton',     
+    "CocosIsland_BOM_1min_2004" = 'Cocos Island',             
+    "CNCAR02_01_2004_WADOT_5min" = 'Carnarvon',            
+    "DPKBY01_03_2004a_WADOT_5min" = 'King Bay',           
+    "DPKBY01_03_2004b_WADOT_5min" = 'King Bay',           
+    "EXEXM02_01_2004_WADOT_5min" = 'Exmouth',            
+    "NWONS01_02_2004_WADOT_5min" = 'Onslow Beadon Creek',
+    "PWLAM01_03_2004_WADOT_5min" = 'Cape Lambert',            
+    "CNCAR02_01_2005_WADOT_5min" = 'Carnarvon',            
+    "DPKBY01_03_2005a_WADOT_5min" = 'King Bay',           
+    "DPKBY01_03_2005b_WADOT_5min" = 'King Bay',           
+    "EXEXM02_01_2005_WADOT_5min" = 'Exmouth',            
+    "NWONS01_02_2005_WADOT_5min" = 'Onslow Beadon Creek',            
+    "PWLAM01_03_2005_WADOT_5min" = 'Cape Lambert',            
+    "BUBNY01_01_2006_WADOT_5min" = 'Bunbury Inner Harbour',            
+    "CNCAR02_01_2006_WADOT_5min" = 'Carnarvon',            
+    "DPKBY01_03_2006a_WADOT_5min" = 'King Bay',           
+    "DPKBY01_03_2006b_WADOT_5min" = 'King Bay',           
+    "EXEXM02_01_2006_WADOT_5min" = 'Exmouth',            
+    "GNGER02_02_2006a_WADOT_5min" = 'Geraldton',           
+    "GNGER02_02_2006b_WADOT_5min" = 'Geraldton',           
+    "NWONS01_02_2006_WADOT_5min"  = 'Onslow Beadon Creek',           
+    "PWLAM01_03_2006_WADOT_5min" = 'Cape Lambert',            
+    "BSGEO01_01_2007_WADOT_5min" = 'Port Geographe',            
+    "CNCAR02_01_2007_WADOT_5min" = 'Carnarvon',            
+    "DPKBY01_03_2007a_WADOT_5min" = 'King Bay',           
+    "DPKBY01_03_2007b_WADOT_5min" = 'King Bay',           
+    "ESESP03_01_2007_WADOT_5min" = 'Esperance',            
+    "EXEXM02_01_2007_WADOT_5min" = 'Exmouth',            
+    "GNGER02_02_2007a_WADOT_5min" = 'Geraldton',           
+    "GNGER02_02_2007b_WADOT_5min" = 'Geraldton',           
+    "NWONS01_02_2007_WADOT_5min" = 'Onslow Beadon Creek',            
+    "PWLAM01_03_2007_WADOT_5min" = 'Cape Lambert',
+    "NOTHING" = 'Deliberate blank entry'
+)
