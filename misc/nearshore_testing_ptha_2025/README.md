@@ -1,7 +1,8 @@
 # Code and data for a study that tests PTHA18 stochastic earthquake-tsunami models at many tide gauges in Australia.
 --------------------------------------------------------------------------------------------------------------------
 
-This folder contains code and links to data used for the paper INSERT-NAME-AND-LINK-WHEN-PUBLISHED.
+This folder contains code and links to data used for the preprint:
+* Davies, 2025, Tsunami variability from stochastic earthquake models: Tests against fourteen tsunamis at Australian tide gauges, 10.22541/au.174836338.80098308/v1
 
 The information is provided for transparency and to assist future studies.
 It was partly run on the NCI Gadi supercomputer, and partly on the authors
