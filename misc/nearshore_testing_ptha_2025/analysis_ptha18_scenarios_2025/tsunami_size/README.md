@@ -44,5 +44,5 @@ Rscript run_stats_under_null_hypothesis.R
   * This requires preliminary versions of files from `parse_gauge_outputs.R` to exist first 
   * In practice the latter was run once, then the time window was created, and then the parsing was redone.
   * Here I've provided the time window output file directly, so this isn't necessary.
-* The gauges that are used were counted with `get_coordinates_of_good_gauges.R`.
+* The gauges that are used were counted with `get_coordinates_of_good_gauges.R`. This also prints a table in latex format with the gauge locations, used in the paper.
 * Some information on durations of gauges that were truncated is in `gauge_truncation_info.R`
