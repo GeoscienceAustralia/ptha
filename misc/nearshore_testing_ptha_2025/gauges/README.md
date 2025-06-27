@@ -9,8 +9,8 @@ The script `gauge_data_links.R` provides a uniform interface to detided tide-gau
 Summary information on the gauge locations, names and providers of the original
 data is in `gauge_coords.csv`. Note this table often includes multiple rows for
 a single site (e.g. due to multiple gauges at one site, or because we obtained
-data at the same gauge at diferent times and designed the script to preseve
-backward compatability) and includes a few sites beyond those used in our
+data at the same gauge at different times and designed the script to preserve
+backward compatibility) and includes a few sites beyond those used in our
 study.
 
 To use the script you have to download and extract the associated data files here: https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2025/DATA.tar.bz2
