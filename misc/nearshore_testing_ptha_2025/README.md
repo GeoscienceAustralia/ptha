@@ -2,7 +2,7 @@
 --------------------------------------------------------------------------------------------------------------------
 
 This folder contains code and links to data used for the preprint:
-* Davies, 2025, Tsunami variability from stochastic earthquake models: Tests against fourteen tsunamis at Australian tide gauges, 10.22541/au.174836338.80098308/v1
+* Davies, 2025, Tsunami variability from stochastic earthquake models: Tests against fourteen tsunamis at Australian tide gauges, submitted to JGRSE.
 
 The information is provided for transparency and to assist future studies.
 It was partly run on the NCI Gadi supercomputer, and partly on the authors
