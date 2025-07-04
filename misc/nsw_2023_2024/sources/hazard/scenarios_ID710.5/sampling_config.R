@@ -6,7 +6,7 @@ target_pt =c(151.3333, -35.6666) # gauge ID 710.5
 NTOT = 360 
 
 # For reproducible randomness
-REPRODUCIBLE_SEED = 123456 
+REPRODUCIBLE_SEED = 123456 # Change this for different samples (even if target_pt changes)
 
 # When we tablulate exceedance-rate curves, use these stage thresholds
 stage_thresholds = seq(0.02, 5.5, by=0.05)
@@ -96,10 +96,12 @@ stage_vs_rate_all_source_zones_other_test_pts = lapply(other_test_points, get_st
 #' This is used in an ad-hoc way, to help determine how we sample different stages.
 #' The idea is to well-resolve stages around return periods of interest, using the
 #' 84th percentile curve for better emphasis of large scenarios.
+#' @param return_importance_function_bin_boundaries if TRUE then just return the importance function
+#' bin boundaries. This is a useful hack to help with plotting.
 #' @return The importance factor I(e) for every scenario e on the source-zone. This 
 #' can later be used to sample the scenarios.
 importance_function<-function(peak_stage_target_pt, scenario_rate_logictreemean,
-    stage_vs_rate_all_source_zones_at_target_pt){
+    stage_vs_rate_all_source_zones_at_target_pt, return_importance_function_bin_boundaries=FALSE){
     # Importance criteria. 
 
     # We want approximately even sampling of different stage bins, with bin
@@ -130,6 +132,12 @@ importance_function<-function(peak_stage_target_pt, scenario_rate_logictreemean,
     stage_threshes = approx( 
         c(min_possible_stage, middle_stages, max_possible_stage + upper_bin_buffer), 
         n=(length(exrate_boundaries)+1)*nsub_bins + 1)$y
+
+    if(return_importance_function_bin_boundaries){
+        # Useful hack for plotting
+        return(stage_threshes)
+    }
+
     event_peak_stage_invrate = peak_stage_target_pt * 0
 
     # Importance criteria will lead to equal chance of sampling in each stage bin
