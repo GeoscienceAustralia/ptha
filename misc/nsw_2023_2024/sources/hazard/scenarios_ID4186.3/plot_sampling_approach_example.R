@@ -88,7 +88,7 @@ plot_and_print_statistics<-function(sz, outdir=OUTDIR){
         stage_thresholds = 10**seq(log10(0.02), log10(MAX_STAGE_LIMIT), len=200)
         event_rate_logic_tree_mean = source_zone_data[[sz]]$event_rate_logic_tree_mean
         sampling_prob = source_zone_data[[sz]]$sampling_prob
-        N_MC = source_zone_data$kermadectonga2$N_MC
+        N_MC = source_zone_data[[sz]]$N_MC
 
         if(plot_site == 'target_pt'){
             peak_stage_plot_site = source_zone_data[[sz]]$event_peak_stage_at_targetpt[[sz]]$max_stage
