@@ -1637,6 +1637,10 @@ TIMER_START('evolve_one_step')
         domain%boundary_flux_evolve_integral = ZERO_dp
         domain%boundary_flux_evolve_integral_exterior = ZERO_dp
 
+        ! update_max_quantities usually occurs after the timestep, but that would miss the 
+        ! initial condition (prior to any timestepping) if we didn't include the following
+        if(domain%nsteps_advanced == 0) call domain%update_max_quantities()
+
         select case (timestepping_method)
 
         case ('static')
