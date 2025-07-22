@@ -3,7 +3,7 @@
 
 ## How to get the data
 
-The data that resides in this folder has been compressed and posted to the NCI THREDDS Server for download here: http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2020/elevation.tar.bz2
+The data that resides in this folder has been compressed and posted to the NCI THREDDS Server for [download here](https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/Nearshore_testing_2020/elevation.tar.bz2).
 
 You need to download that file and extract it (`tar -zxf elevation.tar.bz2`), and perhaps move folders around to ensure the current folder contains sub-folders like this:
 

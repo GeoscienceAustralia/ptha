@@ -62,13 +62,13 @@ else
     # The netcdf fortran include/lib paths might be in either nc-config, or nf-config.
     # Here we test for that and adapt accordingly
     SWALS_NC_TEST := $(nc-config --fflags)
-    SWALS_NETCDF_FINCLUDE ?= `nc-config --fflags`
-    SWALS_NETCDF_FLIBS ?= `nc-config --flibs`
     ifeq ($(SWALS_NC_TEST),)
         SWALS_NETCDF_FINCLUDE ?= `nf-config --fflags`
         SWALS_NETCDF_FLIBS ?= `nf-config --flibs`
+    else
+        SWALS_NETCDF_FINCLUDE ?= `nc-config --fflags`
+        SWALS_NETCDF_FLIBS ?= `nc-config --flibs`
     endif
-
 endif
 
 #

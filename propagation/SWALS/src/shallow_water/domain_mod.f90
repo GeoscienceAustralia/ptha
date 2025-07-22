@@ -383,7 +383,7 @@ module domain_mod
             !! If unallocated then it will be set in domain%nc_grid_output%initialise
         character(len=charlen), allocatable :: nontemporal_grids_to_store(:)
             !! Specify which 'nontemporal' variables to store. For example:
-            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage']
+            !!   [character(len=charlen):: 'max_stage', 'max_flux', 'max_speed', 'arrival_time', 'manning_squared', 'elevation0', 'elevation_source_file_index', 'time_of_max_stage', 'min_stage']
             !! to store everything;
             !!   [''] to store nothing;
             !!   ['max_stage'] to just store the maximum stage.
@@ -1061,6 +1061,14 @@ TIMER_STOP("compute_statistics")
             end do
             !$OMP END DO
             !$OMP END PARALLEL
+
+            ! Set the initial values for the min_stage to a large number
+            do k = 1, size(domain%max_U_variables)
+                if (domain%max_U_variables(k) == 'min_stage') then
+                    ! No need to do this in parallel since already first touched
+                    domain%max_U(:,:,k) = 0.99_output_precision * huge(real(1.0, kind=output_precision))
+                end if
+            end do
         end if
 
         ! Many other variables are required for the non-staggered-grid solvers (i.e. the nonlinear finite-volume solvers)
@@ -1629,6 +1637,10 @@ TIMER_START('evolve_one_step')
         domain%boundary_flux_evolve_integral = ZERO_dp
         domain%boundary_flux_evolve_integral_exterior = ZERO_dp
 
+        ! update_max_quantities usually occurs after the timestep, but that would miss the 
+        ! initial condition (prior to any timestepping) if we didn't include the following
+        if(domain%nsteps_advanced == 0) call domain%update_max_quantities()
+
         select case (timestepping_method)
 
         case ('static')
@@ -2185,7 +2197,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 end if
                             end do
                         end do
-                        !$OMP END DO
+                        !$OMP END DO NOWAIT
                     else
                         ! Only store max stage
                         !$OMP DO SCHEDULE(STATIC)
@@ -2194,7 +2206,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 domain%max_U(i,j,k) = max(domain%max_U(i,j,k), domain%U(i,j,STG))
                             end do
                         end do
-                        !$OMP END DO
+                        !$OMP END DO NOWAIT
                     end if
 
                 case('time_of_max_stage')
@@ -2234,7 +2246,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                     domain%U(i,j,VH) * domain%U(i,j,VH) * depth_N_inv**2))
                             end do
                         end do
-                        !$OMP END DO
+                        !$OMP END DO NOWAIT
                     else
                         ! Speed on co-located grid
                         !$OMP DO SCHEDULE(STATIC)
@@ -2247,7 +2259,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                     sqrt((domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2)*local_depth_inv**2))
                             end do
                         end do
-                        !$OMP END DO
+                        !$OMP END DO NOWAIT
                     end if
 
                 case('max_flux')
@@ -2261,7 +2273,7 @@ EVOLVE_TIMER_START('update_max_quantities')
                                 sqrt(domain%U(i,j,UH)**2 + domain%U(i,j,VH)**2))
                         end do
                     end do
-                    !$OMP END DO
+                    !$OMP END DO NOWAIT
 
                 case('arrival_time')
 
@@ -2279,7 +2291,18 @@ EVOLVE_TIMER_START('update_max_quantities')
                             end if
                         end do
                     end do
-                    !$OMP END DO
+                    !$OMP END DO NOWAIT
+
+                case('min_stage')
+
+                    !! Track the minimum stage
+                    !$OMP DO SCHEDULE(STATIC)
+                    do j = domain%yL, domain%yU !1, domain%nx(2)
+                        do i = domain%xL, domain%xU !1, domain%nx(1)
+                            domain%max_U(i,j,k) = min(domain%max_U(i,j,k), domain%U(i,j,STG))
+                        end do
+                    end do
+                    !$OMP END DO NOWAIT
 
                 case default
                     write(log_output_unit, *) ' Unknown value in domain%max_U_variables '
@@ -2535,7 +2558,7 @@ TIMER_STOP('write_gauge_time_series')
         ! satisfied.
         do i = 1, 10000
             inquire(i, opened = is_open)
-            if(is_open) call flush(i)
+            if(is_open) flush(i)
         end do
 
 #ifndef NONETCDF

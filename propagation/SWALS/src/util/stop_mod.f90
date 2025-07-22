@@ -17,12 +17,12 @@ module stop_mod
         ! A better but more complex approach would be to track open file units
         do i = -10000, 10000
             inquire(unit=i, opened=is_open_file_unit)
-            if(is_open_file_unit) call flush(i)
+            if(is_open_file_unit) flush(i)
         end do
 
         ! Make sure we do not miss the log output unit
         inquire(unit=log_output_unit, opened=is_open_file_unit)
-        if(is_open_file_unit) call flush(log_output_unit)
+        if(is_open_file_unit) flush(log_output_unit)
 
         ! Call the most relevant 'stop' command
 #ifdef COARRAY

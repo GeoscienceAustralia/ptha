@@ -22,7 +22,9 @@ NO_LTO ?= -no-ipo
 # C compiler and gdal libraries
 #
 SWALS_CC ?= gcc -O3
-SWALS_GDAL_LIBS ?= `gdal-config --libs`
+# NCI staff suggested that on Gadi, it's better to link with -lgdal (not via gdal-config)
+SWALS_GDAL_LIBS ?= -lgdal
+#SWALS_GDAL_LIBS ?= `gdal-config --libs`
 SWALS_GDAL_CFLAGS ?= `gdal-config --cflags`
 
 #
@@ -64,10 +66,13 @@ else
     # Here we test for that and adapt accordingly
     SWALS_NC_TEST := $(nc-config --fflags)
     SWALS_NETCDF_FINCLUDE ?= `nc-config --fflags`
-    SWALS_NETCDF_FLIBS ?= `nc-config --flibs`
+    # NCI staff indicated that on Gadi, it's better to just link with -lnetdcdf and/or -lnetcdff
+    SWALS_NETCDF_FLIBS ?= -lnetcdf -lnetcdff
+    #SWALS_NETCDF_FLIBS ?= `nc-config --flibs`
     ifeq ($(SWALS_NC_TEST),)
         SWALS_NETCDF_FINCLUDE ?= `nf-config --fflags`
-        SWALS_NETCDF_FLIBS ?= `nf-config --flibs`
+        SWALS_NETCDF_FLIBS ?= -lnetcdf -lnetcdff
+        #SWALS_NETCDF_FLIBS ?= `nf-config --flibs`
     endif
 
 endif
@@ -94,10 +99,10 @@ ifeq ($(findstring DNOOPENMP, $(SWALS_PREPROCESSOR_FLAGS)),)
     # domain_modone_leapfrog_truely_linear_plus_nonlinear_friction_step_mp_PRECOMPUTE_FRICTION_WORK
     # to:
     # main_modone_leapfrog_truely_linear_plus_nonlinear_friction_step_mp_PRECOMPUTE_FRICTION_WORK
-    SWALS_FC_FLAGS ?= -O3 -qopenmp -fpp -fPIC -ipo -diag-disable=5462
+    SWALS_FC_FLAGS ?= -O3 -qopenmp -fpp -fPIC -ipo -diag-disable=5462 -g
 else
     # Case without openmp
-    SWALS_FC_FLAGS ?= -O3 -fpp -fPIC -ipo -diag-disable=5462
+    SWALS_FC_FLAGS ?= -O3 -fpp -fPIC -ipo -diag-disable=5462 -g
 endif
 
 # Make it easier to append flags for hardware-specific optimization, such as
@@ -119,9 +124,9 @@ SWALS_FORTRAN := $(SWALS_FC) $(SWALS_FC_FLAGS) $(SWALS_PREPROCESSOR_FLAGS) $(SWA
 
 # Use this to make the $(SWALS_LIBRARY)
 SWALS_LIBRARY ?= libSWE.a
-#SWALS_AR ?= xiar rcs
+SWALS_AR ?= xiar rcs
 # Avoid errors when bundling as a library (not that we use the resulting library)
 #SWALS_AR :=/apps/intel-oneapi/compiler/2023.2.0/linux/bin-llvm/llvm-ar rcs
-SWALS_AR :=llvm-ar rcs
+#SWALS_AR :=llvm-ar rcs
 #
 

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Compress all tar files in a directory to bz2
+#
+
+#PBS -q normal
+#PBS -l ncpus=48
+#PBS -l walltime=06:00:00
+#PBS -l mem=190gb
+#PBS -l wd
+#PBS -P w85
+#PBS -j oe
+#PBS -l storage=gdata/w85+scratch/w85
+
+# run each compression using GNU parallel
+module load parallel
+
+
+#base_dir=../OUTPUTS/v6/ptha18_tidal_check/
+base_dir=../OUTPUTS/ptha/sea_level_vary/
+
+# compress them all
+# find $base_dir -type f -name "*.tar" > compress_bz2_files.txt
+# parallel -j ${PBS_NCPUS} "bzip2 {}" :::: compress_bz2_files.txt
+
+# compress the model runs 
+find $base_dir -type f -name "RUN*.tar" > compress_bz2_files.txt
+parallel -j ${PBS_NCPUS} "bzip2 {}" :::: compress_bz2_files.txt
+
+# decompress all bzip2 files
+#find $base_dir -type f -name "*.tar.bz2" > decompress_bz2_files.txt
+#parallel -j ${PBS_NCPUS} "bzip2 -d {}" :::: decompress_bz2_files.txt

@@ -259,26 +259,27 @@ module multidomain_mod
 
     contains
 
-    !
-    ! Given an x, y point, and size=2 arrays periodic_xs, periodic_ys defining
-    ! the x and y extent of a periodic domain, compute x/y values inside the periodic domain.
-    ! If this leads to a change in the x/y coordinate (i.e. if the initial x or y was
-    ! outside the ranges provided by periodic_xs and periodic_ys), then set periodic_point
-    ! to .true., otherwise set it to .false.
-    !
-    ! @param x real x coordinate value
-    ! @param y real y coordinate value
-    ! @param periodic_x array with (xmin, xmax) giving the range of x values in the periodic domain
-    ! @param periodic_y array with (ymin, ymax) giving the range of y values in the periodic domain
-    ! @param periodic_point logical output variable
-    ! @param adjust_coordinates if true then change x/y coordinate values to be inside the main domain, assuming x and y are "just
-    ! outside" the main domain (e.g. if periodic_xs = [0, 360], then x can be in the range (-360, 720), but we can't have more
-    ! coordinate wrapping.).
     subroutine check_periodic(x, y, periodic_xs, periodic_ys, periodic_point, adjust_coordinates)
-        real(dp), intent(inout) :: x, y
+        !! Given an x, y point, and size=2 arrays periodic_xs, periodic_ys defining
+        !! the x and y extent of a periodic domain, compute x/y values inside the periodic domain.
+        !! If the initial x or y was outside the ranges provided by periodic_xs and periodic_ys), 
+        !! then set periodic_point to .true., otherwise set it to .false. 
+        !! If adjust_coordinates is true, then we update x/y with their adjusted values inside the periodic domain,
+        !! noting constraints discussed below.
+        real(dp), intent(inout) :: x, y 
+            !! coordinate value
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
+            !! Range of coordinate values defining the periodic domain. 
+            !! For non-periodic extents just use a value that exceeds 
+            !! the domain extent, e.g. [-HUGE(1.0_dp), HUGE(1.0_dp)] 
         logical, intent(out) :: periodic_point
+            !! On output will be TRUE if the x or y coordinate was 
+            !! adjusted, FALSE otherwise.
         logical, intent(in) :: adjust_coordinates
+            !! If true then early in the routine we will change the x/y coordinate values to 
+            !! be inside the main domain, assuming x and y are "just outside" the main domain. 
+            !! By "just outside" we mean that, e.g.,  If periodic_xs = [0, 360], then the 
+            !! input x can be in the range (-360, 720), but we can't have more coordinate wrapping.
 
         if(periodic_xs(2) <= periodic_xs(1)) then
             print*, 'periodic_xs(2) should be > periodic_xs(1)'
@@ -326,8 +327,8 @@ module multidomain_mod
     end subroutine
 
 
-    ! Scan domains for unreasonably large numbers or NaN issues
     subroutine check_multidomain_stability(md, flag, domain_ind)
+        !! Scan domains for unreasonably large numbers or NaN issues
         type(multidomain_type), intent(inout) :: md
         character(len=*), intent(in) :: flag
         integer(ip), optional, intent(in):: domain_ind
@@ -416,22 +417,22 @@ module multidomain_mod
 
     end subroutine
 
-    ! Communicate max-stage array in halo regions.
-    !
-    ! Often max-stage values in non-priority domain areas are clearly wrong
-    ! (because during timestepping we allow halos to become invalid -- we only
-    ! communicate frequently enough to ensure validity of priority domain areas - and
-    ! the max-stage is thus derived from the invalid values).
-    ! That's not really a problem (because we should never use non-priority-domain
-    ! cell values), but for visualisation it is nice to correct them before the end
-    ! of the simulation.
-    !
-    ! Here we make max_U consistent between domains by:
-    ! A) Swapping max_U and domain%U
-    ! B) Communicating
-    ! C) Swapping domain%U and max_U
-    !
     subroutine communicate_max_U(md)
+        !! Communicate the domain%max_U array in halo regions.
+        !!
+        !! Often the stored maxima over time (in domain%max_U) are clearly wrong in non-priority domain
+        !! areas. That's because during timestepping we allow halos to become invalid. We only
+        !! communicate frequently enough to ensure validity of the solution in priority domain areas.
+        !! That's not technically a problem because we should never use non-priority-domain
+        !! cell values when displaying outputs. But sometimes we might want to make a visualisation that 
+        !! doesn't correct for that (for convenience only). To support this, it's convenient to correct
+        !!  domain%max_U just before the end of the simulation.
+        !!
+        !! Here we make max_U consistent between domains by:
+        !! A) Swapping max_U and domain%U
+        !! B) Communicating
+        !! C) Swapping domain%U and max_U
+        !!
         class(multidomain_type), intent(inout) :: md
 
         integer(ip) :: j, i, k, n, j1
@@ -519,26 +520,27 @@ module multidomain_mod
         ! should be consistent between domains
     end subroutine
 
-    !
-    ! For each domain in domains, figure out how thick the nesting layer
-    ! has to be. Also determine which boundaries have a nesting buffer,
-    ! which are physical boundaries, etc.
-    !
-    ! This is called before domains have been buffered to include nesting
-    ! regions -- so that we know how thick to make the buffer.
-    !
-    ! @param domains array of domains
-    ! @param verbose logical
-    !
     subroutine compute_multidomain_nesting_layer_width(domains, verbose,&
         periodic_xs, periodic_ys, extra_halo_buffer, extra_cells_in_halo,&
         md_log_output_unit)
+        !! For each domain in domains, figure out how thick the nesting layer
+        !! has to be. Also determine which boundaries have a nesting buffer,
+        !! which are physical boundaries, etc.
+        !!
+        !! This is called before domains have been buffered to include nesting
+        !! regions -- so that we know how thick to make the buffer.
+        !!
         type(domain_type), intent(inout) :: domains(:)
+            !! array of domains
         logical, optional, intent(in) :: verbose
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
+            !! Information on the multidomain's periodic boundary conditions
         integer(ip), intent(in) :: extra_halo_buffer
+            !! One way to increase halo thickness (for communication between domains)
         integer(ip), intent(in) :: extra_cells_in_halo
+            !! One way to increase halo thickness (for communication between domains)
         integer(ip), intent(in) :: md_log_output_unit
+            !! Output file unit
 
         integer(ip):: i, j, ii, nd_local, nest_layer_width, boundary_flag, n1
 
@@ -547,7 +549,7 @@ module multidomain_mod
         real(dp), allocatable:: nbr_domain_dx_local(:,:)
         logical, allocatable :: is_nesting_boundary(:,:)
 
-        real(dp) :: max_parent_dx_ratio
+        real(dp) :: max_parent_dx_ratio, dxtmp(2), nrtmp(2)
         logical :: verbose1
 
         if(present(verbose)) then
@@ -629,12 +631,11 @@ module multidomain_mod
                 !
                 ! Ultimately this will be (Maximum value of 'parent domain dx' / 'my dx')
                 !
-                ! x-direction
-                max_parent_dx_ratio = max(max_parent_dx_ratio, real(nint(&
-                    maxval(nbr_domain_dx_local(:,1)/domains(j)%dx(1))), dp) )
-                ! y-direction
-                max_parent_dx_ratio = max(max_parent_dx_ratio, real(nint(&
-                    maxval(nbr_domain_dx_local(:,2)/domains(j)%dx(2))), dp) )
+                dxtmp = maxval(nbr_domain_dx_local, dim=1) ! Negative without neighbour
+                if(all(dxtmp > 0)) then
+                    nrtmp = real(nint(dxtmp/domains(j)%dx), dp) ! nesting ratio
+                    max_parent_dx_ratio = max(max_parent_dx_ratio, maxval(nrtmp))
+                endif
 
             end do
 
@@ -678,15 +679,12 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! Convert the arrays 'priority_domain_index' and 'priority_domain_image' to a set
-    ! of boxes (i.e. rectangular regions with metadata about the priority domain)
-    !  which are well suited to passing to communication routines
-    !
-    !
     subroutine convert_priority_domain_info_to_boxes(priority_domain_index, &
         priority_domain_image, halo_width, myimage, myindex, box_metadata, &
         xs, ys, periodic_xs, periodic_ys, max_parent_dx_ratio, md_log_output_unit)
+        !! Convert the arrays 'priority_domain_index' and 'priority_domain_image' to a set
+        !! of boxes (i.e. rectangular regions with metadata about the priority domain)
+        !!  which are well suited to passing to communication routines
 
         integer(ip), intent(in) :: priority_domain_index(:,:), &
             priority_domain_image(:,:)
@@ -918,20 +916,19 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! Update the values of all_bbox and all_dx, so they contain
-    ! info on the bounding box's and dx values of all domains on all images.
-    !
-    ! For example, all_bbox(1:4, 1:2, i, j) will contain the bounding box
-    ! of domains(i) on image j
-    !
-    ! @param domains the array of domains
-    !
     subroutine create_all_bbox_and_dx(domains, periodic_xs, periodic_ys, md_log_output_unit)
-
+        !! Update the values of all_bbox and all_dx, so they contain
+        !! info on the bounding box's and dx values of all domains on all images.
+        !!
+        !! For example, all_bbox(1:4, 1:2, i, j) will contain the bounding box
+        !! of domains(i) on image j
         type(domain_type), intent(inout) :: domains(:)
+            !! The array of domains in the multidomain
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
+            !! Allow specification of periodic boundaries of the multidomain. For non-periodic 
+            !! boundaries use [-HUGE(1.0_dp), HUGE(1.0_dp)] or another value such that no domain boundary is close.
         integer(ip), intent(in) :: md_log_output_unit
+            !! Output log file unit
 
         integer(ip):: nd, i, j, k, nd_local, ierr
 
@@ -1046,14 +1043,14 @@ module multidomain_mod
     end subroutine
 
 
-    ! Timestep all grids (by the global time-step).
-    !
-    ! This method only includes communication at each global time-step. While that's
-    ! good in terms of reducing comms, it does mean comms buffers might need
-    ! to be very large. To reduce the comms buffer size, we could have more
-    ! communication in sub-steps of the global timestep
-    !
     subroutine evolve_multidomain_one_step(md, dt)
+        !! Timestep all grids (by the global time-step).
+        !!
+        !! This method only includes communication at each global time-step. While that's
+        !! good in terms of reducing comms, it does mean comms buffers might need
+        !! to be very large. To reduce the comms buffer size, we could have more
+        !! communication in sub-steps of the global timestep
+        !!
         class(multidomain_type), intent(inout) :: md
         real(dp), intent(in) :: dt
 
@@ -1168,37 +1165,37 @@ module multidomain_mod
     end subroutine
 
 
-    !
-    ! Given some x, y points, find a domain bounding box which contains them
-    ! (if any). If multiple domains contain them, then pick the one with smallest
-    ! cell area.
-    !
-    ! This is a useful workhorse routine for nesting setup
-    !
-    ! @param xs x-coordinates of test points
-    ! @param ys y-coordinates of test points
-    ! @param nbr_domain_ind integer array with the same length as xs. Will
-    !   be filled with the index of the domain that contains the points,
-    !   or (-1) for points not inside any domain
-    ! @param nbr_image_ind integer array with the same length as xs. Will
-    !   be filled with the image_index of the domain that contains the points
-    !   or (-1) for points not inside any domain
-    ! @param nbr_domain_dx real rank2 array with first dimension the same
-    !   length as xs. Will be filled with the dx values of the domain that
-    !   contains the points, or a large negative number for points not in any domain
-    ! @param error_domain_overlap_same_dx
-    ! @param periodic_xs, periodic_ys x and y limits for the periodic domain
-    ! @param md_log_output_unit file unit for logging
     subroutine find_priority_domain_containing_xy(xs, ys, nbr_domain_ind, &
         nbr_image_ind, nbr_domain_dx, error_domain_overlap_same_dx, &
         periodic_xs, periodic_ys, md_log_output_unit)
+        !! Given some x, y points, find a domain bounding box which contains them
+        !! (if any). If multiple domains contain them, then pick the one with smallest
+        !! cell area.
+        !!
+        !! This is a useful workhorse routine for nesting setup
 
         real(dp), intent(in) :: xs(:), ys(:)
-        integer(ip), intent(inout) :: nbr_domain_ind(:), nbr_image_ind(:)
-        real(dp), intent(inout) :: nbr_domain_dx(:,:)
+            !! Coordinates of test points
+        integer(ip), intent(out) :: nbr_domain_ind(:)
+            !! array with the same length as xs. Will be filled with the index
+            !! of the domain that contains the points, or (-1) for points not inside any domain
+        integer(ip), intent(out) :: nbr_image_ind(:)
+            !! nbr_image_ind integer array with the same length as xs. Will
+            !! be filled with the image_index of the domain that contains the points
+            !! or (-1) for points not inside any domain
+        real(dp), intent(out) :: nbr_domain_dx(:,:)
+            !! nbr_domain_dx real rank2 array with first dimension the same
+            !! length as xs. Will be filled with the dx values of the domain that
+            !! contains the points, or a large negative number for points not in any domain
         logical, intent(in) :: error_domain_overlap_same_dx
+            !! If .TRUE. then throw an error if there are overlapping domains with the same cell size
+            !! (which is not allowed in SWALS input domains -- although SWALS will buffer the domains with halos).
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
+            !! Periodic boundaries of the multidomain. For non-periodic 
+            !! boundaries use [-HUGE(1.0_dp), HUGE(1.0_dp)] or another value 
+            !! such that no domain boundary is close.
         integer(ip), intent(in) :: md_log_output_unit
+            !! File log
 
         integer(ip) :: di, ii, xi, nd
         real(dp) :: xs1, ys1
@@ -1214,7 +1211,7 @@ module multidomain_mod
         ! Default values for 'not contained by any other bbox' points
         nbr_domain_ind = -1_ip
         nbr_image_ind = -1_ip
-        ! Default neighbour cell area = very large negative number
+        ! Default neighbour cell area = very large negative number (with dx^2 finite)
         nbr_domain_dx = -sqrt(HUGE(1.0_dp) - 1.0e+06_dp)
 
         !
@@ -1309,20 +1306,6 @@ module multidomain_mod
 
     end subroutine
 
-    ! Given a domain, and a given boundary (N/E/S/W), find which other domains
-    ! each point along its boundary should nest with.
-    !
-    ! @param domain the domain
-    ! @param boundary_flag integer flag [1,2,3,4] corresponding to [N,E,S,W]
-    !     boundary
-    ! @param nest_layer_width Number of cells in the nesting layer
-    ! @param nbr_domain_ind rank 1 array with indices of the neighbour domain
-    !     we nest with
-    ! @param nbr_image_ind rank 1 array with image_indices holding the
-    !     neighbour domain we nest with
-    ! @param nbr_domain_dx rank 2 array with dx(1:2) values for the domains we
-    !     nest with
-    !
     subroutine find_priority_nesting_domains_along_a_boundary(&
         domain, &
         boundary_flag, &
@@ -1333,14 +1316,27 @@ module multidomain_mod
         periodic_xs,&
         periodic_ys,&
         md_log_output_unit)
+        !! Given a domain, and a given boundary (N/E/S/W), find which other domains
+        !! each point along its boundary should nest with.
 
         type(domain_type), intent(in) :: domain
-        integer(ip), intent(in) :: boundary_flag, nest_layer_width
-        integer(ip), allocatable, intent(out):: nbr_domain_ind(:), &
-            nbr_image_ind(:)
+        integer(ip), intent(in) :: boundary_flag
+            !! integer flag [1,2,3,4] corresponding to [N,E,S,W]
+            !!     boundary
+        integer(ip), intent(in) :: nest_layer_width
+            !! Number of cells in the nesting layer
+        integer(ip), allocatable, intent(out):: nbr_domain_ind(:)
+            !! indices of the neighbour domain we nest with
+        integer(ip), allocatable, intent(out):: nbr_image_ind(:)
+            !! image_indices of the neighbour domain we nest with
         real(dp), allocatable, intent(out):: nbr_domain_dx(:,:)
+            !! dx(1:2) values for the domains we nest with
         real(dp), intent(in) :: periodic_xs(2), periodic_ys(2)
+            !! Periodic boundaries of the multidomain. For non-periodic 
+            !! boundaries use [-HUGE(1.0_dp), HUGE(1.0_dp)] or another value 
+            !! such that no domain boundary is close.
         integer(ip), intent(in) :: md_log_output_unit
+            !! log file unit
 
         ! Local vars
         real(dp), allocatable :: domain_xs(:), domain_ys(:), xs(:), ys(:)
@@ -1434,27 +1430,22 @@ module multidomain_mod
     end subroutine
 
 
-    !
-    ! Determine the required thickness of cells in the nesting region,
-    !  in which the domain receives data.
-    ! It has to be thick enough so we can take one_evolve_step() without
-    !  the full nesting_region information propagating into the interior.
-    ! It also has to be an integer multiple of the ratio between the coarsest
-    !  parent domain's dx size and the current domain's dx -- so that the
-    !  nesting region represents 'full' coarse cells
-    !
-    ! @param max_parent_dx_ratio maximum value of {dx-for-domains-I-nest-with}/{my-dx}
-    ! @param extra_halo_buffer A constant to add to the halo thickness (see code for details)
-    ! @param extra_cells_in_halo A constant to add to the timestepping_metadata%nesting_thickness_for_one_step, before computing
-    ! halo thickness (see code for details & distinction with extra_halo_buffer).
-    !
     function get_domain_nesting_layer_thickness(domain, &
         max_parent_dx_ratio, extra_halo_buffer, extra_cells_in_halo) result(thickness)
+        !! Determine the required thickness of cells in the nesting region,
+        !!  in which the domain receives data.
+        !! It has to be thick enough so we can take one_evolve_step() without
+        !!  the full nesting_region information propagating into the interior.
+        !! It also has to be an integer multiple of the ratio between the coarsest
+        !!  parent domain's dx size and the current domain's dx -- so that the
+        !!  nesting region represents 'full' coarse cells
 
         type(domain_type), intent(in) :: domain
         real(dp), intent(in) :: max_parent_dx_ratio
+            !! maximum value of {dx-for-domains-I-nest-with}/{my-dx}
         integer(ip), intent(in) :: extra_halo_buffer, extra_cells_in_halo
-
+            !! Constant affecting the timestepping_metadata%nesting_thickness_for_one_step, before computing
+            !! halo thickness (see code for details & distinction of extra_cells_in_halo_buffer, extra_halo_buffer).
         integer(ip) :: thickness
         integer(ip) :: required_cells_ts_method
         integer(ip) :: tsi
@@ -1484,14 +1475,13 @@ module multidomain_mod
 
     end function
 
-    !
-    ! Compute the coordinate x/y arrays associated with a given domain
-    !
-    ! The domain is in this subroutine is typically used prior to a call to domain%allocate_quantities()
-    ! Thus it is missing the x/y coordinates. Sometimes we need the x and y coordinates implied by the
-    ! domain, so we get them here.
-    !
     subroutine get_domain_xs_ys(domain, xs, ys)
+        !! Compute the coordinate x/y arrays associated with a given domain
+        !!
+        !! The domain is in this subroutine is typically used prior to a call to domain%allocate_quantities()
+        !! Thus it is missing the x/y coordinates. Sometimes we need the x and y coordinates implied by the
+        !! domain, so we get them here.
+        !!
 
         type(domain_type), intent(in) :: domain
         real(dp), allocatable, intent(inout) :: xs(:), ys(:)
@@ -1517,18 +1507,15 @@ module multidomain_mod
     end subroutine
 
 
-    ! Compute volume in 'active areas' for all domains (or optionally, in just
-    ! one domain). This also updates the volume data stored in md
-    !
-    ! @param md multidomain
-    ! @param vol output goes here
-    ! @param domain_index optional index of only one domain for which we want the volume. If
-    !     not present, sum over all domains
-    !
     subroutine get_flow_volume(md, vol, domain_index)
+        !! Compute volume in 'active areas' for all domains (or optionally, in just
+        !! one domain). This also updates the volume data stored in md
+
         class(multidomain_type), intent(inout) :: md
-        real(force_double), intent(inout) :: vol
+        real(force_double), intent(inout) :: vol !! The volume
         integer(ip), intent(in), optional :: domain_index
+            !! index of only one domain for which we want the volume. If
+            !! not present, sum over all domains
 
         integer(ip) :: k, kstart, kend
 
@@ -1551,9 +1538,8 @@ module multidomain_mod
     end subroutine
 
 
-    ! Make sure initial flow/elev values are consistent between parallel domains, by doing one halo exchange
-    !
     subroutine make_initial_conditions_consistent(md)
+        !! Make sure initial flow/elev values are consistent between parallel domains, by doing one halo exchange
         class(multidomain_type), intent(inout) :: md
 
         call md%send_halos(send_to_recv_buffer=send_halos_immediately)
@@ -1568,11 +1554,9 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! Convenience routine for estimating memory usage
-    ! Only used for reporting
-    !
     subroutine memory_summary(md)
+        !! Convenience routine for estimating memory usage.
+        !! Only used for reporting.
         class(multidomain_type), intent(in) :: md
 
         integer(int64) :: domain_U_size, nesting_buffer_size, big_tmp
@@ -1605,13 +1589,11 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! Convenience routine to report multidomain-wide mass conservation statistics.
-    ! This will integrate the mass using the correct priority domain in each place,
-    ! and check whether changes in this mass match with fluxes through the physical boundary
-    ! of the multidomain.
-    !
     subroutine report_mass_conservation_statistics(md)
+        !! Report multidomain-wide mass conservation statistics.
+        !! This will integrate the mass using the correct priority domain in each place,
+        !! and check whether changes in this mass match with fluxes through the physical boundary
+        !! of the multidomain.
         class(multidomain_type), intent(inout) :: md
 
         real(force_double) :: vol, vol0, bfi, dvol, vol_and_bfi(4)
@@ -1658,34 +1640,30 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! Find if cell 'i,j' on domains(myindex) on 'this_image() == myimage'
-    ! is within the active region
-    !
-    ! The 'active region' contains cells which we need to get from other images, AND
-    ! cells which have priority domain = [ domains(myindex) on 'this_image() == myimage'],
-    ! (although in the latter case, no communication is required, except if using periodic boundaries).
-    ! An example of cells which are not in the 'active region' is coarse domain cells
-    ! which are completely covered by finer domains (and not within the communication buffers).
-    ! Such 'inactive' cells do not affect the solution in priority domains
-    !
-    ! @param priority_domain_index gives index of priority domain for all cells
-    !     on [ domains(myindex) on 'this_image() == myimage']
-    ! @param priority_domain_image gives image index of priority domain for all
-    !     cells on [ domains(myindex) on 'this_image() == myimage']
-    ! @param myindex see above
-    ! @param myimage see above
-    ! @param halo_width the width of the communication buffer
-    ! @param i x-index to be queried
-    ! @param j y-index to be queried
-    ! @param is_in_active output (logical)
-    !
     pure subroutine is_in_active_region(priority_domain_index, priority_domain_image, &
         myindex, myimage, halo_width, i, j, is_in_active)
+        !! Find if cell 'i,j' on domains(myindex) on 'this_image() == myimage'
+        !! is within the active region
+        !!
+        !! The 'active region' contains cells which we need to get from other images, AND
+        !! cells which have priority domain = [ domains(myindex) on 'this_image() == myimage'],
+        !! (although in the latter case, no communication is required, except if using periodic boundaries).
+        !! An example of cells which are not in the 'active region' is coarse domain cells
+        !! which are completely covered by finer domains (and not within the communication buffers).
+        !! Such 'inactive' cells do not affect the solution in priority domains
 
         integer(ip), intent(in) :: priority_domain_index(:,:), priority_domain_image(:,:)
-        integer(ip), intent(in) :: myindex, myimage, halo_width, i, j
-        logical, intent(inout) :: is_in_active
+            !! index/image of the priority domain for all cells
+        integer(ip), intent(in) :: myindex, myimage
+            !! The 'active region' contains cells which we need to get from other images, AND
+            !! cells which have priority domain = [ domains(myindex) on 'this_image() == myimage'],
+            !! (although in the latter case, no communication is required, except if using periodic boundaries).
+        integer(ip), intent(in) :: halo_width
+            !! width of the communication buffer
+        integer(ip), intent(in) :: i, j
+            !! Domain index to be queried
+        logical, intent(out) :: is_in_active
+            !! Output result
 
         integer(ip) :: ii, jj, dims(2)
 
@@ -1708,11 +1686,10 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! This routine can be used to partition domains among coarray images
-    ! Basically we move the provided md%domains to md%domain_metadata, and
-    ! make a new md%domains, with the right piece of the domain on each image
     subroutine partition_domains(md)
+        !! This routine can be used to partition domains among coarray images
+        !! Basically we move the provided md%domains to md%domain_metadata, and
+        !! make a new md%domains, with the right piece of the domain on each image
         class(multidomain_type), intent(inout) :: md
 
         integer(ip) :: nd, next_d, i, j, ni, ti, ii, i0
@@ -2088,18 +2065,16 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! Convenience routine to get nested grid halo data from communication buffer in a multidomain
-    !
-    ! @param md multidomain
-    ! @param sync_before logical. If .TRUE. and using COARRAY, then "sync images" with images that we communicate with, before
-    ! receiving
-    ! @param sync_after logical. If .TRUE. and using COARRAY, then "sync images" with images that we communicate with, after
-    ! receiving
-    !
     subroutine receive_multidomain_halos(md, sync_before, sync_after)
+        !! Convenience routine to get nested grid halo data from communication buffer in a multidomain
+    
         class(multidomain_type), intent(inout) :: md
-        logical, optional, intent(in) :: sync_before, sync_after
+        logical, optional, intent(in) :: sync_before
+            !! If .TRUE. and using COARRAY, then "sync images" with images that we communicate with, before
+            !! receiving
+        logical, optional, intent(in) :: sync_after
+            !! If .TRUE. and using COARRAY, then "sync images" with images that we communicate with, after
+            !! receiving
 
         integer(ip) :: j
         real(dp) :: elev_lim
@@ -2147,11 +2122,9 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! Record the flow volume in all domains at the 'start' of a simulation
-    ! Useful for mass conservation tracking
-    !
     subroutine record_initial_volume(md)
+        !! Record the flow volume in all domains at the 'start' of a simulation
+        !! Useful for mass conservation tracking
         class(multidomain_type), intent(inout) :: md
 
         integer(ip):: i
@@ -2162,19 +2135,16 @@ module multidomain_mod
 
     end subroutine
 
-    !
-    ! Convenience routine to send nested grid halo data to neighbour images in a multidomain
-    !
-    ! @param md multidomain object
-    ! @param domain_index optional integer. If provided, send halos of
-    !   md%domains(domain_index). Otherwise, send halos for all domains.
-    ! @param send_to_recv_buffer optional logical. Default TRUE. If FALSE, we
-    !   do not do a coarray communication, but only copy data to the send buffer.
-    !
     subroutine send_multidomain_halos(md, domain_index, send_to_recv_buffer) !, coarser_domains_only)
+        !! Convenience routine to send nested grid halo data to neighbour images in a multidomain
+
         class(multidomain_type), intent(inout) :: md
         integer(ip), intent(in), optional:: domain_index
+            !! optional integer. If provided, send halos of
+            !!   md%domains(domain_index). Otherwise, send halos for all domains.
         logical, intent(in), optional:: send_to_recv_buffer
+            !! optional logical. Default TRUE. If FALSE, we
+            !!   do not do a coarray communication, but only copy data to the send buffer.
 
         integer(ip) :: i, j, jmn, jmx
         logical::send_to_recv_buffer_local
@@ -2211,23 +2181,21 @@ module multidomain_mod
     end subroutine
 
 
-    ! Set the flow variables in 'null regions' of a domain to 'high and dry' values
-    !
-    ! The 'null regions' are areas where nesting%recv_metadata(:,1) == 0
-    ! Such regions have no impact on the computed flow solution
-    ! in 'priority_domain' regions.
-    !
-    ! @param md
-    ! @param ignore_linear logical. Default FALSE. If TRUE, do not make any changes to null
-    !     regions of domains with timestepping_method == 'linear'. Previously this was
-    !     used to avoid minor wet-dry artefacts (now fixed), caused by neighbouring domains communicating
-    !     non-zero U(:,:,UH) or U(:,:,VH) along wet-dry boundaries. The linear solver
-    !     should always have zero flux terms along such boundaries, but that can be
-    !     violated by nesting communication.
     subroutine set_null_regions_to_dry(md, ignore_linear)
+        !! Set the flow variables in 'null regions' of a domain to 'high and dry' values
+        !!
+        !! The 'null regions' are areas where nesting%recv_metadata(:,1) == 0
+        !! Such regions have no impact on the computed flow solution
+        !! in 'priority_domain' regions.
 
         class(multidomain_type), intent(inout) :: md
         logical, intent(in), optional :: ignore_linear
+            !! Default FALSE. If TRUE, do not make any changes to null
+            !! regions of domains with timestepping_method == 'linear'. Previously this was
+            !! used to avoid minor wet-dry artefacts (now fixed), caused by neighbouring domains communicating
+            !! non-zero U(:,:,UH) or U(:,:,VH) along wet-dry boundaries. The linear solver
+            !! should always have zero flux terms along such boundaries, but that can be
+            !! violated by nesting communication.
 
         ! Null regions have particular values of the recv_metadata index and image
         integer(ip), parameter :: null_index = 0, null_image = 0
@@ -2277,7 +2245,7 @@ module multidomain_mod
     end subroutine
 
     subroutine setup_multidomain_output_folder(md)
-        ! Routine to put all domains outputs in a single folder
+        !! Routine to put all domains outputs in a single folder
 
         class(multidomain_type), intent(inout) :: md
         integer:: i, date_time_values(8) ! For date_and_time
@@ -3190,9 +3158,8 @@ module multidomain_mod
 
     end subroutine
 
-    ! Get the largest timestep that the multidomain can take if the flow is quiescent.
-    !
     function stationary_timestep_max(md) result(timestep)
+        !! Get the largest timestep that the multidomain can take if the flow is quiescent.
         class(multidomain_type), intent(inout) :: md
         real(dp) :: timestep
         integer(ip) :: j
@@ -3254,21 +3221,18 @@ module multidomain_mod
     end subroutine
 
 
-    ! Convenience routine to set the point gauges in all domains from a 3 column csv file
-    ! containing x, y, gaugeID
-    !
-    ! @param md
-    ! @param point_gauges_csv_file csv file with 3 columns: lon, lat, gaugeID
-    ! @param skip_header number of header lines to skip in the file (default 0)
-    ! @param time_var array with indices of variables to store at every timestep. Default [STG, UH, VH]
-    ! @param static_var array with indices of variables to store only once. Default [ELV]
     subroutine set_point_gauges_from_csv(md, point_gauges_csv_file, skip_header, time_var, static_var)
+        !! Convenience routine to set the point gauges in all domains from a 3 column csv file
+        !! containing x, y, gaugeID
         class(multidomain_type), intent(inout) :: md
         character(len=*), intent(in) :: point_gauges_csv_file
+            !! file with 3 columns: lon, lat, gaugeID
         integer(ip), intent(in), optional :: skip_header
+            !! number of header lines to skip in the file (default 0)
         integer(ip), intent(in), optional :: time_var(:)
+            !! array with indices of variables to store at every timestep. Default [STG, UH, VH]
         integer(ip), intent(in), optional :: static_var(:)
-
+            !! array with indices of variables to store only once. Default [ELV]
         character(len=charlen) :: point_gauges_csv_file_local
         real(dp), allocatable :: point_gauges(:,:)
         integer(ip) :: skip_header_local, j
@@ -3329,19 +3293,6 @@ module multidomain_mod
     end subroutine
 
 
-    ! Convenience IO function. Write all domain outputs and print md statistics, if a given time has passed since
-    ! the last writeout
-    !
-    ! @param md multidomain
-    ! @param approximate_writeout_frequency real (default 0.0) - write to files once this much time has elapsed since the last write
-    ! @param write_grids_less_often optional integer (default 1) -- only write grids every 'nth' time we would otherwise writeout
-    ! @param write_gauges_less_often optional integer (default 1) -- only write gauges every 'nth' time we would otherwise writeout
-    ! @param print_less_often optional integer (default 1) -- only print every 'nth' time we would otherwise writeout
-    ! @param timing_tol real (default 0) if the time since the last write out is > "approximate_writeout_frequency - timing_tol"
-    ! , then do the write. This is an attempt to avoid round-off causing a shift in the write-out times
-    ! @param energy_is_finite optional logical variable -- if present it will be passed to the statistics printing routine. In that
-    ! case it will be .TRUE. if the global_energy_on_rho is finite, and .FALSE. otherwise. If the statistics are not printed (e.g.
-    ! print_less_often > 1) then we do not compute energy, and it will be set to .TRUE.
     subroutine write_outputs_and_print_statistics(md, &
         approximate_writeout_frequency, &
         write_grids_less_often, &
@@ -3349,11 +3300,25 @@ module multidomain_mod
         print_less_often,&
         timing_tol, &
         energy_is_finite)
+        !! Convenience IO function. Write all domain outputs and print md statistics, if a given time has passed since
+        !! the last writeout
 
         class(multidomain_type), intent(inout) :: md
-        real(dp), optional, intent(in) :: approximate_writeout_frequency, timing_tol
-        integer(ip), optional, intent(in) :: write_grids_less_often, write_gauges_less_often, print_less_often
+        real(dp), optional, intent(in) :: approximate_writeout_frequency
+            !! real (default 0.0) - Write to files once this much time has elapsed since the last write
+        integer(ip), optional, intent(in) :: write_grids_less_often
+            !! optional integer (default 1) -- only write grids every 'nth' time we would otherwise writeout
+        integer(ip), optional, intent(in) :: write_gauges_less_often
+            !! optional integer (default 1) -- only write gauges every 'nth' time we would otherwise writeout
+        integer(ip), optional, intent(in) :: print_less_often
+            !! optional integer (default 1) -- only print (to logfile) every 'nth' time we would otherwise writeout
+        real(dp), optional, intent(in) :: timing_tol
+            !! real (default 0) - If the time since the last write out is > "approximate_writeout_frequency - timing_tol"
+            !! then do the write. This is an attempt to avoid round-off causing a shift in the write-out times
         logical, optional, intent(out) :: energy_is_finite
+            !! optional logical variable -- if present it will be passed to the statistics printing routine. In that
+            !! case it will be .TRUE. if the global_energy_on_rho is finite, and .FALSE. otherwise. If the statistics 
+            !! are not printed (e.g. print_less_often > 1) then we do not compute energy, and it will be set to .TRUE.
 
         real(dp) :: approx_writeout_freq, model_time, timing_tol_local
         integer(ip) :: write_grids_n, write_gauges_n, print_n, j
@@ -3788,7 +3753,7 @@ __FILE__
                 end do
             end do
 #ifdef COARRAY
-            call flush(log_output_unit)
+            flush(log_output_unit)
             call sync_all_generic
 #endif
             ! Here if it's working, the 'err' will depend on the precision.

@@ -12,7 +12,7 @@ all_scenario_raster_tars = normalizePath(Sys.glob(
 # inundated at a given exceedance-rate.
 #
 # The exceedance-rate defining the upper limit of the inundation zone.
-PTHA_EXRATE_TOL = 1/10000  # At least 1/2500
+PTHA_EXRATE_TOL = 1/2500 #1/10000  # At least 1/2500
 # The rasters used to determine the area inundated within this exceedance-rate
 ptha_exceedance_rate_rasts = normalizePath(Sys.glob('../probabilistic_inundation/ptha18-GreaterPerth2023-sealevel60cm/highres_depth_epistemic_uncertainty/84pc/ptha18-GreaterPerth2023-sealevel60cm-depth_exrate_0.001_0.84_sum_of_source_zones/*.tif'))
 # A name for the PTHA rasters above. Used in output folder name to give
@@ -22,6 +22,18 @@ ptha_exceedance_rate_rast_tag = '84pc' # 'Logic_tree_mean'
 # Scenario sea-level when there is no tsunami -- needed to convert stage to
 # JATWC_H values
 SCENARIO_AMBIENT_SEA_LEVEL = 0.6
+
+# For some models, we use a lower initial stage inside polygons defining 
+# waterbodies that are not connected to the coast. At these sites our calculations
+# need to use an alternative ambient sea level when converting raster zones to polygons
+# with PTHA limits
+LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS = FALSE
+if(LOWER_AMBIENT_SEA_LEVEL_IN_POLYGONS){
+    LOWER_AMBIENT_SEA_LEVEL_POLYGON = vect('../../elevation/initial_stage_40cmAHD/initial_stage_40cmAHD.shp')
+    LOWER_AMBIENT_SEA_LEVEL = 0.4
+    stopifnot(LOWER_AMBIENT_SEA_LEVEL < SCENARIO_AMBIENT_SEA_LEVEL)
+}
+
 
 # For computing the JATWC_H statistic, we only consider points reached by the
 # tsunami, defined as sites with 
@@ -71,3 +83,4 @@ DEFAULT_MC_CORES = 104
 # Fix for imperfectly recorded missing data values in rasters -- treat any
 # value below this as missing data. Applied in "map_threat_levels_in_zone"
 raster_na_below = -3e+38
+

@@ -103,3 +103,9 @@ get the database working again.
 * We could extend the DART testing using records in [this paper](http://dx.doi.org/10.1093/gji/ggt328).
 
 * PTHA18 treats fault segmentation in only a limited way (as an optional local Mw-frequency model, but no real boundaries on rupture location). Consider adding in methods to treat segment boundaries (partially weighted). For example see a simple discussion [here](https://doi.org/10.1785/0120200219). We could also look at geometric methods for source placement, which imply non-trivial spatial magnitude distributions (e.g. [see here and related papers](10.1785/0120220175) ). 
+
+* Determine a strategy to deal with the following situation: PTHA18 often uses SLAB2 geometry and max-depths based on upper limits from Berryman et al. 2015. In some cases (New Guinea, Makran) this implies a very large fault area. Combined with our modelled lower-bound of 10% coupling, this forces substantial seismic moment accumulation. Then, the model prefers high Mw-max (and also low coupling) to try to enforce seismic moment balance. In my subjective opinion, although these results might be possible, it would also be good to have a method that placed some weight on the possibility of very low coupling and/or a smaller active fault area.
+
+* The outer-rise treatment should be considered more deeply and perhaps revised.
+
+* The PTHA18 source geometries are derived by transforming to the depth-below-the-nearby-trench. This doesn't properly consider the situation where the trench is significantly buried, or the effect of the varying topography above the fault. Consider using an approach like [this](https://doi.org/10.1029/2024JB030903) to treat varying topography and perhaps separately extend the fault through buried sediments (like in Carvajal et al. 2025, which cites earlier work).

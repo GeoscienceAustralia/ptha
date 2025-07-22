@@ -1,0 +1,45 @@
+# SOURCE CODE DIRECTORY relative to the current directory
+SWALS_SRC := /g/data/w85/tsunami/CODE/gadi/ptha/propagation/SWALS/src
+
+# To make a library with intel-llvm we need to use a suitable version of 'ar'
+# (Although I think static linking is used in the build below)
+SWALS_AR :=/apps/intel-oneapi/compiler/2023.2.0/linux/bin-llvm/llvm-ar rcs
+
+# Regular case with MPI
+SWALS_PREPROCESSOR_FLAGS := -DTIMER -DSPHERICAL -DCOARRAY -DCOARRAY_PROVIDE_CO_ROUTINES -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS -DLOCAL_TIMESTEP_PARTITIONED_DOMAINS
+
+## Run with the old nesting to try to fix a model that went unstable -- used for sunda2_0108153
+#SWALS_PREPROCESSOR_FLAGS := -DTIMER -DSPHERICAL -DCOARRAY -DCOARRAY_PROVIDE_CO_ROUTINES -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS -DLOCAL_TIMESTEP_PARTITIONED_DOMAINS -DOLD_PROCESS_DATA_TO_SEND_B4FEB22
+
+## Multidomain stability tracking -- this was useful for debugging runs
+#SWALS_PREPROCESSOR_FLAGS := -DTIMER -DSPHERICAL -DCOARRAY -DCOARRAY_PROVIDE_CO_ROUTINES -DCOARRAY_USE_MPI_FOR_INTENSIVE_COMMS -DLOCAL_TIMESTEP_PARTITIONED_DOMAINS -DTRACK_MULTIDOMAIN_STABILITY
+
+
+SWALS_FC := mpif90
+SWALS_FC_FLAGS := -fpp -O3 -qopenmp -ipo
+#SWALS_FC_FLAGS := -fpp -O0 -qopenmp -check -traceback -g
+SWALS_FC_ARCH_FLAGS := -xSAPPHIRERAPIDS
+#SWALS_FC_ARCH_FLAGS := -xCASCADELAKE
+#SWALS_FC_ARCH_FLAGS := -march=broadwell -axSKYLAKE,CASCADELAKE,SAPPHIRERAPIDS -qopt-zmm-usage=high
+#SWALS_FC_ARCH_FLAGS := -xSAPPHIRERAPIDS -qopt-zmm-usage=high
+
+
+include $(SWALS_SRC)/src_standard_compiler_var
+
+#
+# Application-specific compilation
+#
+# Name for the main model file is $(mymodel).f90
+mymodel := model
+# Clean up
+clean: $(mymodel)
+	rm *.o *.mod
+# Link everything
+$(mymodel): $(SWALS_LIBRARY) $(mymodel).o
+	$(SWALS_FORTRAN) $(mymodel).o -o $@_sapphirerapids $(SWALS_OBJECTS) $(SWALS_FC_LIBS)
+# Compile the driver script
+$(mymodel).o: $(mymodel).f90
+	$(SWALS_FORTRAN) -c $^ 
+# Build main source
+include $(SWALS_SRC)/src_make_commands
+

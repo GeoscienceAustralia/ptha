@@ -1,2 +1,2 @@
 include $(SWALS_SRC)/src_make_commands_default
-#include $(SWALS_SRC)/src_make_commands_default_intel_llvm
+#include $(SWALS_SRC)/src_make_commands_intel_llvm

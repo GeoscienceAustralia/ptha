@@ -38,12 +38,12 @@ module nested_grid_comms_mod
     real(dp), parameter :: EPS = 1.0e-06_dp
 
     integer(ip), parameter, public :: SPATIAL_DIM = 2
-    !! Spatial dimensions of the problem -- we solve the 2D shallow water equations
+        !! Spatial dimensions of the problem -- we solve the 2D shallow water equations
 
     integer(ip), parameter :: number_of_gradients_coarse_to_fine = 4_ip
-    !! In a coarse-to-fine send, we send the coarse data, and a number of gradient terms
-    !! which the fine domain can use to interpolate the result. For instance we might send
-    !! 2 x-gradients (forward and backward) and 2 y-gradients (forward and backward)
+        !! In a coarse-to-fine send, we send the coarse data, and a number of gradient terms
+        !! which the fine domain can use to interpolate the result. For instance we might send
+        !! 2 x-gradients (forward and backward) and 2 y-gradients (forward and backward)
 
     ! Indices into boundary flux tracking arrays
     integer(ip), parameter :: NORTH=1_ip, SOUTH=2_ip, EAST=3_ip, WEST=4_ip
@@ -85,7 +85,6 @@ module nested_grid_comms_mod
         !
 
         integer(ip) :: send_inds(2, SPATIAL_DIM + 1)
-            !!
             !! send_inds =  min_i, min_j, min_k,
             !!              max_i, max_j, max_k
         real(dp), allocatable :: send_buffer(:)
@@ -173,9 +172,7 @@ module nested_grid_comms_mod
     end type
 
     type :: domain_nesting_type
-        !!
         !! Type which holds everything a domain needs to do nesting
-        !!
 
         integer(ip), allocatable :: recv_metadata(:,:), send_metadata(:,:)
             !! 'Tables' with metadata describing the send/recv regions, and regions
@@ -208,12 +205,11 @@ module nested_grid_comms_mod
 
     contains
 
-    !
-    ! Report on memory use by domain nesting type
-    !
     pure subroutine domain_nesting_type_memory_size(domain_nesting, buffer_size)
+        !! Report on memory use by domain nesting type
         class(domain_nesting_type), intent(in) :: domain_nesting
         integer(ip), intent(out) :: buffer_size
+            !! Store the output
 
         integer(ip) :: i, local_buffer_size
 
@@ -255,9 +251,8 @@ module nested_grid_comms_mod
         use_wetdry_limiting, &
         neighbour_domain_staggered_grid, my_domain_staggered_grid,&
         comms_tag_prefix)
-        !!
         !! Set up to way nesting communicator type
-        !!
+
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
             !! The two-way-nesting-comms-type to set up
         type(p2p_comms_type), intent(inout) :: p2p
@@ -313,7 +308,7 @@ module nested_grid_comms_mod
             !! but now the parallel comms is done via a type inside the multidomain.
 
         ! Local variables
-        real(dp) :: cell_ratios(SPATIAL_DIM), prod_cell_ratios
+        real(dp) :: cell_ratios(SPATIAL_DIM), prod_cell_ratios, tol
         integer(ip):: iL, iU, jL, jU , kL, kU, sbs, rbs, bl, bw, bd, i, four_ip(4), dir_ip(4), &
             flux_integral_size
         character(charlen) :: n_char1, n_char2, n_char3, char1, char2, char3, comms_tag
@@ -409,8 +404,12 @@ module nested_grid_comms_mod
                 call generic_stop()
             end if
 
-            ! 1/cell_ratios  should be an integer (up to floating point)
-            if(any(abs(ONE_dp/cell_ratios - nint(ONE_dp/cell_ratios)) > EPS)) then
+            ! 1/cell_ratios should be an integer (up to floating point)
+            ! Check this, with error tolerance potentially > EPS, to
+            ! prevent issues in some single precision tests while 
+            ! ensuring 1/cell_ratios will round correctly
+            tol = min(0.499_dp, max(EPS, 100*spacing(maxval(ONE_dp/cell_ratios)))) 
+            if(any(abs(ONE_dp/cell_ratios - nint(ONE_dp/cell_ratios)) > tol)) then
                 write(log_output_unit,*) 'Apparent non-integer cell ratios (finer) ', cell_ratios, ONE_dp/cell_ratios, &
                     my_dx, neighbour_dx
                 call generic_stop()
@@ -620,6 +619,7 @@ module nested_grid_comms_mod
         !! Report on amount of memory used in nesting
         class(two_way_nesting_comms_type), intent(in) :: two_way_nesting_comms
         integer(ip), intent(out) :: buffer_size
+            !! Store the output
         integer(ip) :: i
 
         buffer_size = 0
@@ -650,14 +650,12 @@ module nested_grid_comms_mod
     end subroutine
 
 
-    ! Copy data to the send buffer, with appropriate averaging or interpolation
-    !
-    ! @param two_way_nesting_comms the communicator
-    ! @param U real rank 3 array that we send some subset of
-    !
     subroutine process_data_to_send_ORIGINAL(two_way_nesting_comms, U)
+        !! Copy data to the send buffer, with appropriate averaging or interpolation. This was subsequently updated.
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
+            !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
         real(dp), intent(in) :: U(:,:,:)
+            !! real rank 3 array that we send some subset of
 
         ! Local variables
         integer(ip) :: i,j,k, nb, nvar, ii, jj
@@ -771,9 +769,9 @@ module nested_grid_comms_mod
                 ! Send the volume-integrated U values
                 !
                 !do j = jL, jU
-                !! Note -- here we aim to achieve the same as "do j = jL, jU", but the loop is split
-                !! so that a single openmp threat only ever updates an entry of two_way_nesting_comms%send_buffer.
-                !! This helps avoid openmp non-reproducibility due to ordering of additions
+                ! ! Note -- here we aim to achieve the same as "do j = jL, jU", but the loop is split
+                ! ! so that a single openmp threat only ever updates an entry of two_way_nesting_comms%send_buffer.
+                ! ! This helps avoid openmp non-reproducibility due to ordering of additions
                 do jouter = jL, jU, inv_cell_ratios_ip(2)
                 do jinner = 0, inv_cell_ratios_ip(2)-1
                     j = jouter + jinner
@@ -1038,7 +1036,7 @@ module nested_grid_comms_mod
 
                     end if
 
-                    !! Test for round-off related effects.
+                    ! ! Test for round-off related effects.
                     !gradient_scale_x = 0.0_dp
                     !gradient_scale_y = 0.0_dp
 
@@ -1085,7 +1083,7 @@ module nested_grid_comms_mod
                             ! The finer grid will expect the UH/VH components to be nearer the middle of the cell
 
                             ! Make sure we only use points that really are in the 'send' zone.
-                            !! Potential instabilities / logic issues if we use points received from other domains (?).
+                            ! ! Potential instabilities / logic issues if we use points received from other domains (?).
                             ip1 = iip1 !min(iip1, iU) !min(i+1, iip1)
                             im1 = iim1 !max(iim1, iL) !max(i-1, iim1)
                             jp1 = jjp1 !min(jjp1, jU) !min(j+1, jjp1)
@@ -1190,17 +1188,17 @@ module nested_grid_comms_mod
                         dU_di_m = dU_di_m * gradient_scale_x
                         dU_dj_m = dU_dj_m * gradient_scale_y
 
-                        !!if(my_domain_staggered_grid == 0 .and. neighbour_domain_staggered_grid == 1) then
-                        !!    ! Sending from non-staggered to staggered
-                        !!    if(k == UH) then
-                        !!        !UH is offset slightly west of where the staggered grid wants it
-                        !!        uc = uc + dU_di_p * 0.5_dp/cell_ratios(1)
-                        !!    else if(k == VH) then
-                        !!        ! VH is offset slightly south of where the staggered grid wants it
-                        !!        uc = uc + dU_dj_p*0.5_dp/cell_ratios(2)
-                        !!    end if
-                        !!
-                        !!end if
+                        ! !if(my_domain_staggered_grid == 0 .and. neighbour_domain_staggered_grid == 1) then
+                        ! !    ! Sending from non-staggered to staggered
+                        ! !    if(k == UH) then
+                        ! !        !UH is offset slightly west of where the staggered grid wants it
+                        ! !        uc = uc + dU_di_p * 0.5_dp/cell_ratios(1)
+                        ! !    else if(k == VH) then
+                        ! !        ! VH is offset slightly south of where the staggered grid wants it
+                        ! !        uc = uc + dU_dj_p*0.5_dp/cell_ratios(2)
+                        ! !    end if
+                        ! !
+                        ! !end if
 
                         ! Index offset where we pack the send buffer
                         send_ind_offset = &
@@ -1451,9 +1449,9 @@ module nested_grid_comms_mod
                 ! Send the volume-integrated U values
                 !
                 !do j = jL, jU
-                !! Note -- here we aim to achieve the same as "do j = jL, jU", but the loop is split
-                !! so that a single openmp threat only ever updates an entry of two_way_nesting_comms%send_buffer.
-                !! This helps avoid openmp non-reproducibility due to ordering of additions
+                ! ! Note -- here we aim to achieve the same as "do j = jL, jU", but the loop is split
+                ! ! so that a single openmp threat only ever updates an entry of two_way_nesting_comms%send_buffer.
+                ! ! This helps avoid openmp non-reproducibility due to ordering of additions
                 do jouter = jL, jU, inv_cell_ratios_ip(2)
                 do jinner = 0, inv_cell_ratios_ip(2)-1
                     j = jouter + jinner
@@ -1517,7 +1515,7 @@ module nested_grid_comms_mod
                                             U(i,j,k) * cell_ratios(2)
                                     end if
 
-                                    !! Pointwise
+                                    ! ! Pointwise
                                     !if(central_i == inv_cell_ratios_ip(1)-1 .and. &
                                     !   central_j == inv_cell_ratios_ip(2)/2) then
                                     !    two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k) 
@@ -1532,7 +1530,7 @@ module nested_grid_comms_mod
                                             U(i,j,k) * cell_ratios(1)
                                     end if
 
-                                    !! Pointwise
+                                    ! ! Pointwise
                                     !if(central_j == inv_cell_ratios_ip(2) - 1 .and. &
                                     !   central_i == inv_cell_ratios_ip(1)/2) then
                                     !    ! Average value of VH along 'x' direction inside cell
@@ -1561,7 +1559,7 @@ module nested_grid_comms_mod
                                         two_way_nesting_comms%send_buffer(ijkCounter) = U(i,j,k)
                                     end if
                                 else if(k == UH) then
-                                    !! East point.
+                                    ! ! East point.
                                     !if( (central_i == inv_cell_ratios_ip(1)-1) ) then
                                     !    ! Average value of UH along 'y' direction inside cell
                                     !    ip1 = min(i+1, size(U, 1)) ! valid so long as (md%extra_cells_in_halo > 0)
@@ -1580,7 +1578,7 @@ module nested_grid_comms_mod
                                     end if
 
                                 else if(k == VH) then
-                                    !! North point.
+                                    ! ! North point.
                                     !if( (central_j == inv_cell_ratios_ip(2)-1) ) then
                                     !    ! Average value of VH along 'x' direction inside cell
                                     !    jp1 = min(j+1, size(U, 2))! valid so long as (md%extra_cells_in_halo > 0)
@@ -1616,7 +1614,7 @@ module nested_grid_comms_mod
                                             (0.5_dp * U(i,j,k) + 0.5_dp * U(im1,j,k))*cell_ratios(2)
                                     end if
 
-                                    !! Pointwise
+                                    ! ! Pointwise
                                     !if( (central_i == inv_cell_ratios_ip(1)/2) .and. &
                                     !    (central_j == inv_cell_ratios_ip(2)/2) ) then
                                     !    im1 = max(i-1, 1)
@@ -1634,7 +1632,7 @@ module nested_grid_comms_mod
                                             (0.5_dp * U(i,j,k) + 0.5_dp * U(i,jm1,k))*cell_ratios(1)
                                     end if
 
-                                    !! Pointwise
+                                    ! ! Pointwise
                                     !if( (central_i == inv_cell_ratios_ip(1)/2) .and. &
                                     !    (central_j == inv_cell_ratios_ip(2)/2) ) then
                                     !    jm1 = max(j-1, 1)
@@ -1836,17 +1834,17 @@ module nested_grid_comms_mod
                         dU_di_m = dU_di_m * gradient_scale_x
                         dU_dj_m = dU_dj_m * gradient_scale_y
 
-                        !!if(my_domain_staggered_grid == 0 .and. neighbour_domain_staggered_grid == 1) then
-                        !!    ! Sending from non-staggered to staggered
-                        !!    if(k == UH) then
-                        !!        !UH is offset slightly west of where the staggered grid wants it
-                        !!        uc = uc + dU_di_p * 0.5_dp/cell_ratios(1)
-                        !!    else if(k == VH) then
-                        !!        ! VH is offset slightly south of where the staggered grid wants it
-                        !!        uc = uc + dU_dj_p*0.5_dp/cell_ratios(2)
-                        !!    end if
-                        !!
-                        !!end if
+                        ! !if(my_domain_staggered_grid == 0 .and. neighbour_domain_staggered_grid == 1) then
+                        ! !    ! Sending from non-staggered to staggered
+                        ! !    if(k == UH) then
+                        ! !        !UH is offset slightly west of where the staggered grid wants it
+                        ! !        uc = uc + dU_di_p * 0.5_dp/cell_ratios(1)
+                        ! !    else if(k == VH) then
+                        ! !        ! VH is offset slightly south of where the staggered grid wants it
+                        ! !        uc = uc + dU_dj_p*0.5_dp/cell_ratios(2)
+                        ! !    end if
+                        ! !
+                        ! !end if
 
                         ! Index offset where we pack the send buffer
                         send_ind_offset = &
@@ -1976,22 +1974,21 @@ module nested_grid_comms_mod
     end subroutine
 
 
-
-
-    ! Routine to copy the recv buffer into the main computational array, once
-    ! it has been filled by the neighbour.
-    !
-    ! We keep this separate from the routine which copies the data, so that
-    ! in parallel we can do a sync between the two steps. This also gives us the flexibility
-    ! to use the sync for other parallel comms processes.
-    !
-    ! @param two_way_nesting_comms
-    ! @param U the main computational array that we copy the received data to.
-    !
     subroutine process_received_data(two_way_nesting_comms, p2p, U)
+        !! Routine to copy the recv buffer into the main computational array, once
+        !! it has been filled by the neighbour.
+        !!
+        !! We keep this separate from the routine which copies the data, so that
+        !! in parallel we can do a sync between the two steps. This also gives us the flexibility
+        !! to use the sync for other parallel comms processes.
+        !!
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
+            !! The two way nesting communicator which manages communication on a rectangular patch of the domain.
         type(p2p_comms_type), intent(in) :: p2p
+            !! The point-2-point communication type that will manage this two-way communication,
+            !! (typically associated with the multidomain)
         real(dp), intent(inout) :: U(:,:,:)
+            !! main computational array that we copy the received data to.
 
         integer(ip) :: iL, iU, jL, jU, kL, kU, n0, n1, dir_ip(4), i, j, nvar, s1
         !real(dp) :: stage_mean_before, stage_mean_after
@@ -2137,15 +2134,18 @@ module nested_grid_comms_mod
 
     end subroutine
 
-    ! Copy send_buffer to the right recv_buffer. This should be called AFTER process_data_to_send.
-    !
-    ! @param send_to_recv_buffer optional logical. If FALSE, then do not do a
-    ! parallel communication, but only pack the data in the send buffer [we can
-    ! communicate later with communicate_p2p].
+
     subroutine send_data(two_way_nesting_comms, p2p, send_to_recv_buffer)
+        !! Copy send_buffer to the right recv_buffer. This should be called AFTER process_data_to_send.
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
+            !! The two-way-nesting-comms-type
         type(p2p_comms_type), intent(inout) :: p2p
+            !! The point-2-point communication type that will manage this two-way communication,
+            !! (typically associated with the multidomain)
         logical, optional, intent(in) :: send_to_recv_buffer
+            !! If FALSE, then do not do a parallel communication, but only pack
+            !! the data in the send buffer [we can communicate later with communicate_p2p].
+            !! Default TRUE includes a parallel commuication.
 
         logical:: put_in_recv_buffer
 
@@ -2165,10 +2165,9 @@ module nested_grid_comms_mod
 
     end subroutine
 
-    ! Multiply the boundary flux integral terms by some constant.
-    ! Useful when we time-integrate the boundary fluxes
     pure subroutine boundary_flux_integral_multiply(two_way_nesting_comms, c)
-
+        !! Multiply the boundary flux integral terms by some constant c.
+        !! Useful when we time-integrate the boundary fluxes
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
         real(dp), intent(in) :: c
 
@@ -2193,46 +2192,52 @@ module nested_grid_comms_mod
 
     end subroutine
 
-    ! Replace each boundary_flux_integral_term with
-    !  (dt * current_fluxes * dx + boundary_flux_integral_term)
-    !
-    ! @param two_way_nesting_comms Communication object, which is also tracking
-    !     fluxes through its boundaries.
-    ! @param dt real constant in the equation above
-    ! @param flux_NS rank 3 array with north-south fluxes (for the whole domain)
-    ! @param flux_NS_lower_index integer. Assume flux_NS(:,1,:) contains the
-    !   bottom edge flux for cells with j index = flux_NS_lower_index. For example,
-    !   "flux_NS_lower_index=1" implies that flux_NS includes fluxes on the south boundary.
-    !   For some of our solvers this is not true [e.g. linear leapfrog, because the 'mass flux'
-    !   terms are effectively stored in the domain%U variable].
-    ! @param distance_bottom_edge real rank 1 array with length = (1+number of 'j' cells in domain).
-    !    Gives the length of the bottom edge of a cell with 'j' y index. This
-    !    is an array because for spherical coordinates, the bottom edge cell
-    !    distance changes with latitude.
-    ! @param flux_EW rank 3 array with east-west fluxes (for the whole domain)
-    ! @param flux_EW_lower_index integer. Assume flux_EW(1,:,:) contains the left-edge
-    !    flux for cells with i index = flux_EW_lower_index. For example,
-    !   "flux_EW_lower_index=1" implies that flux_EW includes fluxes right to the boundary.
-    !   For some of our solvers this is not true [e.g. linear leapfrog, because the 'mass flux'
-    !   terms are effectively stored in the domain%U variable].
-    ! @param distance_left_edge real rank 1 array with length = (1+number of 'i' cells in domain).
-    !    Gives the length of the left edge of a cell with 'i' y index. This is usually constant.
-    ! @param k_indices Only apply the update to a few variables with 'k_indices'.
-    ! @param flux_already_multiplied_by_dx logical If TRUE, assume flux_NS and flux_EW have
-    !   already been multiplied by their 'distance_bottom_edge' or 'distance_left_edge' term,
-    !   so do not multiply by this again. Useful because some of our solvers store the fluxes
-    !   as (flux . dx), while others do not.
-    !
     pure subroutine boundary_flux_integral_tstep(two_way_nesting_comms, dt, &
         flux_NS, flux_NS_lower_index, distance_bottom_edge, &
         flux_EW, flux_EW_lower_index, distance_left_edge, &
         k_indices, flux_already_multiplied_by_dx)
+        !! Replace each boundary_flux_integral_term with
+        !!  (dt * current_fluxes * dx + boundary_flux_integral_term)
 
         class(two_way_nesting_comms_type), intent(inout) :: two_way_nesting_comms
-        real(dp), intent(in) :: flux_NS(:,:,:), flux_EW(:,:,:), dt
-        real(dp), intent(in) :: distance_bottom_edge(:), distance_left_edge(:)
-        integer(ip), intent(in) :: flux_NS_lower_index, flux_EW_lower_index, k_indices(2)
+            !! Communication object, which is also tracking fluxes through its boundaries.
+        real(dp), intent(in) :: dt
+            !! constant in the update equation above
+        real(dp), intent(in) :: flux_NS(:,:,:)
+            !! array with north-south fluxes (for the whole domain)
+        real(dp), intent(in) :: flux_EW(:,:,:)
+            !! array with east-west fluxes (for the whole domain)
+        real(dp), intent(in) :: distance_bottom_edge(:)
+            !! array with length = (1+number of y-cells or lat-cells in domain).
+            !! Gives the length of the bottom edge of a cell with 'j' y index. This
+            !! is an array because for spherical coordinates, the bottom edge cell
+            !! distance changes with latitude.
+        real(dp), intent(in) :: distance_left_edge(:)
+            !! array with length = (1+number of x-cells or lon-cells in domain).
+            !! Gives the length of the left edge of a cell with 'i' x index. This is usually 
+            !! identical for all entries.
+        integer(ip), intent(in) :: flux_NS_lower_index
+            !! Assume flux_NS(:,1,:) contains the
+            !! bottom edge flux for cells with j index = flux_NS_lower_index. For example,
+            !! "flux_NS_lower_index=1" implies that flux_NS includes fluxes on the south boundary.
+            !! For some of our solvers this is not true [e.g. linear leapfrog, because the 'mass flux'
+            !! terms are effectively stored in the domain%U variable].
+        integer(ip), intent(in) :: flux_EW_lower_index
+            !! Assume flux_EW(1,:,:) contains the left-edge
+            !! flux for cells with i index = flux_EW_lower_index. For example,
+            !! "flux_EW_lower_index=1" implies that flux_EW includes fluxes right to the boundary.
+            !! For some of our solvers this is not true [e.g. linear leapfrog, because the 'mass flux'
+            !! terms are effectively stored in the domain%U variable].
+        integer(ip), intent(in) :: k_indices(2)
+            !! Only apply the update to a few variables 'k_indices'. Recall the variables in domain%U(:,:,k)
+            !! are stage (k = STG = 1), UH (k = UH = 2), VH (k = VH = 3), elevation (k = ELV = 4). We will
+            !! update all variables with index ranging from ks(1) to ks(2). For example ks=[1,4] will update
+            !! all variables, while ks = [1, 3] will only update STG, UH, VH, or ks[1,1] will only update STG.
         logical, intent(in) :: flux_already_multiplied_by_dx
+            !! If TRUE, assume flux_NS and flux_EW have
+            !! already been multiplied by their 'distance_bottom_edge' or 'distance_left_edge' term,
+            !! so do not multiply by this again. Useful because some of our solvers store the fluxes
+            !! as (flux . dx), while others do not.
 
         integer(ip) :: ks(2), ms(2), ns, dns, i, edge_ip(2), ind1_ip(2), ind2_ip(2), edge
 
@@ -2241,7 +2246,6 @@ module nested_grid_comms_mod
         !     - If flux_NS contains fluxes for [stg, uh, vh], then all those
         !       will be updated in the boundary flux integral.
         !     - If flux_NS has only fluxes for [stg], then only that is updated.
-
         ks = k_indices
 
         if (two_way_nesting_comms%send_active) then
@@ -2350,13 +2354,13 @@ module nested_grid_comms_mod
 
     end subroutine
 
-    !! Report on fluxes between nesting comms type and target domain.
-    !! FIXME: This was used in development but is likely out of date now.
-    !!
-    !! @param nesting nesting type
-    !! @param xs optional vector of x coordinates, in domain%x
-    !! @param ys optional vector of y coordinates, in domain%y
-    !!
+    ! ! Report on fluxes between nesting comms type and target domain.
+    ! ! FIXME: This was used in development but is likely out of date now.
+    ! !
+    ! ! @param nesting nesting type
+    ! ! @param xs optional vector of x coordinates, in domain%x
+    ! ! @param ys optional vector of y coordinates, in domain%y
+    ! !
     !subroutine print_nesting_fluxes(nesting, xs, ys)
 
     !    class(domain_nesting_type), intent(in) :: nesting

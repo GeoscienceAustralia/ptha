@@ -17,7 +17,7 @@ puysgur2 tsunami scenarios had been created.
 **Note 2:** The scripts refer to data in locations starting with
 "../../../../../DATA/TIDES/DART/dart_extract/". This was the location in our
 local file system when running the PTHA18 analysis. A copy of this data has
-been posted [here](http://dapds00.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/DATA/dart_extract.zip).
+been posted [here](https://thredds.nci.org.au/thredds/fileServer/fj6/PTHA/AustPTHA_1/DATA/dart_extract.zip).
 The codes used to process the DART data are in [this folder](./dart_process),
 although at the time of the PTHA18 analysis they were located in
 "../../../../../DATA/TIDES/DART/".

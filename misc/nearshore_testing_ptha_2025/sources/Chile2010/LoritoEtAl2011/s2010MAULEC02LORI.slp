@@ -1,0 +1,24 @@
+% ----------------------------------  FINITE-SOURCE SLIP MODEL  --------------------------------
+% 
+% Evnt : Maule, Chile  		02/27/2010		[Lorito et al. (2011) ] 
+% EventTAG: s2010MAULEC02LORI
+% 
+% Loc  : LAT  = -36.12		LON = -72.9		DEP = 22.9
+% Size : LEN  = 5000.0 km	WID =  5000.0 km		Mw = 8.80	Mo = 1.78e+22 Nm
+% Mech : STRK = 16.39667999999999		DIP = 17.125		RAKE = 109.87413520886692	Htop = 9.0 km 
+% Rupt : HypX = 310.10 km	HypZ = -83.58 km		avTr = 999.0 s	avVr = 999.0 km/s 
+% Invs :  inDx = 25.00 km	inDz  = 25.00 km 	Fmin = 999.00 Hz	Fmax = 999.00 Hz 
+% Invs :  Nx  =  1	Nz  = 1
+% 
+% Number of segments: Nsg = 200 
+% NOTE : The rupture model given below represents a single-fault-plane projection 
+         of a geometrically complex fault with multiple segments! 
+% 
+% Check corresponding file -- s2010MAULEC02LORI.fsp -- for details & exact geometry 
+% 
+% rows : source-parameter values in along-strike direction (row 1 == top) 
+% cols : source-parameter values in down-dip direction 
+% 
+% 30-Sep-2013 created by KSTH (thingbaijam@gmail.com)
+ 
+% --------------------------------------------------------------------------------------------------

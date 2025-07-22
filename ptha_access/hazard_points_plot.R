@@ -7,8 +7,9 @@ if(!exists('config_env')){
 }
 
 # If the following is TRUE, then the code will re-download key datasets. Otherwise,
-# it will read versions from cache, and download if they do not exist
-REFRESH_MAP = config_env$REFRESH_MAP
+# it will read versions from cache, and download if they do not exist.
+# As of 2024/06/05 the caching isn't working, see https://github.com/GeoscienceAustralia/ptha/issues/43#issuecomment-2148583647
+REFRESH_MAP = TRUE #config_env$REFRESH_MAP
 
 #
 # Get base datasets
@@ -128,7 +129,7 @@ unit_source_grids = .read_all_unit_source_grids()
         hazard_points = cbind(hazard_points, data.frame(point_category=hp_type_char))
 
         hazard_points_spdf = SpatialPointsDataFrame(coords = hazard_points[,1:2], 
-            data=hazard_points, proj4string=CRS('+init=epsg:4326'))
+            data=hazard_points, proj4string=CRS('EPSG:4326'))
 
         # Only display a subset of points -- we could do this in a more complex way easily
         #kk = which(hp_type_char != 'intermediateG')
@@ -148,10 +149,14 @@ unit_source_grids = .read_all_unit_source_grids()
             hazard_points_spdf = hazard_points_spdf[c(clip_region_keep, dartp),]
         }
 
-
-        writeOGR(hazard_points_spdf, dsn='DATA/hazard_points_spdf', 
-            layer='hazard_points_spdf', driver='ESRI Shapefile',
-            overwrite=TRUE)
+        ## This fails because the field names are too long for the 10 character shapefile
+        ## limit. It used to work, and the error is probably related to changes in the R
+        ## spatial ecosystem around 2023. These caused us to replace rgdal::writeOGR with a 
+        ## shallow replacement rptha::writeOGR. Underneath the latter uses sf::st_write. It
+        ## may be enforcing the limit on shapefile header names in a way that the rgdal package did not. 
+        #writeOGR(hazard_points_spdf, dsn='DATA/hazard_points_spdf', 
+        #    layer='hazard_points_spdf', driver='ESRI Shapefile',
+        #    overwrite=TRUE)
 
         # Faster read with RDS format
         saveRDS(hazard_points_spdf, hazard_points_spdf_RDS_file)

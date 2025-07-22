@@ -77,12 +77,20 @@ type(polygons_values_type) :: vasse_estuary_pvt, clip_elevation_above_zero_pvt, 
 
 logical, parameter :: close_bunbury_floodgate = .FALSE.
     !! If .TRUE., this will insert "closed-gate" elevations along the Bunbury "plug" floodgate.
-    !! 12/2022, Adrian Brannigan indicated we should run with the floodgate open, as it is not always
-    !! monitored and reaching the end of its design life.
-logical, parameter :: burn_gap_in_bunbury_floodgate = .TRUE.
-    !! If .TRUE., then burn the channel bed (e.g. gap in the floodgate) into the elevation. This is to 
+    !! 12/2022 - Adrian Brannigan indicated we should run with the floodgate open, as it is not always
+    !!           monitored and reaching the end of its design life.
+    !! Mid 2023 - Adrian Brannigan requested that we also run with floodgate closed
+    !! April 2024 - Re-running a model with updated Busselton data, choosing to open the floodgate.
+logical, parameter :: burn_channel_at_bunbury_floodgate = .TRUE.
+    !! If .TRUE., then burn the channel bed at Bunbury floodgate into the elevation. This is to 
     !! ensure the floodgate is 'cleanly' represented in the model, despite the regular grid. It will be applied
-    !! BEFORE we enforce elevation maxima (e.g. breakwalls)
+    !! BEFORE we enforce elevation maxima (e.g. breakwalls) and so alone will not determine whether the floodgate
+    !! is open or closed (see "close_bunbury_floodgate").
+logical, parameter :: include_elevation_updates_2024 = .TRUE. ! .FALSE.
+    !! The initial models (12/2022 and Mid 2023) correspond to .FALSE.
+    !! They had some limitations in elevation data which were identified by
+    !! subsequent field site checks.
+    !! Use of .TRUE. includes the improved elevation data.
 
 #ifdef HIGH_JETTY_FRICTION
 logical, parameter :: use_high_friction_bunbury_jetty = .TRUE.
@@ -206,9 +214,10 @@ subroutine setup_breakwalls_and_flowpaths(domain)
     character(len=charlen), allocatable :: breakwall_csv_lon_lat_z(:), &
         bed_csv_lon_lat_z(:), clip_elevation_above_zero_polygon_files(:)
     character(len=charlen), parameter :: char_format = '(A)'
+    character(len=charlen) :: breakwalls_file_list
     real(dp), allocatable :: clip_elevation_above_zero_elevation_values(:)
 
-    if(burn_gap_in_bunbury_floodgate) then
+    if(burn_channel_at_bunbury_floodgate) then
         ! Enforce channel bed values
         if(.not. allocated(channel_inverts_forced%lines)) then
             ! Setup the class to burn the inverts
@@ -239,9 +248,13 @@ subroutine setup_breakwalls_and_flowpaths(domain)
     if(.not. allocated(breakwalls_forced%lines)) then
         ! On the first call, setup the breakwalls_forced object.
 
+        breakwalls_file_list = merge(&
+            "../breakwalls/swals_breakwall_files_updates2024.txt", &
+            "../breakwalls/swals_breakwall_files.txt            ", & ! Both arguments same length
+            include_elevation_updates_2024)
+
         ! Read the breakwall files
-        call read_character_file("../breakwalls/swals_breakwall_files.txt", &
-            breakwall_csv_lon_lat_z, char_format)
+        call read_character_file(breakwalls_file_list, breakwall_csv_lon_lat_z, char_format)
         ! Add in the relative directory path
         breakwall_csv_lon_lat_z = "../breakwalls/" // breakwall_csv_lon_lat_z
 
@@ -279,11 +292,15 @@ subroutine setup_elevation(domain, all_dx_md)
         !! Coordinates for elevation lookup
     integer(ip) :: j, num_smooth
     character(len=charlen), parameter :: char_format = '(A)'
+    character(len=charlen) :: elevation_files_list
 
     if(.not. allocated(input_elevation_files)) then
         ! Read the elevation data files in preference order
-        call read_character_file("../elevation/swals_elevation_files_in_preference_order.txt", &
-            input_elevation_files, char_format)
+        elevation_files_list = merge(&
+            "../elevation/swals_elevation_files_in_preference_order_2024_update.txt", &
+            "../elevation/swals_elevation_files_in_preference_order.txt            ", &
+            include_elevation_updates_2024)
+        call read_character_file(elevation_files_list, input_elevation_files, char_format)
     end if
     call elevation_data%initialise(input_elevation_files)
 

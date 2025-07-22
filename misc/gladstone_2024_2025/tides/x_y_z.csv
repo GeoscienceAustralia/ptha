@@ -1,0 +1,12 @@
+z is elevation of HAT in AHD. 
+sigma_km is the standard deviation of the Gaussian kernel used to bump up the elevation of the HAT.
+TPXO9 Value (MSL) is the value of the TPXO9 dataset at the location of the tide gauge. Not used just for reference.
+offset is the is the difference between the MSL and AHD values at the tide gauge location.
+name, y, x, z, sigma_km, TPXO9 Value (MSL), offset
+"LADY ELLIOT ISLAND", -24.1166662, 152.7166638, 1.41, 20, 1.46, NA
+"HERON ISLAND", -23.44246, 151.91495, 1.81, 20, 2.05, -0.006
+"BUNDABERG (BURNETT HEADS) PORT GAUGE", -24.76666667, 152.38333333, 1.99, 10, 1.65, NA
+"SOUTH TREES STORM SURGE", -23.853469, 151.309419, 2.42, 10, 2.15, NA
+"FISHERMANS LANDING WHARF QCL", -23.788469, 151.176086, 2.61, 10, 2.22, 0.07
+"MACKAY STORM TIDE", -21.10283333, 149.22746667, 3.68, 10, 3.11, 0.13
+"DARLYMPLE BAY", -21.25191667, 149.30323333, 3.84, 20, 3.50, NA

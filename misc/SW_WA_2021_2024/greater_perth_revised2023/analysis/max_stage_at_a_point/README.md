@@ -2,6 +2,7 @@ Compare the PTHA18 maximum-stage at a given offshore site with the result of the
 
 The key code is [extract_max_stage_at_a_point.R](extract_max_stage_at_a_point.R). 
 * This has many hard-coded input parameters that need modification for each case.
+* A newer version [extract_max_stage_at_a_point_extended.R](extract_max_stage_at_a_point_extended.R) was added at the last minute - this repeats key plots using PTHA18 max-stage values in place of the nonlinear model max stage values, because this makes it easier to see the Monte Carlo performance.
 * The script [run_a_few.sh](run_a_few.sh) applies it to a number of cases. 
 
 Separately there is a code to check a particular exceedance-rate at Hillarys ([this one](check_hillarys.R)), and some other old plotting code to [compare offshore and onshore stage values](plot_offshore_vs_onshore_stage.R).

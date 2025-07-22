@@ -666,6 +666,11 @@ make_max_stage_raster<-function(swals_out, proj4string='EPSG:4326',
 #' transform the variable before plotting
 #' @param NA_if_stage_not_above_elev logical. If TRUE, the set regions with
 #' stage <= (elev + dry_depth) to NA
+#' @param NA_if_max_flux_is_zero logical. If TRUE, then set regions with 
+#' max_flux == 0 to NA. This can be useful if you
+#' have a model with a time-varying earthquake source, where in subsiding areas
+#' that are dry the max_stage may be greater than the final elevation (=elevation0).
+#' These sites are distinguished by having zero max_flux.
 #' @param use_fields logical. If TRUE, use image.plot from the fields package.
 #' Otherwise use graphics::image
 #' @param clip_to_zlim logical. If TRUE, clip the variable limits to be within
@@ -683,7 +688,9 @@ make_max_stage_raster<-function(swals_out, proj4string='EPSG:4326',
 #' @return Nothing, but make the plot.
 multidomain_image<-function(multidomain_dir, variable, time_index, 
     xlim, ylim, zlim, cols, add=FALSE,
-    var_transform_function = NULL, NA_if_stage_not_above_elev = FALSE, 
+    var_transform_function = NULL, 
+    NA_if_stage_not_above_elev = FALSE, 
+    NA_if_max_flux_is_zero = FALSE, 
     use_fields=FALSE, clip_to_zlim=FALSE,
     buffer_is_priority_domain=FALSE, asp=1, fields_axis_args=list(), 
     dry_depth = 1.0e-03){
@@ -760,6 +767,20 @@ multidomain_image<-function(multidomain_dir, variable, time_index,
 
             var[stage < elevation + dry_depth] = NA
         }
+
+        if(NA_if_max_flux_is_zero){
+            # Use NA values at sites where max_flux is zero. This can be useful if you
+            # have a model with a time-varying earthquake source, where in subsiding areas
+            # that are dry the max_stage may be greater than the final elevation (=elevation0).
+            # These sites are distinguished by having zero max_flux.
+            if('max_flux' %in% names(fid$var)){
+                max_flux = ncvar_get(fid, 'max_flux')
+                var[max_flux ==0] = NA
+            }else{
+                stop('max_flux not provided in output file, cannot use it for multidomain_image')
+            }
+        }
+
         nc_close(fid)
 
         if(!is.null(var_transform_function)) var = var_transform_function(var)
@@ -2446,4 +2467,73 @@ get_log_statistics<-function(md_dir){
 
     return(t(desired_result))
 }
+
+#' Count the total number of cells and non-NA cells from a tif file
+#'
+#' @param tif_file a raster file (typically with elevation)
+#' @return vector of length 2 with c("number of cells", "number of non-NA cells")
+count_cells_output_tif=function(tif_file){
+    library(terra)
+    r1 = rast(tif_file)
+    total= prod(dim(r1)) # Beware this misses most halos from merged domains (since they were merged to make the tifs)
+    total_nonNA = sum(!is.na(as.matrix(r1)))
+    c(total, total_nonNA)
+}
+
+#' Count the total number of cells, and priority domain cells, from a netcdf file
+#'
+#' @param nc_file a netcdf file containing model grid outputs, including "is_priority_domain"
+#' @return vector of length 2 with c("number of cells", "number of priority domain cells")
+count_cells_nc_grid_file<-function(nc_grid_file){
+    library(ncdf4)
+    fid = nc_open(nc_grid_file)
+    pd = ncvar_get(fid, 'is_priority_domain')
+    nc_close(fid)
+    return(c(prod(dim(pd)), sum(pd)))
+}
+
+#' Count cells over files, typically applied to files representing a multidomain
+#' 
+#' @param all_files character vector of filenames. They should either all be
+#' tif files (e.g. elevation tifs derived from a SWALS model) or netcdf files
+#' containing the "is_priority_domain" variable
+#' @return Invisibly return a data.frame with the files, priority_noNA cells, and total cells.
+#' @example
+#' all_netcdf_files = Sys.glob('OUTPUTS/run_Chile2010_Lorito11_1arcminoffshore-full-ambient_sea_level_0.0/RUN_20231129_183023159/*/Grid*.nc')
+#' tmp = count_cells_all_files(all_netcdf_files)
+#' # [1] "Total of 267433452 cells in priority domain areas"
+#' # [1] "Total of 284580460 cells in total"
+#' #[1] "  Ratio: 0.939746362065758"
+count_cells_all_files<-function(all_files){
+
+    # Figure out if we are looking at tifs or netcdf
+    if(endsWith(all_files[1], 'nc')){
+        stopifnot(all(endsWith(all_files, 'nc')))
+        count_cells = count_cells_nc_grid_file
+    }else if(endsWith(all_files[1], 'tif')){
+        stopifnot(all(endsWith(all_files, 'tif')))
+        if(!all(grepl('elevation', all_files))){
+            print("Computing cell statistics from tifs that don't contain elevation. Dry regions will affect the priority domain stats.")
+        }
+        count_cells = count_cells_output_tif
+    }else{
+        stop('unknown file types')
+    }
+
+    cell_counts = lapply(all_files, count_cells)
+    cell_counts_mat = matrix(unlist(cell_counts), ncol=2, byrow=TRUE)
+    regular_total_cells = sum(cell_counts_mat[,1]) 
+    regular_total_cells_nonNA = sum(cell_counts_mat[,2])
+    if(endsWith(all_files[1], 'tif')){
+        print(paste0('Total of ', regular_total_cells_nonNA, ' cells priority domain areas that did not have NA raster values'))
+        print(paste0('Total of ', regular_total_cells, ' cells, except this calculation misses halos on merged domains'))
+    }else{
+        print(paste0('Total of ', regular_total_cells_nonNA, ' cells in priority domain areas'))
+        print(paste0('Total of ', regular_total_cells, ' cells in total'))
+    }
+    print(paste0('  Ratio: ', regular_total_cells_nonNA/regular_total_cells))
+
+    return(invisible(data.frame(file=all_files, priority_noNA_cells=cell_counts_mat[,2], total_cells=cell_counts_mat[,1])))
+}
+
 

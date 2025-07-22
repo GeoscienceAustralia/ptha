@@ -1,5 +1,7 @@
 # Analyses of the random PTHA scenarios
 
+These files were used to process the first version of the model. It was later updated, so the results to use were processed in `../analysis_shutfloodgate` and `analysis_NewVasseDrainOpenBunburyFloodgate`.
+
 This folder contains:
 
 * `check_log_files` - performs various sanity checks on model log files {mass conservation, energy decay, etc}

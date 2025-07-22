@@ -1,0 +1,1 @@
+This scenario was "best fitting" according to the PTHA18 criteria for Chile 2010 (based on DARTs). It is a heterogeneous-slip scenario. It's avaiable from the NCI using the [ptha_access](https://github.com/GeoscienceAustralia/ptha/tree/master/ptha_access/example_event_access_scripts/scenarios_similar_to_historical) part of the ptha repo.
