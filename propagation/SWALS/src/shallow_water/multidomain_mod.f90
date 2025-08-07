@@ -222,10 +222,12 @@ module multidomain_mod
             !! the parallel comms are done in a derived type inside the multidomain, such that there is no need to
             !! use distinct labels.
         integer(ip) :: log_output_unit = -HUGE(1_ip)
-            ! File unit for logging. If more than one multidomain is used (relatively uncommon)
-            ! we can put the most common log output for each multidomain in separate files. 
-            ! But beware many other modules just use the "logging module's log_output_unit", 
-            ! and for such messages, the file locations may be messed up if using more than one multidomain
+            !! File unit for logging. If more than one multidomain is used (relatively uncommon)
+            !! we can put the most common log output for each multidomain in separate files. 
+            !! But beware many other modules just use the "logging module's log_output_unit", 
+            !! and for such messages, the file locations may be messed up if using more than one multidomain
+        logical :: use_dispersion = .FALSE.
+            !! This will be .TRUE. if any domain uses dispersion, and .FALSE. otherwise
 
         contains
 
@@ -1042,8 +1044,19 @@ module multidomain_mod
 
     end subroutine
 
-
     subroutine evolve_multidomain_one_step(md, dt)
+        class(multidomain_type), intent(inout) :: md
+        real(dp), intent(in) :: dt
+
+        if(md%use_dispersion) then
+            call evolve_multidomain_one_step_dispersive(md, dt)
+        else
+            call evolve_multidomain_one_step_shallow_water(md, dt)
+        end if
+
+    end subroutine
+
+    subroutine evolve_multidomain_one_step_shallow_water(md, dt)
         !! Timestep all grids (by the global time-step).
         !!
         !! This method only includes communication at each global time-step. While that's
@@ -1051,7 +1064,7 @@ module multidomain_mod
         !! to be very large. To reduce the comms buffer size, we could have more
         !! communication in sub-steps of the global timestep
         !!
-        class(multidomain_type), intent(inout) :: md
+        type(multidomain_type), intent(inout) :: md
         real(dp), intent(in) :: dt
 
         integer(ip) :: j, i, nt
@@ -1164,6 +1177,211 @@ module multidomain_mod
 
     end subroutine
 
+    subroutine evolve_multidomain_one_step_dispersive(md, dt)
+        !! Timestep all grids (by the global time-step) and include dispersive solves on some domains.
+        !!
+        !! Compared to the shallow water version of this routine, there is more communication and less local timestepping,
+        !! so it should be slower even if not actually using dispersion.
+
+        type(multidomain_type), intent(inout) :: md
+        real(dp), intent(in) :: dt
+
+        integer(ip) :: j, substep, nt, dispersive_outer_iterations, nt_max, domain_stepcycles(size(md%domains))
+        real(dp) :: dt_local, max_dt_store(size(md%domains)), tend
+        integer, parameter :: max_dispersive_outer_iterations = 2
+        logical :: is_first_step
+
+TIMER_START('before_stepping')
+        ! All the domains will evolve to this time
+        tend = md%domains(1)%time + dt
+        ! However they may take different numbers of steps to get
+        ! there, leading to tiny numerical differences in the final time.
+        ! To avoid any issues, after timestepping we explicitly set them to tend.
+
+        do j = 1, size(md%domains)
+            ! Re-set the nesting boundary flux integrals
+            ! These will be used to determine how much flux-correction to apply
+            ! following these evolve steps
+            call md%domains(j)%nesting_boundary_flux_integral_multiply(c=0.0_dp)
+
+            if(md%domains(j)%use_dispersion) then
+                ! The dispersive solver uses quadratic-in-time extrapolation to guess the solution,
+                ! and needs to store values to enable extrapolation.
+                call md%domains(j)%ds%qet%append_value_and_time_for_quadratic_extrapolation(&
+                    md%domains(j)%time, md%domains(j)%U(:,:,UH:VH))
+            end if
+        end do
+
+        ! Timestepping levels
+        nt_max = maxval(md%domains(:)%timestepping_refinement_factor)
+        domain_stepcycles = nt_max / md%domains(:)%timestepping_refinement_factor !This MUST be a nonzero integer without roundoff
+TIMER_STOP('before_stepping')
+
+        if(any(abs(domain_stepcycles - &
+                   (nt_max*1.0_dp)/(md%domains(:)%timestepping_refinement_factor*1.0_dp)) > 1e-10_dp)) then
+            write(log_output_unit,*) 'Timestepping refinement factors must all divide nt_max'
+            write(log_output_unit,*) 'such as (nt_max=6) 1, 6, 2, 3 ... or (nt_max=27) 1, 3, 27 ...'
+            call generic_stop
+        end if
+
+        ! For all sub-timesteps
+        substeps_loop: do substep = 1, nt_max
+
+            ! Evolve every domain, sending the data to communicate straight after
+            ! the evolve
+            domain_SW_loop: do j = 1, size(md%domains, kind=ip)
+
+                ! Advance short-time-step domains ahead of big time-step domains
+                !if(mod(substep, domain_stepcycles(j)) /= 0) cycle domain_SW_loop
+                !is_first_step = (substep == domain_stepcycles(j))
+
+                ! Advance big-time-step domains ahead of short time-step domains
+                if(mod(substep-1, domain_stepcycles(j)) /= 0) cycle domain_SW_loop
+                is_first_step = (substep == 0)
+
+TIMER_START('domain_evolve')
+                ! Evolve each domain one or more steps, for a total time of dt
+                nt = md%domains(j)%timestepping_refinement_factor
+                !if(local_timestep_partitioned_domains .and. (.not. md%domains(j)%is_staggered_grid)) then
+                !    ! For nonlinear domains, allow fewer timesteps if it won't cause blowup.
+                !    ! Do not do this for staggered-grid domains, because the leap-frog numerical method needs
+                !    ! a constant time-step
+                !    !
+                !    ! This is most important in distributed-memory applications where the partitioned
+                !    ! domain could support substantially different time-steps in different parts of the
+                !    ! "big domain". In combination with load balancing, we can get large speedups.
+                !    !
+                !    ! NOTE: This will lead to different timestepping with different domain partitions,
+                !    ! so the results should depend on the number of cores unless we specify the partition
+                !    ! via a load_balance_file (which is good practice).
+                !    if(md%domains(j)%max_dt > 0.0_dp) then
+                !        nt = max(1, min(nt, ceiling(dt/(md%domains(j)%local_timestepping_scale * md%domains(j)%max_dt) )))
+                !    end if
+                !end if
+                dt_local = dt/(1.0_dp * nt)
+
+                ! If dispersion is used then backup the flow state
+                call md%domains(j)%copy_U_to_dispersive_last_timestep()
+
+                ! Take a shallow water step
+                call md%domains(j)%evolve_one_step(dt_local)
+
+                ! Report max_dt as the peak dt during the first timestep
+                ! In practice max_dt may cycle between time-steps
+                if(is_first_step) max_dt_store(j) = md%domains(j)%max_dt
+                md%domains(j)%max_dt = max_dt_store(j)
+TIMER_STOP('domain_evolve')
+
+                ! Send the halos only for domain j. Timing code inside
+                call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately, time=md%domains(j)%time)
+            end do domain_SW_loop
+
+            if(.not. send_halos_immediately) then
+                ! Do all the parallel communication in one hit
+                ! This lets us 'collapse' multiple sends to a single image,
+                ! and is more efficient in a bunch of cases.
+TIMER_START('comms1')
+                call communicate_p2p(md%p2p)
+TIMER_STOP('comms1')
+            else
+                write(log_output_unit, *) 'Error: Need to implement support for this case (sync before and after)', &
+                    __LINE__, &
+__FILE__
+                call generic_stop
+            end if
+
+            ! Dispersive terms
+            dispersive_outer_iterations = 0_ip
+            dispersive_outer_loop: do while(dispersive_outer_iterations < max_dispersive_outer_iterations)
+                ! Iterations allow communication between domains during the dispersive solve.
+                dispersive_outer_iterations = dispersive_outer_iterations + 1
+
+                !write(log_output_unit, *) 'DOI: ', dispersive_outer_iterations
+
+                domain_dispersive_loop: do j = 1, size(md%domains, kind=ip)
+        
+                    ! Only update dispersive domains
+                    if(.not. md%domains(j)%use_dispersion) cycle domain_dispersive_loop
+
+                    ! Skip domains unless we updated their shallow water solution on this substep
+                    !if(mod(substep, domain_stepcycles(j)) /= 0) cycle domain_dispersive_loop 
+
+                    ! Skip domains unless we updated their shallow water solution on this substep
+                    if(mod(substep-1, domain_stepcycles(j)) /= 0) cycle domain_dispersive_loop
+
+                    call md%domains(j)%receive_halos(md%p2p, &
+                        ! Only receive from domains that have advanced to the current timestep. 
+                        ! Use a timestep window to protect against roundoff (only includes current timestep). 
+                        ! Timing code inside
+                        skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/nt_max), &
+                        skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/nt_max), &
+                        skip_if_unequal_cell_ratios = dispersive_outer_iterations > 1)
+
+TIMER_START('domain_dispersive_it')
+
+                    call md%domains(j)%solve_dispersive_terms(&
+                        ! The RHS is updated on the first iteration and fixed thereafter
+                        rhs_is_up_to_date = (dispersive_outer_iterations > 1), &
+                        ! After the RHS is computed, on the first iteration we estimate the solution 
+                        ! with forward-in-time extrapolation
+                        estimate_solution_forward_in_time = (dispersive_outer_iterations == 1), &
+                        forward_time = md%domains(j)%time)
+
+TIMER_STOP('domain_dispersive_it')
+                    ! Send the halos only for domain j. Timing code inside
+                    call md%send_halos(domain_index=j, send_to_recv_buffer = send_halos_immediately, time=md%domains(j)%time)
+
+                end do domain_dispersive_loop
+
+                if(.not. send_halos_immediately) then
+TIMER_START('comms_disp')
+                    call communicate_p2p(md%p2p)
+TIMER_STOP('comms_disp')
+                else
+                    write(log_output_unit, *) 'Error: Need to implement support for coarray case (sync before and after)'
+                    call generic_stop
+                end if
+
+            end do dispersive_outer_loop
+
+            ! RECEIVE HALOS
+            get_halos: do j = 1, size(md%domains)
+                ! Only receive if we just stepped or at the last step
+                if(mod(substep-1, domain_stepcycles(j)) /= 0 .and. substep /= nt_max) cycle get_halos
+                !if(mod(substep, domain_stepcycles(j)) /= 0 .and. substep /= nt_max) cycle get_halos
+
+                ! Get the halo information from neighbours. Timing code inside
+                call md%domains(j)%receive_halos(md%p2p, &
+                    skip_if_time_before_this_time = md%domains(j)%time - (0.1_dp*dt/nt_max), &
+                    skip_if_time_after_this_time  = md%domains(j)%time + (0.1_dp*dt/nt_max) )
+            end do get_halos
+
+        end do substeps_loop
+
+TIMER_START('flux_correction')
+        ! Fix time and fluxes
+        do j = 1, size(md%domains)
+            ! Ensure numerically identical time for all domains
+            md%domains(j)%time = tend
+            ! Do flux correction. Timing code inside
+            if(send_boundary_flux_data) then
+                call md%domains(j)%nesting_flux_correction_everywhere(md%all_dx_md, &
+                    md%all_timestepping_methods_md, fraction_of = 1.0_dp)
+            end if
+        end do
+TIMER_STOP('flux_correction')
+
+        ! Do a final send/recv. This is sometimes important for nesting stability, 
+        ! suggesting "domain%nesting_flux_correction_everywhere" is more approximate
+        call md%send_halos(send_to_recv_buffer = send_halos_immediately, time=tend)
+        if(.not. send_halos_immediately) then
+TIMER_START('comms1b')
+            call communicate_p2p(md%p2p)
+TIMER_STOP('comms1b')
+        end if
+        call md%recv_halos(sync_before=sync_before_recv, sync_after=sync_after_recv)
+
+    end subroutine
 
     subroutine find_priority_domain_containing_xy(xs, ys, nbr_domain_ind, &
         nbr_image_ind, nbr_domain_dx, error_domain_overlap_same_dx, &
@@ -1440,7 +1658,7 @@ module multidomain_mod
         !!  parent domain's dx size and the current domain's dx -- so that the
         !!  nesting region represents 'full' coarse cells
 
-        type(domain_type), intent(in) :: domain
+        type(domain_type), intent(inout) :: domain
         real(dp), intent(in) :: max_parent_dx_ratio
             !! maximum value of {dx-for-domains-I-nest-with}/{my-dx}
         integer(ip), intent(in) :: extra_halo_buffer, extra_cells_in_halo
@@ -1450,20 +1668,26 @@ module multidomain_mod
         integer(ip) :: required_cells_ts_method
         integer(ip) :: tsi
 
-        ! Find the minimum nesting layer thickness required by the
-        ! time-stepping algorithm, assuming we only take one evolve_one_step
-        ! in-between nesting updates
+        ! Find index corresponding to domain%timestepping_method in the timestepping_metadata
         tsi = timestepping_method_index(domain%timestepping_method)
-        required_cells_ts_method = timestepping_metadata(tsi)%nesting_thickness_for_one_timestep
 
-        ! For schemes with eddy viscosity we need to increase the halo thickness
-        if(domain%use_eddy_viscosity) then 
+        ! Minimum halo thickness for a single timestep
+        required_cells_ts_method = timestepping_metadata(tsi)%nesting_thickness_for_one_sw_timestep
+        if(domain%use_eddy_viscosity) then
+            ! For schemes with eddy viscosity we must increase the minimum halo thickness
             required_cells_ts_method = (required_cells_ts_method * 3_ip) / 2_ip
         end if
+        domain%timestepping_method_nesting_thickness_for_one_sw_timestep = required_cells_ts_method
 
         ! Now multiply by the number of evolve_one_step calls actually taken, and add any extra buffer
-        thickness = (required_cells_ts_method ) * &
-            domain%timestepping_refinement_factor + extra_cells_in_halo
+        thickness = required_cells_ts_method * domain%timestepping_refinement_factor + extra_cells_in_halo
+
+        if(thickness < domain%minimum_nesting_layer_thickness) then
+            ! In some situations we might want to force the thickness (e.g. if using multiple multidomains
+            ! with different timestepping methods, but we want them to have the same domains, say to simplify
+            ! the forcing treatment).
+            thickness = domain%minimum_nesting_layer_thickness
+        end if
 
         if(nint(max_parent_dx_ratio) > 1) then
             ! Now round up to be a multiple of the parent cell-sizes, and add another extra buffer
@@ -2135,7 +2359,7 @@ module multidomain_mod
 
     end subroutine
 
-    subroutine send_multidomain_halos(md, domain_index, send_to_recv_buffer) !, coarser_domains_only)
+    subroutine send_multidomain_halos(md, domain_index, send_to_recv_buffer, time)
         !! Convenience routine to send nested grid halo data to neighbour images in a multidomain
 
         class(multidomain_type), intent(inout) :: md
@@ -2145,6 +2369,7 @@ module multidomain_mod
         logical, intent(in), optional:: send_to_recv_buffer
             !! optional logical. Default TRUE. If FALSE, we
             !!   do not do a coarray communication, but only copy data to the send buffer.
+        real(dp), intent(in), optional :: time
 
         integer(ip) :: i, j, jmn, jmx
         logical::send_to_recv_buffer_local
@@ -2168,13 +2393,14 @@ module multidomain_mod
 #ifdef COARRAY_USE_MPI_FOR_INTENSIVE_COMMS
         if(send_halos_immediately) then
             write(md%log_output_unit, *) 'Error: Cannot do send_halos_immediately with COARRAY_USE_MPI_FOR_INTENSIVE_COMMS', &
-                __LINE__, __FILE__
+                __LINE__, &
+__FILE__
             call generic_stop
         end if
 #endif
 
         do j = jmn, jmx
-            call md%domains(j)%send_halos(md%p2p, send_to_recv_buffer=send_to_recv_buffer_local)
+            call md%domains(j)%send_halos(md%p2p, send_to_recv_buffer=send_to_recv_buffer_local, time=time)
         end do
 
         TIMER_STOP('send_multidomain_halos')
@@ -2352,6 +2578,9 @@ module multidomain_mod
         do i = 1, size(md%domains, kind=ip)
             md%domains(i)%dx = md%domains(i)%lw/(1.0_dp * md%domains(i)%nx)
         end do
+
+        ! If any domain does a dispersive solve, the multidomain will need to do iteration.
+        md%use_dispersion = any(md%domains(:)%use_dispersion)
 
         ! Split up domains among images, and create all md%domains(i)%myid
         call md%partition_domains()
