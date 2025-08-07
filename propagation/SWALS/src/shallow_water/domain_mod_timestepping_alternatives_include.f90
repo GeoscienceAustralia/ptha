@@ -283,6 +283,21 @@ EVOLVE_TIMER_STOP('rk2n_final_update')
             call domain%update_U(dt_first_step*HALF_dp)
         end if
 
+        if(domain%use_dispersion) then
+            ! Include dispersion in the midpoint predictor step. No iteration as its just for gradient prediction
+            call domain%solve_dispersive_terms(&
+                ! The RHS is updated on the first iteration and fixed thereafter
+                rhs_is_up_to_date = .false., &
+                ! After the RHS is computed, on the first iteration we estimate the solution 
+                ! with forward-in-time extrapolation
+                estimate_solution_forward_in_time = .true., &
+                forward_time = (backup_time + dt_first_step*HALF_dp))
+            !call domain%solve_dispersive_terms(&
+            !    rhs_is_up_to_date = .true., &
+            !    estimate_solution_forward_in_time = .false., &
+            !    forward_time = (backup_time + dt_first_step*HALF_dp))
+        end if
+
         ! Compute fluxes
         call domain%compute_fluxes()
 
@@ -305,6 +320,10 @@ EVOLVE_TIMER_STOP('midpoint_U_from_backup')
 
         ! Update U
         call domain%update_U(dt_first_step)
+
+        !if(domain%use_dispersion) then 
+        !    ! Any dispersion will be treated in the evolve_multidomain_... routine
+        !end if
 
         ! Update the nesting boundary flux
         call domain%nesting_boundary_flux_integral_tstep(&

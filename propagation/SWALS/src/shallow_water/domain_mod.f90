@@ -3724,7 +3724,7 @@ TIMER_STOP('receive_halos')
 
     end subroutine
 
-    subroutine send_halos(domain, p2p, send_to_recv_buffer)
+    subroutine send_halos(domain, p2p, send_to_recv_buffer, time)
         !!
         !! Loop over domain%nesting%send_comms, and send the halo data
         !!
