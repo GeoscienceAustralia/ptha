@@ -117,8 +117,8 @@ module local_routines
         do j = 1, domain%nx(2)
             ! Add a volume so that the x-directed velocity = target_velocity
             domain%U(3, j, STG) = domain%U(3, j,STG) + &
-                target_velocity * depth_ocean * domain%distance_left_edge(j) * dt / &
-                    (domain%distance_bottom_edge(3)*domain%distance_left_edge(j))
+                target_velocity * depth_ocean * domain%distance_left_edge(1) * dt / &
+                    (domain%distance_bottom_edge(j)*domain%distance_left_edge(1))
         end do
         !$OMP END DO
         !$OMP END PARALLEL
