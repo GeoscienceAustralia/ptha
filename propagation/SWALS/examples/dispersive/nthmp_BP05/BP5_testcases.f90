@@ -239,10 +239,13 @@ program BP02
 
     !md%domains(2)%ds%tridiagonal_inner_iter = 4_ip
 
-    ! Taper off dispersion between 15 and 10 cm depth-below-msl
-    !md%domains(2)%ds%td1 = 0.15_dp
-    !md%domains(2)%ds%td2 = 0.10_dp
+    !! Taper off dispersion
+    !md%domains(2)%ds%td1 = 0.07_dp
+    !md%domains(2)%ds%td2 = 0.05_dp
 
+    !! Experiment with using the dispersive solver without dispersion (does
+    !! weird things for 'midpoint' this doesn't turn off the predictor-step
+    !! dispersion).
     !md%dispersive_outer_iterations_count = -1
 
     call md%setup
