@@ -19,11 +19,11 @@ propagation/SWALS/examples/**/*.csv
 
 # Next 3 lines are a trick to ignore all files without an extension
 # ignore everything in examples
-propagation/SWALS/examples/*
+# propagation/SWALS/examples/*
 # then include all folders
-propagation/SWALS/examples/!/**/
+# propagation/SWALS/examples/!/**/
 # then include everything with a dot in the filename
-propagation/SWALS/examples/!*.*
+# propagation/SWALS/examples/!*.*
 
 
 # Below are generic file types to ignore for fortan code 
