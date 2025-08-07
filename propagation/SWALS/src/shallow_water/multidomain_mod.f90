@@ -1094,7 +1094,7 @@ module multidomain_mod
                 ! so the results should depend on the number of cores unless we specify the partition
                 ! via a load_balance_file.
                 if(md%domains(j)%max_dt > 0.0_dp) then
-                    nt = max(1, min(nt, ceiling(dt/(md%domains(j)%local_timestepping_scale * md%domains(j)%max_dt) )))
+                    nt = max(1, min(nt, ceiling(dt/md%domains(j)%max_dt )))
                 end if
             end if
 
