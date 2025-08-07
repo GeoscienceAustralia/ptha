@@ -173,15 +173,15 @@ program BP02
     select case(test_case)
         case('caseA')
             base_L = 2.40_dp
-            bc_file = '../test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3a_analytical.txt'
+            bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3a_analytical.txt'
 
         case('caseB')
             base_L = 0.98_dp
-            bc_file = '../test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3b_analytical.txt'
+            bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3b_analytical.txt'
 
         case('caseC')
             base_L = 0.64_dp
-            bc_file = '../test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3c_analytical.txt'
+            bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3c_analytical.txt'
         case default
             print*, 'Must specify a test case (one of caseA, caseB, caseC)'
             stop

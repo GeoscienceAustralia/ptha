@@ -20,9 +20,9 @@ for(i in 1:length(test_cases)){
     md = get_multidomain(sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1])
     x = md[[1]]
 
-    analytical = read.table(paste0('../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3', 
+    analytical = read.table(paste0('../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3', 
         test_cases[i], '_analytical.txt'), skip=6)
-    obs = read.table(paste0('../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3', test_cases[i], 
+    obs = read.table(paste0('../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3', test_cases[i], 
         '.txt'), skip=6)
 
     gauge_names = c(paste0('G', 4:10), 'Wall')
