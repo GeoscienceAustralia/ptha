@@ -2722,7 +2722,7 @@ module nested_grid_comms_mod
         ! Local variables
         integer(ip) :: i, j, k, xi, yi, this_image_local, num_images_local !, ierr
         integer(ip) :: parent_image_index, child_image_index
-        real(dp) :: x, y, z, err_tol, test_max, test_min
+        real(dp) :: x, y, z, err_tol, test_max, test_min, t1out, t1in, t2out, t2in
         integer(ip), parameter :: strd = 1_ip + number_of_gradients_coarse_to_fine
 
 #ifdef COARRAY
