@@ -14,7 +14,7 @@ show_obs = TRUE
 
 for(i in 1:length(test_cases)){
 
-    run_command = paste0(omp_run_command, ' ./BP2_testcases case', test_cases_caps[i], ' ', timestepping_method, ' > outfile.log')
+    run_command = paste0(omp_run_command, ' ./BP5_testcases case', test_cases_caps[i], ' ', timestepping_method, ' > outfile.log')
     system(run_command)
 
     md = get_multidomain(sort(Sys.glob('OUTPUTS/RUN*'), decreasing=TRUE)[1])

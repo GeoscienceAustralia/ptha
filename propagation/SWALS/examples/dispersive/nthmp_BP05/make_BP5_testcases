@@ -8,7 +8,7 @@ include $(SWALS_SRC)/src_standard_compiler_var
 # Application-specific compilation
 #
 # Name for the main model file is $(mymodel).f90
-mymodel := BP2_testcases
+mymodel := BP5_testcases
 # Clean up
 clean: $(mymodel)
 	rm *.o *.mod
