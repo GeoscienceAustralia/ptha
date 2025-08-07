@@ -12,7 +12,3 @@ Rscript plot.R leapfrog_nonlinear
 Rscript plot.R rk2
 Rscript plot.R midpoint
 Rscript plot.R cliffs
-
-# Cliffs result is interesting. We can see it is not shock-capturing (delayed
-# shocks, like in dam-break test case).
-# Rscript plot.R cliffs 
