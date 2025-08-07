@@ -219,6 +219,7 @@ program BP02
     ! Setup model with 2 domains -- a small one near the boundary using NLSW (which the boundary conditions are better suited to),
     ! and a dispersive domain covering most areas.
     allocate(md%domains(2))
+    !md%periodic_ys = [global_ll(2), global_ll(2) + global_lw(2)]
 
     ! Boundary domain with NLSW. Point is to impose the boundary condition consistently.
     md%domains(1)%lw = [boundary_buffer, global_lw(2)]
@@ -270,7 +271,7 @@ program BP02
         timestep = md%stationary_timestep_max() * ts_scale_centred
     end if
 
-    print*, 'Timestep = ', timestep
+    print*, timestepping_method, ', timestep = ', timestep
 
     ! Evolve the code
     do while (.TRUE.)

@@ -1239,7 +1239,7 @@ TIMER_STOP('before_stepping')
 
                 ! Advance big-time-step domains ahead of short time-step domains
                 if(mod(substep-1, domain_stepcycles(j)) /= 0) cycle domain_SW_loop
-                is_first_step = (substep == 0)
+                is_first_step = (substep == 1)
 
 TIMER_START('domain_evolve')
                 ! Evolve each domain one or more steps, for a total time of dt
