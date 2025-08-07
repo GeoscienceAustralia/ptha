@@ -172,6 +172,8 @@ program BP02
     character(charlen):: test_case, bc_file
     real(dp):: tank_bases(4), tank_slopes(4) 
 
+    integer(ip), parameter :: boundary_buffer_cells = 10_ip ! So we can force the boundary with the NLSW
+    real(dp) :: boundary_buffer
 
     ! Get the case. Values should be caseA, caseB, caseC
     call get_command_argument(1, test_case)
@@ -195,7 +197,8 @@ program BP02
     call get_command_argument(2, timestepping_method)  
     
     ! Resolution
-    dx = 0.02_dp
+    dx = 0.01_dp ! Needs to evenly divide tank_length
+    boundary_buffer = dx * boundary_buffer_cells
  
     ! Tank geometry  -- add a little extra at the end so the reflective wall is in the right place
     tank_bases = [base_L, 4.36_dp, 2.93_dp, 0.9_dp + 2.0_dp*dx]
@@ -209,23 +212,36 @@ program BP02
     global_ll = [0.0_dp, -tank_width/2.0_dp]
     global_nx = global_lw/dx
 
-    ! Setup model with 1 domain
-    allocate(md%domains(1))
-    md%domains(1)%lw = global_lw
-    md%domains(1)%lower_left = global_ll
-    md%domains(1)%nx = global_nx
+    ! Setup model with 2 domains -- a small one near the boundary using NLSW (which the boundary conditions are better suited to),
+    ! and a dispersive domain covering most areas.
+    allocate(md%domains(2))
+
+    ! Boundary domain with NLSW. Point is to impose the boundary condition consistently.
+    md%domains(1)%lw = [boundary_buffer, global_lw(2)]
+    md%domains(1)%lower_left =  global_ll 
+    md%domains(1)%nx = [boundary_buffer_cells, global_nx(2)]
     md%domains(1)%timestepping_method = timestepping_method
-    md%domains(1)%use_dispersion = .true. !
-    md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip !
+    md%domains(1)%use_dispersion = .false. !
+    !md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip !
+
+    ! Main domain with dispersive solver, and halos that cover the NLSW domain
+    md%domains(2)%lw = global_lw + [-boundary_buffer, 0.0_dp]
+    md%domains(2)%lower_left = global_ll + [boundary_buffer, 0.0_dp]
+    md%domains(2)%nx = global_nx - [boundary_buffer_cells, 0]
+    md%domains(2)%timestepping_method = timestepping_method
+    md%domains(2)%use_dispersion = .true. !
+    !md%domains(2)%nc_grid_output%flush_every_n_output_steps = 1_ip !
+    md%domains(2)%minimum_nesting_layer_thickness = boundary_buffer_cells
 
     ! Taper off dispersion between 15 and 10 cm depth-below-msl
-    !md%domains(1)%ds%td1 = 0.15_dp
-    !md%domains(1)%ds%td2 = 0.10_dp
+    !md%domains(2)%ds%td1 = 0.15_dp
+    !md%domains(2)%ds%td2 = 0.10_dp
 
     call md%setup
 
     ! Call local routine to set initial conditions
     call set_initial_conditions_BP2(md%domains(1), tank_bases, tank_slopes, tank_width, initial_depth)
+    call set_initial_conditions_BP2(md%domains(2), tank_bases, tank_slopes, tank_width, initial_depth)
 
     ! Get the boundary data and make an interpolation function f(t) for gauge 4
     call setup_boundary_information(bc_file, -initial_depth)
@@ -237,7 +253,7 @@ program BP02
     call md%make_initial_conditions_consistent() ! Get the initial volume right
 
     ! Fixed timestep  
-    timestep = md%stationary_timestep_max() * 0.5_dp 
+    timestep = md%stationary_timestep_max() * 0.25_dp 
     print*, 'Timestep = ', timestep
 
     ! Evolve the code
