@@ -27,9 +27,9 @@ module linear_dispersive_solver_mod
     ! In tensor notation (with time as a parameter), if writing the NLSW in contravariant form, this would be written as 
     !     g^{lj} \nabla_j( \frac{\partial (\nabla_i q^{i})}{\partial t} )
     ! where 
-    !     q^i = [uh, vh] and 
+    !     q^i = hu^i = contravariant components of flux = [ uh/(Rcoslat), vh/R ]  and 
     !     \nabla_{j} is the covariant derivative and 
-    !      g^{lj} is the metric tensor, used to raise an index (so the term is a contravariant tensor). 
+    !     g^{lj} is the metric tensor, used to raise an index (so the term is a contravariant tensor). 
     ! (Conversion to the conventional form in spherical coordinates would also involve multiplying the UH equation
     ! by Rcoslat and the VH equation by R). Notice the term inside the \nabla_j covariant derivative
     ! is a scalar (so this covariant derivative reduces to the partial derivative) and that scalar is the time derivative of the 
@@ -66,9 +66,6 @@ module linear_dispersive_solver_mod
 
     integer, parameter :: STG=1, UH=2, VH=3, ELV=4
     real(dp), parameter :: jacobi_overrelax = 0.0_dp, tridiagonal_overrelax = 0.0_dp
-        ! FIXME: Remove and replace with simpler variants?
-    !real(dp), parameter :: td1 = 0.1_dp, td2 = 0.09999_dp ! Linear taper of dispersive terms at depth
-    ! real(dp), parameter :: td1 = 0._dp, td2 = -1.0_dp ! TURN OFF LINEAR TAPER of dispersive terms at depth
 
     type dispersive_solver_type
 
@@ -260,9 +257,9 @@ module linear_dispersive_solver_mod
                     solution_uh(i,j) = &
                         ! Include all terms in A_uh%*%x here
                         dispersive_premult * ( &
-                            ! 1/(R_coslat) * d/dlon(uh)
+                            ! lon-diff{ 1/(R_coslat) * d/dlon(uh) }
                             1.0_dp / R_coslat_dlon * ( uh(i+1,j) - 2.0_dp * uh(i,j) + uh(i-1,j) ) + &
-                            ! 1/(R_coslat) * d/dlat( coslat * vh )
+                            ! lon-diff{ 1/(R_coslat) * d/dlat( coslat * vh ) }
                             1.0_dp / R_coslat_dlat * ( (coslat_jph * vh(i+1,j) - coslat_jmh * vh(i+1,j-1)) - &
                                                        (coslat_jph * vh(i  ,j) - coslat_jmh * vh(i  ,j-1)) ) )
                 end do
@@ -306,10 +303,10 @@ module linear_dispersive_solver_mod
                     solution_vh(i,j) = &
                         ! Include all terms in A_vh%*%x here
                         dispersive_premult * ( &
-                            ! uh term
+                            ! lat-diff{ 1/R_coslat duh/dlon }
                             ( 1.0_dp / R_coslat_dlon_jp1 * (uh(i  , j+1) - uh(i-1, j+1)) - &
                               1.0_dp / R_coslat_dlon_j   * (uh(i  , j  ) - uh(i-1, j  )) ) + &
-                            ! vh term
+                            ! lat-diff{ 1/R_coslat d(coslat vh)/dlat }
                             ( 1.0_dp / R_coslat_dlat_jp1 * ( coslat_jp1h * vh(i, j+1) - coslat_jph * vh(i, j  )) - &
                               1.0_dp / R_coslat_dlat_j   * ( coslat_jph  * vh(i, j  ) - coslat_jmh * vh(i, j-1)) ) )
                 end do
@@ -444,15 +441,15 @@ module linear_dispersive_solver_mod
                         ! Include all terms in A_vh%*%x here
                         ! h0**2 / (3 * R) * d/dlat * (
                         dispersive_premult * ( &
-                            ! uh term
-                            ! 1/(R coslat) d(uh)/dlon @ i, j+1/2, by mean of centred differences at j+1 and j.
+                            ! uh term = lat-diff{ 1/Rcoslat duh/dlon }
+                            !   1/(R coslat) d(uh)/dlon @ i, j+1/2, by mean of centred differences at j+1 and j.
                             ( 1.0_dp / R_coslat_dlon_jph * (uh(i+1, j+1) - uh(i-1,j+1) + uh(i+1,j) - uh(i-1,j))*0.25_dp - &
-                            ! 1/(R coslat) d(uh)/dlon @ i, j-1/2, by mean of centred differences at j and j-1
+                            !   1/(R coslat) d(uh)/dlon @ i, j-1/2, by mean of centred differences at j and j-1
                               1.0_dp / R_coslat_dlon_jmh * (uh(i+1, j-1) - uh(i-1,j-1) + uh(i+1,j) - uh(i-1,j))*0.25_dp ) + &
-                            ! vh term
-                            ! 1/(R coslat ) d(coslat vh)/dlat @ i, j+1/2
+                            ! vh term = lat-diff{ 1/Rcoslat d(coslatvh)/dlat }
+                            !   1/(R coslat ) d(coslat vh)/dlat @ i, j+1/2
                             ( 1.0_dp / R_coslat_dlat_jph * ( coslat_jp1 * vh(i, j+1) - coslat_j   * vh(i, j  )) - &
-                            ! 1/(R coslat ) d(coslat vh)/dlat @ i, j-1/2
+                            !   1/(R coslat ) d(coslat vh)/dlat @ i, j-1/2
                               1.0_dp / R_coslat_dlat_jmh * ( coslat_j   * vh(i, j  ) - coslat_jm1 * vh(i, j-1)) ) )
                 end do
             end do
