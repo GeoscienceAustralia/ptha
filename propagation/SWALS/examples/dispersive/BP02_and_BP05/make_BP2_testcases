@@ -1,6 +1,6 @@
 # Source code location
 SWALS_SRC := ../../../src
-SWALS_FC_FLAGS := -O1 -fbounds-check -g -pg -fopenmp -cpp
+#SWALS_FC_FLAGS := -O1 -fbounds-check -g -pg -fopenmp -cpp
 
 include $(SWALS_SRC)/src_standard_compiler_var
 

@@ -52,8 +52,14 @@ for(i in 1:length(test_cases)){
     png(paste0('solution', test_cases_caps[i], '_', timestepping_method, '.png'), width=15, height=8, units='in', res=300)
     par(mfrow=c(3,3))
     par(mar=c(5,5,3,2))
-    plot_ylim = range(analytical[,2:9])
-    plot_ylim = range(c(plot_ylim, range(x$gauges$time_var$stage)))
+    #plot_ylim = range(analytical[,2:9])
+    #plot_ylim = range(c(plot_ylim, range(x$gauges$time_var$stage)))
+    if(test_cases_caps[i] == 'A'){
+        # Case A plots better with a smaller yrange 
+        plot_ylim = c(-0.01, 0.03)
+    }else{
+        plot_ylim = c(-0.05, 0.2)
+    }
     for(ii in 2:ncol(analytical)){
         plot(analytical[,1], analytical[,ii],t='l', ylim=plot_ylim, 
             xlab='Time (s)', ylab='Stage (m)', lwd=4, cex.axis=1.7, cex.lab=2, col='white')

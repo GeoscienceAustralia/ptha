@@ -62,9 +62,10 @@ module local_routines
         real(dp):: stage_uh_vh_elev(4)
 
         if(i == 1) then
-            call boundary_information%gauge4_ts_function%eval([t + boundary_information%t0], stage_uh_vh_elev(1:1))
-            stage_uh_vh_elev(2:3) = 0.0_dp
-            stage_uh_vh_elev(4) = boundary_information%boundary_elev
+            call boundary_information%gauge4_ts_function%eval([t + boundary_information%t0], stage_uh_vh_elev(STG:STG))
+            stage_uh_vh_elev(UH:VH) = 0.0_dp
+            stage_uh_vh_elev(ELV) = domain%U(i,j,ELV) !boundary_information%boundary_elev
+            stage_uh_vh_elev(STG) = max(stage_uh_vh_elev(STG), domain%U(i,j,ELV))
         else
             stage_uh_vh_elev(STG) = domain%U(i,j,STG)
             stage_uh_vh_elev(ELV) = domain%U(i,j,ELV)
@@ -105,13 +106,16 @@ module local_routines
         end do
       
         ! Reflective boundaries on 3 sides
-        wall = 0.5_dp
+        wall = 0.15_dp
         domain%U(:, 1, ELV) = wall
         domain%U(:, 2, ELV) = wall
         domain%U(:, domain%nx(2), ELV) = wall
         domain%U(:, domain%nx(2)-1, ELV) = wall
         domain%U(domain%nx(1), :, ELV) = wall
         domain%U(domain%nx(1)-1, :, ELV) = wall
+
+        ! Try adding a basin to avoid boundary problems
+        !domain%U(1:4, :,ELV) = domain%U(1, 3, ELV)
    
         ! Stage >= bed 
         domain%U(:,:,STG) = max(domain%U(:,:,STG), domain%U(:,:,ELV))
@@ -144,7 +148,8 @@ program BP02
     !!
     use global_mod, only: ip, dp, minimum_allowed_depth
     use multidomain_mod, only: multidomain_type
-    use boundary_mod, only: boundary_stage_transmissive_momentum, flather_boundary
+    use boundary_mod, only: boundary_stage_transmissive_momentum, flather_boundary, &
+        transmissive_boundary, boundary_stage_transmissive_normal_momentum
     use linear_interpolator_mod, only: linear_interpolator_type
     use local_routines
     implicit none
@@ -211,7 +216,7 @@ program BP02
     md%domains(1)%nx = global_nx
     md%domains(1)%timestepping_method = timestepping_method
     md%domains(1)%use_dispersion = .true. !
-    !md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip !
+    md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip !
 
     ! Taper off dispersion between 15 and 10 cm depth-below-msl
     !md%domains(1)%ds%td1 = 0.15_dp
@@ -227,7 +232,7 @@ program BP02
     md%domains(1)%boundary_function => boundary_function
     ! For nonlinear schemes, this boundary condition causes spurious reflections of the outgoing waves (because depths are too
     ! shallow)
-    md%domains(1)%boundary_subroutine => boundary_stage_transmissive_momentum
+    md%domains(1)%boundary_subroutine => boundary_stage_transmissive_normal_momentum
 
     call md%make_initial_conditions_consistent() ! Get the initial volume right
 
@@ -241,13 +246,13 @@ program BP02
         ! Avoid storing grids often
         call md%write_outputs_and_print_statistics(&
             approximate_writeout_frequency=approximate_writeout_frequency, &
-            write_grids_less_often = 999999_ip)
+            write_grids_less_often = 1_ip) ! 999999_ip)
 
         if (md%domains(1)%time > final_time) exit
 
         call md%evolve_one_step(timestep)
 
-        if(md%domains(1)%time > 10.0_dp .and. timestepping_method /= 'linear') then
+        if(md%domains(1)%time > 10.0_dp) then
             ! After the initial wave has entered the domain, we change the boundary condition
             ! for nonlinear schemes to reduce reflection of outgoing waves. 
             md%domains(1)%boundary_subroutine => flather_boundary

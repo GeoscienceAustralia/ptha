@@ -17,7 +17,7 @@ form in the experiments, over regions where non-dispersive nonlinear shallow
 water models predict shock formation.
 
 The [SWALS model](BP2_testcases.f90) is setup to take the numerical method as a commandline
-argument. This is used to test a few nonlinear shallow water solvers (`midpoint` and `rk2` and `leapfrog_nonlinear` and `cliffs`).
+argument. This is used to test a few nonlinear shallow water solvers (`midpoint` and `rk2` and `leapfrog_nonlinear`).
 
 ## Nonlinear solutions - `midpoint`
 
@@ -49,13 +49,3 @@ Here we test the `leapfrog_nonlinear` finite difference scheme including dispers
 ![Figure 9: Comparison of analytical, experimental, and SWALS nonlinear solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/BP02_and_BP05/solutionB_leapfrog_nonlinear.png)
 
 ![Figure 10: Comparison of analytical, experimental, and SWALS nonlinear solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/BP02_and_BP05/solutionC_leapfrog_nonlinear.png)
-
-## Nonlinear solutions - `cliffs`
-
-Here we test the `cliffs` finite difference scheme including dispersion. 
-
-![Figure 8: Comparison of analytical, experimental, and SWALS nonlinear solutions for case A](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/BP02_and_BP05/solutionA_cliffs.png)
-
-![Figure 9: Comparison of analytical, experimental, and SWALS nonlinear solutions for case B](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/BP02_and_BP05/solutionB_cliffs.png)
-
-![Figure 10: Comparison of analytical, experimental, and SWALS nonlinear solutions for case C](https://github.com/GeoscienceAustralia/ptha/blob/figures/propagation/SWALS/examples/dispersive/BP02_and_BP05/solutionC_cliffs.png)

@@ -11,4 +11,4 @@ make -B -f make_BP2_testcases > build_outfile.log
 Rscript plot.R leapfrog_nonlinear
 Rscript plot.R rk2
 Rscript plot.R midpoint
-Rscript plot.R cliffs
+#Rscript plot.R cliffs
