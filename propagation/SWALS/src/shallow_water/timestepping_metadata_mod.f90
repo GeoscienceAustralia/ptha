@@ -33,7 +33,7 @@ module timestepping_metadata_mod
         logical :: eddy_viscosity_is_supported = .false.
             !! Does the solver support an optional eddy viscosity?
 
-        integer(ip) :: nesting_thickness_for_one_timestep = -1_ip
+        integer(ip) :: nesting_thickness_for_one_sw_timestep = -1_ip
             !! How many halo cells are required to advance interior cells a single timestep while
             !! retaining a valid solution?
             !! For example, consider the 'euler' finite-volume timestepping method.  A single 'euler' step of the finite volume solver
@@ -74,7 +74,7 @@ module timestepping_metadata_mod
             !   number of SSP methods for hyperbolic problems.
             timestepping_metadata(1)%default_cfl = 0.99_dp
             timestepping_metadata(1)%default_theta = 1.6_dp
-            timestepping_metadata(1)%nesting_thickness_for_one_timestep = 4_ip
+            timestepping_metadata(1)%nesting_thickness_for_one_sw_timestep = 4_ip
             timestepping_metadata(1)%forcing_elevation_is_allowed = 'optional' ! The option requires more storage
             timestepping_metadata(1)%eddy_viscosity_is_supported = .true.
 
@@ -84,7 +84,7 @@ module timestepping_metadata_mod
             timestepping_metadata(2)%timestepping_method = 'rk2n'
             timestepping_metadata(2)%default_cfl = 0.99_dp
             timestepping_metadata(2)%default_theta = 1.6_dp
-            timestepping_metadata(2)%nesting_thickness_for_one_timestep = 10_ip
+            timestepping_metadata(2)%nesting_thickness_for_one_sw_timestep = 10_ip
             timestepping_metadata(2)%forcing_elevation_is_allowed = 'optional' ! The option requires more storage
             timestepping_metadata(2)%eddy_viscosity_is_supported = .true.
 
@@ -94,7 +94,7 @@ module timestepping_metadata_mod
             timestepping_metadata(3)%timestepping_method = 'midpoint'
             timestepping_metadata(3)%default_cfl = 0.99_dp
             timestepping_metadata(3)%default_theta = 1.6_dp
-            timestepping_metadata(3)%nesting_thickness_for_one_timestep = 4_ip
+            timestepping_metadata(3)%nesting_thickness_for_one_sw_timestep = 4_ip
             timestepping_metadata(3)%forcing_elevation_is_allowed = 'optional' ! The option requires more storage
             timestepping_metadata(3)%eddy_viscosity_is_supported = .true.
 
@@ -104,7 +104,7 @@ module timestepping_metadata_mod
             timestepping_metadata(4)%timestepping_method = 'euler'
             timestepping_metadata(4)%default_cfl = 0.9_dp
             timestepping_metadata(4)%default_theta = 0.9_dp
-            timestepping_metadata(4)%nesting_thickness_for_one_timestep = 2_ip
+            timestepping_metadata(4)%nesting_thickness_for_one_sw_timestep = 2_ip
             timestepping_metadata(4)%forcing_elevation_is_allowed = 'always'
             timestepping_metadata(4)%eddy_viscosity_is_supported = .true.
 
@@ -117,7 +117,7 @@ module timestepping_metadata_mod
             ! given that this flux is not included in the linear equations
             timestepping_metadata(5)%flux_correction_of_mass_only = .true.
             timestepping_metadata(5)%default_cfl = 0.7_dp
-            timestepping_metadata(5)%nesting_thickness_for_one_timestep = 2_ip
+            timestepping_metadata(5)%nesting_thickness_for_one_sw_timestep = 2_ip
             timestepping_metadata(5)%adaptive_timestepping = .false.
             timestepping_metadata(5)%forcing_elevation_is_allowed = 'always'
 
@@ -130,7 +130,7 @@ module timestepping_metadata_mod
             ! given that this flux is not included in the linear equations
             timestepping_metadata(6)%flux_correction_of_mass_only = .true.
             timestepping_metadata(6)%default_cfl = 0.7_dp
-            timestepping_metadata(6)%nesting_thickness_for_one_timestep = 2_ip
+            timestepping_metadata(6)%nesting_thickness_for_one_sw_timestep = 2_ip
             timestepping_metadata(6)%adaptive_timestepping = .false.
             timestepping_metadata(6)%forcing_elevation_is_allowed = 'always'
 
@@ -143,7 +143,7 @@ module timestepping_metadata_mod
             ! solver is not mass conservative
             timestepping_metadata(7)%flux_correction_is_unsupported = .true.
             timestepping_metadata(7)%default_cfl = 0.7_dp
-            timestepping_metadata(7)%nesting_thickness_for_one_timestep = 2_ip
+            timestepping_metadata(7)%nesting_thickness_for_one_sw_timestep = 2_ip
             timestepping_metadata(7)%forcing_elevation_is_allowed = 'always'
 
 
@@ -152,9 +152,9 @@ module timestepping_metadata_mod
             !
             timestepping_metadata(8)%timestepping_method = 'leapfrog_nonlinear'
             timestepping_metadata(8)%is_staggered_grid = 1
-            !timestepping_metadata(8)%flux_correction_of_mass_only = .true.
+            !timestepping_metadata(8)%flux_correction_of_mass_only = .true. ! NB: Currently we do not record momentum fluxes on these domains
             timestepping_metadata(8)%default_cfl = 0.7_dp
-            timestepping_metadata(8)%nesting_thickness_for_one_timestep = 3_ip
+            timestepping_metadata(8)%nesting_thickness_for_one_sw_timestep = 3_ip
             timestepping_metadata(8)%adaptive_timestepping = .false.
             timestepping_metadata(8)%forcing_elevation_is_allowed = 'always'
 
