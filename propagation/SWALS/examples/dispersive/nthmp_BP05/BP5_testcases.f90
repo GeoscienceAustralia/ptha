@@ -173,7 +173,7 @@ program BP02
     real(dp):: tank_bases(4), tank_slopes(4) 
 
     integer(ip), parameter :: boundary_buffer_cells = 10_ip ! So we can force the boundary with the NLSW
-    real(dp) :: boundary_buffer
+    real(dp) :: boundary_buffer, ts_scale_staggered, ts_scale_centred
 
     ! Get the case. Values should be caseA, caseB, caseC
     call get_command_argument(1, test_case)
@@ -181,14 +181,18 @@ program BP02
         case('caseA')
             base_L = 2.40_dp
             bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3a_analytical.txt'
-
+            ts_scale_staggered = 0.6_dp
+            ts_scale_centred = 0.5_dp
         case('caseB')
             base_L = 0.98_dp
             bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3b_analytical.txt'
-
+            ts_scale_staggered = 0.25_dp
+            ts_scale_centred = 0.5_dp
         case('caseC')
             base_L = 0.64_dp
             bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3c_analytical.txt'
+            ts_scale_staggered = 0.25_dp
+            ts_scale_centred = 0.5_dp
         case default
             print*, 'Must specify a test case (one of caseA, caseB, caseC)'
             stop
@@ -233,9 +237,13 @@ program BP02
     !md%domains(2)%nc_grid_output%flush_every_n_output_steps = 1_ip !
     md%domains(2)%minimum_nesting_layer_thickness = boundary_buffer_cells
 
+    !md%domains(2)%ds%tridiagonal_inner_iter = 4_ip
+
     ! Taper off dispersion between 15 and 10 cm depth-below-msl
     !md%domains(2)%ds%td1 = 0.15_dp
     !md%domains(2)%ds%td2 = 0.10_dp
+
+    !md%dispersive_outer_iterations_count = -1
 
     call md%setup
 
@@ -252,8 +260,13 @@ program BP02
 
     call md%make_initial_conditions_consistent() ! Get the initial volume right
 
-    ! Fixed timestep  
-    timestep = md%stationary_timestep_max() * 0.25_dp 
+    ! Fixed timestep, depending on the case stability can be affected.
+    if(md%domains(2)%is_staggered_grid) then
+        timestep = md%stationary_timestep_max() * ts_scale_staggered
+    else
+        timestep = md%stationary_timestep_max() * ts_scale_centred
+    end if
+
     print*, 'Timestep = ', timestep
 
     ! Evolve the code

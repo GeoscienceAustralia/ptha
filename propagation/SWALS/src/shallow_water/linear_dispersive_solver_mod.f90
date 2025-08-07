@@ -99,6 +99,9 @@ module linear_dispersive_solver_mod
             !! Set td1 > td2 to linearly reduce dispersive terms to zero between depths of td1 --> td2
             !! Default corresponds to no tapering. 
 
+        integer(ip) :: tridiagonal_inner_iter = 2_ip
+            !! The tridiagonal solver does this many iterations of 'x-sweep'+'ysweep' for each call to solve_tridiag
+
         type(quadratic_extrapolation_type) :: qet
             !! Allow quadratic extrapolation in time
 
@@ -863,14 +866,14 @@ module linear_dispersive_solver_mod
                 do_nothing_if_missing_times=.true., did_extrapolate=did_extrapolate)
             if(did_extrapolate) then
                 ! If we could extrapolate forward in time then less iterations should be needed
-                niter = 2
+                niter = ds%tridiagonal_inner_iter
             else
                 ! If we could not extrapolate forward in time then more iterations may be needed
-                niter = 20
+                niter = 10_ip*ds%tridiagonal_inner_iter
             end if
         else
             ! If we did not try to extrapolate forward in time, then assume the initial guess was good.
-            niter = 2
+            niter = ds%tridiagonal_inner_iter
         end if
 
         ds%last_iter = niter

@@ -228,6 +228,9 @@ module multidomain_mod
             !! and for such messages, the file locations may be messed up if using more than one multidomain
         logical :: use_dispersion = .FALSE.
             !! This will be .TRUE. if any domain uses dispersion, and .FALSE. otherwise
+        integer :: dispersive_outer_iterations_count = 2
+            !! When doing dispersive solves, we solve the dispersive term on each domain individually, communicate, and repeat
+            !! dispersive_outer_iterations times. Larger numbers could allow information to cross domains more easily.
 
         contains
 
@@ -1188,7 +1191,6 @@ module multidomain_mod
 
         integer(ip) :: j, substep, nt, dispersive_outer_iterations, nt_max, domain_stepcycles(size(md%domains))
         real(dp) :: dt_local, max_dt_store(size(md%domains)), tend
-        integer, parameter :: max_dispersive_outer_iterations = 2
         logical :: is_first_step
 
 TIMER_START('before_stepping')
@@ -1292,7 +1294,7 @@ __FILE__
 
             ! Dispersive terms
             dispersive_outer_iterations = 0_ip
-            dispersive_outer_loop: do while(dispersive_outer_iterations < max_dispersive_outer_iterations)
+            dispersive_outer_loop: do while(dispersive_outer_iterations < md%dispersive_outer_iterations_count)
                 ! Iterations allow communication between domains during the dispersive solve.
                 dispersive_outer_iterations = dispersive_outer_iterations + 1
 
