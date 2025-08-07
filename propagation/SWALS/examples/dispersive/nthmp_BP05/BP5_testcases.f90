@@ -207,7 +207,7 @@ program BP02
     ! Tank geometry  -- add a little extra at the end so the reflective wall is in the right place
     tank_bases = [base_L, 4.36_dp, 2.93_dp, 0.9_dp + 2.0_dp*dx]
     tank_slopes = [0.0_dp, 1.0_dp/53.0_dp, 1.0_dp/150.0_dp, 1.0_dp/13.0_dp]
-    tank_width = 0.1_dp !1.0_dp
+    tank_width = dx * 5.0_dp ! This will cause a single cell of flow (with 2dx walls on either side)
     tank_length = sum(tank_bases)
     initial_depth = 0.218_dp
 
