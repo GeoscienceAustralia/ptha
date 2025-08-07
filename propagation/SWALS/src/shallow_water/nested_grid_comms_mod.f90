@@ -92,7 +92,7 @@ module nested_grid_comms_mod
         integer(ip) :: nsend 
             !! We only need to send send_buffer(1:nsend)
         integer(ip) :: nsend_interior 
-            !! Number of send values that are not edge fluxes
+            !! Number of send values that are not edge flux info or time
         integer(ip) :: send_interior_start = -HUGE(1_ip), send_interior_end = -HUGE(1_ip)
             !! Range of indices in which we store data in send_buffer about the solution (and perhaps its gradients)
         integer(ip) :: send_flux_start = -HUGE(1_ip), send_flux_end = -HUGE(1_ip)
