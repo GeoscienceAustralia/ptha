@@ -219,8 +219,8 @@ program BP02
     md%domains(1)%lw = [boundary_buffer, global_lw(2)]
     md%domains(1)%lower_left =  global_ll 
     md%domains(1)%nx = [boundary_buffer_cells, global_nx(2)]
-    md%domains(1)%timestepping_method = timestepping_method
-    md%domains(1)%use_dispersion = .false. !
+    md%domains(1)%timestepping_method = 'leapfrog_nonlinear' !timestepping_method
+    md%domains(1)%use_dispersion = .false. 
     !md%domains(1)%nc_grid_output%flush_every_n_output_steps = 1_ip !
 
     ! Main domain with dispersive solver, and halos that cover the NLSW domain
@@ -269,7 +269,7 @@ program BP02
         ! Avoid storing grids often
         call md%write_outputs_and_print_statistics(&
             approximate_writeout_frequency=approximate_writeout_frequency, &
-            write_grids_less_often = 1_ip) ! 999999_ip)
+            write_grids_less_often = 999999_ip)
 
         if (md%domains(1)%time > final_time) exit
 

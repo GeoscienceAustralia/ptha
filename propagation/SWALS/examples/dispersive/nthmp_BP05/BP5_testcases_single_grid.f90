@@ -244,7 +244,7 @@ program BP02
         ! Avoid storing grids often
         call md%write_outputs_and_print_statistics(&
             approximate_writeout_frequency=approximate_writeout_frequency, &
-            write_grids_less_often = 1_ip) ! 999999_ip)
+            write_grids_less_often = 999999_ip)
 
         if (md%domains(1)%time > final_time) exit
 
