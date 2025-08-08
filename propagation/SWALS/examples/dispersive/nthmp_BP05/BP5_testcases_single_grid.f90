@@ -140,7 +140,7 @@ end module
 
 !@!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-program BP02
+program BP05
     !!
     !! NTHMP benchmark problem 5 -- Wave on a composite beach -- dispersive version
     !!
