@@ -229,9 +229,10 @@ program BP02
     md%domains(2)%nx = global_nx - [boundary_buffer_cells, 0]
     md%domains(2)%timestepping_method = timestepping_method
     md%domains(2)%use_dispersion = .true. !
-    !md%domains(2)%nc_grid_output%flush_every_n_output_steps = 1_ip !
     md%domains(2)%minimum_nesting_layer_thickness = boundary_buffer_cells
+    !md%domains(2)%nc_grid_output%flush_every_n_output_steps = 1_ip !
 
+    !! Experiment with more nested iterations
     !md%domains(2)%ds%tridiagonal_inner_iter = 4_ip
 
     !! Taper off dispersion

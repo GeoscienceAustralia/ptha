@@ -179,11 +179,9 @@ program BP02
         case('caseA')
             base_L = 2.40_dp
             bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3a_analytical.txt'
-
         case('caseB')
             base_L = 0.98_dp
             bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3b_analytical.txt'
-
         case('caseC')
             base_L = 0.64_dp
             bc_file = '../../nthmp/test_repository/BP02-DmitryN-Solitary_wave_on_composite_beach_analytic/ts3c_analytical.txt'
@@ -200,7 +198,7 @@ program BP02
     ! Tank geometry  -- add a little extra at the end so the reflective wall is in the right place
     tank_bases = [base_L, 4.36_dp, 2.93_dp, 0.9_dp + 2.0_dp*dx]
     tank_slopes = [0.0_dp, 1.0_dp/53.0_dp, 1.0_dp/150.0_dp, 1.0_dp/13.0_dp]
-    tank_width = dx * 5.0_dp ! Only a single cell down the middle
+    tank_width = dx * 5.0_dp ! This will cause a single cell of flow (with 2dx walls on either side)
     tank_length = sum(tank_bases)
     initial_depth = 0.218_dp
 
