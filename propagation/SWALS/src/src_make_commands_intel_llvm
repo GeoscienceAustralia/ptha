@@ -41,7 +41,7 @@ read_raster_mod.o: $(SWALS_SRC)/raster/read_raster_mod.f90
 	$(SWALS_FORTRAN) -O2 $(NO_LTO) -c $^ $(SWALS_GDAL_CFLAGS)
 # Heavy optimization of the cliffs_tolkova_mod.f90 can cause issues with intel-llvm compilers 2023
 cliffs_tolkova_mod.o: $(SWALS_SRC)/shallow_water/cliffs_tolkova_mod.f90
-	$(SWALS_FORTRAN) -O2 $(NO_LTO) -c $^ $(SWALS_GDAL_CFLAGS)
+	$(SWALS_FORTRAN) -O2 $(NO_LTO) -c $^
 
 # Lapack routines (in F77)
 lapack_tridiagonal_solves.o: $(SWALS_SRC)/util/lapack_tridiagonal_solves.f
