@@ -45,7 +45,7 @@ cliffs_tolkova_mod.o: $(SWALS_SRC)/shallow_water/cliffs_tolkova_mod.f90
 
 # Lapack routines (in F77)
 lapack_tridiagonal_solves.o: $(SWALS_SRC)/util/lapack_tridiagonal_solves.f
-	$(SWALS_FORTRAN) $(NO_LTO) -c $^
+	$(SWALS_FORTRAN) -c $^
 
 #
 # These rely on NETCDF, unless compiled with -DNONETCDF,

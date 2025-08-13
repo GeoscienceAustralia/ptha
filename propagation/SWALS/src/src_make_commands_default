@@ -42,7 +42,7 @@ read_raster_mod.o: $(SWALS_SRC)/raster/read_raster_mod.f90
 
 # Lapack routines (in F77)
 lapack_tridiagonal_solves.o: $(SWALS_SRC)/util/lapack_tridiagonal_solves.f
-	$(SWALS_FORTRAN) $(NO_LTO) -c $^
+	$(SWALS_FORTRAN) -c $^
 
 #
 # These rely on NETCDF, unless compiled with -DNONETCDF,
