@@ -1221,8 +1221,8 @@ TIMER_STOP('before_stepping')
 
         if(any(abs(domain_stepcycles - &
                    (nt_max*1.0_dp)/(md%domains(:)%timestepping_refinement_factor*1.0_dp)) > 1e-10_dp)) then
-            write(log_output_unit,*) 'Timestepping refinement factors must all divide nt_max'
-            write(log_output_unit,*) 'such as (nt_max=6) 1, 6, 2, 3 ... or (nt_max=27) 1, 3, 27 ...'
+            write(md%log_output_unit,*) 'Timestepping refinement factors must all divide nt_max'
+            write(md%log_output_unit,*) 'such as (nt_max=6) 1, 6, 2, 3 ... or (nt_max=27) 1, 3, 27 ...'
             call generic_stop
         end if
 
@@ -1286,7 +1286,7 @@ TIMER_START('comms1')
                 call communicate_p2p(md%p2p)
 TIMER_STOP('comms1')
             else
-                write(log_output_unit, *) 'Error: Need to implement support for this case (sync before and after)', &
+                write(md%log_output_unit, *) 'Error: Need to implement support for this case (sync before and after)', &
                     __LINE__, &
 __FILE__
                 call generic_stop
@@ -1340,7 +1340,7 @@ TIMER_START('comms_disp')
                     call communicate_p2p(md%p2p)
 TIMER_STOP('comms_disp')
                 else
-                    write(log_output_unit, *) 'Error: Need to implement support for coarray case (sync before and after)'
+                    write(md%log_output_unit, *) 'Error: Need to implement support for coarray case (sync before and after)'
                     call generic_stop
                 end if
 
