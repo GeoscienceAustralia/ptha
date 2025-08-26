@@ -152,7 +152,7 @@ module timestepping_metadata_mod
             !
             timestepping_metadata(8)%timestepping_method = 'leapfrog_nonlinear'
             timestepping_metadata(8)%is_staggered_grid = 1
-            !timestepping_metadata(8)%flux_correction_of_mass_only = .true. ! NB: Currently we do not record momentum fluxes on these domains
+            timestepping_metadata(8)%flux_correction_of_mass_only = .true. ! NB: Currently we do not record momentum fluxes on these domains, although there is commented out code in the leapfrog_nonlinear solver that could do this.
             timestepping_metadata(8)%default_cfl = 0.7_dp
             timestepping_metadata(8)%nesting_thickness_for_one_sw_timestep = 3_ip
             timestepping_metadata(8)%adaptive_timestepping = .false.
